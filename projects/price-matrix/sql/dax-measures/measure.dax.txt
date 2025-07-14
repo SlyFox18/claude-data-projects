@@ -1,0 +1,18 @@
+# Example setup for documenting DAX Measures
+
+-- Measure: Total Revenue
+-- Table: Sales
+-- Description: Calculates total revenue across all transactions
+-- Created: [Date]
+-- Last Modified: [Date]
+
+Total Revenue = 
+SUMX(
+    Sales,
+    Sales[Quantity] * Sales[Price]
+)
+
+-- Notes:
+-- - Handles blank values appropriately
+-- - Filters applied at report level
+-- - Performance: Good for current data volume
