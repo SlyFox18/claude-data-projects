@@ -25,11 +25,11 @@
 
 ## Debug/Testing
 
-**Count Part Number Test:** Testing measure for validation and quality assurance
+**Count Part Number Test:** Testing measure for validation purposes
 
 **Test Margin Performance:** Compares actual vs target margins with visual status indicators
 
-**Test ListPrice Range:** Testing measure for validation and quality assurance
+**Test ListPrice Range:** Testing measure for validation purposes
 
 ## Performance Indicators
 
@@ -37,9 +37,9 @@
 
 **Performance Status:** Provides analytical insights for price matrix analysis
 
-**Margin Trend:** Quarter-over-quarter margin change tracking
+**Margin Trend:** Provides analytical insights for price matrix analysis
 
-**Seasonal Performance:** Current quarter performance vs annual average
+**Seasonal Performance:** Provides analytical insights for price matrix analysis
 
 **Margin Performance:** Compares actual vs target margins with visual status indicators
 
@@ -53,31 +53,31 @@
 
 ## Transaction Analysis
 
-**Transaction Count for Parts in Range:** Counts individual sales transactions, indicating sales velocity
+**Transaction Count for Parts in Range:** Number of individual sales transactions, indicating sales velocity
 
-**Transaction Sales $ for Parts in Range:** Total sales dollars from actual transactions in the price range
+**Transaction Sales $ for Parts in Range:** Total sales dollars from actual transactions
 
 **Transaction Margin $ for Parts in Range:** Provides analytical insights for price matrix analysis
 
-**Transaction Margin % for Parts in Range:** Shows actual profit margin percentage from sales transactions
+**Transaction Margin % for Parts in Range:** Actual profit margin percentage from sales transactions
 
-**Transaction Quantity for Parts in Range:** Total quantity sold from transactions in the price range
+**Transaction Quantity for Parts in Range:** Total quantity sold from transactions
 
 **Transaction Velocity:** Average transactions per part, indicating demand patterns
 
 **Average Transaction Size:** Average dollar amount per transaction
 
-**Transaction Sales $ % of Total:** Total sales dollars from actual transactions in the price range
+**Transaction Sales $ % of Total:** Total sales dollars from actual transactions
 
-**Transaction Count % of Total:** Counts individual sales transactions, indicating sales velocity
+**Transaction Count % of Total:** Number of individual sales transactions, indicating sales velocity
 
-**Transaction Quantity % of Total:** Total quantity sold from transactions in the price range
+**Transaction Quantity % of Total:** Total quantity sold from transactions
 
 **Current Average Cost (Transaction Based):** Provides analytical insights for price matrix analysis
 
 ## Utilities
 
-**Show Filter 1:** Dynamic display of current filter selections for user clarity
+**Show Filter 1:** Dynamic display of current filter selections
 
 ## Core Business Metrics
 
@@ -85,15 +85,15 @@
 
 **Total Sales $ for Parts in Range:** Provides analytical insights for price matrix analysis
 
-**Average Selling Price for Parts in Range:** Calculates average selling price for parts, showing actual pricing patterns
+**Average Selling Price for Parts in Range:** Average selling price for parts, showing actual pricing patterns
 
 **Total Parts with Sales:** Provides analytical insights for price matrix analysis
 
 **Total Sales Quantity:** Provides analytical insights for price matrix analysis
 
-**Total Sales Dollars:** Shows total dollar sales for parts within a specific price range
+**Total Sales Dollars:** Total dollar sales for parts within a specific price range
 
-**Average Selling Price:** Calculates average selling price for parts, showing actual pricing patterns
+**Average Selling Price:** Average selling price for parts, showing actual pricing patterns
 
 **Total Sales Qty for Parts in Range:** Provides analytical insights for price matrix analysis
 
@@ -145,7 +145,7 @@
 
 **Projected Selling Price:** Provides analytical insights for price matrix analysis
 
-**Current Average Selling Price:** Calculates average selling price for parts, showing actual pricing patterns
+**Current Average Selling Price:** Average selling price for parts, showing actual pricing patterns
 
 **Price Change per Unit:** Provides analytical insights for price matrix analysis
 

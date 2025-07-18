@@ -1,6 +1,6 @@
 ﻿# Price Matrix Project - DAX Measures Documentation
 
-**Generated:** 2025-07-18 14:55
+**Generated:** 2025-07-18 14:59
 **Total Measures:** 83
 **Project:** Price Matrix Analysis System
 
@@ -55,7 +55,7 @@ Fundamental business measures that provide key insights into sales performance a
 
 ### Average Selling Price for Parts in Range
 
-**Business Purpose:** Calculates average selling price for parts, showing actual pricing patterns
+**Business Purpose:** Average selling price for parts, showing actual pricing patterns
 
 **Output Format:** Number
 
@@ -85,7 +85,7 @@ Fundamental business measures that provide key insights into sales performance a
 
 ### Total Sales Dollars
 
-**Business Purpose:** Shows total dollar sales for parts within a specific price range
+**Business Purpose:** Total dollar sales for parts within a specific price range
 
 **Output Format:** Number
 
@@ -95,7 +95,7 @@ Fundamental business measures that provide key insights into sales performance a
 
 ### Average Selling Price
 
-**Business Purpose:** Calculates average selling price for parts, showing actual pricing patterns
+**Business Purpose:** Average selling price for parts, showing actual pricing patterns
 
 **Output Format:** Number
 
@@ -355,7 +355,7 @@ Fundamental business measures that provide key insights into sales performance a
 
 ### Current Average Selling Price
 
-**Business Purpose:** Calculates average selling price for parts, showing actual pricing patterns
+**Business Purpose:** Average selling price for parts, showing actual pricing patterns
 
 **Output Format:** Number
 
@@ -540,7 +540,7 @@ Detailed analysis of individual transactions and sales patterns.
 
 ### Transaction Count for Parts in Range
 
-**Business Purpose:** Counts individual sales transactions, indicating sales velocity
+**Business Purpose:** Number of individual sales transactions, indicating sales velocity
 
 **Output Format:** Number
 
@@ -550,7 +550,7 @@ Detailed analysis of individual transactions and sales patterns.
 
 ### Transaction Sales $ for Parts in Range
 
-**Business Purpose:** Total sales dollars from actual transactions in the price range
+**Business Purpose:** Total sales dollars from actual transactions
 
 **Output Format:** Number
 
@@ -570,7 +570,7 @@ Detailed analysis of individual transactions and sales patterns.
 
 ### Transaction Margin % for Parts in Range
 
-**Business Purpose:** Shows actual profit margin percentage from sales transactions
+**Business Purpose:** Actual profit margin percentage from sales transactions
 
 **Output Format:** Number
 
@@ -580,7 +580,7 @@ Detailed analysis of individual transactions and sales patterns.
 
 ### Transaction Quantity for Parts in Range
 
-**Business Purpose:** Total quantity sold from transactions in the price range
+**Business Purpose:** Total quantity sold from transactions
 
 **Output Format:** Number
 
@@ -610,7 +610,7 @@ Detailed analysis of individual transactions and sales patterns.
 
 ### Transaction Sales $ % of Total
 
-**Business Purpose:** Total sales dollars from actual transactions in the price range
+**Business Purpose:** Total sales dollars from actual transactions
 
 **Output Format:** Number
 
@@ -620,7 +620,7 @@ Detailed analysis of individual transactions and sales patterns.
 
 ### Transaction Count % of Total
 
-**Business Purpose:** Counts individual sales transactions, indicating sales velocity
+**Business Purpose:** Number of individual sales transactions, indicating sales velocity
 
 **Output Format:** Number
 
@@ -630,7 +630,7 @@ Detailed analysis of individual transactions and sales patterns.
 
 ### Transaction Quantity % of Total
 
-**Business Purpose:** Total quantity sold from transactions in the price range
+**Business Purpose:** Total quantity sold from transactions
 
 **Output Format:** Number
 
@@ -770,7 +770,7 @@ Visual indicators and performance tracking measures.
 
 ### Margin Trend
 
-**Business Purpose:** Quarter-over-quarter margin change tracking
+**Business Purpose:** Provides analytical insights for price matrix analysis
 
 **Output Format:** Text/Visual
 
@@ -780,7 +780,7 @@ Visual indicators and performance tracking measures.
 
 ### Seasonal Performance
 
-**Business Purpose:** Current quarter performance vs annual average
+**Business Purpose:** Provides analytical insights for price matrix analysis
 
 **Output Format:** Text/Visual
 
@@ -845,7 +845,7 @@ Supporting measures for user experience and filtering.
 
 ### Show Filter 1
 
-**Purpose:** Dynamic display of current filter selections for user clarity
+**Purpose:** Dynamic display of current filter selections
 
 **Usage:** User interface enhancement
 
@@ -915,4 +915,4 @@ Diagnostic measures for development and troubleshooting.
 ---
 
 *This documentation is automatically generated from Power BI model metadata.*
-*Last updated: 2025-07-18 14:55*
+*Last updated: 2025-07-18 14:59*
