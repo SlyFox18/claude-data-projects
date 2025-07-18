@@ -1,6 +1,6 @@
 ﻿# Price Matrix Project - Enhanced Data Model Documentation
 
-**Generated:** 2025-07-18 15:25
+**Generated:** 2025-07-18 15:29
 **Project:** Price Matrix Analysis System
 
 ## Executive Summary
@@ -32,14 +32,14 @@ The model implements a star schema with centralized fact tables surrounded by di
 Core business data containing transactions and events:
 
 **Fact_Inventory**
-- Purpose: 
+- Purpose: Core inventory and sales data with 12-month rolling metrics
 - Total Columns: 23
 - Key Columns: 8 (for relationships)
 - Measure Columns: 9 (numeric data)
 - Date Columns: 2 (time dimensions)
 
 **Fact_Part_Transactions**
-- Purpose: 
+- Purpose: Individual sales transactions with customer and margin details
 - Total Columns: 32
 - Key Columns: 4 (for relationships)
 - Measure Columns: 17 (numeric data)
@@ -50,49 +50,49 @@ Core business data containing transactions and events:
 Master data providing context and attributes for analysis:
 
 **dim_BranchLocation**
-- Purpose: 
+- Purpose: Branch and location master data for geographic analysis
 - Total Columns: 9
 - Primary Keys: 
 - Business Attributes: 7
 
 **dim_Parts**
-- Purpose: 
+- Purpose: Part master data with descriptions and franchise assignments
 - Total Columns: 5
 - Primary Keys: 
 - Business Attributes: 3
 
 **dim_Franchise**
-- Purpose: 
+- Purpose: Franchise master data for organizational reporting
 - Total Columns: 3
 - Primary Keys: 
 - Business Attributes: 
 
 **dim_DealerGroupCode**
-- Purpose: 
+- Purpose: Supporting table for specialized analysis or system functions
 - Total Columns: 3
 - Primary Keys: 
 - Business Attributes: 
 
 **dim_Source**
-- Purpose: 
+- Purpose: Supporting table for specialized analysis or system functions
 - Total Columns: 3
 - Primary Keys: 
 - Business Attributes: 
 
 **dim_SLC**
-- Purpose: 
+- Purpose: Supporting table for specialized analysis or system functions
 - Total Columns: 3
 - Primary Keys: 
 - Business Attributes: 
 
 **dim_VendorCode**
-- Purpose: 
+- Purpose: Supporting table for specialized analysis or system functions
 - Total Columns: 3
 - Primary Keys: 
 - Business Attributes: 
 
 **dim_DateTable**
-- Purpose: 
+- Purpose: Supporting table for specialized analysis or system functions
 - Total Columns: 21
 - Primary Keys: 
 - Business Attributes: 19
@@ -102,11 +102,11 @@ Master data providing context and attributes for analysis:
 System configuration and calculated tables:
 
 **MeasuresTable**
-- Purpose: 
+- Purpose: Container table for DAX measures (Power BI calculated table)
 - Columns: 3
 
 **Price_Matrix**
-- Purpose: 
+- Purpose: Price range configuration with target margin percentages
 - Columns: 24
 
 
@@ -255,4 +255,4 @@ Time dimensions for trend analysis and filtering.
 
 *This documentation is automatically generated from Power BI model metadata.*
 *For detailed measure documentation, see dax-measures-complete-guide.md*
-*Last updated: 2025-07-18 15:25*
+*Last updated: 2025-07-18 15:29*
