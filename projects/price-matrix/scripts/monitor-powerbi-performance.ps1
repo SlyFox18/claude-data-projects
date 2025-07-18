@@ -62,8 +62,8 @@ $timestamp = Get-Date
 $dateStamp = $timestamp.ToString("yyyy-MM-dd")
 $timeStamp = $timestamp.ToString("HHmm")
 
-# FIX: Use Get-Date -Format to avoid ToString issues
-$timeString = Get-Date $timestamp -Format "HH:mm:ss"
+# FIX: Use Get-Date -Format directly to avoid DateTime conversion issues
+$timeString = Get-Date -Format "HH:mm:ss"
 $performanceRecord = [PSCustomObject]@{
     Time = $timeString
     ConnectivityResult = $connectivityResult
