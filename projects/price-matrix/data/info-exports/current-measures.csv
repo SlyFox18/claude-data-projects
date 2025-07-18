@@ -1,42 +1,48 @@
 ID,Name,Table,Description,DataType,Expression,FormatString,IsHidden,State,KPIID,IsSimpleMeasure,DisplayFolder,DetailRowsDefinition,DataCategory,FormatStringDefinition,LineageTag
 2328,Unique Parts in Range,MeasuresTable,,,"
-IF(
-    HASONEVALUE(Price_Matrix[value_from]) && HASONEVALUE(Price_Matrix[value_to]),
-    VAR CurrentFrom = SELECTEDVALUE(Price_Matrix[value_from])
-    VAR CurrentTo = SELECTEDVALUE(Price_Matrix[value_to])
+IF (
+    HASONEVALUE ( Price_Matrix[value_from] )
+        && HASONEVALUE ( Price_Matrix[value_to] ),
+    VAR CurrentFrom =
+        SELECTEDVALUE ( Price_Matrix[value_from] )
+    VAR CurrentTo =
+        SELECTEDVALUE ( Price_Matrix[value_to] )
     RETURN
-    CALCULATE(
-        DISTINCTCOUNT('Fact_Inventory'[PartNumber]),
-        'Fact_Inventory'[ListPrice] >= CurrentFrom,
-        'Fact_Inventory'[ListPrice] <= CurrentTo,
-        'Fact_Inventory'[Current12MoSales] > 0
-    ),
-    CALCULATE(
-        DISTINCTCOUNT('Fact_Inventory'[PartNumber]),
+        CALCULATE (
+            DISTINCTCOUNT ( 'Fact_Inventory'[PartNumber] ),
+            'Fact_Inventory'[ListPrice] >= CurrentFrom,
+            'Fact_Inventory'[ListPrice] <= CurrentTo,
+            'Fact_Inventory'[Current12MoSales] > 0
+        ),
+    CALCULATE (
+        DISTINCTCOUNT ( 'Fact_Inventory'[PartNumber] ),
         'Fact_Inventory'[Current12MoSales] > 0
     )
 )",,False,Valid,,False,,,,"""0""",828d181d-35e8-4581-9a80-93cd46ebadcd
 2337,Total Sales $ for Parts in Range,MeasuresTable,,,"
-IF(
-    HASONEVALUE(Price_Matrix[value_from]) && HASONEVALUE(Price_Matrix[value_to]),
+IF (
+    HASONEVALUE ( Price_Matrix[value_from] )
+        && HASONEVALUE ( Price_Matrix[value_to] ),
     // Individual row - sum all dollars for parts in this price range
-    VAR CurrentFrom = SELECTEDVALUE(Price_Matrix[value_from])
-    VAR CurrentTo = SELECTEDVALUE(Price_Matrix[value_to])
+    VAR CurrentFrom =
+        SELECTEDVALUE ( Price_Matrix[value_from] )
+    VAR CurrentTo =
+        SELECTEDVALUE ( Price_Matrix[value_to] )
     RETURN
-    CALCULATE(
-        SUM('Fact_Inventory'[Current12MoDollars]),
-        'Fact_Inventory'[ListPrice] >= CurrentFrom,
-        'Fact_Inventory'[ListPrice] <= CurrentTo,
-        'Fact_Inventory'[Current12MoSales] > 0
-    ),
+        CALCULATE (
+            SUM ( 'Fact_Inventory'[Current12MoDollars] ),
+            'Fact_Inventory'[ListPrice] >= CurrentFrom,
+            'Fact_Inventory'[ListPrice] <= CurrentTo,
+            'Fact_Inventory'[Current12MoSales] > 0
+        ),
     // Total row - all dollars
-    CALCULATE(
-        SUM('Fact_Inventory'[Current12MoDollars]),
+    CALCULATE (
+        SUM ( 'Fact_Inventory'[Current12MoDollars] ),
         'Fact_Inventory'[Current12MoSales] > 0
     )
 )",,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",d5ff8e82-7420-4e3d-94d0-b953c9b44a2d
 2340,Average Selling Price for Parts in Range,MeasuresTable,,,"
-DIVIDE(
+DIVIDE (
     [Transaction Sales $ for Parts in Range],
     [Transaction Quantity for Parts in Range]
 )",,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",5f6d02d7-9172-4119-8389-1cb61e3da2a8
@@ -59,451 +65,1561 @@ RETURN
         RETURN
             ___x & UNICHAR ( 13 )
                 & UNICHAR ( 10 )
-    )
-",,False,Valid,,False,,,,,aeb9f879-3388-47dc-b5a4-21193b0f76bf
+    )",,False,Valid,,False,,,,,aeb9f879-3388-47dc-b5a4-21193b0f76bf
 2412,Total Parts with Sales,MeasuresTable,,,"
-CALCULATE(
-    DISTINCTCOUNT('Fact_Inventory'[PartNumber]),
+CALCULATE (
+    DISTINCTCOUNT ( 'Fact_Inventory'[PartNumber] ),
     'Fact_Inventory'[Current12MoSales] > 0
 )",,False,Valid,,False,,,,"""0""",fe63b970-4370-44e6-898d-320cdb89ffc9
 2414,Total Sales Quantity,MeasuresTable,,,"
-CALCULATE(
-    SUM('Fact_Inventory'[Current12MoSales]),
+CALCULATE (
+    SUM ( 'Fact_Inventory'[Current12MoSales] ),
     'Fact_Inventory'[Current12MoSales] > 0
 )",,False,Valid,,False,,,,,a72539db-4554-448b-8dc3-d8a2e6373994
 2417,Total Sales Dollars,MeasuresTable,,,"
-CALCULATE(
-    SUM('Fact_Inventory'[Current12MoDollars]),
+CALCULATE (
+    SUM ( 'Fact_Inventory'[Current12MoDollars] ),
     'Fact_Inventory'[Current12MoSales] > 0
 )",,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",642645ea-bf22-44de-adbb-0b84ba2e48d1
 2420,Average Selling Price,MeasuresTable,,,"
-DIVIDE([Total Sales Dollars], [Total Sales Quantity])",,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",6661b284-fed7-4142-b137-ec341004e50e
-2433,Count Part Number Test,MeasuresTable,,,COUNT(dim_Parts[PartNumber]),,False,Valid,,False,,,,"""0""",d3f42b03-f3f6-447a-b7cd-590def947371
+DIVIDE ( [Total Sales Dollars], [Total Sales Quantity] )",,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",6661b284-fed7-4142-b137-ec341004e50e
+2433,Count Part Number Test,MeasuresTable,,,"
+COUNT ( dim_Parts[PartNumber] )",,False,Valid,,False,,,,"""0""",d3f42b03-f3f6-447a-b7cd-590def947371
 2440,Total Sales Qty for Parts in Range,MeasuresTable,,,"
-IF(
-    HASONEVALUE(Price_Matrix[value_from]) && HASONEVALUE(Price_Matrix[value_to]),
+IF (
+    HASONEVALUE ( Price_Matrix[value_from] )
+        && HASONEVALUE ( Price_Matrix[value_to] ),
     // Individual row - sum all sales for parts in this price range
-    VAR CurrentFrom = SELECTEDVALUE(Price_Matrix[value_from])
-    VAR CurrentTo = SELECTEDVALUE(Price_Matrix[value_to])
+    VAR CurrentFrom =
+        SELECTEDVALUE ( Price_Matrix[value_from] )
+    VAR CurrentTo =
+        SELECTEDVALUE ( Price_Matrix[value_to] )
     RETURN
-    CALCULATE(
-        SUM('Fact_Inventory'[Current12MoSales]),
-        'Fact_Inventory'[ListPrice] >= CurrentFrom,
-        'Fact_Inventory'[ListPrice] <= CurrentTo,
-        'Fact_Inventory'[Current12MoSales] > 0
-    ),
+        CALCULATE (
+            SUM ( 'Fact_Inventory'[Current12MoSales] ),
+            'Fact_Inventory'[ListPrice] >= CurrentFrom,
+            'Fact_Inventory'[ListPrice] <= CurrentTo,
+            'Fact_Inventory'[Current12MoSales] > 0
+        ),
     // Total row - all sales
-    CALCULATE(
-        SUM('Fact_Inventory'[Current12MoSales]),
+    CALCULATE (
+        SUM ( 'Fact_Inventory'[Current12MoSales] ),
         'Fact_Inventory'[Current12MoSales] > 0
     )
 )",,False,Valid,,False,,,,,c08fee47-eb87-4b6c-964e-11cad40e9902
 3158,Transaction Count for Parts in Range,MeasuresTable,,,"
-IF(
-    HASONEVALUE(Price_Matrix[value_from]) && HASONEVALUE(Price_Matrix[value_to]),
+IF (
+    HASONEVALUE ( Price_Matrix[value_from] )
+        && HASONEVALUE ( Price_Matrix[value_to] ),
     // Individual row - count transactions for parts in this price range
-    VAR CurrentFrom = SELECTEDVALUE(Price_Matrix[value_from])
-    VAR CurrentTo = SELECTEDVALUE(Price_Matrix[value_to])
-    VAR PartsInRange = 
-        CALCULATETABLE(
-            VALUES('Fact_Inventory'[PartNumber]),
+    VAR CurrentFrom =
+        SELECTEDVALUE ( Price_Matrix[value_from] )
+    VAR CurrentTo =
+        SELECTEDVALUE ( Price_Matrix[value_to] )
+    VAR PartsInRange =
+        CALCULATETABLE (
+            VALUES ( 'Fact_Inventory'[PartNumber] ),
             'Fact_Inventory'[ListPrice] >= CurrentFrom,
             'Fact_Inventory'[ListPrice] <= CurrentTo,
             'Fact_Inventory'[Current12MoSales] > 0
         )
     RETURN
-    CALCULATE(
-        COUNTROWS('Fact_Part_Transactions'),
-        'Fact_Part_Transactions'[PartNumber] IN PartsInRange,
-        'Fact_Part_Transactions'[SaleAmount] > 0
-    ),
+        CALCULATE (
+            COUNTROWS ( 'Fact_Part_Transactions' ),
+            'Fact_Part_Transactions'[PartNumber] IN PartsInRange,
+            'Fact_Part_Transactions'[SaleAmount] > 0
+        ),
     // Total row - all transactions for parts with inventory sales
-    VAR AllPartsWithSales = 
-        CALCULATETABLE(
-            VALUES('Fact_Inventory'[PartNumber]),
+    VAR AllPartsWithSales =
+        CALCULATETABLE (
+            VALUES ( 'Fact_Inventory'[PartNumber] ),
             'Fact_Inventory'[Current12MoSales] > 0
         )
     RETURN
-    CALCULATE(
-        COUNTROWS('Fact_Part_Transactions'),
-        'Fact_Part_Transactions'[PartNumber] IN AllPartsWithSales,
-        'Fact_Part_Transactions'[SaleAmount] > 0
-    )
+        CALCULATE (
+            COUNTROWS ( 'Fact_Part_Transactions' ),
+            'Fact_Part_Transactions'[PartNumber] IN AllPartsWithSales,
+            'Fact_Part_Transactions'[SaleAmount] > 0
+        )
 )",,False,Valid,,False,,,,"""0""",025fd797-28ee-40e1-aeb0-9be3b08b805b
 3160,Transaction Sales $ for Parts in Range,MeasuresTable,,,"
-IF(
-    HASONEVALUE(Price_Matrix[value_from]) && HASONEVALUE(Price_Matrix[value_to]),
+IF (
+    HASONEVALUE ( Price_Matrix[value_from] )
+        && HASONEVALUE ( Price_Matrix[value_to] ),
     // Individual row - sum transaction sales for parts in this price range
-    VAR CurrentFrom = SELECTEDVALUE(Price_Matrix[value_from])
-    VAR CurrentTo = SELECTEDVALUE(Price_Matrix[value_to])
-    VAR PartsInRange = 
-        CALCULATETABLE(
-            VALUES('Fact_Inventory'[PartNumber]),
+    VAR CurrentFrom =
+        SELECTEDVALUE ( Price_Matrix[value_from] )
+    VAR CurrentTo =
+        SELECTEDVALUE ( Price_Matrix[value_to] )
+    VAR PartsInRange =
+        CALCULATETABLE (
+            VALUES ( 'Fact_Inventory'[PartNumber] ),
             'Fact_Inventory'[ListPrice] >= CurrentFrom,
             'Fact_Inventory'[ListPrice] <= CurrentTo,
             'Fact_Inventory'[Current12MoSales] > 0
         )
     RETURN
-    CALCULATE(
-        SUM('Fact_Part_Transactions'[SaleAmount]),
-        'Fact_Part_Transactions'[PartNumber] IN PartsInRange,
-        'Fact_Part_Transactions'[SaleAmount] > 0
-    ),
+        CALCULATE (
+            SUM ( 'Fact_Part_Transactions'[SaleAmount] ),
+            'Fact_Part_Transactions'[PartNumber] IN PartsInRange,
+            'Fact_Part_Transactions'[SaleAmount] > 0
+        ),
     // Total row - all transaction sales for parts with inventory sales
-    VAR AllPartsWithSales = 
-        CALCULATETABLE(
-            VALUES('Fact_Inventory'[PartNumber]),
+    VAR AllPartsWithSales =
+        CALCULATETABLE (
+            VALUES ( 'Fact_Inventory'[PartNumber] ),
             'Fact_Inventory'[Current12MoSales] > 0
         )
     RETURN
-    CALCULATE(
-        SUM('Fact_Part_Transactions'[SaleAmount]),
-        'Fact_Part_Transactions'[PartNumber] IN AllPartsWithSales,
-        'Fact_Part_Transactions'[SaleAmount] > 0
-    )
+        CALCULATE (
+            SUM ( 'Fact_Part_Transactions'[SaleAmount] ),
+            'Fact_Part_Transactions'[PartNumber] IN AllPartsWithSales,
+            'Fact_Part_Transactions'[SaleAmount] > 0
+        )
 )",,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",89a57b48-f9c1-44b8-ac31-fe9328bb5414
 3163,Transaction Margin $ for Parts in Range,MeasuresTable,,,"
-IF(
-    HASONEVALUE(Price_Matrix[value_from]) && HASONEVALUE(Price_Matrix[value_to]),
+IF (
+    HASONEVALUE ( Price_Matrix[value_from] )
+        && HASONEVALUE ( Price_Matrix[value_to] ),
     // Individual row - sum actual margin for parts in this price range
-    VAR CurrentFrom = SELECTEDVALUE(Price_Matrix[value_from])
-    VAR CurrentTo = SELECTEDVALUE(Price_Matrix[value_to])
-    VAR PartsInRange = 
-        CALCULATETABLE(
-            VALUES('Fact_Inventory'[PartNumber]),
+    VAR CurrentFrom =
+        SELECTEDVALUE ( Price_Matrix[value_from] )
+    VAR CurrentTo =
+        SELECTEDVALUE ( Price_Matrix[value_to] )
+    VAR PartsInRange =
+        CALCULATETABLE (
+            VALUES ( 'Fact_Inventory'[PartNumber] ),
             'Fact_Inventory'[ListPrice] >= CurrentFrom,
             'Fact_Inventory'[ListPrice] <= CurrentTo,
             'Fact_Inventory'[Current12MoSales] > 0
         )
     RETURN
-    CALCULATE(
-        SUM('Fact_Part_Transactions'[Margin]),
-        'Fact_Part_Transactions'[PartNumber] IN PartsInRange,
-        'Fact_Part_Transactions'[SaleAmount] > 0
-    ),
+        CALCULATE (
+            SUM ( 'Fact_Part_Transactions'[Margin] ),
+            'Fact_Part_Transactions'[PartNumber] IN PartsInRange,
+            'Fact_Part_Transactions'[SaleAmount] > 0
+        ),
     // Total row - all margins for parts with inventory sales
-    VAR AllPartsWithSales = 
-        CALCULATETABLE(
-            VALUES('Fact_Inventory'[PartNumber]),
+    VAR AllPartsWithSales =
+        CALCULATETABLE (
+            VALUES ( 'Fact_Inventory'[PartNumber] ),
             'Fact_Inventory'[Current12MoSales] > 0
         )
     RETURN
-    CALCULATE(
-        SUM('Fact_Part_Transactions'[Margin]),
-        'Fact_Part_Transactions'[PartNumber] IN AllPartsWithSales,
-        'Fact_Part_Transactions'[SaleAmount] > 0
-    )
+        CALCULATE (
+            SUM ( 'Fact_Part_Transactions'[Margin] ),
+            'Fact_Part_Transactions'[PartNumber] IN AllPartsWithSales,
+            'Fact_Part_Transactions'[SaleAmount] > 0
+        )
 )",,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",a27f2518-c192-4a21-87fe-d4f2e44c6c9a
 3166,Transaction Margin % for Parts in Range,MeasuresTable,,,"
-IF(
-    HASONEVALUE(Price_Matrix[value_from]) && HASONEVALUE(Price_Matrix[value_to]),
+IF (
+    HASONEVALUE ( Price_Matrix[value_from] )
+        && HASONEVALUE ( Price_Matrix[value_to] ),
     // Individual row - weighted average margin % for parts in this price range
-    VAR CurrentFrom = SELECTEDVALUE(Price_Matrix[value_from])
-    VAR CurrentTo = SELECTEDVALUE(Price_Matrix[value_to])
-    VAR PartsInRange = 
-        CALCULATETABLE(
-            VALUES('Fact_Inventory'[PartNumber]),
+    VAR CurrentFrom =
+        SELECTEDVALUE ( Price_Matrix[value_from] )
+    VAR CurrentTo =
+        SELECTEDVALUE ( Price_Matrix[value_to] )
+    VAR PartsInRange =
+        CALCULATETABLE (
+            VALUES ( 'Fact_Inventory'[PartNumber] ),
             'Fact_Inventory'[ListPrice] >= CurrentFrom,
             'Fact_Inventory'[ListPrice] <= CurrentTo,
             'Fact_Inventory'[Current12MoSales] > 0
         )
-    VAR TotalSales = 
-        CALCULATE(
-            SUM('Fact_Part_Transactions'[SaleAmount]),
+    VAR TotalSales =
+        CALCULATE (
+            SUM ( 'Fact_Part_Transactions'[SaleAmount] ),
             'Fact_Part_Transactions'[PartNumber] IN PartsInRange,
             'Fact_Part_Transactions'[SaleAmount] > 0
         )
-    VAR TotalMargin = 
-        CALCULATE(
-            SUM('Fact_Part_Transactions'[Margin]),
+    VAR TotalMargin =
+        CALCULATE (
+            SUM ( 'Fact_Part_Transactions'[Margin] ),
             'Fact_Part_Transactions'[PartNumber] IN PartsInRange,
             'Fact_Part_Transactions'[SaleAmount] > 0
         )
     RETURN
-    DIVIDE(TotalMargin, TotalSales),
+        DIVIDE ( TotalMargin, TotalSales ),
     // Total row - overall weighted average margin %
-    VAR AllPartsWithSales = 
-        CALCULATETABLE(
-            VALUES('Fact_Inventory'[PartNumber]),
+    VAR AllPartsWithSales =
+        CALCULATETABLE (
+            VALUES ( 'Fact_Inventory'[PartNumber] ),
             'Fact_Inventory'[Current12MoSales] > 0
         )
-    VAR TotalSales = 
-        CALCULATE(
-            SUM('Fact_Part_Transactions'[SaleAmount]),
+    VAR TotalSales =
+        CALCULATE (
+            SUM ( 'Fact_Part_Transactions'[SaleAmount] ),
             'Fact_Part_Transactions'[PartNumber] IN AllPartsWithSales,
             'Fact_Part_Transactions'[SaleAmount] > 0
         )
-    VAR TotalMargin = 
-        CALCULATE(
-            SUM('Fact_Part_Transactions'[Margin]),
+    VAR TotalMargin =
+        CALCULATE (
+            SUM ( 'Fact_Part_Transactions'[Margin] ),
             'Fact_Part_Transactions'[PartNumber] IN AllPartsWithSales,
             'Fact_Part_Transactions'[SaleAmount] > 0
         )
     RETURN
-    DIVIDE(TotalMargin, TotalSales)
+        DIVIDE ( TotalMargin, TotalSales )
 )",,False,Valid,,False,,,,"""0.00%;-0.00%;0.00%""",23b1c8f8-c612-4b77-91c0-81c9db7667c0
 3169,Transaction Quantity for Parts in Range,MeasuresTable,,,"
-IF(
-    HASONEVALUE(Price_Matrix[value_from]) && HASONEVALUE(Price_Matrix[value_to]),
-    VAR CurrentFrom = SELECTEDVALUE(Price_Matrix[value_from])
-    VAR CurrentTo = SELECTEDVALUE(Price_Matrix[value_to])
-    VAR PartsInRange = 
-        CALCULATETABLE(
-            VALUES('Fact_Inventory'[PartNumber]),
+IF (
+    HASONEVALUE ( Price_Matrix[value_from] )
+        && HASONEVALUE ( Price_Matrix[value_to] ),
+    VAR CurrentFrom =
+        SELECTEDVALUE ( Price_Matrix[value_from] )
+    VAR CurrentTo =
+        SELECTEDVALUE ( Price_Matrix[value_to] )
+    VAR PartsInRange =
+        CALCULATETABLE (
+            VALUES ( 'Fact_Inventory'[PartNumber] ),
             'Fact_Inventory'[ListPrice] >= CurrentFrom,
             'Fact_Inventory'[ListPrice] <= CurrentTo,
             'Fact_Inventory'[Current12MoSales] > 0
         )
-    VAR StartDate = EDATE(TODAY(), -12)  // 12 months ago from today
-    VAR EndDate = TODAY()
+    VAR StartDate =
+        EDATE ( TODAY (), -12 ) // 12 months ago from today
+    VAR EndDate =
+        TODAY ()
     RETURN
-    CALCULATE(
-        SUM('Fact_Part_Transactions'[Quantity]),
-        'Fact_Part_Transactions'[PartNumber] IN PartsInRange,
-        'Fact_Part_Transactions'[TransactionDate] >= StartDate,
-        'Fact_Part_Transactions'[TransactionDate] <= EndDate,
-        'Fact_Part_Transactions'[SaleAmount] > 0,          // Only sales (positive amounts)
-        'Fact_Part_Transactions'[Quantity] > 0             // Exclude returns (negative qty)
-    ),
+        CALCULATE (
+            SUM ( 'Fact_Part_Transactions'[Quantity] ),
+            'Fact_Part_Transactions'[PartNumber] IN PartsInRange,
+            'Fact_Part_Transactions'[TransactionDate] >= StartDate,
+            'Fact_Part_Transactions'[TransactionDate] <= EndDate,
+            'Fact_Part_Transactions'[SaleAmount] > 0,
+            // Only sales (positive amounts)
+            'Fact_Part_Transactions'[Quantity] > 0 // Exclude returns (negative qty)
+        ),
     // Total row
-    VAR StartDate = EDATE(TODAY(), -12)
-    VAR EndDate = TODAY()
+    VAR StartDate =
+        EDATE ( TODAY (), -12 )
+    VAR EndDate =
+        TODAY ()
     RETURN
-    CALCULATE(
-        SUM('Fact_Part_Transactions'[Quantity]),
-        'Fact_Part_Transactions'[TransactionDate] >= StartDate,
-        'Fact_Part_Transactions'[TransactionDate] <= EndDate,
-        'Fact_Part_Transactions'[SaleAmount] > 0,
-        'Fact_Part_Transactions'[Quantity] > 0
-    )
-)",,False,Valid,,False,,,,,6b5e13df-52de-4596-a556-cabfe37cea05
+        CALCULATE (
+            SUM ( 'Fact_Part_Transactions'[Quantity] ),
+            'Fact_Part_Transactions'[TransactionDate] >= StartDate,
+            'Fact_Part_Transactions'[TransactionDate] <= EndDate,
+            'Fact_Part_Transactions'[SaleAmount] > 0,
+            'Fact_Part_Transactions'[Quantity] > 0
+        )
+)",,False,Valid,,False,,,,"""0""",6b5e13df-52de-4596-a556-cabfe37cea05
 3192,Test Margin Performance,MeasuresTable,,,"
-VAR TargetMargin = SELECTEDVALUE(Price_Matrix[price_percent])
+VAR TargetMargin =
+    SELECTEDVALUE ( Price_Matrix[price_percent] )
 VAR ActualMargin = [Transaction Margin % for Parts in Range]
 RETURN
-""Target: "" & FORMAT(TargetMargin/100, ""0.0%"") & "" | Actual: "" & FORMAT(ActualMargin, ""0.0%"")",,False,Valid,,False,,,,,32d4f435-b5e6-45e8-82bd-13eabfc37980
+    ""Target: ""
+        & FORMAT ( TargetMargin / 100, ""0.0%"" ) & "" | Actual: ""
+        & FORMAT ( ActualMargin, ""0.0%"" )",,False,Valid,,False,,,,,32d4f435-b5e6-45e8-82bd-13eabfc37980
 3195,Margin Performance Icon,MeasuresTable,,,"
 VAR _Variance = [Transaction Margin % for Parts in Range]
 RETURN
-SWITCH(
-    TRUE(),
-    _Variance >= 0.05, ""🟢 ↗️"",      // Exceeding by 5%+
-    _Variance >= 0.02, ""🟡 ↗️"",      // Above target 2-5%
-    _Variance >= -0.02, ""⚪ ➡️"",     // On target ±2%
-    _Variance >= -0.05, ""🟠 ↘️"",     // Below target 2-5%
-    ""🔴 ↘️""                        // Significantly below 5%+
-)",,False,Valid,,False,,,,,ba83229e-e84b-499e-b0e7-da4f33dd19a2
+    SWITCH (
+        TRUE (),
+        _Variance >= 0.05, ""🟢 ↗️"",
+        // Exceeding by 5%+
+        _Variance >= 0.02, ""🟡 ↗️"",
+        // Above target 2-5%
+        _Variance >= -0.02, ""⚪ ➡️"",
+        // On target ±2%
+        _Variance >= -0.05, ""🟠 ↘️"",
+        // Below target 2-5%
+        ""🔴 ↘️"" // Significantly below 5%+
+    )",,False,Valid,,False,,,,,ba83229e-e84b-499e-b0e7-da4f33dd19a2
 3203,Transaction Velocity,MeasuresTable,,,"
 VAR TransactionCount = [Transaction Count for Parts in Range]
 VAR UniqueParts = [Unique Parts in Range]
-RETURN DIVIDE(TransactionCount, UniqueParts) // Transactions per part",,False,Valid,,False,,,,,ac3d0457-23c9-4f21-aae0-4242eb25d25a
+RETURN
+    DIVIDE ( TransactionCount, UniqueParts )
+// Transactions per part",,False,Valid,,False,,,,,ac3d0457-23c9-4f21-aae0-4242eb25d25a
 3206,Performance Status,MeasuresTable,,,,,False,InvalidExpression,,False,,,,,312c851d-7610-499e-b1c2-66f9d16ba36e
 3210,Average Transaction Size,MeasuresTable,,,"
-DIVIDE([Transaction Sales $ for Parts in Range], [Transaction Count for Parts in Range])",,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",35c36888-3aee-4b56-8178-50d94eb7834c
+DIVIDE (
+    [Transaction Sales $ for Parts in Range],
+    [Transaction Count for Parts in Range]
+)",,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",35c36888-3aee-4b56-8178-50d94eb7834c
 3215,Customer Concentration,MeasuresTable,,,"
-VAR CurrentFrom = SELECTEDVALUE(Price_Matrix[value_from])
-VAR CurrentTo = SELECTEDVALUE(Price_Matrix[value_to])
-VAR PartsInRange = 
-    CALCULATETABLE(
-        VALUES('Fact_Inventory'[PartNumber]),
+VAR CurrentFrom =
+    SELECTEDVALUE ( Price_Matrix[value_from] )
+VAR CurrentTo =
+    SELECTEDVALUE ( Price_Matrix[value_to] )
+VAR PartsInRange =
+    CALCULATETABLE (
+        VALUES ( 'Fact_Inventory'[PartNumber] ),
         'Fact_Inventory'[ListPrice] >= CurrentFrom,
         'Fact_Inventory'[ListPrice] <= CurrentTo
     )
-VAR TopCustomerSales = 
-    CALCULATE(
-        MAXX(
-            VALUES('Fact_Part_Transactions'[CustomerNo]),
-            CALCULATE(SUM('Fact_Part_Transactions'[SaleAmount]))
+VAR TopCustomerSales =
+    CALCULATE (
+        MAXX (
+            VALUES ( 'Fact_Part_Transactions'[CustomerNo] ),
+            CALCULATE ( SUM ( 'Fact_Part_Transactions'[SaleAmount] ) )
         ),
         'Fact_Part_Transactions'[PartNumber] IN PartsInRange
     )
 VAR TotalRangeSales = [Transaction Sales $ for Parts in Range]
 RETURN
-DIVIDE(TopCustomerSales, TotalRangeSales)",,False,Valid,,False,,,,"""0.00%;-0.00%;0.00%""",8078d2dd-d21c-4fa7-adec-a257e936ae50
+    DIVIDE ( TopCustomerSales, TotalRangeSales )",,False,Valid,,False,,,,"""0.00%;-0.00%;0.00%""",8078d2dd-d21c-4fa7-adec-a257e936ae50
 3218,Margin Trend,MeasuresTable,,,"
 VAR CurrentMargin = [Transaction Margin % for Parts in Range]
-VAR PriorPeriodMargin = 
-    CALCULATE(
+VAR PriorPeriodMargin =
+    CALCULATE (
         [Transaction Margin % for Parts in Range],
-        DATEADD('Fact_Part_Transactions'[TransactionDate], -1, QUARTER)
+        DATEADD ( 'Fact_Part_Transactions'[TransactionDate], -1, QUARTER )
     )
 RETURN
-CurrentMargin - PriorPeriodMargin",,False,Valid,,False,,,,,bdf9ef53-ac8a-4846-8766-b77bcef56adf
+    CurrentMargin - PriorPeriodMargin",,False,Valid,,False,,,,,bdf9ef53-ac8a-4846-8766-b77bcef56adf
 3221,Seasonal Performance,MeasuresTable,,,"
-VAR CurrentQuarter = QUARTER(TODAY())
-VAR QuarterPerformance = 
-    CALCULATE(
+VAR CurrentQuarter =
+    QUARTER ( TODAY () )
+VAR QuarterPerformance =
+    CALCULATE (
         [Transaction Margin % for Parts in Range],
-        QUARTER('Fact_Part_Transactions'[TransactionDate]) = CurrentQuarter
+        QUARTER ( 'Fact_Part_Transactions'[TransactionDate] ) = CurrentQuarter
     )
 VAR AnnualAverage = [Transaction Margin % for Parts in Range]
 RETURN
-DIVIDE(QuarterPerformance, AnnualAverage) - 1",,False,Valid,,False,,,,,3cd43170-2909-444a-8188-2b3d0edf923b
+    DIVIDE ( QuarterPerformance, AnnualAverage ) - 1",,False,Valid,,False,,,,,3cd43170-2909-444a-8188-2b3d0edf923b
 3226,Margin Performance,MeasuresTable,,,"
-VAR TargetMargin = SELECTEDVALUE(Price_Matrix[price_percent])
+VAR TargetMargin =
+    SELECTEDVALUE ( Price_Matrix[price_percent] )
 VAR ActualMargin = [Transaction Margin % for Parts in Range]
-VAR _Variance = 
-    IF(
-        NOT ISBLANK(ActualMargin) && NOT ISBLANK(TargetMargin) && ISNUMBER(ActualMargin) && ISNUMBER(TargetMargin),
-        ActualMargin - (TargetMargin / 100),
-        BLANK()
+VAR _Variance =
+    IF (
+        NOT ISBLANK ( ActualMargin )
+            && NOT ISBLANK ( TargetMargin ) && ISNUMBER ( ActualMargin )
+                && ISNUMBER ( TargetMargin ),
+        ActualMargin - ( TargetMargin / 100 ),
+        BLANK ()
     )
-VAR StatusWithIcon = 
-    IF(
-        ISBLANK(_Variance),
+VAR StatusWithIcon =
+    IF (
+        ISBLANK ( _Variance ),
         ""⚫ No Data"",
-        SWITCH(
-            TRUE(),
-            _Variance >= 0.05, ""🟢 Exceeding +"" & FORMAT(_Variance, ""0.0%""),
-            _Variance >= 0.02, ""🟡 Above +"" & FORMAT(_Variance, ""0.0%""),
-            _Variance >= -0.02, ""⚪ On Target "" & FORMAT(_Variance, ""0.0%""),
-            _Variance >= -0.05, ""🟠 Below "" & FORMAT(_Variance, ""0.0%""),
-            ""🔴 Poor "" & FORMAT(_Variance, ""0.0%"")
+        SWITCH (
+            TRUE (),
+            _Variance >= 0.05, ""🟢 Exceeding +"" & FORMAT ( _Variance, ""0.0%"" ),
+            _Variance >= 0.02, ""🟡 Above +"" & FORMAT ( _Variance, ""0.0%"" ),
+            _Variance >= -0.02, ""⚪ On Target "" & FORMAT ( _Variance, ""0.0%"" ),
+            _Variance >= -0.05, ""🟠 Below "" & FORMAT ( _Variance, ""0.0%"" ),
+            ""🔴 Poor "" & FORMAT ( _Variance, ""0.0%"" )
         )
     )
-RETURN StatusWithIcon",,False,Valid,,False,,,,,d305583e-9bd0-4958-99c8-9779e47ded6b
+RETURN
+    StatusWithIcon",,False,Valid,,False,,,,,d305583e-9bd0-4958-99c8-9779e47ded6b
 5419,Test ListPrice Range,MeasuresTable,,,"
-CALCULATE(
-    DISTINCTCOUNT('Fact_Inventory'[PartNumber]),
+CALCULATE (
+    DISTINCTCOUNT ( 'Fact_Inventory'[PartNumber] ),
     'Fact_Inventory'[ListPrice] >= 50.00,
     'Fact_Inventory'[ListPrice] <= 74.99,
     'Fact_Inventory'[Current12MoSales] > 0
 )",,False,Valid,,False,,,,"""0""",f0b83126-3846-45ee-b640-1e13d13e0164
-5422,Debug - Date Range Analysis,MeasuresTable,,,"
-VAR InventoryMessage = ""Inventory: Current12MoSales (static 12-month period)""
-VAR TransMinDate = MIN('Fact_Part_Transactions'[TransactionDate])
-VAR TransMaxDate = MAX('Fact_Part_Transactions'[TransactionDate])
-VAR TransDays = DATEDIFF(TransMinDate, TransMaxDate, DAY)
-RETURN
-InventoryMessage & "" | Transactions: "" & FORMAT(TransMinDate, ""mm/dd/yyyy"") & "" to "" & FORMAT(TransMaxDate, ""mm/dd/yyyy"") & "" ("" & TransDays & "" days)""",,False,Valid,,False,,,,,2ce14b40-26be-417e-b59f-5f5c4391f5b6
-5424,Debug - Quantity Breakdown,MeasuresTable,,,"
-VAR InventoryQty = 
-    CALCULATE(
-        SUM('Fact_Inventory'[Current12MoSales]),
-        'Fact_Inventory'[ListPrice] >= 0.01,
-        'Fact_Inventory'[ListPrice] <= 0.99,
-        'Fact_Inventory'[Current12MoSales] > 0
+15063,Effective List Sale Value for Parts in Range,MeasuresTable,,,"
+IF (
+    HASONEVALUE ( Price_Matrix[value_from] )
+        && HASONEVALUE ( Price_Matrix[value_to] ),
+    // Individual row - sum effective list sale value for parts in this price range
+    VAR CurrentFrom =
+        SELECTEDVALUE ( Price_Matrix[value_from] )
+    VAR CurrentTo =
+        SELECTEDVALUE ( Price_Matrix[value_to] )
+    VAR PartsInRange =
+        CALCULATETABLE (
+            VALUES ( 'Fact_Inventory'[PartNumber] ),
+            'Fact_Inventory'[ListPrice] >= CurrentFrom,
+            'Fact_Inventory'[ListPrice] <= CurrentTo,
+            'Fact_Inventory'[Current12MoSales] > 0
+        )
+    RETURN
+        CALCULATE (
+            SUM ( 'Fact_Part_Transactions'[EffectiveListSalVal] ),
+            'Fact_Part_Transactions'[PartNumber] IN PartsInRange,
+            'Fact_Part_Transactions'[SaleAmount] > 0
+        ),
+    // Total row - all effective list sale values for parts with inventory sales
+    VAR AllPartsWithSales =
+        CALCULATETABLE (
+            VALUES ( 'Fact_Inventory'[PartNumber] ),
+            'Fact_Inventory'[Current12MoSales] > 0
+        )
+    RETURN
+        CALCULATE (
+            SUM ( 'Fact_Part_Transactions'[EffectiveListSalVal] ),
+            'Fact_Part_Transactions'[PartNumber] IN AllPartsWithSales,
+            'Fact_Part_Transactions'[SaleAmount] > 0
+        )
+)",,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",f5953c6d-e52e-4184-88a6-1a51dffb786e
+17210,Effective List Margin $ for Parts in Range,MeasuresTable,,,"
+IF (
+    HASONEVALUE ( Price_Matrix[value_from] )
+        && HASONEVALUE ( Price_Matrix[value_to] ),
+    // Individual row - sum effective list margin for parts in this price range
+    VAR CurrentFrom =
+        SELECTEDVALUE ( Price_Matrix[value_from] )
+    VAR CurrentTo =
+        SELECTEDVALUE ( Price_Matrix[value_to] )
+    VAR PartsInRange =
+        CALCULATETABLE (
+            VALUES ( 'Fact_Inventory'[PartNumber] ),
+            'Fact_Inventory'[ListPrice] >= CurrentFrom,
+            'Fact_Inventory'[ListPrice] <= CurrentTo,
+            'Fact_Inventory'[Current12MoSales] > 0
+        )
+    RETURN
+        CALCULATE (
+            SUM ( 'Fact_Part_Transactions'[EffectiveListMargin] ),
+            'Fact_Part_Transactions'[PartNumber] IN PartsInRange,
+            'Fact_Part_Transactions'[SaleAmount] > 0
+        ),
+    // Total row - all effective list margins for parts with inventory sales
+    VAR AllPartsWithSales =
+        CALCULATETABLE (
+            VALUES ( 'Fact_Inventory'[PartNumber] ),
+            'Fact_Inventory'[Current12MoSales] > 0
+        )
+    RETURN
+        CALCULATE (
+            SUM ( 'Fact_Part_Transactions'[EffectiveListMargin] ),
+            'Fact_Part_Transactions'[PartNumber] IN AllPartsWithSales,
+            'Fact_Part_Transactions'[SaleAmount] > 0
+        )
+)",,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",a6dba806-8903-4bb1-9059-a7fb6f10baee
+19357,Effective List Margin % for Parts in Range,MeasuresTable,,,"
+IF (
+    HASONEVALUE ( Price_Matrix[value_from] )
+        && HASONEVALUE ( Price_Matrix[value_to] ),
+    // Individual row - weighted average effective list margin % for parts in this price range
+    VAR CurrentFrom =
+        SELECTEDVALUE ( Price_Matrix[value_from] )
+    VAR CurrentTo =
+        SELECTEDVALUE ( Price_Matrix[value_to] )
+    VAR PartsInRange =
+        CALCULATETABLE (
+            VALUES ( 'Fact_Inventory'[PartNumber] ),
+            'Fact_Inventory'[ListPrice] >= CurrentFrom,
+            'Fact_Inventory'[ListPrice] <= CurrentTo,
+            'Fact_Inventory'[Current12MoSales] > 0
+        )
+    VAR TotalEffectiveSales =
+        CALCULATE (
+            SUM ( 'Fact_Part_Transactions'[EffectiveListSalVal] ),
+            'Fact_Part_Transactions'[PartNumber] IN PartsInRange,
+            'Fact_Part_Transactions'[SaleAmount] > 0
+        )
+    VAR TotalEffectiveMargin =
+        CALCULATE (
+            SUM ( 'Fact_Part_Transactions'[EffectiveListMargin] ),
+            'Fact_Part_Transactions'[PartNumber] IN PartsInRange,
+            'Fact_Part_Transactions'[SaleAmount] > 0
+        )
+    RETURN
+        DIVIDE ( TotalEffectiveMargin, TotalEffectiveSales ),
+    // Total row - overall weighted average effective list margin %
+    VAR AllPartsWithSales =
+        CALCULATETABLE (
+            VALUES ( 'Fact_Inventory'[PartNumber] ),
+            'Fact_Inventory'[Current12MoSales] > 0
+        )
+    VAR TotalEffectiveSales =
+        CALCULATE (
+            SUM ( 'Fact_Part_Transactions'[EffectiveListSalVal] ),
+            'Fact_Part_Transactions'[PartNumber] IN AllPartsWithSales,
+            'Fact_Part_Transactions'[SaleAmount] > 0
+        )
+    VAR TotalEffectiveMargin =
+        CALCULATE (
+            SUM ( 'Fact_Part_Transactions'[EffectiveListMargin] ),
+            'Fact_Part_Transactions'[PartNumber] IN AllPartsWithSales,
+            'Fact_Part_Transactions'[SaleAmount] > 0
+        )
+    RETURN
+        DIVIDE ( TotalEffectiveMargin, TotalEffectiveSales )
+)",,False,Valid,,False,,,,"""0.00%;-0.00%;0.00%""",425d0966-e6df-4060-b614-15a3bdc226a8
+21502,Matrix Sale Gained for Parts in Range,MeasuresTable,,,"
+IF (
+    HASONEVALUE ( Price_Matrix[value_from] )
+        && HASONEVALUE ( Price_Matrix[value_to] ),
+    // Individual row - sum matrix sale gained for parts in this price range
+    VAR CurrentFrom =
+        SELECTEDVALUE ( Price_Matrix[value_from] )
+    VAR CurrentTo =
+        SELECTEDVALUE ( Price_Matrix[value_to] )
+    VAR PartsInRange =
+        CALCULATETABLE (
+            VALUES ( 'Fact_Inventory'[PartNumber] ),
+            'Fact_Inventory'[ListPrice] >= CurrentFrom,
+            'Fact_Inventory'[ListPrice] <= CurrentTo,
+            'Fact_Inventory'[Current12MoSales] > 0
+        )
+    RETURN
+        CALCULATE (
+            SUM ( 'Fact_Part_Transactions'[MatrixSaleGained] ),
+            'Fact_Part_Transactions'[PartNumber] IN PartsInRange,
+            'Fact_Part_Transactions'[SaleAmount] > 0
+        ),
+    // Total row - all matrix sale gained for parts with inventory sales
+    VAR AllPartsWithSales =
+        CALCULATETABLE (
+            VALUES ( 'Fact_Inventory'[PartNumber] ),
+            'Fact_Inventory'[Current12MoSales] > 0
+        )
+    RETURN
+        CALCULATE (
+            SUM ( 'Fact_Part_Transactions'[MatrixSaleGained] ),
+            'Fact_Part_Transactions'[PartNumber] IN AllPartsWithSales,
+            'Fact_Part_Transactions'[SaleAmount] > 0
+        )
+)",,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",8d396087-3b14-4718-ac0a-5658e5a638ec
+23649,Matrix Margin Gained for Parts in Range,MeasuresTable,,,"
+IF (
+    HASONEVALUE ( Price_Matrix[value_from] )
+        && HASONEVALUE ( Price_Matrix[value_to] ),
+    // Individual row - sum matrix margin gained for parts in this price range
+    VAR CurrentFrom =
+        SELECTEDVALUE ( Price_Matrix[value_from] )
+    VAR CurrentTo =
+        SELECTEDVALUE ( Price_Matrix[value_to] )
+    VAR PartsInRange =
+        CALCULATETABLE (
+            VALUES ( 'Fact_Inventory'[PartNumber] ),
+            'Fact_Inventory'[ListPrice] >= CurrentFrom,
+            'Fact_Inventory'[ListPrice] <= CurrentTo,
+            'Fact_Inventory'[Current12MoSales] > 0
+        )
+    RETURN
+        CALCULATE (
+            SUM ( 'Fact_Part_Transactions'[MatrixMarginGained] ),
+            'Fact_Part_Transactions'[PartNumber] IN PartsInRange,
+            'Fact_Part_Transactions'[SaleAmount] > 0
+        ),
+    // Total row - all matrix margin gained for parts with inventory sales
+    VAR AllPartsWithSales =
+        CALCULATETABLE (
+            VALUES ( 'Fact_Inventory'[PartNumber] ),
+            'Fact_Inventory'[Current12MoSales] > 0
+        )
+    RETURN
+        CALCULATE (
+            SUM ( 'Fact_Part_Transactions'[MatrixMarginGained] ),
+            'Fact_Part_Transactions'[PartNumber] IN AllPartsWithSales,
+            'Fact_Part_Transactions'[SaleAmount] > 0
+        )
+)",,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",5875f2b1-6f50-41db-b920-de0f00189b85
+25796,Matrix Performance Summary,MeasuresTable,,,"
+VAR CurrentRange =
+    IF (
+        HASONEVALUE ( Price_Matrix[value_from] )
+            && HASONEVALUE ( Price_Matrix[value_to] ),
+        ""Range: $"" & FORMAT ( SELECTEDVALUE ( Price_Matrix[value_from] ), ""#,##0.00"" ) & "" - $""
+            & FORMAT ( SELECTEDVALUE ( Price_Matrix[value_to] ), ""#,##0.00"" ),
+        ""All Ranges""
     )
-VAR TransactionQty = 
-    CALCULATE(
-        SUM('Fact_Part_Transactions'[Quantity]),
-        'Fact_Part_Transactions'[PartNumber] IN 
-            CALCULATETABLE(
-                VALUES('Fact_Inventory'[PartNumber]),
-                'Fact_Inventory'[ListPrice] >= 0.01,
-                'Fact_Inventory'[ListPrice] <= 0.99,
-                'Fact_Inventory'[Current12MoSales] > 0
+VAR MatrixSales = [Matrix Sale Gained for Parts in Range]
+VAR MatrixMargin = [Matrix Margin Gained for Parts in Range]
+VAR EffectiveMarginPct = [Effective List Margin % for Parts in Range]
+RETURN
+    CurrentRange & UNICHAR ( 13 )
+        & UNICHAR ( 10 ) & ""Matrix Sales Gained: ""
+        & FORMAT ( MatrixSales, ""$#,##0"" )
+        & UNICHAR ( 13 )
+        & UNICHAR ( 10 ) & ""Matrix Margin Gained: ""
+        & FORMAT ( MatrixMargin, ""$#,##0"" )
+        & UNICHAR ( 13 )
+        & UNICHAR ( 10 ) & ""Effective Margin %: ""
+        & FORMAT ( EffectiveMarginPct, ""0.0%"" )",,False,Valid,,False,,,,,e7f9e183-c94e-47a1-a037-6e791849c869
+27940,Matrix Impact %,MeasuresTable,,,"
+VAR MatrixSales = [Matrix Sale Gained for Parts in Range]
+VAR TotalSales = [Transaction Sales $ for Parts in Range]
+RETURN
+    DIVIDE ( MatrixSales, TotalSales )",,False,Valid,,False,,,,"""0.00%;-0.00%;0.00%""",3c6fd1a1-a786-4d70-b67c-47f88042444f
+30085,Matrix ROI Analysis,MeasuresTable,,,"
+VAR MatrixMargin = [Matrix Margin Gained for Parts in Range]
+VAR OriginalMargin = [Transaction Margin $ for Parts in Range]
+VAR BaselineMargin = OriginalMargin - MatrixMargin
+RETURN
+    DIVIDE ( MatrixMargin, BaselineMargin )",,False,Valid,,False,,,,"""0.00%;-0.00%;0.00%""",db19caad-3254-4fac-843c-f82a533998f7
+35447,Matrix Margin % Gained,MeasuresTable,,,"
+[Transaction Margin % for Parts in Range] - [Effective List Margin % for Parts in Range]",,False,Valid,,False,,,,"""0.00%;-0.00%;0.00%""",c2eeff99-c2d6-47a2-be62-b35b1c46833d
+37594,Turn for Parts in Range,MeasuresTable,,,"
+IF (
+    HASONEVALUE ( Price_Matrix[value_from] )
+        && HASONEVALUE ( Price_Matrix[value_to] ),
+    // Individual row - calculate turn for parts in this price range
+    VAR CurrentFrom =
+        SELECTEDVALUE ( Price_Matrix[value_from] )
+    VAR CurrentTo =
+        SELECTEDVALUE ( Price_Matrix[value_to] )
+    VAR PartsInRange =
+        CALCULATETABLE (
+            VALUES ( 'Fact_Inventory'[PartNumber] ),
+            'Fact_Inventory'[ListPrice] >= CurrentFrom,
+            'Fact_Inventory'[ListPrice] <= CurrentTo,
+            'Fact_Inventory'[Current12MoSales] > 0
+        )
+    VAR TransactionCostAmount =
+        CALCULATE (
+            SUM ( 'Fact_Part_Transactions'[CostAmount] ),
+            'Fact_Part_Transactions'[PartNumber] IN PartsInRange,
+            'Fact_Part_Transactions'[SaleAmount] > 0
+        )
+    VAR InventoryCostAmount =
+        CALCULATE (
+            SUM ( 'Fact_Inventory'[InventoryCost] ),
+            'Fact_Inventory'[ListPrice] >= CurrentFrom,
+            'Fact_Inventory'[ListPrice] <= CurrentTo,
+            'Fact_Inventory'[Current12MoSales] > 0
+        )
+    RETURN
+        DIVIDE ( TransactionCostAmount, InventoryCostAmount ),
+    // Total row - calculate turn for all parts with inventory sales
+    VAR AllPartsWithSales =
+        CALCULATETABLE (
+            VALUES ( 'Fact_Inventory'[PartNumber] ),
+            'Fact_Inventory'[Current12MoSales] > 0
+        )
+    VAR TotalTransactionCostAmount =
+        CALCULATE (
+            SUM ( 'Fact_Part_Transactions'[CostAmount] ),
+            'Fact_Part_Transactions'[PartNumber] IN AllPartsWithSales,
+            'Fact_Part_Transactions'[SaleAmount] > 0
+        )
+    VAR TotalInventoryCostAmount =
+        CALCULATE (
+            SUM ( 'Fact_Inventory'[InventoryCost] ),
+            'Fact_Inventory'[Current12MoSales] > 0
+        )
+    RETURN
+        DIVIDE ( TotalTransactionCostAmount, TotalInventoryCostAmount )
+)",,False,Valid,,False,,,,,7722b7dc-85f0-4590-a30a-f8477bf91b07
+41884,Turn for Parts in Range (12 Month),MeasuresTable,,,"
+IF (
+    HASONEVALUE ( Price_Matrix[value_from] )
+        && HASONEVALUE ( Price_Matrix[value_to] ),
+    VAR CurrentFrom =
+        SELECTEDVALUE ( Price_Matrix[value_from] )
+    VAR CurrentTo =
+        SELECTEDVALUE ( Price_Matrix[value_to] )
+    VAR StartDate =
+        EDATE ( TODAY (), -12 )
+    VAR EndDate =
+        TODAY ()
+    VAR PartsInRange =
+        CALCULATETABLE (
+            VALUES ( 'Fact_Inventory'[PartNumber] ),
+            'Fact_Inventory'[ListPrice] >= CurrentFrom,
+            'Fact_Inventory'[ListPrice] <= CurrentTo,
+            'Fact_Inventory'[Current12MoSales] > 0
+        )
+    VAR TransactionCostAmount =
+        CALCULATE (
+            SUM ( 'Fact_Part_Transactions'[CostAmount] ),
+            'Fact_Part_Transactions'[PartNumber] IN PartsInRange,
+            'Fact_Part_Transactions'[TransactionDate] >= StartDate,
+            'Fact_Part_Transactions'[TransactionDate] <= EndDate,
+            'Fact_Part_Transactions'[SaleAmount] > 0
+        )
+    VAR InventoryCostAmount =
+        CALCULATE (
+            SUM ( 'Fact_Inventory'[InventoryCost] ),
+            'Fact_Inventory'[ListPrice] >= CurrentFrom,
+            'Fact_Inventory'[ListPrice] <= CurrentTo,
+            'Fact_Inventory'[Current12MoSales] > 0
+        )
+    RETURN
+        DIVIDE ( TransactionCostAmount, InventoryCostAmount ),
+    // Total row calculation
+    VAR StartDate =
+        EDATE ( TODAY (), -12 )
+    VAR EndDate =
+        TODAY ()
+    VAR AllPartsWithSales =
+        CALCULATETABLE (
+            VALUES ( 'Fact_Inventory'[PartNumber] ),
+            'Fact_Inventory'[Current12MoSales] > 0
+        )
+    VAR TotalTransactionCostAmount =
+        CALCULATE (
+            SUM ( 'Fact_Part_Transactions'[CostAmount] ),
+            'Fact_Part_Transactions'[PartNumber] IN AllPartsWithSales,
+            'Fact_Part_Transactions'[TransactionDate] >= StartDate,
+            'Fact_Part_Transactions'[TransactionDate] <= EndDate,
+            'Fact_Part_Transactions'[SaleAmount] > 0
+        )
+    VAR TotalInventoryCostAmount =
+        CALCULATE (
+            SUM ( 'Fact_Inventory'[InventoryCost] ),
+            'Fact_Inventory'[Current12MoSales] > 0
+        )
+    RETURN
+        DIVIDE ( TotalTransactionCostAmount, TotalInventoryCostAmount )
+)",,False,Valid,,False,,,,,1d5f5158-1eb4-4bda-bc60-ffba3c99d386
+44030,Transaction Sales $ % of Total,MeasuresTable,,,"
+IF (
+    HASONEVALUE ( Price_Matrix[value_from] )
+        && HASONEVALUE ( Price_Matrix[value_to] ),
+    // Individual row - calculate this range as % of total sales
+    VAR CurrentFrom =
+        SELECTEDVALUE ( Price_Matrix[value_from] )
+    VAR CurrentTo =
+        SELECTEDVALUE ( Price_Matrix[value_to] )
+    VAR PartsInRange =
+        CALCULATETABLE (
+            VALUES ( 'Fact_Inventory'[PartNumber] ),
+            'Fact_Inventory'[ListPrice] >= CurrentFrom,
+            'Fact_Inventory'[ListPrice] <= CurrentTo,
+            'Fact_Inventory'[Current12MoSales] > 0
+        )
+    VAR RangeSales =
+        CALCULATE (
+            SUM ( 'Fact_Part_Transactions'[SaleAmount] ),
+            'Fact_Part_Transactions'[PartNumber] IN PartsInRange,
+            'Fact_Part_Transactions'[SaleAmount] > 0
+        )
+    VAR TotalSales =
+        CALCULATE (
+            SUM ( 'Fact_Part_Transactions'[SaleAmount] ),
+            'Fact_Part_Transactions'[PartNumber]
+                IN CALCULATETABLE (
+                    VALUES ( 'Fact_Inventory'[PartNumber] ),
+                    'Fact_Inventory'[Current12MoSales] > 0
+                ),
+            'Fact_Part_Transactions'[SaleAmount] > 0,
+            ALL ( Price_Matrix ) // Remove any Price_Matrix filters to get true total
+        )
+    RETURN
+        DIVIDE ( RangeSales, TotalSales ),
+    // Total row - show 100%
+    1.00
+)",,False,Valid,,False,,,,"""0.00%;-0.00%;0.00%""",60328601-5f5c-4a0c-a447-3fc532e126eb
+46175,Transaction Count % of Total,MeasuresTable,,,"
+IF (
+    HASONEVALUE ( Price_Matrix[value_from] )
+        && HASONEVALUE ( Price_Matrix[value_to] ),
+    // Individual row - calculate this range as % of total transaction count
+    VAR CurrentFrom =
+        SELECTEDVALUE ( Price_Matrix[value_from] )
+    VAR CurrentTo =
+        SELECTEDVALUE ( Price_Matrix[value_to] )
+    VAR PartsInRange =
+        CALCULATETABLE (
+            VALUES ( 'Fact_Inventory'[PartNumber] ),
+            'Fact_Inventory'[ListPrice] >= CurrentFrom,
+            'Fact_Inventory'[ListPrice] <= CurrentTo,
+            'Fact_Inventory'[Current12MoSales] > 0
+        )
+    VAR RangeTransactionCount =
+        CALCULATE (
+            COUNTROWS ( 'Fact_Part_Transactions' ),
+            'Fact_Part_Transactions'[PartNumber] IN PartsInRange,
+            'Fact_Part_Transactions'[SaleAmount] > 0
+        )
+    VAR TotalTransactionCount =
+        CALCULATE (
+            COUNTROWS ( 'Fact_Part_Transactions' ),
+            'Fact_Part_Transactions'[PartNumber]
+                IN CALCULATETABLE (
+                    VALUES ( 'Fact_Inventory'[PartNumber] ),
+                    'Fact_Inventory'[Current12MoSales] > 0
+                ),
+            'Fact_Part_Transactions'[SaleAmount] > 0,
+            ALL ( Price_Matrix ) // Remove any Price_Matrix filters to get true total
+        )
+    RETURN
+        DIVIDE ( RangeTransactionCount, TotalTransactionCount ),
+    // Total row - show 100%
+    1.00
+)",,False,Valid,,False,,,,"""0.00%;-0.00%;0.00%""",90047bbf-5fb0-4e90-8437-b74888490d1a
+48320,Transaction Quantity % of Total,MeasuresTable,,,"
+IF (
+    HASONEVALUE ( Price_Matrix[value_from] )
+        && HASONEVALUE ( Price_Matrix[value_to] ),
+    // Individual row - calculate this range as % of total quantity
+    VAR CurrentFrom =
+        SELECTEDVALUE ( Price_Matrix[value_from] )
+    VAR CurrentTo =
+        SELECTEDVALUE ( Price_Matrix[value_to] )
+    VAR PartsInRange =
+        CALCULATETABLE (
+            VALUES ( 'Fact_Inventory'[PartNumber] ),
+            'Fact_Inventory'[ListPrice] >= CurrentFrom,
+            'Fact_Inventory'[ListPrice] <= CurrentTo,
+            'Fact_Inventory'[Current12MoSales] > 0
+        )
+    VAR RangeQuantity =
+        CALCULATE (
+            SUM ( 'Fact_Part_Transactions'[Quantity] ),
+            'Fact_Part_Transactions'[PartNumber] IN PartsInRange,
+            'Fact_Part_Transactions'[SaleAmount] > 0,
+            'Fact_Part_Transactions'[Quantity] > 0
+        )
+    VAR TotalQuantity =
+        CALCULATE (
+            SUM ( 'Fact_Part_Transactions'[Quantity] ),
+            'Fact_Part_Transactions'[PartNumber]
+                IN CALCULATETABLE (
+                    VALUES ( 'Fact_Inventory'[PartNumber] ),
+                    'Fact_Inventory'[Current12MoSales] > 0
+                ),
+            'Fact_Part_Transactions'[SaleAmount] > 0,
+            'Fact_Part_Transactions'[Quantity] > 0,
+            ALL ( Price_Matrix ) // Remove any Price_Matrix filters to get true total
+        )
+    RETURN
+        DIVIDE ( RangeQuantity, TotalQuantity ),
+    // Total row - show 100%
+    1.00
+)",,False,Valid,,False,,,,"""0.00%;-0.00%;0.00%""",b8ae1a7d-c9a3-465f-bfae-d482134562ed
+62252,Inventory Cost for Parts in Range (All),MeasuresTable,,,"
+IF (
+    HASONEVALUE ( Price_Matrix[value_from] )
+        && HASONEVALUE ( Price_Matrix[value_to] ),
+    // Individual row - sum inventory cost for ALL parts in this price range
+    VAR CurrentFrom =
+        SELECTEDVALUE ( Price_Matrix[value_from] )
+    VAR CurrentTo =
+        SELECTEDVALUE ( Price_Matrix[value_to] )
+    RETURN
+        CALCULATE (
+            SUM ( 'Fact_Inventory'[InventoryCost] ),
+            'Fact_Inventory'[ListPrice] >= CurrentFrom,
+            'Fact_Inventory'[ListPrice] <= CurrentTo // Removed: 'Fact_Inventory'[Current12MoSales] > 0
+        ),
+    // Total row - all inventory cost for all parts
+    SUM ( 'Fact_Inventory'[InventoryCost] )
+)",,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",14aa329f-bc08-4946-9cdb-0698476e92e3
+64399,Average Inventory Cost for Parts in Range (All),MeasuresTable,,,"
+IF (
+    HASONEVALUE ( Price_Matrix[value_from] )
+        && HASONEVALUE ( Price_Matrix[value_to] ),
+    VAR CurrentFrom =
+        SELECTEDVALUE ( Price_Matrix[value_from] )
+    VAR CurrentTo =
+        SELECTEDVALUE ( Price_Matrix[value_to] )
+    VAR TotalInventoryCost =
+        CALCULATE (
+            SUM ( 'Fact_Inventory'[InventoryCost] ),
+            'Fact_Inventory'[ListPrice] >= CurrentFrom,
+            'Fact_Inventory'[ListPrice] <= CurrentTo
+        )
+    VAR TotalQuantityOnHand =
+        CALCULATE (
+            SUM ( 'Fact_Inventory'[QuantityOnHand] ),
+            'Fact_Inventory'[ListPrice] >= CurrentFrom,
+            'Fact_Inventory'[ListPrice] <= CurrentTo
+        )
+    RETURN
+        DIVIDE ( TotalInventoryCost, TotalQuantityOnHand ),
+    // Total row - overall average inventory cost per unit
+    DIVIDE (
+        SUM ( 'Fact_Inventory'[InventoryCost] ),
+        SUM ( 'Fact_Inventory'[QuantityOnHand] )
+    )
+)",,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",67727615-89f9-4353-a2c6-f8ac16e6d462
+66546,Quantity On Hand for Parts in Range (All),MeasuresTable,,,"
+IF (
+    HASONEVALUE ( Price_Matrix[value_from] )
+        && HASONEVALUE ( Price_Matrix[value_to] ),
+    VAR CurrentFrom =
+        SELECTEDVALUE ( Price_Matrix[value_from] )
+    VAR CurrentTo =
+        SELECTEDVALUE ( Price_Matrix[value_to] )
+    RETURN
+        CALCULATE (
+            SUM ( 'Fact_Inventory'[QuantityOnHand] ),
+            'Fact_Inventory'[ListPrice] >= CurrentFrom,
+            'Fact_Inventory'[ListPrice] <= CurrentTo
+        ),
+    SUM ( 'Fact_Inventory'[QuantityOnHand] )
+)",,False,Valid,,False,,,,,f2c29de8-868f-4e7b-96ca-d413b1220cba
+68691,Average List Price for Parts in Range (All),MeasuresTable,,,"
+IF (
+    HASONEVALUE ( Price_Matrix[value_from] )
+        && HASONEVALUE ( Price_Matrix[value_to] ),
+    VAR CurrentFrom =
+        SELECTEDVALUE ( Price_Matrix[value_from] )
+    VAR CurrentTo =
+        SELECTEDVALUE ( Price_Matrix[value_to] )
+    RETURN
+        CALCULATE (
+            AVERAGE ( 'Fact_Inventory'[ListPrice] ),
+            'Fact_Inventory'[ListPrice] >= CurrentFrom,
+            'Fact_Inventory'[ListPrice] <= CurrentTo
+        ),
+    AVERAGE ( 'Fact_Inventory'[ListPrice] )
+)",,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",1460b9e9-0a56-4f32-8998-783a6a5f73f2
+70838,Inventory Value for Parts in Range (All),MeasuresTable,,,"
+IF (
+    HASONEVALUE ( Price_Matrix[value_from] )
+        && HASONEVALUE ( Price_Matrix[value_to] ),
+    VAR CurrentFrom =
+        SELECTEDVALUE ( Price_Matrix[value_from] )
+    VAR CurrentTo =
+        SELECTEDVALUE ( Price_Matrix[value_to] )
+    RETURN
+        CALCULATE (
+            SUMX (
+                'Fact_Inventory',
+                'Fact_Inventory'[QuantityOnHand] * 'Fact_Inventory'[Cost]
+            ),
+            'Fact_Inventory'[ListPrice] >= CurrentFrom,
+            'Fact_Inventory'[ListPrice] <= CurrentTo
+        ),
+    SUMX (
+        'Fact_Inventory',
+        'Fact_Inventory'[QuantityOnHand] * 'Fact_Inventory'[Cost]
+    )
+)",,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",ff4fcda6-4ca8-4971-808e-c0c28430b62f
+74056,Average Days Since Last Requested (Last 12 Mo),MeasuresTable,,,"
+IF (
+    HASONEVALUE ( Price_Matrix[value_from] )
+        && HASONEVALUE ( Price_Matrix[value_to] ),
+    VAR CurrentFrom =
+        SELECTEDVALUE ( Price_Matrix[value_from] )
+    VAR CurrentTo =
+        SELECTEDVALUE ( Price_Matrix[value_to] )
+    VAR AvgDaysOld =
+        CALCULATE (
+            AVERAGEX (
+                'Fact_Inventory',
+                IF (
+                    NOT ISBLANK ( 'Fact_Inventory'[DateLastRequested] ),
+                    DATEDIFF ( 'Fact_Inventory'[DateLastRequested], TODAY (), DAY ),
+                    BLANK ()
+                )
+            ),
+            'Fact_Inventory'[ListPrice] >= CurrentFrom,
+            'Fact_Inventory'[ListPrice] <= CurrentTo,
+            'Fact_Inventory'[Current12MoSales] > 0
+        )
+    RETURN
+        AvgDaysOld,
+    CALCULATE (
+        AVERAGEX (
+            'Fact_Inventory',
+            IF (
+                NOT ISBLANK ( 'Fact_Inventory'[DateLastRequested] ),
+                DATEDIFF ( 'Fact_Inventory'[DateLastRequested], TODAY (), DAY ),
+                BLANK ()
             )
-    )
-RETURN
-""Inventory: "" & FORMAT(InventoryQty, ""#,##0"") & 
-"" | Transactions: "" & FORMAT(TransactionQty, ""#,##0"") & 
-"" | Difference: "" & FORMAT(TransactionQty - InventoryQty, ""#,##0"")",,False,Valid,,False,,,,,e4d9dd0e-524c-4b5b-afdb-7510c81f8a62
-5426,Debug - Fixed Comparison,MeasuresTable,,,"
-VAR StartDate = EDATE(TODAY(), -12)
-VAR EndDate = TODAY()
-VAR PartsInRange = 
-    CALCULATETABLE(
-        VALUES('Fact_Inventory'[PartNumber]),
-        'Fact_Inventory'[ListPrice] >= 0.01,
-        'Fact_Inventory'[ListPrice] <= 0.99,
+        ),
         'Fact_Inventory'[Current12MoSales] > 0
     )
-VAR InventoryQty = 
-    CALCULATE(
-        SUM('Fact_Inventory'[Current12MoSales]),
-        'Fact_Inventory'[ListPrice] >= 0.01,
-        'Fact_Inventory'[ListPrice] <= 0.99,
+)",,False,Valid,,False,,,,,6dedab24-b531-41be-9dd2-5787d289e9e5
+76201,Inventory Age Category,MeasuresTable,,,"
+VAR DaysOld = [Average Days Since Last Requested (Last 12 Mo)]
+RETURN
+    SWITCH (
+        TRUE (),
+        DaysOld <= 30, ""🟢 Fresh (≤30 days)"",
+        DaysOld <= 90, ""🟡 Aging (31-90 days)"",
+        DaysOld <= 180, ""🟠 Stale (91-180 days)"",
+        DaysOld > 180, ""🔴 Very Stale (>180 days)"",
+        ""⚫ No Data""
+    )",,False,Valid,,False,,,,,9e979ce4-761d-49b8-8ddc-829bffcc1cdd
+78345,Stock Level Analysis,MeasuresTable,,,"
+IF (
+    HASONEVALUE ( Price_Matrix[value_from] )
+        && HASONEVALUE ( Price_Matrix[value_to] ),
+    VAR CurrentFrom =
+        SELECTEDVALUE ( Price_Matrix[value_from] )
+    VAR CurrentTo =
+        SELECTEDVALUE ( Price_Matrix[value_to] )
+    VAR QuantityOnHand =
+        CALCULATE (
+            SUM ( 'Fact_Inventory'[QuantityOnHand] ),
+            'Fact_Inventory'[ListPrice] >= CurrentFrom,
+            'Fact_Inventory'[ListPrice] <= CurrentTo,
+            'Fact_Inventory'[Current12MoSales] > 0
+        )
+    VAR MonthlyMovement =
+        CALCULATE (
+            SUM ( 'Fact_Inventory'[Current12MoSales] ) / 12,
+            'Fact_Inventory'[ListPrice] >= CurrentFrom,
+            'Fact_Inventory'[ListPrice] <= CurrentTo,
+            'Fact_Inventory'[Current12MoSales] > 0
+        )
+    VAR MonthsOfStock =
+        DIVIDE ( QuantityOnHand, MonthlyMovement )
+    RETURN
+        ""Stock: "" & FORMAT ( QuantityOnHand, ""#,##0"" ) & "" | Monthly Movement: ""
+            & FORMAT ( MonthlyMovement, ""#,##0"" ) & "" | Months of Supply: ""
+            & FORMAT ( MonthsOfStock, ""0.1"" ),
+    ""Overall Stock Analysis""
+)",,False,Valid,,False,,,,,278f08d2-8bc6-42a6-bd5d-293351ad1067
+83702,Stock Level Status,MeasuresTable,,,"
+VAR MonthsSupply =
+    VAR QtyOnHand = [Quantity On Hand for Parts in Range (All)]
+    VAR MonthlyMovement = [Total Sales Qty for Parts in Range] / 12
+    RETURN
+        DIVIDE ( QtyOnHand, MonthlyMovement )
+RETURN
+    SWITCH (
+        TRUE (),
+        MonthsSupply > 12, ""🔴 Over Stocked (12+ months)"",
+        MonthsSupply > 6, ""🟠 High Stock (6-12 months)"",
+        MonthsSupply > 3, ""🟡 Adequate (3-6 months)"",
+        MonthsSupply > 1, ""🟢 Balanced (1-3 months)"",
+        MonthsSupply > 0.5, ""🟡 Low Stock (0.5-1 month)"",
+        ""🔴 Critical Low (<0.5 month)""
+    )",,False,Valid,,False,,,,,ae51804d-7eba-4527-8dc7-640fd6041c98
+85846,Stock Level Status Score,MeasuresTable,,,"
+VAR MonthsSupply =
+    VAR QtyOnHand = [Quantity On Hand for Parts in Range (All)]
+    VAR MonthlyMovement = [Total Sales Qty for Parts in Range] / 12
+    RETURN
+        DIVIDE ( QtyOnHand, MonthlyMovement )
+RETURN
+    SWITCH (
+        TRUE (),
+        MonthsSupply > 12, ""Over Stocked"",
+        MonthsSupply > 6, ""Slightly Over"",
+        MonthsSupply > 1, ""Balanced"",
+        MonthsSupply > 0.5, ""Slightly Under"",
+        ""Under Stocked""
+    )",,False,Valid,,False,,,,,a6f661df-32b2-4d47-bb33-238b5885641a
+87990,Inventory Health Score,MeasuresTable,,,"
+IF (
+    HASONEVALUE ( Price_Matrix[value_from] )
+        && HASONEVALUE ( Price_Matrix[value_to] ),
+    VAR CurrentFrom =
+        SELECTEDVALUE ( Price_Matrix[value_from] )
+    VAR CurrentTo =
+        SELECTEDVALUE ( Price_Matrix[value_to] ) // Component 1: Turn Ratio (0-40 points)
+    VAR TurnRatio = [Turn for Parts in Range]
+    VAR TurnScore =
+        SWITCH (
+            TRUE (),
+            TurnRatio >= 3, 40,
+            // Excellent turnover
+            TurnRatio >= 2, 30,
+            // Good turnover  
+            TurnRatio >= 1, 20,
+            // Fair turnover
+            TurnRatio >= 0.5, 10,
+            // Poor turnover
+            0 // Very poor
+        ) // Component 2: Stock Level Balance (0-30 points)  
+    VAR StockBalance = [Stock Level Status Score]
+    VAR StockScore =
+        SWITCH (
+            StockBalance,
+            ""Balanced"", 30,
+            ""Slightly Over"", 20,
+            ""Slightly Under"", 25,
+            ""Over Stocked"", 5,
+            ""Under Stocked"", 15,
+            0
+        ) // Component 3: Age Factor (0-30 points)
+    VAR AvgAge = [Average Days Since Last Requested (Last 12 Mo)]
+    VAR AgeScore =
+        SWITCH (
+            TRUE (),
+            AvgAge <= 30, 30,
+            // Fresh inventory
+            AvgAge <= 90, 20,
+            // Acceptable age
+            AvgAge <= 180, 10,
+            // Getting old
+            5 // Very old
+        )
+    VAR TotalScore = TurnScore + StockScore + AgeScore
+    VAR HealthGrade =
+        SWITCH (
+            TRUE (),
+            TotalScore >= 80, ""🟢 Excellent"",
+            TotalScore >= 60, ""🟡 Good"",
+            TotalScore >= 40, ""🟠 Fair"",
+            TotalScore >= 20, ""🔴 Poor"",
+            ""⚫ Critical""
+        )
+    RETURN
+        HealthGrade & "" ("" & TotalScore & ""/100)"",
+    ""Overall Health""
+)",,False,Valid,,False,,,,,b83a5f70-1d14-40c1-9efa-f7d04481ff56
+90134,Margin Opportunity Analysis,MeasuresTable,,,"
+IF (
+    HASONEVALUE ( Price_Matrix[value_from] )
+        && HASONEVALUE ( Price_Matrix[value_to] ),
+    VAR CurrentFrom =
+        SELECTEDVALUE ( Price_Matrix[value_from] )
+    VAR CurrentTo =
+        SELECTEDVALUE ( Price_Matrix[value_to] )
+    VAR AvgCost =
+        CALCULATE (
+            AVERAGE ( 'Fact_Inventory'[Cost] ),
+            'Fact_Inventory'[ListPrice] >= CurrentFrom,
+            'Fact_Inventory'[ListPrice] <= CurrentTo,
+            'Fact_Inventory'[Current12MoSales] > 0
+        )
+    VAR AvgListPrice =
+        CALCULATE (
+            AVERAGE ( 'Fact_Inventory'[ListPrice] ),
+            'Fact_Inventory'[ListPrice] >= CurrentFrom,
+            'Fact_Inventory'[ListPrice] <= CurrentTo,
+            'Fact_Inventory'[Current12MoSales] > 0
+        )
+    VAR AvgSellPrice =
+        CALCULATE (
+            AVERAGE ( 'Fact_Inventory'[SellPrice1] ),
+            'Fact_Inventory'[ListPrice] >= CurrentFrom,
+            'Fact_Inventory'[ListPrice] <= CurrentTo,
+            'Fact_Inventory'[Current12MoSales] > 0
+        )
+    VAR ListMarginPct =
+        DIVIDE ( AvgListPrice - AvgCost, AvgListPrice )
+    VAR SellMarginPct =
+        DIVIDE ( AvgSellPrice - AvgCost, AvgSellPrice )
+    VAR PricingGap = AvgListPrice - AvgSellPrice
+    VAR PotentialMarginGain =
+        DIVIDE ( PricingGap, AvgSellPrice )
+    RETURN
+        ""List Margin: "" & FORMAT ( ListMarginPct, ""0.0%"" ) & "" | Sell Margin: ""
+            & FORMAT ( SellMarginPct, ""0.0%"" ) & "" | Pricing Gap: $""
+            & FORMAT ( PricingGap, ""#,0.00"" ) & "" | Potential Gain: ""
+            & FORMAT ( PotentialMarginGain, ""0.0%"" ),
+    ""Overall Margin Analysis""
+)",,False,Valid,,False,,,,,2ba0c734-3b26-4a03-b922-41c48a2f2dba
+92278,Pricing Opportunity Score,MeasuresTable,,,"
+VAR CurrentFrom =
+    SELECTEDVALUE ( Price_Matrix[value_from] )
+VAR CurrentTo =
+    SELECTEDVALUE ( Price_Matrix[value_to] )
+VAR TargetMarkup =
+    SELECTEDVALUE ( Price_Matrix[price_percent] ) / 100
+VAR ActualTurnRatio = [Turn for Parts in Range]
+VAR AvgCost =
+    CALCULATE (
+        AVERAGE ( 'Fact_Inventory'[Cost] ),
+        'Fact_Inventory'[ListPrice] >= CurrentFrom,
+        'Fact_Inventory'[ListPrice] <= CurrentTo,
         'Fact_Inventory'[Current12MoSales] > 0
     )
-VAR TransactionQty = 
-    CALCULATE(
-        SUM('Fact_Part_Transactions'[Quantity]),
-        'Fact_Part_Transactions'[PartNumber] IN PartsInRange,
-        'Fact_Part_Transactions'[TransactionDate] >= StartDate,
-        'Fact_Part_Transactions'[TransactionDate] <= EndDate,
-        'Fact_Part_Transactions'[SaleAmount] > 0,
-        'Fact_Part_Transactions'[Quantity] > 0
-    )
-RETURN
-""Date Range: "" & FORMAT(StartDate, ""mm/dd/yyyy"") & "" to "" & FORMAT(EndDate, ""mm/dd/yyyy"") & 
-"" | Parts in Range: "" & COUNTROWS(PartsInRange) &
-"" | Inventory: "" & FORMAT(InventoryQty, ""#,##0"") & 
-"" | Transactions: "" & FORMAT(TransactionQty, ""#,##0"") & 
-"" | Difference: "" & FORMAT(TransactionQty - InventoryQty, ""#,##0"")",,False,Valid,,False,,,,,c06f43b3-7a7e-49f6-aa44-f83d97bfb7b1
-5428,Debug - Transaction Types,MeasuresTable,,,"
-VAR StartDate = EDATE(TODAY(), -12)
-VAR EndDate = TODAY()
-VAR PartsInRange = 
-    CALCULATETABLE(
-        VALUES('Fact_Inventory'[PartNumber]),
-        'Fact_Inventory'[ListPrice] >= 0.01,
-        'Fact_Inventory'[ListPrice] <= 0.99,
+VAR AvgSellPrice =
+    CALCULATE (
+        AVERAGE ( 'Fact_Inventory'[SellPrice1] ),
+        'Fact_Inventory'[ListPrice] >= CurrentFrom,
+        'Fact_Inventory'[ListPrice] <= CurrentTo,
         'Fact_Inventory'[Current12MoSales] > 0
     )
-VAR AllTransactions = 
-    CALCULATE(
-        SUM('Fact_Part_Transactions'[Quantity]),
-        'Fact_Part_Transactions'[PartNumber] IN PartsInRange,
-        'Fact_Part_Transactions'[TransactionDate] >= StartDate,
-        'Fact_Part_Transactions'[TransactionDate] <= EndDate
-    )
-VAR PositiveSaleAmountOnly = 
-    CALCULATE(
-        SUM('Fact_Part_Transactions'[Quantity]),
-        'Fact_Part_Transactions'[PartNumber] IN PartsInRange,
-        'Fact_Part_Transactions'[TransactionDate] >= StartDate,
-        'Fact_Part_Transactions'[TransactionDate] <= EndDate,
-        'Fact_Part_Transactions'[SaleAmount] > 0
-    )
-VAR PositiveQuantityOnly = 
-    CALCULATE(
-        SUM('Fact_Part_Transactions'[Quantity]),
-        'Fact_Part_Transactions'[PartNumber] IN PartsInRange,
-        'Fact_Part_Transactions'[TransactionDate] >= StartDate,
-        'Fact_Part_Transactions'[TransactionDate] <= EndDate,
-        'Fact_Part_Transactions'[Quantity] > 0
-    )
+VAR ActualMarkup =
+    DIVIDE ( AvgSellPrice - AvgCost, AvgCost )
+VAR MarkupVsTarget = ActualMarkup - TargetMarkup
 RETURN
-""All: "" & FORMAT(AllTransactions, ""#,##0"") & 
-"" | +SaleAmt: "" & FORMAT(PositiveSaleAmountOnly, ""#,##0"") & 
-"" | +Qty: "" & FORMAT(PositiveQuantityOnly, ""#,##0"")",,False,Valid,,False,,,,,ccfdcdcc-51d9-45bd-93d0-c4a62c43c904
-5430,Debug - Check Type Field,MeasuresTable,,,"
-VAR TypeValues = 
-    CONCATENATEX(
-        TOPN(10, VALUES('Fact_Part_Transactions'[Type])),
-        'Fact_Part_Transactions'[Type],
-        "", ""
-    )
+    SWITCH (
+        TRUE (),
+        ActualTurnRatio >= 2
+            && MarkupVsTarget < -0.05, ""🟢 Raise Prices (High Turn, Low Markup)"",
+        ActualTurnRatio >= 2
+            && MarkupVsTarget > 0.05, ""🟡 Monitor (High Turn, High Markup)"",
+        ActualTurnRatio < 1
+            && MarkupVsTarget > 0.05, ""🔴 Lower Prices (Low Turn, High Markup)"",
+        ActualTurnRatio < 1
+            && MarkupVsTarget < -0.05, ""🟠 Cost Issue (Low Turn, Low Markup)"",
+        ""⚪ Balanced Pricing""
+    )",,False,Valid,,False,,,,,832623f1-36d5-409e-86fc-89951b717f24
+132090,Unique Parts in Range (All),MeasuresTable,,,"
+IF (
+    HASONEVALUE ( Price_Matrix[value_from] )
+        && HASONEVALUE ( Price_Matrix[value_to] ),
+    VAR CurrentFrom =
+        SELECTEDVALUE ( Price_Matrix[value_from] )
+    VAR CurrentTo =
+        SELECTEDVALUE ( Price_Matrix[value_to] )
+    RETURN
+        CALCULATE (
+            DISTINCTCOUNT ( 'Fact_Inventory'[PartNumber] ),
+            'Fact_Inventory'[ListPrice] >= CurrentFrom,
+            'Fact_Inventory'[ListPrice] <= CurrentTo
+        ),
+    DISTINCTCOUNT ( 'Fact_Inventory'[PartNumber] )
+)",,False,Valid,,False,,,,"""0""",a657362e-98ac-43ae-8896-449fb087b185
+136376,Average Cost per Part in Range (All),MeasuresTable,,,"
+IF (
+    HASONEVALUE ( Price_Matrix[value_from] )
+        && HASONEVALUE ( Price_Matrix[value_to] ),
+    VAR CurrentFrom =
+        SELECTEDVALUE ( Price_Matrix[value_from] )
+    VAR CurrentTo =
+        SELECTEDVALUE ( Price_Matrix[value_to] )
+    RETURN
+        CALCULATE (
+            AVERAGE ( 'Fact_Inventory'[Cost] ),
+            'Fact_Inventory'[ListPrice] >= CurrentFrom,
+            'Fact_Inventory'[ListPrice] <= CurrentTo
+        ),
+    AVERAGE ( 'Fact_Inventory'[Cost] )
+)",,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",8db53e69-9dc1-47bc-9f64-bb4ddf7615e5
+138523,Turn for Parts in Range (All),MeasuresTable,,,"
+IF (
+    HASONEVALUE ( Price_Matrix[value_from] )
+        && HASONEVALUE ( Price_Matrix[value_to] ),
+    // Individual row - calculate turn for ALL parts in this price range
+    VAR CurrentFrom =
+        SELECTEDVALUE ( Price_Matrix[value_from] )
+    VAR CurrentTo =
+        SELECTEDVALUE ( Price_Matrix[value_to] )
+    VAR PartsInRange =
+        CALCULATETABLE (
+            VALUES ( 'Fact_Inventory'[PartNumber] ),
+            'Fact_Inventory'[ListPrice] >= CurrentFrom,
+            'Fact_Inventory'[ListPrice] <= CurrentTo // Removed: 'Fact_Inventory'[Current12MoSales] > 0
+        )
+    VAR TransactionCostAmount =
+        CALCULATE (
+            SUM ( 'Fact_Part_Transactions'[CostAmount] ),
+            'Fact_Part_Transactions'[PartNumber] IN PartsInRange,
+            'Fact_Part_Transactions'[SaleAmount] > 0
+        )
+    VAR InventoryCostAmount =
+        CALCULATE (
+            SUM ( 'Fact_Inventory'[InventoryCost] ),
+            'Fact_Inventory'[ListPrice] >= CurrentFrom,
+            'Fact_Inventory'[ListPrice] <= CurrentTo
+        )
+    RETURN
+        DIVIDE ( TransactionCostAmount, InventoryCostAmount ),
+    // Total row - calculate turn for all parts
+    VAR AllParts =
+        VALUES ( 'Fact_Inventory'[PartNumber] )
+    VAR TotalTransactionCostAmount =
+        CALCULATE (
+            SUM ( 'Fact_Part_Transactions'[CostAmount] ),
+            'Fact_Part_Transactions'[PartNumber] IN AllParts,
+            'Fact_Part_Transactions'[SaleAmount] > 0
+        )
+    VAR TotalInventoryCostAmount =
+        SUM ( 'Fact_Inventory'[InventoryCost] )
+    RETURN
+        DIVIDE ( TotalTransactionCostAmount, TotalInventoryCostAmount )
+)",,False,Valid,,False,,,,,5e7843e6-b227-4e31-a4e7-165466dbf91f
+142820,Inventory Age Category (All),MeasuresTable,,,"
+VAR DaysOld = [Average Days Since Last Requested (Last 12 Mo)]
 RETURN
-""Type Values: "" & TypeValues",,False,Valid,,False,,,,,76f8ba2a-d4c0-4c50-8769-84c1ed16a278
-5432,Debug - Sample Part Analysis,MeasuresTable,,,"
-VAR StartDate = EDATE(TODAY(), -12)
-VAR EndDate = TODAY()
-VAR SamplePart = ""03H1558"" // Test Part Number
-VAR InventoryQty = 
-    CALCULATE(
-        SUM('Fact_Inventory'[Current12MoSales]),
-        'Fact_Inventory'[PartNumber] = SamplePart
-    )
-VAR AllTransQty = 
-    CALCULATE(
-        SUM('Fact_Part_Transactions'[Quantity]),
-        'Fact_Part_Transactions'[PartNumber] = SamplePart,
-        'Fact_Part_Transactions'[TransactionDate] >= StartDate,
-        'Fact_Part_Transactions'[TransactionDate] <= EndDate
-    )
-VAR FilteredTransQty = 
-    CALCULATE(
-        SUM('Fact_Part_Transactions'[Quantity]),
-        'Fact_Part_Transactions'[PartNumber] = SamplePart,
-        'Fact_Part_Transactions'[TransactionDate] >= StartDate,
-        'Fact_Part_Transactions'[TransactionDate] <= EndDate,
-        'Fact_Part_Transactions'[SaleAmount] > 0,
-        'Fact_Part_Transactions'[Quantity] > 0
-    )
+    SWITCH (
+        TRUE (),
+        DaysOld <= 30, ""🟢 Fresh (≤30 days)"",
+        DaysOld <= 90, ""🟡 Aging (31-90 days)"",
+        DaysOld <= 180, ""🟠 Stale (91-180 days)"",
+        DaysOld > 180, ""🔴 Very Stale (>180 days)"",
+        ""⚫ No Data""
+    )",,False,Valid,,False,,,,,86bf8fef-4823-411b-80c8-1553ffa8e32f
+94445,New Markup % Value,New Markup %,,,"
+SELECTEDVALUE ( 'New Markup %'[New Markup %], 50 )",,False,Valid,,False,,,,,5010d97c-876c-4b85-ab8e-8d26940ac977
+97780,Current Markup %,Calculator Measures,,,"
+IF (
+    HASONEVALUE ( Price_Matrix[value_from] )
+        && HASONEVALUE ( Price_Matrix[value_to] ),
+    SELECTEDVALUE ( Price_Matrix[price_percent] ) / 100,
+    BLANK ()
+)",,False,Valid,,False,,,,"""0.00%;-0.00%;0.00%""",148a16c9-ad27-4aae-bb51-eaaef47a5b1b
+99925,Is Range Selected for Changes,Calculator Measures,,,"
+VAR SelectedRanges =
+    VALUES ( 'Range Selection'[Range] )
+VAR CurrentRange =
+    SELECTEDVALUE ( Price_Matrix[Range] )
+VAR IsNoneSelected = ""None Selected"" IN SelectedRanges
+VAR CountSelected =
+    COUNTROWS ( SelectedRanges )
 RETURN
-""Part: "" & SamplePart & 
-"" | Inventory: "" & FORMAT(InventoryQty, ""#,##0"") & 
-"" | All Trans: "" & FORMAT(AllTransQty, ""#,##0"") & 
-"" | Filtered: "" & FORMAT(FilteredTransQty, ""#,##0"")",,False,Valid,,False,,,,,23315c7f-9e62-4a6a-acd9-0475054defb0
+    IF (
+        ISBLANK ( CurrentRange ),
+        FALSE (),
+        IF (
+            IsNoneSelected
+                && CountSelected = 1,
+            // Only ""None Selected"" is chosen
+            FALSE (),
+            IF (
+                IsNoneSelected
+                    && CountSelected > 1,
+                // ""None Selected"" + other ranges chosen - ignore ""None Selected""
+                CurrentRange
+                    IN EXCEPT ( SelectedRanges, ROW ( ""Range"", ""None Selected"" ) ),
+                // No ""None Selected"" - normal logic
+                CurrentRange IN SelectedRanges
+            )
+        )
+    )",,False,Valid,,False,,,,"""""""TRUE"""";""""TRUE"""";""""FALSE""""""",8cc1d459-55ce-4105-9e2e-7d1e2aef69f1
+102070,Applied Markup %,Calculator Measures,,,"
+IF (
+    [Is Range Selected for Changes],
+    SELECTEDVALUE ( 'New Markup %'[New Markup %] ) / 100,
+    [Current Markup %]
+)",,False,Valid,,False,,,,"""0.00%;-0.00%;0.00%""",b96f0f85-e2ee-4393-aabe-e99d3e941b26
+192687,Current Average Cost,Calculator Measures,,,"
+VAR CurrentSellingPrice = [Current Average Selling Price]
+VAR CurrentMarkupDecimal = [Current Markup %]
+RETURN
+    IF (
+        NOT ISBLANK ( CurrentSellingPrice ) && NOT ISBLANK ( CurrentMarkupDecimal ),
+        DIVIDE ( CurrentSellingPrice, ( 1 + CurrentMarkupDecimal ) ),
+        BLANK ()
+    )",,False,Valid,,False,,,,,6f96dee2-f664-4b37-9e74-6a692158d8bd
+194832,Projected Selling Price,Calculator Measures,,,"
+VAR AppliedMarkupDecimal = [Applied Markup %]
+VAR AvgCost = [Current Average Cost]
+RETURN
+    IF (
+        NOT ISBLANK ( AvgCost ) && NOT ISBLANK ( AppliedMarkupDecimal ),
+        AvgCost * ( 1 + AppliedMarkupDecimal ),
+        BLANK ()
+    )",,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",22501a23-3622-4180-a522-bad7c82ac7d0
+196977,Current Average Selling Price,Calculator Measures,,,"
+DIVIDE (
+    [Transaction Sales $ for Parts in Range],
+    [Transaction Quantity for Parts in Range]
+)",,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",5cde44e3-52bd-47fe-8b00-894a989c93cf
+199122,Price Change per Unit,Calculator Measures,,,"
+IF (
+    [Is Range Selected for Changes],
+    [Projected Selling Price] - [Current Average Selling Price],
+    0
+)",,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",52f4158d-1e6e-4604-b561-03dc88a21882
+201267,Revenue Impact (Same Volume),Calculator Measures,,,"
+IF (
+    HASONEVALUE ( Price_Matrix[Range] ),
+    // Individual range calculation
+    IF (
+        [Is Range Selected for Changes],
+        [Price Change per Unit] * [Transaction Quantity for Parts in Range],
+        0
+    ),
+    // Total calculation - sum across all ranges
+    SUMX (
+        VALUES ( Price_Matrix[Range] ),
+        IF (
+            [Is Range Selected for Changes],
+            [Price Change per Unit] * [Transaction Quantity for Parts in Range],
+            0
+        )
+    )
+)",,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",50680334-3676-4257-b96d-44c905e742e4
+203412,Margin Change per Unit,Calculator Measures,,,"
+IF (
+    [Is Range Selected for Changes],
+    VAR CurrentMarginPerUnit = [Current Average Selling Price] - [Current Average Cost]
+    VAR ProjectedMarginPerUnit = [Projected Selling Price] - [Current Average Cost]
+    RETURN
+        ProjectedMarginPerUnit - CurrentMarginPerUnit,
+    0
+)",,False,Valid,,False,,,,,e875bdfd-af0a-4719-8af7-652fe2a295c8
+205557,Margin Impact (Same Volume),Calculator Measures,,,"
+IF (
+    HASONEVALUE ( Price_Matrix[Range] ),
+    // Individual range calculation
+    IF (
+        [Is Range Selected for Changes],
+        [Margin Change per Unit] * [Transaction Quantity for Parts in Range],
+        0
+    ),
+    // Total calculation - sum across all ranges
+    SUMX (
+        VALUES ( Price_Matrix[Range] ),
+        IF (
+            [Is Range Selected for Changes],
+            [Margin Change per Unit] * [Transaction Quantity for Parts in Range],
+            0
+        )
+    )
+)",,False,Valid,,False,,,,,f0e4222f-8cc6-473e-9cb7-97ec60d6eaf2
+207702,Price Change %,Calculator Measures,,,"
+DIVIDE ( [Price Change per Unit], [Current Average Selling Price] )",,False,Valid,,False,,,,,6750ede0-574e-4c55-bc99-fe430bdad689
+209847,Margin Change %,Calculator Measures,,,"
+VAR CurrentMarginPerUnit = [Current Average Selling Price] - [Current Average Cost]
+RETURN
+    DIVIDE ( [Margin Change per Unit], CurrentMarginPerUnit )",,False,Valid,,False,,,,,112eee0f-4149-4afc-82e3-b9e5e31f34b7
+211992,Change Status,Calculator Measures,,,"
+IF ( [Is Range Selected for Changes], ""🔄 CHANGED"", ""⚪ Current"" )",,False,Valid,,False,,,,,37224883-53db-4ff8-a8ee-2db88b2aeabc
+214136,Range Impact Summary,Calculator Measures,,,"
+IF (
+    [Is Range Selected for Changes],
+    ""Markup: ""
+        & FORMAT ( [Current Markup %] / 100, ""0%"" ) & "" → ""
+        & FORMAT ( [Applied Markup %] / 100, ""0%"" ) & "" | Price: $""
+        & FORMAT ( [Current Average Selling Price], ""#,0.00"" ) & "" → $""
+        & FORMAT ( [Projected Selling Price], ""#,0.00"" ) & "" | Revenue Impact: ""
+        & FORMAT ( [Revenue Impact (Same Volume)], ""+$#,##0;-$#,##0"" ),
+    ""No changes applied""
+)",,False,Valid,,False,,,,,a1dc0519-530b-4c41-b251-7910ca859c6a
+232692,Current Average Cost (Transaction Based),Calculator Measures,,,"
+IF (
+    HASONEVALUE ( Price_Matrix[value_from] )
+        && HASONEVALUE ( Price_Matrix[value_to] ),
+    VAR CurrentFrom =
+        SELECTEDVALUE ( Price_Matrix[value_from] )
+    VAR CurrentTo =
+        SELECTEDVALUE ( Price_Matrix[value_to] )
+    VAR PartsInRange =
+        CALCULATETABLE (
+            VALUES ( 'Fact_Inventory'[PartNumber] ),
+            'Fact_Inventory'[ListPrice] >= CurrentFrom,
+            'Fact_Inventory'[ListPrice] <= CurrentTo,
+            'Fact_Inventory'[Current12MoSales] > 0
+        )
+    VAR TotalCostAmount =
+        CALCULATE (
+            SUM ( 'Fact_Part_Transactions'[CostAmount] ),
+            'Fact_Part_Transactions'[PartNumber] IN PartsInRange,
+            'Fact_Part_Transactions'[SaleAmount] > 0
+        )
+    VAR TotalQuantity =
+        CALCULATE (
+            SUM ( 'Fact_Part_Transactions'[Quantity] ),
+            'Fact_Part_Transactions'[PartNumber] IN PartsInRange,
+            'Fact_Part_Transactions'[SaleAmount] > 0
+        )
+    RETURN
+        DIVIDE ( TotalCostAmount, TotalQuantity ),
+    BLANK ()
+)",,False,Valid,,False,,,,,1fba11b6-d013-419c-b475-70550701cbb0
+243800,Gross Profit Impact (Same Volume),Calculator Measures,,,"
+IF (
+    HASONEVALUE ( Price_Matrix[Range] ),
+    // Individual range calculation
+    IF (
+        [Is Range Selected for Changes],
+        VAR CurrentMargin = ( [Current Average Selling Price] - [Current Average Cost] ) * [Transaction Quantity for Parts in Range]
+        VAR ProjectedMargin = ( [Projected Selling Price] - [Current Average Cost] ) * [Transaction Quantity for Parts in Range]
+        RETURN
+            ProjectedMargin - CurrentMargin,
+        0
+    ),
+    // Total calculation
+    SUMX (
+        VALUES ( Price_Matrix[Range] ),
+        IF (
+            [Is Range Selected for Changes],
+            VAR CurrentMargin = ( [Current Average Selling Price] - [Current Average Cost] ) * [Transaction Quantity for Parts in Range]
+            VAR ProjectedMargin = ( [Projected Selling Price] - [Current Average Cost] ) * [Transaction Quantity for Parts in Range]
+            RETURN
+                ProjectedMargin - CurrentMargin,
+            0
+        )
+    )
+)",,False,Valid,,False,,,,,49379579-bd89-49f0-9fb7-53bcf1d19a6d
+245945,Total Revenue Impact,Calculator Measures,,,"
+SUMX (
+    ALL ( Price_Matrix[Range] ),
+    IF (
+        [Is Range Selected for Changes],
+        [Price Change per Unit] * [Transaction Quantity for Parts in Range],
+        0
+    )
+)",,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",3655746c-5149-4c1f-87a9-e3b5e13b09cb
+248090,Total Ranges Changed,Calculator Measures,,,"
+SUMX (
+    ALL ( Price_Matrix[Range] ),
+    IF ( [Is Range Selected for Changes], 1, 0 )
+)",,False,Valid,,False,,,,"""0""",e44f482a-e839-471d-8e29-da895ba1a3ea
+250234,Calculator Summary,Calculator Measures,,,"
+VAR TotalRevenue = [Total Revenue Impact]
+VAR RangesChanged = [Total Ranges Changed]
+VAR NewMarkup =
+    SELECTEDVALUE ( 'New Markup %'[New Markup %], 50 )
+RETURN
+    ""New Markup: ""
+        & FORMAT ( NewMarkup / 100, ""0%"" ) & "" | Ranges Changed: "" & RangesChanged & "" | Total Revenue Impact: ""
+        & FORMAT ( TotalRevenue, ""+$#,##0;-$#,##0;$0"" )",,False,Valid,,False,,,,,f3a5a4af-cbb2-46cb-9ee3-9dccca6be075
+263098,Current Markup % (Card),Calculator Measures,,,"
+VAR SelectedRangesList =
+    VALUES ( 'Range Selection'[Range] )
+VAR IsNoneSelected = ""None Selected"" IN SelectedRangesList
+VAR CountSelected =
+    COUNTROWS ( SelectedRangesList )
+VAR SelectedMarkupSum =
+    SUMX (
+        ALL ( Price_Matrix ),
+        IF (
+            AND ( NOT IsNoneSelected, Price_Matrix[Range] IN SelectedRangesList ),
+            Price_Matrix[price_percent] / 100,
+            0
+        )
+    )
+VAR SelectedRangeCount =
+    SUMX (
+        ALL ( Price_Matrix ),
+        IF (
+            AND ( NOT IsNoneSelected, Price_Matrix[Range] IN SelectedRangesList ),
+            1,
+            0
+        )
+    )
+VAR AllRangesAvg =
+    AVERAGEX ( ALL ( Price_Matrix ), Price_Matrix[price_percent] / 100 )
+RETURN
+    IF (
+        IsNoneSelected
+            || SelectedRangeCount = 0,
+        AllRangesAvg,
+        DIVIDE ( SelectedMarkupSum, SelectedRangeCount )
+    )",,False,Valid,,False,,,,"""0.00%;-0.00%;0.00%""",3676bc70-9029-40ba-82c2-251cf7402d32
+271672,Applied Markup % (Card),Calculator Measures,,,"
+VAR SelectedRanges =
+    VALUES ( 'Range Selection'[Range] )
+VAR IsNoneSelected = ""None Selected"" IN SelectedRanges
+RETURN
+    IF (
+        IsNoneSelected,
+        BLANK (),
+        SELECTEDVALUE ( 'New Markup %'[New Markup %] ) / 100
+    )",,False,Valid,,False,,,,"""0.00%;-0.00%;0.00%""",349591e5-f582-4e1f-8e6f-bf233c126f66
+273817,Ranges Being Changed,Calculator Measures,,,"
+VAR SelectedRanges =
+    VALUES ( 'Range Selection'[Range] )
+VAR IsNoneSelected = ""None Selected"" IN SelectedRanges
+RETURN
+    IF (
+        IsNoneSelected,
+        0,
+        COUNTROWS ( SelectedRanges )
+            - IF ( ""None Selected"" IN SelectedRanges, 1, 0 )
+    )",,False,Valid,,False,,,,"""0""",46f61e92-7a20-4d01-8b9f-5d32523d872b
+275961,Change Status Card,Calculator Measures,,,"
+VAR RangesChanged = [Ranges Being Changed]
+RETURN
+    SWITCH (
+        TRUE (),
+        RangesChanged = 0, ""No Changes"",
+        RangesChanged = 1, ""1 Range Selected"",
+        RangesChanged & "" Ranges Selected""
+    )",,False,Valid,,False,,,,,1711a0fd-ceea-4318-bcc7-6e941defcb1e
+283463,Projected Price Simple Average,Calculator Measures,,,"
+VAR SelectedRangesList =
+    VALUES ( 'Range Selection'[Range] )
+VAR IsNoneSelected = ""None Selected"" IN SelectedRangesList
+RETURN
+    IF (
+        IsNoneSelected,
+        BLANK (),
+        AVERAGEX (
+            FILTER ( ALL ( Price_Matrix ), Price_Matrix[Range] IN SelectedRangesList ),
+            VAR CurrentRange = Price_Matrix[Range]
+            RETURN
+                CALCULATE ( [Projected Selling Price], Price_Matrix[Range] = CurrentRange )
+        )
+    )",,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",b71e5884-db58-4a51-9516-416ba2936347
+301683,Show Range Selected,Calculator Measures,,,"
+VAR MaxFilters = 7
+RETURN
+    IF (
+        ISFILTERED ( 'Range Selection'[Range] ),
+        VAR ___f =
+            FILTERS ( 'Range Selection'[Range] )
+        VAR ___r =
+            COUNTROWS ( ___f )
+        VAR ___t =
+            TOPN ( MaxFilters, ___f, 'Range Selection'[Range] )
+        VAR ___d =
+            CONCATENATEX ( ___t, 'Range Selection'[Range], "", "" )
+        VAR ___x =
+            ""Range:  "" & ___d
+                & IF ( ___r > MaxFilters, "", ... ["" & ___r & "" items selected]"" ) & "" ""
+        RETURN
+            ___x & UNICHAR ( 13 )
+                & UNICHAR ( 10 )
+    )",,False,Valid,,False,,,,,1e071e17-3cf9-46c8-b981-83a96336958c
+322060,Range $0.01 - $0.99 New Markup Value,Range $0.01 - $0.99 New Markup,,,"
+SELECTEDVALUE ( 'Range $0.01 - $0.99 New Markup'[Range $0.01 - $0.99 New Markup] )",,False,Valid,,False,,,,"""0""",4ee59c8c-4b1a-4b84-91ff-8c3e46a56f1e
