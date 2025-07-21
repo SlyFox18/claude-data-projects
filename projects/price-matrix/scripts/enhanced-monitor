@@ -1,0 +1,449 @@
+# Enhanced Power BI Performance Monitor - FIXED VERSION
+# Purpose: Add smart alerting to your existing performance monitoring
+
+param(
+    [Parameter(Mandatory=$false)]
+    [switch]$EnableAlerts,  # FIXED: Removed default value
+    
+    [Parameter(Mandatory=$false)]
+    [string]$AlertEmail = "your.email@company.com"
+)
+
+# Your existing configuration (keep what you have)
+$repo = "C:\Users\bfox\Documents\Git-Projects\claude-data-projects\projects\price-matrix"
+$workspaceId = "ba9d8de4-ef13-44e6-9156-e23a2511f3ad"
+$datasetId = "bdecebfa-be8a-4cb6-8fa0-554316c8a1c9"
+
+Write-Host "=== Enhanced Power BI Performance Monitor (Fixed Version) ===" -ForegroundColor Cyan
+Write-Host "Starting enhanced monitoring with smart alerts..." -ForegroundColor Green
+Write-Host "Alerts Enabled: $EnableAlerts" -ForegroundColor Yellow
+
+# NEW: Create alerts directory
+$alertsPath = "$repo\alerts"
+if (!(Test-Path $alertsPath)) { 
+    Write-Host "Creating alerts directory..." -ForegroundColor Yellow
+    New-Item -ItemType Directory -Path $alertsPath -Force | Out-Null 
+    Write-Host "  ✓ Alerts directory created: $alertsPath" -ForegroundColor Green
+}
+
+# NEW: Simple alert thresholds (you can adjust these)
+$alertThresholds = @{
+    ResponseTimeWarning = 3000      # 3 seconds
+    ResponseTimeCritical = 8000     # 8 seconds
+    RefreshAgeWarning = 26          # 26 hours
+    RefreshAgeCritical = 48         # 48 hours
+    ErrorCountCritical = 3          # 3 or more errors
+}
+
+Write-Host "Alert thresholds configured:" -ForegroundColor Cyan
+Write-Host "  - Response time warning: $($alertThresholds.ResponseTimeWarning)ms" -ForegroundColor White
+Write-Host "  - Response time critical: $($alertThresholds.ResponseTimeCritical)ms" -ForegroundColor White
+Write-Host "  - Data age warning: $($alertThresholds.RefreshAgeWarning) hours" -ForegroundColor White
+
+# NEW: Function to check if we should send alerts
+function Test-AlertConditions {
+    param($Results)
+    
+    Write-Host "Analyzing performance data for alert conditions..." -ForegroundColor Yellow
+    $alerts = @()
+    
+    # Check response time
+    if ($Results.Performance.AverageResponseTime -gt $alertThresholds.ResponseTimeCritical) {
+        $alerts += @{
+            Type = "Critical"
+            Message = "Very slow response time: $($Results.Performance.AverageResponseTime)ms"
+            Recommendation = "Check system resources and recent changes"
+        }
+        Write-Host "  ✗ CRITICAL: Very slow response detected!" -ForegroundColor Red
+    } elseif ($Results.Performance.AverageResponseTime -gt $alertThresholds.ResponseTimeWarning) {
+        $alerts += @{
+            Type = "Warning"  
+            Message = "Slow response time: $($Results.Performance.AverageResponseTime)ms"
+            Recommendation = "Monitor performance trends"
+        }
+        Write-Host "  ⚠ WARNING: Slow response detected" -ForegroundColor Yellow
+    } else {
+        Write-Host "  ✓ Response time is healthy" -ForegroundColor Green
+    }
+    
+    # Check refresh age
+    if ($Results.Refresh.RefreshAgeHours -gt $alertThresholds.RefreshAgeCritical) {
+        $alerts += @{
+            Type = "Critical"
+            Message = "Data is very stale: $($Results.Refresh.RefreshAgeHours) hours old"
+            Recommendation = "Check refresh job immediately"
+        }
+        Write-Host "  ✗ CRITICAL: Data is very stale!" -ForegroundColor Red
+    } elseif ($Results.Refresh.RefreshAgeHours -gt $alertThresholds.RefreshAgeWarning) {
+        $alerts += @{
+            Type = "Warning"
+            Message = "Data is getting stale: $($Results.Refresh.RefreshAgeHours) hours old"  
+            Recommendation = "Review refresh schedule"
+        }
+        Write-Host "  ⚠ WARNING: Data is getting stale" -ForegroundColor Yellow
+    } else {
+        Write-Host "  ✓ Data freshness is healthy" -ForegroundColor Green
+    }
+    
+    # Check for connection failures
+    if ($Results.Connectivity.Status -eq "Failed") {
+        $alerts += @{
+            Type = "Critical"
+            Message = "Cannot connect to Power BI service"
+            Recommendation = "Check internet connection and Power BI service status"
+        }
+        Write-Host "  ✗ CRITICAL: Connection failure!" -ForegroundColor Red
+    }
+    
+    return $alerts
+}
+
+# NEW: Function to send simple alert notification
+function Send-SimpleAlert {
+    param($Alerts, $PerformanceResults, $AlertEmail)
+    
+    if ($Alerts.Count -eq 0) { 
+        Write-Host "No alerts to send" -ForegroundColor Green
+        return 
+    }
+    
+    Write-Host "Creating alert notification..." -ForegroundColor Yellow
+    
+    $criticalAlerts = $Alerts | Where-Object { $_.Type -eq "Critical" }
+    $warningAlerts = $Alerts | Where-Object { $_.Type -eq "Warning" }
+    
+    $alertTitle = if ($criticalAlerts.Count -gt 0) {
+        "🚨 CRITICAL: Power BI Performance Alert"
+    } else {
+        "⚠️ WARNING: Power BI Performance Alert"
+    }
+    
+    # FIXED: Using the variable
+    Write-Host "Alert title: $alertTitle" -ForegroundColor Cyan
+    
+    $emailBody = @"
+<html>
+<body style="font-family: Arial, sans-serif; margin: 20px;">
+    <h2 style="color: $(if ($criticalAlerts.Count -gt 0) { '#dc3545' } else { '#ffc107' });">
+        $alertTitle
+    </h2>
+    
+    <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 15px 0;">
+        <h3 style="margin-top: 0;">Alert Summary</h3>
+        <ul>
+$(foreach ($alert in $Alerts) {
+    $color = if ($alert.Type -eq "Critical") { "#dc3545" } else { "#ffc107" }
+    "            <li style='color: $color; margin: 5px 0;'><strong>$($alert.Type):</strong> $($alert.Message)</li>`n"
+})
+        </ul>
+    </div>
+    
+    <div style="background-color: #e9ecef; padding: 15px; border-radius: 5px; margin: 15px 0;">
+        <h3 style="margin-top: 0;">Current Performance Status</h3>
+        <table style="border-collapse: collapse; width: 100%;">
+            <tr><td style="padding: 8px; border-bottom: 1px solid #ccc;"><strong>Average Response Time:</strong></td><td style="padding: 8px; border-bottom: 1px solid #ccc;">$($PerformanceResults.Performance.AverageResponseTime) ms</td></tr>
+            <tr><td style="padding: 8px; border-bottom: 1px solid #ccc;"><strong>Data Age:</strong></td><td style="padding: 8px; border-bottom: 1px solid #ccc;">$($PerformanceResults.Refresh.RefreshAgeHours) hours</td></tr>
+            <tr><td style="padding: 8px; border-bottom: 1px solid #ccc;"><strong>Connection Status:</strong></td><td style="padding: 8px; border-bottom: 1px solid #ccc;">$($PerformanceResults.Connectivity.Status)</td></tr>
+            <tr><td style="padding: 8px;"><strong>Dataset Status:</strong></td><td style="padding: 8px;">$($PerformanceResults.Dataset.Status)</td></tr>
+        </table>
+    </div>
+    
+    <div style="background-color: #d1ecf1; padding: 15px; border-radius: 5px; margin: 15px 0;">
+        <h3 style="margin-top: 0;">Recommended Actions</h3>
+        <ol>
+$(foreach ($alert in $Alerts) {
+    "            <li style='margin: 5px 0;'>$($alert.Recommendation)</li>`n"
+})
+        </ol>
+    </div>
+    
+    <hr style="margin: 20px 0;">
+    <p style="font-size: 12px; color: #666;">
+        <strong>Alert Details:</strong><br>
+        Generated: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')<br>
+        System: Enhanced Power BI Performance Monitor<br>
+        Alert Email: $AlertEmail
+    </p>
+</body>
+</html>
+"@
+    
+    # Save alert to file (instead of sending email for now)
+    $alertFileName = "alert-$(Get-Date -Format 'yyyyMMdd-HHmmss').html"
+    $alertFile = "$alertsPath\$alertFileName"
+    $emailBody | Out-File $alertFile -Encoding UTF8
+    
+    Write-Host ""
+    Write-Host "🚨 ALERT NOTIFICATION CREATED!" -ForegroundColor Red
+    Write-Host "Alert file saved: $alertFile" -ForegroundColor Yellow
+    Write-Host "Critical Alerts: $($criticalAlerts.Count)" -ForegroundColor $(if ($criticalAlerts.Count -gt 0) { 'Red' } else { 'Green' })
+    Write-Host "Warning Alerts: $($warningAlerts.Count)" -ForegroundColor $(if ($warningAlerts.Count -gt 0) { 'Yellow' } else { 'Green' })
+    
+    # Also create a simple text summary
+    $textSummary = @"
+POWER BI PERFORMANCE ALERT - $(Get-Date)
+=========================================
+
+ALERT SUMMARY:
+$(foreach ($alert in $Alerts) { "- $($alert.Type): $($alert.Message)`n" })
+
+CURRENT STATUS:
+- Response Time: $($PerformanceResults.Performance.AverageResponseTime) ms  
+- Data Age: $($PerformanceResults.Refresh.RefreshAgeHours) hours
+- Connection: $($PerformanceResults.Connectivity.Status)
+
+ACTIONS NEEDED:
+$(foreach ($alert in $Alerts) { "- $($alert.Recommendation)`n" })
+"@
+    
+    $textFile = "$alertsPath\alert-$(Get-Date -Format 'yyyyMMdd-HHmmss').txt"
+    $textSummary | Out-File $textFile -Encoding UTF8
+    
+    Write-Host "Text summary saved: $textFile" -ForegroundColor Green
+}
+
+# Setup directories (your existing code with small enhancement)
+Write-Host ""
+Write-Host "Setting up directories..." -ForegroundColor Yellow
+$monitoringPath = "$repo\monitoring"  
+$performancePath = "$monitoringPath\performance-data"
+
+@($monitoringPath, $performancePath, $alertsPath) | ForEach-Object {
+    if (!(Test-Path $_)) { 
+        New-Item -ItemType Directory -Path $_ -Force | Out-Null 
+        Write-Host "  ✓ Created: $_" -ForegroundColor Green
+    } else {
+        Write-Host "  ✓ Exists: $_" -ForegroundColor Gray
+    }
+}
+
+$timestamp = Get-Date
+$dateStamp = Get-Date -Format "yyyy-MM-dd"
+
+# Initialize results (same as your existing script)
+$monitoringResults = @{
+    Timestamp = $timestamp
+    Connectivity = @{}
+    Dataset = @{}
+    Refresh = @{}  
+    Workspace = @{}
+    Performance = @{}
+    Alerts = @()
+}
+
+Write-Host ""
+Write-Host "1. Testing Power BI Service Connectivity..." -ForegroundColor Cyan
+
+try {
+    Write-Host "   Connecting to Power BI service..." -ForegroundColor Yellow
+    Connect-PowerBIServiceAccount
+    $connectTime = (Get-Date) - $timestamp
+    Write-Host "   ✓ Connected successfully: $([math]::Round($connectTime.TotalMilliseconds, 0))ms" -ForegroundColor Green
+    
+    $monitoringResults.Connectivity = @{
+        Status = "Success"
+        ResponseTime = [math]::Round($connectTime.TotalMilliseconds, 2)
+    }
+} catch {
+    Write-Host "   ✗ Connection failed: $($_.Exception.Message)" -ForegroundColor Red
+    $monitoringResults.Connectivity = @{
+        Status = "Failed"
+        ResponseTime = -1
+        Error = $_.Exception.Message
+    }
+}
+
+Write-Host ""
+Write-Host "2. Checking Dataset Health..." -ForegroundColor Cyan
+
+try {
+    Write-Host "   Querying dataset information..." -ForegroundColor Yellow
+    $datasetStart = Get-Date
+    $datasetInfo = Invoke-PowerBIRestMethod -Url "groups/$workspaceId/datasets/$datasetId" -Method Get | ConvertFrom-Json
+    $datasetTime = (Get-Date) - $datasetStart
+    
+    Write-Host "   ✓ Dataset accessible: $($datasetInfo.name)" -ForegroundColor Green
+    Write-Host "   ✓ Query time: $([math]::Round($datasetTime.TotalMilliseconds, 0))ms" -ForegroundColor Green
+    
+    $monitoringResults.Dataset = @{
+        Name = $datasetInfo.name
+        Status = "Success"
+        QueryTime = [math]::Round($datasetTime.TotalMilliseconds, 2)
+    }
+} catch {
+    Write-Host "   ✗ Dataset check failed: $($_.Exception.Message)" -ForegroundColor Red
+    $monitoringResults.Dataset = @{
+        Status = "Failed"
+        QueryTime = 0
+        Error = $_.Exception.Message
+    }
+}
+
+Write-Host ""
+Write-Host "3. Checking Data Freshness..." -ForegroundColor Cyan
+
+try {
+    Write-Host "   Checking refresh history..." -ForegroundColor Yellow
+    $refreshStart = Get-Date
+    $refreshUrl = "groups/$workspaceId/datasets/$datasetId/refreshes"
+    $refreshInfo = Invoke-PowerBIRestMethod -Url $refreshUrl -Method Get | ConvertFrom-Json
+    $refreshTime = (Get-Date) - $refreshStart
+    
+    if ($refreshInfo.value.Count -gt 0) {
+        $lastRefresh = $refreshInfo.value[0]
+        $refreshAge = (Get-Date) - [DateTime]$lastRefresh.endTime
+        
+        Write-Host "   ✓ Last refresh: $($lastRefresh.status)" -ForegroundColor Green
+        Write-Host "   ✓ Data age: $([math]::Round($refreshAge.TotalHours, 1)) hours" -ForegroundColor Green
+        
+        $monitoringResults.Refresh = @{
+            LastStatus = $lastRefresh.status
+            RefreshAgeHours = [math]::Round($refreshAge.TotalHours, 1)
+            QueryTime = [math]::Round($refreshTime.TotalMilliseconds, 2)
+            Status = "Success"
+        }
+    } else {
+        Write-Host "   ⚠ No refresh history found" -ForegroundColor Yellow
+        $monitoringResults.Refresh = @{
+            Status = "No History"
+            RefreshAgeHours = 999
+            QueryTime = [math]::Round($refreshTime.TotalMilliseconds, 2)
+        }
+    }
+} catch {
+    Write-Host "   ✗ Refresh check failed: $($_.Exception.Message)" -ForegroundColor Red
+    $monitoringResults.Refresh = @{
+        Status = "Error"
+        RefreshAgeHours = 999
+        QueryTime = 0
+        Error = $_.Exception.Message
+    }
+}
+
+# Calculate performance metrics
+Write-Host ""
+Write-Host "4. Calculating Performance Metrics..." -ForegroundColor Cyan
+
+$totalQueryTime = 0
+$queryCount = 0
+
+if ($monitoringResults.Connectivity.ResponseTime -gt 0) { 
+    $totalQueryTime += $monitoringResults.Connectivity.ResponseTime
+    $queryCount++
+    Write-Host "   - Connection time: $($monitoringResults.Connectivity.ResponseTime)ms" -ForegroundColor White
+}
+if ($monitoringResults.Dataset.QueryTime -gt 0) { 
+    $totalQueryTime += $monitoringResults.Dataset.QueryTime
+    $queryCount++
+    Write-Host "   - Dataset query time: $($monitoringResults.Dataset.QueryTime)ms" -ForegroundColor White
+}
+if ($monitoringResults.Refresh.QueryTime -gt 0) { 
+    $totalQueryTime += $monitoringResults.Refresh.QueryTime
+    $queryCount++
+    Write-Host "   - Refresh query time: $($monitoringResults.Refresh.QueryTime)ms" -ForegroundColor White
+}
+
+$avgResponseTime = if ($queryCount -gt 0) { [math]::Round($totalQueryTime / $queryCount, 2) } else { 0 }
+
+$monitoringResults.Performance = @{
+    TotalQueryTime = $totalQueryTime
+    AverageResponseTime = $avgResponseTime
+    QueryCount = $queryCount
+}
+
+Write-Host "   ✓ Total query time: $([math]::Round($totalQueryTime, 0))ms" -ForegroundColor Green
+Write-Host "   ✓ Average response time: $avgResponseTime ms" -ForegroundColor Green
+
+Write-Host ""
+Write-Host "5. Performance Summary:" -ForegroundColor Cyan
+Write-Host "   Average Response Time: $avgResponseTime ms" -ForegroundColor White
+Write-Host "   Data Age: $($monitoringResults.Refresh.RefreshAgeHours) hours" -ForegroundColor White
+Write-Host "   Connection Status: $($monitoringResults.Connectivity.Status)" -ForegroundColor White
+Write-Host "   Dataset Status: $($monitoringResults.Dataset.Status)" -ForegroundColor White
+
+# NEW: Check for alerts
+Write-Host ""
+Write-Host "6. Checking Alert Conditions..." -ForegroundColor Cyan
+
+$alertsFound = Test-AlertConditions -Results $monitoringResults
+$monitoringResults.Alerts = $alertsFound
+
+if ($alertsFound.Count -eq 0) {
+    Write-Host "   ✓ All systems healthy - no alerts needed" -ForegroundColor Green
+} else {
+    Write-Host "   ⚠ $($alertsFound.Count) alert condition(s) detected!" -ForegroundColor Yellow
+    
+    if ($EnableAlerts) {
+        Write-Host "   Generating alert notifications..." -ForegroundColor Yellow
+        Send-SimpleAlert -Alerts $alertsFound -PerformanceResults $monitoringResults -AlertEmail $AlertEmail
+    } else {
+        Write-Host "   (Alerting disabled - add -EnableAlerts parameter to activate)" -ForegroundColor Gray
+        foreach ($alert in $alertsFound) {
+            $color = if ($alert.Type -eq "Critical") { "Red" } else { "Yellow" }
+            Write-Host "   - $($alert.Type): $($alert.Message)" -ForegroundColor $color
+        }
+    }
+}
+
+# Save results (enhanced)
+Write-Host ""
+Write-Host "7. Saving Performance Data..." -ForegroundColor Cyan
+
+$performanceRecord = [PSCustomObject]@{
+    Timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    ConnectivityStatus = $monitoringResults.Connectivity.Status
+    ConnectivityTime = $monitoringResults.Connectivity.ResponseTime
+    DatasetStatus = $monitoringResults.Dataset.Status  
+    DatasetQueryTime = $monitoringResults.Dataset.QueryTime
+    RefreshStatus = $monitoringResults.Refresh.LastStatus
+    RefreshAgeHours = $monitoringResults.Refresh.RefreshAgeHours
+    AverageResponseTime = $avgResponseTime
+    TotalQueryTime = $totalQueryTime
+    QueryCount = $queryCount
+    AlertCount = $alertsFound.Count
+    AlertTypes = ($alertsFound.Type -join ', ')
+    EnabledAlerts = $EnableAlerts
+}
+
+$csvFile = "$performancePath\enhanced-performance-$dateStamp.csv"
+if (Test-Path $csvFile) {
+    Write-Host "   Adding record to existing CSV file..." -ForegroundColor Yellow
+    $performanceRecord | Export-Csv $csvFile -Append -NoTypeInformation
+} else {
+    Write-Host "   Creating new CSV file..." -ForegroundColor Yellow
+    $performanceRecord | Export-Csv $csvFile -NoTypeInformation
+}
+
+Write-Host "   ✓ Performance data saved to: $csvFile" -ForegroundColor Green
+
+# Commit to git (your existing code)
+Write-Host ""
+Write-Host "8. Committing to Git..." -ForegroundColor Cyan
+
+try {
+    Set-Location $repo
+    git add "monitoring/*" "alerts/*" 2>$null
+    $commitMessage = "enhanced: Performance monitoring with smart alerts - $(Get-Date -Format 'yyyy-MM-dd HH:mm')"
+    git commit -m $commitMessage 2>$null
+    git push origin main 2>$null
+    Write-Host "   ✓ Changes committed and pushed to git" -ForegroundColor Green
+} catch {
+    Write-Host "   ⚠ Git operations skipped (not critical)" -ForegroundColor Yellow
+}
+
+Write-Host ""
+Write-Host "=== ENHANCED MONITORING COMPLETE ===" -ForegroundColor Cyan
+$performanceStatus = if ($avgResponseTime -lt 2000) { "✓ Excellent" } elseif ($avgResponseTime -lt 4000) { "⚠ Good" } else { "✗ Needs Attention" }
+$performanceColor = if ($avgResponseTime -lt 2000) { "Green" } elseif ($avgResponseTime -lt 4000) { "Yellow" } else { "Red" }
+
+$freshnessStatus = if ($monitoringResults.Refresh.RefreshAgeHours -lt 25) { "✓ Fresh" } else { "⚠ Stale" }
+$freshnessColor = if ($monitoringResults.Refresh.RefreshAgeHours -lt 25) { "Green" } else { "Yellow" }
+
+Write-Host "Performance Score: $performanceStatus ($avgResponseTime ms)" -ForegroundColor $performanceColor
+Write-Host "Data Freshness: $freshnessStatus ($($monitoringResults.Refresh.RefreshAgeHours) hours)" -ForegroundColor $freshnessColor
+Write-Host "Alerts Triggered: $($alertsFound.Count)" -ForegroundColor $(if ($alertsFound.Count -eq 0) { 'Green' } else { 'Red' })
+Write-Host "Alert Files Created: $(if ($EnableAlerts -and $alertsFound.Count -gt 0) { 'Yes' } else { 'No' })" -ForegroundColor $(if ($EnableAlerts -and $alertsFound.Count -gt 0) { 'Yellow' } else { 'Green' })
+
+Write-Host ""
+Write-Host "Script completed successfully! Press Enter to close..." -ForegroundColor Green
+Read-Host
