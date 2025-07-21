@@ -1,0 +1,17 @@
+ID,Name,Model,DataCategory,Description,IsHidden,StorageMode,TableStorage,Expression,ShowAsVariationOnly,IsPrivate,CalculationGroupPrecedence,LineageTag
+10,ArMaster_Customer_Unique,09344adf-97ff-4633-a728-36179280ae45,Regular,,False,Import,,,False,False,,006585fc-4687-461e-8c13-c7ed46d2c55b
+13,InTrans_Unique,09344adf-97ff-4633-a728-36179280ae45,Regular,,False,Import,,,False,False,,a9b78687-69cb-4f4e-8925-047f47e592bc
+16,DateTableTemplate_c7a5ea64-3720-4f31-91e7-1201a8751d3b,09344adf-97ff-4633-a728-36179280ae45,Regular,,True,Import,,"Calendar(Date(2015,1,1), Date(2015,1,1))",False,True,,e07736f3-3d88-410f-bdb9-e67051ac2ff8
+19,LocalDateTable_0655d974-09ee-46e2-ba6c-a086cb5334ad,09344adf-97ff-4633-a728-36179280ae45,Regular,,True,Import,,"Calendar(Date(Year(MIN('InTrans_Unique'[Trans_Datetime])), 1, 1), Date(Year(MAX('InTrans_Unique'[Trans_Datetime])), 12, 31))",True,False,,eead0635-842b-4f91-b8d5-aea5e0d354a0
+22,Dim_Branch,09344adf-97ff-4633-a728-36179280ae45,Regular,,False,Import,,,False,False,,b24433ff-9d53-4ab0-8b80-494aa7b6d78b
+25,dDate,09344adf-97ff-4633-a728-36179280ae45,Time,,False,Import,,CALENDARAUTO(),False,False,,b02800f3-9be7-4248-befd-ef0aa5f613cb
+12417,Data Refresh,09344adf-97ff-4633-a728-36179280ae45,Regular,,False,Import,,,False,False,,7170e28f-8ce2-4abc-972a-5fde274f8f79
+12420,LocalDateTable_8d63468f-7d5d-4a39-b374-3fcf357d3f4c,09344adf-97ff-4633-a728-36179280ae45,Regular,,True,Import,,"Calendar(Date(Year(MIN('Data Refresh'[CurrentDateTime])), 1, 1), Date(Year(MAX('Data Refresh'[CurrentDateTime])), 12, 31))",True,False,,4b028a3d-56bb-406e-beac-28b6eee5eda1
+12423,LocalDateTable_bf295660-9da0-414b-bdae-d352954fbff2,09344adf-97ff-4633-a728-36179280ae45,Regular,,True,Import,,"Calendar(Date(Year(MIN('Data Refresh'[Date])), 1, 1), Date(Year(MAX('Data Refresh'[Date])), 12, 31))",True,False,,93b46167-9fdc-4d26-8b95-02df6370b89d
+18778,Invoice,09344adf-97ff-4633-a728-36179280ae45,Regular,,False,Import,,,False,False,,c458af87-9c40-4017-90e3-364258ad3244
+18781,LocalDateTable_e14db3da-cc03-4963-a493-b0007f85cf82,09344adf-97ff-4633-a728-36179280ae45,Regular,,True,Import,,"Calendar(Date(Year(MIN('Invoice'[invo_datetime])), 1, 1), Date(Year(MAX('Invoice'[invo_datetime])), 12, 31))",True,False,,b587c36b-77b0-4931-b76b-99cc2cec9e29
+18784,LocalDateTable_ee29c4b7-06c8-4300-a4ae-b29967c75b51,09344adf-97ff-4633-a728-36179280ae45,Regular,,True,Import,,"Calendar(Date(Year(MIN('Invoice'[ORD_CREATED_ON])), 1, 1), Date(Year(MAX('Invoice'[ORD_CREATED_ON])), 12, 31))",True,False,,6fd98d17-b9cb-4dfa-a6bb-11b71376993a
+24819,Current-Measures,09344adf-97ff-4633-a728-36179280ae45,Regular,,False,Import,,INFO.VIEW.MEASURES(),False,False,,3fd4d21a-d39c-4dcb-b824-ce9860e2e304
+26386,Current-Tables,09344adf-97ff-4633-a728-36179280ae45,Regular,,False,Import,,INFO.VIEW.TABLES(),False,False,,22b2de60-f626-4c10-a90e-2e790014c0a7
+27479,Current-Relationships,09344adf-97ff-4633-a728-36179280ae45,Regular,,False,Import,,INFO.VIEW.RELATIONSHIPS(),False,False,,044b1923-c061-484e-9b3e-2ec117afeaa4
+29135,Current-Columns,09344adf-97ff-4633-a728-36179280ae45,Regular,,False,Import,,INFO.VIEW.COLUMNS(),False,False,,c91bed80-cbec-477e-bc1c-5f8f9af0d813

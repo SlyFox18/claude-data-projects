@@ -1,0 +1,469 @@
+ID,Name,Table,Description,DataType,Expression,FormatString,IsHidden,State,KPIID,IsSimpleMeasure,DisplayFolder,DetailRowsDefinition,DataCategory,FormatStringDefinition,LineageTag
+79,COS,InTrans_Unique,,,SUM(InTrans_Unique[Cost]),,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",a89a49e1-050c-41f9-b2ff-2bcd8807d96a
+80,Sales,InTrans_Unique,,,SUM(InTrans_Unique[Sales_Val]),,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",d4e2942d-5b3b-47f8-b818-b7e3b600eada
+81,Margin $,InTrans_Unique,,,[Sales] - [COS],,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",a8e8afd1-219b-446a-bdfa-6670b9079dc9
+82,Margin %,InTrans_Unique,,,"DIVIDE( [Margin $], [Sales], 0 )",,False,Valid,,False,,,,"""0.00%;-0.00%;0.00%""",cc352749-1c35-4d6f-a404-3d16912e2666
+83,YTD vs PYTD Comparison,InTrans_Unique,,,"
+IF(
+    [YTD Sales] > [Previous Year Sales], 
+    1, 
+    IF(
+        [YTD Sales] < [Previous Year Sales], 
+        -1, 
+        0
+    )
+)
+",,False,Valid,,False,,,,"""0""",86915356-0246-4b37-85b3-dcb8e7d49432
+84,PYTD vs Sales Comparison,InTrans_Unique,,,"
+IF(
+    [Previous Year Sales] > [YTD Sales], 
+    1, 
+    IF(
+        [Previous Year Sales] < [YTD Sales], 
+        -1, 
+        0
+    )
+)
+",,False,Valid,,False,,,,"""0""",4e4a62d4-19a9-4378-9866-4ce636da18e7
+85,Margin $ vs PMargin $ Comparison,InTrans_Unique,,,"
+IF(
+    [YTD Margin $] > [Previous Year Margin $], 
+    1, 
+    IF(
+        [YTD Margin $] < [Previous Year Margin $], 
+        -1, 
+        0
+    )
+)",,False,Valid,,False,,,,"""0""",603f3d42-1717-4205-a1a3-de8ba3c0b2c5
+86,PCOS vs COS Compairison,InTrans_Unique,,,"
+IF(
+    [Previous Year COS] > [YTD COS], 
+    1, 
+    IF(
+        [Previous Year COS] < [YTD COS], 
+        -1, 
+        0
+    )
+)",,False,Valid,,False,,,,"""0""",fe910bad-cbc4-4200-aecb-15cf072c5f3a
+87,COS Icon,InTrans_Unique,,,"
+IF(
+    [YTD COS] > [Previous Year COS], 
+    ""▲"", 
+    IF(
+        [YTD COS] < [Previous Year COS], 
+        ""▼"", 
+        """"
+    )
+)",,False,Valid,,False,,,,,64cf30bb-0408-4a58-8a75-18b368675727
+88,COS with Icon,InTrans_Unique,,,"
+FORMAT([YTD COS], ""Currency"") & "" "" & [COS Icon]",,False,Valid,,False,,,,,203984c9-444c-49d2-8ca3-7b8594d33f43
+89,PCOS Icon,InTrans_Unique,,,"
+IF(
+    [Previous Year COS] > [YTD COS], 
+    ""▲"", 
+    IF(
+        [Previous Year COS] < [YTD COS], 
+        ""▼"", 
+        """"
+    )
+)",,False,Valid,,False,,,,,d0369f0f-57bf-42b7-9669-92c14d6250da
+90,PCOS with Icon,InTrans_Unique,,,"
+FORMAT([Previous Year COS], ""Currency"") & "" "" & [PCOS Icon]",,False,Valid,,False,,,,,9f955ed4-99bf-45eb-8a20-28b0e7babfcb
+91,Sales vs PSales Comparison,InTrans_Unique,,,"
+IF(
+    [YTD Sales] > [Previous Year Sales], 
+    1, 
+    IF(
+        [YTD Sales] < [Previous Year Sales], 
+        -1, 
+        0
+    )
+)",,False,Valid,,False,,,,"""0""",be8a67ee-ed1e-431e-97ff-fc8d2f43171d
+92,Sales Icon,InTrans_Unique,,,"
+IF(
+    [YTD Sales] > [Previous Year Sales], 
+    ""▲"", 
+    IF(
+        [YTD Sales] < [Previous Year Sales], 
+        ""▼"", 
+        """"
+    )
+)",,False,Valid,,False,,,,,2831e94c-ff5c-46c1-bcf7-81571fc9a331
+93,Sales with Icon,InTrans_Unique,,,"
+FORMAT([YTD Sales], ""Currency"") & "" "" & [Sales Icon]",,False,Valid,,False,,,,,da0b7787-1dbd-4dca-910a-0cd042ef634e
+94,PSales vs Sales Comparison,InTrans_Unique,,,"
+IF(
+    [Previous Year Sales] > [YTD Sales], 
+    1, 
+    IF(
+        [Previous Year Sales] < [YTD Sales], 
+        -1, 
+        0
+    )
+)",,False,Valid,,False,,,,"""0""",2341cd78-725a-4f51-b131-a3285639b014
+95,PSales Icon,InTrans_Unique,,,"
+IF(
+    [Previous Year Sales] > [YTD Sales], 
+    ""▲"", 
+    IF(
+        [Previous Year Sales] < [YTD Sales], 
+        ""▼"", 
+        """"
+    )
+)",,False,Valid,,False,,,,,2de59031-4fbf-4de6-b2e2-b3a3bc615f4b
+96,PSales with Icon,InTrans_Unique,,,"
+FORMAT([Previous Year Sales], ""Currency"") & "" "" & [PSales Icon]",,False,Valid,,False,,,,,d5c8418c-5e40-4a98-b8df-745ecd1dbe74
+97,Margin $ Icon,InTrans_Unique,,,"
+IF(
+    [YTD Margin $] > [Previous Year Margin $], 
+    ""▲"", 
+    IF(
+        [YTD Margin $] < [Previous Year Margin $], 
+        ""▼"", 
+        """"
+    )
+)",,False,Valid,,False,,,,,97af4205-8bef-4b7b-8681-325d6d1d85ee
+98,Margin $ with Icon,InTrans_Unique,,,"
+FORMAT([YTD Margin $], ""Currency"") & "" "" & [Margin $ Icon]",,False,Valid,,False,,,,,e5452f75-829f-406c-a52c-58a15ef06707
+99,COS vs pCOS Compairison,InTrans_Unique,,,"
+IF(
+    [YTD COS] > [Previous Year COS], 
+    1, 
+    IF(
+        [YTD COS] < [Previous Year COS], 
+        -1, 
+        0
+    )
+)",,False,Valid,,False,,,,"""0""",189637ad-a01b-4096-a6f0-9cc2a63e6a86
+100,PMargin $ vs Margin $ Compairison,InTrans_Unique,,,"
+IF(
+    [Previous Year Margin $] > [YTD Margin $], 
+    1, 
+    IF(
+        [Previous Year Margin $] < [YTD Margin $], 
+        -1, 
+        0
+    )
+)",,False,Valid,,False,,,,"""0""",5588cc1d-dd8b-45dd-b0c1-5c226e19a858
+101,PMargin $ Icon,InTrans_Unique,,,"
+IF(
+    [Previous Year Margin $] > [YTD Margin $], 
+    ""▲"", 
+    IF(
+        [Previous Year Margin $] < [YTD Margin $], 
+        ""▼"", 
+        """"
+    )
+)",,False,Valid,,False,,,,,be851664-4ccb-447e-b7bf-0ee941728288
+102,PMargin $ with Icon,InTrans_Unique,,,"
+FORMAT([Previous Year Margin $], ""Currency"") & "" "" & [PMargin $ Icon]",,False,Valid,,False,,,,,08296368-b0cb-4d80-bfa1-3cb0a3a1ffb9
+2568,Margin % vs PMargin % Comparison,InTrans_Unique,,,"
+IF(
+    [YTD Margin %] > [Previous Year Margin %], 
+    1, 
+    IF(
+        [YTD Margin %] < [Previous Year Margin %], 
+        -1, 
+        0
+    )
+)",,False,Valid,,False,,,,"""0""",ad1de9cd-2a22-45da-b16d-458b923df0e1
+2570,PMargin % vs Margin % Compairison,InTrans_Unique,,,"
+IF(
+    [Previous Year Margin %] > [YTD Margin %], 
+    1, 
+    IF(
+        [Previous Year Margin %] < [YTD Margin %], 
+        -1, 
+        0
+    )
+)",,False,Valid,,False,,,,"""0""",f6bac769-2f08-44fe-b26c-fbd19ac88fbf
+2572,Margin % Icon,InTrans_Unique,,,"
+IF(
+    [YTD Margin %] > [Previous Year Margin %], 
+    ""▲"", 
+    IF(
+        [YTD Margin %] < [Previous Year Margin %], 
+        ""▼"", 
+        """"
+    )
+)",,False,Valid,,False,,,,,8b272db7-f299-4b7c-af2a-fbfb625dccf5
+2574,PMargin % Icon,InTrans_Unique,,,"
+IF(
+    [Previous Year Margin %] > [YTD Margin %], 
+    ""▲"", 
+    IF(
+        [Previous Year Margin %] < [YTD Margin %], 
+        ""▼"", 
+        """"
+    )
+)",,False,Valid,,False,,,,,e8c65f02-3d38-4854-aecd-1c222b61ab36
+2576,Margin % with Icon,InTrans_Unique,,,"
+FORMAT([Margin %], ""0.00%"") & "" "" & [Margin % Icon]
+",,False,Valid,,False,,,,,b1bd1c32-8a41-4ce5-9feb-e15e727dbaf8
+2582,PMargin % with Icon,InTrans_Unique,,,"
+FORMAT([Previous Year Margin %], ""0.00%"") & "" "" & [PMargin % Icon]",,False,Valid,,False,,,,,6e5b0b2c-9f48-4868-b5ec-e9b3582cfac9
+2599,!,InTrans_Unique,,,"""1""",,False,Valid,,False,,,,,502e35df-57cb-4057-8df2-ef3ff2ca4c1c
+3575,Total Sales,InTrans_Unique,,,"[Sales]
+",,False,Valid,,False,,,,,65ca9473-87a0-4431-87fb-d0bc3f878f1c
+3578,Sales Percentage,InTrans_Unique,,,"
+DIVIDE(
+    [Sales],
+    CALCULATE([Sales], ALLSELECTED(InTrans_Unique)),
+    0
+)
+",,False,Valid,,False,,,,"""0.00%;-0.00%;0.00%""",df8e50e3-e58c-43d8-86d7-94a7067a9bff
+15829,2025 Sales Work Order,InTrans_Unique,,,"
+CALCULATE(
+    [Sales],
+    DATESYTD( 'dDate'[Date] ),
+    InTrans_Unique[Sales Type] = ""Work Order""
+)",,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",a0da18ce-5d66-4c15-875d-68d5874b90a1
+15832,2025 Sales Counter,InTrans_Unique,,,"
+CALCULATE(
+    [Sales],
+    DATESYTD( 'dDate'[Date] ),
+    InTrans_Unique[Sales Type] = ""Over the Counter""
+)",,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",75239cc2-6a51-417b-bf55-f77d347577b2
+15839,2025 COS Counter,InTrans_Unique,,,"
+CALCULATE(
+    [COS],
+    DATESYTD( 'dDate'[Date] ),
+    InTrans_Unique[Sales Type] = ""Over the Counter""
+)",,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",9d83f06f-ad7a-41d4-ae51-9d129309a047
+15844,2025 COS Work Order,InTrans_Unique,,,"
+CALCULATE(
+    [COS],
+    DATESYTD( 'dDate'[Date] ),
+    InTrans_Unique[Sales Type] = ""Work Order""
+)",,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",e74e5106-8d16-4969-82c0-685ea4f151b8
+15849,2025 Margin $ Counter,InTrans_Unique,,,[2025 Sales Counter] - [2025 COS Counter],,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",a5248dce-3798-4b2f-98c7-f54e4102c15b
+15854,2025 Margin % Counter,InTrans_Unique,,,"DIVIDE( [2025 Margin $ Counter], [2025 Sales Counter], 0 )",,False,Valid,,False,,,,"""0.00%;-0.00%;0.00%""",82ffc998-21ed-4db6-989b-4cc270938a2a
+15857,2025 Margin $ Work Order,InTrans_Unique,,,[2025 Sales Work Order] - [2025 COS Work Order],,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",04c9eac5-7ba3-4ca6-9480-dcbfd589aa26
+15862,2025 Margin % Work Order,InTrans_Unique,,,"DIVIDE( [2025 Margin $ Work Order], [2025 Sales Work Order], 0 )",,False,Valid,,False,,,,"""0.00%;-0.00%;0.00%""",1ddf19f2-72b5-4dfc-bd59-4498703b81c9
+15908,2025 Margin %,InTrans_Unique,,,"DIVIDE( [YTD Margin $], [YTD Sales], 0 )",,False,Valid,,False,,,,"""0.00%;-0.00%;0.00%""",8fca7ef6-b1d5-47c1-858a-b21de6af1ce6
+103,YTD Sales,Dim_Branch,,,"
+CALCULATE(
+    [Sales],
+    DATESYTD(ALL('dDate'[Date]))
+)
+
+",,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",1dfd9b58-ad3d-4027-82c8-e615f95b0216
+104,YTD COS,Dim_Branch,,,"
+CALCULATE(
+    [COS],
+    DATESYTD('dDate'[Date])
+)
+",,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",0bab0b4b-c4a5-4bfa-8b2d-b7bd7eaf7336
+105,YTD Margin $,Dim_Branch,,,"
+[YTD Sales] - [YTD COS]
+",,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",f1196dfb-cfdc-4232-b60a-992bf56c821c
+106,YTD Margin %,Dim_Branch,,,"
+DIVIDE([YTD Margin $], [YTD Sales], 0)",,False,Valid,,False,,,,"""0.00%;-0.00%;0.00%""",fe4ae7c1-f73c-488b-a41f-fd0adfe01a56
+107,Previous Year Sales,Dim_Branch,,,"
+CALCULATE(
+    TOTALYTD(
+        [Sales],
+        'dDate'[Date]
+    ),
+    DATEADD('dDate'[Date], -1, YEAR)
+)
+
+",,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",74966e7c-9c93-4e5a-816c-6d18240f3e95
+108,Previous Year COS,Dim_Branch,,,"
+CALCULATE(
+    TOTALYTD(
+        [COS],
+        'dDate'[Date]
+    ),
+    DATEADD('dDate'[Date], -1, YEAR)
+)
+
+",,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",d8bce8c5-bc1c-40de-8f07-d81145cf31d4
+109,Previous Year Margin $,Dim_Branch,,,"
+[Previous Year Sales] - [Previous Year COS]",,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",081d7ef5-3a65-4422-a46d-72a5fb11f3e6
+110,Previous Year Margin %,Dim_Branch,,,"
+DIVIDE([Previous Year Margin $], [Previous Year Sales], 0)",,False,Valid,,False,,,,"""0.00%;-0.00%;0.00%""",9f6dd9cf-4aab-4f39-8f8c-17128d87c142
+111,YTD Sales Icon,Dim_Branch,,,"
+IF(
+    [YTD Sales] > [Previous Year Sales], 
+    ""▲"", 
+    IF(
+        [YTD Sales] < [Previous Year Sales], 
+        ""▼"", 
+        """"
+    )
+)
+",,False,Valid,,False,,,,,174782bb-4588-4a53-bb77-a4ced85ba9b4
+112,YTD Sales with Icon,Dim_Branch,,,"
+FORMAT([YTD Sales], ""Currency"") & "" "" & [YTD Sales Icon]
+
+",,False,Valid,,False,,,,,912e11a4-a5a4-4172-a692-455bb77d47de
+113,PYTD Sales Icon,Dim_Branch,,,"
+IF(
+    [Previous Year Sales] > [YTD Sales], 
+    ""▲"", 
+    IF(
+        [Previous Year Sales] < [YTD Sales], 
+        ""▼"", 
+        """"
+    )
+)",,False,Valid,,False,,,,,3fdd43cf-6bf7-4381-a827-117607361aeb
+114,PYTD Sales with Icon,Dim_Branch,,,"
+FORMAT([Previous Year Sales], ""Currency"") & "" "" & [PYTD Sales Icon]",,False,Valid,,False,,,,,b6f66b07-a223-49a6-8d3e-a23a9686e7b3
+2586,YTD Sales Column,Dim_Branch,,,"
+CALCULATE(
+    [Sales],
+    FILTER(
+        ALL('dDate'),
+        'dDate'[Date] <= MAX('dDate'[Date])
+    )
+)
+
+",,False,Valid,,False,,,,,713a8de5-c36f-401b-8714-8c03c7252c8b
+2594,PYTD Sales Line,Dim_Branch,,,"
+CALCULATE(
+    [Sales],
+    DATESYTD(DATEADD('dDate'[Date], -1, YEAR)),
+    SAMEPERIODLASTYEAR('dDate'[Date])
+)
+",,False,Valid,,False,,,,,a96f9d28-aac2-4347-938b-6c1914f39e8a
+6226,COS Sort Value,Dim_Branch,,,[YTD COS],,False,Valid,,False,,,,,885efa40-384c-44ae-9f83-86de210880c7
+6229,Sales Sort Value,Dim_Branch,,,[YTD Sales],,False,Valid,,False,,,,,9e9b32c7-af71-4196-98d0-f9c739e68f1f
+6232,Margin % Sort Value,Dim_Branch,,,[Margin %],,False,Valid,,False,,,,,23104666-3a45-4f93-b3ef-db74c257cf08
+6304,COS Sort Measure,Dim_Branch,,,"
+IF(
+    [YTD COS] > [Previous Year COS], 1, 
+    IF(
+        [YTD COS] < [Previous Year COS], -1, 
+        0
+    )
+)",,False,Valid,,False,,,,"""0""",754cd788-3c45-4db0-80b8-18387e2d326a
+6306,COS Rank,Dim_Branch,,,"
+RANKX(
+    ALLSELECTED('InTrans_Unique'),
+    [YTD COS],
+    ,
+    DESC,
+    DENSE
+)",,False,Valid,,False,,,,"""0""",c895b804-7f09-425f-aa1d-bbf5589398c1
+6311,Margin $ Sort Value,Dim_Branch,,,[YTD Margin $],,False,Valid,,False,,,,,5e6072c2-9007-4eef-baf6-b45123d1726c
+12407,Previous Year to Date Sales,Dim_Branch,,,"
+CALCULATE(
+    [Sales],
+    DATESBETWEEN(
+        'Intrans_Unique'[Trans_Datetime],
+        DATEADD(STARTOFYEAR('Intrans_Unique'[Trans_Datetime]), -1, YEAR),
+        DATEADD(LASTDATE('Intrans_Unique'[Trans_Datetime]), -1, YEAR)
+    )
+)",,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",9cf4739c-66ff-44cb-ae3f-5f630f6b49d0
+15756,2024 COS,Dim_Branch,,,"
+CALCULATE(
+    [COS],
+    DATESYTD( DATEADD( 'dDate'[Date], -1, YEAR))
+)",,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",7ed32e10-c3b7-48b5-86e8-cdbe12ab936f
+15759,2024 Sales,Dim_Branch,,,"
+CALCULATE(
+    [Sales],
+    DATESYTD( DATEADD( 'dDate'[Date], -1, YEAR))
+)",,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",5fa4f93b-a5fa-4f42-8236-a5eab68b5b50
+15766,2024 Margin $,Dim_Branch,,,[2024 Sales] - [2024 COS],,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",471f8b6d-2f50-495b-86a7-12afbeb50ced
+15770,2024 Margin %,Dim_Branch,,,"
+DIVIDE([2024 Margin $], [2024 Sales], 0)",,False,Valid,,False,,,,"""0.00%;-0.00%;0.00%""",e1b87663-5766-48e0-a76a-4cd3cd4bc91c
+15865,2024 Sales Counter,Dim_Branch,,,"
+CALCULATE(
+    [Sales],
+    DATESYTD( DATEADD( 'dDate'[Date], -1, YEAR)),
+    InTrans_Unique[Sales Type] = ""Over the Counter""
+)",,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",f772cebd-c21d-48c2-a8d4-5ecb31b04b17
+15870,2024 COS Counter,Dim_Branch,,,"
+CALCULATE(
+    [COS],
+    DATESYTD( DATEADD( 'dDate'[Date], -1, YEAR)),
+    InTrans_Unique[Sales Type] = ""Over the Counter""
+)",,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",146857f4-504d-4868-be6c-20a6c55723f7
+15875,2024 Margin $ Counter,Dim_Branch,,,[2024 Sales Counter] - [2024 COS Counter],,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",dc059263-7c56-41c1-b276-95faf6c64cf8
+15883,2024 Margin % Counter,Dim_Branch,,,"DIVIDE( [2024 Margin $ Counter], [2024 Sales Counter], 0 )",,False,Valid,,False,,,,"""0.00%;-0.00%;0.00%""",55d15651-5fe0-4fde-b17f-2a66d19ca37a
+15886,2024 Sales Work Order,Dim_Branch,,,"
+CALCULATE(
+    [Sales],
+    DATESYTD( DATEADD( 'dDate'[Date], -1, YEAR)),
+    InTrans_Unique[Sales Type] = ""Work Order""
+)",,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",d4cf298a-7294-465c-a666-79b47289845c
+15891,2024 COS Work Order,Dim_Branch,,,"
+CALCULATE(
+    [COS],
+    DATESYTD( DATEADD( 'dDate'[Date], -1, YEAR)),
+    InTrans_Unique[Sales Type] = ""Work Order""
+)",,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",debea803-b9fc-445e-9de8-c3203335f86a
+15896,2024 Margin $ Work Order,Dim_Branch,,,[2024 Sales Work Order] - [2024 COS Work Order],,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",5d566c75-f930-4dc5-97bd-e812dffc6272
+15901,2024 Margin % Work Order,Dim_Branch,,,"DIVIDE( [2024 Margin $ Work Order], [2024 Sales Work Order], 0 )",,False,Valid,,False,,,,"""0.00%;-0.00%;0.00%""",e1c00eaf-70ac-4f6a-a20f-33739c20d88a
+21742,Sales Manuel,Invoice,,,SUM( Invoice[parts_sale_val] ),,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",7c3443fb-cf32-49fd-b286-166eb46a87ad
+21745,COS Manuel,Invoice,,,SUM( Invoice[parts_cost_val] ),,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",8b31bba0-3e2c-4a00-a327-f29a3d031f2b
+21750,Margin $ Manuel,Invoice,,,[Sales Manuel] - [COS Manuel],,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",59b9187e-031f-4707-999a-91f59fe27059
+21755,Margin % Manuel,Invoice,,,"DIVIDE( [Margin $ Manuel], [Sales Manuel], 0 )",,False,Valid,,False,,,,"""0.00%;-0.00%;0.00%""",7e664729-451f-4299-bbdf-310a596d547c
+22667,YTD Sales Manuel,Invoice,,,"
+CALCULATE(
+    [Sales Manuel],
+    DATESYTD(ALL('Invoice'[invo_datetime].[Date]))
+)",,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",41b287d2-5f43-41bb-a2e6-4f32fbd22ef9
+22671,YTD COS Manuel,Invoice,,,"
+CALCULATE(
+    [COS Manuel],
+    DATESYTD(ALL('Invoice'[invo_datetime].[Date]))
+)",,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",5e5ab8ad-8c6d-418b-8811-8107af313d0d
+22678,YTD Margin $ Manuel,Invoice,,,[YTD Sales Manuel] - [YTD COS Manuel],,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",40b2afa5-fb1f-4412-a7b4-79e8c2349011
+22683,YTD Margin % Manuel,Invoice,,,"DIVIDE( [YTD Margin $ Manuel], [YTD Sales Manuel], 0 )",,False,Valid,,False,,,,"""0.00%;-0.00%;0.00%""",20e2eaaf-0794-4500-a6ee-6e425ebf0f9c
+22686,2025 Sales Manuel Counter,Invoice,,,"
+CALCULATE(
+    [Sales Manuel],
+    DATESYTD( 'Invoice'[invo_datetime].[Date] ),
+    Invoice[Sales Type] = ""Over the Counter""
+)",,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",1460c83c-06f8-4a38-97e9-61a5badd1c1d
+22691,2025 Sales Manuel Work Order,Invoice,,,"
+CALCULATE(
+    [Sales Manuel],
+    DATESYTD( 'Invoice'[invo_datetime].[Date] ),
+    Invoice[Sales Type] = ""Work Order""
+)",,False,Valid,,False,,,,,ff2c3627-5ded-4416-9e18-b6f9c28b995b
+22696,2024 Sales Manuel Counter,Invoice,,,"
+CALCULATE(
+    [Sales Manuel],
+    DATESYTD( DATEADD( 'Invoice'[invo_datetime].[Date], -1, YEAR)),
+    Invoice[Sales Type] = ""Over the Counter""
+)",,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",a82dee74-7cd6-4983-b112-5c4917b9dae4
+22699,2024 Sales Manuel,Invoice,,,"
+CALCULATE(
+    [Sales Manuel],
+    DATESYTD( DATEADD( 'Invoice'[invo_datetime].[Date], -1, YEAR))
+)",,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",a6012c97-e535-47e4-9f47-1af27f55dd79
+22702,2024 COS Manuel,Invoice,,,"
+CALCULATE(
+    [COS Manuel],
+    DATESYTD( DATEADD( 'Invoice'[invo_datetime].[Date], -1, YEAR))
+)",,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",b31adec4-e3c5-4f79-bde3-985465e2fdac
+22709,2024 Margin $ Manuel,Invoice,,,[2024 Sales Manuel] - [2024 COS Manuel],,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",ce8ad30d-36f4-433b-8d58-8f1f7b6de291
+22714,2024 Margin % Manuel,Invoice,,,"DIVIDE( [2024 Margin $ Manuel], [2024 Sales Manuel], 0 )",,False,Valid,,False,,,,"""0.00%;-0.00%;0.00%""",dd18cc37-bedb-464a-a9c8-177e7d4d7ff6
+22725,2025 COS Manuel Counter,Invoice,,,"
+CALCULATE(
+    [COS Manuel],
+    DATESYTD( 'Invoice'[invo_datetime].[Date] ),
+    Invoice[Sales Type] = ""Over the Counter""
+)",,False,Valid,,False,,,,,517c762e-a338-4d50-9128-970ae178b52e
+22728,2024 COS Manuel Counter,Invoice,,,"
+CALCULATE(
+    [COS Manuel],
+    DATESYTD( DATEADD( 'Invoice'[invo_datetime].[Date], -1, YEAR)),
+    Invoice[Sales Type] = ""Over the Counter""
+)",,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",c225edc3-6aa2-48ac-bf45-fd9bee20b9fc
+22733,2024 Sales Manuel Work Order,Invoice,,,"
+CALCULATE(
+    [Sales Manuel],
+    DATESYTD( DATEADD( 'Invoice'[invo_datetime].[Date], -1, YEAR)),
+    Invoice[Sales Type] = ""Work Order""
+)",,False,Valid,,False,,,,,3120c536-7e91-4d4a-8825-c81ab9391099
+22736,2024 COS Manuel Work Order,Invoice,,,"
+CALCULATE(
+    [COS Manuel],
+    DATESYTD( DATEADD( 'Invoice'[invo_datetime].[Date], -1, YEAR)),
+    Invoice[Sales Type] = ""Work Order""
+)",,False,Valid,,False,,,,,584b1bc2-8648-4f4a-b405-d52ceb13608c
