@@ -1,0 +1,6 @@
+[[Fact_WorkOrderComprehensive]]
+[[Fact_LaborWIP]]
+[[Fact_LaborInvoiced -V2 - Current]]
+[[Fact_LaborJobs - V2 - Current]]
+[[Fact_LaborPunches - V2 - Current]]
+[[Fact_LaborJobSummary]]
