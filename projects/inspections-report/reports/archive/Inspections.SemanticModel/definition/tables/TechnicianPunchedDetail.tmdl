@@ -1,0 +1,170 @@
+table TechnicianPunchedDetail
+	lineageTag: d67579b4-4829-4a46-9aae-7e2371d018c0
+
+	column Branch
+		dataType: string
+		lineageTag: 48a8dba8-bfef-4819-b35c-462046a58cbe
+		summarizeBy: none
+		sourceColumn: Branch
+
+		annotation SummarizationSetBy = Automatic
+
+	column RepairOrderNumber
+		dataType: int64
+		formatString: 0
+		lineageTag: cefebf5a-a810-4642-a62c-18b6ab3dcebf
+		summarizeBy: none
+		sourceColumn: RepairOrderNumber
+
+		annotation SummarizationSetBy = Automatic
+
+	column TechnicianCode
+		dataType: string
+		lineageTag: c541daca-c8b4-4579-b638-db37876ce0ae
+		summarizeBy: none
+		sourceColumn: TechnicianCode
+
+		annotation SummarizationSetBy = Automatic
+
+	column Model
+		dataType: string
+		lineageTag: dca9d56a-9a80-4e1b-946d-b174ee62b20d
+		summarizeBy: none
+		sourceColumn: Model
+
+		annotation SummarizationSetBy = Automatic
+
+	column CustomerName
+		dataType: string
+		lineageTag: 3d252ae6-ffa6-41cb-93e9-4125542eb1a2
+		summarizeBy: none
+		sourceColumn: CustomerName
+
+		annotation SummarizationSetBy = Automatic
+
+	column WorkDate
+		dataType: dateTime
+		formatString: Long Date
+		lineageTag: 8c376201-c405-4ea0-a168-81eb8cc257e5
+		summarizeBy: none
+		sourceColumn: WorkDate
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column HoursWorked
+		dataType: double
+		formatString: 0.0
+		lineageTag: 88fa8a04-d4a1-4633-8237-d8697e3f0031
+		summarizeBy: sum
+		sourceColumn: HoursWorked
+
+		annotation SummarizationSetBy = Automatic
+
+	column HoursSold
+		dataType: double
+		lineageTag: d03d4b64-5984-40bd-8ac8-2a1d68066219
+		summarizeBy: sum
+		sourceColumn: HoursSold
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column HoursInternal
+		dataType: double
+		lineageTag: a27d833f-10a8-486a-83ea-0ed7b644f9ae
+		summarizeBy: sum
+		sourceColumn: HoursInternal
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column HoursWarranty
+		dataType: double
+		lineageTag: 19090cd3-6b12-41d4-b6e9-6d813c0c6e71
+		summarizeBy: sum
+		sourceColumn: HoursWarranty
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column HoursRetail
+		dataType: double
+		lineageTag: 65d0ae8c-86d1-47e8-bea7-1d0bfd6976b7
+		summarizeBy: sum
+		sourceColumn: HoursRetail
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column HoursSundry
+		dataType: double
+		lineageTag: 52485e47-ed79-468a-ac70-bdfb45825f15
+		summarizeBy: sum
+		sourceColumn: HoursSundry
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column HoursOther
+		dataType: double
+		lineageTag: c982eb60-42f7-45a4-a2a2-e7a826b7781b
+		summarizeBy: sum
+		sourceColumn: HoursOther
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column JobCode
+		dataType: string
+		lineageTag: 6922e566-a17c-4320-96a9-6207ea64d7cc
+		summarizeBy: none
+		sourceColumn: JobCode
+
+		annotation SummarizationSetBy = Automatic
+
+	column JobType
+		dataType: string
+		lineageTag: c44d1259-6c71-4901-bb6d-0d857edccda9
+		summarizeBy: none
+		sourceColumn: JobType
+
+		annotation SummarizationSetBy = Automatic
+
+	column ROBranch
+		dataType: string
+		lineageTag: 2d4cc06c-8236-47fd-aff8-6304d60ab767
+		summarizeBy: none
+		sourceColumn: ROBranch
+
+		annotation SummarizationSetBy = Automatic
+
+	column CreationDate
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: e8950fa0-7225-46e5-9a7d-96df44d38c48
+		summarizeBy: none
+		sourceColumn: CreationDate
+
+		annotation SummarizationSetBy = Automatic
+
+	partition TechnicianPunchedDetail = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-wczpfb6a52fude7azc6zsgeuty.datawarehouse.fabric.microsoft.com", "LH_Service_Reports_Data"),
+				    dbo_TechnicianPunchedDetail = Source{[Schema="dbo",Item="TechnicianPunchedDetail"]}[Data]
+				in
+				    dbo_TechnicianPunchedDetail
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

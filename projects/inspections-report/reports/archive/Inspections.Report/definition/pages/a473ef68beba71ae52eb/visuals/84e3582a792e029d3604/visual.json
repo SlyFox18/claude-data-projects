@@ -1,0 +1,213 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.1.0/schema.json",
+  "name": "84e3582a792e029d3604",
+  "position": {
+    "x": 0,
+    "y": 133,
+    "z": 0,
+    "height": 706.12594458438286,
+    "width": 1483,
+    "tabOrder": 4000
+  },
+  "visual": {
+    "visualType": "bac49510ab1d3fa4399887df4f629646fbf",
+    "query": {
+      "queryState": {
+        "category": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Dim_Branch"
+                    }
+                  },
+                  "Property": "Branch"
+                }
+              },
+              "queryRef": "Dim_Branch.Branch",
+              "nativeQueryRef": "Branch",
+              "active": true
+            }
+          ]
+        },
+        "overlapValues": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "MeasuresTable"
+                    }
+                  },
+                  "Property": "Parts $ Total"
+                }
+              },
+              "queryRef": "MeasuresTable.Parts $ Total",
+              "nativeQueryRef": "Parts $ Total"
+            }
+          ]
+        },
+        "measure": {
+          "projections": [
+            {
+              "field": {
+                "Aggregation": {
+                  "Expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "Job_Code_Times"
+                        }
+                      },
+                      "Property": "PartsGoal$$"
+                    }
+                  },
+                  "Function": 4
+                }
+              },
+              "queryRef": "Sum(Job_Code_Times.PartsGoal$$)",
+              "nativeQueryRef": "Parts Goal $$",
+              "displayName": "Parts Goal $$"
+            },
+            {
+              "field": {
+                "NativeVisualCalculation": {
+                  "Language": "dax",
+                  "Expression": "BLANK()",
+                  "Name": "Percent of grand total"
+                }
+              },
+              "queryRef": "select",
+              "nativeQueryRef": "Percent of grand total",
+              "hidden": true
+            }
+          ]
+        },
+        "LabelValues": {
+          "projections": [
+            {
+              "field": {
+                "Aggregation": {
+                  "Expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "Job_Code_Times"
+                        }
+                      },
+                      "Property": "PartsGoal$$"
+                    }
+                  },
+                  "Function": 4
+                }
+              },
+              "queryRef": "Sum(Job_Code_Times.PartsGoal$$)",
+              "nativeQueryRef": "Parts Goal $$",
+              "displayName": "Parts Goal $$"
+            }
+          ]
+        }
+      },
+      "sortDefinition": {
+        "sort": [
+          {
+            "field": {
+              "Aggregation": {
+                "Expression": {
+                  "Column": {
+                    "Expression": {
+                      "SourceRef": {
+                        "Entity": "Job_Code_Times"
+                      }
+                    },
+                    "Property": "PartsGoal$$"
+                  }
+                },
+                "Function": 4
+              }
+            },
+            "direction": "Descending"
+          }
+        ],
+        "isDefaultSort": true
+      }
+    },
+    "objects": {
+      "generalView": [
+        {
+          "properties": {
+            "overlapColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#387FE3'"
+                    }
+                  }
+                }
+              }
+            },
+            "barsColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "ThemeDataColor": {
+                      "ColorId": 0,
+                      "Percent": -0.2
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ],
+      "fontParams": [
+        {
+          "properties": {
+            "fontSize": {
+              "expr": {
+                "Literal": {
+                  "Value": "12D"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Parts $ vs. Goal'"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "divider": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "drillFilterOtherVisuals": true
+  },
+  "parentGroupName": "1ba116b2985cfa21fe6c"
+}

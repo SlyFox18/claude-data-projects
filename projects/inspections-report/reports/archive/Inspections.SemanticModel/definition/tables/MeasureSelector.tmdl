@@ -1,0 +1,46 @@
+table MeasureSelector
+	lineageTag: e6cfd91b-e4cf-4ab5-b6fb-f767fd3d2e17
+
+	column MeasureName
+		lineageTag: a14e4ae4-7509-40b8-b6ba-bae3bd263e33
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [MeasureName]
+
+		annotation SummarizationSetBy = Automatic
+
+	column MeasureIndex
+		formatString: 0
+		lineageTag: d0388093-b5b3-44cc-b034-52999d13b51a
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [MeasureIndex]
+
+		annotation SummarizationSetBy = Automatic
+
+	column SortOrder
+		formatString: 0
+		lineageTag: 35830389-79d6-4ed8-9961-7c60a6438da2
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [SortOrder]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition MeasureSelector = calculated
+		mode: import
+		source =
+				
+				DATATABLE(
+				    "MeasureName", STRING,
+				    "MeasureIndex", INTEGER,
+				    "SortOrder", INTEGER,
+				    {
+				        {"Total Inspections", 0, 3},
+				        {"Parts $ Total", 1, 2},
+				        {"Labor $ Total", 2, 1}
+				    }
+				)
+
+	annotation PBI_Id = 5566aba1e5fd48f187d324d1fef2a06f
+

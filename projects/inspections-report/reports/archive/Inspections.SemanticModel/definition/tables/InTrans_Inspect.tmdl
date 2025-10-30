@@ -1,0 +1,75 @@
+table InTrans_Inspect
+	lineageTag: d4e5f66e-c5ab-42b0-a2b4-902b9994259b
+
+	column BRANCH
+		dataType: string
+		lineageTag: 8fa6f24a-1a15-49fc-82bd-3b26f1ce617b
+		summarizeBy: none
+		sourceColumn: BRANCH
+
+		annotation SummarizationSetBy = Automatic
+
+	column FRANCHISE
+		dataType: string
+		lineageTag: 9344e7fa-f1e3-444d-853c-113444103fc4
+		summarizeBy: none
+		sourceColumn: FRANCHISE
+
+		annotation SummarizationSetBy = Automatic
+
+	column PART_NO
+		dataType: string
+		lineageTag: bf2ef3cd-8498-467b-bb2c-b4cc797b4b61
+		summarizeBy: none
+		sourceColumn: PART_NO
+
+		annotation SummarizationSetBy = Automatic
+
+	column Trans_Datetime
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: 82c1f698-51df-46c7-98d4-2adf000246a2
+		summarizeBy: none
+		sourceColumn: Trans_Datetime
+
+		annotation SummarizationSetBy = Automatic
+
+	column REF_NO
+		dataType: string
+		lineageTag: d081ece4-f2c0-45b1-868b-c22109954b00
+		summarizeBy: none
+		sourceColumn: REF_NO
+
+		annotation SummarizationSetBy = Automatic
+
+	column SALE_VAL
+		dataType: double
+		lineageTag: b082b63e-379f-4509-a9ee-5a50cdbb068d
+		summarizeBy: sum
+		sourceColumn: SALE_VAL
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column DESCRIPTION
+		dataType: string
+		lineageTag: a32778da-dc53-40b9-b8af-ce95e59b5360
+		summarizeBy: none
+		sourceColumn: DESCRIPTION
+
+		annotation SummarizationSetBy = Automatic
+
+	partition InTrans_Inspect = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-wczpfb6a52fude7azc6zsgeuty.datawarehouse.fabric.microsoft.com", "LH_Service_Reports_Data"),
+				    dbo_InTrans_Inspect = Source{[Schema="dbo",Item="InTrans_Inspect"]}[Data]
+				in
+				    dbo_InTrans_Inspect
+
+	annotation PBI_ResultType = Table
+
+	annotation PBI_NavigationStepName = Navigation
+

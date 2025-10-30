@@ -1,0 +1,277 @@
+table RepairOrderDetail
+	lineageTag: 77dfe639-8e8a-4c71-a667-432326752e56
+
+	measure JobCodeCount =
+			
+			COUNT ( 'RepairOrderDetail'[JobCode] )
+		formatString: 0
+		lineageTag: 68a65c6d-0462-4e65-ae43-e6eb4d1056f0
+
+	measure CreationDateAge =
+			
+			SWITCH (
+			    TRUE (),
+			    MAX ( 'RepairOrderDetail'[CreationDate] )
+			        < TODAY () - 60, 2,
+			    -- Over 2 months old
+			    MAX ( 'RepairOrderDetail'[CreationDate] )
+			        < TODAY () - 30, 1,
+			    -- Over 1 month old
+			    0 -- Within the last month
+			)
+		formatString: 0
+		lineageTag: 63f4c044-caa3-4888-a0eb-620defd0f5ba
+
+	measure LastPunchDateAge =
+			
+			SWITCH (
+			    TRUE (),
+			    MAX ( 'RepairOrderDetail'[LastLaborPunch] )
+			        < TODAY () - 60, 2,
+			    -- Over 2 months old
+			    MAX ( 'RepairOrderDetail'[LastLaborPunch] )
+			        < TODAY () - 30, 1,
+			    -- Over 1 month old
+			    0 -- Within the last month
+			)
+		formatString: 0
+		lineageTag: d1345a41-d4b8-40a4-8205-14e7db72e358
+
+	column DaysSinceLastLabor
+		dataType: int64
+		formatString: 0
+		lineageTag: 34b1ad55-2dd6-4b15-b5e7-d75469237b55
+		summarizeBy: sum
+		sourceColumn: DaysSinceLastLabor
+
+		annotation SummarizationSetBy = Automatic
+
+	column StatusDisplay
+		dataType: string
+		lineageTag: 42c3771c-2086-443f-adee-6acf197c0062
+		summarizeBy: none
+		sourceColumn: StatusDisplay
+
+		annotation SummarizationSetBy = Automatic
+
+	column Branch
+		dataType: string
+		lineageTag: 3aeb1665-8883-4d0d-8f2b-32dc0dafbee5
+		summarizeBy: none
+		sourceColumn: Branch
+
+		annotation SummarizationSetBy = Automatic
+
+	column RONumber
+		dataType: int64
+		formatString: 0
+		lineageTag: 39d3bdff-2024-4192-b0a7-6dfc59e5d56d
+		summarizeBy: none
+		sourceColumn: RONumber
+
+		annotation SummarizationSetBy = Automatic
+
+	column JobCode
+		dataType: string
+		lineageTag: 5ffbf0a5-c6b0-44d3-9ce6-9ed11e1bcf90
+		summarizeBy: none
+		sourceColumn: JobCode
+
+		annotation SummarizationSetBy = Automatic
+
+	column JobType
+		dataType: string
+		lineageTag: 0d760e80-0c2d-419b-b7b8-a13b8138aae8
+		summarizeBy: none
+		sourceColumn: JobType
+
+		annotation SummarizationSetBy = Automatic
+
+	column InvoiceNumber
+		dataType: string
+		lineageTag: 72066223-0962-4b85-a135-be19b471c759
+		summarizeBy: none
+		sourceColumn: InvoiceNumber
+
+		annotation SummarizationSetBy = Automatic
+
+	column ROProgressStatus
+		dataType: string
+		lineageTag: b5b80f8e-33f5-458e-9ba7-8609f549a6a5
+		summarizeBy: none
+		sourceColumn: ROProgressStatus
+
+		annotation SummarizationSetBy = Automatic
+
+	column CreationDate
+		dataType: dateTime
+		formatString: Short Date
+		lineageTag: 2fa88100-1d35-4896-ba70-bcdcc7f0516a
+		summarizeBy: none
+		sourceColumn: CreationDate
+
+		annotation SummarizationSetBy = Automatic
+
+	column JobStartDate
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: 16c6980f-408c-4afe-a2b5-d99a04722631
+		summarizeBy: none
+		sourceColumn: JobStartDate
+
+		annotation SummarizationSetBy = Automatic
+
+	column DaysSinceROFinishDate
+		dataType: int64
+		formatString: 0
+		lineageTag: 0859da49-3500-424b-9c3d-6a5e465b095c
+		summarizeBy: sum
+		sourceColumn: DaysSinceROFinishDate
+
+		annotation SummarizationSetBy = Automatic
+
+	column DaysSinceCreationDate
+		dataType: int64
+		formatString: 0
+		lineageTag: 0ea23a50-d52d-4026-960c-5307e586b19e
+		summarizeBy: sum
+		sourceColumn: DaysSinceCreationDate
+
+		annotation SummarizationSetBy = Automatic
+
+	column LaborSale
+		dataType: double
+		lineageTag: b0a20f5f-5dd6-46dd-9439-8102277e6145
+		summarizeBy: sum
+		sourceColumn: LaborSale
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column SubletSale
+		dataType: double
+		lineageTag: ebfb9770-42b3-452d-b6a6-11300d7bea86
+		summarizeBy: sum
+		sourceColumn: SubletSale
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column PartSale
+		dataType: double
+		lineageTag: 38d3e676-64d3-47b4-a353-258aaf575666
+		summarizeBy: sum
+		sourceColumn: PartSale
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column OtherSale
+		dataType: double
+		lineageTag: be44144e-9908-4ad8-b49f-e337245c03c0
+		summarizeBy: sum
+		sourceColumn: OtherSale
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column TotalSale
+		dataType: double
+		lineageTag: 7ac44b23-414f-4267-941a-9f0e672e0b90
+		summarizeBy: sum
+		sourceColumn: TotalSale
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column LastLaborPunch
+		dataType: dateTime
+		formatString: Short Date
+		lineageTag: 5bc77683-0bd5-4655-9e56-7f27a6ae6cf5
+		summarizeBy: none
+		sourceColumn: LastLaborPunch
+
+		annotation SummarizationSetBy = Automatic
+
+	column QuotationIndicator
+		dataType: string
+		lineageTag: d201af3a-f60b-444e-b8bf-c5e5583d56f8
+		summarizeBy: none
+		sourceColumn: QuotationIndicator
+
+		annotation SummarizationSetBy = Automatic
+
+	column FirstLaborPunch
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: 2ee7a983-2392-4476-a4d0-b01c5933743b
+		summarizeBy: none
+		sourceColumn: FirstLaborPunch
+
+		annotation SummarizationSetBy = Automatic
+
+	column HasInspectionJobCode =
+			
+			IF(
+			    CALCULATE(
+			        COUNTROWS(
+			            SUMMARIZE(
+			                FILTER(
+			                    'RepairOrderDetail',
+			                    'RepairOrderDetail'[JobCode] IN VALUES(JobCodes[job_code])
+			                ),
+			                'RepairOrderDetail'[RONumber],
+			                'RepairOrderDetail'[JobCode]
+			            )
+			        )
+			    ) > 0,
+			    1,
+			    0
+			)
+		formatString: 0
+		lineageTag: 9f98fd10-e9aa-4560-b801-0ca6f8c98080
+		summarizeBy: count
+
+		annotation SummarizationSetBy = Automatic
+
+	column HoursWorked = ```
+			
+			VAR Hours = 
+			    SUMX(
+			        FILTER(
+			            TechnicianPunchedDetail, 
+			            TechnicianPunchedDetail[RepairOrderNumber] = RepairOrderDetail[RONumber]
+			        ), 
+			        TechnicianPunchedDetail[HoursWorked]
+			    )
+			RETURN 
+			    IF(
+			        Hours = 0, 
+			        0, 
+			        Hours
+			    )
+			```
+		formatString: 0.0
+		lineageTag: 5d58bfee-ebce-41ba-b78f-125d0ddf6aa5
+		summarizeBy: sum
+
+		annotation SummarizationSetBy = Automatic
+
+	partition RepairOrderDetail = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-wczpfb6a52fude7azc6zsgeuty.datawarehouse.fabric.microsoft.com", "LH_Service_Reports_Data"),
+				    dbo_RepairOrderDetail = Source{[Schema="dbo",Item="RepairOrderDetail"]}[Data]
+				in
+				    dbo_RepairOrderDetail
+
+	annotation PBI_ResultType = Table
+
+	annotation PBI_NavigationStepName = Navigation
+

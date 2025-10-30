@@ -1,0 +1,27 @@
+table ValidInvoiceNumbers
+	lineageTag: a8a72b3b-cd6d-4d0f-8ff8-66bfd2a6166f
+
+	column 'Invoice No'
+		lineageTag: 25d521be-5341-4d53-8c35-e8792af1d1af
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Invoice No]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition ValidInvoiceNumbers = calculated
+		mode: import
+		source =
+				
+				DISTINCT(
+				    SELECTCOLUMNS(
+				        FILTER(
+				            'Job_Code_Times',
+				            'Job_Code_Times'[job_code] IN VALUES(JobCodes[job_code])
+				        ),
+				        "Invoice No", 'Job_Code_Times'[INVOICE_NO]
+				    )
+				)
+
+	annotation PBI_Id = 51b5ddf7dc1643b99044723d517c1b94
+

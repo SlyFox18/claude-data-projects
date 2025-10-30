@@ -1,0 +1,70 @@
+relationship AutoDetected_70b88576-34c0-4536-8347-c157f997f9bf
+	fromColumn: InTrans_Inspect.BRANCH
+	toColumn: Dim_Branch.BranchID
+
+relationship 0288b409-1f35-41d3-7ba1-b9e1d77dd41a
+	crossFilteringBehavior: bothDirections
+	toCardinality: many
+	fromColumn: InTrans_Inspect.REF_NO
+	toColumn: Job_Code_Times.INVOICE_NO
+
+relationship 158e001d-ce07-ff32-ef63-8fe622c35313
+	fromColumn: Job_Code_Times.Location
+	toColumn: Dim_Branch.BranchID
+
+relationship e2eaf1ae-00e6-9f5d-b7d4-a2d42a298c6e
+	fromColumn: InTrans_Inspect.REF_NO
+	toColumn: BridgeTable.'Invoice No'
+
+relationship 4b97336e-8b88-3a06-2463-fb44881ea637
+	fromColumn: Job_Code_Times.INVOICE_NO
+	toColumn: BridgeTable.'Invoice No'
+
+relationship 445ebd78-1628-a5fb-3128-37491c756d32
+	fromColumn: InTrans_Inspect.REF_NO
+	toColumn: ValidInvoiceNumbers.'Invoice No'
+
+relationship 4b9c78c0-03ae-0ea8-f55f-066ec3b634f5
+	fromColumn: Job_Code_Times.INVOICE_NO
+	toColumn: ValidInvoiceNumbers.'Invoice No'
+
+relationship 9dd3691e-84a8-4bb6-c0cb-77c149a2e90a
+	fromColumn: Job_Code_Times.wo_number
+	toColumn: ValidWONumbers.wo_number
+
+relationship cbfd2727-14a8-25f6-4b17-23a11a16cf72
+	fromColumn: Job_Code_Times.WO_Created
+	toColumn: dDate.Date
+
+relationship AutoDetected_6c9034d0-a785-4fb7-aade-c75c75a98d57
+	fromColumn: RepairOrderDetail.Branch
+	toColumn: Dim_Branch.BranchID
+
+relationship 160dc424-4e92-6dce-c2ae-be412ddc192e
+	fromColumn: RepairOrderDetail.RONumber
+	toColumn: ValidWONumbers.wo_number
+
+relationship 3d492011-4db3-1884-953f-bedffbf2b80b
+	crossFilteringBehavior: bothDirections
+	toCardinality: many
+	fromColumn: RepairOrderDetail.RONumber
+	toColumn: Job_Code_Times.wo_number
+
+relationship AutoDetected_f32b1832-c867-4b30-b4fd-58ec73f220af
+	fromColumn: Job_Code_Times.Location
+	toColumn: 'Inspection Goals'.LOCATION
+
+relationship AutoDetected_25703656-30ac-420e-9f3a-5c2af2f8e986
+	fromColumn: TechnicianPunchedDetail.Branch
+	toColumn: Dim_Branch.BranchID
+
+relationship 33e50b56-fd3c-47f1-b310-401374688ddb
+	crossFilteringBehavior: bothDirections
+	toCardinality: many
+	fromColumn: TechnicianPunchedDetail.RepairOrderNumber
+	toColumn: RepairOrderDetail.RONumber
+
+relationship 2f2fd101-505e-8b1a-d99f-29ec7c7b2892
+	fromColumn: Job_Code_Times.job_code
+	toColumn: JobCodes.job_code
+

@@ -1,0 +1,490 @@
+table MeasuresTable
+	lineageTag: cf39c104-998a-4f0c-8ef4-bd90ae1a3a37
+
+	/// Displays filtered branch values as a concatenated string with line breaks when the Branch field is filtered
+	measure ShowFilterBranch =
+			
+			IF (
+			    ISFILTERED ( Dim_Branch[Branch] ),
+			    VAR _Location =
+			        VALUES ( Dim_Branch[Branch] )
+			    VAR _Itemscombined =
+			        CONCATENATEX ( _Location, Dim_Branch[Branch], UNICHAR ( 10 ) )
+			    RETURN
+			        _Itemscombined & UNICHAR ( 10 ),
+			    ""
+			)
+		lineageTag: 9de3ac47-78f2-4233-9f45-ea87963c624c
+
+	/// Counts the total number of inspections by counting unique combinations of work order numbers and job codes
+	measure TotalInspections =
+			
+			COUNTROWS (
+			    SUMMARIZE (
+			        FILTER (
+			            'Job_Code_Times',
+			            'Job_Code_Times'[job_code] IN VALUES ( JobCodes[job_code] )
+			        ),
+			        'Job_Code_Times'[wo_number],
+			        'Job_Code_Times'[job_code]
+			    )
+			)
+		formatString: 0
+		lineageTag: 9fcac5dc-23d5-417d-8d72-05df7414bbf9
+
+	/// Calculates the total parts sales value by summing sale values from valid invoices, excluding franchise "ZP"
+	measure 'Parts $ Total' =
+			
+			SUMX (
+			    FILTER (
+			        'InTrans_Inspect',
+			        'InTrans_Inspect'[FRANCHISE] <> "ZP"
+			            && 'InTrans_Inspect'[REF_NO] IN VALUES ( ValidInvoiceNumbers[Invoice No] )
+			    ),
+			    'InTrans_Inspect'[SALE_VAL]
+			)
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: c52b9a5c-48bf-4104-9e0d-41578ee930a0
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	/// Calculates the total labor dollars by subtracting inspection dollars from total labor and adding back inspection dollars
+	measure 'Labor $ Total' = [TotalLaborWithInspection] - [TotalInspectionDollars] + [Inspection Dollars]
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 6bd74273-a27d-4ccb-b9d6-6ab54b27ce18
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	/// Calculates total inspection revenue by summing unique invoice labor values for qualifying job codes
+	measure 'Inspection Dollars' =
+			
+			SUMX (
+			    DISTINCT (
+			        SELECTCOLUMNS (
+			            FILTER (
+			                'Job_Code_Times',
+			                'Job_Code_Times'[job_code] IN VALUES ( JobCodes[job_code] )
+			            ),
+			            "Inv_Lab_Val", 'Job_Code_Times'[Inv_Lab_Val]
+			        )
+			    ),
+			    [Inv_Lab_Val]
+			)
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 1d23b9f0-5d99-4d61-8554-0d2ca71c02ac
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	/// Calculates the total labor revenue including inspection by summing invoice labor values for all relevant job codes
+	measure TotalLaborWithInspection =
+			
+			SUMX (
+			    DISTINCT (
+			        SELECTCOLUMNS (
+			            FILTER ( 'Job_Code_Times', 'Job_Code_Times'[HasRelevantJobCode] = 1 ),
+			            "job_code", 'Job_Code_Times'[job_code],
+			            "Inv_Lab_Val", 'Job_Code_Times'[Inv_Lab_Val]
+			        )
+			    ),
+			    [Inv_Lab_Val]
+			)
+		lineageTag: a681ac53-a4f0-4851-ab42-11ea6cb68b0e
+
+	/// Calculates the total inspection dollars by summing invoice labor values for job codes that are both relevant and inspection-related
+	measure TotalInspectionDollars =
+			
+			SUMX (
+			    DISTINCT (
+			        SELECTCOLUMNS (
+			            FILTER (
+			                'Job_Code_Times',
+			                'Job_Code_Times'[job_code]
+			                    IN VALUES ( JobCodes[job_code] )
+			                        && 'Job_Code_Times'[HasRelevantJobCode] = 1
+			            ),
+			            "Inv_Lab_Val", 'Job_Code_Times'[Inv_Lab_Val]
+			        )
+			    ),
+			    [Inv_Lab_Val]
+			)
+		lineageTag: f970d5c3-7e1c-40ee-9a7b-c0f39caeb96e
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	/// Counts the number of work orders that contain relevant job codes
+	measure FilteredWorkOrders =
+			
+			CALCULATE (
+			    COUNTROWS ( 'Job_Code_Times' ),
+			    FILTER ( 'Job_Code_Times', 'Job_Code_Times'[HasRelevantJobCode] = 1 )
+			)
+		formatString: 0
+		lineageTag: 13463401-772f-4c75-9fa8-ceb89e957616
+
+	/// Calculates the total discount value by summing the absolute sale values for specific part numbers in the 'InTrans_Inspect' table.
+	measure 'ADV Discount' =
+			
+			SUMX (
+			    FILTER (
+			        'InTrans_Inspect',
+			        'InTrans_Inspect'[PART_NO] = "LEGACY"
+			            || 'InTrans_Inspect'[PART_NO] = "ADV"
+			    ),
+			    - ABS ( 'InTrans_Inspect'[SALE_VAL] )
+			)
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 969acfcb-ec87-4e8c-8733-b092c5672625
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	/// Calculates the trucking discount amount by summing the negative absolute sale values for part number "4900"
+	measure 'Trucking Discount' =
+			
+			SUMX (
+			    FILTER ( 'InTrans_Inspect', 'InTrans_Inspect'[PART_NO] = "4900" ),
+			    - ABS ( 'InTrans_Inspect'[SALE_VAL] )
+			)
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 673d59c9-7505-4727-b8af-262efea6d829
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	/// Calculates total parts revenue by summing sales values from transactions excluding franchise "ZP"
+	measure 'Parts $$' =
+			
+			SUMX (
+			    FILTER ( 'InTrans_Inspect', 'InTrans_Inspect'[FRANCHISE] <> "ZP" ),
+			    'InTrans_Inspect'[SALE_VAL]
+			)
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 602803dc-b1e3-40bb-94ec-95bc05935804
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	/// Calculates the parts discount by summing the negative absolute sale values for promotions with part number "*10PROMO"
+	measure 'Parts Discount' =
+			
+			SUMX (
+			    FILTER ( 'InTrans_Inspect', 'InTrans_Inspect'[PART_NO] = "*10PROMO" ),
+			    - ABS ( 'InTrans_Inspect'[SALE_VAL] )
+			)
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 5e8e47cb-c35a-4f12-a9a8-433ef66b742f
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	/// Calculates total labor revenue including inspections by summing unique job code invoice labor values
+	measure 'Labor With Inspection' =
+			
+			SUMX (
+			    DISTINCT (
+			        SELECTCOLUMNS (
+			            'Job_Code_Times',
+			            "job_code", 'Job_Code_Times'[job_code],
+			            "Inv_Lab_Val", 'Job_Code_Times'[Inv_Lab_Val]
+			        )
+			    ),
+			    [Inv_Lab_Val]
+			)
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 6b4a1db7-f42b-4ad2-9d29-3ef7c6bae0e7
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	/// Calculates labor revenue excluding inspection dollars by subtracting inspection dollars from total labor
+	measure 'Labor $$' = [Labor With Inspection] - [Inspection Dollars]
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 968d4303-8519-4879-8b02-cbd8129834eb
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	/// Calculates the combined total of parts and labor revenue including inspections
+	measure 'Total Labor & Parts' = [Parts $$] + [Labor With Inspection]
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 4178ba50-62d9-4a5a-a8d2-05ae9a8f68f6
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	/// Calculates the total discount percentage by dividing the sum of all discounts by the total labor and parts revenue
+	measure 'Total Discount %' =
+			
+			ABS (
+			    DIVIDE (
+			        [ADV Discount] + [Trucking Discount] + [Parts Discount],
+			        [Total Labor & Parts]
+			    )
+			)
+		formatString: 0%;-0%;0%
+		lineageTag: 250d37a7-1fff-4d9a-b4f7-f863e16d84c0
+
+	/// Calculates the total dollar amount of all discounts by summing individual discount categories
+	measure 'Total $-Discount $' = [ADV Discount] + [Trucking Discount] + [Parts Discount] + [Discount]
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 23a8348b-151c-458c-9c1b-e072b1bcfd92
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	/// Calculates the total estimated hours for inspection-related job codes
+	measure Estimate =
+			
+			SUMX (
+			    DISTINCT (
+			        SELECTCOLUMNS (
+			            FILTER (
+			                'Job_Code_Times',
+			                'Job_Code_Times'[job_code] IN VALUES ( JobCodes[job_code] )
+			            ),
+			            "hrs_est", 'Job_Code_Times'[hrs_est]
+			        )
+			    ),
+			    [hrs_est]
+			)
+		formatString: 0.0
+		lineageTag: 7ea0dd3a-654e-47fc-9d4b-925cb19fa0ea
+
+	/// Calculates the total hours worked for inspection-related job codes
+	measure 'Hours Worked' =
+			
+			SUMX (
+			    FILTER (
+			        'Job_Code_Times',
+			        'Job_Code_Times'[job_code] IN VALUES ( JobCodes[job_code] )
+			    ),
+			    'Job_Code_Times'[hrs_wrk]
+			)
+		formatString: 0.0
+		lineageTag: 2e1c7ed0-1750-4c67-b2b3-59b805761c04
+
+	/// Calculates the total invoiced hours for inspection-related job codes
+	measure 'Hours Invoiced' =
+			
+			SUMX (
+			    FILTER (
+			        'Job_Code_Times',
+			        'Job_Code_Times'[job_code] IN VALUES ( JobCodes[job_code] )
+			    ),
+			    'Job_Code_Times'[hrs_inv]
+			)
+		formatString: 0.0
+		lineageTag: dcd8c679-567c-48d7-aeeb-7399051aeb01
+
+	/// Returns a different measure based on the selected measure index (0=TotalInspections, 1=Parts$ Total, 2=Labor$ Total)
+	measure 'Selected Measure' =
+			
+			SWITCH (
+			    SELECTEDVALUE ( MeasureSelector[MeasureIndex] ),
+			    0, [TotalInspections],
+			    1, [Parts $ Total],
+			    2, [Labor $ Total],
+			    BLANK ()
+			)
+		lineageTag: 769df42b-ad69-4fac-a635-15db2149fc46
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	/// Counts total inspections per month by filtering for relevant job codes within each month
+	measure TotalInspectionsPerMonth =
+			
+			CALCULATE (
+			    COUNTROWS (
+			        SUMMARIZE (
+			            FILTER (
+			                'Job_Code_Times',
+			                'Job_Code_Times'[job_code] IN VALUES ( JobCodes[job_code] )
+			            ),
+			            'Job_Code_Times'[wo_number],
+			            'Job_Code_Times'[job_code]
+			        )
+			    ),
+			    VALUES ( 'Job_Code_Times'[MonthCreated] )
+			)
+		formatString: 0
+		lineageTag: a3fded1a-08b4-4f6c-b798-92fe825df815
+
+	/// Calculates the total parts revenue per month from valid invoices, excluding franchise "ZP"
+	measure PartsTotalPerMonth =
+			
+			CALCULATE (
+			    SUMX (
+			        FILTER (
+			            'InTrans_Inspect',
+			            'InTrans_Inspect'[FRANCHISE] <> "ZP"
+			                && 'InTrans_Inspect'[REF_NO] IN VALUES ( ValidInvoiceNumbers[Invoice No] )
+			        ),
+			        'InTrans_Inspect'[SALE_VAL]
+			    ),
+			    VALUES ( 'Job_Code_Times'[MonthCreated] )
+			)
+		lineageTag: 8dbb0caa-3390-4521-85a2-21fe1f1b5098
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	/// Calculates the average monthly parts revenue across all months
+	measure AveragePartsTotalPerMonth =
+			
+			AVERAGEX ( VALUES ( 'Job_Code_Times'[MonthCreated] ), [PartsTotalPerMonth] )
+		lineageTag: 8d983330-91b5-4b06-aa09-7d82ac47f1f3
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	/// Calculates the average parts revenue per inspection per month by dividing monthly parts total by monthly inspection count
+	measure AveragePartsTotalPerInspectionPerMonth =
+			
+			DIVIDE ( [PartsTotalPerMonth], [TotalInspectionsPerMonth] )
+		lineageTag: 575878b8-7f5c-4746-bc91-c4b16d48528a
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	/// Calculates the total discount amount per month
+	measure TotalDiscountPerMonth =
+			
+			CALCULATE ( [Total $-Discount $], VALUES ( 'Job_Code_Times'[MonthCreated] ) )
+		lineageTag: b41427af-0d2a-4109-b94b-de9da5e6a6fd
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	/// Calculates the average discount amount per inspection per month
+	measure AverageDiscountPerInspectionPerMonth =
+			
+			DIVIDE ( [TotalDiscountPerMonth], [TotalInspectionsPerMonth] )
+		lineageTag: 2663beca-5957-4978-af14-0e3d33adaac7
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	/// Calculates the total labor and parts revenue per month
+	measure TotalLaborAndPartsPerMonth =
+			
+			CALCULATE ( [Total Labor & Parts], VALUES ( 'Job_Code_Times'[MonthCreated] ) )
+		lineageTag: a7eff56a-2782-42ea-b86b-8e6a8f7f60d9
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	/// Calculates the average labor and parts revenue per inspection per month
+	measure AverageLaborAndPartsPerInspectionPerMonth =
+			
+			DIVIDE ( [TotalLaborAndPartsPerMonth], [TotalInspectionsPerMonth] )
+		lineageTag: 0e7e04e8-c071-40fe-887b-4e951b4ae030
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	/// Displays filtered work order numbers as a concatenated string with line breaks when work order field is filtered
+	measure ShowFilterWO# =
+			
+			IF (
+			    ISFILTERED ( Job_Code_Times[wo_number] ),
+			    VAR _Location =
+			        VALUES ( Job_Code_Times[wo_number] )
+			    VAR _Itemscombined =
+			        CONCATENATEX ( _Location, Job_Code_Times[wo_number], UNICHAR ( 10 ) )
+			    RETURN
+			        _Itemscombined & UNICHAR ( 10 ),
+			    ""
+			)
+		lineageTag: ba83b5bb-191d-483b-8e61-6596cd7cbc4d
+
+	/// Displays filtered date values or "Month" when no date filter is applied
+	measure ShowFilterMonth =
+			
+			IF (
+			    ISFILTERED ( dDate[Date] ),
+			    VAR _Location =
+			        VALUES ( dDate[Date] )
+			    VAR _Itemscombined =
+			        CONCATENATEX ( _Location, dDate[Date], UNICHAR ( 10 ) )
+			    RETURN
+			        _Itemscombined & UNICHAR ( 10 ),
+			    "Month"
+			)
+		lineageTag: 0316fdc7-8260-4d62-bb51-b90cf5a8f542
+
+	/// Displays filtered year values or "Year" when no year filter is applied
+	measure ShowFilterYear =
+			
+			IF (
+			    ISFILTERED ( dDate[Year] ),
+			    VAR _Location =
+			        VALUES ( dDate[Year] )
+			    VAR _Itemscombined =
+			        CONCATENATEX ( _Location, dDate[Year], UNICHAR ( 10 ) )
+			    RETURN
+			        _Itemscombined & UNICHAR ( 10 ),
+			    "Year"
+			)
+		lineageTag: 3f0c72d5-1c3e-4edb-adad-3c75178a43b0
+
+	/// Checks if the job_code column is filtered, returning TRUE or FALSE
+	measure 'Check Filter' =
+			
+			ISFILTERED ( 'Job_Code_Times'[job_code] )
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: b2242deb-dc9d-4f19-9510-f86694b2eb19
+
+	/// Returns 1 if a job_code filter is applied, otherwise returns 0, used to control visual visibility
+	measure 'Hide Visual-' =
+			
+			IF ( [Check Filter], 1, 0 )
+		formatString: 0
+		lineageTag: 80fdc8b3-54ae-48a7-866f-584709371c73
+
+	/// Displays a message prompting users to select a part number when no job_code filter is applied
+	measure Message- =
+			
+			IF ( [Check Filter], "", "Select a Part Number to see more details" )
+		lineageTag: 169259fa-9b25-4569-bf18-a3cd6163713c
+
+	/// Sets card background color based on whether a job_code filter is applied
+	measure 'Card Bkgd Color' =
+			
+			IF ( [Check Filter], "#FFFFFF00", "" )
+		lineageTag: 15efa674-5e4c-4cd5-8ae9-79e42aa4f598
+
+	/// Calculates the total invoice labor value by summing unique work order invoice labor values
+	measure DistinctInspectionDollars =
+			
+			SUMX (
+			    DISTINCT (
+			        SELECTCOLUMNS (
+			            'Job_Code_Times',
+			            "wo_number", 'Job_Code_Times'[wo_number],
+			            "Inv_Lab_Val", 'Job_Code_Times'[Inv_Lab_Val]
+			        )
+			    ),
+			    [Inv_Lab_Val]
+			)
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: e44ec53b-10ad-486a-8260-3a3e05c007e2
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	/// Calculates the discount amount by summing parts total, inspection dollars, and labor dollars
+	measure Discount = [Parts $ Total] + [Inspection Dollars] + [Labor $$]
+		lineageTag: 801c9892-98d3-478e-a477-0659f3d9af92
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column Value
+		isHidden
+		formatString: 0
+		lineageTag: 100c1076-5afb-48f2-9df7-5de8917b0fa2
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [Value]
+
+		annotation SummarizationSetBy = Automatic
+
+	column DummyColumn
+		isHidden
+		formatString: 0
+		lineageTag: 38ac6f42-3d68-47f9-88b1-37c66dab1f6f
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [DummyColumn]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition MeasuresTable = calculated
+		mode: import
+		source = ADDCOLUMNS( GENERATESERIES(1, 1), "DummyColumn", 1 )
+
+	annotation PBI_Id = 42f2f8250428409fa189b4707094f59b
+

@@ -1,0 +1,60 @@
+table _Measures
+	lineageTag: 3b1a6758-3ca4-47e9-8791-b5d6002e665c
+
+	measure 'Welcome Name' =
+			
+			VAR _User =
+			    USERPRINCIPALNAME ()
+			VAR _Position =
+			    SEARCH ( "@", _User, 1 )
+			VAR _Name =
+			    LEFT ( _User, _Position - 1 )
+			VAR _FirstLetter =
+			    UPPER ( LEFT ( _Name, 1 ) )
+			VAR _LastName =
+			    MID ( _Name, 2, LEN ( _Name ) - 1 )
+			VAR _FormattedLastName =
+			    UPPER ( LEFT ( _LastName, 1 ) )
+			        & LOWER ( MID ( _LastName, 2, LEN ( _LastName ) ) )
+			RETURN
+			    "Welcome Back, " & _FirstLetter & "." & _FormattedLastName
+		lineageTag: 1ebd317f-6819-4431-9dc5-f7f3415056d0
+
+	measure 'Applied Filters' =
+			
+			VAR MaxFilters = 7
+			RETURN
+			    IF (
+			        ISFILTERED ( dim_BranchLocation[Branch] ),
+			        VAR ___f =
+			            FILTERS ( dim_BranchLocation[Branch] )
+			        VAR ___r =
+			            COUNTROWS ( ___f )
+			        VAR ___t =
+			            TOPN ( MaxFilters, ___f, dim_BranchLocation[Branch] )
+			        VAR ___d =
+			            CONCATENATEX ( ___t, dim_BranchLocation[Branch], ", " )
+			        VAR ___x =
+			            "Branch:  " & ___d
+			                & IF ( ___r > MaxFilters, ", ... [" & ___r & " items selected]" ) & " "
+			        RETURN
+			            ___x & UNICHAR ( 13 )
+			                & UNICHAR ( 10 )
+			    )
+		lineageTag: 55ecb7c5-666c-4eee-81ed-601b4d20b195
+
+	column Value
+		isHidden
+		lineageTag: 9bebaa8d-37e0-4801-a109-64f1ce8274e2
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Value]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition _Measures = calculated
+		mode: import
+		source = { "This table holds all measures for the Parts Reorder Monitoring report" }
+
+	annotation PBI_Id = cede00dec9ea4a12ab8bdd6643dee20e
+
