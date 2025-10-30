@@ -2,7 +2,7 @@
 
 > **Status:** ðŸ”„ In Development | âœ… Production | ðŸ“¦ Archived  
 > **Last Updated:** [Date]  
-> **Data Analyst:** [Your Name]
+> **Data Analyst:** [Brian Fox]
 
 ## ðŸ“‹ Project Overview
 
@@ -58,4 +58,4 @@
 
 ## ðŸ“ž Support
 
-For questions or issues, contact: [Your contact info]
+For questions or issues, contact: [bfox@spitractor.com]
