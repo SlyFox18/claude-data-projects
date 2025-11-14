@@ -8,7 +8,7 @@ model Model
 
 annotation __PBI_TimeIntelligenceEnabled = 0
 
-annotation PBI_QueryOrder = ["Data Refresh","dim_BranchLocation","dim_DateTable","Fact_LaborJobSummary"]
+annotation PBI_QueryOrder = ["Data Refresh","dim_BranchLocation","dim_DateTable","Fact_LaborJobSummary","Inspection Goals","Fact_WorkOrderParts","Fact_PendingInspections","dim_CustomerList","dim_Parts"]
 
 annotation PBI_ProTooling = ["DevMode"]
 
@@ -21,6 +21,13 @@ ref table 'New Report Columns'
 ref table _Measures
 ref table 'New Report Measures'
 ref table Fact_LaborJobSummary
+ref table 'Inspection Goals'
+ref table Fact_WorkOrderParts
+ref table ValidInvoiceNumbers
+ref table Fact_PendingInspections
+ref table dim_CustomerList
+ref table ServiceRecommendations
+ref table dim_Parts
 
 ref cultureInfo en-US
 

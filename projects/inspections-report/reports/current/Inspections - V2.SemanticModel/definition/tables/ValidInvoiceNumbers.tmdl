@@ -1,0 +1,28 @@
+table ValidInvoiceNumbers
+	lineageTag: fc0e3fd1-213f-4e1f-b8e4-04818fcbae9d
+
+	column InvoiceNumber
+		lineageTag: 5a77edc6-b5b1-4bbc-ac34-8b445954e38c
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [InvoiceNumber]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition ValidInvoiceNumbers = calculated
+		mode: import
+		source =
+				
+				DISTINCT(
+				    SELECTCOLUMNS(
+				        FILTER(
+				            Fact_LaborJobSummary,
+				            Fact_LaborJobSummary[IsInspection] = TRUE
+				                && NOT(ISBLANK(Fact_LaborJobSummary[InvoiceNumber]))
+				        ),
+				        "InvoiceNumber", Fact_LaborJobSummary[InvoiceNumber]
+				    )
+				)
+
+	annotation PBI_Id = 8fcb593e2a7b41c7b2e2eaba6d402421
+

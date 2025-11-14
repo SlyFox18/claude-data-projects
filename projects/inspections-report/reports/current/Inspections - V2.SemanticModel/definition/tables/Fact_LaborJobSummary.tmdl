@@ -91,13 +91,14 @@ table Fact_LaborJobSummary
 
 	column InvoicedLaborAmount
 		dataType: double
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
 		lineageTag: c6c0d899-173b-462c-9564-a63d7e75c03a
 		summarizeBy: sum
 		sourceColumn: InvoicedLaborAmount
 
 		annotation SummarizationSetBy = Automatic
 
-		annotation PBI_FormatHint = {"isGeneralNumber":true}
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
 
 	column EstimatedHours
 		dataType: double
@@ -226,12 +227,14 @@ table Fact_LaborJobSummary
 
 	column WorkOrderCreationDate
 		dataType: dateTime
-		formatString: General Date
+		formatString: Short Date
 		lineageTag: fe126aa0-f1d2-4c0c-9713-1bb40940a46e
 		summarizeBy: none
 		sourceColumn: WorkOrderCreationDate
 
 		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
 
 	column WorkOrderClosedDate
 		dataType: dateTime
@@ -281,6 +284,49 @@ table Fact_LaborJobSummary
 
 		annotation SummarizationSetBy = Automatic
 
+	column BranchName =
+			
+			RELATED(dim_BranchLocation[Branch])
+		lineageTag: 30501713-2db1-4dd8-bb5d-06aa9e9be882
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	column CreationMonthYear =
+			
+			FORMAT(Fact_LaborJobSummary[WorkOrderCreationDate], "MMM-YY")
+		lineageTag: c995486d-055d-41dc-8974-7d8115beb865
+		summarizeBy: none
+		sortByColumn: CreationMonthSort
+
+		changedProperty = SortByColumn
+
+		annotation SummarizationSetBy = Automatic
+
+	column CreationMonthSort = ```
+			
+			YEAR(Fact_LaborJobSummary[WorkOrderCreationDate]) * 100 + 
+			MONTH(Fact_LaborJobSummary[WorkOrderCreationDate])
+			```
+		formatString: 0
+		lineageTag: 28344a23-d22d-4517-9b1c-ffddc4c2ef58
+		summarizeBy: sum
+
+		annotation SummarizationSetBy = Automatic
+
+	column WorkOrderCreationDateKey =
+			
+			IF(
+			    ISBLANK(Fact_LaborJobSummary[WorkOrderCreationDate]),
+			    BLANK(),
+			    INT(FORMAT(Fact_LaborJobSummary[WorkOrderCreationDate], "YYYYMMDD"))
+			)
+		formatString: 0
+		lineageTag: b20f1e7a-954c-4c4c-bc85-bddc49c28f42
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
 	partition Fact_LaborJobSummary = m
 		mode: import
 		source =
@@ -289,4 +335,8 @@ table Fact_LaborJobSummary
 				    dbo_Fact_LaborJobSummary = Source{[Schema="dbo",Item="Fact_LaborJobSummary"]}[Data]
 				in
 				    dbo_Fact_LaborJobSummary
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
 
