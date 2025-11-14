@@ -1,820 +1,820 @@
-# Inspections Report - Data Architecture
+# Inspections Report - Technical Architecture
 
-**Last Updated:** 2025-10-30  
-**Architecture Version:** 1.0 (Phase 1 Complete)  
-**Status:** Production-Ready Foundation
+> **Document Purpose:** Detailed technical design decisions, data model architecture, and system implementation patterns  
+> **Last Updated:** 2025-11-14  
+> **Author:** [Your Name]
 
 ---
 
 ## 📋 Table of Contents
 
 1. [Architecture Overview](#architecture-overview)
-2. [Data Flow](#data-flow)
-3. [Dimensional Model Design](#dimensional-model-design)
-4. [Fact Table Architecture](#fact-table-architecture)
-5. [Grain Analysis](#grain-analysis)
-6. [Join Strategies](#join-strategies)
-7. [Performance Architecture](#performance-architecture)
-8. [Future Enhancements](#future-enhancements)
+2. [Data Model Design](#data-model-design)
+3. [Fact Table Architectures](#fact-table-architectures)
+4. [Dimension Table Designs](#dimension-table-designs)
+5. [Goals System Integration](#goals-system-integration)
+6. [Predictive Analytics Engine](#predictive-analytics-engine)
+7. [Performance Optimization](#performance-optimization)
+8. [Business Logic Patterns](#business-logic-patterns)
+9. [Data Quality Framework](#data-quality-framework)
+10. [Technical Decisions Log](#technical-decisions-log)
 
 ---
 
-## 🎯 Architecture Overview
+## 🏗️ Architecture Overview
 
-### Design Philosophy
+### **System Architecture Diagram**
 
-This architecture follows **modern Lakehouse dimensional modeling** principles:
-
-1. **Raw Layer:** Simple, fast extraction from source (ODBC)
-2. **Curated Layer:** Dimensional fact tables with pre-aggregation
-3. **Semantic Layer:** Power BI with DAX measures
-4. **Incremental Refresh:** Only process changed records
-5. **Documentation First:** Self-documenting code and comprehensive docs
-
-### Architecture Pattern
-
-**Pattern:** Star Schema with Fact Constellation  
-**Style:** Kimball Methodology  
-**Platform:** Microsoft Fabric Lakehouse  
-**Refresh Strategy:** Incremental (2023+ scope)
-
----
-
-## 📊 Data Flow
-
-### High-Level Data Flow
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                    SOURCE SYSTEM                                 │
-│                   EquipRDB64 (ODBC)                             │
-│                  Informix Database                               │
-│                                                                  │
-│  Tables: wkothsub, wkmechwk, wkrofile                          │
-└─────────────────────────┬───────────────────────────────────────┘
-                          │
-                          │ ODBC Query (Incremental)
-                          │ Filter: ModifiedDate >= 2023-01-01
-                          │
-                          ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                    RAW LAYER (Lakehouse)                         │
-│                  Simple Extraction Queries                       │
-│                                                                  │
-│  ┌────────────────┐  ┌────────────────┐  ┌────────────────┐   │
-│  │ Raw_wkothsub   │  │ Raw_wkmechwk   │  │ Raw_wkrofile   │   │
-│  │ 21 columns     │  │ 19 columns     │  │ 20 columns     │   │
-│  │ 2m 10s refresh │  │ 2m refresh     │  │ 1m 30s refresh │   │
-│  │ Job Financial  │  │ Labor Punches  │  │ WO Master      │   │
-│  └────────────────┘  └────────────────┘  └────────────────┘   │
-│                                                                  │
-│  Design: Performance-optimized column selection                 │
-│  Refresh: Incremental (ModifiedDate >= 2023-01-01)             │
-│  Purpose: Fast, clean data extraction only                      │
-└─────────────────────────┬───────────────────────────────────────┘
-                          │
-                          │ Power Query M
-                          │ • Join & Aggregate
-                          │ • Business Logic
-                          │ • Inspection Flag
-                          │
-                          ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                 CURATED LAYER (Lakehouse)                        │
-│                  Dimensional Fact Tables                         │
-│                                                                  │
-│  ┌──────────────────────────────────────────────────────────┐  │
-│  │           Fact_LaborJobSummary                           │  │
-│  │                                                          │  │
-│  │  Grain: One row per job per work order                  │  │
-│  │  Refresh: 2m 09s                                        │  │
-│  │  Fields: 31 (financial, hours, flags)                   │  │
-│  │  Rows: ~50k-100k (2+ years)                            │  │
-│  │                                                          │  │
-│  │  Key Features:                                           │  │
-│  │  • IsInspection flag (111 job codes)                    │  │
-│  │  • Aggregated labor hours (from punches)                │  │
-│  │  • Work order status context                            │  │
-│  │  • Pre-calculated metrics                               │  │
-│  │  • IsPending flag for workflow                          │  │
-│  └──────────────────────────────────────────────────────────┘  │
-│                                                                  │
-│  Design: Pre-aggregated for report performance                  │
-│  Logic: Business rules and calculations applied                 │
-│  Purpose: Report-ready analytical data                          │
-└─────────────────────────┬───────────────────────────────────────┘
-                          │
-                          │ DirectQuery or Import
-                          │ Power BI Data Model
-                          │
-                          ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                  SEMANTIC LAYER (Power BI)                       │
-│                    DAX Measures & Reports                        │
-│                                                                  │
-│  ┌────────────────┐  ┌────────────────┐  ┌────────────────┐   │
-│  │ Page 1:        │  │ Page 2:        │  │ Page 3:        │   │
-│  │ Summary        │  │ Job Breakdown  │  │ Pending        │   │
-│  │ Dashboard      │  │                │  │ Inspections    │   │
-│  └────────────────┘  └────────────────┘  └────────────────┘   │
-│                                                                  │
-│  ┌────────────────┐  ┌────────────────┐  ┌────────────────┐   │
-│  │ Page 4:        │  │ Page 5:        │  │ Page 6:        │   │
-│  │ Overview       │  │ Location       │  │ Goals          │   │
-│  │                │  │ Analysis       │  │ Tracking       │   │
-│  └────────────────┘  └────────────────┘  └────────────────┘   │
-│                                                                  │
-│  Design: DAX measures for KPIs and calculations                 │
-│  Purpose: Business user interface and analytics                 │
-└─────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│                    PRESENTATION LAYER                        │
+│  Power BI Report (7 Pages + Drill-Through Capabilities)    │
+└────────────────┬────────────────────────────────────────────┘
+                 │
+┌────────────────▼────────────────────────────────────────────┐
+│                    SEMANTIC LAYER                            │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐     │
+│  │   3 Fact     │  │     4        │  │   Service    │     │
+│  │   Tables     │  │  Dimensions  │  │Recommendations│    │
+│  └──────────────┘  └──────────────┘  └──────────────┘     │
+│          ▲                 ▲                 ▲              │
+└──────────┼─────────────────┼─────────────────┼──────────────┘
+           │                 │                 │
+┌──────────▼─────────────────▼─────────────────▼──────────────┐
+│                    DATA INTEGRATION LAYER                     │
+│  ┌────────────┐  ┌────────────┐  ┌────────────┐            │
+│  │  Fabric    │  │   Excel    │  │    DAX     │            │
+│  │ Dataflows  │  │  OneDrive  │  │ Calculated │            │
+│  │ (6 Raw)    │  │  (Goals)   │  │   Table    │            │
+│  └────────────┘  └────────────┘  └────────────┘            │
+└───────────────────────────────────────────────────────────────┘
+           │                 │                 
+┌──────────▼─────────────────▼──────────────────────────────────┐
+│                    SOURCE SYSTEMS                              │
+│  SQL Database (Work Orders, Parts, Customers, Branches)      │
+└───────────────────────────────────────────────────────────────┘
 ```
 
----
+### **Three-Layer Architecture**
 
-## 🏛️ Dimensional Model Design
+#### **1. Source Layer (SQL Database)**
+- **Purpose:** Operational transactional systems
+- **Tables:** Work orders, labor punches, parts transactions, customer data
+- **Refresh:** Real-time operational updates
+- **Access:** Read-only via Fabric Dataflows
 
-### Current State (Phase 1)
+#### **2. Data Integration Layer**
+- **Fabric Dataflows (6 Raw Tables):**
+  - Raw_wkothsub (incremental refresh 2023+)
+  - Raw_wkmechwk (incremental refresh 2023+)
+  - Raw_wkrofile (incremental refresh 2023+)
+  - Raw_InTrans (date filter 2024+)
+  - Raw_RepairOrderDetail (full refresh)
+  - Raw_TechnicianPunchedDetail (full refresh)
+  
+- **Excel Integration (OneDrive):**
+  - Inspection Goals (manual maintenance)
+  - Branch-level targets and thresholds
+  
+- **DAX Calculated Table:**
+  - ServiceRecommendations (generated at model refresh)
+  - Predictive analytics from historical patterns
 
-**Fact Tables:**
-- ✅ Fact_LaborJobSummary (Complete)
-
-**Dimensions:**
-- 🚧 Date Dimension (Standard - to be built in Phase 2)
-- 🚧 Branch/Location Dimension (to be built in Phase 2)
-- 🚧 Customer Dimension (exists in other project, needs integration)
-- 🚧 Goals Table (External - SharePoint Excel)
-
-### Star Schema Design
-```
-                    ┌─────────────────┐
-                    │   dim_Date      │
-                    │                 │
-                    │ • DateKey       │
-                    │ • Year          │
-            ┌───────│ • Quarter       │
-            │       │ • Month         │
-            │       │ • Week          │
-            │       └─────────────────┘
-            │
-            │       ┌─────────────────┐
-            │       │   dim_Branch    │
-            │       │                 │
-            │       │ • BranchCode    │
-            ├───────│ • BranchName    │
-            │       │ • Region        │
-            │       │ • Manager       │
-            │       └─────────────────┘
-            │
-            │
-            │       ┌──────────────────────────────────────┐
-            │       │    Fact_LaborJobSummary              │
-            │       │                                      │
-            │       │ Keys:                                │
-            ├───────│ • BranchCode (FK)                    │
-            │       │ • WorkOrderNumber                    │
-            │       │ • JobCode                            │
-            │       │ • InvoiceDate (FK)                   │
-            │       │                                      │
-            │       │ Measures:                            │
-            │       │ • EstimatedLaborAmount               │
-            │       │ • ActualLaborAmount                  │
-            │       │ • InvoicedLaborAmount                │
-            │       │ • EstimatedPartsAmount               │
-            │       │ • ActualPartsAmount                  │
-            │       │ • InvoicedPartsAmount                │
-            │       │ • EstimatedHours                     │
-            │       │ • ActualHoursWorked ⭐              │
-            │       │ • InvoicedHours                      │
-            │       │                                      │
-            │       │ Dimensions/Attributes:               │
-            │       │ • JobCode                            │
-            │       │ • JobType                            │
-            │       │ • WorkOrderStatus ⭐                │
-            │       │ • IsInspection ⭐⭐                 │
-            │       │ • IsPending ⭐                      │
-            │       │ • [+ 20 more fields]                 │
-            │       └──────────────────────────────────────┘
-            │                    │
-            │                    │
-            │       ┌────────────┴──────────┐
-            │       │   dim_Customer        │
-            │       │                       │
-            └───────│ • AccountNumber       │
-                    │ • CustomerName        │
-                    │ • CustomerType        │
-                    │ • AccountClass        │
-                    └───────────────────────┘
-
-            ⭐ = New in Phase 1
-            ⭐⭐ = Critical for Inspections Report
-```
-
-### Future Constellation Pattern
-
-As the system grows, additional fact tables may be added:
-```
-        dim_Date
-           │
-           ├────── Fact_LaborJobSummary (Job-level)
-           │          └── (Current fact table)
-           │
-           ├────── Fact_LaborPunches (Punch-level detail)
-           │          └── (Future - if tech detail needed)
-           │
-           └────── Fact_WorkOrderParts (Parts transactions)
-                      └── (Future - if parts detail needed)
-```
-
-**Constellation Benefits:**
-- Each fact optimized for its grain
-- Shared dimensions reduce duplication
-- Flexible analysis at different levels
-- Performance optimized per use case
+#### **3. Semantic Layer (Power BI Model)**
+- **Fact Tables (3):** Pre-aggregated business events
+- **Dimension Tables (4):** Master data for analysis
+- **Goals Table:** Performance targets
+- **Calculated Table:** Predictive recommendations
+- **Measures:** Business logic and KPIs
+- **Hierarchies:** Drill-down paths
 
 ---
 
-## 🎲 Fact Table Architecture
+## 📊 Data Model Design
 
-### Fact_LaborJobSummary Design
+### **Star Schema Implementation**
 
-#### Grain Definition
+The data model follows **dimensional modeling best practices** with a star schema design optimized for analytical queries and report performance.
 
-**Grain Statement:**  
-*"One row per job code per work order"*
+### **Design Principles**
 
-**Grain Example:**
-- Work Order #669579 has 3 job codes = 3 rows
-- Each row represents a distinct service/repair job
-- Multiple techs working same job = aggregated to single row
+1. **Fact-Centered Design:** Business events (inspections, parts, pending work) at the center
+2. **Conformed Dimensions:** Shared dimensions across fact tables
+3. **Surrogate Keys:** Integer keys for optimal join performance
+4. **One-Way Relationships:** Simple, predictable filter propagation
+5. **Bi-Directional Only When Needed:** Minimal use for specific scenarios
 
-#### Fact Type Classification
+### **Relationship Matrix**
 
-**Type:** Transaction Fact Table (with Periodic Snapshot characteristics)
+| From Table | To Table | Join Column(s) | Cardinality | Cross-Filter |
+|------------|----------|----------------|-------------|--------------|
+| Fact_LaborJobSummary | dim_BranchLocation | BranchCode | Many-to-One | Single |
+| Fact_LaborJobSummary | dim_DateTable | WorkOrderCreationDate | Many-to-One | Single |
+| Fact_LaborJobSummary | dim_CustomerList | (Lookup logic) | Many-to-One | Single |
+| Fact_PendingInspections | dim_BranchLocation | BranchCode | Many-to-One | Single |
+| Fact_PendingInspections | dim_DateTable | CreationDate | Many-to-One | Single |
+| Fact_WorkOrderParts | dim_BranchLocation | BranchCode | Many-to-One | Single |
+| Fact_WorkOrderParts | dim_Parts | PartNumber | Many-to-One | Single |
+| Fact_WorkOrderParts | dim_DateTable | TransactionDate | Many-to-One | Single |
+| dim_BranchLocation | Inspection Goals | LocationID → LOCATION | One-to-One | Single |
 
-**Characteristics:**
-- ✅ Captures business events (job completion)
-- ✅ Additive measures (amounts, hours)
-- ✅ Time stamped (InvoiceDate, CreationDate)
-- ⚠️ Some snapshot attributes (status, pending flag)
+### **Grain Decisions**
 
-#### Measure Classification
+Each fact table grain carefully chosen for business analysis needs:
 
-**Fully Additive Measures (16):**
-- All financial amounts (can sum across all dimensions)
-- All hours fields (can sum across all dimensions)
-- TotalInvoicedAmount, TotalEstimatedAmount
+- **Fact_LaborJobSummary:** Job-level grain (one row per job code per work order)
+  - *Why:* Balances detail with performance, enables job code analysis
+  - *Trade-off:* Loses individual tech detail (acceptable for reporting needs)
 
-**Semi-Additive Measures (0):**
-- None (no balance/inventory type measures)
+- **Fact_PendingInspections:** Work order-level grain (one row per pending work order)
+  - *Why:* Simpler structure, faster refresh, matches business view of "pending queue"
+  - *Trade-off:* Only shows primary inspection code (acceptable for queue management)
 
-**Non-Additive Measures (2):**
-- HoursVariance (must calculate from components)
-- All percentage calculations (derived in DAX)
-
-**Degenerate Dimensions (4):**
-- WorkOrderNumber (kept as fact attribute, not dimension)
-- InvoiceNumber (transactional reference)
-- ClaimNumber (optional reference)
-- JobCode (kept in fact for flexibility)
-
-**Role-Playing Dimensions:**
-- Date dimension will have multiple roles:
-  - InvoiceDate (when invoiced)
-  - WorkOrderCreationDate (when WO created)
-  - WorkOrderClosedDate (when WO closed)
+- **Fact_WorkOrderParts:** Transaction-level grain (one row per part per invoice)
+  - *Why:* Maximum detail for parts analysis, pricing flexibility
+  - *Trade-off:* Larger row count, longer refresh (managed with proper indexing)
 
 ---
 
-## 🔍 Grain Analysis
+## 🎯 Fact Table Architectures
 
-### Grain Challenges & Solutions
+### **Fact_LaborJobSummary Architecture**
 
-#### Challenge 1: Multiple Technicians per Job
+#### **Design Pattern: Multi-Source Integration**
 
-**Problem:**
-- Raw_wkmechwk has multiple punch records per job
-- Tech A: 2.5 hours on IS-TRACTOR INSPECT
-- Tech B: 1.5 hours on same job
-- How to represent at job-level grain?
-
-**Solution:**
-- Pre-aggregate hours BEFORE joining to fact
-- SUM(HoursWorked) GROUP BY Branch, WorkOrder, JobCode
-- Result: 4.0 hours total for the job
-- Trade-off: Lose individual tech detail (acceptable for this report)
-
-**Implementation:**
-```powerquery
-// Step 2 in Fact_LaborJobSummary.pq
-AggregatedHours = Table.Group(
-    Raw_wkmechwk,
-    {"Branch", "WorkOrder", "JobCode"},
-    {
-        {"ActualHoursWorked", each List.Sum([HoursWorked])},
-        {"InvoicedHours", each List.Sum([InvoiceHours])}
-    }
-)
+```
+┌───────────────┐
+│  Raw_wkothsub │  (Primary: Job financial data)
+│  Grain: Jobs  │
+└───────┬───────┘
+        │ LEFT JOIN
+┌───────▼───────────┐
+│  Raw_wkmechwk     │  (Aggregated: Tech hours → job hours)
+│  Grain: Punches   │  PRE-AGGREGATE before join!
+│  → Job Level      │
+└───────┬───────────┘
+        │ LEFT JOIN
+┌───────▼───────────┐
+│  Raw_wkrofile     │  (Context: Work order status)
+│  Grain: Work Order│
+└───────────────────┘
 ```
 
----
+#### **Key Design Decisions**
 
-#### Challenge 2: Work Order Context (One-to-Many)
+1. **Pre-Aggregation Strategy**
+   - **Decision:** Aggregate Raw_wkmechwk from punch-level to job-level BEFORE joining
+   - **Rationale:** Reduces join complexity, faster performance, cleaner grain
+   - **Implementation:** `Table.Group` on Branch + WorkOrder + JobCode
 
-**Problem:**
-- Raw_wkrofile: 1 row per work order
-- Fact_LaborJobSummary: Multiple jobs per work order
-- How to join without duplicating work order attributes?
+2. **LEFT JOIN Preservation**
+   - **Decision:** Use LEFT OUTER joins for labor and work order context
+   - **Rationale:** Preserves all jobs even if no labor punches or work order record
+   - **Benefit:** Complete job list, NULLs indicate missing data (not missing jobs)
 
-**Solution:**
-- LEFT OUTER JOIN on Branch + WorkOrder
-- Work order attributes (status, dates) replicated across jobs
-- This is intentional denormalization (performance trade-off)
+3. **Inspection Code Lookup**
+   - **Decision:** Embed 111 inspection codes in query (inline table)
+   - **Rationale:** Single source of truth, no external dependency, version controlled
+   - **Maintenance:** Update in one place when new inspection codes added
 
-**Example:**
+4. **Refresh Strategy: Incremental**
+   - **Decision:** Inherit incremental refresh from Raw_wkothsub (2023+, ModifiedDate)
+   - **Rationale:** Reduces refresh time, processes only changed records
+   - **Performance:** 3 minutes for ~50K rows (excellent)
+
+### **Fact_PendingInspections Architecture**
+
+#### **Design Pattern: Simple Filtering with Aggregation**
+
 ```
-Work Order #12345 has 3 jobs:
-  Job 1: IS-TRACTOR INSPECT  → Status = "wip"
-  Job 2: REPAIR-ENGINE       → Status = "wip"  (same status)
-  Job 3: PARTS-FILTER        → Status = "wip"  (same status)
-```
-
-**Why This Works:**
-- Work order status applies to ALL jobs in that WO
-- Denormalization reduces report-time joins
-- Acceptable redundancy for query performance
-
----
-
-#### Challenge 3: Parts-Only Jobs (NULL Hours)
-
-**Problem:**
-- Some jobs have no labor (parts-only)
-- Raw_wkmechwk has no records for these jobs
-- Should these rows exist in the fact table?
-
-**Solution:**
-- YES - keep all jobs from Raw_wkothsub
-- Use LEFT OUTER JOIN to wkmechwk aggregation
-- ActualHoursWorked = NULL for parts-only jobs
-- This is intentional and expected
-
-**Business Rule:**
-```
-IF ActualHoursWorked IS NULL
-THEN Job is either:
-  • Parts-only (common)
-  • Not yet worked (pending)
-  • Data quality issue (rare)
+┌─────────────────────┐
+│ Raw_RepairOrderDetail│  (One row per work order)
+│ Filter: NOT Invoiced │
+└──────────┬───────────┘
+           │ INNER JOIN (Inspection Codes)
+           │ LEFT JOIN (Hours)
+┌──────────▼─────────────────┐
+│ Raw_TechnicianPunchedDetail│  (Aggregated: Hours by WO)
+│ PRE-AGGREGATE: SUM(Hours)  │
+└────────────────────────────┘
 ```
 
-**Impact on Metrics:**
-- "Total Inspections" count = includes parts-only
-- "Hours Worked" sum = excludes NULL (correct)
-- "Avg Hours per Inspection" = exclude NULL in calculation
+#### **Key Design Decisions**
 
----
+1. **Work Order Grain Choice**
+   - **Decision:** One row per work order (not job-level like LaborJobSummary)
+   - **Rationale:** RepairOrderDetail has one row per WO with primary job code
+   - **Benefit:** Simpler logic, faster refresh, matches business view
 
-## 🔗 Join Strategies
+2. **Status Definition**
+   - **Decision:** StatusDisplay NOT "Invoiced" (includes "In Process", "WIP Finished Not Invoiced")
+   - **Rationale:** Clear exclusion of completed work, flexible for new status values
+   - **Validation:** Ensures no overlap with Fact_LaborJobSummary
 
-### Join Architecture
+3. **Hours Pre-Aggregation**
+   - **Decision:** Aggregate TechnicianPunchedDetail to work order level before joining
+   - **Rationale:** LEFT JOIN preserves WOs without hours (work not started yet)
+   - **Business Value:** Shows progress on pending work
+
+4. **Refresh Strategy: Full**
+   - **Decision:** Full refresh on each load
+   - **Rationale:** Small dataset (~100 rows), fast refresh (1.5 min), always current
+   - **Acceptable:** Dynamic data, full refresh is still very fast
+
+### **Fact_WorkOrderParts Architecture**
+
+#### **Design Pattern: Invoice-Based Filtering with Parts Detail**
+
 ```
-Fact_LaborJobSummary Build Process:
-
-1. Base Table (Raw_wkothsub)
-   └── Grain: 1 row per job per work order
-       Rows: ~100,000
-
-2. LEFT JOIN → InspectionCodes Lookup
-   └── Adds: IsInspection flag
-       Match: JobCode = job_code
-       Result: All rows preserved
-
-3. LEFT JOIN → Aggregated Labor Hours
-   └── Adds: ActualHoursWorked, InvoicedHours
-       Match: Branch + WorkOrder + JobCode
-       Result: ~75% match, rest NULL (expected)
-
-4. LEFT JOIN → Work Order Context
-   └── Adds: WorkOrderStatus, dates
-       Match: Branch + WorkOrder
-       Result: 100% match (should always find WO)
-
-Final Row Count: Same as Raw_wkothsub ✅
-```
-
-### Join Type Decisions
-
-#### Why LEFT OUTER Joins?
-
-**Decision:** Use LEFT OUTER for all joins  
-**Rationale:** Data completeness over perfect matching
-
-**Alternative Considered:** INNER JOIN  
-**Rejected Because:**
-- Would lose parts-only jobs (no labor)
-- Would lose jobs if WO missing (data quality)
-- Would lose visibility into orphaned records
-
-**Trade-off:**
-- ✅ Keep all jobs (complete picture)
-- ⚠️ Some NULLs to handle (documented)
-- ✅ Easier debugging (can see unmatched records)
-
----
-
-### Join Performance Optimization
-
-#### Pre-Aggregation Strategy
-
-**Pattern:** Aggregate → Join (not Join → Aggregate)
-
-**Why?**
-- Reduces join cardinality
-- Fewer rows to process
-- Better query performance
-
-**Example:**
-```
-❌ BAD: Join Raw_wkmechwk (1M rows) then aggregate
-  • 1M row join
-  • Then aggregate in fact table
-  • Slow, memory intensive
-
-✅ GOOD: Aggregate Raw_wkmechwk to job level (50k rows) then join
-  • 50k row join (20x fewer rows!)
-  • Pre-aggregated before join
-  • Fast, efficient
+┌────────────────────┐
+│   Raw_wkothsub     │  (Inspection work orders)
+│   Filter: Inspection│
+│   Get: Invoice #s  │
+└────────┬───────────┘
+         │ INNER JOIN (on Invoice Number)
+         │ ⚠️ CRITICAL FIX: Was work order, now invoice!
+┌────────▼───────────┐
+│   Raw_InTrans      │  (Parts transactions)
+│   Join Key: REF_NO │  (= Invoice Number)
+│   Filter: Franchise│
+└────────────────────┘
 ```
 
-**Implementation:**
-```powerquery
-// Aggregate FIRST
-AggregatedHours = Table.Group(...)  // 50k rows
+#### **Key Design Decisions**
 
-// Then JOIN
-JoinLaborHours = Table.NestedJoin(
-    RemoveMatchColumn,          // 100k rows
-    AggregatedHours,            // 50k rows (pre-aggregated!)
-    JoinKind.LeftOuter
-)
+1. **CRITICAL BUG FIX: Invoice Number Join**
+   - **Original Bug:** Joined InTrans.REF_NO to work order numbers
+   - **Problem:** InTrans.REF_NO is actually INVOICE NUMBER, not work order
+   - **Result Before Fix:** Only 186 rows (incorrect join)
+   - **Fix Applied:** Join InTrans to invoice numbers from inspection work orders
+   - **Result After Fix:** ~150K rows (correct join)
+   - **Learning:** Always verify field semantics, not just names!
+
+2. **Two-Step Filtering Approach**
+   - **Step 1:** Identify inspection work orders from Raw_wkothsub
+   - **Step 2:** Get invoice numbers from those work orders
+   - **Step 3:** Filter InTrans to those invoice numbers
+   - **Rationale:** Ensures only parts from inspection work orders included
+
+3. **Data Type Safety**
+   - **Decision:** Explicitly convert Branch and Invoice to TEXT before joins
+   - **Rationale:** Prevents SQL numeric overflow errors on large invoice numbers
+   - **Implementation:** `Table.TransformColumnTypes` before `Table.NestedJoin`
+
+4. **Refresh Strategy: Full with Date Filter**
+   - **Decision:** Full refresh, but InTrans filtered to 2024+ at source
+   - **Rationale:** Reduces data volume, faster refresh, recent data sufficient
+   - **Performance:** 10 minutes (monitoring for optimization opportunities)
+
+---
+
+## 🗂️ Dimension Table Designs
+
+### **dim_BranchLocation Design**
+
+#### **Purpose:** Branch/location master with operational intelligence
+
+#### **Key Features**
+
+1. **Smart Operational Filtering**
+   - **Original Issue:** Used `Table.Skip(30)` which removed legitimate branches
+   - **Fix Applied:** Pattern-based filtering on BranchID
+   - **Keep:** Numbered branches (1, 2, 3, 11, 12...) and specialized shops (1I, 1S, 1C...)
+   - **Remove:** Hourly branches (H1, H2...) and Salary branches (S1, S2...)
+   - **Impact:** Restored complete operational branch coverage
+
+2. **Branch Type Classification**
+   - **Main Branch:** Full-service operational locations
+   - **IS Shop:** Inspection/service specialists
+   - **Set-Up Shop:** Equipment setup specialists
+   - **CP Shop:** Customer pickup specialists
+   - **Business Value:** Enables specialized work assignment
+
+3. **Geographic Intelligence**
+   - **Regional Classification:** West Texas, Central Texas, Southern NM, Border Region
+   - **Market Presence:** Primary vs Secondary market categorization
+   - **Service Capacity:** Full Service, Inspection Specialist, Setup Specialist
+   - **Business Value:** Territory management and strategic planning
+
+4. **Data Quality Scoring**
+   - **Scoring:** 0-100 scale based on field completeness
+   - **Components:** Location ID (40pts), Geography (30pts), Operations (30pts)
+   - **Business Value:** Identifies records needing data enhancement
+
+### **dim_CustomerList Design**
+
+#### **Purpose:** Customer master with financial intelligence
+
+#### **Key Features**
+
+1. **Multiple Naming Strategies**
+   - **Customer:** Standard format (Company or "LastName, FirstName")
+   - **DisplayName:** Best available name with intelligent fallbacks
+   - **PrimaryName:** Company-first priority
+   - **FullName:** Complete individual name
+   - **Business Value:** Flexible naming for different report contexts
+
+2. **Financial Health Indicators**
+   - **Credit Utilization:** AccountBalance / CreditLimit
+   - **Financial Risk Level:** Minimal / Low / Medium / High (based on utilization)
+   - **Has Overdue Balance:** Boolean across all aging buckets
+   - **Business Value:** Proactive credit management and risk assessment
+
+3. **Customer Segmentation**
+   - **Customer Tier:** Key Account / Premium / Standard / Basic
+   - **Criteria:** Key flag + credit limit thresholds
+   - **Is High Value:** Boolean for premium segments
+   - **Business Value:** Differentiated service levels and prioritization
+
+4. **Special System Customers**
+   - **Purpose:** Handle work orders without standard customer assignment
+   - **Negative Keys:** -1 through -8 for easy identification
+   - **Types:** UNKNOWN, INTERNAL, WARRANTY, FLEET, EXCESS, POLICY, BILLING, MISC
+   - **Integration:** Critical for Fact_LaborJobSummary CustomerLookupKey logic
+
+5. **Marketing Intelligence**
+   - **IsMarketingEligible:** Has email AND account is active
+   - **PreferredContactMethod:** Email > Mobile > Business Phone > Mail
+   - **Business Value:** Targeted campaigns and optimal communication
+
+### **dim_DateTable Design**
+
+#### **Purpose:** Standard date dimension for time intelligence
+
+#### **Key Features**
+
+1. **Complete Calendar Attributes**
+   - Date, Year, Quarter, Month, Week, Day, Weekday, etc.
+   - Fiscal calendar support
+   - Holiday calendar (if applicable)
+
+2. **Time Intelligence Functions**
+   - YTD, QTD, MTD calculations
+   - Prior period comparisons
+   - Rolling windows (30/60/90 days)
+
+3. **Date Hierarchies**
+   - Year > Quarter > Month > Day
+   - Year > Month > Week > Day
+   - Enables drill-down analysis
+
+### **dim_Parts Design**
+
+#### **Purpose:** Parts master with inventory and pricing intelligence
+
+#### **Key Features**
+
+1. **Inventory Intelligence**
+   - **Stock Status:** In Stock / Backordered / Out of Stock
+   - **IsAvailable:** Boolean for quick filtering
+   - **Calculation:** Based on QuantityOnHand and BackOrderQty
+   - **Business Value:** Service planning and parts availability
+
+2. **Sales Activity Indicators**
+   - **HasRecentSales:** Boolean (12-month sales > 0)
+   - **ActivityStatus:** Active / No Recent Sales
+   - **Business Value:** Obsolescence management
+
+3. **Business Filter Columns**
+   - **Source, SLC, DealerGroupCode, CommodityCode, VendorCode**
+   - **Purpose:** Advanced filtering and classification
+   - **Business Value:** Procurement and inventory management
+
+4. **Pricing Information**
+   - **InventoryCost:** Cost basis
+   - **SellPrice1:** Selling price
+   - **ListPrice:** Manufacturer list price
+   - **Business Value:** Margin analysis
+
+5. **CRITICAL USAGE NOTE**
+   - **Problem:** Fact_WorkOrderParts.Description contains "Inv No. XXXXXX"
+   - **Solution:** ALWAYS use dim_Parts.Description for actual part descriptions
+   - **Join:** dim_Parts.PartNumber = Fact_WorkOrderParts.PartNumber
+
+---
+
+## 🎯 Goals System Integration
+
+### **Architecture Pattern: Excel as Master Data**
+
+```
+┌───────────────────────┐
+│   Excel on OneDrive   │  (Manual maintenance)
+│  "Inspection Goals"   │
+│  15 branch locations  │
+└──────────┬────────────┘
+           │ Power BI Get Data
+           │ (Refresh on demand)
+┌──────────▼────────────┐
+│  Inspection Goals     │  (Power BI Table)
+│  LOCATION field       │
+└──────────┬────────────┘
+           │ Relationship
+┌──────────▼────────────┐
+│  dim_BranchLocation   │
+│  LocationID field     │
+└───────────────────────┘
 ```
 
+### **Design Decisions**
+
+1. **Why Excel (Not Database)?**
+   - **Decision:** Excel on OneDrive as master source for goals
+   - **Rationale:**
+     - Business users comfortable with Excel
+     - Easy goal updates without IT
+     - Version control via OneDrive
+     - Flexible format for business needs
+   - **Trade-off:** Manual maintenance required, no automated validation
+
+2. **Relationship Strategy**
+   - **Join:** Inspection Goals.LOCATION → dim_BranchLocation.LocationID
+   - **Cardinality:** One-to-One (one goal record per branch)
+   - **Filter Direction:** Single direction from goals to branch
+   - **Validation:** All 15 active branches have goals defined
+
+3. **Goal Structure**
+   - **General Goals:**
+     - Total Inspections Goal
+     - Labor $$ with Inspection Goal
+     - Total Parts $$ Goal
+   - **Specific Goals (CS690/770 Combines):**
+     - CS690/770 Inspections Goal
+     - CS690/770 Labor $$ with Inspection Goal
+     - CS690/770 Total Parts $$ Goal
+   - **Rationale:** Combines are high-value, merit separate tracking
+
+4. **Goal Calculation Pattern**
+   ```dax
+   % to Goal = 
+   DIVIDE(
+       [Actual Value],
+       [Goal Value],
+       0  // Return 0 if goal is missing/zero
+   )
+   ```
+
+5. **Performance Indicators**
+   - **>120%:** 🏆 Exceptional performance
+   - **100-119%:** ✅ Meeting/exceeding goal
+   - **90-99%:** ⚠️ Approaching goal
+   - **<90%:** 🚨 Below target (needs attention)
+
 ---
 
-## ⚡ Performance Architecture
+## 🔮 Predictive Analytics Engine
 
-### Refresh Performance Design
+### **ServiceRecommendations Calculated Table**
 
-#### Target Performance Metrics
+#### **Architecture: Historical Pattern Learning**
 
-| Component | Target | Actual | Status |
-|-----------|--------|--------|--------|
-| Raw_wkothsub | <3 min | 2m 10s | ✅ |
-| Raw_wkmechwk | <3 min | 2m | ✅ |
-| Raw_wkrofile | <2 min | 1m 30s | ✅ |
-| Fact_LaborJobSummary | <3 min | 2m 09s | ✅ |
-| **Total Refresh** | **<15 min** | **~8 min** | ✅ |
-
-#### Performance Design Principles
-
-**1. Raw Layer Optimization**
-
-**Column Threshold Discovery:**
-- Tested incrementally to find database limits
-- 20-21 columns: Optimal performance
-- 30+ columns: Performance degrades (35+ minutes!)
-- Lesson: Raw tables focused on essential columns only
-
-**Query Folding:**
-- 100% SQL-level processing
-- No Power Query transformations in raw layer
-- Simple SELECT with WHERE (incremental filter)
-- Let database do the work
-
-**Incremental Refresh:**
-```sql
-WHERE ModifiedDate >= '2023-01-01'  -- Simple date filter
-  AND ModifiedDate < CURRENT_DATETIME
+```
+┌──────────────────────────┐
+│  Fact_PendingInspections │  (Current queue)
+│  Get: Inspection Codes   │
+└─────────┬────────────────┘
+          │
+          │ For Each Pending Code:
+          │
+┌─────────▼─────────────────┐
+│  Fact_LaborJobSummary     │  (Historical data)
+│  Find: Completed WOs with │
+│        this inspection    │
+└─────────┬─────────────────┘
+          │
+          │ For Each Completed WO:
+          │
+┌─────────▼─────────────────┐
+│  Identify OTHER Services  │  (Non-inspection jobs)
+│  Performed on this WO     │
+└─────────┬─────────────────┘
+          │
+          │ Calculate Frequency:
+          │
+┌─────────▼─────────────────┐
+│  Service Frequency =      │
+│  (Times Appeared) /       │
+│  (Total Completions)      │
+└───────────────────────────┘
 ```
 
+#### **DAX Implementation Logic**
+
+1. **Step 1: Get Pending Inspection Codes**
+   ```dax
+   VAR InspectionCodes = 
+       SELECTCOLUMNS(
+           DISTINCT(Fact_PendingInspections[JobCode]),
+           "InspectionJobCode", Fact_PendingInspections[JobCode]
+       )
+   ```
+
+2. **Step 2: For Each Code, Find Historical Work Orders**
+   ```dax
+   VAR InspectionWorkOrders = 
+       CALCULATETABLE(
+           VALUES(Fact_LaborJobSummary[WorkOrderNumber]),
+           Fact_LaborJobSummary[JobCode] = CurrentInspection,
+           Fact_LaborJobSummary[IsInspection] = TRUE,
+           NOT(ISBLANK(Fact_LaborJobSummary[InvoiceNumber]))
+       )
+   ```
+
+3. **Step 3: Find Other Services on Those Work Orders**
+   ```dax
+   VAR UniqueServices = 
+       CALCULATETABLE(
+           SUMMARIZE(
+               Fact_LaborJobSummary,
+               Fact_LaborJobSummary[JobCode],
+               Fact_LaborJobSummary[JobType]
+           ),
+           Fact_LaborJobSummary[WorkOrderNumber] IN InspectionWorkOrders,
+           Fact_LaborJobSummary[IsInspection] = FALSE
+       )
+   ```
+
+4. **Step 4: Calculate Frequency**
+   ```dax
+   "TimesAdded", 
+       VAR ServiceCode = Fact_LaborJobSummary[JobCode]
+       VAR WorkOrdersWithService = 
+           CALCULATETABLE(
+               VALUES(Fact_LaborJobSummary[WorkOrderNumber]),
+               Fact_LaborJobSummary[WorkOrderNumber] IN InspectionWorkOrders,
+               Fact_LaborJobSummary[JobCode] = ServiceCode
+           )
+       RETURN COUNTROWS(WorkOrdersWithService)
+   ```
+
+5. **Step 5: Calculate Total Labor Cost**
+   ```dax
+   "TotalLabor",
+       VAR ServiceCode = Fact_LaborJobSummary[JobCode]
+       RETURN
+       CALCULATE(
+           SUM(Fact_LaborJobSummary[InvoicedLaborAmount]),
+           Fact_LaborJobSummary[WorkOrderNumber] IN InspectionWorkOrders,
+           Fact_LaborJobSummary[JobCode] = ServiceCode
+       )
+   ```
+
+#### **Business Logic**
+
+1. **Frequency Calculation**
+   ```
+   Frequency % = (TimesAdded / CompletedInspections) * 100
+   
+   Example:
+   - Completed IS-CS690 inspections: 224
+   - GEN REPAIR 1 appeared on: 124 of them
+   - Frequency: 124 / 224 = 55%
+   ```
+
+2. **Projected Need**
+   ```
+   EstimatedNeed = PendingCount * Frequency%
+   
+   Example:
+   - Pending IS-CS690 inspections: 6
+   - GEN REPAIR 1 frequency: 55%
+   - Estimated need: 6 * 0.55 = 3.3 → round to 3
+   ```
+
+3. **Revenue Projection**
+   ```
+   EstimatedRevenue = EstimatedNeed * AverageLabor
+   
+   Where:
+   AverageLabor = TotalLabor / TimesAdded
+   ```
+
+#### **Color Coding Logic**
+
+- **🔴 Red (50%+ frequency):** Critical - needed on most inspections
+- **🟡 Yellow (30-49% frequency):** Common - often needed
+- **🟢 Green (<30% frequency):** Occasional - sometimes needed
+
+#### **Refresh Behavior**
+
+- **When:** Calculated table refreshes with full model refresh
+- **Duration:** Calculates in seconds (DAX execution)
+- **Dependencies:** Requires Fact_LaborJobSummary and Fact_PendingInspections to be current
+
 ---
 
-**2. Fact Layer Optimization**
+## ⚡ Performance Optimization
 
-**Pre-Aggregation:**
-- Aggregate wkmechwk before joining (reduces cardinality)
-- 1M punch records → 50k job summaries
-- Join 50k rows instead of 1M rows (20x improvement!)
+### **Refresh Time Analysis**
 
-**Embedded Lookups:**
-- 111 inspection codes embedded in query
-- No separate dimension table lookup
-- Faster than table join for small lists
+| Component | Time | Optimization Status |
+|-----------|------|---------------------|
+| Raw Tables (6) | ~3 min | ✅ Optimized (incremental where possible) |
+| Fact_LaborJobSummary | 3 min | ✅ Excellent (pre-aggregation working) |
+| Fact_PendingInspections | 1.5 min | ✅ Excellent (small dataset) |
+| Fact_WorkOrderParts | 10 min | ⚠️ Monitoring (complex joins) |
+| Dimensions (4) | ~2 min | ✅ Good (master data, infrequent changes) |
+| **Total** | **~14.5 min** | **✅ Acceptable, monitoring WorkOrderParts** |
 
-**Column Selection from wkrofile:**
-- Only select needed columns (5 of 20)
-- Reduces data transfer
-- Improves join performance
+### **Optimization Strategies Implemented**
 
-**Calculated Fields:**
-- Pre-calculate common metrics (TotalInvoicedAmount, IsPending)
-- Done once at refresh vs repeatedly in DAX
-- Better report performance
+1. **Incremental Refresh (Raw Tables)**
+   - **Applied To:** Raw_wkothsub, Raw_wkmechwk, Raw_wkrofile
+   - **Strategy:** 2023+ scope, ModifiedDate filtering
+   - **Benefit:** Only processes changed/new records
+   - **Impact:** Reduced raw table refresh from 30+ min to ~3 min
+
+2. **Pre-Aggregation Before Joins**
+   - **Pattern:** Aggregate → Join (not Join → Aggregate)
+   - **Example:** Raw_wkmechwk aggregated punch→job level before joining
+   - **Benefit:** Fewer rows to join, faster performance
+   - **Impact:** Fact_LaborJobSummary 3 min (vs 10+ min without)
+
+3. **Strategic Column Selection**
+   - **Pattern:** Select only needed columns early in query
+   - **Implementation:** `Table.SelectColumns` right after source
+   - **Benefit:** Reduces data transfer, memory usage
+   - **Impact:** Faster processing throughout query
+
+4. **Data Type Optimization**
+   - **Pattern:** Explicit type conversion for join columns
+   - **Critical:** Convert to TEXT before string joins
+   - **Benefit:** Prevents SQL overflow, ensures proper joins
+   - **Example:** Branch + Invoice numbers as TEXT in WorkOrderParts
+
+5. **Query Folding Preservation**
+   - **Pattern:** Structure queries to maintain folding where possible
+   - **Monitoring:** Check "View Native Query" in Power Query
+   - **Benefit:** Operations pushed to SQL Server (faster than M engine)
+   - **Trade-off:** Balance between folding and complex transformations
+
+### **Fact_WorkOrderParts Optimization Opportunities**
+
+**Current Issue:** 10-minute refresh time
+
+**Potential Optimizations to Investigate:**
+
+1. **Incremental Refresh Evaluation**
+   - Consider if ModifiedDate available on InTrans
+   - Scope could be 2024+ with incremental updates
+   - Risk: Invoice numbers may reference older work orders
+
+2. **Index Optimization**
+   - Ensure Branch + Invoice indexed on source tables
+   - PartNumber index for dim_Parts join
+   - May require DBA coordination
+
+3. **Join Order Optimization**
+   - Test different join sequences
+   - Consider materializing inspection invoices list separately
+
+4. **Parallel Processing**
+   - Evaluate if partitioning possible
+   - Separate by branch or date range
+   - Combine results (more complex to maintain)
+
+**Current Assessment:** 10 minutes acceptable for now, monitor CU usage
 
 ---
 
-### Incremental Refresh Strategy
+## 🔐 Data Quality Framework
 
-#### Current Implementation
+### **Quality Dimensions Tracked**
 
-**Scope:** ModifiedDate >= 2023-01-01
+1. **Completeness:** Are all expected fields populated?
+2. **Accuracy:** Do values match business rules?
+3. **Consistency:** Are values consistent across related tables?
+4. **Timeliness:** Is data current and refreshing properly?
+5. **Uniqueness:** Are there unexpected duplicates?
 
-**Rationale:**
-- Captures 2+ years of history (sufficient for trends)
-- Recent modifications on old work orders captured
-- Balances performance vs data completeness
+### **Data Quality Scoring Implementation**
 
-**Row Count Impact:**
+#### **dim_BranchLocation Scoring (0-100)**
 ```
-Full History:   ~500k jobs (10+ years)
-Incremental:    ~100k jobs (2023+)
-Reduction:      80% fewer rows!
+Score Components:
+- Location ID present and not default (20 pts)
+- Branch ID present (20 pts)
+- City present (15 pts)
+- State present (15 pts)
+- Branch Name present (15 pts)
+- Valid type classification (15 pts)
 ```
 
----
-
-#### How Incremental Refresh Works
-
-**Raw Tables:**
-```powerquery
-// Each raw table filters at source
-WHERE ModifiedDate >= '2023-01-01'
-  AND ModifiedDate < DateTime.LocalNow()
+#### **dim_CustomerList Scoring (0-100)**
+```
+Score Components:
+- Name present (Company OR FirstName) (25 pts)
+- Contact info (Email OR Phone) (25 pts)
+- Address complete (Street + City + State) (25 pts)
+- Financial data (CreditLimit OR Balance <> 0) (25 pts)
 ```
 
-**Fact Table:**
-- Inherits from Raw_wkothsub filter
-- Only processes jobs modified since 2023
-- Automatically stays incremental
+#### **dim_Parts Scoring (Conceptual)**
+```
+Score Components:
+- Part number and description (25 pts)
+- Inventory data present (25 pts)
+- Pricing data present (25 pts)
+- Business classifications present (25 pts)
+```
 
-**Daily Refresh:**
-- Only NEW or CHANGED records processed
-- Old records (no changes) skipped
-- Typical daily refresh: <1,000 changed records
+### **Validation Checks**
 
----
+1. **Row Count Validation**
+   - Expected vs actual row counts
+   - Alert if variance > 10%
 
-### Scalability Considerations
+2. **Financial Reconciliation**
+   - Sum of parts and labor vs known totals
+   - Goals comparison validation
 
-#### Current Capacity
+3. **Relationship Integrity**
+   - All fact rows have valid dimension matches
+   - No orphaned records
 
-**Row Volume:**
-- Current: ~100k jobs (2023+)
-- Growth: ~50k jobs per year
-- 2-year window maintains ~100k rows (stable)
-
-**Performance Headroom:**
-- Currently using ~50% of 3-minute target
-- Can handle 2-3x data volume growth
-- Alert threshold: 5-minute refresh time
-
----
-
-#### Future Optimization Opportunities
-
-**If Performance Degrades:**
-
-1. **Partition by Year:**
-   - Create separate fact tables per year
-   - Union in Power BI
-   - Reduces single-table scan size
-
-2. **Aggregate Fact Table:**
-   - Pre-aggregate to daily grain
-   - Keep detail table for drill-through
-   - Faster for summary queries
-
-3. **Columnstore Compression:**
-   - If migrating to SQL-based lakehouse
-   - Significant compression for numeric columns
-   - Faster aggregation queries
-
-4. **Partition Elimination:**
-   - Implement proper partitioning scheme
-   - Query only relevant partitions
-   - Reduces data scan volume
+4. **Business Rule Validation**
+   - Inspection flags applied correctly
+   - Status transitions valid
+   - Date logic consistent
 
 ---
 
-## 🎯 Design Decisions & Trade-offs
+## 📝 Technical Decisions Log
 
-### Key Architectural Decisions
+### **Decision 1: Fact Table Grain Choices**
+- **Decision:** Job-level (Labor), Work order-level (Pending), Transaction-level (Parts)
+- **Date:** 2025-10-30
+- **Rationale:** Balance detail vs performance, align with business questions
+- **Impact:** Optimized performance, appropriate analysis levels
 
-#### Decision 1: Single Fact vs Multiple Facts
+### **Decision 2: Goals in Excel (Not Database)**
+- **Decision:** Excel on OneDrive as master goals source
+- **Date:** 2025-11-14
+- **Rationale:** Business ownership, easy updates, familiar tool
+- **Impact:** Flexible goal management, manual maintenance required
 
-**Decision:** Single comprehensive fact table  
-**Alternative:** Separate facts for labor, parts, status
+### **Decision 3: Calculated Table for Recommendations**
+- **Decision:** DAX calculated table (not M query)
+- **Date:** 2025-11-14
+- **Rationale:** Depends on existing fact tables, complex logic suited for DAX
+- **Impact:** Fast refresh, easy to modify, integrated with model
 
-**Rationale:**
-- ✅ All metrics share same context (inspection jobs)
-- ✅ Simpler report queries (single source)
-- ✅ Better performance (one table scan)
-- ✅ Easier maintenance
+### **Decision 4: Invoice Join Fix (WorkOrderParts)**
+- **Decision:** Join InTrans to invoice numbers (not work order numbers)
+- **Date:** 2025-11-14 (Fix applied)
+- **Rationale:** InTrans.REF_NO is invoice number, not work order
+- **Impact:** Correct data (186 rows → 150K rows)
 
-**Trade-off:**
-- ⚠️ Lost: Individual technician detail
-- ⚠️ Lost: Individual punch-level timing
-- ✅ Acceptable for inspection reporting use case
+### **Decision 5: Pre-Aggregation Pattern**
+- **Decision:** Aggregate tech hours before joining to jobs
+- **Date:** 2025-10-30
+- **Rationale:** Reduces join complexity, faster performance
+- **Impact:** 3-minute refresh (vs 10+ minutes)
 
----
+### **Decision 6: Negative Keys for Special Customers**
+- **Decision:** Use -1 to -8 for system customer records
+- **Date:** 2025-10-30
+- **Rationale:** Easy identification, no conflict with real customers
+- **Impact:** Clean handling of non-standard work order scenarios
 
-#### Decision 2: Pre-Aggregated Hours vs Detail
-
-**Decision:** Aggregate labor hours to job level  
-**Alternative:** Keep punch-level detail
-
-**Rationale:**
-- ✅ Matches report grain (job-level, not punch-level)
-- ✅ Better performance (50k vs 1M rows)
-- ✅ Simpler queries (no aggregation in DAX)
-
-**Trade-off:**
-- ⚠️ Cannot analyze individual tech performance
-- ⚠️ Cannot see specific punch times
-- ✅ Can build separate Fact_LaborPunches if detail needed
-
----
-
-#### Decision 3: Embedded Inspection Codes vs Dimension
-
-**Decision:** Embed 111 codes in query as #table  
-**Alternative:** Separate dim_InspectionCodes table
-
-**Rationale:**
-- ✅ Faster (no table join at refresh)
-- ✅ Simpler (one less table to manage)
-- ✅ Centralized (all codes in one place)
-- ✅ Version controlled (in query code)
-
-**Trade-off:**
-- ⚠️ Query change needed to add codes
-- ⚠️ Not user-maintainable
-- ✅ Acceptable for stable list of 111 codes
+### **Decision 7: Embedded Inspection Codes**
+- **Decision:** 111 codes defined inline in queries
+- **Date:** 2025-10-30
+- **Rationale:** Single source of truth, version controlled, no external dependency
+- **Impact:** Consistent across all fact tables, easy maintenance
 
 ---
 
-#### Decision 4: Work Order Denormalization
+## 🔄 Evolution & Future Enhancements
 
-**Decision:** Include WO attributes in fact table  
-**Alternative:** Separate dim_WorkOrder table
+### **Potential Future Enhancements**
 
-**Rationale:**
-- ✅ Better query performance (no join)
-- ✅ Simpler model (fewer tables)
-- ✅ Acceptable redundancy (WO attributes shared across jobs)
+1. **Incremental Refresh for WorkOrderParts**
+   - Reduce 10-minute refresh time
+   - Requires ModifiedDate or similar field
 
-**Trade-off:**
-- ⚠️ Redundant data (status repeated per job)
-- ⚠️ Update complexity (change WO status = multiple rows)
-- ✅ Acceptable for read-heavy analytical use case
+2. **Automated Goals Calculation**
+   - Generate goals from historical patterns
+   - Maintain Excel as override option
 
----
+3. **Tech-Level Detail Fact**
+   - New fact table for individual tech analysis
+   - Separate from summarized LaborJobSummary
 
-### Technical Debt & Future Improvements
+4. **Expected Date Integration**
+   - If field becomes available in source
+   - Enable expected vs actual analysis
 
-#### Known Technical Debt
+5. **Real-Time Pending Queue**
+   - DirectQuery or hybrid mode
+   - More frequent updates
 
-**1. Missing Expected Date Field**
-- **Issue:** Raw_wkrofile lacks expected_datetime
-- **Impact:** Cannot calculate timeline variance
-- **Workaround:** Use business rules (30-day threshold)
-- **Resolution:** Investigate if field exists elsewhere
-
-**2. Embedded Inspection Codes**
-- **Issue:** Not user-maintainable
-- **Impact:** Requires query change for new codes
-- **Workaround:** Well-documented process
-- **Resolution:** Consider dimension table if codes change frequently
-
-**3. Status Code Assumptions**
-- **Issue:** IsPending hardcoded for 3 status codes
-- **Impact:** May miss other pending states
-- **Workaround:** Periodic validation with business
-- **Resolution:** Implement status dimension with IsPending flag
+6. **Expanded Recommendations**
+   - Include parts recommendations (not just services)
+   - Confidence intervals on projections
 
 ---
 
-## 🚀 Future Enhancements
-
-### Phase 2: Planned Enhancements
-
-**1. Dimension Tables**
-- dim_Date (standard calendar)
-- dim_Branch (location hierarchy)
-- dim_Customer (from existing project)
-- Goals table (SharePoint integration)
-
-**2. Additional Metrics**
-- Customer retention (repeat inspections)
-- Seasonal trends (harvest vs off-season)
-- Technician productivity (if separate fact added)
-
----
-
-### Phase 3: Potential Enhancements
-
-**1. Additional Fact Tables**
-
-**Fact_LaborPunches:**
-- Grain: Individual tech punches
-- Purpose: Detailed tech performance analysis
-- When: If business requests individual tech metrics
-
-**Fact_WorkOrderParts:**
-- Grain: Individual parts transactions
-- Purpose: Detailed parts analysis
-- When: If inspection parts detail needed
-
-**2. Advanced Analytics**
-
-**Predictive Models:**
-- Inspection estimate accuracy prediction
-- Peak season capacity planning
-- Equipment failure prediction (based on inspection findings)
-
-**Machine Learning:**
-- Anomaly detection (unusual inspection patterns)
-- Clustering (customer segments)
-- Forecasting (inspection volume prediction)
-
----
-
-## 📊 Data Quality Architecture
-
-### Built-in Validation
-
-**Grain Preservation:**
-- Row count validation (fact = raw_wkothsub)
-- Alert if row count increases (indicates join issue)
-
-**NULL Handling:**
-- Expected NULLs documented (ActualHoursWorked)
-- Unexpected NULLs flagged (WorkOrderStatus)
-
-**Business Rule Validation:**
-- TotalInvoicedAmount = Labor + Parts
-- IsInspection TRUE for known codes
-
-### Monitoring & Alerting
-
-**Refresh Monitoring:**
-- Alert if refresh > 5 minutes
-- Alert if row count variance > 20%
-- Alert if failure rate > 0%
-
-**Data Quality Checks:**
-- ActualHoursWorked NULL rate (expect 20-30%)
-- WorkOrderStatus NULL rate (expect 0%)
-- IsInspection distribution (expect 5-15%)
-
----
-
-## 📞 Architecture Decisions Contact
-
-**Architecture Owner:** [Brian Fox]  
-**Last Reviewed:** 2025-10-30  
-**Next Review:** 2026-01-30 (Quarterly)
-
-For architecture questions or proposed changes:
-1. Review this document
-2. Check [data-dictionary.md](documentation/data-dictionary.md)
-3. Review [README.md](README.md)
-4. Contact project lead for discussion
-
----
-
-## 📅 Architecture Evolution Log
-
-### Version 1.0 (2025-10-30) - Phase 1 Complete
-
-**Implemented:**
-- ✅ Three-layer architecture (Raw → Curated → Semantic)
-- ✅ Fact_LaborJobSummary with inspection intelligence
-- ✅ Pre-aggregated labor hours strategy
-- ✅ Embedded inspection code lookup
-- ✅ Incremental refresh pattern (2023+)
-
-**Performance Achieved:**
-- ✅ 2m 09s fact table refresh (target: <3 min)
-- ✅ 97% improvement over old query (60-120 min → 2 min)
-- ✅ Zero failures in testing
-- ✅ Eliminated capacity throttling
-
-**Lessons Learned:**
-- Database has 20-21 column optimization threshold
-- Pre-aggregation before joins critical for performance
-- LEFT OUTER joins preserve data completeness
-- Embedded lookups faster than joins for small lists
-
----
-
-**End of Architecture Documentation**
+**Document Version:** 1.0  
+**Last Major Update:** 2025-11-14  
+**Next Review:** Phase 3 planning
