@@ -3485,8 +3485,8 @@ table _Measures
 			                TRUE(),
 			                CONTAINSSTRING(JobCode, "TRACTOR"), "🚜 Tractor",
 			                CONTAINSSTRING(JobCode, "HARVESTREADY"), "🌾 Harvest Ready",
-			                CONTAINSSTRING(JobCode, "CS690"), "🌾 CS690 Combine",
-			                CONTAINSSTRING(JobCode, "CS770"), "🌾 CS770 Combine",
+			                CONTAINSSTRING(JobCode, "CS690"), "🌾 CS690 Cotton Stripper",
+			                CONTAINSSTRING(JobCode, "CS770"), "🌾 CS770 Cotton Stripper",
 			                CONTAINSSTRING(JobCode, "STRIPPER"), "🧹 Stripper",
 			                CONTAINSSTRING(JobCode, "COMPACT"), "🏗️ Compact",
 			                CONTAINSSTRING(JobCode, "SPRAYER"), "💧 Sprayer",
@@ -3705,7 +3705,7 @@ table _Measures
 			"
 			<div style='font-family: Segoe UI, Arial, sans-serif; height: 100%; overflow-y: auto; padding: 10px;'>
 			    <div style='font-size: 18px; font-weight: 700; color: white; margin-bottom: 15px; padding: 12px 20px; background: linear-gradient(to right, #1D3C4E, #3A7CA5); border-radius: 8px;'>
-			        📊 Branch Performance - Goals (15 Locations)
+			        📊 Branch Performance - Goals (16 Locations)
 			    </div>
 			    
 			    <div style='display: flex; padding: 8px 20px; margin-bottom: 5px; gap: 20px; font-size: 11px; font-weight: 600; color: #6B7280; text-transform: uppercase;'>
@@ -6248,6 +6248,35 @@ table _Measures
 		lineageTag: 5254c6f9-d5f1-45c8-9e11-67d9e519e9a8
 
 		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Date Range Display' = ```
+			
+			VAR MinDate = 
+			    CALCULATE(
+			        MIN(dim_DateTable[Date])
+			    )
+			VAR MaxDate = 
+			    CALCULATE(
+			        MAX(dim_DateTable[Date])
+			    )
+			VAR MinFormatted = FORMAT(MinDate, "MMM D, YYYY")
+			VAR MaxFormatted = FORMAT(MaxDate, "MMM D, YYYY")
+			VAR IsSingleDate = MinDate = MaxDate
+			VAR AllMinDate = CALCULATE(MIN(dim_DateTable[Date]), ALL(dim_DateTable))
+			VAR AllMaxDate = CALCULATE(MAX(dim_DateTable[Date]), ALL(dim_DateTable))
+			VAR IsAllDates = MinDate = AllMinDate && MaxDate = AllMaxDate
+			RETURN
+			IF(
+			    IsAllDates,
+			    "📅 All Dates",
+			    IF(
+			        IsSingleDate,
+			        "📅 " & MinFormatted,
+			        "📅 " & MinFormatted & " → " & MaxFormatted
+			    )
+			)
+			```
+		lineageTag: a6e84087-7c47-43d2-a65d-0e040da339ee
 
 	column Value
 		isHidden
