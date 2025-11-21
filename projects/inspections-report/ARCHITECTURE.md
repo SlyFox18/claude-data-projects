@@ -675,6 +675,22 @@ Each fact table grain carefully chosen for business analysis needs:
 
 **Current Assessment:** 10 minutes acceptable for now, monitor CU usage
 
+## Pipeline Architecture
+
+The report refresh is powered by a 4-phase pipeline architecture:
+
+- [Pipeline Overview](./documentation/pipeline-architecture-overview.md) - Complete system architecture
+- [Phase 1: Raw Data](./documentation/pipeline-phase-1-raw-data.md) - Source data refresh
+- [Phase 2: InTrans Incremental](./documentation/pipeline-phase-2-intrans-incremental.md) - Parts transaction incremental load
+- [Phase 3: Dimensions](./documentation/pipeline-phase-3-dimensions.md) - Dimension table refresh
+- [Phase 4: Facts & Semantic Models](./documentation/pipeline-phase-4-facts-semantic-models.md) - Fact tables and report refresh
+- [Master Orchestrator](./documentation/pipeline-master-orchestrator.md) - Complete workflow orchestration
+
+Implementation guides:
+- [Scaling Guide](./documentation/pipeline-scaling-guide.md) - Adding more reports
+- [Migration Guide](./documentation/pipeline-migration-guide-intrans.md) - Moving to InTrans_Incremental
+- [Troubleshooting](./documentation/pipeline-troubleshooting-guide.md) - Common issues
+
 ---
 
 ## 🔐 Data Quality Framework
