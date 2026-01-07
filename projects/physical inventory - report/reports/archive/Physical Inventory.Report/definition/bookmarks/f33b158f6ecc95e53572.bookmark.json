@@ -1,0 +1,841 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/bookmark/1.4.0/schema.json",
+  "displayName": "Hide Slicer 2",
+  "name": "f33b158f6ecc95e53572",
+  "options": {
+    "targetVisualNames": [
+      "c9902cdba626021b34e2",
+      "a35a51cac69e32c07482",
+      "65dd83b607d6bda5c4ac",
+      "4c590695de083c04ecca",
+      "004879ec4b5fec85fc13",
+      "0fe15cb1bd6a9478b962",
+      "cd5f91e0a0e20a94cfee",
+      "25891990bbec3f8222af"
+    ],
+    "suppressData": true
+  },
+  "explorationState": {
+    "version": "1.3",
+    "activeSection": "307ea5c2abf919fd38f7",
+    "sections": {
+      "307ea5c2abf919fd38f7": {
+        "visualContainers": {
+          "e543f8b3bc7cc912d242": {
+            "singleVisual": {
+              "visualType": "shape",
+              "objects": {}
+            }
+          },
+          "d8c0c4f2c5d186e105e2": {
+            "singleVisual": {
+              "visualType": "shape",
+              "objects": {}
+            }
+          },
+          "96172be845029daa37f3": {
+            "singleVisual": {
+              "visualType": "image",
+              "objects": {}
+            }
+          },
+          "16af817668f81f07de94": {
+            "singleVisual": {
+              "visualType": "image",
+              "objects": {}
+            }
+          },
+          "fcb30e34cd11b612aa0d": {
+            "singleVisual": {
+              "visualType": "textbox",
+              "objects": {}
+            }
+          },
+          "4e0cfb36eda7953ecf6d": {
+            "filters": {
+              "byExpr": [
+                {
+                  "name": "16c5ccf84295378366d3",
+                  "type": "Advanced",
+                  "expression": {
+                    "Aggregation": {
+                      "Expression": {
+                        "Column": {
+                          "Expression": {
+                            "SourceRef": {
+                              "Entity": "Data Refresh"
+                            }
+                          },
+                          "Property": "CurrentDateTime"
+                        }
+                      },
+                      "Function": 3
+                    }
+                  },
+                  "howCreated": 0
+                }
+              ]
+            },
+            "singleVisual": {
+              "visualType": "card",
+              "objects": {}
+            }
+          },
+          "f237414ee63c1ba568d5": {
+            "filters": {
+              "byExpr": [
+                {
+                  "name": "625dfbcea6c27f45880a",
+                  "type": "Advanced",
+                  "expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "MeasuresTable"
+                        }
+                      },
+                      "Property": "Weeks Remaining"
+                    }
+                  },
+                  "howCreated": 0
+                }
+              ]
+            },
+            "singleVisual": {
+              "visualType": "card",
+              "objects": {},
+              "orderBy": [
+                {
+                  "Direction": 2,
+                  "Expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "MeasuresTable"
+                        }
+                      },
+                      "Property": "Weeks Remaining"
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "0a38270b1558fdc71629": {
+            "filters": {
+              "byExpr": [
+                {
+                  "name": "eea9c56586cd087ec477",
+                  "type": "Advanced",
+                  "filter": {
+                    "Version": 2,
+                    "From": [
+                      {
+                        "Name": "j",
+                        "Entity": "jdis_Phy_Inv",
+                        "Type": 0
+                      }
+                    ],
+                    "Where": [
+                      {
+                        "Condition": {
+                          "Comparison": {
+                            "ComparisonKind": 3,
+                            "Left": {
+                              "Column": {
+                                "Expression": {
+                                  "SourceRef": {
+                                    "Source": "j"
+                                  }
+                                },
+                                "Property": "Date Created"
+                              }
+                            },
+                            "Right": {
+                              "DateSpan": {
+                                "Expression": {
+                                  "Literal": {
+                                    "Value": "datetime'2024-12-31T00:00:00'"
+                                  }
+                                },
+                                "TimeUnit": 5
+                              }
+                            }
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  "expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "jdis_Phy_Inv"
+                        }
+                      },
+                      "Property": "Date Created"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "b4f4ceca7d7fef0a961d",
+                  "type": "Advanced",
+                  "filter": {
+                    "Version": 2,
+                    "From": [
+                      {
+                        "Name": "j",
+                        "Entity": "jdis_Phy_Inv",
+                        "Type": 0
+                      }
+                    ],
+                    "Where": [
+                      {
+                        "Condition": {
+                          "Comparison": {
+                            "ComparisonKind": 2,
+                            "Left": {
+                              "Column": {
+                                "Expression": {
+                                  "SourceRef": {
+                                    "Source": "j"
+                                  }
+                                },
+                                "Property": "Bin Qty"
+                              }
+                            },
+                            "Right": {
+                              "Literal": {
+                                "Value": "0L"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  "expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "jdis_Phy_Inv"
+                        }
+                      },
+                      "Property": "Bin Qty"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "4e75b16e17edc91e07e8",
+                  "type": "Advanced",
+                  "filter": {
+                    "Version": 2,
+                    "From": [
+                      {
+                        "Name": "m",
+                        "Entity": "MeasuresTable",
+                        "Type": 0
+                      }
+                    ],
+                    "Where": [
+                      {
+                        "Condition": {
+                          "Comparison": {
+                            "ComparisonKind": 0,
+                            "Left": {
+                              "Measure": {
+                                "Expression": {
+                                  "SourceRef": {
+                                    "Source": "m"
+                                  }
+                                },
+                                "Property": "Is Bin Uncounted This Year"
+                              }
+                            },
+                            "Right": {
+                              "Literal": {
+                                "Value": "1L"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  "expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "MeasuresTable"
+                        }
+                      },
+                      "Property": "Is Bin Uncounted This Year"
+                    }
+                  },
+                  "howCreated": 1
+                },
+                {
+                  "name": "e9ef7301fca39cbc9f3e",
+                  "type": "Categorical",
+                  "expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "Dim_Branch"
+                        }
+                      },
+                      "Property": "Branch"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "8878aa2398485d9cb4f3",
+                  "type": "Categorical",
+                  "expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "Dim_Franchise"
+                        }
+                      },
+                      "Property": "Franchise"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "d4ce5970256d7ea3b469",
+                  "type": "Categorical",
+                  "expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "jdis_Phy_Inv"
+                        }
+                      },
+                      "Property": "Bin"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "f94ae56edad8de4bd0ee",
+                  "type": "Categorical",
+                  "expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "jdis_Phy_Inv"
+                        }
+                      },
+                      "Property": "Stocktake Date"
+                    }
+                  },
+                  "howCreated": 0
+                }
+              ]
+            },
+            "singleVisual": {
+              "visualType": "tableEx",
+              "objects": {},
+              "orderBy": [
+                {
+                  "Direction": 2,
+                  "Expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "jdis_Phy_Inv"
+                        }
+                      },
+                      "Property": "Bin Qty"
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "12e2831079bbaf27d96e": {
+            "filters": {
+              "byExpr": [
+                {
+                  "name": "2d9c43a61dc7097e3e36",
+                  "type": "Advanced",
+                  "expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "MeasuresTable"
+                        }
+                      },
+                      "Property": "Parts Left to Count"
+                    }
+                  },
+                  "howCreated": 1
+                },
+                {
+                  "name": "2d68c2fef013cc5d3d93",
+                  "type": "Advanced",
+                  "filter": {
+                    "Version": 2,
+                    "From": [
+                      {
+                        "Name": "j",
+                        "Entity": "jdis_Phy_Inv",
+                        "Type": 0
+                      }
+                    ],
+                    "Where": [
+                      {
+                        "Condition": {
+                          "Comparison": {
+                            "ComparisonKind": 2,
+                            "Left": {
+                              "Column": {
+                                "Expression": {
+                                  "SourceRef": {
+                                    "Source": "j"
+                                  }
+                                },
+                                "Property": "Bin Qty"
+                              }
+                            },
+                            "Right": {
+                              "Literal": {
+                                "Value": "0L"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  "expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "jdis_Phy_Inv"
+                        }
+                      },
+                      "Property": "Bin Qty"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "f0cb8814536dbcb3ef40",
+                  "type": "Advanced",
+                  "filter": {
+                    "Version": 2,
+                    "From": [
+                      {
+                        "Name": "m",
+                        "Entity": "MeasuresTable",
+                        "Type": 0
+                      }
+                    ],
+                    "Where": [
+                      {
+                        "Condition": {
+                          "Comparison": {
+                            "ComparisonKind": 0,
+                            "Left": {
+                              "Measure": {
+                                "Expression": {
+                                  "SourceRef": {
+                                    "Source": "m"
+                                  }
+                                },
+                                "Property": "Is Uncounted This Year"
+                              }
+                            },
+                            "Right": {
+                              "Literal": {
+                                "Value": "1L"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  "expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "MeasuresTable"
+                        }
+                      },
+                      "Property": "Is Uncounted This Year"
+                    }
+                  },
+                  "howCreated": 1
+                },
+                {
+                  "name": "08788b0c00da58e1f017",
+                  "type": "Advanced",
+                  "filter": {
+                    "Version": 2,
+                    "From": [
+                      {
+                        "Name": "j",
+                        "Entity": "jdis_Phy_Inv",
+                        "Type": 0
+                      }
+                    ],
+                    "Where": [
+                      {
+                        "Condition": {
+                          "Comparison": {
+                            "ComparisonKind": 3,
+                            "Left": {
+                              "Column": {
+                                "Expression": {
+                                  "SourceRef": {
+                                    "Source": "j"
+                                  }
+                                },
+                                "Property": "Date Created"
+                              }
+                            },
+                            "Right": {
+                              "DateSpan": {
+                                "Expression": {
+                                  "Literal": {
+                                    "Value": "datetime'2024-12-31T00:00:00'"
+                                  }
+                                },
+                                "TimeUnit": 5
+                              }
+                            }
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  "expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "jdis_Phy_Inv"
+                        }
+                      },
+                      "Property": "Date Created"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "0cd981afc9c96330712b",
+                  "type": "Categorical",
+                  "expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "Dim_Branch"
+                        }
+                      },
+                      "Property": "Branch"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "35a8bc6321f6eb47b2bf",
+                  "type": "Categorical",
+                  "expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "Dim_Franchise"
+                        }
+                      },
+                      "Property": "Franchise"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "700b35952c8b64eb28e8",
+                  "type": "Categorical",
+                  "expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "jdis_Phy_Inv"
+                        }
+                      },
+                      "Property": "Part No"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "f2c993d6b0fab05159f4",
+                  "type": "Categorical",
+                  "expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "jdis_Phy_Inv"
+                        }
+                      },
+                      "Property": "Bin"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "d14a08c79c5fd0e17e1c",
+                  "type": "Categorical",
+                  "expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "jdis_Phy_Inv"
+                        }
+                      },
+                      "Property": "Description"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "dade277058f2adb523b1",
+                  "type": "Categorical",
+                  "expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "jdis_Phy_Inv"
+                        }
+                      },
+                      "Property": "Stocktake Date"
+                    }
+                  },
+                  "howCreated": 0
+                }
+              ]
+            },
+            "singleVisual": {
+              "visualType": "tableEx",
+              "objects": {},
+              "orderBy": [
+                {
+                  "Direction": 2,
+                  "Expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "jdis_Phy_Inv"
+                        }
+                      },
+                      "Property": "Bin Qty"
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "8611014ae9539dc44934": {
+            "singleVisual": {
+              "visualType": "textbox",
+              "objects": {}
+            }
+          },
+          "a35a51cac69e32c07482": {
+            "singleVisual": {
+              "visualType": "actionButton",
+              "objects": {}
+            }
+          },
+          "65dd83b607d6bda5c4ac": {
+            "filters": {
+              "byExpr": [
+                {
+                  "name": "a822fe0fd17068e0d84c",
+                  "type": "Categorical",
+                  "filter": {
+                    "Version": 2,
+                    "From": [
+                      {
+                        "Name": "d",
+                        "Entity": "Dim_Branch",
+                        "Type": 0
+                      }
+                    ],
+                    "Where": [
+                      {
+                        "Condition": {
+                          "Not": {
+                            "Expression": {
+                              "In": {
+                                "Expressions": [
+                                  {
+                                    "Column": {
+                                      "Expression": {
+                                        "SourceRef": {
+                                          "Source": "d"
+                                        }
+                                      },
+                                      "Property": "Branch"
+                                    }
+                                  }
+                                ],
+                                "Values": [
+                                  [
+                                    {
+                                      "Literal": {
+                                        "Value": "'05 - Deming'"
+                                      }
+                                    }
+                                  ],
+                                  [
+                                    {
+                                      "Literal": {
+                                        "Value": "'12 - O''Donnell'"
+                                      }
+                                    }
+                                  ],
+                                  [
+                                    {
+                                      "Literal": {
+                                        "Value": "'97 - Colorado City'"
+                                      }
+                                    }
+                                  ],
+                                  [
+                                    {
+                                      "Literal": {
+                                        "Value": "null"
+                                      }
+                                    }
+                                  ],
+                                  [
+                                    {
+                                      "Literal": {
+                                        "Value": "'04 - Las Cruces'"
+                                      }
+                                    }
+                                  ]
+                                ]
+                              }
+                            }
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  "expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "Dim_Branch"
+                        }
+                      },
+                      "Property": "Branch"
+                    }
+                  },
+                  "howCreated": 0
+                }
+              ]
+            },
+            "singleVisual": {
+              "visualType": "advancedSlicerVisual",
+              "objects": {}
+            }
+          },
+          "4c590695de083c04ecca": {
+            "filters": {
+              "byExpr": [
+                {
+                  "name": "eb1bbf3977899eb12947",
+                  "type": "Advanced",
+                  "expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "MeasuresTable"
+                        }
+                      },
+                      "Property": "Show Filter 1"
+                    }
+                  },
+                  "howCreated": 0
+                }
+              ]
+            },
+            "singleVisual": {
+              "visualType": "tableEx",
+              "objects": {},
+              "orderBy": [
+                {
+                  "Direction": 2,
+                  "Expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "MeasuresTable"
+                        }
+                      },
+                      "Property": "Show Filter 1"
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "004879ec4b5fec85fc13": {
+            "singleVisual": {
+              "visualType": "image",
+              "objects": {}
+            }
+          },
+          "0fe15cb1bd6a9478b962": {
+            "singleVisual": {
+              "visualType": "textbox",
+              "objects": {}
+            }
+          },
+          "cd5f91e0a0e20a94cfee": {
+            "singleVisual": {
+              "visualType": "shape",
+              "objects": {}
+            }
+          },
+          "25891990bbec3f8222af": {
+            "singleVisual": {
+              "visualType": "shape",
+              "objects": {}
+            }
+          }
+        },
+        "visualContainerGroups": {
+          "c9902cdba626021b34e2": {
+            "isHidden": true
+          }
+        }
+      }
+    },
+    "objects": {
+      "merge": {
+        "outspacePane": [
+          {
+            "properties": {
+              "expanded": {
+                "expr": {
+                  "Literal": {
+                    "Value": "false"
+                  }
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+}

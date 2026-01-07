@@ -1,0 +1,196 @@
+ID,Name,Table,Description,DataType,Expression,FormatString,IsHidden,State,KPIID,IsSimpleMeasure,DisplayFolder,DetailRowsDefinition,DataCategory,FormatStringDefinition,LineageTag
+3322,Bins Counted,MeasuresTable,,,"
+    CALCULATE(
+        DISTINCTCOUNT(jdis_Phy_Inv[Bin]),
+        YEAR(jdis_Phy_Inv[Stocktake Date]) = YEAR(TODAY())
+    )",,False,Valid,,False,,,,"""0""",2b942f6c-19f4-4b94-a565-9685e277c90a
+3324,Parts Counted,MeasuresTable,,,"
+    CALCULATE(
+        DISTINCTCOUNT(jdis_Phy_Inv[Part No]),
+        YEAR(jdis_Phy_Inv[Stocktake Date]) = YEAR(TODAY())
+    )",,False,Valid,,False,,,,"""0""",f1b8e371-ffa0-4825-973f-8ef040f01d51
+3326,Total Parts,MeasuresTable,,,DISTINCTCOUNT(jdis_Phy_Inv[Part No]),,False,Valid,,False,,,,"""0""",84be7e06-2613-4b06-bc46-1ab01980bd60
+3328,Total Bins,MeasuresTable,,,DISTINCTCOUNT(jdis_Phy_Inv[Bin]),,False,Valid,,False,,,,"""0""",058f533f-dd36-4bd6-87ae-0472b9a65d0e
+3332,Bins Left to Count,MeasuresTable,,,[Total Bins] - [Bins Counted],,False,Valid,,False,,,,"""0""",aef7c51c-8ab6-4630-bf81-8c57f83b6b4e
+3334,Parts Left to Count,MeasuresTable,,,[Total Parts] - [Parts Counted],,False,Valid,,False,,,,"""0""",720a1d4a-82fc-4b61-a86c-196cc5e544d1
+3336,% Bins Counted,MeasuresTable,,,"DIVIDE([Bins Counted], [Total Bins], 0)",,False,Valid,,False,,,,"""0.0%;-0.0%;0.0%""",e74a1ecf-fa89-4f82-85c5-3bee1ae1cd52
+3339,% Parts Counted,MeasuresTable,,,"DIVIDE([Parts Counted], [Total Parts], 0)",,False,Valid,,False,,,,"""0.0%;-0.0%;0.0%""",58ff9db9-9f8d-443b-9739-a65b57424156
+3342,Weeks Remaining,MeasuresTable,,,"
+VAR CurrentWeek = WEEKNUM(TODAY())
+VAR WeeksInYear = 52
+RETURN WeeksInYear - CurrentWeek",,False,Valid,,False,,,,"""0""",a99dfa83-6ce8-424c-a267-3fe041d0e451
+3344,Bins Per Week Remaining,MeasuresTable,,,"DIVIDE([Bins Left to Count], [Weeks Remaining], 0)",,False,Valid,,False,,,,"""0""",8785387b-b944-42f4-a40a-f19aa3216ce1
+3589,Bins To Count Per Week,MeasuresTable,,,"
+VAR TotalBins = [Total Bins]  
+VAR WeeksInYear = 52
+RETURN DIVIDE(TotalBins, WeeksInYear, 0)",,False,Valid,,False,,,,"""0""",35e51c53-1069-4d54-b4f0-fc77278d520a
+3592,Weeks Passed,MeasuresTable,,,"
+VAR CurrentWeek = WEEKNUM(TODAY())
+RETURN CurrentWeek",,False,Valid,,False,,,,"""0""",410e7c31-a84f-48c6-901d-6ab235c0da29
+3594,On Track % Bins1,MeasuresTable,,,"
+    [Bins To Count Per Week] * [Weeks Passed] / [Total Bins]",,False,Valid,,False,,,,"""0.0%;-0.0%;0.0%""",0ce42190-3383-4076-9d54-faac55b2f412
+3597,On Track % Bins Counted,MeasuresTable,,,[% Bins Counted] / [On Track % Bins1],,False,Valid,,False,,,,"""0.0%;-0.0%;0.0%""",d268662c-8f79-4d6f-b975-2b8f81222566
+3600,OnTrackColorCode,MeasuresTable,,,"
+SWITCH(
+    TRUE(),
+    [Target % Bins] < 0.75 || [Target % Parts] < 0.75, 1,
+    ([Target % Bins] >= 0.70 && [Target % Bins] < 0.9) || ([Target % Parts] >= 0.70 && [Target % Parts] < 0.9), 2,
+    ([Target % Bins] >= 0.9 && [Target % Bins] < 1) || ([Target % Parts] >= 0.9 && [Target % Parts] < 1), 3,
+    [Target % Bins] >= 1 || [Target % Parts] >= 1, 4,
+    BLANK()
+)",,False,Valid,,False,,,,"""0""",18084b98-7d46-4b48-b5f1-aaba163dd50a
+3602,Parts Per Week Remaining,MeasuresTable,,,"DIVIDE([Parts Left to Count], [Weeks Remaining], 0)",,False,Valid,,False,,,,"""0""",e2093ba3-0631-414c-b76d-9a693700759c
+3605,On Track % Parts1,MeasuresTable,,,"
+VAR AvgPartsPerWeek = [Parts To Count Per Week]
+VAR WeeksPassed = [Weeks Passed]
+VAR TotalParts = [Total Parts]
+VAR Calculatio = AvgPartsPerWeek * WeeksPassed
+RETURN
+    DIVIDE(Calculatio, TotalParts)",,False,Valid,,False,,,,"""0.0%;-0.0%;0.0%""",35395323-1b18-4df7-ad86-61ac058be415
+3607,Parts To Count Per Week,MeasuresTable,,,"DIVIDE([Total Parts], 52, 0)",,False,Valid,,False,,,,"""0""",1ebccf1e-6dfb-4fa8-ad5f-8fc6e1185988
+3610,On Track % Part Counted,MeasuresTable,,,[% Parts Counted] / [On Track % Parts1],,False,Valid,,False,,,,"""0.0%;-0.0%;0.0%""",56e376bc-9d4e-4254-a4a3-d61be18cc0b4
+5694,CalculationByBranchParts,MeasuresTable,,,"ROUND([Parts To Count Per Week] * [Weeks Passed], 0)",,False,Valid,,False,,,,"""0""",72e2b42c-26b0-4a4b-b847-89736091cd9a
+5739,Target % Parts,MeasuresTable,,,"DIVIDE([CalculationByBranchParts], [Total Parts], 0)",,False,Valid,,False,,,,"""0.0%;-0.0%;0.0%""",237225d5-5c84-4676-9556-6a59c2bf4ddf
+5828,Total Parts by Branch,MeasuresTable,,,"CALCULATE([Total Parts], ALLEXCEPT('jdis_Phy_Inv', 'jdis_Phy_Inv'[Branch]))",,False,Valid,,False,,,,"""0""",04965075-f214-496d-a9a0-fe60fb73c725
+5938,CalculationByBranchBin,MeasuresTable,,,"ROUND([Bins To Count Per Week] * [Weeks Passed], 0)",,False,Valid,,False,,,,"""0""",bc488ff6-f40b-4658-9975-b264478688f2
+5983,Target % Bins,MeasuresTable,,,"DIVIDE([CalculationByBranchBin], [Total Bins], 0)",,False,Valid,,False,,,,"""0.0%;-0.0%;0.0%""",e9bba686-ffaa-4f94-a36d-279683f0c5ed
+6411,BinsNotCounted,MeasuresTable,,,"
+VAR CurrentYear = YEAR(TODAY())
+VAR BinsList = 
+    CONCATENATEX(
+        FILTER(
+            VALUES(jdis_Phy_Inv[Bin]),
+            NOT (
+                CALCULATE(
+                    COUNTROWS(jdis_Phy_Inv),
+                    YEAR(jdis_Phy_Inv[Stocktake Date]) = CurrentYear
+                ) > 0
+            )
+        ),
+        jdis_Phy_Inv[Bin],
+        "", ""
+    )
+RETURN
+BinsList",,False,Valid,,False,,,,,aba3cba7-ee7d-4267-88ae-ebdad65768f5
+67257,Not Counted,MeasuresTable,,,DISTINCTCOUNT(BinsNotCountedTable[Bin]),,False,Valid,,False,,,,"""0""",dbffe080-a922-4d14-b008-1f383bd0ba05
+107054,GaugeColor Bins,MeasuresTable,,,"
+IF(
+    [% Bins Counted] < [Target % Bins], 
+    ""Red"", 
+    ""Green""
+)",,False,Valid,,False,,,,,97fc1f17-b3e8-4f9e-8392-559e767cc53e
+111025,GaugeColor Parts,MeasuresTable,,,"
+IF(
+    [% Parts Counted] < [Target % Parts], 
+    ""Red"", 
+    ""Green""
+)",,False,Valid,,False,,,,,3b296011-4980-4716-a7ea-1d5d62f8699a
+151390,Show Filter 1,MeasuresTable,,,"
+VAR MaxFilters = 3
+RETURN
+    IF (
+        ISFILTERED ( Dim_Branch[Branch] ),
+        VAR ___f =
+            FILTERS ( Dim_Branch[Branch] )
+        VAR ___r =
+            COUNTROWS ( ___f )
+        VAR ___t =
+            TOPN ( MaxFilters, ___f, Dim_Branch[Branch] )
+        VAR ___d =
+            CONCATENATEX ( ___t, Dim_Branch[Branch], "", "" )
+        VAR ___x =
+            ""Branch:  "" & ___d
+                & IF ( ___r > MaxFilters, "", ... ["" & ___r & "" items selected]"" ) & "" ""
+        RETURN
+            ___x & UNICHAR ( 13 )
+                & UNICHAR ( 10 )
+    )",,False,Valid,,False,,,,,69670a7f-f397-41f0-ade5-a54da3c1fb64
+162144,ShowFilterBranch,MeasuresTable,,,"
+IF (
+    ISFILTERED ( Dim_Branch[Branch] ),
+    VAR _Location =
+        VALUES ( Dim_Branch[Branch] )
+    VAR _Itemscombined =
+        CONCATENATEX ( _Location, Dim_Branch[Branch], UNICHAR ( 10 ) )
+    RETURN
+        _Itemscombined & UNICHAR ( 10 ),
+    """"
+)",,False,Valid,,False,,,,,7e35780a-5323-48d8-b080-27de4bc60d19
+191327,Total Parts with Qty,MeasuresTable,,,"
+CALCULATE(
+    DISTINCTCOUNT(jdis_Phy_Inv[Part No]),
+    jdis_Phy_Inv[Bin Qty] > 0
+)",,False,Valid,,False,,,,"""0""",74404d0d-fdb1-4e30-b6fa-b9d7a9dfeb8e
+198245,Parts with Qty Counted,MeasuresTable,,,"
+CALCULATE(
+    DISTINCTCOUNT(jdis_Phy_Inv[Part No]),
+    jdis_Phy_Inv[Bin Qty] > 0,
+    YEAR(jdis_Phy_Inv[Stocktake Date]) = YEAR(TODAY())
+)",,False,Valid,,False,,,,"""0""",3235afc4-43c0-4611-a88c-0a0eafbaa857
+205163,Parts with Qty Left to Count,MeasuresTable,,,"
+[Total Parts with Qty] - [Parts with Qty Counted]",,False,Valid,,False,,,,"""0""",5c7d08ad-ecff-40b9-8bac-593e4059ce00
+212081,Parts with Qty % Counted,MeasuresTable,,,"
+DIVIDE(
+    [Parts with Qty Counted],
+    [Total Parts with Qty],
+    0
+)",,False,Valid,,False,,,,,5bc711a2-6137-422e-9d17-ea599ab482c8
+225916,% Parts with Qty Counted,MeasuresTable,,,"
+DIVIDE([Parts with Qty Counted], [Total Parts with Qty], 0)",,False,Valid,,False,,,,"""0.0%;-0.0%;0.0%""",eb950d39-3883-48b1-906f-05868f99677b
+232835,Target % Parts with Qty,MeasuresTable,,,"
+DIVIDE([CalculationByBranchPartsWithQty], [Total Parts with Qty], 0)",,False,Valid,,False,,,,,c1a6acb1-ac64-4421-9aac-ec32d285d594
+239753,CalculationByBranchPartsWithQty,MeasuresTable,,,"
+ROUND([Parts with Qty To Count Per Week] * [Weeks Passed], 0)",,False,Valid,,False,,,,,ee02d5d6-3131-438a-8f63-6e36515818b4
+246671,Parts with Qty To Count Per Week,MeasuresTable,,,"
+DIVIDE([Total Parts with Qty], 52, 0)",,False,Valid,,False,,,,,e2f42e51-6f10-4d6b-abdb-c2995edae8a4
+253590,GaugeColor Parts with Qty,MeasuresTable,,,"
+IF(
+    [% Parts with Qty Counted] < [Target % Parts with Qty], 
+    ""Red"", 
+    ""Green""
+)",,False,Valid,,False,,,,,83c6b5c4-a110-45ef-b826-f236fc52ca7b
+260508,Total Bin Qty,MeasuresTable,,,"
+SUM(jdis_Phy_Inv[Bin Qty])",,False,Valid,,False,,,,,9fc96b03-f5a5-4085-ac96-080177206766
+267427,Bin Qty Counted,MeasuresTable,,,"
+CALCULATE(
+    SUM(jdis_Phy_Inv[Bin Qty]),
+    YEAR(jdis_Phy_Inv[Stocktake Date]) = YEAR(TODAY())
+)",,False,Valid,,False,,,,,d44b6687-e16e-400f-9b6b-7c14276fe625
+274346,% Bin Qty Counted,MeasuresTable,,,"
+DIVIDE([Bin Qty Counted], [Total Bin Qty], 0)",,False,Valid,,False,,,,"""0.0%;-0.0%;0.0%""",159c5446-8d0c-42d5-8baa-63e798d26b5c
+281265,Bin Qty To Count Per Week,MeasuresTable,,,"
+DIVIDE([Total Bin Qty], 52, 0)",,False,Valid,,False,,,,,46562149-2e09-49d1-8c11-edc88553d697
+288184,CalculationByBranchBinQty,MeasuresTable,,,"
+ROUND([Bin Qty To Count Per Week] * [Weeks Passed], 0)",,False,Valid,,False,,,,,28486a9f-ab0f-4946-83d9-dfd17d22042a
+295103,Target % Bin Qty,MeasuresTable,,,"
+DIVIDE([CalculationByBranchBinQty], [Total Bin Qty], 0)",,False,Valid,,False,,,,,f61fca0d-b38e-41d1-9161-782ec6ea59c1
+302022,GaugeColor Bin Qty,MeasuresTable,,,"
+IF(
+    [% Bin Qty Counted] < [Target % Bin Qty], 
+    ""Red"", 
+    ""Green""
+)",,False,Valid,,False,,,,,ce69422e-9812-46c9-b1bf-c82d9eb09351
+322776,Bin Qty Left to Count,MeasuresTable,,,"
+[Total Bin Qty] - [Bin Qty Counted]",,False,Valid,,False,,,,,7c1636dd-f791-4fa4-b79c-76668dba2e49
+355753,Is Uncounted This Year,MeasuresTable,,,"
+IF(
+    HASONEVALUE(jdis_Phy_Inv[Part No]),
+    IF(
+        ISBLANK(MAX(jdis_Phy_Inv[Stocktake Date])) || 
+        YEAR(MAX(jdis_Phy_Inv[Stocktake Date])) < YEAR(TODAY()),
+        1,
+        0
+    ),
+    BLANK()
+)",,False,Valid,,False,,,,"""0""",72e20450-8712-4d0c-8e6a-5a51a7ff38ab
+362671,Is Bin Uncounted This Year,MeasuresTable,,,"
+IF(
+    HASONEVALUE(jdis_Phy_Inv[Bin]),
+    IF(
+        ISBLANK(MAX(jdis_Phy_Inv[Stocktake Date])) || 
+        YEAR(MAX(jdis_Phy_Inv[Stocktake Date])) < YEAR(TODAY()),
+        1,
+        0
+    ),
+    BLANK()
+)",,False,Valid,,False,,,,"""0""",c82c2d4a-1a6d-494c-b0b6-7c76a543ff70

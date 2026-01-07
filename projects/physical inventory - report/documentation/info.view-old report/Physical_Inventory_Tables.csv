@@ -1,0 +1,47 @@
+ID,Name,Model,DataCategory,Description,IsHidden,StorageMode,TableStorage,Expression,ShowAsVariationOnly,IsPrivate,CalculationGroupPrecedence,LineageTag
+15,DateTableTemplate_60e4a704-a3c4-4ff9-a2a1-e7b0fbe4adb7,3df63b14-981a-43a0-9cca-0080a037da0b,Regular,,True,Import,,"Calendar(Date(2015,1,1), Date(2015,1,1))",False,True,,ebae98ce-91d4-495d-a2d8-bcc527af8a3d
+2233,MeasuresTable,3df63b14-981a-43a0-9cca-0080a037da0b,Regular,,False,Import,,"ADDCOLUMNS( GENERATESERIES(1, 1), ""DummyColumn"", 1 )",False,False,,280c971c-3818-4839-911d-999bc42fe009
+2333,jdis_Phy_Inv,3df63b14-981a-43a0-9cca-0080a037da0b,Regular,,False,Import,,,False,False,,0e2dfaaa-d8e3-4387-9391-49bcf6e65cec
+3347,Dim_Branch,3df63b14-981a-43a0-9cca-0080a037da0b,Regular,,False,Import,,,False,False,,19a3f2ac-303e-4c0f-969b-69fc9ff04394
+3613,dDate,3df63b14-981a-43a0-9cca-0080a037da0b,Time,,False,Import,,CALENDARAUTO(),False,False,,22120f20-4542-4155-b2c7-fb40bcb8f39d
+7142,BinsNotCountedTable,3df63b14-981a-43a0-9cca-0080a037da0b,Regular,,False,Import,,"
+VAR CurrentYear = YEAR(TODAY())
+RETURN
+FILTER(
+    'jdis_Phy_Inv',
+    NOT (
+        CALCULATE(
+            COUNTROWS('jdis_Phy_Inv'),
+            YEAR('jdis_Phy_Inv'[Stocktake Date]) = CurrentYear
+        ) > 0
+    )
+)",False,False,,a57a4b4c-437d-4795-8335-84db41419885
+8200,PartsNotCountedTable,3df63b14-981a-43a0-9cca-0080a037da0b,Regular,,False,Import,,"
+VAR CurrentYear = YEAR(TODAY())
+RETURN
+FILTER(
+    'jdis_Phy_Inv',
+    NOT (
+        CALCULATE(
+            COUNTROWS('jdis_Phy_Inv'),
+            YEAR('jdis_Phy_Inv'[Stocktake Date]) = CurrentYear
+        ) > 0
+    )
+)",False,False,,cdc9a10a-7c64-4823-8055-cf799c123d62
+52655,Dim_Franchise,3df63b14-981a-43a0-9cca-0080a037da0b,Regular,,False,Import,,"DISTINCT(SELECTCOLUMNS(jdis_Phy_Inv, ""Franchise"", jdis_Phy_Inv[Franchise]))",False,False,,f0135d70-8a22-4ca0-a98b-ad4c465b1da5
+118385,Data Refresh,3df63b14-981a-43a0-9cca-0080a037da0b,Regular,,False,Import,,,False,False,,5a1b8832-d388-481a-87a5-90cd6aaaec5f
+118388,LocalDateTable_135d1ae5-54c5-45a0-9ed1-db6b6c7da471,3df63b14-981a-43a0-9cca-0080a037da0b,Regular,,True,Import,,"Calendar(Date(Year(MIN('Data Refresh'[CurrentDateTime])), 1, 1), Date(Year(MAX('Data Refresh'[CurrentDateTime])), 12, 31))",True,False,,31109209-e878-4086-ae8f-09193badd9f6
+118391,LocalDateTable_0f82d426-7199-4113-919f-88a85294901f,3df63b14-981a-43a0-9cca-0080a037da0b,Regular,,True,Import,,"Calendar(Date(Year(MIN('Data Refresh'[Date])), 1, 1), Date(Year(MAX('Data Refresh'[Date])), 12, 31))",True,False,,91d8a416-5f30-4669-a32d-0c2fcd1aa187
+134561,Physical_Inventory_Measures,3df63b14-981a-43a0-9cca-0080a037da0b,Regular,,True,Import,,INFO.VIEW.MEASURES(),False,False,,33d6372c-65f3-414e-aae8-d4c0efd600d3
+137755,Physical_Inventory_Tables,3df63b14-981a-43a0-9cca-0080a037da0b,Regular,,True,Import,,INFO.VIEW.TABLES(),False,False,,2b45b056-2e71-43f4-a60a-b3988c020c4e
+141494,Physical_Inventory_Columns,3df63b14-981a-43a0-9cca-0080a037da0b,Regular,,True,Import,,INFO.VIEW.COLUMNS(),False,False,,cc588ef2-e2ff-40c4-bda8-fe12f55a2468
+146094,Physical_Inventory_Relationships,3df63b14-981a-43a0-9cca-0080a037da0b,Regular,,True,Import,,INFO.VIEW.RELATIONSHIPS(),False,False,,58a2ada3-f1ca-4b00-ac6d-2bbc109e80a8
+167522,LocalDateTable_b5b3ed34-09cb-4447-b972-044482ece3f9,3df63b14-981a-43a0-9cca-0080a037da0b,Regular,,True,Import,,"Calendar(Date(Year(MIN('jdis_Phy_Inv'[Stocktake Date])), 1, 1), Date(Year(MAX('jdis_Phy_Inv'[Stocktake Date])), 12, 31))",True,False,,6f624842-5b44-4b2a-9310-71146cc573b0
+167525,LocalDateTable_cc551eda-c6f7-466e-9193-f2f6f0df0e7b,3df63b14-981a-43a0-9cca-0080a037da0b,Regular,,True,Import,,"Calendar(Date(Year(MIN('jdis_Phy_Inv'[Date Created])), 1, 1), Date(Year(MAX('jdis_Phy_Inv'[Date Created])), 12, 31))",True,False,,86d170f7-8ea8-4885-828b-50e5a912692b
+167528,LocalDateTable_96976973-4080-4cd3-93b1-c235fa1a1f90,3df63b14-981a-43a0-9cca-0080a037da0b,Regular,,True,Import,,"Calendar(Date(Year(MIN('jdis_Phy_Inv'[Last Activity Date])), 1, 1), Date(Year(MAX('jdis_Phy_Inv'[Last Activity Date])), 12, 31))",True,False,,b2718674-48fb-46f4-bc6b-a81c6c31ab99
+170974,LocalDateTable_e8a68c70-5174-4f01-bf5a-e22c67eefd02,3df63b14-981a-43a0-9cca-0080a037da0b,Regular,,True,Import,,"Calendar(Date(Year(MIN('PartsNotCountedTable'[Stocktake Date])), 1, 1), Date(Year(MAX('PartsNotCountedTable'[Stocktake Date])), 12, 31))",True,False,,1d181daf-8f38-49b2-a66d-b0119d394dfa
+170977,LocalDateTable_a0644146-c1ec-46d8-bdca-11b02ff67aec,3df63b14-981a-43a0-9cca-0080a037da0b,Regular,,True,Import,,"Calendar(Date(Year(MIN('PartsNotCountedTable'[Date Created])), 1, 1), Date(Year(MAX('PartsNotCountedTable'[Date Created])), 12, 31))",True,False,,28a490c3-4504-4116-9954-4181e0154dba
+170980,LocalDateTable_f4f9a0fc-ca7c-4140-bef3-7b0974bf3b22,3df63b14-981a-43a0-9cca-0080a037da0b,Regular,,True,Import,,"Calendar(Date(Year(MIN('PartsNotCountedTable'[Last Activity Date])), 1, 1), Date(Year(MAX('PartsNotCountedTable'[Last Activity Date])), 12, 31))",True,False,,97c96f06-36b1-4246-a617-d6824bf1b4c5
+173615,LocalDateTable_1b95341e-e09c-44cf-98c8-ca743cb21f2f,3df63b14-981a-43a0-9cca-0080a037da0b,Regular,,True,Import,,"Calendar(Date(Year(MIN('BinsNotCountedTable'[Stocktake Date])), 1, 1), Date(Year(MAX('BinsNotCountedTable'[Stocktake Date])), 12, 31))",True,False,,603e1dea-b59b-4f35-afd8-86d9413c97ea
+173618,LocalDateTable_51f00c87-1367-4098-b5cf-e6e06b4091ff,3df63b14-981a-43a0-9cca-0080a037da0b,Regular,,True,Import,,"Calendar(Date(Year(MIN('BinsNotCountedTable'[Date Created])), 1, 1), Date(Year(MAX('BinsNotCountedTable'[Date Created])), 12, 31))",True,False,,3463103f-4569-4d1d-b559-d9d62b3e446a
+173621,LocalDateTable_5c2c8501-4059-44d8-a54e-c6e10cf4a447,3df63b14-981a-43a0-9cca-0080a037da0b,Regular,,True,Import,,"Calendar(Date(Year(MIN('BinsNotCountedTable'[Last Activity Date])), 1, 1), Date(Year(MAX('BinsNotCountedTable'[Last Activity Date])), 12, 31))",True,False,,0db0a968-0e16-4529-9890-328f9ad3a3eb
