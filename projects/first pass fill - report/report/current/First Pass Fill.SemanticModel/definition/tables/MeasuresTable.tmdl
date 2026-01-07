@@ -1,0 +1,2443 @@
+table MeasuresTable
+	lineageTag: 0d039455-6ff6-47ec-acba-7d08b99b993f
+
+	measure '01. Counter %' =
+			
+			DIVIDE(
+			    SUM(Fact_FirstPassFill[CounterFirstPassSuccesses]),
+			    SUM(Fact_FirstPassFill[CounterFirstPassAttempts]),
+			    0
+			)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 2e4766f9-b90a-41d7-9c13-77eb45ad0b69
+
+	measure 'Counter+Transfer %' =
+			
+			DIVIDE(
+			    SUM(Fact_FirstPassFill[CounterFirstPassSuccesses]) + SUM(Fact_FirstPassFill[CounterTransferSuccesses]),
+			    SUM(Fact_FirstPassFill[CounterFirstPassAttempts]),
+			    0
+			)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: ada82087-ef79-46a4-9d6a-07af71e8f2c5
+
+	measure 'Shop %' =
+			
+			DIVIDE(
+			    SUM(Fact_FirstPassFill[WorkshopFirstPassSuccesses]),
+			    SUM(Fact_FirstPassFill[WorkshopFirstPassAttempts]),
+			    0
+			)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 2ed9b494-f97c-4bed-8a16-7c3823365661
+
+	measure 'Shop + Transfer %' =
+			
+			DIVIDE(
+			    SUM(Fact_FirstPassFill[WorkshopFirstPassSuccesses]) + SUM(Fact_FirstPassFill[WorkshopTransferSuccesses]),
+			    SUM(Fact_FirstPassFill[WorkshopFirstPassAttempts]),
+			    0
+			)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 88eda68f-513d-40bc-9db2-a90238edf51a
+
+	measure 'Total %' =
+			
+			DIVIDE(
+			    SUM(Fact_FirstPassFill[TotalFirstPassSuccesses]),
+			    SUM(Fact_FirstPassFill[TotalFirstPassAttempts]),
+			    0
+			)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 63d430b6-969f-40ee-b938-ec26ccc3b49d
+
+	measure 'Total + Transfer %' =
+			
+			DIVIDE(
+			    SUM(Fact_FirstPassFill[TotalFirstPassSuccesses]) + SUM(Fact_FirstPassFill[TotalTransferSuccesses]),
+			    SUM(Fact_FirstPassFill[TotalFirstPassAttempts]),
+			    0
+			)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: cb5a676d-1b7b-4710-9588-cfc2cb909746
+
+	measure R12-Counter =
+			
+			CALCULATE([01. Counter %], dim_DateTable[IsRolling12Months] = TRUE)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: be39b6e9-b53c-47ae-a774-df8def667ec2
+
+	measure PY-R12-Counter =
+			
+			CALCULATE(
+			    [01. Counter %],
+			    dim_DateTable[IsRolling24Months] = TRUE,
+			    dim_DateTable[IsRolling12Months] = FALSE
+			)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: fbf6b65b-dde5-4032-948c-bfb022b2996a
+
+	measure R12-Counter+Trans =
+			
+			CALCULATE([Counter+Transfer %], dim_DateTable[IsRolling12Months] = TRUE)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 1327a942-89c5-4721-a9c9-84fe6cf7eaac
+
+	measure PY-R12-Counter+Trans =
+			
+			CALCULATE([Counter+Transfer %], dim_DateTable[IsRolling24Months] = TRUE, dim_DateTable[IsRolling12Months] = FALSE)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 566bf3f1-fcc4-4c88-a974-5c39417d7042
+
+	measure R12-Shop =
+			
+			CALCULATE([Shop %], dim_DateTable[IsRolling12Months] = TRUE)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: e139cb54-ae68-4e1d-8916-ff2f779b0e13
+
+	measure R12-Shop+Trans =
+			
+			CALCULATE([Shop + Transfer %], dim_DateTable[IsRolling12Months] = TRUE)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 85a3b1e5-20ec-4639-8ce0-42f405872dc6
+
+	measure R12-Total =
+			
+			CALCULATE([Total %], dim_DateTable[IsRolling12Months] = TRUE)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 11ea52f9-f096-41c3-86a3-1e00d70403b7
+
+	measure R12-Total+Trans =
+			
+			CALCULATE([Total + Transfer %], dim_DateTable[IsRolling12Months] = TRUE)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 4e57da9a-8e91-4aa9-8b79-8a6a3e9d4f70
+
+	measure PY-R12-Shop =
+			
+			CALCULATE([Shop %], dim_DateTable[IsRolling24Months] = TRUE, dim_DateTable[IsRolling12Months] = FALSE)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: f4d60f8e-ca21-4674-a217-b8b1afb7d2b0
+
+	measure PY-R12-Shop+Trans =
+			
+			CALCULATE([Shop + Transfer %], dim_DateTable[IsRolling24Months] = TRUE, dim_DateTable[IsRolling12Months] = FALSE)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 9bac7d9c-32cc-42d6-a29c-eaa85973fd30
+
+	measure PY-R12-Total =
+			
+			CALCULATE([Total %], dim_DateTable[IsRolling24Months] = TRUE, dim_DateTable[IsRolling12Months] = FALSE)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 24edb420-3aa1-4931-95c5-751ea0a31248
+
+	measure PY-R12-Total+Trans =
+			
+			CALCULATE([Total + Transfer %], dim_DateTable[IsRolling24Months] = TRUE, dim_DateTable[IsRolling12Months] = FALSE)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 375c1810-71d7-49fa-af73-30f7b84986e1
+
+	measure 'Counter Target' = 0.85
+		lineageTag: d4dcc217-392d-4866-b764-1ccd19b08d7a
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Shop Target' = 0.80
+		lineageTag: 1648ee14-b7f2-455c-9918-3cda1d0cfc30
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Total Target' = 0.85
+		lineageTag: cc58e1df-dd95-46cd-b3a7-c9b01ecab0ae
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure '03. Counter % PY' =
+			
+			CALCULATE(
+			    [01. Counter %],
+			    DATEADD(dim_DateTable[Date], -1, YEAR)
+			)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: bbb14767-996a-40dc-bd63-6d539a72afa9
+
+	measure 'Counter+Transfer % PY' =
+			
+			CALCULATE(
+			    [Counter+Transfer %],
+			    SAMEPERIODLASTYEAR(dim_DateTable[Date])
+			)
+		lineageTag: d4695f3d-8179-4dd6-9dc1-be903ab56f62
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Shop % PY' = ```
+			
+			CALCULATE(
+			    [Shop %],
+			    SAMEPERIODLASTYEAR(dim_DateTable[Date])
+			)
+			
+			```
+		lineageTag: 40e2de82-0c53-463b-bf49-0b84f0fa3b35
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Shop + Transfer % PY' =
+			
+			CALCULATE(
+			    [Shop + Transfer %],
+			    SAMEPERIODLASTYEAR(dim_DateTable[Date])
+			)
+		lineageTag: e926ceeb-cf5d-49f8-898d-e53b8c50f643
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Total % PY' = ```
+			
+			CALCULATE(
+			    [Total %],
+			    SAMEPERIODLASTYEAR(dim_DateTable[Date])
+			)
+			
+			```
+		lineageTag: 7402e3b9-428d-412f-a022-ff177f812553
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Total + Transfer % PY' =
+			
+			CALCULATE(
+			    [Total + Transfer %],
+			    SAMEPERIODLASTYEAR(dim_DateTable[Date])
+			)
+		lineageTag: 01a13937-6142-452c-ae7a-84f7ddffb020
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Counter Variance' = [01. Counter %] - [Counter % Same Period LY]
+		lineageTag: 3c1a0c4e-5743-41ea-a8b6-093a601e2d10
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Counter+Transfer Variance' = [Counter+Transfer %] - [Counter+Transfer % Same Period LY]
+		lineageTag: 5489e8af-5a0e-4c61-9d0a-6906ffaf5f5b
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Shop Variance' = [Shop %] - [Shop % Same Period LY]
+		lineageTag: e81258d8-3b57-44ce-bf8f-0ab24a65cf91
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Shop+Transfer Variance' = [Shop + Transfer %] - [Shop + Transfer % Same Period LY]
+		lineageTag: 49f386bf-5045-43c8-957c-a9a8e79a557c
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Total Variance' = [Total %] - [Total % Same Period LY]
+		lineageTag: 41b01466-3635-4cb7-b470-b1ace97f808f
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Total+Transfer Variance' = [Total + Transfer %] - [Total + Transfer % Same Period LY]
+		lineageTag: c0c5b38f-2df6-4cf2-87fa-2505c6c4ba96
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Counter Variance Label' =
+			
+			FORMAT([Counter Variance], "+0.0;-0.0") & "pp"
+		lineageTag: f7b928ba-8deb-4dd7-a165-54848cff9df4
+
+	measure 'Shop Variance Label' =
+			
+			FORMAT([Shop Variance], "+0.0;-0.0") & "pp"
+		lineageTag: 85ce8272-2d8e-4851-a2f0-82f75d654c07
+
+	measure 'Total Variance Label' =
+			
+			FORMAT([Total Variance], "+0.0;-0.0") & "pp"
+		lineageTag: 35f34134-9db9-47b1-8c6f-3ee65933e3d3
+
+	measure 'Performance Variance' = ```
+			
+			SWITCH(
+			    SELECTEDVALUE('Performance Metrics'[Metric]),
+			    "Counter", [Counter Variance],
+			    "Counter + Transfer", [Counter+Transfer Variance],
+			    "Shop", [Shop Variance],
+			    "Shop + Transfer", [Shop+Transfer Variance], 
+			    "Total", [Total Variance],
+			    "Total + Transfer", [Total+Transfer Variance],
+			    BLANK()
+			)
+			```
+		lineageTag: d6aea9d1-cc68-4f00-a3cb-992b352e382f
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Current Period Performance' =
+			
+			SWITCH(
+			    SELECTEDVALUE('Performance Metrics'[Metric]),
+			    "Counter", [01. Counter %],
+			    "Counter + Transfer", [Counter+Transfer %],
+			    "Shop", [Shop %],
+			    "Shop + Transfer", [Shop + Transfer %],
+			    "Total", [Total %],
+			    "Total + Transfer", [Total + Transfer %],
+			    BLANK()
+			)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: f0dd5f6b-16ad-4f35-bfb8-e4b2befb37e6
+
+	measure 'Prior Year Performance' = ```
+			
+			SWITCH(
+			    SELECTEDVALUE('Performance Metrics'[Metric]),
+			    "Counter", [Counter % Same Period LY],
+			    "Counter + Transfer", [Counter+Transfer % Same Period LY],
+			    "Shop", [Shop % Same Period LY], 
+			    "Shop + Transfer", [Shop + Transfer % Same Period LY],
+			    "Total", [Total % Same Period LY],
+			    "Total + Transfer", [Total + Transfer % Same Period LY],
+			    BLANK()
+			)
+			```
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 1b50241a-5fe6-40ee-80af-bf6427fdc90b
+
+	measure 'Performance Target' =
+			
+			SWITCH(
+			    SELECTEDVALUE('Performance Metrics'[Metric]),
+			    "Counter", 0.85,
+			    "Counter + Transfer", 0.90,
+			    "Shop", 0.80,
+			    "Shop + Transfer", 0.85,
+			    "Total", 0.85,
+			    "Total + Transfer", 0.90,
+			    BLANK()
+			)
+		lineageTag: 7bed6e5a-a303-4e9a-98d8-f29c55826d44
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure '02. Counter % YTD' =
+			
+			CALCULATE(
+			    [01. Counter %],
+			    dim_DateTable[IsYearToDate] = TRUE
+			)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 545a9fd7-a66f-46d8-a68a-00b76641b350
+
+	measure 'Counter % Same Period LY' =
+			
+			VAR SelectedDates = VALUES(dim_DateTable[Date])
+			VAR MinDate = MINX(SelectedDates, dim_DateTable[Date])
+			VAR MaxDate = MAXX(SelectedDates, dim_DateTable[Date])
+			VAR PYStartDate = DATE(YEAR(MinDate) - 1, MONTH(MinDate), DAY(MinDate))
+			VAR PYEndDate = DATE(YEAR(MaxDate) - 1, MONTH(MaxDate), DAY(MaxDate))
+			RETURN
+			CALCULATE(
+			    [01. Counter %],
+			    dim_DateTable[Date] >= PYStartDate && dim_DateTable[Date] <= PYEndDate,
+			    ALL(dim_DateTable[Date])  // Remove existing date filter
+			)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 00d63e1e-3c46-47cc-9fd6-0b82e889ebe1
+
+	measure 'Counter+Transfer % Same Period LY' =
+			
+			VAR SelectedDates = VALUES(dim_DateTable[Date])
+			VAR MinDate = MINX(SelectedDates, dim_DateTable[Date])
+			VAR MaxDate = MAXX(SelectedDates, dim_DateTable[Date])
+			VAR PYStartDate = DATE(YEAR(MinDate) - 1, MONTH(MinDate), DAY(MinDate))
+			VAR PYEndDate = DATE(YEAR(MaxDate) - 1, MONTH(MaxDate), DAY(MaxDate))
+			RETURN
+			CALCULATE(
+			    [Counter+Transfer %],
+			    dim_DateTable[Date] >= PYStartDate && dim_DateTable[Date] <= PYEndDate,
+			    ALL(dim_DateTable[Date])
+			)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 92f164ba-71d7-46bf-8c4d-7c887b5f0abd
+
+	measure 'Shop % Same Period LY' =
+			
+			VAR SelectedDates = VALUES(dim_DateTable[Date])
+			VAR MinDate = MINX(SelectedDates, dim_DateTable[Date])
+			VAR MaxDate = MAXX(SelectedDates, dim_DateTable[Date])
+			VAR PYStartDate = DATE(YEAR(MinDate) - 1, MONTH(MinDate), DAY(MinDate))
+			VAR PYEndDate = DATE(YEAR(MaxDate) - 1, MONTH(MaxDate), DAY(MaxDate))
+			RETURN
+			CALCULATE(
+			    [Shop %],
+			    dim_DateTable[Date] >= PYStartDate && dim_DateTable[Date] <= PYEndDate,
+			    ALL(dim_DateTable[Date])
+			)
+		lineageTag: ac8ce027-9173-4cc1-8baa-e528edb7396c
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Shop + Transfer % Same Period LY' =
+			
+			VAR SelectedDates = VALUES(dim_DateTable[Date])
+			VAR MinDate = MINX(SelectedDates, dim_DateTable[Date])
+			VAR MaxDate = MAXX(SelectedDates, dim_DateTable[Date])
+			VAR PYStartDate = DATE(YEAR(MinDate) - 1, MONTH(MinDate), DAY(MinDate))
+			VAR PYEndDate = DATE(YEAR(MaxDate) - 1, MONTH(MaxDate), DAY(MaxDate))
+			RETURN
+			CALCULATE(
+			    [Shop + Transfer %],
+			    dim_DateTable[Date] >= PYStartDate && dim_DateTable[Date] <= PYEndDate,
+			    ALL(dim_DateTable[Date])
+			)
+		lineageTag: f79afd69-6893-4906-88ca-f783d7a15abd
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Total % Same Period LY' =
+			
+			VAR SelectedDates = VALUES(dim_DateTable[Date])
+			VAR MinDate = MINX(SelectedDates, dim_DateTable[Date])
+			VAR MaxDate = MAXX(SelectedDates, dim_DateTable[Date])
+			VAR PYStartDate = DATE(YEAR(MinDate) - 1, MONTH(MinDate), DAY(MinDate))
+			VAR PYEndDate = DATE(YEAR(MaxDate) - 1, MONTH(MaxDate), DAY(MaxDate))
+			RETURN
+			CALCULATE(
+			    [Total %],
+			    dim_DateTable[Date] >= PYStartDate && dim_DateTable[Date] <= PYEndDate,
+			    ALL(dim_DateTable[Date])
+			)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 855d50c6-70ec-42a8-9c9d-9825c5974d83
+
+	measure 'Total + Transfer % Same Period LY' =
+			
+			VAR SelectedDates = VALUES(dim_DateTable[Date])
+			VAR MinDate = MINX(SelectedDates, dim_DateTable[Date])
+			VAR MaxDate = MAXX(SelectedDates, dim_DateTable[Date])
+			VAR PYStartDate = DATE(YEAR(MinDate) - 1, MONTH(MinDate), DAY(MinDate))
+			VAR PYEndDate = DATE(YEAR(MaxDate) - 1, MONTH(MaxDate), DAY(MaxDate))
+			RETURN
+			CALCULATE(
+			    [Total + Transfer %],
+			    dim_DateTable[Date] >= PYStartDate && dim_DateTable[Date] <= PYEndDate,
+			    ALL(dim_DateTable[Date])
+			)
+		lineageTag: c426a251-66fd-4dc0-bd1f-48429f8febed
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Counter % Current Year' =
+			
+			CALCULATE(
+			    DIVIDE(
+			        SUM(Fact_FirstPassFill[CounterFirstPassSuccesses]),
+			        SUM(Fact_FirstPassFill[CounterFirstPassAttempts]),
+			        0
+			    ),
+			    YEAR(dim_DateTable[Date]) = YEAR(TODAY())
+			)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 6e5091df-ade9-4e00-92f0-c9175f253c29
+
+	measure 'Counter % Prior Year' =
+			
+			CALCULATE(
+			    DIVIDE(
+			        SUM(Fact_FirstPassFill[CounterFirstPassSuccesses]),
+			        SUM(Fact_FirstPassFill[CounterFirstPassAttempts]),
+			        0
+			    ),
+			    YEAR(dim_DateTable[Date]) = YEAR(TODAY()) - 1
+			)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 286287dc-d411-4418-a078-c1e16e40de00
+
+	measure 'Performance by Metric' = ```
+			
+			SWITCH(
+			    SELECTEDVALUE('Metric Names'[Metric]),
+			    "Counter", [01. Counter %],
+			    "Counter + Transfer", [Counter+Transfer %],
+			    "Shop", [Shop %], 
+			    "Shop + Transfer", [Shop + Transfer %],
+			    "Total", [Total %],
+			    "Total + Transfer", [Total + Transfer %],
+			    BLANK()
+			)
+			```
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: db3ea604-6215-4c0c-a6ae-81b6b7a4a89b
+
+	measure '04. Counter % PY YTD' =
+			
+			CALCULATE(
+			    DIVIDE(
+			        SUM(Fact_FirstPassFill[CounterFirstPassSuccesses]),
+			        SUM(Fact_FirstPassFill[CounterFirstPassAttempts]),
+			        0
+			    ),
+			    dim_DateTable[IsYearToDate] = TRUE,
+			    dim_DateTable[Year] = YEAR(TODAY()) - 1
+			)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: dd72f712-15c1-4ab9-a5a8-3f428fcbe851
+
+	measure 'Counter % MTD/YTD' =
+			
+			VAR SelectedPeriod = SELECTEDVALUE('TBL Time Period'[Name])
+			RETURN
+			SWITCH(
+			    SelectedPeriod,
+			    "MTD", [01. Counter %],
+			    "YTD", [02. Counter % YTD],
+			    [01. Counter %]
+			)
+		lineageTag: 60c3f6ff-61f7-4b9e-975b-a171f0d08b6d
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Counter % PY MTD/YTD' =
+			
+			VAR SelectedPeriod = SELECTEDVALUE('TBL Time Period'[Name])
+			RETURN
+			SWITCH(
+			    SelectedPeriod,
+			    "MTD", [03. Counter % PY],
+			    "YTD", [04. Counter % PY YTD],
+			    [03. Counter % PY]
+			)
+		lineageTag: 7e8b6f43-1e64-4e1a-bdac-58a5e9799b83
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure '07. Abs var Counter %-PY MTD/YTD' = ```
+			
+			[10. Counter % suppl MTD/YTD] - [11. Counter % PY suppl MTD/YTD]
+			
+			```
+		lineageTag: f82eada3-be41-416c-a3ed-f72480987922
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure '08. Rel var Counter %-PY MTD/YTD' =
+			
+			DIVIDE([07. Abs var Counter %-PY MTD/YTD], [11. Counter % PY suppl MTD/YTD], 0)
+		lineageTag: 58cda871-d87d-4ee4-8b48-972fd2944d91
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure '09. Datalabel variance Counter %-PY MTD/YTD' = ```
+			
+			VAR PYValue = [11. Counter % PY suppl MTD/YTD]
+			VAR AbsVar = [07. Abs var Counter %-PY MTD/YTD]
+			VAR RelVar = [08. Rel var Counter %-PY MTD/YTD]
+			RETURN
+			FORMAT(PYValue, "0.0%") & " " & 
+			FORMAT(AbsVar, "+0.0pp;-0.0pp") & " " &
+			FORMAT(RelVar, "+0.0%;-0.0%") & 
+			IF(AbsVar > 0, " ▲", IF(AbsVar < 0, " ▼", ""))
+			```
+		lineageTag: 9616fedd-890c-410e-a314-bf52b3305bd9
+
+	measure 'Counter % Trend' =
+			
+			CALCULATE(
+			    [Counter % MTD/YTD],
+			    dim_DateTable[IsRolling12Months] = TRUE)
+		lineageTag: 04d707a7-9cc0-4df1-bb17-b9ca0aa376e2
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure '11. Counter % PY suppl MTD/YTD' = ```
+			
+			    VAR __StartDate = STARTOFYEAR(dim_DateTable[Date])
+			    VAR __EndDate = ENDOFYEAR(dim_DateTable[Date])
+			    VAR __DateRange = DATESBETWEEN(dim_DateTable[Date], __StartDate, __EndDate)
+			    VAR __Result = 
+			        IF(
+			            SELECTEDVALUE('TBL Time Period'[Name]) = "YTD",
+			            CALCULATE(
+			                [04. Counter % PY YTD],
+			                __DateRange,
+			                USERELATIONSHIP(Date_Supplemental[Date], dim_DateTable[Date])
+			            ),
+			            CALCULATE(
+			                [03. Counter % PY],
+			                __DateRange,
+			                USERELATIONSHIP(Date_Supplemental[Date], dim_DateTable[Date])
+			            )
+			        )
+			    RETURN __Result
+			```
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 703d5479-e8da-4b03-a8aa-08428c60f840
+
+	measure '003. Month number suppl' = SELECTEDVALUE(Date_Supplemental[Month Number])
+		formatString: 0
+		lineageTag: be7c63fe-9c01-4bf3-bf3e-2e942f22956b
+
+	measure '001. Dynamic subtitel' = ```
+			
+			SELECTEDVALUE(dim_DateTable[MonthName]) & "'" & 
+			RIGHT(SELECTEDVALUE(dim_DateTable[Year]),2) & " - " & 
+			SELECTEDVALUE('TBL Time Period'[Name])
+			```
+		lineageTag: 79909dcc-9570-497d-8c0e-d5cd6dd03f7c
+
+	measure '10. Counter % suppl MTD/YTD' = ```
+			
+			    VAR __StartDate = STARTOFYEAR(dim_DateTable[Date])
+			    VAR __EndDate = MAX(dim_DateTable[Date])
+			    VAR __DateRange = DATESBETWEEN(dim_DateTable[Date], __StartDate, __EndDate)
+			    VAR __Result = 
+			        IF(
+			            SELECTEDVALUE('TBL Time Period'[Name]) = "YTD",
+			            CALCULATE(
+			                [02. Counter % YTD],
+			                __DateRange,
+			                USERELATIONSHIP(Date_Supplemental[Date], dim_DateTable[Date])
+			            ),
+			            CALCULATE(
+			                [01. Counter %],
+			                __DateRange,
+			                USERELATIONSHIP(Date_Supplemental[Date], dim_DateTable[Date])
+			            )
+			        )
+			    RETURN __Result
+			
+			```
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 35247107-7fa8-4f06-9682-28e72307cc46
+
+	measure '21. Error bar negative zero' = 0
+		formatString: 0
+		lineageTag: 2826b06f-49e8-4438-b944-560391321390
+
+	measure '22. Error bar positive zero' = 0
+		formatString: 0
+		lineageTag: fe4aaa8c-b0dd-4da3-9b95-6c6048aceb47
+
+	measure '18.1 Scale factor - Max Y-axis' = 1.75
+		lineageTag: 94569914-9a7a-43b3-9c9f-03c0f04bacdc
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure '20.1 Scale factor - Data label position variance' = 1.21
+		lineageTag: e8738b07-fa7e-47f4-a39f-0f60a82da896
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure '18.2 Max Y-axis Range' = ```
+			
+			VAR __ScaleFactor = [18.1 Scale factor - Max Y-axis]
+			VAR __Values = 
+			    ADDCOLUMNS(
+			        ALLSELECTED(Date_Supplemental[Month Number], Date_Supplemental[Month]),
+			        "__AC", [10. Counter % suppl MTD/YTD],
+			        "__Comparison", [11. Counter % PY suppl MTD/YTD]
+			    )
+			
+			VAR __MaxAC = MAXX(__Values, [__AC])
+			VAR __MaxComparison = MAXX(__Values, [__Comparison])
+			VAR __MinAC = MINX(__Values, [__AC])
+			VAR __MinComparison = MINX(__Values, [__Comparison])
+			
+			VAR __MaxValue = MAX(__MaxAC, __MaxComparison)
+			VAR __MinValue = MIN(__MinAC, __MinComparison)
+			VAR __MinNegative = IF(__MinValue < 0, __MinValue, 0)
+			VAR __Range = __MaxValue - __MinNegative
+			VAR __Result = __Range * __ScaleFactor + __MinNegative
+			
+			RETURN __Result
+			```
+		lineageTag: 7916099a-da5f-4d30-a5d0-22137283b5bc
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure '19. Data label position Counter % value' =
+			
+			IF([003. Month number suppl] = 1, [18.2 Max Y-axis Range], BLANK())
+		lineageTag: 71e9b2c2-d076-41df-9e75-a0e66031dbd8
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure '20.2 Data label position Counter % variance' = ```
+			
+			IF(
+			    [003. Month number suppl] = 1,
+			
+			    VAR __ScaleFactor = [20.1 Scale factor - Data label position variance] 
+			    VAR __Values = 
+			    ADDCOLUMNS(
+			        ALLSELECTED(Date_Supplemental[Month Number], Date_Supplemental[Month]),
+			            "__AC", [10. Counter % suppl MTD/YTD],
+			            "__Comparison", [11. Counter % PY suppl MTD/YTD]
+			        )
+			    
+			    VAR __MaxAC = MAXX(__Values, [__AC])
+			    VAR __MaxComparison = MAXX(__Values, [__Comparison])
+			    VAR __MinAC = MINX(__Values, [__AC])
+			    VAR __MinComparison = MINX(__Values, [__Comparison])
+			    VAR __MaxValue = MAX(__MaxAC, __MaxComparison)
+			    VAR __MinValue = MIN(__MinAC, __MinComparison)
+			    VAR __MinNegative = IF(__MinValue < 0, __MinValue, 0)
+			    VAR __Range = __MaxValue - __MinNegative
+			    
+			    RETURN __Range * __ScaleFactor + __MinNegative,
+			    
+			    BLANK()
+			)
+			```
+		lineageTag: e3cd1236-ba60-4e22-b030-7e5e30cc2f92
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure '17. Min Y-axis Range' = ```
+			
+			VAR __Values = 
+			    ADDCOLUMNS(
+			        ALLSELECTED(Date_Supplemental[Month Number], Date_Supplemental[Month]),
+			        "__AC", [10. Counter % suppl MTD/YTD],
+			        "__Comparison", [11. Counter % PY suppl MTD/YTD]
+			    )
+			VAR __MinAC = MINX(__Values, [__AC])
+			VAR __MinComparison = MINX(__Values, [__Comparison])
+			VAR __MinValue = MIN(__MinAC, __MinComparison)
+			RETURN IF(__MinValue < 0, __MinValue, 0)
+			```
+		lineageTag: ebd299a2-210e-4936-8b69-47534fe64fb9
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure '05. Counter % MTD/YTD' =
+			
+			IF(
+			    SELECTEDVALUE('TBL Time Period'[Name]) = "YTD",
+			    [02. Counter % YTD],
+			    [01. Counter %]
+			)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 7dd5f510-72fb-4e01-b61c-5fff3047df0b
+
+	measure '06. Counter % PY MTD/YTD' =
+			
+			IF(
+			    SELECTEDVALUE('TBL Time Period'[Name]) = "YTD",
+			    [04. Counter % PY YTD],
+			    [03. Counter % PY]
+			)
+		lineageTag: 251b23f1-4425-45a6-afd9-35a41708ff46
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure '12. Abs var suppl Counter %-PY MTD/YTD' =
+			
+			[10. Counter % suppl MTD/YTD] - [11. Counter % PY suppl MTD/YTD]
+		lineageTag: 2898490b-d637-4670-9306-4f697c8d8849
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure '15. FX color Counter % columns' =
+			
+			IF(
+			    [12. Abs var suppl Counter %-PY MTD/YTD] >= 0,
+			    "#4C9B9D",
+			    "#D6282E"
+			)
+		lineageTag: 833e48a6-5a39-4f1b-a8a5-4e4a30d91f5f
+
+	measure '16. FX color Counter % data labels' =
+			
+			IF(
+			    [07. Abs var Counter %-PY MTD/YTD] >= 0,
+			    "#4C9B9D",
+			    "#D6282E"
+			)
+		lineageTag: 723fea4e-b7e9-4f8f-90bf-fcc0610c6dc6
+
+	measure '13. Counter % suppl MTD/YTD < PY' =
+			
+			IF(
+			    [12. Abs var suppl Counter %-PY MTD/YTD] < 0,
+			    [10. Counter % suppl MTD/YTD],
+			    BLANK()
+			)
+		lineageTag: 0259a2f7-f4aa-435f-84fe-e1e29311ae4d
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure '14. Counter % suppl MTD/YTD > PY' =
+			
+			IF(
+			    [12. Abs var suppl Counter %-PY MTD/YTD] >= 0,
+			    [10. Counter % suppl MTD/YTD],
+			    BLANK()
+			)
+		lineageTag: df2be874-3c61-41e0-aeac-977148dd91cd
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Dynamic Target - Total %' =
+			
+			VAR FixedTarget = 0.81
+			VAR BranchSelected = SELECTEDVALUE(dim_BranchLocation[BranchID])
+			VAR HasBranchFilter = NOT ISBLANK(BranchSelected)
+			RETURN
+			IF(
+			    HasBranchFilter,
+			    // When branch is selected, show rolling 12-month average for that branch
+			    CALCULATE(
+			        AVERAGE(Fact_FirstPassFill[TotalFirstPassRate]),
+			        dim_DateTable[IsRolling12Months] = TRUE,
+			        REMOVEFILTERS(dim_DateTable[Month])  // Remove month filter to get 12-month average
+			    ),
+			    // When no branch filter, use fixed target
+			    FixedTarget
+			)
+		lineageTag: 8c05c28e-585f-41b8-83b3-a77be75e3612
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Total % YoY Change' =
+			
+			VAR CurrentYear = YEAR(TODAY())
+			VAR PriorYear = CurrentYear - 1
+			VAR CurrentYearValue = CALCULATE(
+			    [Total %],
+			    dim_DateTable[Year] = CurrentYear
+			)
+			VAR PriorYearValue = CALCULATE(
+			    [Total %],
+			    dim_DateTable[Year] = PriorYear
+			)
+			RETURN CurrentYearValue - PriorYearValue
+		formatString: 0.00%;-0.00%;0.00%
+		lineageTag: 518a0a7b-d769-49ae-b519-7dba41976756
+
+	measure 'Total % YoY Change Label' = ```
+			
+			VAR _Variance = [Total % YoY Change]
+			VAR Arrow = IF(_Variance > 0, "▲", IF(_Variance < 0, "▼", ""))
+			RETURN 
+			IF(
+			    NOT ISBLANK(_Variance),
+			    Arrow & FORMAT(ABS(_Variance), "0.0%") & " vs LY",
+			    ""
+			)
+			```
+		lineageTag: 31149253-2e52-46d7-ad7b-ea9c31737f99
+
+	measure 'Total % YoY Color' =
+			
+			VAR BranchVariance = [Total % YoY Change]
+			RETURN IF(BranchVariance > 0, "#00B04F", "#FF0000")
+		lineageTag: a6e2444e-d8de-4c04-9fbd-7c0006dfb226
+
+	measure 'Dynamic subtitel' =
+			
+			SELECTEDVALUE(dim_DateTable[MonthName])
+		lineageTag: 5fc7a53a-6597-472c-9b7a-dde18d559883
+
+	measure 'Counter % YoY Change' =
+			
+			VAR CurrentYear = YEAR(TODAY())
+			VAR PriorYear = CurrentYear - 1
+			VAR CurrentYearValue = CALCULATE(
+			    [01. Counter %],
+			    dim_DateTable[Year] = CurrentYear
+			)
+			VAR PriorYearValue = CALCULATE(
+			    [01. Counter %],
+			    dim_DateTable[Year] = PriorYear
+			)
+			RETURN CurrentYearValue - PriorYearValue
+		lineageTag: 8a4c7d35-02ff-4384-b088-70b29bd2f7e7
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Counter % YoY Change Label' = ```
+			
+			VAR _Variance = [Counter % YoY Change]
+			VAR Arrow = IF(_Variance > 0, "▲", IF(_Variance < 0, "▼", ""))
+			RETURN 
+			IF(
+			    NOT ISBLANK(_Variance),
+			    Arrow & FORMAT(ABS(_Variance), "0.0%") & " vs LY",
+			    ""
+			)
+			```
+		lineageTag: 88fb670c-12b1-4dd5-b8bc-d892d3fef46f
+
+	measure 'Counter % YoY Color' =
+			
+			IF([Counter % YoY Change] > 0, "#00B04F", "#FF0000")
+		lineageTag: 0eb49c29-bee9-4215-90d0-016fbe369e61
+
+	measure 'Shop % YoY Change' =
+			
+			VAR CurrentYear = YEAR(TODAY())
+			VAR PriorYear = CurrentYear - 1
+			VAR CurrentYearValue = CALCULATE(
+			    [Shop %],
+			    dim_DateTable[Year] = CurrentYear
+			)
+			VAR PriorYearValue = CALCULATE(
+			    [Shop %],
+			    dim_DateTable[Year] = PriorYear
+			)
+			RETURN CurrentYearValue - PriorYearValue
+		lineageTag: 26b7d7a8-0191-4f0d-a672-1572ef477335
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Shop % YoY Change Label' = ```
+			
+			VAR _Variance = [Shop % YoY Change]
+			VAR Arrow = IF(_Variance > 0, "▲", IF(_Variance < 0, "▼", ""))
+			RETURN 
+			IF(
+			    NOT ISBLANK(_Variance),
+			    Arrow & FORMAT(ABS(_Variance), "0.0%") & " vs LY",
+			    ""
+			)
+			```
+		lineageTag: 13ba87b0-6496-4e0f-83b9-50695ff7aa27
+
+	measure 'Shop % YoY Color' =
+			
+			IF([Shop % YoY Change] > 0, "#00B04F", "#FF0000")
+		lineageTag: cfaace43-7afd-413f-ac22-e3c66e758c5c
+
+	measure 'R12 Counter % vs PY Change' = [R12-Counter (Working)] - [PY-R12-Counter (Working)]
+		lineageTag: cdc32bd7-41cb-4288-8ead-812260d26dd1
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'R12 Counter % Change Label' = ```
+			
+			VAR _Variance = [R12 Counter % vs PY Change]
+			VAR Arrow = IF(_Variance > 0, "▲", IF(_Variance < 0, "▼", ""))
+			RETURN 
+			IF(
+			    NOT ISBLANK(_Variance),
+			    Arrow & FORMAT(ABS(_Variance), "0.0%") & " vs PY-R12",
+			    ""
+			)
+			
+			```
+		lineageTag: e1f20456-852d-434a-b243-2ac0216c70d8
+
+	measure 'R12 Counter % YoY Color' =
+			
+			IF([R12 Counter % vs PY Change] > 0, "#00B04F", "#FF0000")
+		lineageTag: 392ee818-b0e5-482e-a4a9-c2b327b9095b
+
+	measure 'R12 Shop % vs PY Change' = [R12-Shop (Working)] - [PY-R12-Shop (Working)]
+		lineageTag: 2c140b00-47c7-4a8f-beb0-69797fdc6724
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'R12 Shop % Change Label' = ```
+			
+			VAR _Variance = [R12 Shop % vs PY Change]
+			VAR Arrow = IF(_Variance > 0, "▲", IF(_Variance < 0, "▼", ""))
+			RETURN 
+			IF(
+			    NOT ISBLANK(_Variance),
+			    Arrow & FORMAT(ABS(_Variance), "0.0%") & " vs PY-R12",
+			    ""
+			)
+			```
+		lineageTag: 0dfcd36f-73eb-4233-8e9c-a54832ac6545
+
+	measure 'R12 Shop % YoY Color' =
+			
+			IF([R12 Shop % vs PY Change] > 0, "#00B04F", "#FF0000")
+		lineageTag: 4dae22ed-9a47-4a64-bd34-794632cf1ad4
+
+	measure 'R12 Total % vs PY Change' = [R12-Total (Working)] - [PY-R12-Total (Working)]
+		lineageTag: a6f5ac33-197b-4797-90d6-e534a2aa2996
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'R12 Total % Change Label' = ```
+			
+			VAR _Variance = [R12 Total % vs PY Change]
+			VAR Arrow = IF(_Variance > 0, "▲", IF(_Variance < 0, "▼", ""))
+			RETURN 
+			IF(
+			    NOT ISBLANK(_Variance),
+			    Arrow & FORMAT(ABS(_Variance), "0.0%") & " vs PY-R12",
+			    ""
+			)
+			```
+		lineageTag: 9a445423-3c4f-44a1-9d1e-e2c6a29baf0c
+
+	measure 'R12 Total % YoY Color' =
+			
+			IF([R12 Total % vs PY Change] > 0, "#00B04F", "#FF0000")
+		lineageTag: 52b0161c-1701-41ad-bb4e-09a0d0599dd3
+
+	measure 'Counter % YTD _Variance Label' = ```
+			
+			VAR _Variance = [Counter % YTD Variance for Cards]
+			VAR Arrow = IF(_Variance > 0, "▲", IF(_Variance < 0, "▼", ""))
+			RETURN 
+			IF(
+			    NOT ISBLANK(_Variance),
+			    Arrow & FORMAT(ABS(_Variance), "0.0%") & " vs PY YTD",
+			    ""
+			)
+			```
+		lineageTag: faa4dddd-f25d-4455-8870-5270ad078c53
+
+	measure 'Counter % YTD Variance for Cards' = ```
+			
+			VAR CurrentYearData = 
+			    SUMMARIZE(
+			        FILTER(ALL(dim_DateTable[Year]), dim_DateTable[Year] = 2025),
+			        dim_DateTable[Year],
+			        "CounterPct", [01. Counter %]
+			    )
+			VAR PriorYearData = 
+			    SUMMARIZE(
+			        FILTER(ALL(dim_DateTable[Year]), dim_DateTable[Year] = 2024),
+			        dim_DateTable[Year],
+			        "CounterPct", [01. Counter %]
+			    )
+			VAR Current2025 = MAXX(CurrentYearData, [CounterPct])
+			VAR Prior2024 = MAXX(PriorYearData, [CounterPct])
+			RETURN Current2025 - Prior2024
+			```
+		lineageTag: f3b52f00-1ccd-4683-93a0-5b6d13078ec2
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Counter % YTD Color' =
+			
+			IF([Counter % YTD Variance for Cards] > 0, "#00B04F", "#FF0000")
+		lineageTag: 8389632c-f87a-41c9-a434-3ce9bef6c10e
+
+	measure 'Debug - YTD Flag True Count' =
+			
+			CALCULATE(
+			    COUNT(dim_DateTable[Date]),
+			    dim_DateTable[IsYearToDate] = TRUE
+			)
+		formatString: 0
+		lineageTag: da6538e3-9f34-41ca-bf7d-2f9b57a5b43c
+
+	measure 'Debug - All Years' =
+			
+			CONCATENATEX(
+			    DISTINCT(dim_DateTable[Year]),
+			    dim_DateTable[Year],
+			    ", "
+			)
+		lineageTag: 43d05c0d-ad82-427b-bca9-3a4341b0137e
+
+	measure 'Shop % YTD Variance for Cards' = ```
+			
+			VAR CurrentYearData = 
+			    SUMMARIZE(
+			        FILTER(ALL(dim_DateTable[Year]), dim_DateTable[Year] = 2025),
+			        dim_DateTable[Year],
+			        "ShopPct", [Shop %]
+			    )
+			VAR PriorYearData = 
+			    SUMMARIZE(
+			        FILTER(ALL(dim_DateTable[Year]), dim_DateTable[Year] = 2024),
+			        dim_DateTable[Year],
+			        "ShopPct", [Shop %]
+			    )
+			VAR Current2025 = MAXX(CurrentYearData, [ShopPct])
+			VAR Prior2024 = MAXX(PriorYearData, [ShopPct])
+			RETURN Current2025 - Prior2024
+			```
+		lineageTag: 359253df-571f-427f-a273-04c4b2afb75d
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Shop % YTD _Variance Label' = ```
+			
+			VAR _Variance = [Shop % YTD Variance for Cards]
+			VAR Arrow = IF(_Variance > 0, "▲", IF(_Variance < 0, "▼", ""))
+			RETURN 
+			IF(
+			    NOT ISBLANK(_Variance),
+			    Arrow & FORMAT(ABS(_Variance), "0.0%") & " vs PY YTD",
+			    ""
+			)
+			```
+		lineageTag: 86309d15-946b-48ad-885f-541c681c9b8c
+
+	measure 'Shop % YTD Color' =
+			
+			IF([Shop % YTD Variance for Cards] > 0, "#00B04F", "#FF0000")
+		lineageTag: ae021125-0aa2-4caf-bcd3-8678a8d20c43
+
+	measure 'Total % YTD Variance for Cards' = ```
+			
+			VAR CurrentYearData = 
+			    SUMMARIZE(
+			        FILTER(ALL(dim_DateTable[Year]), dim_DateTable[Year] = 2025),
+			        dim_DateTable[Year],
+			        "TotalPct", [Total %]
+			    )
+			VAR PriorYearData = 
+			    SUMMARIZE(
+			        FILTER(ALL(dim_DateTable[Year]), dim_DateTable[Year] = 2024),
+			        dim_DateTable[Year],
+			        "TotalPct", [Total %]
+			    )
+			VAR Current2025 = MAXX(CurrentYearData, [TotalPct])
+			VAR Prior2024 = MAXX(PriorYearData, [TotalPct])
+			RETURN Current2025 - Prior2024
+			```
+		lineageTag: 190701ce-befc-4073-b570-e036c17df433
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Total % YTD Variance Label' = ```
+			
+			VAR _Variance = [Total % YTD Variance for Cards]
+			VAR Arrow = IF(_Variance > 0, "▲", IF(_Variance < 0, "▼", ""))
+			RETURN 
+			IF(
+			    NOT ISBLANK(_Variance),
+			    Arrow & FORMAT(ABS(_Variance), "0.0%") & " vs PY YTD",
+			    ""
+			)
+			```
+		lineageTag: 3bc06325-4039-4ede-aec7-6e9fa48bb100
+
+	measure 'Total % YTD Color' =
+			
+			IF([Total % YTD Variance for Cards] > 0, "#00B04F", "#FF0000")
+		lineageTag: cffe13c0-7f44-4896-bfaf-a9f22bd1fa35
+
+	measure 'Total % YTD Status Color' = ```
+			
+			VAR CurrentTotal = [Total %]
+			RETURN
+			SWITCH(
+			    TRUE(),
+			    CurrentTotal >= 0.83, "#00B04F", // Green for excellent
+			    CurrentTotal >= 0.79, "#FFA500", // Orange for on target  
+			    "#FF0000" // Red for needs attention
+			)
+			```
+		lineageTag: dcc25380-4d1f-4fbd-98eb-9634cb7614b1
+
+	measure 'Total % YTD Status Label' = ```
+			
+			VAR CurrentTotal = [Total %]
+			VAR _Status = 
+			    SWITCH(
+			        TRUE(),
+			        CurrentTotal >= 0.83, "EXCELLENT",
+			        CurrentTotal >= 0.79, "ON TARGET", 
+			        "NEEDS ATTENTION"
+			    )
+			RETURN _Status & " • " & FORMAT(CurrentTotal, "0.0%")
+			```
+		lineageTag: b3862aa7-3f86-4093-9a38-87243f2d076f
+
+	measure 'Counter Trend Arrow' = ```
+			
+			VAR TrendChange = [R12 Counter % vs PY Change]
+			RETURN 
+			IF(TrendChange > 0.005, "▲ IMPROVING", 
+			   IF(TrendChange < -0.005, "▼ DECLINING", "→ STABLE"))
+			
+			```
+		lineageTag: 0fc515f7-dc15-412f-9a5e-328d019e3199
+
+	measure 'Shop Trend Arrow' = ```
+			
+			VAR TrendChange = [R12 Shop % vs PY Change]
+			RETURN 
+			IF(TrendChange > 0.005, "▲ IMPROVING", 
+			   IF(TrendChange < -0.005, "▼ DECLINING", "→ STABLE"))
+			```
+		lineageTag: 88004fa3-e000-42d2-ae11-d0f169511e32
+
+	measure 'Total Trend Arrow' = ```
+			
+			VAR TrendChange = [R12 Total % vs PY Change]
+			RETURN 
+			IF(TrendChange > 0.005, "▲ IMPROVING", 
+			   IF(TrendChange < -0.005, "▼ DECLINING", "→ STABLE"))
+			```
+		lineageTag: 971dd5e3-3cc7-44a6-b20f-127537e2bb5c
+
+	measure 'Best Performing Area' = ```
+			
+			VAR CounterPct = [R12-Counter]
+			VAR ShopPct = [R12-Shop] 
+			VAR TotalPct = [R12-Total]
+			VAR BestValue = MAX(MAX(CounterPct, ShopPct), TotalPct)
+			RETURN
+			SWITCH(
+			    TRUE(),
+			    CounterPct = BestValue, "COUNTER • " & FORMAT(CounterPct, "0.0%"),
+			    ShopPct = BestValue, "SHOP • " & FORMAT(ShopPct, "0.0%"),
+			    "TOTAL • " & FORMAT(TotalPct, "0.0%")
+			)
+			```
+		lineageTag: da05404b-74af-40f5-b472-724277da2a12
+
+	measure 'Biggest Improvement' =
+			
+			VAR CounterImprove = [R12 Counter % vs PY Change]
+			VAR ShopImprove = [R12 Shop % vs PY Change]
+			VAR TotalImprove = [R12 Total % vs PY Change]
+			VAR BestImprovement = MAX(MAX(CounterImprove, ShopImprove), TotalImprove)
+			RETURN
+			SWITCH(
+			    TRUE(),
+			    CounterImprove = BestImprovement, "COUNTER +" & FORMAT(BestImprovement, "0.0%"),
+			    ShopImprove = BestImprovement, "SHOP +" & FORMAT(BestImprovement, "0.0%"),
+			    "TOTAL +" & FORMAT(BestImprovement, "0.0%")
+			)
+		lineageTag: 2e36e813-9878-4873-a4f0-909ee96453eb
+
+	measure 'Needs Attention' =
+			
+			VAR CounterPct = [R12-Counter]
+			VAR ShopPct = [R12-Shop]
+			VAR TotalPct = [R12-Total]
+			VAR LowestValue = MIN(MIN(CounterPct, ShopPct), TotalPct)
+			RETURN
+			SWITCH(
+			    TRUE(),
+			    CounterPct = LowestValue, "COUNTER • " & FORMAT(CounterPct, "0.0%"),
+			    ShopPct = LowestValue, "SHOP • " & FORMAT(ShopPct, "0.0%"),
+			    "TOTAL • " & FORMAT(TotalPct, "0.0%")
+			)
+		lineageTag: 91258684-0169-48f3-9bf0-3029c34dfd6f
+
+	measure 'Branch Performance %' = ```
+			
+			VAR SelectedPeriod = SELECTEDVALUE('Time Period Table'[Period])
+			RETURN
+			SWITCH(
+			    SelectedPeriod,
+			    "YTD", [Total %], // Your existing YTD measure
+			    "R12", [R12-Total], // Your existing R12 measure  
+			    "MTD", [Total %], // Current month (filtered by month slicer)
+			    [Total %] // Default
+			)
+			```
+		lineageTag: f288fead-6258-48e2-8192-7bdf608488a6
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Branch Current Performance' = [Total %]
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: fe6c194d-df62-4850-864c-e72257502a7d
+
+	measure 'Branch Prior Year Performance' = [Total % Same Period LY]
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: b6bb4ec6-3044-4e79-81cf-061d63da4308
+
+	measure 'Branch Variance' = [Branch Current Performance] - [Branch Prior Year Performance]
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: bb271981-5296-41f9-a54c-2e83b2e6ea6e
+
+	measure 'Branch Status' =
+			
+			VAR Performance = [Branch Current Performance]
+			RETURN
+			SWITCH(
+			    TRUE(),
+			    Performance >= 0.83, "Excellent",
+			    Performance >= 0.79, "On Target",
+			    "Needs Attention"
+			)
+		lineageTag: ee0d56a4-b951-4e2f-8ef3-3c7df093e803
+
+	measure 'Branch Rank' =
+			
+			RANKX(
+			    ALLSELECTED(dim_BranchLocation[Branch]),
+			    [Branch Current Performance],
+			    ,
+			    DESC
+			)
+		formatString: 0
+		lineageTag: 569e0f04-e46f-4833-af88-bc5ad4ce3663
+
+	measure 'Branch Variance Label' =
+			
+			VAR _Variance = [Branch Variance]
+			VAR Arrow = IF(_Variance > 0, "▲", IF(_Variance < 0, "▼", "→"))
+			RETURN Arrow & FORMAT(ABS(_Variance), "0.0%")
+		lineageTag: 89472549-3b1b-4b2a-961c-9cb553e45133
+
+	measure 'Debug Branch Count' = DISTINCTCOUNT(dim_BranchLocation[BranchID])
+		formatString: 0
+		lineageTag: 6537f0d0-2361-494e-9733-302969411d73
+
+	measure 'Debug All Performance Values' =
+			
+			CONCATENATEX(
+			    ALLSELECTED(dim_BranchLocation[BranchID]),
+			    FORMAT([Branch Current Performance], "0.0%"),
+			    ", "
+			)
+		lineageTag: 01a7ef71-3160-437d-9ea4-7255ca81fc20
+
+	measure 'Debug Branch Name' = CONCATENATEX(VALUES(dim_BranchLocation[Branch]), dim_BranchLocation[Branch], ", ")
+		lineageTag: 0af054ba-01ce-45b1-b2ee-b5070fbdab2b
+
+	measure 'Branch Rank Main Only' =
+			
+			RANKX(
+			    FILTER(
+			        ALL(dim_BranchLocation),
+			        dim_BranchLocation[BranchType] = "Main Branch"
+			    ),
+			    [Branch Current Performance],
+			    ,
+			    DESC
+			)
+		formatString: 0
+		lineageTag: 875458dc-04c5-46b4-b8fe-65396924a949
+
+	measure 'Debug Date Count' = DISTINCTCOUNT(dim_DateTable[Date])
+		formatString: 0
+		lineageTag: 1bbdaf3b-727f-4154-b814-cfc20fb577ff
+
+	measure 'Branch Variance Color' =
+			
+			VAR _Variance = [Branch Variance]
+			RETURN
+			IF(_Variance > 0, "#00B04F", "#FF0000") // Green for positive, Red for negative
+		lineageTag: a4a590e5-cdd3-4124-a381-2fcf8cb1ed28
+
+	measure 'Branch R12 Performance' = [R12-Total]
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 05068899-e478-4b48-ae98-7e40cecd8bd4
+
+	measure 'Branch R12 Prior' = [PY-R12-Total]
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 06d7669f-fcb5-4f0a-92bf-5e9ac0b8a282
+
+	measure 'Branch R12 Variance' = [Branch R12 Performance] - [Branch R12 Prior]
+		lineageTag: 0ce6e68a-60a4-4ede-a6b2-b0f517a01617
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Branch R12 Variance Label' =
+			
+			VAR _Variance = [Branch R12 Variance]
+			VAR Arrow = IF(_Variance > 0, "▲", IF(_Variance < 0, "▼", "→"))
+			RETURN Arrow & FORMAT(ABS(_Variance), "0.0%")
+		lineageTag: d4e1195a-c7b0-4683-8226-aead9b550314
+
+	measure 'Branch R12 Status' =
+			
+			VAR Performance = [Branch R12 Performance]
+			RETURN
+			SWITCH(
+			    TRUE(),
+			    Performance >= 0.83, "Excellent",
+			    Performance >= 0.79, "On Target",
+			    "Needs Attention"
+			)
+		lineageTag: 12e35d0e-49ab-4f5e-898c-842a6791e500
+
+	measure 'Branch R12 Rank' =
+			
+			RANKX(
+			    FILTER(
+			        ALL(dim_BranchLocation),
+			        dim_BranchLocation[BranchType] = "Main Branch"
+			    ),
+			    [Branch R12 Performance],
+			    ,
+			    DESC
+			)
+		formatString: 0
+		lineageTag: 4e84c499-f6af-4f47-8bcc-921f56097589
+
+	measure 'Branch R12 Variance Color' =
+			
+			VAR _Variance = [Branch R12 Variance]
+			RETURN IF(_Variance > 0, "#00B04F", "#FF0000")
+		lineageTag: 5c9819db-b767-4476-938d-33621f11e550
+
+	measure 'Branch Monthly Performance' = [Total %]
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: d6cbbdd0-334f-4c45-8e99-524be1ecb620
+
+	measure 'Branch Monthly Prior' = [Branch Monthly Performance] - [Total % YoY Change]
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 14e78431-fc81-4122-ba6f-9eebfc6d90c2
+
+	measure 'Branch Monthly Variance' = [Branch Monthly Performance] - [Branch Monthly Prior]
+		lineageTag: 6608d780-8243-4077-8dbf-205579c0cde4
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Branch Monthly Variance Label' = ```
+			
+			VAR _Variance = [Branch Monthly Variance]
+			VAR Arrow = IF(_Variance > 0, "▲", IF(_Variance < 0, "▼", ""))
+			RETURN Arrow & FORMAT(ABS(_Variance), "0.0%")
+			
+			```
+		lineageTag: 69742779-c8ae-4afd-ae1c-341d12e65749
+
+	measure 'Branch Monthly Status' =
+			
+			VAR Performance = [Branch Monthly Performance]
+			RETURN
+			SWITCH(
+			    TRUE(),
+			    Performance >= 0.83, "Excellent",
+			    Performance >= 0.79, "On Target",
+			    "Needs Attention"
+			)
+		lineageTag: a2b5e379-9b86-4b20-b2ff-7b0f207bbace
+
+	measure 'Branch Monthly Rank' =
+			
+			RANKX(
+			    FILTER(
+			        ALL(dim_BranchLocation),
+			        dim_BranchLocation[BranchType] = "Main Branch"
+			    ),
+			    [Branch Monthly Performance],
+			    ,
+			    DESC
+			)
+		formatString: 0
+		lineageTag: a9ccf226-b8b2-4be2-b838-b76680e2925b
+
+	measure 'Branch Monthly Variance Color' =
+			
+			VAR _Variance = [Branch Monthly Variance]
+			RETURN IF(_Variance > 0, "#00B04F", "#FF0000")
+		lineageTag: 63b394d8-089f-45b7-a6d3-c88b25905510
+
+	measure 'Branches Above Target' = ```
+			
+			VAR BranchesAbove = 
+			    SUMX(
+			        FILTER(
+			            FILTER(
+			                ALL(dim_BranchLocation),
+			                dim_BranchLocation[BranchType] = "Main Branch"
+			            ),
+			            [Total %] >= 0.81
+			        ),
+			        1
+			    )
+			RETURN BranchesAbove & " of 19 branches above 81% target"
+			```
+		lineageTag: 1babc5be-0da8-4728-8580-2ac96ded42c7
+
+	measure 'Average Branch Performance' = ```
+			
+			VAR AvgPerformance = 
+			    AVERAGEX(
+			        FILTER(
+			            ALL(dim_BranchLocation),
+			            dim_BranchLocation[BranchType] = "Main Branch"
+			        ),
+			        [Total %]
+			    )
+			RETURN "Average: " & FORMAT(AvgPerformance, "0.0%")
+			```
+		lineageTag: 04ca09c5-80ba-49cb-b74d-ceb6f44fda07
+
+	measure 'Biggest Improver' = ```
+			
+			VAR MaxImprovement = 
+			    MAXX(
+			        FILTER(
+			            ALL(dim_BranchLocation),
+			            dim_BranchLocation[BranchType] = "Main Branch"
+			        ),
+			        [Total % YoY Change]
+			    )
+			VAR BestBranch = 
+			    MAXX(
+			        FILTER(
+			            ALL(dim_BranchLocation),
+			            dim_BranchLocation[BranchType] = "Main Branch" && 
+			            [Total % YoY Change] = MaxImprovement
+			        ),
+			        dim_BranchLocation[Branch]
+			    )
+			RETURN BestBranch & " (+" & FORMAT(MaxImprovement, "0.0%") & ")"
+			```
+		lineageTag: 34839e06-caae-46da-804d-72294b0b0137
+
+	measure 'Needs Most Attention' = ```
+			
+			VAR MinPerformance = 
+			    MINX(
+			        FILTER(
+			            ALL(dim_BranchLocation),
+			            dim_BranchLocation[BranchType] = "Main Branch"
+			        ),
+			        [Total %]
+			    )
+			VAR WorstBranch = 
+			    MAXX(
+			        FILTER(
+			            ALL(dim_BranchLocation),
+			            dim_BranchLocation[BranchType] = "Main Branch" && 
+			            [Total %] = MinPerformance
+			        ),
+			        dim_BranchLocation[Branch]
+			    )
+			RETURN WorstBranch & " (" & FORMAT(MinPerformance, "0.0%") & ")"
+			```
+		lineageTag: 1a46a4fc-d404-4374-b61c-d3d7082ed275
+
+	measure 'YTD Branches Above Target' = ```
+			
+			VAR BranchesAbove = 
+			    SUMX(
+			        FILTER(
+			            ALL(dim_BranchLocation),
+			            dim_BranchLocation[BranchType] = "Main Branch" && [Total %] >= 0.81
+			        ),
+			        1
+			    )
+			RETURN BranchesAbove & " of 19 branches above 81% target (YTD)"
+			```
+		lineageTag: 5dd30975-16b1-48a7-98b3-874e7b3e0baf
+
+	measure 'YTD Average Performance' = ```
+			
+			VAR AvgPerformance = 
+			    AVERAGEX(
+			        FILTER(
+			            ALL(dim_BranchLocation),
+			            dim_BranchLocation[BranchType] = "Main Branch"
+			        ),
+			        [Total %]
+			    )
+			RETURN "YTD Average: " & FORMAT(AvgPerformance, "0.0%")
+			
+			```
+		lineageTag: 344b0289-3571-4574-8450-672e28962f55
+
+	measure 'YTD Biggest Improver' = ```
+			
+			VAR MaxImprovement = 
+			    MAXX(
+			        FILTER(
+			            ALL(dim_BranchLocation),
+			            dim_BranchLocation[BranchType] = "Main Branch"
+			        ),
+			        [Total % YTD Variance for Cards]
+			    )
+			VAR BestBranch = 
+			    MAXX(
+			        FILTER(
+			            ALL(dim_BranchLocation),
+			            dim_BranchLocation[BranchType] = "Main Branch" && 
+			            [Total % YTD Variance for Cards] = MaxImprovement
+			        ),
+			        dim_BranchLocation[Branch]
+			    )
+			RETURN BestBranch & " (+" & FORMAT(MaxImprovement, "0.0%") & " YTD)"
+			```
+		lineageTag: 347225f6-a0a6-4efe-ac91-2acff0b280d9
+
+	measure 'R12 Branches Above Target' = ```
+			
+			VAR BranchesAbove = 
+			    SUMX(
+			        FILTER(
+			            ALL(dim_BranchLocation),
+			            dim_BranchLocation[BranchType] = "Main Branch" && [R12-Total] >= 0.81
+			        ),
+			        1
+			    )
+			RETURN BranchesAbove & " of 19 branches above 81% target (R12)"
+			```
+		lineageTag: b2ec062b-60a4-4491-9ee1-89eafa9502af
+
+	measure 'R12 Average Performance' = ```
+			
+			VAR AvgPerformance = 
+			    AVERAGEX(
+			        FILTER(
+			            ALL(dim_BranchLocation),
+			            dim_BranchLocation[BranchType] = "Main Branch"
+			        ),
+			        [R12-Total]
+			    )
+			RETURN "R12 Average: " & FORMAT(AvgPerformance, "0.0%")
+			```
+		lineageTag: a74c83fc-11c5-4e18-9176-b87b1a8c8e2b
+
+	measure 'R12 Biggest Improver' = ```
+			
+			VAR MaxImprovement = 
+			    MAXX(
+			        FILTER(
+			            ALL(dim_BranchLocation),
+			            dim_BranchLocation[BranchType] = "Main Branch"
+			        ),
+			        [R12 Total % vs PY Change]
+			    )
+			VAR BestBranch = 
+			    MAXX(
+			        FILTER(
+			            ALL(dim_BranchLocation),
+			            dim_BranchLocation[BranchType] = "Main Branch" && 
+			            [R12 Total % vs PY Change] = MaxImprovement
+			        ),
+			        dim_BranchLocation[Branch]
+			    )
+			RETURN BestBranch & " (+" & FORMAT(MaxImprovement, "0.0%") & " R12)"
+			```
+		lineageTag: 59506ddc-ae0c-448f-81d1-35dd6bd9c06c
+
+	measure 'YTD Needs Most Attention' = ```
+			
+			VAR MinPerformance = 
+			    MINX(
+			        FILTER(
+			            ALL(dim_BranchLocation),
+			            dim_BranchLocation[BranchType] = "Main Branch"
+			        ),
+			        [Total %]
+			    )
+			VAR WorstBranch = 
+			    MAXX(
+			        FILTER(
+			            ALL(dim_BranchLocation),
+			            dim_BranchLocation[BranchType] = "Main Branch" && 
+			            [Total %] = MinPerformance
+			        ),
+			        dim_BranchLocation[Branch]
+			    )
+			RETURN WorstBranch & " (" & FORMAT(MinPerformance, "0.0%") & " YTD)"
+			```
+		lineageTag: 8f0b7c7f-e190-487c-801a-c5013e3714af
+
+	measure 'R12 Needs Most Attention' = ```
+			
+			VAR MinPerformance = 
+			    MINX(
+			        FILTER(
+			            ALL(dim_BranchLocation),
+			            dim_BranchLocation[BranchType] = "Main Branch"
+			        ),
+			        [R12-Total]
+			    )
+			VAR WorstBranch = 
+			    MAXX(
+			        FILTER(
+			            ALL(dim_BranchLocation),
+			            dim_BranchLocation[BranchType] = "Main Branch" && 
+			            [R12-Total] = MinPerformance
+			        ),
+			        dim_BranchLocation[Branch]
+			    )
+			RETURN WorstBranch & " (" & FORMAT(MinPerformance, "0.0%") & " R12)"
+			```
+		lineageTag: 10e1d8e7-da98-459e-8e17-553d69cb8e90
+
+	measure 'Quick Wins Opportunities' = ```
+			
+			VAR QuickWins = 
+			    SUMX(
+			        FILTER(
+			            ALL(dim_BranchLocation),
+			            dim_BranchLocation[BranchType] = "Main Branch" && 
+			            [Total %] >= 0.78 && [Total %] < 0.81
+			        ),
+			        1
+			    )
+			RETURN QuickWins & " branches within 3% of target"
+			```
+		lineageTag: e404fb45-899f-4173-92c2-f89ea780dc28
+
+	measure 'Dynamic Time Period' =
+			
+			VAR SelectedGranularity = SELECTEDVALUE('Time Granularity Table'[Granularity], "Monthly")
+			VAR CurrentDate = MAX(dim_DateTable[Date])
+			RETURN
+			SWITCH(
+			    SelectedGranularity,
+			    "Monthly", FORMAT(CurrentDate, "MMM YYYY"),
+			    "Annual", FORMAT(YEAR(CurrentDate), "0"),
+			    FORMAT(CurrentDate, "MMM YYYY")
+			)
+		lineageTag: 051338c8-13bb-4922-934b-f6383a4b6ee2
+
+	measure 'YoY Performance Change' = ```
+			
+			VAR CurrentValue = [Performance by Metric]
+			VAR PriorYearValue = CALCULATE([Performance by Metric], SAMEPERIODLASTYEAR(dim_DateTable[Date]))
+			RETURN CurrentValue - PriorYearValue
+			
+			```
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: d764874e-bbfc-485b-af95-dbfc83411d01
+
+	measure 'YoY Trend Indicator' =
+			
+			VAR YoYChange = [YoY Performance Change]
+			RETURN
+			IF(YoYChange > 0.005, "↗ Improving",
+			   IF(YoYChange < -0.005, "↘ Declining", "→ Stable"))
+		lineageTag: ab092102-a20c-469d-8217-76d6f098b651
+
+	measure 'Month Performance Rank' = ```
+			
+			VAR CurrentMonth = MONTH(MAX(dim_DateTable[Date]))
+			VAR AvgForMonth = 
+			    CALCULATE(
+			        AVERAGEX(VALUES(dim_DateTable[Date]), [Performance by Metric]),
+			        dim_DateTable[Month] = CurrentMonth,
+			        ALL(dim_DateTable[Year])
+			    )
+			VAR AllMonthsAvg = 
+			    AVERAGEX(
+			        ALL(dim_DateTable[Date]),
+			        [Performance by Metric]
+			    )
+			RETURN AvgForMonth - AllMonthsAvg
+			```
+		lineageTag: 6d1e419c-72f4-41a0-b713-56c36337a2e0
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Consistent Poor Months' = ```
+			
+			VAR PoorMonths = 
+			    FILTER(
+			        ADDCOLUMNS(
+			            VALUES(dim_DateTable[MonthName]),
+			            "MonthAvg", 
+			            CALCULATE(
+			                AVERAGEX(VALUES(dim_DateTable[Date]), [Performance by Metric]),
+			                ALL(dim_DateTable[Year])
+			            )
+			        ),
+			        [MonthAvg] < 0.77
+			    )
+			RETURN
+			CONCATENATEX(PoorMonths, dim_DateTable[MonthName], ", ")
+			```
+		lineageTag: 63c0e6e1-0116-40fb-a09b-bdffbdb2ba12
+
+	measure Measure
+		lineageTag: 0ac58c35-5158-4079-9d9e-439a25f3ff0e
+
+		annotation 43dbc3e8-3a1c-4b6f-9923-b49ff7d6691c = True
+
+	measure 'R12-Counter (Working)' = ```
+			
+			VAR SelectedMaxDate = 
+			    IF(
+			        ISFILTERED(dim_DateTable[MonthName]),
+			        -- When month filtered, use end of selected month in current data year
+			        EOMONTH(DATE(2025, MONTH(MAX(dim_DateTable[Date])), 1), 0),
+			        -- When no filter, use current month
+			        EOMONTH(TODAY(), 0)
+			    )
+			VAR RollingStartDate = EOMONTH(SelectedMaxDate, -12) + 1  -- 12 months back
+			RETURN
+			CALCULATE(
+			    [01. Counter %],
+			    dim_DateTable[Date] >= RollingStartDate &&
+			    dim_DateTable[Date] <= SelectedMaxDate
+			)
+			```
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 677ad806-c690-4eaa-b1fd-c515b737a409
+
+	measure 'Period Verification' = ```
+			
+			VAR SelectedMaxDate = 
+			    IF(
+			        ISFILTERED(dim_DateTable[MonthName]),
+			        EOMONTH(DATE(2025, MONTH(MAX(dim_DateTable[Date])), 1), 0),
+			        EOMONTH(TODAY(), 0)
+			    )
+			VAR RollingStartDate = EOMONTH(SelectedMaxDate, -12) + 1
+			VAR PYMaxDate = EOMONTH(SelectedMaxDate, -12)
+			VAR PYRollingStart = EOMONTH(PYMaxDate, -12) + 1
+			RETURN
+			"R12 Selected Period: " & FORMAT(RollingStartDate, "MMM YYYY") & " to " & FORMAT(SelectedMaxDate, "MMM YYYY") &
+			" | PY: " & FORMAT(PYRollingStart, "MMM YYYY") & " to " & FORMAT(PYMaxDate, "MMM YYYY")
+			```
+		lineageTag: 049fd4ee-5390-4ca6-9f4b-78148d49ccd5
+
+	measure 'PY-R12-Counter (Working)' = ```
+			
+			VAR SelectedMaxDate = 
+			    IF(
+			        ISFILTERED(dim_DateTable[MonthName]),
+			        EOMONTH(DATE(2025, MONTH(MAX(dim_DateTable[Date])), 1), 0),
+			        EOMONTH(TODAY(), 0)
+			    )
+			VAR PYMaxDate = EOMONTH(SelectedMaxDate, -12)  -- Same month last year
+			VAR PYRollingStart = EOMONTH(PYMaxDate, -12) + 1  -- 12 months back from PY
+			RETURN
+			CALCULATE(
+			    [01. Counter %],
+			    dim_DateTable[Date] >= PYRollingStart &&
+			    dim_DateTable[Date] <= PYMaxDate
+			)
+			```
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: cde92494-15b7-4d02-9819-73765e7bffa7
+
+	measure 'R12-Counter+Trans (Working)' = ```
+			
+			VAR SelectedMaxDate = 
+			    IF(
+			        ISFILTERED(dim_DateTable[MonthName]),
+			        EOMONTH(DATE(2025, MONTH(MAX(dim_DateTable[Date])), 1), 0),
+			        EOMONTH(TODAY(), 0)
+			    )
+			VAR RollingStartDate = EOMONTH(SelectedMaxDate, -12) + 1
+			RETURN
+			CALCULATE(
+			    [Counter+Transfer %],
+			    dim_DateTable[Date] >= RollingStartDate &&
+			    dim_DateTable[Date] <= SelectedMaxDate
+			)
+			```
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 89a3591f-65cd-4f31-9352-f2d2ab1f4f6e
+
+	measure 'PY-R12-Counter+Trans (Working)' = ```
+			
+			VAR SelectedMaxDate = 
+			    IF(
+			        ISFILTERED(dim_DateTable[MonthName]),
+			        EOMONTH(DATE(2025, MONTH(MAX(dim_DateTable[Date])), 1), 0),
+			        EOMONTH(TODAY(), 0)
+			    )
+			VAR PYMaxDate = EOMONTH(SelectedMaxDate, -12)
+			VAR PYRollingStart = EOMONTH(PYMaxDate, -12) + 1
+			RETURN
+			CALCULATE(
+			    [Counter+Transfer %],
+			    dim_DateTable[Date] >= PYRollingStart &&
+			    dim_DateTable[Date] <= PYMaxDate
+			)
+			```
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: babcb273-32a1-4166-acb6-0f1111846d03
+
+	measure 'R12-Shop (Working)' = ```
+			
+			VAR SelectedMaxDate = 
+			    IF(
+			        ISFILTERED(dim_DateTable[MonthName]),
+			        EOMONTH(DATE(2025, MONTH(MAX(dim_DateTable[Date])), 1), 0),
+			        EOMONTH(TODAY(), 0)
+			    )
+			VAR RollingStartDate = EOMONTH(SelectedMaxDate, -12) + 1
+			RETURN
+			CALCULATE(
+			    [Shop %],
+			    dim_DateTable[Date] >= RollingStartDate &&
+			    dim_DateTable[Date] <= SelectedMaxDate
+			)
+			```
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 4fdf1d54-a296-4ec6-98d9-b3c098472d49
+
+	measure 'PY-R12-Shop (Working)' = ```
+			
+			VAR SelectedMaxDate = 
+			    IF(
+			        ISFILTERED(dim_DateTable[MonthName]),
+			        EOMONTH(DATE(2025, MONTH(MAX(dim_DateTable[Date])), 1), 0),
+			        EOMONTH(TODAY(), 0)
+			    )
+			VAR PYMaxDate = EOMONTH(SelectedMaxDate, -12)
+			VAR PYRollingStart = EOMONTH(PYMaxDate, -12) + 1
+			RETURN
+			CALCULATE(
+			    [Shop %],
+			    dim_DateTable[Date] >= PYRollingStart &&
+			    dim_DateTable[Date] <= PYMaxDate
+			)
+			```
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: a71b6f7a-68c3-4abe-b126-0b49e87d38f5
+
+	measure 'R12-Shop+Trans (Working)' = ```
+			
+			VAR SelectedMaxDate = 
+			    IF(
+			        ISFILTERED(dim_DateTable[MonthName]),
+			        EOMONTH(DATE(2025, MONTH(MAX(dim_DateTable[Date])), 1), 0),
+			        EOMONTH(TODAY(), 0)
+			    )
+			VAR RollingStartDate = EOMONTH(SelectedMaxDate, -12) + 1
+			RETURN
+			CALCULATE(
+			    [Shop + Transfer %],
+			    dim_DateTable[Date] >= RollingStartDate &&
+			    dim_DateTable[Date] <= SelectedMaxDate
+			)
+			```
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: e0d6885b-fc9d-443c-bcf4-ee9f29a22945
+
+	measure 'PY-R12-Shop+Trans (Working)' = ```
+			
+			VAR SelectedMaxDate = 
+			    IF(
+			        ISFILTERED(dim_DateTable[MonthName]),
+			        EOMONTH(DATE(2025, MONTH(MAX(dim_DateTable[Date])), 1), 0),
+			        EOMONTH(TODAY(), 0)
+			    )
+			VAR PYMaxDate = EOMONTH(SelectedMaxDate, -12)
+			VAR PYRollingStart = EOMONTH(PYMaxDate, -12) + 1
+			RETURN
+			CALCULATE(
+			    [Shop + Transfer %],
+			    dim_DateTable[Date] >= PYRollingStart &&
+			    dim_DateTable[Date] <= PYMaxDate
+			)
+			```
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: f8037990-92d6-4742-9cc0-1d9c4d7ea305
+
+	measure 'R12-Total (Working)' = ```
+			
+			VAR SelectedMaxDate = 
+			    IF(
+			        ISFILTERED(dim_DateTable[MonthName]),
+			        EOMONTH(DATE(2025, MONTH(MAX(dim_DateTable[Date])), 1), 0),
+			        EOMONTH(TODAY(), 0)
+			    )
+			VAR RollingStartDate = EOMONTH(SelectedMaxDate, -12) + 1
+			RETURN
+			CALCULATE(
+			    [Total %],
+			    dim_DateTable[Date] >= RollingStartDate &&
+			    dim_DateTable[Date] <= SelectedMaxDate
+			)
+			```
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 73254e22-875d-43f4-8f00-452ed11001e9
+
+	measure 'PY-R12-Total (Working)' = ```
+			
+			VAR SelectedMaxDate = 
+			    IF(
+			        ISFILTERED(dim_DateTable[MonthName]),
+			        EOMONTH(DATE(2025, MONTH(MAX(dim_DateTable[Date])), 1), 0),
+			        EOMONTH(TODAY(), 0)
+			    )
+			VAR PYMaxDate = EOMONTH(SelectedMaxDate, -12)
+			VAR PYRollingStart = EOMONTH(PYMaxDate, -12) + 1
+			RETURN
+			CALCULATE(
+			    [Total %],
+			    dim_DateTable[Date] >= PYRollingStart &&
+			    dim_DateTable[Date] <= PYMaxDate
+			)
+			```
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: ead1c4fd-e021-4eaa-a796-13875bda757d
+
+	measure 'R12-Total+Trans (Working)' = ```
+			
+			VAR SelectedMaxDate = 
+			    IF(
+			        ISFILTERED(dim_DateTable[MonthName]),
+			        EOMONTH(DATE(2025, MONTH(MAX(dim_DateTable[Date])), 1), 0),
+			        EOMONTH(TODAY(), 0)
+			    )
+			VAR RollingStartDate = EOMONTH(SelectedMaxDate, -12) + 1
+			RETURN
+			CALCULATE(
+			    [Total + Transfer %],
+			    dim_DateTable[Date] >= RollingStartDate &&
+			    dim_DateTable[Date] <= SelectedMaxDate
+			)
+			```
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 360d853b-861e-4958-9e2d-6fdea5e715be
+
+	measure 'PY-R12-Total+Trans (Working)' = ```
+			
+			VAR SelectedMaxDate = 
+			    IF(
+			        ISFILTERED(dim_DateTable[MonthName]),
+			        EOMONTH(DATE(2025, MONTH(MAX(dim_DateTable[Date])), 1), 0),
+			        EOMONTH(TODAY(), 0)
+			    )
+			VAR PYMaxDate = EOMONTH(SelectedMaxDate, -12)
+			VAR PYRollingStart = EOMONTH(PYMaxDate, -12) + 1
+			RETURN
+			CALCULATE(
+			    [Total + Transfer %],
+			    dim_DateTable[Date] >= PYRollingStart &&
+			    dim_DateTable[Date] <= PYMaxDate
+			)
+			```
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 5c805957-ab45-4595-810d-789b811adf43
+
+	measure 'Performance by Metric R12' = ```
+			
+			SWITCH(
+			    SELECTEDVALUE('Metric Names'[Metric]),
+			    "Counter", [R12-Counter (Working)],
+			    "Counter + Transfer", [R12-Counter+Trans (Working)],
+			    "Shop", [R12-Shop (Working)], 
+			    "Shop + Transfer", [R12-Shop+Trans (Working)],
+			    "Total", [R12-Total (Working)],
+			    "Total + Transfer", [R12-Total+Trans (Working)],
+			    BLANK()
+			)
+			```
+		lineageTag: bd5790fd-921c-4ac1-8ba2-33d94a6397e9
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Rolling 12 Trend' =
+			
+			VAR CurrentDate = MAX(dim_DateTable[Date])
+			VAR Rolling12Period = DATESINPERIOD(dim_DateTable[Date], CurrentDate, -12, MONTH)
+			RETURN
+			CALCULATE(
+			    DIVIDE(
+			        SUM(Fact_FirstPassFill[TotalFirstPassSuccesses]),
+			        SUM(Fact_FirstPassFill[TotalFirstPassAttempts]),
+			        0
+			    ),
+			    Rolling12Period
+			)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: ac63c38f-6950-40e2-9917-4b9600244f27
+
+	measure 'Home - Header' = ```
+			
+			// Get user name
+			VAR _User = USERPRINCIPALNAME()
+			VAR _Position = SEARCH("@", _User, 1)
+			VAR _Name = LEFT(_User, _Position - 1)
+			VAR _FirstLetter = UPPER(LEFT(_Name, 1))
+			VAR _LastName = MID(_Name, 2, LEN(_Name) - 1)
+			VAR _FormattedLastName = 
+			    UPPER(LEFT(_LastName, 1)) & LOWER(MID(_LastName, 2, LEN(_LastName)))
+			VAR WelcomeName = _FirstLetter & "." & _FormattedLastName
+			
+			// Get current date/time info
+			VAR CurrentDate = TODAY()
+			VAR DateDisplay = FORMAT(CurrentDate, "MMM D, YYYY")
+			VAR CurrentHour = HOUR(NOW())
+			VAR TimeGreeting = 
+			    IF(CurrentHour < 12, "Good Morning",
+			    IF(CurrentHour < 17, "Good Afternoon",
+			    "Good Evening"))
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    height: 85px;
+			    padding: 15px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 10px;
+			    color: white;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-between;
+			    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    box-sizing: border-box;
+			'>
+			    <!-- Left side: Dashboard Title -->
+			    <div style='display: flex; align-items: center; gap: 15px;'>
+			        <!-- Home icon -->
+			        <div style='
+			            width: 40px;
+			            height: 40px;
+			            background: rgba(255,255,255,0.15);
+			            border-radius: 8px;
+			            display: flex;
+			            align-items: center;
+			            justify-content: center;
+			            font-size: 20px;
+			        '>
+			            🏠
+			        </div>
+			        
+			        <!-- Title -->
+			        <div>
+			            <div style='font-size: 12px; opacity: 0.85; margin-bottom: 4px; letter-spacing: 0.5px;'>
+			                REPORT
+			            </div>
+			            <div style='font-size: 26px; font-weight: 700; line-height: 1;'>
+			                First Pass Fill - By Month
+			            </div>
+			        </div>
+			    </div>
+			    
+			    <!-- Right side: Welcome & Date -->
+			    <div style='text-align: right;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 6px;'>
+			            " & TimeGreeting & ", " & WelcomeName & "
+			        </div>
+			        <div style='font-size: 16px; font-weight: 600;'>
+			            📅 " & DateDisplay & "
+			        </div>
+			    </div>
+			</div>
+			"
+			```
+		lineageTag: f4d6689a-2aab-4a8a-8555-5d198f1e736a
+
+	measure 'Rolling12 - Header' = ```
+			
+			// Get user name
+			VAR _User = USERPRINCIPALNAME()
+			VAR _Position = SEARCH("@", _User, 1)
+			VAR _Name = LEFT(_User, _Position - 1)
+			VAR _FirstLetter = UPPER(LEFT(_Name, 1))
+			VAR _LastName = MID(_Name, 2, LEN(_Name) - 1)
+			VAR _FormattedLastName = 
+			    UPPER(LEFT(_LastName, 1)) & LOWER(MID(_LastName, 2, LEN(_LastName)))
+			VAR WelcomeName = _FirstLetter & "." & _FormattedLastName
+			
+			// Get current date/time info
+			VAR CurrentDate = TODAY()
+			VAR DateDisplay = FORMAT(CurrentDate, "MMM D, YYYY")
+			VAR CurrentHour = HOUR(NOW())
+			VAR TimeGreeting = 
+			    IF(CurrentHour < 12, "Good Morning",
+			    IF(CurrentHour < 17, "Good Afternoon",
+			    "Good Evening"))
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    height: 85px;
+			    padding: 15px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 10px;
+			    color: white;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-between;
+			    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    box-sizing: border-box;
+			'>
+			    <!-- Left side: Dashboard Title -->
+			    <div style='display: flex; align-items: center; gap: 15px;'>
+			        <!-- Home icon -->
+			        <div style='
+			            width: 40px;
+			            height: 40px;
+			            background: rgba(255,255,255,0.15);
+			            border-radius: 8px;
+			            display: flex;
+			            align-items: center;
+			            justify-content: center;
+			            font-size: 20px;
+			        '>
+			            🏠
+			        </div>
+			        
+			        <!-- Title -->
+			        <div>
+			            <div style='font-size: 12px; opacity: 0.85; margin-bottom: 4px; letter-spacing: 0.5px;'>
+			                REPORT
+			            </div>
+			            <div style='font-size: 26px; font-weight: 700; line-height: 1;'>
+			                First Pass Fill - Rolling 12 vs. PY
+			            </div>
+			        </div>
+			    </div>
+			    
+			    <!-- Right side: Welcome & Date -->
+			    <div style='text-align: right;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 6px;'>
+			            " & TimeGreeting & ", " & WelcomeName & "
+			        </div>
+			        <div style='font-size: 16px; font-weight: 600;'>
+			            📅 " & DateDisplay & "
+			        </div>
+			    </div>
+			</div>
+			"
+			```
+		lineageTag: ae3f7e40-f787-4d44-99f4-de20242343b9
+
+	measure 'YTD - Header' = ```
+			
+			// Get user name
+			VAR _User = USERPRINCIPALNAME()
+			VAR _Position = SEARCH("@", _User, 1)
+			VAR _Name = LEFT(_User, _Position - 1)
+			VAR _FirstLetter = UPPER(LEFT(_Name, 1))
+			VAR _LastName = MID(_Name, 2, LEN(_Name) - 1)
+			VAR _FormattedLastName = 
+			    UPPER(LEFT(_LastName, 1)) & LOWER(MID(_LastName, 2, LEN(_LastName)))
+			VAR WelcomeName = _FirstLetter & "." & _FormattedLastName
+			
+			// Get current date/time info
+			VAR CurrentDate = TODAY()
+			VAR DateDisplay = FORMAT(CurrentDate, "MMM D, YYYY")
+			VAR CurrentHour = HOUR(NOW())
+			VAR TimeGreeting = 
+			    IF(CurrentHour < 12, "Good Morning",
+			    IF(CurrentHour < 17, "Good Afternoon",
+			    "Good Evening"))
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    height: 85px;
+			    padding: 15px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 10px;
+			    color: white;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-between;
+			    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    box-sizing: border-box;
+			'>
+			    <!-- Left side: Dashboard Title -->
+			    <div style='display: flex; align-items: center; gap: 15px;'>
+			        <!-- Home icon -->
+			        <div style='
+			            width: 40px;
+			            height: 40px;
+			            background: rgba(255,255,255,0.15);
+			            border-radius: 8px;
+			            display: flex;
+			            align-items: center;
+			            justify-content: center;
+			            font-size: 20px;
+			        '>
+			            🏠
+			        </div>
+			        
+			        <!-- Title -->
+			        <div>
+			            <div style='font-size: 12px; opacity: 0.85; margin-bottom: 4px; letter-spacing: 0.5px;'>
+			                REPORT
+			            </div>
+			            <div style='font-size: 26px; font-weight: 700; line-height: 1;'>
+			                First Pass Fill - YTD
+			            </div>
+			        </div>
+			    </div>
+			    
+			    <!-- Right side: Welcome & Date -->
+			    <div style='text-align: right;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 6px;'>
+			            " & TimeGreeting & ", " & WelcomeName & "
+			        </div>
+			        <div style='font-size: 16px; font-weight: 600;'>
+			            📅 " & DateDisplay & "
+			        </div>
+			    </div>
+			</div>
+			"
+			```
+		lineageTag: d19b31b5-8a2a-4617-81db-f6cac3d5e49c
+
+	measure 'Summary - Header' = ```
+			
+			// Get user name
+			VAR _User = USERPRINCIPALNAME()
+			VAR _Position = SEARCH("@", _User, 1)
+			VAR _Name = LEFT(_User, _Position - 1)
+			VAR _FirstLetter = UPPER(LEFT(_Name, 1))
+			VAR _LastName = MID(_Name, 2, LEN(_Name) - 1)
+			VAR _FormattedLastName = 
+			    UPPER(LEFT(_LastName, 1)) & LOWER(MID(_LastName, 2, LEN(_LastName)))
+			VAR WelcomeName = _FirstLetter & "." & _FormattedLastName
+			
+			// Get current date/time info
+			VAR CurrentDate = TODAY()
+			VAR DateDisplay = FORMAT(CurrentDate, "MMM D, YYYY")
+			VAR CurrentHour = HOUR(NOW())
+			VAR TimeGreeting = 
+			    IF(CurrentHour < 12, "Good Morning",
+			    IF(CurrentHour < 17, "Good Afternoon",
+			    "Good Evening"))
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    height: 85px;
+			    padding: 15px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 10px;
+			    color: white;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-between;
+			    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    box-sizing: border-box;
+			'>
+			    <!-- Left side: Dashboard Title -->
+			    <div style='display: flex; align-items: center; gap: 15px;'>
+			        <!-- Home icon -->
+			        <div style='
+			            width: 40px;
+			            height: 40px;
+			            background: rgba(255,255,255,0.15);
+			            border-radius: 8px;
+			            display: flex;
+			            align-items: center;
+			            justify-content: center;
+			            font-size: 20px;
+			        '>
+			            🏠
+			        </div>
+			        
+			        <!-- Title -->
+			        <div>
+			            <div style='font-size: 12px; opacity: 0.85; margin-bottom: 4px; letter-spacing: 0.5px;'>
+			                REPORT
+			            </div>
+			            <div style='font-size: 26px; font-weight: 700; line-height: 1;'>
+			                First Pass Fill - Summary
+			            </div>
+			        </div>
+			    </div>
+			    
+			    <!-- Right side: Welcome & Date -->
+			    <div style='text-align: right;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 6px;'>
+			            " & TimeGreeting & ", " & WelcomeName & "
+			        </div>
+			        <div style='font-size: 16px; font-weight: 600;'>
+			            📅 " & DateDisplay & "
+			        </div>
+			    </div>
+			</div>
+			"
+			```
+		lineageTag: a61fe319-41d9-41f3-9996-56f3da8d1db7
+
+	measure 'Trends - Header' = ```
+			
+			// Get user name
+			VAR _User = USERPRINCIPALNAME()
+			VAR _Position = SEARCH("@", _User, 1)
+			VAR _Name = LEFT(_User, _Position - 1)
+			VAR _FirstLetter = UPPER(LEFT(_Name, 1))
+			VAR _LastName = MID(_Name, 2, LEN(_Name) - 1)
+			VAR _FormattedLastName = 
+			    UPPER(LEFT(_LastName, 1)) & LOWER(MID(_LastName, 2, LEN(_LastName)))
+			VAR WelcomeName = _FirstLetter & "." & _FormattedLastName
+			
+			// Get current date/time info
+			VAR CurrentDate = TODAY()
+			VAR DateDisplay = FORMAT(CurrentDate, "MMM D, YYYY")
+			VAR CurrentHour = HOUR(NOW())
+			VAR TimeGreeting = 
+			    IF(CurrentHour < 12, "Good Morning",
+			    IF(CurrentHour < 17, "Good Afternoon",
+			    "Good Evening"))
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    height: 85px;
+			    padding: 15px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 10px;
+			    color: white;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-between;
+			    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    box-sizing: border-box;
+			'>
+			    <!-- Left side: Dashboard Title -->
+			    <div style='display: flex; align-items: center; gap: 15px;'>
+			        <!-- Home icon -->
+			        <div style='
+			            width: 40px;
+			            height: 40px;
+			            background: rgba(255,255,255,0.15);
+			            border-radius: 8px;
+			            display: flex;
+			            align-items: center;
+			            justify-content: center;
+			            font-size: 20px;
+			        '>
+			            🏠
+			        </div>
+			        
+			        <!-- Title -->
+			        <div>
+			            <div style='font-size: 12px; opacity: 0.85; margin-bottom: 4px; letter-spacing: 0.5px;'>
+			                REPORT
+			            </div>
+			            <div style='font-size: 26px; font-weight: 700; line-height: 1;'>
+			                First Pass Fill - Trends
+			            </div>
+			        </div>
+			    </div>
+			    
+			    <!-- Right side: Welcome & Date -->
+			    <div style='text-align: right;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 6px;'>
+			            " & TimeGreeting & ", " & WelcomeName & "
+			        </div>
+			        <div style='font-size: 16px; font-weight: 600;'>
+			            📅 " & DateDisplay & "
+			        </div>
+			    </div>
+			</div>
+			"
+			```
+		lineageTag: cb9b1585-aa3b-4f6e-a444-eb322e786968
+
+	column Value
+		isHidden
+		formatString: 0
+		lineageTag: 8678bf39-f176-4547-98dc-825053f376fe
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [Value]
+
+		annotation SummarizationSetBy = Automatic
+
+	column DummyColumn
+		isHidden
+		formatString: 0
+		lineageTag: cd49475c-303a-4460-be09-b11b4ce4fce3
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [DummyColumn]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition MeasuresTable = calculated
+		mode: import
+		source = ADDCOLUMNS( GENERATESERIES(1, 1), "DummyColumn", 1 )
+
+	annotation PBI_Id = 6fbd826045c24c5594d31f62f17aaa57
+

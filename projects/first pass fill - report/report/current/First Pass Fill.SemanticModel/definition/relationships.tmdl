@@ -1,0 +1,22 @@
+relationship AutoDetected_7dde6b7f-4b2b-4f82-91d7-ac1813e4ea41
+	fromColumn: Fact_FirstPassFill.BranchKey
+	toColumn: dim_BranchLocation.BranchKey
+
+relationship AutoDetected_a92e2687-c476-4a61-99c9-5ad6911616bc
+	fromColumn: Fact_FirstPassFill.PartNumberKey
+	toColumn: dim_Parts.PartNumberKey
+
+relationship b69b6b27-f0d8-5c5c-c6e9-d36a9f1af499
+	fromColumn: Fact_FirstPassFill.JobCodeKey
+	toColumn: dim_JobCode.JobCodeKey
+
+relationship c28bc7fb-46f9-83a3-156e-ff69e4c9de6f
+	fromColumn: Fact_FirstPassFill.PeriodDateKey
+	toColumn: dim_DateTable.DateKey
+
+relationship ef7e1c03-13ab-460e-5bab-e82190728a1f
+	crossFilteringBehavior: bothDirections
+	fromCardinality: one
+	fromColumn: dim_DateTable.Date
+	toColumn: Date_Supplemental.Date
+

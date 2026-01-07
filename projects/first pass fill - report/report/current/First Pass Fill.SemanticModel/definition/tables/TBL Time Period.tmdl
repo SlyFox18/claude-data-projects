@@ -1,0 +1,31 @@
+table 'TBL Time Period'
+	lineageTag: 9c2c2797-da60-4165-a69b-3f2a434f687e
+
+	column Sort
+		dataType: int64
+		formatString: 0
+		lineageTag: 0a083c48-8580-44a7-99bc-f03a778eaa2d
+		summarizeBy: sum
+		sourceColumn: Sort
+
+		annotation SummarizationSetBy = Automatic
+
+	column Name
+		dataType: string
+		lineageTag: 32df25fd-678d-4879-92e9-0bb281c4f2a8
+		summarizeBy: none
+		sourceColumn: Name
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'TBL Time Period' = m
+		mode: import
+		source =
+				let
+				    Source = Table.FromRows(Json.Document(Binary.Decompress(Binary.FromText("i45WMlTSUfINcVGK1YlWMgKyI0HsWAA=", BinaryEncoding.Base64), Compression.Deflate)), let _t = ((type nullable text) meta [Serialized.Text = true]) in type table [Sort = _t, Name = _t]),
+				    #"Changed Type" = Table.TransformColumnTypes(Source,{{"Sort", Int64.Type}, {"Name", type text}})
+				in
+				    #"Changed Type"
+
+	annotation PBI_ResultType = Table
+

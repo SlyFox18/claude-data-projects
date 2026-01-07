@@ -1,0 +1,40 @@
+table 'Performance Metrics'
+	lineageTag: 2bdf3b0d-917b-4b83-8c0f-c83308040e77
+
+	column Metric
+		lineageTag: e50d6458-3060-4af8-8bb4-ce2670d31402
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Metric]
+
+		annotation SummarizationSetBy = Automatic
+
+	column Order
+		formatString: 0
+		lineageTag: 919a7649-8e53-4154-888e-64235749607e
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [Order]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Performance Metrics' = calculated
+		mode: import
+		source = ```
+				
+				DATATABLE(
+				    "Metric", STRING,
+				    "Order", INTEGER,
+				    {
+				        {"Counter", 1},
+				        {"Counter + Transfer", 2}, 
+				        {"Shop", 3},
+				        {"Shop + Transfer", 4},
+				        {"Total", 5},
+				        {"Total + Transfer", 6}
+				    }
+				)
+				```
+
+	annotation PBI_Id = dc8623bd623e4087a79802dd974bc5b8
+

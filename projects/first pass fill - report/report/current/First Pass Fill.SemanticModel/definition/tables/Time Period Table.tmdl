@@ -1,0 +1,36 @@
+table 'Time Period Table'
+	lineageTag: 04c52686-7725-4a97-9fb1-891052f26193
+
+	column Period
+		lineageTag: 4a429efd-d1d0-499e-80ae-b1726b37cd1f
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Period]
+
+		annotation SummarizationSetBy = Automatic
+
+	column Display
+		lineageTag: fc4e819f-bf58-42af-81e2-8dbb5e09a444
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Display]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Time Period Table' = calculated
+		mode: import
+		source = ```
+				
+				DATATABLE(
+				    "Period", STRING,
+				    "Display", STRING,
+				    {
+				        {"YTD", "Year to Date"},
+				        {"R12", "Rolling 12 Months"}, 
+				        {"MTD", "Month vs Same Month LY"}
+				    }
+				)
+				```
+
+	annotation PBI_Id = 92fc4b9ed5174a5481fe7ccc3abb78d2
+

@@ -1,0 +1,113 @@
+table dim_JobCode
+	lineageTag: 5ebc6d6b-2299-4add-ad87-9b5d44246b06
+
+	column JobCodeKey
+		dataType: int64
+		formatString: 0
+		lineageTag: 518acd9f-2d33-4e55-86e2-414141783240
+		summarizeBy: none
+		sourceColumn: JobCodeKey
+
+		annotation SummarizationSetBy = Automatic
+
+	column JobCode
+		dataType: string
+		lineageTag: 4e641fc3-c1e7-4352-bf2c-318bbbe7c1e5
+		summarizeBy: none
+		sourceColumn: JobCode
+
+		annotation SummarizationSetBy = Automatic
+
+	column JobCodeDisplayName
+		dataType: string
+		lineageTag: 1fbd47b4-ee61-456d-a182-3b5536c8ff88
+		summarizeBy: none
+		sourceColumn: JobCodeDisplayName
+
+		annotation SummarizationSetBy = Automatic
+
+	column JobCodeShortDesc
+		dataType: string
+		lineageTag: 16a64f4e-6727-410d-9164-ad7d800d32f9
+		summarizeBy: none
+		sourceColumn: JobCodeShortDesc
+
+		annotation SummarizationSetBy = Automatic
+
+	column JobCodeCategory
+		dataType: string
+		lineageTag: 90547a1c-3cbf-4ebc-9e9f-6204e64137e1
+		summarizeBy: none
+		sourceColumn: JobCodeCategory
+
+		annotation SummarizationSetBy = Automatic
+
+	column EquipmentType
+		dataType: string
+		lineageTag: 2acf92d2-919e-4b6b-8394-699f0f1753a2
+		summarizeBy: none
+		sourceColumn: EquipmentType
+
+		annotation SummarizationSetBy = Automatic
+
+	column EquipmentCategory
+		dataType: string
+		lineageTag: ebdd7dd1-2855-470a-a229-40f7c336d5ea
+		summarizeBy: none
+		sourceColumn: EquipmentCategory
+
+		annotation SummarizationSetBy = Automatic
+
+	column ServiceComplexity
+		dataType: string
+		lineageTag: 3ba1fb85-82fd-4b70-8585-6f16e1e9a0d6
+		summarizeBy: none
+		sourceColumn: ServiceComplexity
+
+		annotation SummarizationSetBy = Automatic
+
+	column IsInspection
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: e723c2cf-7e8d-438c-804a-19a9e1868747
+		summarizeBy: none
+		sourceColumn: IsInspection
+
+		annotation SummarizationSetBy = Automatic
+
+	column IsWarrantyWork
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: a29db1ec-abb2-427c-8757-fe1a0bc770b0
+		summarizeBy: none
+		sourceColumn: IsWarrantyWork
+
+		annotation SummarizationSetBy = Automatic
+
+	column IsSeasonalWork
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 89675e1c-8a5e-4cea-be1a-c5078545ed21
+		summarizeBy: none
+		sourceColumn: IsSeasonalWork
+
+		annotation SummarizationSetBy = Automatic
+
+	column IsUrgentWork
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 1350f045-828d-4f80-afaa-1bbe37cbe0b4
+		summarizeBy: none
+		sourceColumn: IsUrgentWork
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dim_JobCode = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-gxnyznhdptpenfw724g3o5sjzm.datawarehouse.fabric.microsoft.com", "LH_Master_Data"),
+				    dbo_dim_JobCode = Source{[Schema="dbo",Item="dim_JobCode"]}[Data]
+				in
+				    dbo_dim_JobCode
+
