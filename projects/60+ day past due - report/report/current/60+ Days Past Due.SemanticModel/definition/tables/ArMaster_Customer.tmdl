@@ -1,0 +1,194 @@
+table ArMaster_Customer
+	lineageTag: d328a434-51bb-44f7-9055-e9636f79c712
+
+	column ContactID
+		dataType: string
+		lineageTag: e25cf62a-25a2-4b00-b462-71c05e49b800
+		summarizeBy: none
+		sourceColumn: ContactID
+
+		annotation SummarizationSetBy = Automatic
+
+	column CustomerNumber
+		dataType: int64
+		formatString: 0
+		lineageTag: 27d2f492-3816-4332-be8d-7a5982d964ff
+		summarizeBy: sum
+		sourceColumn: CustomerNumber
+
+		annotation SummarizationSetBy = Automatic
+
+	column CustomerNumberChar
+		dataType: string
+		lineageTag: 55503fa8-e034-468b-8098-3c9bbdc7d5ea
+		summarizeBy: none
+		sourceColumn: CustomerNumberChar
+
+		annotation SummarizationSetBy = Automatic
+
+	column StatusCode
+		dataType: string
+		lineageTag: 66e345c8-2dab-4413-bf0e-3ab11e4d09f8
+		summarizeBy: none
+		sourceColumn: StatusCode
+
+		annotation SummarizationSetBy = Automatic
+
+	column AccountType
+		dataType: string
+		lineageTag: 3bcc2307-db97-472d-ac00-8c3a4a5bacff
+		summarizeBy: none
+		sourceColumn: AccountType
+
+		annotation SummarizationSetBy = Automatic
+
+	column TradeType
+		dataType: string
+		lineageTag: b52ee6e6-61d8-4663-8aa3-9b07595b90a5
+		summarizeBy: none
+		sourceColumn: TradeType
+
+		annotation SummarizationSetBy = Automatic
+
+	column DiscountType
+		dataType: string
+		lineageTag: e8dd1233-dc63-428f-b6df-06e8ce8966c9
+		summarizeBy: none
+		sourceColumn: DiscountType
+
+		annotation SummarizationSetBy = Automatic
+
+	column TaxExemptNumber
+		dataType: string
+		lineageTag: 1c3780f2-d57f-4ac6-a5d7-7fd26d720447
+		summarizeBy: none
+		sourceColumn: TaxExemptNumber
+
+		annotation SummarizationSetBy = Automatic
+
+	column QuotePurchaseOrder
+		dataType: string
+		lineageTag: 3b3396a6-8849-409d-9cfb-edd8f7f3e8b7
+		summarizeBy: none
+		sourceColumn: QuotePurchaseOrder
+
+		annotation SummarizationSetBy = Automatic
+
+	column Territory
+		dataType: string
+		lineageTag: ed4f7149-8398-4816-aa5b-6bbeed95cf92
+		summarizeBy: none
+		sourceColumn: Territory
+
+		annotation SummarizationSetBy = Automatic
+
+	column PriceLevel
+		dataType: string
+		lineageTag: 398c0555-6507-4fd1-9070-c4b47add25d5
+		summarizeBy: none
+		sourceColumn: PriceLevel
+
+		annotation SummarizationSetBy = Automatic
+
+	column PricePercent
+		dataType: double
+		lineageTag: 20406b10-542a-487f-bb42-1650748c3af6
+		summarizeBy: sum
+		sourceColumn: PricePercent
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column LabourRate
+		dataType: double
+		lineageTag: 3baa206d-477d-4669-925c-9961e0c7be30
+		summarizeBy: sum
+		sourceColumn: LabourRate
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column BillToAccount
+		dataType: int64
+		formatString: 0
+		lineageTag: 0cb475c3-ba7d-4ea6-8e19-2a7f49fe0d8d
+		summarizeBy: sum
+		sourceColumn: BillToAccount
+
+		annotation SummarizationSetBy = Automatic
+
+	column CustomerNotes
+		dataType: string
+		lineageTag: 24b3120a-2a24-40e8-92c7-ab0959e08720
+		summarizeBy: none
+		sourceColumn: CustomerNotes
+
+		annotation SummarizationSetBy = Automatic
+
+	column CapricornNumber
+		dataType: double
+		lineageTag: 43696a99-6f27-4655-8b4e-c68547f231b5
+		summarizeBy: sum
+		sourceColumn: CapricornNumber
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column CustomerAlert
+		dataType: string
+		lineageTag: 052a81ac-0759-46b5-a87f-d35742fc1231
+		summarizeBy: none
+		sourceColumn: CustomerAlert
+
+		annotation SummarizationSetBy = Automatic
+
+	column TaxExemptType
+		dataType: string
+		lineageTag: 063e281b-13fd-486b-93b4-3fbf39ebc59d
+		summarizeBy: none
+		sourceColumn: TaxExemptType
+
+		annotation SummarizationSetBy = Automatic
+
+	column AllowTransactionNoCC
+		dataType: string
+		lineageTag: fa3750dd-0cd4-41ff-86e9-d7e3766b643f
+		summarizeBy: none
+		sourceColumn: AllowTransactionNoCC
+
+		annotation SummarizationSetBy = Automatic
+
+	column CreatedDate
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: d690643e-5aab-46d2-aa55-3c652a816efa
+		summarizeBy: none
+		sourceColumn: CreatedDate
+
+		annotation SummarizationSetBy = Automatic
+
+	column ModifiedDate
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: 23e1eaf1-5b41-4707-81af-3e95683a0b1e
+		summarizeBy: none
+		sourceColumn: ModifiedDate
+
+		annotation SummarizationSetBy = Automatic
+
+	partition ArMaster_Customer = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-gxnyznhdptpenfw724g3o5sjzm.datawarehouse.fabric.microsoft.com", "LH_Master_Data"),
+				    dbo_ArMaster_Customer = Source{[Schema="dbo",Item="ArMaster_Customer"]}[Data]
+				in
+				    dbo_ArMaster_Customer
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

@@ -1,0 +1,268 @@
+table _Measures
+	lineageTag: 22e4b9e3-99b6-4634-9836-9ade5a5ea5a5
+
+	measure 'Home - Header' = ```
+			
+			// Get user name
+			VAR _User = USERPRINCIPALNAME()
+			VAR _Position = SEARCH("@", _User, 1)
+			VAR _Name = LEFT(_User, _Position - 1)
+			VAR _FirstLetter = UPPER(LEFT(_Name, 1))
+			VAR _LastName = MID(_Name, 2, LEN(_Name) - 1)
+			VAR _FormattedLastName = 
+			    UPPER(LEFT(_LastName, 1)) & LOWER(MID(_LastName, 2, LEN(_LastName)))
+			VAR WelcomeName = _FirstLetter & "." & _FormattedLastName
+			
+			// Get current date/time info
+			VAR CurrentDate = TODAY()
+			VAR DateDisplay = FORMAT(CurrentDate, "MMM D, YYYY")
+			VAR CurrentHour = HOUR(NOW())
+			VAR TimeGreeting = 
+			    IF(CurrentHour < 12, "Good Morning",
+			    IF(CurrentHour < 17, "Good Afternoon",
+			    "Good Evening"))
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    height: 85px;
+			    padding: 15px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 10px;
+			    color: white;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-between;
+			    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    box-sizing: border-box;
+			'>
+			    <!-- Left side: Dashboard Title -->
+			    <div style='display: flex; align-items: center; gap: 15px;'>
+			        <!-- Home icon -->
+			        <div style='
+			            width: 40px;
+			            height: 40px;
+			            background: rgba(255,255,255,0.15);
+			            border-radius: 8px;
+			            display: flex;
+			            align-items: center;
+			            justify-content: center;
+			            font-size: 20px;
+			        '>
+			            🏠
+			        </div>
+			        
+			        <!-- Title -->
+			        <div>
+			            <div style='font-size: 12px; opacity: 0.85; margin-bottom: 4px; letter-spacing: 0.5px;'>
+			                REPORT
+			            </div>
+			            <div style='font-size: 26px; font-weight: 700; line-height: 1;'>
+			                60 Days Past Due
+			            </div>
+			        </div>
+			    </div>
+			    
+			    <!-- Right side: Welcome & Date -->
+			    <div style='text-align: right;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 6px;'>
+			            " & TimeGreeting & ", " & WelcomeName & "
+			        </div>
+			        <div style='font-size: 16px; font-weight: 600;'>
+			            📅 " & DateDisplay & "
+			        </div>
+			    </div>
+			</div>
+			"
+			```
+		lineageTag: 49efea2a-3c06-4cab-8367-26b26caa141e
+
+	measure 'Over 60' =
+			
+			CALCULATE (
+			    SUM ( 'armaster'[Aging60] ),
+			    FILTER ( 'armaster', 'armaster'[Aging60] > 0 )
+			)
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 3f9f6bd6-ad7f-4abb-aa8a-3b5653be2d26
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Over 90' =
+			
+			CALCULATE (
+			    SUM ( 'armaster'[Aging90] ),
+			    FILTER ( 'armaster', 'armaster'[Aging90] > 0 )
+			)
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: ca2e75c1-925d-4aef-9e48-6928b663c660
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Over 120' =
+			
+			CALCULATE (
+			    SUM ( 'armaster'[Aging120] ),
+			    FILTER ( 'armaster', 'armaster'[Aging120] > 0 )
+			)
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 4ee91d9b-cb97-4e92-ae98-d8191f1108a5
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Credit Limit % 60+' =
+			DIVIDE(
+			    [Over 60] + [Over 90] + [Over 120],
+			    SUM(armaster[CreditLimit]),
+			    0
+			)
+		formatString: 0%;-0%;0%
+		lineageTag: 869e2c71-f687-435a-bf2e-638c77057b7b
+
+	measure 'Credit Limit % 60+ Formatting' =
+			
+			SWITCH(
+			    TRUE(),
+			    ROUND([Credit Limit % 60+], 2) >= 1, 1,  -- Red for values exactly or above 100%
+			    ROUND([Credit Limit % 60+], 2) >= 0.75, 2,  -- Orange for 75% - 99%
+			    ROUND([Credit Limit % 60+], 2) >= 0.5, 3,  -- Yellow for 50% - 74%
+			    0  -- No color for below 50%
+			)
+		formatString: 0
+		lineageTag: 61965a05-531f-4b98-a10c-d5bcc6650c89
+
+	measure 'Over 30' =
+			
+			CALCULATE (
+			    SUM ( 'armaster'[Aging30] ),
+			    FILTER ( 'armaster', 'armaster'[Aging30] > 0 )
+			)
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: ef8a846f-5dc0-4b31-8329-447ae73f8e20
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Credit Limit % Current' =
+			
+			DIVIDE(
+			    SUMX(
+			        armaster,
+			        armaster[AccountBalance] + armaster[Aging30] + armaster[Aging60] + armaster[Aging90] + armaster[Aging120]
+			    ),
+			    SUM(armaster[CreditLimit]),
+			    0
+			)
+		formatString: 0%;-0%;0%
+		lineageTag: e67349a5-c547-4ac5-9387-dc0a6c84a0d9
+
+	measure 'Credit Limit % Current+ Formatting' =
+			
+			SWITCH(
+			    TRUE(),
+			    ROUND([Credit Limit % Current], 2) >= 1, 1,  -- Red for values exactly or above 100%
+			    ROUND([Credit Limit % Current], 2) >= 0.75, 2,  -- Orange for 75% - 99%
+			    ROUND([Credit Limit % Current], 2) >= 0.5, 3,  -- Yellow for 50% - 74%
+			    0  -- No color for below 50%
+			)
+		formatString: 0
+		lineageTag: 10d49634-c9a0-425c-8328-1a25e471c3c0
+
+	measure 'Total Owed' = SUM(Fact_InSalOrd_InSalPar[Order_Total_$$]) + SUM(armaster[AccountBalance]) + [Over 30] + [Over 60] + [Over 90] + [Over 120]
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 79a4861f-e194-4caf-9b2c-9d5df879d0c7
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Details - Header' = ```
+			
+			// Get user name
+			VAR _User = USERPRINCIPALNAME()
+			VAR _Position = SEARCH("@", _User, 1)
+			VAR _Name = LEFT(_User, _Position - 1)
+			VAR _FirstLetter = UPPER(LEFT(_Name, 1))
+			VAR _LastName = MID(_Name, 2, LEN(_Name) - 1)
+			VAR _FormattedLastName = 
+			    UPPER(LEFT(_LastName, 1)) & LOWER(MID(_LastName, 2, LEN(_LastName)))
+			VAR WelcomeName = _FirstLetter & "." & _FormattedLastName
+			
+			// Get current date/time info
+			VAR CurrentDate = TODAY()
+			VAR DateDisplay = FORMAT(CurrentDate, "MMM D, YYYY")
+			VAR CurrentHour = HOUR(NOW())
+			VAR TimeGreeting = 
+			    IF(CurrentHour < 12, "Good Morning",
+			    IF(CurrentHour < 17, "Good Afternoon",
+			    "Good Evening"))
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    height: 85px;
+			    padding: 15px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 10px;
+			    color: white;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-between;
+			    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    box-sizing: border-box;
+			'>
+			    <!-- Left side: Dashboard Title -->
+			    <div style='display: flex; align-items: center; gap: 15px;'>
+			        <!-- Home icon -->
+			        <div style='
+			            width: 40px;
+			            height: 40px;
+			            background: rgba(255,255,255,0.15);
+			            border-radius: 8px;
+			            display: flex;
+			            align-items: center;
+			            justify-content: center;
+			            font-size: 20px;
+			        '>
+			            🏠
+			        </div>
+			        
+			        <!-- Title -->
+			        <div>
+			            <div style='font-size: 12px; opacity: 0.85; margin-bottom: 4px; letter-spacing: 0.5px;'>
+			                REPORT
+			            </div>
+			            <div style='font-size: 26px; font-weight: 700; line-height: 1;'>
+			                60 Days Past Due - Details
+			            </div>
+			        </div>
+			    </div>
+			    
+			    <!-- Right side: Welcome & Date -->
+			    <div style='text-align: right;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 6px;'>
+			            " & TimeGreeting & ", " & WelcomeName & "
+			        </div>
+			        <div style='font-size: 16px; font-weight: 600;'>
+			            📅 " & DateDisplay & "
+			        </div>
+			    </div>
+			</div>
+			"
+			```
+		lineageTag: 20a00151-6ed4-4ffc-8432-b2a00dc97051
+
+	column Value
+		isHidden
+		lineageTag: da2dfa23-0c4c-4e9d-8014-3cc5710e756b
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Value]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition _Measures = calculated
+		mode: import
+		source = { "This table holds all measures for the Parts Reorder Monitoring report" }
+
+	annotation PBI_Id = da82ad85df114f0dbe8c17ce73f079a8
+

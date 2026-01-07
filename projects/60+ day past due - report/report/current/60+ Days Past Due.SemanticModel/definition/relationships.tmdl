@@ -1,0 +1,19 @@
+relationship AutoDetected_e7d38479-7b9f-4d37-89c6-d366dc6aaa2b
+	crossFilteringBehavior: bothDirections
+	fromCardinality: one
+	fromColumn: ArMaster_Customer.ContactID
+	toColumn: armaster.ContactID
+
+relationship 148bf127-068d-b4b9-d5ba-bd2a04303643
+	fromColumn: ArMaster_Customer.Territory
+	toColumn: dim_BranchLocation.BranchID
+
+relationship 6353bc1d-10f6-ee74-0646-394c87bb5832
+	crossFilteringBehavior: bothDirections
+	fromColumn: dim_CustomerList.AccountNumber
+	toColumn: armaster.AccountNumber
+
+relationship b5800cbd-3642-382d-2598-496115b11aaf
+	fromColumn: Fact_InSalOrd_InSalPar.CustomerNumber
+	toColumn: armaster.ContactID
+

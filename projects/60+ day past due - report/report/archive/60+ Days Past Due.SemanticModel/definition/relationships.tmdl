@@ -1,0 +1,44 @@
+relationship 22a99167-d82f-4f3b-b776-c574e832227c
+	joinOnDateBehavior: datePartOnly
+	fromColumn: ArMaster.DATE_LAST_PAY
+	toColumn: LocalDateTable_e9aca0cc-0a88-4451-b91f-a79fd75f394a.Date
+
+relationship 96047172-87b8-4ee1-9af9-930ea38237d9
+	joinOnDateBehavior: datePartOnly
+	fromColumn: ArMaster.Creation_Date
+	toColumn: LocalDateTable_a1e9e489-16e1-4ec1-a50c-0ef65a4e2831.Date
+
+relationship a94864a4-134f-4279-b0b5-593f9465ccc7
+	joinOnDateBehavior: datePartOnly
+	fromColumn: ArMaster.Last_Modified_Date
+	toColumn: LocalDateTable_b2360731-746c-4e7c-a88a-a17c615beaf6.Date
+
+relationship 32acd63c-ae6a-4eae-8f29-073796a751f8
+	joinOnDateBehavior: datePartOnly
+	fromColumn: InSalOrd_InSalPar.Order_Date
+	toColumn: LocalDateTable_b428c4fe-7158-4185-a770-07bdce83a440.Date
+
+relationship AutoDetected_8ff2d44c-8013-4ffe-9cf9-77358f021950
+	crossFilteringBehavior: bothDirections
+	fromCardinality: one
+	fromColumn: ArMaster_Customer.contact_code
+	toColumn: ArMaster.contact_code
+
+relationship AutoDetected_4d2eb6e7-5fd0-4d1c-bcf8-27918b033e79
+	fromColumn: InSalOrd_InSalPar.Contact_Code
+	toColumn: ArMaster.contact_code
+
+relationship c7d7abeb-3f94-5d35-1eae-63b04db22785
+	fromColumn: ArMaster_Customer.TERRITORY
+	toColumn: Dim_Branch.BranchID
+
+relationship b34670b6-7981-4dd7-a1eb-283d263d101f
+	joinOnDateBehavior: datePartOnly
+	fromColumn: 'Data Refresh'.CurrentDateTime
+	toColumn: LocalDateTable_717c2e51-905a-442c-adcd-484ef02e8336.Date
+
+relationship 5e54044d-dae8-4184-9eb5-39e89201df5e
+	joinOnDateBehavior: datePartOnly
+	fromColumn: 'Data Refresh'.Date
+	toColumn: LocalDateTable_e9b2b96c-0254-4d52-a0be-6a88faf91970.Date
+

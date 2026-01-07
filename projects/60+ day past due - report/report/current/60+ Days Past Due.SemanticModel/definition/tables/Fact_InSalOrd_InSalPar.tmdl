@@ -1,0 +1,152 @@
+table Fact_InSalOrd_InSalPar
+	lineageTag: 4abc6453-4849-4b01-80aa-99e70e707a55
+
+	column HeaderBranch
+		dataType: string
+		lineageTag: 6c366e72-8da4-42a1-a6f8-bc33a46f9c4d
+		summarizeBy: none
+		sourceColumn: HeaderBranch
+
+		annotation SummarizationSetBy = Automatic
+
+	column CustomerNumber
+		dataType: string
+		lineageTag: 46f2ff1d-da05-460a-b9c2-b0005a10e7b0
+		summarizeBy: none
+		sourceColumn: CustomerNumber
+
+		annotation SummarizationSetBy = Automatic
+
+	column HeaderSalesperson
+		dataType: string
+		lineageTag: 78a3742b-8f38-48db-b229-1e16a0a1509d
+		summarizeBy: none
+		sourceColumn: HeaderSalesperson
+
+		annotation SummarizationSetBy = Automatic
+
+	column FileNumber
+		dataType: int64
+		formatString: 0
+		lineageTag: 48053e97-4702-4f07-851f-154453877463
+		summarizeBy: sum
+		sourceColumn: FileNumber
+
+		annotation SummarizationSetBy = Automatic
+
+	column Order_No
+		dataType: string
+		lineageTag: 374d44fe-8e9c-4001-97e0-41d4eb616287
+		summarizeBy: none
+		sourceColumn: Order_No
+
+		annotation SummarizationSetBy = Automatic
+
+	column OrderType
+		dataType: string
+		lineageTag: f9a78fb6-5598-495b-bb3d-b44a17dfc374
+		summarizeBy: none
+		sourceColumn: OrderType
+
+		annotation SummarizationSetBy = Automatic
+
+	column OrderDate
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: eece5dd4-f195-413f-9c23-297bba835fe8
+		summarizeBy: none
+		sourceColumn: OrderDate
+
+		annotation SummarizationSetBy = Automatic
+
+	column Days_Open
+		dataType: int64
+		formatString: 0
+		lineageTag: b08bb2af-b3be-465c-a0dc-1f84607bc24d
+		summarizeBy: sum
+		sourceColumn: Days_Open
+
+		annotation SummarizationSetBy = Automatic
+
+	column Aging
+		dataType: string
+		lineageTag: b346ff09-589c-4e72-8acd-87691d0fe7f6
+		summarizeBy: none
+		sourceColumn: Aging
+
+		annotation SummarizationSetBy = Automatic
+
+	column #_Parts_On_Order
+		dataType: double
+		lineageTag: c792faec-ad4e-46ae-98dc-eeaaa8d48e36
+		summarizeBy: sum
+		sourceColumn: #_Parts_On_Order
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column #_On_Back_Order
+		dataType: double
+		lineageTag: b4bae789-31d0-449b-ae3d-4dc3f5cb5209
+		summarizeBy: sum
+		sourceColumn: #_On_Back_Order
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column Order_Total_$$
+		dataType: double
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 93ace14d-0996-48db-99cd-3f8f91669707
+		summarizeBy: sum
+		sourceColumn: Order_Total_$$
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	column $$_not_BO
+		dataType: double
+		lineageTag: 4d34ba79-74c4-4b29-85c1-0836dbf27bb4
+		summarizeBy: sum
+		sourceColumn: $$_not_BO
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column Backorder_Amount
+		dataType: double
+		lineageTag: ee242db4-4756-4a9b-b2b3-fb7fec0a320a
+		summarizeBy: sum
+		sourceColumn: Backorder_Amount
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column Freight
+		dataType: double
+		lineageTag: b7f5bd8d-e565-4fe5-a012-12de988f67ad
+		summarizeBy: sum
+		sourceColumn: Freight
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	partition Fact_InSalOrd_InSalPar = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-gxnyznhdptpenfw724g3o5sjzm.datawarehouse.fabric.microsoft.com", "LH_Master_Data"),
+				    dbo_Fact_InSalOrd_InSalPar = Source{[Schema="dbo",Item="Fact_InSalOrd_InSalPar"]}[Data]
+				in
+				    dbo_Fact_InSalOrd_InSalPar
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

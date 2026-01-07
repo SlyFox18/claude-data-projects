@@ -1,0 +1,111 @@
+table ArMaster_Customer
+	lineageTag: 444b3d60-1ba5-4f2b-a449-506fa9c19d74
+
+	column contact_code
+		dataType: string
+		isHidden
+		lineageTag: 33be1caa-15b0-4f48-bb90-608b9c624b89
+		summarizeBy: none
+		sourceColumn: contact_code
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column ACC_TYPE
+		dataType: string
+		isHidden
+		lineageTag: a0ba272e-9b66-43a9-b0c5-d2e2dc3c67f4
+		summarizeBy: none
+		sourceColumn: ACC_TYPE
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column TERRITORY
+		dataType: string
+		isHidden
+		lineageTag: 85b4a035-900c-44c7-b5ca-3ee6db14f0e6
+		summarizeBy: none
+		sourceColumn: TERRITORY
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column Customer_No
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: bcc41916-8b52-4024-b0f6-bbde7fb9ea7f
+		summarizeBy: sum
+		sourceColumn: Customer_No
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column surname
+		dataType: string
+		isHidden
+		lineageTag: fa54aaf6-1d11-48af-a702-8565da101596
+		summarizeBy: none
+		sourceColumn: surname
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'first name'
+		dataType: string
+		isHidden
+		lineageTag: f078bae7-3568-464b-8cde-79dabc0c3524
+		summarizeBy: none
+		sourceColumn: first name
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column company_name
+		dataType: string
+		isHidden
+		lineageTag: 9ae3aab5-c9f1-4a09-b34a-91c03b6aa4cd
+		summarizeBy: none
+		sourceColumn: company_name
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Name - Company' = [Name] & " - " & [company_name]
+		lineageTag: 1a426cd8-1d0c-4cbb-abc5-55a5dcf3a43b
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	column Name = [first name] & " " & [surname]
+		isHidden
+		lineageTag: db7d1a9d-d7bc-4409-8a90-2049de0632a5
+		summarizeBy: none
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	partition ArMaster_Customer = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-h4diddse4pienf2bknp7qv3ade.datawarehouse.fabric.microsoft.com", "LH_Financial_Report_Data"),
+				    dbo_ArMaster_Customer = Source{[Schema="dbo",Item="ArMaster_Customer"]}[Data],
+				    #"Renamed Columns" = Table.RenameColumns(dbo_ArMaster_Customer,{{"name", "first name"}}),
+				    #"Capitalized Each Word" = Table.TransformColumns(#"Renamed Columns",{{"surname", Text.Proper, type text}, {"first name", Text.Proper, type text}})
+				in
+				    #"Capitalized Each Word"
+
+	annotation PBI_ResultType = Table
+
+	annotation PBI_NavigationStepName = Navigation
+

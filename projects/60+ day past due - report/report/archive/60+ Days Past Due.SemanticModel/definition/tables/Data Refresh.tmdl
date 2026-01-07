@@ -1,0 +1,60 @@
+table 'Data Refresh'
+	lineageTag: a2fdfe41-a6d9-486c-a6a9-82a3ff107e7e
+
+	column CurrentDateTime
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: 696ecc81-e234-4220-af5a-2ce2549fa854
+		summarizeBy: none
+		sourceColumn: CurrentDateTime
+
+		variation Variation
+			isDefault
+			relationship: b34670b6-7981-4dd7-a1eb-283d263d101f
+			defaultHierarchy: LocalDateTable_717c2e51-905a-442c-adcd-484ef02e8336.'Date Hierarchy'
+
+		annotation SummarizationSetBy = Automatic
+
+	column Date
+		dataType: dateTime
+		formatString: Long Date
+		lineageTag: 716b4736-8ef0-493f-8f4f-8113b03991fa
+		summarizeBy: none
+		sourceColumn: Date
+
+		variation Variation
+			isDefault
+			relationship: 5e54044d-dae8-4184-9eb5-39e89201df5e
+			defaultHierarchy: LocalDateTable_e9b2b96c-0254-4d52-a0be-6a88faf91970.'Date Hierarchy'
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column Time
+		dataType: dateTime
+		formatString: Long Time
+		lineageTag: c9ec7dcf-d40f-4044-9974-ee03a49ae0e5
+		summarizeBy: none
+		sourceColumn: Time
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Time
+
+	partition 'Data Refresh' = m
+		mode: import
+		source =
+				let
+				    Source = #table({"CurrentDateTime"}, {{DateTime.LocalNow() - #duration(0,6,0,0)}}),
+				    #"Duplicated Column" = Table.DuplicateColumn(Source, "CurrentDateTime", "CurrentDateTime - Copy"),
+				    #"Duplicated Column1" = Table.DuplicateColumn(#"Duplicated Column", "CurrentDateTime - Copy", "CurrentDateTime - Copy - Copy"),
+				    #"Changed Type" = Table.TransformColumnTypes(#"Duplicated Column1",{{"CurrentDateTime", type datetimezone}, {"CurrentDateTime - Copy", type date}, {"CurrentDateTime - Copy - Copy", type time}}),
+				    #"Renamed Columns" = Table.RenameColumns(#"Changed Type",{{"CurrentDateTime - Copy", "Date"}, {"CurrentDateTime - Copy - Copy", "Time"}})
+				in
+				    #"Renamed Columns"
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

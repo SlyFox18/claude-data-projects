@@ -1,0 +1,625 @@
+table ArMaster
+	lineageTag: 9ddabf7e-2b66-445d-9d3e-8b14ab7c8abd
+
+	measure 'Credit Limit % 60+' = ```
+			DIVIDE(
+			    [Over 60] + [Over 90] + [Over 120],
+			    SUM(ArMaster[Credit Limit]),
+			    0
+			)
+			
+			```
+		formatString: 0%;-0%;0%
+		lineageTag: 05d926e9-a49f-49a8-ac4d-1485b449a6e3
+
+	measure 'Over 30' =
+			
+			CALCULATE (
+			    SUM ( 'ArMaster'[DAYS_30] ),
+			    FILTER ( 'ArMaster', 'ArMaster'[DAYS_30] > 0 )
+			)
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 934c1e12-2342-49ae-86f3-0972de92f391
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Over 60' =
+			
+			CALCULATE (
+			    SUM ( 'ArMaster'[DAYS_60] ),
+			    FILTER ( 'ArMaster', 'ArMaster'[DAYS_60] > 0 )
+			)
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: f80470fb-c668-4897-bd4c-f2c8bd94d408
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Over 90' =
+			
+			CALCULATE (
+			    SUM ( 'ArMaster'[DAYS_90] ),
+			    FILTER ( 'ArMaster', 'ArMaster'[DAYS_90] > 0 )
+			)
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: f840d674-1aab-471e-b012-2097738ef3bc
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Over 120' =
+			
+			CALCULATE (
+			    SUM ( 'ArMaster'[DAYS_120] ),
+			    FILTER ( 'ArMaster', 'ArMaster'[DAYS_120] > 0 )
+			)
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: f2ff1fe9-8e3e-4bea-b783-1bf74556778e
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'YTD Debits Filtered' =
+			
+			IF(
+			    [HasDataOver60_90_120] = 1,
+			    CALCULATE(
+			        SUM('ArMaster'[YTD Debits]),
+			        DATESYTD('ArMaster'[Last_Modified_Date].[Date])
+			    ),
+			    BLANK()
+			)
+		lineageTag: 1ecaea0e-cbfd-42cd-8fd5-08db1ef6bdb0
+
+	measure 'LYTD Debits Filtered' =
+			
+			IF(
+			    [HasDataOver60_90_120] = 1,
+			    CALCULATE(
+			        SUM('ArMaster'[LYTD Debits]),
+			        DATESYTD('ArMaster'[Last_Modified_Date].[Date])
+			    ),
+			    BLANK()
+			)
+		lineageTag: cf221e1d-93c8-436d-80da-f2bef79e01a2
+
+	measure HasDataOver60_90_120 =
+			
+			IF(
+			    NOT(ISBLANK(SUM('ArMaster'[DAYS_60]))) &&
+			    NOT(ISBLANK(SUM('ArMaster'[DAYS_90]))) &&
+			    NOT(ISBLANK(SUM('ArMaster'[DAYS_120]))),
+			    1,
+			    0
+			)
+		formatString: 0
+		lineageTag: b22594e1-93f3-41a1-a5fd-ff09e45fe0b5
+
+	measure 'Credit Limit % Current+' =
+			
+			DIVIDE(
+			    SUMX(
+			        ArMaster,
+			        ArMaster[Current] + ArMaster[Over 30] + ArMaster[Over 60] + ArMaster[Over 90] + ArMaster[Over 120]
+			    ),
+			    SUM(ArMaster[Credit Limit]),
+			    0
+			)
+		formatString: 0%;-0%;0%
+		lineageTag: 3d682a50-ce49-4eab-8111-1808aa5b4dc1
+
+	measure '% Credit Limit 30' = DIVIDE([Over 30], SUM(ArMaster[Credit Limit]), 0)
+		lineageTag: b11fb9ee-4502-45f4-89b5-1ea2705bf5cb
+
+	measure '% Credit Limit 60' = DIVIDE([Over 60], SUM(ArMaster[Credit Limit]), 0)
+		lineageTag: 46e51054-70ee-4561-8d66-edaca6f84c4a
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure '% Credit Limit 90' = DIVIDE([Over 90], SUM(ArMaster[Credit Limit]), 0)
+		lineageTag: afbd3002-b3fc-48e2-9e56-c6cba033d0e3
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure '% Credit Limit 120' = DIVIDE([Over 120], SUM(ArMaster[Credit Limit]), 0)
+		lineageTag: 7c7239dc-13f8-44db-9a3b-0ce47d8f8500
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'YTD Debits Icon' = ```
+			
+			IF(
+			     [YTD Debits0] > [LYTD Debits0], 
+			    "▲", 
+			    IF(
+			        [YTD Debits0] < [LYTD Debits0], 
+			        "▼", 
+			        ""
+			    )
+			)
+			```
+		lineageTag: 0ff8ca0b-bdff-470d-aefd-89e3c1a0204f
+
+	measure 'YTD Debits0' = SUM(ArMaster[YTD Debits])
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: f3daf86d-0081-4e61-9008-eedfc8e43116
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'LYTD Debits0' = SUM(ArMaster[LYTD Debits])
+		formatString: \$#,0.0;(\$#,0.0);\$#,0.0
+		lineageTag: 95cb243e-d89c-40fc-836f-000b074459a8
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'YTD Debit with Icon' =
+			
+			FORMAT([YTD Debits0], "Currency") & " " & [YTD Debits Icon]
+		lineageTag: 702e065d-bbdd-4258-b4bf-413ff3c57ec8
+
+	measure 'Credit Limit % 60+ Formatting' = ```
+			
+			SWITCH(
+			    TRUE(),
+			    ROUND([Credit Limit % 60+], 2) >= 1, 1,  -- Red for values exactly or above 100%
+			    ROUND([Credit Limit % 60+], 2) >= 0.75, 2,  -- Orange for 75% - 99%
+			    ROUND([Credit Limit % 60+], 2) >= 0.5, 3,  -- Yellow for 50% - 74%
+			    0  -- No color for below 50%
+			)
+			
+			
+			
+			
+			
+			```
+		formatString: 0
+		lineageTag: e0b06f7b-8dc7-49b4-aaa1-7f2d53bc3c46
+
+	measure 'Credit Limit % Current+ Formatting' =
+			
+			SWITCH(
+			    TRUE(),
+			    ROUND([Credit Limit % Current+], 2) >= 1, 1,  -- Red for values exactly or above 100%
+			    ROUND([Credit Limit % Current+], 2) >= 0.75, 2,  -- Orange for 75% - 99%
+			    ROUND([Credit Limit % Current+], 2) >= 0.5, 3,  -- Yellow for 50% - 74%
+			    0  -- No color for below 50%
+			)
+		formatString: 0
+		lineageTag: 9c794d03-8209-464c-a4a1-3359e6297670
+
+	measure 'Total Owed' = SUM(InSalOrd_InSalPar[Open Invoice]) + SUM(ArMaster[Current]) + [Over 30] + [Over 60] + [Over 90] + [Over 120]
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: a0d53fd0-03e3-4520-a67f-a608f2b0397e
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	column 'Account No'
+		dataType: int64
+		formatString: 0
+		lineageTag: e381848a-d6f7-41c7-9d0e-0e9bc0bfaf29
+		summarizeBy: sum
+		sourceColumn: Account No
+
+		annotation SummarizationSetBy = Automatic
+
+	column contact_code
+		dataType: string
+		isHidden
+		lineageTag: 14932f49-2b8c-4b16-84eb-b62a86547fdc
+		summarizeBy: none
+		sourceColumn: contact_code
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Credit Limit'
+		dataType: double
+		formatString: \$#,0;(\$#,0);\$#,0
+		lineageTag: 178eac62-f502-4a50-89fb-362003295a9b
+		summarizeBy: sum
+		sourceColumn: Credit Limit
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	column CREDIT_MESSAGE
+		dataType: string
+		lineageTag: 60d13c40-32ee-44db-8d27-fc4e23def120
+		summarizeBy: none
+		sourceColumn: CREDIT_MESSAGE
+
+		annotation SummarizationSetBy = Automatic
+
+	column BANK
+		dataType: string
+		isHidden
+		lineageTag: 9a78f864-5a5e-4887-80a4-bf891ced1de9
+		summarizeBy: none
+		sourceColumn: BANK
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column BANK_BRANCH
+		dataType: string
+		isHidden
+		lineageTag: 7b3bf6d1-5db8-43a4-933c-b531e6390289
+		summarizeBy: none
+		sourceColumn: BANK_BRANCH
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column BANK_ACC
+		dataType: string
+		isHidden
+		lineageTag: 74e3d9db-6e39-4002-b295-621ba813a82b
+		summarizeBy: none
+		sourceColumn: BANK_ACC
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column Current
+		dataType: double
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 76be5dba-2b44-455b-b401-873e512ed310
+		summarizeBy: sum
+		sourceColumn: Current
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	column DAYS_30
+		dataType: double
+		isHidden
+		lineageTag: 57c17401-0442-4526-914d-e78fd414e9cb
+		summarizeBy: sum
+		sourceColumn: DAYS_30
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column DAYS_60
+		dataType: double
+		isHidden
+		lineageTag: 0ca68439-9a43-4a00-9ca2-76edf0794e7f
+		summarizeBy: sum
+		sourceColumn: DAYS_60
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column DAYS_90
+		dataType: double
+		isHidden
+		lineageTag: dce0263c-b306-431e-a380-4625b7714f3c
+		summarizeBy: sum
+		sourceColumn: DAYS_90
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column BAL_FORWARD
+		dataType: double
+		isHidden
+		lineageTag: 6c921485-0a7a-4916-bd99-4b5414512531
+		summarizeBy: sum
+		sourceColumn: BAL_FORWARD
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column 'YTD Credits'
+		dataType: double
+		lineageTag: b5acd75c-53a3-470f-bf0b-9a9c6c316d0b
+		summarizeBy: sum
+		sourceColumn: YTD Credits
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column 'YTD Debits'
+		dataType: double
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 639effb1-e3ed-42aa-8544-b5b4e84e97e2
+		summarizeBy: sum
+		sourceColumn: YTD Debits
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	column DATE_LAST_PAY
+		dataType: dateTime
+		formatString: Short Date
+		lineageTag: 5917c0ef-7559-4fa8-af4f-df51384e7137
+		summarizeBy: none
+		sourceColumn: DATE_LAST_PAY
+
+		variation Variation
+			isDefault
+			relationship: 22a99167-d82f-4f3b-b776-c574e832227c
+			defaultHierarchy: LocalDateTable_e9aca0cc-0a88-4451-b91f-a79fd75f394a.'Date Hierarchy'
+
+		changedProperty = DataType
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column LAST_AMOUNT_PAY
+		dataType: double
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 0a5dce77-ca02-41ec-8f46-617b5c028999
+		summarizeBy: sum
+		sourceColumn: LAST_AMOUNT_PAY
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	column STATEMENT_TYPE
+		dataType: string
+		isHidden
+		lineageTag: dd4bc80c-5da3-4ab5-b9fa-ad07b613c2b0
+		summarizeBy: none
+		sourceColumn: STATEMENT_TYPE
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'LYTD Credits'
+		dataType: double
+		lineageTag: d3c23e01-6a66-4993-9678-d2b31e2b8589
+		summarizeBy: sum
+		sourceColumn: LYTD Credits
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column 'LYTD Debits'
+		dataType: double
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 93b2a650-abf2-4202-b96a-040325daa48a
+		summarizeBy: sum
+		sourceColumn: LYTD Debits
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	column CREDIT_TERM
+		dataType: string
+		lineageTag: ae1997d4-8dd2-4d77-95b2-6c2087e24bc7
+		summarizeBy: none
+		sourceColumn: CREDIT_TERM
+
+		annotation SummarizationSetBy = Automatic
+
+	column PRINT_STATEMENT
+		dataType: string
+		isHidden
+		lineageTag: d5862027-1181-49bb-b506-28d5a064ad08
+		summarizeBy: none
+		sourceColumn: PRINT_STATEMENT
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column PRINT_DAYS
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: b215fda1-bea0-4668-b9cc-e74073028432
+		summarizeBy: sum
+		sourceColumn: PRINT_DAYS
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column user_field1
+		dataType: string
+		isHidden
+		lineageTag: c8ae68f7-d46c-4ce7-bc62-c509cf71cd47
+		summarizeBy: none
+		sourceColumn: user_field1
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column user_field2
+		dataType: string
+		isHidden
+		lineageTag: d226cca3-cb33-427f-a1c1-4aac5075f053
+		summarizeBy: none
+		sourceColumn: user_field2
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column Type
+		dataType: string
+		lineageTag: c3188cb9-6b6c-4f45-9369-4d1a6e7c16db
+		summarizeBy: none
+		sourceColumn: Type
+
+		annotation SummarizationSetBy = Automatic
+
+	column distribution_method
+		dataType: string
+		lineageTag: 15546190-8509-4c67-9f9f-59b3554223cb
+		summarizeBy: none
+		sourceColumn: distribution_method
+
+		annotation SummarizationSetBy = Automatic
+
+	column Pay_Method
+		dataType: string
+		isHidden
+		lineageTag: c75e35fd-19c4-4d69-86f1-5e13060dd1e9
+		summarizeBy: none
+		sourceColumn: Pay_Method
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column Creation_Date
+		dataType: dateTime
+		isHidden
+		formatString: General Date
+		lineageTag: 4badf259-549a-44a6-95bb-259918d0a27e
+		summarizeBy: none
+		sourceColumn: Creation_Date
+
+		variation Variation
+			isDefault
+			relationship: 96047172-87b8-4ee1-9af9-930ea38237d9
+			defaultHierarchy: LocalDateTable_a1e9e489-16e1-4ec1-a50c-0ef65a4e2831.'Date Hierarchy'
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column Rental_Credit_Limit
+		dataType: double
+		isHidden
+		lineageTag: dfe52795-c527-4b44-9ba2-69a08e4f2910
+		summarizeBy: sum
+		sourceColumn: Rental_Credit_Limit
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column Rental_Discount_Percentage
+		dataType: double
+		isHidden
+		lineageTag: d4f51be6-4338-4819-a6e4-1fddb4192f4a
+		summarizeBy: sum
+		sourceColumn: Rental_Discount_Percentage
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column Credit_Status
+		dataType: string
+		lineageTag: cd9666fc-5cfd-4bfc-bc61-65c75f84bc2e
+		summarizeBy: none
+		sourceColumn: Credit_Status
+
+		annotation SummarizationSetBy = Automatic
+
+	column Last_Modified_Date
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: 66332604-6a14-4f38-a0ca-a934c469c311
+		summarizeBy: none
+		sourceColumn: Last_Modified_Date
+
+		variation Variation
+			isDefault
+			relationship: a94864a4-134f-4279-b0b5-593f9465ccc7
+			defaultHierarchy: LocalDateTable_b2360731-746c-4e7c-a88a-a17c615beaf6.'Date Hierarchy'
+
+		annotation SummarizationSetBy = Automatic
+
+	column CreatedBy
+		dataType: string
+		isHidden
+		lineageTag: b8c0f86a-c4e8-42f7-882d-78dfcc0b9e7d
+		summarizeBy: none
+		sourceColumn: CreatedBy
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column ModifiedBy
+		dataType: string
+		isHidden
+		lineageTag: e6dce973-0d56-4683-8f29-ac9664dc7c55
+		summarizeBy: none
+		sourceColumn: ModifiedBy
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column user_field4
+		dataType: string
+		isHidden
+		lineageTag: dd28717b-98cc-4e23-b4c8-83820b3c95bc
+		summarizeBy: none
+		sourceColumn: user_field4
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column DAYS_120
+		dataType: double
+		isHidden
+		lineageTag: 2cac214d-1372-42e0-9ea9-b6e6a3c1960b
+		summarizeBy: sum
+		sourceColumn: DAYS_120
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column CreatedByApp
+		dataType: string
+		isHidden
+		lineageTag: db0ae8d2-a0e9-4265-b58d-463f62a4e52d
+		summarizeBy: none
+		sourceColumn: CreatedByApp
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	partition ArMaster = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-h4diddse4pienf2bknp7qv3ade.datawarehouse.fabric.microsoft.com", "LH_Financial_Report_Data"),
+				    dbo_ArMaster = Source{[Schema="dbo",Item="ArMaster"]}[Data],
+				    #"Renamed Columns" = Table.RenameColumns(dbo_ArMaster,{{"user_field3", "Type"}, {"CREDIT_LIMIT", "Credit Limit"}, {"CURRENT_VALUE", "Current"}, {"LYTD_CREDITS", "LYTD Credits"}, {"LYTD_DEBITS", "LYTD Debits"}, {"YTD_CREDITS", "YTD Credits"}, {"YTD_DEBITS", "YTD Debits"}, {"ACC_NO", "Account No"}})
+				in
+				    #"Renamed Columns"
+
+	annotation PBI_ResultType = Table
+
+	annotation PBI_NavigationStepName = Navigation
+

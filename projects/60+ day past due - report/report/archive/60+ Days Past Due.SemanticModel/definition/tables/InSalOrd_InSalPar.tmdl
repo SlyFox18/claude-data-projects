@@ -1,0 +1,165 @@
+table InSalOrd_InSalPar
+	lineageTag: 4e07c9c8-85cf-412d-8bf6-9bca70f4da34
+
+	column Location
+		dataType: string
+		lineageTag: 1cac329f-3847-4e62-b0b8-5bfaa1a270e0
+		summarizeBy: none
+		sourceColumn: Location
+
+		annotation SummarizationSetBy = Automatic
+
+	column Location_Name
+		dataType: string
+		lineageTag: deb435c1-9e29-4006-9c86-3b1ce878e392
+		summarizeBy: none
+		sourceColumn: Location_Name
+
+		annotation SummarizationSetBy = Automatic
+
+	column Order_No
+		dataType: int64
+		formatString: 0
+		lineageTag: 7f3f52f1-cf0d-4437-bade-6358c1225f23
+		summarizeBy: sum
+		sourceColumn: Order_No
+
+		annotation SummarizationSetBy = Automatic
+
+	column Invoice_Type
+		dataType: string
+		lineageTag: d4da63b4-2096-411d-aec0-59bb0ef50037
+		summarizeBy: none
+		sourceColumn: Invoice_Type
+
+		annotation SummarizationSetBy = Automatic
+
+	column Order_Date
+		dataType: dateTime
+		formatString: Long Date
+		lineageTag: dada0a1b-5186-44c4-bc63-5b3d2ff6964d
+		summarizeBy: none
+		sourceColumn: Order_Date
+
+		variation Variation
+			isDefault
+			relationship: 32acd63c-ae6a-4eae-8f29-073796a751f8
+			defaultHierarchy: LocalDateTable_b428c4fe-7158-4185-a770-07bdce83a440.'Date Hierarchy'
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column Days_Open
+		dataType: int64
+		formatString: 0
+		lineageTag: f85600f1-1df2-4f05-a9b7-ba8b4855348d
+		summarizeBy: sum
+		sourceColumn: Days_Open
+
+		annotation SummarizationSetBy = Automatic
+
+	column Aging
+		dataType: string
+		lineageTag: f7fb056a-a54f-47d4-bb07-a51ff9714a4c
+		summarizeBy: none
+		sourceColumn: Aging
+
+		annotation SummarizationSetBy = Automatic
+
+	column #_Parts_On_Order
+		dataType: double
+		lineageTag: 37734adf-0d2c-4d13-832f-f0cc60b79d75
+		summarizeBy: sum
+		sourceColumn: #_Parts_On_Order
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column #_On_Back_Order
+		dataType: double
+		lineageTag: fe14dd81-f5c9-42e9-b718-f3ce112f7445
+		summarizeBy: sum
+		sourceColumn: #_On_Back_Order
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column 'Open Invoice'
+		dataType: double
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 67524937-9500-48f9-a324-a6cbdf5033fd
+		summarizeBy: sum
+		sourceColumn: Open Invoice
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	column $$_not_BO
+		dataType: double
+		lineageTag: 0efe152b-802f-41f5-8e24-aba17b37236e
+		summarizeBy: sum
+		sourceColumn: $$_not_BO
+
+		annotation SummarizationSetBy = User
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column Deposit
+		dataType: double
+		lineageTag: 912f631f-33ab-434a-8d97-f1dc6fce5920
+		summarizeBy: sum
+		sourceColumn: Deposit
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column Salesman
+		dataType: string
+		lineageTag: 5949647d-8a16-4a08-9282-b82f2acb1b33
+		summarizeBy: none
+		sourceColumn: Salesman
+
+		annotation SummarizationSetBy = Automatic
+
+	column Contact_Code
+		dataType: string
+		lineageTag: 98c900fa-fc69-4723-b9a5-915812260ba1
+		summarizeBy: none
+		sourceColumn: Contact_Code
+
+		annotation SummarizationSetBy = Automatic
+
+	column AR_Acct
+		dataType: int64
+		formatString: 0
+		lineageTag: 344e67d5-4fc9-4c5f-ac73-1d749675dea1
+		summarizeBy: sum
+		sourceColumn: AR_Acct
+
+		annotation SummarizationSetBy = Automatic
+
+	column Customer
+		dataType: string
+		lineageTag: 7dd0e738-7ea8-430d-bec8-73a160f84f8a
+		summarizeBy: none
+		sourceColumn: Customer
+
+		annotation SummarizationSetBy = Automatic
+
+	partition InSalOrd_InSalPar = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-h4diddse4pienf2bknp7qv3ade.datawarehouse.fabric.microsoft.com", "LH_Financial_Report_Data"),
+				    dbo_InSalOrd_InSalPar = Source{[Schema="dbo",Item="InSalOrd_InSalPar"]}[Data],
+				    #"Renamed Columns" = Table.RenameColumns(dbo_InSalOrd_InSalPar,{{"Order_Total_$$", "Open Invoice"}})
+				in
+				    #"Renamed Columns"
+
+	annotation PBI_ResultType = Table
+
