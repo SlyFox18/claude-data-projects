@@ -1,0 +1,279 @@
+table _Test-Measures
+	lineageTag: 614607e1-0078-495b-9fa0-beaa1314dbe8
+
+	measure 'TEST - Row Count Fact' =
+			
+			COUNTROWS(Fact_PartsAdjustments)
+		formatString: 0
+		lineageTag: bb8bd513-dd6d-4cd7-b380-c106fc1b64c7
+
+	measure 'TEST - Sum PositiveCost' =
+			
+			SUM(Fact_PartsAdjustments[PositiveCost])
+		lineageTag: 1c21481a-fced-499a-9c69-8c682f75ccaf
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'TEST - Sum NegativeCost' =
+			
+			SUM(Fact_PartsAdjustments[NegativeCost])
+		lineageTag: 3721487b-2347-4a36-8d0f-34535c8a4765
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'TEST - Sum Inventory' =
+			
+			SUM(jdis_Part_Information[InventoryCost])
+		lineageTag: 2872a11a-f463-4e25-9cbf-693a811ff5e5
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'TEST - Date Max' =
+			
+			MAX(dim_DateTable[Date])
+		formatString: General Date
+		lineageTag: edd8c14a-8333-4aea-aaf0-429471cc4c27
+
+	measure 'TEST - Lines Without R12 Filter' =
+			
+			COUNTROWS(Fact_PartsAdjustments)
+		formatString: 0
+		lineageTag: b90c9832-2f84-4e07-be39-27d6b4237f3b
+
+	measure 'TEST - Records Without SubAccount' =
+			
+			CALCULATE(
+			    COUNTROWS(Fact_PartsAdjustments),
+			    ISBLANK(Fact_PartsAdjustments[SubAccount])
+			)
+		formatString: 0
+		lineageTag: 81489d9c-b791-44ba-b39b-fbedc93070c8
+
+	measure 'TEST - $ Without SubAccount' =
+			
+			CALCULATE(
+			    SUM(Fact_PartsAdjustments[CostValue]),
+			    ISBLANK(Fact_PartsAdjustments[SubAccount])
+			)
+		lineageTag: c593579a-7bab-4fc3-8575-101cbe1650ab
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'TEST - Max Date Old Logic' =
+			
+			CALCULATE(
+			    MAX(Fact_PartsAdjustments[TransDatetime]),
+			    ALL(Fact_PartsAdjustments)
+			)
+		formatString: General Date
+		lineageTag: a79f8a0b-1309-434b-a450-cd5f431037e4
+
+	measure 'TEST - Last Date Old Logic' =
+			
+			CALCULATE(
+			    LASTDATE(Fact_PartsAdjustments[TransDatetime]),
+			    ALL(Fact_PartsAdjustments)
+			)
+		formatString: General Date
+		lineageTag: 4f54ba04-98e8-4f8a-91f0-4d48a73e873e
+
+	measure 'TEST - R12 InTrans Records Pre-2023' =
+			
+			CALCULATE(
+			    COUNTROWS(Fact_PartsAdjustments),
+			    DATESINPERIOD(
+			        dim_DateTable[Date],
+			        MAX(Fact_PartsAdjustments[TransDatetime]),
+			        -12,
+			        MONTH
+			    ),
+			    Fact_PartsAdjustments[TransDatetime] < DATE(2023, 1, 1)
+			)
+		formatString: 0
+		lineageTag: d1b21f81-5d7c-4be0-b9b0-4de1adacdd10
+
+	measure 'TEST - Fact Row Count' = COUNTROWS(Fact_PartsAdjustments)
+		formatString: 0
+		lineageTag: 2e6853eb-3557-4175-af54-954e0a9a3742
+
+	measure 'TEST - Specific Transaction' =
+			
+			CALCULATE(
+			    SUM(Fact_PartsAdjustments[CostValue]),
+			    Fact_PartsAdjustments[RONumber] = "UPDCYCCNTX878024"
+			)
+		lineageTag: 241f2574-3cdd-45a5-97ba-c7d6f0831510
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'TEST - Records Without PA Type' =
+			
+			CALCULATE(
+			    COUNTROWS(Fact_PartsAdjustments),
+			    ISBLANK(Fact_PartsAdjustments[SubAccount])
+			)
+		formatString: 0
+		lineageTag: cf829ea5-79bd-48f4-8067-cddf66db0eb5
+
+	measure 'TEST - $ Without PA Type' =
+			
+			CALCULATE(
+			    SUM(Fact_PartsAdjustments[CostValue]),
+			    ISBLANK(Fact_PartsAdjustments[SubAccount])
+			)
+		lineageTag: 39261de3-0ad0-4010-a98f-0012d28ddbf0
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'TEST - Records in R12 Window' = ```
+			
+			CALCULATE(
+			    COUNTROWS(Fact_PartsAdjustments),
+			    DATESINPERIOD(
+			        dim_DateTable[Date], 
+			        MAX(Fact_PartsAdjustments[TransDatetime]), 
+			        -12, 
+			        MONTH
+			    )
+			)
+			```
+		formatString: 0
+		lineageTag: deb9190d-6efb-4ee8-9a03-cc92367969cd
+
+	measure 'TEST - Records with Qty 0 (R12)' = ```
+			
+			CALCULATE(
+			    COUNTROWS(Fact_PartsAdjustments),
+			    DATESINPERIOD(
+			        dim_DateTable[Date], 
+			        MAX(Fact_PartsAdjustments[TransDatetime]), 
+			        -12, 
+			        MONTH
+			    ),
+			    Fact_PartsAdjustments[Qty] = 0
+			)
+			```
+		formatString: 0
+		lineageTag: 40f4ab66-1cde-46a7-aba8-69bb3de5a889
+
+	measure 'TEST - R12 Start Date' = ```
+			
+			CALCULATE(
+			    MIN(Fact_PartsAdjustments[TransDatetime]),
+			    DATESINPERIOD(
+			        dim_DateTable[Date], 
+			        MAX(Fact_PartsAdjustments[TransDatetime]), 
+			        -12, 
+			        MONTH
+			    )
+			)
+			```
+		formatString: General Date
+		lineageTag: 8cf6a5ee-b1ba-4701-b31a-68157acf3bae
+
+	measure 'TEST - R12 End Date' = ```
+			
+			CALCULATE(
+			    MAX(Fact_PartsAdjustments[TransDatetime]),
+			    DATESINPERIOD(
+			        dim_DateTable[Date], 
+			        MAX(Fact_PartsAdjustments[TransDatetime]), 
+			        -12, 
+			        MONTH
+			    )
+			)
+			```
+		formatString: General Date
+		lineageTag: 8e9d7b15-bfa3-4623-92b4-40e050376c23
+
+	measure 'TEST - Max Date in Fact' = MAX(Fact_PartsAdjustments[TransDatetime])
+		formatString: General Date
+		lineageTag: 8a8cc325-34bb-4bbb-9603-aedee236749d
+
+	measure 'TEST - Direct Sum of CostValue (All Records)' =
+			
+			CALCULATE(
+			    SUM(Fact_PartsAdjustments[CostValue]),
+			    ALL(Fact_PartsAdjustments)
+			)
+		lineageTag: b93135d0-2dc1-4c59-a67d-f58e5f022f6a
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'TEST - Direct Sum with Qty <> 0 Only' =
+			
+			CALCULATE(
+			    SUM(Fact_PartsAdjustments[CostValue]),
+			    ALL(Fact_PartsAdjustments),
+			    Fact_PartsAdjustments[Qty] <> 0
+			)
+		lineageTag: 41594ba7-832e-4deb-a0ee-46a0116a6ec9
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'TEST - Direct Sum R12 + Qty <> 0' = ```
+			
+			CALCULATE(
+			    SUM(Fact_PartsAdjustments[CostValue]),
+			    DATESINPERIOD(
+			        dim_DateTable[Date], 
+			        MAX(Fact_PartsAdjustments[TransDatetime]), 
+			        -12, 
+			        MONTH
+			    ),
+			    Fact_PartsAdjustments[Qty] <> 0
+			)
+			```
+		lineageTag: 1f4a108c-573c-4479-b180-8730eda77b76
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'TEST - Sum of All PA Types' =
+			
+			VAR StockCheck = CALCULATE([_DynamicTotal], dim_AdjustmentType[AdjustmentTypeName] = "Stock Check")
+			VAR CountOff = CALCULATE([_DynamicTotal], dim_AdjustmentType[AdjustmentTypeName] = "Count Off")
+			VAR CustomerBIN = CALCULATE([_DynamicTotal], dim_AdjustmentType[AdjustmentTypeName] = "Customer BIN")
+			VAR Overage = CALCULATE([_DynamicTotal], dim_AdjustmentType[AdjustmentTypeName] = "Overage")
+			VAR Damaged = CALCULATE([_DynamicTotal], dim_AdjustmentType[AdjustmentTypeName] = "Damaged")
+			VAR Lost = CALCULATE([_DynamicTotal], dim_AdjustmentType[AdjustmentTypeName] = "Lost")
+			VAR AllTypesSum = StockCheck + CountOff + CustomerBIN + Overage + Damaged + Lost
+			VAR GrandTotal = [_DynamicTotal]
+			VAR Difference = GrandTotal - AllTypesSum
+			RETURN
+			"All Types Sum: " & FORMAT(AllTypesSum, "$#,##0") & UNICHAR(10) &
+			"Grand Total: " & FORMAT(GrandTotal, "$#,##0") & UNICHAR(10) &
+			"Difference: " & FORMAT(Difference, "$#,##0") & UNICHAR(10) &
+			"% Missing: " & FORMAT(DIVIDE(Difference, GrandTotal, 0), "0.0%")
+		lineageTag: 97e4d15b-d670-4777-bbdf-e7b20136682b
+
+	measure 'DEBUG - PA Type %' = ```
+			
+			VAR CurrentTypeTotal = [_DynamicTotal]
+			
+			VAR GrandTotal = 
+			    CALCULATE(
+			        [_DynamicTotal],
+			        REMOVEFILTERS(dim_AdjustmentType)
+			    )
+			
+			RETURN 
+			"Current: " & FORMAT(CurrentTypeTotal, "#,##0") & 
+			" | Grand: " & FORMAT(GrandTotal, "#,##0") & 
+			" | Pct: " & FORMAT(DIVIDE(CurrentTypeTotal, GrandTotal, 0), "0.0%")
+			```
+		lineageTag: e25c8c18-f3c9-4c4b-a8f2-5579d86a919d
+
+	column Value
+		lineageTag: 5e77c12b-9d6b-4a3e-8b6b-da5dab7387b3
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Value]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition _Test-Measures = calculated
+		mode: import
+		source = { "This table holds all measures for Testing" }
+
+	annotation PBI_Id = 964450dcec38406fb81986c39ae8624b
+

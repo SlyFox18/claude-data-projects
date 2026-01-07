@@ -1,0 +1,171 @@
+table PositiveTable
+	lineageTag: 4fddbd3f-7a12-46f3-8e60-eaa7bb406386
+
+	column Branch
+		lineageTag: 35a4dd5d-3486-4542-893a-3f1b2bc72a7f
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: InTrans_Parts_Adjust[Branch]
+
+		annotation SummarizationSetBy = Automatic
+
+	column Franchise
+		lineageTag: 10e90df8-95d0-4cb3-9279-b17a63984898
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: InTrans_Parts_Adjust[Franchise]
+
+		annotation SummarizationSetBy = Automatic
+
+	column Part_No
+		lineageTag: 2d8c16cd-3e8a-4403-ac4e-16f17a839e9b
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: InTrans_Parts_Adjust[Part_No]
+
+		annotation SummarizationSetBy = Automatic
+
+	column Description
+		lineageTag: 340c9f44-44d2-4757-832d-3338d13c8477
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: InTrans_Parts_Adjust[Description]
+
+		annotation SummarizationSetBy = Automatic
+
+	column Trans_Date
+		formatString: General Date
+		lineageTag: a2de89e0-e685-4cc6-a48b-a1ee64bf4f76
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: InTrans_Parts_Adjust[Trans_Date]
+
+		variation Variation
+			isDefault
+			relationship: 1ea395d5-9ab1-4218-a530-fa6cf183c2cc
+			defaultHierarchy: LocalDateTable_75883237-0d0d-43f7-81d0-ca785d04218f.'Date Hierarchy'
+
+		annotation SummarizationSetBy = Automatic
+
+	column Type
+		lineageTag: 7e42a2fc-e903-42b0-af3e-500691590606
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: InTrans_Parts_Adjust[Type]
+
+		annotation SummarizationSetBy = Automatic
+
+	column Cost
+		lineageTag: 98f56272-79f0-4e30-a12b-6ca32efbe3e1
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: InTrans_Parts_Adjust[Cost]
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column REF_NO
+		lineageTag: 96cf4e52-db67-42ba-b871-8a92e5cc06fe
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: InTrans_Parts_Adjust[REF_NO]
+
+		annotation SummarizationSetBy = Automatic
+
+	column QTY
+		lineageTag: 829b0d0d-94e0-43d1-b268-61f2857d1e58
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: InTrans_Parts_Adjust[QTY]
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column Trans_ID
+		formatString: 0
+		lineageTag: 6f1e38d9-9240-4bbd-be87-3251f6ea4c9c
+		summarizeBy: count
+		isNameInferred
+		sourceColumn: InTrans_Parts_Adjust[Trans_ID]
+
+		annotation SummarizationSetBy = Automatic
+
+	column Salesman
+		lineageTag: dd659a16-a0bf-411f-87f9-45510199aaf7
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: InTrans_Parts_Adjust[Salesman]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Sell Price'
+		lineageTag: 07766db4-04ab-46cf-9d93-161d0a18b3cf
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: InTrans_Parts_Adjust[Sell Price]
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column 'Qty (out)'
+		lineageTag: 9d2e194c-f2ef-4734-b305-3a85d6917454
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: InTrans_Parts_Adjust[Qty (out)]
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column 'Qty (in)'
+		lineageTag: 0de5ee1e-128b-4f75-8f9c-28c5e11ae289
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: InTrans_Parts_Adjust[Qty (in)]
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column Positive_QTY
+		lineageTag: 3cd1525d-a199-4f2c-9e46-4f22abe9c2fe
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [Positive_QTY]
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column Positive_Trans_Date
+		formatString: General Date
+		lineageTag: 04a54b64-6ede-406f-9b10-31a67dbd7c73
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Positive_Trans_Date]
+
+		variation Variation
+			isDefault
+			relationship: bf929681-b0d9-4455-b679-10f38b61a7cd
+			defaultHierarchy: LocalDateTable_18a0d960-c7a8-4ba9-944e-135dd6f597cc.'Date Hierarchy'
+
+		annotation SummarizationSetBy = Automatic
+
+	partition PositiveTable = calculated
+		mode: import
+		source =
+				
+				FILTER (
+				    ADDCOLUMNS (
+				        InTrans_Parts_Adjust,
+				        "Positive_QTY", IF ( InTrans_Parts_Adjust[QTY] > 0, InTrans_Parts_Adjust[QTY], BLANK() ),
+				        "Positive_Trans_Date", InTrans_Parts_Adjust[Trans_Date]
+				    ),
+				    [Positive_QTY] <> BLANK()
+				)
+
+	annotation PBI_Id = 089446b25ddb4b4f987eb63bbf400d20
+

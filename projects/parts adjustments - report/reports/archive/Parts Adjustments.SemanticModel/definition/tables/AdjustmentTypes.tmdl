@@ -1,0 +1,35 @@
+table AdjustmentTypes
+	lineageTag: 3949d059-f05f-45f2-bcc3-9e1276d2b90e
+
+	column AdjustmentType
+		lineageTag: 43e43449-011e-4df3-bba1-ef3c221ed0ad
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [AdjustmentType]
+
+		annotation SummarizationSetBy = Automatic
+
+	column AdjustmentValue
+		formatString: 0
+		lineageTag: a9c16d42-e549-407a-851a-f2e335efc486
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [AdjustmentValue]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition AdjustmentTypes = calculated
+		mode: import
+		source =
+				
+				DATATABLE(
+				    "AdjustmentType", STRING,
+				    "AdjustmentValue", INTEGER,
+				    {
+				        {"Positive Adjustment $ (R12)", 0},
+				        {"Negative Adjustment $ (R12)", 1}
+				    }
+				)
+
+	annotation PBI_Id = 12b41a7da9404240a27fd22cb300bbc7
+

@@ -1,0 +1,6 @@
+let
+  Source = Odbc.Query("dsn=EquipRDB64", "SELECT#(lf)    BRANCH AS ""Branch"",#(lf)    FRANCHISE AS ""Franchise"",#(lf)    PART_NO AS ""Part No"",#(lf)    DESCRIPTION AS ""Description"",#(lf)    Trans_Datetime AS ""Trans Date"",#(lf)    TYPE AS ""Type"",#(lf)    COST_VAL AS ""Cost"",#(lf)    REF_NO,#(lf)    QTY,#(lf)    trans_id AS ""Trans ID"",#(lf)    Salesman,#(lf)    SELL_PRICE1 AS ""Sale Price""#(lf)FROM#(lf)    InTrans#(lf)WHERE#(lf)    TYPE = 'A'#(lf)    AND Trans_Datetime >= '2023-01-01'#(lf)"),
+  #"Changed column type" = Table.TransformColumnTypes(Source, {{"Trans Date", type date}})
+in
+  #"Changed column type"
+

@@ -1,0 +1,141 @@
+table InTrans_Parts_Adjust
+	lineageTag: c572b189-5228-414f-829e-b1c96765b73a
+
+	column Branch
+		dataType: string
+		lineageTag: 40e91737-e505-4771-ba90-8a5e42f89be9
+		summarizeBy: none
+		sourceColumn: Branch
+
+		annotation SummarizationSetBy = Automatic
+
+	column Franchise
+		dataType: string
+		lineageTag: 7d31b0d1-ee4d-4d4c-901a-3b383a2704b0
+		summarizeBy: none
+		sourceColumn: Franchise
+
+		annotation SummarizationSetBy = Automatic
+
+	column Part_No
+		dataType: string
+		lineageTag: 759f7dba-440b-43f7-8a5b-d4a7336d1f8b
+		summarizeBy: none
+		sourceColumn: Part_No
+
+		annotation SummarizationSetBy = Automatic
+
+	column Description
+		dataType: string
+		lineageTag: 1f5cd345-ed79-4e56-b593-bf68f358e4aa
+		summarizeBy: none
+		sourceColumn: Description
+
+		annotation SummarizationSetBy = Automatic
+
+	column Trans_Date
+		dataType: dateTime
+		formatString: Short Date
+		lineageTag: 293c0f52-a54c-4683-953b-5de0e837d875
+		summarizeBy: none
+		sourceColumn: Trans_Date
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column Type
+		dataType: string
+		lineageTag: dbd39786-18f6-4ab9-a5c0-9f02c5f488c6
+		summarizeBy: none
+		sourceColumn: Type
+
+		annotation SummarizationSetBy = Automatic
+
+	column Cost
+		dataType: double
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 6eb1db38-14dc-4164-99aa-c30201ba4c59
+		summarizeBy: sum
+		sourceColumn: Cost
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	column REF_NO
+		dataType: string
+		lineageTag: 9a8b5c40-0c92-432b-967a-8d973e4d21cd
+		summarizeBy: none
+		sourceColumn: REF_NO
+
+		annotation SummarizationSetBy = Automatic
+
+	column QTY
+		dataType: double
+		formatString: 0
+		lineageTag: ed3d8edd-3695-45cc-b656-797d8c5ca4f7
+		summarizeBy: sum
+		sourceColumn: QTY
+
+		annotation SummarizationSetBy = Automatic
+
+	column Trans_ID
+		dataType: int64
+		formatString: 0
+		lineageTag: cf1b9804-3955-4ed6-aaeb-ffc7ef828018
+		summarizeBy: count
+		sourceColumn: Trans_ID
+
+		annotation SummarizationSetBy = Automatic
+
+	column Salesman
+		dataType: string
+		lineageTag: f7d3478d-780c-4afe-b1d2-2daa2bd7c72f
+		summarizeBy: none
+		sourceColumn: Salesman
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Sell Price'
+		dataType: double
+		lineageTag: efc6fe4b-dfc9-4419-ba8a-a6a1149a6f93
+		summarizeBy: sum
+		sourceColumn: Sell Price
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column 'Qty (out)' =
+			
+			IF('InTrans_Parts_Adjust'[QTY] < 0, 'InTrans_Parts_Adjust'[QTY], 0)
+		lineageTag: 15404e01-808e-4f6e-8d0f-f5b5699dbcb9
+		summarizeBy: sum
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column 'Qty (in)' =
+			
+			IF('InTrans_Parts_Adjust'[QTY] > 0, 'InTrans_Parts_Adjust'[QTY], 0)
+		lineageTag: d12c67f4-1171-4145-9666-d8a69db13838
+		summarizeBy: sum
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	partition InTrans_Parts_Adjust = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-ch6iiwox4jveda3rmgudwi6hey.datawarehouse.fabric.microsoft.com", "LH_Parts_Reports_Data"),
+				    dbo_InTrans___Parts_Adjust = Source{[Schema="dbo",Item="InTrans___Parts_Adjust"]}[Data],
+				    #"Renamed Columns" = Table.RenameColumns(dbo_InTrans___Parts_Adjust,{{"Sale_Price", "Sell Price"}})
+				in
+				    #"Renamed Columns"
+
+	annotation PBI_ResultType = Table
+

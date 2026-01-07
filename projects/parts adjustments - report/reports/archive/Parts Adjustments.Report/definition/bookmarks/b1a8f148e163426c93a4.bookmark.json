@@ -1,0 +1,937 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/bookmark/1.4.0/schema.json",
+  "displayName": "Show Net",
+  "name": "b1a8f148e163426c93a4",
+  "options": {
+    "targetVisualNames": [],
+    "suppressData": true
+  },
+  "explorationState": {
+    "version": "1.3",
+    "activeSection": "080165d022b6fe959d00",
+    "sections": {
+      "080165d022b6fe959d00": {
+        "visualContainers": {
+          "f0560f402b5a4b26fa4b": {
+            "singleVisual": {
+              "visualType": "shape",
+              "objects": {}
+            }
+          },
+          "2d730ee14236eb4b5d92": {
+            "singleVisual": {
+              "visualType": "shape",
+              "objects": {}
+            }
+          },
+          "15dcfb3c7c4c0066dcb2": {
+            "filters": {
+              "byExpr": [
+                {
+                  "name": "d2a7a85ce82f19ef59b3",
+                  "type": "Categorical",
+                  "filter": {
+                    "Version": 2,
+                    "From": [
+                      {
+                        "Name": "d",
+                        "Entity": "Dim_Branch",
+                        "Type": 0
+                      }
+                    ],
+                    "Where": [
+                      {
+                        "Condition": {
+                          "Not": {
+                            "Expression": {
+                              "In": {
+                                "Expressions": [
+                                  {
+                                    "Column": {
+                                      "Expression": {
+                                        "SourceRef": {
+                                          "Source": "d"
+                                        }
+                                      },
+                                      "Property": "Branch"
+                                    }
+                                  }
+                                ],
+                                "Values": [
+                                  [
+                                    {
+                                      "Literal": {
+                                        "Value": "'04 - Las Cruces'"
+                                      }
+                                    }
+                                  ],
+                                  [
+                                    {
+                                      "Literal": {
+                                        "Value": "'12 - O''Donnell'"
+                                      }
+                                    }
+                                  ],
+                                  [
+                                    {
+                                      "Literal": {
+                                        "Value": "'97 - Colorado City'"
+                                      }
+                                    }
+                                  ],
+                                  [
+                                    {
+                                      "Literal": {
+                                        "Value": "'05 - Deming'"
+                                      }
+                                    }
+                                  ]
+                                ]
+                              }
+                            }
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  "expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "Dim_Branch"
+                        }
+                      },
+                      "Property": "Branch"
+                    }
+                  },
+                  "howCreated": 0
+                }
+              ]
+            },
+            "singleVisual": {
+              "visualType": "advancedSlicerVisual",
+              "objects": {
+                "merge": {
+                  "general": [
+                    {
+                      "properties": {
+                        "filter": {
+                          "filter": {
+                            "Version": 2,
+                            "From": [
+                              {
+                                "Name": "d",
+                                "Entity": "Dim_Branch",
+                                "Type": 0
+                              }
+                            ],
+                            "Where": [
+                              {
+                                "Condition": {
+                                  "In": {
+                                    "Expressions": [
+                                      {
+                                        "Column": {
+                                          "Expression": {
+                                            "SourceRef": {
+                                              "Source": "d"
+                                            }
+                                          },
+                                          "Property": "Branch"
+                                        }
+                                      }
+                                    ],
+                                    "Values": [
+                                      [
+                                        {
+                                          "Literal": {
+                                            "Value": "'01 - Seminole'"
+                                          }
+                                        }
+                                      ]
+                                    ]
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "d07aecf046465b52d216": {
+            "singleVisual": {
+              "visualType": "image",
+              "objects": {}
+            }
+          },
+          "6e2aa5987f3d84691c27": {
+            "singleVisual": {
+              "visualType": "pageNavigator",
+              "objects": {}
+            }
+          },
+          "7eebf36e7ee5ff2f015a": {
+            "filters": {
+              "byExpr": [
+                {
+                  "name": "acf8a31dd6c50c6a2d48",
+                  "type": "Advanced",
+                  "expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "MeasuresTable"
+                        }
+                      },
+                      "Property": "Total Adjustments $ (R12)"
+                    }
+                  },
+                  "howCreated": 0
+                }
+              ]
+            },
+            "singleVisual": {
+              "visualType": "cardVisual",
+              "objects": {},
+              "orderBy": [
+                {
+                  "Direction": 2,
+                  "Expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "MeasuresTable"
+                        }
+                      },
+                      "Property": "Total Adjustments $ (R12)"
+                    }
+                  }
+                }
+              ],
+              "display": {
+                "mode": "hidden"
+              }
+            }
+          },
+          "a86ee6f0c9c6c39f0d17": {
+            "filters": {
+              "byExpr": [
+                {
+                  "name": "b53fcb657cb6c656b53e",
+                  "type": "Advanced",
+                  "expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "MeasuresTable"
+                        }
+                      },
+                      "Property": "Total Qty (R12)"
+                    }
+                  },
+                  "howCreated": 0
+                }
+              ]
+            },
+            "singleVisual": {
+              "visualType": "cardVisual",
+              "objects": {},
+              "orderBy": [
+                {
+                  "Direction": 2,
+                  "Expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "MeasuresTable"
+                        }
+                      },
+                      "Property": "Total Qty (R12)"
+                    }
+                  }
+                }
+              ],
+              "display": {
+                "mode": "hidden"
+              }
+            }
+          },
+          "0359255f3f84736ebafb": {
+            "filters": {
+              "byExpr": [
+                {
+                  "name": "9821c5872da5fbe8baa1",
+                  "type": "Advanced",
+                  "expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "MeasuresTable"
+                        }
+                      },
+                      "Property": "Total Adjustment Lines (R12)"
+                    }
+                  },
+                  "howCreated": 0
+                }
+              ]
+            },
+            "singleVisual": {
+              "visualType": "cardVisual",
+              "objects": {},
+              "orderBy": [
+                {
+                  "Direction": 2,
+                  "Expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "MeasuresTable"
+                        }
+                      },
+                      "Property": "Total Adjustment Lines (R12)"
+                    }
+                  }
+                }
+              ],
+              "display": {
+                "mode": "hidden"
+              }
+            }
+          },
+          "5c0e657ecec365849f38": {
+            "filters": {
+              "byExpr": [
+                {
+                  "name": "e27aa97e2a9b42ba91e9",
+                  "type": "Categorical",
+                  "expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "GlTrans___Parts_Adjust"
+                        }
+                      },
+                      "Property": "PA Type"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "1c0ef0af9dcb006acb3e",
+                  "type": "Advanced",
+                  "expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "MeasuresTable"
+                        }
+                      },
+                      "Property": "Total Adjustment Lines (R12)"
+                    }
+                  },
+                  "howCreated": 0
+                }
+              ]
+            },
+            "singleVisual": {
+              "visualType": "clusteredBarChart",
+              "objects": {},
+              "orderBy": [
+                {
+                  "Direction": 2,
+                  "Expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "MeasuresTable"
+                        }
+                      },
+                      "Property": "Total Adjustment Lines (R12)"
+                    }
+                  }
+                }
+              ],
+              "activeProjections": {
+                "Category": [
+                  {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "GlTrans___Parts_Adjust"
+                        }
+                      },
+                      "Property": "PA Type"
+                    }
+                  }
+                ]
+              },
+              "display": {
+                "mode": "hidden"
+              }
+            }
+          },
+          "9a19ae1fbd58ee1a06f9": {
+            "singleVisual": {
+              "visualType": "shape",
+              "objects": {}
+            }
+          },
+          "c647c89f6b5d0062ac14": {
+            "singleVisual": {
+              "visualType": "shape",
+              "objects": {}
+            }
+          },
+          "2882d4adb0388d4a7be8": {
+            "filters": {
+              "byExpr": [
+                {
+                  "name": "1f904a4dba70865f5dd9",
+                  "type": "Categorical",
+                  "expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "GlTrans___Parts_Adjust"
+                        }
+                      },
+                      "Property": "PA Type"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "0d0eb1f5719431f54983",
+                  "type": "Advanced",
+                  "expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "MeasuresTable"
+                        }
+                      },
+                      "Property": "Positive Adjustment $ (R12)"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "62992e90f0e3a887fa61",
+                  "type": "Advanced",
+                  "expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "MeasuresTable"
+                        }
+                      },
+                      "Property": "Negative Adjustment $ (R12)"
+                    }
+                  },
+                  "howCreated": 0
+                }
+              ]
+            },
+            "singleVisual": {
+              "visualType": "clusteredBarChart",
+              "objects": {},
+              "orderBy": [
+                {
+                  "Direction": 2,
+                  "Expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "MeasuresTable"
+                        }
+                      },
+                      "Property": "Positive Adjustment $ (R12)"
+                    }
+                  }
+                }
+              ],
+              "activeProjections": {
+                "Category": [
+                  {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "GlTrans___Parts_Adjust"
+                        }
+                      },
+                      "Property": "PA Type"
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "1c6e5ab25147a1c06139": {
+            "filters": {
+              "byExpr": [
+                {
+                  "name": "39415c46abcaa951f8a3",
+                  "type": "Categorical",
+                  "expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "GlTrans___Parts_Adjust"
+                        }
+                      },
+                      "Property": "PA Type"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "3d1cf6afbafde83912d5",
+                  "type": "Advanced",
+                  "expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "MeasuresTable"
+                        }
+                      },
+                      "Property": "Positive Qty (R12)"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "6f5c38f6fdf788c843de",
+                  "type": "Advanced",
+                  "expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "MeasuresTable"
+                        }
+                      },
+                      "Property": "Negative Qty (R12)"
+                    }
+                  },
+                  "howCreated": 0
+                }
+              ]
+            },
+            "singleVisual": {
+              "visualType": "clusteredBarChart",
+              "objects": {},
+              "orderBy": [
+                {
+                  "Direction": 2,
+                  "Expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "MeasuresTable"
+                        }
+                      },
+                      "Property": "Positive Qty (R12)"
+                    }
+                  }
+                }
+              ],
+              "activeProjections": {
+                "Category": [
+                  {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "GlTrans___Parts_Adjust"
+                        }
+                      },
+                      "Property": "PA Type"
+                    }
+                  }
+                ]
+              },
+              "display": {
+                "mode": "hidden"
+              }
+            }
+          },
+          "d8aba9e0251a31e5007f": {
+            "filters": {
+              "byExpr": [
+                {
+                  "name": "4c905e4b232dd6b42b45",
+                  "type": "Categorical",
+                  "expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "GlTrans___Parts_Adjust"
+                        }
+                      },
+                      "Property": "PA Type"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "7e624d21c275a94673c2",
+                  "type": "Advanced",
+                  "expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "MeasuresTable"
+                        }
+                      },
+                      "Property": "Positive Adjustment Lines (R12)"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "89656d862a7e19fd5962",
+                  "type": "Advanced",
+                  "expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "MeasuresTable"
+                        }
+                      },
+                      "Property": "Negative Adjustment Lines (R12)"
+                    }
+                  },
+                  "howCreated": 0
+                }
+              ]
+            },
+            "singleVisual": {
+              "visualType": "clusteredBarChart",
+              "objects": {},
+              "orderBy": [
+                {
+                  "Direction": 2,
+                  "Expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "MeasuresTable"
+                        }
+                      },
+                      "Property": "Positive Adjustment Lines (R12)"
+                    }
+                  }
+                }
+              ],
+              "activeProjections": {
+                "Category": [
+                  {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "GlTrans___Parts_Adjust"
+                        }
+                      },
+                      "Property": "PA Type"
+                    }
+                  }
+                ]
+              },
+              "display": {
+                "mode": "hidden"
+              }
+            }
+          },
+          "ac878b049016e48f04fb": {
+            "filters": {
+              "byExpr": [
+                {
+                  "name": "c44f394ec9f9d28474fa",
+                  "type": "Categorical",
+                  "expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "GlTrans___Parts_Adjust"
+                        }
+                      },
+                      "Property": "PA Type"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "fd31eb72d11016c83fe2",
+                  "type": "Advanced",
+                  "expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "MeasuresTable"
+                        }
+                      },
+                      "Property": "Total Adjustments $ (R12)"
+                    }
+                  },
+                  "howCreated": 0
+                }
+              ]
+            },
+            "singleVisual": {
+              "visualType": "clusteredBarChart",
+              "objects": {},
+              "orderBy": [
+                {
+                  "Direction": 2,
+                  "Expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "MeasuresTable"
+                        }
+                      },
+                      "Property": "Total Adjustments $ (R12)"
+                    }
+                  }
+                }
+              ],
+              "activeProjections": {
+                "Category": [
+                  {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "GlTrans___Parts_Adjust"
+                        }
+                      },
+                      "Property": "PA Type"
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "f23f07fe9481bd671c78": {
+            "filters": {
+              "byExpr": [
+                {
+                  "name": "04f57b6daec39d039265",
+                  "type": "Categorical",
+                  "expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "GlTrans___Parts_Adjust"
+                        }
+                      },
+                      "Property": "PA Type"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "b891cc0bdc1fb5cc5508",
+                  "type": "Advanced",
+                  "expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "MeasuresTable"
+                        }
+                      },
+                      "Property": "Total Qty (R12)"
+                    }
+                  },
+                  "howCreated": 0
+                }
+              ]
+            },
+            "singleVisual": {
+              "visualType": "clusteredBarChart",
+              "objects": {},
+              "orderBy": [
+                {
+                  "Direction": 2,
+                  "Expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "MeasuresTable"
+                        }
+                      },
+                      "Property": "Total Qty (R12)"
+                    }
+                  }
+                }
+              ],
+              "activeProjections": {
+                "Category": [
+                  {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "GlTrans___Parts_Adjust"
+                        }
+                      },
+                      "Property": "PA Type"
+                    }
+                  }
+                ]
+              },
+              "display": {
+                "mode": "hidden"
+              }
+            }
+          },
+          "31bbca74235edb5a5f10": {
+            "singleVisual": {
+              "visualType": "shape",
+              "objects": {}
+            }
+          },
+          "41537b55fda093f93b33": {
+            "filters": {
+              "byExpr": [
+                {
+                  "name": "ea80a587432a98cd1ec3",
+                  "type": "Advanced",
+                  "expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "MeasuresTable"
+                        }
+                      },
+                      "Property": "Adjustment $ (Net) (R12)"
+                    }
+                  },
+                  "howCreated": 0
+                }
+              ]
+            },
+            "singleVisual": {
+              "visualType": "cardVisual",
+              "objects": {},
+              "orderBy": [
+                {
+                  "Direction": 2,
+                  "Expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "MeasuresTable"
+                        }
+                      },
+                      "Property": "Adjustment $ (Net) (R12)"
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "acbdc53cf68781edc482": {
+            "filters": {
+              "byExpr": [
+                {
+                  "name": "2202ef9f9c74d6caca3c",
+                  "type": "Advanced",
+                  "expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "MeasuresTable"
+                        }
+                      },
+                      "Property": "Adjustment Qty (Net) (R12)"
+                    }
+                  },
+                  "howCreated": 0
+                }
+              ]
+            },
+            "singleVisual": {
+              "visualType": "cardVisual",
+              "objects": {},
+              "orderBy": [
+                {
+                  "Direction": 2,
+                  "Expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "MeasuresTable"
+                        }
+                      },
+                      "Property": "Adjustment Qty (Net) (R12)"
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "25aff393e5bab6a966d1": {
+            "filters": {
+              "byExpr": [
+                {
+                  "name": "72c978ed4f1ae1953c59",
+                  "type": "Advanced",
+                  "expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "MeasuresTable"
+                        }
+                      },
+                      "Property": "Adjustment Lines (Net) (R12)"
+                    }
+                  },
+                  "howCreated": 0
+                }
+              ]
+            },
+            "singleVisual": {
+              "visualType": "cardVisual",
+              "objects": {},
+              "orderBy": [
+                {
+                  "Direction": 2,
+                  "Expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "MeasuresTable"
+                        }
+                      },
+                      "Property": "Adjustment Lines (Net) (R12)"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    "objects": {
+      "merge": {
+        "outspacePane": [
+          {
+            "properties": {
+              "expanded": {
+                "expr": {
+                  "Literal": {
+                    "Value": "false"
+                  }
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+}

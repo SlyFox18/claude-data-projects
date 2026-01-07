@@ -1,0 +1,1208 @@
+table _Measures
+	lineageTag: 22e4b9e3-99b6-4634-9836-9ade5a5ea5a5
+
+	measure 'Home - Header' = ```
+			
+			// Get user name
+			VAR _User = USERPRINCIPALNAME()
+			VAR _Position = SEARCH("@", _User, 1)
+			VAR _Name = LEFT(_User, _Position - 1)
+			VAR _FirstLetter = UPPER(LEFT(_Name, 1))
+			VAR _LastName = MID(_Name, 2, LEN(_Name) - 1)
+			VAR _FormattedLastName = 
+			    UPPER(LEFT(_LastName, 1)) & LOWER(MID(_LastName, 2, LEN(_LastName)))
+			VAR WelcomeName = _FirstLetter & "." & _FormattedLastName
+			
+			// Get current date/time info
+			VAR CurrentDate = TODAY()
+			VAR DateDisplay = FORMAT(CurrentDate, "MMM D, YYYY")
+			VAR CurrentHour = HOUR(NOW())
+			VAR TimeGreeting = 
+			    IF(CurrentHour < 12, "Good Morning",
+			    IF(CurrentHour < 17, "Good Afternoon",
+			    "Good Evening"))
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    height: 85px;
+			    padding: 15px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 10px;
+			    color: white;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-between;
+			    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    box-sizing: border-box;
+			'>
+			    <!-- Left side: Dashboard Title -->
+			    <div style='display: flex; align-items: center; gap: 15px;'>
+			        <!-- Home icon -->
+			        <div style='
+			            width: 40px;
+			            height: 40px;
+			            background: rgba(255,255,255,0.15);
+			            border-radius: 8px;
+			            display: flex;
+			            align-items: center;
+			            justify-content: center;
+			            font-size: 20px;
+			        '>
+			            🏠
+			        </div>
+			        
+			        <!-- Title -->
+			        <div>
+			            <div style='font-size: 12px; opacity: 0.85; margin-bottom: 4px; letter-spacing: 0.5px;'>
+			                REPORT
+			            </div>
+			            <div style='font-size: 26px; font-weight: 700; line-height: 1;'>
+			                Parts Adjustments - Overview
+			            </div>
+			        </div>
+			    </div>
+			    
+			    <!-- Right side: Welcome & Date -->
+			    <div style='text-align: right;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 6px;'>
+			            " & TimeGreeting & ", " & WelcomeName & "
+			        </div>
+			        <div style='font-size: 16px; font-weight: 600;'>
+			            📅 " & DateDisplay & "
+			        </div>
+			    </div>
+			</div>
+			"
+			```
+		lineageTag: 49efea2a-3c06-4cab-8367-26b26caa141e
+
+	measure 'Positive Adjustment $ (R12)' =
+			
+			CALCULATE(
+			    SUM(Fact_PartsAdjustments[PositiveCost]),
+			    DATESINPERIOD(
+			        dim_DateTable[Date],
+			        MAX(Fact_PartsAdjustments[TransDatetime]),  // ← Changed from MAX(dim_DateTable[Date])
+			        -12,
+			        MONTH
+			    )
+			)
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 2fe5d524-d11f-42f9-99ac-70437a6deabf
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Negative Adjustment $ (R12)' =
+			
+			CALCULATE(
+			    SUM(Fact_PartsAdjustments[NegativeCost]),
+			    DATESINPERIOD(
+			        dim_DateTable[Date],
+			        MAX(Fact_PartsAdjustments[TransDatetime]),  // ← Changed
+			        -12,
+			        MONTH
+			    )
+			)
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: eea021c7-e785-49c7-91d5-8197c246e5d7
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Total Adjustments $ (R12)' =
+			
+			[Positive Adjustment $ (R12)] + ABS([Negative Adjustment $ (R12)])
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 39ef2929-b8d5-49eb-a4e1-477653c45113
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Positive Qty (R12)' =
+			
+			CALCULATE(
+			    SUM(Fact_PartsAdjustments[PositiveQty]),
+			    DATESINPERIOD(
+			        dim_DateTable[Date],
+			        MAX(Fact_PartsAdjustments[TransDatetime]),  // ← Changed
+			        -12,
+			        MONTH
+			    )
+			)
+		lineageTag: 7e852c55-4290-40c5-9aa5-ec6a4434dd5b
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Negative Qty (R12)' =
+			
+			CALCULATE(
+			    SUM(Fact_PartsAdjustments[NegativeQty]),
+			    DATESINPERIOD(
+			        dim_DateTable[Date],
+			        MAX(Fact_PartsAdjustments[TransDatetime]),  // ← Changed
+			        -12,
+			        MONTH
+			    )
+			)
+		lineageTag: b7fc19c5-3635-46a2-8ece-ed36a526aef2
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Total Qty (R12)' =
+			
+			[Positive Qty (R12)] + ABS([Negative Qty (R12)])
+		lineageTag: ead31a7e-92d1-4f80-8976-b02489ba84b7
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Total Adjustment Lines (R12)' =
+			
+			CALCULATE(
+			    COUNTROWS(Fact_PartsAdjustments),
+			    DATESINPERIOD(
+			        dim_DateTable[Date],
+			        MAX(Fact_PartsAdjustments[TransDatetime]),
+			        -12,
+			        MONTH
+			    ),
+			    Fact_PartsAdjustments[Qty] <> 0  // ← Added the missing filter
+			)
+		formatString: 0
+		lineageTag: b14f1446-d52e-44b0-8b51-7575b9f71218
+
+	measure 'Total Inventory $' =
+			
+			SUM(jdis_Part_Information[InventoryCost])
+		lineageTag: 7b50ee3b-e5bd-4307-9a75-21e39685191a
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'On Hand Qty' =
+			
+			SUM(jdis_Part_Information[QuantityOnHand])
+		lineageTag: 91db74ae-0def-4209-bdcb-3be6360dcc14
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Total Parts' =
+			
+			COUNTROWS(jdis_Part_Information)  // Counts all rows (branch-part combinations)
+		formatString: 0
+		lineageTag: b1e8fded-13b4-4457-ae89-91be77d3e458
+
+	measure 'Adjustment $ to Inventory $' =
+			
+			DIVIDE([Total Adjustments $ (R12)], [Total Inventory $], 0)
+		formatString: 0.00%;-0.00%;0.00%
+		lineageTag: 322acfa1-6c73-48fa-81eb-a52b0707537a
+
+	measure 'Adjustment Qty to Inventory Qty' =
+			
+			DIVIDE([Total Qty (R12)], [On Hand Qty], 0)
+		formatString: 0.00%;-0.00%;0.00%
+		lineageTag: b2e06eab-4c10-42ca-8ba6-7525fdb9d55d
+
+	measure 'Adjustment Lines to Inventory Lines' =
+			
+			DIVIDE([Total Adjustment Lines (R12)], [Total Parts], 0)
+		formatString: 0.00%;-0.00%;0.00%
+		lineageTag: bbaacc26-6ea6-48d6-8cbb-1f51f2fd4645
+
+	measure 'Page 1 - Hero Card' = ```
+			
+			VAR TotalAdjustments = [Total Adjustments $ (R12)]
+			VAR TotalInventory = [Total Inventory $]
+			VAR PctDollars = [Adjustment $ to Inventory $]
+			
+			VAR TotalQty = [Total Qty (R12)]
+			VAR OnHandQty = [On Hand Qty]
+			VAR PctQty = [Adjustment Qty to Inventory Qty]
+			
+			VAR TotalLines = [Total Adjustment Lines (R12)]
+			VAR TotalParts = [Total Parts]
+			VAR PctLines = [Adjustment Lines to Inventory Lines]
+			
+			// Number formatting for display
+			VAR AdjText = 
+			    IF(TotalAdjustments >= 1000000,
+			        "$" & FORMAT(TotalAdjustments/1000000, "#,##0.0") & "M",
+			        "$" & FORMAT(TotalAdjustments/1000, "#,##0") & "K"
+			    )
+			VAR InvText = 
+			    IF(TotalInventory >= 1000000,
+			        "$" & FORMAT(TotalInventory/1000000, "#,##0.0") & "M",
+			        "$" & FORMAT(TotalInventory/1000, "#,##0") & "K"
+			    )
+			VAR QtyText = 
+			    IF(TotalQty >= 1000000,
+			        FORMAT(TotalQty/1000000, "#,##0.0") & "M",
+			        IF(TotalQty >= 1000,
+			            FORMAT(TotalQty/1000, "#,##0") & "K",
+			            FORMAT(TotalQty, "#,##0")
+			        )
+			    )
+			VAR OnHandText = 
+			    IF(OnHandQty >= 1000000,
+			        FORMAT(OnHandQty/1000000, "#,##0.0") & "M",
+			        FORMAT(OnHandQty/1000, "#,##0") & "K"
+			    )
+			VAR LinesText = 
+			    IF(TotalLines >= 1000,
+			        FORMAT(TotalLines/1000, "#,##0") & "K",
+			        FORMAT(TotalLines, "#,##0")
+			    )
+			VAR PartsText = 
+			    IF(TotalParts >= 1000000,
+			        FORMAT(TotalParts/1000000, "#,##0.0") & "M",
+			        FORMAT(TotalParts/1000, "#,##0") & "K"
+			    )
+			
+			RETURN
+			"<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    padding: 25px 30px 25px 30px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 12px;
+			    box-shadow: 0 8px 24px rgba(0,0,0,0);
+			    color: white;
+			    min-height: 160px;
+			'>
+			    <!-- Main Metrics Row -->
+			    <div style='display: flex; justify-content: space-around; align-items: center; gap: 20px;'>
+			        
+			        <!-- Section 1: Total Adjustments $ -->
+			        <div style='flex: 1; text-align: center;'>
+			            <div style='font-size: 18px; text-transform: uppercase; letter-spacing: 1.5px; opacity: 0.8; margin-bottom: 8px;'>
+			                Total Adjustments $ (R12)
+			            </div>
+			            <div style='font-size: 42px; font-weight: 700; line-height: 1; margin-bottom: 6px;'>
+			                " & AdjText & "
+			            </div>
+			            <div style='font-size: 18px; opacity: 0.75;'>
+			                Total Inventory $: " & InvText & "
+			            </div>
+			            <div style='font-size: 18px; opacity: 0.75; margin-top: 4px;'>
+			                Adjustment $ to Inventory $: " & FORMAT(PctDollars, "0.0%") & "
+			            </div>
+			        </div>
+			        
+			        <!-- Section 2: Total Qty -->
+			        <div style='flex: 1; text-align: center; border-left: 1px solid rgba(255,255,255,0.2); padding-left: 20px;'>
+			            <div style='font-size: 18px; text-transform: uppercase; letter-spacing: 1.5px; opacity: 0.8; margin-bottom: 8px;'>
+			                Total Qty (R12)
+			            </div>
+			            <div style='font-size: 42px; font-weight: 700; line-height: 1; margin-bottom: 6px;'>
+			                " & QtyText & "
+			            </div>
+			            <div style='font-size: 18px; opacity: 0.75;'>
+			                On Hand Qty: " & OnHandText & "
+			            </div>
+			            <div style='font-size: 18px; opacity: 0.75; margin-top: 4px;'>
+			                Adjustment Qty to Inventory Qty: " & FORMAT(PctQty, "0.0%") & "
+			            </div>
+			        </div>
+			        
+			        <!-- Section 3: Total Lines -->
+			        <div style='flex: 1; text-align: center; border-left: 1px solid rgba(255,255,255,0.2); padding-left: 20px;'>
+			            <div style='font-size: 18px; text-transform: uppercase; letter-spacing: 1.5px; opacity: 0.8; margin-bottom: 8px;'>
+			                Total Adjustment Lines (R12)
+			            </div>
+			            <div style='font-size: 42px; font-weight: 700; line-height: 1; margin-bottom: 6px;'>
+			                " & LinesText & "
+			            </div>
+			            <div style='font-size: 18px; opacity: 0.75;'>
+			                Total Parts: " & PartsText & "
+			            </div>
+			            <div style='font-size: 18px; opacity: 0.75; margin-top: 4px;'>
+			                Adjustment Lines to Inventory Lines: " & FORMAT(PctLines, "0.0%") & "
+			            </div>
+			        </div>
+			    </div>
+			</div>"
+			```
+		lineageTag: eccb5f17-1341-463a-8b29-b038fca98060
+
+	measure 'Adjustment $ (Net) (R12)' =
+			
+			CALCULATE(
+			    SUM(Fact_PartsAdjustments[CostValue]),  // Direct sum (includes positive and negative)
+			    DATESINPERIOD(
+			        dim_DateTable[Date],
+			        MAX(Fact_PartsAdjustments[TransDatetime]),
+			        -12,
+			        MONTH
+			    )
+			)
+		lineageTag: 4b26a0f7-d48a-4765-9329-db40e604e1ff
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Adjust $ / Inv $ (Net) (R12)' =
+			
+			DIVIDE([Adjustment $ (Net) (R12)], [Total Inventory $], 0)
+		lineageTag: c048630f-b979-428b-9446-e829446c1172
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Adjustment Qty (Net) (R12)' =
+			
+			CALCULATE(
+			    SUM(Fact_PartsAdjustments[Qty]),  // Direct sum (includes positive and negative)
+			    DATESINPERIOD(
+			        dim_DateTable[Date],
+			        MAX(Fact_PartsAdjustments[TransDatetime]),
+			        -12,
+			        MONTH
+			    )
+			)
+		lineageTag: 16364eeb-759f-46b7-8293-df2bd97981ff
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Adjust Qty / Inv Qty (Net) (R12)' =
+			
+			DIVIDE([Adjustment Qty (Net) (R12)], [On Hand Qty], 0)
+		lineageTag: d07bc311-c2de-4680-8ff5-f6e00fcdef5e
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Positive Adjustment Lines (R12)' =
+			
+			CALCULATE(
+			    COUNTROWS(Fact_PartsAdjustments),
+			    DATESINPERIOD(
+			        dim_DateTable[Date],
+			        MAX(Fact_PartsAdjustments[TransDatetime]),
+			        -12,
+			        MONTH
+			    ),
+			    Fact_PartsAdjustments[Qty] > 0
+			)
+		formatString: 0
+		lineageTag: 7ab5c846-c1a1-4d0e-97ca-edd2737e44f1
+
+	measure 'Negative Adjustment Lines (R12)' =
+			
+			CALCULATE(
+			    COUNTROWS(Fact_PartsAdjustments),
+			    DATESINPERIOD(
+			        dim_DateTable[Date],
+			        MAX(Fact_PartsAdjustments[TransDatetime]),
+			        -12,
+			        MONTH
+			    ),
+			    Fact_PartsAdjustments[Qty] < 0
+			)
+		formatString: 0
+		lineageTag: 9c62c8de-9a94-43ba-9cb0-4af0de30dbd1
+
+	measure 'Adjustment Lines (Net) (R12)' =
+			
+			[Positive Adjustment Lines (R12)] - [Negative Adjustment Lines (R12)]
+		formatString: 0
+		lineageTag: 41e9a3fc-9a3c-4c9c-bbd7-cda6cf8efe4e
+
+	measure 'Adjust Lines / Inv Lines (Net) (R12)' =
+			
+			DIVIDE([Adjustment Lines (Net) (R12)], [Total Parts], 0)
+		lineageTag: 0087c9a3-b783-470c-850d-b7980e5fec5e
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Page 1 - Hero Card (Net)' = ```
+			
+			VAR NetAdjustments = [Adjustment $ (Net) (R12)]
+			VAR TotalInventory = [Total Inventory $]
+			VAR PctDollarsNet = [Adjust $ / Inv $ (Net) (R12)]
+			
+			VAR NetQty = [Adjustment Qty (Net) (R12)]
+			VAR OnHandQty = [On Hand Qty]
+			VAR PctQtyNet = [Adjust Qty / Inv Qty (Net) (R12)]
+			
+			VAR NetLines = [Adjustment Lines (Net) (R12)]
+			VAR TotalParts = [Total Parts]
+			VAR PctLinesNet = [Adjust Lines / Inv Lines (Net) (R12)]
+			
+			// Determine if values are positive or negative for color coding
+			VAR DollarsColor = IF(NetAdjustments >= 0, "#4ade80", "#ef4444")
+			VAR QtyColor = IF(NetQty >= 0, "#4ade80", "#ef4444")
+			VAR LinesColor = IF(NetLines >= 0, "#4ade80", "#ef4444")
+			
+			// Number formatting for display
+			VAR AdjText = 
+			    IF(ABS(NetAdjustments) >= 1000000,
+			        IF(NetAdjustments >= 0, "", "-") & "$" & FORMAT(ABS(NetAdjustments)/1000000, "#,##0.0") & "M",
+			        IF(NetAdjustments >= 0, "", "-") & "$" & FORMAT(ABS(NetAdjustments)/1000, "#,##0.0") & "K"
+			    )
+			VAR InvText = 
+			    IF(TotalInventory >= 1000000,
+			        "$" & FORMAT(TotalInventory/1000000, "#,##0.0") & "M",
+			        "$" & FORMAT(TotalInventory/1000, "#,##0") & "K"
+			    )
+			VAR QtyText = 
+			    IF(ABS(NetQty) >= 1000000,
+			        FORMAT(NetQty/1000000, "#,##0.0") & "M",
+			        IF(ABS(NetQty) >= 1000,
+			            FORMAT(NetQty/1000, "#,##0") & "K",
+			            FORMAT(NetQty, "#,##0")
+			        )
+			    )
+			VAR OnHandText = 
+			    IF(OnHandQty >= 1000000,
+			        FORMAT(OnHandQty/1000000, "#,##0.0") & "M",
+			        FORMAT(OnHandQty/1000, "#,##0") & "K"
+			    )
+			VAR LinesText = 
+			    IF(ABS(NetLines) >= 1000,
+			        FORMAT(NetLines/1000, "#,##0") & "K",
+			        FORMAT(NetLines, "#,##0")
+			    )
+			VAR PartsText = 
+			    IF(TotalParts >= 1000000,
+			        FORMAT(TotalParts/1000000, "#,##0.0") & "M",
+			        FORMAT(TotalParts/1000, "#,##0") & "K"
+			    )
+			
+			RETURN
+			"<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    padding: 25px 30px 25px 30px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 12px;
+			    box-shadow: 0 8px 24px rgba(0,0,0,0);
+			    color: white;
+			    min-height: 160px;
+			'>
+			    <!-- Main Metrics Row -->
+			    <div style='display: flex; justify-content: space-around; align-items: center; gap: 20px;'>
+			        
+			        <!-- Section 1: Net Adjustments $ -->
+			        <div style='flex: 1; text-align: center;'>
+			            <div style='font-size: 18px; text-transform: uppercase; letter-spacing: 1.5px; opacity: 0.8; margin-bottom: 8px;'>
+			                Adjustment $ (Net) (R12)
+			            </div>
+			            <div style='font-size: 42px; font-weight: 700; line-height: 1; margin-bottom: 6px; color: " & DollarsColor & ";'>
+			                " & AdjText & "
+			            </div>
+			            <div style='font-size: 18px; opacity: 0.75;'>
+			                Total Inventory $: " & InvText & "
+			            </div>
+			            <div style='font-size: 18px; opacity: 0.75; margin-top: 4px;'>
+			                Adjust $ / Inv $ (Net) (R12): " & FORMAT(PctDollarsNet, "0.0%") & "
+			            </div>
+			        </div>
+			        
+			        <!-- Section 2: Net Qty -->
+			        <div style='flex: 1; text-align: center; border-left: 1px solid rgba(255,255,255,0.2); padding-left: 20px;'>
+			            <div style='font-size: 18px; text-transform: uppercase; letter-spacing: 1.5px; opacity: 0.8; margin-bottom: 8px;'>
+			                Adjustment Qty (Net) (R12)
+			            </div>
+			            <div style='font-size: 42px; font-weight: 700; line-height: 1; margin-bottom: 6px; color: " & QtyColor & ";'>
+			                " & QtyText & "
+			            </div>
+			            <div style='font-size: 18px; opacity: 0.75;'>
+			                On Hand Qty: " & OnHandText & "
+			            </div>
+			            <div style='font-size: 18px; opacity: 0.75; margin-top: 4px;'>
+			                Adjust Qty / Inv Qty (Net) (R12): " & FORMAT(PctQtyNet, "0.0%") & "
+			            </div>
+			        </div>
+			        
+			        <!-- Section 3: Net Lines -->
+			        <div style='flex: 1; text-align: center; border-left: 1px solid rgba(255,255,255,0.2); padding-left: 20px;'>
+			            <div style='font-size: 18px; text-transform: uppercase; letter-spacing: 1.5px; opacity: 0.8; margin-bottom: 8px;'>
+			                Adjustment Lines (Net) (R12)
+			            </div>
+			            <div style='font-size: 42px; font-weight: 700; line-height: 1; margin-bottom: 6px; color: " & LinesColor & ";'>
+			                " & LinesText & "
+			            </div>
+			            <div style='font-size: 18px; opacity: 0.75;'>
+			                Total Parts: " & PartsText & "
+			            </div>
+			            <div style='font-size: 18px; opacity: 0.75; margin-top: 4px;'>
+			                Adjust Lines / Inv Lines (Net) (R12): " & FORMAT(PctLinesNet, "0.0%") & "
+			            </div>
+			        </div>
+			    </div>
+			</div>"
+			
+			```
+		lineageTag: 275387b7-7ea9-4c8a-9d66-57635d0fdece
+
+	measure _SelectedMetric =
+			
+			SELECTEDVALUE(MetricSelector[MetricType], "Dollar")
+		lineageTag: 7101fedc-665f-4b10-8b51-76d732ef30cc
+
+	measure _DynamicTotal =
+			
+			SWITCH(
+			    [_SelectedMetric],
+			    "Dollar", [Total Adjustments $ (R12)],
+			    "Qty", [Total Qty (R12)],
+			    "Lines", [Total Adjustment Lines (R12)],
+			    BLANK()
+			)
+		formatString: #,0.00
+		lineageTag: 0f520c9e-4e82-4fb9-a600-30de0fe1ce9f
+
+	measure _DynamicPositive =
+			
+			SWITCH(
+			    [_SelectedMetric],
+			    "Dollar", [Positive Adjustment $ (R12)],
+			    "Qty", [Positive Qty (R12)],
+			    "Lines", [Positive Adjustment Lines (R12)],
+			    BLANK()
+			)
+		formatString: #,0.00
+		lineageTag: 88d02de9-0242-4813-b535-b81e955651de
+
+	measure _DynamicNegative =
+			
+			SWITCH(
+			    [_SelectedMetric],
+			    "Dollar", ABS([Negative Adjustment $ (R12)]),
+			    "Qty", ABS([Negative Qty (R12)]),
+			    "Lines", ABS([Negative Adjustment Lines (R12)]),
+			    BLANK()
+			)
+		formatString: #,0.00
+		lineageTag: 58b1342a-fe48-473e-ae53-a59fe4fe50cc
+
+	measure _FormatValue = ```
+			
+			VAR SelectedMetric = [_SelectedMetric]
+			VAR _Value = [_DynamicTotal]
+			RETURN
+			SWITCH(
+			    SelectedMetric,
+			    "Dollar", 
+			        IF(_Value >= 1000000, 
+			            FORMAT(_Value / 1000000, "$0.00M"),
+			            FORMAT(_Value / 1000, "$0K")
+			        ),
+			    "Qty",
+			        IF(_Value >= 1000000,
+			            FORMAT(_Value / 1000000, "0.00M"),
+			            FORMAT(_Value / 1000, "0K")
+			        ),
+			    "Lines",
+			        IF(_Value >= 1000,
+			            FORMAT(_Value / 1000, "0K"),
+			            FORMAT(_Value, "#,##0")
+			        ),
+			    ""
+			)
+			```
+		lineageTag: 48c5b232-6d97-454c-82a1-31fbbbff7864
+
+	measure 'HTML - PA Type Cards' =
+			
+			VAR SelectedMetric = [_SelectedMetric]
+			
+			// For display values - use absolute sums (switches based on metric)
+			VAR StockCheckPos = CALCULATE([_DynamicPositive], dim_AdjustmentType[AdjustmentTypeName] = "Stock Check")
+			VAR StockCheckNeg = CALCULATE([_DynamicNegative], dim_AdjustmentType[AdjustmentTypeName] = "Stock Check")
+			VAR StockCheckTotal = StockCheckPos + StockCheckNeg
+			
+			VAR CountOffPos = CALCULATE([_DynamicPositive], dim_AdjustmentType[AdjustmentTypeName] = "Count Off")
+			VAR CountOffNeg = CALCULATE([_DynamicNegative], dim_AdjustmentType[AdjustmentTypeName] = "Count Off")
+			VAR CountOffTotal = CountOffPos + CountOffNeg
+			
+			VAR CustomerBINPos = CALCULATE([_DynamicPositive], dim_AdjustmentType[AdjustmentTypeName] = "Customer BIN")
+			VAR CustomerBINNeg = CALCULATE([_DynamicNegative], dim_AdjustmentType[AdjustmentTypeName] = "Customer BIN")
+			VAR CustomerBINTotal = CustomerBINPos + CustomerBINNeg
+			
+			VAR OveragePos = CALCULATE([_DynamicPositive], dim_AdjustmentType[AdjustmentTypeName] = "Overage")
+			VAR OverageNeg = CALCULATE([_DynamicNegative], dim_AdjustmentType[AdjustmentTypeName] = "Overage")
+			VAR OverageTotal = OveragePos + OverageNeg
+			
+			VAR DamagedPos = CALCULATE([_DynamicPositive], dim_AdjustmentType[AdjustmentTypeName] = "Damaged")
+			VAR DamagedNeg = CALCULATE([_DynamicNegative], dim_AdjustmentType[AdjustmentTypeName] = "Damaged")
+			VAR DamagedTotal = DamagedPos + DamagedNeg
+			
+			VAR LostPos = CALCULATE([_DynamicPositive], dim_AdjustmentType[AdjustmentTypeName] = "Lost")
+			VAR LostNeg = CALCULATE([_DynamicNegative], dim_AdjustmentType[AdjustmentTypeName] = "Lost")
+			VAR LostTotal = LostPos + LostNeg
+			
+			// Get the grand total for percentage calculation (automatically switches based on metric)
+			VAR GrandTotal = [_DynamicTotal]
+			
+			// Calculate percentages dynamically based on selected metric
+			VAR StockCheckPct = DIVIDE(StockCheckTotal, GrandTotal, 0)
+			VAR CountOffPct = DIVIDE(CountOffTotal, GrandTotal, 0)
+			VAR CustomerBINPct = DIVIDE(CustomerBINTotal, GrandTotal, 0)
+			VAR OveragePct = DIVIDE(OverageTotal, GrandTotal, 0)
+			VAR DamagedPct = DIVIDE(DamagedTotal, GrandTotal, 0)
+			VAR LostPct = DIVIDE(LostTotal, GrandTotal, 0)
+			
+			// Stock Check formatting
+			VAR StockCheckTotalFmt = IF(SelectedMetric = "Dollar", IF(StockCheckTotal >= 1000000, FORMAT(StockCheckTotal/1000000, "$0.00M"), FORMAT(StockCheckTotal/1000, "$0K")), IF(SelectedMetric = "Qty", IF(StockCheckTotal >= 1000, FORMAT(StockCheckTotal/1000, "0K"), FORMAT(StockCheckTotal, "#,##0")), FORMAT(StockCheckTotal, "#,##0")))
+			VAR StockCheckPosFmt = IF(SelectedMetric = "Dollar", IF(StockCheckPos >= 1000000, FORMAT(StockCheckPos/1000000, "$0.00M"), FORMAT(StockCheckPos/1000, "$0K")), IF(SelectedMetric = "Qty", IF(StockCheckPos >= 1000, FORMAT(StockCheckPos/1000, "0K"), FORMAT(StockCheckPos, "#,##0")), FORMAT(StockCheckPos, "#,##0")))
+			VAR StockCheckNegFmt = IF(SelectedMetric = "Dollar", IF(StockCheckNeg >= 1000000, FORMAT(StockCheckNeg/1000000, "$0.00M"), FORMAT(StockCheckNeg/1000, "$0K")), IF(SelectedMetric = "Qty", IF(StockCheckNeg >= 1000, FORMAT(StockCheckNeg/1000, "0K"), FORMAT(StockCheckNeg, "#,##0")), FORMAT(StockCheckNeg, "#,##0")))
+			
+			// Count Off formatting
+			VAR CountOffTotalFmt = IF(SelectedMetric = "Dollar", IF(CountOffTotal >= 1000000, FORMAT(CountOffTotal/1000000, "$0.00M"), FORMAT(CountOffTotal/1000, "$0K")), IF(SelectedMetric = "Qty", IF(CountOffTotal >= 1000, FORMAT(CountOffTotal/1000, "0K"), FORMAT(CountOffTotal, "#,##0")), FORMAT(CountOffTotal, "#,##0")))
+			VAR CountOffPosFmt = IF(SelectedMetric = "Dollar", IF(CountOffPos >= 1000000, FORMAT(CountOffPos/1000000, "$0.00M"), FORMAT(CountOffPos/1000, "$0K")), IF(SelectedMetric = "Qty", IF(CountOffPos >= 1000, FORMAT(CountOffPos/1000, "0K"), FORMAT(CountOffPos, "#,##0")), FORMAT(CountOffPos, "#,##0")))
+			VAR CountOffNegFmt = IF(SelectedMetric = "Dollar", IF(CountOffNeg >= 1000000, FORMAT(CountOffNeg/1000000, "$0.00M"), FORMAT(CountOffNeg/1000, "$0K")), IF(SelectedMetric = "Qty", IF(CountOffNeg >= 1000, FORMAT(CountOffNeg/1000, "0K"), FORMAT(CountOffNeg, "#,##0")), FORMAT(CountOffNeg, "#,##0")))
+			
+			// Customer BIN formatting
+			VAR CustomerBINTotalFmt = IF(SelectedMetric = "Dollar", IF(CustomerBINTotal >= 1000000, FORMAT(CustomerBINTotal/1000000, "$0.00M"), FORMAT(CustomerBINTotal/1000, "$0K")), IF(SelectedMetric = "Qty", IF(CustomerBINTotal >= 1000, FORMAT(CustomerBINTotal/1000, "0K"), FORMAT(CustomerBINTotal, "#,##0")), FORMAT(CustomerBINTotal, "#,##0")))
+			VAR CustomerBINPosFmt = IF(SelectedMetric = "Dollar", IF(CustomerBINPos >= 1000000, FORMAT(CustomerBINPos/1000000, "$0.00M"), FORMAT(CustomerBINPos/1000, "$0K")), IF(SelectedMetric = "Qty", IF(CustomerBINPos >= 1000, FORMAT(CustomerBINPos/1000, "0K"), FORMAT(CustomerBINPos, "#,##0")), FORMAT(CustomerBINPos, "#,##0")))
+			VAR CustomerBINNegFmt = IF(SelectedMetric = "Dollar", IF(CustomerBINNeg >= 1000000, FORMAT(CustomerBINNeg/1000000, "$0.00M"), FORMAT(CustomerBINNeg/1000, "$0K")), IF(SelectedMetric = "Qty", IF(CustomerBINNeg >= 1000, FORMAT(CustomerBINNeg/1000, "0K"), FORMAT(CustomerBINNeg, "#,##0")), FORMAT(CustomerBINNeg, "#,##0")))
+			
+			// Overage formatting
+			VAR OverageTotalFmt = IF(SelectedMetric = "Dollar", IF(OverageTotal >= 1000000, FORMAT(OverageTotal/1000000, "$0.00M"), FORMAT(OverageTotal/1000, "$0K")), IF(SelectedMetric = "Qty", IF(OverageTotal >= 1000, FORMAT(OverageTotal/1000, "0K"), FORMAT(OverageTotal, "#,##0")), FORMAT(OverageTotal, "#,##0")))
+			VAR OveragePosFmt = IF(SelectedMetric = "Dollar", IF(OveragePos >= 1000000, FORMAT(OveragePos/1000000, "$0.00M"), FORMAT(OveragePos/1000, "$0K")), IF(SelectedMetric = "Qty", IF(OveragePos >= 1000, FORMAT(OveragePos/1000, "0K"), FORMAT(OveragePos, "#,##0")), FORMAT(OveragePos, "#,##0")))
+			VAR OverageNegFmt = IF(SelectedMetric = "Dollar", IF(OverageNeg >= 1000000, FORMAT(OverageNeg/1000000, "$0.00M"), FORMAT(OverageNeg/1000, "$0K")), IF(SelectedMetric = "Qty", IF(OverageNeg >= 1000, FORMAT(OverageNeg/1000, "0K"), FORMAT(OverageNeg, "#,##0")), FORMAT(OverageNeg, "#,##0")))
+			
+			// Damaged formatting
+			VAR DamagedTotalFmt = IF(SelectedMetric = "Dollar", IF(DamagedTotal >= 1000000, FORMAT(DamagedTotal/1000000, "$0.00M"), FORMAT(DamagedTotal/1000, "$0K")), IF(SelectedMetric = "Qty", IF(DamagedTotal >= 1000, FORMAT(DamagedTotal/1000, "0K"), FORMAT(DamagedTotal, "#,##0")), FORMAT(DamagedTotal, "#,##0")))
+			VAR DamagedPosFmt = IF(SelectedMetric = "Dollar", IF(DamagedPos >= 1000000, FORMAT(DamagedPos/1000000, "$0.00M"), FORMAT(DamagedPos/1000, "$0K")), IF(SelectedMetric = "Qty", IF(DamagedPos >= 1000, FORMAT(DamagedPos/1000, "0K"), FORMAT(DamagedPos, "#,##0")), FORMAT(DamagedPos, "#,##0")))
+			VAR DamagedNegFmt = IF(SelectedMetric = "Dollar", IF(DamagedNeg >= 1000000, FORMAT(DamagedNeg/1000000, "$0.00M"), FORMAT(DamagedNeg/1000, "$0K")), IF(SelectedMetric = "Qty", IF(DamagedNeg >= 1000, FORMAT(DamagedNeg/1000, "0K"), FORMAT(DamagedNeg, "#,##0")), FORMAT(DamagedNeg, "#,##0")))
+			
+			// Lost formatting
+			VAR LostTotalFmt = IF(SelectedMetric = "Dollar", IF(LostTotal >= 1000000, FORMAT(LostTotal/1000000, "$0.00M"), FORMAT(LostTotal/1000, "$0K")), IF(SelectedMetric = "Qty", IF(LostTotal >= 1000, FORMAT(LostTotal/1000, "0K"), FORMAT(LostTotal, "#,##0")), FORMAT(LostTotal, "#,##0")))
+			VAR LostPosFmt = IF(SelectedMetric = "Dollar", IF(LostPos >= 1000000, FORMAT(LostPos/1000000, "$0.00M"), FORMAT(LostPos/1000, "$0K")), IF(SelectedMetric = "Qty", IF(LostPos >= 1000, FORMAT(LostPos/1000, "0K"), FORMAT(LostPos, "#,##0")), FORMAT(LostPos, "#,##0")))
+			VAR LostNegFmt = IF(SelectedMetric = "Dollar", IF(LostNeg >= 1000000, FORMAT(LostNeg/1000000, "$0.00M"), FORMAT(LostNeg/1000, "$0K")), IF(SelectedMetric = "Qty", IF(LostNeg >= 1000, FORMAT(LostNeg/1000, "0K"), FORMAT(LostNeg, "#,##0")), FORMAT(LostNeg, "#,##0")))
+			
+			RETURN
+			"<!DOCTYPE html>
+			<html>
+			<head>
+			<style>
+			    body { margin: 0; padding: 15px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: transparent; }
+			    .container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+			    .pa-card { background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%); border-radius: 12px; padding: 16px; color: white; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0); transition: transform 0.2s ease; }
+			    .pa-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+			    .pa-header { display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 10px; }
+			    .pa-icon { font-size: 16px; opacity: 0.85; }
+			    .pa-type-name { font-size: 16px; font-weight: 600; letter-spacing: 0.5px; opacity: 0.95; text-transform: uppercase; }
+			    .pa-value { font-size: 32px; font-weight: 700; margin-bottom: 6px; line-height: 1; }
+			    .pa-percentage { font-size: 18px; font-weight: 500; opacity: 0.85; margin-bottom: 12px; }
+			    .pa-split { font-size: 16px; opacity: 0.75; border-top: 1px solid rgba(255,255,255,0.25); padding-top: 10px; display: flex; justify-content: space-between; gap: 8px; }
+			    .pa-split-item { flex: 1; }
+			    .split-label { display: block; font-size: 14px; opacity: 0.7; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.5px; }
+			    .split-value { display: block; font-size: 18px; font-weight: 600; }
+			    .negative-arrow { color: #ff6b6b; text-shadow: 0 1px 3px rgba(0,0,0,0.4); }
+			    .positive-arrow { color: #4ade80; text-shadow: 0 1px 3px rgba(0,0,0,0.4); }
+			    .pa-card.large .pa-value { font-size: 30px; }
+			    .pa-card.medium .pa-value { font-size: 30px; }
+			    .pa-card.small .pa-value { font-size: 28px; }
+			</style>
+			</head>
+			<body>
+			<div class='container'>
+			    <div class='pa-card large'>
+			        <div class='pa-header'>
+			            <span class='pa-icon'>📋</span>
+			            <span class='pa-type-name'>Stock Check</span>
+			        </div>
+			        <div class='pa-value'>" & StockCheckTotalFmt & "</div>
+			        <div class='pa-percentage'>" & FORMAT(StockCheckPct, "0.0%") & " of total</div>
+			        <div class='pa-split'>
+			            <div class='pa-split-item'>
+			                <span class='split-label'>Positive</span>
+			                <span class='split-value positive-arrow'>↑ " & StockCheckPosFmt & "</span>
+			            </div>
+			            <div class='pa-split-item'>
+			                <span class='split-label'>Negative</span>
+			                <span class='split-value negative-arrow'>↓ " & StockCheckNegFmt & "</span>
+			            </div>
+			        </div>
+			    </div>
+			    <div class='pa-card medium'>
+			        <div class='pa-header'>
+			            <span class='pa-icon'>🔢</span>
+			            <span class='pa-type-name'>Count Off</span>
+			        </div>
+			        <div class='pa-value'>" & CountOffTotalFmt & "</div>
+			        <div class='pa-percentage'>" & FORMAT(CountOffPct, "0.0%") & " of total</div>
+			        <div class='pa-split'>
+			            <div class='pa-split-item'>
+			                <span class='split-label'>Positive</span>
+			                <span class='split-value positive-arrow'>↑ " & CountOffPosFmt & "</span>
+			            </div>
+			            <div class='pa-split-item'>
+			                <span class='split-label'>Negative</span>
+			                <span class='split-value negative-arrow'>↓ " & CountOffNegFmt & "</span>
+			            </div>
+			        </div>
+			    </div>
+			    <div class='pa-card small'>
+			        <div class='pa-header'>
+			            <span class='pa-icon'>👤</span>
+			            <span class='pa-type-name'>Customer BIN</span>
+			        </div>
+			        <div class='pa-value'>" & CustomerBINTotalFmt & "</div>
+			        <div class='pa-percentage'>" & FORMAT(CustomerBINPct, "0.0%") & " of total</div>
+			        <div class='pa-split'>
+			            <div class='pa-split-item'>
+			                <span class='split-label'>Positive</span>
+			                <span class='split-value positive-arrow'>↑ " & CustomerBINPosFmt & "</span>
+			            </div>
+			            <div class='pa-split-item'>
+			                <span class='split-label'>Negative</span>
+			                <span class='split-value negative-arrow'>↓ " & CustomerBINNegFmt & "</span>
+			            </div>
+			        </div>
+			    </div>
+			    <div class='pa-card small'>
+			        <div class='pa-header'>
+			            <span class='pa-icon'>📦</span>
+			            <span class='pa-type-name'>Overage</span>
+			        </div>
+			        <div class='pa-value'>" & OverageTotalFmt & "</div>
+			        <div class='pa-percentage'>" & FORMAT(OveragePct, "0.0%") & " of total</div>
+			        <div class='pa-split'>
+			            <div class='pa-split-item'>
+			                <span class='split-label'>Positive</span>
+			                <span class='split-value positive-arrow'>↑ " & OveragePosFmt & "</span>
+			            </div>
+			            <div class='pa-split-item'>
+			                <span class='split-label'>Negative</span>
+			                <span class='split-value negative-arrow'>↓ " & OverageNegFmt & "</span>
+			            </div>
+			        </div>
+			    </div>
+			    <div class='pa-card small'>
+			        <div class='pa-header'>
+			            <span class='pa-icon'>💔</span>
+			            <span class='pa-type-name'>Damaged</span>
+			        </div>
+			        <div class='pa-value'>" & DamagedTotalFmt & "</div>
+			        <div class='pa-percentage'>" & FORMAT(DamagedPct, "0.0%") & " of total</div>
+			        <div class='pa-split'>
+			            <div class='pa-split-item'>
+			                <span class='split-label'>Positive</span>
+			                <span class='split-value positive-arrow'>↑ " & DamagedPosFmt & "</span>
+			            </div>
+			            <div class='pa-split-item'>
+			                <span class='split-label'>Negative</span>
+			                <span class='split-value negative-arrow'>↓ " & DamagedNegFmt & "</span>
+			            </div>
+			        </div>
+			    </div>
+			    <div class='pa-card small'>
+			        <div class='pa-header'>
+			            <span class='pa-icon'>🔍</span>
+			            <span class='pa-type-name'>Lost</span>
+			        </div>
+			        <div class='pa-value'>" & LostTotalFmt & "</div>
+			        <div class='pa-percentage'>" & FORMAT(LostPct, "0.0%") & " of total</div>
+			        <div class='pa-split'>
+			            <div class='pa-split-item'>
+			                <span class='split-label'>Positive</span>
+			                <span class='split-value positive-arrow'>↑ " & LostPosFmt & "</span>
+			            </div>
+			            <div class='pa-split-item'>
+			                <span class='split-label'>Negative</span>
+			                <span class='split-value negative-arrow'>↓ " & LostNegFmt & "</span>
+			            </div>
+			        </div>
+			    </div>
+			</div>
+			</body>
+			</html>"
+		lineageTag: 1cf5d29d-3baf-45cf-b055-79065bf8fe2f
+
+	measure 'HTML - PA Type Big Three' = ```
+			
+			VAR SelectedMetric = [_SelectedMetric]
+			
+			// Top 3 calculations
+			VAR StockCheckTotal = CALCULATE([_DynamicTotal], dim_AdjustmentType[AdjustmentTypeName] = "Stock Check")
+			VAR StockCheckPos = CALCULATE([_DynamicPositive], dim_AdjustmentType[AdjustmentTypeName] = "Stock Check")
+			VAR StockCheckNeg = CALCULATE([_DynamicNegative], dim_AdjustmentType[AdjustmentTypeName] = "Stock Check")
+			VAR StockCheckPct = DIVIDE(StockCheckTotal, [_DynamicTotal], 0)
+			
+			VAR CountOffTotal = CALCULATE([_DynamicTotal], dim_AdjustmentType[AdjustmentTypeName] = "Count Off")
+			VAR CountOffPos = CALCULATE([_DynamicPositive], dim_AdjustmentType[AdjustmentTypeName] = "Count Off")
+			VAR CountOffNeg = CALCULATE([_DynamicNegative], dim_AdjustmentType[AdjustmentTypeName] = "Count Off")
+			VAR CountOffPct = DIVIDE(CountOffTotal, [_DynamicTotal], 0)
+			
+			VAR CustomerBINTotal = CALCULATE([_DynamicTotal], dim_AdjustmentType[AdjustmentTypeName] = "Customer BIN")
+			VAR CustomerBINPos = CALCULATE([_DynamicPositive], dim_AdjustmentType[AdjustmentTypeName] = "Customer BIN")
+			VAR CustomerBINNeg = CALCULATE([_DynamicNegative], dim_AdjustmentType[AdjustmentTypeName] = "Customer BIN")
+			VAR CustomerBINPct = DIVIDE(CustomerBINTotal, [_DynamicTotal], 0)
+			
+			// Others calculations
+			VAR OverageTotal = CALCULATE([_DynamicTotal], dim_AdjustmentType[AdjustmentTypeName] = "Overage")
+			VAR OveragePct = DIVIDE(OverageTotal, [_DynamicTotal], 0)
+			VAR DamagedTotal = CALCULATE([_DynamicTotal], dim_AdjustmentType[AdjustmentTypeName] = "Damaged")
+			VAR DamagedPct = DIVIDE(DamagedTotal, [_DynamicTotal], 0)
+			VAR LostTotal = CALCULATE([_DynamicTotal], dim_AdjustmentType[AdjustmentTypeName] = "Lost")
+			VAR LostPct = DIVIDE(LostTotal, [_DynamicTotal], 0)
+			
+			VAR OthersTotal = OverageTotal + DamagedTotal + LostTotal
+			VAR OthersPos = 
+			    CALCULATE([_DynamicPositive], dim_AdjustmentType[AdjustmentTypeName] = "Overage") +
+			    CALCULATE([_DynamicPositive], dim_AdjustmentType[AdjustmentTypeName] = "Damaged") +
+			    CALCULATE([_DynamicPositive], dim_AdjustmentType[AdjustmentTypeName] = "Lost")
+			VAR OthersNeg = 
+			    CALCULATE([_DynamicNegative], dim_AdjustmentType[AdjustmentTypeName] = "Overage") +
+			    CALCULATE([_DynamicNegative], dim_AdjustmentType[AdjustmentTypeName] = "Damaged") +
+			    CALCULATE([_DynamicNegative], dim_AdjustmentType[AdjustmentTypeName] = "Lost")
+			
+			// Stock Check formatting
+			VAR StockCheckTotalFmt = IF(SelectedMetric = "Dollar", IF(StockCheckTotal >= 1000000, FORMAT(StockCheckTotal/1000000, "$0.00M"), FORMAT(StockCheckTotal/1000, "$0K")), IF(SelectedMetric = "Qty", IF(StockCheckTotal >= 1000, FORMAT(StockCheckTotal/1000, "0K"), FORMAT(StockCheckTotal, "#,##0")), FORMAT(StockCheckTotal, "#,##0")))
+			VAR StockCheckPosFmt = IF(SelectedMetric = "Dollar", IF(StockCheckPos >= 1000000, FORMAT(StockCheckPos/1000000, "$0.00M"), FORMAT(StockCheckPos/1000, "$0K")), IF(SelectedMetric = "Qty", IF(StockCheckPos >= 1000, FORMAT(StockCheckPos/1000, "0K"), FORMAT(StockCheckPos, "#,##0")), FORMAT(StockCheckPos, "#,##0")))
+			VAR StockCheckNegFmt = IF(SelectedMetric = "Dollar", IF(StockCheckNeg >= 1000000, FORMAT(StockCheckNeg/1000000, "$0.00M"), FORMAT(StockCheckNeg/1000, "$0K")), IF(SelectedMetric = "Qty", IF(StockCheckNeg >= 1000, FORMAT(StockCheckNeg/1000, "0K"), FORMAT(StockCheckNeg, "#,##0")), FORMAT(StockCheckNeg, "#,##0")))
+			
+			// Count Off formatting
+			VAR CountOffTotalFmt = IF(SelectedMetric = "Dollar", IF(CountOffTotal >= 1000000, FORMAT(CountOffTotal/1000000, "$0.00M"), FORMAT(CountOffTotal/1000, "$0K")), IF(SelectedMetric = "Qty", IF(CountOffTotal >= 1000, FORMAT(CountOffTotal/1000, "0K"), FORMAT(CountOffTotal, "#,##0")), FORMAT(CountOffTotal, "#,##0")))
+			VAR CountOffPosFmt = IF(SelectedMetric = "Dollar", IF(CountOffPos >= 1000000, FORMAT(CountOffPos/1000000, "$0.00M"), FORMAT(CountOffPos/1000, "$0K")), IF(SelectedMetric = "Qty", IF(CountOffPos >= 1000, FORMAT(CountOffPos/1000, "0K"), FORMAT(CountOffPos, "#,##0")), FORMAT(CountOffPos, "#,##0")))
+			VAR CountOffNegFmt = IF(SelectedMetric = "Dollar", IF(CountOffNeg >= 1000000, FORMAT(CountOffNeg/1000000, "$0.00M"), FORMAT(CountOffNeg/1000, "$0K")), IF(SelectedMetric = "Qty", IF(CountOffNeg >= 1000, FORMAT(CountOffNeg/1000, "0K"), FORMAT(CountOffNeg, "#,##0")), FORMAT(CountOffNeg, "#,##0")))
+			
+			// Customer BIN formatting
+			VAR CustomerBINTotalFmt = IF(SelectedMetric = "Dollar", IF(CustomerBINTotal >= 1000000, FORMAT(CustomerBINTotal/1000000, "$0.00M"), FORMAT(CustomerBINTotal/1000, "$0K")), IF(SelectedMetric = "Qty", IF(CustomerBINTotal >= 1000, FORMAT(CustomerBINTotal/1000, "0K"), FORMAT(CustomerBINTotal, "#,##0")), FORMAT(CustomerBINTotal, "#,##0")))
+			VAR CustomerBINPosFmt = IF(SelectedMetric = "Dollar", IF(CustomerBINPos >= 1000000, FORMAT(CustomerBINPos/1000000, "$0.00M"), FORMAT(CustomerBINPos/1000, "$0K")), IF(SelectedMetric = "Qty", IF(CustomerBINPos >= 1000, FORMAT(CustomerBINPos/1000, "0K"), FORMAT(CustomerBINPos, "#,##0")), FORMAT(CustomerBINPos, "#,##0")))
+			VAR CustomerBINNegFmt = IF(SelectedMetric = "Dollar", IF(CustomerBINNeg >= 1000000, FORMAT(CustomerBINNeg/1000000, "$0.00M"), FORMAT(CustomerBINNeg/1000, "$0K")), IF(SelectedMetric = "Qty", IF(CustomerBINNeg >= 1000, FORMAT(CustomerBINNeg/1000, "0K"), FORMAT(CustomerBINNeg, "#,##0")), FORMAT(CustomerBINNeg, "#,##0")))
+			
+			// Others formatting
+			VAR OverageTotalFmt = IF(SelectedMetric = "Dollar", IF(OverageTotal >= 1000000, FORMAT(OverageTotal/1000000, "$0.00M"), FORMAT(OverageTotal/1000, "$0K")), IF(SelectedMetric = "Qty", IF(OverageTotal >= 1000, FORMAT(OverageTotal/1000, "0K"), FORMAT(OverageTotal, "#,##0")), FORMAT(OverageTotal, "#,##0")))
+			VAR DamagedTotalFmt = IF(SelectedMetric = "Dollar", IF(DamagedTotal >= 1000000, FORMAT(DamagedTotal/1000000, "$0.00M"), FORMAT(DamagedTotal/1000, "$0K")), IF(SelectedMetric = "Qty", IF(DamagedTotal >= 1000, FORMAT(DamagedTotal/1000, "0K"), FORMAT(DamagedTotal, "#,##0")), FORMAT(DamagedTotal, "#,##0")))
+			VAR LostTotalFmt = IF(SelectedMetric = "Dollar", IF(LostTotal >= 1000000, FORMAT(LostTotal/1000000, "$0.00M"), FORMAT(LostTotal/1000, "$0K")), IF(SelectedMetric = "Qty", IF(LostTotal >= 1000, FORMAT(LostTotal/1000, "0K"), FORMAT(LostTotal, "#,##0")), FORMAT(LostTotal, "#,##0")))
+			VAR OthersTotalFmt = IF(SelectedMetric = "Dollar", IF(OthersTotal >= 1000000, FORMAT(OthersTotal/1000000, "$0.00M"), FORMAT(OthersTotal/1000, "$0K")), IF(SelectedMetric = "Qty", IF(OthersTotal >= 1000, FORMAT(OthersTotal/1000, "0K"), FORMAT(OthersTotal, "#,##0")), FORMAT(OthersTotal, "#,##0")))
+			VAR OthersPosFmt = IF(SelectedMetric = "Dollar", IF(OthersPos >= 1000000, FORMAT(OthersPos/1000000, "$0.00M"), FORMAT(OthersPos/1000, "$0K")), IF(SelectedMetric = "Qty", IF(OthersPos >= 1000, FORMAT(OthersPos/1000, "0K"), FORMAT(OthersPos, "#,##0")), FORMAT(OthersPos, "#,##0")))
+			VAR OthersNegFmt = IF(SelectedMetric = "Dollar", IF(OthersNeg >= 1000000, FORMAT(OthersNeg/1000000, "$0.00M"), FORMAT(OthersNeg/1000, "$0K")), IF(SelectedMetric = "Qty", IF(OthersNeg >= 1000, FORMAT(OthersNeg/1000, "0K"), FORMAT(OthersNeg, "#,##0")), FORMAT(OthersNeg, "#,##0")))
+			
+			RETURN
+			"<!DOCTYPE html>
+			<html>
+			<head>
+			<style>
+			    body { margin: 0; padding: 15px; font-family: 'Segoe UI'; background: transparent; }
+			    .grid-container { display: grid; grid-template-columns: 2fr 1fr; gap: 15px; }
+			    .section-title { font-size: 12px; font-weight: 700; color: #2c3e50; letter-spacing: 0.5px; margin-bottom: 12px; text-transform: uppercase; }
+			    .pa-card-large { background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%); border-radius: 12px; padding: 20px; color: white; margin-bottom: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+			    .pa-card-large .type-name { font-size: 13px; font-weight: 600; letter-spacing: 0.5px; opacity: 0.9; margin-bottom: 8px; }
+			    .pa-card-large .value-row { display: flex; justify-content: space-between; align-items: center; }
+			    .pa-card-large .value { font-size: 36px; font-weight: 700; line-height: 1; }
+			    .pa-card-large .percentage { font-size: 28px; font-weight: 700; opacity: 0.8; }
+			    .pa-card-large .split-info { display: flex; justify-content: space-between; margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.25); font-size: 12px; opacity: 0.8; }
+			    .pa-card-medium { background: linear-gradient(135deg, #2E5266 0%, #3A7CA5 100%); border-radius: 10px; padding: 16px; color: white; margin-bottom: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.12); }
+			    .pa-card-medium .type-name { font-size: 12px; font-weight: 600; opacity: 0.9; margin-bottom: 6px; }
+			    .pa-card-medium .value-row { display: flex; justify-content: space-between; align-items: center; }
+			    .pa-card-medium .value { font-size: 28px; font-weight: 700; }
+			    .pa-card-medium .percentage { font-size: 22px; font-weight: 700; opacity: 0.8; }
+			    .pa-card-medium .split-info { display: flex; justify-content: space-between; margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.25); font-size: 11px; opacity: 0.75; }
+			    .pa-card-small { background: linear-gradient(135deg, #3A7CA5 0%, #5A9AC8 100%); border-radius: 8px; padding: 14px; color: white; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+			    .pa-card-small .type-name { font-size: 11px; font-weight: 600; opacity: 0.9; margin-bottom: 6px; }
+			    .pa-card-small .value-row { display: flex; justify-content: space-between; align-items: center; }
+			    .pa-card-small .value { font-size: 22px; font-weight: 700; }
+			    .pa-card-small .percentage { font-size: 18px; font-weight: 700; opacity: 0.8; }
+			    .pa-card-small .split-info { display: flex; justify-content: space-between; margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.25); font-size: 10px; opacity: 0.7; }
+			    .others-container { background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border-radius: 12px; padding: 18px; box-shadow: 0 2px 4px rgba(0,0,0,0.08); }
+			    .others-container .section-title { color: #495057; margin-bottom: 15px; }
+			    .other-item { display: flex; justify-content: space-between; align-items: baseline; padding: 8px 0; border-bottom: 1px solid rgba(0,0,0,0.05); font-size: 12px; color: #495057; }
+			    .other-item:last-child { border-bottom: none; }
+			    .other-name { font-weight: 600; }
+			    .other-value { font-weight: 700; color: #2c3e50; }
+			    .positive-text { color: #22c55e; }
+			    .negative-text { color: #ef4444; }
+			</style>
+			</head>
+			<body>
+			<div class='grid-container'>
+			    <div>
+			        <div class='section-title'>Top Adjustment Types</div>
+			        <div class='pa-card-large'>
+			            <div class='type-name'>STOCK CHECK</div>
+			            <div class='value-row'>
+			                <div class='value'>" & StockCheckTotalFmt & "</div>
+			                <div class='percentage'>" & FORMAT(StockCheckPct, "0.0%") & "</div>
+			            </div>
+			            <div class='split-info'>
+			                <span class='positive-text'>↑ " & StockCheckPosFmt & " positive</span>
+			                <span class='negative-text'>↓ " & StockCheckNegFmt & " negative</span>
+			            </div>
+			        </div>
+			        <div class='pa-card-medium'>
+			            <div class='type-name'>COUNT OFF</div>
+			            <div class='value-row'>
+			                <div class='value'>" & CountOffTotalFmt & "</div>
+			                <div class='percentage'>" & FORMAT(CountOffPct, "0.0%") & "</div>
+			            </div>
+			            <div class='split-info'>
+			                <span class='positive-text'>↑ " & CountOffPosFmt & " positive</span>
+			                <span class='negative-text'>↓ " & CountOffNegFmt & " negative</span>
+			            </div>
+			        </div>
+			        <div class='pa-card-small'>
+			            <div class='type-name'>CUSTOMER BIN</div>
+			            <div class='value-row'>
+			                <div class='value'>" & CustomerBINTotalFmt & "</div>
+			                <div class='percentage'>" & FORMAT(CustomerBINPct, "0.0%") & "</div>
+			            </div>
+			            <div class='split-info'>
+			                <span class='positive-text'>↑ " & CustomerBINPosFmt & " pos</span>
+			                <span class='negative-text'>↓ " & CustomerBINNegFmt & " neg</span>
+			            </div>
+			        </div>
+			    </div>
+			    <div class='others-container'>
+			        <div class='section-title'>Other Types</div>
+			        <div class='other-item'>
+			            <span class='other-name'>Overage</span>
+			            <span class='other-value'>" & OverageTotalFmt & " (" & FORMAT(OveragePct, "0.0%") & ")</span>
+			        </div>
+			        <div class='other-item'>
+			            <span class='other-name'>Damaged</span>
+			            <span class='other-value'>" & DamagedTotalFmt & " (" & FORMAT(DamagedPct, "0.0%") & ")</span>
+			        </div>
+			        <div class='other-item'>
+			            <span class='other-name'>Lost</span>
+			            <span class='other-value'>" & LostTotalFmt & " (" & FORMAT(LostPct, "0.0%") & ")</span>
+			        </div>
+			        <div style='margin-top: 15px; padding-top: 15px; border-top: 2px solid rgba(0,0,0,0.1);'>
+			            <div style='display: flex; justify-content: space-between; font-size: 11px; color: #6c757d; margin-bottom: 4px;'>
+			                <span>Subtotal (Others):</span>
+			                <span style='font-weight: 700;'>" & OthersTotalFmt & "</span>
+			            </div>
+			            <div style='display: flex; justify-content: space-between; font-size: 10px; color: #6c757d;'>
+			                <span class='positive-text'>↑ " & OthersPosFmt & "</span>
+			                <span class='negative-text'>↓ " & OthersNegFmt & "</span>
+			            </div>
+			        </div>
+			    </div>
+			</div>
+			</body>
+			</html>"
+			```
+		lineageTag: 114356d8-c806-4e9a-896b-a224a9a11549
+
+	measure 'Details - Header' = ```
+			
+			// Get user name
+			VAR _User = USERPRINCIPALNAME()
+			VAR _Position = SEARCH("@", _User, 1)
+			VAR _Name = LEFT(_User, _Position - 1)
+			VAR _FirstLetter = UPPER(LEFT(_Name, 1))
+			VAR _LastName = MID(_Name, 2, LEN(_Name) - 1)
+			VAR _FormattedLastName = 
+			    UPPER(LEFT(_LastName, 1)) & LOWER(MID(_LastName, 2, LEN(_LastName)))
+			VAR WelcomeName = _FirstLetter & "." & _FormattedLastName
+			
+			// Get current date/time info
+			VAR CurrentDate = TODAY()
+			VAR DateDisplay = FORMAT(CurrentDate, "MMM D, YYYY")
+			VAR CurrentHour = HOUR(NOW())
+			VAR TimeGreeting = 
+			    IF(CurrentHour < 12, "Good Morning",
+			    IF(CurrentHour < 17, "Good Afternoon",
+			    "Good Evening"))
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    height: 85px;
+			    padding: 15px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 10px;
+			    color: white;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-between;
+			    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    box-sizing: border-box;
+			'>
+			    <!-- Left side: Dashboard Title -->
+			    <div style='display: flex; align-items: center; gap: 15px;'>
+			        <!-- Home icon -->
+			        <div style='
+			            width: 40px;
+			            height: 40px;
+			            background: rgba(255,255,255,0.15);
+			            border-radius: 8px;
+			            display: flex;
+			            align-items: center;
+			            justify-content: center;
+			            font-size: 20px;
+			        '>
+			            🏠
+			        </div>
+			        
+			        <!-- Title -->
+			        <div>
+			            <div style='font-size: 12px; opacity: 0.85; margin-bottom: 4px; letter-spacing: 0.5px;'>
+			                REPORT
+			            </div>
+			            <div style='font-size: 26px; font-weight: 700; line-height: 1;'>
+			                Parts Adjustments - Details
+			            </div>
+			        </div>
+			    </div>
+			    
+			    <!-- Right side: Welcome & Date -->
+			    <div style='text-align: right;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 6px;'>
+			            " & TimeGreeting & ", " & WelcomeName & "
+			        </div>
+			        <div style='font-size: 16px; font-weight: 600;'>
+			            📅 " & DateDisplay & "
+			        </div>
+			    </div>
+			</div>
+			"
+			```
+		lineageTag: 25262354-fa63-46d7-adff-36e922015e50
+
+	measure 'Selected Measure' =
+			
+			SWITCH(
+			    SELECTEDVALUE(MeasureSelector[MeasureIndex]),
+			    0, [Adjustment $ to Inventory $],
+			    1, [Adjustment Qty to Inventory Qty],
+			    2, [Adjustment Lines to Inventory Lines],
+			    BLANK()
+			)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: fe0bb7ee-e318-4754-b208-6b46664cf271
+
+	measure 'Branch - Header' = ```
+			
+			// Get user name
+			VAR _User = USERPRINCIPALNAME()
+			VAR _Position = SEARCH("@", _User, 1)
+			VAR _Name = LEFT(_User, _Position - 1)
+			VAR _FirstLetter = UPPER(LEFT(_Name, 1))
+			VAR _LastName = MID(_Name, 2, LEN(_Name) - 1)
+			VAR _FormattedLastName = 
+			    UPPER(LEFT(_LastName, 1)) & LOWER(MID(_LastName, 2, LEN(_LastName)))
+			VAR WelcomeName = _FirstLetter & "." & _FormattedLastName
+			
+			// Get current date/time info
+			VAR CurrentDate = TODAY()
+			VAR DateDisplay = FORMAT(CurrentDate, "MMM D, YYYY")
+			VAR CurrentHour = HOUR(NOW())
+			VAR TimeGreeting = 
+			    IF(CurrentHour < 12, "Good Morning",
+			    IF(CurrentHour < 17, "Good Afternoon",
+			    "Good Evening"))
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    height: 85px;
+			    padding: 15px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 10px;
+			    color: white;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-between;
+			    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    box-sizing: border-box;
+			'>
+			    <!-- Left side: Dashboard Title -->
+			    <div style='display: flex; align-items: center; gap: 15px;'>
+			        <!-- Home icon -->
+			        <div style='
+			            width: 40px;
+			            height: 40px;
+			            background: rgba(255,255,255,0.15);
+			            border-radius: 8px;
+			            display: flex;
+			            align-items: center;
+			            justify-content: center;
+			            font-size: 20px;
+			        '>
+			            🏠
+			        </div>
+			        
+			        <!-- Title -->
+			        <div>
+			            <div style='font-size: 12px; opacity: 0.85; margin-bottom: 4px; letter-spacing: 0.5px;'>
+			                REPORT
+			            </div>
+			            <div style='font-size: 26px; font-weight: 700; line-height: 1;'>
+			                Parts Adjustments - % by Branch
+			            </div>
+			        </div>
+			    </div>
+			    
+			    <!-- Right side: Welcome & Date -->
+			    <div style='text-align: right;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 6px;'>
+			            " & TimeGreeting & ", " & WelcomeName & "
+			        </div>
+			        <div style='font-size: 16px; font-weight: 600;'>
+			            📅 " & DateDisplay & "
+			        </div>
+			    </div>
+			</div>
+			"
+			```
+		lineageTag: 8f6a6a2c-8918-43c4-a3fa-dfe770dc271b
+
+	measure 'Absolute Adjustment $' = SUMX('Fact_PartsAdjustments', ABS('Fact_PartsAdjustments'[CostValue]))
+		lineageTag: 2616cee0-49ee-4dd3-913b-1592de11a62e
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'PA Type % of Total' = ```
+			
+			VAR SelectedMetric = [_SelectedMetric]
+			
+			// Current PA Type total (in filter context)
+			VAR CurrentTotal = [_DynamicTotal]
+			
+			// Grand total - remove filter from the TYPE column in fact table
+			VAR GrandTotal = 
+			    CALCULATE(
+			        [_DynamicTotal],
+			        ALL(Fact_PartsAdjustments[PAType])  // ← Replace with actual column name
+			    )
+			
+			RETURN DIVIDE(CurrentTotal, GrandTotal, 0)
+			```
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 77768ab3-c496-482e-b970-5b393c2e7847
+
+	measure 'Chart Title - Total' = ```
+			
+			VAR SelectedMetric = [_SelectedMetric]
+			RETURN 
+			    SWITCH(
+			        SelectedMetric,
+			        "Dollar", "Total Adjustment $ (R12)",
+			        "Qty", "Total Adjustment Qty (R12)",
+			        "Lines", "Total Adjustment Lines (R12)",
+			        "Total Adjustments (R12)"  // Default fallback
+			    )
+			```
+		lineageTag: b39a6616-6dc7-46b3-9327-7856769ec5fc
+
+	measure 'Chart Title - Compare' = ```
+			
+			VAR SelectedMetric = [_SelectedMetric]
+			RETURN 
+			    SWITCH(
+			        SelectedMetric,
+			        "Dollar", "Compare Adjustment $",
+			        "Qty", "Compare Adjustment Qty",
+			        "Lines", "Compare Adjustment Lines",
+			        "Compare Adjustments"  // Default fallback
+			    )
+			```
+		lineageTag: fc7f7d9d-0ae6-4e8b-bc17-d4b2d916263b
+
+	column Value
+		isHidden
+		lineageTag: da2dfa23-0c4c-4e9d-8014-3cc5710e756b
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Value]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition _Measures = calculated
+		mode: import
+		source = { "This table holds all measures for the Parts Reorder Monitoring report" }
+
+	annotation PBI_Id = da82ad85df114f0dbe8c17ce73f079a8
+

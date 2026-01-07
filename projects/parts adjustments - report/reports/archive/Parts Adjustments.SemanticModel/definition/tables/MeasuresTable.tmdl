@@ -1,0 +1,456 @@
+table MeasuresTable
+	lineageTag: feaf49a9-f897-48a3-bf67-1bf5469a9c29
+
+	measure 'Adjustment $ (Net)' = SUM('InTrans_Parts_Adjust'[Cost])
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: ad44f646-a8c5-4c0b-81b4-0f118f38d1c3
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Adjustment Qty (Net)' = SUM('InTrans_Parts_Adjust'[QTY])
+		lineageTag: 1f3817ef-9104-4259-ab84-5d4f24356b6e
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Total Parts' = COUNT('jdis___Parts_Adjust'[Part_No])
+		formatString: 0
+		lineageTag: bee9921f-9cdd-4c7a-86f4-6b16c97f8e3c
+
+	measure 'Total Cost' = SUM('jdis___Parts_Adjust'[Cost])
+		lineageTag: 5e96a189-bfaf-4a37-8931-4c3751b3904c
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Adjustment Lines' = COUNTROWS(InTrans_Parts_Adjust)
+		formatString: 0
+		lineageTag: e722d664-4b8d-4a44-815b-24b0f6f4cb89
+
+	measure 'Total Inventory $' = SUM('jdis___Parts_Adjust'[In_Stock_Cost])
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 90fce06d-2fbb-4889-bc83-35909cd3e369
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Adjustment $ to Inventory $' = DIVIDE([Total Adjustments $ (R12)] , [Total Inventory $], 0)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 880b283e-0f14-4aca-9ddc-7dabdc631608
+
+	measure 'Adjustment Lines to Inventory Lines' = DIVIDE([Total Adjustment Lines (R12)], [Total Parts], 0)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 247f86f4-2cc8-4344-945f-879410aa831c
+
+	measure 'Adjustment Qty to Inventory Qty' = DIVIDE([Total Qty (R12)] , [On Hand Qty], 0)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: f1c2eb89-80b3-4ac0-a588-b29e3c6ff28b
+
+	measure 'Negative Adjustment $' =
+			
+			CALCULATE(
+			    SUM('InTrans_Parts_Adjust'[Cost]),
+			    'InTrans_Parts_Adjust'[Cost] < 0
+			)
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 122049dd-bd50-491f-af24-b18ea02e69f9
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Positive Adjustment $' =
+			
+			CALCULATE(
+			    SUM('InTrans_Parts_Adjust'[Cost]),
+			    'InTrans_Parts_Adjust'[Cost] > 0
+			)
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 287a4031-3af5-4959-bc9c-763180b976df
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Cost Percentage' =
+			
+			DIVIDE(
+			    [Adjustment $ (Net)],
+			    CALCULATE([Adjustment $ (Net)], ALLSELECTED(GlTrans___Parts_Adjust)),
+			    0
+			)
+		formatString: 0.00%;-0.00%;0.00%
+		lineageTag: 49ef1ca0-04ec-403b-b632-b981bf76ea09
+
+	measure 'PA Type Adjustment $' =
+			
+			CALCULATE(
+			    SUM('InTrans_Parts_Adjust'[Cost]),
+			    ALLEXCEPT('GlTrans___Parts_Adjust', 'GlTrans___Parts_Adjust'[PA Type])
+			)
+		lineageTag: 4273097b-dd5b-495f-b074-4725084f210d
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Total Cost $' = SUM('InTrans_Parts_Adjust'[Cost])
+		lineageTag: 3ec0e0c8-439a-4ac0-9c25-587d66acd13d
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'PA Type Percentage' =
+			
+			DIVIDE(
+			    [PA Type Adjustment $],
+			    [Total Cost $],
+			    0
+			)
+		formatString: 0.00%;-0.00%;0.00%
+		lineageTag: d1b9ccac-94cf-4348-83fb-d79f14c7dd13
+
+	measure 'Absolute Adjustment $' = SUMX('InTrans_Parts_Adjust', ABS('InTrans_Parts_Adjust'[Cost]))
+		lineageTag: 5186174b-1388-48b9-948f-f5e921c73b58
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Total Absolute Adjustment $' =
+			
+			CALCULATE(
+			    [Absolute Adjustment $],
+			    ALLSELECTED('GlTrans___Parts_Adjust')
+			)
+		lineageTag: e551aeb6-4565-423b-ab81-c483dc227e5f
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Cost Percentage 1' =
+			
+			DIVIDE(
+			    [Absolute Adjustment $],
+			    [Total Absolute Adjustment $],
+			    0
+			)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: abde9a4f-0d10-42db-9af3-1720c199cf1e
+
+	measure 'On Hand Qty' = SUM('jdis___Parts_Adjust'[On_Hand_Qty])
+		lineageTag: 75650984-2c96-4c65-b8a0-1635eb289e63
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Total Adjustments $' =
+			
+			[Positive Adjustment $] + ABS([Negative Adjustment $])
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: e7e1bdc5-a7fc-4fb6-8b1a-cb6a0c5a07d4
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Positive Adjustment $ (R12)' =
+			
+			CALCULATE(
+			    SUM('InTrans_Parts_Adjust'[Cost]),
+			    'InTrans_Parts_Adjust'[Cost] > 0,
+			    DATESINPERIOD(
+			        'InTrans_Parts_Adjust'[Trans_Date],
+			        MAX('InTrans_Parts_Adjust'[Trans_Date]),
+			        -12,
+			        MONTH
+			    )
+			)
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 4fd4859b-de79-46e9-b857-8497b6347b6a
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Negative Adjustment $ (R12)' =
+			
+			CALCULATE(
+			    SUM('InTrans_Parts_Adjust'[Cost]),
+			    'InTrans_Parts_Adjust'[Cost] < 0,
+			    DATESINPERIOD(
+			        'InTrans_Parts_Adjust'[Trans_Date],
+			        MAX('InTrans_Parts_Adjust'[Trans_Date]),
+			        -12,
+			        MONTH
+			    )
+			)
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 20ac3d0c-cc53-4504-b08a-ef9229c0cbd3
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Total Adjustments $ (R12)' =
+			
+			[Positive Adjustment $ (R12)] + ABS([Negative Adjustment $ (R12)])
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: dc480ebc-6aaa-4a06-afa7-85f56e8b6c5d
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Selected Measure' =
+			
+			SWITCH(
+			    SELECTEDVALUE(MeasureSelector[MeasureIndex]),
+			    0, [Adjustment $ to Inventory $],
+			    1, [Adjustment Qty to Inventory Qty],
+			    2, [Adjustment Lines to Inventory Lines],
+			    BLANK()
+			)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: f3ef3dd3-a8a0-4187-8771-46ada4b4e3c6
+
+	measure 'Combined Adjustments $ (R12)' =
+			
+			[Positive Adjustment $ (R12)] + ABS([Negative Adjustment $ (R12)])
+		lineageTag: 41bd945e-51d5-4d1c-909f-152b4fbfdd22
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Selected Adjustment $ (R12)' =
+			
+			SWITCH(
+			    SELECTEDVALUE(AdjustmentTypes[AdjustmentType]),
+			    "Positive Adjustment $ (R12)", [Positive Adjustment $ (R12)],
+			    "Negative Adjustment $ (R12)", [Negative Adjustment $ (R12)],
+			    BLANK()
+			)
+		lineageTag: c911e7c3-0260-4d80-95b7-2aec1bbb2704
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Positive Qty' =
+			
+			CALCULATE(
+			    SUM('InTrans_Parts_Adjust'[QTY]),
+			    'InTrans_Parts_Adjust'[QTY] > 0
+			)
+		lineageTag: 420ea19f-b6b4-4884-a287-baaf34a0c656
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Negative Qty' =
+			
+			CALCULATE(
+			    SUM('InTrans_Parts_Adjust'[QTY]),
+			    'InTrans_Parts_Adjust'[QTY] < 0
+			)
+		lineageTag: 7e5b6703-05bd-48a3-9ca0-05dab0c3f58d
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Positive Qty (R12)' =
+			
+			CALCULATE(
+			    SUM('InTrans_Parts_Adjust'[QTY]),
+			    'InTrans_Parts_Adjust'[QTY] > 0,
+			    DATESINPERIOD(
+			        'InTrans_Parts_Adjust'[Trans_Date],
+			        MAX('InTrans_Parts_Adjust'[Trans_Date]),
+			        -12,
+			        MONTH
+			    )
+			)
+		lineageTag: 04688a1f-af3c-4d7b-b9d2-64d1307a9f1c
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Negative Qty (R12)' =
+			
+			CALCULATE(
+			    SUM('InTrans_Parts_Adjust'[QTY]),
+			    'InTrans_Parts_Adjust'[QTY] < 0,
+			    DATESINPERIOD(
+			        'InTrans_Parts_Adjust'[Trans_Date],
+			        MAX('InTrans_Parts_Adjust'[Trans_Date]),
+			        -12,
+			        MONTH
+			    )
+			)
+		lineageTag: 356e916a-d3aa-43c1-ab35-7a1a55465f3e
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Total Qty (R12)' =
+			
+			[Positive Qty (R12)] + ABS([Negative Qty (R12)])
+		formatString: 0
+		lineageTag: c2e968d7-f9b2-4191-98be-5afc4a213e97
+
+	measure 'Total Adjustment Lines (R12)' =
+			
+			CALCULATE(
+			    COUNTROWS(InTrans_Parts_Adjust),
+			    DATESINPERIOD(
+			        InTrans_Parts_Adjust[Trans_Date],
+			        LASTDATE(InTrans_Parts_Adjust[Trans_Date]),
+			        -12,
+			        MONTH
+			    ),
+			    InTrans_Parts_Adjust[Qty] <> 0
+			)
+		formatString: 0
+		lineageTag: 5f6bb6cc-3a59-4031-8aec-733fee8c0325
+
+	measure 'Negative Adjustment Lines (R12)' =
+			
+			CALCULATE(
+			    -1 * COUNTROWS(InTrans_Parts_Adjust),
+			    DATESINPERIOD(
+			        InTrans_Parts_Adjust[Trans_Date],
+			        LASTDATE(InTrans_Parts_Adjust[Trans_Date]),
+			        -12,
+			        MONTH
+			    ),
+			    InTrans_Parts_Adjust[Qty] < 0
+			)
+		formatString: 0
+		lineageTag: ff2edfef-e2a3-4b45-8c8a-03c3305961e0
+
+	measure 'Positive Adjustment Lines (R12)' =
+			
+			CALCULATE(
+			    COUNTROWS(InTrans_Parts_Adjust),
+			    DATESINPERIOD(
+			        InTrans_Parts_Adjust[Trans_Date],
+			        LASTDATE(InTrans_Parts_Adjust[Trans_Date]),
+			        -12,
+			        MONTH
+			    ),
+			    InTrans_Parts_Adjust[Qty] > 0
+			)
+		formatString: 0
+		lineageTag: 5ee79e4d-52f9-4a29-81f7-2d0fba1fc78f
+
+	measure 'Adjustment $ to Inventory $  (Net)' = [Adjustment $ (Net)] / [Total Inventory $]
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 65563ad3-082c-4f1e-a8b9-552da4ae8463
+
+	measure 'Adjustment Qty to Inventory Qty (Net)' = [Adjustment Qty (Net)] / [On Hand Qty]
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: b5fe15c9-046d-4660-a796-091ff219fbf2
+
+	measure 'Positive Adjustment Lines' =
+			
+			CALCULATE(
+			    COUNTROWS(InTrans_Parts_Adjust),
+			    InTrans_Parts_Adjust[Qty] > 0
+			)
+		formatString: 0
+		lineageTag: bc94c1d8-5daa-4d2b-95fc-7ee8b8e7b44c
+
+	measure 'Negative Adjustment Lines' =
+			
+			CALCULATE(
+			    -1 * COUNTROWS(InTrans_Parts_Adjust),
+			    InTrans_Parts_Adjust[Qty] <= 0
+			)
+		formatString: 0
+		lineageTag: 50d8e5a0-097e-41c4-a201-127e9612ca85
+
+	measure 'Adjustment Lines (Net) (R12)' = [Negative Adjustment Lines (R12)] + [Positive Adjustment Lines (R12)]
+		formatString: 0
+		lineageTag: f3628cba-3d1b-4232-b6a6-104f544ac9a4
+
+	measure 'Adjustment $ (Net) (R12)' =
+			
+			CALCULATE(
+			    SUM('InTrans_Parts_Adjust'[Cost]),
+			    DATESINPERIOD(
+			        'InTrans_Parts_Adjust'[Trans_Date],
+			        LASTDATE('InTrans_Parts_Adjust'[Trans_Date]),
+			        -12,
+			        MONTH
+			    )
+			)
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: a72e578b-525b-4ae0-a45d-29beef335502
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Adjust $ / Inv $ (Net) (R12)' = [Adjustment $ (Net) (R12)] / [Total Inventory $]
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 9a32321f-9502-4227-9442-f4f89fbaf694
+
+	measure 'Adjustment Qty (Net) (R12)' =
+			
+			CALCULATE(
+			    SUM('InTrans_Parts_Adjust'[QTY]),
+			    DATESINPERIOD(
+			        'InTrans_Parts_Adjust'[Trans_Date],
+			        LASTDATE('InTrans_Parts_Adjust'[Trans_Date]),
+			        -12,
+			        MONTH
+			    )
+			)
+		formatString: 0
+		lineageTag: bb0aa4e4-5a9f-4cec-9392-9f31157d2e9d
+
+	measure 'Adjust Qty / Inv Qty (Net) (R12)' = [Adjustment Qty (Net) (R12)] / [On Hand Qty]
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 72c6d528-3be0-4998-81ea-11d407e43788
+
+	measure 'Adjust Lines / Inv Lines (Net) (R12)' = [Adjustment Lines (Net) (R12)] / [Total Parts]
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 9e4851a1-326c-45d4-b4c4-cd85ec032365
+
+	measure 'TotalQty PartNo' =
+			
+			CALCULATE(
+			    SUM('InTrans_Parts_Adjust'[QTY]),
+			    DATESINPERIOD('InTrans_Parts_Adjust'[Trans_Date], MAX('InTrans_Parts_Adjust'[Trans_Date]), -12, MONTH)
+			)
+		lineageTag: 21de20e7-7e38-4b27-8881-c44e65950d15
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure ExactDuplicates =
+			
+			FILTER(
+			    VALUES('InTrans_Parts_Adjust'[Part_No]),
+			    CALCULATE(SUM('InTrans_Parts_Adjust'[QTY])) = 0 &&
+			    CALCULATE(SUM('InTrans_Parts_Adjust'[Qty (out)])) < 0 &&
+			    CALCULATE(SUM('InTrans_Parts_Adjust'[Qty (in)])) > 0
+			)
+		lineageTag: 49883d87-e29a-46eb-91b9-d97480499ae2
+
+	measure NetQtyLast12Months =
+			
+			CALCULATE(
+			    SUM('InTrans_Parts_Adjust'[QTY]),
+			    DATESINPERIOD('InTrans_Parts_Adjust'[Trans_Date], MAX('InTrans_Parts_Adjust'[Trans_Date]), -12, MONTH)
+			)
+		formatString: 0
+		lineageTag: 63e9075d-f56a-4beb-8418-712824ee99ed
+
+	measure FilteredParts =
+			
+			FILTER(
+			    VALUES('InTrans_Parts_Adjust'[Part_No]),
+			    [NetQtyLast12Months] = 0
+			)
+		lineageTag: 6b845a14-956c-4b03-865f-fb64b3d9da24
+
+	column Value
+		isHidden
+		formatString: 0
+		lineageTag: cd4ec33b-ccde-4ebb-a88f-a30e41c207c3
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [Value]
+
+		annotation SummarizationSetBy = Automatic
+
+	column DummyColumn
+		isHidden
+		formatString: 0
+		lineageTag: c141b113-a6c2-4195-be34-70a36542cb1a
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [DummyColumn]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition MeasuresTable = calculated
+		mode: import
+		source = ```
+				ADDCOLUMNS( 
+				    GENERATESERIES(1, 1), 
+				    "DummyColumn", 1 
+				)
+				```
+
+	annotation PBI_Id = bc50cb03d6be472d81d49ee99acd6647
+

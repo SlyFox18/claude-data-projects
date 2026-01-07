@@ -1,0 +1,45 @@
+table MetricSelector
+	lineageTag: 70359376-6625-4321-afe5-5719481459ca
+
+	column MetricType
+		lineageTag: 4660b45d-3ef6-410d-8d11-b3d735555024
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [MetricType]
+
+		annotation SummarizationSetBy = Automatic
+
+	column MetricLabel
+		lineageTag: 907064eb-a530-4712-a5a2-4c36bd1fa4c8
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [MetricLabel]
+
+		annotation SummarizationSetBy = Automatic
+
+	column SortOrder
+		formatString: 0
+		lineageTag: f4324277-7957-45e3-bf5e-ab1c1faff9b9
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [SortOrder]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition MetricSelector = calculated
+		mode: import
+		source =
+				
+				DATATABLE(
+				    "MetricType", STRING,
+				    "MetricLabel", STRING,
+				    "SortOrder", INTEGER,
+				    {
+				        {"Dollar", "Adjustment $", 1},
+				        {"Qty", "Qty", 2},
+				        {"Lines", "Lines", 3}
+				    }
+				)
+
+	annotation PBI_Id = 092b474604b54c538968fe497a42d4fe
+

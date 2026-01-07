@@ -1,0 +1,61 @@
+table AdjustmentValues
+	lineageTag: 593b83f7-8f5c-4d84-8bc0-a8fd9e2508a2
+
+	column AdjustmentType
+		lineageTag: 28e235f9-b3e0-4dc1-bcef-0c43a1a2c49e
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [AdjustmentType]
+
+		annotation SummarizationSetBy = Automatic
+
+	column AdjustmentValue
+		lineageTag: dd50a3f8-3964-464f-b41e-3842c2521941
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [AdjustmentValue]
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	partition AdjustmentValues = calculated
+		mode: import
+		source = ```
+				
+				UNION(
+				    SELECTCOLUMNS(
+				        'InTrans_Parts_Adjust',
+				        "AdjustmentType", "Positive Adjustment $ (R12)",
+				        "AdjustmentValue", 
+				        CALCULATE(
+				            SUM('InTrans_Parts_Adjust'[Cost]),
+				            'InTrans_Parts_Adjust'[Cost] > 0,
+				            DATESINPERIOD(
+				                'InTrans_Parts_Adjust'[Trans_Date],
+				                MAX('InTrans_Parts_Adjust'[Trans_Date]),
+				                -12,
+				                MONTH
+				            )
+				        )
+				    ),
+				    SELECTCOLUMNS(
+				        'InTrans_Parts_Adjust',
+				        "AdjustmentType", "Negative Adjustment $ (R12)",
+				        "AdjustmentValue", 
+				        CALCULATE(
+				            SUM('InTrans_Parts_Adjust'[Cost]),
+				            'InTrans_Parts_Adjust'[Cost] < 0,
+				            DATESINPERIOD(
+				                'InTrans_Parts_Adjust'[Trans_Date],
+				                MAX('InTrans_Parts_Adjust'[Trans_Date]),
+				                -12,
+				                MONTH
+				            )
+				        )
+				    )
+				)
+				```
+
+	annotation PBI_Id = 46e85022a9bc48ff953e98202a3edf00
+

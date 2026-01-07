@@ -1,0 +1,6 @@
+let
+  Source = Odbc.Query("dsn=EquipRDB64", "SELECT#(lf)    BRANCH,#(lf)    DEPT,#(lf)    ACCT,#(lf)    SUB_ACCT,#(lf)    GLTRANS_DATE,#(lf)    REF,#(lf)    BATCH,#(lf)    TYPE,#(lf)    QTY,#(lf)    VALUE,#(lf)    DESCRIPTION,#(lf)    DOC_REF,#(lf)    trans_id,#(lf)    lop_id#(lf)FROM#(lf)    GlTrans#(lf)WHERE#(lf)    DEPT = 30#(lf)    AND ACCT = 480#(lf)    AND GLTRANS_DATE >= '2023-01-01'"),
+  #"Changed column type" = Table.TransformColumnTypes(Source, {{"GLTRANS_DATE", type date}})
+in
+  #"Changed column type"
+

@@ -1,0 +1,157 @@
+ID,Name,Model,DataCategory,Description,IsHidden,StorageMode,TableStorage,Expression,ShowAsVariationOnly,IsPrivate,CalculationGroupPrecedence,LineageTag
+10,GlTrans___Parts_Adjust,820af3ff-39d8-4e41-b03b-6754c8a217dd,Regular,,False,Import,,,False,False,,f398569b-4c3a-40c8-bbf2-78b345daca18
+13,DateTableTemplate_10954ce7-6673-4fb8-8dde-42756cb554d0,820af3ff-39d8-4e41-b03b-6754c8a217dd,Regular,,True,Import,,"Calendar(Date(2015,1,1), Date(2015,1,1))",False,True,,37dc7dee-c0f4-4add-bca9-c179ae2e6b24
+16,LocalDateTable_fa2f3c9d-0f68-47b8-96ba-a5d395ba882f,820af3ff-39d8-4e41-b03b-6754c8a217dd,Regular,,True,Import,,"Calendar(Date(Year(MIN('GlTrans___Parts_Adjust'[GLTRANS_DATE])), 1, 1), Date(Year(MAX('GlTrans___Parts_Adjust'[GLTRANS_DATE])), 12, 31))",True,False,,badc2c4e-689f-444e-b578-affec9b372a4
+19,InTrans_Parts_Adjust,820af3ff-39d8-4e41-b03b-6754c8a217dd,Regular,,False,Import,,,False,False,,c572b189-5228-414f-829e-b1c96765b73a
+22,jdis___Parts_Adjust,820af3ff-39d8-4e41-b03b-6754c8a217dd,Regular,,False,Import,,,False,False,,8358228a-1da8-402f-b2a1-f144128f6444
+25,Dim_Branch,820af3ff-39d8-4e41-b03b-6754c8a217dd,Regular,,False,Import,,,False,False,,8fede62a-b967-4e5d-b7c6-49e2511d9bd4
+28,BridgingTable,820af3ff-39d8-4e41-b03b-6754c8a217dd,Regular,,True,Import,,"
+DISTINCT(
+    UNION(
+        SELECTCOLUMNS('InTrans_Parts_Adjust', ""REF"", 'InTrans_Parts_Adjust'[REF_NO]),
+        SELECTCOLUMNS('GlTrans___Parts_Adjust', ""REF"", 'GlTrans___Parts_Adjust'[REF])
+    )
+)",False,False,,2af659b7-049f-4a11-aaa6-f9ca1eff2d31
+31,PartNoBridgingTable,820af3ff-39d8-4e41-b03b-6754c8a217dd,Regular,,True,Import,,"
+DISTINCT(
+    UNION(
+        SELECTCOLUMNS('InTrans_Parts_Adjust', ""Part_No"", 'InTrans_Parts_Adjust'[Part_No]),
+        SELECTCOLUMNS('jdis___Parts_Adjust', ""Part_No"", 'jdis___Parts_Adjust'[Part_No])
+    )
+)",False,False,,ca525c75-7816-493a-948e-2028025d0039
+34,dDate,820af3ff-39d8-4e41-b03b-6754c8a217dd,Time,,False,Import,,CALENDARAUTO(),False,False,,3fbfbb45-f4a0-47e4-af10-dc828138e960
+37,MeasuresTable,820af3ff-39d8-4e41-b03b-6754c8a217dd,Regular,,False,Import,,"ADDCOLUMNS( 
+    GENERATESERIES(1, 1), 
+    ""DummyColumn"", 1 
+)",False,False,,feaf49a9-f897-48a3-bf67-1bf5469a9c29
+40,MeasureSelector,820af3ff-39d8-4e41-b03b-6754c8a217dd,Regular,,False,Import,,"
+DATATABLE(
+    ""MeasureName"", STRING,
+    ""MeasureIndex"", INTEGER,
+    ""SortOrder"", INTEGER,
+    {
+        {""Adjustment $"", 0, 1},
+        {""Qty"", 1, 2},
+        {""Lines"", 2, 3}
+    }
+)",False,False,,773801d4-9cc5-43d6-938d-d4195dac9d7a
+43,AdjustmentTypes,820af3ff-39d8-4e41-b03b-6754c8a217dd,Regular,,False,Import,,"
+DATATABLE(
+    ""AdjustmentType"", STRING,
+    ""AdjustmentValue"", INTEGER,
+    {
+        {""Positive Adjustment $ (R12)"", 0},
+        {""Negative Adjustment $ (R12)"", 1}
+    }
+)",False,False,,3949d059-f05f-45f2-bcc3-9e1276d2b90e
+46,AdjustmentValues,820af3ff-39d8-4e41-b03b-6754c8a217dd,Regular,,False,Import,,"
+UNION(
+    SELECTCOLUMNS(
+        'InTrans_Parts_Adjust',
+        ""AdjustmentType"", ""Positive Adjustment $ (R12)"",
+        ""AdjustmentValue"", 
+        CALCULATE(
+            SUM('InTrans_Parts_Adjust'[Cost]),
+            'InTrans_Parts_Adjust'[Cost] > 0,
+            DATESINPERIOD(
+                'InTrans_Parts_Adjust'[Trans_Date],
+                MAX('InTrans_Parts_Adjust'[Trans_Date]),
+                -12,
+                MONTH
+            )
+        )
+    ),
+    SELECTCOLUMNS(
+        'InTrans_Parts_Adjust',
+        ""AdjustmentType"", ""Negative Adjustment $ (R12)"",
+        ""AdjustmentValue"", 
+        CALCULATE(
+            SUM('InTrans_Parts_Adjust'[Cost]),
+            'InTrans_Parts_Adjust'[Cost] < 0,
+            DATESINPERIOD(
+                'InTrans_Parts_Adjust'[Trans_Date],
+                MAX('InTrans_Parts_Adjust'[Trans_Date]),
+                -12,
+                MONTH
+            )
+        )
+    )
+)",False,False,,593b83f7-8f5c-4d84-8bc0-a8fd9e2508a2
+49,NegativeTable,820af3ff-39d8-4e41-b03b-6754c8a217dd,Regular,,False,Import,,"
+FILTER (
+    ADDCOLUMNS (
+        InTrans_Parts_Adjust,
+        ""Negative_QTY"", IF ( InTrans_Parts_Adjust[QTY] < 0, InTrans_Parts_Adjust[QTY], BLANK() ),
+        ""Negative_Trans_Date"", InTrans_Parts_Adjust[Trans_Date]
+    ),
+    [Negative_QTY] <> BLANK()
+)",False,False,,8b046f33-b21f-45ef-b678-e1ceda64bf57
+52,PositiveTable,820af3ff-39d8-4e41-b03b-6754c8a217dd,Regular,,False,Import,,"
+FILTER (
+    ADDCOLUMNS (
+        InTrans_Parts_Adjust,
+        ""Positive_QTY"", IF ( InTrans_Parts_Adjust[QTY] > 0, InTrans_Parts_Adjust[QTY], BLANK() ),
+        ""Positive_Trans_Date"", InTrans_Parts_Adjust[Trans_Date]
+    ),
+    [Positive_QTY] <> BLANK()
+)",False,False,,4fddbd3f-7a12-46f3-8e60-eaa7bb406386
+55,CombinedTable,820af3ff-39d8-4e41-b03b-6754c8a217dd,Regular,,False,Import,,"
+UNION (
+    SELECTCOLUMNS (
+        NegativeTable,
+        ""Part_No"", NegativeTable[Part_No],
+        ""QTY"", NegativeTable[Negative_QTY],
+        ""Trans_Date"", NegativeTable[Negative_Trans_Date],
+        ""Type"", ""Negative""
+    ),
+    SELECTCOLUMNS (
+        PositiveTable,
+        ""Part_No"", PositiveTable[Part_No],
+        ""QTY"", PositiveTable[Positive_QTY],
+        ""Trans_Date"", PositiveTable[Positive_Trans_Date],
+        ""Type"", ""Positive""
+    )
+)",False,False,,8a4148c5-be39-49ab-a495-6309ab2aba86
+58,FilteredCombinedTable,820af3ff-39d8-4e41-b03b-6754c8a217dd,Regular,,False,Import,,"
+SUMMARIZE (
+    CombinedTable,
+    CombinedTable[Part_No],
+    ""Negative_QTY"", CALCULATE ( SUM ( CombinedTable[QTY] ), CombinedTable[Type] = ""Negative"" ),
+    ""Negative_Trans_Date"", CALCULATE ( MAX ( CombinedTable[Trans_Date] ), CombinedTable[Type] = ""Negative"" ),
+    ""Positive_QTY"", CALCULATE ( SUM ( CombinedTable[QTY] ), CombinedTable[Type] = ""Positive"" ),
+    ""Positive_Trans_Date"", CALCULATE ( MAX ( CombinedTable[Trans_Date] ), CombinedTable[Type] = ""Positive"" )
+)
+
+",False,False,,65cb5ded-56fd-4244-8872-e1f2c45d4db9
+61,LocalDateTable_591293a1-bed7-4886-82ce-9bf9d0b466d4,820af3ff-39d8-4e41-b03b-6754c8a217dd,Regular,,True,Import,,"Calendar(Date(Year(MIN('FilteredCombinedTable'[Negative_Trans_Date])), 1, 1), Date(Year(MAX('FilteredCombinedTable'[Negative_Trans_Date])), 12, 31))",True,False,,a0421b96-301a-4a59-88d4-f4ea83ecc04c
+64,LocalDateTable_2efb6dcc-aaf1-4c07-9b7f-d329360b1786,820af3ff-39d8-4e41-b03b-6754c8a217dd,Regular,,True,Import,,"Calendar(Date(Year(MIN('FilteredCombinedTable'[Positive_Trans_Date])), 1, 1), Date(Year(MAX('FilteredCombinedTable'[Positive_Trans_Date])), 12, 31))",True,False,,c720aff8-4dc4-4f06-94a3-4061af43c3e5
+67,SummarizedTable,820af3ff-39d8-4e41-b03b-6754c8a217dd,Regular,,False,Import,,"
+SUMMARIZE (
+    CombinedTable,
+    CombinedTable[Part_No],
+    ""Negative_QTY"", CALCULATE ( SUM ( CombinedTable[QTY] ), CombinedTable[Type] = ""Negative"" ),
+    ""Negative_Trans_Date"", CALCULATE ( MAX ( CombinedTable[Trans_Date] ), CombinedTable[Type] = ""Negative"" ),
+    ""Positive_QTY"", CALCULATE ( SUM ( CombinedTable[QTY] ), CombinedTable[Type] = ""Positive"" ),
+    ""Positive_Trans_Date"", CALCULATE ( MAX ( CombinedTable[Trans_Date] ), CombinedTable[Type] = ""Positive"" )
+)",False,False,,2db40d06-2292-4543-b0a0-fe13eacbd686
+70,LocalDateTable_a7d6cadf-fecd-4bc6-9c46-b0a52fb3be4c,820af3ff-39d8-4e41-b03b-6754c8a217dd,Regular,,True,Import,,"Calendar(Date(Year(MIN('SummarizedTable'[Negative_Trans_Date])), 1, 1), Date(Year(MAX('SummarizedTable'[Negative_Trans_Date])), 12, 31))",True,False,,24da70e6-1498-4a1e-89c7-6fa813c09d36
+73,LocalDateTable_a77eaf6f-d502-4310-bbce-fbdd1bc652fc,820af3ff-39d8-4e41-b03b-6754c8a217dd,Regular,,True,Import,,"Calendar(Date(Year(MIN('SummarizedTable'[Positive_Trans_Date])), 1, 1), Date(Year(MAX('SummarizedTable'[Positive_Trans_Date])), 12, 31))",True,False,,c8f7f733-7da9-430b-9f8c-c7c46ad887f9
+76,FilteredCombinedTable1,820af3ff-39d8-4e41-b03b-6754c8a217dd,Regular,,False,Import,,"
+FILTER (
+    SummarizedTable,
+    [Negative_QTY] + [Positive_QTY] = 0
+)",False,False,,f8cdf054-3f97-449b-a18b-c30e3d021501
+79,LocalDateTable_5f7cfd19-f229-4c08-9349-a6d47ae8aa91,820af3ff-39d8-4e41-b03b-6754c8a217dd,Regular,,True,Import,,"Calendar(Date(Year(MIN('FilteredCombinedTable1'[Negative_Trans_Date])), 1, 1), Date(Year(MAX('FilteredCombinedTable1'[Negative_Trans_Date])), 12, 31))",True,False,,37883dd9-1385-4a48-a9da-20c42991f0dd
+82,LocalDateTable_c7eae526-b95c-4453-a4de-8d9e5c963ec8,820af3ff-39d8-4e41-b03b-6754c8a217dd,Regular,,True,Import,,"Calendar(Date(Year(MIN('FilteredCombinedTable1'[Positive_Trans_Date])), 1, 1), Date(Year(MAX('FilteredCombinedTable1'[Positive_Trans_Date])), 12, 31))",True,False,,3a713ff3-ae15-4fbd-bfab-0e40b148beaf
+85,LocalDateTable_7862f79e-8c34-451f-b4a6-79d13f21fcbf,820af3ff-39d8-4e41-b03b-6754c8a217dd,Regular,,True,Import,,"Calendar(Date(Year(MIN('CombinedTable'[Trans_Date])), 1, 1), Date(Year(MAX('CombinedTable'[Trans_Date])), 12, 31))",True,False,,c82ba36a-b356-4494-aece-e7deb4b6a4c1
+88,LocalDateTable_8ed1b779-9158-4081-bf64-dbcab02c74c1,820af3ff-39d8-4e41-b03b-6754c8a217dd,Regular,,True,Import,,"Calendar(Date(Year(MIN('NegativeTable'[Trans_Date])), 1, 1), Date(Year(MAX('NegativeTable'[Trans_Date])), 12, 31))",True,False,,13315178-b268-4cb6-b0fc-554b4aba4e77
+91,LocalDateTable_992a14ba-ea79-4d98-9805-c14c4e7b4f3e,820af3ff-39d8-4e41-b03b-6754c8a217dd,Regular,,True,Import,,"Calendar(Date(Year(MIN('NegativeTable'[Negative_Trans_Date])), 1, 1), Date(Year(MAX('NegativeTable'[Negative_Trans_Date])), 12, 31))",True,False,,4d51bffb-bdd1-4ae2-9a5c-fb72cd733d41
+94,LocalDateTable_75883237-0d0d-43f7-81d0-ca785d04218f,820af3ff-39d8-4e41-b03b-6754c8a217dd,Regular,,True,Import,,"Calendar(Date(Year(MIN('PositiveTable'[Trans_Date])), 1, 1), Date(Year(MAX('PositiveTable'[Trans_Date])), 12, 31))",True,False,,b9c12991-f2c0-4542-a0fe-ff33d8858eb5
+97,LocalDateTable_18a0d960-c7a8-4ba9-944e-135dd6f597cc,820af3ff-39d8-4e41-b03b-6754c8a217dd,Regular,,True,Import,,"Calendar(Date(Year(MIN('PositiveTable'[Positive_Trans_Date])), 1, 1), Date(Year(MAX('PositiveTable'[Positive_Trans_Date])), 12, 31))",True,False,,d14af3c5-4480-4dfb-a800-92c96e3617f1
+21154,Data Refresh,820af3ff-39d8-4e41-b03b-6754c8a217dd,Regular,,False,Import,,,False,False,,17fa1621-c610-4c93-8eee-81727e667f09
+21157,LocalDateTable_f6e3ad46-5c13-475f-bc8a-820388e30cea,820af3ff-39d8-4e41-b03b-6754c8a217dd,Regular,,True,Import,,"Calendar(Date(Year(MIN('Data Refresh'[CurrentDateTime])), 1, 1), Date(Year(MAX('Data Refresh'[CurrentDateTime])), 12, 31))",True,False,,dafef080-1194-4157-ae7e-5bb2722c2977
+21160,LocalDateTable_4dc28703-c045-4d4c-b533-fcc9c036761c,820af3ff-39d8-4e41-b03b-6754c8a217dd,Regular,,True,Import,,"Calendar(Date(Year(MIN('Data Refresh'[Date])), 1, 1), Date(Year(MAX('Data Refresh'[Date])), 12, 31))",True,False,,dc333b31-4b54-4c9c-87ec-7f7b552bceb3
+42668,Old Report Tables,820af3ff-39d8-4e41-b03b-6754c8a217dd,Regular,,False,Import,,INFO.VIEW.TABLES(),False,False,,c5da7cf4-2ef4-4ca3-a459-e5efda591edd
+43103,Old Report Columns,820af3ff-39d8-4e41-b03b-6754c8a217dd,Regular,,False,Import,,INFO.VIEW.COLUMNS(),False,False,,91840413-b2ce-41f2-a732-4b793249e9b2
+44399,Old Report Releationships,820af3ff-39d8-4e41-b03b-6754c8a217dd,Regular,,False,Import,,INFO.VIEW.RELATIONSHIPS(),False,False,,5b4c7bee-7450-41e4-b589-b794e72c2bdd
+46391,Old Report Measures,820af3ff-39d8-4e41-b03b-6754c8a217dd,Regular,,False,Import,,INFO.VIEW.MEASURES(),False,False,,53935a33-8107-481f-8ce6-90ed4102e440

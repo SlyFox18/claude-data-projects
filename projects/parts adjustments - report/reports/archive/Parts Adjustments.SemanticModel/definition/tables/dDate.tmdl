@@ -1,0 +1,43 @@
+table dDate
+	lineageTag: 3fbfbb45-f4a0-47e4-af10-dc828138e960
+	dataCategory: Time
+
+	column Date
+		isKey
+		formatString: Short Date
+		lineageTag: 615b1e50-9fc7-455d-8f11-cee2a0d84372
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Date]
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column MonthNumber = MONTH(dDate[Date])
+		formatString: 0
+		lineageTag: dc59dce5-016f-4b09-95ca-347d267ca58f
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	column Month = FORMAT(dDate[Date],"mmm")
+		lineageTag: f2e36e36-1166-4be2-a36f-4b480469cdea
+		summarizeBy: none
+		sortByColumn: MonthNumber
+
+		annotation SummarizationSetBy = Automatic
+
+	column Year = YEAR(dDate[Date])
+		formatString: 0
+		lineageTag: 75f1a9f3-f6e1-4397-a72c-763fa904d758
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dDate = calculated
+		mode: import
+		source = CALENDARAUTO()
+
+	annotation PBI_Id = 2dadb57a0dcd4df7a527b8321c66a255
+

@@ -1,0 +1,172 @@
+table GlTrans___Parts_Adjust
+	lineageTag: f398569b-4c3a-40c8-bbf2-78b345daca18
+
+	column BRANCH
+		dataType: string
+		lineageTag: aceccfc8-0087-4001-a45c-23ed2658e45a
+		summarizeBy: none
+		sourceColumn: BRANCH
+
+		annotation SummarizationSetBy = Automatic
+
+	column DEPT
+		dataType: string
+		lineageTag: b3100355-e506-4913-9182-179811988577
+		summarizeBy: none
+		sourceColumn: DEPT
+
+		annotation SummarizationSetBy = Automatic
+
+	column ACCT
+		dataType: double
+		lineageTag: 3b5b433c-1d29-44b1-8f72-e5606d7f98ee
+		summarizeBy: sum
+		sourceColumn: ACCT
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column SUB_ACCT
+		dataType: double
+		lineageTag: 8956e436-9d54-47ca-ba7e-5da583f17215
+		summarizeBy: sum
+		sourceColumn: SUB_ACCT
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column GLTRANS_DATE
+		dataType: dateTime
+		formatString: Long Date
+		lineageTag: 7d3847b9-b0f2-49bf-b935-2aebbee9f0e3
+		summarizeBy: none
+		sourceColumn: GLTRANS_DATE
+
+		variation Variation
+			isDefault
+			relationship: fdf0f54f-b331-4653-8359-f93c694d60ef
+			defaultHierarchy: LocalDateTable_fa2f3c9d-0f68-47b8-96ba-a5d395ba882f.'Date Hierarchy'
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column REF
+		dataType: string
+		lineageTag: 3c3d50c9-7a12-41e4-97b8-363c08f59b36
+		summarizeBy: none
+		sourceColumn: REF
+
+		annotation SummarizationSetBy = Automatic
+
+	column BATCH
+		dataType: double
+		lineageTag: 2ebddcc4-3f38-4749-8b85-77029a9f0041
+		summarizeBy: sum
+		sourceColumn: BATCH
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column TYPE
+		dataType: string
+		lineageTag: f01cd5a9-4496-4036-a26a-a238d671c52f
+		summarizeBy: none
+		sourceColumn: TYPE
+
+		annotation SummarizationSetBy = Automatic
+
+	column QTY
+		dataType: double
+		lineageTag: 41f7fa6a-19e1-4caa-bb39-c4e926590e03
+		summarizeBy: sum
+		sourceColumn: QTY
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column VALUE
+		dataType: double
+		lineageTag: 2cd18cdc-d770-40f3-97fe-6843b95c8610
+		summarizeBy: sum
+		sourceColumn: VALUE
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column DESCRIPTION
+		dataType: string
+		lineageTag: 96a12873-b942-4313-9bb9-4db42119c28b
+		summarizeBy: none
+		sourceColumn: DESCRIPTION
+
+		annotation SummarizationSetBy = Automatic
+
+	column DOC_REF
+		dataType: string
+		lineageTag: 5e84674f-b024-4661-bb41-1e7d68445517
+		summarizeBy: none
+		sourceColumn: DOC_REF
+
+		annotation SummarizationSetBy = Automatic
+
+	column trans_id
+		dataType: int64
+		formatString: 0
+		lineageTag: c280eaf2-fff7-4db8-8510-d159f7b4e453
+		summarizeBy: sum
+		sourceColumn: trans_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column lop_id
+		dataType: string
+		lineageTag: 6f15bbe9-9223-4f14-b222-c71850a78816
+		summarizeBy: none
+		sourceColumn: lop_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'PA Type' =
+			
+			SWITCH(
+			    TRUE(),
+			    'GlTrans___Parts_Adjust'[SUB_ACCT] = 1, "Stock Check",
+			    'GlTrans___Parts_Adjust'[SUB_ACCT] = 2, "Customer BIN",
+			    'GlTrans___Parts_Adjust'[SUB_ACCT] = 3, "Damaged",
+			    'GlTrans___Parts_Adjust'[SUB_ACCT] = 4, "Lost",
+			    'GlTrans___Parts_Adjust'[SUB_ACCT] = 5, "Overage",
+			    'GlTrans___Parts_Adjust'[SUB_ACCT] = 6, "Count Off",
+			    "Unknown"
+			)
+		lineageTag: b102a5f8-a90f-48ca-b731-2e84f76461c3
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	partition GlTrans___Parts_Adjust = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-ch6iiwox4jveda3rmgudwi6hey.datawarehouse.fabric.microsoft.com", "LH_Parts_Reports_Data"),
+				    dbo_GlTrans___Parts_Adjust = Source{[Schema="dbo",Item="GlTrans___Parts_Adjust"]}[Data],
+				    #"Replaced Value" = Table.ReplaceValue(dbo_GlTrans___Parts_Adjust,"01","1",Replacer.ReplaceText,{"BRANCH"}),
+				    #"Replaced Value1" = Table.ReplaceValue(#"Replaced Value","06","6",Replacer.ReplaceText,{"BRANCH"}),
+				    #"Replaced Value2" = Table.ReplaceValue(#"Replaced Value1","03","3",Replacer.ReplaceText,{"BRANCH"}),
+				    #"Replaced Value3" = Table.ReplaceValue(#"Replaced Value2","07","7",Replacer.ReplaceText,{"BRANCH"}),
+				    #"Replaced Value4" = Table.ReplaceValue(#"Replaced Value3","08","8",Replacer.ReplaceText,{"BRANCH"}),
+				    #"Replaced Value5" = Table.ReplaceValue(#"Replaced Value4","02","2",Replacer.ReplaceText,{"BRANCH"}),
+				    #"Replaced Value6" = Table.ReplaceValue(#"Replaced Value5","04","4",Replacer.ReplaceText,{"BRANCH"}),
+				    #"Filtered Rows" = Table.SelectRows(#"Replaced Value6", each true)
+				in
+				    #"Filtered Rows"
+
+	annotation PBI_ResultType = Table
+
+	annotation PBI_NavigationStepName = Navigation
+

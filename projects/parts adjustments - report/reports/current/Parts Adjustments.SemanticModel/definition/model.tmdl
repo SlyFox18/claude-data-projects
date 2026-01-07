@@ -1,0 +1,31 @@
+model Model
+	culture: en-US
+	defaultPowerBIDataSourceVersion: powerBI_V3
+	sourceQueryCulture: en-US
+	dataAccessOptions
+		legacyRedirects
+		returnErrorValuesAsNull
+
+annotation __PBI_TimeIntelligenceEnabled = 0
+
+annotation PBI_QueryOrder = ["Data Refresh","dim_BranchLocation","dim_DateTable","dim_AdjustmentType","dim_Parts","Fact_PartsAdjustments","jdis_Part_Information"]
+
+annotation PBI_ProTooling = ["DevMode"]
+
+ref table 'Data Refresh'
+ref table dim_BranchLocation
+ref table dim_DateTable
+ref table 'New Report Tables'
+ref table 'New Report Relationships'
+ref table 'New Report Columns'
+ref table _Measures
+ref table dim_AdjustmentType
+ref table dim_Parts
+ref table Fact_PartsAdjustments
+ref table jdis_Part_Information
+ref table _Test-Measures
+ref table MetricSelector
+ref table MeasureSelector
+
+ref cultureInfo en-US
+

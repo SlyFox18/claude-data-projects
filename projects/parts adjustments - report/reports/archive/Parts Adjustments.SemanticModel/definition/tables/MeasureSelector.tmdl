@@ -1,0 +1,47 @@
+table MeasureSelector
+	lineageTag: 773801d4-9cc5-43d6-938d-d4195dac9d7a
+
+	column MeasureName
+		lineageTag: 03216b7b-e917-4c05-b654-82902701a31c
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [MeasureName]
+		sortByColumn: SortOrder
+
+		annotation SummarizationSetBy = Automatic
+
+	column MeasureIndex
+		formatString: 0
+		lineageTag: f3a95fb2-2fe3-42d1-a697-e68aedd97f2b
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [MeasureIndex]
+
+		annotation SummarizationSetBy = Automatic
+
+	column SortOrder
+		formatString: 0
+		lineageTag: c4468cda-1af2-4e55-9c9a-448c9c011aaa
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [SortOrder]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition MeasureSelector = calculated
+		mode: import
+		source =
+				
+				DATATABLE(
+				    "MeasureName", STRING,
+				    "MeasureIndex", INTEGER,
+				    "SortOrder", INTEGER,
+				    {
+				        {"Adjustment $", 0, 1},
+				        {"Qty", 1, 2},
+				        {"Lines", 2, 3}
+				    }
+				)
+
+	annotation PBI_Id = 760bae2876d14055a88c621bf2ad697c
+

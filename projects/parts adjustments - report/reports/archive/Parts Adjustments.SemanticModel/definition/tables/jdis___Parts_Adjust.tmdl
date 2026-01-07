@@ -1,0 +1,76 @@
+table jdis___Parts_Adjust
+	lineageTag: 8358228a-1da8-402f-b2a1-f144128f6444
+
+	column Branch
+		dataType: string
+		lineageTag: 2023da79-4063-4b74-bfba-07a6c1bd1d4c
+		summarizeBy: none
+		sourceColumn: Branch
+
+		annotation SummarizationSetBy = Automatic
+
+	column Franchise
+		dataType: string
+		lineageTag: 0c913213-65f1-4fe5-afad-6682be694b6d
+		summarizeBy: none
+		sourceColumn: Franchise
+
+		annotation SummarizationSetBy = Automatic
+
+	column Description
+		dataType: string
+		lineageTag: f19c0239-c3d5-4d3c-93ed-a34179ca5826
+		summarizeBy: none
+		sourceColumn: Description
+
+		annotation SummarizationSetBy = Automatic
+
+	column Part_No
+		dataType: string
+		lineageTag: 4b40ea80-1b60-4af4-9d78-d3708701c304
+		summarizeBy: none
+		sourceColumn: Part_No
+
+		annotation SummarizationSetBy = Automatic
+
+	column Cost
+		dataType: double
+		lineageTag: 5d63a221-397a-4f5e-ab4a-6f1d320d3f32
+		summarizeBy: sum
+		sourceColumn: Cost
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column In_Stock_Cost
+		dataType: double
+		lineageTag: 811f334c-70b1-45e2-bacb-d7e22f73ec1a
+		summarizeBy: sum
+		sourceColumn: In_Stock_Cost
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column On_Hand_Qty
+		dataType: double
+		lineageTag: 26608552-462f-4774-b052-84aef61f61cc
+		summarizeBy: sum
+		sourceColumn: On_Hand_Qty
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	partition jdis___Parts_Adjust = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-ch6iiwox4jveda3rmgudwi6hey.datawarehouse.fabric.microsoft.com", "LH_Parts_Reports_Data"),
+				    dbo_jdis___Parts_Adjust = Source{[Schema="dbo",Item="jdis___Parts_Adjust"]}[Data]
+				in
+				    dbo_jdis___Parts_Adjust
+
+	annotation PBI_ResultType = Table
+
