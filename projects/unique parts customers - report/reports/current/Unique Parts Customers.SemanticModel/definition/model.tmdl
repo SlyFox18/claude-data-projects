@@ -1,0 +1,29 @@
+model Model
+	culture: en-US
+	defaultPowerBIDataSourceVersion: powerBI_V3
+	sourceQueryCulture: en-US
+	dataAccessOptions
+		legacyRedirects
+		returnErrorValuesAsNull
+
+annotation __PBI_TimeIntelligenceEnabled = 0
+
+annotation PBI_QueryOrder = ["Data Refresh","dim_BranchLocation","dim_DateTable","dim_CustomerList","Fact_Invoice_UniqueCustomers","Fact_InTrans_UniqueCustomers","dim_UniqueCustomers"]
+
+annotation PBI_ProTooling = ["DevMode"]
+
+ref table MeasuresTable
+ref table 'Data Refresh'
+ref table dim_BranchLocation
+ref table dim_DateTable
+ref table Current-Tables
+ref table Current-Relationships
+ref table Current-Columns
+ref table dim_CustomerList
+ref table Fact_Invoice_UniqueCustomers
+ref table Fact_InTrans_UniqueCustomers
+ref table dim_UniqueCustomers
+ref table Current-Measures
+
+ref cultureInfo en-US
+

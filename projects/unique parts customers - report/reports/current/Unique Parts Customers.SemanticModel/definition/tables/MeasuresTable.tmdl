@@ -1,0 +1,1573 @@
+table MeasuresTable
+	lineageTag: 0d039455-6ff6-47ec-acba-7d08b99b993f
+
+	measure InTrans_Sales =
+			
+			SUM ( Fact_InTrans_UniqueCustomers[SaleValue] )
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 31fad12c-6d80-4168-9be3-81a15595ece0
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure InTrans_Cost =
+			
+			SUM ( Fact_InTrans_UniqueCustomers[CostValue] )
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 87f3cbd2-b0fa-4b77-b25d-4eec51321524
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure InTrans_Margin =
+			
+			[InTrans_Sales] - [InTrans_Cost]
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: ad9b031d-5387-4c64-8056-3bde7bc05de0
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure InTrans_Margin% =
+			
+			DIVIDE ( [InTrans_Margin], [InTrans_Sales], 0 )
+		formatString: 0.00%;-0.00%;0.00%
+		lineageTag: 5cd32f18-3b8f-45a2-ae23-8e10c8a29e3b
+
+	measure Invoice_Sales =
+			
+			SUM ( Fact_Invoice_UniqueCustomers[PartsSaleValue] )
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 5362940b-0b90-436d-85da-e082f48894e2
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure Invoice_Cost =
+			
+			SUM ( Fact_Invoice_UniqueCustomers[PartsCostValue] )
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 4a7b1b3a-cd6d-4ac8-949c-429e66196b60
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure Invoice_Margin =
+			
+			[Invoice_Sales] - [Invoice_Cost]
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 6427c839-b548-4dab-ada0-dcf09e6e04af
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure Invoice_Margin% =
+			
+			DIVIDE ( [Invoice_Margin], [Invoice_Sales], 0 )
+		formatString: 0.00%;-0.00%;0.00%
+		lineageTag: b784e707-4f51-42bc-97e0-ec52f69ee3b3
+
+	measure Total_Sales =
+			
+			[InTrans_Sales] + [Invoice_Sales]
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 51fd5384-3c93-4b77-9988-a1b5572696f2
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure Total_Cost =
+			
+			[InTrans_Cost] + [Invoice_Cost]
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: e3057925-b5c1-4d6e-aaf1-7d267e840fa3
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure Total_Margin =
+			
+			[Total_Sales] - [Total_Cost]
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: b8b4c89d-8072-4a42-b2bc-92234450dbd2
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure Total_Margin% =
+			
+			DIVIDE ( [Total_Margin], [Total_Sales], 0 )
+		formatString: 0.00%;-0.00%;0.00%
+		lineageTag: bfe8d2ba-80f5-41c4-9b4a-5d72a78754d9
+
+	measure YTD_Sales =
+			
+			VAR SelectedYears =
+			    VALUES ( dim_DateTable[Year] )
+			VAR YearCount =
+			    COUNTROWS ( SelectedYears )
+			VAR TargetYear =
+			    IF ( YearCount = 1, SELECTEDVALUE ( dim_DateTable[Year] ), YEAR ( TODAY () ) )
+			RETURN
+			    CALCULATE (
+			        TOTALYTD ( [Total_Sales], dim_DateTable[Date] ),
+			        YEAR ( dim_DateTable[Date] ) = TargetYear
+			    )
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 869a587e-5549-4a78-8fd6-9d75bf15f9de
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure YTD_Cost =
+			
+			CALCULATE (
+			    TOTALYTD ( [Total_Cost], dim_DateTable[Date] ),
+			    YEAR ( dim_DateTable[Date] ) = 2025
+			)
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: bb859c2a-19d4-4898-9257-ba87c398d533
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure YTD_Margin =
+			
+			CALCULATE (
+			    TOTALYTD ( [Total_Margin], dim_DateTable[Date] ),
+			    YEAR ( dim_DateTable[Date] ) = 2025
+			)
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: fbdf073c-9cf7-4392-966c-bd876b85381a
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure YTD_Margin% =
+			
+			DIVIDE ( [YTD_Margin], [YTD_Sales], 0 )
+		formatString: 0.00%;-0.00%;0.00%
+		lineageTag: 469296e7-b224-476f-b247-8902808321e6
+
+	measure PYTD_Sales =
+			
+			CALCULATE (
+			    TOTALYTD ( [Total_Sales], dim_DateTable[Date] ),
+			    YEAR ( dim_DateTable[Date] ) = 2024
+			)
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: b2d976bc-784a-4c4b-b794-3a651360374e
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure YTD_Sales_v2 =
+			
+			IF (
+			    HASONEVALUE ( dim_DateTable[Year] ),
+			    TOTALYTD ( [Total_Sales], dim_DateTable[Date] ),
+			    BLANK ()
+			)
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 0ab9bd20-e0d3-4aec-9329-dac63957b5c5
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure PYTD_Cost =
+			
+			CALCULATE (
+			    TOTALYTD ( [Total_Cost], dim_DateTable[Date] ),
+			    YEAR ( dim_DateTable[Date] ) = 2024
+			)
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 55329d66-3498-48d7-a17c-ede3b8b54c90
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure PYTD_Margin =
+			
+			CALCULATE (
+			    TOTALYTD ( [Total_Margin], dim_DateTable[Date] ),
+			    YEAR ( dim_DateTable[Date] ) = 2024
+			)
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: bdd088db-2ffc-432c-aa86-e4d3df9d8f17
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure PYTD_Margin% =
+			
+			DIVIDE ( [PYTD_Margin], [PYTD_Sales], 0 )
+		formatString: 0.00%;-0.00%;0.00%
+		lineageTag: 2aa79064-9fab-4b60-ab9e-d28d6563da85
+
+	measure Monthly_YTD_Sales =
+			
+			CALCULATE ( [Total_Sales], DATESYTD ( dim_DateTable[Date] ) )
+		lineageTag: 60bacbc7-1d1c-4d3c-8845-f6c45b4358e7
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure Monthly_Previous_Sales =
+			
+			CALCULATE ( [Total_Sales], DATEADD ( dim_DateTable[Date], -1, YEAR ) )
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: c0d1704f-4f3b-4b38-a299-fda98db7cee9
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure Monthly_Previous_Margin =
+			
+			CALCULATE ( [Total_Margin], DATEADD ( dim_DateTable[Date], -1, YEAR ) )
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 034bdef8-0a59-473f-81af-c38789f6f317
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 2025_Sales_Counter =
+			
+			CALCULATE (
+			    [InTrans_Sales],
+			    YEAR ( dim_DateTable[Date] ) = 2025,
+			    Fact_InTrans_UniqueCustomers[SalesType] = "Over the Counter"
+			)
+			    + CALCULATE (
+			        [Invoice_Sales],
+			        YEAR ( dim_DateTable[Date] ) = 2025,
+			        Fact_Invoice_UniqueCustomers[SalesType] = "Over the Counter"
+			    )
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: f9c1a407-2d1a-4ca4-91b6-acf764dd2829
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 2025_Sales_WorkOrder =
+			
+			CALCULATE (
+			    [InTrans_Sales],
+			    YEAR ( dim_DateTable[Date] ) = 2025,
+			    Fact_InTrans_UniqueCustomers[SalesType] = "Work Order"
+			)
+			    + CALCULATE (
+			        [Invoice_Sales],
+			        YEAR ( dim_DateTable[Date] ) = 2025,
+			        Fact_Invoice_UniqueCustomers[SalesType] = "Work Order"
+			    )
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 00b0f9d6-8534-4202-95d0-4c6309c7daf2
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 2025_Cost_Counter =
+			
+			CALCULATE (
+			    [InTrans_Cost],
+			    YEAR ( dim_DateTable[Date] ) = 2025,
+			    Fact_InTrans_UniqueCustomers[SalesType] = "Over the Counter"
+			)
+			    + CALCULATE (
+			        [Invoice_Cost],
+			        YEAR ( dim_DateTable[Date] ) = 2025,
+			        Fact_Invoice_UniqueCustomers[SalesType] = "Over the Counter"
+			    )
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 8a94a224-581b-4513-addd-d82cf540eff7
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 2025_Cost_WorkOrder =
+			
+			CALCULATE (
+			    [InTrans_Cost],
+			    YEAR ( dim_DateTable[Date] ) = 2025,
+			    Fact_InTrans_UniqueCustomers[SalesType] = "Work Order"
+			)
+			    + CALCULATE (
+			        [Invoice_Cost],
+			        YEAR ( dim_DateTable[Date] ) = 2025,
+			        Fact_Invoice_UniqueCustomers[SalesType] = "Work Order"
+			    )
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: af612217-b3bf-44ea-b1f8-1efc6793592f
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 2025_Margin_Counter =
+			
+			[2025_Sales_Counter] - [2025_Cost_Counter]
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 27012691-8f49-4a02-9b53-6d6f69455b9e
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 2025_Margin%_Counter =
+			
+			DIVIDE ( [2025_Margin_Counter], [2025_Sales_Counter], 0 )
+		formatString: 0.00%;-0.00%;0.00%
+		lineageTag: eceaa128-3e7e-4757-846e-53fef0a03a22
+
+	measure 2025_Margin_WorkOrder =
+			
+			[2025_Sales_WorkOrder] - [2025_Cost_WorkOrder]
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: de75899c-b58d-4243-ac1d-d7678bf6448b
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 2025_Margin%_WorkOrder =
+			
+			DIVIDE ( [2025_Margin_WorkOrder], [2025_Sales_WorkOrder], 0 )
+		formatString: 0.00%;-0.00%;0.00%
+		lineageTag: 6134c3dd-3c4e-4202-9a8a-b346624812b8
+
+	measure 2024_Sales_Counter =
+			
+			CALCULATE (
+			    [InTrans_Sales],
+			    YEAR ( dim_DateTable[Date] ) = 2024,
+			    Fact_InTrans_UniqueCustomers[SalesType] = "Over the Counter"
+			)
+			    + CALCULATE (
+			        [Invoice_Sales],
+			        YEAR ( dim_DateTable[Date] ) = 2024,
+			        Fact_Invoice_UniqueCustomers[SalesType] = "Over the Counter"
+			    )
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: ec331c2c-550d-4d93-8d0c-f5df467c8b12
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 2024_Sales_WorkOrder =
+			
+			CALCULATE (
+			    [InTrans_Sales],
+			    YEAR ( dim_DateTable[Date] ) = 2024,
+			    Fact_InTrans_UniqueCustomers[SalesType] = "Work Order"
+			)
+			    + CALCULATE (
+			        [Invoice_Sales],
+			        YEAR ( dim_DateTable[Date] ) = 2024,
+			        Fact_Invoice_UniqueCustomers[SalesType] = "Work Order"
+			    )
+		formatString: \$#,0.0;(\$#,0.0);\$#,0.0
+		lineageTag: 18f3c29d-0623-41fc-ac8b-3f1ac342e261
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 2024_Cost_Counter =
+			
+			CALCULATE (
+			    [InTrans_Cost],
+			    YEAR ( dim_DateTable[Date] ) = 2024,
+			    Fact_InTrans_UniqueCustomers[SalesType] = "Over the Counter"
+			)
+			    + CALCULATE (
+			        [Invoice_Cost],
+			        YEAR ( dim_DateTable[Date] ) = 2024,
+			        Fact_Invoice_UniqueCustomers[SalesType] = "Over the Counter"
+			    )
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: d922b9c7-b6fe-4b18-91a6-6825b91d1811
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 2024_Cost_WorkOrder =
+			
+			CALCULATE (
+			    [InTrans_Cost],
+			    YEAR ( dim_DateTable[Date] ) = 2024,
+			    Fact_InTrans_UniqueCustomers[SalesType] = "Work Order"
+			)
+			    + CALCULATE (
+			        [Invoice_Cost],
+			        YEAR ( dim_DateTable[Date] ) = 2024,
+			        Fact_Invoice_UniqueCustomers[SalesType] = "Work Order"
+			    )
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 79966466-ec66-4fa7-90fd-3ebbf4512753
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 2024_Margin_Counter =
+			
+			[2024_Sales_Counter] - [2024_Cost_Counter]
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 4badae14-2dd3-4c13-a7c3-bcacd711346a
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 2024_Margin%_Counter =
+			
+			DIVIDE ( [2024_Margin_Counter], [2024_Sales_Counter], 0 )
+		formatString: 0.00%;-0.00%;0.00%
+		lineageTag: 820bfb87-0372-4c7b-b468-c901ff7034b7
+
+	measure 2024_Margin_WorkOrder =
+			
+			[2024_Sales_WorkOrder] - [2024_Cost_WorkOrder]
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 8763238f-a228-451d-8e33-53eddd30ca30
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 2024_Margin%_WorkOrder =
+			
+			DIVIDE ( [2024_Margin_WorkOrder], [2024_Sales_WorkOrder], 0 )
+		formatString: 0.00%;-0.00%;0.00%
+		lineageTag: cd5423f4-6277-4fb2-91d5-f331a3005f42
+
+	measure YoY_Sales_Growth% =
+			
+			DIVIDE ( [YTD_Sales] - [SPLY_Sales], [SPLY_Sales], 0 )
+		formatString: 0.00%;-0.00%;0.00%
+		lineageTag: d737ca35-3e70-457b-bc98-658c9fca08f3
+
+	measure SPLY_Sales =
+			
+			CALCULATE ( [Total_Sales], SAMEPERIODLASTYEAR ( dim_DateTable[Date] ) )
+		lineageTag: e5d44ee9-260e-45b6-a3c9-408f57288633
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure Customer_Share_of_Total% =
+			
+			DIVIDE (
+			    [YTD_Sales],
+			    CALCULATE ( [YTD_Sales], ALL ( dim_UniqueCustomers ) ),
+			    0
+			)
+		formatString: 0.00%;-0.00%;0.00%
+		lineageTag: 5f80c860-eae8-48e0-995b-4b0847f0f52a
+
+	measure '.' =
+			
+			1
+		formatString: 0
+		lineageTag: 5722b769-aef2-4b53-8a5c-68a487e3efc7
+
+	measure 'Customer_Share_of_Total% 2024' =
+			
+			DIVIDE (
+			    [PYTD_Sales],
+			    CALCULATE ( [PYTD_Sales], ALL ( dim_UniqueCustomers ) ),
+			    0
+			)
+		formatString: 0.00%;-0.00%;0.00%
+		lineageTag: eb5c5eae-68e8-4614-a1ac-d847f7471543
+
+	measure 'Show Filter 1' =
+			
+			VAR MaxFilters = 7
+			RETURN
+			    IF (
+			        ISFILTERED ( dim_BranchLocation[Branch] ),
+			        VAR ___f =
+			            FILTERS ( dim_BranchLocation[Branch] )
+			        VAR ___r =
+			            COUNTROWS ( ___f )
+			        VAR ___t =
+			            TOPN ( MaxFilters, ___f, dim_BranchLocation[Branch] )
+			        VAR ___d =
+			            CONCATENATEX ( ___t, dim_BranchLocation[Branch], ", " )
+			        VAR ___x =
+			            "Branch:  " & ___d
+			                & IF ( ___r > MaxFilters, ", ... [" & ___r & " items selected]" ) & " "
+			        RETURN
+			            ___x & UNICHAR ( 13 )
+			                & UNICHAR ( 10 )
+			    )
+		lineageTag: b0911c98-5918-468f-a415-556786bb7885
+
+	measure 'Previous Year to Date Sales' =
+			
+			VAR CurrentDate =
+			    TODAY ()
+			VAR CurrentYear =
+			    YEAR ( CurrentDate )
+			VAR SameDateLastYear =
+			    DATE ( CurrentYear - 1, MONTH ( CurrentDate ), DAY ( CurrentDate ) )
+			RETURN
+			    CALCULATE (
+			        [Total_Sales],
+			        dim_DateTable[Date]
+			            >= DATE ( CurrentYear - 1, 1, 1 ),
+			        dim_DateTable[Date] <= SameDateLastYear
+			    )
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: f1e300ff-beeb-4d92-a643-21f8115e43c7
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure SPLY_Sales_Fixed =
+			
+			VAR CurrentCustomer =
+			    SELECTEDVALUE ( dim_UniqueCustomers[CustomerName] )
+			RETURN
+			    IF (
+			        NOT ISBLANK ( CurrentCustomer ),
+			        CALCULATE (
+			            [Total_Sales],
+			            SAMEPERIODLASTYEAR ( dim_DateTable[Date] ),
+			            dim_UniqueCustomers[CustomerName] = CurrentCustomer
+			        ),
+			        BLANK ()
+			    )
+		lineageTag: acfa1260-3332-46f1-bd9b-e3d04172b21c
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'DIfference Sales' =
+			
+			[YTD_Sales] - [Previous Year to Date Sales]
+		lineageTag: 5730143a-d9cb-4154-8a18-7e0342a4203d
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Previous Year to Date Margin' =
+			
+			VAR CurrentDate =
+			    TODAY ()
+			VAR CurrentYear =
+			    YEAR ( CurrentDate )
+			VAR SameDateLastYear =
+			    DATE ( CurrentYear - 1, MONTH ( CurrentDate ), DAY ( CurrentDate ) )
+			RETURN
+			    CALCULATE (
+			        [Total_Margin],
+			        dim_DateTable[Date]
+			            >= DATE ( CurrentYear - 1, 1, 1 ),
+			        dim_DateTable[Date] <= SameDateLastYear
+			    )
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 4105d292-e3d0-40ac-865a-3bb812bef3c6
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Difference Margin' =
+			
+			[YTD_Margin] - [Previous Year to Date Margin]
+		lineageTag: 5c91614e-20a7-4466-84bd-fc53a8ed175f
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure ShowUniqueCustomer =
+			
+			IF (
+			    ISFILTERED ( dim_UniqueCustomers[CustomerName] ),
+			    VAR _Location =
+			        VALUES ( dim_UniqueCustomers[CustomerName] )
+			    VAR _Itemscombined =
+			        CONCATENATEX ( _Location, dim_UniqueCustomers[CustomerName], UNICHAR ( 10 ) )
+			    RETURN
+			        _Itemscombined & UNICHAR ( 10 ),
+			    ""
+			)
+		lineageTag: cc41c9f3-dd83-4f7f-889e-aa0f1689d6f8
+
+	measure 'Monthly_YTD_Sales v2' =
+			
+			CALCULATE ( [Total_Sales], DATEADD ( dim_DateTable[Date], 0, YEAR ) )
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: ceaecf28-1142-455d-bcd1-fdb718698189
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Montly Difference Sales' =
+			
+			[Monthly_YTD_Sales v2] - [Monthly_Previous_Sales]
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 3ea53c7a-93a4-4c7b-a305-4bd494cd9e4f
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure Monthly_YTD_Margin =
+			
+			CALCULATE ( [Total_Margin], DATEADD ( dim_DateTable[Date], 0, YEAR ) )
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 6ab74a10-57a6-425c-917c-d2f245bf0ab7
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Monthly Difference Margin' =
+			
+			[Monthly_YTD_Margin] - [Monthly_Previous_Margin]
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 8541d44e-80be-41e3-9a47-ab67aa835e1d
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Sales Difference Icon' =
+			
+			IF (
+			    [Monthly_YTD_Sales v2] > [Monthly_Previous_Sales],
+			    "▲",
+			    IF ( [Monthly_YTD_Sales v2] < [Monthly_Previous_Sales], "▼", "→" )
+			)
+		lineageTag: edebde39-ebce-4dc3-96f6-093c8f2e2c9a
+
+	measure 'Sales Difference with Icon' =
+			
+			VAR Difference = [Monthly_YTD_Sales v2] - [Monthly_Previous_Sales]
+			VAR Icon = [Sales Difference Icon]
+			RETURN
+			    FORMAT ( Difference, "Currency" ) & " " & Icon
+		lineageTag: f6d3fa28-16be-4d3b-9a4a-d0ab8873c1c7
+
+	measure 'Margin Difference Icon' =
+			
+			IF (
+			    [Monthly_YTD_Margin] > [Monthly_Previous_Margin],
+			    "▲",
+			    IF ( [Monthly_YTD_Margin] < [Monthly_Previous_Margin], "▼", "→" )
+			)
+		lineageTag: 640b4609-52aa-4723-aedb-8853ace1a010
+
+	measure 'Margin Difference with Icon' =
+			
+			VAR Difference = [Monthly Difference Margin]
+			VAR Icon = [Margin Difference Icon]
+			RETURN
+			    FORMAT ( Difference, "Currency" ) & " " & Icon
+		lineageTag: 91ed224e-9392-4dc2-8d28-4c2e8760d229
+
+	measure 'Sales Difference Icon YTD' =
+			
+			IF (
+			    [YTD_Sales] > [Previous Year to Date Sales],
+			    "▲",
+			    IF ( [YTD_Sales] < [Previous Year to Date Sales], "▼", "→" )
+			)
+		lineageTag: 5a122b9f-a173-404d-b71b-f88d5d3025c1
+
+	measure 'Sales Difference with Icon YTD' =
+			
+			VAR Difference = [DIfference Sales]
+			VAR Icon = [Sales Difference Icon YTD]
+			RETURN
+			    FORMAT ( Difference, "Currency" ) & " " & Icon
+		lineageTag: 65b65686-c29c-460f-a8a4-a35aa06051fd
+
+	measure 'Margin Difference Icon YTD' =
+			
+			IF (
+			    [YTD_Margin] > [Previous Year to Date Margin],
+			    "▲",
+			    IF ( [YTD_Margin] < [Previous Year to Date Margin], "▼", "→" )
+			)
+		lineageTag: d2237879-562a-4c3d-9a6d-926ff34245a2
+
+	measure 'Margin Difference with Icon YTD' =
+			
+			VAR Difference = [Difference Margin]
+			VAR Icon = [Margin Difference Icon YTD]
+			RETURN
+			    FORMAT ( Difference, "Currency" ) & " " & Icon
+		lineageTag: e8ea3233-50dc-41b1-8d19-f97c313cd9eb
+
+	measure 'Sales Performance Rule' =
+			
+			IF (
+			    [Monthly_YTD_Sales v2] > [Monthly_Previous_Sales],
+			    1,
+			    // Green (positive performance)
+			    0 // Red (negative performance)
+			)
+		formatString: 0
+		lineageTag: 31849ed8-c9c6-45d0-8acc-562d2d6fc083
+
+	measure 'Margin Performance Rule' =
+			
+			IF (
+			    [Monthly_YTD_Margin] > [Monthly_Previous_Margin],
+			    1,
+			    // Green
+			    0 // Red
+			)
+		formatString: 0
+		lineageTag: 00778f07-5931-44aa-891b-e69252e80740
+
+	measure 'Sales Rule 1' =
+			
+			IF ( [YTD_Sales] > [Previous Year to Date Sales], 1, // Green
+			    0 // Red
+			    )
+		formatString: 0
+		lineageTag: 6fad7fdb-e13b-44f7-a12d-66b0c23a1908
+
+	measure 'Sales Rule 2' =
+			
+			IF ( [Previous Year to Date Sales] > [YTD_Sales], 1, // Green
+			    0 // Red
+			    )
+		formatString: 0
+		lineageTag: de7bdbe7-a9b3-4621-b13c-86a1a2e07293
+
+	measure 'Sales Rule 3' =
+			
+			IF (
+			    [Monthly_YTD_Sales v2] > [Monthly_Previous_Sales],
+			    1,
+			    // Green
+			    0 // Red
+			)
+		formatString: 0
+		lineageTag: 43144610-a8be-4d92-b3d4-31b1abac89ff
+
+	measure 'Sales Rule 4' =
+			
+			IF (
+			    [Monthly_Previous_Sales] > [Monthly_YTD_Sales v2],
+			    1,
+			    // Green
+			    0 // Red
+			)
+		formatString: 0
+		lineageTag: 34935479-3083-4415-9ad3-640d6fc1849a
+
+	measure 'Margin Rule 1' =
+			
+			IF (
+			    [Monthly_Previous_Margin] > [Monthly_YTD_Margin],
+			    1,
+			    // Green
+			    0 // Red
+			)
+		formatString: 0
+		lineageTag: 47bd6c96-97cc-476b-b662-9117c0f1a103
+
+	measure 'Margin Rule 2' =
+			
+			IF (
+			    [YTD_Margin] > [Previous Year to Date Margin],
+			    1,
+			    // Green (positive performance)
+			    0 // Red (negative performance)
+			)
+		formatString: 0
+		lineageTag: df218008-c81e-4b93-958a-ad52846a81b0
+
+	measure 'Margin Rule 3' =
+			
+			IF (
+			    [Previous Year to Date Margin] > [YTD_Margin],
+			    1,
+			    // Green (positive performance)
+			    0 // Red (negative performance)
+			)
+		formatString: 0
+		lineageTag: 668d010c-95f3-431d-9ffd-6c456ae8dd41
+
+	measure 'Conditional Formating Sales' =
+			
+			IF ( [YTD_Sales] > [PYTD_Sales], 1, // Green
+			    0 // Red
+			    )
+		formatString: 0
+		lineageTag: c6285b71-a872-43f1-bb42-e3ad6f91754a
+
+	measure 'Conditional Formating Cost' =
+			
+			IF ( [YTD_Cost] > [PYTD_Cost], 1, // Green
+			    0 // Red
+			    )
+		formatString: 0
+		lineageTag: be660451-f5bd-4b6c-852a-34405f9388b7
+
+	measure 'Conditional Formating Margin' =
+			
+			IF ( [YTD_Margin] > [PYTD_Margin], 1, // Green
+			    0 // Red
+			    )
+		formatString: 0
+		lineageTag: b100e8e6-7661-4f2b-a2ec-8b39251ee85a
+
+	measure 'Conditional Formating Margin %' =
+			
+			IF ( [YTD_Margin%] > [PYTD_Margin%], 1, // Green
+			    0 // Red
+			    )
+		formatString: 0
+		lineageTag: 989aad08-b731-4287-b584-819a5a9517f5
+
+	measure 'Sales Percentage' =
+			
+			DIVIDE (
+			    [Total_Sales],
+			    CALCULATE ( [Total_Sales], ALLSELECTED ( Fact_InTrans_UniqueCustomers ) ),
+			    0
+			)
+		lineageTag: d0866865-febd-4e23-ad34-de89f6a7e791
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Welcome Name' =
+			
+			VAR _User =
+			    USERPRINCIPALNAME ()
+			VAR _Position =
+			    SEARCH ( "@", _User, 1 )
+			VAR _Name =
+			    LEFT ( _User, _Position - 1 )
+			VAR _FirstLetter =
+			    UPPER ( LEFT ( _Name, 1 ) )
+			VAR _LastName =
+			    MID ( _Name, 2, LEN ( _Name ) - 1 )
+			VAR _FormattedLastName =
+			    UPPER ( LEFT ( _LastName, 1 ) )
+			        & LOWER ( MID ( _LastName, 2, LEN ( _LastName ) ) )
+			RETURN
+			    "Welcome Back, " & _FirstLetter & "." & _FormattedLastName
+		lineageTag: 511a57a0-1a7e-4caa-a9ac-716fbe3404ac
+
+	measure R12M_Sales =
+			
+			CALCULATE (
+			    [Total_Sales],
+			    DATESINPERIOD ( dim_DateTable[Date], MAX ( dim_DateTable[Date] ), -12, MONTH )
+			)
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: a7779581-74ec-4458-9c72-fd1e5b99813b
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure R12M_Sales_LY =
+			
+			VAR CurrentMaxDate =
+			    MAX ( dim_DateTable[Date] )
+			VAR LastYearEndDate =
+			    DATE ( YEAR ( CurrentMaxDate ) - 1, MONTH ( CurrentMaxDate ), DAY ( CurrentMaxDate ) )
+			RETURN
+			    CALCULATE (
+			        [Total_Sales],
+			        DATESINPERIOD ( dim_DateTable[Date], LastYearEndDate, -12, MONTH )
+			    )
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: fbe0c745-562d-4f88-92e8-498d4c2de07c
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure R12M_Growth% =
+			
+			DIVIDE ( [R12M_Sales] - [R12M_Sales_LY], [R12M_Sales_LY], 0 )
+		lineageTag: 74f8e1a5-9367-42c3-aa8d-bea5258fb03b
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure R12M_Cost =
+			
+			CALCULATE (
+			    [Total_Cost],
+			    DATESINPERIOD ( dim_DateTable[Date], MAX ( dim_DateTable[Date] ), -12, MONTH )
+			)
+		lineageTag: 8e0f726a-b9d9-4099-a431-95c172a388dc
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure R12M_Margin =
+			
+			[R12M_Sales] - [R12M_Cost]
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: d93a86b0-fc79-447e-9f51-278090cfa108
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure R12M_Cost_LY =
+			
+			VAR CurrentMaxDate =
+			    MAX ( dim_DateTable[Date] )
+			VAR LastYearEndDate =
+			    DATE ( YEAR ( CurrentMaxDate ) - 1, MONTH ( CurrentMaxDate ), DAY ( CurrentMaxDate ) )
+			RETURN
+			    CALCULATE (
+			        [Total_Cost],
+			        DATESINPERIOD ( dim_DateTable[Date], LastYearEndDate, -12, MONTH )
+			    )
+		lineageTag: 8be9d6a2-a2da-4b90-814e-795f29fbdc05
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure R12M_Margin_LY =
+			
+			[R12M_Sales_LY] - [R12M_Cost_LY]
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: c9be5054-d7c8-451a-a86a-680694eb47eb
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure R12M_Margin% =
+			
+			DIVIDE ( [R12M_Margin], [R12M_Sales], 0 )
+		lineageTag: 23699c1e-cae7-4ad0-98a1-9c9e5399e180
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure R12M_Margin%_LY =
+			
+			DIVIDE ( [R12M_Margin_LY], [R12M_Sales_LY], 0 )
+		lineageTag: 0803c803-a8a9-42eb-b6ea-9c9d4c2fc1ed
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure R12M_Sales_Variance =
+			
+			[R12M_Sales] - [R12M_Sales_LY]
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 15b7e44b-5a2f-4417-ad19-15e7070ed27a
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure R12M_Sales_Growth% =
+			
+			DIVIDE ( [R12M_Sales] - [R12M_Sales_LY], [R12M_Sales_LY], 0 )
+		lineageTag: db6ecbef-e850-493e-942c-a9a37a4ca04c
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure R12M_Margin_Variance =
+			
+			[R12M_Margin] - [R12M_Margin_LY]
+		lineageTag: fa34f2ee-9f9f-465b-addf-e0dd8bf00b4f
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Sales Rule 1.2' =
+			
+			IF ( [Previous Year to Date Sales] > [YTD_Sales], 1, // Green
+			    0 // Red
+			    )
+		formatString: 0
+		lineageTag: f05a3ed8-77ed-4ba5-8227-3265869f2855
+
+	measure 'R12M_Sales Card' =
+			
+			CALCULATE (
+			    [Total_Sales],
+			    DATESINPERIOD ( dim_DateTable[Date], TODAY (), -12, MONTH )
+			)
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: da1bede7-ab6c-4737-874d-aab3df1f3b7c
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'R12M_Sales_LY Card' =
+			
+			VAR LastYearDate =
+			    DATE ( YEAR ( TODAY () ) - 1, MONTH ( TODAY () ), DAY ( TODAY () ) )
+			RETURN
+			    CALCULATE (
+			        [Total_Sales],
+			        DATESINPERIOD ( dim_DateTable[Date], LastYearDate, -12, MONTH )
+			    )
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: d89903fb-9996-4158-aea1-3d2ac55a71b5
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure R12M_Difference =
+			
+			[R12M_Sales] - [R12M_Sales_LY]
+		lineageTag: 4ffd1f64-3b5a-4b52-ae0b-4a3db97e5156
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'R12M_Sales Dynamic' =
+			
+			VAR MaxDateInContext =
+			    MAX ( dim_DateTable[Date] )
+			VAR HasDateFilter =
+			    NOT ISEMPTY ( FILTERS ( dim_DateTable[Date] ) )
+			VAR EndDate =
+			    IF ( HasDateFilter, MaxDateInContext, TODAY () )
+			RETURN
+			    CALCULATE (
+			        [Total_Sales],
+			        DATESINPERIOD ( dim_DateTable[Date], EndDate, -12, MONTH )
+			    )
+		lineageTag: 86d4caaf-c68b-445e-84d5-f72d8bf0bb42
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'R12M_Sales_LY Dynamic' =
+			
+			VAR MaxDateInContext =
+			    MAX ( dim_DateTable[Date] )
+			VAR HasDateFilter =
+			    NOT ISEMPTY ( FILTERS ( dim_DateTable[Date] ) )
+			VAR EndDate =
+			    IF ( HasDateFilter, MaxDateInContext, TODAY () )
+			VAR LastYearDate =
+			    DATE ( YEAR ( EndDate ) - 1, MONTH ( EndDate ), DAY ( EndDate ) )
+			RETURN
+			    CALCULATE (
+			        [Total_Sales],
+			        DATESINPERIOD ( dim_DateTable[Date], LastYearDate, -12, MONTH )
+			    )
+		lineageTag: d62856f3-01c4-4f57-a2b9-f6773b054f34
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure R12M_Sales_Difference_Icon =
+			
+			IF (
+			    [R12M_Sales] > [R12M_Sales_LY],
+			    "▲",
+			    IF ( [R12M_Sales] < [R12M_Sales_LY], "▼", "→" )
+			)
+		lineageTag: 9fa46b9d-97c1-4060-8a95-6a7d8847dacf
+
+	measure R12M_Sales_Difference_with_Icon =
+			
+			VAR Difference = [R12M_Difference]
+			VAR Icon = [R12M_Sales_Difference_Icon]
+			RETURN
+			    FORMAT ( Difference, "Currency" ) & " " & Icon
+		lineageTag: 582c0bfa-4da4-4bb4-b984-69418113a492
+
+	measure 'Sales Rule 1.3' =
+			
+			IF ( [R12M_Sales Card] > [R12M_Sales_LY Card], 1, // Green
+			    0 // Red
+			    )
+		formatString: 0
+		lineageTag: b928ea5d-280b-40f7-be77-20d0a820fe88
+
+	measure 'Sales Rule 1.4' =
+			
+			IF ( [R12M_Sales_LY Card] > [R12M_Sales Card], 1, // Green
+			    0 // Red
+			    )
+		formatString: 0
+		lineageTag: f3ea2580-08bc-4407-b7f5-910d9ef48964
+
+	measure R12M_Margin_Card =
+			
+			CALCULATE (
+			    [Total_Margin],
+			    DATESINPERIOD ( dim_DateTable[Date], TODAY (), -12, MONTH )
+			)
+		lineageTag: c0e5cb9b-08d6-4e29-bce7-8ee46ea9c108
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'R12M_Margin Dynamic' =
+			
+			VAR MaxDateInContext =
+			    MAX ( dim_DateTable[Date] )
+			VAR HasDateFilter =
+			    NOT ISEMPTY ( FILTERS ( dim_DateTable[Date] ) )
+			VAR EndDate =
+			    IF ( HasDateFilter, MaxDateInContext, TODAY () )
+			RETURN
+			    CALCULATE (
+			        [Total_Margin],
+			        DATESINPERIOD ( dim_DateTable[Date], EndDate, -12, MONTH )
+			    )
+		lineageTag: f798e10e-296b-4c65-ab06-862f70f7e06f
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'R12M_Margin_LY Card' =
+			
+			VAR LastYearDate =
+			    DATE ( YEAR ( TODAY () ) - 1, MONTH ( TODAY () ), DAY ( TODAY () ) )
+			RETURN
+			    CALCULATE (
+			        [Total_Margin],
+			        DATESINPERIOD ( dim_DateTable[Date], LastYearDate, -12, MONTH )
+			    )
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: c1d7c9c6-c498-493d-a533-3ea92afa929b
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure R12M_Margin_Difference_Card =
+			
+			[R12M_Margin_Card] - [R12M_Margin_LY Card]
+		lineageTag: 5c61077e-0741-4836-bbc0-bdd31bf45094
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'R12 Margin Difference with Icon YTD' =
+			
+			VAR Difference = [R12M_Margin_Difference_Card]
+			VAR Icon = [Margin Difference Icon YTD]
+			RETURN
+			    FORMAT ( Difference, "Currency" ) & " " & Icon
+		lineageTag: 59f9bc1b-fb02-439d-8418-106e4b8b2608
+
+	measure 'Margin Rule 1.1' =
+			
+			IF ( [R12M_Margin_Card] > [R12M_Margin_LY Card], 1, // Green
+			    0 // Red
+			    )
+		formatString: 0
+		lineageTag: c0dec7f2-5463-444c-979c-3568d29d0ff4
+
+	measure 'Margin Rule 1.2' =
+			
+			IF ( [R12M_Margin_LY Card] > [R12M_Margin_Card], 1, // Green
+			    0 // Red
+			    )
+		formatString: 0
+		lineageTag: 7510d1ac-edd3-474c-9bff-ff73e56625ee
+
+	measure 'Margin Rule 4' =
+			
+			IF (
+			    [Monthly_YTD_Margin] > [Monthly_Previous_Margin],
+			    1,
+			    // Green (positive performance)
+			    0 // Red (negative performance)
+			)
+		formatString: 0
+		lineageTag: 98cd636c-e6f7-4da3-80f5-42a14ad5f1f9
+
+	measure 'R12M_Margin_LY Dynamic' =
+			
+			VAR MaxDateInContext =
+			    MAX ( dim_DateTable[Date] )
+			VAR HasDateFilter =
+			    NOT ISEMPTY ( FILTERS ( dim_DateTable[Date] ) )
+			VAR EndDate =
+			    IF ( HasDateFilter, MaxDateInContext, TODAY () )
+			VAR LastYearDate =
+			    DATE ( YEAR ( EndDate ) - 1, MONTH ( EndDate ), DAY ( EndDate ) )
+			RETURN
+			    CALCULATE (
+			        [Total_Margin],
+			        DATESINPERIOD ( dim_DateTable[Date], LastYearDate, -12, MONTH )
+			    )
+		lineageTag: 343d2d84-7284-45b5-8ef0-bf33189c9a0d
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Sales Rule 5' =
+			
+			IF (
+			    [R12M_Sales] > [R12M_Sales_LY],
+			    1,
+			    // Green - current R12M is higher
+			    0 // Red - current R12M is lower
+			)
+		formatString: 0
+		lineageTag: 1f78070e-65f1-4971-94f0-069d5527a190
+
+	measure R12M_Margin_Difference =
+			
+			[R12M_Margin] - [R12M_Margin_LY]
+		lineageTag: 4db87dbd-da8d-4ea3-9a27-3cb47fa59716
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'R12 Margin Difference with Icon R12' =
+			
+			VAR Difference = [R12M_Margin_Difference]
+			VAR Icon = [Margin Difference Icon R12]
+			RETURN
+			    FORMAT ( Difference, "Currency" ) & " " & Icon
+		lineageTag: 7fa3850f-64c4-40f9-a5c5-0695e3aee2ff
+
+	measure 'Margin Difference Icon R12' =
+			
+			IF (
+			    [R12M_Margin] > [R12M_Margin_LY],
+			    "▲",
+			    IF ( [R12M_Margin] < [R12M_Margin_LY], "▼", "→" )
+			)
+		lineageTag: d1a58dba-0ea3-4490-815b-a0fbe9992d7e
+
+	measure 'Margin Rule 5' =
+			
+			IF (
+			    [R12M_Margin] > [R12M_Margin_LY],
+			    1,
+			    // Green - current R12M margin is higher
+			    0 // Red - current R12M margin is lower
+			)
+		formatString: 0
+		lineageTag: e2b45ac1-1bb0-4393-be69-923a6421c72c
+
+	measure 'R12M_Cost Card' =
+			
+			CALCULATE (
+			    [Total_Cost],
+			    DATESINPERIOD ( dim_DateTable[Date], TODAY (), -12, MONTH )
+			)
+		lineageTag: 2b127e5d-67e3-4192-92da-e57ff41cd0b0
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'R12M_Margin Card' =
+			
+			[R12M_Sales Card] - [R12M_Cost Card]
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 9bff29f6-0631-45f1-8339-d80d1436f954
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'R12M_Cost_LY Card' =
+			
+			VAR LastYearDate =
+			    DATE ( YEAR ( TODAY () ) - 1, MONTH ( TODAY () ), DAY ( TODAY () ) )
+			RETURN
+			    CALCULATE (
+			        [Total_Cost],
+			        DATESINPERIOD ( dim_DateTable[Date], LastYearDate, -12, MONTH )
+			    )
+		lineageTag: 41c943f9-9afe-4442-a2da-e914bbbcc826
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'R12M_Margin% Card' =
+			
+			DIVIDE ( [R12M_Margin Card], [R12M_Sales Card], 0 )
+		formatString: 0.00%;-0.00%;0.00%
+		lineageTag: f6db56a8-6d01-4504-b5b2-66aacd782163
+
+	measure 'R12M_Margin%_LY Card' =
+			
+			DIVIDE ( [R12M_Margin_LY Card], [R12M_Sales_LY Card], 0 )
+		formatString: 0.00%;-0.00%;0.00%
+		lineageTag: 93a60128-0786-4032-a4c2-75ba95fcaeb2
+
+	measure 'Conditional Formating R12 Sales' =
+			
+			IF ( [R12M_Sales Card] > [R12M_Sales_LY Card], 1, // Green
+			    0 // Red
+			    )
+		formatString: 0
+		lineageTag: 798f63b5-0572-48f0-8256-e1efda0690c8
+
+	measure 'Conditional Formating R12 Margin' =
+			
+			IF ( [R12M_Margin Card] > [R12M_Margin_LY Card], 1, // Green
+			    0 // Red
+			    )
+		formatString: 0
+		lineageTag: 9d90c20f-ba17-4393-9d4c-30385d82091e
+
+	measure 'Conditional Formating R12 Margin %' =
+			
+			IF ( [R12M_Margin% Card] > [R12M_Margin%_LY Card], 1, // Green
+			    0 // Red
+			    )
+		formatString: 0
+		lineageTag: 91b92268-90a2-49cb-940d-3b1ae1021428
+
+	measure 'Sales Difference with Icon Short' = ```
+			
+			VAR Difference = [Monthly_YTD_Sales v2] - [Monthly_Previous_Sales]
+			VAR Icon = [Sales Difference Icon]
+			VAR AbsValue = ABS(Difference)
+			VAR FormattedValue = 
+			    SWITCH(
+			        TRUE(),
+			        AbsValue >= 1000000, FORMAT(Difference / 1000000, "$#,0.##") & "M",
+			        AbsValue >= 1000, FORMAT(Difference / 1000, "$#,0.##") & "K",
+			        FORMAT(Difference, "$#,0")
+			    )
+			RETURN FormattedValue & " " & Icon
+			```
+		lineageTag: 1c919aea-922a-4a6c-8b87-954dce24808e
+
+	measure R12M_Sales_Difference_with_Icon_Short = ```
+			
+			VAR Difference = [R12M_Difference]
+			VAR Icon = [R12M_Sales_Difference_Icon]
+			VAR AbsValue = ABS(Difference)
+			VAR FormattedValue = 
+			    SWITCH(
+			        TRUE(),
+			        AbsValue >= 1000000, FORMAT(Difference / 1000000, "$#,0.##") & "M",
+			        AbsValue >= 1000, FORMAT(Difference / 1000, "$#,0.##") & "K",
+			        FORMAT(Difference, "$#,0")
+			    )
+			RETURN FormattedValue & " " & Icon
+			```
+		lineageTag: 63dda794-0372-4e3c-8725-6b8ade1663cf
+
+	measure 'Margin Difference with Icon Short' = ```
+			
+			VAR Difference = [Monthly Difference Margin]
+			VAR Icon = [Margin Difference Icon]
+			VAR AbsValue = ABS(Difference)
+			VAR FormattedValue = 
+			    SWITCH(
+			        TRUE(),
+			        AbsValue >= 1000000, FORMAT(Difference / 1000000, "$#,0.##") & "M",
+			        AbsValue >= 1000, FORMAT(Difference / 1000, "$#,0.##") & "K",
+			        FORMAT(Difference, "$#,0")
+			    )
+			RETURN FormattedValue & " " & Icon
+			```
+		lineageTag: 767ea1a3-0831-48d1-8672-db14a8395dc7
+
+	measure 'R12 Margin Difference with Icon R12 Short' = ```
+			
+			VAR Difference = [R12M_Margin_Difference]
+			VAR Icon = [Margin Difference Icon R12]
+			VAR AbsValue = ABS(Difference)
+			VAR FormattedValue = 
+			    SWITCH(
+			        TRUE(),
+			        AbsValue >= 1000000, FORMAT(Difference / 1000000, "$#,0.##") & "M",
+			        AbsValue >= 1000, FORMAT(Difference / 1000, "$#,0.##") & "K",
+			        FORMAT(Difference, "$#,0")
+			    )
+			RETURN FormattedValue & " " & Icon
+			```
+		lineageTag: a6dbf00a-113c-461e-a7d4-08d50f09719b
+
+	measure 'Dynamic Customer Name' = ```
+			
+			SELECTEDVALUE(
+			    dim_UniqueCustomers[CustomerName], 
+			    "All Unique Customers"
+			)
+			```
+		lineageTag: 627b4129-23a8-4d4b-9bff-c55ecff33cbd
+
+	measure 'Home - Header' = ```
+			
+			// Get user name
+			VAR _User = USERPRINCIPALNAME()
+			VAR _Position = SEARCH("@", _User, 1)
+			VAR _Name = LEFT(_User, _Position - 1)
+			VAR _FirstLetter = UPPER(LEFT(_Name, 1))
+			VAR _LastName = MID(_Name, 2, LEN(_Name) - 1)
+			VAR _FormattedLastName = 
+			    UPPER(LEFT(_LastName, 1)) & LOWER(MID(_LastName, 2, LEN(_LastName)))
+			VAR WelcomeName = _FirstLetter & "." & _FormattedLastName
+			
+			// Get current date/time info
+			VAR CurrentDate = TODAY()
+			VAR DateDisplay = FORMAT(CurrentDate, "MMM D, YYYY")
+			VAR CurrentHour = HOUR(NOW())
+			VAR TimeGreeting = 
+			    IF(CurrentHour < 12, "Good Morning",
+			    IF(CurrentHour < 17, "Good Afternoon",
+			    "Good Evening"))
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    height: 85px;
+			    padding: 15px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 10px;
+			    color: white;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-between;
+			    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    box-sizing: border-box;
+			'>
+			    <!-- Left side: Dashboard Title -->
+			    <div style='display: flex; align-items: center; gap: 15px;'>
+			        <!-- Home icon -->
+			        <div style='
+			            width: 40px;
+			            height: 40px;
+			            background: rgba(255,255,255,0.15);
+			            border-radius: 8px;
+			            display: flex;
+			            align-items: center;
+			            justify-content: center;
+			            font-size: 20px;
+			        '>
+			            🏠
+			        </div>
+			        
+			        <!-- Title -->
+			        <div>
+			            <div style='font-size: 12px; opacity: 0.85; margin-bottom: 4px; letter-spacing: 0.5px;'>
+			                REPORT
+			            </div>
+			            <div style='font-size: 26px; font-weight: 700; line-height: 1;'>
+			                Unique Parts Customers
+			            </div>
+			        </div>
+			    </div>
+			    
+			    <!-- Right side: Welcome & Date -->
+			    <div style='text-align: right;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 6px;'>
+			            " & TimeGreeting & ", " & WelcomeName & "
+			        </div>
+			        <div style='font-size: 16px; font-weight: 600;'>
+			            📅 " & DateDisplay & "
+			        </div>
+			    </div>
+			</div>
+			"
+			```
+		lineageTag: 1d82525c-692c-4ce0-a4f9-3fe52725f96a
+
+	measure 'Details - Header' = ```
+			
+			// Get user name
+			VAR _User = USERPRINCIPALNAME()
+			VAR _Position = SEARCH("@", _User, 1)
+			VAR _Name = LEFT(_User, _Position - 1)
+			VAR _FirstLetter = UPPER(LEFT(_Name, 1))
+			VAR _LastName = MID(_Name, 2, LEN(_Name) - 1)
+			VAR _FormattedLastName = 
+			    UPPER(LEFT(_LastName, 1)) & LOWER(MID(_LastName, 2, LEN(_LastName)))
+			VAR WelcomeName = _FirstLetter & "." & _FormattedLastName
+			
+			// Get current date/time info
+			VAR CurrentDate = TODAY()
+			VAR DateDisplay = FORMAT(CurrentDate, "MMM D, YYYY")
+			VAR CurrentHour = HOUR(NOW())
+			VAR TimeGreeting = 
+			    IF(CurrentHour < 12, "Good Morning",
+			    IF(CurrentHour < 17, "Good Afternoon",
+			    "Good Evening"))
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    height: 85px;
+			    padding: 15px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 10px;
+			    color: white;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-between;
+			    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    box-sizing: border-box;
+			'>
+			    <!-- Left side: Dashboard Title -->
+			    <div style='display: flex; align-items: center; gap: 15px;'>
+			        <!-- Home icon -->
+			        <div style='
+			            width: 40px;
+			            height: 40px;
+			            background: rgba(255,255,255,0.15);
+			            border-radius: 8px;
+			            display: flex;
+			            align-items: center;
+			            justify-content: center;
+			            font-size: 20px;
+			        '>
+			            🏠
+			        </div>
+			        
+			        <!-- Title -->
+			        <div>
+			            <div style='font-size: 12px; opacity: 0.85; margin-bottom: 4px; letter-spacing: 0.5px;'>
+			                REPORT
+			            </div>
+			            <div style='font-size: 26px; font-weight: 700; line-height: 1;'>
+			                Customer Details
+			            </div>
+			        </div>
+			    </div>
+			    
+			    <!-- Right side: Welcome & Date -->
+			    <div style='text-align: right;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 6px;'>
+			            " & TimeGreeting & ", " & WelcomeName & "
+			        </div>
+			        <div style='font-size: 16px; font-weight: 600;'>
+			            📅 " & DateDisplay & "
+			        </div>
+			    </div>
+			</div>
+			"
+			```
+		lineageTag: f0071956-f533-49d3-adcb-061c6dec6a9f
+
+	measure 'Comparison - Header' = ```
+			
+			// Get user name
+			VAR _User = USERPRINCIPALNAME()
+			VAR _Position = SEARCH("@", _User, 1)
+			VAR _Name = LEFT(_User, _Position - 1)
+			VAR _FirstLetter = UPPER(LEFT(_Name, 1))
+			VAR _LastName = MID(_Name, 2, LEN(_Name) - 1)
+			VAR _FormattedLastName = 
+			    UPPER(LEFT(_LastName, 1)) & LOWER(MID(_LastName, 2, LEN(_LastName)))
+			VAR WelcomeName = _FirstLetter & "." & _FormattedLastName
+			
+			// Get current date/time info
+			VAR CurrentDate = TODAY()
+			VAR DateDisplay = FORMAT(CurrentDate, "MMM D, YYYY")
+			VAR CurrentHour = HOUR(NOW())
+			VAR TimeGreeting = 
+			    IF(CurrentHour < 12, "Good Morning",
+			    IF(CurrentHour < 17, "Good Afternoon",
+			    "Good Evening"))
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    height: 85px;
+			    padding: 15px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 10px;
+			    color: white;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-between;
+			    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    box-sizing: border-box;
+			'>
+			    <!-- Left side: Dashboard Title -->
+			    <div style='display: flex; align-items: center; gap: 15px;'>
+			        <!-- Home icon -->
+			        <div style='
+			            width: 40px;
+			            height: 40px;
+			            background: rgba(255,255,255,0.15);
+			            border-radius: 8px;
+			            display: flex;
+			            align-items: center;
+			            justify-content: center;
+			            font-size: 20px;
+			        '>
+			            🏠
+			        </div>
+			        
+			        <!-- Title -->
+			        <div>
+			            <div style='font-size: 12px; opacity: 0.85; margin-bottom: 4px; letter-spacing: 0.5px;'>
+			                REPORT
+			            </div>
+			            <div style='font-size: 26px; font-weight: 700; line-height: 1;'>
+			                Unique Parts Customers - Comparison
+			            </div>
+			        </div>
+			    </div>
+			    
+			    <!-- Right side: Welcome & Date -->
+			    <div style='text-align: right;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 6px;'>
+			            " & TimeGreeting & ", " & WelcomeName & "
+			        </div>
+			        <div style='font-size: 16px; font-weight: 600;'>
+			            📅 " & DateDisplay & "
+			        </div>
+			    </div>
+			</div>
+			"
+			```
+		lineageTag: 7389529d-db1d-449f-971e-5e9b7a739fd9
+
+	column Value
+		isHidden
+		formatString: 0
+		lineageTag: 8678bf39-f176-4547-98dc-825053f376fe
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [Value]
+
+		annotation SummarizationSetBy = Automatic
+
+	column DummyColumn
+		isHidden
+		formatString: 0
+		lineageTag: cd49475c-303a-4460-be09-b11b4ce4fce3
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [DummyColumn]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition MeasuresTable = calculated
+		mode: import
+		source = ADDCOLUMNS( GENERATESERIES(1, 1), "DummyColumn", 1 )
+
+	annotation PBI_Id = 6fbd826045c24c5594d31f62f17aaa57
+
