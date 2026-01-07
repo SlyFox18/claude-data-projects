@@ -1,0 +1,486 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/bookmark/1.4.0/schema.json",
+  "displayName": "Show Nav Panel 3",
+  "name": "1c69ab76b56fdf67d163",
+  "options": {
+    "targetVisualNames": [],
+    "suppressData": true
+  },
+  "explorationState": {
+    "version": "1.3",
+    "activeSection": "6a9ecbdf9951094d94ea",
+    "sections": {
+      "6a9ecbdf9951094d94ea": {
+        "filters": {
+          "byExpr": [
+            {
+              "name": "5e760befa9008ddc69a3",
+              "type": "Categorical",
+              "expression": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Tables"
+                    }
+                  },
+                  "Property": "table_name"
+                }
+              },
+              "howCreated": 5
+            }
+          ]
+        },
+        "visualContainers": {
+          "9468b834366c11e432a8": {
+            "singleVisual": {
+              "visualType": "textbox",
+              "objects": {}
+            }
+          },
+          "e5789ddb1005547955b9": {
+            "singleVisual": {
+              "visualType": "image",
+              "objects": {}
+            }
+          },
+          "395d6e906ae85bc28b6b": {
+            "singleVisual": {
+              "visualType": "shape",
+              "objects": {}
+            }
+          },
+          "5e6c2feee515dd311e7f": {
+            "singleVisual": {
+              "visualType": "pageNavigator",
+              "objects": {}
+            }
+          },
+          "7a5ff12c062616c5e0a4": {
+            "singleVisual": {
+              "visualType": "image",
+              "objects": {}
+            }
+          },
+          "fefe9a01055d4a5d4c1d": {
+            "singleVisual": {
+              "visualType": "shape",
+              "objects": {}
+            }
+          },
+          "79140d78ceeb5a01f0f2": {
+            "singleVisual": {
+              "visualType": "image",
+              "objects": {}
+            }
+          },
+          "91e1db79958deac735c6": {
+            "filters": {
+              "byExpr": [
+                {
+                  "name": "dadcaeff5800d712a841",
+                  "type": "Advanced",
+                  "expression": {
+                    "Aggregation": {
+                      "Expression": {
+                        "Column": {
+                          "Expression": {
+                            "SourceRef": {
+                              "Entity": "Data Refresh"
+                            }
+                          },
+                          "Property": "CurrentDateTime"
+                        }
+                      },
+                      "Function": 3
+                    }
+                  },
+                  "howCreated": 0
+                }
+              ]
+            },
+            "singleVisual": {
+              "visualType": "card",
+              "objects": {}
+            }
+          },
+          "136198568a20b1dff76a": {
+            "singleVisual": {
+              "visualType": "image",
+              "objects": {}
+            }
+          },
+          "9c6befa4f314842aa716": {
+            "singleVisual": {
+              "visualType": "shape",
+              "objects": {}
+            }
+          },
+          "e410298873ccdb3466e9": {
+            "singleVisual": {
+              "visualType": "image",
+              "objects": {}
+            }
+          },
+          "c2a7376352106d5e2b1e": {
+            "singleVisual": {
+              "visualType": "image",
+              "objects": {}
+            }
+          },
+          "fcb73c69510bfe00a1a3": {
+            "singleVisual": {
+              "visualType": "image",
+              "objects": {},
+              "display": {
+                "mode": "hidden"
+              }
+            }
+          },
+          "45d6ea45a4e641002ab2": {
+            "filters": {
+              "byExpr": [
+                {
+                  "name": "bfbb92afac2431185fd3",
+                  "type": "Advanced",
+                  "filter": {
+                    "Version": 2,
+                    "From": [
+                      {
+                        "Name": "a",
+                        "Entity": "AllTableRelationships",
+                        "Type": 0
+                      }
+                    ],
+                    "Where": [
+                      {
+                        "Condition": {
+                          "Not": {
+                            "Expression": {
+                              "Contains": {
+                                "Left": {
+                                  "Column": {
+                                    "Expression": {
+                                      "SourceRef": {
+                                        "Source": "a"
+                                      }
+                                    },
+                                    "Property": "table_name"
+                                  }
+                                },
+                                "Right": {
+                                  "Literal": {
+                                    "Value": "'ISYS'"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  "expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "AllTableRelationships"
+                        }
+                      },
+                      "Property": "table_name"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "3a72994df960c93fbb06",
+                  "type": "Categorical",
+                  "expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "AllTableRelationships"
+                        }
+                      },
+                      "Property": "related_table"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "3ac5f1ffee8d63f6e15f",
+                  "type": "Categorical",
+                  "expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "AllTableRelationships"
+                        }
+                      },
+                      "Property": "relationship_name"
+                    }
+                  },
+                  "howCreated": 0
+                }
+              ]
+            },
+            "singleVisual": {
+              "visualType": "ForceGraph1449359463895",
+              "objects": {},
+              "activeProjections": {
+                "Source": [
+                  {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "AllTableRelationships"
+                        }
+                      },
+                      "Property": "table_name"
+                    }
+                  }
+                ],
+                "Target": [
+                  {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "AllTableRelationships"
+                        }
+                      },
+                      "Property": "related_table"
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "63e032776d7106ef4924": {
+            "filters": {
+              "byExpr": [
+                {
+                  "name": "654438b144abbe9d9318",
+                  "type": "Advanced",
+                  "filter": {
+                    "Version": 2,
+                    "From": [
+                      {
+                        "Name": "a",
+                        "Entity": "AllTableRelationships",
+                        "Type": 0
+                      }
+                    ],
+                    "Where": [
+                      {
+                        "Condition": {
+                          "Not": {
+                            "Expression": {
+                              "Contains": {
+                                "Left": {
+                                  "Column": {
+                                    "Expression": {
+                                      "SourceRef": {
+                                        "Source": "a"
+                                      }
+                                    },
+                                    "Property": "table_name"
+                                  }
+                                },
+                                "Right": {
+                                  "Literal": {
+                                    "Value": "'ISYS'"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  "expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "AllTableRelationships"
+                        }
+                      },
+                      "Property": "table_name"
+                    }
+                  },
+                  "howCreated": 0
+                }
+              ]
+            },
+            "singleVisual": {
+              "visualType": "listSlicer",
+              "objects": {},
+              "activeProjections": {
+                "Values": [
+                  {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "AllTableRelationships"
+                        }
+                      },
+                      "Property": "table_name"
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "ef4f224811c8a84c549e": {
+            "filters": {
+              "byExpr": [
+                {
+                  "name": "2fcc54a4c21a594d25ff",
+                  "type": "Advanced",
+                  "filter": {
+                    "Version": 2,
+                    "From": [
+                      {
+                        "Name": "a",
+                        "Entity": "AllTableRelationships",
+                        "Type": 0
+                      }
+                    ],
+                    "Where": [
+                      {
+                        "Condition": {
+                          "Not": {
+                            "Expression": {
+                              "Contains": {
+                                "Left": {
+                                  "Column": {
+                                    "Expression": {
+                                      "SourceRef": {
+                                        "Source": "a"
+                                      }
+                                    },
+                                    "Property": "table_name"
+                                  }
+                                },
+                                "Right": {
+                                  "Literal": {
+                                    "Value": "'ISYS'"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  "expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "AllTableRelationships"
+                        }
+                      },
+                      "Property": "table_name"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "d69540ea5e499474d5a5",
+                  "type": "Advanced",
+                  "expression": {
+                    "Aggregation": {
+                      "Expression": {
+                        "Column": {
+                          "Expression": {
+                            "SourceRef": {
+                              "Entity": "AllTableRelationships"
+                            }
+                          },
+                          "Property": "related_table"
+                        }
+                      },
+                      "Function": 2
+                    }
+                  },
+                  "howCreated": 0
+                }
+              ]
+            },
+            "singleVisual": {
+              "visualType": "tableEx",
+              "objects": {},
+              "orderBy": [
+                {
+                  "Direction": 2,
+                  "Expression": {
+                    "Aggregation": {
+                      "Expression": {
+                        "Column": {
+                          "Expression": {
+                            "SourceRef": {
+                              "Entity": "AllTableRelationships"
+                            }
+                          },
+                          "Property": "related_table"
+                        }
+                      },
+                      "Function": 2
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "01c6a53b200892fdb584": {
+            "filters": {
+              "byExpr": [
+                {
+                  "name": "6c26744264058c4b31bf",
+                  "type": "Advanced",
+                  "expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "Relationship Map - Header"
+                    }
+                  },
+                  "howCreated": 0
+                }
+              ]
+            },
+            "singleVisual": {
+              "visualType": "htmlContent443BE3AD55E043BF878BED274D3A6855",
+              "objects": {}
+            }
+          }
+        },
+        "visualContainerGroups": {
+          "79d0791b373310f9be7a": {
+            "isHidden": false
+          }
+        }
+      }
+    },
+    "objects": {
+      "merge": {
+        "outspacePane": [
+          {
+            "properties": {
+              "expanded": {
+                "expr": {
+                  "Literal": {
+                    "Value": "false"
+                  }
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+}
