@@ -1,0 +1,25 @@
+model Model
+	culture: en-US
+	defaultPowerBIDataSourceVersion: powerBI_V3
+	sourceQueryCulture: en-US
+	dataAccessOptions
+		legacyRedirects
+		returnErrorValuesAsNull
+
+annotation __PBI_TimeIntelligenceEnabled = 0
+
+annotation PBI_QueryOrder = ["Data Refresh","dim_BranchLocation","dim_DateTable","Fact_NegativeOnHand_OnHandNoBin"]
+
+annotation PBI_ProTooling = ["DevMode"]
+
+ref table 'Data Refresh'
+ref table dim_BranchLocation
+ref table dim_DateTable
+ref table 'New Report Tables'
+ref table 'New Report Relationships'
+ref table 'New Report Columns'
+ref table _Measures
+ref table Fact_NegativeOnHand_OnHandNoBin
+
+ref cultureInfo en-US
+

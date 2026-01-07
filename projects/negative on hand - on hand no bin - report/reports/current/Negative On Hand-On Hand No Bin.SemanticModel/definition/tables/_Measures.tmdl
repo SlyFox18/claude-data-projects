@@ -1,0 +1,1120 @@
+table _Measures
+	lineageTag: 3b1a6758-3ca4-47e9-8791-b5d6002e665c
+
+	measure 'Welcome Name' =
+			
+			VAR _User =
+			    USERPRINCIPALNAME ()
+			VAR _Position =
+			    SEARCH ( "@", _User, 1 )
+			VAR _Name =
+			    LEFT ( _User, _Position - 1 )
+			VAR _FirstLetter =
+			    UPPER ( LEFT ( _Name, 1 ) )
+			VAR _LastName =
+			    MID ( _Name, 2, LEN ( _Name ) - 1 )
+			VAR _FormattedLastName =
+			    UPPER ( LEFT ( _LastName, 1 ) )
+			        & LOWER ( MID ( _LastName, 2, LEN ( _LastName ) ) )
+			RETURN
+			    "Welcome Back, " & _FirstLetter & "." & _FormattedLastName
+		displayFolder: Accessories
+		lineageTag: 1ebd317f-6819-4431-9dc5-f7f3415056d0
+
+	measure 'Total Parts with Issues' =
+			
+			COUNTROWS('Fact_NegativeOnHand_OnHandNoBin')
+		formatString: 0
+		displayFolder: Basic Issue Counts
+		lineageTag: 33c98878-b405-4102-ab10-b17f331262f6
+
+	measure 'Parts with Negative Bin Qty' =
+			
+			CALCULATE(
+			    COUNTROWS('Fact_NegativeOnHand_OnHandNoBin'),
+			    'Fact_NegativeOnHand_OnHandNoBin'[HasNegativeBinQty] = TRUE
+			)
+		formatString: 0
+		displayFolder: Basic Issue Counts
+		lineageTag: a91ad5bd-28f2-45bc-bba0-862d8907b550
+
+	measure 'Parts with On Hand No Bin' =
+			
+			CALCULATE(
+			    COUNTROWS('Fact_NegativeOnHand_OnHandNoBin'),
+			    'Fact_NegativeOnHand_OnHandNoBin'[HasBinQtyNoBin] = TRUE
+			)
+		formatString: 0
+		displayFolder: Basic Issue Counts
+		lineageTag: 8fc045e5-60ff-4a6d-8d58-aaba73ba98a5
+
+	measure 'Parts with Both Issues' =
+			
+			CALCULATE(
+			    COUNTROWS('Fact_NegativeOnHand_OnHandNoBin'),
+			    'Fact_NegativeOnHand_OnHandNoBin'[IssueType] = "Both Issues"
+			)
+		formatString: 0
+		displayFolder: Basic Issue Counts
+		lineageTag: 118f2851-4361-4451-b78e-763d7997d9ba
+
+	measure 'Total Negative Bin Qty' =
+			
+			CALCULATE(
+			    SUM('Fact_NegativeOnHand_OnHandNoBin'[BinQty]),
+			    'Fact_NegativeOnHand_OnHandNoBin'[HasNegativeBinQty] = TRUE
+			)
+		formatString: 0
+		displayFolder: Quantity Aggregations
+		lineageTag: 03b39a6e-ab3b-463f-988f-98323ef17c11
+
+	measure 'Total Qty No Bin' =
+			
+			CALCULATE(
+			    SUM('Fact_NegativeOnHand_OnHandNoBin'[BinQty]),
+			    'Fact_NegativeOnHand_OnHandNoBin'[HasBinQtyNoBin] = TRUE
+			)
+		formatString: 0
+		displayFolder: Quantity Aggregations
+		lineageTag: 69e601f5-eb36-4724-8608-f72a6a0d5015
+
+	measure 'Avg Negative Qty per Part' =
+			
+			CALCULATE(
+			    AVERAGE('Fact_NegativeOnHand_OnHandNoBin'[BinQty]),
+			    'Fact_NegativeOnHand_OnHandNoBin'[HasNegativeBinQty] = TRUE
+			)
+		displayFolder: Quantity Aggregations
+		lineageTag: 5414a64a-287d-4269-93cc-2fee49979c19
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Avg Qty No Bin per Part' =
+			
+			CALCULATE(
+			    AVERAGE('Fact_NegativeOnHand_OnHandNoBin'[BinQty]),
+			    'Fact_NegativeOnHand_OnHandNoBin'[HasBinQtyNoBin] = TRUE
+			)
+		displayFolder: Quantity Aggregations
+		lineageTag: 8b2235a1-19ab-4bba-8fe5-1bbfa3871132
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Total Negative Inventory Value' =
+			
+			SUMX(
+			    FILTER(
+			        'Fact_NegativeOnHand_OnHandNoBin',
+			        'Fact_NegativeOnHand_OnHandNoBin'[HasNegativeBinQty] = TRUE
+			    ),
+			    ABS('Fact_NegativeOnHand_OnHandNoBin'[BinQty]) * 'Fact_NegativeOnHand_OnHandNoBin'[Cost]
+			)
+		displayFolder: Financial Impact
+		lineageTag: 685676d6-ac79-44a9-bdcb-d92584a602e1
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Total Value No Bin' =
+			
+			SUMX(
+			    FILTER(
+			        'Fact_NegativeOnHand_OnHandNoBin',
+			        'Fact_NegativeOnHand_OnHandNoBin'[HasBinQtyNoBin] = TRUE
+			    ),
+			    'Fact_NegativeOnHand_OnHandNoBin'[BinQty] * 'Fact_NegativeOnHand_OnHandNoBin'[Cost]
+			)
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		displayFolder: Financial Impact
+		lineageTag: d1c0012e-454b-4797-83ae-99039268aeaf
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Total Inventory Value at Risk' =
+			
+			SUM('Fact_NegativeOnHand_OnHandNoBin'[InventoryValueAtRisk])
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		displayFolder: Financial Impact
+		lineageTag: 91cbf81f-3d0a-452e-bc57-9301f5e91557
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Avg Value at Risk per Part' =
+			
+			AVERAGE('Fact_NegativeOnHand_OnHandNoBin'[InventoryValueAtRisk])
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		displayFolder: Financial Impact
+		lineageTag: 7435f9ec-d973-4235-b626-64d1546386f2
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Critical Issues' =
+			
+			CALCULATE(
+			    COUNTROWS('Fact_NegativeOnHand_OnHandNoBin'),
+			    'Fact_NegativeOnHand_OnHandNoBin'[IssueSeverity] = "Critical"
+			)
+		formatString: 0
+		displayFolder: Severity & Priority
+		lineageTag: ad7bd518-595d-4dd1-b3ee-c5f6a62f75de
+
+	measure 'High Severity Issues' =
+			
+			CALCULATE(
+			    COUNTROWS('Fact_NegativeOnHand_OnHandNoBin'),
+			    'Fact_NegativeOnHand_OnHandNoBin'[IssueSeverity] IN {"High", "High Volume"}
+			)
+		formatString: 0
+		displayFolder: Severity & Priority
+		lineageTag: 54c91d56-4cc9-4785-84b2-443897bfc66d
+
+	measure 'Parts Recently Requested' =
+			
+			CALCULATE(
+			    COUNTROWS('Fact_NegativeOnHand_OnHandNoBin'),
+			    'Fact_NegativeOnHand_OnHandNoBin'[DaysSinceLastRequest] <= 30
+			)
+		formatString: 0
+		displayFolder: Severity & Priority
+		lineageTag: dc0bbe2c-7b44-4593-8cf9-747ee4350011
+
+	measure 'Parts with Back Orders' =
+			
+			CALCULATE(
+			    COUNTROWS('Fact_NegativeOnHand_OnHandNoBin'),
+			    'Fact_NegativeOnHand_OnHandNoBin'[BackOrderQty] > 0
+			)
+		formatString: 0
+		displayFolder: Severity & Priority
+		lineageTag: 75a86008-b006-49a1-8cca-d35fc9007036
+
+	measure 'Total Back Order Qty' =
+			
+			SUM('Fact_NegativeOnHand_OnHandNoBin'[BackOrderQty])
+		displayFolder: Severity & Priority
+		lineageTag: 9c64ce07-bdc3-4b7d-9fd8-b68c83e6dca7
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Total Qty on Hand' =
+			
+			SUM('Fact_NegativeOnHand_OnHandNoBin'[QuantityOnHand])
+		displayFolder: Inventory Context
+		lineageTag: 2f6578b4-7eb6-47d6-97b8-c4e2d2636aa3
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Total Bulk Bin Qty' =
+			
+			SUM('Fact_NegativeOnHand_OnHandNoBin'[BulkBinQty])
+		displayFolder: Inventory Context
+		lineageTag: e63bf903-cfda-4479-9b40-63a8ef8c551c
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Total Pending Qty' =
+			
+			SUM('Fact_NegativeOnHand_OnHandNoBin'[PendingQty])
+		displayFolder: Inventory Context
+		lineageTag: 2cb5853a-3351-4541-8604-48e1f83803a7
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Total On Order Qty' =
+			
+			SUM('Fact_NegativeOnHand_OnHandNoBin'[OnOrder])
+		displayFolder: Inventory Context
+		lineageTag: f36f8567-623d-4272-9d45-c7414880c764
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Net Available Inventory' =
+			
+			SUM('Fact_NegativeOnHand_OnHandNoBin'[TotalAvailableQty])
+		displayFolder: Inventory Context
+		lineageTag: 7d689c92-4d9b-4a9c-a7b3-bb2251091016
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Total 12Mo Sales Units' =
+			
+			SUM('Fact_NegativeOnHand_OnHandNoBin'[Current12MoSales])
+		displayFolder: Sales Activity
+		lineageTag: 406a1d5e-ce15-429a-8906-a5cc7b1cde9e
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Total 12Mo Sales Dollars' =
+			
+			SUM('Fact_NegativeOnHand_OnHandNoBin'[Current12MoDollars])
+		displayFolder: Sales Activity
+		lineageTag: 3b57ff4e-d9f6-430f-8e61-6b00f5480381
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Parts with Sales Activity' =
+			
+			CALCULATE(
+			    COUNTROWS('Fact_NegativeOnHand_OnHandNoBin'),
+			    'Fact_NegativeOnHand_OnHandNoBin'[Current12MoSales] > 0
+			)
+		formatString: 0
+		displayFolder: Sales Activity
+		lineageTag: c47814ce-150e-4652-a7fb-a44e96a12282
+
+	measure '% Issue Parts with Sales' =
+			
+			DIVIDE(
+			    [Parts with Sales Activity],
+			    [Total Parts with Issues],
+			    0
+			)
+		displayFolder: Sales Activity
+		lineageTag: ce23c330-4a41-4be8-84f3-46f23fe9e03b
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure '% Negative Bin Qty Issues' =
+			
+			DIVIDE(
+			    [Parts with Negative Bin Qty],
+			    [Total Parts with Issues],
+			    0
+			)
+		displayFolder: Percentage & Ratio
+		lineageTag: 7fb6ed42-190d-444d-94d7-124eb81d0086
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure '% No Bin Assignment Issues' =
+			
+			DIVIDE(
+			    [Parts with On Hand No Bin],
+			    [Total Parts with Issues],
+			    0
+			)
+		displayFolder: Percentage & Ratio
+		lineageTag: 3ce05df3-4dde-45e6-9124-04aed51f0597
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure '% Critical Issues' =
+			
+			DIVIDE(
+			    [Critical Issues],
+			    [Total Parts with Issues],
+			    0
+			)
+		displayFolder: Percentage & Ratio
+		lineageTag: 6c0dd378-8127-411e-a290-17cdffc8ce05
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure '% Value in Critical Issues' =
+			
+			DIVIDE(
+			    CALCULATE(
+			        [Total Inventory Value at Risk],
+			        'Fact_NegativeOnHand_OnHandNoBin'[IssueSeverity] = "Critical"
+			    ),
+			    [Total Inventory Value at Risk],
+			    0
+			)
+		displayFolder: Percentage & Ratio
+		lineageTag: bb9ef8e7-22de-4d83-83d1-13f68eb7f4f9
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Avg Bin Qty All Branches' =
+			
+			CALCULATE(
+			    AVERAGE('Fact_NegativeOnHand_OnHandNoBin'[BinQty]),
+			    ALLSELECTED('Fact_NegativeOnHand_OnHandNoBin'[Branch])
+			)
+		displayFolder: Comparative & Ranking
+		lineageTag: f4fbbc2f-8639-472a-b890-ef5ee4f2fd14
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Branch Issue Rank' =
+			
+			RANKX(
+			    ALLSELECTED('Fact_NegativeOnHand_OnHandNoBin'[Branch]),
+			    [Total Parts with Issues],
+			    ,
+			    DESC,
+			    DENSE
+			)
+		formatString: 0
+		displayFolder: Comparative & Ranking
+		lineageTag: b8c4c274-062b-43a4-9800-73fe0b3794e8
+
+	measure 'Franchise Issue Rank' =
+			
+			RANKX(
+			    ALLSELECTED('Fact_NegativeOnHand_OnHandNoBin'[Franchise]),
+			    [Total Parts with Issues],
+			    ,
+			    DESC,
+			    DENSE
+			)
+		formatString: 0
+		displayFolder: Comparative & Ranking
+		lineageTag: dc19f1cf-115c-482a-aaf5-54e00e1f635f
+
+	measure 'Severity Color' =
+			
+			VAR CriticalCount = [Critical Issues]
+			VAR HighCount = [High Severity Issues]
+			VAR TotalCount = [Total Parts with Issues]
+			RETURN
+			    SWITCH(
+			        TRUE(),
+			        DIVIDE(CriticalCount, TotalCount, 0) > 0.3, "Red",
+			        DIVIDE(HighCount, TotalCount, 0) > 0.5, "Orange",
+			        "Yellow"
+			    )
+		displayFolder: Formatting
+		lineageTag: ceaa04a6-07d5-416a-b972-d9a238483dda
+
+	measure 'Negative Bin Qty Display' =
+			
+			VAR NegQty = [Total Negative Bin Qty]
+			RETURN
+			    IF(
+			        ISBLANK(NegQty),
+			        "No Issues",
+			        FORMAT(ABS(NegQty), "#,##0") & " units"
+			    )
+		displayFolder: Display Format
+		lineageTag: a08cab43-1fec-4ef7-a266-514da85cb2da
+
+	measure 'Value at Risk Display' =
+			
+			VAR ValueRisk = [Total Inventory Value at Risk]
+			RETURN
+			    IF(
+			        ISBLANK(ValueRisk) || ValueRisk = 0,
+			        "No Risk",
+			        FORMAT(ValueRisk, "$#,##0")
+			    )
+		displayFolder: Display Format
+		lineageTag: bd6e7ec0-82ed-4192-a8fa-2587f52c267c
+
+	measure 'Report Title Dynamic' =
+			
+			VAR SelectedBranch = SELECTEDVALUE('dim_BranchLocation'[Branch])
+			VAR SelectedFranchise = SELECTEDVALUE('Fact_NegativeOnHand_OnHandNoBin'[Franchise])
+			VAR IssueCount = [Total Parts with Issues]
+			VAR BranchCount = DISTINCTCOUNT('Fact_NegativeOnHand_OnHandNoBin'[Branch])
+			
+			RETURN
+			    SWITCH(
+			        TRUE(),
+			        NOT ISBLANK(SelectedBranch) && NOT ISBLANK(SelectedFranchise),
+			            "Inventory Issues: Branch " & SelectedBranch & " - " & SelectedFranchise & " (" & IssueCount & " parts)",
+			        NOT ISBLANK(SelectedBranch),
+			            "Inventory Issues: Branch " & SelectedBranch & " (" & IssueCount & " parts)",
+			        NOT ISBLANK(SelectedFranchise),
+			            "Inventory Issues: " & SelectedFranchise & " Franchise (" & IssueCount & " parts)",
+			        BranchCount = 1,
+			            "Inventory Issues: " & IssueCount & " Parts Across All Franchises",
+			        "Inventory Issues: " & IssueCount & " Parts Across " & BranchCount & " Branches"
+			    )
+		displayFolder: Dynamic Title
+		lineageTag: 9f10c61d-a153-4a9a-b91a-db75486fc507
+
+	measure 'Negative Bin Qty Title' =
+			
+			VAR NegCount = [Parts with Negative Bin Qty]
+			VAR NegQty = ABS([Total Negative Bin Qty])
+			VAR ValueAtRisk = [Total Negative Inventory Value]
+			VAR SelectedBranch = SELECTEDVALUE('dim_BranchLocation'[Branch])
+			
+			RETURN
+			    IF(
+			        ISBLANK(SelectedBranch),
+			        "Negative On Hand: " & NegCount & " Parts | " & FORMAT(NegQty, "#,##0") & " Units | " & FORMAT(ValueAtRisk, "$#,##0") & " at Risk",
+			        "Negative On Hand - Branch " & SelectedBranch & ": " & NegCount & " Parts | " & FORMAT(NegQty, "#,##0") & " Units"
+			    )
+		displayFolder: Dynamic Title
+		lineageTag: 6e6a5ec4-16bc-40b0-affc-8ccfbcae0935
+
+	measure 'On Hand No Bin Title' =
+			
+			VAR NoBinCount = [Parts with On Hand No Bin]
+			VAR NoBinQty = [Total Qty No Bin]
+			VAR ValueNoBin = [Total Value No Bin]
+			VAR SelectedBranch = SELECTEDVALUE('dim_BranchLocation'[Branch])
+			
+			RETURN
+			    IF(
+			        ISBLANK(SelectedBranch),
+			        "On Hand No Bin: " & NoBinCount & " Parts | " & FORMAT(NoBinQty, "#,##0") & " Units | " & FORMAT(ValueNoBin, "$#,##0") & " Value",
+			        "On Hand No Bin - Branch " & SelectedBranch & ": " & NoBinCount & " Parts | " & FORMAT(NoBinQty, "#,##0") & " Units"
+			    )
+		displayFolder: Dynamic Title
+		lineageTag: 781d7b73-7f26-4b1f-a4e2-d85233df5048
+
+	measure 'Summary Title with Severity' = ```
+			
+			VAR TotalIssues = [Total Parts with Issues]
+			VAR CriticalCount = [Critical Issues]
+			VAR HighCount = [High Severity Issues]
+			
+			RETURN
+			    "Inventory Issues Summary" & UNICHAR(10) &
+			    TotalIssues & " Total Parts | " & 
+			    CriticalCount & " Critical | " & 
+			    HighCount & " High Priority"
+			```
+		displayFolder: Dynamic Title
+		lineageTag: f9e04cbd-00ad-42c0-a6e5-9efd982fc62a
+
+	measure 'Franchise Breakdown Title' = ```
+			
+			VAR FranchiseCount = DISTINCTCOUNT('Fact_NegativeOnHand_OnHandNoBin'[Franchise])
+			VAR TopFranchise = 
+			    CALCULATE(
+			        SELECTEDVALUE('Fact_NegativeOnHand_OnHandNoBin'[Franchise]),
+			        TOPN(1, 
+			            VALUES('Fact_NegativeOnHand_OnHandNoBin'[Franchise]),
+			            [Total Parts with Issues],
+			            DESC
+			        )
+			    )
+			VAR TopFranchiseCount = 
+			    CALCULATE(
+			        [Total Parts with Issues],
+			        'Fact_NegativeOnHand_OnHandNoBin'[Franchise] = TopFranchise
+			    )
+			
+			RETURN
+			    "Issues by Franchise (" & FranchiseCount & " Total)" & UNICHAR(10) &
+			    "Highest: " & TopFranchise & " with " & TopFranchiseCount & " parts"
+			```
+		displayFolder: Dynamic Title
+		lineageTag: 2444d103-4cdd-4f30-be60-d7fa121177a3
+
+	measure 'Branch Comparison Title' =
+			
+			VAR BranchCount = DISTINCTCOUNT('Fact_NegativeOnHand_OnHandNoBin'[Branch])
+			VAR AvgIssuesPerBranch = DIVIDE([Total Parts with Issues], BranchCount, 0)
+			
+			RETURN
+			    "Branch Analysis (" & BranchCount & " branches)" & UNICHAR(10) &
+			    "Average " & FORMAT(AvgIssuesPerBranch, "#,##0.0") & " issues per branch"
+		displayFolder: Dynamic Title
+		lineageTag: 59b1a959-9518-45a6-90ec-2d72f5660f4f
+
+	measure 'Active Filters Display' = ```
+			
+			VAR BranchFilter = SELECTEDVALUE('dim_BranchLocation'[Branch])
+			VAR FranchiseFilter = SELECTEDVALUE('Fact_NegativeOnHand_OnHandNoBin'[Franchise])
+			VAR IssueTypeFilter = SELECTEDVALUE('Fact_NegativeOnHand_OnHandNoBin'[IssueType])
+			VAR SeverityFilter = SELECTEDVALUE('Fact_NegativeOnHand_OnHandNoBin'[IssueSeverity])
+			
+			VAR FilterText = 
+			    CONCATENATEX(
+			        FILTER(
+			            {
+			                ("Branch", BranchFilter),
+			                ("Franchise", FranchiseFilter),
+			                ("Issue Type", IssueTypeFilter),
+			                ("Severity", SeverityFilter)
+			            },
+			            NOT ISBLANK([Value2])
+			        ),
+			        [Value1] & ": " & [Value2],
+			        " | "
+			    )
+			
+			RETURN
+			    IF(
+			        ISBLANK(FilterText),
+			        "All Data",
+			        "Filtered by: " & FilterText
+			    )
+			```
+		displayFolder: Dynamic Title
+		lineageTag: d53273a5-1946-4c84-9b10-d969905aa8be
+
+	measure 'Chart Subtitle Key Metric' = ```
+			
+			VAR SelectedIssueType = SELECTEDVALUE('Fact_NegativeOnHand_OnHandNoBin'[IssueType])
+			VAR MetricValue = 
+			    SWITCH(
+			        SelectedIssueType,
+			        "Negative Bin Qty", [Total Negative Inventory Value],
+			        "On Hand No Bin", [Total Value No Bin],
+			        [Total Inventory Value at Risk]
+			    )
+			
+			RETURN
+			    IF(
+			        ISBLANK(SelectedIssueType),
+			        "Total Value at Risk: " & FORMAT(MetricValue, "$#,##0"),
+			        SelectedIssueType & " - Value Impact: " & FORMAT(MetricValue, "$#,##0")
+			    )
+			```
+		displayFolder: Dynamic Title
+		lineageTag: 1b913cc9-f6ff-423d-b28c-44b12de8ca18
+
+	measure 'Parts Created Last 30 Days' =
+			
+			VAR Today = TODAY()
+			VAR ThirtyDaysAgo = Today - 30
+			RETURN
+			    CALCULATE(
+			        COUNTROWS('Fact_NegativeOnHand_OnHandNoBin'),
+			        'Fact_NegativeOnHand_OnHandNoBin'[DateCreated] >= ThirtyDaysAgo
+			    )
+		formatString: 0
+		displayFolder: Time Intelligence
+		lineageTag: 4b137d1e-dcb5-41f8-975f-5ef36a2c731f
+
+	measure 'Parts Created Last 90 Days' =
+			
+			VAR Today = TODAY()
+			VAR NinetyDaysAgo = Today - 90
+			RETURN
+			    CALCULATE(
+			        COUNTROWS('Fact_NegativeOnHand_OnHandNoBin'),
+			        'Fact_NegativeOnHand_OnHandNoBin'[DateCreated] >= NinetyDaysAgo
+			    )
+		formatString: 0
+		displayFolder: Time Intelligence
+		lineageTag: 86f5d06d-02f5-4c76-818c-982452662b08
+
+	measure 'Stale Issues (90+ Days)' =
+			
+			CALCULATE(
+			    COUNTROWS('Fact_NegativeOnHand_OnHandNoBin'),
+			    'Fact_NegativeOnHand_OnHandNoBin'[DaysSinceLastRequest] >= 90
+			)
+		formatString: 0
+		displayFolder: Time Intelligence
+		lineageTag: 7b8e3bc0-d87b-41ba-af60-333da707b942
+
+	measure 'Very Stale Issues (180+ Days)' =
+			
+			CALCULATE(
+			    COUNTROWS('Fact_NegativeOnHand_OnHandNoBin'),
+			    'Fact_NegativeOnHand_OnHandNoBin'[DaysSinceLastRequest] >= 180
+			)
+		formatString: 0
+		displayFolder: Time Intelligence
+		lineageTag: aed80128-775a-4577-b59c-1ee0e236371b
+
+	measure 'Active Issues (Last 30 Days)' =
+			
+			CALCULATE(
+			    COUNTROWS('Fact_NegativeOnHand_OnHandNoBin'),
+			    'Fact_NegativeOnHand_OnHandNoBin'[DaysSinceLastRequest] <= 30
+			)
+		formatString: 0
+		displayFolder: Time Intelligence
+		lineageTag: 72a23f59-aaa5-4618-87ff-9ed86c861790
+
+	measure 'Avg Days Since Request' =
+			
+			AVERAGE('Fact_NegativeOnHand_OnHandNoBin'[DaysSinceLastRequest])
+		displayFolder: Time Intelligence
+		lineageTag: fc205526-2c4c-48dc-a5b0-7e638b02904d
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Issues by Age Category' =
+			
+			VAR ActiveCount = [Active Issues (Last 30 Days)]
+			VAR StaleCount = [Stale Issues (90+ Days)]
+			VAR VeryStaleCount = [Very Stale Issues (180+ Days)]
+			VAR RecentCount = [Total Parts with Issues] - ActiveCount - StaleCount
+			
+			RETURN
+			    "Active (≤30d): " & ActiveCount & " | " &
+			    "Recent (31-89d): " & RecentCount & " | " &
+			    "Stale (90-179d): " & (StaleCount - VeryStaleCount) & " | " &
+			    "Very Stale (≥180d): " & VeryStaleCount
+		displayFolder: Time Intelligence
+		lineageTag: 93aafa6a-0003-4703-b0a9-7360d3a9fed7
+
+	measure 'Key Insights Summary' = ```
+			
+			VAR TotalIssues = [Total Parts with Issues]
+			VAR TopBranch = 
+			    CALCULATE(
+			        SELECTEDVALUE('Fact_NegativeOnHand_OnHandNoBin'[Branch]),
+			        TOPN(1, VALUES('Fact_NegativeOnHand_OnHandNoBin'[Branch]), [Total Parts with Issues], DESC)
+			    )
+			VAR TopBranchCount = 
+			    CALCULATE([Total Parts with Issues], 'Fact_NegativeOnHand_OnHandNoBin'[Branch] = TopBranch)
+			VAR BranchesAffected = DISTINCTCOUNT('Fact_NegativeOnHand_OnHandNoBin'[Branch])
+			VAR TopFranchise = 
+			    CALCULATE(
+			        SELECTEDVALUE('Fact_NegativeOnHand_OnHandNoBin'[Franchise]),
+			        TOPN(1, VALUES('Fact_NegativeOnHand_OnHandNoBin'[Franchise]), [Total Parts with Issues], DESC)
+			    )
+			VAR BackOrderCount = [Parts with Back Orders]
+			VAR BackOrderPct = DIVIDE(BackOrderCount, TotalIssues, 0)
+			VAR NegativeCount = [Parts with Negative Bin Qty]
+			VAR NoBinCount = [Parts with On Hand No Bin]
+			
+			RETURN
+			"📊 SUMMARY" & UNICHAR(10) & UNICHAR(10) &
+			"Issues across " & BranchesAffected & " branches" & UNICHAR(10) &
+			"Branch " & TopBranch & " has the most issues (" & TopBranchCount & " parts)" & UNICHAR(10) &
+			"Franchise " & TopFranchise & " most affected" & UNICHAR(10) & UNICHAR(10) &
+			"ISSUE BREAKDOWN:" & UNICHAR(10) &
+			"  • " & NegativeCount & " parts with negative inventory" & UNICHAR(10) &
+			"  • " & NoBinCount & " parts without bin assignments" & UNICHAR(10) &
+			"  • " & BackOrderCount & " parts (" & FORMAT(BackOrderPct, "0.0%") & ") have customer back orders"
+			```
+		displayFolder: Summary
+		lineageTag: 8f55b9ff-bfe0-4c37-b65b-f8ae90d6e349
+
+	measure 'Parts Needing Immediate Action' =
+			
+			CALCULATE(
+			    COUNTROWS('Fact_NegativeOnHand_OnHandNoBin'),
+			    'Fact_NegativeOnHand_OnHandNoBin'[IssueSeverity] = "Critical",
+			    'Fact_NegativeOnHand_OnHandNoBin'[BackOrderQty] > 0
+			)
+		formatString: 0
+		displayFolder: Severity & Priority
+		lineageTag: 32e6e101-0fb6-47ac-ad9d-d90bb4bab6c5
+
+	measure 'Export Guide' = ```
+			
+			VAR SelectedBranches = 
+			    IF(
+			        ISFILTERED('Fact_NegativeOnHand_OnHandNoBin'[Branch]),
+			        CONCATENATEX(VALUES('Fact_NegativeOnHand_OnHandNoBin'[Branch]), 'Fact_NegativeOnHand_OnHandNoBin'[Branch], ", "),
+			        "All Branches"
+			    )
+			VAR IssueCount = [Total Parts with Issues]
+			VAR NegCount = [Parts with Negative Bin Qty]
+			VAR NoBinCount = [Parts with On Hand No Bin]
+			
+			RETURN
+			"📋 SELECTED DATA" & UNICHAR(10) & UNICHAR(10) &
+			"Branches: " & SelectedBranches & UNICHAR(10) &
+			"Total Issues: " & IssueCount & " parts" & UNICHAR(10) & UNICHAR(10) &
+			"Ready to export:" & UNICHAR(10) &
+			"  • " & NegCount & " negative inventory items" & UNICHAR(10) &
+			"  • " & NoBinCount & " items needing bin assignment"
+			```
+		displayFolder: Summary
+		lineageTag: b522052e-f655-47f5-b5db-8acb7b367d7f
+
+	measure 'Summary HTML Clean' = ```
+			
+			VAR TotalIssues = [Total Parts with Issues]
+			VAR TopBranch = 
+			    CALCULATE(
+			        SELECTEDVALUE('Fact_NegativeOnHand_OnHandNoBin'[Branch]),
+			        TOPN(1, VALUES('Fact_NegativeOnHand_OnHandNoBin'[Branch]), [Total Parts with Issues], DESC)
+			    )
+			VAR TopBranchCount = 
+			    CALCULATE([Total Parts with Issues], 'Fact_NegativeOnHand_OnHandNoBin'[Branch] = TopBranch)
+			VAR BranchesAffected = DISTINCTCOUNT('Fact_NegativeOnHand_OnHandNoBin'[Branch])
+			VAR TopFranchise = 
+			    CALCULATE(
+			        SELECTEDVALUE('Fact_NegativeOnHand_OnHandNoBin'[Franchise]),
+			        TOPN(1, VALUES('Fact_NegativeOnHand_OnHandNoBin'[Franchise]), [Total Parts with Issues], DESC)
+			    )
+			VAR BackOrderCount = [Parts with Back Orders]
+			VAR BackOrderPct = DIVIDE(BackOrderCount, TotalIssues, 0)
+			VAR NegativeCount = [Parts with Negative Bin Qty]
+			VAR NoBinCount = [Parts with On Hand No Bin]
+			VAR _HTML = 
+			    "<div style='font-family: Segoe UI, Arial, sans-serif; padding: 0; background: white; height: 100%;'>" &
+			    "<div style='background: #3d5a80; color: white; padding: 15px; text-align: center;'>" &
+			    "<div style='font-size: 18px; font-weight: 600;'>📊 SUMMARY</div>" &
+			    "<div style='font-size: 11px; opacity: 0.9; margin-top: 3px;'>Issues across " & BranchesAffected & " branches</div>" &
+			    "</div>" &
+			    "<div style='padding: 20px;'>" &
+			    "<div style='background: #f8f9fa; padding: 12px; border-left: 4px solid #3d5a80; margin-bottom: 15px;'>" &
+			    "<div style='font-size: 12px; color: #6c757d; margin-bottom: 5px;'>HIGHEST IMPACT</div>" &
+			    "<div style='font-size: 14px; color: #212529;'>Branch <strong>" & TopBranch & "</strong> has <strong>" & TopBranchCount & "</strong> issues</div>" &
+			    "</div>" &
+			    "<div style='background: #f8f9fa; padding: 12px; border-left: 4px solid #3d5a80; margin-bottom: 15px;'>" &
+			    "<div style='font-size: 12px; color: #6c757d; margin-bottom: 5px;'>MOST AFFECTED</div>" &
+			    "<div style='font-size: 14px; color: #212529;'>Franchise <strong>" & TopFranchise & "</strong></div>" &
+			    "</div>" &
+			    "<div style='border-top: 2px solid #e9ecef; padding-top: 15px; margin-top: 15px;'>" &
+			    "<div style='font-size: 13px; font-weight: 600; color: #3d5a80; margin-bottom: 10px;'>ISSUE BREAKDOWN</div>" &
+			    "<div style='display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e9ecef;'>" &
+			    "<span style='font-size: 13px; color: #495057;'>Negative inventory</span>" &
+			    "<strong style='font-size: 13px; color: #dc3545;'>" & NegativeCount & "</strong>" &
+			    "</div>" &
+			    "<div style='display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e9ecef;'>" &
+			    "<span style='font-size: 13px; color: #495057;'>No bin assignment</span>" &
+			    "<strong style='font-size: 13px; color: #fd7e14;'>" & NoBinCount & "</strong>" &
+			    "</div>" &
+			    "<div style='display: flex; justify-content: space-between; padding: 8px 0;'>" &
+			    "<span style='font-size: 13px; color: #495057;'>Customer back orders</span>" &
+			    "<strong style='font-size: 13px; color: #0d6efd;'>" & BackOrderCount & " (" & FORMAT(BackOrderPct, "0.0%") & ")</strong>" &
+			    "</div>" &
+			    "</div>" &
+			    "</div>" &
+			    "</div>"
+			RETURN _HTML
+			```
+		displayFolder: Summary
+		lineageTag: 84128b13-a233-4f20-9d6d-5087c61a2e42
+
+	measure 'Summary HTML' = ```
+			
+			VAR TotalIssues = [Total Parts with Issues]
+			VAR TopBranch = 
+			    CALCULATE(
+			        SELECTEDVALUE('Fact_NegativeOnHand_OnHandNoBin'[Branch]),
+			        TOPN(1, VALUES('Fact_NegativeOnHand_OnHandNoBin'[Branch]), [Total Parts with Issues], DESC)
+			    )
+			VAR TopBranchCount = 
+			    CALCULATE([Total Parts with Issues], 'Fact_NegativeOnHand_OnHandNoBin'[Branch] = TopBranch)
+			VAR BranchesAffected = DISTINCTCOUNT('Fact_NegativeOnHand_OnHandNoBin'[Branch])
+			VAR TopFranchise = 
+			    CALCULATE(
+			        SELECTEDVALUE('Fact_NegativeOnHand_OnHandNoBin'[Franchise]),
+			        TOPN(1, VALUES('Fact_NegativeOnHand_OnHandNoBin'[Franchise]), [Total Parts with Issues], DESC)
+			    )
+			VAR BackOrderCount = [Parts with Back Orders]
+			VAR BackOrderPct = DIVIDE(BackOrderCount, TotalIssues, 0)
+			VAR NegativeCount = [Parts with Negative Bin Qty]
+			VAR NoBinCount = [Parts with On Hand No Bin]
+			
+			VAR _HTML = 
+			"<div style='font-family: Segoe UI, Arial, sans-serif; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 8px; color: white; height: 100%;'>
+			    
+			    <div style='text-align: center; margin-bottom: 20px;'>
+			        <div style='font-size: 24px; font-weight: bold; margin-bottom: 5px;'>📊 SUMMARY</div>
+			        <div style='font-size: 12px; opacity: 0.9;'>Inventory Issues Overview</div>
+			    </div>
+			    
+			    <div style='background: rgba(255,255,255,0.15); padding: 15px; border-radius: 6px; margin-bottom: 15px; backdrop-filter: blur(10px);'>
+			        <div style='font-size: 14px; font-weight: 600; margin-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.3); padding-bottom: 5px;'>Distribution</div>
+			        <div style='font-size: 13px; line-height: 1.8;'>
+			            Issues across <strong>" & BranchesAffected & " branches</strong><br/>
+			            Branch <strong>" & TopBranch & "</strong> has the most issues (<strong>" & TopBranchCount & "</strong> parts)<br/>
+			            Franchise <strong>" & TopFranchise & "</strong> most affected
+			        </div>
+			    </div>
+			    
+			    <div style='background: rgba(255,255,255,0.15); padding: 15px; border-radius: 6px; backdrop-filter: blur(10px);'>
+			        <div style='font-size: 14px; font-weight: 600; margin-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.3); padding-bottom: 5px;'>Issue Breakdown</div>
+			        <div style='font-size: 13px; line-height: 1.8;'>
+			            <div style='display: flex; justify-content: space-between; margin-bottom: 5px;'>
+			                <span>🔴 Negative inventory</span>
+			                <strong>" & NegativeCount & " parts</strong>
+			            </div>
+			            <div style='display: flex; justify-content: space-between; margin-bottom: 5px;'>
+			                <span>📦 No bin assignment</span>
+			                <strong>" & NoBinCount & " parts</strong>
+			            </div>
+			            <div style='display: flex; justify-content: space-between; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.2);'>
+			                <span>⚠️ Customer back orders</span>
+			                <strong>" & BackOrderCount & " (" & FORMAT(BackOrderPct, "0.0%") & ")</strong>
+			            </div>
+			        </div>
+			    </div>
+			    
+			</div>"
+			
+			RETURN _HTML
+			```
+		displayFolder: Summary
+		lineageTag: 89889ef5-dca7-4607-b369-338ff8fcc10b
+
+	measure 'Summary HTML Final' = ```
+			
+			VAR TotalIssues = [Total Parts with Issues]
+			VAR TopBranch = 
+			    CALCULATE(
+			        SELECTEDVALUE('Fact_NegativeOnHand_OnHandNoBin'[Branch]),
+			        TOPN(1, VALUES('Fact_NegativeOnHand_OnHandNoBin'[Branch]), [Total Parts with Issues], DESC)
+			    )
+			VAR TopBranchCount = 
+			    CALCULATE([Total Parts with Issues], 'Fact_NegativeOnHand_OnHandNoBin'[Branch] = TopBranch)
+			VAR BranchesAffected = 
+			    COUNTROWS(
+			        DISTINCT(
+			            SELECTCOLUMNS(
+			                'Fact_NegativeOnHand_OnHandNoBin',
+			                "Branch", RELATED('dim_BranchLocation'[Branch])
+			            )
+			        )
+			    )
+			VAR TopFranchise = 
+			    CALCULATE(
+			        SELECTEDVALUE('Fact_NegativeOnHand_OnHandNoBin'[Franchise]),
+			        TOPN(1, VALUES('Fact_NegativeOnHand_OnHandNoBin'[Franchise]), [Total Parts with Issues], DESC)
+			    )
+			VAR BackOrderCount = [Parts with Back Orders]
+			VAR BackOrderPct = DIVIDE(BackOrderCount, TotalIssues, 0)
+			VAR NegativeCount = [Parts with Negative Bin Qty]
+			VAR NoBinCount = [Parts with On Hand No Bin]
+			VAR _HTML = 
+			    "<div style='font-family: Segoe UI, Arial, sans-serif; width: 100%; height: 100%; background: white; box-sizing: border-box; margin: 0; padding: 0; overflow: hidden;'>" &
+			    "<div style='background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%); color: white; padding: 12px 0; text-align: center; margin: 0;'>" &
+			    "<div style='font-size: 18px; font-weight: 600;'>📊 SUMMARY</div>" &
+			    "</div>" &
+			    "<div style='padding: 14px;'>" &
+			    "<div style='background: rgba(74, 91, 115, 0.08); padding: 12px; border-radius: 6px; margin-bottom: 10px;'>" &
+			    "<div style='font-size: 13px; font-weight: 600; margin-bottom: 7px; color: #4A5B73; border-bottom: 1px solid rgba(74, 91, 115, 0.2); padding-bottom: 4px;'>Distribution</div>" &
+			    "<div style='font-size: 12px; line-height: 1.5; color: #2c3e50;'>" &
+			    "Issues across <strong>" & BranchesAffected & " branches</strong><br/>" &
+			    "Branch <strong>" & TopBranch & "</strong> has the most issues (<strong>" & TopBranchCount & "</strong> parts)<br/>" &
+			    "Franchise <strong>" & TopFranchise & "</strong> most affected" &
+			    "</div>" &
+			    "</div>" &
+			    "<div style='background: rgba(74, 91, 115, 0.08); padding: 12px; border-radius: 6px;'>" &
+			    "<div style='font-size: 13px; font-weight: 600; margin-bottom: 7px; color: #4A5B73; border-bottom: 1px solid rgba(74, 91, 115, 0.2); padding-bottom: 4px;'>Issue Breakdown</div>" &
+			    "<div style='font-size: 12px; line-height: 1.5; color: #2c3e50;'>" &
+			    "<div style='display: flex; justify-content: space-between; margin-bottom: 3px;'>" &
+			    "<span>🔴 Negative inventory</span>" &
+			    "<strong>" & NegativeCount & " parts</strong>" &
+			    "</div>" &
+			    "<div style='display: flex; justify-content: space-between; margin-bottom: 3px;'>" &
+			    "<span>📦 No bin assignment</span>" &
+			    "<strong>" & NoBinCount & " parts</strong>" &
+			    "</div>" &
+			    "<div style='display: flex; justify-content: space-between; padding-top: 5px; border-top: 1px solid rgba(74, 91, 115, 0.15);'>" &
+			    "<span>⚠️ Customer back orders</span>" &
+			    "<strong>" & BackOrderCount & " (" & FORMAT(BackOrderPct, "0.0%") & ")</strong>" &
+			    "</div>" &
+			    "</div>" &
+			    "</div>" &
+			    "</div>" &
+			    "</div>"
+			RETURN _HTML
+			```
+		displayFolder: Summary
+		lineageTag: f267acf8-9b4a-40ff-a25d-6e62750a5764
+
+	measure 'Show Filter 1' =
+			
+			VAR MaxFilters = 3
+			RETURN
+			    IF (
+			        ISFILTERED ( dim_BranchLocation[Branch] ),
+			        VAR ___f =
+			            FILTERS ( dim_BranchLocation[Branch] )
+			        VAR ___r =
+			            COUNTROWS ( ___f )
+			        VAR ___t =
+			            TOPN ( MaxFilters, ___f, dim_BranchLocation[Branch] )
+			        VAR ___d =
+			            CONCATENATEX ( ___t, dim_BranchLocation[Branch], ", " )
+			        VAR ___x =
+			            "Branch:  " & ___d
+			                & IF ( ___r > MaxFilters, ", ... [" & ___r & " items selected]" ) & " "
+			        RETURN
+			            ___x & UNICHAR ( 13 )
+			                & UNICHAR ( 10 )
+			    )
+		displayFolder: Formatting
+		lineageTag: b557f15f-8dd0-4054-9b42-3be91415ac42
+
+	measure 'Home - Header' = ```
+			
+			// Get user name
+			VAR _User = USERPRINCIPALNAME()
+			VAR _Position = SEARCH("@", _User, 1)
+			VAR _Name = LEFT(_User, _Position - 1)
+			VAR _FirstLetter = UPPER(LEFT(_Name, 1))
+			VAR _LastName = MID(_Name, 2, LEN(_Name) - 1)
+			VAR _FormattedLastName = 
+			    UPPER(LEFT(_LastName, 1)) & LOWER(MID(_LastName, 2, LEN(_LastName)))
+			VAR WelcomeName = _FirstLetter & "." & _FormattedLastName
+			
+			// Get current date/time info
+			VAR CurrentDate = TODAY()
+			VAR DateDisplay = FORMAT(CurrentDate, "MMM D, YYYY")
+			VAR CurrentHour = HOUR(NOW())
+			VAR TimeGreeting = 
+			    IF(CurrentHour < 12, "Good Morning",
+			    IF(CurrentHour < 17, "Good Afternoon",
+			    "Good Evening"))
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    height: 85px;
+			    padding: 15px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 10px;
+			    color: white;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-between;
+			    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    box-sizing: border-box;
+			'>
+			    <!-- Left side: Dashboard Title -->
+			    <div style='display: flex; align-items: center; gap: 15px;'>
+			        <!-- Home icon -->
+			        <div style='
+			            width: 40px;
+			            height: 40px;
+			            background: rgba(255,255,255,0.15);
+			            border-radius: 8px;
+			            display: flex;
+			            align-items: center;
+			            justify-content: center;
+			            font-size: 20px;
+			        '>
+			            🏠
+			        </div>
+			        
+			        <!-- Title -->
+			        <div>
+			            <div style='font-size: 12px; opacity: 0.85; margin-bottom: 4px; letter-spacing: 0.5px;'>
+			                REPORT
+			            </div>
+			            <div style='font-size: 26px; font-weight: 700; line-height: 1;'>
+			                Negative On Hand - On Hand no Bin
+			            </div>
+			        </div>
+			    </div>
+			    
+			    <!-- Right side: Welcome & Date -->
+			    <div style='text-align: right;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 6px;'>
+			            " & TimeGreeting & ", " & WelcomeName & "
+			        </div>
+			        <div style='font-size: 16px; font-weight: 600;'>
+			            📅 " & DateDisplay & "
+			        </div>
+			    </div>
+			</div>
+			"
+			```
+		lineageTag: 6e9d78f0-c429-4668-b97e-3e56a89c224c
+
+	measure 'Hero Card - Inventory Issues' = ```
+			
+			VAR TotalIssues = [Total Parts with Issues]
+			VAR NegativeParts = [Parts with Negative Bin Qty]
+			VAR NegativeQty = [Total Negative Bin Qty]
+			VAR NoBinParts = [Parts with On Hand No Bin]
+			VAR NoBinQty = [Total Qty No Bin]
+			VAR BackOrderParts = [Parts with Back Orders]
+			
+			// Format the values
+			VAR TotalIssuesText = FORMAT(TotalIssues, "#,##0")
+			VAR NegativePartsText = FORMAT(NegativeParts, "#,##0")
+			VAR NegativeQtyText = FORMAT(NegativeQty, "#,##0")
+			VAR NoBinPartsText = FORMAT(NoBinParts, "#,##0")
+			VAR NoBinQtyText = FORMAT(NoBinQty, "#,##0")
+			VAR BackOrderPartsText = FORMAT(BackOrderParts, "#,##0")
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    padding: 20px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 12px;
+			    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+			    color: white;
+			    height: 105px;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-around;
+			'>
+			    <!-- Section 1: Total Parts with Issues -->
+			    <div style='text-align: center; flex: 1;'>
+			        <div style='font-size: 11px; opacity: 0.85; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;'>
+			            Total Issues
+			        </div>
+			        <div style='font-size: 36px; font-weight: 700; line-height: 1;'>
+			            " & TotalIssuesText & "
+			        </div>
+			    </div>
+			    
+			    <!-- Divider -->
+			    <div style='width: 1.5px; height: 70px; background: rgba(255,255,255,0.3); margin: 0 10px;'></div>
+			    
+			    <!-- Section 2: Parts with Negative Bin Qty -->
+			    <div style='text-align: center; flex: 1;'>
+			        <div style='font-size: 11px; opacity: 0.85; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;'>
+			            Negative Parts
+			        </div>
+			        <div style='font-size: 36px; font-weight: 700; line-height: 1; color: #ef4444;'>
+			            " & NegativePartsText & "
+			        </div>
+			    </div>
+			    
+			    <!-- Divider -->
+			    <div style='width: 1.5px; height: 70px; background: rgba(255,255,255,0.3); margin: 0 10px;'></div>
+			    
+			    <!-- Section 3: Total Negative Bin Qty -->
+			    <div style='text-align: center; flex: 1;'>
+			        <div style='font-size: 11px; opacity: 0.85; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;'>
+			            Negative Qty
+			        </div>
+			        <div style='font-size: 36px; font-weight: 700; line-height: 1; color: #ef4444;'>
+			            " & NegativeQtyText & "
+			        </div>
+			    </div>
+			    
+			    <!-- Divider -->
+			    <div style='width: 1.5px; height: 70px; background: rgba(255,255,255,0.3); margin: 0 10px;'></div>
+			    
+			    <!-- Section 4: Parts with On Hand No Bin -->
+			    <div style='text-align: center; flex: 1;'>
+			        <div style='font-size: 11px; opacity: 0.85; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;'>
+			            No Bin Parts
+			        </div>
+			        <div style='font-size: 36px; font-weight: 700; line-height: 1; color: #fbbf24;'>
+			            " & NoBinPartsText & "
+			        </div>
+			    </div>
+			    
+			    <!-- Divider -->
+			    <div style='width: 1.5px; height: 70px; background: rgba(255,255,255,0.3); margin: 0 10px;'></div>
+			    
+			    <!-- Section 5: Total Qty No Bin -->
+			    <div style='text-align: center; flex: 1;'>
+			        <div style='font-size: 11px; opacity: 0.85; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;'>
+			            No Bin Qty
+			        </div>
+			        <div style='font-size: 36px; font-weight: 700; line-height: 1; color: #fbbf24;'>
+			            " & NoBinQtyText & "
+			        </div>
+			    </div>
+			    
+			    <!-- Divider -->
+			    <div style='width: 1.5px; height: 70px; background: rgba(255,255,255,0.3); margin: 0 10px;'></div>
+			    
+			    <!-- Section 6: Parts with Back Orders -->
+			    <div style='text-align: center; flex: 1;'>
+			        <div style='font-size: 11px; opacity: 0.85; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;'>
+			            Back Orders
+			        </div>
+			        <div style='font-size: 36px; font-weight: 700; line-height: 1; color: #a78bfa;'>
+			            " & BackOrderPartsText & "
+			        </div>
+			    </div>
+			</div>
+			"
+			```
+		lineageTag: 3d8403dd-81d6-4fd0-a35f-51820a26d3a0
+
+	column Value
+		isHidden
+		lineageTag: 9bebaa8d-37e0-4801-a109-64f1ce8274e2
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Value]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition _Measures = calculated
+		mode: import
+		source = { "This table holds all measures for the Parts Reorder Monitoring report" }
+
+	annotation PBI_Id = cede00dec9ea4a12ab8bdd6643dee20e
+
