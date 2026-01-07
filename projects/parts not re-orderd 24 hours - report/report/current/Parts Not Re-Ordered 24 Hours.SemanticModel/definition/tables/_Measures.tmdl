@@ -1,0 +1,340 @@
+table _Measures
+	lineageTag: 3aff6095-0079-4024-bffb-ae5a5ec7158b
+
+	measure 'Current DateTime' = NOW()
+		formatString: General Date
+		lineageTag: 5977b850-01b2-4006-9218-b448b52485ed
+
+	measure 'Parts Not Reordered' =
+			
+			CALCULATE(
+			    DISTINCTCOUNT( Fact_PartsNotReordered[PartNumber] ),
+			    Fact_PartsNotReordered[Business Hours Since Sale] <= 24,
+			    Fact_PartsNotReordered[OnOrder] <= 0 || ISBLANK( Fact_PartsNotReordered[OnOrder] )
+			)
+		formatString: 0
+		lineageTag: 76ac5cae-dabe-42e0-be45-511d713ecab7
+
+	measure 'Branches Affected' =
+			
+			CALCULATE(
+			    DISTINCTCOUNT( Fact_PartsNotReordered[Branch] ),
+			    Fact_PartsNotReordered[Business Hours Since Sale] <= 24,
+			    Fact_PartsNotReordered[OnOrder] <= 0 || ISBLANK( Fact_PartsNotReordered[OnOrder] )
+			)
+		formatString: 0
+		lineageTag: 3b1fed5c-00ee-4e10-b6e7-9d9fd8e12770
+
+	measure 'Total Qty Not Reordered' =
+			
+			CALCULATE(
+			    SUM( Fact_PartsNotReordered[QtySold] ),
+			    Fact_PartsNotReordered[Business Hours Since Sale] <= 24,
+			    Fact_PartsNotReordered[OnOrder] <= 0 || ISBLANK( Fact_PartsNotReordered[OnOrder] )
+			)
+		formatString: 0
+		lineageTag: 7df0ff87-3a0a-4fc9-82ec-032d4c323e40
+
+	measure 'Times This Part Not Reordered' =
+			
+			CALCULATE(
+			    COUNTROWS( Fact_PartsNotReordered ),
+			    Fact_PartsNotReordered[Business Hours Since Sale] <= 24,
+			    Fact_PartsNotReordered[OnOrder] <= 0 || ISBLANK( Fact_PartsNotReordered[OnOrder] ),
+			    ALLEXCEPT( Fact_PartsNotReordered, Fact_PartsNotReordered[PartNumber] )
+			)
+		formatString: 0
+		lineageTag: 2a3610ce-f2c8-4d8e-a409-910757d0aa37
+
+	measure 'Tooltip - Current Sales' =
+			
+			MAX(Fact_PartsNotReordered[Current12MoSales])
+		formatString: 0
+		lineageTag: 0b6690d9-e874-471e-8350-65c7e1d6a615
+
+	measure 'Tooltip - Previous Sales' =
+			
+			MAX(Fact_PartsNotReordered[Previous12MoSales])
+		formatString: 0
+		lineageTag: c37fe724-7622-4394-bec1-75edf04811b9
+
+	measure 'Tooltip - Sales Change' =
+			
+			VAR _Current = [Tooltip - Current Sales]
+			VAR Previous = [Tooltip - Previous Sales]
+			VAR Change = _Current - Previous
+			RETURN Change
+		formatString: 0
+		lineageTag: 2c2ad1a9-4959-4e86-84d3-bf741d66913d
+
+	measure 'Tooltip - Sales Change %' = ```
+			
+			VAR _Current = [Tooltip - Current Sales]
+			VAR Previous = [Tooltip - Previous Sales]
+			VAR ChangePercent = 
+			    IF(
+			        Previous > 0,
+			        DIVIDE(_Current - Previous, Previous),
+			        BLANK()
+			    )
+			RETURN ChangePercent
+			```
+		lineageTag: c8e8c96c-3105-462a-a805-32a6f8129649
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Tooltip - Trend Arrow' =
+			
+			VAR Change = [Tooltip - Sales Change]
+			RETURN
+			    SWITCH(
+			        TRUE(),
+			        Change > 0, "▲ Increasing",
+			        Change < 0, "▼ Decreasing",
+			        "— Flat"
+			    )
+		lineageTag: 805cd211-9418-476a-ad85-1f80a4313c26
+
+	measure 'Parts Not On Order - Header' = ```
+			
+			// Get user name
+			VAR _User = USERPRINCIPALNAME()
+			VAR _Position = SEARCH("@", _User, 1)
+			VAR _Name = LEFT(_User, _Position - 1)
+			VAR _FirstLetter = UPPER(LEFT(_Name, 1))
+			VAR _LastName = MID(_Name, 2, LEN(_Name) - 1)
+			VAR _FormattedLastName = 
+			    UPPER(LEFT(_LastName, 1)) & LOWER(MID(_LastName, 2, LEN(_LastName)))
+			VAR WelcomeName = _FirstLetter & "." & _FormattedLastName
+			
+			// Get current date/time info
+			VAR CurrentDate = TODAY()
+			VAR DateDisplay = FORMAT(CurrentDate, "MMM D, YYYY")
+			VAR CurrentHour = HOUR(NOW())
+			VAR TimeGreeting = 
+			    IF(CurrentHour < 12, "Good Morning",
+			    IF(CurrentHour < 17, "Good Afternoon",
+			    "Good Evening"))
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    height: 85px;
+			    padding: 15px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 10px;
+			    color: white;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-between;
+			    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    box-sizing: border-box;
+			'>
+			    <!-- Left side: Dashboard Title -->
+			    <div style='display: flex; align-items: center; gap: 15px;'>
+			        <!-- Home icon -->
+			        <div style='
+			            width: 40px;
+			            height: 40px;
+			            background: rgba(255,255,255,0.15);
+			            border-radius: 8px;
+			            display: flex;
+			            align-items: center;
+			            justify-content: center;
+			            font-size: 20px;
+			        '>
+			            🏠
+			        </div>
+			        
+			        <!-- Title -->
+			        <div>
+			            <div style='font-size: 12px; opacity: 0.85; margin-bottom: 4px; letter-spacing: 0.5px;'>
+			                DASHBOARD
+			            </div>
+			            <div style='font-size: 26px; font-weight: 700; line-height: 1;'>
+			                Parts Not on Order - 24 Hours Later
+			            </div>
+			        </div>
+			    </div>
+			    
+			    <!-- Right side: Welcome & Date -->
+			    <div style='text-align: right;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 6px;'>
+			            " & TimeGreeting & ", " & WelcomeName & "
+			        </div>
+			        <div style='font-size: 16px; font-weight: 600;'>
+			            📅 " & DateDisplay & "
+			        </div>
+			    </div>
+			</div>
+			"
+			```
+		lineageTag: 5ece13b7-ae75-4059-bd35-edc3dc426d47
+
+	measure 'Dashboard Hero Card - Parts Reorder' = ```
+			
+			VAR PartsNotReordered = [Parts Not Reordered]
+			VAR BranchesAffected = [Branches Affected]
+			VAR TotalQtyNotReordered = [Total Qty Not Reordered]
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    padding: 25px 20px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 12px;
+			    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+			    color: white;
+			    height: 140px;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-around;
+			'>
+			    <!-- Section 1: Parts Not Reordered -->
+			    <div style='text-align: center; flex: 1;'>
+			        <div style='font-size: 12px; opacity: 0.85; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;'>
+			            Parts Not Reordered
+			        </div>
+			        <div style='font-size: 48px; font-weight: 700; line-height: 1;'>
+			            " & FORMAT(PartsNotReordered, "#,##0") & "
+			        </div>
+			        <div style='font-size: 12px; margin-top: 8px; opacity: 0.8;'>
+			            Within 24 Business Hours
+			        </div>
+			    </div>
+			    
+			    <!-- Divider -->
+			    <div style='width: 1.5px; height: 90px; background: rgba(255,255,255,0.25); margin: 0 15px;'></div>
+			    
+			    <!-- Section 2: Branches Affected -->
+			    <div style='text-align: center; flex: 1;'>
+			        <div style='font-size: 12px; opacity: 0.85; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;'>
+			            Branches Affected
+			        </div>
+			        <div style='font-size: 48px; font-weight: 700; line-height: 1;'>
+			            " & FORMAT(BranchesAffected, "#,##0") & "
+			        </div>
+			        <div style='font-size: 12px; margin-top: 8px; opacity: 0.8;'>
+			            Locations Need Action
+			        </div>
+			    </div>
+			    
+			    <!-- Divider -->
+			    <div style='width: 1.5px; height: 90px; background: rgba(255,255,255,0.25); margin: 0 15px;'></div>
+			    
+			    <!-- Section 3: Total Qty Not Reordered -->
+			    <div style='text-align: center; flex: 1;'>
+			        <div style='font-size: 12px; opacity: 0.85; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;'>
+			            Total Qty Not Reordered
+			        </div>
+			        <div style='font-size: 48px; font-weight: 700; line-height: 1;'>
+			            " & FORMAT(TotalQtyNotReordered, "#,##0") & "
+			        </div>
+			        <div style='font-size: 12px; margin-top: 8px; opacity: 0.8;'>
+			            Units Pending Order
+			        </div>
+			    </div>
+			</div>
+			"
+			```
+		lineageTag: 66caf613-0ffb-4ec5-affe-01fbbecb1364
+
+	measure 'Tooltip - Sales History HTML' = ```
+			
+			VAR CurrentSales = [Tooltip - Current Sales]
+			VAR PreviousSales = [Tooltip - Previous Sales]
+			VAR SalesChange = [Tooltip - Sales Change]
+			VAR TrendArrow = [Tooltip - Trend Arrow]
+			VAR ChangeColor = IF(SalesChange > 0, "#86efac", IF(SalesChange < 0, "#fca5a5", "#d1d5db"))
+			VAR ArrowSymbol = IF(SalesChange > 0, "▲", IF(SalesChange < 0, "▼", "—"))
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    padding: 12px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 8px;
+			    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+			    color: white;
+			    height: 100%;
+			    width: 100%;
+			    box-sizing: border-box;
+			    display: flex;
+			    flex-direction: column;
+			    justify-content: space-around;
+			'>
+			    <!-- Header -->
+			    <div style='text-align: center; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 6px;'>
+			        <div style='font-size: 10px; opacity: 0.85; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;'>
+			            Sales History
+			        </div>
+			    </div>
+			    
+			    <!-- Last 12 Months -->
+			    <div style='text-align: center;'>
+			        <div style='font-size: 9px; opacity: 0.75; margin-bottom: 4px;'>
+			            Last 12 Months
+			        </div>
+			        <div style='font-size: 28px; font-weight: 700; line-height: 1;'>
+			            " & FORMAT(CurrentSales, "#,##0") & "
+			        </div>
+			    </div>
+			    
+			    <!-- Divider -->
+			    <div style='height: 1px; background: rgba(255,255,255,0.15); margin: 4px 0;'></div>
+			    
+			    <!-- Previous 12 Months -->
+			    <div style='text-align: center;'>
+			        <div style='font-size: 9px; opacity: 0.75; margin-bottom: 4px;'>
+			            Previous 12 Months
+			        </div>
+			        <div style='font-size: 28px; font-weight: 700; line-height: 1;'>
+			            " & FORMAT(PreviousSales, "#,##0") & "
+			        </div>
+			    </div>
+			    
+			    <!-- Divider -->
+			    <div style='height: 1px; background: rgba(255,255,255,0.15); margin: 4px 0;'></div>
+			    
+			    <!-- Change -->
+			    <div style='text-align: center;'>
+			        <div style='font-size: 9px; opacity: 0.75; margin-bottom: 4px;'>
+			            Change
+			        </div>
+			        <div style='font-size: 24px; font-weight: 700; line-height: 1; color: " & ChangeColor & ";'>
+			            " & FORMAT(SalesChange, "+#,##0;-#,##0") & "
+			        </div>
+			    </div>
+			    
+			    <!-- Divider -->
+			    <div style='height: 1px; background: rgba(255,255,255,0.15); margin: 4px 0;'></div>
+			    
+			    <!-- Trend Arrow -->
+			    <div style='text-align: center;'>
+			        <div style='font-size: 12px; font-weight: 600; color: " & ChangeColor & ";'>
+			            " & ArrowSymbol & " " & TrendArrow & "
+			        </div>
+			    </div>
+			</div>
+			"
+			```
+		lineageTag: 07e7cb6a-6191-4502-993d-2841254309f1
+
+	column Value
+		isHidden
+		lineageTag: 1f252799-288c-446d-8e24-ce4a8c176591
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Value]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition _Measures = calculated
+		mode: import
+		source = { "This table holds all measures for the Parts Reorder Monitoring report" }
+
+	annotation PBI_Id = dbd7d5c53e8f4fd5b8d0352823d67d78
+

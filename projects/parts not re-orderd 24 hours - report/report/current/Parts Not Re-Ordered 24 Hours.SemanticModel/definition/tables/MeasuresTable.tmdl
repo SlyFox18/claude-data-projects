@@ -1,0 +1,74 @@
+table MeasuresTable
+	isHidden
+	lineageTag: 0d039455-6ff6-47ec-acba-7d08b99b993f
+
+	measure 'Welcome Name' =
+			
+			VAR _User =
+			    USERPRINCIPALNAME ()
+			VAR _Position =
+			    SEARCH ( "@", _User, 1 )
+			VAR _Name =
+			    LEFT ( _User, _Position - 1 )
+			VAR _FirstLetter =
+			    UPPER ( LEFT ( _Name, 1 ) )
+			VAR _LastName =
+			    MID ( _Name, 2, LEN ( _Name ) - 1 )
+			VAR _FormattedLastName =
+			    UPPER ( LEFT ( _LastName, 1 ) )
+			        & LOWER ( MID ( _LastName, 2, LEN ( _LastName ) ) )
+			RETURN
+			    "Welcome Back, " & _FirstLetter & "." & _FormattedLastName
+		isHidden
+		lineageTag: e6d65f23-5bad-438a-9ab9-84546804830c
+
+	measure 'Show Filter 1' =
+			
+			VAR MaxFilters = 7
+			RETURN
+			    IF (
+			        ISFILTERED ( dim_BranchLocation[Branch] ),
+			        VAR ___f =
+			            FILTERS ( dim_BranchLocation[Branch] )
+			        VAR ___r =
+			            COUNTROWS ( ___f )
+			        VAR ___t =
+			            TOPN ( MaxFilters, ___f, dim_BranchLocation[Branch] )
+			        VAR ___d =
+			            CONCATENATEX ( ___t, dim_BranchLocation[Branch], ", " )
+			        VAR ___x =
+			            "Branch:  " & ___d
+			                & IF ( ___r > MaxFilters, ", ... [" & ___r & " items selected]" ) & " "
+			        RETURN
+			            ___x & UNICHAR ( 13 )
+			                & UNICHAR ( 10 )
+			    )
+		isHidden
+		lineageTag: 80215221-86d3-4400-a454-dc6c766a0e1b
+
+	column Value
+		isHidden
+		formatString: 0
+		lineageTag: 8678bf39-f176-4547-98dc-825053f376fe
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [Value]
+
+		annotation SummarizationSetBy = Automatic
+
+	column DummyColumn
+		isHidden
+		formatString: 0
+		lineageTag: cd49475c-303a-4460-be09-b11b4ce4fce3
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [DummyColumn]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition MeasuresTable = calculated
+		mode: import
+		source = ADDCOLUMNS( GENERATESERIES(1, 1), "DummyColumn", 1 )
+
+	annotation PBI_Id = 6fbd826045c24c5594d31f62f17aaa57
+

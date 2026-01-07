@@ -1,0 +1,183 @@
+table Fact_PartsNotReordered
+	lineageTag: fe7c2031-84cc-46fc-bb25-5320dedb8c4a
+
+	column Branch
+		dataType: string
+		lineageTag: 66c66cd6-ba28-4d4d-b524-d77b4c799432
+		summarizeBy: none
+		sourceColumn: Branch
+
+		annotation SummarizationSetBy = Automatic
+
+	column PartNumber
+		dataType: string
+		lineageTag: d792d903-477d-4aa9-9f60-b4c39e86c22f
+		summarizeBy: none
+		sourceColumn: PartNumber
+
+		annotation SummarizationSetBy = Automatic
+
+	column Description
+		dataType: string
+		lineageTag: 60aedb14-8c55-485d-81f6-35406db344d3
+		summarizeBy: none
+		sourceColumn: Description
+
+		annotation SummarizationSetBy = Automatic
+
+	column QtySold
+		dataType: double
+		formatString: 0
+		lineageTag: 15885e17-1558-4dea-8c0a-5821f160e53f
+		summarizeBy: sum
+		sourceColumn: QtySold
+
+		annotation SummarizationSetBy = Automatic
+
+	column InvoiceNumber
+		dataType: string
+		lineageTag: 346f112c-d5ad-4714-8daf-587ac9ba1242
+		summarizeBy: none
+		sourceColumn: InvoiceNumber
+
+		annotation SummarizationSetBy = Automatic
+
+	column BinQty
+		dataType: double
+		formatString: 0
+		lineageTag: 81c5cf41-e988-43c8-9ecd-cf970a58cd4f
+		summarizeBy: sum
+		sourceColumn: BinQty
+
+		annotation SummarizationSetBy = Automatic
+
+	column TransDatetime
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: deb2b131-c36a-45db-a8b8-d21a9e2de15d
+		summarizeBy: none
+		sourceColumn: TransDatetime
+
+		annotation SummarizationSetBy = Automatic
+
+	column OnOrder
+		dataType: double
+		formatString: 0
+		lineageTag: 4a3634a4-81ff-4db2-84da-8151a927fb26
+		summarizeBy: sum
+		sourceColumn: OnOrder
+
+		annotation SummarizationSetBy = Automatic
+
+	column Type
+		dataType: string
+		lineageTag: eabb131c-727c-48ed-a2a6-31f2a1a07058
+		summarizeBy: none
+		sourceColumn: Type
+
+		annotation SummarizationSetBy = Automatic
+
+	column Franchise
+		dataType: string
+		lineageTag: 537eddd3-9a6e-4f5e-93e7-b14a6524753e
+		summarizeBy: none
+		sourceColumn: Franchise
+
+		annotation SummarizationSetBy = Automatic
+
+	column SaleDate
+		dataType: dateTime
+		formatString: Short Date
+		lineageTag: f9de5500-e802-4a06-bca8-b6e10c41481f
+		summarizeBy: none
+		sourceColumn: SaleDate
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column 'Business Hours Since Sale' = ```
+			
+			VAR CurrentDateTime = NOW()
+			VAR SaleDateTime = Fact_PartsNotReordered[TransDatetime]
+			VAR SaleDate = Fact_PartsNotReordered[SaleDate]
+			VAR CurrentDate = TODAY()
+			
+			// Calculate total actual hours
+			VAR TotalHours = DATEDIFF( SaleDateTime, CurrentDateTime, HOUR )
+			
+			// Count weekend days between sale and now using dim_DateTable
+			VAR WeekendDays = 
+			    CALCULATE(
+			        COUNTROWS( dim_DateTable ),
+			        FILTER(
+			            ALL( dim_DateTable ),
+			            dim_DateTable[Date] >= SaleDate &&
+			            dim_DateTable[Date] <= CurrentDate &&
+			            dim_DateTable[IsWeekend] = TRUE
+			        )
+			    )
+			
+			// Subtract 24 hours for each weekend day
+			VAR BusinessHours = TotalHours - (WeekendDays * 24)
+			
+			RETURN
+			    IF( 
+			        ISBLANK(SaleDateTime), 
+			        BLANK(), 
+			        BusinessHours 
+			    )
+			```
+		formatString: 0
+		lineageTag: c3c41dd1-869c-411f-a05a-e5bdaf9467e6
+		summarizeBy: sum
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Hour of Sale' = HOUR( Fact_PartsNotReordered[TransDatetime] )
+		formatString: 0
+		lineageTag: 7e58faf9-b5ee-459f-8a8b-c1ad97429bed
+		summarizeBy: sum
+
+		annotation SummarizationSetBy = Automatic
+
+	column DealerGroupCode
+		dataType: string
+		lineageTag: 71ab3967-1a57-49aa-9855-2ad5e894330a
+		summarizeBy: none
+		sourceColumn: DealerGroupCode
+
+		annotation SummarizationSetBy = Automatic
+
+	column Current12MoSales
+		dataType: double
+		formatString: 0
+		lineageTag: c107abf5-8810-4ca6-bb7b-353ef6840609
+		summarizeBy: sum
+		sourceColumn: Current12MoSales
+
+		annotation SummarizationSetBy = Automatic
+
+	column Previous12MoSales
+		dataType: double
+		formatString: 0
+		lineageTag: 6a71daf5-bc57-40af-99ac-13b3733b7237
+		summarizeBy: sum
+		sourceColumn: Previous12MoSales
+
+		annotation SummarizationSetBy = Automatic
+
+	partition Fact_PartsNotReordered = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-gxnyznhdptpenfw724g3o5sjzm.datawarehouse.fabric.microsoft.com", "LH_Master_Data"),
+				    dbo_Fact_PartsNotReordered = Source{[Schema="dbo",Item="Fact_PartsNotReordered"]}[Data],
+				    #"Filtered Rows" = Table.SelectRows(dbo_Fact_PartsNotReordered, each ([Type] = "C" or [Type] = "I"))
+				in
+				    #"Filtered Rows"
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+
