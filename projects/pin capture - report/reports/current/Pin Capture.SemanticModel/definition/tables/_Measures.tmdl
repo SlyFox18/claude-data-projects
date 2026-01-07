@@ -1,0 +1,2806 @@
+table _Measures
+	lineageTag: 22e4b9e3-99b6-4634-9836-9ade5a5ea5a5
+
+	measure 'Home - Header' = ```
+			
+			// Get user name
+			VAR _User = USERPRINCIPALNAME()
+			VAR _Position = SEARCH("@", _User, 1)
+			VAR _Name = LEFT(_User, _Position - 1)
+			VAR _FirstLetter = UPPER(LEFT(_Name, 1))
+			VAR _LastName = MID(_Name, 2, LEN(_Name) - 1)
+			VAR _FormattedLastName = 
+			    UPPER(LEFT(_LastName, 1)) & LOWER(MID(_LastName, 2, LEN(_LastName)))
+			VAR WelcomeName = _FirstLetter & "." & _FormattedLastName
+			
+			// Get current date/time info
+			VAR CurrentDate = TODAY()
+			VAR DateDisplay = FORMAT(CurrentDate, "MMM D, YYYY")
+			VAR CurrentHour = HOUR(NOW())
+			VAR TimeGreeting = 
+			    IF(CurrentHour < 12, "Good Morning",
+			    IF(CurrentHour < 17, "Good Afternoon",
+			    "Good Evening"))
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    height: 85px;
+			    padding: 15px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 10px;
+			    color: white;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-between;
+			    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    box-sizing: border-box;
+			'>
+			    <!-- Left side: Dashboard Title -->
+			    <div style='display: flex; align-items: center; gap: 15px;'>
+			        <!-- Home icon -->
+			        <div style='
+			            width: 40px;
+			            height: 40px;
+			            background: rgba(255,255,255,0.15);
+			            border-radius: 8px;
+			            display: flex;
+			            align-items: center;
+			            justify-content: center;
+			            font-size: 20px;
+			        '>
+			            🏠
+			        </div>
+			        
+			        <!-- Title -->
+			        <div>
+			            <div style='font-size: 12px; opacity: 0.85; margin-bottom: 4px; letter-spacing: 0.5px;'>
+			                REPORT
+			            </div>
+			            <div style='font-size: 26px; font-weight: 700; line-height: 1;'>
+			                Pin Capture - Overview
+			            </div>
+			        </div>
+			    </div>
+			    
+			    <!-- Right side: Welcome & Date -->
+			    <div style='text-align: right;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 6px;'>
+			            " & TimeGreeting & ", " & WelcomeName & "
+			        </div>
+			        <div style='font-size: 16px; font-weight: 600;'>
+			            📅 " & DateDisplay & "
+			        </div>
+			    </div>
+			</div>
+			"
+			```
+		lineageTag: 49efea2a-3c06-4cab-8367-26b26caa141e
+
+	measure 'Total Transactions' =
+			
+			DISTINCTCOUNT(Fact_PinTransactions[RONumber])
+		formatString: 0
+		lineageTag: 7e9a613f-87a6-4601-9e08-7c595227e0f0
+
+	measure 'Transactions with Pins' =
+			
+			CALCULATE(
+			    DISTINCTCOUNT(Fact_PinTransactions[RONumber]),
+			    Fact_PinTransactions[Has Pin] = TRUE
+			)
+		formatString: 0
+		lineageTag: c0a661c6-6fcf-42a3-be45-174fe3774397
+
+	measure '% Transactions with Pin' =
+			
+			DIVIDE(
+			    [Transactions with Pins],
+			    [Total Transactions],
+			    0
+			)
+		formatString: 0.00%;-0.00%;0.00%
+		lineageTag: 71f13ddd-440f-46d0-a04d-3d24db17247e
+
+	measure 'Total Sales' =
+			
+			SUM(Fact_PinTransactions[SaleValue])
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 4063b4d3-5e27-4b69-ae1c-4a62a4fec3eb
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Total Cost' =
+			
+			SUM(Fact_PinTransactions[CostValue])
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 2d13e743-48a4-44a9-9f0d-4901a2e6282f
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Total Margin' =
+			
+			SUM(Fact_PinTransactions[Margin])
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 10f41863-9c9d-4a9a-bd1e-d759d0202d57
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Sale with Pin' = ```
+			
+			VAR InvoicesWithPins = 
+			    CALCULATETABLE(
+			        VALUES(Fact_PinTransactions[RONumber]),
+			        Fact_PinTransactions[Has Pin] = TRUE
+			    )
+			RETURN
+			CALCULATE(
+			    SUM(Fact_PinTransactions[SaleValue]),
+			    InvoicesWithPins
+			)
+			```
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 3cc851f1-5507-409d-b961-1fd37a273274
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Cost with Pin' = ```
+			
+			VAR InvoicesWithPins = 
+			    CALCULATETABLE(
+			        VALUES(Fact_PinTransactions[RONumber]),
+			        Fact_PinTransactions[Has Pin] = TRUE
+			    )
+			RETURN
+			CALCULATE(
+			    SUM(Fact_PinTransactions[CostValue]),
+			    InvoicesWithPins
+			)
+			```
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 07001a15-2c79-455d-b79c-8ec0b3dd65cf
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Margin with Pin' = ```
+			
+			VAR InvoicesWithPins = 
+			    CALCULATETABLE(
+			        VALUES(Fact_PinTransactions[RONumber]),
+			        Fact_PinTransactions[Has Pin] = TRUE
+			    )
+			RETURN
+			CALCULATE(
+			    SUM(Fact_PinTransactions[Margin]),
+			    InvoicesWithPins
+			)
+			```
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 6e5419e1-3f8c-4cd9-afec-558c874387d8
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure '% Dollars with Pin (Sales)' =
+			
+			DIVIDE(
+			    [Sale with Pin],
+			    [Total Sales],
+			    0
+			)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 5d8955f9-c4a1-4cb1-9ab9-5c2a62ce7818
+
+	measure '% Dollars with Pin (Margin)' =
+			
+			DIVIDE(
+			    [Margin with Pin],
+			    [Total Margin],
+			    0
+			)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 275de6be-d4dc-450c-ae14-e1391058f2ed
+
+	measure 'Total Invoices' =
+			
+			DISTINCTCOUNT(Fact_PinTransactions[RONumber])
+		formatString: 0
+		lineageTag: 17227fd3-811b-4f15-b910-fc58811ef0b8
+
+	measure 'Invoices with Pin' =
+			
+			CALCULATE(
+			    DISTINCTCOUNT(Fact_PinTransactions[RONumber]),
+			    Fact_PinTransactions[Has Pin] = TRUE
+			)
+		formatString: 0
+		lineageTag: 4dc59eed-9c67-4d5d-aa9e-b5132c97ff8b
+
+	measure '% Invoices with Pin' =
+			
+			DIVIDE(
+			    [Invoices with Pin],
+			    [Total Invoices],
+			    0
+			)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 698eaad1-ee8b-4c69-a962-3d1662027c33
+
+	measure 'Avg Invoice Value' =
+			
+			DIVIDE(
+			    [Total Sales],
+			    [Total Invoices],
+			    0
+			)
+		lineageTag: f6f01ee2-c204-4679-9bf2-df13c972976e
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Branch - Header' = ```
+			
+			// Get user name
+			VAR _User = USERPRINCIPALNAME()
+			VAR _Position = SEARCH("@", _User, 1)
+			VAR _Name = LEFT(_User, _Position - 1)
+			VAR _FirstLetter = UPPER(LEFT(_Name, 1))
+			VAR _LastName = MID(_Name, 2, LEN(_Name) - 1)
+			VAR _FormattedLastName = 
+			    UPPER(LEFT(_LastName, 1)) & LOWER(MID(_LastName, 2, LEN(_LastName)))
+			VAR WelcomeName = _FirstLetter & "." & _FormattedLastName
+			
+			// Get current date/time info
+			VAR CurrentDate = TODAY()
+			VAR DateDisplay = FORMAT(CurrentDate, "MMM D, YYYY")
+			VAR CurrentHour = HOUR(NOW())
+			VAR TimeGreeting = 
+			    IF(CurrentHour < 12, "Good Morning",
+			    IF(CurrentHour < 17, "Good Afternoon",
+			    "Good Evening"))
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    height: 85px;
+			    padding: 15px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 10px;
+			    color: white;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-between;
+			    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    box-sizing: border-box;
+			'>
+			    <!-- Left side: Dashboard Title -->
+			    <div style='display: flex; align-items: center; gap: 15px;'>
+			        <!-- Home icon -->
+			        <div style='
+			            width: 40px;
+			            height: 40px;
+			            background: rgba(255,255,255,0.15);
+			            border-radius: 8px;
+			            display: flex;
+			            align-items: center;
+			            justify-content: center;
+			            font-size: 20px;
+			        '>
+			            🏠
+			        </div>
+			        
+			        <!-- Title -->
+			        <div>
+			            <div style='font-size: 12px; opacity: 0.85; margin-bottom: 4px; letter-spacing: 0.5px;'>
+			                REPORT
+			            </div>
+			            <div style='font-size: 26px; font-weight: 700; line-height: 1;'>
+			                Pin Capture - Branch Summary
+			            </div>
+			        </div>
+			    </div>
+			    
+			    <!-- Right side: Welcome & Date -->
+			    <div style='text-align: right;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 6px;'>
+			            " & TimeGreeting & ", " & WelcomeName & "
+			        </div>
+			        <div style='font-size: 16px; font-weight: 600;'>
+			            📅 " & DateDisplay & "
+			        </div>
+			    </div>
+			</div>
+			"
+			```
+		lineageTag: adf857e6-8588-4c3b-8b30-9549814722e9
+
+	measure '% Pin Capture by Franchise' =
+			
+			DIVIDE(
+			    CALCULATE([Transactions with Pins], ALLEXCEPT(Fact_PinTransactions, Fact_PinTransactions[Franchise])),
+			    CALCULATE([Total Transactions], ALLEXCEPT(Fact_PinTransactions, Fact_PinTransactions[Franchise])),
+			    0
+			)
+		lineageTag: f601a9a7-06af-4250-81c0-70d5babec34a
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Unique Pins Tracked' = ```
+			
+			VAR PinsFromPinNo = 
+			    CALCULATETABLE(
+			        VALUES(Fact_PinTransactions[PinNo]),
+			        NOT(ISBLANK(Fact_PinTransactions[PinNo]))
+			    )
+			VAR PinsFromNotation = 
+			    CALCULATETABLE(
+			        VALUES(Fact_PinTransactions[Notation]),
+			        NOT(ISBLANK(Fact_PinTransactions[Notation]))
+			    )
+			RETURN
+			COUNTROWS(UNION(PinsFromPinNo, PinsFromNotation))
+			```
+		formatString: 0
+		lineageTag: 61242730-3201-45b6-9cf4-b9805a85f957
+
+	measure 'Avg Sales per Pin' =
+			
+			DIVIDE(
+			    [Sale with Pin],
+			    [Unique Pins Tracked],
+			    0
+			)
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 63aff8f5-35c9-4c3a-8b95-d86994c7768f
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Pin Capture Goal' = 0.10  // 10% target - adjust based on stakeholder goal
+		lineageTag: 49b9d207-c2e0-410d-bcf1-807304ed17eb
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Hero Card - Pin Capture' = ```
+			
+			VAR TotalCost = [Total Cost]
+			VAR CostWithPin = [Cost with Pin]
+			VAR PctCost = [% Dollars with Pin (Cost)]
+			VAR PctCostText = FORMAT(PctCost, "0.0%")
+			
+			VAR TotalTrans = [Total Transactions]
+			VAR TransWithPin = [Transactions with Pins]
+			VAR PctTrans = DIVIDE(TransWithPin, TotalTrans, 0)
+			VAR PctTransText = FORMAT(PctTrans, "0.0%")
+			
+			VAR PinGoal = 0.10  // 10% target
+			VAR CostGoalColor = IF(PctCost >= PinGoal, "#4ade80", IF(PctCost >= PinGoal * 0.5, "#fbbf24", "#ef4444"))
+			VAR TransGoalColor = IF(PctTrans >= PinGoal, "#4ade80", IF(PctTrans >= PinGoal * 0.5, "#fbbf24", "#ef4444"))
+			
+			// Section 1: Cost with Pin
+			VAR CostWithPinText = 
+			    IF(CostWithPin >= 1000000,
+			        FORMAT(CostWithPin / 1000000, "$#,##0.0") & "M",
+			        FORMAT(CostWithPin / 1000, "$#,##0") & "K"
+			    )
+			VAR TotalCostText = 
+			    IF(TotalCost >= 1000000,
+			        FORMAT(TotalCost / 1000000, "$#,##0.0") & "M",
+			        FORMAT(TotalCost / 1000, "$#,##0") & "K"
+			    )
+			
+			// Section 4: Month-over-Month Change
+			VAR MoMChange = [MoM Change - Pin Capture]
+			VAR MoMChangeText = 
+			    IF(
+			        ISBLANK(MoMChange),
+			        "N/A",
+			        FORMAT(MoMChange, "+0.0%;-0.0%;0.0%")
+			    )
+			VAR MoMArrow = 
+			    IF(
+			        ISBLANK(MoMChange), "",
+			        IF(MoMChange > 0, " ↑", 
+			        IF(MoMChange < 0, " ↓", " →"))
+			    )
+			VAR MoMColor = 
+			    IF(
+			        ISBLANK(MoMChange), "#94a3b8",
+			        IF(MoMChange > 0, "#4ade80",
+			        IF(MoMChange < 0, "#ef4444", "#94a3b8"))
+			    )
+			
+			// Section 5: Top Performer (Branch)
+			VAR TopBranchName = 
+			    CALCULATE(
+			        SELECTEDVALUE(dim_BranchLocation[Branch]),
+			        TOPN(1, ALL(dim_BranchLocation[Branch]), [% Transactions with Pin], DESC)
+			    )
+			VAR TopBranchPct = 
+			    CALCULATE(
+			        [% Transactions with Pin],
+			        TOPN(1, ALL(dim_BranchLocation[Branch]), [% Transactions with Pin], DESC)
+			    )
+			VAR TopBranchText = FORMAT(TopBranchPct, "0.0%")
+			
+			// Unique pins for context
+			VAR UniquePins = [Unique Pins Tracked]
+			
+			// CONTEXT ROW
+			VAR MinDate = MIN(dim_DateTable[Date])
+			VAR MaxDate = MAX(dim_DateTable[Date])
+			VAR SelectedPeriod = 
+			    IF(
+			        DATEDIFF(MinDate, MaxDate, DAY) <= 31,
+			        FORMAT(MaxDate, "MMMM YYYY"),
+			        IF(
+			            DATEDIFF(MinDate, MaxDate, DAY) <= 100,
+			            "Q" & QUARTER(MaxDate) & " " & YEAR(MaxDate),
+			            "YTD " & YEAR(MaxDate)
+			        )
+			    )
+			VAR ActiveBranches = [Active Branches]
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    padding: 25px 30px 20px 30px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 12px;
+			    box-shadow: 0 8px 24px rgba(0,0,0,0);
+			    color: white;
+			    height: 210px;
+			    display: flex;
+			    flex-direction: column;
+			    justify-content: space-between;
+			'>
+			    <!-- Main Content Row -->
+			    <div style='display: flex; align-items: center; justify-content: space-around;'>
+			        <!-- Section 1: Cost with Pin -->
+			        <div style='text-align: center; flex: 1;'>
+			            <div style='font-size: 14px; opacity: 0.9; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px;'>
+			                Cost with Pin Captured
+			            </div>
+			            <div style='font-size: 72px; font-weight: 700; line-height: 1;'>
+			                " & CostWithPinText & "
+			            </div>
+			            <div style='font-size: 18px; margin-top: 10px; opacity: 0.9;'>
+			                Total Cost: " & TotalCostText & "
+			            </div>
+			        </div>
+			        
+			        <!-- Divider -->
+			        <div style='width: 2px; height: 120px; background: rgba(255,255,255,0.3); margin: 0 20px;'></div>
+			        
+			        <!-- Section 2: % of Dollars with Pin -->
+			        <div style='text-align: center; flex: 1;'>
+			            <div style='font-size: 14px; opacity: 0.9; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px;'>
+			                % of Dollars with Pin
+			            </div>
+			            <div style='
+			                font-size: 64px; 
+			                font-weight: 700; 
+			                line-height: 1;
+			                color: " & CostGoalColor & ";
+			            '>
+			                " & PctCostText & "
+			            </div>
+			            <div style='font-size: 18px; margin-top: 10px; font-weight: 600;'>
+			                Goal: " & FORMAT(PinGoal, "0%") & " | Cost Basis
+			            </div>
+			        </div>
+			        
+			        <!-- Divider -->
+			        <div style='width: 2px; height: 120px; background: rgba(255,255,255,0.3); margin: 0 20px;'></div>
+			        
+			        <!-- Section 3: % of Transactions with Pin -->
+			        <div style='text-align: center; flex: 1;'>
+			            <div style='font-size: 14px; opacity: 0.9; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px;'>
+			                Pin Capture Rate
+			            </div>
+			            <div style='
+			                font-size: 64px; 
+			                font-weight: 700; 
+			                line-height: 1;
+			                color: " & TransGoalColor & ";
+			            '>
+			                " & PctTransText & "
+			            </div>
+			            <div style='font-size: 18px; margin-top: 10px; font-weight: 600;'>
+			                " & FORMAT(TransWithPin, "#,##0") & " of " & FORMAT(TotalTrans, "#,##0") &"
+			            </div>
+			        </div>
+			        
+			        <!-- Divider -->
+			        <div style='width: 2px; height: 120px; background: rgba(255,255,255,0.3); margin: 0 20px;'></div>
+			        
+			        <!-- Section 4: Month-over-Month Trend -->
+			        <div style='text-align: center; flex: 1;'>
+			            <div style='font-size: 14px; opacity: 0.9; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px;'>
+			                Trend (MoM)
+			            </div>
+			            <div style='
+			                font-size: 56px; 
+			                font-weight: 700; 
+			                line-height: 1;
+			                color: " & MoMColor & ";
+			            '>
+			                " & MoMChangeText & MoMArrow & "
+			            </div>
+			            <div style='font-size: 16px; margin-top: 10px; opacity: 0.9;'>
+			                " & FORMAT(UniquePins, "#,##0") & " unique pins
+			            </div>
+			        </div>
+			        
+			        <!-- Divider -->
+			        <div style='width: 2px; height: 120px; background: rgba(255,255,255,0.3); margin: 0 20px;'></div>
+			        
+			        <!-- Section 5: Top Branch -->
+			        <div style='text-align: center; flex: 1;'>
+			            <div style='font-size: 14px; opacity: 0.9; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px;'>
+			                Top Branch
+			            </div>
+			            <div style='font-size: 56px; font-weight: 700; line-height: 1; color: #4ade80;'>
+			                " & TopBranchText & "
+			            </div>
+			            <div style='font-size: 18px; margin-top: 10px; opacity: 0.9;'>
+			                " & TopBranchName & "
+			            </div>
+			        </div>
+			    </div>
+			    
+			    <!-- Context Footer -->
+			    <div style='
+			        margin-top: 10px;
+			        padding-top: 10px;
+			        border-top: 1px solid rgba(255,255,255,0.2);
+			        font-size: 12px;
+			        opacity: 0.85;
+			        text-align: center;
+			        letter-spacing: 0.5px;
+			    '>
+			        Selected: <strong>" & SelectedPeriod & "</strong> | <strong>" & ActiveBranches & "</strong> Branch Locations | Tracking <strong>" & FORMAT(UniquePins, "#,##0") & "</strong> Unique Pins
+			    </div>
+			</div>
+			"
+			```
+		lineageTag: d7da257b-354f-4538-9ecd-4dac37d37fb3
+
+	measure '% Dollars with Pin (Cost)' =
+			
+			DIVIDE([Cost with Pin], [Total Cost], 0)
+		lineageTag: 84d2204a-02c9-4d9d-a27c-a5cc5b19a96d
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Pins from PinNo' =
+			
+			CALCULATE(
+			    COUNTROWS(Fact_PinTransactions),
+			    NOT(ISBLANK(Fact_PinTransactions[PinNo]))
+			)
+		formatString: 0
+		lineageTag: 17c76132-e3db-4ad8-8258-b7581f48b4b4
+
+	measure 'Pins from Notation' =
+			
+			CALCULATE(
+			    COUNTROWS(Fact_PinTransactions),
+			    NOT(ISBLANK(Fact_PinTransactions[Notation]))
+			)
+		formatString: 0
+		lineageTag: b5356198-0206-49a1-bf0b-cb4329992f73
+
+	measure 'Pins from Both Fields' = ```
+			
+			CALCULATE(
+			    COUNTROWS(Fact_PinTransactions),
+			    NOT(ISBLANK(Fact_PinTransactions[PinNo])) 
+			    && NOT(ISBLANK(Fact_PinTransactions[Notation]))
+			)
+			```
+		formatString: 0
+		lineageTag: 4730d009-5fca-4734-b968-abc210af4e7d
+
+	measure '% Pins from PinNo Only' = ```
+			
+			VAR PinNoOnly = 
+			    CALCULATE(
+			        COUNTROWS(Fact_PinTransactions),
+			        NOT(ISBLANK(Fact_PinTransactions[PinNo])),
+			        ISBLANK(Fact_PinTransactions[Notation])
+			    )
+			VAR TotalWithPin = [Transactions with Pins]
+			RETURN
+			DIVIDE(PinNoOnly, TotalWithPin, 0)
+			```
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: dbafd0be-c7c2-40a4-9b46-1a250c1d162e
+
+	measure '% Pins from Notation Only' = ```
+			
+			VAR NotationOnly = 
+			    CALCULATE(
+			        COUNTROWS(Fact_PinTransactions),
+			        ISBLANK(Fact_PinTransactions[PinNo]),
+			        NOT(ISBLANK(Fact_PinTransactions[Notation]))
+			    )
+			VAR TotalWithPin = [Transactions with Pins]
+			RETURN
+			DIVIDE(NotationOnly, TotalWithPin, 0)
+			```
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: e75879a7-beab-49fe-877d-6e140bc94a15
+
+	measure '% Pins from Both' =
+			
+			VAR BothFields = [Pins from Both Fields]
+			VAR TotalWithPin = [Transactions with Pins]
+			RETURN
+			DIVIDE(BothFields, TotalWithPin, 0)
+		formatString: 0.00%;-0.00%;0.00%
+		lineageTag: d4961024-a4c1-4267-a76c-f94cd402fa23
+
+	measure 'Cost from PinNo Only' =
+			
+			CALCULATE(
+			    SUM(Fact_PinTransactions[CostValue]),
+			    NOT(ISBLANK(Fact_PinTransactions[PinNo])),
+			    ISBLANK(Fact_PinTransactions[Notation])
+			)
+		lineageTag: 057fe74b-2b16-4919-9c72-53964f4c79df
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Cost from Notation Only' =
+			
+			CALCULATE(
+			    SUM(Fact_PinTransactions[CostValue]),
+			    ISBLANK(Fact_PinTransactions[PinNo]),
+			    NOT(ISBLANK(Fact_PinTransactions[Notation]))
+			)
+		lineageTag: 454bdf50-2ab8-44ea-b2cb-af21f0dad560
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Cost from Both Fields' =
+			
+			CALCULATE(
+			    SUM(Fact_PinTransactions[CostValue]),
+			    NOT(ISBLANK(Fact_PinTransactions[PinNo])),
+			    NOT(ISBLANK(Fact_PinTransactions[Notation]))
+			)
+		lineageTag: 60336036-1033-4493-9096-2f35a014aab0
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Pin Capture Rate - Previous Month' = ```
+			
+			VAR PreviousMonthDates = 
+			    FILTER(
+			        ALL(dim_DateTable),
+			        dim_DateTable[IsPreviousMonth] = TRUE
+			    )
+			VAR PreviousRate = 
+			    CALCULATE(
+			        [% Dollars with Pin (Cost)],
+			        PreviousMonthDates
+			    )
+			RETURN
+			PreviousRate
+			```
+		formatString: 0.00%;-0.00%;0.00%
+		lineageTag: 61375313-4eb0-467d-a0d1-b0f5a8234b4a
+
+	measure 'MoM Change - Pin Capture' =
+			
+			VAR CurrentRate = [% Dollars with Pin (Cost)]
+			VAR PriorRate = [Pin Capture Rate - Previous Month]
+			VAR Change = CurrentRate - PriorRate
+			
+			RETURN
+			IF(
+			    ISBLANK(PriorRate),
+			    BLANK(),
+			    Change
+			)
+		lineageTag: 0fd34ce6-c031-4ce3-8d96-506d0ea05fb7
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'MoM Change Text' = ```
+			
+			VAR Change = [MoM Change - Pin Capture]
+			VAR ChangeText = FORMAT(Change, "+0.0%;-0.0%;0.0%")
+			VAR Arrow = 
+			    IF(Change > 0, "↑", 
+			    IF(Change < 0, "↓", "→"))
+			RETURN
+			IF(
+			    ISBLANK(Change),
+			    "No prior data",
+			    ChangeText & " " & Arrow
+			)
+			```
+		lineageTag: 26c0767e-08f6-43e8-9f01-148dd2702dd3
+
+	measure 'MoM Change Color' =
+			
+			VAR Change = [MoM Change - Pin Capture]
+			RETURN
+			IF(
+			    ISBLANK(Change), "#94a3b8",  // Gray if no data
+			    IF(Change > 0, "#4ade80",     // Green if improving
+			    IF(Change < 0, "#ef4444",     // Red if declining
+			    "#94a3b8"))                   // Gray if flat
+			)
+		lineageTag: fd8feea7-f316-428a-86f6-b2ae2f682705
+
+	measure 'Top 3 Branches' = ```
+			
+			VAR TopBranches = 
+			    TOPN(
+			        3,
+			        SUMMARIZE(
+			            Fact_PinTransactions,
+			            dim_BranchLocation[Branch],
+			            "CaptureRate", [% Dollars with Pin (Cost)],
+			            "MoMChange", [MoM Change - Pin Capture]
+			        ),
+			        [CaptureRate],
+			        DESC
+			    )
+			RETURN
+			CONCATENATEX(
+			    TopBranches,
+			    "✓ " & [Branch] & 
+			    "    " & FORMAT([CaptureRate], "0.0%") & 
+			    "  (" & 
+			    IF([MoMChange] > 0, "↑ +" & FORMAT([MoMChange], "0.0%"), 
+			    IF([MoMChange] < 0, "↓ " & FORMAT([MoMChange], "0.0%"), 
+			    "→ " & FORMAT([MoMChange], "0.0%"))) & 
+			    " vs last month)",
+			    UNICHAR(10),  // Line break
+			    [CaptureRate],
+			    DESC
+			)
+			```
+		lineageTag: 5788df6c-8761-4f3a-8fff-8ab5022be607
+
+	measure 'Bottom 3 Branches' = ```
+			
+			VAR BottomBranches = 
+			    TOPN(
+			        3,
+			        SUMMARIZE(
+			            Fact_PinTransactions,
+			            dim_BranchLocation[Branch],
+			            "CaptureRate", [% Dollars with Pin (Cost)],
+			            "MoMChange", [MoM Change - Pin Capture]
+			        ),
+			        [CaptureRate],
+			        ASC  // Ascending to get lowest
+			    )
+			RETURN
+			CONCATENATEX(
+			    BottomBranches,
+			    "⚠ " & [Branch] & 
+			    "    " & FORMAT([CaptureRate], "0.0%") & 
+			    "  (" & 
+			    IF([MoMChange] > 0, "↑ +" & FORMAT([MoMChange], "0.0%"), 
+			    IF([MoMChange] < 0, "↓ " & FORMAT([MoMChange], "0.0%"), 
+			    "→ " & FORMAT([MoMChange], "0.0%"))) & 
+			    " vs last month)",
+			    UNICHAR(10),  // Line break
+			    [CaptureRate],
+			    ASC
+			)
+			```
+		lineageTag: a3b23594-72ac-49a3-a85e-90cbce0edf6d
+
+	measure 'Branch Performance - HTML Card' = ```
+			
+			// Get top 3 branches by capture rate
+			VAR Top3 = 
+			    TOPN(
+			        3,
+			        ADDCOLUMNS(
+			            SUMMARIZE(
+			                Fact_PinTransactions,
+			                dim_BranchLocation[Branch]
+			            ),
+			            "CaptureRate", [% Transactions with Pin],
+			            "MoMChange", [MoM Change - Pin Capture]
+			        ),
+			        [CaptureRate],
+			        DESC
+			    )
+			
+			// Get top 3 most improved branches (biggest MoM gains)
+			VAR MostImproved3 = 
+			    TOPN(
+			        3,
+			        ADDCOLUMNS(
+			            SUMMARIZE(
+			                Fact_PinTransactions,
+			                dim_BranchLocation[Branch]
+			            ),
+			            "CaptureRate", [% Transactions with Pin],
+			            "MoMChange", [MoM Change - Pin Capture]
+			        ),
+			        [MoMChange],
+			        DESC
+			    )
+			
+			// Format Top 3 Performers
+			VAR Top3HTML = 
+			    CONCATENATEX(
+			        Top3,
+			        "
+			        <div style='
+			            display: flex; 
+			            justify-content: space-between; 
+			            align-items: center;
+			            padding: 15px 25px;
+			            margin-bottom: 12px;
+			            background: rgba(74, 222, 128, 0.15);
+			            border-left: 4px solid #4ade80;
+			            border-radius: 8px;
+			        '>
+			            <div style='font-size: 20px; font-weight: 600;'>" & [Branch] & "</div>
+			            <div style='display: flex; gap: 30px; align-items: center;'>
+			                <div style='font-size: 28px; font-weight: 700; color: #4ade80;'>" & 
+			                    FORMAT([CaptureRate], "0.0%") & 
+			                "</div>
+			                <div style='
+			                    font-size: 18px; 
+			                    font-weight: 600; 
+			                    color: " & IF([MoMChange] > 0, "#4ade80", IF([MoMChange] < 0, "#ef4444", "#94a3b8")) & ";
+			                    min-width: 100px;
+			                    text-align: right;
+			                '>" & 
+			                    IF([MoMChange] > 0, "↑ +" & FORMAT([MoMChange], "0.0%"),
+			                    IF([MoMChange] < 0, "↓ " & FORMAT([MoMChange], "0.0%"),
+			                    "→ " & FORMAT([MoMChange], "0.0%"))) & 
+			                "</div>
+			            </div>
+			        </div>
+			        ",
+			        "",
+			        [CaptureRate],
+			        DESC
+			    )
+			
+			// Format Most Improved 3
+			VAR MostImproved3HTML = 
+			    CONCATENATEX(
+			        MostImproved3,
+			        "
+			        <div style='
+			            display: flex; 
+			            justify-content: space-between; 
+			            align-items: center;
+			            padding: 15px 25px;
+			            margin-bottom: 12px;
+			            background: rgba(59, 130, 246, 0.15);
+			            border-left: 4px solid #3b82f6;
+			            border-radius: 8px;
+			        '>
+			            <div style='font-size: 20px; font-weight: 600;'>" & [Branch] & "</div>
+			            <div style='display: flex; gap: 30px; align-items: center;'>
+			                <div style='font-size: 28px; font-weight: 700; color: #60a5fa;'>" & 
+			                    FORMAT([CaptureRate], "0.0%") & 
+			                "</div>
+			                <div style='
+			                    font-size: 18px; 
+			                    font-weight: 600; 
+			                    color: " & IF([MoMChange] > 0, "#4ade80", IF([MoMChange] < 0, "#ef4444", "#94a3b8")) & ";
+			                    min-width: 100px;
+			                    text-align: right;
+			                '>" & 
+			                    IF([MoMChange] > 0, "↑ +" & FORMAT([MoMChange], "0.0%"),
+			                    IF([MoMChange] < 0, "↓ " & FORMAT([MoMChange], "0.0%"),
+			                    "→ " & FORMAT([MoMChange], "0.0%"))) & 
+			                "</div>
+			            </div>
+			        </div>
+			        ",
+			        "",
+			        [MoMChange],
+			        DESC
+			    )
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    padding: 20px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 12px;
+			    box-shadow: 0 8px 24px rgba(0,0,0,0);
+			    color: white;
+			    height: 355px;
+			    display: flex;
+			    gap: 40px;
+			'>
+			    <!-- LEFT SIDE: Top Performers -->
+			    <div style='flex: 1;'>
+			        <div style='
+			            font-size: 22px; 
+			            font-weight: 700; 
+			            margin-bottom: 25px;
+			            text-transform: uppercase;
+			            letter-spacing: 1.5px;
+			            color: #4ade80;
+			            border-bottom: 2px solid rgba(74, 222, 128, 0.3);
+			            padding-bottom: 15px;
+			        '>
+			            ✓ TOP PERFORMERS - Pin Capture Rate
+			        </div>
+			        " & Top3HTML & "
+			    </div>
+			    
+			    <!-- MIDDLE DIVIDER -->
+			    <div style='width: 2px; background: rgba(255,255,255,0.3);'></div>
+			    
+			    <!-- RIGHT SIDE: Most Improved -->
+			    <div style='flex: 1;'>
+			        <div style='
+			            font-size: 22px; 
+			            font-weight: 700; 
+			            margin-bottom: 25px;
+			            text-transform: uppercase;
+			            letter-spacing: 1.5px;
+			            color: #60a5fa;
+			            border-bottom: 2px solid rgba(96, 165, 250, 0.3);
+			            padding-bottom: 15px;
+			        '>
+			            🚀 MOST IMPROVED
+			        </div>
+			        " & MostImproved3HTML & "
+			    </div>
+			</div>
+			"
+			```
+		lineageTag: 8f4bbef3-6b2f-4ea1-85e7-f660a719eb76
+
+	measure 'Overview KPI Cards' = ```
+			
+			VAR TotalTransactions = [Total Transactions]
+			VAR TransactionsWithPin = [Transactions with Pins]
+			VAR PctTransactions = [% Transactions with Pin]
+			VAR TotalCost = [Total Cost]
+			VAR CostWithPin = [Cost with Pin]
+			VAR InvoicesWithPin = [Invoices with Pin]
+			
+			// Format numbers
+			VAR TotalTransText = 
+			    IF(TotalTransactions >= 1000000,
+			        FORMAT(TotalTransactions / 1000000, "#,##0.0") & "M",
+			        FORMAT(TotalTransactions / 1000, "#,##0.0") & "K"
+			    )
+			VAR TransWithPinText = FORMAT(TransactionsWithPin, "#,##0")
+			VAR PctTransText = FORMAT(PctTransactions, "0.0%")
+			VAR TotalCostText = 
+			    IF(TotalCost >= 1000000,
+			        FORMAT(TotalCost / 1000000, "$#,##0.0") & "M",
+			        FORMAT(TotalCost / 1000, "$#,##0") & "K"
+			    )
+			VAR CostWithPinText = 
+			    IF(CostWithPin >= 1000000,
+			        FORMAT(CostWithPin / 1000000, "$#,##0.0") & "M",
+			        FORMAT(CostWithPin / 1000, "$#,##0") & "K"
+			    )
+			VAR InvoicesWithPinText = FORMAT(InvoicesWithPin, "#,##0")
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    padding: 20px 30px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 12px;
+			    box-shadow: 0 8px 24px rgba(0,0,0,0);
+			    color: white;
+			    height: 170px;
+			    display: flex;
+			    gap: 20px;
+			    align-items: center;
+			    justify-content: space-around;
+			'>
+			    <!-- Card 1: Total Transactions -->
+			    <div style='
+			        text-align: center;
+			        padding: 20px;
+			        background: rgba(255,255,255,0.1);
+			        border-radius: 8px;
+			        flex: 1;
+			        border: 1px solid rgba(255,255,255,0.2);
+			    '>
+			        <div style='
+			            font-size: 11px; 
+			            text-transform: uppercase; 
+			            letter-spacing: 1px; 
+			            opacity: 0.8;
+			            margin-bottom: 8px;
+			        '>
+			            Total Transactions
+			        </div>
+			        <div style='font-size: 36px; font-weight: 700; line-height: 1;'>
+			            " & TotalTransText & "
+			        </div>
+			    </div>
+			    
+			    <!-- Card 2: Transactions with Pin -->
+			    <div style='
+			        text-align: center;
+			        padding: 20px;
+			        background: rgba(74, 222, 128, 0.2);
+			        border-radius: 8px;
+			        flex: 1;
+			        border: 1px solid rgba(74, 222, 128, 0.4);
+			    '>
+			        <div style='
+			            font-size: 11px; 
+			            text-transform: uppercase; 
+			            letter-spacing: 1px; 
+			            opacity: 0.8;
+			            margin-bottom: 8px;
+			        '>
+			            Transactions with Pin
+			        </div>
+			        <div style='font-size: 36px; font-weight: 700; line-height: 1; color: #4ade80;'>
+			            " & TransWithPinText & "
+			        </div>
+			    </div>
+			    
+			    <!-- Card 3: % Transactions Captured -->
+			    <div style='
+			        text-align: center;
+			        padding: 20px;
+			        background: rgba(251, 191, 36, 0.2);
+			        border-radius: 8px;
+			        flex: 1;
+			        border: 1px solid rgba(251, 191, 36, 0.4);
+			    '>
+			        <div style='
+			            font-size: 11px; 
+			            text-transform: uppercase; 
+			            letter-spacing: 1px; 
+			            opacity: 0.8;
+			            margin-bottom: 8px;
+			        '>
+			            % Captured
+			        </div>
+			        <div style='font-size: 36px; font-weight: 700; line-height: 1; color: #fbbf24;'>
+			            " & PctTransText & "
+			        </div>
+			    </div>
+			    
+			    <!-- Card 4: Total Cost -->
+			    <div style='
+			        text-align: center;
+			        padding: 20px;
+			        background: rgba(255,255,255,0.1);
+			        border-radius: 8px;
+			        flex: 1;
+			        border: 1px solid rgba(255,255,255,0.2);
+			    '>
+			        <div style='
+			            font-size: 11px; 
+			            text-transform: uppercase; 
+			            letter-spacing: 1px; 
+			            opacity: 0.8;
+			            margin-bottom: 8px;
+			        '>
+			            Total Cost
+			        </div>
+			        <div style='font-size: 36px; font-weight: 700; line-height: 1;'>
+			            " & TotalCostText & "
+			        </div>
+			    </div>
+			    
+			    <!-- Card 5: Cost with Pin -->
+			    <div style='
+			        text-align: center;
+			        padding: 20px;
+			        background: rgba(74, 222, 128, 0.2);
+			        border-radius: 8px;
+			        flex: 1;
+			        border: 1px solid rgba(74, 222, 128, 0.4);
+			    '>
+			        <div style='
+			            font-size: 11px; 
+			            text-transform: uppercase; 
+			            letter-spacing: 1px; 
+			            opacity: 0.8;
+			            margin-bottom: 8px;
+			        '>
+			            Cost with Pin
+			        </div>
+			        <div style='font-size: 36px; font-weight: 700; line-height: 1; color: #4ade80;'>
+			            " & CostWithPinText & "
+			        </div>
+			    </div>
+			    
+			    <!-- Card 6: Invoices with Pin -->
+			    <div style='
+			        text-align: center;
+			        padding: 20px;
+			        background: rgba(96, 165, 250, 0.2);
+			        border-radius: 8px;
+			        flex: 1;
+			        border: 1px solid rgba(96, 165, 250, 0.4);
+			    '>
+			        <div style='
+			            font-size: 11px; 
+			            text-transform: uppercase; 
+			            letter-spacing: 1px; 
+			            opacity: 0.8;
+			            margin-bottom: 8px;
+			        '>
+			            Invoices with Pin
+			        </div>
+			        <div style='font-size: 36px; font-weight: 700; line-height: 1; color: #60a5fa;'>
+			            " & InvoicesWithPinText & "
+			        </div>
+			    </div>
+			</div>
+			"
+			```
+		lineageTag: 9c28a436-d1b4-4b9d-9c03-8d3690ec0fd7
+
+	measure 'Invoice Detail - Header' = ```
+			
+			// Get user name
+			VAR _User = USERPRINCIPALNAME()
+			VAR _Position = SEARCH("@", _User, 1)
+			VAR _Name = LEFT(_User, _Position - 1)
+			VAR _FirstLetter = UPPER(LEFT(_Name, 1))
+			VAR _LastName = MID(_Name, 2, LEN(_Name) - 1)
+			VAR _FormattedLastName = 
+			    UPPER(LEFT(_LastName, 1)) & LOWER(MID(_LastName, 2, LEN(_LastName)))
+			VAR WelcomeName = _FirstLetter & "." & _FormattedLastName
+			
+			// Get current date/time info
+			VAR CurrentDate = TODAY()
+			VAR DateDisplay = FORMAT(CurrentDate, "MMM D, YYYY")
+			VAR CurrentHour = HOUR(NOW())
+			VAR TimeGreeting = 
+			    IF(CurrentHour < 12, "Good Morning",
+			    IF(CurrentHour < 17, "Good Afternoon",
+			    "Good Evening"))
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    height: 85px;
+			    padding: 15px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 10px;
+			    color: white;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-between;
+			    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    box-sizing: border-box;
+			'>
+			    <!-- Left side: Dashboard Title -->
+			    <div style='display: flex; align-items: center; gap: 15px;'>
+			        <!-- Home icon -->
+			        <div style='
+			            width: 40px;
+			            height: 40px;
+			            background: rgba(255,255,255,0.15);
+			            border-radius: 8px;
+			            display: flex;
+			            align-items: center;
+			            justify-content: center;
+			            font-size: 20px;
+			        '>
+			            🏠
+			        </div>
+			        
+			        <!-- Title -->
+			        <div>
+			            <div style='font-size: 12px; opacity: 0.85; margin-bottom: 4px; letter-spacing: 0.5px;'>
+			                REPORT
+			            </div>
+			            <div style='font-size: 26px; font-weight: 700; line-height: 1;'>
+			                Pin Capture - Transaction Detail
+			            </div>
+			        </div>
+			    </div>
+			    
+			    <!-- Right side: Welcome & Date -->
+			    <div style='text-align: right;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 6px;'>
+			            " & TimeGreeting & ", " & WelcomeName & "
+			        </div>
+			        <div style='font-size: 16px; font-weight: 600;'>
+			            📅 " & DateDisplay & "
+			        </div>
+			    </div>
+			</div>
+			"
+			```
+		lineageTag: 2fe1afb9-c9f3-4492-8439-6068af450b3b
+
+	measure 'Invoice Has Pin' = ```
+			
+			VAR CurrentInvoice = VALUES(Fact_PinTransactions[RONumber])
+			VAR PinsFound = 
+			    CALCULATE(
+			        COUNTROWS(Fact_PinTransactions),
+			        CurrentInvoice,
+			        NOT(ISBLANK(Fact_PinTransactions[Pin Identifier])),
+			        Fact_PinTransactions[Pin Identifier] <> "",
+			        Fact_PinTransactions[Pin Identifier] <> "0"
+			    )
+			RETURN
+			IF(PinsFound > 0, "Yes", "No")
+			```
+		lineageTag: c3d93697-15e2-4ca4-8729-8f68ef9bf5dd
+
+	measure 'Unique Pins on Invoice' =
+			
+			VAR UniquePins = MAX(Fact_PinTransactions[Unique Pins Per Invoice])
+			RETURN
+			IF(UniquePins > 0, UniquePins, BLANK())
+		formatString: 0
+		lineageTag: 9141c299-e445-4fa7-9bca-2eb05d1a39d2
+
+	measure 'Pin Numbers on Invoice' = ```
+			
+			CALCULATE(
+			    CONCATENATEX(
+			        FILTER(
+			            DISTINCT(Fact_PinTransactions[Pin Identifier]),
+			            NOT(ISBLANK(Fact_PinTransactions[Pin Identifier]))
+			            && Fact_PinTransactions[Pin Identifier] <> ""
+			            && Fact_PinTransactions[Pin Identifier] <> "0"
+			        ),
+			        Fact_PinTransactions[Pin Identifier],
+			        ", ",
+			        Fact_PinTransactions[Pin Identifier],
+			        ASC
+			    ),
+			    ALLEXCEPT(Fact_PinTransactions, Fact_PinTransactions[RONumber])
+			)
+			
+			
+			```
+		lineageTag: d705da64-1d30-4146-b5c2-80a8ed393f63
+
+	measure 'Line Items on Invoice' =
+			
+			VAR CurrentInvoice = VALUES(Fact_PinTransactions[RONumber])
+			RETURN
+			CALCULATE(
+			    COUNTROWS(Fact_PinTransactions),
+			    CurrentInvoice
+			)
+		formatString: 0
+		lineageTag: 30f3d873-a5aa-464a-9a70-397c30ab3fd8
+
+	measure 'Invoice Total Cost' =
+			
+			VAR CurrentInvoice = VALUES(Fact_PinTransactions[RONumber])
+			RETURN
+			CALCULATE(
+			    SUM(Fact_PinTransactions[CostValue]),
+			    CurrentInvoice
+			)
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 7cfbfe32-b890-452b-99f4-18bde1bab1ed
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Invoice Total Sale' =
+			
+			VAR CurrentInvoice = VALUES(Fact_PinTransactions[RONumber])
+			RETURN
+			CALCULATE(
+			    SUM(Fact_PinTransactions[SaleValue]),
+			    CurrentInvoice
+			)
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 6bdb3cf2-e9c5-4f6a-b312-18e86e68122b
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Invoice Total Margin' =
+			
+			VAR CurrentInvoice = VALUES(Fact_PinTransactions[RONumber])
+			RETURN
+			CALCULATE(
+			    SUM(Fact_PinTransactions[Margin]),
+			    CurrentInvoice
+			)
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 1fa03972-a582-44f9-90b6-e40cb38623f6
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Invoice Margin %' =
+			
+			DIVIDE(
+			    [Invoice Total Margin],
+			    [Invoice Total Sale],
+			    BLANK()
+			)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: d906c25a-3010-4c13-aba9-a1b50e4d511e
+
+	measure 'Invoice Date' = ```
+			
+			IF(
+			    HASONEVALUE(Fact_PinTransactions[RONumber]),
+			    VAR CurrentInvoice = VALUES(Fact_PinTransactions[RONumber])
+			    VAR MinDate = 
+			        CALCULATE(
+			            MIN(Fact_PinTransactions[TransDatetime]),
+			            CurrentInvoice,
+			            KEEPFILTERS(Fact_PinTransactions[TransDatetime] <> BLANK())
+			        )
+			    RETURN
+			    FORMAT(MinDate, "M/D/YYYY"),
+			    BLANK()  // Return blank for subtotal rows
+			)
+			```
+		lineageTag: 0c45c6a0-043d-4595-8a0e-cdae48961f1f
+
+	measure 'Matrix Filter - Pin Status' =
+			
+			VAR SelectedOption = SELECTEDVALUE(PinFilterOptions[Filter Option], "WithPin")  // Default to WithPin
+			VAR CurrentInvoiceHasPin = [Invoice Has Pin]
+			RETURN
+			SWITCH(
+			    SelectedOption,
+			    "All", 1,  // Show everything
+			    "WithPin", IF(CurrentInvoiceHasPin = "Yes", 1, 0),  // Show only with pins
+			    "WithoutPin", IF(CurrentInvoiceHasPin = "No", 1, 0),  // Show only without pins
+			    1  // Default: show all
+			)
+		formatString: 0
+		lineageTag: 781bc3fc-d149-4354-8134-3d487cf3a7f1
+
+	measure 'Days Since Invoice' =
+			
+			VAR InvoiceDate = MAX(Fact_PinTransactions[TransDatetime])
+			VAR TodaysDate = TODAY()
+			VAR DaysSince = TodaysDate - InvoiceDate
+			RETURN
+			DaysSince
+		formatString: General Date
+		lineageTag: cce858ba-5830-42e2-aad8-6542e0078009
+
+	measure 'Recent Invoice Color' =
+			
+			VAR DaysSince = [Days Since Invoice]
+			RETURN
+			SWITCH(
+			    TRUE(),
+			    DaysSince <= 7, "#E0F2FE",      // Light blue - Last 7 days
+			    DaysSince <= 14, "#FEF3C7",     // Light yellow - 8-14 days
+			    BLANK()                          // No color - Older than 14 days
+			)
+		lineageTag: 8844ba86-10ff-4fd5-9ed8-5c693bac38dc
+
+	measure 'Invoice Recency' =
+			
+			VAR DaysSince = [Days Since Invoice]
+			RETURN
+			SWITCH(
+			    TRUE(),
+			    DaysSince = 0, "🟢 Today",
+			    DaysSince <= 3, "🔵 This Week",
+			    DaysSince <= 7, "⚪ Recent",
+			    BLANK()
+			)
+		lineageTag: 27c33889-c0f2-4dc8-b597-95618d742376
+
+	measure 'Date Column Highlight' = ```
+			
+			VAR InvoiceDate = MAX(Fact_PinTransactions[TransDatetime])
+			VAR DaysSince = TODAY() - InvoiceDate
+			RETURN
+			SWITCH(
+			    TRUE(),
+			    DaysSince = 0, "#a7f3d0",       // Green - Today
+			    DaysSince <= 3, "#93c5fd",      // Blue - Last 3 days  
+			    DaysSince <= 7, "#dbeafe",      // Light blue - Last week
+			    BLANK()
+			)
+			```
+		lineageTag: bd38a8c9-af8e-49c4-982b-7e856bf50361
+
+	measure 'Invoices Shown' = ```
+			
+			VAR InvoicesWithPins = DISTINCTCOUNT(Fact_PinTransactions[RONumber])
+			VAR TotalInvoices = 
+			    CALCULATE(
+			        DISTINCTCOUNT(Fact_PinTransactions[RONumber]),
+			        ALL(Fact_PinTransactions)  // Remove all filters to get grand total
+			    )
+			VAR PctCaptured = DIVIDE(InvoicesWithPins, TotalInvoices)
+			RETURN
+			FORMAT(InvoicesWithPins, "#,##0") & " of " & 
+			FORMAT(TotalInvoices, "#,##0") & " (" & FORMAT(PctCaptured, "0.0%") & ")"
+			```
+		lineageTag: a41d93bc-8a4b-46e4-9962-a480999b9727
+
+	measure 'Transaction Detail Hero Card' = ```
+			
+			VAR InvoicesShown = DISTINCTCOUNT(Fact_PinTransactions[RONumber])
+			
+			// Remove the Invoice Has Pin Flag filter to get ALL transactions
+			VAR TotalTransactions = 
+			    CALCULATE(
+			        DISTINCTCOUNT(Fact_PinTransactions[RONumber]),
+			        REMOVEFILTERS(Fact_PinTransactions[Invoice Has Pin Flag])
+			    )
+			
+			VAR PinCaptureRate = DIVIDE(InvoicesShown, TotalTransactions, 0)
+			
+			VAR TotalCost = [Cost with Pin]
+			VAR TotalSales = [Sale with Pin]
+			VAR TotalMargin = [Margin with Pin]
+			VAR AvgInvoice = DIVIDE(TotalCost, InvoicesShown, 0)
+			VAR MarginPct = DIVIDE(TotalMargin, TotalSales, 0)
+			
+			// Get actual date range
+			VAR MinDate = MIN(dim_DateTable[Date])
+			VAR MaxDate = MAX(dim_DateTable[Date])
+			VAR DayCount = DATEDIFF(MinDate, MaxDate, DAY) + 1
+			
+			// Smart period detection with ACTUAL date ranges
+			VAR SelectedPeriod = 
+			    IF(
+			        DayCount = 1,
+			        FORMAT(MaxDate, "MMM DD, YYYY"),
+			        IF(
+			            DayCount <= 31 && DAY(MinDate) = 1 && DAY(EOMONTH(MaxDate, 0)) = DAY(MaxDate),
+			            FORMAT(MaxDate, "MMMM YYYY"),
+			            IF(
+			                DayCount >= 89 && DayCount <= 92 && MONTH(MinDate) IN {1,4,7,10} && DAY(MinDate) = 1,
+			                "Q" & QUARTER(MaxDate) & " " & YEAR(MaxDate),
+			                IF(
+			                    YEAR(MinDate) = YEAR(MaxDate) && MONTH(MinDate) = 1 && DAY(MinDate) = 1 && MaxDate = TODAY() - 1,
+			                    "YTD " & YEAR(MaxDate),
+			                    FORMAT(MinDate, "MMM DD, YYYY") & " - " & FORMAT(MaxDate, "MMM DD, YYYY")
+			                )
+			            )
+			        )
+			    )
+			
+			// *** SMART NUMBER FORMATTING ***
+			VAR InvoicesShownText = FORMAT(InvoicesShown, "#,##0")
+			VAR CaptureRateText = FORMAT(PinCaptureRate, "0.0%")
+			
+			VAR TotalCostText = 
+			    IF(TotalCost >= 1000000,
+			        FORMAT(TotalCost / 1000000, "$#,##0.0") & "M",
+			        IF(TotalCost >= 1000,
+			            FORMAT(TotalCost / 1000, "$#,##0") & "K",
+			            FORMAT(TotalCost, "$#,##0")
+			        )
+			    )
+			
+			VAR TotalSalesText = 
+			    IF(TotalSales >= 1000000,
+			        FORMAT(TotalSales / 1000000, "$#,##0.0") & "M",
+			        IF(TotalSales >= 1000,
+			            FORMAT(TotalSales / 1000, "$#,##0") & "K",
+			            FORMAT(TotalSales, "$#,##0")
+			        )
+			    )
+			
+			VAR TotalMarginText = 
+			    IF(TotalMargin >= 1000000,
+			        FORMAT(TotalMargin / 1000000, "$#,##0.0") & "M",
+			        IF(TotalMargin >= 1000,
+			            FORMAT(TotalMargin / 1000, "$#,##0") & "K",
+			            FORMAT(TotalMargin, "$#,##0")
+			        )
+			    )
+			
+			VAR AvgInvoiceText = 
+			    IF(AvgInvoice >= 1000000,
+			        FORMAT(AvgInvoice / 1000000, "$#,##0.0") & "M",
+			        IF(AvgInvoice >= 1000,
+			            FORMAT(AvgInvoice / 1000, "$#,##0") & "K",
+			            FORMAT(AvgInvoice, "$#,##0")
+			        )
+			    )
+			
+			VAR MarginPctText = FORMAT(MarginPct, "0.0%")
+			
+			RETURN
+			"<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    padding: 15px 30px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 12px;
+			    box-shadow: 0 8px 24px rgba(0,0,0,0);
+			    color: white;
+			    height: 155px;
+			    display: flex;
+			    flex-direction: column;
+			    justify-content: space-between;
+			'>
+			    <!-- Metrics Row -->
+			    <div style='display: flex; justify-content: space-around; align-items: center; gap: 20px;'>
+			        <!-- Card 1: Invoices Shown -->
+			        <div style='text-align: center; flex: 1;'>
+			            <div style='font-size: 18px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.8; margin-bottom: 6px;'>
+			                Invoices Shown
+			            </div>
+			            <div style='font-size: 40px; font-weight: 700; line-height: 1;'>
+			                " & InvoicesShownText & "
+			            </div>
+			            <div style='font-size: 18px; opacity: 0.75; margin-top: 4px;'>
+			                " & CaptureRateText & " of total transactions
+			            </div>
+			        </div>
+			        
+			        <!-- Card 2: Total Cost -->
+			        <div style='text-align: center; flex: 1;'>
+			            <div style='font-size: 18px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.8; margin-bottom: 6px;'>
+			                Total Cost
+			            </div>
+			            <div style='font-size: 40px; font-weight: 700; line-height: 1;'>
+			                " & TotalCostText & "
+			            </div>
+			            <div style='font-size: 18px; opacity: 0.75; margin-top: 4px;'>
+			                All line items
+			            </div>
+			        </div>
+			        
+			        <!-- Card 3: Total Sales -->
+			        <div style='text-align: center; flex: 1;'>
+			            <div style='font-size: 18px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.8; margin-bottom: 6px;'>
+			                Total Sales
+			            </div>
+			            <div style='font-size: 40px; font-weight: 700; line-height: 1;'>
+			                " & TotalSalesText & "
+			            </div>
+			            <div style='font-size: 18px; opacity: 0.75; margin-top: 4px;'>
+			                Revenue
+			            </div>
+			        </div>
+			        
+			        <!-- Card 4: Margin -->
+			        <div style='text-align: center; flex: 1;'>
+			            <div style='font-size: 18px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.8; margin-bottom: 6px;'>
+			                Margin
+			            </div>
+			            <div style='font-size: 40px; font-weight: 700; line-height: 1; color: #4ade80;'>
+			                " & TotalMarginText & "
+			            </div>
+			            <div style='font-size: 18px; opacity: 0.75; margin-top: 4px;'>
+			                " & MarginPctText & " margin
+			            </div>
+			        </div>
+			        
+			        <!-- Card 5: Avg Invoice -->
+			        <div style='text-align: center; flex: 1;'>
+			            <div style='font-size: 18px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.8; margin-bottom: 6px;'>
+			                Avg Invoice
+			            </div>
+			            <div style='font-size: 40px; font-weight: 700; line-height: 1; color: #60a5fa;'>
+			                " & AvgInvoiceText & "
+			            </div>
+			            <div style='font-size: 18px; opacity: 0.75; margin-top: 4px;'>
+			                Per invoice
+			            </div>
+			        </div>
+			    </div>
+			    
+			    <!-- Context Footer -->
+			    <div style='
+			        padding-top: 8px;
+			        border-top: 1px solid rgba(255,255,255,0.2);
+			        font-size: 14px;
+			        opacity: 0.85;
+			        text-align: center;
+			    '>
+			        Selected: <strong>" & SelectedPeriod & "</strong>
+			    </div>
+			</div>"
+			```
+		lineageTag: f5d01376-45ae-4304-83b4-c03455ab5a13
+
+	measure 'Drill Through - Invoice Header' =
+			
+			VAR InvoiceNum = SELECTEDVALUE(Fact_PinTransactions[RONumber], "No invoice selected")
+			VAR InvoiceDate = SELECTEDVALUE(Fact_PinTransactions[TransDatetime])
+			VAR Branch = SELECTEDVALUE(Fact_PinTransactions[Branch])
+			VAR BranchName = SELECTEDVALUE(dim_BranchLocation[BranchName], "Branch " & Branch)
+			VAR CustomerNo = SELECTEDVALUE(Fact_PinTransactions[CustomerNo], "N/A")
+			
+			RETURN
+			"Invoice: " & InvoiceNum & " | " &
+			"Date: " & FORMAT(InvoiceDate, "M/D/YYYY") & " | " &
+			"Branch: " & BranchName & " | " &
+			"Customer: " & CustomerNo
+		lineageTag: 4ec318b4-d820-4ca0-9bbb-23b26a7415ef
+
+	measure 'Drill Through - Invoice Summary' = ```
+			
+			VAR LineCount = COUNTROWS(Fact_PinTransactions)
+			VAR TotalCost = SUM(Fact_PinTransactions[CostValue])
+			VAR TotalSales = SUM(Fact_PinTransactions[SaleValue])
+			VAR TotalMargin = SUM(Fact_PinTransactions[Margin])
+			VAR MarginPct = DIVIDE(TotalMargin, TotalSales)
+			VAR PinsFound = COUNTROWS(FILTER(Fact_PinTransactions, NOT(ISBLANK([Pin Identifier]))))
+			
+			RETURN
+			"Line Items: " & LineCount & 
+			" | Total Cost: $" & FORMAT(TotalCost, "#,##0") &
+			" | Total Sales: $" & FORMAT(TotalSales, "#,##0") &
+			" | Margin: $" & FORMAT(TotalMargin, "#,##0") & " (" & FORMAT(MarginPct, "0.0%") & ")" &
+			" | Items with Pins: " & PinsFound
+			```
+		lineageTag: 2fa257e2-09db-4def-919d-13b12659096d
+
+	measure 'Drill Through - Invoice Hero Card' = ```
+			
+			VAR InvoiceNum = SELECTEDVALUE(Fact_PinTransactions[RONumber], "N/A")
+			VAR InvoiceDate = SELECTEDVALUE(Fact_PinTransactions[TransDatetime])
+			VAR Branch = SELECTEDVALUE(Fact_PinTransactions[Branch])
+			VAR BranchName = SELECTEDVALUE(dim_BranchLocation[BranchName], "Branch " & Branch)
+			VAR CustomerNo = SELECTEDVALUE(Fact_PinTransactions[CustomerNo], "N/A")
+			
+			VAR LineCount = COUNTROWS(Fact_PinTransactions)
+			VAR TotalCost = SUM(Fact_PinTransactions[CostValue])
+			VAR TotalSales = SUM(Fact_PinTransactions[SaleValue])
+			VAR TotalMargin = SUM(Fact_PinTransactions[Margin])
+			VAR MarginPct = DIVIDE(TotalMargin, TotalSales)
+			VAR PinsFound = COUNTROWS(FILTER(Fact_PinTransactions, NOT(ISBLANK([Pin Identifier]))))
+			
+			// Color coding for margin
+			VAR MarginColor = IF(MarginPct >= 0.30, "#4ade80", IF(MarginPct >= 0.20, "#fbbf24", "#ef4444"))
+			
+			// *** SMART NUMBER FORMATTING ***
+			VAR TotalCostText = 
+			    IF(TotalCost >= 1000000,
+			        "$" & FORMAT(TotalCost / 1000000, "#,##0.0") & "M",
+			        IF(TotalCost >= 1000,
+			            "$" & FORMAT(TotalCost / 1000, "#,##0") & "K",
+			            "$" & FORMAT(TotalCost, "#,##0")
+			        )
+			    )
+			
+			VAR TotalSalesText = 
+			    IF(TotalSales >= 1000000,
+			        "$" & FORMAT(TotalSales / 1000000, "#,##0.0") & "M",
+			        IF(TotalSales >= 1000,
+			            "$" & FORMAT(TotalSales / 1000, "#,##0") & "K",
+			            "$" & FORMAT(TotalSales, "#,##0")
+			        )
+			    )
+			
+			VAR TotalMarginText = 
+			    IF(TotalMargin >= 1000000,
+			        "$" & FORMAT(TotalMargin / 1000000, "#,##0.0") & "M",
+			        IF(TotalMargin >= 1000,
+			            "$" & FORMAT(TotalMargin / 1000, "#,##0") & "K",
+			            "$" & FORMAT(TotalMargin, "#,##0")
+			        )
+			    )
+			
+			RETURN
+			"<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    padding: 20px 30px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 12px;
+			    box-shadow: 0 8px 24px rgba(0,0,0,0);
+			    color: white;
+			    height: 130px;
+			    display: flex;
+			    justify-content: space-between;
+			    align-items: center;
+			    gap: 15px;
+			'>
+			    <!-- Section 1: Invoice Number -->
+			    <div style='flex: 1.2; text-align: center; border-right: 1px solid rgba(255,255,255,0.2); padding-right: 15px;'>
+			        <div style='font-size: 18px; opacity: 0.85; margin-bottom: 6px;'>Invoice Number</div>
+			        <div style='font-size: 40px; font-weight: 700; margin-bottom: 4px;'>" & InvoiceNum & "</div>
+			        <div style='font-size: 18px; opacity: 0.75;'>" & FORMAT(InvoiceDate, "M/D/YYYY") & "</div>
+			    </div>
+			    
+			    <!-- Section 2: Branch & Customer -->
+			    <div style='flex: 1; text-align: center; border-right: 1px solid rgba(255,255,255,0.2); padding-right: 15px;'>
+			        <div style='font-size: 18px; opacity: 0.85; margin-bottom: 6px;'>Location</div>
+			        <div style='font-size: 40px; font-weight: 700; margin-bottom: 4px;'>" & BranchName & "</div>
+			        <div style='font-size: 18px; opacity: 0.75;'>Customer: " & CustomerNo & "</div>
+			    </div>
+			    
+			    <!-- Section 3: Line Items -->
+			    <div style='flex: 0.8; text-align: center; border-right: 1px solid rgba(255,255,255,0.2); padding-right: 15px;'>
+			        <div style='font-size: 18px; opacity: 0.85; margin-bottom: 6px;'>Line Items</div>
+			        <div style='font-size: 40px; font-weight: 700; margin-bottom: 4px;'>" & LineCount & "</div>
+			        <div style='font-size: 18px; opacity: 0.75;'>" & PinsFound & " with pins</div>
+			    </div>
+			    
+			    <!-- Section 4: Total Cost -->
+			    <div style='flex: 0.9; text-align: center; border-right: 1px solid rgba(255,255,255,0.2); padding-right: 15px;'>
+			        <div style='font-size: 18px; opacity: 0.85; margin-bottom: 6px;'>Total Cost</div>
+			        <div style='font-size: 40px; font-weight: 700; margin-bottom: 4px;'>" & TotalCostText & "</div>
+			        <div style='font-size: 18px; opacity: 0.75;'>Invoice total</div>
+			    </div>
+			    
+			    <!-- Section 5: Total Sales -->
+			    <div style='flex: 0.9; text-align: center; border-right: 1px solid rgba(255,255,255,0.2); padding-right: 15px;'>
+			        <div style='font-size: 18px; opacity: 0.85; margin-bottom: 6px;'>Total Sales</div>
+			        <div style='font-size: 40px; font-weight: 700; margin-bottom: 4px;'>" & TotalSalesText & "</div>
+			        <div style='font-size: 18px; opacity: 0.75;'>Revenue</div>
+			    </div>
+			    
+			    <!-- Section 6: Margin -->
+			    <div style='flex: 0.9; text-align: center;'>
+			        <div style='font-size: 18px; opacity: 0.85; margin-bottom: 6px;'>Margin</div>
+			        <div style='font-size: 40px; font-weight: 700; margin-bottom: 4px;'>" & TotalMarginText & "</div>
+			        <div style='font-size: 18px; opacity: 0.75; color: " & MarginColor & ";'>" & FORMAT(MarginPct, "0.0%") & " margin</div>
+			    </div>
+			</div>"
+			```
+		lineageTag: 091541de-d9cf-412a-b666-ce23f0bed4e7
+
+	measure 'Branch Performance - Hero Card' = ```
+			
+			VAR TotalBranches = [Active Branches]
+			VAR OverallRate = [Overall Capture Rate]
+			VAR TotalTrans = [Total Transactions]
+			VAR TransWithPins = [Transactions with Pins]
+			VAR TotalCostWithPins = [Cost with Pin]
+			VAR MonthChange = [MoM Change]
+			
+			// Get actual date range
+			VAR MinDate = MIN(dim_DateTable[Date])
+			VAR MaxDate = MAX(dim_DateTable[Date])
+			VAR DayCount = DATEDIFF(MinDate, MaxDate, DAY) + 1
+			
+			// Smart period detection with ACTUAL date ranges for custom periods
+			VAR SelectedPeriod = 
+			    IF(
+			        DayCount = 1,
+			        // Single day
+			        FORMAT(MaxDate, "MMM DD, YYYY"),
+			        IF(
+			            DayCount <= 31 && DAY(MinDate) = 1 && DAY(EOMONTH(MaxDate, 0)) = DAY(MaxDate),
+			            // Full single month
+			            FORMAT(MaxDate, "MMMM YYYY"),
+			            IF(
+			                DayCount >= 89 && DayCount <= 92 && MONTH(MinDate) IN {1,4,7,10} && DAY(MinDate) = 1,
+			                // Full quarter
+			                "Q" & QUARTER(MaxDate) & " " & YEAR(MaxDate),
+			                IF(
+			                    YEAR(MinDate) = YEAR(MaxDate) && MONTH(MinDate) = 1 && DAY(MinDate) = 1 && MaxDate = TODAY() - 1,
+			                    // True YTD (starts Jan 1, ends yesterday)
+			                    "YTD " & YEAR(MaxDate),
+			                    // Everything else: show actual date range
+			                    FORMAT(MinDate, "MMM DD, YYYY") & " - " & FORMAT(MaxDate, "MMM DD, YYYY")
+			                )
+			            )
+			        )
+			    )
+			
+			// Comparison period text
+			VAR ComparisonPeriod = 
+			    IF(
+			        DayCount <= 31 && DAY(MinDate) = 1 && DAY(EOMONTH(MaxDate, 0)) = DAY(MaxDate),
+			        // Full month: show prior month name
+			        FORMAT(EDATE(MaxDate, -1), "MMMM"),
+			        // Everything else
+			        "Prior Period"
+			    )
+			
+			// Trend arrow and color
+			VAR ShowComparison = NOT(ISBLANK(MonthChange))
+			VAR TrendArrow = IF(ShowComparison, IF(MonthChange > 0, "↑", IF(MonthChange < 0, "↓", "→")), "")
+			VAR TrendColor = IF(MonthChange > 0, "#4ade80", IF(MonthChange < 0, "#ef4444", "#fbbf24"))
+			VAR ChangeText = IF(ShowComparison, FORMAT(MonthChange, "+0.0%;-0.0%;0.0%"), "—")
+			
+			// Smart number formatting
+			VAR CostFormatted = 
+			    IF(TotalCostWithPins >= 1000000, 
+			        "$" & FORMAT(TotalCostWithPins/1000000, "#,##0.0") & "M",
+			        "$" & FORMAT(TotalCostWithPins/1000, "#,##0") & "K"
+			    )
+			
+			VAR TransFormatted = FORMAT(TotalTrans, "#,##0")
+			VAR PinsFormatted = FORMAT(TransWithPins, "#,##0")
+			
+			RETURN
+			"<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    padding: 20px 30px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 12px;
+			    box-shadow: 0 8px 24px rgba(0,0,0,0);
+			    color: white;
+			    height: 160px;
+			    display: flex;
+			    flex-direction: column;
+			    justify-content: space-between;
+			'>
+			    <!-- Metrics Row -->
+			    <div style='display: flex; justify-content: space-between; align-items: center; gap: 25px;'>
+			        <!-- Capture Rate -->
+			        <div style='flex: 1; text-align: center;'>
+			            <div style='font-size: 42px; font-weight: 700; margin-bottom: 4px;'>" & FORMAT(OverallRate, "0.0%") & "</div>
+			            <div style='font-size: 18px; opacity: 0.80;'>Capture Rate</div>
+			        </div>
+			        
+			        <!-- Total Transactions -->
+			        <div style='flex: 1; text-align: center; border-left: 1px solid rgba(255,255,255,0.2); padding-left: 20px;'>
+			            <div style='font-size: 42px; font-weight: 700; margin-bottom: 4px;'>" & TransFormatted & "</div>
+			            <div style='font-size: 18px; opacity: 0.80;'>Total Transactions</div>
+			        </div>
+			        
+			        <!-- Pins Captured -->
+			        <div style='flex: 1; text-align: center; border-left: 1px solid rgba(255,255,255,0.2); padding-left: 20px;'>
+			            <div style='font-size: 42px; font-weight: 700; margin-bottom: 4px;'>" & PinsFormatted & "</div>
+			            <div style='font-size: 18px; opacity: 0.80;'>Transactions with Pin</div>
+			        </div>
+			        
+			        <!-- Cost with Pins -->
+			        <div style='flex: 1; text-align: center; border-left: 1px solid rgba(255,255,255,0.2); padding-left: 20px;'>
+			            <div style='font-size: 42px; font-weight: 700; margin-bottom: 4px;'>" & CostFormatted & "</div>
+			            <div style='font-size: 18px; opacity: 0.80;'>Cost Captured</div>
+			        </div>
+			        
+			        <!-- Change vs Prior -->
+			        <div style='flex: 1; text-align: center; border-left: 1px solid rgba(255,255,255,0.2); padding-left: 20px;'>
+			            <div style='font-size: 42px; font-weight: 700; margin-bottom: 4px; color: " & TrendColor & ";'>" & TrendArrow & " " & ChangeText & "</div>
+			            <div style='font-size: 18px; opacity: 0.80;'>vs Prior Period</div>
+			        </div>
+			    </div>
+			    
+			    <!-- Context Row -->
+			    <div style='
+			        padding-top: 12px;
+			        border-top: 1px solid rgba(255,255,255,0.2);
+			        font-size: 16px;
+			        opacity: 0.85;
+			        text-align: center;
+			    '>
+			        Selected: <strong>" & SelectedPeriod & "</strong> | 
+			        <strong>" & TotalBranches & "</strong> Branch Locations | 
+			        Comparison: vs <strong>" & ComparisonPeriod & "</strong>
+			    </div>
+			</div>"
+			```
+		lineageTag: b3ae46d1-d02f-454a-86d3-737c249dec69
+
+	measure 'Branch Capture Rate' =
+			
+			DIVIDE(
+			    [Transactions with Pins],
+			    [Total Transactions],
+			    BLANK()
+			)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 318e69c2-315c-41f8-9ebe-6eed04a8603d
+
+	measure 'Branch MoM Change' = ```
+			
+			VAR CurrentRate = [Pin Capture Rate]
+			VAR PriorRate = 
+			    CALCULATE(
+			        [Pin Capture Rate],
+			        PREVIOUSMONTH(dim_DateTable[Date])
+			    )
+			RETURN
+			CurrentRate - PriorRate
+			```
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 006268d1-2094-4892-a1f6-9a95a5cedd96
+
+	measure 'Branch MoM Change Arrow' =
+			
+			VAR Change = [Branch MoM Change]
+			RETURN
+			SWITCH(TRUE(),
+			    Change > 0.005, "↑",
+			    Change < -0.005, "↓",
+			    "→"
+			)
+		lineageTag: 4f34577c-4a74-4cb2-acf3-68d6aa92d53b
+
+	measure 'Top Performers This Month' = ```
+			
+			VAR TopBranches = 
+			    TOPN(
+			        5,
+			        SUMMARIZE(
+			            dim_BranchLocation,
+			            dim_BranchLocation[BranchName],
+			            "CaptureRate", [Branch Capture Rate],
+			            "MoMChange", [Branch MoM Change]
+			        ),
+			        [CaptureRate],
+			        DESC
+			    )
+			RETURN
+			CONCATENATEX(
+			    TopBranches,
+			    dim_BranchLocation[BranchName] & ": " & 
+			    FORMAT([CaptureRate], "0.0%") & " (" & 
+			    FORMAT([MoMChange], "+0.0%;-0.0%") & ")",
+			    UNICHAR(10)  // Line break
+			)
+			```
+		lineageTag: 3341a4a0-85aa-4bff-b310-b06147dce602
+
+	measure 'Total Cost with Pins' =
+			
+			CALCULATE(
+			    SUM(Fact_PinTransactions[CostValue]),
+			    NOT(ISBLANK(Fact_PinTransactions[Pin Identifier])),
+			    Fact_PinTransactions[Pin Identifier] <> "",
+			    Fact_PinTransactions[Pin Identifier] <> "0"
+			)
+		lineageTag: 48853a99-e920-43c2-86e6-9d72a12d85f0
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Overall Capture Rate' =
+			
+			DIVIDE(
+			    [Transactions with Pins],
+			    [Total Transactions],
+			    BLANK()
+			)
+		lineageTag: 2b4face8-a0ce-4a1f-8a9a-ae6f00a4b198
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Last Month Capture Rate' =
+			
+			CALCULATE(
+			    [Overall Capture Rate],
+			    PREVIOUSMONTH(dim_DateTable[Date])
+			)
+		lineageTag: 28354232-f3c4-4c9d-88cb-e071e57f8ac5
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'MoM Change' = ```
+			
+			VAR MinDate = MIN(dim_DateTable[Date])
+			VAR MaxDate = MAX(dim_DateTable[Date])
+			VAR DayCount = DATEDIFF(MinDate, MaxDate, DAY) + 1
+			
+			VAR CurrentRate = [Overall Capture Rate]
+			
+			// Determine comparison logic based on period type
+			VAR ComparisonRate = 
+			    SWITCH(
+			        TRUE(),
+			        // Single month: use PREVIOUSMONTH
+			        DayCount <= 31 && DAY(MinDate) = 1 && DAY(EOMONTH(MaxDate, 0)) = DAY(MaxDate),
+			            CALCULATE(
+			                [Overall Capture Rate],
+			                PREVIOUSMONTH(dim_DateTable[Date])
+			            ),
+			        // Quarter: use PREVIOUSQUARTER
+			        DayCount >= 89 && DayCount <= 92 && MONTH(MinDate) IN {1,4,7,10} && DAY(MinDate) = 1,
+			            CALCULATE(
+			                [Overall Capture Rate],
+			                PREVIOUSQUARTER(dim_DateTable[Date])
+			            ),
+			        // YTD: compare to same YTD last year
+			        YEAR(MinDate) = YEAR(MaxDate) && MONTH(MinDate) = 1 && DAY(MinDate) = 1,
+			            CALCULATE(
+			                [Overall Capture Rate],
+			                SAMEPERIODLASTYEAR(dim_DateTable[Date])
+			            ),
+			        // Rolling periods or custom ranges: compare to same period last year
+			        DayCount > 100,
+			            CALCULATE(
+			                [Overall Capture Rate],
+			                DATEADD(dim_DateTable[Date], -1, YEAR)
+			            ),
+			        // Short custom periods (< 100 days): month-over-month
+			        CALCULATE(
+			            [Overall Capture Rate],
+			            DATEADD(dim_DateTable[Date], -1, MONTH)
+			        )
+			    )
+			
+			RETURN 
+			IF(
+			    NOT(ISBLANK(ComparisonRate)),
+			    CurrentRate - ComparisonRate,
+			    BLANK()
+			)
+			```
+		lineageTag: 549ee3d9-2dce-45a3-90a2-9bd1e074699b
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'YTD Capture Rate' =
+			
+			CALCULATE(
+			    [Overall Capture Rate],
+			    DATESYTD(dim_DateTable[Date])
+			)
+		lineageTag: 97bc084c-4440-4f5b-9d37-da167a285301
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Active Branches' =
+			
+			CALCULATE(
+			    DISTINCTCOUNT(Fact_PinTransactions[Branch]),
+			    NOT(ISBLANK(Fact_PinTransactions[Pin Identifier])),
+			    Fact_PinTransactions[Pin Identifier] <> "",
+			    Fact_PinTransactions[Pin Identifier] <> "0"
+			)
+		formatString: 0
+		lineageTag: 0fd9fcf8-1130-4bb0-941c-fccaddb7defd
+
+	measure 'Total Sale with Pin' = ```
+			
+			VAR InvoicesWithPins = 
+			    CALCULATETABLE(
+			        VALUES(Fact_PinTransactions[RONumber]),
+			        Fact_PinTransactions[Has Pin] = TRUE
+			    )
+			RETURN
+			CALCULATE(
+			    SUM(Fact_PinTransactions[SaleValue]),
+			    InvoicesWithPins
+			)
+			```
+		lineageTag: e85d3e72-634f-4fe7-84fc-dd74f0486ee8
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Total Margin with Pin' = ```
+			
+			VAR InvoicesWithPins = 
+			    CALCULATETABLE(
+			        VALUES(Fact_PinTransactions[RONumber]),
+			        Fact_PinTransactions[Has Pin] = TRUE
+			    )
+			RETURN
+			CALCULATE(
+			    SUM(Fact_PinTransactions[Margin]),
+			    InvoicesWithPins
+			)
+			```
+		lineageTag: 232b543e-b48a-4d2c-a440-eedc0a8fb74f
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Total Line Items' =
+			
+			COUNTROWS(Fact_PinTransactions)
+		formatString: 0
+		lineageTag: 2e83d18d-e0b7-4acc-9865-b839e16405d8
+
+	measure 'Line Items with Pins' = ```
+			
+			VAR InvoicesWithPins = 
+			    CALCULATETABLE(
+			        VALUES(Fact_PinTransactions[RONumber]),
+			        Fact_PinTransactions[Has Pin] = TRUE
+			    )
+			RETURN
+			CALCULATE(
+			    COUNTROWS(Fact_PinTransactions),
+			    InvoicesWithPins
+			)
+			```
+		formatString: 0
+		lineageTag: 95737bd5-e2ba-4521-9b21-0fc77a1784b9
+
+	measure 'Franchise Overview Card' = ```
+			
+			// Franchise D (John Deere) metrics
+			VAR FranchiseD_CaptureRate = 
+			    CALCULATE(
+			        [% Transactions with Pin],
+			        Fact_PinTransactions[Franchise] = "D"
+			    )
+			VAR FranchiseD_Cost = 
+			    CALCULATE(
+			        [Cost with Pin],
+			        Fact_PinTransactions[Franchise] = "D"
+			    )
+			VAR FranchiseD_Transactions = 
+			    CALCULATE(
+			        [Transactions with Pins],
+			        Fact_PinTransactions[Franchise] = "D"
+			    )
+			VAR FranchiseD_UniquePins = 
+			    CALCULATE(
+			        [Unique Pins Tracked],
+			        Fact_PinTransactions[Franchise] = "D"
+			    )
+			VAR FranchiseD_PctOfTotal = 
+			    DIVIDE(
+			        CALCULATE([Total Cost], Fact_PinTransactions[Franchise] = "D"),
+			        [Total Cost],
+			        0
+			    )
+			
+			// Format Franchise D numbers
+			VAR FranchiseD_CostText = 
+			    IF(FranchiseD_Cost >= 1000000,
+			        FORMAT(FranchiseD_Cost / 1000000, "$#,##0.0") & "M",
+			        FORMAT(FranchiseD_Cost / 1000, "$#,##0") & "K"
+			    )
+			VAR FranchiseD_TransText = 
+			    IF(FranchiseD_Transactions >= 1000,
+			        FORMAT(FranchiseD_Transactions / 1000, "#,##0.0") & "K",
+			        FORMAT(FranchiseD_Transactions, "#,##0")
+			    )
+			VAR FranchiseD_PinsText = FORMAT(FranchiseD_UniquePins, "#,##0")
+			VAR FranchiseD_PctText = FORMAT(FranchiseD_PctOfTotal, "0%")
+			
+			// Get top 3 other franchises
+			VAR OtherFranchises = 
+			    TOPN(
+			        2,
+			        ADDCOLUMNS(
+			            SUMMARIZE(
+			                FILTER(
+			                    Fact_PinTransactions,
+			                    Fact_PinTransactions[Franchise] <> "D" &&
+			                    NOT(ISBLANK(Fact_PinTransactions[Franchise]))
+			                ),
+			                Fact_PinTransactions[Franchise]
+			            ),
+			            "CaptureRate", [% Transactions with Pin],
+			            "Cost", [Cost with Pin],
+			            "Transactions", [Transactions with Pins]
+			        ),
+			        [Cost],
+			        DESC
+			    )
+			
+			// Format top 3 other franchises
+			VAR OtherFranchisesHTML = 
+			    CONCATENATEX(
+			        OtherFranchises,
+			        "
+			        <div style='
+			            margin-bottom: 6px;
+			            padding: 5px 10px;
+			            background: rgba(255,255,255,0.08);
+			            border-radius: 4px;
+			            border-left: 3px solid rgba(96, 165, 250, 0.6);
+			        '>
+			            <div style='
+			                font-size: 18px; 
+			                font-weight: 600; 
+			                color: #60a5fa;
+			                margin-bottom: 2px;
+			            '>
+			                Franchise " & [Franchise] & ": " & FORMAT([CaptureRate], "0.0%") & "
+			            </div>
+			            <div style='font-size: 14px; opacity: 0.85;'>
+			                " & 
+			                IF([Cost] >= 1000000,
+			                    FORMAT([Cost] / 1000000, "$#,##0.0") & "M",
+			                    FORMAT([Cost] / 1000, "$#,##0") & "K"
+			                ) & " (" & FORMAT([Transactions], "#,##0") & " trans)
+			            </div>
+			        </div>
+			        ",
+			        "",
+			        [Cost],
+			        DESC
+			    )
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    padding: 15px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 12px;
+			    box-shadow: 0 8px 24px rgba(0,0,0,0);
+			    color: white;
+			    height: 215px;
+			    display: flex;
+			    gap: 15px;
+			    overflow: hidden;
+			'>
+			    <!-- LEFT SIDE: Franchise D Spotlight -->
+			    <div style='
+			        flex: 6;
+			        display: flex;
+			        flex-direction: column;
+			        justify-content: space-between;
+			    '>
+			        <div>
+			            <div style='
+			                font-size: 15px; 
+			                font-weight: 700; 
+			                margin-bottom: 10px;
+			                text-transform: uppercase;
+			                letter-spacing: 1.2px;
+			                color: #fbbf24;
+			                display: flex;
+			                align-items: center;
+			                gap: 6px;
+			            '>
+			                🚜 FRANCHISE D (JOHN DEERE)
+			            </div>
+			            
+			            <div style='display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px;'>
+			                <!-- Metric 1: Capture Rate -->
+			                <div>
+			                    <div style='font-size: 12px; opacity: 0.75; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px;'>
+			                        Pin Capture Rate
+			                    </div>
+			                    <div style='font-size: 24px; font-weight: 700; color: #4ade80; line-height: 1;'>
+			                        " & FORMAT(FranchiseD_CaptureRate, "0.0%") & "
+			                    </div>
+			                </div>
+			                
+			                <!-- Metric 2: Cost Captured -->
+			                <div>
+			                    <div style='font-size: 12px; opacity: 0.75; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px;'>
+			                        Cost Captured
+			                    </div>
+			                    <div style='font-size: 24px; font-weight: 700; color: #60a5fa; line-height: 1;'>
+			                        " & FranchiseD_CostText & "
+			                    </div>
+			                </div>
+			                
+			                <!-- Metric 3: Transactions -->
+			                <div>
+			                    <div style='font-size: 12px; opacity: 0.75; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px;'>
+			                        Transactions
+			                    </div>
+			                    <div style='font-size: 24px; font-weight: 700; line-height: 1;'>
+			                        " & FranchiseD_TransText & "
+			                    </div>
+			                </div>
+			                
+			                <!-- Metric 4: Unique Pins -->
+			                <div>
+			                    <div style='font-size: 12px; opacity: 0.75; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px;'>
+			                        Unique Pins
+			                    </div>
+			                    <div style='font-size: 24px; font-weight: 700; line-height: 1;'>
+			                        " & FranchiseD_PinsText & "
+			                    </div>
+			                </div>
+			            </div>
+			        </div>
+			        
+			        <div style='
+			            font-size: 14px; 
+			            opacity: 0.8; 
+			            border-top: 1px solid rgba(255,255,255,0.2);
+			            padding-top: 6px;
+			            margin-top: 6px;
+			        '>
+			            <strong>" & FranchiseD_PctText & "</strong> of total business
+			        </div>
+			    </div>
+			    
+			    <!-- VERTICAL DIVIDER -->
+			    <div style='width: 2px; background: rgba(255,255,255,0.3);'></div>
+			    
+			    <!-- RIGHT SIDE: Top 3 Other Franchises -->
+			    <div style='flex: 4; display: flex; flex-direction: column;'>
+			        <div style='
+			            font-size: 14px; 
+			            font-weight: 700; 
+			            margin-bottom: 8px;
+			            text-transform: uppercase;
+			            letter-spacing: 1px;
+			            color: #60a5fa;
+			        '>
+			            TOP 2 - OTHER FRANCHISES
+			        </div>
+			        
+			        " & OtherFranchisesHTML & "
+			    </div>
+			</div>
+			"
+			```
+		lineageTag: ad08ac21-4d1d-4ced-937a-2daf80f1a0b4
+
+	measure 'Pin Capture Rate' =
+			
+			VAR TotalTrans = [Total Transactions]
+			VAR TransWithPin = [Transactions with Pins]
+			RETURN
+			DIVIDE(TransWithPin, TotalTrans, 0)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 267cbdf1-230b-46c5-a4ab-0f15f04b144d
+
+	measure 'Page 1 - Overview Hero Card' = ```
+			
+			VAR TotalCostWithPins = [Cost with Pin]
+			VAR TotalCost = 
+			    CALCULATE(
+			        SUM(Fact_PinTransactions[CostValue]),
+			        REMOVEFILTERS(Fact_PinTransactions[Invoice Has Pin Flag])
+			    )
+			VAR PctDollarsWithPin = DIVIDE(TotalCostWithPins, TotalCost, 0)
+			
+			VAR TransWithPins = [Transactions with Pins]
+			VAR TotalTrans = 
+			    CALCULATE(
+			        DISTINCTCOUNT(Fact_PinTransactions[RONumber]),
+			        REMOVEFILTERS(Fact_PinTransactions[Invoice Has Pin Flag])
+			    )
+			VAR PctTransWithPin = DIVIDE(TransWithPins, TotalTrans, 0)
+			
+			VAR UniquePins = [Unique Pins Tracked]  
+			VAR TotalBranches = [Active Branches]
+			
+			VAR MonthChange = [MoM Change]
+			
+			// Get top performing branch
+			VAR TopBranchName = 
+			    CALCULATE(
+			        SELECTEDVALUE(Fact_PinTransactions[Branch]),
+			        TOPN(
+			            1,
+			            VALUES(Fact_PinTransactions[Branch]),
+			            [Pin Capture Rate],
+			            DESC
+			        )
+			    )
+			VAR TopBranchRate = 
+			    CALCULATE(
+			        [Pin Capture Rate],
+			        TOPN(
+			            1,
+			            VALUES(Fact_PinTransactions[Branch]),
+			            [Pin Capture Rate],
+			            DESC
+			        )
+			    )
+			
+			// Get actual date range
+			VAR MinDate = MIN(dim_DateTable[Date])
+			VAR MaxDate = MAX(dim_DateTable[Date])
+			VAR DayCount = DATEDIFF(MinDate, MaxDate, DAY) + 1
+			
+			// Smart period detection with ACTUAL date ranges
+			VAR SelectedPeriod = 
+			    IF(
+			        DayCount = 1,
+			        FORMAT(MaxDate, "MMM DD, YYYY"),
+			        IF(
+			            DayCount <= 31 && DAY(MinDate) = 1 && DAY(EOMONTH(MaxDate, 0)) = DAY(MaxDate),
+			            FORMAT(MaxDate, "MMMM YYYY"),
+			            IF(
+			                DayCount >= 89 && DayCount <= 92 && MONTH(MinDate) IN {1,4,7,10} && DAY(MinDate) = 1,
+			                "Q" & QUARTER(MaxDate) & " " & YEAR(MaxDate),
+			                IF(
+			                    YEAR(MinDate) = YEAR(MaxDate) && MONTH(MinDate) = 1 && DAY(MinDate) = 1 && MaxDate = TODAY() - 1,
+			                    "YTD " & YEAR(MaxDate),
+			                    FORMAT(MinDate, "MMM DD, YYYY") & " - " & FORMAT(MaxDate, "MMM DD, YYYY")
+			                )
+			            )
+			        )
+			    )
+			
+			// Comparison period text
+			VAR ComparisonPeriodText = 
+			    SWITCH(
+			        TRUE(),
+			        DayCount <= 31 && DAY(MinDate) = 1 && DAY(EOMONTH(MaxDate, 0)) = DAY(MaxDate),
+			            "vs " & FORMAT(EDATE(MaxDate, -1), "MMMM"),
+			        DayCount >= 89 && DayCount <= 92 && MONTH(MinDate) IN {1,4,7,10} && DAY(MinDate) = 1,
+			            "vs Prior Quarter",
+			        YEAR(MinDate) = YEAR(MaxDate) && MONTH(MinDate) = 1 && DAY(MinDate) = 1,
+			            "vs Prior YTD",
+			        DayCount > 100,
+			            "vs Same Period Last Year",
+			        "vs Prior Month"
+			    )
+			
+			// Trend details
+			VAR ShowTrend = NOT(ISBLANK(MonthChange))
+			VAR TrendArrow = IF(ShowTrend, IF(MonthChange > 0, "↑", IF(MonthChange < 0, "↓", "→")), "")
+			VAR TrendColor = IF(MonthChange > 0, "#4ade80", IF(MonthChange < 0, "#ef4444", "#fbbf24"))
+			VAR ChangeText = IF(ShowTrend, FORMAT(MonthChange, "+0.0%;-0.0%;0.0%"), "—")
+			
+			// Number formatting
+			VAR CostText = 
+			    IF(TotalCostWithPins >= 1000000,
+			        "$" & FORMAT(TotalCostWithPins/1000000, "#,##0.0") & "M",
+			        "$" & FORMAT(TotalCostWithPins/1000, "#,##0") & "K"
+			    )
+			VAR TotalCostText = 
+			    IF(TotalCost >= 1000000,
+			        "$" & FORMAT(TotalCost/1000000, "#,##0.0") & "M",
+			        "$" & FORMAT(TotalCost/1000, "#,##0") & "K"
+			    )
+			
+			RETURN
+			"<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    padding: 25px 30px 20px 30px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 12px;
+			    box-shadow: 0 8px 24px rgba(0,0,0,0);
+			    color: white;
+			    height: 200px;
+			    display: flex;
+			    flex-direction: column;
+			    justify-content: space-between;
+			'>
+			    <!-- Top Row: 4 Main Metrics -->
+			    <div style='display: flex; justify-content: space-around; align-items: center; gap: 20px; flex: 1;'>
+			        <!-- Section 1: Cost with Pins -->
+			        <div style='flex: 1; text-align: center;'>
+			            <div style='font-size: 13px; text-transform: uppercase; letter-spacing: 1.5px; opacity: 0.8; margin-bottom: 8px;'>
+			                Cost with Pin Captured
+			            </div>
+			            <div style='font-size: 48px; font-weight: 700; line-height: 1; margin-bottom: 6px;'>
+			                " & CostText & "
+			            </div>
+			            <div style='font-size: 14px; opacity: 0.75;'>
+			                Total Cost: " & TotalCostText & "
+			            </div>
+			        </div>
+			        
+			        <!-- Section 2: % of Dollars -->
+			        <div style='flex: 1; text-align: center; border-left: 1px solid rgba(255,255,255,0.2); padding-left: 20px;'>
+			            <div style='font-size: 13px; text-transform: uppercase; letter-spacing: 1.5px; opacity: 0.8; margin-bottom: 8px;'>
+			                % of Dollars with Pin
+			            </div>
+			            <div style='font-size: 48px; font-weight: 700; line-height: 1; margin-bottom: 6px; color: " & IF(PctDollarsWithPin >= 0.1, "#4ade80", "#ef4444") & ";'>
+			                " & FORMAT(PctDollarsWithPin, "0.0%") & "
+			            </div>
+			            <div style='font-size: 14px; opacity: 0.75;'>
+			                Goal: 10% | Cost Basis
+			            </div>
+			        </div>
+			        
+			        <!-- Section 3: Pin Capture Rate -->
+			        <div style='flex: 1; text-align: center; border-left: 1px solid rgba(255,255,255,0.2); padding-left: 20px;'>
+			            <div style='font-size: 13px; text-transform: uppercase; letter-spacing: 1.5px; opacity: 0.8; margin-bottom: 8px;'>
+			                Pin Capture Rate
+			            </div>
+			            <div style='font-size: 48px; font-weight: 700; line-height: 1; margin-bottom: 6px;'>
+			                " & FORMAT(PctTransWithPin, "0.0%") & "
+			            </div>
+			            <div style='font-size: 14px; opacity: 0.75;'>
+			                " & FORMAT(TransWithPins, "#,##0") & " of " & FORMAT(TotalTrans, "#,##0") & "
+			            </div>
+			        </div>
+			        
+			        <!-- Section 4: Trend -->
+			        <div style='flex: 1; text-align: center; border-left: 1px solid rgba(255,255,255,0.2); padding-left: 20px;'>
+			            <div style='font-size: 13px; text-transform: uppercase; letter-spacing: 1.5px; opacity: 0.8; margin-bottom: 8px;'>
+			                Change vs Prior
+			            </div>
+			            <div style='font-size: 48px; font-weight: 700; line-height: 1; margin-bottom: 6px; color: " & TrendColor & ";'>
+			                " & TrendArrow & " " & ChangeText & "
+			            </div>
+			            <div style='font-size: 14px; opacity: 0.75;'>
+			                Top: " & TopBranchName & " (" & FORMAT(TopBranchRate, "0.0%") & ")
+			            </div>
+			        </div>
+			    </div>
+			    
+			    <!-- Context Footer -->
+			    <div style='
+			        padding-top: 12px;
+			        border-top: 1px solid rgba(255,255,255,0.2);
+			        font-size: 16px;
+			        opacity: 0.85;
+			        text-align: center;
+			    '>
+			        Selected: <strong>" & SelectedPeriod & "</strong> | 
+			        <strong>" & TotalBranches & "</strong> Branch Locations | 
+			        Tracking <strong>" & FORMAT(UniquePins, "#,##0") & "</strong> Unique Pins | 
+			        Comparison: <strong>" & ComparisonPeriodText & "</strong>
+			    </div>
+			</div>"
+			```
+		lineageTag: a2b1a56e-9987-41f6-a732-de83219fc6b6
+
+	measure 'Margin %' =
+			
+			DIVIDE(
+			    [Margin with Pin],
+			    [Sale with Pin],
+			    BLANK()
+			)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: ac454918-3cdd-457b-9ede-1a47e0de43a1
+
+	measure 'Active Filters Detail' = ```
+			
+			// Date Range Detection
+			VAR MinDate = MIN(dim_DateTable[Date])
+			VAR MaxDate = MAX(dim_DateTable[Date])
+			VAR DayCount = DATEDIFF(MinDate, MaxDate, DAY) + 1
+			
+			VAR DateRangeText = 
+			    IF(
+			        DayCount = 1,
+			        FORMAT(MaxDate, "MMM DD, YYYY"),
+			        IF(
+			            DayCount <= 31 && DAY(MinDate) = 1 && DAY(EOMONTH(MaxDate, 0)) = DAY(MaxDate),
+			            FORMAT(MaxDate, "MMMM YYYY"),
+			            IF(
+			                DayCount >= 89 && DayCount <= 92 && MONTH(MinDate) IN {1,4,7,10} && DAY(MinDate) = 1,
+			                "Q" & QUARTER(MaxDate) & " " & YEAR(MaxDate),
+			                IF(
+			                    YEAR(MinDate) = YEAR(MaxDate) && MONTH(MinDate) = 1 && DAY(MinDate) = 1,
+			                    "YTD " & YEAR(MaxDate),
+			                    FORMAT(MinDate, "MMM DD, YYYY") & " - " & FORMAT(MaxDate, "MMM DD, YYYY")
+			                )
+			            )
+			        )
+			    )
+			
+			// Branch Filter Detection
+			VAR IsBranchFiltered = ISFILTERED(dim_BranchLocation[Branch])
+			VAR BranchValues = 
+			    IF(IsBranchFiltered,
+			        VAR ValueCount = COUNTROWS(VALUES(dim_BranchLocation[Branch]))
+			        VAR ValueList = 
+			            IF(ValueCount <= 5,
+			                CONCATENATEX(
+			                    VALUES(dim_BranchLocation[Branch]), 
+			                    dim_BranchLocation[Branch], 
+			                    ", ", 
+			                    dim_BranchLocation[Branch], 
+			                    ASC
+			                ),
+			                CONCATENATEX(
+			                    TOPN(5, VALUES(dim_BranchLocation[Branch]), dim_BranchLocation[Branch], ASC), 
+			                    dim_BranchLocation[Branch], 
+			                    ", "
+			                ) & " (+" & (ValueCount - 5) & " more)"
+			            )
+			        RETURN ValueList,
+			        "All Branches"
+			    )
+			
+			// Franchise Filter Detection
+			VAR IsFranchiseFiltered = ISFILTERED(Fact_PinTransactions[Franchise])
+			VAR FranchiseValues = 
+			    IF(IsFranchiseFiltered,
+			        VAR ValueCount = COUNTROWS(VALUES(Fact_PinTransactions[Franchise]))
+			        VAR ValueList = 
+			            IF(ValueCount <= 5,
+			                CONCATENATEX(
+			                    VALUES(Fact_PinTransactions[Franchise]), 
+			                    Fact_PinTransactions[Franchise], 
+			                    ", ", 
+			                    Fact_PinTransactions[Franchise], 
+			                    ASC
+			                ),
+			                CONCATENATEX(
+			                    TOPN(5, VALUES(Fact_PinTransactions[Franchise]), Fact_PinTransactions[Franchise], ASC), 
+			                    Fact_PinTransactions[Franchise], 
+			                    ", "
+			                ) & " (+" & (ValueCount - 5) & " more)"
+			            )
+			        RETURN ValueList,
+			        "All Franchises"
+			    )
+			
+			// Invoice Type Filter Detection
+			VAR IsInvoiceTypeFiltered = ISFILTERED(Fact_PinTransactions[Invoice_Type])
+			VAR InvoiceTypeValues = 
+			    IF(IsInvoiceTypeFiltered,
+			        VAR ValueCount = COUNTROWS(VALUES(Fact_PinTransactions[Invoice_Type]))
+			        VAR ValueList = 
+			            CONCATENATEX(
+			                VALUES(Fact_PinTransactions[Invoice_Type]), 
+			                Fact_PinTransactions[Invoice_Type], 
+			                ", ", 
+			                Fact_PinTransactions[Invoice_Type], 
+			                ASC
+			            )
+			        RETURN ValueList,
+			        "All Types"
+			    )
+			
+			// Count active filters (excluding date which is always filtered)
+			VAR ActiveFilterCount = 
+			    (IF(IsBranchFiltered, 1, 0)) +
+			    (IF(IsFranchiseFiltered, 1, 0)) +
+			    (IF(IsInvoiceTypeFiltered, 1, 0))
+			
+			// Build filter display text
+			VAR FilterText = 
+			    "📅 Date Range: " & DateRangeText & UNICHAR(10) &
+			    "📍 Branch: " & BranchValues & UNICHAR(10) &
+			    "🚜 Franchise: " & FranchiseValues & UNICHAR(10) &
+			    "📋 Invoice Type: " & InvoiceTypeValues
+			
+			VAR HeaderText = 
+			    IF(ActiveFilterCount = 0,
+			        "✓ Viewing All Data",
+			        "🔍 Active Filters (" & ActiveFilterCount & ")"
+			    )
+			
+			RETURN
+			HeaderText & UNICHAR(10) & UNICHAR(10) & FilterText
+			```
+		lineageTag: 840ea4b5-8f73-4bce-a918-3ce878757933
+
+	measure 'Overview - Header' = ```
+			
+			// Get user name
+			VAR _User = USERPRINCIPALNAME()
+			VAR _Position = SEARCH("@", _User, 1)
+			VAR _Name = LEFT(_User, _Position - 1)
+			VAR _FirstLetter = UPPER(LEFT(_Name, 1))
+			VAR _LastName = MID(_Name, 2, LEN(_Name) - 1)
+			VAR _FormattedLastName = 
+			    UPPER(LEFT(_LastName, 1)) & LOWER(MID(_LastName, 2, LEN(_LastName)))
+			VAR WelcomeName = _FirstLetter & "." & _FormattedLastName
+			
+			// Get current date/time info
+			VAR CurrentDate = TODAY()
+			VAR DateDisplay = FORMAT(CurrentDate, "MMM D, YYYY")
+			VAR CurrentHour = HOUR(NOW())
+			VAR TimeGreeting = 
+			    IF(CurrentHour < 12, "Good Morning",
+			    IF(CurrentHour < 17, "Good Afternoon",
+			    "Good Evening"))
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    height: 85px;
+			    padding: 15px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 10px;
+			    color: white;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-between;
+			    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    box-sizing: border-box;
+			'>
+			    <!-- Left side: Dashboard Title -->
+			    <div style='display: flex; align-items: center; gap: 15px;'>
+			        <!-- Home icon -->
+			        <div style='
+			            width: 40px;
+			            height: 40px;
+			            background: rgba(255,255,255,0.15);
+			            border-radius: 8px;
+			            display: flex;
+			            align-items: center;
+			            justify-content: center;
+			            font-size: 20px;
+			        '>
+			            🏠
+			        </div>
+			        
+			        <!-- Title -->
+			        <div>
+			            <div style='font-size: 12px; opacity: 0.85; margin-bottom: 4px; letter-spacing: 0.5px;'>
+			                REPORT
+			            </div>
+			            <div style='font-size: 26px; font-weight: 700; line-height: 1;'>
+			                Pin Capture - Overview
+			            </div>
+			        </div>
+			    </div>
+			    
+			    <!-- Right side: Welcome & Date -->
+			    <div style='text-align: right;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 6px;'>
+			            " & TimeGreeting & ", " & WelcomeName & "
+			        </div>
+			        <div style='font-size: 16px; font-weight: 600;'>
+			            📅 " & DateDisplay & "
+			        </div>
+			    </div>
+			</div>
+			"
+			```
+		lineageTag: 79efbadc-d8a2-4a96-9f1c-ff245247bb5a
+
+	measure 'Invoice Detail Drill - Header' = ```
+			
+			// Get user name
+			VAR _User = USERPRINCIPALNAME()
+			VAR _Position = SEARCH("@", _User, 1)
+			VAR _Name = LEFT(_User, _Position - 1)
+			VAR _FirstLetter = UPPER(LEFT(_Name, 1))
+			VAR _LastName = MID(_Name, 2, LEN(_Name) - 1)
+			VAR _FormattedLastName = 
+			    UPPER(LEFT(_LastName, 1)) & LOWER(MID(_LastName, 2, LEN(_LastName)))
+			VAR WelcomeName = _FirstLetter & "." & _FormattedLastName
+			
+			// Get current date/time info
+			VAR CurrentDate = TODAY()
+			VAR DateDisplay = FORMAT(CurrentDate, "MMM D, YYYY")
+			VAR CurrentHour = HOUR(NOW())
+			VAR TimeGreeting = 
+			    IF(CurrentHour < 12, "Good Morning",
+			    IF(CurrentHour < 17, "Good Afternoon",
+			    "Good Evening"))
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    height: 85px;
+			    padding: 15px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 10px;
+			    color: white;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-between;
+			    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    box-sizing: border-box;
+			'>
+			    <!-- Left side: Dashboard Title -->
+			    <div style='display: flex; align-items: center; gap: 15px;'>
+			        <!-- Home icon -->
+			        <div style='
+			            width: 40px;
+			            height: 40px;
+			            background: rgba(255,255,255,0.15);
+			            border-radius: 8px;
+			            display: flex;
+			            align-items: center;
+			            justify-content: center;
+			            font-size: 20px;
+			        '>
+			            🏠
+			        </div>
+			        
+			        <!-- Title -->
+			        <div>
+			            <div style='font-size: 12px; opacity: 0.85; margin-bottom: 4px; letter-spacing: 0.5px;'>
+			                REPORT
+			            </div>
+			            <div style='font-size: 26px; font-weight: 700; line-height: 1;'>
+			                Pin Capture - Transaction Detail - Drill Through
+			            </div>
+			        </div>
+			    </div>
+			    
+			    <!-- Right side: Welcome & Date -->
+			    <div style='text-align: right;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 6px;'>
+			            " & TimeGreeting & ", " & WelcomeName & "
+			        </div>
+			        <div style='font-size: 16px; font-weight: 600;'>
+			            📅 " & DateDisplay & "
+			        </div>
+			    </div>
+			</div>
+			"
+			```
+		lineageTag: 5d21a5c8-4fbf-44a2-ad85-780c219a5e9b
+
+	column Value
+		isHidden
+		lineageTag: da2dfa23-0c4c-4e9d-8014-3cc5710e756b
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Value]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition _Measures = calculated
+		mode: import
+		source = { "This table holds all measures for the Parts Reorder Monitoring report" }
+
+	annotation PBI_Id = da82ad85df114f0dbe8c17ce73f079a8
+

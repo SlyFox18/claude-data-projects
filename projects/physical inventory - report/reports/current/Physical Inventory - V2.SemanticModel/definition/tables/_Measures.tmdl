@@ -1,0 +1,3169 @@
+table _Measures
+	lineageTag: 22e4b9e3-99b6-4634-9836-9ade5a5ea5a5
+
+	measure 'Home - Header' = ```
+			
+			// Get user name
+			VAR _User = USERPRINCIPALNAME()
+			VAR _Position = SEARCH("@", _User, 1)
+			VAR _Name = LEFT(_User, _Position - 1)
+			VAR _FirstLetter = UPPER(LEFT(_Name, 1))
+			VAR _LastName = MID(_Name, 2, LEN(_Name) - 1)
+			VAR _FormattedLastName = 
+			    UPPER(LEFT(_LastName, 1)) & LOWER(MID(_LastName, 2, LEN(_LastName)))
+			VAR WelcomeName = _FirstLetter & "." & _FormattedLastName
+			
+			// Get current date/time info
+			VAR CurrentDate = TODAY()
+			VAR DateDisplay = FORMAT(CurrentDate, "MMM D, YYYY")
+			VAR CurrentHour = HOUR(NOW())
+			VAR TimeGreeting = 
+			    IF(CurrentHour < 12, "Good Morning",
+			    IF(CurrentHour < 17, "Good Afternoon",
+			    "Good Evening"))
+			
+			// Get weeks remaining and target
+			VAR WeeksLeft = [Weeks Remaining]
+			VAR TargetPct = FORMAT([Target % Bins], "0.0%")
+			
+			// Branch filter context
+			VAR IsBranchFiltered = ISFILTERED(dim_BranchLocation[Branch])
+			VAR HasOneBranch = HASONEVALUE(dim_BranchLocation[Branch])
+			VAR SelectedBranch = SELECTEDVALUE(dim_BranchLocation[Branch], BLANK())
+			VAR BranchCount = DISTINCTCOUNT(dim_BranchLocation[Branch])
+			VAR TotalBranches = CALCULATE(DISTINCTCOUNT(dim_BranchLocation[Branch]), ALL(dim_BranchLocation[Branch]))
+			
+			VAR BranchDisplayText = 
+			    IF(
+			        NOT(IsBranchFiltered),
+			        "All Branches (" & TotalBranches & ")",
+			        IF(
+			            HasOneBranch,
+			            "Branch: " & SelectedBranch,
+			            BranchCount & " Branches Selected"
+			        )
+			    )
+			
+			// Badge color: Blue if filtered, gray if all
+			VAR BadgeColor = IF(IsBranchFiltered, "rgba(255,255,255,0.25)", "rgba(255,255,255,0.25)")
+			VAR BadgeIcon = IF(IsBranchFiltered, "📍", "🌐")
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    height: 85px;
+			    padding: 15px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 10px;
+			    color: white;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-between;
+			    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    box-sizing: border-box;
+			'>
+			    <!-- Left side: Dashboard Title -->
+			    <div style='display: flex; align-items: center; gap: 15px;'>
+			        <!-- Home icon -->
+			        <div style='
+			            width: 40px;
+			            height: 40px;
+			            background: rgba(255,255,255,0.15);
+			            border-radius: 8px;
+			            display: flex;
+			            align-items: center;
+			            justify-content: center;
+			            font-size: 20px;
+			        '>
+			            🏠
+			        </div>
+			        
+			        <!-- Title with Branch Filter Badge -->
+			        <div>
+			            <div style='font-size: 12px; opacity: 0.85; margin-bottom: 4px; letter-spacing: 0.5px;'>
+			                REPORT
+			            </div>
+			            <div style='display: flex; align-items: center; gap: 10px;'>
+			                <div style='font-size: 26px; font-weight: 700; line-height: 1;'>
+			                    Physical Inventory
+			                </div>
+			                <div style='
+			                    font-size: 13px;
+			                    padding: 5px 12px;
+			                    background: " & BadgeColor & ";
+			                    border-radius: 6px;
+			                    font-weight: 600;
+			                    letter-spacing: 0.3px;
+			                '>
+			                    " & BadgeIcon & " " & BranchDisplayText & "
+			                </div>
+			            </div>
+			        </div>
+			    </div>
+			    
+			    <!-- Right side: Welcome & Date with Weeks Remaining -->
+			    <div style='text-align: right;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 6px;'>
+			            " & TimeGreeting & ", " & WelcomeName & "
+			        </div>
+			        <div style='font-size: 16px; font-weight: 600; display: flex; align-items: center; justify-content: flex-end; gap: 12px;'>
+			            <span>📅 " & DateDisplay & "</span>
+			            <span style='opacity: 0.4;'>•</span>
+			            <span style='
+			                background: rgba(255,255,255,0.2);
+			                padding: 4px 10px;
+			                border-radius: 6px;
+			                font-size: 15px;
+			            '>⏰ " & WeeksLeft & " Weeks Left</span>
+			        </div>
+			    </div>
+			</div>
+			"
+			```
+		lineageTag: 49efea2a-3c06-4cab-8367-26b26caa141e
+
+	measure 'Weeks Left' =
+			
+			VAR CurrentDate = TODAY()
+			VAR _EndOfYear = DATE(YEAR(CurrentDate), 12, 31)
+			VAR DaysLeft = _EndOfYear - CurrentDate
+			VAR WeeksLeft = DIVIDE(DaysLeft, 7, 0)
+			RETURN
+			    ROUNDUP(WeeksLeft, 0)
+		formatString: 0
+		lineageTag: edd61b47-e47a-4441-ab5e-63a60682bbb7
+
+	measure 'Current Year' = YEAR(TODAY())
+		formatString: 0
+		lineageTag: 82bf125f-f9ff-44c1-9d50-e7eaf421b070
+
+	measure 'Weeks Remaining' = 52 - WEEKNUM(TODAY()) + 1
+		lineageTag: 0fb631f3-72d6-4349-a7ba-ed60158addeb
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Weeks Passed' = WEEKNUM(TODAY())
+		formatString: 0
+		lineageTag: 313a006a-f497-4e66-b4c0-56a4d3935bd1
+
+	measure 'Target %' = DIVIDE([Weeks Passed], 52, 0)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 12bf987a-84a8-43df-991c-4da5af67e676
+
+	measure 'Total Bins' = DISTINCTCOUNT('Physical Inventory'[Bin])
+		formatString: 0
+		lineageTag: 8cbc27cb-41ff-4dcf-bf37-34de15d47941
+
+	measure 'Bins Counted' =
+			
+			CALCULATE(
+			    DISTINCTCOUNT('Physical Inventory'[Bin]),
+			    'Physical Inventory'[Is Bin Uncounted This Year] = 0  // 0 = Counted
+			)
+		formatString: 0
+		lineageTag: b55cface-9248-4317-8649-fae56b253fdd
+
+	measure 'Bins Left to Count' =
+			
+			[Total Bins] - [Bins Counted]
+		formatString: 0
+		lineageTag: d3a3f853-c65a-41df-bb10-30f6b6a0a667
+
+	measure 'Bins To Count Per Week' = DIVIDE([Total Bins], 52, 0)
+		formatString: 0
+		lineageTag: df2887d8-23a0-4357-990e-5d310a77fe3c
+
+	measure 'Target % Bins' = DIVIDE([Weeks Passed], 52, 0)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: b125699e-0ef1-490f-9e3a-56198f4628ab
+
+	measure 'Parts Counted' =
+			
+			CALCULATE(
+			    DISTINCTCOUNT('Physical Inventory'[PartNumber]),
+			    'Physical Inventory'[Is Part Uncounted This Year] = 0  // 0 = Counted
+			)
+		formatString: 0
+		lineageTag: 5fcbe744-9b87-408a-8e7e-bd8e0de09777
+
+	measure 'Total Parts' = DISTINCTCOUNT('Physical Inventory'[PartNumber])
+		formatString: 0
+		lineageTag: 65c1670c-c196-4f70-920f-244d4d3b2847
+
+	measure 'Parts Left to Count' =
+			
+			[Total Parts] - [Parts Counted]
+		formatString: 0
+		lineageTag: d4cd709e-5910-4b82-a96a-9e812d6e240e
+
+	measure 'Parts To Count Per Week' = DIVIDE([Total Parts], 52, 0)
+		formatString: 0
+		lineageTag: edb7bdc2-afb2-4c38-afe8-a6a90e58d385
+
+	measure 'Target % Parts' = DIVIDE([Weeks Passed], 52, 0)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 2c4a4ece-cb92-4cd5-a7ba-7b78dc184433
+
+	measure '% Bins Counted' = DIVIDE([Bins Counted], [Total Bins], 0)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: f92b924e-dbdf-4638-ae00-a98749f6cbd2
+
+	measure '% Parts Counted' = DIVIDE([Parts Counted], [Total Parts], 0)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: b49aef06-0912-4173-a105-b2985abd48cf
+
+	measure 'Total Bin Qty' = SUM('Physical Inventory'[BinQty])
+		lineageTag: 3ba26266-6d34-41ab-b1f1-993afc091daf
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Bin Qty Counted' =
+			
+			CALCULATE(
+			    SUM('Physical Inventory'[BinQty]),
+			    YEAR('Physical Inventory'[StocktakeDate]) = YEAR(TODAY())
+			)
+		lineageTag: c3195fce-b320-4e15-9b4e-77d54fcc3591
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure '% Bin Qty Counted' =
+			
+			DIVIDE([Items with Bin Qty Counted], [Total Items with Bin Qty], 0)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 82b3363c-8143-4ed3-b946-5a1b400aeb95
+
+	measure 'Bin Qty To Count Per Week' = DIVIDE([Total Bin Qty], 52, 0)
+		lineageTag: f092c8b9-49f6-4df6-b370-c2111656e142
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Target % Bin Qty' = DIVIDE([Weeks Passed], 52, 0)
+		lineageTag: 5d831dcb-6a97-482b-bc68-6d2007d5a16e
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Total Parts with Qty' = ```
+			
+			CALCULATE(
+			    DISTINCTCOUNT('Physical Inventory'[PartNumber]),
+			    KEEPFILTERS('Physical Inventory'[Has Bin Qty] = 1)
+			)
+			
+			```
+		formatString: 0
+		lineageTag: cd40228b-870b-436d-9cc3-23648746c69a
+
+	measure 'Parts with Qty Counted' = ```
+			
+			CALCULATE(
+			    DISTINCTCOUNT('Physical Inventory'[PartNumber]),
+			    KEEPFILTERS('Physical Inventory'[Is Part with Qty Counted] = 1)
+			)
+			
+			```
+		formatString: 0
+		lineageTag: c8863956-9f10-4b81-8026-552252624338
+
+	measure '% Parts Counted with Qty' =
+			
+			DIVIDE([Parts with Qty Counted], [Total Parts with Qty], 0)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 7fb7853e-2444-434f-adc4-201d8be92aae
+
+	measure 'Parts with Qty To Count Per Week' = DIVIDE([Total Parts with Qty], 52, 0)
+		lineageTag: 718cb7e4-77ca-4a08-b2b8-753d2133eb0c
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Target % Parts with Qty' = DIVIDE([Weeks Passed], 52, 0)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: b33050a2-8d6c-43b8-a99b-1396a01c2750
+
+	measure 'Physical Inventory Hero Card' = ```
+			
+			-- Metrics
+			VAR BinsCounted = [Bins Counted]
+			VAR TotalBins = [Total Bins]
+			VAR BinsLeft = [Bins Left to Count]
+			VAR BinsPct = [% Bins Counted]
+			
+			VAR PartsCounted = [Parts Counted]
+			VAR TotalParts = [Total Parts]
+			VAR PartsLeft = [Parts Left to Count]
+			VAR PartsPct = [% Parts Counted]
+			
+			VAR WeeksLeft = [Weeks Remaining]
+			
+			-- Velocity calculations
+			VAR BinsAvgPerWeek = DIVIDE(TotalBins, 52, 0)
+			VAR PartsAvgPerWeek = DIVIDE(TotalParts, 52, 0)
+			VAR BinsRequiredPerWeek = DIVIDE(BinsLeft, WeeksLeft, 0)
+			VAR PartsRequiredPerWeek = DIVIDE(PartsLeft, WeeksLeft, 0)
+			
+			-- Gap for display (not for color)
+			VAR BinsGap = BinsRequiredPerWeek - BinsAvgPerWeek
+			VAR PartsGap = PartsRequiredPerWeek - PartsAvgPerWeek
+			VAR BinsPctChange = DIVIDE(BinsGap, BinsAvgPerWeek, 0)
+			VAR PartsPctChange = DIVIDE(PartsGap, PartsAvgPerWeek, 0)
+			
+			-- PACE-BASED colors for progress sections
+			VAR ExpectedPct = [Expected % Complete]  -- 92.3%
+			VAR BinsVariance = BinsPct - ExpectedPct
+			VAR PartsVariance = PartsPct - ExpectedPct
+			
+			VAR BinsProgressColor =
+			    SWITCH(
+			        TRUE(),
+			        BinsVariance >= 0.05, "#10b981",
+			        BinsVariance >= 0, "#14b8a6",
+			        BinsVariance >= -0.05, "#f59e0b",
+			        "#e11d48"
+			    )
+			
+			VAR PartsProgressColor =
+			    SWITCH(
+			        TRUE(),
+			        PartsVariance >= 0.05, "#10b981",
+			        PartsVariance >= 0, "#14b8a6",
+			        PartsVariance >= -0.05, "#f59e0b",
+			        "#e11d48"
+			    )
+			
+			-- SAME pace-based colors for velocity sections
+			VAR BinsVelocityColor = BinsProgressColor
+			VAR PartsVelocityColor = PartsProgressColor
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    padding: 30px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 12px;
+			    color: white;
+			    height: 185px;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-around;
+			'>
+			
+			    <!-- Section 1: Bins Counted -->
+			    <div style='text-align:center; flex:1;'>
+			        <div style='font-size:18px; opacity:.9; margin-bottom:12px; text-transform:uppercase; letter-spacing:1px; font-weight:600;'>📦 Bins Counted</div>
+			        <div style='font-size:72px; font-weight:700; line-height:1; color:" & BinsProgressColor & ";'>
+			            " & FORMAT(BinsCounted, "#,##0") & "
+			        </div>
+			        <div style='font-size:16px; margin-top:8px; opacity:.9;'>
+			            <strong style='color:" & BinsProgressColor & "; font-size:18px;'>" & FORMAT(BinsPct, "0.0%") & "</strong> of " & FORMAT(TotalBins, "#,##0") & " • <span style='background:rgba(255,255,255,0.2); padding:2px 8px; border-radius:4px; font-weight:600;'>" & FORMAT(BinsLeft, "#,##0") & " left</span>
+			        </div>
+			    </div>
+			
+			    <div style='width:2px; height:120px; background:rgba(255,255,255,0.3); margin:0 30px;'></div>
+			
+			    <!-- Section 2: Bins Per Week -->
+			    <div style='text-align:center; flex:1;'>
+			        <div style='font-size:18px; opacity:.9; margin-bottom:8px; text-transform:uppercase; letter-spacing:1px; font-weight:600;'>📊 Bins Per Week</div>
+			        <div style='font-size:64px; font-weight:700; line-height:1; color:" & BinsVelocityColor & ";'>
+			            " & FORMAT(BinsRequiredPerWeek, "#,##0") & "
+			        </div>
+			        <div style='font-size:14px; margin-top:8px; opacity:.85;'>
+			            needed in next " & FORMAT(WeeksLeft, "#,##0") & " weeks
+			        </div>
+			        <div style='
+			            font-size:13px; 
+			            margin-top:6px; 
+			            padding:4px 10px; 
+			            background:rgba(255,255,255,0.15); 
+			            border-radius:6px;
+			            display:inline-block;
+			        '>
+			            <span style='opacity:.8'>avg was</span> <strong>" & FORMAT(BinsAvgPerWeek, "#,##0") & "</strong>
+			            <span style='color:" & BinsVelocityColor & "; font-weight:700; margin-left:6px'>" & FORMAT(BinsPctChange, "+0%;-0%") & "</span>
+			        </div>
+			    </div>
+			
+			    <div style='width:2px; height:120px; background:rgba(255,255,255,0.3); margin:0 30px;'></div>
+			
+			    <!-- Section 3: Parts Counted -->
+			    <div style='text-align:center; flex:1;'>
+			        <div style='font-size:18px; opacity:.9; margin-bottom:12px; text-transform:uppercase; letter-spacing:1px; font-weight:600;'>🔧 Parts Counted</div>
+			        <div style='font-size:72px; font-weight:700; line-height:1; color:" & PartsProgressColor & ";'>
+			            " & FORMAT(PartsCounted, "#,##0") & "
+			        </div>
+			        <div style='font-size:16px; margin-top:8px; opacity:.9;'>
+			            <strong style='color:" & PartsProgressColor & "; font-size:18px;'>" & FORMAT(PartsPct, "0.0%") & "</strong> of " & FORMAT(TotalParts, "#,##0") & " • <span style='background:rgba(255,255,255,0.2); padding:2px 8px; border-radius:4px; font-weight:600;'>" & FORMAT(PartsLeft, "#,##0") & " left</span>
+			        </div>
+			    </div>
+			
+			    <div style='width:2px; height:120px; background:rgba(255,255,255,0.3); margin:0 30px;'></div>
+			
+			    <!-- Section 4: Parts Per Week -->
+			    <div style='text-align:center; flex:1;'>
+			        <div style='font-size:18px; opacity:.9; margin-bottom:8px; text-transform:uppercase; letter-spacing:1px; font-weight:600;'>🎯 Parts Per Week</div>
+			        <div style='font-size:64px; font-weight:700; line-height:1; color:" & PartsVelocityColor & ";'>
+			            " & FORMAT(PartsRequiredPerWeek, "#,##0") & "
+			        </div>
+			        <div style='font-size:14px; margin-top:8px; opacity:.85;'>
+			            needed in next " & FORMAT(WeeksLeft, "#,##0") & " weeks
+			        </div>
+			        <div style='
+			            font-size:13px; 
+			            margin-top:6px; 
+			            padding:4px 10px; 
+			            background:rgba(255,255,255,0.15); 
+			            border-radius:6px;
+			            display:inline-block;
+			        '>
+			            <span style='opacity:.8'>avg was</span> <strong>" & FORMAT(PartsAvgPerWeek, "#,##0") & "</strong>
+			            <span style='color:" & PartsVelocityColor & "; font-weight:700; margin-left:6px'>" & FORMAT(PartsPctChange, "+0%;-0%") & "</span>
+			        </div>
+			    </div>
+			</div>
+			"
+			```
+		lineageTag: 2d37d54e-30e8-4ed4-a74e-0acb50075459
+
+	measure 'Bins Counted Card' = ```
+			
+			VAR BinsCounted = [Bins Counted]
+			VAR TotalBins = [Total Bins]
+			VAR BinsLeft = [Bins Left to Count]
+			VAR BinsPct = [% Bins Counted]
+			VAR TargetPct = [Target % Bins]
+			VAR IsOnTrack = BinsPct >= TargetPct
+			VAR StatusColor = IF(IsOnTrack, "#4ade80", "#fbbf24")
+			VAR StatusText = IF(IsOnTrack, "✓ On Track", "⚠ Behind")
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    padding: 20px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 10px;
+			    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    color: white;
+			    height: 140px;
+			    position: relative;
+			'>
+			    <!-- Header -->
+			    <div style='
+			        display: flex;
+			        justify-content: space-between;
+			        align-items: center;
+			        margin-bottom: 15px;
+			    '>
+			        <div style='
+			            font-size: 12px;
+			            opacity: 0.85;
+			            text-transform: uppercase;
+			            letter-spacing: 1.2px;
+			            font-weight: 600;
+			        '>
+			            📦 Bins Counted
+			        </div>
+			        <div style='
+			            font-size: 11px;
+			            padding: 4px 10px;
+			            background: " & StatusColor & ";
+			            border-radius: 12px;
+			            font-weight: 600;
+			        '>
+			            " & StatusText & "
+			        </div>
+			    </div>
+			    
+			    <!-- Main Number -->
+			    <div style='
+			        font-size: 56px;
+			        font-weight: 700;
+			        line-height: 1;
+			        margin-bottom: 10px;
+			    '>
+			        " & FORMAT(BinsCounted, "#,##0") & "
+			    </div>
+			    
+			    <!-- Details -->
+			    <div style='
+			        display: flex;
+			        justify-content: space-between;
+			        align-items: center;
+			        font-size: 14px;
+			        opacity: 0.9;
+			    '>
+			        <div>
+			            Total: <strong>" & FORMAT(TotalBins, "#,##0") & "</strong>
+			        </div>
+			        <div style='
+			            background: rgba(255,255,255,0.15);
+			            padding: 4px 12px;
+			            border-radius: 6px;
+			            font-weight: 600;
+			        '>
+			            " & FORMAT(BinsLeft, "#,##0") & " left
+			        </div>
+			    </div>
+			</div>
+			"
+			```
+		lineageTag: a39789c2-e30d-4339-a242-4bcb668b7b59
+
+	measure 'Bins Per Week Card' = ```
+			
+			VAR BinsPerWeek = [Bins To Count Per Week]
+			VAR TargetPct = [Target % Bins]
+			VAR WeeksLeft = [Weeks Remaining]
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    padding: 20px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 10px;
+			    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    color: white;
+			    height: 140px;
+			'>
+			    <!-- Header -->
+			    <div style='
+			        font-size: 12px;
+			        opacity: 0.85;
+			        text-transform: uppercase;
+			        letter-spacing: 1.2px;
+			        font-weight: 600;
+			        margin-bottom: 15px;
+			    '>
+			        📊 Weekly Target
+			    </div>
+			    
+			    <!-- Main Number -->
+			    <div style='
+			        font-size: 56px;
+			        font-weight: 700;
+			        line-height: 1;
+			        margin-bottom: 10px;
+			    '>
+			        " & FORMAT(BinsPerWeek, "#,##0") & "
+			    </div>
+			    
+			    <!-- Details -->
+			    <div style='
+			        display: flex;
+			        justify-content: space-between;
+			        align-items: center;
+			        font-size: 14px;
+			        opacity: 0.9;
+			    '>
+			        <div>
+			            bins per week
+			        </div>
+			        <div style='
+			            background: rgba(255,255,255,0.15);
+			            padding: 4px 12px;
+			            border-radius: 6px;
+			            font-weight: 600;
+			        '>
+			            Target: " & FORMAT(TargetPct, "0.0%") & "
+			        </div>
+			    </div>
+			</div>
+			"
+			```
+		lineageTag: a8953408-33f0-44e0-b82b-d5b7c12cbdbc
+
+	measure 'Parts Counted Card' = ```
+			
+			VAR PartsCounted = [Parts Counted]
+			VAR TotalParts = [Total Parts]
+			VAR PartsLeft = [Parts Left to Count]
+			VAR PartsPct = [% Parts Counted]
+			VAR TargetPct = [Target % Parts]
+			VAR IsOnTrack = PartsPct >= TargetPct
+			VAR StatusColor = IF(IsOnTrack, "#4ade80", "#fbbf24")
+			VAR StatusText = IF(IsOnTrack, "✓ On Track", "⚠ Behind")
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    padding: 20px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 10px;
+			    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    color: white;
+			    height: 140px;
+			    position: relative;
+			'>
+			    <!-- Header -->
+			    <div style='
+			        display: flex;
+			        justify-content: space-between;
+			        align-items: center;
+			        margin-bottom: 15px;
+			    '>
+			        <div style='
+			            font-size: 12px;
+			            opacity: 0.85;
+			            text-transform: uppercase;
+			            letter-spacing: 1.2px;
+			            font-weight: 600;
+			        '>
+			            🔧 Parts Counted
+			        </div>
+			        <div style='
+			            font-size: 11px;
+			            padding: 4px 10px;
+			            background: " & StatusColor & ";
+			            border-radius: 12px;
+			            font-weight: 600;
+			        '>
+			            " & StatusText & "
+			        </div>
+			    </div>
+			    
+			    <!-- Main Number -->
+			    <div style='
+			        font-size: 56px;
+			        font-weight: 700;
+			        line-height: 1;
+			        margin-bottom: 10px;
+			    '>
+			        " & FORMAT(PartsCounted, "#,##0") & "
+			    </div>
+			    
+			    <!-- Details -->
+			    <div style='
+			        display: flex;
+			        justify-content: space-between;
+			        align-items: center;
+			        font-size: 14px;
+			        opacity: 0.9;
+			    '>
+			        <div>
+			            Total: <strong>" & FORMAT(TotalParts, "#,##0") & "</strong>
+			        </div>
+			        <div style='
+			            background: rgba(255,255,255,0.15);
+			            padding: 4px 12px;
+			            border-radius: 6px;
+			            font-weight: 600;
+			        '>
+			            " & FORMAT(PartsLeft, "#,##0") & " left
+			        </div>
+			    </div>
+			</div>
+			"
+			```
+		lineageTag: 0fa5852c-5e8a-4dbb-b5b1-c8933ed4d1c1
+
+	measure 'Parts Per Week Card' = ```
+			
+			VAR PartsPerWeek = [Parts To Count Per Week]
+			VAR TargetPct = [Target % Parts]
+			VAR WeeksLeft = [Weeks Remaining]
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    padding: 20px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 10px;
+			    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    color: white;
+			    height: 140px;
+			'>
+			    <!-- Header -->
+			    <div style='
+			        font-size: 12px;
+			        opacity: 0.85;
+			        text-transform: uppercase;
+			        letter-spacing: 1.2px;
+			        font-weight: 600;
+			        margin-bottom: 15px;
+			    '>
+			        🎯 Weekly Target
+			    </div>
+			    
+			    <!-- Main Number -->
+			    <div style='
+			        font-size: 56px;
+			        font-weight: 700;
+			        line-height: 1;
+			        margin-bottom: 10px;
+			    '>
+			        " & FORMAT(PartsPerWeek, "#,##0") & "
+			    </div>
+			    
+			    <!-- Details -->
+			    <div style='
+			        display: flex;
+			        justify-content: space-between;
+			        align-items: center;
+			        font-size: 14px;
+			        opacity: 0.9;
+			    '>
+			        <div>
+			            parts per week
+			        </div>
+			        <div style='
+			            background: rgba(255,255,255,0.15);
+			            padding: 4px 12px;
+			            border-radius: 6px;
+			            font-weight: 600;
+			        '>
+			            Target: " & FORMAT(TargetPct, "0.0%") & "
+			        </div>
+			    </div>
+			</div>
+			"
+			```
+		lineageTag: 54b37ef9-1edc-4258-8dd7-ef91433ae065
+
+	measure 'PI – Bins Progress Bar (HTML)' = ```
+			
+			VAR BinsCounted = [Bins Counted]
+			VAR TotalBins   = [Total Bins]
+			VAR BinsLeft    = [Bins Left to Count]
+			VAR Pct         = [% Bins Counted]              -- 0–1
+			VAR Target      = [Target % Bins]               -- 0–1
+			VAR OnTrack     = Pct >= Target
+			VAR PctText     = FORMAT(Pct, "0.0%")
+			VAR TargetText  = FORMAT(Target, "0.0%")
+			VAR DeltaText   = FORMAT(Pct - Target, "+0.0%;-0.0%")
+			VAR ProgressColor = IF(OnTrack, "#4ade80", "#fbbf24")
+			VAR TrackColor    = "#e6edf3"
+			VAR BarWidthPct   = FORMAT(100 * Pct, "0") & "%"
+			VAR TargetLeftPct = FORMAT(100 * Target, "0") & "%"
+			RETURN
+			"
+			<div style='font-family: Segoe UI, Arial; padding:18px; background:#0f2a3a; border-radius:12px; color:#fff; box-shadow:0 6px 20px rgba(0,0,0,.2)'>
+			  <div style='display:flex; justify-content:space-between; align-items:center; margin-bottom:10px'>
+			    <div style='font-weight:600; letter-spacing:.5px'>% Bins Counted</div>
+			    <div style='font-size:12px; padding:4px 10px; border-radius:999px; background:" & ProgressColor & "; color:#0f172a; font-weight:700'>" & DeltaText & "</div>
+			  </div>
+			
+			  <div style='position:relative; width:100%; height:22px; background:" & TrackColor & "; border-radius:12px; overflow:hidden'>
+			    <div style='width:" & BarWidthPct & "; height:100%; background:" & ProgressColor & "; border-radius:12px'></div>
+			    <div style='position:absolute; left:" & TargetLeftPct & "; top:-6px; height:34px; width:2px; background:#fff; opacity:.9'></div>
+			  </div>
+			
+			  <div style='display:flex; justify-content:space-between; margin-top:10px; font-size:13px; opacity:.9'>
+			    <div><strong style='font-size:18px; color:" & ProgressColor & "'>" & PctText & "</strong> • goal " & TargetText & "</div>
+			    <div>" & FORMAT(BinsCounted, "#,##0") & " of " & FORMAT(TotalBins, "#,##0") & " • <span style='background:rgba(255,255,255,.2); padding:2px 8px; border-radius:6px; font-weight:600'>" & FORMAT(BinsLeft, "#,##0") & " left</span></div>
+			  </div>
+			</div>
+			"
+			
+			```
+		lineageTag: 1824b817-20ce-4436-b394-64dcbbb3383f
+
+	measure 'PI – Bins Bullet (HTML)' = ```
+			
+			VAR BinsCounted = [Bins Counted]
+			VAR TotalBins   = [Total Bins]
+			VAR BinsLeft    = [Bins Left to Count]
+			VAR Pct         = [% Bins Counted]
+			VAR Target      = [Target % Bins]
+			VAR OnTrack     = Pct >= Target
+			VAR PctText     = FORMAT(Pct, "0.0%")
+			VAR TargetText  = FORMAT(Target, "0.0%")
+			VAR DeltaText   = FORMAT(Pct - Target, "+0.0%;-0.0%")
+			-- Bands (tune as you like)
+			VAR LowBand     = 0.70
+			VAR MidBand     = 0.90
+			VAR LowStop     = FORMAT(100 * LowBand, "0") & "%"
+			VAR MidStop     = FORMAT(100 * MidBand, "0") & "%"
+			VAR BarWidthPct = FORMAT(100 * Pct, "0") & "%"
+			VAR TargetLeftPct = FORMAT(100 * Target, "0") & "%"
+			RETURN
+			"
+			<div style='font-family: Segoe UI, Arial; padding:18px; background:#0f2a3a; border-radius:12px; color:#fff; box-shadow:0 6px 20px rgba(0,0,0,.2)'>
+			  <div style='display:flex; justify-content:space-between; align-items:center; margin-bottom:10px'>
+			    <div style='font-weight:600; letter-spacing:.5px'>% Bins Counted</div>
+			    <div style='font-size:12px; padding:4px 10px; border-radius:999px; background:" & IF(OnTrack, "#4ade80", "#fbbf24") & "; color:#0f172a; font-weight:700'>" & DeltaText & "</div>
+			  </div>
+			
+			  <div style='position:relative; width:100%; height:40px; border-radius:10px; overflow:hidden;
+			              background: linear-gradient(to right,
+			                #334155 0% " & LowStop & ",
+			                #64748b " & LowStop & " " & MidStop & ",
+			                #93c5fd " & MidStop & " 100%)'>
+			    <div style='position:absolute; left:0; top:10px; height:20px; width:" & BarWidthPct & "; background:" & IF(OnTrack, "#4ade80", "#fbbf24") & "; border-radius:8px'></div>
+			    <div style='position:absolute; left:" & TargetLeftPct & "; top:0; height:40px; width:2px; background:#ffffff; opacity:.95'></div>
+			  </div>
+			
+			  <div style='display:flex; justify-content:space-between; margin-top:10px; font-size:13px; opacity:.9'>
+			    <div><strong style='font-size:18px; color:" & IF(OnTrack, "#4ade80", "#fbbf24") & "'>" & PctText & "</strong> • goal " & TargetText & "</div>
+			    <div>" & FORMAT(BinsCounted, "#,##0") & " of " & FORMAT(TotalBins, "#,##0") & " • <span style='background:rgba(255,255,255,.2); padding:2px 8px; border-radius:6px; font-weight:600'>" & FORMAT(BinsLeft, "#,##0") & " left</span></div>
+			  </div>
+			</div>
+			"
+			
+			```
+		lineageTag: 634eb6ed-ffcd-498f-ab83-7f220dddbf9c
+
+	measure 'PI – Bins Circular Ring (HTML)' = ```
+			
+			VAR BinsCounted = [Bins Counted]
+			VAR TotalBins   = [Total Bins]
+			VAR BinsLeft    = [Bins Left to Count]
+			VAR Pct         = [% Bins Counted]
+			VAR Target      = [Target % Bins]
+			VAR OnTrack     = Pct >= Target
+			VAR PctText     = FORMAT(Pct, "0.0%")
+			VAR TargetText  = FORMAT(Target, "0.0%")
+			VAR DeltaText   = FORMAT(Pct - Target, "+0.0%;-0.0%")
+			VAR R           = 70
+			VAR C           = 2 * PI() * R
+			VAR DashProgress = ROUND(Pct * C, 0)
+			VAR DashRemaining = ROUND(C - DashProgress, 0)
+			VAR TargetDeg   = FORMAT(Target * 360, "0")   -- degrees
+			RETURN
+			"
+			<div style='font-family: Segoe UI, Arial; padding:18px; background:#0f2a3a; border-radius:12px; color:#fff; box-shadow:0 6px 20px rgba(0,0,0,.2); display:flex; align-items:center; gap:18px'>
+			  <svg width='160' height='160' viewBox='0 0 160 160' style='flex:0 0 auto'>
+			    <g transform='rotate(-90 80 80)'>
+			      <!-- Track -->
+			      <circle cx='80' cy='80' r='" & R & "' stroke='#e6edf3' stroke-width='14' fill='none' />
+			      <!-- Progress -->
+			      <circle cx='80' cy='80' r='" & R & "' stroke='" & IF(OnTrack, "#4ade80", "#fbbf24") & "' stroke-width='14' fill='none'
+			              stroke-linecap='round' stroke-dasharray='" & DashProgress & " " & DashRemaining & "' />
+			    </g>
+			    <!-- Target tick -->
+			    <line x1='80' y1='80' x2='80' y2='14' stroke='#ffffff' stroke-width='2' opacity='.95'
+			          transform='rotate(" & TargetDeg & " 80 80)' />
+			    <!-- Center label -->
+			    <text x='80' y='86' text-anchor='middle' font-size='26' font-weight='700' fill='" & IF(OnTrack, "#4ade80", "#fbbf24") & "'>" & PctText & "</text>
+			    <text x='80' y='110' text-anchor='middle' font-size='12' fill='#e6edf3'>goal " & TargetText & "</text>
+			  </svg>
+			
+			  <div style='flex:1'>
+			    <div style='font-weight:600; letter-spacing:.5px; margin-bottom:6px'>% Bins Counted</div>
+			    <div style='font-size:12px; padding:4px 10px; border-radius:999px; background:" & IF(OnTrack, "#4ade80", "#fbbf24") & "; color:#0f172a; font-weight:700; display:inline-block'>" & DeltaText & "</div>
+			    <div style='margin-top:10px; font-size:14px; opacity:.9'>" & FORMAT(BinsCounted, "#,##0") & " of " & FORMAT(TotalBins, "#,##0") & " • <span style='background:rgba(255,255,255,.2); padding:2px 8px; border-radius:6px; font-weight:600'>" & FORMAT(BinsLeft, "#,##0") & " left</span></div>
+			  </div>
+			</div>
+			"
+			
+			```
+		lineageTag: 96ba6327-2d44-4e23-9201-6fb8b111c74c
+
+	measure 'PI – Bins KPI Tile (HTML)' = ```
+			
+			VAR BinsCounted = [Bins Counted]
+			VAR TotalBins   = [Total Bins]
+			VAR BinsLeft    = [Bins Left to Count]
+			VAR Pct         = [% Bins Counted]
+			VAR Target      = [Target % Bins]
+			VAR OnTrack     = Pct >= Target
+			VAR PctText     = FORMAT(Pct, "0.0%")
+			VAR TargetText  = FORMAT(Target, "0.0%")
+			VAR DeltaText   = FORMAT(Pct - Target, "+0.0%;-0.0%")
+			VAR BarWidthPct   = FORMAT(100 * Pct, "0") & "%"
+			VAR TargetLeftPct = FORMAT(100 * Target, "0") & "%"
+			VAR ProgressColor = IF(OnTrack, "#4ade80", "#60a5fa")  // green or blue
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 16px;
+			    color: #fff;
+			    box-shadow: 0 8px 24px rgba(0,0,0,.25);
+			    padding: 28px;
+			    width: 100%;
+			'>
+			  <div style='display:flex; justify-content:space-between; align-items:center; margin-bottom:12px'>
+			    <div style='font-weight:600; letter-spacing:.5px; font-size:20px'>% Bins Counted</div>
+			    <div style='font-size:14px; padding:6px 14px; border-radius:999px; background:" & ProgressColor & "; color:#0f172a; font-weight:700'>" & DeltaText & "</div>
+			  </div>
+			
+			  <div style='font-size:54px; font-weight:800; margin-top:6px; color:" & ProgressColor & "'>" & PctText & "</div>
+			  <div style='font-size:16px; opacity:.9; margin-bottom:14px'>" & FORMAT(BinsCounted, "#,##0") & " of " & FORMAT(TotalBins, "#,##0") & " • <span style='background:rgba(255,255,255,.2); padding:4px 10px; border-radius:6px; font-weight:600'>" & FORMAT(BinsLeft, "#,##0") & " left</span></div>
+			
+			  <div style='position:relative; width:100%; height:16px; background:rgba(255,255,255,.2); border-radius:10px; margin-top:10px'>
+			    <div style='width:" & BarWidthPct & "; height:100%; background:" & ProgressColor & "; border-radius:10px'></div>
+			    <div style='position:absolute; left:" & TargetLeftPct & "; top:-4px; height:24px; width:2px; background:#ffffff; opacity:.95'></div>
+			  </div>
+			
+			  <div style='display:flex; justify-content:space-between; font-size:14px; margin-top:8px; opacity:.8'>
+			    <div>0%</div>
+			    <div>goal " & TargetText & "</div>
+			    <div>100%</div>
+			  </div>
+			</div>
+			"
+			
+			```
+		lineageTag: 750ee1cf-1dd0-422d-833e-79879e55954e
+
+	measure 'Bins KPI Tile Animated Gradient' = ```
+			
+			VAR BinsCounted   = [Bins Counted]
+			VAR TotalBins     = [Total Bins]
+			VAR BinsLeft      = [Bins Left to Count]
+			VAR Pct           = [% Bins Counted]
+			VAR Target        = [Target % Bins]
+			VAR PctText       = FORMAT(Pct, "0.0%")
+			VAR TargetText    = FORMAT(Target, "0.0%")
+			VAR DeltaText     = FORMAT(Pct - Target, "+0.0%;-0.0%")
+			VAR BarWidthPct   = FORMAT(100 * Pct, "0") & "%"
+			VAR TargetLeftPct = FORMAT(100 * Target, "0") & "%"
+			
+			-- Status indicators (matching hero card)
+			VAR OnTrack       = Pct >= Target
+			VAR StatusIcon    = IF(OnTrack, "✓", "⚠")
+			
+			-- Expanded severity color scale
+			VAR SeverityColor =
+			    SWITCH(
+			        TRUE(),
+			        Pct >= Target, "#10b981",           // emerald
+			        Pct >= Target * 0.95, "#14b8a6",    // teal
+			        Pct >= Target * 0.90, "#0ea5e9",    // sky blue
+			        Pct >= Target * 0.80, "#f59e0b",    // amber
+			        "#e11d48"                           // rose
+			    )
+			
+			-- Gradient start color (lighter tone)
+			VAR GradientStart =
+			    SWITCH(
+			        TRUE(),
+			        Pct >= Target, "#6ee7b7",           // light emerald
+			        Pct >= Target * 0.95, "#99f6e4",    // light teal
+			        Pct >= Target * 0.90, "#7dd3fc",    // light sky blue
+			        Pct >= Target * 0.80, "#fde68a",    // light amber
+			        "#fda4af"                           // light rose
+			    )
+			
+			-- Badge gradient background (matching hero card style)
+			VAR BadgeGradient = "linear-gradient(135deg, " & GradientStart & " 0%, " & SeverityColor & " 100%)"
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 16px;
+			    color: #fff;
+			    padding: 28px;
+			    width: 100%;
+			'>
+			  <style>
+			    .progress-bar {
+			        width: 0%;
+			        height: 100%;
+			        background: linear-gradient(to right, " & GradientStart & ", " & SeverityColor & ");
+			        border-radius:10px;
+			        animation: grow 1.5s ease-out forwards;
+			    }
+			    @keyframes grow {
+			        to { width:" & BarWidthPct & "; }
+			    }
+			    .pulse {
+			        animation: pulse 1.5s infinite;
+			    }
+			    @keyframes pulse {
+			        0% { box-shadow: 0 0 0 0 rgba(255,255,255,0.6); }
+			        70% { box-shadow: 0 0 0 10px rgba(255,255,255,0); }
+			        100% { box-shadow: 0 0 0 0 rgba(255,255,255,0); }
+			    }
+			  </style>
+			
+			  <div style='display:flex; justify-content:space-between; align-items:center; margin-bottom:12px'>
+			    <div style='font-weight:600; letter-spacing:.5px; font-size:20px'>📦 % Bins Counted</div>
+			    <div class='" & IF(Pct < Target, "pulse", "") & "' style='
+			        font-size:13px; 
+			        padding:5px 12px; 
+			        border-radius:12px; 
+			        background:" & BadgeGradient & "; 
+			        color:#1a1a1a; 
+			        font-weight:700;
+			        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+			    '>" & StatusIcon & " " & DeltaText & "</div>
+			  </div>
+			
+			  <div style='font-size:54px; font-weight:800; margin-top:6px; color:" & SeverityColor & "'>" & PctText & "</div>
+			  <div style='font-size:16px; opacity:.9; margin-bottom:14px'>" & FORMAT(BinsCounted, "#,##0") & " of " & FORMAT(TotalBins, "#,##0") & " • <span style='background:rgba(255,255,255,.2); padding:4px 10px; border-radius:6px; font-weight:600'>" & FORMAT(BinsLeft, "#,##0") & " left</span></div>
+			
+			  <div style='position:relative; width:100%; height:16px; background:rgba(255,255,255,.2); border-radius:10px; margin-top:10px'>
+			    <div class='progress-bar'></div>
+			    <div style='position:absolute; left:" & TargetLeftPct & "; top:-4px; height:24px; width:2px; background:#ffffff; opacity:.95'></div>
+			  </div>
+			
+			  <div style='display:flex; justify-content:space-between; font-size:14px; margin-top:8px; opacity:.8'>
+			    <div>0%</div>
+			    <div>goal " & TargetText & "</div>
+			    <div>100%</div>
+			  </div>
+			</div>
+			"
+			```
+		lineageTag: 9e4d8fc9-bd26-4c8d-a37c-0defc5077f65
+
+	measure 'PI – Bins KPI Glass (HTML)' =
+			
+			VAR BinsCounted   = [Bins Counted]
+			VAR TotalBins     = [Total Bins]
+			VAR BinsLeft      = [Bins Left to Count]
+			VAR Pct           = [% Bins Counted]          -- 0–1
+			VAR Target        = [Target % Bins]           -- 0–1
+			VAR PctText       = FORMAT(Pct, "0.0%")
+			VAR TargetText    = FORMAT(Target, "0.0%")
+			VAR DeltaText     = FORMAT(Pct - Target, "+0.0%;-0.0%")
+			VAR BarWidthPct   = FORMAT(100 * Pct, "0") & "%"
+			VAR TargetLeftPct = FORMAT(100 * Target, "0") & "%"
+			
+			-- Severity color: green (on track), orange (slightly behind), coral (behind)
+			VAR SeverityColor =
+			    SWITCH(
+			        TRUE(),
+			        Pct >= Target,        "#4ade80",
+			        Pct >= Target * 0.9,  "#f97316",
+			        "#fb7185"
+			    )
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    padding: 24px;
+			    border-radius: 18px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    box-shadow: 0 12px 30px rgba(0,0,0,0.25);
+			    width: 100%;
+			'>
+			  <!-- Glass panel -->
+			  <div style='
+			      background: rgba(255,255,255,0.14);
+			      border: 1px solid rgba(255,255,255,0.35);
+			      border-radius: 16px;
+			      padding: 22px;
+			      color: #ffffff;
+			      backdrop-filter: blur(8px);
+			      -webkit-backdrop-filter: blur(8px);
+			      box-shadow: inset 0 1px 0 rgba(255,255,255,0.25), 0 8px 20px rgba(0,0,0,0.25);
+			  '>
+			    <style>
+			      .bar-fill {
+			        width: 0%;
+			        height: 100%;
+			        background: " & SeverityColor & ";
+			        border-radius: 10px;
+			        animation: grow 1.2s ease-out forwards;
+			      }
+			      @keyframes grow { to { width: " & BarWidthPct & "; } }
+			
+			      .badge {
+			        font-size: 14px; padding: 6px 14px; border-radius: 999px; font-weight: 700;
+			        background: " & SeverityColor & "; color: #0f172a;
+			      }
+			      .badge.pulse {
+			        animation: pulse 1.5s ease-in-out infinite;
+			      }
+			      @keyframes pulse {
+			        0%   { box-shadow: 0 0 0 0 rgba(255,255,255,0.6); }
+			        70%  { box-shadow: 0 0 0 12px rgba(255,255,255,0); }
+			        100% { box-shadow: 0 0 0 0 rgba(255,255,255,0); }
+			      }
+			    </style>
+			
+			    <div style='display:flex; justify-content:space-between; align-items:center; margin-bottom:10px'>
+			      <div style='font-weight:600; letter-spacing:.5px; font-size:20px'>% Bins Counted</div>
+			      <div class='badge " & IF(Pct < Target, "pulse", "") & "'>" & DeltaText & "</div>
+			    </div>
+			
+			    <div style='font-size:52px; font-weight:800; line-height:1; margin-top:4px; color:" & SeverityColor & "'>" & PctText & "</div>
+			    <div style='font-size:15px; opacity:.9; margin-bottom:14px'>
+			      " & FORMAT(BinsCounted, "#,##0") & " of " & FORMAT(TotalBins, "#,##0") & "
+			      • <span style='background: rgba(255,255,255,0.28); padding: 4px 10px; border-radius: 8px; font-weight:600'>
+			          " & FORMAT(BinsLeft, "#,##0") & " left
+			        </span>
+			    </div>
+			
+			    <!-- Progress bar -->
+			    <div style='position:relative; width:100%; height:16px; background: rgba(255,255,255,0.22); border-radius:10px'>
+			      <div class='bar-fill'></div>
+			      <div style='position:absolute; left:" & TargetLeftPct & "; top:-4px; height:24px; width:2px; background:#ffffff; opacity:.95'></div>
+			    </div>
+			
+			    <div style='display:flex; justify-content:space-between; font-size:13px; margin-top:8px; opacity:.85'>
+			      <div>0%</div>
+			      <div>goal " & TargetText & "</div>
+			      <div>100%</div>
+			    </div>
+			  </div>
+			</div>
+			"
+		lineageTag: 034a4108-eaa8-4027-a682-3f218e93eb30
+
+	measure 'PI – Bins Glass Ring (HTML)' = ```
+			
+			VAR BinsCounted   = [Bins Counted]
+			VAR TotalBins     = [Total Bins]
+			VAR BinsLeft      = [Bins Left to Count]
+			VAR Pct           = [% Bins Counted]
+			VAR Target        = [Target % Bins]
+			VAR PctText       = FORMAT(Pct, "0.0%")
+			VAR TargetText    = FORMAT(Target, "0.0%")
+			VAR DeltaText     = FORMAT(Pct - Target, "+0.0%;-0.0%")
+			VAR SeverityColor =
+			    SWITCH(
+			        TRUE(),
+			        Pct >= Target,        "#4ade80",
+			        Pct >= Target * 0.9,  "#f97316",
+			        "#fb7185"
+			    )
+			VAR R             = 70
+			VAR C             = 2 * PI() * R
+			VAR DashProgress  = ROUND(Pct * C, 0)
+			VAR DashRemain    = ROUND(C - DashProgress, 0)
+			VAR TargetDeg     = FORMAT(Target * 360, "0")
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    padding: 24px;
+			    border-radius: 18px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    box-shadow: 0 12px 30px rgba(0,0,0,0.25);
+			    width: 100%;
+			'>
+			  <div style='
+			      background: rgba(255,255,255,0.14);
+			      border: 1px solid rgba(255,255,255,0.35);
+			      border-radius: 16px;
+			      padding: 18px 22px;
+			      color: #ffffff;
+			      backdrop-filter: blur(8px);
+			      -webkit-backdrop-filter: blur(8px);
+			      box-shadow: inset 0 1px 0 rgba(255,255,255,0.25), 0 8px 20px rgba(0,0,0,0.25);
+			      display:flex; align-items:center; gap:18px;
+			  '>
+			    <style>
+			      .ring-progress {
+			        stroke: " & SeverityColor & ";
+			        stroke-width: 14;
+			        stroke-linecap: round;
+			        fill: none;
+			        stroke-dasharray: 0 " & C & ";
+			        animation: fill 1.2s ease-out forwards;
+			      }
+			      @keyframes fill {
+			        to { stroke-dasharray: " & DashProgress & " " & DashRemain & "; }
+			      }
+			      .badge {
+			        font-size: 14px; padding: 6px 14px; border-radius: 999px; font-weight: 700;
+			        background: " & SeverityColor & "; color: #0f172a;
+			      }
+			      .badge.pulse { animation: pulse 1.5s ease-in-out infinite; }
+			      @keyframes pulse {
+			        0% { box-shadow: 0 0 0 0 rgba(255,255,255,0.6); }
+			        70% { box-shadow: 0 0 0 12px rgba(255,255,255,0); }
+			        100% { box-shadow: 0 0 0 0 rgba(255,255,255,0); }
+			      }
+			    </style>
+			
+			    <svg width='160' height='160' viewBox='0 0 160 160' style='flex:0 0 auto'>
+			      <g transform='rotate(-90 80 80)'>
+			        <circle cx='80' cy='80' r='" & R & "' stroke='#e6edf3' stroke-width='14' fill='none' />
+			        <circle class='ring-progress' cx='80' cy='80' r='" & R & "' />
+			      </g>
+			      <line x1='80' y1='80' x2='80' y2='14' stroke='#ffffff' stroke-width='2' opacity='.95'
+			            transform='rotate(" & TargetDeg & " 80 80)' />
+			      <text x='80' y='86' text-anchor='middle' font-size='26' font-weight='700' fill='" & SeverityColor & "'>" & PctText & "</text>
+			      <text x='80' y='110' text-anchor='middle' font-size='12' fill='#e6edf3'>goal " & TargetText & "</text>
+			    </svg>
+			
+			    <div style='flex:1'>
+			      <div style='display:flex; justify-content:space-between; align-items:center; margin-bottom:8px'>
+			        <div style='font-weight:600; letter-spacing:.5px; font-size:18px'>% Bins Counted</div>
+			        <div class='badge " & IF(Pct < Target, "pulse", "") & "'>" & DeltaText & "</div>
+			      </div>
+			      <div style='font-size:14px; opacity:.9'>
+			        " & FORMAT(BinsCounted, "#,##0") & " of " & FORMAT(TotalBins, "#,##0") & "
+			        • <span style='background: rgba(255,255,255,0.28); padding: 4px 10px; border-radius: 8px; font-weight:600'>
+			            " & FORMAT(BinsLeft, "#,##0") & " left
+			          </span>
+			      </div>
+			    </div>
+			  </div>
+			</div>
+			"
+			
+			```
+		lineageTag: 87f59b6b-4954-4331-8db7-408e0d1a40c2
+
+	measure 'Parts KPI Tile Animated Gradient' = ```
+			
+			VAR PartsCounted   = [Parts Counted]
+			VAR TotalParts     = [Total Parts]
+			VAR PartsLeft      = [Parts Left to Count]
+			VAR Pct            = [% Parts Counted]            -- 0–1
+			VAR Target         = [Target % Parts]             -- 0–1
+			VAR PctText        = FORMAT(Pct, "0.0%")
+			VAR TargetText     = FORMAT(Target, "0.0%")
+			VAR DeltaText      = FORMAT(Pct - Target, "+0.0%;-0.0%")
+			VAR BarWidthPct    = FORMAT(100 * Pct, "0") & "%"
+			VAR TargetLeftPct  = FORMAT(100 * Target, "0") & "%"
+			
+			-- Status indicators (matching hero card)
+			VAR OnTrack        = Pct >= Target
+			VAR StatusIcon     = IF(OnTrack, "✓", "⚠")
+			
+			-- Expanded severity color scale (same as Bins)
+			VAR SeverityColor =
+			    SWITCH(
+			        TRUE(),
+			        Pct >= Target, "#10b981",           -- emerald
+			        Pct >= Target * 0.95, "#14b8a6",    -- teal
+			        Pct >= Target * 0.90, "#0ea5e9",    -- sky blue
+			        Pct >= Target * 0.80, "#f59e0b",    -- amber
+			        "#e11d48"                           -- rose
+			    )
+			
+			-- Gradient start color (lighter tone)
+			VAR GradientStart =
+			    SWITCH(
+			        TRUE(),
+			        Pct >= Target, "#6ee7b7",           -- light emerald
+			        Pct >= Target * 0.95, "#99f6e4",    -- light teal
+			        Pct >= Target * 0.90, "#7dd3fc",    -- light sky blue
+			        Pct >= Target * 0.80, "#fde68a",    -- light amber
+			        "#fda4af"                           -- light rose
+			    )
+			
+			-- Badge gradient background (matching hero card style)
+			VAR BadgeGradient = "linear-gradient(135deg, " & GradientStart & " 0%, " & SeverityColor & " 100%)"
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 16px;
+			    color: #fff;
+			    padding: 28px;
+			    width: 100%;
+			'>
+			  <style>
+			    .progress-bar {
+			        width: 0%;
+			        height: 100%;
+			        background: linear-gradient(to right, " & GradientStart & ", " & SeverityColor & ");
+			        border-radius:10px;
+			        animation: grow 1.5s ease-out forwards;
+			    }
+			    @keyframes grow { to { width:" & BarWidthPct & "; } }
+			    .pulse { animation: pulse 1.5s infinite; }
+			    @keyframes pulse {
+			        0% { box-shadow: 0 0 0 0 rgba(255,255,255,0.6); }
+			        70% { box-shadow: 0 0 0 10px rgba(255,255,255,0); }
+			        100% { box-shadow: 0 0 0 0 rgba(255,255,255,0); }
+			    }
+			  </style>
+			
+			  <div style='display:flex; justify-content:space-between; align-items:center; margin-bottom:12px'>
+			    <div style='font-weight:600; letter-spacing:.5px; font-size:20px'>🔧 % Parts Counted</div>
+			    <div class='" & IF(Pct < Target, "pulse", "") & "' style='
+			        font-size:13px; 
+			        padding:5px 12px; 
+			        border-radius:12px; 
+			        background:" & BadgeGradient & "; 
+			        color:#1a1a1a; 
+			        font-weight:700;
+			        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+			    '>" & StatusIcon & " " & DeltaText & "</div>
+			  </div>
+			
+			  <div style='font-size:54px; font-weight:800; margin-top:6px; color:" & SeverityColor & "'>" & PctText & "</div>
+			  <div style='font-size:16px; opacity:.9; margin-bottom:14px'>
+			    " & FORMAT(PartsCounted, "#,##0") & " of " & FORMAT(TotalParts, "#,##0") & "
+			    • <span style='background:rgba(255,255,255,.2); padding:4px 10px; border-radius:6px; font-weight:600'>" & FORMAT(PartsLeft, "#,##0") & " left</span>
+			  </div>
+			
+			  <div style='position:relative; width:100%; height:16px; background:rgba(255,255,255,.2); border-radius:10px; margin-top:10px'>
+			    <div class='progress-bar'></div>
+			    <div style='position:absolute; left:" & TargetLeftPct & "; top:-4px; height:24px; width:2px; background:#ffffff; opacity:.95'></div>
+			  </div>
+			
+			  <div style='display:flex; justify-content:space-between; font-size:14px; margin-top:8px; opacity:.8'>
+			    <div>0%</div>
+			    <div>goal " & TargetText & "</div>
+			    <div>100%</div>
+			  </div>
+			</div>
+			"
+			```
+		lineageTag: 5011f113-626e-4bdd-9380-cda38c7c2e79
+
+	measure 'Bin Qty Counted Pace Card' = ```
+			
+			VAR CurrentPct          = [% Bin Qty Counted (Qty)]        -- 0–1, quantity-based
+			VAR ExpectedPct         = [Expected % Complete]            -- 0–1, time-based target
+			VAR _Variance           = CurrentPct - ExpectedPct
+			
+			-- QUANTITY-BASED context values (replace row-based ones)
+			VAR QtyTotal            = [Total Bin Qty (All Dates)]
+			VAR QtyCounted          = [Bin Qty Counted (This Year)]
+			VAR QtyLeft             = [Bin Qty Left (Qty)]
+			
+			-- For label consistency with the Bins card
+			VAR WeeksElapsed        = [Weeks Elapsed This Year]
+			VAR ExpectedText        = FORMAT(ExpectedPct, "0.0%")
+			VAR VarianceText        = FORMAT(_Variance, "+0.0%;-0.0%")
+			VAR VarianceLabel       = IF(_Variance >= 0, "ahead of pace", "behind pace")
+			
+			-- Row visuals (positions)
+			VAR BarWidthPct         = FORMAT(100 * CurrentPct, "0") & "%"
+			VAR ExpectedLeftPct     = FORMAT(100 * ExpectedPct, "0") & "%"
+			
+			-- Severity color (match Bins card thresholds & palette)
+			VAR SeverityColor =
+			    SWITCH(
+			        TRUE(),
+			        _Variance >= 0.05, "#10b981",  -- emerald
+			        _Variance >= 0,    "#14b8a6",  -- teal
+			        _Variance >= -0.05,"#f59e0b",  -- amber
+			        "#e11d48"                      -- rose
+			    )
+			
+			VAR GradientStart =
+			    SWITCH(
+			        TRUE(),
+			        _Variance >= 0.05, "#6ee7b7",
+			        _Variance >= 0,    "#99f6e4",
+			        _Variance >= -0.05,"#fde68a",
+			        "#fda4af"
+			    )
+			
+			VAR PaceStatus =
+			    SWITCH(
+			        TRUE(),
+			        _Variance >= 0.05, "Ahead",
+			        _Variance >= 0,    "On Pace",
+			        _Variance >= -0.05,"Slightly Behind",
+			        "Behind"
+			    )
+			
+			VAR PaceIcon =
+			    SWITCH(
+			        TRUE(),
+			        _Variance >= 0.05, "🟢",
+			        _Variance >= 0,    "🟡",
+			        _Variance >= -0.05,"🟠",
+			        "🔴"
+			    )
+			
+			VAR BadgeGradient = "linear-gradient(135deg, " & GradientStart & " 0%, " & SeverityColor & " 100%)"
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 16px;
+			    color: #fff;
+			    padding: 28px;         /* SAME as Bins Counting Progress */
+			    width: 100%;
+			'>
+			  <style>
+			    .progress-bar-binqty {
+			        width: 0%;
+			        height: 100%;
+			        background: linear-gradient(to right, " & GradientStart & ", " & SeverityColor & ");
+			        border-radius:10px;
+			        animation: grow-binqty 1.5s ease-out forwards;
+			    }
+			    @keyframes grow-binqty {
+			        to { width:" & BarWidthPct & "; }
+			    }
+			    .pulse-binqty {
+			        animation: pulse-binqty 1.5s infinite;
+			    }
+			    @keyframes pulse-binqty {
+			        0% { box-shadow: 0 0 0 0 rgba(255,255,255,0.6); }
+			        70% { box-shadow: 0 0 0 10px rgba(255,255,255,0); }
+			        100% { box-shadow: 0 0 0 0 rgba(255,255,255,0); }
+			    }
+			  </style>
+			
+			  <!-- HEADER with Status Badge -->
+			  <div style='display:flex; justify-content:space-between; align-items:center; margin-bottom:12px'>
+			    <div style='font-weight:600; letter-spacing:.5px; font-size:20px'>📊 % Bin Qty Counted</div>
+			    <div class='" & IF(_Variance < 0, "pulse-binqty", "") & "' style='
+			        font-size:13px; 
+			        padding:5px 12px; 
+			        border-radius:12px; 
+			        background:" & BadgeGradient & "; 
+			        color:#1a1a1a; 
+			        font-weight:700;
+			        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+			    '>" & PaceIcon & " " & PaceStatus & "</div>
+			  </div>
+			
+			  <!-- MAIN PERCENTAGE -->
+			  <div style='font-size:54px; font-weight:800; margin-top:6px; color:" & SeverityColor & "'>" & FORMAT(CurrentPct, "0.0%") & "</div>
+			  
+			  <!-- CONTEXT INFO (QUANTITY-BASED) -->
+			  <div style='font-size:16px; opacity:.9; margin-bottom:14px'>
+			    " & FORMAT(QtyCounted, "#,##0") & " of " & FORMAT(QtyTotal, "#,##0") & " • 
+			    <span style='background:rgba(255,255,255,.2); padding:4px 10px; border-radius:6px; font-weight:600'>" & FORMAT(QtyLeft, "#,##0") & " left</span>
+			  </div>
+			
+			  <!-- EXPLANATION ROW -->
+			  <div style='font-size:14px; opacity:.85; margin-bottom:10px; line-height:1.4'>
+			    Week " & WeeksElapsed & " target: <strong>" & ExpectedText & "</strong> • 
+			    <span style='color:" & SeverityColor & "; font-weight:700'>" & VarianceText & " " & VarianceLabel & "</span>
+			  </div>
+			
+			  <!-- PROGRESS BAR with Marker -->
+			  <div style='position:relative; width:100%; height:16px; background:rgba(255,255,255,.2); border-radius:10px; margin-top:10px'>
+			    <div class='progress-bar-binqty'></div>
+			    <div style='position:absolute; left:" & ExpectedLeftPct & "; top:-4px; height:24px; width:2px; background:#ffffff; opacity:.95; box-shadow: 0 0 8px rgba(255,255,255,0.5)'></div>
+			  </div>
+			
+			  <!-- SIMPLE LEGEND -->
+			  <div style='display:flex; justify-content:space-between; font-size:14px; margin-top:8px; opacity:.8'>
+			    <div>0%</div>
+			    <div style='font-size:12px; margin-top:-2px'>↑ week " & WeeksElapsed & " target</div>
+			    <div>100%</div>
+			  </div>
+			</div>
+			"
+			
+			```
+		lineageTag: 4213c1b2-9a60-49e1-a924-85cd6920ce54
+
+	measure 'Parts Counted Qty Pace Card' = ```
+			
+			VAR CurrentPct             = [% Parts Counted with Qty]      -- 0–1
+			VAR ExpectedPct            = [Expected % Complete]           -- 0–1 (time-based expectation)
+			VAR _Variance              = CurrentPct - ExpectedPct
+			
+			VAR PartsWithQty           = [Total Parts with Qty]
+			VAR PartsWithQtyCounted    = [Parts with Qty Counted]
+			VAR PartsRemaining         = PartsWithQty - PartsWithQtyCounted
+			
+			-- For label consistency with the Bins card
+			VAR WeeksElapsed   = [Weeks Elapsed This Year]               -- same weeks measure used in Bins card
+			VAR ExpectedText   = FORMAT(ExpectedPct, "0.0%")
+			VAR VarianceText   = FORMAT(_Variance, "+0.0%;-0.0%")
+			VAR VarianceLabel  = IF(_Variance >= 0, "ahead of pace", "behind pace")
+			
+			-- Visual positioning (bar & marker)
+			VAR BarWidthPct      = FORMAT(100 * CurrentPct, "0") & "%"
+			VAR ExpectedLeftPct  = FORMAT(100 * ExpectedPct, "0") & "%"
+			
+			-- Severity color (match Bins card thresholds & palette)
+			VAR SeverityColor =
+			    SWITCH(
+			        TRUE(),
+			        _Variance >= 0.05, "#10b981",  -- emerald
+			        _Variance >= 0,    "#14b8a6",  -- teal
+			        _Variance >= -0.05,"#f59e0b",  -- amber
+			        "#e11d48"                      -- rose
+			    )
+			
+			VAR GradientStart =
+			    SWITCH(
+			        TRUE(),
+			        _Variance >= 0.05, "#6ee7b7",
+			        _Variance >= 0,    "#99f6e4",
+			        _Variance >= -0.05,"#fde68a",
+			        "#fda4af"
+			    )
+			
+			VAR PaceStatus =
+			    SWITCH(
+			        TRUE(),
+			        _Variance >= 0.05, "Ahead",
+			        _Variance >= 0,    "On Pace",
+			        _Variance >= -0.05,"Slightly Behind",
+			        "Behind"
+			    )
+			
+			VAR PaceIcon =
+			    SWITCH(
+			        TRUE(),
+			        _Variance >= 0.05, "🟢",
+			        _Variance >= 0,    "🟡",
+			        _Variance >= -0.05,"🟠",
+			        "🔴"
+			    )
+			
+			VAR BadgeGradient = "linear-gradient(135deg, " & GradientStart & " 0%, " & SeverityColor & " 100%)"
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 16px;
+			    color: #fff;
+			    padding: 28px;            /* SAME as Bins Counting Progress */
+			    width: 100%;
+			'>
+			  <style>
+			    .progress-bar-partsqty0 {
+			        width: 0%;
+			        height: 100%;
+			        background: linear-gradient(to right, " & GradientStart & ", " & SeverityColor & ");
+			        border-radius:10px;
+			        animation: grow-partsqty0 1.5s ease-out forwards;
+			    }
+			    @keyframes grow-partsqty0 {
+			        to { width:" & BarWidthPct & "; }
+			    }
+			    .pulse-partsqty0 {
+			        animation: pulse-partsqty0 1.5s infinite;
+			    }
+			    @keyframes pulse-partsqty0 {
+			        0% { box-shadow: 0 0 0 0 rgba(255,255,255,0.6); }
+			        70% { box-shadow: 0 0 0 10px rgba(255,255,255,0); }
+			        100% { box-shadow: 0 0 0 0 rgba(255,255,255,0); }
+			    }
+			  </style>
+			
+			  <!-- HEADER with Status Badge (identical spacing to Bins card) -->
+			  <div style='display:flex; justify-content:space-between; align-items:center; margin-bottom:12px'>
+			    <div style='font-weight:600; letter-spacing:.5px; font-size:20px'>🎯 % Parts Counted (Qty &gt; 0)</div>
+			    <div class='" & IF(_Variance < 0, "pulse-partsqty0", "") & "' style='
+			        font-size:13px; 
+			        padding:5px 12px; 
+			        border-radius:12px; 
+			        background:" & BadgeGradient & "; 
+			        color:#1a1a1a; 
+			        font-weight:700;
+			        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+			    '>" & PaceIcon & " " & PaceStatus & "</div>
+			  </div>
+			
+			  <!-- MAIN PERCENTAGE -->
+			  <div style='font-size:54px; font-weight:800; margin-top:6px; color:" & SeverityColor & "'>" & FORMAT(CurrentPct, "0.0%") & "</div>
+			  
+			  <!-- CONTEXT INFO -->
+			  <div style='font-size:16px; opacity:.9; margin-bottom:14px'>
+			    " & FORMAT(PartsWithQtyCounted, "#,##0") & " of " & FORMAT(PartsWithQty, "#,##0") & " • 
+			    <span style='background:rgba(255,255,255,0.2); padding:4px 10px; border-radius:6px; font-weight:600'>" & FORMAT(PartsRemaining, "#,##0") & " left</span>
+			  </div>
+			
+			  <!-- EXPLANATION ROW (same format as Bins card) -->
+			  <div style='font-size:14px; opacity:.85; margin-bottom:10px; line-height:1.4'>
+			    Week " & WeeksElapsed & " target: <strong>" & ExpectedText & "</strong> • 
+			    <span style='color:" & SeverityColor & "; font-weight:700'>" & VarianceText & " " & VarianceLabel & "</span>
+			  </div>
+			
+			  <!-- PROGRESS BAR with Marker (same height & margin) -->
+			  <div style='position:relative; width:100%; height:16px; background:rgba(255,255,255,0.2); border-radius:10px; margin-top:10px'>
+			    <div class='progress-bar-partsqty0'></div>
+			    <!-- Expected progress marker (white line) -->
+			    <div style='position:absolute; left:" & ExpectedLeftPct & "; top:-4px; height:24px; width:2px; background:#ffffff; opacity:.95; box-shadow: 0 0 8px rgba(255,255,255,0.5)'></div>
+			  </div>
+			
+			  <!-- SIMPLE LEGEND -->
+			  <div style='display:flex; justify-content:space-between; font-size:14px; margin-top:8px; opacity:.8'>
+			    <div>0%</div>
+			    <div style='font-size:12px; margin-top:-2px'>↑ week " & WeeksElapsed & " target</div>
+			    <div>100%</div>
+			  </div>
+			</div>
+			"
+			
+			```
+		lineageTag: f4c97d95-ffef-46a1-a3b8-ad979829ff4e
+
+	measure 'Not Counted - Header' = ```
+			
+			// Get user name
+			VAR _User = USERPRINCIPALNAME()
+			VAR _Position = SEARCH("@", _User, 1)
+			VAR _Name = LEFT(_User, _Position - 1)
+			VAR _FirstLetter = UPPER(LEFT(_Name, 1))
+			VAR _LastName = MID(_Name, 2, LEN(_Name) - 1)
+			VAR _FormattedLastName = 
+			    UPPER(LEFT(_LastName, 1)) & LOWER(MID(_LastName, 2, LEN(_LastName)))
+			VAR WelcomeName = _FirstLetter & "." & _FormattedLastName
+			
+			// Get current date/time info
+			VAR CurrentDate = TODAY()
+			VAR DateDisplay = FORMAT(CurrentDate, "MMM D, YYYY")
+			VAR CurrentHour = HOUR(NOW())
+			VAR TimeGreeting = 
+			    IF(CurrentHour < 12, "Good Morning",
+			    IF(CurrentHour < 17, "Good Afternoon",
+			    "Good Evening"))
+			
+			// Get weeks remaining and target
+			VAR WeeksLeft = [Weeks Remaining]
+			VAR TargetPct = FORMAT([Target % Bins], "0.0%")
+			
+			// Branch filter context
+			VAR IsBranchFiltered = ISFILTERED(dim_BranchLocation[Branch])
+			VAR HasOneBranch = HASONEVALUE(dim_BranchLocation[Branch])
+			VAR SelectedBranch = SELECTEDVALUE(dim_BranchLocation[Branch], BLANK())
+			VAR BranchCount = DISTINCTCOUNT(dim_BranchLocation[Branch])
+			VAR TotalBranches = CALCULATE(DISTINCTCOUNT(dim_BranchLocation[Branch]), ALL(dim_BranchLocation[Branch]))
+			
+			VAR BranchDisplayText = 
+			    IF(
+			        NOT(IsBranchFiltered),
+			        "All Branches (" & TotalBranches & ")",
+			        IF(
+			            HasOneBranch,
+			            "Branch: " & SelectedBranch,
+			            BranchCount & " Branches Selected"
+			        )
+			    )
+			
+			// Badge color: Blue if filtered, gray if all
+			VAR BadgeColor = IF(IsBranchFiltered, "rgba(255,255,255,0.25)", "rgba(255,255,255,0.25)")
+			VAR BadgeIcon = IF(IsBranchFiltered, "📍", "🌐")
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    height: 85px;
+			    padding: 15px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 10px;
+			    color: white;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-between;
+			    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    box-sizing: border-box;
+			'>
+			    <!-- Left side: Dashboard Title -->
+			    <div style='display: flex; align-items: center; gap: 15px;'>
+			        <!-- Home icon -->
+			        <div style='
+			            width: 40px;
+			            height: 40px;
+			            background: rgba(255,255,255,0.15);
+			            border-radius: 8px;
+			            display: flex;
+			            align-items: center;
+			            justify-content: center;
+			            font-size: 20px;
+			        '>
+			            🏠
+			        </div>
+			        
+			        <!-- Title with Branch Filter Badge -->
+			        <div>
+			            <div style='font-size: 12px; opacity: 0.85; margin-bottom: 4px; letter-spacing: 0.5px;'>
+			                REPORT
+			            </div>
+			            <div style='display: flex; align-items: center; gap: 10px;'>
+			                <div style='font-size: 26px; font-weight: 700; line-height: 1;'>
+			                    Bin & Parts Not Counted
+			                </div>
+			                <div style='
+			                    font-size: 13px;
+			                    padding: 5px 12px;
+			                    background: " & BadgeColor & ";
+			                    border-radius: 6px;
+			                    font-weight: 600;
+			                    letter-spacing: 0.3px;
+			                '>
+			                    " & BadgeIcon & " " & BranchDisplayText & "
+			                </div>
+			            </div>
+			        </div>
+			    </div>
+			    
+			    <!-- Right side: Welcome & Date with Weeks Remaining -->
+			    <div style='text-align: right;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 6px;'>
+			            " & TimeGreeting & ", " & WelcomeName & "
+			        </div>
+			        <div style='font-size: 16px; font-weight: 600; display: flex; align-items: center; justify-content: flex-end; gap: 12px;'>
+			            <span>📅 " & DateDisplay & "</span>
+			            <span style='opacity: 0.4;'>•</span>
+			            <span style='
+			                background: rgba(255,255,255,0.2);
+			                padding: 4px 10px;
+			                border-radius: 6px;
+			                font-size: 15px;
+			            '>⏰ " & WeeksLeft & " Weeks Left</span>
+			        </div>
+			    </div>
+			</div>
+			"
+			```
+		lineageTag: e6f03fdc-99f7-4b49-aa69-c728001a8dbc
+
+	measure 'Not Counted Export Header' = ```
+			
+			VAR SelectedBranch = SELECTEDVALUE(dim_BranchLocation[Branch], "All Branches")
+			VAR BranchName = 
+			    IF(
+			        SelectedBranch = "All Branches",
+			        "All Branches",
+			        SELECTEDVALUE(dim_BranchLocation[BranchName], SelectedBranch)
+			    )
+			
+			// USE DASHBOARD MEASURES (single source of truth)
+			VAR TotalPartsUncounted = [Parts Left to Count]
+			VAR TotalBinsUncounted = [Bins Left to Count]
+			
+			// CORRECTED WEEKLY TARGET CALCULATION
+			VAR CurrentDate = TODAY()
+			VAR YearEnd = DATE(YEAR(CurrentDate), 12, 31)
+			VAR DaysLeft = YearEnd - CurrentDate
+			VAR WeeksLeft = ROUND(DaysLeft / 7, 0)
+			VAR WeeksLeftSafe = IF(WeeksLeft < 1, 1, WeeksLeft)
+			VAR BinsPerWeek = ROUND(DIVIDE(TotalBinsUncounted, WeeksLeftSafe, 0), 0)
+			
+			RETURN
+			"<div style='background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%); 
+			            padding: 16px 20px 12px 20px; 
+			            border-radius: 8px; 
+			            color: white; 
+			            font-family: ""Segoe UI"", Arial, sans-serif;
+			            box-shadow: 0 3px 5px rgba(0,0,0,0.15);'>
+			    
+			    <!-- HEADER ROW -->
+			    <div style='display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;'>
+			        <div>
+			            <div style='font-size: 20px; font-weight: 700; margin-bottom: 2px;'>
+			                📦 Physical Inventory Export
+			            </div>
+			            <div style='font-size: 14px; opacity: 0.85;'>
+			                " & BranchName & " - Items Requiring Physical Count
+			            </div>
+			        </div>
+			        <div style='text-align: right;'>
+			            <div style='font-size: 13px; opacity: 0.75; margin-bottom: 2px;'>Weekly Target (" & WeeksLeftSafe & " weeks left)</div>
+			            <div style='font-size: 22px; font-weight: 700;'>~" & FORMAT(BinsPerWeek, "#,##0") & " bins</div>
+			        </div>
+			    </div>
+			    
+			    <!-- STATS ROW -->
+			    <div style='display: flex; gap: 24px; margin-bottom: 12px;'>
+			        <div>
+			            <div style='font-size: 13px; opacity: 0.75; margin-bottom: 2px;'>Parts Not Counted</div>
+			            <div style='font-size: 24px; font-weight: 700;'>" & FORMAT(TotalPartsUncounted, "#,##0") & "</div>
+			        </div>
+			        <div>
+			            <div style='font-size: 13px; opacity: 0.75; margin-bottom: 2px;'>Bins Not Counted</div>
+			            <div style='font-size: 24px; font-weight: 700;'>" & FORMAT(TotalBinsUncounted, "#,##0") & "</div>
+			        </div>
+			    </div>
+			    
+			    <!-- SUBTLE TAB-STYLE VIEW SELECTOR -->
+			    <div style='border-top: 1px solid rgba(255,255,255,0.2); padding-top: 10px;'>
+			        <div style='display: flex; gap: 8px; align-items: center;'>
+			            <div style='font-size: 11px; opacity: 0.75; margin-right: 4px;'>View:</div>
+			            
+			            <div style='background: rgba(255,215,0,0.15);
+			                        border: 1px solid rgba(255,215,0,0.4);
+			                        color: #FFD700;
+			                        padding: 6px 16px;
+			                        border-radius: 4px;
+			                        font-size: 13px;
+			                        font-weight: 600;
+			                        cursor: pointer;'>
+			                🔧 Parts
+			            </div>
+			            
+			            <div style='background: rgba(74,144,226,0.15);
+			                        border: 1px solid rgba(74,144,226,0.4);
+			                        color: #4A90E2;
+			                        padding: 6px 16px;
+			                        border-radius: 4px;
+			                        font-size: 13px;
+			                        font-weight: 600;
+			                        cursor: pointer;'>
+			                📦 Bins
+			            </div>
+			            
+			            <div style='margin-left: 8px; font-size: 14px; opacity: 0.7;'>
+			                → Export: Click view → ""..."" on table → Export to Excel → Use <b>Suggested Week</b> column
+			            </div>
+			        </div>
+			    </div>
+			    
+			</div>"
+			```
+		lineageTag: fb89e2f7-a97c-4a0e-a5d9-fc85ca329f48
+
+	measure 'Is Part Uncounted This Year' = ```
+			
+			IF(
+			    HASONEVALUE('Physical Inventory'[PartNumber]),
+			    VAR PartStocktakeDate = MAX('Physical Inventory'[StocktakeDate])
+			    RETURN
+			        IF(
+			            ISBLANK(PartStocktakeDate) || 
+			            YEAR(PartStocktakeDate) < YEAR(TODAY()),
+			            1,  // Uncounted
+			            0   // Counted
+			        ),
+			    BLANK()
+			)
+			```
+		formatString: 0
+		lineageTag: 1cc3031c-8567-4aee-9ca6-2a67e8bc936c
+
+	measure 'Is Bin Uncounted This Year' = ```
+			
+			IF(
+			    HASONEVALUE('Physical Inventory'[Bin]),
+			    VAR CurrentBin = VALUES('Physical Inventory'[Bin])
+			    VAR AnyPartCountedInBin = 
+			        CALCULATE(
+			            COUNTROWS('Physical Inventory'),
+			            'Physical Inventory'[Is Part Counted] = 1,
+			            CurrentBin
+			        )
+			    RETURN
+			        IF(AnyPartCountedInBin > 0, 0, 1)  // If any part counted, bin is counted (0), else uncounted (1)
+			    ,
+			    BLANK()
+			)
+			```
+		formatString: 0
+		lineageTag: 6bb90922-939f-4c9b-8f6a-6e6e35334597
+
+	measure 'Help Panel - Not Counted Page' = ```
+			
+			"<div style='background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%); 
+			            padding: 24px; 
+			            border-radius: 12px; 
+			            color: white; 
+			            font-family: ""Segoe UI"", Arial, sans-serif;
+			            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+			            max-width: 900px;'>
+			    
+			    <!-- HEADER -->
+			    <div style='text-align: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 2px solid rgba(255,255,255,0.2);'>
+			        <div style='font-size: 28px; font-weight: 700; margin-bottom: 8px;'>
+			            ℹ️ Physical Inventory Export - Help Guide
+			        </div>
+			        <div style='font-size: 14px; opacity: 0.85;'>
+			            Everything you need to know about this page
+			        </div>
+			    </div>
+			    
+			    <!-- SECTION 1: WHAT THIS PAGE DOES -->
+			    <div style='background: rgba(255,255,255,0.08); 
+			                border-radius: 8px; 
+			                padding: 18px; 
+			                margin-bottom: 18px;
+			                border-left: 4px solid #FFD700;'>
+			        <div style='font-size: 18px; font-weight: 700; margin-bottom: 12px; color: #FFD700;'>
+			            📋 What This Page Does
+			        </div>
+			        <div style='font-size: 14px; line-height: 1.8; opacity: 0.95;'>
+			            This page shows <b>all parts and bins that have NOT been counted yet this year</b>. Use it to:<br/>
+			            • Export lists of uncounted items to Excel<br/>
+			            • Track which items your branch still needs to count<br/>
+			            • Plan your counting schedule using the Suggested Week column<br/>
+			            • Monitor progress toward completing your annual physical inventory
+			        </div>
+			    </div>
+			    
+			    <!-- SECTION 2: HOW COUNTING WORKS -->
+			    <div style='background: rgba(255,255,255,0.08); 
+			                border-radius: 8px; 
+			                padding: 18px; 
+			                margin-bottom: 18px;
+			                border-left: 4px solid #4A90E2;'>
+			        <div style='font-size: 18px; font-weight: 700; margin-bottom: 12px; color: #4A90E2;'>
+			            🔍 How ""Counted"" is Determined
+			        </div>
+			        <div style='font-size: 14px; line-height: 1.8; opacity: 0.95;'>
+			            <b>For Parts:</b> A part is counted when its Stocktake Date is in the current year (2025).<br/><br/>
+			            
+			            <b>For Bins:</b> A bin is counted when <u>at least one part</u> in that bin has been counted this year.<br/>
+			            <span style='font-size: 12px; opacity: 0.8; font-style: italic;'>
+			            → Example: If bin ""A-001"" has 5 parts and you count 1 of them, the entire bin is marked as counted.<br/>
+			            → Why? Physical inventory is done by bin location, not individual parts.
+			            </span><br/><br/>
+			            
+			            <b>Date Filter:</b> Only items created before 12/31/2024 are included (excludes brand new items that haven't been properly stocked yet).
+			        </div>
+			    </div>
+			    
+			    <!-- SECTION 3: THE TWO VIEWS -->
+			    <div style='background: rgba(255,255,255,0.08); 
+			                border-radius: 8px; 
+			                padding: 18px; 
+			                margin-bottom: 18px;
+			                border-left: 4px solid #9B59B6;'>
+			        <div style='font-size: 18px; font-weight: 700; margin-bottom: 12px; color: #BB8FCE;'>
+			            👁️ Understanding the Two Views
+			        </div>
+			        <div style='font-size: 14px; line-height: 1.8; opacity: 0.95;'>
+			            <div style='margin-bottom: 12px;'>
+			                <b style='color: #FFD700;'>🔧 Parts View:</b> Shows every individual part that hasn't been counted.<br/>
+			                <span style='font-size: 12px; opacity: 0.8;'>
+			                → Use this for detailed part-by-part tracking<br/>
+			                → Includes Part Number, Description, Bin Qty, and dates<br/>
+			                → Best for: Finding specific parts or drilling into details
+			                </span>
+			            </div>
+			            <div>
+			                <b style='color: #4A90E2;'>📦 Bins View:</b> Shows bins that haven't been counted (summary by location).<br/>
+			                <span style='font-size: 12px; opacity: 0.8;'>
+			                → Use this for location-based counting workflow<br/>
+			                → Shows Part Count and Total Bin Qty per bin<br/>
+			                → Best for: Walking through the warehouse by bin location
+			                </span>
+			            </div>
+			        </div>
+			    </div>
+			    
+			    <!-- SECTION 4: SUGGESTED WEEK COLUMN -->
+			    <div style='background: rgba(255,255,255,0.08); 
+			                border-radius: 8px; 
+			                padding: 18px; 
+			                margin-bottom: 18px;
+			                border-left: 4px solid #E67E22;'>
+			        <div style='font-size: 18px; font-weight: 700; margin-bottom: 12px; color: #F39C12;'>
+			            📅 How Suggested Week Works
+			        </div>
+			        <div style='font-size: 14px; line-height: 1.8; opacity: 0.95;'>
+			            <b>Purpose:</b> Helps you spread counting evenly throughout the year.<br/><br/>
+			            
+			            <b>How it's calculated:</b><br/>
+			            • Each bin in your branch is assigned a week number (1-52)<br/>
+			            • Bins are sorted alphabetically (A-001, A-002, etc.)<br/>
+			            • Week numbers cycle: Week 1, Week 2, ... Week 52, then back to Week 1<br/><br/>
+			            
+			            <span style='font-size: 12px; opacity: 0.8; font-style: italic;'>
+			            → Example: If your branch has 520 bins, ~10 bins are assigned to each week<br/>
+			            → This creates a balanced workload across the entire year
+			            </span>
+			        </div>
+			    </div>
+			    
+			    <!-- SECTION 5: WEEKLY TARGET CALCULATION -->
+			    <div style='background: rgba(255,255,255,0.08); 
+			                border-radius: 8px; 
+			                padding: 18px; 
+			                margin-bottom: 18px;
+			                border-left: 4px solid #E74C3C;'>
+			        <div style='font-size: 18px; font-weight: 700; margin-bottom: 12px; color: #EC7063;'>
+			            🎯 Weekly Target Calculation
+			        </div>
+			        <div style='font-size: 14px; line-height: 1.8; opacity: 0.95;'>
+			            <b>Formula:</b> Bins Not Counted ÷ Weeks Left in Year = Weekly Target<br/><br/>
+			            
+			            <b>Example (December with 4 weeks left):</b><br/>
+			            8,586 bins not counted ÷ 4 weeks = ~2,147 bins per week<br/><br/>
+			            
+			            <span style='background: rgba(231,76,60,0.2); padding: 8px 12px; border-radius: 4px; display: inline-block; font-size: 13px;'>
+			            ⚠️ <b>Important:</b> This number changes throughout the year! Early in the year, targets are lower (~165/week). 
+			            Late in the year, they spike to show urgency. Use this to stay on track!
+			            </span>
+			        </div>
+			    </div>
+			    
+			    <!-- SECTION 6: STEP-BY-STEP INSTRUCTIONS -->
+			    <div style='background: rgba(255,255,255,0.08); 
+			                border-radius: 8px; 
+			                padding: 18px; 
+			                margin-bottom: 18px;
+			                border-left: 4px solid #27AE60;'>
+			        <div style='font-size: 18px; font-weight: 700; margin-bottom: 12px; color: #52BE80;'>
+			            ✅ Step-by-Step: How to Use This Page
+			        </div>
+			        <div style='font-size: 14px; line-height: 1.9; opacity: 0.95;'>
+			            <b>1. Select Your Branch</b><br/>
+			            <span style='margin-left: 20px; font-size: 13px; opacity: 0.85;'>
+			            Use the branch slicer at the top of the page to filter to your location
+			            </span><br/><br/>
+			            
+			            <b>2. Choose Your View</b><br/>
+			            <span style='margin-left: 20px; font-size: 13px; opacity: 0.85;'>
+			            Click ""🔧 Parts"" for detailed part listing, or ""📦 Bins"" for location summary
+			            </span><br/><br/>
+			            
+			            <b>3. Export to Excel</b><br/>
+			            <span style='margin-left: 20px; font-size: 13px; opacity: 0.85;'>
+			            Click the ""..."" (More options) button at the top-right of the table<br/>
+			            Select ""Export data"" → Choose ""Summarized data"" → Click ""Export""
+			            </span><br/><br/>
+			            
+			            <b>4. Use the Suggested Week Column</b><br/>
+			            <span style='margin-left: 20px; font-size: 13px; opacity: 0.85;'>
+			            In Excel, sort or filter by ""Suggested Week"" to plan your counting schedule<br/>
+			            Focus on counting items for the current week number
+			            </span><br/><br/>
+			            
+			            <b>5. Count and Update</b><br/>
+			            <span style='margin-left: 20px; font-size: 13px; opacity: 0.85;'>
+			            As you complete physical counts in your system, items automatically disappear from this page<br/>
+			            Refresh the report to see updated progress
+			            </span>
+			        </div>
+			    </div>
+			    
+			    <!-- SECTION 7: TIPS & BEST PRACTICES -->
+			    <div style='background: rgba(255,255,255,0.08); 
+			                border-radius: 8px; 
+			                padding: 18px;
+			                border-left: 4px solid #3498DB;'>
+			        <div style='font-size: 18px; font-weight: 700; margin-bottom: 12px; color: #5DADE2;'>
+			            💡 Tips & Best Practices
+			        </div>
+			        <div style='font-size: 14px; line-height: 1.8; opacity: 0.95;'>
+			            • <b>Export early in the week</b> to give your team time to count all assigned items<br/>
+			            • <b>Check the Weekly Target</b> regularly to ensure you're staying on pace<br/>
+			            • <b>Focus on bins, not individual parts</b> - count everything in a bin at once<br/>
+			            • <b>Watch for spikes</b> in Weekly Target toward year-end - don't fall behind!<br/>
+			            • <b>Re-export periodically</b> as items get counted to get updated lists
+			        </div>
+			    </div>
+			    
+			    <!-- FOOTER -->
+			    <div style='text-align: center; margin-top: 24px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.2);'>
+			        <div style='font-size: 12px; opacity: 0.7;'>
+			            Questions? Contact your regional inventory coordinator
+			        </div>
+			    </div>
+			    
+			</div>"
+			```
+		lineageTag: 5d23c3e7-0e97-4d56-a710-038739a49aef
+
+	measure 'Test - Total Parts' =
+			
+			CALCULATE(
+			    DISTINCTCOUNT('Physical Inventory'[PartNumber]),
+			    ALL('Physical Inventory')  // Remove all filters
+			)
+		formatString: 0
+		lineageTag: b1e12f06-46c8-4482-be8a-8f0317784962
+
+	measure 'Test - Parts Uncounted' =
+			
+			CALCULATE(
+			    DISTINCTCOUNT('Physical Inventory'[PartNumber]),
+			    'Physical Inventory'[Is Part Uncounted This Year] = 1,
+			    ALL('Physical Inventory')  // Remove all filters
+			)
+		formatString: 0
+		lineageTag: 74a9cc7f-9f35-4bb3-b358-c03836485a54
+
+	measure 'Test - Total Bins' =
+			
+			CALCULATE(
+			    DISTINCTCOUNT('Physical Inventory'[Bin]),
+			    ALL('Physical Inventory')  // Remove all filters
+			)
+		formatString: 0
+		lineageTag: 832a9a42-1efb-42f2-86a5-e671d4bac6c5
+
+	measure 'Test - Bins Uncounted' =
+			
+			CALCULATE(
+			    DISTINCTCOUNT('Physical Inventory'[Bin]),
+			    'Physical Inventory'[Is Bin Uncounted This Year] = 1,
+			    ALL('Physical Inventory')  // Remove all filters
+			)
+		formatString: 0
+		lineageTag: 5f4804c0-ccc1-4e70-ab34-dde1e6275a17
+
+	measure 'Parts Not Counted' =
+			
+			CALCULATE(
+			    DISTINCTCOUNT('Physical Inventory'[PartNumber]),
+			    'Physical Inventory'[Is Part Uncounted This Year] = 1  // 1 = Uncounted
+			)
+		formatString: 0
+		lineageTag: b85e5666-3c05-4560-98ae-4f4ce6d23f2c
+
+	measure 'Bins Not Counted' =
+			
+			CALCULATE(
+			    DISTINCTCOUNT('Physical Inventory'[Bin]),
+			    'Physical Inventory'[Is Bin Uncounted This Year] = 1  // 1 = Uncounted
+			)
+		formatString: 0
+		lineageTag: 443372ed-faf2-43a9-af97-4eb6308cda58
+
+	measure 'Weeks Elapsed This Year' =
+			
+			VAR YearStart = DATE(YEAR(TODAY()), 1, 1)
+			VAR DaysElapsed = TODAY() - YearStart
+			VAR WeeksElapsed = ROUND(DaysElapsed / 7, 0)
+			RETURN
+			    WeeksElapsed
+		lineageTag: 950b100e-7f3b-4d1c-b0e2-2cc381377e35
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Expected % Complete' =
+			
+			VAR WeeksElapsed = [Weeks Elapsed This Year]
+			VAR ExpectedPct = DIVIDE(WeeksElapsed, 52, 0)
+			RETURN
+			    ExpectedPct
+		lineageTag: 705a6666-f709-41d9-9bf9-91567adceaec
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Expected % Complete Alt' =
+			
+			VAR YearStart = DATE(YEAR(TODAY()), 1, 1)
+			VAR YearEnd = DATE(YEAR(TODAY()), 12, 31)
+			VAR DaysInYear = YearEnd - YearStart + 1
+			VAR DaysElapsed = TODAY() - YearStart
+			VAR ExpectedPct = DIVIDE(DaysElapsed, DaysInYear, 0)
+			RETURN
+			    ExpectedPct
+		lineageTag: 7b32521f-27ab-4947-ac3b-5a03677bde84
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Actual % Complete - Bins' =
+			
+			[% Bins Counted]
+		lineageTag: 1d3c7dce-e885-4a44-a3e7-bb0a6ccf0eb9
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Actual % Complete - Parts' =
+			
+			[% Parts Counted]
+		lineageTag: 5434c7d5-4fb2-4862-ac88-606091ca0ee7
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Variance vs Target - Bins' =
+			
+			[Actual % Complete - Bins] - [Expected % Complete]
+		lineageTag: 3a07cfbf-31e4-4d4a-a07d-6f1a1bd3cd88
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Variance vs Target - Parts' =
+			
+			[Actual % Complete - Parts] - [Expected % Complete]
+		lineageTag: 78d31c76-c2c4-44eb-9b14-a458a1a0982d
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Status - Bins' =
+			
+			VAR _Variance = [Variance vs Target - Bins]
+			VAR AbsVariance = ABS(_Variance)
+			RETURN
+			    SWITCH(
+			        TRUE(),
+			        _Variance >= 0.05, "🟢 Ahead of Schedule",
+			        _Variance >= 0, "🟡 On Track",
+			        _Variance >= -0.05, "🟠 Slightly Behind",
+			        "🔴 Behind Schedule"
+			    )
+		lineageTag: b7e13b9c-eca4-415e-a7f4-a1dd08c3b7ab
+
+	measure 'Status - Parts' =
+			
+			VAR _Variance = [Variance vs Target - Parts]
+			VAR AbsVariance = ABS(_Variance)
+			RETURN
+			    SWITCH(
+			        TRUE(),
+			        _Variance >= 0.05, "🟢 Ahead of Schedule",
+			        _Variance >= 0, "🟡 On Track",
+			        _Variance >= -0.05, "🟠 Slightly Behind",
+			        "🔴 Behind Schedule"
+			    )
+		lineageTag: c764c887-0809-4f2b-af4a-fc4d65f57458
+
+	measure 'Days to Catch Up - Bins' =
+			
+			VAR _Variance = [Variance vs Target - Bins]
+			VAR BinsRemaining = [Bins Left to Count]
+			VAR DaysLeft = DATE(YEAR(TODAY()), 12, 31) - TODAY()
+			VAR CurrentDailyRate = DIVIDE([Bins Counted], [Weeks Elapsed This Year] * 7, 0)
+			VAR RequiredDailyRate = DIVIDE(BinsRemaining, DaysLeft, 0)
+			VAR AdditionalBinsPerDay = RequiredDailyRate - CurrentDailyRate
+			RETURN
+			    IF(
+			        _Variance < 0,
+			        "Need " & FORMAT(AdditionalBinsPerDay, "#,##0") & " more bins/day to finish on time",
+			        "On pace to finish on time"
+			    )
+		lineageTag: 124196ae-d861-45a1-9e10-5da134f028d9
+
+	measure 'Progress Status Card' = ```
+			
+			VAR WeeksElapsed = [Weeks Elapsed This Year]
+			VAR WeeksLeft = 52 - WeeksElapsed
+			VAR ExpectedPct = [Expected % Complete]
+			VAR ActualBinsPct = [Actual % Complete - Bins]
+			VAR ActualPartsPct = [Actual % Complete - Parts]
+			VAR BinsVariance = [Variance vs Target - Bins]
+			VAR PartsVariance = [Variance vs Target - Parts]
+			VAR BinsStatus = [Status - Bins]
+			VAR PartsStatus = [Status - Parts]
+			
+			// Determine status color
+			VAR BinsColor = 
+			    SWITCH(
+			        TRUE(),
+			        BinsVariance >= 0.05, "#27AE60",  // Green
+			        BinsVariance >= 0, "#F39C12",     // Yellow
+			        BinsVariance >= -0.05, "#E67E22", // Orange
+			        "#E74C3C"                          // Red
+			    )
+			
+			VAR PartsColor = 
+			    SWITCH(
+			        TRUE(),
+			        PartsVariance >= 0.05, "#27AE60",
+			        PartsVariance >= 0, "#F39C12",
+			        PartsVariance >= -0.05, "#E67E22",
+			        "#E74C3C"
+			    )
+			
+			RETURN
+			"<div style='background: linear-gradient(135deg, #2C3E50 0%, #34495E 100%); 
+			            padding: 20px; 
+			            border-radius: 10px; 
+			            color: white; 
+			            font-family: ""Segoe UI"", Arial, sans-serif;'>
+			    
+			    <div style='text-align: center; margin-bottom: 16px;'>
+			        <div style='font-size: 18px; font-weight: 700; margin-bottom: 4px;'>
+			            📊 Counting Progress vs Target
+			        </div>
+			        <div style='font-size: 12px; opacity: 0.8;'>
+			            Week " & WeeksElapsed & " of 52 (" & WeeksLeft & " weeks remaining)
+			        </div>
+			    </div>
+			    
+			    <!-- BINS STATUS -->
+			    <div style='background: rgba(255,255,255,0.1); 
+			                padding: 14px; 
+			                border-radius: 8px; 
+			                margin-bottom: 12px;
+			                border-left: 4px solid " & BinsColor & ";'>
+			        <div style='display: flex; justify-content: space-between; align-items: center;'>
+			            <div>
+			                <div style='font-size: 14px; font-weight: 600; margin-bottom: 6px;'>
+			                    📦 Bins Progress
+			                </div>
+			                <div style='font-size: 20px; font-weight: 700; color: " & BinsColor & ";'>
+			                    " & BinsStatus & "
+			                </div>
+			            </div>
+			            <div style='text-align: right;'>
+			                <div style='font-size: 11px; opacity: 0.8; margin-bottom: 4px;'>Expected vs Actual</div>
+			                <div style='font-size: 16px; font-weight: 600;'>
+			                    " & FORMAT(ExpectedPct, "0.0%") & " vs " & FORMAT(ActualBinsPct, "0.0%") & "
+			                </div>
+			                <div style='font-size: 13px; margin-top: 4px; color: " & BinsColor & ";'>
+			                    " & IF(BinsVariance >= 0, "↑ +" & FORMAT(BinsVariance, "0.0%") & " ahead", "↓ " & FORMAT(BinsVariance, "0.0%") & " behind") & "
+			                </div>
+			            </div>
+			        </div>
+			    </div>
+			    
+			    <!-- PARTS STATUS -->
+			    <div style='background: rgba(255,255,255,0.1); 
+			                padding: 14px; 
+			                border-radius: 8px;
+			                border-left: 4px solid " & PartsColor & ";'>
+			        <div style='display: flex; justify-content: space-between; align-items: center;'>
+			            <div>
+			                <div style='font-size: 14px; font-weight: 600; margin-bottom: 6px;'>
+			                    🔧 Parts Progress
+			                </div>
+			                <div style='font-size: 20px; font-weight: 700; color: " & PartsColor & ";'>
+			                    " & PartsStatus & "
+			                </div>
+			            </div>
+			            <div style='text-align: right;'>
+			                <div style='font-size: 11px; opacity: 0.8; margin-bottom: 4px;'>Expected vs Actual</div>
+			                <div style='font-size: 16px; font-weight: 600;'>
+			                    " & FORMAT(ExpectedPct, "0.0%") & " vs " & FORMAT(ActualPartsPct, "0.0%") & "
+			                </div>
+			                <div style='font-size: 13px; margin-top: 4px; color: " & PartsColor & ";'>
+			                    " & IF(PartsVariance >= 0, "↑ +" & FORMAT(PartsVariance, "0.0%") & " ahead", "↓ " & FORMAT(PartsVariance, "0.0%") & " behind") & "
+			                </div>
+			            </div>
+			        </div>
+			    </div>
+			    
+			</div>"
+			```
+		lineageTag: b0f1151f-7fa3-4df4-8ccc-1ed50a39543e
+
+	measure 'Bins Progress vs Target Card' = ```
+			
+			VAR WeeksElapsed = [Weeks Elapsed This Year]
+			VAR ExpectedPct = [Expected % Complete]
+			VAR ActualPct = [% Bins Counted]
+			VAR _Variance = ActualPct - ExpectedPct
+			VAR BinsCounted = [Bins Counted]
+			VAR TotalBins = [Total Bins]
+			VAR BinsLeft = [Bins Left to Count]
+			
+			-- Status determination
+			VAR OnTrack = _Variance >= 0
+			VAR StatusIcon = 
+			    SWITCH(
+			        TRUE(),
+			        _Variance >= 0.05, "🟢",     -- Ahead
+			        _Variance >= 0, "🟡",        -- On Track
+			        _Variance >= -0.05, "🟠",    -- Slightly Behind
+			        "🔴"                         -- Behind
+			    )
+			
+			VAR StatusText = 
+			    SWITCH(
+			        TRUE(),
+			        _Variance >= 0.05, "Ahead",
+			        _Variance >= 0, "On Track",
+			        _Variance >= -0.05, "Slightly Behind",
+			        "Behind"
+			    )
+			
+			-- Expanded severity color scale (matching your existing card)
+			VAR SeverityColor =
+			    SWITCH(
+			        TRUE(),
+			        _Variance >= 0.05, "#10b981",        -- emerald (ahead)
+			        _Variance >= 0, "#14b8a6",           -- teal (on track)
+			        _Variance >= -0.05, "#f59e0b",       -- amber (slightly behind)
+			        "#e11d48"                           -- rose (behind)
+			    )
+			
+			-- Gradient start color (lighter tone)
+			VAR GradientStart =
+			    SWITCH(
+			        TRUE(),
+			        _Variance >= 0.05, "#6ee7b7",        -- light emerald
+			        _Variance >= 0, "#99f6e4",           -- light teal
+			        _Variance >= -0.05, "#fde68a",       -- light amber
+			        "#fda4af"                           -- light rose
+			    )
+			
+			-- Badge gradient background
+			VAR BadgeGradient = "linear-gradient(135deg, " & GradientStart & " 0%, " & SeverityColor & " 100%)"
+			
+			-- Format variance for display
+			VAR VarianceText = FORMAT(_Variance, "+0.0%;-0.0%")
+			VAR BarWidthPct = FORMAT(100 * ActualPct, "0") & "%"
+			VAR ExpectedLeftPct = FORMAT(100 * ExpectedPct, "0") & "%"
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 16px;
+			    color: #fff;
+			    padding: 28px;
+			    width: 100%;
+			'>
+			  <style>
+			    .progress-bar-bins {
+			        width: 0%;
+			        height: 100%;
+			        background: linear-gradient(to right, " & GradientStart & ", " & SeverityColor & ");
+			        border-radius:10px;
+			        animation: grow-bins 1.5s ease-out forwards;
+			    }
+			    @keyframes grow-bins {
+			        to { width:" & BarWidthPct & "; }
+			    }
+			    .pulse-bins {
+			        animation: pulse-bins 1.5s infinite;
+			    }
+			    @keyframes pulse-bins {
+			        0% { box-shadow: 0 0 0 0 rgba(255,255,255,0.6); }
+			        70% { box-shadow: 0 0 0 10px rgba(255,255,255,0); }
+			        100% { box-shadow: 0 0 0 0 rgba(255,255,255,0); }
+			    }
+			  </style>
+			
+			  <div style='display:flex; justify-content:space-between; align-items:center; margin-bottom:12px'>
+			    <div style='font-weight:600; letter-spacing:.5px; font-size:20px'>📦 Bins Progress</div>
+			    <div class='" & IF(_Variance < 0, "pulse-bins", "") & "' style='
+			        font-size:13px; 
+			        padding:5px 12px; 
+			        border-radius:12px; 
+			        background:" & BadgeGradient & "; 
+			        color:#1a1a1a; 
+			        font-weight:700;
+			        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+			    '>" & StatusIcon & " " & StatusText & "</div>
+			  </div>
+			
+			  <div style='font-size:54px; font-weight:800; margin-top:6px; color:" & SeverityColor & "'>" & FORMAT(ActualPct, "0.0%") & "</div>
+			  
+			  <div style='font-size:14px; opacity:.85; margin-bottom:4px'>
+			    Expected: " & FORMAT(ExpectedPct, "0.0%") & " 
+			    <span style='color:" & SeverityColor & "; font-weight:700; margin-left:8px'>" & VarianceText & "</span>
+			  </div>
+			  
+			  <div style='font-size:16px; opacity:.9; margin-bottom:14px'>
+			    " & FORMAT(BinsCounted, "#,##0") & " of " & FORMAT(TotalBins, "#,##0") & " • 
+			    <span style='background:rgba(255,255,255,.2); padding:4px 10px; border-radius:6px; font-weight:600'>" & FORMAT(BinsLeft, "#,##0") & " left</span>
+			  </div>
+			
+			  <div style='position:relative; width:100%; height:16px; background:rgba(255,255,255,.2); border-radius:10px; margin-top:10px'>
+			    <div class='progress-bar-bins'></div>
+			    <div style='position:absolute; left:" & ExpectedLeftPct & "; top:-4px; height:24px; width:2px; background:#ffffff; opacity:.95; box-shadow: 0 0 8px rgba(255,255,255,0.5)'></div>
+			  </div>
+			
+			  <div style='display:flex; justify-content:space-between; font-size:14px; margin-top:8px; opacity:.8'>
+			    <div>0%</div>
+			    <div style='font-size:12px; margin-top:-2px'>↑ expected (Week " & WeeksElapsed & ")</div>
+			    <div>100%</div>
+			  </div>
+			</div>
+			"
+			```
+		lineageTag: 6588be66-92fc-4891-a6af-e0fcb507623e
+
+	measure 'Parts Progress vs Target Card' = ```
+			
+			VAR WeeksElapsed = [Weeks Elapsed This Year]
+			VAR ExpectedPct = [Expected % Complete]
+			VAR ActualPct = [% Parts Counted]
+			VAR _Variance = ActualPct - ExpectedPct
+			VAR PartsCounted = [Parts Counted]
+			VAR TotalParts = [Total Parts]
+			VAR PartsLeft = [Parts Left to Count]
+			
+			-- Status determination
+			VAR StatusIcon = 
+			    SWITCH(
+			        TRUE(),
+			        _Variance >= 0.05, "🟢",     -- Ahead
+			        _Variance >= 0, "🟡",        -- On Track
+			        _Variance >= -0.05, "🟠",    -- Slightly Behind
+			        "🔴"                         -- Behind
+			    )
+			
+			VAR StatusText = 
+			    SWITCH(
+			        TRUE(),
+			        _Variance >= 0.05, "Ahead",
+			        _Variance >= 0, "On Track",
+			        _Variance >= -0.05, "Slightly Behind",
+			        "Behind"
+			    )
+			
+			-- Expanded severity color scale (matching your existing card)
+			VAR SeverityColor =
+			    SWITCH(
+			        TRUE(),
+			        _Variance >= 0.05, "#10b981",        -- emerald (ahead)
+			        _Variance >= 0, "#14b8a6",           -- teal (on track)
+			        _Variance >= -0.05, "#f59e0b",       -- amber (slightly behind)
+			        "#e11d48"                           -- rose (behind)
+			    )
+			
+			-- Gradient start color (lighter tone)
+			VAR GradientStart =
+			    SWITCH(
+			        TRUE(),
+			        _Variance >= 0.05, "#6ee7b7",        -- light emerald
+			        _Variance >= 0, "#99f6e4",           -- light teal
+			        _Variance >= -0.05, "#fde68a",       -- light amber
+			        "#fda4af"                           -- light rose
+			    )
+			
+			-- Badge gradient background
+			VAR BadgeGradient = "linear-gradient(135deg, " & GradientStart & " 0%, " & SeverityColor & " 100%)"
+			
+			-- Format variance for display
+			VAR VarianceText = FORMAT(_Variance, "+0.0%;-0.0%")
+			VAR BarWidthPct = FORMAT(100 * ActualPct, "0") & "%"
+			VAR ExpectedLeftPct = FORMAT(100 * ExpectedPct, "0") & "%"
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 16px;
+			    color: #fff;
+			    padding: 28px;
+			    width: 100%;
+			'>
+			  <style>
+			    .progress-bar-parts {
+			        width: 0%;
+			        height: 100%;
+			        background: linear-gradient(to right, " & GradientStart & ", " & SeverityColor & ");
+			        border-radius:10px;
+			        animation: grow-parts 1.5s ease-out forwards;
+			    }
+			    @keyframes grow-parts {
+			        to { width:" & BarWidthPct & "; }
+			    }
+			    .pulse-parts {
+			        animation: pulse-parts 1.5s infinite;
+			    }
+			    @keyframes pulse-parts {
+			        0% { box-shadow: 0 0 0 0 rgba(255,255,255,0.6); }
+			        70% { box-shadow: 0 0 0 10px rgba(255,255,255,0); }
+			        100% { box-shadow: 0 0 0 0 rgba(255,255,255,0); }
+			    }
+			  </style>
+			
+			  <div style='display:flex; justify-content:space-between; align-items:center; margin-bottom:12px'>
+			    <div style='font-weight:600; letter-spacing:.5px; font-size:20px'>🔧 Parts Progress</div>
+			    <div class='" & IF(_Variance < 0, "pulse-parts", "") & "' style='
+			        font-size:13px; 
+			        padding:5px 12px; 
+			        border-radius:12px; 
+			        background:" & BadgeGradient & "; 
+			        color:#1a1a1a; 
+			        font-weight:700;
+			        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+			    '>" & StatusIcon & " " & StatusText & "</div>
+			  </div>
+			
+			  <div style='font-size:54px; font-weight:800; margin-top:6px; color:" & SeverityColor & "'>" & FORMAT(ActualPct, "0.0%") & "</div>
+			  
+			  <div style='font-size:14px; opacity:.85; margin-bottom:4px'>
+			    Expected: " & FORMAT(ExpectedPct, "0.0%") & " 
+			    <span style='color:" & SeverityColor & "; font-weight:700; margin-left:8px'>" & VarianceText & "</span>
+			  </div>
+			  
+			  <div style='font-size:16px; opacity:.9; margin-bottom:14px'>
+			    " & FORMAT(PartsCounted, "#,##0") & " of " & FORMAT(TotalParts, "#,##0") & " • 
+			    <span style='background:rgba(255,255,255,.2); padding:4px 10px; border-radius:6px; font-weight:600'>" & FORMAT(PartsLeft, "#,##0") & " left</span>
+			  </div>
+			
+			  <div style='position:relative; width:100%; height:16px; background:rgba(255,255,255,.2); border-radius:10px; margin-top:10px'>
+			    <div class='progress-bar-parts'></div>
+			    <div style='position:absolute; left:" & ExpectedLeftPct & "; top:-4px; height:24px; width:2px; background:#ffffff; opacity:.95; box-shadow: 0 0 8px rgba(255,255,255,0.5)'></div>
+			  </div>
+			
+			  <div style='display:flex; justify-content:space-between; font-size:14px; margin-top:8px; opacity:.8'>
+			    <div>0%</div>
+			    <div style='font-size:12px; margin-top:-2px'>↑ expected (Week " & WeeksElapsed & ")</div>
+			    <div>100%</div>
+			  </div>
+			</div>
+			"
+			
+			```
+		lineageTag: 63ff7936-8e31-42d2-b6e4-93bddfacb097
+
+	measure 'Bins Counting Progress Enhanced' = ```
+			
+			VAR BinsCounted = [Bins Counted]
+			VAR TotalBins = [Total Bins]
+			VAR BinsLeft = [Bins Left to Count]
+			VAR ActualPct = [% Bins Counted]
+			VAR GoalPct = [Target % Bins]  -- 94.2%
+			VAR ExpectedPct = [Expected % Complete]  -- 92.3% for week 48
+			VAR PctText = FORMAT(ActualPct, "0.0%")
+			VAR GoalText = FORMAT(GoalPct, "0.0%")
+			VAR ExpectedText = FORMAT(ExpectedPct, "0.0%")
+			
+			-- Calculate both variances
+			VAR VarianceFromGoal = ActualPct - GoalPct
+			VAR VarianceFromExpected = ActualPct - ExpectedPct
+			VAR GoalDeltaText = FORMAT(VarianceFromGoal, "+0.0%;-0.0%")
+			VAR ExpectedDeltaText = FORMAT(VarianceFromExpected, "+0.0%;-0.0%")
+			
+			-- Status based on time-based expectation (more relevant for pacing)
+			VAR OnPace = VarianceFromExpected >= 0
+			VAR StatusIcon = IF(VarianceFromExpected >= 0, "✓", "⚠")
+			
+			-- Bar and marker positions
+			VAR BarWidthPct = FORMAT(100 * ActualPct, "0") & "%"
+			VAR GoalLeftPct = FORMAT(100 * GoalPct, "0") & "%"
+			VAR ExpectedLeftPct = FORMAT(100 * ExpectedPct, "0") & "%"
+			
+			-- Color based on status
+			VAR SeverityColor =
+			    SWITCH(
+			        TRUE(),
+			        VarianceFromExpected >= 0.05, "#10b981",     -- ahead
+			        VarianceFromExpected >= 0, "#14b8a6",        -- on track
+			        VarianceFromExpected >= -0.05, "#f59e0b",    -- slightly behind
+			        "#e11d48"                                     -- behind
+			    )
+			
+			VAR GradientStart =
+			    SWITCH(
+			        TRUE(),
+			        VarianceFromExpected >= 0.05, "#6ee7b7",
+			        VarianceFromExpected >= 0, "#99f6e4",
+			        VarianceFromExpected >= -0.05, "#fde68a",
+			        "#fda4af"
+			    )
+			
+			VAR BadgeGradient = "linear-gradient(135deg, " & GradientStart & " 0%, " & SeverityColor & " 100%)"
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 16px;
+			    color: #fff;
+			    padding: 28px;
+			    width: 100%;
+			    height: 100%;
+			    display: flex;
+			    flex-direction: column;
+			'>
+			  <style>
+			    .progress-bar-bins-new {
+			        width: 0%;
+			        height: 100%;
+			        background: linear-gradient(to right, " & GradientStart & ", " & SeverityColor & ");
+			        border-radius:10px;
+			        animation: grow-bins-new 1.5s ease-out forwards;
+			    }
+			    @keyframes grow-bins-new {
+			        to { width:" & BarWidthPct & "; }
+			    }
+			    .pulse-bins-new {
+			        animation: pulse-bins-new 1.5s infinite;
+			    }
+			    @keyframes pulse-bins-new {
+			        0% { box-shadow: 0 0 0 0 rgba(255,255,255,0.6); }
+			        70% { box-shadow: 0 0 0 10px rgba(255,255,255,0); }
+			        100% { box-shadow: 0 0 0 0 rgba(255,255,255,0); }
+			    }
+			  </style>
+			
+			  <div style='display:flex; justify-content:space-between; align-items:center; margin-bottom:12px'>
+			    <div style='font-weight:600; letter-spacing:.5px; font-size:20px'>📦 Bins Counting Progress</div>
+			    <div class='" & IF(VarianceFromExpected < 0, "pulse-bins-new", "") & "' style='
+			        font-size:13px; 
+			        padding:5px 12px; 
+			        border-radius:12px; 
+			        background:" & BadgeGradient & "; 
+			        color:#1a1a1a; 
+			        font-weight:700;
+			        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+			    '>" & StatusIcon & " " & ExpectedDeltaText & "</div>
+			  </div>
+			
+			  <div style='font-size:54px; font-weight:800; margin-top:6px; margin-bottom:8px; color:" & SeverityColor & "'>" & PctText & "</div>
+			  
+			  <div style='font-size:16px; opacity:.9; margin-bottom:16px'>
+			    " & FORMAT(BinsCounted, "#,##0") & " of " & FORMAT(TotalBins, "#,##0") & " • 
+			    <span style='background:rgba(255,255,255,.2); padding:4px 10px; border-radius:6px; font-weight:600'>" & FORMAT(BinsLeft, "#,##0") & " left</span>
+			  </div>
+			
+			  <div style='position:relative; width:100%; height:16px; background:rgba(255,255,255,.2); border-radius:10px; margin-top:auto; margin-bottom:12px'>
+			    <div class='progress-bar-bins-new'></div>
+			    
+			    <!-- Expected progress marker (white) -->
+			    <div style='position:absolute; left:" & ExpectedLeftPct & "; top:-4px; height:24px; width:2px; background:#ffffff; opacity:.95; box-shadow: 0 0 8px rgba(255,255,255,0.5)'></div>
+			    
+			    <!-- Year-end goal marker (yellow) -->
+			    <div style='position:absolute; left:" & GoalLeftPct & "; top:-4px; height:24px; width:2px; background:#fbbf24; opacity:.95; box-shadow: 0 0 8px rgba(251,191,36,0.5)'></div>
+			  </div>
+			
+			  <div style='display:flex; justify-content:space-between; font-size:13px; opacity:.85'>
+			    <div>0%</div>
+			    <div style='text-align:center'>
+			      <div style='color:#fbbf24; font-weight:600'>goal " & GoalText & "</div>
+			      <div style='color:#ffffff; font-size:11px; margin-top:2px'>expected " & ExpectedText & "</div>
+			    </div>
+			    <div>100%</div>
+			  </div>
+			</div>
+			"
+			```
+		lineageTag: 2a07bcf1-4894-4325-a4cd-8e911134742a
+
+	measure 'Bins Counting Progress' = ```
+			
+			VAR BinsCounted = [Bins Counted]
+			VAR TotalBins = [Total Bins]
+			VAR BinsLeft = [Bins Left to Count]
+			VAR ActualPct = [% Bins Counted]
+			
+			-- Time-based expectation (where you SHOULD be right now)
+			VAR WeeksElapsed = [Weeks Elapsed This Year]
+			VAR ExpectedPct = DIVIDE(WeeksElapsed, 52, 0)
+			VAR ExpectedText = FORMAT(ExpectedPct, "0.0%")
+			
+			-- Calculate pace variance
+			VAR VarianceFromPace = ActualPct - ExpectedPct
+			VAR VarianceText = FORMAT(VarianceFromPace, "+0.0%;-0.0%")
+			VAR VarianceLabel = IF(VarianceFromPace >= 0, "ahead of pace", "behind pace")
+			
+			VAR PaceStatus = 
+			    SWITCH(
+			        TRUE(),
+			        VarianceFromPace >= 0.05, "Ahead",
+			        VarianceFromPace >= 0, "On Pace",
+			        VarianceFromPace >= -0.05, "Slightly Behind",
+			        "Behind"
+			    )
+			
+			VAR PaceIcon = 
+			    SWITCH(
+			        TRUE(),
+			        VarianceFromPace >= 0.05, "🟢",
+			        VarianceFromPace >= 0, "🟡",
+			        VarianceFromPace >= -0.05, "🟠",
+			        "🔴"
+			    )
+			
+			-- Visual positioning
+			VAR BarWidthPct = FORMAT(100 * ActualPct, "0") & "%"
+			VAR ExpectedLeftPct = FORMAT(100 * ExpectedPct, "0") & "%"
+			
+			-- Color based on pace
+			VAR SeverityColor =
+			    SWITCH(
+			        TRUE(),
+			        VarianceFromPace >= 0.05, "#10b981",
+			        VarianceFromPace >= 0, "#14b8a6",
+			        VarianceFromPace >= -0.05, "#f59e0b",
+			        "#e11d48"
+			    )
+			
+			VAR GradientStart =
+			    SWITCH(
+			        TRUE(),
+			        VarianceFromPace >= 0.05, "#6ee7b7",
+			        VarianceFromPace >= 0, "#99f6e4",
+			        VarianceFromPace >= -0.05, "#fde68a",
+			        "#fda4af"
+			    )
+			
+			VAR BadgeGradient = "linear-gradient(135deg, " & GradientStart & " 0%, " & SeverityColor & " 100%)"
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 16px;
+			    color: #fff;
+			    padding: 28px;
+			    width: 100%;
+			'>
+			  <style>
+			    .progress-bar-bins {
+			        width: 0%;
+			        height: 100%;
+			        background: linear-gradient(to right, " & GradientStart & ", " & SeverityColor & ");
+			        border-radius:10px;
+			        animation: grow-bins 1.5s ease-out forwards;
+			    }
+			    @keyframes grow-bins {
+			        to { width:" & BarWidthPct & "; }
+			    }
+			    .pulse-bins {
+			        animation: pulse-bins 1.5s infinite;
+			    }
+			    @keyframes pulse-bins {
+			        0% { box-shadow: 0 0 0 0 rgba(255,255,255,0.6); }
+			        70% { box-shadow: 0 0 0 10px rgba(255,255,255,0); }
+			        100% { box-shadow: 0 0 0 0 rgba(255,255,255,0); }
+			    }
+			  </style>
+			
+			  <!-- HEADER with Status Badge -->
+			  <div style='display:flex; justify-content:space-between; align-items:center; margin-bottom:12px'>
+			    <div style='font-weight:600; letter-spacing:.5px; font-size:20px'>📦 % Bins Counted</div>
+			    <div class='" & IF(VarianceFromPace < 0, "pulse-bins", "") & "' style='
+			        font-size:13px; 
+			        padding:5px 12px; 
+			        border-radius:12px; 
+			        background:" & BadgeGradient & "; 
+			        color:#1a1a1a; 
+			        font-weight:700;
+			        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+			    '>" & PaceIcon & " " & PaceStatus & "</div>
+			  </div>
+			
+			  <!-- MAIN PERCENTAGE -->
+			  <div style='font-size:54px; font-weight:800; margin-top:6px; color:" & SeverityColor & "'>" & FORMAT(ActualPct, "0.0%") & "</div>
+			  
+			  <!-- CONTEXT INFO -->
+			  <div style='font-size:16px; opacity:.9; margin-bottom:14px'>
+			    " & FORMAT(BinsCounted, "#,##0") & " of " & FORMAT(TotalBins, "#,##0") & " • 
+			    <span style='background:rgba(255,255,255,.2); padding:4px 10px; border-radius:6px; font-weight:600'>" & FORMAT(BinsLeft, "#,##0") & " left</span>
+			  </div>
+			
+			  <!-- COMPACT EXPLANATION -->
+			  <div style='font-size:14px; opacity:.85; margin-bottom:10px; line-height:1.4'>
+			    Week " & WeeksElapsed & " target: <strong>" & ExpectedText & "</strong> • 
+			    <span style='color:" & SeverityColor & "; font-weight:700'>" & VarianceText & " " & VarianceLabel & "</span>
+			  </div>
+			
+			  <!-- PROGRESS BAR with Marker -->
+			  <div style='position:relative; width:100%; height:16px; background:rgba(255,255,255,.2); border-radius:10px; margin-top:10px'>
+			    <div class='progress-bar-bins'></div>
+			    
+			    <!-- Expected progress marker (white line) -->
+			    <div style='position:absolute; left:" & ExpectedLeftPct & "; top:-4px; height:24px; width:2px; background:#ffffff; opacity:.95; box-shadow: 0 0 8px rgba(255,255,255,0.5)'></div>
+			  </div>
+			
+			  <!-- SIMPLE LEGEND -->
+			  <div style='display:flex; justify-content:space-between; font-size:14px; margin-top:8px; opacity:.8'>
+			    <div>0%</div>
+			    <div style='font-size:12px; margin-top:-2px'>↑ week " & WeeksElapsed & " target</div>
+			    <div>100%</div>
+			  </div>
+			</div>
+			"
+			```
+		lineageTag: 0e52b8d9-ae89-4c6f-a3e0-b0b4c03246dc
+
+	measure 'Parts Counting Progress' = ```
+			
+			VAR PartsCounted = [Parts Counted]
+			VAR TotalParts = [Total Parts]
+			VAR PartsLeft = [Parts Left to Count]
+			VAR ActualPct = [% Parts Counted]
+			
+			-- Time-based expectation
+			VAR WeeksElapsed = [Weeks Elapsed This Year]
+			VAR ExpectedPct = DIVIDE(WeeksElapsed, 52, 0)
+			VAR ExpectedText = FORMAT(ExpectedPct, "0.0%")
+			
+			-- Calculate pace variance
+			VAR VarianceFromPace = ActualPct - ExpectedPct
+			VAR VarianceText = FORMAT(VarianceFromPace, "+0.0%;-0.0%")
+			VAR VarianceLabel = IF(VarianceFromPace >= 0, "ahead of pace", "behind pace")
+			
+			VAR PaceStatus = 
+			    SWITCH(
+			        TRUE(),
+			        VarianceFromPace >= 0.05, "Ahead",
+			        VarianceFromPace >= 0, "On Pace",
+			        VarianceFromPace >= -0.05, "Slightly Behind",
+			        "Behind"
+			    )
+			
+			VAR PaceIcon = 
+			    SWITCH(
+			        TRUE(),
+			        VarianceFromPace >= 0.05, "🟢",
+			        VarianceFromPace >= 0, "🟡",
+			        VarianceFromPace >= -0.05, "🟠",
+			        "🔴"
+			    )
+			
+			-- Visual positioning
+			VAR BarWidthPct = FORMAT(100 * ActualPct, "0") & "%"
+			VAR ExpectedLeftPct = FORMAT(100 * ExpectedPct, "0") & "%"
+			
+			-- Color based on pace
+			VAR SeverityColor =
+			    SWITCH(
+			        TRUE(),
+			        VarianceFromPace >= 0.05, "#10b981",
+			        VarianceFromPace >= 0, "#14b8a6",
+			        VarianceFromPace >= -0.05, "#f59e0b",
+			        "#e11d48"
+			    )
+			
+			VAR GradientStart =
+			    SWITCH(
+			        TRUE(),
+			        VarianceFromPace >= 0.05, "#6ee7b7",
+			        VarianceFromPace >= 0, "#99f6e4",
+			        VarianceFromPace >= -0.05, "#fde68a",
+			        "#fda4af"
+			    )
+			
+			VAR BadgeGradient = "linear-gradient(135deg, " & GradientStart & " 0%, " & SeverityColor & " 100%)"
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 16px;
+			    color: #fff;
+			    padding: 28px;
+			    width: 100%;
+			'>
+			  <style>
+			    .progress-bar-parts {
+			        width: 0%;
+			        height: 100%;
+			        background: linear-gradient(to right, " & GradientStart & ", " & SeverityColor & ");
+			        border-radius:10px;
+			        animation: grow-parts 1.5s ease-out forwards;
+			    }
+			    @keyframes grow-parts {
+			        to { width:" & BarWidthPct & "; }
+			    }
+			    .pulse-parts {
+			        animation: pulse-parts 1.5s infinite;
+			    }
+			    @keyframes pulse-parts {
+			        0% { box-shadow: 0 0 0 0 rgba(255,255,255,0.6); }
+			        70% { box-shadow: 0 0 0 10px rgba(255,255,255,0); }
+			        100% { box-shadow: 0 0 0 0 rgba(255,255,255,0); }
+			    }
+			  </style>
+			
+			  <!-- HEADER with Status Badge -->
+			  <div style='display:flex; justify-content:space-between; align-items:center; margin-bottom:12px'>
+			    <div style='font-weight:600; letter-spacing:.5px; font-size:20px'>🔧 % Parts Counted</div>
+			    <div class='" & IF(VarianceFromPace < 0, "pulse-parts", "") & "' style='
+			        font-size:13px; 
+			        padding:5px 12px; 
+			        border-radius:12px; 
+			        background:" & BadgeGradient & "; 
+			        color:#1a1a1a; 
+			        font-weight:700;
+			        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+			    '>" & PaceIcon & " " & PaceStatus & "</div>
+			  </div>
+			
+			  <!-- MAIN PERCENTAGE -->
+			  <div style='font-size:54px; font-weight:800; margin-top:6px; color:" & SeverityColor & "'>" & FORMAT(ActualPct, "0.0%") & "</div>
+			  
+			  <!-- CONTEXT INFO -->
+			  <div style='font-size:16px; opacity:.9; margin-bottom:14px'>
+			    " & FORMAT(PartsCounted, "#,##0") & " of " & FORMAT(TotalParts, "#,##0") & " • 
+			    <span style='background:rgba(255,255,255,.2); padding:4px 10px; border-radius:6px; font-weight:600'>" & FORMAT(PartsLeft, "#,##0") & " left</span>
+			  </div>
+			
+			  <!-- COMPACT EXPLANATION -->
+			  <div style='font-size:14px; opacity:.85; margin-bottom:10px; line-height:1.4'>
+			    Week " & WeeksElapsed & " target: <strong>" & ExpectedText & "</strong> • 
+			    <span style='color:" & SeverityColor & "; font-weight:700'>" & VarianceText & " " & VarianceLabel & "</span>
+			  </div>
+			
+			  <!-- PROGRESS BAR with Marker -->
+			  <div style='position:relative; width:100%; height:16px; background:rgba(255,255,255,.2); border-radius:10px; margin-top:10px'>
+			    <div class='progress-bar-parts'></div>
+			    
+			    <!-- Expected progress marker (white line) -->
+			    <div style='position:absolute; left:" & ExpectedLeftPct & "; top:-4px; height:24px; width:2px; background:#ffffff; opacity:.95; box-shadow: 0 0 8px rgba(255,255,255,0.5)'></div>
+			  </div>
+			
+			  <!-- SIMPLE LEGEND -->
+			  <div style='display:flex; justify-content:space-between; font-size:14px; margin-top:8px; opacity:.8'>
+			    <div>0%</div>
+			    <div style='font-size:12px; margin-top:-2px'>↑ week " & WeeksElapsed & " target</div>
+			    <div>100%</div>
+			  </div>
+			</div>
+			"
+			```
+		lineageTag: 7652d6da-7471-4bcf-bb40-3f4377933e15
+
+	measure 'Total Items with Bin Qty' =
+			
+			SUM('Physical Inventory'[Has Bin Qty])
+		formatString: 0
+		lineageTag: 9bd2c379-123c-4854-a70e-99427e6e2aed
+
+	measure 'Items with Bin Qty Counted' =
+			
+			SUM('Physical Inventory'[Is Part with Qty Counted])
+		formatString: 0
+		lineageTag: 9cbb2dd7-1e19-4dc5-bb25-99257ab29444
+
+	measure 'Diag – Bins Counted (Filtered)' = ```
+			
+			CALCULATE(
+			    DISTINCTCOUNT('Physical Inventory'[Bin]),
+			    KEEPFILTERS( NOT ISBLANK('Physical Inventory'[StocktakeDate]) ),
+			    KEEPFILTERS( YEAR('Physical Inventory'[StocktakeDate]) = YEAR(TODAY()) )
+			)
+			
+			```
+		formatString: 0
+		lineageTag: 7f8de3fa-ae3d-4c55-ae09-1f8935d0ad4f
+
+	measure 'Diag – Total Bins (Filtered)' =
+			
+			CALCULATE(
+			    DISTINCTCOUNT('Physical Inventory'[Bin])
+			)
+		formatString: 0
+		lineageTag: 54074b6f-e16f-44e1-9983-7a85fb00850b
+
+	measure 'Diag – % Bins Counted (Filtered)' = ```
+			
+			DIVIDE([Diag – Bins Counted (Filtered)], [Diag – Total Bins (Filtered)], 0)
+			
+			```
+		formatString: 0.00%;-0.00%;0.00%
+		lineageTag: ac55aad6-892a-4da8-a501-3e199d9df8c0
+
+	measure 'Diag – Bins Counted (All)' = ```
+			
+			CALCULATE(
+			    DISTINCTCOUNT('Physical Inventory'[Bin]),
+			    KEEPFILTERS( NOT ISBLANK('Physical Inventory'[StocktakeDate]) ),
+			    KEEPFILTERS( YEAR('Physical Inventory'[StocktakeDate]) = YEAR(TODAY()) ),
+			    ALL('Physical Inventory')
+			)
+			
+			```
+		formatString: 0
+		lineageTag: 8ffa5359-148e-41dc-bd90-3f4c589427aa
+
+	measure 'Diag – Total Bins (All)' = ```
+			
+			CALCULATE(
+			    DISTINCTCOUNT('Physical Inventory'[Bin]),
+			    ALL('Physical Inventory')
+			)
+			
+			```
+		formatString: 0
+		lineageTag: 6b33c7f1-8556-4f92-955d-503d976f6565
+
+	measure 'Diag – % Bins Counted (All)' = ```
+			
+			DIVIDE([Diag – Bins Counted (All)], [Diag – Total Bins (All)], 0)
+			
+			```
+		formatString: 0.00%;-0.00%;0.00%
+		lineageTag: c5fa9d99-1238-4dd5-87e3-b6da1201dd66
+
+	measure 'Diag – Bins Snapshot' = ```
+			
+			VAR Counted = [Diag – Bins Counted (Filtered)]
+			VAR Total   = [Diag – Total Bins (Filtered)]
+			VAR Pct     = [Diag – % Bins Counted (Filtered)]
+			RETURN
+			FORMAT(Counted, "#,##0") & " of " & FORMAT(Total, "#,##0") & " • " & FORMAT(Pct, "0.0%")
+			
+			```
+		lineageTag: 76419b1e-695f-44ba-8d1d-8490d92b2ea7
+
+	measure 'Diag – BinQty Counted (Filtered)' = ```
+			
+			CALCULATE(
+			    SUM('Physical Inventory'[BinQty]),
+			    KEEPFILTERS( NOT ISBLANK('Physical Inventory'[StocktakeDate]) ),
+			    KEEPFILTERS( YEAR('Physical Inventory'[StocktakeDate]) = YEAR(TODAY()) )
+			)
+			
+			```
+		lineageTag: 931b9a7a-ce2e-415a-93d3-0d6cbfc65e41
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Diag – Total BinQty (Filtered)' = ```
+			
+			CALCULATE(
+			    SUM('Physical Inventory'[BinQty])
+			)
+			
+			```
+		lineageTag: b2a5fee8-e13f-40bb-aa78-2b3ec58262d5
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Diag – % BinQty Counted (Filtered)' = ```
+			
+			DIVIDE([Diag – BinQty Counted (Filtered)], [Diag – Total BinQty (Filtered)], 0)
+			
+			```
+		formatString: 0.00%;-0.00%;0.00%
+		lineageTag: 7f4b186f-88a3-47dd-a737-427e82330c55
+
+	measure 'Diag – Parts Qty>0 Counted (Filtered)' = ```
+			
+			CALCULATE(
+			    DISTINCTCOUNT('Physical Inventory'[PartNumber]),
+			    KEEPFILTERS('Physical Inventory'[BinQty] > 0),
+			    KEEPFILTERS( NOT ISBLANK('Physical Inventory'[StocktakeDate]) ),
+			    KEEPFILTERS( YEAR('Physical Inventory'[StocktakeDate]) = YEAR(TODAY()) )
+			)
+			
+			```
+		formatString: 0
+		lineageTag: 46391ed4-49b1-4206-8d64-acedc77467df
+
+	measure 'Diag – Total Parts Qty>0 (Filtered)' = ```
+			
+			CALCULATE(
+			    DISTINCTCOUNT('Physical Inventory'[PartNumber]),
+			    KEEPFILTERS('Physical Inventory'[BinQty] > 0)
+			)
+			
+			```
+		formatString: 0
+		lineageTag: 23f13e95-ca83-4cab-a471-b9a7a9922304
+
+	measure 'Diag – % Parts Qty>0 Counted (Filtered)' = ```
+			
+			DIVIDE([Diag – Parts Qty>0 Counted (Filtered)], [Diag – Total Parts Qty>0 (Filtered)], 0)
+			
+			```
+		formatString: 0.00%;-0.00%;0.00%
+		lineageTag: a80b1e62-3a9c-4060-9b70-0c701a882ce6
+
+	measure 'Total Bin Qty (All Dates)' = ```
+			
+			CALCULATE(
+			    SUM('Physical Inventory'[BinQty]),
+			    REMOVEFILTERS('Physical Inventory'[StocktakeDate])    -- denominator not limited by date
+			)
+			
+			```
+		lineageTag: ceaa6eb0-d81e-472d-bb6c-136d2fb871ea
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Bin Qty Counted (This Year)' = ```
+			
+			CALCULATE(
+			    SUM('Physical Inventory'[BinQty]),
+			    KEEPFILTERS( NOT ISBLANK('Physical Inventory'[StocktakeDate]) ),
+			    KEEPFILTERS( YEAR('Physical Inventory'[StocktakeDate]) = YEAR(TODAY()) )
+			)
+			
+			```
+		lineageTag: d1f02384-fb2b-46e6-bbc5-f7f009b8d502
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure '% Bin Qty Counted (Qty)' = ```
+			
+			DIVIDE([Bin Qty Counted (This Year)], [Total Bin Qty (All Dates)], 0)
+			
+			```
+		lineageTag: 5482cee5-919e-483b-84d8-d6a8a04b1048
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Bin Qty Left (Qty)' = ```
+			
+			[Total Bin Qty (All Dates)] - [Bin Qty Counted (This Year)]
+			
+			```
+		lineageTag: 03828b96-8638-49aa-9e46-1c7475c8fb77
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column Value
+		isHidden
+		lineageTag: da2dfa23-0c4c-4e9d-8014-3cc5710e756b
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Value]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition _Measures = calculated
+		mode: import
+		source = { "This table holds all measures for the Parts Reorder Monitoring report" }
+
+	annotation PBI_Id = da82ad85df114f0dbe8c17ce73f079a8
+

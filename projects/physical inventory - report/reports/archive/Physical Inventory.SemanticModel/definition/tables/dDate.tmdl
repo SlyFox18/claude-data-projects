@@ -1,0 +1,68 @@
+table dDate
+	lineageTag: 22120f20-4542-4155-b2c7-fb40bcb8f39d
+	dataCategory: Time
+
+	column Date
+		isKey
+		formatString: Short Date
+		lineageTag: b8f7561d-0454-4e34-b889-a848e221b2f7
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Date]
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column MonthNumber = MONTH(dDate[Date])
+		formatString: 0
+		lineageTag: 68c10162-c68c-40ed-ab12-0db362480fbe
+		summarizeBy: sum
+
+		annotation SummarizationSetBy = Automatic
+
+	column Month = FORMAT(dDate[Date],"mmm")
+		lineageTag: 8c9e6e4b-02e7-4eda-aafc-55e9608c28b8
+		summarizeBy: none
+		sortByColumn: MonthNumber
+
+		annotation SummarizationSetBy = Automatic
+
+	column Year = YEAR(dDate[Date])
+		formatString: 0
+		lineageTag: ad047db6-6cb7-41ea-8c37-e127b7cc44d0
+		summarizeBy: sum
+
+		annotation SummarizationSetBy = Automatic
+
+	column Day = FORMAT(dDate[Date],"ddd")
+		lineageTag: 62081ec9-dd7c-4d63-b980-d7c793580535
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Week Number' = WEEKNUM('dDate'[Date])
+		formatString: 0
+		lineageTag: 6625a442-06a0-4edc-ba3e-1b1ccd495a19
+		summarizeBy: sum
+
+		annotation SummarizationSetBy = Automatic
+
+	column Today =
+			
+			IF(
+			    dDate[Date] = TODAY(),
+			    "Today",
+			    IF(dDate[Date] < TODAY(), dDate[Date] & "")
+			)
+		lineageTag: ee775517-68f7-4ed5-81a7-581a740cb72b
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dDate = calculated
+		mode: import
+		source = CALENDARAUTO()
+
+	annotation PBI_Id = 14f2dba1f2494ea59ff3dca7076fb8fe
+

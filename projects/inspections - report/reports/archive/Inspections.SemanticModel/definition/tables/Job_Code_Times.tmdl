@@ -1,0 +1,371 @@
+table Job_Code_Times
+	lineageTag: 6ef5c199-ccd3-4dd4-af3b-cebbb8f27999
+
+	measure PartsGoal =
+			
+			CALCULATE (
+			    SUM ( 'Inspection Goals'[2025 Total Parts $$ Goal] ),
+			    TREATAS ( VALUES ( 'Dim_Branch'[BranchID] ), 'Inspection Goals'[LOCATION] )
+			)
+		lineageTag: 8177cae0-116a-4903-9e48-668067d1512d
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure PartsPercentageOfGoal =
+			
+			DIVIDE ( [Parts $ Total], [PartsGoal], 0 )
+		formatString: 0%;-0%;0%
+		lineageTag: b1d98773-d135-48b1-9497-ded973330a7f
+
+	column Location
+		dataType: string
+		lineageTag: 1861d20e-c4f9-40ac-b95f-ed5cb6264739
+		summarizeBy: none
+		sourceColumn: Location
+
+		annotation SummarizationSetBy = Automatic
+
+	column wo_number
+		dataType: int64
+		formatString: 0
+		lineageTag: d945c27f-217f-4efd-a895-94dc0541100a
+		summarizeBy: none
+		sourceColumn: wo_number
+
+		annotation SummarizationSetBy = Automatic
+
+	column Customer
+		dataType: string
+		lineageTag: bf8737fd-6af8-4212-86f1-f75a20f2c8c4
+		summarizeBy: none
+		sourceColumn: Customer
+
+		annotation SummarizationSetBy = Automatic
+
+	column status
+		dataType: string
+		lineageTag: 6b313df5-92dd-4041-bf0f-228e9f6a999a
+		summarizeBy: none
+		sourceColumn: status
+
+		annotation SummarizationSetBy = Automatic
+
+	column WO_Created
+		dataType: dateTime
+		formatString: Short Date
+		lineageTag: 62ca1960-e495-44ea-a7bf-67bb83e031b4
+		summarizeBy: none
+		sourceColumn: WO_Created
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column reg
+		dataType: string
+		lineageTag: b53bd69a-2893-4ee4-9b4f-b2db46f897d6
+		summarizeBy: none
+		sourceColumn: reg
+
+		annotation SummarizationSetBy = Automatic
+
+	column wo_type
+		dataType: string
+		lineageTag: 13a79260-99c3-4e4d-80df-ecd95d9a1911
+		summarizeBy: none
+		sourceColumn: wo_type
+
+		annotation SummarizationSetBy = Automatic
+
+	column make
+		dataType: string
+		lineageTag: 4e89db00-f430-46d8-9d49-d7b3eecd0b18
+		summarizeBy: none
+		sourceColumn: make
+
+		annotation SummarizationSetBy = Automatic
+
+	column vehicle_model_1
+		dataType: string
+		lineageTag: 6f3adbdd-0b30-4ef2-a3aa-e4213e47103f
+		summarizeBy: none
+		sourceColumn: vehicle_model_1
+
+		annotation SummarizationSetBy = Automatic
+
+	column PIN
+		dataType: string
+		lineageTag: 33ccd0a1-a621-4fe2-969b-2243efe65c44
+		summarizeBy: none
+		sourceColumn: PIN
+
+		annotation SummarizationSetBy = Automatic
+
+	column job_code
+		dataType: string
+		lineageTag: 42d05570-50d0-4e79-a250-17ddde6061dc
+		summarizeBy: none
+		sourceColumn: job_code
+
+		annotation SummarizationSetBy = Automatic
+
+	column Invoice_Details
+		dataType: string
+		lineageTag: 2dd244b4-894f-47d6-a46f-bd59766c0f14
+		summarizeBy: none
+		sourceColumn: Invoice_Details
+
+		annotation SummarizationSetBy = Automatic
+
+	column hrs_est
+		dataType: double
+		lineageTag: 1935d25f-0e86-44db-852a-ca9b2f9beb36
+		summarizeBy: sum
+		sourceColumn: hrs_est
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column hrs_wrk
+		dataType: double
+		formatString: 0.0
+		lineageTag: 7507621f-6362-4f45-b1c5-6d5ddb7f7db0
+		summarizeBy: sum
+		sourceColumn: hrs_wrk
+
+		annotation SummarizationSetBy = Automatic
+
+	column hrs_inv
+		dataType: double
+		formatString: 0.0
+		lineageTag: 004f0c39-e3e2-4a34-9149-3dc0f9b1382e
+		summarizeBy: sum
+		sourceColumn: hrs_inv
+
+		annotation SummarizationSetBy = Automatic
+
+	column Vehicle_Model_2
+		dataType: string
+		lineageTag: ff6af277-496b-4122-b7ac-a2a0b0286e87
+		summarizeBy: none
+		sourceColumn: Vehicle_Model_2
+
+		annotation SummarizationSetBy = Automatic
+
+	column Job_Code_1
+		dataType: string
+		lineageTag: 1d2de770-6e6d-44f3-99c9-0c5a9e1bad2e
+		summarizeBy: none
+		sourceColumn: Job_Code_1
+
+		annotation SummarizationSetBy = Automatic
+
+	column Job_Type
+		dataType: string
+		lineageTag: d30253fc-9ea7-41d1-b2b9-a46c7f445327
+		summarizeBy: none
+		sourceColumn: Job_Type
+
+		annotation SummarizationSetBy = Automatic
+
+	column Tech
+		dataType: string
+		lineageTag: 4b329424-f33a-4ee8-9197-adaa290bfb76
+		summarizeBy: none
+		sourceColumn: Tech
+
+		annotation SummarizationSetBy = Automatic
+
+	column Tech_Day
+		dataType: dateTime
+		formatString: Long Date
+		lineageTag: 5bf24e7a-97e5-408f-8144-4a451ae80183
+		summarizeBy: none
+		sourceColumn: Tech_Day
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column Submitted
+		dataType: string
+		lineageTag: 6fa88684-eaa1-4ab7-8ffd-fee64afa8378
+		summarizeBy: none
+		sourceColumn: Submitted
+
+		annotation SummarizationSetBy = Automatic
+
+	column Standard_Labor
+		dataType: string
+		lineageTag: 8052196e-0c7c-4229-baef-43b29a52088c
+		summarizeBy: none
+		sourceColumn: Standard_Labor
+
+		annotation SummarizationSetBy = Automatic
+
+	column SALE_VAL
+		dataType: double
+		lineageTag: cc80d99d-45ed-4549-9f52-d7dc63766e65
+		summarizeBy: sum
+		sourceColumn: SALE_VAL
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column INVOICE_NO
+		dataType: string
+		lineageTag: 539f493b-f359-4ff1-8170-a567d8a3057e
+		summarizeBy: none
+		sourceColumn: INVOICE_NO
+
+		annotation SummarizationSetBy = Automatic
+
+	column Inv_Lab_Val
+		dataType: double
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: eab84304-cdd6-4a9e-93e8-093b21e1d263
+		summarizeBy: sum
+		sourceColumn: Inv_Lab_Val
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	column HasInspectionJobCode =
+			
+			IF(
+			    CALCULATE(
+			        COUNTROWS(
+			            SUMMARIZE(
+			                FILTER(
+			                    'Job_Code_Times',
+			                    'Job_Code_Times'[job_code] IN VALUES(JobCodes[job_code])
+			                ),
+			                'Job_Code_Times'[wo_number],
+			                'Job_Code_Times'[job_code]
+			            )
+			        )
+			    ) > 0,
+			    1,
+			    0
+			)
+		formatString: 0
+		lineageTag: 3a843a6e-e6ad-4833-8a82-86c17459b510
+		summarizeBy: count
+
+		annotation SummarizationSetBy = Automatic
+
+	column HasRelevantJobCode =
+			
+			IF(
+			    CALCULATE(
+			        COUNTROWS(
+			            FILTER(
+			                'Job_Code_Times',
+			                'Job_Code_Times'[job_code] IN VALUES(JobCodes[job_code])
+			            )
+			        ),
+			        ALLEXCEPT('Job_Code_Times', 'Job_Code_Times'[wo_number])
+			    ) > 0,
+			    1,
+			    0
+			)
+		formatString: 0
+		lineageTag: fac7695f-c81f-47dd-84e6-f60d9664647c
+		summarizeBy: count
+
+		annotation SummarizationSetBy = Automatic
+
+	column MonthCreated = FORMAT('Job_Code_Times'[WO_Created], "MMM")
+		lineageTag: 81b6f647-8f58-40d2-a408-726bf26aae16
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	column YearCreated = FORMAT('Job_Code_Times'[WO_Created], "YYYY")
+		lineageTag: e29f2121-f311-4770-8e5a-5dd63f2a3302
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	column RelevantJobCodeFlag =
+			
+			IF(
+			    'Job_Code_Times'[job_code] IN {"IS-CS690 INSPECT", "IS-CS770 INSPECT"},
+			    1,
+			    0
+			)
+		formatString: 0
+		lineageTag: 2bcf00c7-06dd-4c05-9472-99ee859f70fa
+		summarizeBy: sum
+
+		annotation SummarizationSetBy = Automatic
+
+	column account_number
+		dataType: double
+		lineageTag: d813dac9-1232-4e46-b205-1fac78b9b33c
+		summarizeBy: sum
+		sourceColumn: account_number
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column InspectionGoal =
+			
+			LOOKUPVALUE(
+			    'Inspection Goals'[2025 Inspections Goal],
+			    'Inspection Goals'[LOCATION],
+			    'Job_Code_Times'[Location]
+			)
+		formatString: 0
+		lineageTag: 5dca435a-036e-4200-a7ed-ff35c08b04c7
+		summarizeBy: sum
+
+		annotation SummarizationSetBy = Automatic
+
+	column PartsGoal$$ =
+			
+			LOOKUPVALUE(
+			    'Inspection Goals'[2025 Total Parts $$ Goal],
+			    'Inspection Goals'[LOCATION],
+			    'Job_Code_Times'[Location]
+			)
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 39f7724c-af42-48a9-b635-6c1614425e0b
+		summarizeBy: sum
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	column LaborGoal$$ =
+			
+			LOOKUPVALUE(
+			    'Inspection Goals'[2025 Labor $$ w/ Inspection Goal],
+			    'Inspection Goals'[LOCATION],
+			    'Job_Code_Times'[Location]
+			)
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 40bacaa6-21fd-41f8-8cb6-cdd4267ea842
+		summarizeBy: sum
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	partition Job_Code_Times = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-wczpfb6a52fude7azc6zsgeuty.datawarehouse.fabric.microsoft.com", "LH_Service_Reports_Data"),
+				    dbo_Job_Code_Times = Source{[Schema="dbo",Item="Job_Code_Times"]}[Data]
+				in
+				    dbo_Job_Code_Times
+
+	annotation PBI_ResultType = Table
+
+	annotation PBI_NavigationStepName = Navigation
+

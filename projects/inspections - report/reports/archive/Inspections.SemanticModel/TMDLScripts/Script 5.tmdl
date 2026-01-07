@@ -1,0 +1,412 @@
+createOrReplace
+
+	table 'Inspection Goals'
+		lineageTag: c58967c7-d4f0-407c-b0f7-63b1135e5b51
+
+		/// Calculates the current inspection goal for selected locations
+		measure CurrentInspectionGoal =
+				
+				CALCULATE (
+				    SUM ( 'Inspection Goals'[2025 Inspections Goal] ),
+				    TREATAS (
+				        VALUES ( 'Inspection Goals'[LOCATION] ),
+				        'Inspection Goals'[LOCATION]
+				    )
+				)
+			formatString: 0
+			lineageTag: e1362528-8014-45a3-a358-b838a3979984
+
+		/// Counts distinct work orders filtered by job codes across all selected branches
+		measure TotalInspectionsGoal =
+				
+				CALCULATE (
+				    COUNTROWS (
+				        SUMMARIZE (
+				            FILTER (
+				                'Job_Code_Times',
+				                'Job_Code_Times'[job_code] IN VALUES ( JobCodes[job_code] )
+				            ),
+				            'Job_Code_Times'[wo_number],
+				            'Job_Code_Times'[job_code]
+				        )
+				    ),
+				    ALLSELECTED ( 'Dim_Branch'[BranchID] )
+				)
+			formatString: 0
+			lineageTag: fcb1713b-b3f8-40fe-a9b7-a71a748acace
+
+		/// Returns the inspection goal for the currently selected location
+		measure SelectedLocationGoal =
+				
+				CALCULATE (
+				    SUM ( 'Inspection Goals'[2025 Inspections Goal] ),
+				    TREATAS ( VALUES ( 'Dim_Branch'[BranchID] ), 'Inspection Goals'[LOCATION] )
+				)
+			lineageTag: d2110468-7307-4cf7-b572-6967d9e13e49
+
+			annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+		/// Calculates the total inspection goal for the selected branch locations
+		measure 'Total Inspection Goal' =
+				
+				CALCULATE (
+				    SUM ( 'Inspection Goals'[2025 Inspections Goal] ),
+				    TREATAS ( VALUES ( 'Dim_Branch'[BranchID] ), 'Inspection Goals'[LOCATION] )
+				)
+			formatString: 0
+			lineageTag: f3523c71-fab7-48a3-b5f4-e3c966a048c3
+
+		/// Converts parts percentage of goal to a percentage value by multiplying by 100
+		measure PartsPercentageValue =
+				
+				[PartsPercentageOfGoal] * 100
+			lineageTag: 3806d7ff-8e9b-4f88-9407-3fb6c1a6c826
+
+			annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+		/// Calculates the percentage of inspection goal achieved based on total inspections divided by goal
+		measure InspectionPercentageOfGoal =
+				
+				DIVIDE ( [TotalInspections], [Total Inspection Goal], 0 )
+			formatString: 0%;-0%;0%
+			lineageTag: 3301fc75-b18d-47d1-99ea-c97b0b5ef7fd
+
+		/// Returns the 2025 parts revenue goal for the selected branch locations
+		measure DynamicPartsGoal =
+				
+				CALCULATE (
+				    SUM ( 'Inspection Goals'[2025 Total Parts $$ Goal] ),
+				    TREATAS ( VALUES ( 'Dim_Branch'[BranchID] ), 'Inspection Goals'[LOCATION] )
+				)
+			formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+			lineageTag: 447ca3ab-c027-465b-8cfa-30b8f2525af7
+
+			annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+		/// Returns the labor revenue goal with inspections for the selected branches
+		measure LaborGoal =
+				
+				CALCULATE (
+				    SUM ( 'Inspection Goals'[2025 Labor $$ w/ Inspection Goal] ),
+				    TREATAS ( VALUES ( 'Dim_Branch'[BranchID] ), 'Inspection Goals'[LOCATION] )
+				)
+			lineageTag: a302594d-ebf7-4e80-b5bc-821878d7a6b0
+
+			annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+		/// Calculates the percentage of labor goal achieved by dividing total labor with inspection by the dynamic labor goal
+		measure LaborPercentageOfGoal =
+				
+				DIVIDE ( [TotalLaborWithInspection], [TotalDynamicLaborGoal], 0 )
+			formatString: 0%;-0%;0%
+			lineageTag: b6a53dd2-d6f4-485a-a7ed-a71f4dc15381
+
+		/// Returns the 2025 labor revenue goal with inspections for the selected branch locations
+		measure DynamicLaborGoal =
+				
+				CALCULATE (
+				    SUM ( 'Inspection Goals'[2025 Labor $$ w/ Inspection Goal] ),
+				    TREATAS ( VALUES ( 'Dim_Branch'[BranchID] ), 'Inspection Goals'[LOCATION] )
+				)
+			formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+			lineageTag: de4cc3c0-16d0-47d5-b2fb-09901d3f3d88
+
+			annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+		/// Counts the number of CS690 and CS770 inspections completed for the selected branch locations
+		measure CS690-CS770-Inspections =
+				
+				CALCULATE (
+				    COUNTROWS (
+				        SUMMARIZE (
+				            FILTER (
+				                'Job_Code_Times',
+				                'Job_Code_Times'[job_code] IN { "IS-CS690 INSPECT", "IS-CS770 INSPECT" }
+				            ),
+				            'Job_Code_Times'[wo_number],
+				            'Job_Code_Times'[job_code]
+				        )
+				    ),
+				    TREATAS ( VALUES ( 'Dim_Branch'[BranchID] ), 'Inspection Goals'[LOCATION] )
+				)
+			formatString: 0
+			lineageTag: 6f3acd23-8c2b-4cb9-bcff-f28c9a63bf09
+
+		/// Returns the combined inspection goal for CS690 and CS770 models for selected branch locations
+		measure 'CS690 - CS770 Goal' =
+				
+				CALCULATE (
+				    SUM ( 'Inspection Goals'[2025 CS690/770 Inspections Goal] ),
+				    TREATAS ( VALUES ( 'Dim_Branch'[BranchID] ), 'Inspection Goals'[LOCATION] )
+				)
+			formatString: 0
+			lineageTag: 6fd47775-1b81-4bbd-a14b-f72ae0744c60
+
+		/// Calculates the percentage of CS690 and CS770 inspection goals achieved
+		measure CS690-CS770PercentageOfGoal =
+				
+				DIVIDE ( [CS690-CS770-Inspections], [CS690 - CS770 Goal], 0 )
+			formatString: 0%;-0%;0%
+			lineageTag: b3089719-82f1-47dc-9410-e7775a919477
+
+		/// Calculates the total labor value for work orders with CS690 and CS770 inspections
+		measure LaborWithInspection =
+				
+				CALCULATE (
+				    SUMX (
+				        DISTINCT (
+				            SELECTCOLUMNS (
+				                FILTER (
+				                    'Job_Code_Times',
+				                    'Job_Code_Times'[job_code] IN { "IS-CS690 INSPECT", "IS-CS770 INSPECT" }
+				                ),
+				                "job_code", 'Job_Code_Times'[job_code],
+				                "Inv_Lab_Val", 'Job_Code_Times'[Inv_Lab_Val]
+				            )
+				        ),
+				        [Inv_Lab_Val]
+				    ),
+				    TREATAS ( VALUES ( 'Dim_Branch'[BranchID] ), 'Inspection Goals'[LOCATION] )
+				)
+			lineageTag: e9b9a073-116f-4861-8a3e-4b7da5bace60
+
+			annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+		/// Calculates the total parts revenue for CS690 and CS770 inspections, excluding ZP franchise
+		measure CS690/770FilteredPartsTotal =
+				
+				SUMX (
+				    FILTER (
+				        'InTrans_Inspect',
+				        'InTrans_Inspect'[FRANCHISE] <> "ZP"
+				            && 'InTrans_Inspect'[REF_NO]
+				                IN SELECTCOLUMNS (
+				                    FILTER (
+				                        'Job_Code_Times',
+				                        'Job_Code_Times'[job_code] IN { "IS-CS690 INSPECT", "IS-CS770 INSPECT" }
+				                    ),
+				                    "Invoice No", 'Job_Code_Times'[INVOICE_NO]
+				                )
+				    ),
+				    'InTrans_Inspect'[SALE_VAL]
+				)
+			formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+			lineageTag: ea73c606-fc5f-4c1a-8c01-0290dd3fd14a
+
+			annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+		/// Returns the parts revenue goal for CS690 and CS770 models for selected branch locations
+		measure CS690/770PartsGoal =
+				
+				CALCULATE (
+				    SUM ( 'Inspection Goals'[2025 CS690/770 Total Parts $$ Goal] ),
+				    TREATAS ( VALUES ( 'Dim_Branch'[BranchID] ), 'Inspection Goals'[LOCATION] )
+				)
+			formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+			lineageTag: 423ea7bf-a7a5-4691-b656-e5628c57fb01
+
+			annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+		/// Calculates the percentage of CS690 and CS770 parts revenue goal achieved
+		measure CS690/770PartsPercentageOfGoal =
+				
+				DIVIDE ( [CS690/770FilteredPartsTotal], [CS690/770PartsGoal], 0 )
+			formatString: 0%;-0%;0%
+			lineageTag: 8681f67a-1e03-41a8-9d66-29cbf13dddde
+
+		/// Calculates the total labor value for CS690 and CS770 inspection job codes
+		measure FilteredLaborTotal =
+				
+				SUMX (
+				    DISTINCT (
+				        SELECTCOLUMNS (
+				            FILTER (
+				                'Job_Code_Times',
+				                'Job_Code_Times'[job_code] IN { "IS-CS690 INSPECT", "IS-CS770 INSPECT" }
+				            ),
+				            "job_code", 'Job_Code_Times'[job_code],
+				            "Inv_Lab_Val", 'Job_Code_Times'[Inv_Lab_Val]
+				        )
+				    ),
+				    [Inv_Lab_Val]
+				)
+			lineageTag: 7e923ea6-26f4-48cd-8bce-1cbef72f2e3e
+
+			annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+		/// Returns the labor revenue goal for CS690 and CS770 inspections for the selected locations
+		measure CS690/770LaborGoal =
+				
+				CALCULATE (
+				    SUM ( 'Inspection Goals'[2025 CS690/770 Labor $$ w/ Inspection Goal] ),
+				    FILTER (
+				        'Inspection Goals',
+				        'Inspection Goals'[LOCATION] IN VALUES ( 'Dim_Branch'[BranchID] )
+				    )
+				)
+			formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+			lineageTag: 74e0cdcc-743a-431b-8427-efda52449174
+
+			annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+		/// Indicates whether there are relevant job codes associated with the work order number, returning 1 if true and 0 if false.
+		measure CS69_770HasRelevantJobCode =
+				
+				IF (
+				    CALCULATE (
+				        COUNTROWS (
+				            FILTER (
+				                'Job_Code_Times',
+				                'Job_Code_Times'[job_code] IN { "IS-CS690 INSPECT", "IS-CS770 INSPECT" }
+				            )
+				        ),
+				        ALLEXCEPT ( 'Job_Code_Times', 'Job_Code_Times'[wo_number] )
+				    ) > 0,
+				    1,
+				    0
+				)
+			formatString: 0
+			lineageTag: 1ddbf5ab-42f6-43af-b056-5fddd80bf6c8
+
+		/// Calculates labor value for CS690 and CS770 inspections from filtered job codes
+		measure CS690/770LaborWithInspection =
+				
+				CALCULATE (
+				    SUMX ( DISTINCT ( FilteredJobCodes ), FilteredJobCodes[Inv_Lab_Val] ),
+				    ALLEXCEPT ( 'Inspection Goals', 'Inspection Goals'[LOCATION] )
+				)
+			lineageTag: b9518df6-f912-4049-9655-769769ba8160
+
+			annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+		/// Calculates the total labor dollars for work orders that include CS690 and CS770 inspections
+		measure CS690/770LaborWithInspectionDollars =
+				
+				VAR InspectionWONumbers =
+				    CALCULATETABLE (
+				        VALUES ( 'Job_Code_Times'[wo_number] ),
+				        'Job_Code_Times'[job_code] IN { "IS-CS690 INSPECT", "IS-CS770 INSPECT" }
+				    )
+				RETURN
+				    CALCULATE (
+				        SUMX (
+				            DISTINCT (
+				                SELECTCOLUMNS (
+				                    FILTER ( 'Job_Code_Times', 'Job_Code_Times'[wo_number] IN InspectionWONumbers ),
+				                    "job_code", 'Job_Code_Times'[job_code],
+				                    "Inv_Lab_Val", 'Job_Code_Times'[Inv_Lab_Val]
+				                )
+				            ),
+				            [Inv_Lab_Val]
+				        )
+				    )
+			formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+			lineageTag: 20808d18-692a-4122-be0f-9e5730521f58
+
+			annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+		/// Calculates the percentage of CS690 and CS770 labor revenue goal achieved
+		measure CS690/770LaborPercentageToGoal =
+				
+				DIVIDE ( [CS690/770LaborWithInspectionDollars], [CS690/770LaborGoal], 0 )
+			formatString: 0%;-0%;0%
+			lineageTag: f6e045ac-f823-4f66-89c7-8e9f4bc441de
+
+		/// Sums the labor with inspection value across all branches
+		measure DynamicTotalLaborWithInspection =
+				
+				SUMX ( ALL ( 'Dim_Branch'[BranchID] ), [Labor With Inspection] )
+			lineageTag: 7b2a54c8-0c44-4322-ae9e-2e3f99d13085
+
+			annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+		/// Calculates the sum of all branch labor goals
+		measure TotalDynamicLaborGoal =
+				
+				SUMX ( ALL ( 'Dim_Branch'[BranchID] ), [DynamicLaborGoal] )
+			lineageTag: b673c927-7e4f-48e6-8902-c70e8bd56baa
+
+			annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+		column LOCATION
+			dataType: string
+			lineageTag: 55d284f9-1fc0-4d22-858f-744f1a83af88
+			summarizeBy: none
+			sourceColumn: LOCATION
+
+			annotation SummarizationSetBy = Automatic
+
+		column '2025 Inspections Goal'
+			dataType: double
+			formatString: 0
+			lineageTag: 4c29f6ed-e0c1-4350-aa96-332a4e489294
+			summarizeBy: none
+			sourceColumn: 2025 Inspections Goal
+
+			annotation SummarizationSetBy = Automatic
+
+		column '2025 Labor $$ w/ Inspection Goal'
+			dataType: double
+			formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+			lineageTag: 3f23d6fa-c938-4fc0-a7a9-516b20035a8f
+			summarizeBy: none
+			sourceColumn: 2025 Labor $$ w/ Inspection Goal
+
+			annotation SummarizationSetBy = Automatic
+
+			annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+		column '2025 Total Parts $$ Goal'
+			dataType: double
+			formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+			lineageTag: 9d97e7dd-cd91-489a-a8e8-2f0136841799
+			summarizeBy: none
+			sourceColumn: 2025 Total Parts $$ Goal
+
+			annotation SummarizationSetBy = Automatic
+
+			annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+		column '2025 CS690/770 Inspections Goal'
+			dataType: int64
+			formatString: 0
+			lineageTag: 3c278536-96b7-4a6c-8216-bc238f821bdc
+			summarizeBy: none
+			sourceColumn: 2025 CS690/770 Inspections Goal
+
+			annotation SummarizationSetBy = Automatic
+
+		column '2025 CS690/770 Labor $$ w/ Inspection Goal'
+			dataType: double
+			formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+			lineageTag: b5470862-d264-4b02-9bd8-9a2c1b9c29f6
+			summarizeBy: none
+			sourceColumn: 2025 CS690/770 Labor $$ w/ Inspection Goal
+
+			annotation SummarizationSetBy = Automatic
+
+			annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+		column '2025 CS690/770 Total Parts $$ Goal'
+			dataType: double
+			lineageTag: 52097530-9610-4eda-91ce-0a5790c741c4
+			summarizeBy: none
+			sourceColumn: 2025 CS690/770 Total Parts $$ Goal
+
+			annotation SummarizationSetBy = Automatic
+
+			annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+		partition 'Inspection Goals' = m
+			mode: import
+			source =
+					let
+					    Source = Excel.Workbook(Web.Contents("https://spitractor-my.sharepoint.com/personal/bfox_spitractor_com/Documents/Power%20BI%20-%20Vis/Data/Inspection%20Goals.xlsx"), null, true),
+					    Table3_Table = Source{[Item="Table3",Kind="Table"]}[Data],
+					    #"Changed Type" = Table.TransformColumnTypes(Table3_Table,{{"LOCATION", type text}, {"2025 Inspections Goal", type number}, {"2025 Labor $$ w/ Inspection Goal", type number}, {"2025 Total Parts $$ Goal", type number}, {"2025 CS690/770 Inspections Goal", Int64.Type}, {"2025 CS690/770 Labor $$ w/ Inspection Goal", type number}, {"2025 CS690/770 Total Parts $$ Goal", type number}})
+					in
+					    #"Changed Type"
+
+		annotation PBI_NavigationStepName = Navigation
+
+		annotation PBI_ResultType = Table

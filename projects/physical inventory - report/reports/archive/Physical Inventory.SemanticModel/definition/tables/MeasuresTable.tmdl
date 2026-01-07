@@ -1,0 +1,413 @@
+table MeasuresTable
+	lineageTag: 280c971c-3818-4839-911d-999bc42fe009
+
+	measure 'Bins Counted' = ```
+			
+			    CALCULATE(
+			        DISTINCTCOUNT(jdis_Phy_Inv[Bin]),
+			        YEAR(jdis_Phy_Inv[Stocktake Date]) = YEAR(TODAY())
+			    )
+			```
+		formatString: 0
+		lineageTag: 2b942f6c-19f4-4b94-a565-9685e277c90a
+
+	measure 'Parts Counted' = ```
+			
+			    CALCULATE(
+			        DISTINCTCOUNT(jdis_Phy_Inv[Part No]),
+			        YEAR(jdis_Phy_Inv[Stocktake Date]) = YEAR(TODAY())
+			    )
+			```
+		formatString: 0
+		lineageTag: f1b8e371-ffa0-4825-973f-8ef040f01d51
+
+	measure 'Total Parts' = DISTINCTCOUNT(jdis_Phy_Inv[Part No])
+		formatString: 0
+		lineageTag: 84be7e06-2613-4b06-bc46-1ab01980bd60
+
+	measure 'Total Bins' = DISTINCTCOUNT(jdis_Phy_Inv[Bin])
+		formatString: 0
+		lineageTag: 058f533f-dd36-4bd6-87ae-0472b9a65d0e
+
+	measure 'Bins Left to Count' = [Total Bins] - [Bins Counted]
+		formatString: 0
+		lineageTag: aef7c51c-8ab6-4630-bf81-8c57f83b6b4e
+
+	measure 'Parts Left to Count' = [Total Parts] - [Parts Counted]
+		formatString: 0
+		lineageTag: 720a1d4a-82fc-4b61-a86c-196cc5e544d1
+
+	measure '% Bins Counted' = DIVIDE([Bins Counted], [Total Bins], 0)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: e74a1ecf-fa89-4f82-85c5-3bee1ae1cd52
+
+	measure '% Parts Counted' = DIVIDE([Parts Counted], [Total Parts], 0)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 58ff9db9-9f8d-443b-9739-a65b57424156
+
+	measure 'Weeks Remaining' =
+			
+			VAR CurrentWeek = WEEKNUM(TODAY())
+			VAR WeeksInYear = 52
+			RETURN WeeksInYear - CurrentWeek
+		formatString: 0
+		lineageTag: a99dfa83-6ce8-424c-a267-3fe041d0e451
+
+	measure 'Bins Per Week Remaining' = DIVIDE([Bins Left to Count], [Weeks Remaining], 0)
+		formatString: 0
+		lineageTag: 8785387b-b944-42f4-a40a-f19aa3216ce1
+
+	measure 'Bins To Count Per Week' = ```
+			
+			VAR TotalBins = [Total Bins]  
+			VAR WeeksInYear = 52
+			RETURN DIVIDE(TotalBins, WeeksInYear, 0)
+			```
+		formatString: 0
+		lineageTag: 35e51c53-1069-4d54-b4f0-fc77278d520a
+
+	measure 'Weeks Passed' =
+			
+			VAR CurrentWeek = WEEKNUM(TODAY())
+			RETURN CurrentWeek
+		formatString: 0
+		lineageTag: 410e7c31-a84f-48c6-901d-6ab235c0da29
+
+	measure 'On Track % Bins1' = ```
+			
+			    [Bins To Count Per Week] * [Weeks Passed] / [Total Bins]
+			```
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 0ce42190-3383-4076-9d54-faac55b2f412
+
+	measure 'On Track % Bins Counted' = [% Bins Counted] / [On Track % Bins1]
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: d268662c-8f79-4d6f-b975-2b8f81222566
+
+	measure OnTrackColorCode =
+			
+			SWITCH(
+			    TRUE(),
+			    [Target % Bins] < 0.75 || [Target % Parts] < 0.75, 1,
+			    ([Target % Bins] >= 0.70 && [Target % Bins] < 0.9) || ([Target % Parts] >= 0.70 && [Target % Parts] < 0.9), 2,
+			    ([Target % Bins] >= 0.9 && [Target % Bins] < 1) || ([Target % Parts] >= 0.9 && [Target % Parts] < 1), 3,
+			    [Target % Bins] >= 1 || [Target % Parts] >= 1, 4,
+			    BLANK()
+			)
+		formatString: 0
+		lineageTag: 18084b98-7d46-4b48-b5f1-aaba163dd50a
+
+	measure 'Parts Per Week Remaining' = DIVIDE([Parts Left to Count], [Weeks Remaining], 0)
+		formatString: 0
+		lineageTag: e2093ba3-0631-414c-b76d-9a693700759c
+
+	measure 'On Track % Parts1' =
+			
+			VAR AvgPartsPerWeek = [Parts To Count Per Week]
+			VAR WeeksPassed = [Weeks Passed]
+			VAR TotalParts = [Total Parts]
+			VAR Calculatio = AvgPartsPerWeek * WeeksPassed
+			RETURN
+			    DIVIDE(Calculatio, TotalParts)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 35395323-1b18-4df7-ad86-61ac058be415
+
+	measure 'Parts To Count Per Week' = DIVIDE([Total Parts], 52, 0)
+		formatString: 0
+		lineageTag: 1ebccf1e-6dfb-4fa8-ad5f-8fc6e1185988
+
+	measure 'On Track % Part Counted' = [% Parts Counted] / [On Track % Parts1]
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 56e376bc-9d4e-4254-a4a3-d61be18cc0b4
+
+	measure CalculationByBranchParts = ROUND([Parts To Count Per Week] * [Weeks Passed], 0)
+		formatString: 0
+		lineageTag: 72e2b42c-26b0-4a4b-b847-89736091cd9a
+
+	measure 'Target % Parts' = DIVIDE([CalculationByBranchParts], [Total Parts], 0)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 237225d5-5c84-4676-9556-6a59c2bf4ddf
+
+	measure 'Total Parts by Branch' = CALCULATE([Total Parts], ALLEXCEPT('jdis_Phy_Inv', 'jdis_Phy_Inv'[Branch]))
+		formatString: 0
+		lineageTag: 04965075-f214-496d-a9a0-fe60fb73c725
+
+	measure CalculationByBranchBin = ROUND([Bins To Count Per Week] * [Weeks Passed], 0)
+		formatString: 0
+		lineageTag: bc488ff6-f40b-4658-9975-b264478688f2
+
+	measure 'Target % Bins' = DIVIDE([CalculationByBranchBin], [Total Bins], 0)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: e9bba686-ffaa-4f94-a36d-279683f0c5ed
+
+	measure BinsNotCounted = ```
+			
+			VAR CurrentYear = YEAR(TODAY())
+			VAR BinsList = 
+			    CONCATENATEX(
+			        FILTER(
+			            VALUES(jdis_Phy_Inv[Bin]),
+			            NOT (
+			                CALCULATE(
+			                    COUNTROWS(jdis_Phy_Inv),
+			                    YEAR(jdis_Phy_Inv[Stocktake Date]) = CurrentYear
+			                ) > 0
+			            )
+			        ),
+			        jdis_Phy_Inv[Bin],
+			        ", "
+			    )
+			RETURN
+			BinsList
+			```
+		lineageTag: aba3cba7-ee7d-4267-88ae-ebdad65768f5
+
+	measure 'Not Counted' = DISTINCTCOUNT(BinsNotCountedTable[Bin])
+		formatString: 0
+		lineageTag: dbffe080-a922-4d14-b008-1f383bd0ba05
+
+	measure 'GaugeColor Bins' = ```
+			
+			IF(
+			    [% Bins Counted] < [Target % Bins], 
+			    "Red", 
+			    "Green"
+			)
+			```
+		lineageTag: 97fc1f17-b3e8-4f9e-8392-559e767cc53e
+
+	measure 'GaugeColor Parts' = ```
+			
+			IF(
+			    [% Parts Counted] < [Target % Parts], 
+			    "Red", 
+			    "Green"
+			)
+			```
+		lineageTag: 3b296011-4980-4716-a7ea-1d5d62f8699a
+
+	measure 'Show Filter 1' =
+			
+			VAR MaxFilters = 3
+			RETURN
+			    IF (
+			        ISFILTERED ( Dim_Branch[Branch] ),
+			        VAR ___f =
+			            FILTERS ( Dim_Branch[Branch] )
+			        VAR ___r =
+			            COUNTROWS ( ___f )
+			        VAR ___t =
+			            TOPN ( MaxFilters, ___f, Dim_Branch[Branch] )
+			        VAR ___d =
+			            CONCATENATEX ( ___t, Dim_Branch[Branch], ", " )
+			        VAR ___x =
+			            "Branch:  " & ___d
+			                & IF ( ___r > MaxFilters, ", ... [" & ___r & " items selected]" ) & " "
+			        RETURN
+			            ___x & UNICHAR ( 13 )
+			                & UNICHAR ( 10 )
+			    )
+		lineageTag: 69670a7f-f397-41f0-ade5-a54da3c1fb64
+
+	measure ShowFilterBranch =
+			
+			IF (
+			    ISFILTERED ( Dim_Branch[Branch] ),
+			    VAR _Location =
+			        VALUES ( Dim_Branch[Branch] )
+			    VAR _Itemscombined =
+			        CONCATENATEX ( _Location, Dim_Branch[Branch], UNICHAR ( 10 ) )
+			    RETURN
+			        _Itemscombined & UNICHAR ( 10 ),
+			    ""
+			)
+		lineageTag: 7e35780a-5323-48d8-b080-27de4bc60d19
+
+	measure 'Total Parts with Qty' =
+			
+			CALCULATE(
+			    DISTINCTCOUNT(jdis_Phy_Inv[Part No]),
+			    jdis_Phy_Inv[Bin Qty] > 0
+			)
+		formatString: 0
+		lineageTag: 74404d0d-fdb1-4e30-b6fa-b9d7a9dfeb8e
+
+	measure 'Parts with Qty Counted' =
+			
+			CALCULATE(
+			    DISTINCTCOUNT(jdis_Phy_Inv[Part No]),
+			    jdis_Phy_Inv[Bin Qty] > 0,
+			    YEAR(jdis_Phy_Inv[Stocktake Date]) = YEAR(TODAY())
+			)
+		formatString: 0
+		lineageTag: 3235afc4-43c0-4611-a88c-0a0eafbaa857
+
+	measure 'Parts with Qty Left to Count' =
+			
+			[Total Parts with Qty] - [Parts with Qty Counted]
+		formatString: 0
+		lineageTag: 5c7d08ad-ecff-40b9-8bac-593e4059ce00
+
+	measure 'Parts with Qty % Counted' =
+			
+			DIVIDE(
+			    [Parts with Qty Counted],
+			    [Total Parts with Qty],
+			    0
+			)
+		lineageTag: 5bc711a2-6137-422e-9d17-ea599ab482c8
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure '% Parts with Qty Counted' =
+			
+			DIVIDE([Parts with Qty Counted], [Total Parts with Qty], 0)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: eb950d39-3883-48b1-906f-05868f99677b
+
+	measure 'Target % Parts with Qty' =
+			
+			DIVIDE([CalculationByBranchPartsWithQty], [Total Parts with Qty], 0)
+		lineageTag: c1a6acb1-ac64-4421-9aac-ec32d285d594
+
+	measure CalculationByBranchPartsWithQty =
+			
+			ROUND([Parts with Qty To Count Per Week] * [Weeks Passed], 0)
+		lineageTag: ee02d5d6-3131-438a-8f63-6e36515818b4
+
+	measure 'Parts with Qty To Count Per Week' =
+			
+			DIVIDE([Total Parts with Qty], 52, 0)
+		lineageTag: e2f42e51-6f10-4d6b-abdb-c2995edae8a4
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'GaugeColor Parts with Qty' = ```
+			
+			IF(
+			    [% Parts with Qty Counted] < [Target % Parts with Qty], 
+			    "Red", 
+			    "Green"
+			)
+			```
+		lineageTag: 83c6b5c4-a110-45ef-b826-f236fc52ca7b
+
+	measure 'Total Bin Qty' =
+			
+			SUM(jdis_Phy_Inv[Bin Qty])
+		lineageTag: 9fc96b03-f5a5-4085-ac96-080177206766
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Bin Qty Counted' =
+			
+			CALCULATE(
+			    SUM(jdis_Phy_Inv[Bin Qty]),
+			    YEAR(jdis_Phy_Inv[Stocktake Date]) = YEAR(TODAY())
+			)
+		lineageTag: d44b6687-e16e-400f-9b6b-7c14276fe625
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure '% Bin Qty Counted' =
+			
+			DIVIDE([Bin Qty Counted], [Total Bin Qty], 0)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 159c5446-8d0c-42d5-8baa-63e798d26b5c
+
+	measure 'Bin Qty To Count Per Week' =
+			
+			DIVIDE([Total Bin Qty], 52, 0)
+		lineageTag: 46562149-2e09-49d1-8c11-edc88553d697
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure CalculationByBranchBinQty =
+			
+			ROUND([Bin Qty To Count Per Week] * [Weeks Passed], 0)
+		lineageTag: 28486a9f-ab0f-4946-83d9-dfd17d22042a
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Target % Bin Qty' =
+			
+			DIVIDE([CalculationByBranchBinQty], [Total Bin Qty], 0)
+		lineageTag: f61fca0d-b38e-41d1-9161-782ec6ea59c1
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'GaugeColor Bin Qty' = ```
+			
+			IF(
+			    [% Bin Qty Counted] < [Target % Bin Qty], 
+			    "Red", 
+			    "Green"
+			)
+			```
+		lineageTag: ce69422e-9812-46c9-b1bf-c82d9eb09351
+
+	measure 'Bin Qty Left to Count' =
+			
+			[Total Bin Qty] - [Bin Qty Counted]
+		lineageTag: 7c1636dd-f791-4fa4-b79c-76668dba2e49
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Is Uncounted This Year' = ```
+			
+			IF(
+			    HASONEVALUE(jdis_Phy_Inv[Part No]),
+			    IF(
+			        ISBLANK(MAX(jdis_Phy_Inv[Stocktake Date])) || 
+			        YEAR(MAX(jdis_Phy_Inv[Stocktake Date])) < YEAR(TODAY()),
+			        1,
+			        0
+			    ),
+			    BLANK()
+			)
+			```
+		formatString: 0
+		lineageTag: 72e20450-8712-4d0c-8e6a-5a51a7ff38ab
+
+	measure 'Is Bin Uncounted This Year' = ```
+			
+			IF(
+			    HASONEVALUE(jdis_Phy_Inv[Bin]),
+			    IF(
+			        ISBLANK(MAX(jdis_Phy_Inv[Stocktake Date])) || 
+			        YEAR(MAX(jdis_Phy_Inv[Stocktake Date])) < YEAR(TODAY()),
+			        1,
+			        0
+			    ),
+			    BLANK()
+			)
+			```
+		formatString: 0
+		lineageTag: c82c2d4a-1a6d-494c-b0b6-7c76a543ff70
+
+	column Value
+		isHidden
+		formatString: 0
+		lineageTag: 93784026-9632-49a5-86f1-924efa1ad408
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [Value]
+
+		annotation SummarizationSetBy = Automatic
+
+	column DummyColumn
+		isHidden
+		formatString: 0
+		lineageTag: bcd897e6-d20d-4026-9aaf-e940fa8b897c
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [DummyColumn]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition MeasuresTable = calculated
+		mode: import
+		source = ADDCOLUMNS( GENERATESERIES(1, 1), "DummyColumn", 1 )
+
+	annotation PBI_Id = 8c7764e7d56543a292059493be41b715
+

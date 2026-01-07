@@ -1,0 +1,188 @@
+table Fact_WorkOrderParts
+	lineageTag: cea83721-0be5-4a5c-8eb6-935d26222a12
+
+	column TransactionDate
+		dataType: dateTime
+		formatString: Long Date
+		lineageTag: 8f6387f4-622e-42fc-a2b7-f1ab6a49da97
+		summarizeBy: none
+		sourceColumn: TransactionDate
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column PartNumber
+		dataType: string
+		lineageTag: 6922c27f-2069-4bbd-8e00-043419b9505a
+		summarizeBy: none
+		sourceColumn: PartNumber
+
+		annotation SummarizationSetBy = Automatic
+
+	column Quantity
+		dataType: double
+		formatString: 0
+		lineageTag: ee64ced2-3e0b-46cf-a973-227840a7ba26
+		summarizeBy: sum
+		sourceColumn: Quantity
+
+		annotation SummarizationSetBy = Automatic
+
+	column SaleValue
+		dataType: double
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: c8740c0d-ec95-416d-abf3-c31fcb67eaac
+		summarizeBy: sum
+		sourceColumn: SaleValue
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	column CostValue
+		dataType: double
+		lineageTag: fcebecf2-f94c-4fb7-90e9-9eba064858ae
+		summarizeBy: sum
+		sourceColumn: CostValue
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column Franchise
+		dataType: string
+		lineageTag: e61227fd-25fe-4134-917f-d0c97d4875b3
+		summarizeBy: none
+		sourceColumn: Franchise
+
+		annotation SummarizationSetBy = Automatic
+
+	column Type
+		dataType: string
+		lineageTag: 323449c8-e861-4152-b741-26eb2a8e00f5
+		summarizeBy: none
+		sourceColumn: Type
+
+		annotation SummarizationSetBy = Automatic
+
+	column TradeType
+		dataType: string
+		lineageTag: 125b1418-566b-4635-8b3b-b825f19a3c21
+		summarizeBy: none
+		sourceColumn: TradeType
+
+		annotation SummarizationSetBy = Automatic
+
+	column BranchCode
+		dataType: string
+		lineageTag: cc4068b1-7bb4-4dbe-9fc0-bf7c185c426d
+		summarizeBy: none
+		sourceColumn: BranchCode
+
+		annotation SummarizationSetBy = Automatic
+
+	column Description
+		dataType: string
+		lineageTag: 43a48a3e-a9ee-4251-b996-79e8da461ce6
+		summarizeBy: none
+		sourceColumn: Description
+
+		annotation SummarizationSetBy = Automatic
+
+	column CustomerNumber
+		dataType: string
+		lineageTag: 5f560eee-b254-482c-8548-f97b19e3443b
+		summarizeBy: none
+		sourceColumn: CustomerNumber
+
+		annotation SummarizationSetBy = Automatic
+
+	column SellPrice
+		dataType: double
+		lineageTag: 462d47fb-d9cd-4b7c-b528-7be0bbf56d96
+		summarizeBy: sum
+		sourceColumn: SellPrice
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column ListPrice
+		dataType: double
+		lineageTag: def23206-bc9e-40d2-9fce-bc759c649ae4
+		summarizeBy: sum
+		sourceColumn: ListPrice
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column ModifiedDate
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: b6e4f4d2-d550-480d-987c-cb360cbf5f1f
+		summarizeBy: none
+		sourceColumn: ModifiedDate
+
+		annotation SummarizationSetBy = Automatic
+
+	column CreationDate
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: a427317e-eff9-477a-a582-6b69a8b30cc3
+		summarizeBy: none
+		sourceColumn: CreationDate
+
+		annotation SummarizationSetBy = Automatic
+
+	column InvoiceNumber
+		dataType: string
+		lineageTag: 12e91f62-75fd-494c-85d7-d6e509deb60c
+		summarizeBy: none
+		sourceColumn: InvoiceNumber
+
+		annotation SummarizationSetBy = Automatic
+
+	column TransactionDateKey =
+			
+			IF(
+			    ISBLANK(Fact_WorkOrderParts[TransactionDate]),
+			    BLANK(),
+			    INT(FORMAT(Fact_WorkOrderParts[TransactionDate], "YYYYMMDD"))
+			)
+		formatString: 0
+		lineageTag: 712ea8fe-60c7-4297-8b32-c1c1fe3d3c7c
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	column JobCode
+		dataType: string
+		lineageTag: f1314f46-2dc4-41f6-8db2-051574b0b36f
+		summarizeBy: none
+		sourceColumn: JobCode
+
+		annotation SummarizationSetBy = Automatic
+
+	column JobType
+		dataType: string
+		lineageTag: db2080e4-b964-445b-b221-234410e34fa7
+		summarizeBy: none
+		sourceColumn: JobType
+
+		annotation SummarizationSetBy = Automatic
+
+	partition Fact_WorkOrderParts = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-gxnyznhdptpenfw724g3o5sjzm.datawarehouse.fabric.microsoft.com", "LH_Master_Data"),
+				    dbo_Fact_WorkOrderParts = Source{[Schema="dbo",Item="Fact_WorkOrderParts"]}[Data]
+				in
+				    dbo_Fact_WorkOrderParts
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

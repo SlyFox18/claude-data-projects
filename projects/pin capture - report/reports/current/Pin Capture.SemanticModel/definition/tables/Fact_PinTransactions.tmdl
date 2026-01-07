@@ -1,0 +1,438 @@
+table Fact_PinTransactions
+	lineageTag: ae439eaf-4e6f-47a5-9ea4-c75903487e6c
+
+	column TransDatetime
+		dataType: dateTime
+		formatString: Short Date
+		lineageTag: 7528c93b-819f-49c9-9abb-66f61604c9c5
+		summarizeBy: none
+		sourceColumn: TransDatetime
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column Branch
+		dataType: string
+		lineageTag: b565425c-e248-40c1-9949-670d7478200f
+		summarizeBy: none
+		sourceColumn: Branch
+
+		annotation SummarizationSetBy = Automatic
+
+	column Franchise
+		dataType: string
+		lineageTag: beb2ab66-fed2-4f0a-be65-37271ddba3b7
+		summarizeBy: none
+		sourceColumn: Franchise
+
+		annotation SummarizationSetBy = Automatic
+
+	column RONumber
+		dataType: string
+		lineageTag: 4cc98f87-dcbd-437b-a156-e0cf7dcdfd8e
+		summarizeBy: none
+		sourceColumn: RONumber
+
+		annotation SummarizationSetBy = Automatic
+
+	column PartNumber
+		dataType: string
+		lineageTag: 489d57a4-86b5-4692-8e20-1547da9554f7
+		summarizeBy: none
+		sourceColumn: PartNumber
+
+		annotation SummarizationSetBy = Automatic
+
+	column Description
+		dataType: string
+		lineageTag: 5ca7e534-31f8-4f52-ba1c-f3f3ea331e49
+		summarizeBy: none
+		sourceColumn: Description
+
+		annotation SummarizationSetBy = Automatic
+
+	column SaleValue
+		dataType: double
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 88d65931-b958-44ba-a611-59ba3d78b3a8
+		summarizeBy: sum
+		sourceColumn: SaleValue
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	column CostValue
+		dataType: double
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 3fd4ba49-c76f-4543-8dfa-b38f4e597b45
+		summarizeBy: sum
+		sourceColumn: CostValue
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	column Margin
+		dataType: double
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 585e18df-ac65-4fa3-9b72-b832d5b99350
+		summarizeBy: sum
+		sourceColumn: Margin
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	column PinNo
+		dataType: string
+		lineageTag: 5034d877-b391-4c3f-a13c-669bdcd46bbc
+		summarizeBy: none
+		sourceColumn: PinNo
+
+		annotation SummarizationSetBy = Automatic
+
+	column Qty
+		dataType: double
+		formatString: 0
+		lineageTag: 0e98f898-e088-4754-8053-bf2884bedbfb
+		summarizeBy: sum
+		sourceColumn: Qty
+
+		annotation SummarizationSetBy = Automatic
+
+	column CustomerNo
+		dataType: string
+		lineageTag: 3e525dea-b7a1-4a52-86ab-23e861257576
+		summarizeBy: none
+		sourceColumn: CustomerNo
+
+		annotation SummarizationSetBy = Automatic
+
+	column TradeType
+		dataType: string
+		lineageTag: 7884da63-4b44-4002-b5ee-bb09b27f1528
+		summarizeBy: none
+		sourceColumn: TradeType
+
+		annotation SummarizationSetBy = Automatic
+
+	column JobCode
+		dataType: string
+		lineageTag: 0667118d-5d85-42f9-bb08-1739b5671879
+		summarizeBy: none
+		sourceColumn: JobCode
+
+		annotation SummarizationSetBy = Automatic
+
+	column JobType
+		dataType: string
+		lineageTag: 0d876077-aeed-4644-97d3-d9d345803d26
+		summarizeBy: none
+		sourceColumn: JobType
+
+		annotation SummarizationSetBy = Automatic
+
+	column Notation
+		dataType: string
+		lineageTag: b9a19e53-3046-4d15-b45b-9b4f80f42b57
+		summarizeBy: none
+		sourceColumn: Notation
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Has Pin' = ```
+			
+			VAR PinNoValid = 
+			    NOT(ISBLANK(Fact_PinTransactions[PinNo]))
+			    && Fact_PinTransactions[PinNo] <> ""
+			    && Fact_PinTransactions[PinNo] <> "0"
+			
+			VAR NotationValid = 
+			    NOT(ISBLANK(Fact_PinTransactions[Notation]))
+			    && Fact_PinTransactions[Notation] <> ""
+			    && Fact_PinTransactions[Notation] <> "0"
+			
+			RETURN
+			    PinNoValid || NotationValid
+			```
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 2645c8c8-ac12-4361-b55f-26f1b29ab16a
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Pin Identifier' =
+			
+			IF(
+			    NOT(ISBLANK(Fact_PinTransactions[PinNo])),
+			    Fact_PinTransactions[PinNo],
+			    Fact_PinTransactions[Notation]
+			)
+		lineageTag: 79c2422c-000b-4529-a1eb-e6b18df1c69e
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Pin Source' =
+			
+			IF(
+			    NOT(ISBLANK(Fact_PinTransactions[PinNo])) && NOT(ISBLANK(Fact_PinTransactions[Notation])),
+			    "Both",
+			    IF(
+			        NOT(ISBLANK(Fact_PinTransactions[PinNo])),
+			        "PinNo",
+			        IF(
+			            NOT(ISBLANK(Fact_PinTransactions[Notation])),
+			            "Notation",
+			            "No Pin"
+			        )
+			    )
+			)
+		lineageTag: 4a7c051c-ae16-4674-9358-9ba34a542dc1
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Invoice Has Pin Flag' = ```
+			
+			VAR CurrentInvoice = Fact_PinTransactions[RONumber]
+			VAR HasPin = 
+			    CALCULATE(
+			        COUNTROWS(Fact_PinTransactions),
+			        ALLEXCEPT(Fact_PinTransactions, Fact_PinTransactions[RONumber]),
+			        Fact_PinTransactions[Has Pin] = TRUE
+			    ) > 0
+			RETURN
+			IF(HasPin, "Yes", "No")
+			```
+		lineageTag: 7f45780a-683d-4cbb-b335-15d9e484804b
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	column Type
+		dataType: string
+		lineageTag: f0c4c064-5b09-4a2e-bae0-948b3154cde9
+		summarizeBy: none
+		sourceColumn: Type
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Unique Pins Per Invoice' = ```
+			
+			VAR CurrentInvoice = Fact_PinTransactions[RONumber]
+			VAR UniquePins = 
+			    CALCULATE(
+			        DISTINCTCOUNT(Fact_PinTransactions[Pin Identifier]),
+			        ALLEXCEPT(Fact_PinTransactions, Fact_PinTransactions[RONumber]),
+			        NOT(ISBLANK(Fact_PinTransactions[Pin Identifier])),
+			        Fact_PinTransactions[Pin Identifier] <> "",
+			        Fact_PinTransactions[Pin Identifier] <> "0"
+			    )
+			RETURN
+			UniquePins
+			```
+		formatString: 0
+		lineageTag: 2144f4f6-7b84-4b76-8fc3-9ece4b7d79dd
+		summarizeBy: sum
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Line Item Margin %' =
+			
+			DIVIDE(
+			    Fact_PinTransactions[Margin],
+			    Fact_PinTransactions[SaleValue],
+			    BLANK()
+			)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: f4d13a59-78c1-4b38-ae1a-ba9f188f9957
+		summarizeBy: sum
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Line Item Status Icon' = ```
+			
+			VAR HasPin = Fact_PinTransactions[Has Pin]
+			VAR PinSource = Fact_PinTransactions[Pin Source]
+			VAR MarginPct = DIVIDE(Fact_PinTransactions[Margin], Fact_PinTransactions[SaleValue])
+			RETURN
+			SWITCH(TRUE(),
+			    // Best case: Pin + Great margin
+			    HasPin = TRUE && MarginPct >= 0.25, "💎",
+			    
+			    // Good: Pin + Good margin
+			    HasPin = TRUE && MarginPct >= 0.15, "✅",
+			    
+			    // OK: Pin captured but low margin
+			    HasPin = TRUE && MarginPct >= 0.10, "🟡",
+			    
+			    // Warning: Pin but very low/negative margin
+			    HasPin = TRUE && MarginPct < 0.10, "🟠",
+			    
+			    // Alert: No pin + low margin
+			    HasPin = FALSE && MarginPct < 0.10, "⚠️",
+			    
+			    // No pin, normal margin
+			    HasPin = FALSE, "⚪",
+			    
+			    // Default
+			    "❓"
+			)
+			```
+		lineageTag: 619a6d1c-67dd-4b24-9036-f39b44e75d55
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	column FileNo
+		dataType: string
+		lineageTag: 04d38371-9b4c-4f1a-bff4-fb9001a0b67b
+		summarizeBy: none
+		sourceColumn: FileNo
+
+		annotation SummarizationSetBy = Automatic
+
+	column Invoice_Type
+		dataType: string
+		lineageTag: de21c094-e326-4820-a1eb-60e4ff5b7400
+		summarizeBy: none
+		sourceColumn: Invoice_Type
+
+		annotation SummarizationSetBy = Automatic
+
+	partition Fact_PinTransactions = m
+		mode: import
+		source = ```
+				let
+				    // Connect to Lakehouse
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-gxnyznhdptpenfw724g3o5sjzm.datawarehouse.fabric.microsoft.com", "LH_Master_Data"),
+				    dbo_InTrans_Incremental = Source{[Schema="dbo",Item="InTrans_Incremental"]}[Data],
+				    
+				    // Filter to last 24 months (rolling window) - DO THIS EARLY!
+				    TwoYearsAgo = DateTime.From(Date.AddMonths(Date.StartOfMonth(DateTime.Date(DateTime.LocalNow())), -24)),
+				    FilteredDate = Table.SelectRows(dbo_InTrans_Incremental, each [TransDatetime] >= TwoYearsAgo),
+				    
+				    // Filter to Invoice (I) and Credit (C) transactions only
+				    FilteredType = Table.SelectRows(FilteredDate, each [Type] = "I" or [Type] = "C"),
+				    
+				    // Add calculated Margin column
+				    AddMargin = Table.AddColumn(FilteredType, "Margin", each [SaleValue] - [CostValue], type number),
+				    
+				    // *** ADD JOIN KEY TO INTRANS ***
+				    AddInTransKey = Table.AddColumn(AddMargin, "JoinKey",
+				        each Text.From([RONumber]) & "|" & [Branch],
+				        type text),
+				    
+				    // *** LOAD AND PREPARE WKOTHSUB LOOKUP (DISTINCT INVOICE NUMBERS ONLY) ***
+				    dbo_wkothsub = Source{[Schema="dbo",Item="wkothsub"]}[Data],
+				    
+				    // Filter to only records with invoice numbers (reduces dataset significantly)
+				    WkOthSubWithInvoices = Table.SelectRows(dbo_wkothsub, 
+				        each [InvoiceNumber] <> null and [InvoiceNumber] <> ""),
+				    
+				    // Get distinct Invoice|Branch combinations only (reduces from 103K to ~38K rows)
+				    DistinctWorkOrders = Table.Distinct(
+				        Table.SelectColumns(WkOthSubWithInvoices, {"InvoiceNumber", "Branch"}),
+				        {"InvoiceNumber", "Branch"}
+				    ),
+				    
+				    // Add join key to work orders
+				    AddWOKey = Table.AddColumn(DistinctWorkOrders, "JoinKey",
+				        each Text.From([InvoiceNumber]) & "|" & [Branch],
+				        type text),
+				    
+				    // Add flag column to identify work orders
+				    AddWOFlag = Table.AddColumn(AddWOKey, "IsWorkOrder", each true, type logical),
+				    
+				    // *** LEFT JOIN TO IDENTIFY WORK ORDERS (MUCH FASTER THAN LIST LOOKUP) ***
+				    MergeWorkOrders = Table.NestedJoin(
+				        AddInTransKey,
+				        {"JoinKey"},
+				        AddWOFlag,
+				        {"JoinKey"},
+				        "WorkOrderMatch",
+				        JoinKind.LeftOuter
+				    ),
+				    
+				    // *** EXPAND TO GET WORK ORDER FLAG ***
+				    ExpandWorkOrder = Table.ExpandTableColumn(MergeWorkOrders, "WorkOrderMatch", 
+				        {"IsWorkOrder"}, 
+				        {"IsWorkOrder"}),
+				    
+				    // *** CREATE INVOICE_TYPE COLUMN ***
+				    AddInvoiceType = Table.AddColumn(ExpandWorkOrder, "Invoice_Type",
+				        each if [IsWorkOrder] = true then "Work Order" else "Invoice",
+				        type text),
+				    
+				    // Remove temporary columns
+				    RemoveTempColumns = Table.RemoveColumns(AddInvoiceType, {"JoinKey", "IsWorkOrder"}),
+				    
+				    // Select only columns needed
+				    SelectColumns = Table.SelectColumns(RemoveTempColumns, {
+				        "TransDatetime",
+				        "Branch",
+				        "Franchise",
+				        "RONumber",
+				        "FileNo",
+				        "PartNumber",
+				        "Description",
+				        "SaleValue",
+				        "CostValue",
+				        "Margin",
+				        "PinNo",
+				        "Notation",
+				        "Qty",
+				        "CustomerNo",
+				        "TradeType",
+				        "JobCode",
+				        "JobType",
+				        "Type",
+				        "Invoice_Type"
+				    }),
+				    
+				    // Set data types
+				    TypedColumns = Table.TransformColumnTypes(SelectColumns, {
+				        {"TransDatetime", type datetime},
+				        {"Branch", type text},
+				        {"Franchise", type text},
+				        {"RONumber", type text},
+				        {"FileNo", type text},
+				        {"PartNumber", type text},
+				        {"Description", type text},
+				        {"SaleValue", type number},
+				        {"CostValue", type number},
+				        {"Margin", type number},
+				        {"PinNo", type text},
+				        {"Notation", type text},
+				        {"Qty", type number},
+				        {"CustomerNo", type text},
+				        {"TradeType", type text},
+				        {"JobCode", type text},
+				        {"JobType", type text},
+				        {"Type", type text},
+				        {"Invoice_Type", type text}
+				    }),
+				    
+				    // *** REMOVE DUPLICATE ROWS ***
+				    RemoveDuplicates = Table.Distinct(TypedColumns, {
+				        "TransDatetime",
+				        "RONumber", 
+				        "PartNumber",
+				        "Branch",
+				        "Qty",
+				        "SaleValue",
+				        "CostValue"
+				    }),
+				    
+				    #"Extracted Date" = Table.TransformColumns(RemoveDuplicates,{{"TransDatetime", DateTime.Date, type date}})
+				in
+				    #"Extracted Date"
+				```
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

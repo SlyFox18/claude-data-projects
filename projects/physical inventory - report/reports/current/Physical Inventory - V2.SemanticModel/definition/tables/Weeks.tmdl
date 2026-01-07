@@ -1,0 +1,41 @@
+table Weeks
+	lineageTag: 7b640c4e-9a16-4ab1-95a0-a608e9ca651c
+
+	column Value
+		formatString: 0
+		lineageTag: 32c7e959-0784-4cc7-9c92-1fb8912facf2
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Value]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Week Number'
+		formatString: 0
+		lineageTag: 7b887d40-aca6-480d-99d1-66166ce1924f
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Week Number]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Week Label'
+		lineageTag: 009617a4-8b47-4fc7-9dfa-4323e8753b10
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Week Label]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition Weeks = calculated
+		mode: import
+		source =
+				
+				ADDCOLUMNS(
+				    GENERATESERIES(1, 52, 1),
+				    "Week Number", [Value],
+				    "Week Label", "Week " & FORMAT([Value], "00")
+				)
+
+	annotation PBI_Id = 66132614c32a43b2819b9db4b9a5750e
+

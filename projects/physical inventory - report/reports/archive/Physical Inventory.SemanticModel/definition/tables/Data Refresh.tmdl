@@ -1,0 +1,60 @@
+table 'Data Refresh'
+	lineageTag: 5a1b8832-d388-481a-87a5-90cd6aaaec5f
+
+	column CurrentDateTime
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: ba81a43c-b1f5-44a7-98d7-9996b08128fc
+		summarizeBy: none
+		sourceColumn: CurrentDateTime
+
+		variation Variation
+			isDefault
+			relationship: c0f9f9b5-b7b8-4f0a-bbb8-9bacd34eed9a
+			defaultHierarchy: LocalDateTable_135d1ae5-54c5-45a0-9ed1-db6b6c7da471.'Date Hierarchy'
+
+		annotation SummarizationSetBy = Automatic
+
+	column Date
+		dataType: dateTime
+		formatString: Long Date
+		lineageTag: 857e1a2e-4a63-433e-a8e9-d75197aca3c8
+		summarizeBy: none
+		sourceColumn: Date
+
+		variation Variation
+			isDefault
+			relationship: 7b67ca91-2826-419e-9ff1-6379b8c4eff3
+			defaultHierarchy: LocalDateTable_0f82d426-7199-4113-919f-88a85294901f.'Date Hierarchy'
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column Time
+		dataType: dateTime
+		formatString: Long Time
+		lineageTag: c6a04448-d304-44e0-95af-b64d96f7ee81
+		summarizeBy: none
+		sourceColumn: Time
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Time
+
+	partition 'Data Refresh' = m
+		mode: import
+		source =
+				let
+				    Source = #table({"CurrentDateTime"}, {{DateTime.LocalNow() - #duration(0,6,0,0)}}),
+				    #"Duplicated Column" = Table.DuplicateColumn(Source, "CurrentDateTime", "CurrentDateTime - Copy"),
+				    #"Duplicated Column1" = Table.DuplicateColumn(#"Duplicated Column", "CurrentDateTime - Copy", "CurrentDateTime - Copy - Copy"),
+				    #"Renamed Columns" = Table.RenameColumns(#"Duplicated Column1",{{"CurrentDateTime - Copy", "Date"}, {"CurrentDateTime - Copy - Copy", "Time"}}),
+				    #"Changed Type" = Table.TransformColumnTypes(#"Renamed Columns",{{"CurrentDateTime", type datetimezone}, {"Date", type date}, {"Time", type time}})
+				in
+				    #"Changed Type"
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+
