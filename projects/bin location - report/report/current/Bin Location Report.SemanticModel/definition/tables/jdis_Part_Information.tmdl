@@ -1,0 +1,175 @@
+table jdis_Part_Information
+	lineageTag: 43432e36-5578-4dd3-b70d-87c7b57a3800
+
+	column Branch
+		dataType: string
+		lineageTag: 4f5598d9-23de-4184-b07d-c255dd710870
+		summarizeBy: none
+		sourceColumn: Branch
+
+		annotation SummarizationSetBy = Automatic
+
+	column PartNumber
+		dataType: string
+		lineageTag: 46cd38ee-e451-4526-8198-9e72acc840c6
+		summarizeBy: none
+		sourceColumn: PartNumber
+
+		annotation SummarizationSetBy = Automatic
+
+	column Description
+		dataType: string
+		lineageTag: 32bc4863-3604-491c-b5d9-cc015f380d59
+		summarizeBy: none
+		sourceColumn: Description
+
+		annotation SummarizationSetBy = Automatic
+
+	column Franchise
+		dataType: string
+		lineageTag: d3379c1d-1f4a-4432-8f86-ce238b39bb2d
+		summarizeBy: none
+		sourceColumn: Franchise
+
+		annotation SummarizationSetBy = Automatic
+
+	column DealerGroupCode
+		dataType: string
+		lineageTag: 385b985f-c8fb-4b81-a109-c24f32fc3d6d
+		summarizeBy: none
+		sourceColumn: DealerGroupCode
+
+		annotation SummarizationSetBy = Automatic
+
+	column QuantityOnHand
+		dataType: double
+		formatString: 0
+		lineageTag: 46e48487-9d9b-4074-8ef5-f5829d53d43a
+		summarizeBy: sum
+		sourceColumn: QuantityOnHand
+
+		annotation SummarizationSetBy = Automatic
+
+	column BinQty
+		dataType: double
+		formatString: 0
+		lineageTag: 937ef8d5-f46c-4456-9d21-c42814cd31ce
+		summarizeBy: sum
+		sourceColumn: BinQty
+
+		annotation SummarizationSetBy = Automatic
+
+	column BulkBin
+		dataType: string
+		lineageTag: 684a8bb0-8e60-4e21-bffb-9a3b702cba9d
+		summarizeBy: none
+		sourceColumn: BulkBin
+
+		annotation SummarizationSetBy = Automatic
+
+	column Bin
+		dataType: string
+		lineageTag: 188d1cf3-9e95-4893-9511-b48994e246f0
+		summarizeBy: none
+		sourceColumn: Bin
+
+		annotation SummarizationSetBy = Automatic
+
+	column PackageQty
+		dataType: int64
+		formatString: 0
+		lineageTag: 15ac6b6b-0e40-4b44-86f8-66763b95b195
+		summarizeBy: sum
+		sourceColumn: PackageQty
+
+		annotation SummarizationSetBy = Automatic
+
+	column InventoryCost
+		dataType: double
+		lineageTag: c43ea428-14de-4a76-b0b7-6823ea591185
+		summarizeBy: sum
+		sourceColumn: InventoryCost
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column Cost
+		dataType: double
+		lineageTag: e5b2575b-9bc2-486a-88d4-b9b146c5a5c3
+		summarizeBy: sum
+		sourceColumn: Cost
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column SellPrice1
+		dataType: double
+		lineageTag: 35874f0c-6536-4661-8076-641c809829e5
+		summarizeBy: sum
+		sourceColumn: SellPrice1
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column ListPrice
+		dataType: double
+		lineageTag: 369c2038-017a-4cc0-bb22-25a52cdab6e8
+		summarizeBy: sum
+		sourceColumn: ListPrice
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column BulkBinQty
+		dataType: double
+		formatString: 0
+		lineageTag: a95bda0e-8597-4ad1-aa69-782c0b503cf8
+		summarizeBy: sum
+		sourceColumn: BulkBinQty
+
+		annotation SummarizationSetBy = Automatic
+
+	column PendingQty
+		dataType: double
+		formatString: 0
+		lineageTag: d51d547a-8450-47dc-a4a3-c55b88db32d0
+		summarizeBy: sum
+		sourceColumn: PendingQty
+
+		annotation SummarizationSetBy = Automatic
+
+	column SuperTo
+		dataType: string
+		lineageTag: 721a4dae-b17f-4642-b890-e158b96951a9
+		summarizeBy: none
+		sourceColumn: SuperTo
+
+		annotation SummarizationSetBy = Automatic
+
+	column SuperFrom
+		dataType: string
+		lineageTag: 24bfc1fc-58ea-49c4-b932-8e544a08b638
+		summarizeBy: none
+		sourceColumn: SuperFrom
+
+		annotation SummarizationSetBy = Automatic
+
+	partition jdis_Part_Information = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-gxnyznhdptpenfw724g3o5sjzm.datawarehouse.fabric.microsoft.com", "LH_Master_Data"),
+				    dbo_jdis_Part_Information = Source{[Schema="dbo",Item="jdis_Part_Information"]}[Data],
+				    #"Removed Other Columns" = Table.SelectColumns(dbo_jdis_Part_Information,{"Branch", "PartNumber", "Description", "Franchise", "DealerGroupCode", "QuantityOnHand", "BinQty", "BulkBin", "Bin", "PackageQty", "InventoryCost", "Cost", "SellPrice1", "ListPrice", "BulkBinQty", "PendingQty", "SuperTo", "SuperFrom"}),
+				    #"Changed Type" = Table.TransformColumnTypes(#"Removed Other Columns",{{"PackageQty", Int64.Type}})
+				in
+				    #"Changed Type"
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

@@ -1,0 +1,152 @@
+table dim_BranchLocation
+	lineageTag: f5e94c0a-5a13-48e8-bab1-f1fa73b75b39
+
+	column BranchKey
+		dataType: int64
+		formatString: 0
+		lineageTag: 38691dea-618e-4b2a-b29e-d2ec17f38163
+		summarizeBy: none
+		sourceColumn: BranchKey
+
+		annotation SummarizationSetBy = Automatic
+
+	column Branch
+		dataType: string
+		lineageTag: 465c81ae-de4a-49b9-811d-e36fd9b21f42
+		summarizeBy: none
+		sourceColumn: Branch
+		sortByColumn: LocationID
+
+		changedProperty = SortByColumn
+
+		annotation SummarizationSetBy = Automatic
+
+	column BranchType
+		dataType: string
+		lineageTag: 22920758-ce81-4cac-abe4-1bb72ba2c276
+		summarizeBy: none
+		sourceColumn: BranchType
+
+		annotation SummarizationSetBy = Automatic
+
+	column BranchID
+		dataType: string
+		lineageTag: 14d615a9-c1fd-4d5a-86d3-b691d62a6cd9
+		summarizeBy: none
+		sourceColumn: BranchID
+
+		annotation SummarizationSetBy = Automatic
+
+	column BranchName
+		dataType: string
+		lineageTag: afc52d4b-a90b-44b7-899c-5402f2f5c9c2
+		summarizeBy: none
+		sourceColumn: BranchName
+
+		annotation SummarizationSetBy = Automatic
+
+	column LocationID
+		dataType: string
+		lineageTag: 74b9a9c9-005c-4ab7-b6d5-f86e19ddf73b
+		summarizeBy: none
+		sourceColumn: LocationID
+
+		annotation SummarizationSetBy = Automatic
+
+	column State
+		dataType: string
+		lineageTag: f4407698-e92d-4ca9-9965-26fb69bd6e19
+		summarizeBy: none
+		sourceColumn: State
+
+		annotation SummarizationSetBy = Automatic
+
+	column City
+		dataType: string
+		lineageTag: 65716c81-4191-42df-8fed-c25779f9590e
+		summarizeBy: none
+		sourceColumn: City
+
+		annotation SummarizationSetBy = Automatic
+
+	column ServiceCapacity
+		dataType: string
+		lineageTag: 801657f6-bc17-495f-97aa-fb9ba20f7b59
+		summarizeBy: none
+		sourceColumn: ServiceCapacity
+
+		annotation SummarizationSetBy = Automatic
+
+	column MarketPresence
+		dataType: string
+		lineageTag: 8968896b-5c4a-44b1-9779-db1827f370cf
+		summarizeBy: none
+		sourceColumn: MarketPresence
+
+		annotation SummarizationSetBy = Automatic
+
+	column TerritoryCoverage
+		dataType: string
+		lineageTag: 2d7b8399-bb5c-450d-b2b3-9ae906ef9360
+		summarizeBy: none
+		sourceColumn: TerritoryCoverage
+
+		annotation SummarizationSetBy = Automatic
+
+	column OperationalPriority
+		dataType: double
+		lineageTag: e0eeeaee-4594-4e1d-b59f-79d3fa57d29a
+		summarizeBy: none
+		sourceColumn: OperationalPriority
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column RegionalClassification
+		dataType: string
+		lineageTag: 7e219346-eb8d-41a0-a7ed-e07b409fd67a
+		summarizeBy: none
+		sourceColumn: RegionalClassification
+
+		annotation SummarizationSetBy = Automatic
+
+	column ServiceHours
+		dataType: string
+		lineageTag: 57abf96b-933a-450c-a23a-f1213087ae0f
+		summarizeBy: none
+		sourceColumn: ServiceHours
+
+		annotation SummarizationSetBy = Automatic
+
+	column DistanceFromHub
+		dataType: string
+		lineageTag: d849ed35-d3a8-4242-839e-c1a8a6f92633
+		summarizeBy: none
+		sourceColumn: DistanceFromHub
+
+		annotation SummarizationSetBy = Automatic
+
+	column DataQualityScore
+		dataType: double
+		lineageTag: d1265e8a-9c03-4e05-b8fd-893dd7fc97ec
+		summarizeBy: none
+		sourceColumn: DataQualityScore
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	partition dim_BranchLocation = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-gxnyznhdptpenfw724g3o5sjzm.datawarehouse.fabric.microsoft.com", "LH_Master_Data"),
+				    dbo_dim_BranchLocation = Source{[Schema="dbo",Item="dim_BranchLocation"]}[Data]
+				in
+				    dbo_dim_BranchLocation
+
+	annotation PBI_ResultType = Table
+
+	annotation PBI_NavigationStepName = Navigation
+
