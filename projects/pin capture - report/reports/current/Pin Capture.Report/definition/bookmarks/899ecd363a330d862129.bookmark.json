@@ -1,0 +1,1469 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/bookmark/1.4.0/schema.json",
+  "displayName": "Show Nav Panel 4",
+  "name": "899ecd363a330d862129",
+  "options": {
+    "targetVisualNames": [],
+    "suppressData": true
+  },
+  "explorationState": {
+    "version": "1.3",
+    "activeSection": "80f2328a9847644f9d58",
+    "sections": {
+      "80f2328a9847644f9d58": {
+        "filters": {
+          "byExpr": [
+            {
+              "name": "f42a91905bfbd6163e17",
+              "type": "Categorical",
+              "filter": {
+                "Version": 2,
+                "From": [
+                  {
+                    "Name": "f",
+                    "Entity": "Fact_PinTransactions",
+                    "Type": 0
+                  }
+                ],
+                "Where": [
+                  {
+                    "Condition": {
+                      "In": {
+                        "Expressions": [
+                          {
+                            "Column": {
+                              "Expression": {
+                                "SourceRef": {
+                                  "Source": "f"
+                                }
+                              },
+                              "Property": "RONumber"
+                            }
+                          }
+                        ],
+                        "Values": [
+                          [
+                            {
+                              "Literal": {
+                                "Value": "'1865196'"
+                              }
+                            }
+                          ]
+                        ]
+                      }
+                    }
+                  }
+                ]
+              },
+              "expression": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Fact_PinTransactions"
+                    }
+                  },
+                  "Property": "RONumber"
+                }
+              },
+              "howCreated": 5
+            }
+          ],
+          "byTransientState": [
+            {
+              "name": "transientFilter",
+              "filter": {
+                "Version": 2,
+                "From": [
+                  {
+                    "Name": "d",
+                    "Entity": "dim_DateTable",
+                    "Type": 0
+                  }
+                ],
+                "Where": [
+                  {
+                    "Condition": {
+                      "In": {
+                        "Expressions": [
+                          {
+                            "Column": {
+                              "Expression": {
+                                "SourceRef": {
+                                  "Source": "d"
+                                }
+                              },
+                              "Property": "IsRolling12Months"
+                            }
+                          }
+                        ],
+                        "Values": [
+                          [
+                            {
+                              "Literal": {
+                                "Value": "true"
+                              }
+                            }
+                          ]
+                        ]
+                      }
+                    }
+                  }
+                ]
+              },
+              "expression": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "dim_DateTable"
+                    }
+                  },
+                  "Property": "IsRolling12Months"
+                }
+              },
+              "howCreated": 5,
+              "isTransient": true
+            },
+            {
+              "name": "transientFilter1",
+              "filter": {
+                "Version": 2,
+                "From": [
+                  {
+                    "Name": "f",
+                    "Entity": "Fact_PinTransactions",
+                    "Type": 0
+                  }
+                ],
+                "Where": [
+                  {
+                    "Condition": {
+                      "In": {
+                        "Expressions": [
+                          {
+                            "Column": {
+                              "Expression": {
+                                "SourceRef": {
+                                  "Source": "f"
+                                }
+                              },
+                              "Property": "Invoice Has Pin Flag"
+                            }
+                          }
+                        ],
+                        "Values": [
+                          [
+                            {
+                              "Literal": {
+                                "Value": "'Yes'"
+                              }
+                            }
+                          ]
+                        ]
+                      }
+                    }
+                  }
+                ]
+              },
+              "expression": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Fact_PinTransactions"
+                    }
+                  },
+                  "Property": "Invoice Has Pin Flag"
+                }
+              },
+              "howCreated": 5,
+              "isTransient": true
+            },
+            {
+              "name": "transientFilter2",
+              "filter": {
+                "Version": 2,
+                "From": [
+                  {
+                    "Name": "subquery",
+                    "Expression": {
+                      "Subquery": {
+                        "Query": {
+                          "Version": 2,
+                          "From": [
+                            {
+                              "Name": "f",
+                              "Entity": "Fact_PinTransactions",
+                              "Type": 0
+                            },
+                            {
+                              "Name": "_",
+                              "Entity": "_Measures",
+                              "Type": 0
+                            },
+                            {
+                              "Name": "d",
+                              "Entity": "dim_BranchLocation",
+                              "Type": 0
+                            },
+                            {
+                              "Name": "d1",
+                              "Entity": "dim_DateTable",
+                              "Type": 0
+                            }
+                          ],
+                          "Select": [
+                            {
+                              "Column": {
+                                "Expression": {
+                                  "SourceRef": {
+                                    "Source": "d"
+                                  }
+                                },
+                                "Property": "Branch"
+                              },
+                              "Name": "dim_BranchLocation.Branch",
+                              "NativeReferenceName": "Branch1"
+                            },
+                            {
+                              "Column": {
+                                "Expression": {
+                                  "SourceRef": {
+                                    "Source": "f"
+                                  }
+                                },
+                                "Property": "RONumber"
+                              },
+                              "Name": "Fact_PinTransactions.RONumber",
+                              "NativeReferenceName": "Transaction #"
+                            }
+                          ],
+                          "Where": [
+                            {
+                              "Condition": {
+                                "In": {
+                                  "Expressions": [
+                                    {
+                                      "Column": {
+                                        "Expression": {
+                                          "SourceRef": {
+                                            "Source": "d1"
+                                          }
+                                        },
+                                        "Property": "IsRolling12Months"
+                                      }
+                                    }
+                                  ],
+                                  "Values": [
+                                    [
+                                      {
+                                        "Literal": {
+                                          "Value": "true"
+                                        }
+                                      }
+                                    ]
+                                  ]
+                                }
+                              }
+                            },
+                            {
+                              "Condition": {
+                                "In": {
+                                  "Expressions": [
+                                    {
+                                      "Column": {
+                                        "Expression": {
+                                          "SourceRef": {
+                                            "Source": "f"
+                                          }
+                                        },
+                                        "Property": "Invoice Has Pin Flag"
+                                      }
+                                    }
+                                  ],
+                                  "Values": [
+                                    [
+                                      {
+                                        "Literal": {
+                                          "Value": "'Yes'"
+                                        }
+                                      }
+                                    ]
+                                  ]
+                                }
+                              }
+                            },
+                            {
+                              "Condition": {
+                                "Not": {
+                                  "Expression": {
+                                    "Comparison": {
+                                      "ComparisonKind": 0,
+                                      "Left": {
+                                        "Measure": {
+                                          "Expression": {
+                                            "SourceRef": {
+                                              "Source": "_"
+                                            }
+                                          },
+                                          "Property": "Invoice Date"
+                                        }
+                                      },
+                                      "Right": {
+                                        "Literal": {
+                                          "Value": "null"
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              },
+                              "Target": [
+                                {
+                                  "Column": {
+                                    "Expression": {
+                                      "SourceRef": {
+                                        "Source": "d"
+                                      }
+                                    },
+                                    "Property": "Branch"
+                                  }
+                                },
+                                {
+                                  "Column": {
+                                    "Expression": {
+                                      "SourceRef": {
+                                        "Source": "f"
+                                      }
+                                    },
+                                    "Property": "RONumber"
+                                  }
+                                }
+                              ]
+                            },
+                            {
+                              "Condition": {
+                                "Comparison": {
+                                  "ComparisonKind": 0,
+                                  "Left": {
+                                    "Column": {
+                                      "Expression": {
+                                        "SourceRef": {
+                                          "Source": "f"
+                                        }
+                                      },
+                                      "Property": "RONumber"
+                                    }
+                                  },
+                                  "Right": {
+                                    "AnyValue": {
+                                      "DefaultValueOverridesAncestors": true
+                                    }
+                                  }
+                                }
+                              }
+                            },
+                            {
+                              "Condition": {
+                                "Comparison": {
+                                  "ComparisonKind": 0,
+                                  "Left": {
+                                    "Column": {
+                                      "Expression": {
+                                        "SourceRef": {
+                                          "Source": "d"
+                                        }
+                                      },
+                                      "Property": "Branch"
+                                    }
+                                  },
+                                  "Right": {
+                                    "AnyValue": {
+                                      "DefaultValueOverridesAncestors": true
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    },
+                    "Type": 2
+                  },
+                  {
+                    "Name": "d",
+                    "Entity": "dim_BranchLocation",
+                    "Type": 0
+                  },
+                  {
+                    "Name": "f",
+                    "Entity": "Fact_PinTransactions",
+                    "Type": 0
+                  }
+                ],
+                "Where": [
+                  {
+                    "Condition": {
+                      "In": {
+                        "Expressions": [
+                          {
+                            "Column": {
+                              "Expression": {
+                                "SourceRef": {
+                                  "Source": "d"
+                                }
+                              },
+                              "Property": "Branch"
+                            }
+                          },
+                          {
+                            "Column": {
+                              "Expression": {
+                                "SourceRef": {
+                                  "Source": "f"
+                                }
+                              },
+                              "Property": "RONumber"
+                            }
+                          }
+                        ],
+                        "Table": {
+                          "SourceRef": {
+                            "Source": "subquery"
+                          }
+                        }
+                      }
+                    }
+                  }
+                ]
+              },
+              "howCreated": 5,
+              "isTransient": true
+            },
+            {
+              "name": "transientFilter3",
+              "filter": {
+                "Version": 2,
+                "From": [
+                  {
+                    "Name": "d",
+                    "Entity": "dim_BranchLocation",
+                    "Type": 0
+                  }
+                ],
+                "Where": [
+                  {
+                    "Condition": {
+                      "In": {
+                        "Expressions": [
+                          {
+                            "Column": {
+                              "Expression": {
+                                "SourceRef": {
+                                  "Source": "d"
+                                }
+                              },
+                              "Property": "Branch"
+                            }
+                          }
+                        ],
+                        "Values": [
+                          [
+                            {
+                              "Literal": {
+                                "Value": "'3 - Denver City'"
+                              }
+                            }
+                          ]
+                        ]
+                      }
+                    }
+                  }
+                ]
+              },
+              "expression": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "dim_BranchLocation"
+                    }
+                  },
+                  "Property": "Branch"
+                }
+              },
+              "howCreated": 5,
+              "isTransient": true
+            }
+          ]
+        },
+        "visualContainers": {
+          "aa17c0b11b351743e228": {
+            "singleVisual": {
+              "visualType": "textbox",
+              "objects": {}
+            }
+          },
+          "51c18cc567635cb4d4e2": {
+            "singleVisual": {
+              "visualType": "shape",
+              "objects": {}
+            }
+          },
+          "f31dfba469c25a99cafe": {
+            "filters": {
+              "byExpr": [
+                {
+                  "name": "3e4e61395d2bf1ae4fb0",
+                  "type": "Advanced",
+                  "expression": {
+                    "Aggregation": {
+                      "Expression": {
+                        "Column": {
+                          "Expression": {
+                            "SourceRef": {
+                              "Entity": "Data Refresh"
+                            }
+                          },
+                          "Property": "CurrentDateTime"
+                        }
+                      },
+                      "Function": 3
+                    }
+                  },
+                  "howCreated": 0
+                }
+              ]
+            },
+            "singleVisual": {
+              "visualType": "card",
+              "objects": {}
+            }
+          },
+          "c2fe31cec5d31f5279f4": {
+            "singleVisual": {
+              "visualType": "image",
+              "objects": {}
+            }
+          },
+          "ecc3db7f4662c27fa687": {
+            "singleVisual": {
+              "visualType": "image",
+              "objects": {},
+              "display": {
+                "mode": "hidden"
+              }
+            }
+          },
+          "219a7f0b5fcc8cc1d373": {
+            "singleVisual": {
+              "visualType": "image",
+              "objects": {}
+            }
+          },
+          "c1d7327120fda80fab79": {
+            "singleVisual": {
+              "visualType": "image",
+              "objects": {}
+            }
+          },
+          "a61ade72fd50f487bdfc": {
+            "singleVisual": {
+              "visualType": "image",
+              "objects": {}
+            }
+          },
+          "39c78218ebb5ae233592": {
+            "singleVisual": {
+              "visualType": "image",
+              "objects": {}
+            }
+          },
+          "c17918b3da82dd6adf3a": {
+            "filters": {
+              "byExpr": [
+                {
+                  "name": "390268fc292c4a7467ca",
+                  "type": "Categorical",
+                  "expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "Fact_PinTransactions"
+                        }
+                      },
+                      "Property": "Branch"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "3df6f5df93ee74dbd439",
+                  "type": "Categorical",
+                  "expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "Fact_PinTransactions"
+                        }
+                      },
+                      "Property": "TransDatetime"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "1b619ef2fc10e42cf828",
+                  "type": "Categorical",
+                  "expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "Fact_PinTransactions"
+                        }
+                      },
+                      "Property": "RONumber"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "8f2e1bc6b6173fd86d9d",
+                  "type": "Categorical",
+                  "expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "Fact_PinTransactions"
+                        }
+                      },
+                      "Property": "PartNumber"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "5bceff8376b420878cd0",
+                  "type": "Categorical",
+                  "expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "Fact_PinTransactions"
+                        }
+                      },
+                      "Property": "Description"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "22458ef2e8561d53025f",
+                  "type": "Categorical",
+                  "expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "Fact_PinTransactions"
+                        }
+                      },
+                      "Property": "Franchise"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "41585ebc64e72a41b950",
+                  "type": "Categorical",
+                  "expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "Fact_PinTransactions"
+                        }
+                      },
+                      "Property": "Has Pin"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "2fc745accc95c661320f",
+                  "type": "Categorical",
+                  "expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "Fact_PinTransactions"
+                        }
+                      },
+                      "Property": "Pin Identifier"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "33a74feceae4c49346a3",
+                  "type": "Categorical",
+                  "expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "Fact_PinTransactions"
+                        }
+                      },
+                      "Property": "Pin Source"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "3e83cc6d622c209232a8",
+                  "type": "Advanced",
+                  "expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "Total Sales"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "fe7dc59f23f669df5611",
+                  "type": "Advanced",
+                  "expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "Total Cost"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "095e2684df3a957fa5f8",
+                  "type": "Advanced",
+                  "expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "Total Margin"
+                    }
+                  },
+                  "howCreated": 0
+                }
+              ]
+            },
+            "singleVisual": {
+              "visualType": "tableEx",
+              "objects": {},
+              "orderBy": [
+                {
+                  "Direction": 2,
+                  "Expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "Fact_PinTransactions"
+                        }
+                      },
+                      "Property": "RONumber"
+                    }
+                  }
+                }
+              ],
+              "display": {
+                "mode": "hidden"
+              }
+            }
+          },
+          "e9f6a168613d5a6ba78a": {
+            "filters": {
+              "byExpr": [
+                {
+                  "name": "d8ddc5b1175895b037ab",
+                  "type": "Advanced",
+                  "expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "Invoice Detail - Header"
+                    }
+                  },
+                  "howCreated": 0
+                }
+              ]
+            },
+            "singleVisual": {
+              "visualType": "htmlContent443BE3AD55E043BF878BED274D3A6855",
+              "objects": {}
+            }
+          },
+          "fd7e78bf8581c9e9f882": {
+            "singleVisual": {
+              "visualType": "image",
+              "objects": {}
+            }
+          },
+          "25134864e6b29809332f": {
+            "singleVisual": {
+              "visualType": "shape",
+              "objects": {}
+            }
+          },
+          "d0200d4029d60ee7f6ee": {
+            "singleVisual": {
+              "visualType": "actionButton",
+              "objects": {}
+            }
+          },
+          "ceaaf5566440928e298a": {
+            "filters": {
+              "byExpr": [
+                {
+                  "name": "7df9d0d8c7b1c19598b0",
+                  "type": "Advanced",
+                  "expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "Invoice Has Pin"
+                    }
+                  },
+                  "howCreated": 1
+                },
+                {
+                  "name": "189ff0d4fbdea9779d01",
+                  "type": "Categorical",
+                  "expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "Fact_PinTransactions"
+                        }
+                      },
+                      "Property": "PartNumber"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "dc962a0b81a173aac960",
+                  "type": "Categorical",
+                  "expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "Fact_PinTransactions"
+                        }
+                      },
+                      "Property": "Franchise"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "84633d312f8f687693e1",
+                  "type": "Categorical",
+                  "expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "Fact_PinTransactions"
+                        }
+                      },
+                      "Property": "Description"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "f0b5b50499b5f3e5c09d",
+                  "type": "Categorical",
+                  "expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "Fact_PinTransactions"
+                        }
+                      },
+                      "Property": "TransDatetime"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "13bd804cb7f1bfff5ec8",
+                  "type": "Advanced",
+                  "expression": {
+                    "Aggregation": {
+                      "Expression": {
+                        "Column": {
+                          "Expression": {
+                            "SourceRef": {
+                              "Entity": "Fact_PinTransactions"
+                            }
+                          },
+                          "Property": "Qty"
+                        }
+                      },
+                      "Function": 0
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "22f8dffb5bf974ad2d0d",
+                  "type": "Categorical",
+                  "expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "Fact_PinTransactions"
+                        }
+                      },
+                      "Property": "Pin Identifier"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "d07e2d4e21b09d37f2a4",
+                  "type": "Categorical",
+                  "expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "Fact_PinTransactions"
+                        }
+                      },
+                      "Property": "Pin Source"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "dba7fe81671edde1af42",
+                  "type": "Advanced",
+                  "expression": {
+                    "Aggregation": {
+                      "Expression": {
+                        "Column": {
+                          "Expression": {
+                            "SourceRef": {
+                              "Entity": "Fact_PinTransactions"
+                            }
+                          },
+                          "Property": "CostValue"
+                        }
+                      },
+                      "Function": 0
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "06f2817d5aaf20afee2d",
+                  "type": "Advanced",
+                  "expression": {
+                    "Aggregation": {
+                      "Expression": {
+                        "Column": {
+                          "Expression": {
+                            "SourceRef": {
+                              "Entity": "Fact_PinTransactions"
+                            }
+                          },
+                          "Property": "SaleValue"
+                        }
+                      },
+                      "Function": 0
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "2e4b4a323187940c115a",
+                  "type": "Advanced",
+                  "expression": {
+                    "Aggregation": {
+                      "Expression": {
+                        "Column": {
+                          "Expression": {
+                            "SourceRef": {
+                              "Entity": "Fact_PinTransactions"
+                            }
+                          },
+                          "Property": "Margin"
+                        }
+                      },
+                      "Function": 0
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "143f0fd3aef3ef07a22d",
+                  "type": "Advanced",
+                  "expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "Fact_PinTransactions"
+                        }
+                      },
+                      "Property": "Line Item Margin %"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "60bb6e7d1b6243c88bd4",
+                  "type": "Categorical",
+                  "expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "Fact_PinTransactions"
+                        }
+                      },
+                      "Property": "Line Item Status Icon"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "76ddfd7ae3824ac645b2",
+                  "type": "Categorical",
+                  "expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "dim_Parts"
+                        }
+                      },
+                      "Property": "Description"
+                    }
+                  },
+                  "howCreated": 0
+                }
+              ]
+            },
+            "singleVisual": {
+              "visualType": "tableEx",
+              "objects": {},
+              "orderBy": [
+                {
+                  "Direction": 2,
+                  "Expression": {
+                    "Aggregation": {
+                      "Expression": {
+                        "Column": {
+                          "Expression": {
+                            "SourceRef": {
+                              "Entity": "Fact_PinTransactions"
+                            }
+                          },
+                          "Property": "CostValue"
+                        }
+                      },
+                      "Function": 0
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "898575093956b1f0a2db": {
+            "filters": {
+              "byExpr": [
+                {
+                  "name": "69b268e8b8d238cabb61",
+                  "type": "Advanced",
+                  "expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "Drill Through - Invoice Hero Card"
+                    }
+                  },
+                  "howCreated": 0
+                }
+              ]
+            },
+            "singleVisual": {
+              "visualType": "htmlContent443BE3AD55E043BF878BED274D3A6855",
+              "objects": {}
+            }
+          },
+          "ed4cca664c0d14e042ba": {
+            "singleVisual": {
+              "visualType": "shape",
+              "objects": {}
+            }
+          },
+          "f89a0fdc12cd75b6d593": {
+            "filters": {
+              "byExpr": [
+                {
+                  "name": "78ba7dec54a606ac99d7",
+                  "type": "Advanced",
+                  "expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "Active Filters Detail"
+                    }
+                  },
+                  "howCreated": 0
+                }
+              ]
+            },
+            "singleVisual": {
+              "visualType": "card",
+              "objects": {}
+            }
+          },
+          "0d58aada68860b5f05b7": {
+            "singleVisual": {
+              "visualType": "actionButton",
+              "objects": {}
+            }
+          },
+          "0f8afa7ad0ef338c9dc9": {
+            "filters": {
+              "byExpr": [
+                {
+                  "name": "6aa6d2d5dc3707a2dd3c",
+                  "type": "Categorical",
+                  "expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "dim_DateTable"
+                        }
+                      },
+                      "Property": "Date"
+                    }
+                  },
+                  "howCreated": 0
+                }
+              ]
+            },
+            "singleVisual": {
+              "visualType": "InforiverFilterF39DAE8D57A743EF89F5C3809DEE2B69",
+              "objects": {
+                "merge": {
+                  "panelMode": [
+                    {
+                      "properties": {
+                        "enableCascadeFilter": {
+                          "expr": {
+                            "Literal": {
+                              "Value": "false"
+                            }
+                          }
+                        },
+                        "tileBackgroundColor": {
+                          "expr": {
+                            "Literal": {
+                              "Value": "'https://colors.inforiver.com/?colors=WyIjRkZGRkZGIiwiI0ZGRkZGRiIsIiNGRkZGRkYiLCIjRkZGRkZGIiwiI0ZGRkZGRiIsIiNGRkZGRkYiLCIjRkZGRkZGIiwiI0ZGRkZGRiIsIiNGRkZGRkYiLCIjRkZGRkZGIiwiI0ZGRkZGRiIsIiNGRkZGRkYiLCIjRkZGRkZGIiwiI0ZGRkZGRiIsIiNGRkZGRkYiLCIjRkZGRkZGIiwiI0ZGRkZGRiIsIiNGRkZGRkYiLCIjRkZGRkZGIiwiI0ZGRkZGRiJd'"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ],
+                  "migration": [
+                    {
+                      "properties": {
+                        "migrationSettings": {
+                          "expr": {
+                            "Literal": {
+                              "Value": "'{\"v1_0_0_0\":{\"hierarchyStyle\":{\"isResolved\":true}},\"v2_0_0_0\":{\"appearance\":{\"isResolved\":true}},\"v5_7_0_0\":{\"appearance\":{\"isResolved\":true}}}'"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ],
+                  "columnHeaders": [
+                    {
+                      "properties": {
+                        "globalSearch": {
+                          "expr": {
+                            "Literal": {
+                              "Value": "true"
+                            }
+                          }
+                        },
+                        "enableToolbar": {
+                          "expr": {
+                            "Literal": {
+                              "Value": "true"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ],
+                  "presets": [
+                    {
+                      "properties": {
+                        "enablePreset": {
+                          "expr": {
+                            "Literal": {
+                              "Value": "true"
+                            }
+                          }
+                        },
+                        "presetsFontSize": {
+                          "expr": {
+                            "Literal": {
+                              "Value": "12D"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ],
+                  "dateCard": [
+                    {
+                      "properties": {
+                        "defaultDateRangeSelection": {
+                          "expr": {
+                            "Literal": {
+                              "Value": "'user_defined'"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ],
+                  "popupCard": [
+                    {
+                      "properties": {
+                        "minModeFilter": {
+                          "expr": {
+                            "Literal": {
+                              "Value": "false"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ],
+                  "appearance": [
+                    {
+                      "properties": {
+                        "clearSearchAfterSelect": {
+                          "expr": {
+                            "Literal": {
+                              "Value": "false"
+                            }
+                          }
+                        },
+                        "enableCanvasMode": {
+                          "expr": {
+                            "Literal": {
+                              "Value": "true"
+                            }
+                          }
+                        },
+                        "filterNoData": {
+                          "expr": {
+                            "Literal": {
+                              "Value": "false"
+                            }
+                          }
+                        },
+                        "measureTooltip": {
+                          "expr": {
+                            "Literal": {
+                              "Value": "true"
+                            }
+                          }
+                        },
+                        "varianceTooltip": {
+                          "expr": {
+                            "Literal": {
+                              "Value": "true"
+                            }
+                          }
+                        },
+                        "dateTooltip": {
+                          "expr": {
+                            "Literal": {
+                              "Value": "true"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ],
+                  "general": [
+                    {
+                      "properties": {
+                        "filter": {
+                          "filter": {
+                            "Version": 2,
+                            "From": [
+                              {
+                                "Name": "d",
+                                "Entity": "dim_DateTable",
+                                "Type": 0
+                              }
+                            ],
+                            "Where": [
+                              {
+                                "Condition": {
+                                  "And": {
+                                    "Left": {
+                                      "Comparison": {
+                                        "ComparisonKind": 2,
+                                        "Left": {
+                                          "Column": {
+                                            "Expression": {
+                                              "SourceRef": {
+                                                "Source": "d"
+                                              }
+                                            },
+                                            "Property": "Date"
+                                          }
+                                        },
+                                        "Right": {
+                                          "DateSpan": {
+                                            "Expression": {
+                                              "Literal": {
+                                                "Value": "datetime'2025-01-01T00:00:00'"
+                                              }
+                                            },
+                                            "TimeUnit": 5
+                                          }
+                                        }
+                                      }
+                                    },
+                                    "Right": {
+                                      "Comparison": {
+                                        "ComparisonKind": 4,
+                                        "Left": {
+                                          "Column": {
+                                            "Expression": {
+                                              "SourceRef": {
+                                                "Source": "d"
+                                              }
+                                            },
+                                            "Property": "Date"
+                                          }
+                                        },
+                                        "Right": {
+                                          "DateSpan": {
+                                            "Expression": {
+                                              "Literal": {
+                                                "Value": "datetime'2025-12-31T23:59:59.059'"
+                                              }
+                                            },
+                                            "TimeUnit": 5
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    }
+                  ],
+                  "filter": [
+                    {
+                      "properties": {
+                        "selectedDatePreset": {
+                          "expr": {
+                            "Literal": {
+                              "Value": "'[\"date-this-1-year\"]'"
+                            }
+                          }
+                        },
+                        "customPresets": {
+                          "expr": {
+                            "Literal": {
+                              "Value": "'[{\"type\":\"date\",\"key\":\"date-this-1-month\",\"label\":\"Current Month\",\"layout\":\"square.withIcon\",\"icon\":\"presetCalendar\",\"iconColor\":\"#444444\"},{\"type\":\"date\",\"key\":\"date-last-1-month\",\"label\":\"Last Month\",\"layout\":\"square.withIcon\",\"icon\":\"presetCalendar\",\"iconColor\":\"#444444\"},{\"type\":\"date\",\"key\":\"date-this-1-quarter\",\"label\":\"Current Quarter\",\"layout\":\"square.withIcon\",\"icon\":\"presetCalendar\",\"iconColor\":\"#444444\"},{\"type\":\"date\",\"key\":\"date-last-1-quarter\",\"label\":\"Last Quarter\",\"layout\":\"square.withIcon\",\"icon\":\"presetCalendar\",\"iconColor\":\"#444444\"},{\"type\":\"date\",\"key\":\"date-this-1-year\",\"label\":\"Current Year\",\"layout\":\"square.withIcon\",\"icon\":\"presetCalendar\",\"iconColor\":\"#444444\"},{\"type\":\"date\",\"key\":\"date-last-1-year\",\"label\":\"Last Year\",\"layout\":\"\",\"icon\":\"presetCalendar\",\"iconColor\":\"#444444\"}]'"
+                            }
+                          }
+                        },
+                        "customImages": {
+                          "expr": {
+                            "Literal": {
+                              "Value": "'[]'"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "fdda4fa97701a4ac1b0e": {
+            "singleVisual": {
+              "visualType": "pageNavigator",
+              "objects": {}
+            }
+          },
+          "6c7c3fcf84d68c1f8060": {
+            "singleVisual": {
+              "visualType": "image",
+              "objects": {}
+            }
+          }
+        },
+        "visualContainerGroups": {
+          "b68856ffab910d774104": {
+            "isHidden": false
+          }
+        }
+      }
+    },
+    "objects": {
+      "merge": {
+        "outspacePane": [
+          {
+            "properties": {
+              "expanded": {
+                "expr": {
+                  "Literal": {
+                    "Value": "false"
+                  }
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+}
