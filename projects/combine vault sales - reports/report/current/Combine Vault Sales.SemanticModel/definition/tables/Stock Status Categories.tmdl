@@ -1,0 +1,45 @@
+table 'Stock Status Categories'
+	lineageTag: 42669285-fe49-441d-95f1-f6a6bb76ff76
+
+	column 'Stock Category'
+		lineageTag: ef9b8799-2d96-4915-aaf3-2c2e89316152
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Stock Category]
+		sortByColumn: 'Sort Order'
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Sort Order'
+		formatString: 0
+		lineageTag: 9879be79-efb2-4b4c-b429-4e43bf93639f
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [Sort Order]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Stock Status Categories' = calculated
+		mode: import
+		source =
+				
+				DATATABLE(
+				    "Sort Order", INTEGER,
+				    "Stock Category", STRING,
+				    {
+				        {1, "⚠️ Out of Stock"},
+				        {2, "🔴 Critical Low"},
+				        {3, "⚡ Low Stock"},
+				        {4, "✅ Healthy"},
+				        {5, "📊 Adequate"},
+				        {6, "🟡 Slow - Monitor"},
+				        {7, "📦 Overstock - Active"},
+				        {8, "💤 Stagnant Stock"},
+				        {9, "💤 Inactive - Has Stock"},
+				        {10, "⚪ Inactive - No Stock"},
+				        {11, "❓ Unknown"}
+				    }
+				)
+
+	annotation PBI_Id = 364720ccca0542afbe8a3e7bbda04a1d
+

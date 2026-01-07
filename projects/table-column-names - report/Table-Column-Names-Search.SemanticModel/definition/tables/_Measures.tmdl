@@ -1,0 +1,286 @@
+table _Measures
+	lineageTag: 22e4b9e3-99b6-4634-9836-9ade5a5ea5a5
+
+	measure 'Home - Header' = ```
+			
+			// Get user name
+			VAR _User = USERPRINCIPALNAME()
+			VAR _Position = SEARCH("@", _User, 1)
+			VAR _Name = LEFT(_User, _Position - 1)
+			VAR _FirstLetter = UPPER(LEFT(_Name, 1))
+			VAR _LastName = MID(_Name, 2, LEN(_Name) - 1)
+			VAR _FormattedLastName = 
+			    UPPER(LEFT(_LastName, 1)) & LOWER(MID(_LastName, 2, LEN(_LastName)))
+			VAR WelcomeName = _FirstLetter & "." & _FormattedLastName
+			
+			// Get current date/time info
+			VAR CurrentDate = TODAY()
+			VAR DateDisplay = FORMAT(CurrentDate, "MMM D, YYYY")
+			VAR CurrentHour = HOUR(NOW())
+			VAR TimeGreeting = 
+			    IF(CurrentHour < 12, "Good Morning",
+			    IF(CurrentHour < 17, "Good Afternoon",
+			    "Good Evening"))
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    height: 85px;
+			    padding: 15px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 10px;
+			    color: white;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-between;
+			    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    box-sizing: border-box;
+			'>
+			    <!-- Left side: Dashboard Title -->
+			    <div style='display: flex; align-items: center; gap: 15px;'>
+			        <!-- Home icon -->
+			        <div style='
+			            width: 40px;
+			            height: 40px;
+			            background: rgba(255,255,255,0.15);
+			            border-radius: 8px;
+			            display: flex;
+			            align-items: center;
+			            justify-content: center;
+			            font-size: 20px;
+			        '>
+			            🏠
+			        </div>
+			        
+			        <!-- Title -->
+			        <div>
+			            <div style='font-size: 12px; opacity: 0.85; margin-bottom: 4px; letter-spacing: 0.5px;'>
+			                REPORT
+			            </div>
+			            <div style='font-size: 26px; font-weight: 700; line-height: 1;'>
+			                Equip Database - Table & Column Names Search
+			            </div>
+			        </div>
+			    </div>
+			    
+			    <!-- Right side: Welcome & Date -->
+			    <div style='text-align: right;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 6px;'>
+			            " & TimeGreeting & ", " & WelcomeName & "
+			        </div>
+			        <div style='font-size: 16px; font-weight: 600;'>
+			            📅 " & DateDisplay & "
+			        </div>
+			    </div>
+			</div>
+			"
+			```
+		lineageTag: 49efea2a-3c06-4cab-8367-26b26caa141e
+
+	measure 'Hero Card - Data Dictionary' = ```
+			
+			VAR TotalTables = DISTINCTCOUNT(Tables[table_name])
+			VAR TotalColumns = COUNTROWS(TableColumns)
+			VAR TotalRelationships = DISTINCTCOUNT(TableRelationships[relationship_name])
+			VAR TotalViews = DISTINCTCOUNT(Views[view_name])
+			
+			// Format the values
+			VAR TotalTablesText = FORMAT(TotalTables, "#,##0")
+			VAR TotalColumnsText = FORMAT(TotalColumns, "#,##0")
+			VAR TotalRelationshipsText = FORMAT(TotalRelationships, "#,##0")
+			VAR TotalViewsText = FORMAT(TotalViews, "#,##0")
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    padding: 20px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 12px;
+			    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+			    color: white;
+			    height: 105px;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-around;
+			'>
+			    <!-- Section 1: Total Tables -->
+			    <div style='text-align: center; flex: 1;'>
+			        <div style='font-size: 11px; opacity: 0.85; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;'>
+			            Total Tables
+			        </div>
+			        <div style='font-size: 36px; font-weight: 700; line-height: 1;'>
+			            " & TotalTablesText & "
+			        </div>
+			    </div>
+			    
+			    <!-- Divider -->
+			    <div style='width: 1.5px; height: 70px; background: rgba(255,255,255,0.3); margin: 0 10px;'></div>
+			    
+			    <!-- Section 2: Total Columns -->
+			    <div style='text-align: center; flex: 1;'>
+			        <div style='font-size: 11px; opacity: 0.85; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;'>
+			            Total Columns
+			        </div>
+			        <div style='font-size: 36px; font-weight: 700; line-height: 1; color: #60a5fa;'>
+			            " & TotalColumnsText & "
+			        </div>
+			    </div>
+			    
+			    <!-- Divider -->
+			    <div style='width: 1.5px; height: 70px; background: rgba(255,255,255,0.3); margin: 0 10px;'></div>
+			    
+			    <!-- Section 3: Total Relationships -->
+			    <div style='text-align: center; flex: 1;'>
+			        <div style='font-size: 11px; opacity: 0.85; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;'>
+			            Total Relationships
+			        </div>
+			        <div style='font-size: 36px; font-weight: 700; line-height: 1; color: #34d399;'>
+			            " & TotalRelationshipsText & "
+			        </div>
+			    </div>
+			    
+			    <!-- Divider -->
+			    <div style='width: 1.5px; height: 70px; background: rgba(255,255,255,0.3); margin: 0 10px;'></div>
+			    
+			    <!-- Section 4: Total Views -->
+			    <div style='text-align: center; flex: 1;'>
+			        <div style='font-size: 11px; opacity: 0.85; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;'>
+			            Total Views
+			        </div>
+			        <div style='font-size: 36px; font-weight: 700; line-height: 1; color: #a78bfa;'>
+			            " & TotalViewsText & "
+			        </div>
+			    </div>
+			</div>
+			"
+			```
+		lineageTag: f6bb44e6-ccd5-4a68-94a3-9124ba382fb2
+
+	measure 'Table Row Count' =
+			
+			VAR SelectedTable = SELECTEDVALUE(TableColumns[table_name])
+			VAR RowCount = CALCULATE(
+			    SUM(TableStats[row_count]),
+			    Tables[table_name] = SelectedTable
+			)
+			RETURN
+			IF(HASONEVALUE(TableColumns[table_name]), RowCount, BLANK())
+		lineageTag: 15471fa7-0e75-4d8d-8a4f-c8b67d30e11b
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Relationship Count' =
+			
+			CALCULATE(
+			    DISTINCTCOUNT(TableRelationships[relationship_name]),
+			    FILTER(
+			        TableRelationships,
+			        TableRelationships[foreign_table] = SELECTEDVALUE(Tables[table_name]) ||
+			        TableRelationships[primary_table] = SELECTEDVALUE(Tables[table_name])
+			    )
+			)
+		formatString: 0
+		lineageTag: c9c2948d-1ca2-4e2e-8b8e-68a6b475a2a0
+
+	measure '.' = 1
+		formatString: 0
+		lineageTag: c4d97f0a-e78d-431f-aa1c-f75577dec53a
+
+	measure 'Total Relationships' = DISTINCTCOUNT(AllTableRelationships[relationship_name]) / 2
+		formatString: 0
+		lineageTag: c15d6bbc-2c04-4035-88c4-ce7071d347ec
+
+	measure 'Relationship Map - Header' = ```
+			
+			// Get user name
+			VAR _User = USERPRINCIPALNAME()
+			VAR _Position = SEARCH("@", _User, 1)
+			VAR _Name = LEFT(_User, _Position - 1)
+			VAR _FirstLetter = UPPER(LEFT(_Name, 1))
+			VAR _LastName = MID(_Name, 2, LEN(_Name) - 1)
+			VAR _FormattedLastName = 
+			    UPPER(LEFT(_LastName, 1)) & LOWER(MID(_LastName, 2, LEN(_LastName)))
+			VAR WelcomeName = _FirstLetter & "." & _FormattedLastName
+			
+			// Get current date/time info
+			VAR CurrentDate = TODAY()
+			VAR DateDisplay = FORMAT(CurrentDate, "MMM D, YYYY")
+			VAR CurrentHour = HOUR(NOW())
+			VAR TimeGreeting = 
+			    IF(CurrentHour < 12, "Good Morning",
+			    IF(CurrentHour < 17, "Good Afternoon",
+			    "Good Evening"))
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    height: 85px;
+			    padding: 15px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 10px;
+			    color: white;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-between;
+			    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    box-sizing: border-box;
+			'>
+			    <!-- Left side: Dashboard Title -->
+			    <div style='display: flex; align-items: center; gap: 15px;'>
+			        <!-- Home icon -->
+			        <div style='
+			            width: 40px;
+			            height: 40px;
+			            background: rgba(255,255,255,0.15);
+			            border-radius: 8px;
+			            display: flex;
+			            align-items: center;
+			            justify-content: center;
+			            font-size: 20px;
+			        '>
+			            🏠
+			        </div>
+			        
+			        <!-- Title -->
+			        <div>
+			            <div style='font-size: 12px; opacity: 0.85; margin-bottom: 4px; letter-spacing: 0.5px;'>
+			                REPORT
+			            </div>
+			            <div style='font-size: 26px; font-weight: 700; line-height: 1;'>
+			                Table Relationship Map
+			            </div>
+			        </div>
+			    </div>
+			    
+			    <!-- Right side: Welcome & Date -->
+			    <div style='text-align: right;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 6px;'>
+			            " & TimeGreeting & ", " & WelcomeName & "
+			        </div>
+			        <div style='font-size: 16px; font-weight: 600;'>
+			            📅 " & DateDisplay & "
+			        </div>
+			    </div>
+			</div>
+			"
+			```
+		lineageTag: fbaf88c2-551e-41d1-9d54-f655a8c91b3c
+
+	column Value
+		isHidden
+		lineageTag: da2dfa23-0c4c-4e9d-8014-3cc5710e756b
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Value]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition _Measures = calculated
+		mode: import
+		source = { "This table holds all measures for the Parts Reorder Monitoring report" }
+
+	annotation PBI_Id = da82ad85df114f0dbe8c17ce73f079a8
+

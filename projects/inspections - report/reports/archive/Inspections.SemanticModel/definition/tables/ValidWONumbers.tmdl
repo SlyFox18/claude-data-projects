@@ -1,0 +1,28 @@
+table ValidWONumbers
+	lineageTag: 506a44f8-f774-4038-a514-9c485567fc4c
+
+	column wo_number
+		formatString: 0
+		lineageTag: f9ac945c-ce3e-4541-8b6c-f2a663bf6844
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [wo_number]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition ValidWONumbers = calculated
+		mode: import
+		source =
+				
+				DISTINCT(
+				    SELECTCOLUMNS(
+				        FILTER(
+				            'Job_Code_Times',
+				            'Job_Code_Times'[job_code] IN VALUES(JobCodes[job_code])
+				        ),
+				        "wo_number", 'Job_Code_Times'[wo_number]
+				    )
+				)
+
+	annotation PBI_Id = fea7062bd87f4ffb8e6923080f46a9b5
+

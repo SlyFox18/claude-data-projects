@@ -1,0 +1,65 @@
+table Views
+	lineageTag: c51c9fd8-d168-4f38-938b-c25b8a6ce4f0
+
+	column view_name
+		dataType: string
+		lineageTag: bc45511d-14ab-4c5b-a67d-26767409ede8
+		summarizeBy: none
+		sourceColumn: view_name
+
+		annotation SummarizationSetBy = Automatic
+
+	column column_name
+		dataType: string
+		lineageTag: 7558680a-1655-4cc0-83a3-a2e6dbf8ab53
+		summarizeBy: none
+		sourceColumn: column_name
+
+		annotation SummarizationSetBy = Automatic
+
+	column data_type
+		dataType: string
+		lineageTag: 46e3a11d-1393-4881-96e2-3ce0b2f299a5
+		summarizeBy: none
+		sourceColumn: data_type
+
+		annotation SummarizationSetBy = Automatic
+
+	column column_length
+		dataType: int64
+		formatString: 0
+		lineageTag: e499660f-4287-492d-b131-8201c24d1e6b
+		summarizeBy: sum
+		sourceColumn: column_length
+
+		annotation SummarizationSetBy = Automatic
+
+	column ordinal_position
+		dataType: int64
+		formatString: 0
+		lineageTag: 36fd8f08-b656-46b4-ac30-07e0e22e2c26
+		summarizeBy: sum
+		sourceColumn: ordinal_position
+
+		annotation SummarizationSetBy = Automatic
+
+	column object_type
+		dataType: string
+		lineageTag: fc8d360f-99a7-4cd6-aa69-db1144cb7c6f
+		summarizeBy: none
+		sourceColumn: object_type
+
+		annotation SummarizationSetBy = Automatic
+
+	partition Views = m
+		mode: import
+		source =
+				let
+				    Source = Odbc.Query("dsn=EquipRDB64", "-- All views and their columns#(lf)SELECT #(lf)    t.table_name as view_name,#(lf)    c.column_name,#(lf)    c.base_type_str as data_type,#(lf)    c.width as column_length,#(lf)    c.column_id as ordinal_position,#(lf)    'View' as object_type#(lf)FROM sys.systable t#(lf)INNER JOIN sys.systabcol c ON t.table_id = c.table_id#(lf)WHERE t.creator NOT IN (1, 3)#(lf)    AND t.table_type = 'VIEW'#(lf)ORDER BY t.table_name, c.column_id;")
+				in
+				    Source
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

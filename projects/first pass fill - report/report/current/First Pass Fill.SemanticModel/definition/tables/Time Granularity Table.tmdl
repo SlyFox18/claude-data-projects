@@ -1,0 +1,34 @@
+table 'Time Granularity Table'
+	lineageTag: 7c95665f-8ce8-4a13-be3f-4882055c85b4
+
+	column Granularity
+		lineageTag: fac2187d-0b64-4e45-98b7-f70cf900bb86
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Granularity]
+
+		annotation SummarizationSetBy = Automatic
+
+	column Display
+		lineageTag: 4ba660d7-606b-47e5-84f1-dd1cad3bb764
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Display]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Time Granularity Table' = calculated
+		mode: import
+		source =
+				
+				DATATABLE(
+				    "Granularity", STRING,
+				    "Display", STRING,
+				    {
+				        {"Monthly", "Month by Month"},
+				        {"Annual", "Year by Year"}
+				    }
+				)
+
+	annotation PBI_Id = fdd52fcde79348759d052ab163b4845c
+

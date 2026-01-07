@@ -1,0 +1,77 @@
+table FilteredCombinedTable
+	lineageTag: 65cb5ded-56fd-4244-8872-e1f2c45d4db9
+
+	column Part_No
+		lineageTag: 54cea13c-4264-4f91-b20d-291f95c6ca9e
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: CombinedTable[Part_No]
+
+		annotation SummarizationSetBy = Automatic
+
+	column Negative_QTY
+		lineageTag: 8a55478e-60c0-42da-be42-5ef194e6d4bd
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [Negative_QTY]
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column Negative_Trans_Date
+		formatString: General Date
+		lineageTag: 406750a4-e60c-496a-af2a-ef219a1fc0e8
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Negative_Trans_Date]
+
+		variation Variation
+			isDefault
+			relationship: b79b6eaa-bc2b-42ed-a294-115bbfd6cf25
+			defaultHierarchy: LocalDateTable_591293a1-bed7-4886-82ce-9bf9d0b466d4.'Date Hierarchy'
+
+		annotation SummarizationSetBy = Automatic
+
+	column Positive_QTY
+		lineageTag: 21d607de-197d-44e6-bd58-935559289822
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [Positive_QTY]
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column Positive_Trans_Date
+		formatString: General Date
+		lineageTag: dd9213c6-1ff2-4324-aeab-048f7c03c67e
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Positive_Trans_Date]
+
+		variation Variation
+			isDefault
+			relationship: db435f39-62d7-43fe-bfcd-6010149d7281
+			defaultHierarchy: LocalDateTable_2efb6dcc-aaf1-4c07-9b7f-d329360b1786.'Date Hierarchy'
+
+		annotation SummarizationSetBy = Automatic
+
+	partition FilteredCombinedTable = calculated
+		mode: import
+		source = ```
+				
+				SUMMARIZE (
+				    CombinedTable,
+				    CombinedTable[Part_No],
+				    "Negative_QTY", CALCULATE ( SUM ( CombinedTable[QTY] ), CombinedTable[Type] = "Negative" ),
+				    "Negative_Trans_Date", CALCULATE ( MAX ( CombinedTable[Trans_Date] ), CombinedTable[Type] = "Negative" ),
+				    "Positive_QTY", CALCULATE ( SUM ( CombinedTable[QTY] ), CombinedTable[Type] = "Positive" ),
+				    "Positive_Trans_Date", CALCULATE ( MAX ( CombinedTable[Trans_Date] ), CombinedTable[Type] = "Positive" )
+				)
+				
+				
+				```
+
+	annotation PBI_Id = 9ebb07b7a7534307bed436385b89fa78
+

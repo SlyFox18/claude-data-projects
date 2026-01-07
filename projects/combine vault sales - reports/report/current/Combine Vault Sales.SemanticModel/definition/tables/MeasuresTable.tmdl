@@ -1,0 +1,3719 @@
+table MeasuresTable
+	lineageTag: 0d039455-6ff6-47ec-acba-7d08b99b993f
+
+	measure 'Welcome Name' =
+			
+			VAR _User =
+			    USERPRINCIPALNAME ()
+			VAR _Position =
+			    SEARCH ( "@", _User, 1 )
+			VAR _Name =
+			    LEFT ( _User, _Position - 1 )
+			VAR _FirstLetter =
+			    UPPER ( LEFT ( _Name, 1 ) )
+			VAR _LastName =
+			    MID ( _Name, 2, LEN ( _Name ) - 1 )
+			VAR _FormattedLastName =
+			    UPPER ( LEFT ( _LastName, 1 ) )
+			        & LOWER ( MID ( _LastName, 2, LEN ( _LastName ) ) )
+			RETURN
+			    "Welcome Back, " & _FirstLetter & "." & _FormattedLastName
+		lineageTag: e6d65f23-5bad-438a-9ab9-84546804830c
+
+	measure 'Show Filter 1' =
+			
+			VAR MaxFilters = 7
+			RETURN
+			    IF (
+			        ISFILTERED ( dim_BranchLocation[Branch] ),
+			        VAR ___f =
+			            FILTERS ( dim_BranchLocation[Branch] )
+			        VAR ___r =
+			            COUNTROWS ( ___f )
+			        VAR ___t =
+			            TOPN ( MaxFilters, ___f, dim_BranchLocation[Branch] )
+			        VAR ___d =
+			            CONCATENATEX ( ___t, dim_BranchLocation[Branch], ", " )
+			        VAR ___x =
+			            "Branch:  " & ___d
+			                & IF ( ___r > MaxFilters, ", ... [" & ___r & " items selected]" ) & " "
+			        RETURN
+			            ___x & UNICHAR ( 13 )
+			                & UNICHAR ( 10 )
+			    )
+		lineageTag: 80215221-86d3-4400-a454-dc6c766a0e1b
+
+	measure 'Sales R12' =
+			
+			CALCULATE(
+			    SUM(fact_Branch12_Transactions[SaleValue]),
+			    fact_Branch12_Transactions[IsSale] = TRUE,
+			    dim_DateTable[IsRolling365Days] = TRUE
+			)
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 2b3a7299-54e1-45d9-a7a4-116277d6c1ed
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Total COS R12' =
+			
+			CALCULATE(
+			    SUM(fact_Branch12_Transactions[CostValue]),
+			    fact_Branch12_Transactions[IsSale] = TRUE,
+			    dim_DateTable[IsRolling365Days] = TRUE
+			)
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 6369f841-cf26-4312-99e6-6a77ca432624
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Inventory Value' =
+			
+			SUM(dim_Branch12_Parts[InventoryCost])
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 1a143123-a997-41fc-841b-4e1ea282c9f0
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Current Turn' =
+			
+			VAR AvgInventory = [Inventory Value]
+			VAR CostOfSales = [Total COS R12]
+			RETURN
+			    IF(
+			        AvgInventory > 0,
+			        DIVIDE(CostOfSales, AvgInventory, 0),
+			        0
+			    )
+		lineageTag: 6c495c66-83c3-4ac3-bd56-7983ad06b162
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Margin $' =
+			
+			CALCULATE(
+			    SUM(fact_Branch12_Transactions[MarginDollars]),
+			    fact_Branch12_Transactions[IsSale] = TRUE
+			)
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: e518ca12-bb3e-458b-91ba-9268e7289cc9
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Margin %' =
+			
+			VAR TotalSales = [Sales]  // Context-aware sales
+			VAR TotalMargin = [Margin $]
+			RETURN
+			    IF(
+			        TotalSales > 0,
+			        DIVIDE(TotalMargin, TotalSales, 0),
+			        0
+			    )
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: b8c893c4-e44e-4f2f-9d70-5867f0b88320
+
+	measure 'Margin $ R12' =
+			
+			CALCULATE(
+			    SUM(fact_Branch12_Transactions[MarginDollars]),
+			    fact_Branch12_Transactions[IsSale] = TRUE,
+			    dim_DateTable[IsRolling365Days] = TRUE
+			)
+		lineageTag: 29d9dad8-1a2a-43eb-8267-5523a87e6f4f
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure Sales =
+			
+			CALCULATE(
+			    SUM(fact_Branch12_Transactions[SaleValue]),
+			    fact_Branch12_Transactions[IsSale] = TRUE
+			)
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 055a6e17-77c2-4470-913e-131ca69b98c0
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Previous Year Sales' =
+			
+			CALCULATE(
+			    [Sales],
+			    DATEADD(dim_DateTable[Date], -1, YEAR)
+			)
+		lineageTag: c323b4dd-d6ce-4dde-82cc-dbb1b697fe83
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Sales YTD Growth $' = ```
+			
+			VAR CurrentYear = YEAR(TODAY())
+			VAR LastYear = CurrentYear - 1
+			VAR YearStart2025 = DATE(CurrentYear, 1, 1)
+			VAR YearStart2024 = DATE(LastYear, 1, 1)
+			VAR CurrentDate = TODAY()
+			VAR SameDayLastYear = DATE(LastYear, MONTH(TODAY()), DAY(TODAY()))
+			
+			VAR CurrentYTD = 
+			    CALCULATE(
+			        [Sales],
+			        REMOVEFILTERS(dim_DateTable),
+			        dim_DateTable[Date] >= YearStart2025,
+			        dim_DateTable[Date] <= CurrentDate,
+			        KEEPFILTERS(fact_Branch12_Transactions[IsSale] = TRUE)
+			    )
+			
+			VAR LastYearYTD = 
+			    CALCULATE(
+			        [Sales],
+			        REMOVEFILTERS(dim_DateTable),
+			        dim_DateTable[Date] >= YearStart2024,
+			        dim_DateTable[Date] <= SameDayLastYear,
+			        KEEPFILTERS(fact_Branch12_Transactions[IsSale] = TRUE)
+			    )
+			
+			RETURN
+			    CurrentYTD - LastYearYTD
+			```
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: d3537d89-9208-4269-92a9-ac73cd8b6f24
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Sales Growth %' =
+			
+			VAR CurrentSales = [Sales]
+			VAR PriorSales = [Previous Year Sales]
+			RETURN
+			    IF(
+			        PriorSales > 0,
+			        DIVIDE(CurrentSales - PriorSales, PriorSales, 0),
+			        BLANK()
+			    )
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: c95e51f1-745e-41dc-91d4-a3267d0440ac
+
+	measure 'Sales Qty' =
+			
+			CALCULATE(
+			    SUM(fact_Branch12_Transactions[SalesQty]),
+			    fact_Branch12_Transactions[IsSale] = TRUE
+			)
+		formatString: 0
+		lineageTag: 073e2c58-0b26-4155-8edb-49a012e453e2
+
+	measure Qty =
+			
+			CALCULATE(
+			    SUM(fact_Branch12_Transactions[SalesQty]),
+			    fact_Branch12_Transactions[IsSale] = TRUE,
+			    fact_Branch12_Transactions[Date] >= TODAY() - 365
+			)
+		formatString: 0
+		lineageTag: 588611fe-cc49-422b-9ec3-6b4ccec0040c
+
+	measure Demands = ```
+			
+			CALCULATE(
+			    COUNTROWS(Fact_Branch12_Transactions),
+			    Fact_Branch12_Transactions[IsSale] = TRUE,
+			    Fact_Branch12_Transactions[Date] >= TODAY() - 365,
+			    Fact_Branch12_Transactions[Date] <= TODAY()
+			)
+			
+			```
+		lineageTag: b3b90ca0-5bf9-4780-90ca-d41d3865bf48
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Unit Price' =
+			
+			CALCULATE(
+			    MIN(fact_Branch12_Transactions[SellPrice1]),
+			    fact_Branch12_Transactions[IsSale] = TRUE,
+			    fact_Branch12_Transactions[Date] >= TODAY() - 365,
+			    fact_Branch12_Transactions[Date] <= TODAY()
+			)
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 765f512d-d0a3-4d2e-bc7a-a403540ba8c2
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Avg Unit Price' =
+			
+			VAR TotalSales = [Sales]
+			VAR TotalQty = [Sales Qty]
+			RETURN
+			    IF(
+			        TotalQty > 0,
+			        DIVIDE(TotalSales, TotalQty, 0),
+			        BLANK()
+			    )
+		lineageTag: 30ebc3a2-5187-4ee4-9bfa-f3b19486b242
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Margin % Color' =
+			
+			VAR MarginPct = [Margin %]
+			RETURN
+			    SWITCH(
+			        TRUE(),
+			        MarginPct >= 0.40, "#10B981",  // Green (good margin)
+			        MarginPct >= 0.30, "#F59E0B",  // Yellow (acceptable)
+			        MarginPct < 0.30, "#EF4444",   // Red (low margin)
+			        "#6B7280"                       // Gray (no data)
+			    )
+		lineageTag: e64051db-412b-455d-be87-c9ca61744a7b
+
+	measure 'Stock Status' = ```
+			
+			VAR QtyOnHand = SUM(dim_Branch12_Parts[QuantityOnHand])
+			VAR DemandsR12 = [Demands]  // Transaction count R12
+			VAR SalesQtyR12 = [Qty]     // Actual quantity sold R12
+			VAR DaysSinceLastSale = [Days - Last Sale]
+			
+			// Calculate monthly velocity from R12 sales
+			VAR MonthlyVelocity = DIVIDE(SalesQtyR12, 12, 0)
+			VAR MonthsOfSupply = 
+			    IF(
+			        MonthlyVelocity > 0,
+			        DIVIDE(QtyOnHand, MonthlyVelocity, 999),
+			        999
+			    )
+			
+			// Activity classification (refined)
+			VAR HasRecentActivity = NOT ISBLANK(DaysSinceLastSale) && DaysSinceLastSale <= 90
+			VAR HasModerateActivity = NOT ISBLANK(DaysSinceLastSale) && DaysSinceLastSale > 90 && DaysSinceLastSale <= 365
+			VAR IsStagnant = NOT ISBLANK(DaysSinceLastSale) && DaysSinceLastSale > 365
+			VAR HasNoDemand = ISBLANK(DaysSinceLastSale) || (DemandsR12 = 0 && SalesQtyR12 = 0)
+			
+			// Demand indicators
+			VAR HasDemandR12 = DemandsR12 > 0 && SalesQtyR12 > 0
+			
+			RETURN
+			    SWITCH(
+			        TRUE(),
+			        
+			        // ========== PRIORITY 1: OUT OF STOCK ==========
+			        // No inventory but has recent demand/sales
+			        QtyOnHand = 0 && HasDemandR12 && NOT ISBLANK(DaysSinceLastSale), 
+			            "⚠️ Out of Stock",
+			        
+			        // ========== PRIORITY 2: CRITICAL LOW STOCK ==========
+			        // Less than 1 month supply with recent activity (< 90 days)
+			        MonthsOfSupply < 1 && HasRecentActivity && QtyOnHand > 0, 
+			            "🔴 Critical Low",
+			        
+			        // ========== PRIORITY 3: LOW STOCK ==========
+			        // 1-2 months supply with recent activity
+			        MonthsOfSupply >= 1 && MonthsOfSupply < 2 && HasRecentActivity && QtyOnHand > 0, 
+			            "⚡ Low Stock",
+			        
+			        // ========== PRIORITY 4: HEALTHY ==========
+			        // 2-6 months supply with recent activity (< 90 days)
+			        MonthsOfSupply >= 2 && MonthsOfSupply <= 6 && HasRecentActivity && QtyOnHand > 0, 
+			            "✅ Healthy",
+			        
+			        // ========== PRIORITY 5: ADEQUATE ==========
+			        // 6-12 months supply with recent activity
+			        MonthsOfSupply > 6 && MonthsOfSupply <= 12 && HasRecentActivity && QtyOnHand > 0, 
+			            "📊 Adequate",
+			        
+			        // ========== PRIORITY 6: SLOW MOVING - MONITOR ==========
+			        // Has stock, moderate activity (90-180 days), regardless of months supply
+			        // OR very low velocity but sold within 180 days
+			        QtyOnHand > 0 && HasModerateActivity, 
+			            "🟡 Slow - Monitor",
+			        
+			        // ========== PRIORITY 7: OVERSTOCK - RECENT SALES ==========
+			        // More than 12 months supply BUT sold within last 90 days
+			        // Keep this separate from total stagnant - these are just overstocked
+			        MonthsOfSupply > 12 && HasRecentActivity && QtyOnHand > 0, 
+			            "📦 Overstock - Active",
+			        
+			        // ========== PRIORITY 8: STAGNANT STOCK ==========
+			        // Has stock but no sales in 180+ days
+			        QtyOnHand > 0 && IsStagnant, 
+			            "💤 Stagnant Stock",
+			        
+			        // ========== PRIORITY 9: INACTIVE - NO STOCK ==========
+			        // No stock and no demand in R12
+			        QtyOnHand = 0 && HasNoDemand, 
+			            "⚪ Inactive - No Stock",
+			        
+			        // ========== PRIORITY 10: INACTIVE - HAS STOCK ==========
+			        // Has stock but absolutely no sales/demand in R12
+			        QtyOnHand > 0 && HasNoDemand, 
+			            "💤 Inactive - Has Stock",
+			        
+			        // Fallback - should rarely hit this
+			        "❓ Unknown"
+			    )
+			```
+		lineageTag: ff2443d3-842a-4a1f-a018-bcb9d900a7cc
+
+	measure 'Part Count' =
+			
+			DISTINCTCOUNT(fact_Branch12_Transactions[PartNumber])
+		formatString: 0
+		lineageTag: d7f17100-e282-45f1-b587-653970a31724
+
+	measure 'Transaction Count' =
+			
+			CALCULATE(
+			    COUNTROWS(fact_Branch12_Transactions),
+			    fact_Branch12_Transactions[IsSale] = TRUE
+			)
+		formatString: 0
+		lineageTag: d5feb4b5-9e29-444e-a363-4c94d65668b8
+
+	measure 'Parts in Stock' =
+			
+			CALCULATE(
+			    COUNTROWS(dim_Branch12_Parts),
+			    dim_Branch12_Parts[IsAvailable] = TRUE,
+			    dim_Branch12_Parts[PartNumber] <> "UNKNOWN"
+			)
+		formatString: 0
+		lineageTag: 99f7f619-cf9f-4567-8a22-fcb74d8d8591
+
+	measure 'Parts Out of Stock' =
+			
+			COUNTROWS(
+			    FILTER(
+			        VALUES(dim_Branch12_Parts[PartNumber]),
+			        [Stock Status] = "⚠️ Out of Stock"
+			    )
+			)
+		formatString: 0
+		lineageTag: fe00e2da-7dbf-436f-a2cc-233d5ad9717b
+
+	measure 'Sales Previous Month' =
+			
+			CALCULATE(
+			    [Sales],
+			    DATEADD(dim_DateTable[Date], -1, MONTH)
+			)
+		lineageTag: ef011f93-1407-4316-82fe-b6fa6c7c106f
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Sales MoM Growth %' =
+			
+			VAR CurrentSales = [Sales]
+			VAR PriorSales = [Sales Previous Month]
+			RETURN
+			    IF(
+			        PriorSales > 0,
+			        DIVIDE(CurrentSales - PriorSales, PriorSales, 0),
+			        BLANK()
+			    )
+		lineageTag: b06fa449-3b6b-4ff2-874c-80d3e3098551
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Has Sales' = [Sales] > 0
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 419219f7-2497-4dff-9ad0-cf2f7834e0c1
+
+	measure 'Days - Last Sale' = ```
+			
+			VAR LastSaleDate = 
+			    CALCULATE(
+			        MAX(fact_Branch12_Transactions[Date]),
+			        fact_Branch12_Transactions[IsSale] = TRUE
+			    )
+			RETURN
+			    IF(
+			        NOT ISBLANK(LastSaleDate),
+			        INT(TODAY() - LastSaleDate),  // ← INT ensures whole days
+			        BLANK()
+			    )
+			
+			```
+		formatString: 0
+		lineageTag: aa683477-522e-488e-b250-52f292c4e3fb
+
+	measure 'TEST Sales R12 Check' = ```
+			
+			VAR CalculatedSales = [Sales R12]
+			VAR ExpectedSales = 148740  // Update with your actual old report value
+			VAR Difference = CalculatedSales - ExpectedSales
+			VAR PercentDiff = DIVIDE(Difference, ExpectedSales, 0)
+			RETURN
+			    "Calculated: " & FORMAT(CalculatedSales, "$#,##0") & 
+			    " | Expected: " & FORMAT(ExpectedSales, "$#,##0") & 
+			    " | Diff: " & FORMAT(Difference, "$#,##0") & 
+			    " (" & FORMAT(PercentDiff, "0.0%") & ")"
+			```
+		lineageTag: fcda6757-2ac8-4dd6-9e74-fbaa49b03432
+
+	measure 'TEST Transaction Split' = ```
+			
+			VAR SalesCount = 
+			    CALCULATE(
+			        COUNTROWS(fact_Branch12_Transactions), 
+			        fact_Branch12_Transactions[IsSale] = TRUE
+			    )
+			VAR AddsCount = 
+			    CALCULATE(
+			        COUNTROWS(fact_Branch12_Transactions), 
+			        fact_Branch12_Transactions[IsSale] = FALSE
+			    )
+			RETURN
+			    "Sales Transactions: " & FORMAT(SalesCount, "#,##0") & 
+			    " | Inventory Additions: " & FORMAT(AddsCount, "#,##0")
+			```
+		lineageTag: 9a68f06c-d35e-43ef-ae06-c35a4e52883c
+
+	measure 'Sales Last 365' =
+			
+			CALCULATE(
+			    [Sales],
+			    fact_Branch12_Transactions[Date] >= TODAY() - 365,
+			    fact_Branch12_Transactions[Date] <= TODAY()
+			)
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 38d505c1-9302-4286-9e1d-22f25b46eb0c
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Margin % R12' =
+			
+			VAR TotalSales = [Sales R12]
+			VAR TotalMargin = [Margin $ R12]
+			RETURN
+			    IF(
+			        TotalSales > 0,
+			        DIVIDE(TotalMargin, TotalSales, 0),
+			        0
+			    )
+		lineageTag: 4b77d84f-8775-4c4f-adc6-aa702410a4ea
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure Cost =
+			
+			CALCULATE(
+			    SUM(fact_Branch12_Transactions[CostValue]),
+			    fact_Branch12_Transactions[IsSale] = TRUE
+			)
+		lineageTag: a386c502-998d-487d-b08f-ee31df92388b
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Margin $ Last 365' =
+			
+			CALCULATE(
+			    SUM(fact_Branch12_Transactions[MarginDollars]),
+			    fact_Branch12_Transactions[IsSale] = TRUE,
+			    fact_Branch12_Transactions[Date] >= TODAY() - 365,
+			    fact_Branch12_Transactions[Date] <= TODAY()
+			)
+		lineageTag: 66fe7654-03ff-4360-9074-07ee8139b86c
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Margin % Last 365' =
+			
+			VAR TotalSales = [Sales Last 365]
+			VAR TotalMargin = [Margin $ Last 365]
+			RETURN
+			    IF(
+			        TotalSales > 0,
+			        DIVIDE(TotalMargin, TotalSales, 0),
+			        0
+			    )
+		lineageTag: cce1ff91-37f5-475c-90ba-44ab3ab92090
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Qty on Hand' =
+			
+			SUM(dim_Branch12_Parts[QuantityOnHand])
+		formatString: 0
+		lineageTag: c76a447d-5bd1-4405-bdb5-8a7abebc5a98
+
+	measure 'Bin Qty' = SUM(dim_Branch12_Parts[BinQty])
+		formatString: 0
+		lineageTag: 545d8c00-c5c7-4c12-a19e-630a1d104d93
+
+	measure 'Pending Qty' = SUM(dim_Branch12_Parts[PendingQty])
+		formatString: 0
+		lineageTag: 34aed377-ae38-44cc-93c7-d69faf47ac8c
+
+	measure 'Bulk Bin Qty' = SUM(dim_Branch12_Parts[BulkBinQty])
+		lineageTag: 3dc2a42d-3b68-4d9f-8ae7-f9c0b7dcac26
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Total Parts' = DISTINCTCOUNT(fact_Branch12_Transactions[PartNumber])
+		formatString: 0
+		lineageTag: ddbe41ce-992c-4a44-b41a-36c2733b4684
+
+	measure 'Total Transactions' =
+			
+			CALCULATE(
+			    COUNTROWS(fact_Branch12_Transactions),
+			    fact_Branch12_Transactions[IsSale] = TRUE
+			)
+		formatString: 0
+		lineageTag: 22f16679-a558-4ef3-8148-9ae1f3406562
+
+	measure 'Active Parts' =
+			
+			CALCULATE(
+			    DISTINCTCOUNT(fact_Branch12_Transactions[PartNumber]),
+			    fact_Branch12_Transactions[IsSale] = TRUE,
+			    fact_Branch12_Transactions[Date] >= TODAY() - 365
+			)
+		formatString: 0
+		lineageTag: 9bb6685d-259a-4422-9cf4-cd72d01d58c8
+
+	measure 'Avg Transaction Value' =
+			
+			VAR TotalSales = [Sales]
+			VAR TransCount = [Total Transactions]
+			RETURN
+			    IF(
+			        TransCount > 0,
+			        DIVIDE(TotalSales, TransCount, 0),
+			        BLANK()
+			    )
+		lineageTag: a93f27fd-cfc3-4ecd-842b-6c11693d5df6
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'TEST Measure Summary' =
+			
+			"Sales R12: " & FORMAT([Sales R12], "$#,##0") & UNICHAR(10) &
+			"Cost R12: " & FORMAT([Total COS R12], "$#,##0") & UNICHAR(10) &
+			"Margin R12: " & FORMAT([Margin $ R12], "$#,##0") & UNICHAR(10) &
+			"Margin %: " & FORMAT([Margin % R12], "0.0%") & UNICHAR(10) &
+			"Inventory: " & FORMAT([Inventory Value], "$#,##0") & UNICHAR(10) &
+			"Turn Rate: " & FORMAT([Current Turn], "0.00")
+		lineageTag: dcb082b3-bb92-4e84-938f-3922288af498
+
+	measure 'TEST Inventory Comparison' = ```
+			
+			VAR NewCalc = [Inventory Value]
+			VAR OldCalc = SUMX(dim_Branch12_Parts, [QuantityOnHand] * [Cost])
+			VAR Difference = NewCalc - OldCalc
+			RETURN
+			    "New: " & FORMAT(NewCalc, "$#,##0") & 
+			    " | Old Calc: " & FORMAT(OldCalc, "$#,##0") & 
+			    " | Diff: " & FORMAT(Difference, "$#,##0")
+			```
+		lineageTag: 2df58998-53c0-4588-b1b1-591f7292fbbc
+
+	measure 'Unit Price (Context)' =
+			
+			CALCULATE(
+			    MIN(fact_Branch12_Transactions[SellPrice1]),
+			    fact_Branch12_Transactions[IsSale] = TRUE
+			)
+		lineageTag: 1a917522-d574-4399-90ce-387c403ea0a4
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Sales YTD' =
+			
+			CALCULATE(
+			    [Sales],
+			    DATESYTD(dim_DateTable[Date])
+			)
+		lineageTag: d52f9711-9aad-424a-9a5d-67006aaa5a0d
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Previous Year YTD' =
+			
+			CALCULATE(
+			    [Sales YTD],
+			    DATEADD(dim_DateTable[Date], -1, YEAR)
+			)
+		lineageTag: 51bcbeb7-91b5-4c1f-a139-d23149c8146c
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Previous Year Sales Test' =
+			
+			CALCULATE(
+			    [Sales],
+			    SAMEPERIODLASTYEAR(dim_DateTable[Date])
+			)
+		lineageTag: 0419c844-0b19-4c56-b107-4361be37f1c9
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'TEST December Sales Detail' =
+			
+			CALCULATE(
+			    [Sales],
+			    dim_DateTable[Year] = 2024,
+			    dim_DateTable[Month] = 12
+			)
+		lineageTag: b156e92a-3545-438d-9dce-b72fe963d131
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'TEST December Transaction Count' =
+			
+			CALCULATE(
+			    [Total Transactions],
+			    dim_DateTable[Year] = 2024,
+			    dim_DateTable[Month] = 12
+			)
+		formatString: 0
+		lineageTag: ebef06d9-7ec2-474f-8944-f78b353913c6
+
+	measure 'Sales Regular' =
+			
+			IF(
+			    SELECTEDVALUE(dim_DateTable[Month]) = 12,
+			    BLANK(),
+			    [Sales]
+			)
+		lineageTag: 1a80ef00-a5e1-41e6-907d-00fbeda197f1
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Sales December' =
+			
+			IF(
+			    SELECTEDVALUE(dim_DateTable[Month]) = 12,
+			    [Sales],
+			    BLANK()
+			)
+		lineageTag: 6984b992-fc4f-4656-97af-9da6f7e982fe
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Column Color Formatting' =
+			
+			VAR CurrentSales = [Sales]
+			VAR PriorYearSales = [Previous Year Sales]
+			VAR CurrentMonth = SELECTEDVALUE(dim_DateTable[Month])
+			VAR CurrentYear = SELECTEDVALUE(dim_DateTable[Year])
+			VAR IsDecember2024 = CurrentMonth = 12 && CurrentYear = 2024
+			RETURN
+			    SWITCH(
+			        TRUE(),
+			        IsDecember2024, 2,                      // Exceptional month (December 2024)
+			        CurrentSales > PriorYearSales, 1,       // Better than last year (Blue)
+			        0                                        // Worse than last year (Grey)
+			    )
+		formatString: 0
+		lineageTag: c82c99da-2a04-44aa-93a7-b1e52eb36725
+
+	measure 'Column Color Formatting  Custom' = ```
+			
+			VAR CurrentSales = [Sales]
+			VAR PriorYearSales = [Previous Year Sales]
+			VAR AverageSales = 
+			    CALCULATE(
+			        AVERAGE(fact_Branch12_Transactions[SaleValue]),
+			        fact_Branch12_Transactions[IsSale] = TRUE,
+			        dim_DateTable[Date] >= TODAY() - 365
+			    )
+			VAR IsExceptional = CurrentSales > (AverageSales * 3)  // 3x average = exceptional
+			RETURN
+			    SWITCH(
+			        TRUE(),
+			        IsExceptional, 2,                       // Exceptional (Amber)
+			        CurrentSales > PriorYearSales, 1,       // Better than last year (Blue)
+			        0                                        // Worse than last year (Grey)
+			    )
+			```
+		formatString: 0
+		lineageTag: 8c5b4374-f012-4062-becf-11982b3b1c17
+
+	measure 'Performance Category' =
+			
+			VAR ColorCode = [Column Color Formatting]
+			RETURN
+			    SWITCH(
+			        ColorCode,
+			        2, "🔥 Exceptional Month",
+			        1, "✅ Better than Last Year",
+			        0, "📉 Below Last Year",
+			        "N/A"
+			    )
+		lineageTag: 54135121-1e65-40ce-b3c0-7b2303a438b0
+
+	measure 'Tooltip Current Sales' =
+			
+			VAR CurrentSales = [Sales]
+			VAR FormattedSales = FORMAT(CurrentSales, "$#,##0")
+			RETURN
+			    FormattedSales
+		lineageTag: 125ffe96-c401-48b9-ab7d-7f553adf1a3d
+
+	measure 'Tooltip Previous Year' =
+			
+			VAR PriorSales = [Previous Year Sales]
+			VAR FormattedSales = FORMAT(PriorSales, "$#,##0")
+			RETURN
+			    FormattedSales
+		lineageTag: 4708da0f-9968-451e-bec8-91721fc6425a
+
+	measure 'Tooltip Variance' = ```
+			
+			VAR CurrentSales = [Sales]
+			VAR PriorSales = [Previous Year Sales]
+			VAR Difference = CurrentSales - PriorSales
+			VAR FormattedDiff = FORMAT(ABS(Difference), "$#,##0")
+			VAR Arrow = IF(Difference > 0, "▲", IF(Difference < 0, "▼", "●"))
+			VAR Sign = IF(Difference > 0, "+", IF(Difference < 0, "-", ""))
+			RETURN
+			    Sign & FormattedDiff & " " & Arrow
+			
+			```
+		lineageTag: 94413484-452b-4303-9af0-41d0e088fdfb
+
+	measure 'Tooltip Variance %' = ```
+			
+			VAR CurrentSales = [Sales]
+			VAR PriorSales = [Previous Year Sales]
+			VAR GrowthRate = 
+			    IF(
+			        PriorSales > 0,
+			        DIVIDE(CurrentSales - PriorSales, PriorSales),
+			        BLANK()
+			    )
+			VAR FormattedPct = FORMAT(ABS(GrowthRate), "0.0%")
+			VAR Arrow = IF(GrowthRate > 0, "▲", IF(GrowthRate < 0, "▼", "●"))
+			VAR Sign = IF(GrowthRate > 0, "+", IF(GrowthRate < 0, "-", ""))
+			RETURN
+			    IF(
+			        NOT ISBLANK(GrowthRate),
+			        Sign & FormattedPct & " " & Arrow,
+			        "N/A"
+			    )
+			```
+		lineageTag: 25197936-3de0-4816-a6f4-b9cb96ad10b8
+
+	measure 'Tooltip Performance' =
+			
+			VAR CurrentSales = [Sales]
+			VAR PriorSales = [Previous Year Sales]
+			VAR Difference = CurrentSales - PriorSales
+			VAR GrowthRate = IF(PriorSales > 0, DIVIDE(Difference, PriorSales), BLANK())
+			VAR CurrentMonth = SELECTEDVALUE(dim_DateTable[Month])
+			VAR CurrentYear = SELECTEDVALUE(dim_DateTable[Year])
+			VAR IsExceptional = CurrentMonth = 12 && CurrentYear = 2024
+			RETURN
+			    SWITCH(
+			        TRUE(),
+			        IsExceptional, "🔥 Exceptional Performance",
+			        GrowthRate > 0.20, "🚀 Strong Growth",
+			        GrowthRate > 0, "✅ Growth vs Last Year",
+			        GrowthRate = 0, "➖ Flat",
+			        GrowthRate > -0.20, "📉 Slight Decline",
+			        "⚠️ Significant Decline"
+			    )
+		lineageTag: c2c00e7f-8fac-43e4-a281-e4f653695775
+
+	measure 'Tooltip Month Label' =
+			
+			VAR MonthName = SELECTEDVALUE(dim_DateTable[MonthName])
+			VAR Year = SELECTEDVALUE(dim_DateTable[Year])
+			RETURN
+			    MonthName & " " & FORMAT(Year, "0000")
+		lineageTag: 86a22162-bee6-4782-bf87-e88ec0f5b00a
+
+	measure 'Tooltip Rank' = ```
+			
+			VAR CurrentMonth = SELECTEDVALUE(dim_DateTable[MonthYearDate])
+			VAR CurrentSales = [Sales]
+			VAR Ranking = 
+			    RANKX(
+			        ALL(dim_DateTable[MonthYearDate]),
+			        [Sales],
+			        ,
+			        DESC,
+			        DENSE
+			    )
+			RETURN
+			    "#" & Ranking & " of 12 months"
+			```
+		lineageTag: d46ff08a-3111-46f2-9940-79762ff79c98
+
+	measure 'Tooltip YTD Progress' =
+			
+			VAR YTDSales = [Sales YTD]
+			VAR FormattedYTD = FORMAT(YTDSales, "$#,##0")
+			RETURN
+			    "YTD Total: " & FormattedYTD
+		lineageTag: eb857f77-fe48-4904-a940-91d6cf92f7ba
+
+	measure 'Tooltip Trend' = ```
+			
+			VAR Last3Months = 
+			    CALCULATE(
+			        AVERAGE(fact_Branch12_Transactions[SaleValue]),
+			        dim_DateTable[Date] >= SELECTEDVALUE(dim_DateTable[Date]) - 90,
+			        dim_DateTable[Date] <= SELECTEDVALUE(dim_DateTable[Date])
+			    )
+			VAR CurrentMonth = [Sales]
+			RETURN
+			    IF(
+			        CurrentMonth > Last3Months,
+			        "📈 Above 3-month avg",
+			        "📉 Below 3-month avg"
+			    )
+			```
+		lineageTag: 80fdb3b4-b63a-44b1-9514-4d74655d32fe
+
+	measure 'Sales YTD LY' =
+			
+			VAR CurrentYear = YEAR(TODAY())
+			VAR LastYear = CurrentYear - 1
+			VAR YearStart = DATE(LastYear, 1, 1)
+			VAR CurrentDayLastYear = DATE(LastYear, MONTH(TODAY()), DAY(TODAY()))
+			RETURN
+			    CALCULATE(
+			        [Sales],
+			        REMOVEFILTERS(dim_DateTable),  // Clear any date filters
+			        dim_DateTable[Date] >= YearStart,
+			        dim_DateTable[Date] <= CurrentDayLastYear,
+			        KEEPFILTERS(fact_Branch12_Transactions[IsSale] = TRUE)
+			    )
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: de58aa8f-2980-4ecf-85a2-663cecdd903f
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Sales YTD Growth %' = ```
+			
+			VAR CurrentYear = YEAR(TODAY())
+			VAR LastYear = CurrentYear - 1
+			VAR YearStart2025 = DATE(CurrentYear, 1, 1)
+			VAR YearStart2024 = DATE(LastYear, 1, 1)
+			VAR CurrentDate = TODAY()
+			VAR SameDayLastYear = DATE(LastYear, MONTH(TODAY()), DAY(TODAY()))
+			
+			VAR CurrentYTD = 
+			    CALCULATE(
+			        [Sales],
+			        REMOVEFILTERS(dim_DateTable),
+			        dim_DateTable[Date] >= YearStart2025,
+			        dim_DateTable[Date] <= CurrentDate,
+			        KEEPFILTERS(fact_Branch12_Transactions[IsSale] = TRUE)
+			    )
+			
+			VAR LastYearYTD = 
+			    CALCULATE(
+			        [Sales],
+			        REMOVEFILTERS(dim_DateTable),
+			        dim_DateTable[Date] >= YearStart2024,
+			        dim_DateTable[Date] <= SameDayLastYear,
+			        KEEPFILTERS(fact_Branch12_Transactions[IsSale] = TRUE)
+			    )
+			
+			RETURN
+			    IF(
+			        NOT ISBLANK(LastYearYTD) && LastYearYTD <> 0,
+			        DIVIDE(CurrentYTD - LastYearYTD, LastYearYTD, 0),
+			        BLANK()
+			    )
+			```
+		formatString: 0.00%;-0.00%;0.00%
+		lineageTag: 9699cd40-f16f-48b8-965e-463a0bde51aa
+
+	measure 'Margin YTD' =
+			
+			VAR CurrentYear = YEAR(TODAY())
+			VAR YearStart = DATE(CurrentYear, 1, 1)
+			VAR CurrentDate = TODAY()
+			RETURN
+			    CALCULATE(
+			        [Margin $],
+			        REMOVEFILTERS(dim_DateTable),
+			        dim_DateTable[Date] >= YearStart,
+			        dim_DateTable[Date] <= CurrentDate,
+			        KEEPFILTERS(fact_Branch12_Transactions[IsSale] = TRUE)
+			    )
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 28e97c76-f3cd-4358-8553-29d609edba56
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Margin YTD LY' =
+			
+			VAR CurrentYear = YEAR(TODAY())
+			VAR LastYear = CurrentYear - 1
+			VAR YearStart = DATE(LastYear, 1, 1)
+			VAR CurrentDayLastYear = DATE(LastYear, MONTH(TODAY()), DAY(TODAY()))
+			RETURN
+			    CALCULATE(
+			        [Margin $],
+			        REMOVEFILTERS(dim_DateTable),
+			        dim_DateTable[Date] >= YearStart,
+			        dim_DateTable[Date] <= CurrentDayLastYear,
+			        KEEPFILTERS(fact_Branch12_Transactions[IsSale] = TRUE)
+			    )
+		lineageTag: 0f62aaab-07cf-43c6-93fd-952908f9af31
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Margin YTD Growth %' = ```
+			
+			VAR CurrentYear = YEAR(TODAY())
+			VAR LastYear = CurrentYear - 1
+			VAR YearStart2025 = DATE(CurrentYear, 1, 1)
+			VAR YearStart2024 = DATE(LastYear, 1, 1)
+			VAR CurrentDate = TODAY()
+			VAR SameDayLastYear = DATE(LastYear, MONTH(TODAY()), DAY(TODAY()))
+			
+			VAR CurrentYTD = 
+			    CALCULATE(
+			        [Margin $],
+			        REMOVEFILTERS(dim_DateTable),
+			        dim_DateTable[Date] >= YearStart2025,
+			        dim_DateTable[Date] <= CurrentDate,
+			        KEEPFILTERS(fact_Branch12_Transactions[IsSale] = TRUE)
+			    )
+			
+			VAR LastYearYTD = 
+			    CALCULATE(
+			        [Margin $],
+			        REMOVEFILTERS(dim_DateTable),
+			        dim_DateTable[Date] >= YearStart2024,
+			        dim_DateTable[Date] <= SameDayLastYear,
+			        KEEPFILTERS(fact_Branch12_Transactions[IsSale] = TRUE)
+			    )
+			
+			RETURN
+			    DIVIDE(CurrentYTD - LastYearYTD, LastYearYTD, 0)
+			```
+		lineageTag: a194f492-0ab5-4112-985f-b76f3bb7f11c
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Avg Margin % YTD' = ```
+			
+			VAR CurrentYear = YEAR(TODAY())
+			VAR YearStart = DATE(CurrentYear, 1, 1)
+			VAR CurrentDate = TODAY()
+			
+			VAR SalesYTD = 
+			    CALCULATE(
+			        [Sales],
+			        REMOVEFILTERS(dim_DateTable),
+			        dim_DateTable[Date] >= YearStart,
+			        dim_DateTable[Date] <= CurrentDate,
+			        KEEPFILTERS(fact_Branch12_Transactions[IsSale] = TRUE)
+			    )
+			
+			VAR MarginYTD = 
+			    CALCULATE(
+			        [Margin $],
+			        REMOVEFILTERS(dim_DateTable),
+			        dim_DateTable[Date] >= YearStart,
+			        dim_DateTable[Date] <= CurrentDate,
+			        KEEPFILTERS(fact_Branch12_Transactions[IsSale] = TRUE)
+			    )
+			
+			RETURN
+			    DIVIDE(MarginYTD, SalesYTD, 0)
+			```
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 52e966b0-0205-475a-a3a6-9375a6ec3b62
+
+	measure 'Avg Margin % YTD LY' = ```
+			
+			VAR CurrentYear = YEAR(TODAY())
+			VAR LastYear = CurrentYear - 1
+			VAR YearStart = DATE(LastYear, 1, 1)
+			VAR CurrentDayLastYear = DATE(LastYear, MONTH(TODAY()), DAY(TODAY()))
+			
+			VAR SalesYTD = 
+			    CALCULATE(
+			        [Sales],
+			        REMOVEFILTERS(dim_DateTable),
+			        dim_DateTable[Date] >= YearStart,
+			        dim_DateTable[Date] <= CurrentDayLastYear,
+			        KEEPFILTERS(fact_Branch12_Transactions[IsSale] = TRUE)
+			    )
+			
+			VAR MarginYTD = 
+			    CALCULATE(
+			        [Margin $],
+			        REMOVEFILTERS(dim_DateTable),
+			        dim_DateTable[Date] >= YearStart,
+			        dim_DateTable[Date] <= CurrentDayLastYear,
+			        KEEPFILTERS(fact_Branch12_Transactions[IsSale] = TRUE)
+			    )
+			
+			RETURN
+			    DIVIDE(MarginYTD, SalesYTD, 0)
+			```
+		formatString: 0.00%;-0.00%;0.00%
+		lineageTag: 6c1c8c51-9cd6-48f6-8442-3ef6acec9cc5
+
+	measure 'Margin % YTD Change pp' =
+			
+			VAR CurrentMarginPct = [Avg Margin % YTD]
+			VAR LastYearMarginPct = [Avg Margin % YTD LY]
+			VAR ChangePP = CurrentMarginPct - LastYearMarginPct
+			
+			RETURN
+			    ChangePP
+		formatString: 0.00
+		lineageTag: 3b153a0b-2beb-432c-8bcc-3771ed75010e
+
+	measure 'Transactions YTD' =
+			
+			VAR CurrentYear = YEAR(TODAY())
+			VAR YearStart = DATE(CurrentYear, 1, 1)
+			VAR CurrentDate = TODAY()
+			RETURN
+			    CALCULATE(
+			        [Total Transactions],
+			        REMOVEFILTERS(dim_DateTable),
+			        dim_DateTable[Date] >= YearStart,
+			        dim_DateTable[Date] <= CurrentDate
+			    )
+		formatString: 0
+		lineageTag: 3dbe76c0-5789-4a3c-9475-a64918c6e93a
+
+	measure 'Transactions YTD LY' =
+			
+			VAR CurrentYear = YEAR(TODAY())
+			VAR LastYear = CurrentYear - 1
+			VAR YearStart = DATE(LastYear, 1, 1)
+			VAR CurrentDayLastYear = DATE(LastYear, MONTH(TODAY()), DAY(TODAY()))
+			RETURN
+			    CALCULATE(
+			        [Total Transactions],
+			        REMOVEFILTERS(dim_DateTable),
+			        dim_DateTable[Date] >= YearStart,
+			        dim_DateTable[Date] <= CurrentDayLastYear
+			    )
+		formatString: 0
+		lineageTag: 4cd76baa-e5d8-4d96-b757-e5f6c2cceb5d
+
+	measure 'Transactions YTD Growth %' = ```
+			
+			VAR CurrentYear = YEAR(TODAY())
+			VAR LastYear = CurrentYear - 1
+			VAR YearStart2025 = DATE(CurrentYear, 1, 1)
+			VAR YearStart2024 = DATE(LastYear, 1, 1)
+			VAR CurrentDate = TODAY()
+			VAR SameDayLastYear = DATE(LastYear, MONTH(TODAY()), DAY(TODAY()))
+			
+			VAR CurrentYTD = 
+			    CALCULATE(
+			        [Total Transactions],
+			        REMOVEFILTERS(dim_DateTable),
+			        dim_DateTable[Date] >= YearStart2025,
+			        dim_DateTable[Date] <= CurrentDate
+			    )
+			
+			VAR LastYearYTD = 
+			    CALCULATE(
+			        [Total Transactions],
+			        REMOVEFILTERS(dim_DateTable),
+			        dim_DateTable[Date] >= YearStart2024,
+			        dim_DateTable[Date] <= SameDayLastYear
+			    )
+			
+			RETURN
+			    DIVIDE(CurrentYTD - LastYearYTD, LastYearYTD, 0)
+			```
+		lineageTag: 359d695e-8426-4c27-a69e-d4753cd95242
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Cost Recovery %' =
+			
+			VAR TotalSales = [Sales R12]
+			VAR TotalCost = [Total COS R12]
+			RETURN
+			    DIVIDE(TotalSales, TotalCost, 0)
+		lineageTag: 5323d561-6e30-4520-a242-2dc5c8dde6d2
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Cost Recovery Status' =
+			
+			VAR Recovery = [Cost Recovery %]
+			RETURN
+			    SWITCH(
+			        TRUE(),
+			        Recovery >= 1.30, "🟢 Excellent",
+			        Recovery >= 1.10, "✅ Profitable",
+			        Recovery >= 1.00, "⚠️ Break Even",
+			        "🔴 Loss"
+			    )
+		lineageTag: 8a83ed38-b584-4d2d-acc0-11a665410a53
+
+	measure 'Avg Transaction R12' = ```
+			
+			VAR TotalSales = [Sales R12]
+			VAR TransCount = 
+			    CALCULATE(
+			        [Total Transactions],
+			        dim_DateTable[IsRolling365Days] = TRUE
+			    )
+			RETURN
+			    DIVIDE(TotalSales, TransCount, 0)
+			```
+		lineageTag: f8a5ff77-1ac0-4d6a-bb9a-e3c791732795
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Avg Transaction LY' =
+			
+			CALCULATE(
+			    [Avg Transaction R12],
+			    SAMEPERIODLASTYEAR(dim_DateTable[Date])
+			)
+		lineageTag: d1ed0e6c-7397-45b3-8cb1-691ba884c7e3
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Avg Transaction Growth %' =
+			
+			DIVIDE([Avg Transaction R12] - [Avg Transaction LY], [Avg Transaction LY], 0)
+		lineageTag: d085754c-d09c-46d7-b71e-b5a69f9e35b9
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Current Turn LY' =
+			
+			CALCULATE(
+			    [Current Turn],
+			    SAMEPERIODLASTYEAR(dim_DateTable[Date])
+			)
+		lineageTag: f268b090-dc23-4a0d-a04f-ed1f38ecc0f3
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Turn Rate Change' =
+			
+			[Current Turn] - [Current Turn LY]
+		lineageTag: aa5a78ee-0d14-4a5e-b96c-b6ca69922dfe
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Top 3 Parts' = ```
+			
+			VAR TopParts = 
+			    TOPN(
+			        3,
+			        SUMMARIZE(
+			            dim_Branch12_Parts,
+			            dim_Branch12_Parts[Description],
+			            "PartSales", [Sales Last 365],
+			            "PartMargin", [Margin % Last 365]
+			        ),
+			        [PartSales],
+			        DESC
+			    )
+			VAR Result = 
+			    CONCATENATEX(
+			        TopParts,
+			        "• " & [Description] & ": " & 
+			        FORMAT([PartSales], "$#,##0") & 
+			        " (" & FORMAT([PartMargin], "0%") & ")",
+			        UNICHAR(10),
+			        [PartSales],
+			        DESC
+			    )
+			RETURN
+			    Result
+			```
+		lineageTag: 3747cfed-172a-49d2-81a8-dc34f730ea24
+
+	measure 'Low Stock Count' = ```
+			
+			VAR LowStockParts = 
+			    FILTER(
+			        ALL(dim_Branch12_Parts[PartNumber]),
+			        CONTAINSSTRING([Stock Status], "Low Stock")
+			    )
+			RETURN
+			    COUNTROWS(LowStockParts)
+			```
+		formatString: 0
+		lineageTag: 8fe4fe9f-a1b3-476b-b2f8-7c50c0c42a7d
+
+	measure 'Slow Mover Count' = ```
+			
+			VAR SlowMovers = 
+			    FILTER(
+			        ALL(dim_Branch12_Parts[PartNumber]),
+			        [Days - Last Sale] > 180
+			    )
+			RETURN
+			    COUNTROWS(SlowMovers)
+			```
+		formatString: 0
+		lineageTag: ee89f33d-f527-42eb-96bd-55969e52f534
+
+	measure 'Action Items Summary' =
+			
+			VAR OutOfStock = [Parts Out of Stock]
+			VAR LowStock = [Low Stock Count]
+			VAR SlowMovers = [Slow Mover Count]
+			RETURN
+			    "• " & OutOfStock & " parts out of stock" & UNICHAR(10) &
+			    "• " & LowStock & " parts low stock" & UNICHAR(10) &
+			    "• " & SlowMovers & " slow movers (>180 days)"
+		lineageTag: ea790719-052a-444e-927f-27a19831fa8b
+
+	measure 'TEST YTD Debug' = ```
+			
+			VAR CurrentYTD = [Sales YTD]
+			VAR LastYearYTD = [Sales YTD LY]
+			VAR TestCalc = CurrentYTD - LastYearYTD
+			RETURN
+			    "Sales YTD: " & FORMAT(CurrentYTD, "$#,##0") & 
+			    " | Sales YTD LY: " & FORMAT(LastYearYTD, "$#,##0") & 
+			    " | Difference: " & FORMAT(TestCalc, "$#,##0") &
+			    " | Growth %: " & FORMAT(DIVIDE(TestCalc, LastYearYTD, 0), "0.00%")
+			```
+		lineageTag: 7fd12979-dda8-4835-81d3-dba1461f8adc
+
+	measure 'Sales YTD total' =
+			
+			VAR CurrentYear = YEAR(TODAY())
+			VAR YearStart = DATE(CurrentYear, 1, 1)
+			VAR CurrentDate = TODAY()
+			RETURN
+			    CALCULATE(
+			        [Sales],
+			        REMOVEFILTERS(dim_DateTable),  // Clear any date filters
+			        dim_DateTable[Date] >= YearStart,
+			        dim_DateTable[Date] <= CurrentDate,
+			        KEEPFILTERS(fact_Branch12_Transactions[IsSale] = TRUE)  // Keep the IsSale filter
+			    )
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 6eb3f792-87c5-49b8-9ec2-bc5520655956
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Margin YTD Growth $' =
+			
+			[Margin YTD] - [Margin YTD LY]
+		lineageTag: 8de4be70-42e9-4257-813b-13ae2784c842
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'YTD Current' =
+			
+			SWITCH(
+			    SELECTEDVALUE('YTD Metrics'[Metric]),
+			    "Sales YTD", [Sales YTD total],
+			    "Margin YTD", [Margin YTD],
+			    "Avg Margin %", [Avg Margin % YTD],
+			    "Transactions YTD", [Transactions YTD],
+			    BLANK()
+			)
+		lineageTag: a6284b3f-bd3b-4220-94bf-ab635aba6130
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'YTD Growth %' =
+			
+			SWITCH(
+			    SELECTEDVALUE('YTD Metrics'[Metric]),
+			    "Sales YTD", [Sales YTD Growth %],
+			    "Margin YTD", DIVIDE([Margin YTD Growth $], [Margin YTD LY], 0),
+			    "Avg Margin %", [Margin % YTD Change pp],
+			    "Transactions YTD", [Transactions YTD Growth %],
+			    BLANK()
+			)
+		lineageTag: baee49f3-3175-4460-9f54-abf8594318b9
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'YTD Growth $' =
+			
+			SWITCH(
+			    SELECTEDVALUE('YTD Metrics'[Metric]),
+			    "Sales YTD", [Sales YTD Growth $],
+			    "Margin YTD", [Margin YTD Growth $],
+			    "Avg Margin %", [Margin % YTD Change pp],
+			    "Transactions YTD", [Transactions YTD Growth Count],
+			    BLANK()
+			)
+		lineageTag: 57fabb05-10fe-48bd-8026-9b409bde68f0
+
+	measure 'Transactions YTD Growth Count' = ```
+			
+			VAR CurrentYear = YEAR(TODAY())
+			VAR LastYear = CurrentYear - 1
+			VAR YearStart2025 = DATE(CurrentYear, 1, 1)
+			VAR YearStart2024 = DATE(LastYear, 1, 1)
+			VAR CurrentDate = TODAY()
+			VAR SameDayLastYear = DATE(LastYear, MONTH(TODAY()), DAY(TODAY()))
+			
+			VAR CurrentYTD = 
+			    CALCULATE(
+			        [Total Transactions],
+			        REMOVEFILTERS(dim_DateTable),
+			        dim_DateTable[Date] >= YearStart2025,
+			        dim_DateTable[Date] <= CurrentDate
+			    )
+			
+			VAR LastYearYTD = 
+			    CALCULATE(
+			        [Total Transactions],
+			        REMOVEFILTERS(dim_DateTable),
+			        dim_DateTable[Date] >= YearStart2024,
+			        dim_DateTable[Date] <= SameDayLastYear
+			    )
+			
+			RETURN
+			    CurrentYTD - LastYearYTD
+			```
+		formatString: 0
+		lineageTag: 72ba1434-6cb8-42ef-b0bf-476994838b09
+
+	measure 'YTD Comparison Text' = ```
+			
+			VAR GrowthPct = [YTD Growth %]
+			VAR GrowthAbs = [YTD Growth $]
+			VAR Metric = SELECTEDVALUE('YTD Metrics'[Metric])
+			VAR Arrow = IF(GrowthPct > 0, "↑", IF(GrowthPct < 0, "↓", "→"))
+			VAR PctFormat = FORMAT(ABS(GrowthPct), "0.0%")
+			VAR AbsFormat = 
+			    SWITCH(
+			        Metric,
+			        "Sales YTD", FORMAT(ABS(GrowthAbs), "$#,##0"),
+			        "Margin YTD", FORMAT(ABS(GrowthAbs), "$#,##0"),
+			        "Avg Margin %", FORMAT(ABS(GrowthAbs), "0.0%"),
+			        "Transactions YTD", FORMAT(ABS(GrowthAbs), "#,##0"),
+			        ""
+			    )
+			RETURN
+			    "vs 2024: " & PctFormat & " " & Arrow & "  (" & AbsFormat & ")"
+			```
+		lineageTag: 629459bf-ea6b-43a7-adc9-693164f06291
+
+	measure 'Sales YTD Summary' = ```
+			
+			VAR CurrentYTD = [Sales YTD]
+			VAR LastYearYTD = [Sales YTD LY]
+			VAR GrowthDollar = [Sales YTD Growth $]
+			VAR GrowthPercent = [Sales YTD Growth %]
+			VAR IsPositive = GrowthDollar > 0
+			VAR Arrow = IF(IsPositive, "▲", "▼")
+			VAR Direction = IF(IsPositive, "up", "down")
+			VAR AbsGrowthDollar = ABS(GrowthDollar)
+			VAR AbsGrowthPercent = ABS(GrowthPercent)
+			
+			RETURN
+			    "At this time last year sales were " & FORMAT(LastYearYTD, "$#,##0") & 
+			    ", which is " & Arrow & " " & Direction & " " & FORMAT(AbsGrowthDollar, "$#,##0") & 
+			    " and a " & FORMAT(AbsGrowthPercent, "0.0%") & 
+			    IF(IsPositive, " increase", " decrease") & " from last year."
+			```
+		lineageTag: 6351fb37-e169-4d92-83e7-c29b47619a7d
+
+	measure 'Margin YTD Summary' = ```
+			
+			VAR CurrentYTD = [Margin YTD]
+			VAR LastYearYTD = [Margin YTD LY]
+			VAR GrowthDollar = [Margin YTD Growth $]
+			VAR GrowthPercent = DIVIDE(GrowthDollar, LastYearYTD, 0)
+			VAR IsPositive = GrowthDollar > 0
+			VAR Arrow = IF(IsPositive, "▲", "▼")
+			VAR Direction = IF(IsPositive, "up", "down")
+			VAR AbsGrowthDollar = ABS(GrowthDollar)
+			VAR AbsGrowthPercent = ABS(GrowthPercent)
+			
+			RETURN
+			    "At this time last year margin was " & FORMAT(LastYearYTD, "$#,##0") & 
+			    ", which is " & Arrow & " " & Direction & " " & FORMAT(AbsGrowthDollar, "$#,##0") & 
+			    " and a " & FORMAT(AbsGrowthPercent, "0.0%") & 
+			    IF(IsPositive, " increase", " decrease") & " from last year."
+			```
+		lineageTag: aafd7068-d86b-4707-95a5-9f5b73354a14
+
+	measure 'Transactions YTD Summary' = ```
+			
+			VAR CurrentYTD = [Transactions YTD]
+			VAR LastYearYTD = [Transactions YTD LY]
+			VAR GrowthCount = [Transactions YTD Growth Count]
+			VAR GrowthPercent = [Transactions YTD Growth %]
+			VAR IsPositive = GrowthCount > 0
+			VAR Arrow = IF(IsPositive, "▲", "▼")
+			VAR Direction = IF(IsPositive, "up", "down")
+			VAR AbsGrowthCount = ABS(GrowthCount)
+			VAR AbsGrowthPercent = ABS(GrowthPercent)
+			
+			RETURN
+			    "At this time last year we had " & FORMAT(LastYearYTD, "#,##0") & 
+			    " transactions, which is " & Arrow & " " & Direction & " " & FORMAT(AbsGrowthCount, "#,##0") & 
+			    " transactions and a " & FORMAT(AbsGrowthPercent, "0.0%") & 
+			    IF(IsPositive, " increase", " decrease") & " from last year."
+			```
+		lineageTag: dd120129-e980-40e4-b6b5-7e30ec6e09bd
+
+	measure 'Margin Percent YTD Summary' = ```
+			
+			VAR CurrentMarginPct = [Avg Margin % YTD]
+			VAR LastYearMarginPct = [Avg Margin % YTD LY]
+			VAR ChangePP = [Margin % YTD Change pp]
+			VAR IsPositive = ChangePP > 0
+			VAR Arrow = IF(IsPositive, "▲", "▼")
+			VAR Direction = IF(IsPositive, "improved", "declined")
+			VAR AbsChangePP = ABS(ChangePP)
+			
+			RETURN
+			    IF(
+			        NOT ISBLANK(CurrentMarginPct) && NOT ISBLANK(LastYearMarginPct),
+			        "At this time last year margin was " & FORMAT(LastYearMarginPct, "0.0%") & 
+			        ", which is " & Arrow & " " & Direction & " by " & FORMAT(AbsChangePP, "0.0%") & 
+			        " from last year.",
+			        "Insufficient data for comparison"
+			    )
+			```
+		lineageTag: d29ac294-c270-4576-b936-ddb310939d98
+
+	measure 'Complete YTD Summary' = ```
+			
+			VAR SalesCurrent = [Sales YTD]
+			VAR SalesLY = [Sales YTD LY]
+			VAR SalesGrowth = [Sales YTD Growth %]
+			VAR MarginCurrent = [Margin YTD]
+			VAR MarginLY = [Margin YTD LY]
+			VAR MarginGrowth = DIVIDE([Margin YTD Growth $], MarginLY, 0)
+			
+			RETURN
+			    "Sales: " & FORMAT(SalesCurrent, "$#,##0") & " (vs " & FORMAT(SalesLY, "$#,##0") & " LY, " & 
+			    IF(SalesGrowth > 0, "▲", "▼") & FORMAT(ABS(SalesGrowth), "0.0%") & ")" &
+			    UNICHAR(10) & UNICHAR(10) &
+			    "Margin: " & FORMAT(MarginCurrent, "$#,##0") & " (vs " & FORMAT(MarginLY, "$#,##0") & " LY, " & 
+			    IF(MarginGrowth > 0, "▲", "▼") & FORMAT(ABS(MarginGrowth), "0.0%") & ")"
+			```
+		lineageTag: 8381a7d0-a635-4368-bd39-bb4467c3ebc6
+
+	measure 'Months of Supply' =
+			
+			VAR QtyOnHand = SUM(dim_Branch12_Parts[QuantityOnHand])
+			VAR QtySold = [Qty]
+			VAR Demands = [Demands]
+			
+			RETURN
+			    IF(
+			        Demands > 0 && QtySold > 0,
+			        (QtyOnHand / QtySold) * 12,  // Simple formula: (OnHand / Annual Sales) * 12
+			        IF(QtyOnHand > 0 && Demands = 0, 999, BLANK())
+			    )
+		formatString: 0.0
+		lineageTag: d0ca2944-bb4c-4860-81e2-a70428f81da0
+
+	measure 'Suggested Order Qty Advanced' = ```
+			
+			VAR OnHand = SUM(dim_Branch12_Parts[QuantityOnHand])
+			VAR SalesQtyR12 = [Qty]
+			VAR DemandsR12 = [Demands]  // Number of transactions
+			VAR DaysSinceLastSale = [Days - Last Sale]
+			
+			// Calculate typical order size (how much they buy per transaction)
+			VAR AvgOrderSize = DIVIDE(SalesQtyR12, DemandsR12, 1)
+			VAR MonthlyVelocity = DIVIDE(SalesQtyR12, 12, 0)
+			
+			// Only suggest orders for items with recent or moderate activity
+			VAR HasRelevantActivity = NOT ISBLANK(DaysSinceLastSale) && DaysSinceLastSale <= 180
+			
+			// Calculate order quantity
+			VAR TargetMonthsSupply = 3
+			VAR TargetQty = MonthlyVelocity * TargetMonthsSupply
+			VAR CalculatedOrder = TargetQty - OnHand
+			
+			// Smart minimum: use average order size as minimum
+			// This ensures you have enough for at least 1 customer order
+			VAR MinimumOrder = 
+			    IF(
+			        AvgOrderSize > 0,
+			        ROUNDUP(AvgOrderSize, 0),
+			        1
+			    )
+			
+			VAR SuggestedOrder = 
+			    IF(
+			        HasRelevantActivity && SalesQtyR12 > 0 && CalculatedOrder > 0,
+			        MAX(MinimumOrder, ROUNDUP(CalculatedOrder, 0)),
+			        BLANK()
+			    )
+			
+			RETURN SuggestedOrder
+			```
+		formatString: 0
+		lineageTag: 45c332bb-aa15-4adc-81a4-6ee92775dd21
+
+	measure 'Reorder Priority Score' = ```
+			
+			VAR _Status = [Stock Status]
+			VAR SalesQtyR12 = [Qty]
+			VAR DaysSinceLastSale = [Days - Last Sale]
+			
+			// Base score from status
+			VAR StatusScore = 
+			    SWITCH(
+			        _Status,
+			        "⚠️ Out of Stock", 10000,
+			        "🔴 Critical Low", 5000,
+			        "⚡ Low Stock", 2500,
+			        "🟡 Slow - Monitor", 500,
+			        "✅ Healthy", 100,
+			        0
+			    )
+			
+			// Velocity multiplier (higher sales = higher priority)
+			VAR VelocityMultiplier = SalesQtyR12 * 10
+			
+			// Recency bonus (more recent sales = higher priority)
+			VAR RecencyBonus = 
+			    SWITCH(
+			        TRUE(),
+			        ISBLANK(DaysSinceLastSale), 0,
+			        DaysSinceLastSale <= 30, 1000,
+			        DaysSinceLastSale <= 60, 500,
+			        DaysSinceLastSale <= 90, 250,
+			        DaysSinceLastSale <= 180, 100,
+			        0
+			    )
+			
+			RETURN
+			    StatusScore + VelocityMultiplier + RecencyBonus
+			
+			
+			```
+		lineageTag: 31004fab-020a-47a0-be2f-80578d840c07
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Estimated Reorder Cost' =
+			
+			SUMX(
+			    VALUES(dim_Branch12_Parts[PartNumber]),
+			    VAR SuggestedQty = [Suggested Order Qty Advanced]
+			    VAR AvgCost = CALCULATE(AVERAGE(dim_Branch12_Parts[Cost]))
+			    RETURN
+			        IF(NOT ISBLANK(SuggestedQty), SuggestedQty * AvgCost, 0)
+			)
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 4816ebb5-0c69-4f99-8654-56964841bdef
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Parts Low Stock' =
+			
+			CALCULATE(
+			    DISTINCTCOUNT(dim_Branch12_Parts[PartNumber]),
+			    FILTER(
+			        VALUES(dim_Branch12_Parts[PartNumber]),
+			        [Stock Status] = "⚡ Low Stock"
+			    )
+			)
+		formatString: 0
+		lineageTag: c7b9d30c-1e08-4da3-a0e8-2714aa8cc0b6
+
+	measure 'Parts Overstock' =
+			
+			CALCULATE(
+			    DISTINCTCOUNT(dim_Branch12_Parts[PartNumber]),
+			    FILTER(
+			        VALUES(dim_Branch12_Parts[PartNumber]),
+			        [Stock Status] = "📦 Overstock"
+			    )
+			)
+		formatString: 0
+		lineageTag: f9fbf962-be4b-4969-9fa1-eb8b6789cc36
+
+	measure 'Parts Healthy Count' =
+			
+			COUNTROWS(
+			    FILTER(
+			        VALUES(dim_Branch12_Parts[PartNumber]),
+			        [Stock Status] = "✅ Healthy"
+			    )
+			)
+		formatString: 0
+		lineageTag: 8c8765db-c473-4522-8722-dfc4120d891a
+
+	measure 'Parts Needing Attention' =
+			
+			COUNTROWS(
+			    FILTER(
+			        VALUES(dim_Branch12_Parts[PartNumber]),
+			        [Stock Status] IN {"⚠️ Out of Stock", "🔴 Critical Low", "⚡ Low Stock"}
+			    )
+			)
+		formatString: 0
+		lineageTag: 889346e0-fb23-4101-b1a6-a98fc826c326
+
+	measure 'Parts Out of Stock Count' =
+			
+			COUNTROWS(
+			    FILTER(
+			        VALUES(dim_Branch12_Parts[PartNumber]),
+			        [Stock Status] = "⚠️ Out of Stock"
+			    )
+			)
+		formatString: 0
+		lineageTag: cd657b0d-0e37-4b11-a65e-ce74425f955e
+
+	measure 'Parts Low Stock Count' =
+			
+			COUNTROWS(
+			    FILTER(
+			        VALUES(dim_Branch12_Parts[PartNumber]),
+			        [Stock Status] = "⚡ Low Stock"
+			    )
+			)
+		formatString: 0
+		lineageTag: ea3d5f71-9627-4fe7-9f07-5bb8cc390eb2
+
+	measure 'Parts Overstock Active' =
+			
+			COUNTROWS(
+			    FILTER(
+			        VALUES(dim_Branch12_Parts[PartNumber]),
+			        [Stock Status] = "📦 Overstock - Active"
+			    )
+			)
+		formatString: 0
+		lineageTag: 9c26a876-420b-46a6-944f-2dd15ec1acbd
+
+	measure 'R12 Sales Qty' = [Qty]
+		lineageTag: ca5936e1-0f4f-4e61-b803-c8fa03fde579
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'R24 Sales Qty' =
+			
+			CALCULATE(
+			    SUM(fact_Branch12_Transactions[Qty]),
+			    DATESINPERIOD(
+			        dim_DateTable[Date],
+			        MAX(dim_DateTable[Date]),
+			        -730,
+			        DAY
+			    ),
+			    fact_Branch12_Transactions[IsSale] = TRUE
+			)
+		lineageTag: d208d546-7e9e-4fbf-882e-b9244e3a81df
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Avg Order Qty' =
+			
+			VAR TotalQty = [Qty]
+			VAR NumTransactions = [Demands]
+			RETURN
+			    DIVIDE(TotalQty, NumTransactions, BLANK())
+		lineageTag: 0bb132e6-b74d-4dc1-b91e-5c906154c15c
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Stock Status Sort' =
+			
+			VAR _Status = [Stock Status]
+			RETURN
+			    SWITCH(
+			        _Status,
+			        "⚠️ Out of Stock", 1,
+			        "🔴 Critical Low", 2,
+			        "⚡ Low Stock", 3,
+			        "✅ Healthy", 4,
+			        "📊 Adequate", 5,
+			        "🟡 Slow - Monitor", 6,
+			        "📦 Overstock - Active", 7,
+			        "💤 Stagnant Stock", 8,
+			        "⚪ Inactive - No Stock", 9,
+			        "💤 Inactive - Has Stock", 10,
+			        99  // Unknown
+			    )
+		formatString: 0
+		lineageTag: 230e4226-90ab-4b8b-bc45-a96533564836
+
+	measure 'Days Since Last Sale' = ```
+			
+			VAR LastSaleDate = 
+			    CALCULATE(
+			        MAX(fact_Branch12_Transactions[Date]),
+			        fact_Branch12_Transactions[IsSale] = TRUE
+			    )
+			VAR Today = TODAY()
+			VAR DaysSince = Today - LastSaleDate
+			RETURN
+			    IF(NOT ISBLANK(LastSaleDate), DaysSince, BLANK())
+			```
+		formatString: General Date
+		lineageTag: d09d9e2c-f6cc-40b4-87fc-f301a8157e4a
+
+	measure 'Suggested Order Cost' =
+			
+			VAR SuggestedQty = [Suggested Order Qty Advanced]
+			VAR Cost = SUM(dim_Branch12_Parts[Cost])
+			
+			RETURN
+			    IF(
+			        NOT ISBLANK(SuggestedQty),
+			        SuggestedQty * Cost,
+			        BLANK()
+			    )
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 6cd44529-bf99-4344-a9ba-a42e861cc619
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Parts Critical + Low Stock' =
+			
+			COUNTROWS(
+			    FILTER(
+			        VALUES(dim_Branch12_Parts[PartNumber]),
+			        [Stock Status] IN {"🔴 Critical Low", "⚡ Low Stock"}
+			    )
+			)
+		formatString: 0
+		lineageTag: 9c50db75-a208-4215-b09a-54392c96828b
+
+	measure 'Parts Adequate Count' =
+			
+			COUNTROWS(
+			    FILTER(
+			        VALUES(dim_Branch12_Parts[PartNumber]),
+			        [Stock Status] = "📊 Adequate"
+			    )
+			)
+		formatString: 0
+		lineageTag: f0dc5ce6-b47d-4d57-a37c-326ff57949c6
+
+	measure 'Parts Inactive with Stock Count' =
+			
+			COUNTROWS(
+			    FILTER(
+			        VALUES(dim_Branch12_Parts[PartNumber]),
+			        [Stock Status] = "💤 Inactive - Has Stock"
+			    )
+			)
+		formatString: 0
+		lineageTag: d97a024f-f70f-403b-ac2e-487e7ef723af
+
+	measure 'Parts Inactive No Stock Count' =
+			
+			COUNTROWS(
+			    FILTER(
+			        VALUES(dim_Branch12_Parts[PartNumber]),
+			        [Stock Status] = "🔘 Inactive - No Stock"
+			    )
+			)
+		formatString: 0
+		lineageTag: 795944fd-c29f-40f8-ac5a-811c18b76f47
+
+	measure 'Parts Unknown Count' =
+			
+			COUNTROWS(
+			    FILTER(
+			        VALUES(dim_Branch12_Parts[PartNumber]),
+			        [Stock Status] = "❓ Unknown"
+			    )
+			)
+		formatString: 0
+		lineageTag: 4db529be-9805-4b58-92f7-8eba412d973e
+
+	measure 'Stock Health Category' = ```
+			
+			VAR _Status = [Stock Status]
+			RETURN
+			    SWITCH(
+			        TRUE(),
+			        CONTAINSSTRING(_Status, "Out of Stock") || CONTAINSSTRING(_Status, "Critical"), 
+			            "🔴 Urgent Action Required",
+			        
+			        CONTAINSSTRING(_Status, "Low Stock"), 
+			            "🟠 Action Needed Soon",
+			        
+			        CONTAINSSTRING(_Status, "Slow - Monitor"), 
+			            "🟡 Monitor Closely",
+			        
+			        CONTAINSSTRING(_Status, "Healthy") || CONTAINSSTRING(_Status, "Adequate"), 
+			            "🟢 Good _Status",
+			        
+			        CONTAINSSTRING(_Status, "Overstock - Active"), 
+			            "🔵 Overstock - But Selling",
+			        
+			        CONTAINSSTRING(_Status, "Stagnant"), 
+			            "🟣 Review/Reduce Stock",
+			        
+			        CONTAINSSTRING(_Status, "Inactive"), 
+			            "⚪ Inactive",
+			        
+			        "⚪ Other"
+			    )
+			```
+		lineageTag: 508aaa05-0548-4afc-a9f1-1c190214b412
+
+	measure 'Slow Moving Parts' =
+			
+			COUNTROWS(
+			    FILTER(
+			        VALUES(dim_Branch12_Parts[PartNumber]),
+			        [Stock Status] = "🟡 Slow - Monitor"
+			    )
+			)
+		formatString: 0
+		lineageTag: e77cdaf1-d030-4f6e-b980-e8a780bf2b46
+
+	measure 'Stagnant Parts' =
+			
+			COUNTROWS(
+			    FILTER(
+			        VALUES(dim_Branch12_Parts[PartNumber]),
+			        [Stock Status] IN {"💤 Stagnant Stock", "💤 Inactive - Has Stock"}
+			    )
+			)
+		formatString: 0
+		lineageTag: 8467de14-75f4-4f50-b228-5364f77e351e
+
+	measure 'Healthy Parts' =
+			
+			COUNTROWS(
+			    FILTER(
+			        VALUES(dim_Branch12_Parts[PartNumber]),
+			        [Stock Status] IN {"✅ Healthy", "📊 Adequate"}
+			    )
+			)
+		formatString: 0
+		lineageTag: 9e6f1b4e-e7f1-4872-99e0-a2c80b100409
+
+	measure 'Parts Needing Review' =
+			
+			[Slow Moving Parts] + [Stagnant Parts] + [Parts Overstock Active]
+		formatString: 0
+		lineageTag: 03115b48-fa80-4dc2-8c7f-82406eba421a
+
+	measure 'Show Parts Filter' = ```
+			
+			VAR CurrentPartStatus = [Stock Status]
+			VAR CountSelected = COUNTROWS(VALUES('Stock Status Categories'[Stock Category]))
+			VAR AllCount = COUNTROWS(ALL('Stock Status Categories'[Stock Category]))
+			
+			RETURN
+			    IF(
+			        CountSelected = AllCount || CountSelected = 0,  // All selected or none selected
+			        1,
+			        IF(
+			            SELECTEDVALUE('Stock Status Categories'[Stock Category]) = CurrentPartStatus 
+			            || CurrentPartStatus IN VALUES('Stock Status Categories'[Stock Category]),
+			            1,
+			            0
+			        )
+			    )
+			
+			```
+		formatString: 0
+		lineageTag: c9b03446-42df-43ba-8449-59ed85ef3b73
+
+	measure 'Info Page HTML' =
+			
+			"<!DOCTYPE html>
+			<html>
+			<head>
+			<meta charset='UTF-8'>
+			<style>
+			* { margin: 0; padding: 0; box-sizing: border-box; }
+			body { font-family: 'Segoe UI', Tahoma, sans-serif; line-height: 1.6; color: #333; background: white; }
+			.container { width: 100%; margin: 0; background: white; }
+			.header { background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%); color: white; padding: 40px; text-align: center; }
+			.header h1 { font-size: 36px; margin-bottom: 10px; font-weight: 700; letter-spacing: -0.5px; }
+			.header p { font-size: 18px; opacity: 0.95; font-weight: 300; }
+			.content { padding: 40px 50px; }
+			.section { margin-bottom: 45px; }
+			.section-title { font-size: 26px; color: #2E5266; margin-bottom: 25px; padding-bottom: 12px; border-bottom: 4px solid #3A7CA5; font-weight: 700; display: flex; align-items: center; gap: 12px; }
+			.intro { font-size: 17px; color: #555; margin-bottom: 30px; background: #E8F4F8; padding: 25px; border-radius: 10px; border-left: 5px solid #3A7CA5; line-height: 1.8; }
+			.grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px; }
+			.card { background: white; border-radius: 12px; padding: 22px; border: 2px solid #e8e8e8; transition: all 0.3s; position: relative; overflow: hidden; }
+			.card:hover { transform: translateY(-5px); box-shadow: 0 8px 25px rgba(0,0,0,0.12); }
+			.card::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 5px; }
+			.urgent::before { background: linear-gradient(90deg, #dc3545 0%, #c82333 100%); }
+			.urgent { background: linear-gradient(180deg, #fff5f5 0%, #ffffff 100%); border-color: #dc3545; }
+			.low::before { background: linear-gradient(90deg, #ffc107 0%, #ff9800 100%); }
+			.low { background: linear-gradient(180deg, #fffbf0 0%, #ffffff 100%); border-color: #ffc107; }
+			.healthy::before { background: linear-gradient(90deg, #28a745 0%, #20c997 100%); }
+			.healthy { background: linear-gradient(180deg, #f0fff4 0%, #ffffff 100%); border-color: #28a745; }
+			.monitor::before { background: linear-gradient(90deg, #fd7e14 0%, #e83e8c 100%); }
+			.monitor { background: linear-gradient(180deg, #fff8f0 0%, #ffffff 100%); border-color: #fd7e14; }
+			.review::before { background: linear-gradient(90deg, #6c757d 0%, #495057 100%); }
+			.review { background: linear-gradient(180deg, #f8f9fa 0%, #ffffff 100%); border-color: #6c757d; }
+			.card-header { font-size: 22px; font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; gap: 10px; color: #1a1a1a; }
+			.card-icon { font-size: 32px; }
+			.card-desc { font-size: 15px; color: #666; margin-bottom: 15px; line-height: 1.6; }
+			.card-action { font-size: 14px; font-weight: 700; padding: 10px 15px; border-radius: 8px; display: inline-block; margin-top: 8px; }
+			.urgent .card-action { background: #dc3545; color: white; }
+			.low .card-action { background: #ffc107; color: #333; }
+			.healthy .card-action { background: #28a745; color: white; }
+			.monitor .card-action { background: #fd7e14; color: white; }
+			.review .card-action { background: #6c757d; color: white; }
+			.info-box { background: linear-gradient(135deg, #E8F4F8 0%, #C3E3EE 100%); border-left: 5px solid #3A7CA5; padding: 25px; margin: 25px 0; border-radius: 10px; box-shadow: 0 3px 10px rgba(58,124,165,0.1); }
+			.info-box h3 { color: #1D3C4E; margin-bottom: 15px; font-size: 20px; font-weight: 700; }
+			.info-box p { color: #424242; font-size: 15px; line-height: 1.8; margin-bottom: 10px; }
+			.calc-box { background: linear-gradient(135deg, #fff9e6 0%, #ffe082 100%); border: 3px solid #ffd54f; border-radius: 12px; padding: 25px; margin: 25px 0; box-shadow: 0 3px 10px rgba(255,193,7,0.15); }
+			.calc-box h4 { color: #f57f17; margin-bottom: 15px; font-size: 19px; font-weight: 700; }
+			.calc-step { padding: 10px 0; font-size: 15px; font-family: 'Courier New', monospace; color: #424242; border-left: 3px solid #ffc107; padding-left: 15px; margin: 8px 0; background: rgba(255,255,255,0.6); border-radius: 4px; }
+			.field-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; margin-top: 25px; }
+			.field { background: #f8f9fa; padding: 18px; border-radius: 8px; border-left: 4px solid #3A7CA5; }
+			.field-name { font-weight: 700; color: #1a1a1a; margin-bottom: 8px; font-size: 16px; }
+			.field-desc { font-size: 14px; color: #666; line-height: 1.6; }
+			.workflow { counter-reset: step; list-style: none; padding: 0; }
+			.workflow li { counter-increment: step; margin-bottom: 20px; padding-left: 60px; position: relative; font-size: 16px; line-height: 1.7; }
+			.workflow li::before { content: counter(step); position: absolute; left: 0; top: -2px; width: 42px; height: 42px; background: linear-gradient(135deg, #1D3C4E 0%, #3A7CA5 100%); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 18px; box-shadow: 0 4px 10px rgba(29,60,78,0.3); }
+			.tips { background: linear-gradient(135deg, #2E5266 0%, #1D3C4E 100%); color: white; padding: 30px; border-radius: 12px; margin-top: 35px; box-shadow: 0 5px 20px rgba(29,60,78,0.3); }
+			.tips h3 { margin-bottom: 20px; font-size: 24px; font-weight: 700; }
+			.tips ul { list-style: none; padding: 0; }
+			.tips li { padding: 10px 0 10px 30px; position: relative; font-size: 15px; line-height: 1.7; }
+			.tips li::before { content: '✓'; position: absolute; left: 0; font-weight: 900; font-size: 20px; }
+			.footer { background: #f8f9fa; padding: 25px; text-align: center; color: #666; font-size: 14px; border-top: 2px solid #e0e0e0; }
+			.footer strong { color: #2E5266; }
+			</style>
+			</head>
+			<body>
+			<div class='container'>
+			<div class='header'>
+			<h1>📊 Combine Vault Sales Report</h1>
+			<p>Complete User Guide & Reference Documentation</p>
+			</div>
+			<div class='content'>
+			<div class='section'>
+			<h2 class='section-title'>🎯 What This Report Does</h2>
+			<div class='intro'>
+			This report helps you manage your parts inventory by tracking sales performance, monitoring stock levels in real-time, and providing intelligent restocking recommendations. It analyzes the last 12 months of sales activity to help you make data-driven purchasing decisions, avoid stockouts, and reduce excess inventory.
+			</div>
+			</div>
+			<div class='section'>
+			<h2 class='section-title'>🚦 Stock Status Categories Explained</h2>
+			<div class='grid'>
+			<div class='card urgent'>
+			<div class='card-header'><span class='card-icon'>⚠️</span> Out of Stock</div>
+			<div class='card-desc'>No inventory available but customers are actively buying this part (sold within 90 days).</div>
+			<div class='card-action'>⚡ ORDER IMMEDIATELY</div>
+			</div>
+			<div class='card urgent'>
+			<div class='card-header'><span class='card-icon'>🔴</span> Critical Low</div>
+			<div class='card-desc'>Less than 1 month of supply remaining based on current sales velocity.</div>
+			<div class='card-action'>⚡ ORDER VERY SOON</div>
+			</div>
+			<div class='card low'>
+			<div class='card-header'><span class='card-icon'>⚡</span> Low Stock</div>
+			<div class='card-desc'>Between 1-2 months of supply on hand. Still time but should order soon.</div>
+			<div class='card-action'>📋 ORDER THIS WEEK</div>
+			</div>
+			<div class='card healthy'>
+			<div class='card-header'><span class='card-icon'>✅</span> Healthy</div>
+			<div class='card-desc'>2-6 months of supply. Perfect inventory level - actively selling with good stock.</div>
+			<div class='card-action'>✓ NO ACTION NEEDED</div>
+			</div>
+			<div class='card healthy'>
+			<div class='card-header'><span class='card-icon'>📊</span> Adequate</div>
+			<div class='card-desc'>6-12 months of supply. Slightly overstocked but still selling regularly.</div>
+			<div class='card-action'>👀 MONITOR CLOSELY</div>
+			</div>
+			<div class='card monitor'>
+			<div class='card-header'><span class='card-icon'>🟡</span> Slow - Monitor</div>
+			<div class='card-desc'>Last sale was 90-180 days ago. Moving slowly but has some recent activity.</div>
+			<div class='card-action'>⚠️ WATCH & REDUCE</div>
+			</div>
+			<div class='card monitor'>
+			<div class='card-header'><span class='card-icon'>📦</span> Overstock - Active</div>
+			<div class='card-desc'>Over 12 months of supply but still selling (within last 90 days).</div>
+			<div class='card-action'>🛑 STOP ORDERING</div>
+			</div>
+			<div class='card review'>
+			<div class='card-header'><span class='card-icon'>💤</span> Stagnant Stock</div>
+			<div class='card-desc'>Has inventory but no sales in 180+ days. Dead stock tying up capital.</div>
+			<div class='card-action'>🔄 RETURN/LIQUIDATE</div>
+			</div>
+			<div class='card review'>
+			<div class='card-header'><span class='card-icon'>⚪</span> Inactive</div>
+			<div class='card-desc'>No inventory and no demand in the last year. Part is inactive.</div>
+			<div class='card-action'>— NO ACTION</div>
+			</div>
+			</div>
+			</div>
+			<div class='section'>
+			<h2 class='section-title'>🧮 How Stock Status is Calculated</h2>
+			<div class='info-box'>
+			<h3>📐 Three Key Factors</h3>
+			<p><strong>1. Quantity on Hand:</strong> Current physical inventory in stock</p>
+			<p><strong>2. Sales Velocity:</strong> Average monthly sales calculated over the last 12 months</p>
+			<p><strong>3. Recent Activity:</strong> Number of days since the last customer purchase</p>
+			</div>
+			<div class='calc-box'>
+			<h4>📊 Calculation Example</h4>
+			<div class='calc-step'><strong>Step 1:</strong> Monthly Velocity = Total Sales (R12) ÷ 12 months</div>
+			<div class='calc-step'>           Example: 60 units sold ÷ 12 = 5 units/month velocity</div>
+			<div class='calc-step'><strong>Step 2:</strong> Months of Supply = Qty on Hand ÷ Monthly Velocity</div>
+			<div class='calc-step'>           Example: 10 units ÷ 5 units/month = 2.0 months supply</div>
+			<div class='calc-step'><strong>Step 3:</strong> Check Days Since Last Sale for activity level</div>
+			<div class='calc-step'>           Example: Last sale 45 days ago = Active (< 90 days)</div>
+			<div class='calc-step'><strong>RESULT:</strong> 2 months supply + Active = <strong>✅ Healthy Status</strong></div>
+			</div>
+			<div class='info-box'>
+			<h3>💡 Suggested Order Quantity Logic</h3>
+			<p>The report targets maintaining <strong>3 months of supply</strong> for actively selling parts. Formula: (Monthly Velocity × 3) - Qty on Hand = Suggested Order.</p>
+			<p>For slow-moving parts selling less than 4 units per year, the system suggests a minimum of 1 unit to avoid zero recommendations while preventing over-ordering.</p>
+			</div>
+			</div>
+			<div class='section'>
+			<h2 class='section-title'>🔍 Key Fields Dictionary</h2>
+			<div class='field-grid'>
+			<div class='field'>
+			<div class='field-name'>Qty on Hand</div>
+			<div class='field-desc'>Physical inventory currently available in stock</div>
+			</div>
+			<div class='field'>
+			<div class='field-name'>Bin Qty</div>
+			<div class='field-desc'>Expected quantity (may differ from actual due to receiving/returns)</div>
+			</div>
+			<div class='field'>
+			<div class='field-name'>Pending Qty</div>
+			<div class='field-desc'>Parts on order but not yet received from vendor</div>
+			</div>
+			<div class='field'>
+			<div class='field-name'>Qty Sold</div>
+			<div class='field-desc'>Total number of units sold in the selected time period</div>
+			</div>
+			<div class='field'>
+			<div class='field-name'>Demands</div>
+			<div class='field-desc'>Number of sales transactions (not quantity). Example: 3 transactions of 5 units each = 3 demands, 15 qty sold</div>
+			</div>
+			<div class='field'>
+			<div class='field-name'>Months of Supply</div>
+			<div class='field-desc'>How long current inventory will last at current sales rate. 999.0 = virtually infinite (no sales)</div>
+			</div>
+			<div class='field'>
+			<div class='field-name'>Days - Last Sale</div>
+			<div class='field-desc'>Calendar days since this part last sold. Blank = never sold or no sales in 365 days</div>
+			</div>
+			<div class='field'>
+			<div class='field-name'>Suggested Order Qty</div>
+			<div class='field-desc'>Recommended order quantity to maintain 3 months supply (only for parts sold within 180 days)</div>
+			</div>
+			</div>
+			</div>
+			<div class='section'>
+			<h2 class='section-title'>📋 Suggested Daily Workflow</h2>
+			<ol class='workflow'>
+			<li>Filter to <strong>Out of Stock</strong> status and order these parts immediately to prevent lost sales</li>
+			<li>Review <strong>Critical Low</strong> and <strong>Low Stock</strong> categories to plan your purchasing for the week</li>
+			<li>Check the <strong>Suggested Order Qty</strong> column for calculated recommended quantities</li>
+			<li>Export filtered lists to Excel for easy integration with your purchasing system</li>
+			<li><strong>Weekly:</strong> Review Slow-Monitor and Overstock categories to adjust future ordering</li>
+			<li><strong>Monthly:</strong> Analyze Stagnant Stock for potential returns, transfers, or liquidation opportunities</li>
+			</ol>
+			</div>
+			<div class='tips'>
+			<h3>💡 Pro Tips for Maximum Efficiency</h3>
+			<ul>
+			<li>Use the Stock Status slicer to focus on one action category at a time</li>
+			<li>Check Days Since Last Sale to verify actual activity levels and catch trends early</li>
+			<li>Consider seasonal patterns</li>
+			<li>Parts showing 999 months supply have essentially zero sales velocity</li>
+			<li>Export your filtered reorder lists directly to Excel for seamless ordering</li>
+			<li>Review inventory value trends weekly to optimize cash flow and working capital</li>
+			<li>Set reminders to review stagnant stock monthly to free up warehouse space</li>
+			</ul>
+			</div>
+			</div>
+			<div class='footer'>
+			<p><strong>Combine Vault Sales Report</strong> | Version 2.0 | Updated October 2025</p>
+			<p>Questions or need assistance? Contact your inventory manager or reporting team</p>
+			</div>
+			</div>
+			</body>
+			</html>"
+		lineageTag: f3264b6c-a7e4-45f6-9a34-b72956487a9d
+
+	measure 'Sales Previous R12' =
+			
+			CALCULATE(
+			    SUM(fact_Branch12_Transactions[SaleValue]),
+			    fact_Branch12_Transactions[IsSale] = TRUE,
+			    dim_DateTable[IsRolling730Days] = TRUE,
+			    dim_DateTable[IsRolling365Days] = FALSE
+			)
+		formatString: $#,0.00;($#,0.00);$#,0.00
+		lineageTag: b4760c82-c2fc-498c-8cff-9335a44d4a21
+
+	measure 'Sales R12 vs Previous $ Change' = [Sales R12] - [Sales Previous R12]
+		formatString: $#,0.00;($#,0.00);$#,0.00
+		lineageTag: 9edcf3a4-02c8-4398-9e05-1c32db5f1126
+
+	measure 'Sales R12 vs Previous % Change' =
+			VAR PercentChange = DIVIDE([Sales R12] - [Sales Previous R12], [Sales Previous R12], 0)
+			VAR Arrow = IF(PercentChange > 0, "↑", IF(PercentChange < 0, "↓", "─"))
+			RETURN Arrow & " " & FORMAT(PercentChange, "0.0%")
+		lineageTag: e0081fd3-023d-4730-95b9-a112135aec04
+
+	measure 'Sales R12 vs Previous % (Numeric)' =
+			
+			DIVIDE([Sales R12] - [Sales Previous R12], [Sales Previous R12], 0)
+		lineageTag: c598ebc7-db87-4c80-bc78-c18a61b060a2
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Sales R12 vs Previous Status' = ```
+			VAR PercentChange = DIVIDE([Sales R12] - [Sales Previous R12], [Sales Previous R12], 0)
+			RETURN 
+			    IF(PercentChange > 0, 1,  // Growth = 1
+			    IF(PercentChange < 0, 0,  // Decline = 0
+			    -1))                      // No Change = -1
+			```
+		lineageTag: 4a69ff9f-77a5-441d-97a8-b2e9e14a1552
+
+	measure 'Demands Previous R12' =
+			CALCULATE(
+			    COUNTROWS(Fact_Branch12_Transactions),
+			    Fact_Branch12_Transactions[IsSale] = TRUE,
+			    dim_DateTable[IsRolling730Days] = TRUE,
+			    dim_DateTable[IsRolling365Days] = FALSE
+			)
+		formatString: #,0
+		lineageTag: 30b60ea7-d7dc-4b24-838c-46791d203d22
+
+	measure 'Qty Previous R12' =
+			CALCULATE(
+			    SUM(fact_Branch12_Transactions[SalesQty]),
+			    fact_Branch12_Transactions[IsSale] = TRUE,
+			    dim_DateTable[IsRolling730Days] = TRUE,
+			    dim_DateTable[IsRolling365Days] = FALSE
+			)
+		formatString: #,0
+		lineageTag: 0bd838bf-3755-49fd-a87b-e6fdb6c3b6ed
+
+	measure 'Location Analysis Narrative' = ```
+			
+			VAR TopBranch = TOPN(1, VALUES(dim_BranchLocation[BranchName]), [Sales R12], DESC)
+			VAR TopSales = [Sales R12]
+			VAR TopDemands = [Demands]
+			VAR BranchCount = DISTINCTCOUNT(Fact_Branch12_Transactions[TransferBranch])
+			VAR AvgSalePerDemand = DIVIDE([Sales R12], [Demands], 0)
+			
+			RETURN
+			"Branch 12 serves " & BranchCount & " locations with our top customer being " & 
+			TopBranch & " at " & FORMAT(TopSales, "$#,0") & " across " & TopDemands & 
+			" transfer requests. This represents an average of " & FORMAT(AvgSalePerDemand, "$#,0") & 
+			" per transfer, indicating " & 
+			IF(AvgSalePerDemand > 1000, "high-value parts", "standard parts") & " movement."
+			```
+		lineageTag: 795ab431-2727-42c4-9e7e-7b342fb70b0e
+
+	measure 'Transfer Branch - Header' = ```
+			
+			// Get user name
+			VAR _User = USERPRINCIPALNAME()
+			VAR _Position = SEARCH("@", _User, 1)
+			VAR _Name = LEFT(_User, _Position - 1)
+			VAR _FirstLetter = UPPER(LEFT(_Name, 1))
+			VAR _LastName = MID(_Name, 2, LEN(_Name) - 1)
+			VAR _FormattedLastName = 
+			    UPPER(LEFT(_LastName, 1)) & LOWER(MID(_LastName, 2, LEN(_LastName)))
+			VAR WelcomeName = _FirstLetter & "." & _FormattedLastName
+			
+			// Get current date/time info
+			VAR CurrentDate = TODAY()
+			VAR DateDisplay = FORMAT(CurrentDate, "MMM D, YYYY")
+			VAR CurrentHour = HOUR(NOW())
+			VAR TimeGreeting = 
+			    IF(CurrentHour < 12, "Good Morning",
+			    IF(CurrentHour < 17, "Good Afternoon",
+			    "Good Evening"))
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    height: 85px;
+			    padding: 15px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 10px;
+			    color: white;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-between;
+			    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    box-sizing: border-box;
+			'>
+			    <!-- Left side: Dashboard Title -->
+			    <div style='display: flex; align-items: center; gap: 15px;'>
+			        <!-- Home icon -->
+			        <div style='
+			            width: 40px;
+			            height: 40px;
+			            background: rgba(255,255,255,0.15);
+			            border-radius: 8px;
+			            display: flex;
+			            align-items: center;
+			            justify-content: center;
+			            font-size: 20px;
+			        '>
+			            🏠
+			        </div>
+			        
+			        <!-- Title -->
+			        <div>
+			            <div style='font-size: 12px; opacity: 0.85; margin-bottom: 4px; letter-spacing: 0.5px;'>
+			                DASHBOARD
+			            </div>
+			            <div style='font-size: 26px; font-weight: 700; line-height: 1;'>
+			                Transfer Branch Analysis
+			            </div>
+			        </div>
+			    </div>
+			    
+			    <!-- Right side: Welcome & Date -->
+			    <div style='text-align: right;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 6px;'>
+			            " & TimeGreeting & ", " & WelcomeName & "
+			        </div>
+			        <div style='font-size: 16px; font-weight: 600;'>
+			            📅 " & DateDisplay & "
+			        </div>
+			    </div>
+			</div>
+			"
+			```
+		lineageTag: f079b052-28c8-43c4-9bc6-655cd5a3105c
+
+	measure 'Top Customer Share' = ```
+			
+			VAR TopCustomerSales = 
+			    CALCULATE(
+			        [Sales R12],
+			        TOPN(1, ALL(dim_BranchLocation[Branch]), [Sales R12], DESC)
+			    )
+			VAR TotalSales = [Days Since Last Transfer]
+			RETURN
+			DIVIDE(TopCustomerSales, TotalSales, 0)
+			```
+		lineageTag: 7d3fe9c6-5ebb-4de2-970d-bad2835c26ab
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Days Since Last Transfer' = ```
+			
+			VAR LastTransferDate = 
+			    CALCULATE(
+			        MAX(Fact_Branch12_Transactions[TransDatetime]),
+			        Fact_Branch12_Transactions[IsSale] = TRUE,
+			        Fact_Branch12_Transactions[TransferBranch] <> BLANK()
+			    )
+			VAR Today = TODAY()
+			RETURN
+			INT(Today - LastTransferDate)
+			```
+		lineageTag: 31a6186c-1198-4ca8-b0a0-fb477da2f95a
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Locations Served' =
+			
+			CALCULATE(
+			    DISTINCTCOUNT(Fact_Branch12_Transactions[TransferBranch]),
+			    Fact_Branch12_Transactions[IsSale] = TRUE,
+			    Fact_Branch12_Transactions[TransferBranch] <> BLANK(),
+			    dim_DateTable[IsRolling365Days] = TRUE
+			)
+		formatString: 0
+		lineageTag: ea231ed9-5145-4f7b-98b6-2cbb203535b8
+
+	measure 'Active Locations L30D' =
+			
+			CALCULATE(
+			    DISTINCTCOUNT(Fact_Branch12_Transactions[TransferBranch]),
+			    Fact_Branch12_Transactions[IsSale] = TRUE,
+			    Fact_Branch12_Transactions[TransferBranch] <> BLANK(),
+			    Fact_Branch12_Transactions[TransDatetime] >= TODAY() - 30
+			)
+		lineageTag: 8f66e94b-65a2-4c93-8df3-6b32d4a254e2
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Transfer Insights Narrative' = ```
+			
+			VAR TopBranch = 
+			    CALCULATE(
+			        MAX(dim_BranchLocation[Branch]),
+			        TOPN(1, ALL(dim_BranchLocation[Branch]), [Sales R12], DESC)
+			    )
+			VAR TopBranchSales = 
+			    CALCULATE(
+			        [Sales R12],
+			        TOPN(1, ALL(dim_BranchLocation[Branch]), [Sales R12], DESC)
+			    )
+			VAR TotalLocations = 
+			    CALCULATE(
+			        DISTINCTCOUNT(Fact_Branch12_Transactions[TransferBranch]),
+			        Fact_Branch12_Transactions[IsSale] = TRUE,
+			        Fact_Branch12_Transactions[TransferBranch] <> BLANK(),
+			        dim_DateTable[IsRolling365Days] = TRUE
+			    )
+			VAR TotalTransferSales = [Sales R12]
+			VAR TopShare = DIVIDE(TopBranchSales, TotalTransferSales, 0)
+			
+			RETURN
+			"<div style='font-family: Segoe UI; font-size: 14px; line-height: 1.6; padding: 10px;'>
+			<p><strong>Transfer Distribution Summary (Rolling 12 Months):</strong></p>
+			<ul style='margin-top: 8px;'>
+			<li>Branch 12 served <strong>" & TotalLocations & " locations</strong> with <strong>" & FORMAT(TotalTransferSales, "$#,0K") & "</strong> in total transfers</li>
+			<li><strong>" & TopBranch & "</strong> is the primary destination at <strong>" & FORMAT(TopBranchSales, "$#,0K") & "</strong> (" & FORMAT(TopShare, "0%") & " of transfers)</li>
+			<li>Total transfer demands: <strong>" & FORMAT([Demands], "#,0") & "</strong> transactions</li>
+			</ul>
+			</div>"
+			```
+		lineageTag: 0f50f5c3-afec-4ba0-a344-71f644837de1
+
+	measure 'Transfer Qty by Branch' =
+			
+			VAR CurrentBranch = SELECTEDVALUE(dim_BranchLocation[Branch])
+			RETURN
+			IF(
+			    NOT ISBLANK(CurrentBranch),
+			    CALCULATE(
+			        SUM(fact_Branch12_Transactions[SalesQty]),
+			        fact_Branch12_Transactions[IsSale] = TRUE,
+			        fact_Branch12_Transactions[TransferBranch] = CurrentBranch,
+			        dim_DateTable[IsRolling365Days] = TRUE
+			    ),
+			    BLANK()
+			)
+		formatString: 0
+		lineageTag: 766fb3d1-1f54-46a1-a4c8-4b0c51d087ac
+
+	measure 'Transfer Demands R12' =
+			
+			CALCULATE(
+			    [Demands],
+			    Fact_Branch12_Transactions[TransferBranch] <> BLANK()
+			)
+		formatString: 0
+		lineageTag: d5a8e1bd-9fa7-4e9d-8276-8c4ab0870d8e
+
+	measure 'Destinations Served' =
+			
+			CALCULATE(
+			    DISTINCTCOUNT(Fact_Branch12_Transactions[TransferBranch]),
+			    Fact_Branch12_Transactions[IsSale] = TRUE,
+			    Fact_Branch12_Transactions[TransferBranch] <> BLANK()
+			)
+		formatString: 0
+		lineageTag: 377ce0f5-d4ef-4113-a686-f65927c0c690
+
+	measure 'Sales Change R12' = ```
+			
+			VAR DollarChange = [Sales R12] - [Sales Previous R12]
+			VAR PercentChange = DIVIDE(DollarChange, [Sales Previous R12], 0)
+			VAR Arrow = 
+			    IF(PercentChange > 0, "▲", 
+			    IF(PercentChange < 0, "▼", 
+			    "─"))
+			RETURN
+			Arrow & " " & FORMAT(DollarChange, "$#,0") & " (" & FORMAT(PercentChange, "0.0%") & ")"
+			```
+		lineageTag: 50db93cc-72ec-42f1-99fb-e8a3536396ea
+
+	measure 'Demands Change R12' = ```
+			
+			VAR CurrentDemands = [Demands]
+			VAR PreviousDemands = [Demands Previous R12]
+			VAR Change = CurrentDemands - PreviousDemands
+			VAR Arrow = 
+			    IF(Change > 0, "▲", 
+			    IF(Change < 0, "▼", 
+			    "─"))
+			RETURN
+			Arrow & " " & FORMAT(Change, "+0;-0;0")
+			```
+		lineageTag: 302120c8-df74-4822-9141-145300260a45
+
+	measure 'Sales Change Status' = ```
+			
+			VAR PercentChange = DIVIDE([Sales R12] - [Sales Previous R12], [Sales Previous R12], 0)
+			RETURN
+			    IF(PercentChange >= 0.5, 2,      -- Strong growth (>50%)
+			    IF(PercentChange > 0, 1,          -- Moderate growth (0-50%)
+			    IF(PercentChange = 0, 0,          -- No change
+			    IF(PercentChange > -0.5, -1,      -- Moderate decline (0 to -50%)
+			    -2)))) 
+			```
+		formatString: 0
+		lineageTag: d308a71c-5aff-466c-ac69-fc0060d99a14
+
+	measure 'Branch Sales Share' = ```
+			
+			VAR CurrentBranchSales = [Sales R12]
+			VAR TotalTransferSales = 
+			    CALCULATE(
+			        [Sales R12], 
+			        ALL(dim_BranchLocation[Branch])
+			    )
+			RETURN
+			DIVIDE(CurrentBranchSales, TotalTransferSales, 0)
+			```
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 92b0f285-9f00-4153-b6d0-ee07e81c4da3
+
+	measure 'Demands Change Status' =
+			
+			VAR CurrentDemands = [Demands]
+			VAR PreviousDemands = [Demands Previous R12]
+			VAR Change = CurrentDemands - PreviousDemands
+			RETURN
+			    IF(Change > 0, 1,      -- Increase = 1 (format as green)
+			    IF(Change < 0, 2,      -- Decrease = 2 (format as red)
+			    0))                    -- No change = 0 (neutral/gray)
+		formatString: 0
+		lineageTag: 1dc65772-1052-4fe0-bf92-2fb918aa0e52
+
+	measure 'Transfer Branch - Insights Panel' = ```
+			
+			// Calculate key metrics
+			VAR TotalLocations = 
+			    CALCULATE(
+			        DISTINCTCOUNT(Fact_Branch12_Transactions[TransferBranch]),
+			        Fact_Branch12_Transactions[IsSale] = TRUE,
+			        Fact_Branch12_Transactions[TransferBranch] <> BLANK(),
+			        dim_DateTable[IsRolling365Days] = TRUE
+			    )
+			VAR TotalSales = [Sales R12]
+			VAR TotalDemands = [Demands]
+			VAR AvgSalePerTransfer = DIVIDE(TotalSales, TotalDemands, 0)
+			
+			// Top branch info
+			VAR TopBranch = 
+			    CALCULATE(
+			        MAX(dim_BranchLocation[Branch]),
+			        TOPN(1, ALL(dim_BranchLocation[Branch]), [Sales R12], DESC)
+			    )
+			VAR TopBranchSales = 
+			    CALCULATE(
+			        [Sales R12],
+			        TOPN(1, ALL(dim_BranchLocation[Branch]), [Sales R12], DESC)
+			    )
+			VAR TopBranchShare = DIVIDE(TopBranchSales, TotalSales, 0)
+			
+			// Growth/decline analysis
+			VAR GrowingBranches = 
+			    COUNTROWS(
+			        FILTER(
+			            ALL(dim_BranchLocation[Branch]),
+			            [Sales R12] > [Sales Previous R12] && [Sales R12] > 0
+			        )
+			    )
+			VAR DecliningBranches = 
+			    COUNTROWS(
+			        FILTER(
+			            ALL(dim_BranchLocation[Branch]),
+			            [Sales R12] < [Sales Previous R12] && [Sales R12] > 0
+			        )
+			    )
+			
+			// Sales growth
+			VAR CurrentSales = TotalSales
+			VAR PreviousSales = [Sales Previous R12]
+			VAR SalesGrowthRate = DIVIDE(CurrentSales - PreviousSales, PreviousSales, 0)
+			VAR SalesGrowthIcon = IF(SalesGrowthRate > 0, "📈", IF(SalesGrowthRate < 0, "📉", "➖"))
+			VAR SalesGrowthColor = IF(SalesGrowthRate > 0, "#4CAF50", IF(SalesGrowthRate < 0, "#F44336", "#9E9E9E"))
+			
+			// Demands growth
+			VAR CurrentDemands = TotalDemands
+			VAR PreviousDemands = [Demands Previous R12]
+			VAR DemandsGrowthRate = DIVIDE(CurrentDemands - PreviousDemands, PreviousDemands, 0)
+			VAR DemandsGrowthIcon = IF(DemandsGrowthRate > 0, "📈", IF(DemandsGrowthRate < 0, "📉", "➖"))
+			VAR DemandsGrowthColor = IF(DemandsGrowthRate > 0, "#4CAF50", IF(DemandsGrowthRate < 0, "#F44336", "#9E9E9E"))
+			
+			RETURN
+			"
+			<div style='font-family: Segoe UI; height: 790px; width: 600px; display: flex; flex-direction: column; gap: 15px;'>
+			
+			    <!-- Section 1: Key Performance Metrics -->
+			    <div style='
+			        background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 100%);
+			        border-radius: 12px;
+			        padding: 25px;
+			        color: white;
+			        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			        flex: 1;
+			        display: flex;
+			        flex-direction: column;
+			    '>
+			        <div style='font-size: 18px; font-weight: 700; margin-bottom: 20px; opacity: 0.9;'>
+			            📊 TRANSFER PERFORMANCE OVERVIEW
+			        </div>
+			        
+			        <div style='display: grid; grid-template-columns: 1fr 1fr; gap: 15px; flex: 1;'>
+			            <!-- Total Sales -->
+			            <div style='background: rgba(255,255,255,0.1); border-radius: 8px; padding: 20px; display: flex; flex-direction: column; justify-content: center;'>
+			                <div style='font-size: 14px; opacity: 0.8; margin-bottom: 8px;'>Total Sales (R12)</div>
+			                <div style='font-size: 36px; font-weight: 700; margin-bottom: 8px;'>" & FORMAT(TotalSales, "$#,0K") & "</div>
+			                <div style='font-size: 14px; color: " & SalesGrowthColor & ";'>
+			                    " & SalesGrowthIcon & " " & FORMAT(SalesGrowthRate, "+0.0%;-0.0%;0.0%") & " vs Previous R12
+			                </div>
+			            </div>
+			            
+			            <!-- Active Locations -->
+			            <div style='background: rgba(255,255,255,0.1); border-radius: 8px; padding: 20px; display: flex; flex-direction: column; justify-content: center;'>
+			                <div style='font-size: 14px; opacity: 0.8; margin-bottom: 8px;'>Active Locations</div>
+			                <div style='font-size: 36px; font-weight: 700; margin-bottom: 8px;'>" & TotalLocations & "</div>
+			                <div style='font-size: 14px; opacity: 0.85;'>
+			                    " & GrowingBranches & " Growing | " & DecliningBranches & " Declining
+			                </div>
+			            </div>
+			            
+			            <!-- Total Demands -->
+			            <div style='background: rgba(255,255,255,0.1); border-radius: 8px; padding: 20px; display: flex; flex-direction: column; justify-content: center;'>
+			                <div style='font-size: 14px; opacity: 0.8; margin-bottom: 8px;'>Transfer Demands</div>
+			                <div style='font-size: 36px; font-weight: 700; margin-bottom: 8px;'>" & FORMAT(TotalDemands, "#,0") & "</div>
+			                <div style='font-size: 14px; color: " & DemandsGrowthColor & ";'>
+			                    " & DemandsGrowthIcon & " " & FORMAT(DemandsGrowthRate, "+0.0%;-0.0%;0.0%") & " vs Previous R12
+			                </div>
+			            </div>
+			            
+			            <!-- Avg per Transfer -->
+			            <div style='background: rgba(255,255,255,0.1); border-radius: 8px; padding: 20px; display: flex; flex-direction: column; justify-content: center;'>
+			                <div style='font-size: 14px; opacity: 0.8; margin-bottom: 8px;'>Avg Sale/Transfer</div>
+			                <div style='font-size: 36px; font-weight: 700; margin-bottom: 8px;'>" & FORMAT(AvgSalePerTransfer, "$#,0") & "</div>
+			                <div style='font-size: 14px; opacity: 0.85;'>
+			                    Per Transaction
+			                </div>
+			            </div>
+			        </div>
+			    </div>
+			
+			    <!-- Section 2: Primary Demand Center -->
+			    <div style='
+			        background: linear-gradient(135deg, #1565C0 0%, #0D47A1 100%);
+			        border-radius: 12px;
+			        padding: 30px;
+			        color: white;
+			        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			        flex: 1;
+			        display: flex;
+			        flex-direction: column;
+			    '>
+			        <div style='display: flex; align-items: center; gap: 15px; margin-bottom: 25px;'>
+			            <div style='font-size: 40px;'>🏆</div>
+			            <div>
+			                <div style='font-size: 18px; font-weight: 700;'>PRIMARY DEMAND CENTER</div>
+			                <div style='font-size: 14px; opacity: 0.9; margin-top: 4px;'>Highest Combine Parts Distribution Volume</div>
+			            </div>
+			        </div>
+			        
+			        <div style='background: rgba(255,255,255,0.15); border-radius: 8px; padding: 25px; flex: 1; display: flex; flex-direction: column; justify-content: center;'>
+			            <div style='font-size: 17px; line-height: 1.8; margin-bottom: 20px;'>
+			                <strong>" & TopBranch & " - Abernathy</strong> represents <strong>" & FORMAT(TopBranchShare, "0%") & "</strong> of all Branch 12 transfers
+			                (<strong>" & FORMAT(TopBranchSales, "$#,0K") & "</strong> of <strong>" & FORMAT(TotalSales, "$#,0K") & "</strong> total)
+			            </div>
+			            <div style='padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.2); font-size: 15px; opacity: 0.95; line-height: 1.7;'>
+			                💡 <em>High volume indicates strong combine repair business at this location. Branch 12 distribution model is effectively supporting their parts needs.</em>
+			            </div>
+			        </div>
+			    </div>
+			
+			</div>
+			"
+			```
+		lineageTag: 5ee7001e-272b-4584-aef1-384462321863
+
+	measure 'Transfer Branch - Market Segments' = ```
+			
+			VAR TotalSales = [Sales R12]
+			
+			// Define market segments based on share
+			VAR PrimaryMarket = 
+			    CONCATENATEX(
+			        FILTER(
+			            ALL(dim_BranchLocation[Branch]),
+			            DIVIDE([Sales R12], TotalSales, 0) >= 0.25
+			        ),
+			        dim_BranchLocation[Branch],
+			        ", ",
+			        [Sales R12], DESC
+			    )
+			VAR PrimarySales = 
+			    CALCULATE(
+			        [Sales R12],
+			        FILTER(
+			            ALL(dim_BranchLocation[Branch]),
+			            DIVIDE([Sales R12], TotalSales, 0) >= 0.25
+			        )
+			    )
+			VAR PrimaryShare = DIVIDE(PrimarySales, TotalSales, 0)
+			
+			VAR SecondaryCount = 
+			    COUNTROWS(
+			        FILTER(
+			            ALL(dim_BranchLocation[Branch]),
+			            DIVIDE([Sales R12], TotalSales, 0) >= 0.05 &&
+			            DIVIDE([Sales R12], TotalSales, 0) < 0.25 &&
+			            [Sales R12] > 0
+			        )
+			    )
+			VAR SecondarySales = 
+			    CALCULATE(
+			        [Sales R12],
+			        FILTER(
+			            ALL(dim_BranchLocation[Branch]),
+			            DIVIDE([Sales R12], TotalSales, 0) >= 0.05 &&
+			            DIVIDE([Sales R12], TotalSales, 0) < 0.25
+			        )
+			    )
+			VAR SecondaryShare = DIVIDE(SecondarySales, TotalSales, 0)
+			
+			VAR TertiaryCount = 
+			    COUNTROWS(
+			        FILTER(
+			            ALL(dim_BranchLocation[Branch]),
+			            DIVIDE([Sales R12], TotalSales, 0) < 0.05 &&
+			            [Sales R12] > 0
+			        )
+			    )
+			VAR TertiarySales = 
+			    CALCULATE(
+			        [Sales R12],
+			        FILTER(
+			            ALL(dim_BranchLocation[Branch]),
+			            DIVIDE([Sales R12], TotalSales, 0) < 0.05
+			        )
+			    )
+			VAR TertiaryShare = DIVIDE(TertiarySales, TotalSales, 0)
+			
+			RETURN
+			"
+			<div style='font-family: Segoe UI; height: 790px; width: 600px; display: flex; flex-direction: column; gap: 15px;'>
+			
+			    <!-- Title Section -->
+			    <div style='
+			        background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 100%);
+			        border-radius: 12px;
+			        padding: 20px;
+			        color: white;
+			        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    '>
+			        <div style='font-size: 18px; font-weight: 700;'>🎯 MARKET SEGMENTATION</div>
+			        <div style='font-size: 13px; opacity: 0.85; margin-top: 5px;'>Strategic categorization of transfer destinations</div>
+			    </div>
+			
+			    <!-- Primary Market (>25% share) -->
+			    <div style='
+			        background: linear-gradient(135deg, #5E35B1 0%, #512DA8 100%);
+			        border-radius: 12px;
+			        padding: 20px;
+			        color: white;
+			        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    '>
+			        <div style='display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;'>
+			            <div style='font-size: 16px; font-weight: 700;'>👑 PRIMARY MARKET</div>
+			            <div style='background: rgba(255,255,255,0.25); border-radius: 20px; padding: 5px 15px; font-size: 13px; font-weight: 600;'>
+			                " & FORMAT(PrimaryShare, "0%") & " of Sales
+			            </div>
+			        </div>
+			        <div style='background: rgba(255,255,255,0.15); border-radius: 8px; padding: 15px;'>
+			            <div style='font-size: 24px; font-weight: 700; margin-bottom: 8px;'>" & FORMAT(PrimarySales, "$#,0K") & "</div>
+			            <div style='font-size: 14px; line-height: 1.5;'>
+			                <strong>Location(s):</strong> " & PrimaryMarket & "
+			            </div>
+			            <div style='font-size: 12px; margin-top: 10px; opacity: 0.9; font-style: italic;'>
+			                Core customer(s) representing majority of transfer volume. Critical for operational continuity.
+			            </div>
+			        </div>
+			    </div>
+			
+			    <!-- Secondary Market (5-25% share) -->
+			    <div style='
+			        background: linear-gradient(135deg, #1976D2 0%, #1565C0 100%);
+			        border-radius: 12px;
+			        padding: 20px;
+			        color: white;
+			        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    '>
+			        <div style='display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;'>
+			            <div style='font-size: 16px; font-weight: 700;'>🔷 SECONDARY MARKET</div>
+			            <div style='background: rgba(255,255,255,0.25); border-radius: 20px; padding: 5px 15px; font-size: 13px; font-weight: 600;'>
+			                " & FORMAT(SecondaryShare, "0%") & " of Sales
+			            </div>
+			        </div>
+			        <div style='background: rgba(255,255,255,0.15); border-radius: 8px; padding: 15px;'>
+			            <div style='font-size: 24px; font-weight: 700; margin-bottom: 8px;'>" & FORMAT(SecondarySales, "$#,0K") & "</div>
+			            <div style='font-size: 14px; line-height: 1.5;'>
+			                <strong>" & SecondaryCount & " locations</strong> with meaningful regular demand
+			            </div>
+			            <div style='font-size: 12px; margin-top: 10px; opacity: 0.9; font-style: italic;'>
+			                Growth opportunities. Increasing secondary market share reduces concentration risk.
+			            </div>
+			        </div>
+			    </div>
+			
+			    <!-- Tertiary Market (<5% share) -->
+			    <div style='
+			        background: linear-gradient(135deg, #00897B 0%, #00796B 100%);
+			        border-radius: 12px;
+			        padding: 20px;
+			        color: white;
+			        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    '>
+			        <div style='display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;'>
+			            <div style='font-size: 16px; font-weight: 700;'>◽ TERTIARY MARKET</div>
+			            <div style='background: rgba(255,255,255,0.25); border-radius: 20px; padding: 5px 15px; font-size: 13px; font-weight: 600;'>
+			                " & FORMAT(TertiaryShare, "0%") & " of Sales
+			            </div>
+			        </div>
+			        <div style='background: rgba(255,255,255,0.15); border-radius: 8px; padding: 15px;'>
+			            <div style='font-size: 24px; font-weight: 700; margin-bottom: 8px;'>" & FORMAT(TertiarySales, "$#,0K") & "</div>
+			            <div style='font-size: 14px; line-height: 1.5;'>
+			                <strong>" & TertiaryCount & " locations</strong> with sporadic/small-volume needs
+			            </div>
+			            <div style='font-size: 12px; margin-top: 10px; opacity: 0.9; font-style: italic;'>
+			                Long tail customers. Minimal individual impact but collectively meaningful.
+			            </div>
+			        </div>
+			    </div>
+			
+			</div>
+			"
+			```
+		lineageTag: 21eda840-765f-44e3-9dc3-4a4907b171c8
+
+	measure 'Transfer Branch - Trend Analysis' = ```
+			
+			VAR CurrentSales = [Sales R12]
+			VAR PreviousSales = [Sales Previous R12]
+			VAR SalesGrowth = DIVIDE(CurrentSales - PreviousSales, PreviousSales, 0)
+			
+			VAR CurrentDemands = [Demands]
+			VAR PreviousDemands = [Demands Previous R12]
+			VAR DemandsGrowth = DIVIDE(CurrentDemands - PreviousDemands, PreviousDemands, 0)
+			
+			VAR GrowingLocations = 
+			    COUNTROWS(
+			        FILTER(
+			            ALL(dim_BranchLocation[Branch]),
+			            [Sales R12] > [Sales Previous R12] && [Sales R12] > 0
+			        )
+			    )
+			
+			VAR StableLocations = 
+			    COUNTROWS(
+			        FILTER(
+			            ALL(dim_BranchLocation[Branch]),
+			            [Sales R12] = [Sales Previous R12] && [Sales R12] > 0
+			        )
+			    )
+			
+			VAR DecliningLocations = 
+			    COUNTROWS(
+			        FILTER(
+			            ALL(dim_BranchLocation[Branch]),
+			            [Sales R12] < [Sales Previous R12] && [Sales R12] > 0
+			        )
+			    )
+			
+			VAR TrendSummary = 
+			    IF(GrowingLocations > DecliningLocations, 
+			        "Expanding footprint with " & GrowingLocations & " growing markets",
+			        "Contracting footprint with " & DecliningLocations & " declining markets")
+			
+			RETURN
+			"
+			<div style='font-family: Segoe UI; height: 790px; width: 600px; display: flex; flex-direction: column; gap: 15px;'>
+			
+			    <!-- Period Comparison Header -->
+			    <div style='
+			        background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 100%);
+			        border-radius: 12px;
+			        padding: 20px;
+			        color: white;
+			        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    '>
+			        <div style='font-size: 18px; font-weight: 700;'>📈 PERIOD-OVER-PERIOD TRENDS</div>
+			        <div style='font-size: 13px; opacity: 0.85; margin-top: 5px;'>Current R12 vs Previous R12 Performance</div>
+			    </div>
+			
+			    <!-- Sales Trend -->
+			    <div style='
+			        background: linear-gradient(135deg, #43A047 0%, #388E3C 100%);
+			        border-radius: 12px;
+			        padding: 25px;
+			        color: white;
+			        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    '>
+			        <div style='font-size: 14px; opacity: 0.9; margin-bottom: 8px;'>TOTAL TRANSFER SALES</div>
+			        <div style='display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 15px;'>
+			            <div>
+			                <div style='font-size: 40px; font-weight: 700; line-height: 1;'>" & FORMAT(CurrentSales, "$#,0K") & "</div>
+			                <div style='font-size: 14px; opacity: 0.8; margin-top: 5px;'>Current R12</div>
+			            </div>
+			            <div style='text-align: right;'>
+			                <div style='font-size: 24px; font-weight: 600;'>" & FORMAT(PreviousSales, "$#,0K") & "</div>
+			                <div style='font-size: 12px; opacity: 0.8;'>Previous R12</div>
+			            </div>
+			        </div>
+			        <div style='background: rgba(255,255,255,0.2); border-radius: 8px; padding: 12px; text-align: center;'>
+			            <div style='font-size: 28px; font-weight: 700;'>" & FORMAT(SalesGrowth, "+0.0%;-0.0%;0.0%") & "</div>
+			            <div style='font-size: 13px; margin-top: 3px;'>
+			                " & FORMAT(CurrentSales - PreviousSales, "$+#,0;$-#,0;$0") & " Change
+			            </div>
+			        </div>
+			    </div>
+			
+			    <!-- Demands Trend -->
+			    <div style='
+			        background: linear-gradient(135deg, #FB8C00 0%, #F57C00 100%);
+			        border-radius: 12px;
+			        padding: 25px;
+			        color: white;
+			        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    '>
+			        <div style='font-size: 14px; opacity: 0.9; margin-bottom: 8px;'>TRANSFER DEMANDS</div>
+			        <div style='display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 15px;'>
+			            <div>
+			                <div style='font-size: 40px; font-weight: 700; line-height: 1;'>" & FORMAT(CurrentDemands, "#,0") & "</div>
+			                <div style='font-size: 14px; opacity: 0.8; margin-top: 5px;'>Current R12</div>
+			            </div>
+			            <div style='text-align: right;'>
+			                <div style='font-size: 24px; font-weight: 600;'>" & FORMAT(PreviousDemands, "#,0") & "</div>
+			                <div style='font-size: 12px; opacity: 0.8;'>Previous R12</div>
+			            </div>
+			        </div>
+			        <div style='background: rgba(255,255,255,0.2); border-radius: 8px; padding: 12px; text-align: center;'>
+			            <div style='font-size: 28px; font-weight: 700;'>" & FORMAT(DemandsGrowth, "+0.0%;-0.0%;0.0%") & "</div>
+			            <div style='font-size: 13px; margin-top: 3px;'>
+			                " & FORMAT(CurrentDemands - PreviousDemands, "+#,0;-#,0;0") & " Transactions
+			            </div>
+			        </div>
+			    </div>
+			
+			    <!-- Market Movement Summary -->
+			    <div style='
+			        background: linear-gradient(135deg, #6A1B9A 0%, #4A148C 100%);
+			        border-radius: 12px;
+			        padding: 20px;
+			        color: white;
+			        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			        flex: 1;
+			    '>
+			        <div style='font-size: 16px; font-weight: 700; margin-bottom: 15px;'>🎯 MARKET MOVEMENT</div>
+			        
+			        <div style='display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 15px;'>
+			            <div style='background: rgba(76,175,80,0.3); border-radius: 6px; padding: 12px; text-align: center;'>
+			                <div style='font-size: 28px; font-weight: 700;'>" & GrowingLocations & "</div>
+			                <div style='font-size: 11px; margin-top: 3px;'>📈 Growing</div>
+			            </div>
+			            <div style='background: rgba(158,158,158,0.3); border-radius: 6px; padding: 12px; text-align: center;'>
+			                <div style='font-size: 28px; font-weight: 700;'>" & StableLocations & "</div>
+			                <div style='font-size: 11px; margin-top: 3px;'>➖ Stable</div>
+			            </div>
+			            <div style='background: rgba(244,67,54,0.3); border-radius: 6px; padding: 12px; text-align: center;'>
+			                <div style='font-size: 28px; font-weight: 700;'>" & DecliningLocations & "</div>
+			                <div style='font-size: 11px; margin-top: 3px;'>📉 Declining</div>
+			            </div>
+			        </div>
+			        
+			        <div style='background: rgba(255,255,255,0.15); border-radius: 6px; padding: 12px; font-size: 13px; line-height: 1.5;'>
+			            <strong>Trend Summary:</strong> " & TrendSummary & ". Monitor declining markets for competitive threats or changing customer patterns.
+			        </div>
+			    </div>
+			
+			</div>
+			"
+			```
+		lineageTag: 2a61a066-d91a-41f1-8926-410828e33754
+
+	measure 'Transfer Branch - Enhanced Summary' = ```
+			
+			VAR TotalLocations = 
+			    CALCULATE(
+			        DISTINCTCOUNT(Fact_Branch12_Transactions[TransferBranch]),
+			        Fact_Branch12_Transactions[IsSale] = TRUE,
+			        Fact_Branch12_Transactions[TransferBranch] <> BLANK(),
+			        dim_DateTable[IsRolling365Days] = TRUE
+			    )
+			VAR TotalSales = [Sales R12]
+			VAR TotalDemands = [Demands]
+			
+			VAR TopBranch = 
+			    CALCULATE(
+			        MAX(dim_BranchLocation[Branch]),
+			        TOPN(1, ALL(dim_BranchLocation[Branch]), [Sales R12], DESC)
+			    )
+			VAR TopBranchSales = 
+			    CALCULATE(
+			        [Sales R12],
+			        TOPN(1, ALL(dim_BranchLocation[Branch]), [Sales R12], DESC)
+			    )
+			VAR TopBranchShare = DIVIDE(TopBranchSales, TotalSales, 0)
+			
+			VAR GrowthRate = DIVIDE([Sales R12] - [Sales Previous R12], [Sales Previous R12], 0)
+			
+			RETURN
+			"
+			<div style='font-family: Segoe UI; height: 790px; width: 600px; display: flex; flex-direction: column; gap: 15px;'>
+			
+			    <!-- Summary Narrative -->
+			    <div style='
+			        background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 100%);
+			        border-radius: 12px;
+			        padding: 25px;
+			        color: white;
+			        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    '>
+			        <div style='font-size: 18px; font-weight: 700; margin-bottom: 15px;'>
+			            📋 TRANSFER DISTRIBUTION SUMMARY
+			        </div>
+			        <div style='font-size: 14px; line-height: 1.8;'>
+			            <p style='margin: 0 0 12px 0;'>
+			                Branch 12 served <strong>" & TotalLocations & " locations</strong> with <strong>" & FORMAT(TotalSales, "$#,0K") & "</strong> in total transfers over the rolling 12-month period.
+			            </p>
+			            <p style='margin: 0 0 12px 0;'>
+			                <strong>" & TopBranch & "</strong> is the primary destination at <strong>" & FORMAT(TopBranchSales, "$#,0K") & "</strong>, representing <strong>" & FORMAT(TopBranchShare, "0%") & "</strong> of all transfer sales.
+			            </p>
+			            <p style='margin: 0;'>
+			                Total transfer demands: <strong>" & FORMAT(TotalDemands, "#,0") & "</strong> transactions with overall growth of <strong>" & FORMAT(GrowthRate, "+0.0%;-0.0%;0.0%") & "</strong> vs previous period.
+			            </p>
+			        </div>
+			    </div>
+			
+			    <!-- Quick Stats Grid -->
+			    <div style='display: grid; grid-template-columns: 1fr 1fr; gap: 15px;'>
+			        
+			        <!-- Stat 1: Avg Sale -->
+			        <div style='
+			            background: linear-gradient(135deg, #43A047 0%, #388E3C 100%);
+			            border-radius: 12px;
+			            padding: 20px;
+			            color: white;
+			            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			        '>
+			            <div style='font-size: 13px; opacity: 0.85; margin-bottom: 5px;'>Avg Sale per Transfer</div>
+			            <div style='font-size: 36px; font-weight: 700;'>" & FORMAT(DIVIDE(TotalSales, TotalDemands, 0), "$#,0") & "</div>
+			            <div style='font-size: 12px; opacity: 0.8; margin-top: 5px;'>Transaction Value</div>
+			        </div>
+			        
+			        <!-- Stat 2: Top Customer -->
+			        <div style='
+			            background: linear-gradient(135deg, #E53935 0%, #C62828 100%);
+			            border-radius: 12px;
+			            padding: 20px;
+			            color: white;
+			            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			        '>
+			            <div style='font-size: 13px; opacity: 0.85; margin-bottom: 5px;'>Top Customer Share</div>
+			            <div style='font-size: 36px; font-weight: 700;'>" & FORMAT(TopBranchShare, "0%") & "</div>
+			            <div style='font-size: 12px; opacity: 0.8; margin-top: 5px;'>Concentration Risk</div>
+			        </div>
+			        
+			        <!-- Stat 3: Active Locations -->
+			        <div style='
+			            background: linear-gradient(135deg, #FB8C00 0%, #F57C00 100%);
+			            border-radius: 12px;
+			            padding: 20px;
+			            color: white;
+			            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			        '>
+			            <div style='font-size: 13px; opacity: 0.85; margin-bottom: 5px;'>Active Locations</div>
+			            <div style='font-size: 36px; font-weight: 700;'>" & TotalLocations & "</div>
+			            <div style='font-size: 12px; opacity: 0.8; margin-top: 5px;'>Transfer Destinations</div>
+			        </div>
+			        
+			        <!-- Stat 4: Growth Rate -->
+			        <div style='
+			            background: linear-gradient(135deg, #1E88E5 0%, #1565C0 100%);
+			            border-radius: 12px;
+			            padding: 20px;
+			            color: white;
+			            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			        '>
+			            <div style='font-size: 13px; opacity: 0.85; margin-bottom: 5px;'>Sales Growth R12</div>
+			            <div style='font-size: 36px; font-weight: 700;'>" & FORMAT(GrowthRate, "+0.0%;-0.0%;0.0%") & "</div>
+			            <div style='font-size: 12px; opacity: 0.8; margin-top: 5px;'>vs Previous R12</div>
+			        </div>
+			        
+			    </div>
+			
+			    <!-- Key Insights Box -->
+			    <div style='
+			        background: linear-gradient(135deg, #6A1B9A 0%, #4A148C 100%);
+			        border-radius: 12px;
+			        padding: 20px;
+			        color: white;
+			        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			        flex: 1;
+			    '>
+			        <div style='font-size: 16px; font-weight: 700; margin-bottom: 12px;'>💡 KEY INSIGHTS</div>
+			        <div style='font-size: 13px; line-height: 1.7;'>
+			            <div style='margin-bottom: 10px; padding-left: 15px; border-left: 3px solid rgba(255,255,255,0.4);'>
+			                <strong>Concentration Risk:</strong> Over half of transfer volume goes to a single location, creating supply chain vulnerability.
+			            </div>
+			            <div style='margin-bottom: 10px; padding-left: 15px; border-left: 3px solid rgba(255,255,255,0.4);'>
+			                <strong>Growth Trend:</strong> Strong overall growth indicates increasing demand for Branch 12 distribution services.
+			            </div>
+			            <div style='padding-left: 15px; border-left: 3px solid rgba(255,255,255,0.4);'>
+			                <strong>Operational Focus:</strong> Monitor top customer relationship closely while developing secondary market opportunities.
+			            </div>
+			        </div>
+			    </div>
+			
+			</div>
+			"
+			```
+		lineageTag: 9985c364-cf96-4d09-9660-5df9b4f0b20f
+
+	measure 'Info Page - Header' = ```
+			
+			// Get user name
+			VAR _User = USERPRINCIPALNAME()
+			VAR _Position = SEARCH("@", _User, 1)
+			VAR _Name = LEFT(_User, _Position - 1)
+			VAR _FirstLetter = UPPER(LEFT(_Name, 1))
+			VAR _LastName = MID(_Name, 2, LEN(_Name) - 1)
+			VAR _FormattedLastName = 
+			    UPPER(LEFT(_LastName, 1)) & LOWER(MID(_LastName, 2, LEN(_LastName)))
+			VAR WelcomeName = _FirstLetter & "." & _FormattedLastName
+			
+			// Get current date/time info
+			VAR CurrentDate = TODAY()
+			VAR DateDisplay = FORMAT(CurrentDate, "MMM D, YYYY")
+			VAR CurrentHour = HOUR(NOW())
+			VAR TimeGreeting = 
+			    IF(CurrentHour < 12, "Good Morning",
+			    IF(CurrentHour < 17, "Good Afternoon",
+			    "Good Evening"))
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    height: 85px;
+			    padding: 15px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 10px;
+			    color: white;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-between;
+			    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    box-sizing: border-box;
+			'>
+			    <!-- Left side: Dashboard Title -->
+			    <div style='display: flex; align-items: center; gap: 15px;'>
+			        <!-- Home icon -->
+			        <div style='
+			            width: 40px;
+			            height: 40px;
+			            background: rgba(255,255,255,0.15);
+			            border-radius: 8px;
+			            display: flex;
+			            align-items: center;
+			            justify-content: center;
+			            font-size: 20px;
+			        '>
+			            🏠
+			        </div>
+			        
+			        <!-- Title -->
+			        <div>
+			            <div style='font-size: 12px; opacity: 0.85; margin-bottom: 4px; letter-spacing: 0.5px;'>
+			                DASHBOARD
+			            </div>
+			            <div style='font-size: 26px; font-weight: 700; line-height: 1;'>
+			                Combine Vault Sales - Information Page
+			            </div>
+			        </div>
+			    </div>
+			    
+			    <!-- Right side: Welcome & Date -->
+			    <div style='text-align: right;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 6px;'>
+			            " & TimeGreeting & ", " & WelcomeName & "
+			        </div>
+			        <div style='font-size: 16px; font-weight: 600;'>
+			            📅 " & DateDisplay & "
+			        </div>
+			    </div>
+			</div>
+			"
+			```
+		lineageTag: 9304118d-e1a8-4108-a6c7-2e7323807cbd
+
+	measure 'Restock Page - Header' = ```
+			
+			// Get user name
+			VAR _User = USERPRINCIPALNAME()
+			VAR _Position = SEARCH("@", _User, 1)
+			VAR _Name = LEFT(_User, _Position - 1)
+			VAR _FirstLetter = UPPER(LEFT(_Name, 1))
+			VAR _LastName = MID(_Name, 2, LEN(_Name) - 1)
+			VAR _FormattedLastName = 
+			    UPPER(LEFT(_LastName, 1)) & LOWER(MID(_LastName, 2, LEN(_LastName)))
+			VAR WelcomeName = _FirstLetter & "." & _FormattedLastName
+			
+			// Get current date/time info
+			VAR CurrentDate = TODAY()
+			VAR DateDisplay = FORMAT(CurrentDate, "MMM D, YYYY")
+			VAR CurrentHour = HOUR(NOW())
+			VAR TimeGreeting = 
+			    IF(CurrentHour < 12, "Good Morning",
+			    IF(CurrentHour < 17, "Good Afternoon",
+			    "Good Evening"))
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    height: 85px;
+			    padding: 15px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 10px;
+			    color: white;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-between;
+			    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    box-sizing: border-box;
+			'>
+			    <!-- Left side: Dashboard Title -->
+			    <div style='display: flex; align-items: center; gap: 15px;'>
+			        <!-- Home icon -->
+			        <div style='
+			            width: 40px;
+			            height: 40px;
+			            background: rgba(255,255,255,0.15);
+			            border-radius: 8px;
+			            display: flex;
+			            align-items: center;
+			            justify-content: center;
+			            font-size: 20px;
+			        '>
+			            🏠
+			        </div>
+			        
+			        <!-- Title -->
+			        <div>
+			            <div style='font-size: 12px; opacity: 0.85; margin-bottom: 4px; letter-spacing: 0.5px;'>
+			                DASHBOARD
+			            </div>
+			            <div style='font-size: 26px; font-weight: 700; line-height: 1;'>
+			                Combine Vault - Restock Tool
+			            </div>
+			        </div>
+			    </div>
+			    
+			    <!-- Right side: Welcome & Date -->
+			    <div style='text-align: right;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 6px;'>
+			            " & TimeGreeting & ", " & WelcomeName & "
+			        </div>
+			        <div style='font-size: 16px; font-weight: 600;'>
+			            📅 " & DateDisplay & "
+			        </div>
+			    </div>
+			</div>
+			"
+			```
+		lineageTag: 432162c8-bec6-48e7-a25a-474e37f08cef
+
+	measure 'Restock Hero Card' = ```
+			
+			VAR OutOfStock = [Parts Out of Stock]
+			VAR CriticalLow = [Parts Critical + Low Stock]
+			VAR SlowMoving = [Slow Moving Parts]
+			VAR Stagnant = [Stagnant Parts]
+			VAR Overstock = [Parts Overstock Active]
+			VAR Healthy = [Healthy Parts]
+			VAR ReorderCost = [Estimated Reorder Cost]
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    padding: 25px 20px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 12px;
+			    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+			    color: white;
+			    height: 140px;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-around;
+			'>
+			    <!-- Section 1: Out of Stock (URGENT) -->
+			    <div style='text-align: center; flex: 1;'>
+			        <div style='font-size: 11px; opacity: 0.85; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;'>
+			            Out of Stock
+			        </div>
+			        <div style='font-size: 42px; font-weight: 700; line-height: 1; color: #fca5a5;'>
+			            " & FORMAT(OutOfStock, "#,##0") & "
+			        </div>
+			        <div style='font-size: 11px; margin-top: 6px; opacity: 0.8; font-weight: 600;'>
+			            ⚡ ORDER NOW
+			        </div>
+			    </div>
+			    
+			    <!-- Divider -->
+			    <div style='width: 1.5px; height: 90px; background: rgba(255,255,255,0.25); margin: 0 15px;'></div>
+			    
+			    <!-- Section 2: Critical + Low Stock -->
+			    <div style='text-align: center; flex: 1;'>
+			        <div style='font-size: 11px; opacity: 0.85; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;'>
+			            Critical + Low
+			        </div>
+			        <div style='font-size: 42px; font-weight: 700; line-height: 1; color: #fca5a5;'>
+			            " & FORMAT(CriticalLow, "#,##0") & "
+			        </div>
+			        <div style='font-size: 11px; margin-top: 6px; opacity: 0.8; font-weight: 600;'>
+			            🔴 URGENT
+			        </div>
+			    </div>
+			    
+			    <!-- Divider -->
+			    <div style='width: 1.5px; height: 90px; background: rgba(255,255,255,0.25); margin: 0 15px;'></div>
+			    
+			    <!-- Section 3: Slow Moving -->
+			    <div style='text-align: center; flex: 1;'>
+			        <div style='font-size: 11px; opacity: 0.85; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;'>
+			            Slow Moving
+			        </div>
+			        <div style='font-size: 42px; font-weight: 700; line-height: 1; color: #fcd34d;'>
+			            " & FORMAT(SlowMoving, "#,##0") & "
+			        </div>
+			        <div style='font-size: 11px; margin-top: 6px; opacity: 0.8; font-weight: 600;'>
+			            🟡 MONITOR
+			        </div>
+			    </div>
+			    
+			    <!-- Divider -->
+			    <div style='width: 1.5px; height: 90px; background: rgba(255,255,255,0.25); margin: 0 15px;'></div>
+			    
+			    <!-- Section 4: Stagnant -->
+			    <div style='text-align: center; flex: 1;'>
+			        <div style='font-size: 11px; opacity: 0.85; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;'>
+			            Stagnant
+			        </div>
+			        <div style='font-size: 42px; font-weight: 700; line-height: 1;'>
+			            " & FORMAT(Stagnant, "#,##0") & "
+			        </div>
+			        <div style='font-size: 11px; margin-top: 6px; opacity: 0.8; font-weight: 600;'>
+			            💤 REVIEW
+			        </div>
+			    </div>
+			    
+			    <!-- Divider -->
+			    <div style='width: 1.5px; height: 90px; background: rgba(255,255,255,0.25); margin: 0 15px;'></div>
+			    
+			    <!-- Section 5: Overstock -->
+			    <div style='text-align: center; flex: 1;'>
+			        <div style='font-size: 11px; opacity: 0.85; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;'>
+			            Overstock
+			        </div>
+			        <div style='font-size: 42px; font-weight: 700; line-height: 1; color: #fdba74;'>
+			            " & FORMAT(Overstock, "#,##0") & "
+			        </div>
+			        <div style='font-size: 11px; margin-top: 6px; opacity: 0.8; font-weight: 600;'>
+			            📦 STOP ORDER
+			        </div>
+			    </div>
+			    
+			    <!-- Divider -->
+			    <div style='width: 1.5px; height: 90px; background: rgba(255,255,255,0.25); margin: 0 15px;'></div>
+			    
+			    <!-- Section 6: Healthy -->
+			    <div style='text-align: center; flex: 1;'>
+			        <div style='font-size: 11px; opacity: 0.85; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;'>
+			            Healthy
+			        </div>
+			        <div style='font-size: 42px; font-weight: 700; line-height: 1; color: #86efac;'>
+			            " & FORMAT(Healthy, "#,##0") & "
+			        </div>
+			        <div style='font-size: 11px; margin-top: 6px; opacity: 0.8; font-weight: 600;'>
+			            ✅ ON TRACK
+			        </div>
+			    </div>
+			    
+			    <!-- Divider -->
+			    <div style='width: 1.5px; height: 90px; background: rgba(255,255,255,0.25); margin: 0 15px;'></div>
+			    
+			    <!-- Section 7: Reorder Cost -->
+			    <div style='text-align: center; flex: 1;'>
+			        <div style='font-size: 11px; opacity: 0.85; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;'>
+			            Reorder Cost
+			        </div>
+			        <div style='font-size: 36px; font-weight: 700; line-height: 1;'>
+			            " & FORMAT(ReorderCost, "$#,##0") & "
+			        </div>
+			        <div style='font-size: 11px; margin-top: 6px; opacity: 0.8; font-weight: 600;'>
+			            💰 ESTIMATED
+			        </div>
+			    </div>
+			</div>
+			"
+			```
+		lineageTag: 3a2edee0-4683-4f7d-ad14-7dcc68577c34
+
+	measure 'Home Page - Header' = ```
+			
+			// Get user name
+			VAR _User = USERPRINCIPALNAME()
+			VAR _Position = SEARCH("@", _User, 1)
+			VAR _Name = LEFT(_User, _Position - 1)
+			VAR _FirstLetter = UPPER(LEFT(_Name, 1))
+			VAR _LastName = MID(_Name, 2, LEN(_Name) - 1)
+			VAR _FormattedLastName = 
+			    UPPER(LEFT(_LastName, 1)) & LOWER(MID(_LastName, 2, LEN(_LastName)))
+			VAR WelcomeName = _FirstLetter & "." & _FormattedLastName
+			
+			// Get current date/time info
+			VAR CurrentDate = TODAY()
+			VAR DateDisplay = FORMAT(CurrentDate, "MMM D, YYYY")
+			VAR CurrentHour = HOUR(NOW())
+			VAR TimeGreeting = 
+			    IF(CurrentHour < 12, "Good Morning",
+			    IF(CurrentHour < 17, "Good Afternoon",
+			    "Good Evening"))
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    height: 85px;
+			    padding: 15px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 10px;
+			    color: white;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-between;
+			    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    box-sizing: border-box;
+			'>
+			    <!-- Left side: Dashboard Title -->
+			    <div style='display: flex; align-items: center; gap: 15px;'>
+			        <!-- Home icon -->
+			        <div style='
+			            width: 40px;
+			            height: 40px;
+			            background: rgba(255,255,255,0.15);
+			            border-radius: 8px;
+			            display: flex;
+			            align-items: center;
+			            justify-content: center;
+			            font-size: 20px;
+			        '>
+			            🏠
+			        </div>
+			        
+			        <!-- Title -->
+			        <div>
+			            <div style='font-size: 12px; opacity: 0.85; margin-bottom: 4px; letter-spacing: 0.5px;'>
+			                DASHBOARD
+			            </div>
+			            <div style='font-size: 26px; font-weight: 700; line-height: 1;'>
+			                Combine Vault Sales
+			            </div>
+			        </div>
+			    </div>
+			    
+			    <!-- Right side: Welcome & Date -->
+			    <div style='text-align: right;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 6px;'>
+			            " & TimeGreeting & ", " & WelcomeName & "
+			        </div>
+			        <div style='font-size: 16px; font-weight: 600;'>
+			            📅 " & DateDisplay & "
+			        </div>
+			    </div>
+			</div>
+			"
+			```
+		lineageTag: e059ed99-683e-4000-97ab-5b1a6781f047
+
+	measure 'Dashboard Hero Card' = ```
+			
+			VAR SalesR12 = [Sales R12]
+			VAR SalesPrevR12 = [Sales Previous R12]
+			VAR SalesChange = SalesR12 - SalesPrevR12
+			VAR SalesChangeText = FORMAT(SalesChange, "+$#,##0;-$#,##0")
+			VAR SalesChangePct = DIVIDE(SalesChange, SalesPrevR12, 0)
+			VAR SalesChangePctText = FORMAT(SalesChangePct, "+0.0%;-0.0%")
+			VAR Arrow = IF(SalesChange > 0, "▲", IF(SalesChange < 0, "▼", "─"))
+			VAR ChangeColor = IF(SalesChange > 0, "#86efac", IF(SalesChange < 0, "#fca5a5", "#d1d5db"))
+			
+			VAR TotalCOS = [Total COS R12]
+			VAR InventoryValue = [Inventory Value]
+			VAR CurrentTurn = [Current Turn]
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    padding: 25px 20px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 12px;
+			    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+			    color: white;
+			    height: 140px;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-around;
+			'>
+			    <!-- Section 1: Sales R12 -->
+			    <div style='text-align: center; flex: 1;'>
+			        <div style='font-size: 12px; opacity: 0.85; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;'>
+			            Sales R12
+			        </div>
+			        <div style='font-size: 48px; font-weight: 700; line-height: 1;'>
+			            " & FORMAT(SalesR12, "$#,##0") & "
+			        </div>
+			        <div style='font-size: 12px; margin-top: 8px; opacity: 0.8;'>
+			            Rolling 12 Months
+			        </div>
+			    </div>
+			    
+			    <!-- Divider -->
+			    <div style='width: 1.5px; height: 90px; background: rgba(255,255,255,0.25); margin: 0 15px;'></div>
+			    
+			    <!-- Section 2: Sales Previous R12 with Change -->
+			    <div style='text-align: center; flex: 1;'>
+			        <div style='font-size: 12px; opacity: 0.85; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;'>
+			            Previous R12
+			        </div>
+			        <div style='font-size: 42px; font-weight: 700; line-height: 1;'>
+			            " & FORMAT(SalesPrevR12, "$#,##0") & "
+			        </div>
+			        <div style='font-size: 14px; margin-top: 8px; font-weight: 600; color: " & ChangeColor & ";'>
+			            " & Arrow & " " & SalesChangeText & " (" & SalesChangePctText & ")
+			        </div>
+			    </div>
+			    
+			    <!-- Divider -->
+			    <div style='width: 1.5px; height: 90px; background: rgba(255,255,255,0.25); margin: 0 15px;'></div>
+			    
+			    <!-- Section 3: Total COS R12 -->
+			    <div style='text-align: center; flex: 1;'>
+			        <div style='font-size: 12px; opacity: 0.85; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;'>
+			            Total COS R12
+			        </div>
+			        <div style='font-size: 48px; font-weight: 700; line-height: 1;'>
+			            " & FORMAT(TotalCOS, "$#,##0") & "
+			        </div>
+			        <div style='font-size: 12px; margin-top: 8px; opacity: 0.8;'>
+			            Cost of Sales
+			        </div>
+			    </div>
+			    
+			    <!-- Divider -->
+			    <div style='width: 1.5px; height: 90px; background: rgba(255,255,255,0.25); margin: 0 15px;'></div>
+			    
+			    <!-- Section 4: Inventory Value -->
+			    <div style='text-align: center; flex: 1;'>
+			        <div style='font-size: 12px; opacity: 0.85; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;'>
+			            Inventory Value
+			        </div>
+			        <div style='font-size: 48px; font-weight: 700; line-height: 1;'>
+			            " & FORMAT(InventoryValue, "$#,##0") & "
+			        </div>
+			        <div style='font-size: 12px; margin-top: 8px; opacity: 0.8;'>
+			            Current Stock Value
+			        </div>
+			    </div>
+			    
+			    <!-- Divider -->
+			    <div style='width: 1.5px; height: 90px; background: rgba(255,255,255,0.25); margin: 0 15px;'></div>
+			    
+			    <!-- Section 5: Current Turn -->
+			    <div style='text-align: center; flex: 1;'>
+			        <div style='font-size: 12px; opacity: 0.85; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;'>
+			            Current Turn
+			        </div>
+			        <div style='font-size: 48px; font-weight: 700; line-height: 1; color: #fcd34d;'>
+			            " & FORMAT(CurrentTurn, "0.00") & "
+			        </div>
+			        <div style='font-size: 12px; margin-top: 8px; opacity: 0.8;'>
+			            Inventory Turnover
+			        </div>
+			    </div>
+			</div>
+			"
+			```
+		lineageTag: e8bd6279-c01c-4cd4-9b6c-e0e6a8d3ed0b
+
+	measure 'YTD Performance Cards' = ```
+			
+			VAR SalesYTDTotal = [Sales YTD total]
+			VAR SalesYTDSummary = [Sales YTD Summary]
+			VAR AvgMarginPct = [Avg Margin % YTD]
+			VAR MarginPctSummary = [Margin Percent YTD Summary]
+			VAR MarginYTD = [Margin YTD]
+			VAR MarginYTDSummary = [Margin YTD Summary]
+			VAR TransactionsYTD = [Transactions YTD]
+			VAR TransactionsYTDSummary = [Transactions YTD Summary]
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    width: 475px;
+			    height: 405px;
+			    display: grid;
+			    grid-template-columns: 1fr 1fr;
+			    grid-template-rows: 1fr 1fr;
+			    gap: 12px;
+			    padding: 0;
+			'>
+			    <!-- Card 1: Sales YTD -->
+			    <div style='
+			        background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 100%);
+			        border-radius: 10px;
+			        padding: 15px;
+			        color: white;
+			        display: flex;
+			        flex-direction: column;
+			        justify-content: center;
+			        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    '>
+			        <div style='font-size: 12px; opacity: 0.8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;'>
+			            💰 Sales YTD
+			        </div>
+			        <div style='font-size: 32px; font-weight: 700; line-height: 1; margin-bottom: 8px;'>
+			            " & FORMAT(SalesYTDTotal, "$#,##0") & "
+			        </div>
+			        <div style='font-size: 14px; line-height: 1.4; opacity: 0.9;'>
+			            " & SalesYTDSummary & "
+			        </div>
+			    </div>
+			    
+			    <!-- Card 2: Avg Margin % -->
+			    <div style='
+			        background: linear-gradient(135deg, #2E5266 0%, #3A7CA5 100%);
+			        border-radius: 10px;
+			        padding: 15px;
+			        color: white;
+			        display: flex;
+			        flex-direction: column;
+			        justify-content: center;
+			        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    '>
+			        <div style='font-size: 12px; opacity: 0.8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;'>
+			            📊 Avg Margin %
+			        </div>
+			        <div style='font-size: 32px; font-weight: 700; line-height: 1; margin-bottom: 8px;'>
+			            " & FORMAT(AvgMarginPct, "0.0%") & "
+			        </div>
+			        <div style='font-size: 14px; line-height: 1.4; opacity: 0.9;'>
+			            " & MarginPctSummary & "
+			        </div>
+			    </div>
+			    
+			    <!-- Card 3: Margin YTD -->
+			    <div style='
+			        background: linear-gradient(135deg, #3A7CA5 0%, #2E5266 100%);
+			        border-radius: 10px;
+			        padding: 15px;
+			        color: white;
+			        display: flex;
+			        flex-direction: column;
+			        justify-content: center;
+			        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    '>
+			        <div style='font-size: 12px; opacity: 0.8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;'>
+			            💵 Margin YTD
+			        </div>
+			        <div style='font-size: 32px; font-weight: 700; line-height: 1; margin-bottom: 8px;'>
+			            " & FORMAT(MarginYTD, "$#,##0") & "
+			        </div>
+			        <div style='font-size: 14px; line-height: 1.4; opacity: 0.9;'>
+			            " & MarginYTDSummary & "
+			        </div>
+			    </div>
+			    
+			    <!-- Card 4: Transactions YTD -->
+			    <div style='
+			        background: linear-gradient(135deg, #2E5266 0%, #1D3C4E 100%);
+			        border-radius: 10px;
+			        padding: 15px;
+			        color: white;
+			        display: flex;
+			        flex-direction: column;
+			        justify-content: center;
+			        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    '>
+			        <div style='font-size: 12px; opacity: 0.8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;'>
+			            🔢 Transactions YTD
+			        </div>
+			        <div style='font-size: 32px; font-weight: 700; line-height: 1; margin-bottom: 8px;'>
+			            " & FORMAT(TransactionsYTD, "#,##0") & "
+			        </div>
+			        <div style='font-size: 14px; line-height: 1.4; opacity: 0.9;'>
+			            " & TransactionsYTDSummary & "
+			        </div>
+			    </div>
+			</div>
+			"
+			```
+		lineageTag: c8e86660-0d67-4689-82e6-e3de4870c25e
+
+	measure 'Column Color Formatting Enhanced' = ```
+			
+			VAR CurrentSales      = COALESCE([Sales], 0)
+			VAR PriorYearSales    = COALESCE([Previous Year Sales], 0)
+			VAR CurrentMonthNum   = SELECTEDVALUE(dim_DateTable[Month])  // 1..12
+			VAR CurrentYear       = SELECTEDVALUE(dim_DateTable[Year])
+			
+			// Identify the last date shown in the visual (after slicers/filters)
+			VAR LastVisibleDate   = CALCULATE(MAX(dim_DateTable[Date]), ALLSELECTED(dim_DateTable))
+			VAR LastVisibleMonth  = MONTH(LastVisibleDate)
+			VAR LastVisibleYear   = YEAR(LastVisibleDate)
+			
+			// “Exceptional” month is the December that’s part of the current 12-month window
+			VAR IsExceptionalDecember =
+			    NOT ISBLANK(LastVisibleDate)
+			    && CurrentMonthNum = 12
+			    && CurrentYear = LastVisibleYear
+			
+			RETURN
+			    SWITCH(
+			        TRUE(),
+			        IsExceptionalDecember,                 2,  // Special highlight (December in current window)
+			        CurrentSales > PriorYearSales,         1,  // Better than PY
+			        0                                          // Worse or equal (if you want a tie code, add a branch)
+			    )
+			
+			```
+		formatString: 0
+		lineageTag: 8e29b999-f503-4100-b216-588cf8707559
+
+	column Value
+		isHidden
+		formatString: 0
+		lineageTag: 8678bf39-f176-4547-98dc-825053f376fe
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [Value]
+
+		annotation SummarizationSetBy = Automatic
+
+	column DummyColumn
+		isHidden
+		formatString: 0
+		lineageTag: cd49475c-303a-4460-be09-b11b4ce4fce3
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [DummyColumn]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition MeasuresTable = calculated
+		mode: import
+		source = ADDCOLUMNS( GENERATESERIES(1, 1), "DummyColumn", 1 )
+
+	annotation PBI_Id = 6fbd826045c24c5594d31f62f17aaa57
+

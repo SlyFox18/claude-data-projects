@@ -1,0 +1,100 @@
+table TableColumns
+	lineageTag: 0e504f9f-1684-4655-aa96-255cec2a6452
+
+	column table_name
+		dataType: string
+		lineageTag: 9afb6e12-b480-4196-9fac-559e515dbf4c
+		summarizeBy: none
+		sourceColumn: table_name
+
+		annotation SummarizationSetBy = Automatic
+
+	column column_name
+		dataType: string
+		lineageTag: 68a7e855-8dce-4a9b-8ab7-c56310f9070e
+		summarizeBy: none
+		sourceColumn: column_name
+
+		annotation SummarizationSetBy = Automatic
+
+	column data_type
+		dataType: string
+		lineageTag: 613055b0-f9b6-4b4e-a2f4-17e9fe662d85
+		summarizeBy: none
+		sourceColumn: data_type
+
+		annotation SummarizationSetBy = Automatic
+
+	column column_length
+		dataType: int64
+		formatString: 0
+		lineageTag: c961ef7a-1989-4859-ba56-0076186c5fca
+		summarizeBy: sum
+		sourceColumn: column_length
+
+		annotation SummarizationSetBy = Automatic
+
+	column decimal_scale
+		dataType: int64
+		formatString: 0
+		lineageTag: 275fe9ae-5e54-4905-be8f-f15041df90c0
+		summarizeBy: sum
+		sourceColumn: decimal_scale
+
+		annotation SummarizationSetBy = Automatic
+
+	column is_nullable
+		dataType: string
+		lineageTag: 5b78d94b-cd9d-433a-a8f7-c5f10b4ad224
+		summarizeBy: none
+		sourceColumn: is_nullable
+
+		annotation SummarizationSetBy = Automatic
+
+	column default_value
+		dataType: string
+		lineageTag: 97643e52-6365-47cd-860d-9004545d342c
+		summarizeBy: none
+		sourceColumn: default_value
+
+		annotation SummarizationSetBy = Automatic
+
+	column ordinal_position
+		dataType: int64
+		formatString: 0
+		lineageTag: 69f5bdd0-ebc6-44ed-bed7-ea1f3760a890
+		summarizeBy: sum
+		sourceColumn: ordinal_position
+
+		annotation SummarizationSetBy = Automatic
+
+	column table_row_count
+		dataType: double
+		lineageTag: c511dc89-5c8a-4714-b908-4f4cb46facdc
+		summarizeBy: sum
+		sourceColumn: table_row_count
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column is_primary_key
+		dataType: string
+		lineageTag: f6a36b96-6cf5-419f-9870-bdf41f88c004
+		summarizeBy: none
+		sourceColumn: is_primary_key
+
+		annotation SummarizationSetBy = Automatic
+
+	partition TableColumns = m
+		mode: import
+		source =
+				let
+				    Source = Odbc.Query("dsn=EquipRDB64", "-- Optimized for your SQL Anywhere version#(lf)SELECT #(lf)    t.table_name,#(lf)    c.column_name,#(lf)    c.base_type_str as data_type,#(lf)    c.width as column_length,#(lf)    c.scale as decimal_scale,#(lf)    CASE WHEN c.nulls = 'Y' THEN 'Yes' ELSE 'No' END as is_nullable,#(lf)    c.""default"" as default_value,#(lf)    c.column_id as ordinal_position,#(lf)    t.count as table_row_count,#(lf)    CASE WHEN idx.index_name IS NOT NULL THEN 'Yes' ELSE 'No' END as is_primary_key#(lf)FROM sys.systable t#(lf)INNER JOIN sys.systabcol c ON t.table_id = c.table_id#(lf)LEFT JOIN sys.sysidxcol ic ON c.column_id = ic.column_id AND c.table_id = ic.table_id#(lf)LEFT JOIN sys.sysidx idx ON ic.index_id = idx.index_id AND ic.table_id = idx.table_id AND idx.index_category = 1#(lf)WHERE t.creator NOT IN (1, 3)#(lf)    AND t.table_type = 'BASE'#(lf)ORDER BY t.table_name, c.column_id;")
+				in
+				    Source
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

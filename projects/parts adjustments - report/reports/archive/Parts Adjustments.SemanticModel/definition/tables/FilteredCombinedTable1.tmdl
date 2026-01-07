@@ -1,0 +1,70 @@
+table FilteredCombinedTable1
+	lineageTag: f8cdf054-3f97-449b-a18b-c30e3d021501
+
+	column Part_No
+		lineageTag: 1dea35ea-3589-4c8f-85ca-fb243e9b8b90
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: SummarizedTable[Part_No]
+
+		annotation SummarizationSetBy = Automatic
+
+	column Negative_QTY
+		lineageTag: a5ccb99f-2319-4a5e-a670-f959e3d2204f
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: SummarizedTable[Negative_QTY]
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column Negative_Trans_Date
+		formatString: General Date
+		lineageTag: 8d06dcd6-3e1b-435a-b700-1e1882e02cb4
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: SummarizedTable[Negative_Trans_Date]
+
+		variation Variation
+			isDefault
+			relationship: 64c1e5ed-b649-4af4-9c0b-4a4573b52314
+			defaultHierarchy: LocalDateTable_5f7cfd19-f229-4c08-9349-a6d47ae8aa91.'Date Hierarchy'
+
+		annotation SummarizationSetBy = Automatic
+
+	column Positive_QTY
+		lineageTag: f5de571a-e9ea-4fd1-833a-ea018d1ef2e6
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: SummarizedTable[Positive_QTY]
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column Positive_Trans_Date
+		formatString: General Date
+		lineageTag: 4393055c-4602-4f33-8f7f-89db71128776
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: SummarizedTable[Positive_Trans_Date]
+
+		variation Variation
+			isDefault
+			relationship: b38c962f-d34f-4657-860c-f0f1ff77b7b0
+			defaultHierarchy: LocalDateTable_c7eae526-b95c-4453-a4de-8d9e5c963ec8.'Date Hierarchy'
+
+		annotation SummarizationSetBy = Automatic
+
+	partition FilteredCombinedTable1 = calculated
+		mode: import
+		source =
+				
+				FILTER (
+				    SummarizedTable,
+				    [Negative_QTY] + [Positive_QTY] = 0
+				)
+
+	annotation PBI_Id = 061560ca16c14bd59a0ed3b30f18bdf5
+

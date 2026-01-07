@@ -1,0 +1,38 @@
+table 'YTD Metrics'
+	lineageTag: 1cdd096a-fdf4-40d6-a9f6-1068b1018fb2
+
+	column Metric
+		lineageTag: 90eb059d-a5df-43dc-b68c-c4e2440f50b9
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Metric]
+		sortByColumn: SortOrder
+
+		annotation SummarizationSetBy = Automatic
+
+	column SortOrder
+		formatString: 0
+		lineageTag: 53228f4e-0def-409e-ae6b-0da81b1107a4
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [SortOrder]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'YTD Metrics' = calculated
+		mode: import
+		source =
+				
+				DATATABLE(
+				    "Metric", STRING,
+				    "SortOrder", INTEGER,
+				    {
+				        {"Sales YTD", 1},
+				        {"Margin YTD", 2},
+				        {"Avg Margin %", 3},
+				        {"Transactions YTD", 4}
+				    }
+				)
+
+	annotation PBI_Id = a50ff67da84f4d0ab710b203a6f7ea56
+

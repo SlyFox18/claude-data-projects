@@ -1,0 +1,17 @@
+table Dim_Franchise
+	lineageTag: f0135d70-8a22-4ca0-a98b-ad4c465b1da5
+
+	column Franchise
+		lineageTag: ef7e5057-1121-48d0-97bb-8770812502d4
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Franchise]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition Dim_Franchise = calculated
+		mode: import
+		source = DISTINCT(SELECTCOLUMNS(jdis_Phy_Inv, "Franchise", jdis_Phy_Inv[Franchise]))
+
+	annotation PBI_Id = ed9bdb86e374490e8d7537e41ee7bba7
+

@@ -1,0 +1,91 @@
+table dim_UniqueCustomers
+	lineageTag: 0460bff8-a66b-4abe-8948-5781ea306761
+
+	column CustomerKey
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: 9980e51f-9b79-4a52-8245-b377b9e26589
+		summarizeBy: none
+		sourceColumn: CustomerKey
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column CustomerName
+		dataType: string
+		lineageTag: a308a971-d836-4f53-92e1-670b20808de2
+		summarizeBy: none
+		sourceColumn: CustomerName
+
+		annotation SummarizationSetBy = Automatic
+
+	column DataSource
+		dataType: string
+		isHidden
+		lineageTag: a093623c-c747-4462-82a8-e7e5aa39c37a
+		summarizeBy: none
+		sourceColumn: DataSource
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column IdentificationMethod
+		dataType: string
+		isHidden
+		lineageTag: 28e5d0f8-38bf-4eb8-a422-2d4c668af26a
+		summarizeBy: none
+		sourceColumn: IdentificationMethod
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column IdentificationRule
+		dataType: string
+		isHidden
+		lineageTag: 9894327e-0efb-438a-a456-33158838e8d2
+		summarizeBy: none
+		sourceColumn: IdentificationRule
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column IsActive
+		dataType: boolean
+		isHidden
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: e0867a70-d4dc-47ad-92d6-34053d68ad7a
+		summarizeBy: none
+		sourceColumn: IsActive
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column CreatedDate
+		dataType: dateTime
+		isHidden
+		formatString: Long Date
+		lineageTag: bac7fe74-889f-404b-994e-b547360d3e79
+		summarizeBy: none
+		sourceColumn: CreatedDate
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	partition dim_UniqueCustomers = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-gxnyznhdptpenfw724g3o5sjzm.datawarehouse.fabric.microsoft.com", "LH_Master_Data"),
+				    dbo_dim_UniqueCustomers = Source{[Schema="dbo",Item="dim_UniqueCustomers"]}[Data]
+				in
+				    dbo_dim_UniqueCustomers
+

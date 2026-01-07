@@ -1,0 +1,39 @@
+table 'Unique Constraints'
+	lineageTag: ae61e8dd-f487-4c8b-a8a1-bfdeb15ad573
+
+	column table_name
+		dataType: string
+		lineageTag: 8400e31b-c027-42f6-9b4e-606ec1a188f4
+		summarizeBy: none
+		sourceColumn: table_name
+
+		annotation SummarizationSetBy = Automatic
+
+	column constraint_name
+		dataType: string
+		lineageTag: 669544d3-27cd-4da2-a1d0-d3f9670fd8c1
+		summarizeBy: none
+		sourceColumn: constraint_name
+
+		annotation SummarizationSetBy = Automatic
+
+	column column_name
+		dataType: string
+		lineageTag: fa886797-ab35-4e6e-be30-34150199e309
+		summarizeBy: none
+		sourceColumn: column_name
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Unique Constraints' = m
+		mode: import
+		source =
+				let
+				    Source = Odbc.Query("dsn=EquipRDB64", "-- Find all unique constraints#(lf)SELECT #(lf)    t.table_name,#(lf)    idx.index_name as constraint_name,#(lf)    c.column_name#(lf)FROM sys.sysidx idx#(lf)INNER JOIN sys.systable t ON idx.table_id = t.table_id#(lf)INNER JOIN sys.sysidxcol ic ON idx.index_id = ic.index_id AND idx.table_id = ic.table_id#(lf)INNER JOIN sys.systabcol c ON ic.column_id = c.column_id AND ic.table_id = c.table_id#(lf)WHERE t.creator NOT IN (1, 3)#(lf)    AND idx.""unique"" = 1#(lf)    AND idx.index_category = 3  -- Unique constraint#(lf)ORDER BY t.table_name, idx.index_name, ic.sequence;")
+				in
+				    Source
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

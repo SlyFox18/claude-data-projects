@@ -1,0 +1,26 @@
+table BridgingTable
+	isHidden
+	lineageTag: 2af659b7-049f-4a11-aaa6-f9ca1eff2d31
+
+	column REF
+		isHidden
+		lineageTag: 7f0bc36d-f9d9-4b80-87b0-439bfe0d9b69
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [REF]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition BridgingTable = calculated
+		mode: import
+		source =
+				
+				DISTINCT(
+				    UNION(
+				        SELECTCOLUMNS('InTrans_Parts_Adjust', "REF", 'InTrans_Parts_Adjust'[REF_NO]),
+				        SELECTCOLUMNS('GlTrans___Parts_Adjust', "REF", 'GlTrans___Parts_Adjust'[DOC_REF])
+				    )
+				)
+
+	annotation PBI_Id = bfba50cec2b94f0f9bab248655bd521e
+

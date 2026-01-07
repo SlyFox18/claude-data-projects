@@ -1,0 +1,57 @@
+table TableStats
+	lineageTag: 3aa0d7ed-8a46-4b6e-8274-249d98732b16
+
+	column table_name
+		dataType: string
+		lineageTag: eda88638-3f22-4c8a-b4b9-c9f1abe335fb
+		summarizeBy: none
+		sourceColumn: table_name
+
+		annotation SummarizationSetBy = Automatic
+
+	column table_type
+		dataType: string
+		lineageTag: c494d5ca-a73b-4014-a236-ed541fc74058
+		summarizeBy: none
+		sourceColumn: table_type
+
+		annotation SummarizationSetBy = Automatic
+
+	column row_count
+		dataType: double
+		formatString: #,0
+		lineageTag: 60030241-7cf0-4695-90a0-2119247ca1e7
+		summarizeBy: none
+		sourceColumn: row_count
+
+		annotation SummarizationSetBy = Automatic
+
+	column storage_pages
+		dataType: int64
+		formatString: 0
+		lineageTag: c788c3c5-2f20-48e5-b5ee-c8f36f71ec8d
+		summarizeBy: none
+		sourceColumn: storage_pages
+
+		annotation SummarizationSetBy = Automatic
+
+	column table_description
+		dataType: string
+		lineageTag: 03a0758c-90eb-400c-b3d3-8c2d86807bc1
+		summarizeBy: none
+		sourceColumn: table_description
+
+		annotation SummarizationSetBy = Automatic
+
+	partition TableStats = m
+		mode: import
+		source =
+				let
+				    Source = Odbc.Query("dsn=EquipRDB64", "-- Table statistics (size and row counts)#(lf)SELECT #(lf)    t.table_name,#(lf)    t.table_type,#(lf)    t.count as row_count,#(lf)    t.table_page_count as storage_pages,#(lf)    COALESCE(t.remarks, '') as table_description#(lf)FROM sys.systable t#(lf)WHERE t.creator NOT IN (1, 3)#(lf)    AND t.table_type = 'BASE'#(lf)ORDER BY t.count DESC;")
+				in
+				    Source
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

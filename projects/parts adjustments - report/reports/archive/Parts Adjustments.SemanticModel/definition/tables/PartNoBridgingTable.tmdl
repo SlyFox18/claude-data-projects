@@ -1,0 +1,26 @@
+table PartNoBridgingTable
+	isHidden
+	lineageTag: ca525c75-7816-493a-948e-2028025d0039
+
+	column Part_No
+		isHidden
+		lineageTag: 17d101ad-3e58-4187-9df5-edc8392ae790
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Part_No]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition PartNoBridgingTable = calculated
+		mode: import
+		source =
+				
+				DISTINCT(
+				    UNION(
+				        SELECTCOLUMNS('InTrans_Parts_Adjust', "Part_No", 'InTrans_Parts_Adjust'[Part_No]),
+				        SELECTCOLUMNS('jdis___Parts_Adjust', "Part_No", 'jdis___Parts_Adjust'[Part_No])
+				    )
+				)
+
+	annotation PBI_Id = aebb0a3be7a0401fac8d9c9ec8387fe5
+

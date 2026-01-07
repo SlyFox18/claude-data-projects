@@ -1,0 +1,203 @@
+table Fact_Invoice_UniqueCustomers
+	lineageTag: e26fe298-799e-4b04-9ef7-a53cb77dae8b
+
+	column TransactionKey
+		dataType: string
+		lineageTag: 53ef6e51-cf6c-4383-9dca-43e590a37314
+		summarizeBy: none
+		sourceColumn: TransactionKey
+
+		annotation SummarizationSetBy = Automatic
+
+	column DateKey
+		dataType: int64
+		formatString: 0
+		lineageTag: 24a0993a-6fb2-4cc0-b488-0f915e1fd4b1
+		summarizeBy: none
+		sourceColumn: DateKey
+
+		annotation SummarizationSetBy = Automatic
+
+	column InvoiceDate
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: 76caebaf-a6ad-490e-9c78-89b8e4cc5190
+		summarizeBy: none
+		sourceColumn: InvoiceDate
+
+		annotation SummarizationSetBy = Automatic
+
+	column InvoiceYear
+		dataType: int64
+		formatString: 0
+		lineageTag: d699225e-c7d0-446b-a4b8-707c9e38762e
+		summarizeBy: sum
+		sourceColumn: InvoiceYear
+
+		annotation SummarizationSetBy = Automatic
+
+	column InvoiceMonth
+		dataType: int64
+		formatString: 0
+		lineageTag: 6cfd665c-3d4d-4307-9f2d-a9f86f662e8d
+		summarizeBy: sum
+		sourceColumn: InvoiceMonth
+
+		annotation SummarizationSetBy = Automatic
+
+	column InvoiceQuarter
+		dataType: int64
+		formatString: 0
+		lineageTag: 880c874d-9369-4ad8-8acc-8fb4c1d9cc0c
+		summarizeBy: sum
+		sourceColumn: InvoiceQuarter
+
+		annotation SummarizationSetBy = Automatic
+
+	column InvoiceYearMonth
+		dataType: int64
+		formatString: 0
+		lineageTag: f8b6c3bc-3167-4fd4-8ba0-a20133e362ad
+		summarizeBy: sum
+		sourceColumn: InvoiceYearMonth
+
+		annotation SummarizationSetBy = Automatic
+
+	column Branch
+		dataType: string
+		lineageTag: b6b66620-4f7e-4f52-8db3-a5776bd4b75a
+		summarizeBy: none
+		sourceColumn: Branch
+
+		annotation SummarizationSetBy = Automatic
+
+	column BranchKey
+		dataType: int64
+		formatString: 0
+		lineageTag: ae5ecea1-587c-4d7a-8d52-202e255e3b4d
+		summarizeBy: none
+		sourceColumn: BranchKey
+
+		annotation SummarizationSetBy = Automatic
+
+	column CustomerNumber
+		dataType: string
+		lineageTag: 94fa3a25-4ff8-4c67-b6f1-8d3b088cd744
+		summarizeBy: none
+		sourceColumn: CustomerNumber
+
+		annotation SummarizationSetBy = Automatic
+
+	column CustomerKey
+		dataType: int64
+		formatString: 0
+		lineageTag: bd641dac-6324-4926-9dd2-c9c3ee60e34c
+		summarizeBy: none
+		sourceColumn: CustomerKey
+
+		annotation SummarizationSetBy = Automatic
+
+	column InvoiceNumber
+		dataType: string
+		lineageTag: 4ebd685f-8e72-41f4-8abd-a52a192412d5
+		summarizeBy: none
+		sourceColumn: InvoiceNumber
+
+		annotation SummarizationSetBy = Automatic
+
+	column WorkOrderNumber
+		dataType: int64
+		formatString: 0
+		lineageTag: 19a5f3ea-cc32-4a84-815b-52b90f08078a
+		summarizeBy: sum
+		sourceColumn: WorkOrderNumber
+
+		annotation SummarizationSetBy = Automatic
+
+	column CustomerOrderNumber
+		dataType: string
+		lineageTag: 0a5a7987-d970-4ccf-a911-ceb871adcd18
+		summarizeBy: none
+		sourceColumn: CustomerOrderNumber
+
+		annotation SummarizationSetBy = Automatic
+
+	column PartsSaleValue
+		dataType: double
+		lineageTag: 71c90cf6-9325-4395-80a5-2a8e82dcd9e3
+		summarizeBy: sum
+		sourceColumn: PartsSaleValue
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column PartsCostValue
+		dataType: double
+		lineageTag: d042ce6f-3ef9-4e18-a475-7e04a4f44753
+		summarizeBy: sum
+		sourceColumn: PartsCostValue
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column MarginAmount
+		dataType: double
+		lineageTag: 54b7ecfb-d45d-4064-ae9c-fc1d3476aace
+		summarizeBy: sum
+		sourceColumn: MarginAmount
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column MarginPercent
+		dataType: double
+		lineageTag: dbf70685-03a0-4ff7-84b8-c99758055363
+		summarizeBy: sum
+		sourceColumn: MarginPercent
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column SalesType
+		dataType: string
+		lineageTag: f6d37b9f-b0bf-47e7-a41f-08dcbdcd2e97
+		summarizeBy: none
+		sourceColumn: SalesType
+
+		annotation SummarizationSetBy = Automatic
+
+	column InvoiceType
+		dataType: string
+		lineageTag: 3f24fcc6-69cb-4144-97e6-2cc774b01f10
+		summarizeBy: none
+		sourceColumn: InvoiceType
+
+		annotation SummarizationSetBy = Automatic
+
+	column CompanyName
+		dataType: string
+		lineageTag: 2cfe96c3-bc22-407e-b198-b79caca6d865
+		summarizeBy: none
+		sourceColumn: CompanyName
+
+		annotation SummarizationSetBy = Automatic
+
+	column CustomerNameNumber = [CompanyName] & " - " & [CustomerNumber]
+		lineageTag: a17a1fe5-855a-49a7-a23c-2d3ac0169580
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	partition Fact_Invoice_UniqueCustomers = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-gxnyznhdptpenfw724g3o5sjzm.datawarehouse.fabric.microsoft.com", "LH_Master_Data"),
+				    dbo_Fact_Invoice_UniqueCustomers = Source{[Schema="dbo",Item="Fact_Invoice_UniqueCustomers"]}[Data]
+				in
+				    dbo_Fact_Invoice_UniqueCustomers
+

@@ -1,0 +1,23 @@
+relationship AutoDetected_c47b1dbe-73e6-4e39-a807-18cb0a0b5857
+	fromColumn: Fact_Branch12_Transactions.DateKey
+	toColumn: dim_DateTable.DateKey
+
+relationship AutoDetected_0f64897d-4d4c-4461-b671-a16c454ae3fd
+	fromColumn: Fact_Branch12_Transactions.PartNumberKey
+	toColumn: dim_Branch12_Parts.PartNumberKey
+
+relationship a1776dae-19cc-cb26-e0cf-13139908966a
+	fromColumn: Fact_Branch12_Transactions.TransferBranch
+	toColumn: dim_BranchLocation.BranchID
+
+relationship AutoDetected_e1fadda5-687d-4a94-8302-e6362c6688f1
+	crossFilteringBehavior: bothDirections
+	fromCardinality: one
+	fromColumn: dim_Branch12_Parts.PartNumberKey
+	toColumn: dim_Parts.PartNumberKey
+
+relationship AutoDetected_8385f977-d91a-4a32-ac3b-5506df6f9a14
+	isActive: false
+	fromColumn: Fact_Branch12_Transactions.PartNumberKey
+	toColumn: dim_Parts.PartNumberKey
+

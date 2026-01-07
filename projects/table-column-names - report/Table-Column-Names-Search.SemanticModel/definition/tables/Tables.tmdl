@@ -1,0 +1,24 @@
+table Tables
+	lineageTag: 0705ef4b-80b7-436c-aebf-008f425fdce5
+
+	column table_name
+		lineageTag: 12411283-83bc-42bd-a81d-5388efc70514
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [table_name]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition Tables = calculated
+		mode: import
+		source =
+				
+				DISTINCT(
+				    UNION(
+				        SELECTCOLUMNS(TableColumns, "table_name", TableColumns[table_name]),
+				        SELECTCOLUMNS(TableStats, "table_name", TableStats[table_name])
+				    )
+				)
+
+	annotation PBI_Id = 307c567d445b46e489537e470f3c0e05
+

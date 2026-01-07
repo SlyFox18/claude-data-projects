@@ -1,0 +1,78 @@
+table AllTableRelationships
+	lineageTag: c9374f0f-a794-48bc-a085-c45c5da72326
+
+	column table_name
+		lineageTag: 7637a9f3-6d6c-48ab-b2af-a2ec2c19e2cb
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [table_name]
+
+		annotation SummarizationSetBy = Automatic
+
+	column relationship_name
+		lineageTag: 77c10a3c-1f8d-45ab-8642-70a11dc79a31
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [relationship_name]
+
+		annotation SummarizationSetBy = Automatic
+
+	column relationship_type
+		lineageTag: 96b72e9a-c3b9-472b-ac06-7cd748b11c1d
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [relationship_type]
+
+		annotation SummarizationSetBy = Automatic
+
+	column related_table
+		lineageTag: 5282432c-e953-4053-891b-dea1eb5234ff
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [related_table]
+
+		annotation SummarizationSetBy = Automatic
+
+	column this_column
+		lineageTag: 8fc622cc-d06a-40d7-a37d-fa2f16839f9c
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [this_column]
+
+		annotation SummarizationSetBy = Automatic
+
+	column related_column
+		lineageTag: df45a986-7f29-4fad-89d5-9631e14ddad6
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [related_column]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition AllTableRelationships = calculated
+		mode: import
+		source =
+				
+				UNION(
+				    SELECTCOLUMNS(
+				        TableRelationships,
+				        "table_name", TableRelationships[foreign_table],
+				        "relationship_name", TableRelationships[relationship_name],
+				        "relationship_type", "Foreign Key",
+				        "related_table", TableRelationships[primary_table],
+				        "this_column", TableRelationships[foreign_key_column],
+				        "related_column", TableRelationships[references_column]
+				    ),
+				    SELECTCOLUMNS(
+				        TableRelationships,
+				        "table_name", TableRelationships[primary_table],
+				        "relationship_name", TableRelationships[relationship_name],
+				        "relationship_type", "Primary Key",
+				        "related_table", TableRelationships[foreign_table],
+				        "this_column", TableRelationships[references_column],
+				        "related_column", TableRelationships[foreign_key_column]
+				    )
+				)
+
+	annotation PBI_Id = 4d0c9dc9a61240b0aee63c788873da1a
+

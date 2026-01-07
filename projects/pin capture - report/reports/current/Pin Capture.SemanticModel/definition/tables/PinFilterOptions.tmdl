@@ -1,0 +1,45 @@
+table PinFilterOptions
+	lineageTag: b8cfe9a2-22dd-45ae-8423-de2fc65077e9
+
+	column 'Filter Option'
+		lineageTag: 050763ef-a9d7-462c-b166-8c508017f3aa
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Filter Option]
+
+		annotation SummarizationSetBy = Automatic
+
+	column Display
+		lineageTag: 8be4a115-7103-4463-a525-35a117bf50ca
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Display]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Sort Order'
+		formatString: 0
+		lineageTag: cabef92c-69fb-440b-8f36-2bf15bf555e1
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [Sort Order]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition PinFilterOptions = calculated
+		mode: import
+		source =
+				
+				DATATABLE(
+				    "Filter Option", STRING,
+				    "Display", STRING,
+				    "Sort Order", INTEGER,
+				    {
+				        {"All", "Show All Invoices", 1},
+				        {"WithPin", "Invoices WITH Pin", 2},
+				        {"WithoutPin", "Invoices WITHOUT Pin", 3}
+				    }
+				)
+
+	annotation PBI_Id = 2ccb4caad47e459ca81b21172b0480e4
+

@@ -1,0 +1,64 @@
+table Indexes
+	lineageTag: dc7d4e89-7afb-4ad3-80a9-70c5cf2aebaa
+
+	column table_name
+		dataType: string
+		lineageTag: 8a3eb7fd-72ec-4ec1-9ada-a0507b7e0d6a
+		summarizeBy: none
+		sourceColumn: table_name
+
+		annotation SummarizationSetBy = Automatic
+
+	column index_name
+		dataType: string
+		lineageTag: a0d561f4-eab9-4bfd-80ae-e04728634c9a
+		summarizeBy: none
+		sourceColumn: index_name
+
+		annotation SummarizationSetBy = Automatic
+
+	column column_name
+		dataType: string
+		lineageTag: 6698f92a-5a23-445e-8b67-f7c37fd6bc8f
+		summarizeBy: none
+		sourceColumn: column_name
+
+		annotation SummarizationSetBy = Automatic
+
+	column index_type
+		dataType: string
+		lineageTag: 1df247a2-6a10-4994-bf34-0343e3771fe2
+		summarizeBy: none
+		sourceColumn: index_type
+
+		annotation SummarizationSetBy = Automatic
+
+	column is_unique
+		dataType: string
+		lineageTag: e466b12d-8534-4c19-bfcc-fd177b3bc4c2
+		summarizeBy: none
+		sourceColumn: is_unique
+
+		annotation SummarizationSetBy = Automatic
+
+	column column_order_in_index
+		dataType: int64
+		formatString: 0
+		lineageTag: 51935cef-a820-4fe9-bf21-67b75cba46d7
+		summarizeBy: sum
+		sourceColumn: column_order_in_index
+
+		annotation SummarizationSetBy = Automatic
+
+	partition Indexes = m
+		mode: import
+		source =
+				let
+				    Source = Odbc.Query("dsn=EquipRDB64", "-- All indexes and their columns#(lf)SELECT #(lf)    t.table_name,#(lf)    idx.index_name,#(lf)    c.column_name,#(lf)    CASE idx.index_category #(lf)        WHEN 1 THEN 'Primary Key'#(lf)        WHEN 2 THEN 'Foreign Key'#(lf)        WHEN 3 THEN 'Unique'#(lf)        WHEN 4 THEN 'Non-Unique'#(lf)        ELSE 'Other'#(lf)    END as index_type,#(lf)    CASE WHEN idx.""unique"" = 1 THEN 'Yes' ELSE 'No' END as is_unique,#(lf)    ic.sequence as column_order_in_index#(lf)FROM sys.sysidx idx#(lf)INNER JOIN sys.systable t ON idx.table_id = t.table_id#(lf)INNER JOIN sys.sysidxcol ic ON idx.index_id = ic.index_id AND idx.table_id = ic.table_id#(lf)INNER JOIN sys.systabcol c ON ic.column_id = c.column_id AND ic.table_id = c.table_id#(lf)WHERE t.creator NOT IN (1, 3)#(lf)    AND t.table_type = 'BASE'#(lf)ORDER BY t.table_name, idx.index_name, ic.sequence;")
+				in
+				    Source
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

@@ -1,0 +1,91 @@
+table CombinedTable
+	lineageTag: 8a4148c5-be39-49ab-a495-6309ab2aba86
+
+	measure MatchingParts =
+			
+			SUMMARIZE (
+			    FILTER (
+			        ADDCOLUMNS (
+			            SUMMARIZE (
+			                CombinedTable,
+			                CombinedTable[Part_No],
+			                "Negative_QTY", CALCULATE ( SUM ( CombinedTable[QTY] ), CombinedTable[Type] = "Negative" ),
+			                "Negative_Trans_Date", CALCULATE ( MAX ( CombinedTable[Trans_Date] ), CombinedTable[Type] = "Negative" ),
+			                "Positive_QTY", CALCULATE ( SUM ( CombinedTable[QTY] ), CombinedTable[Type] = "Positive" ),
+			                "Positive_Trans_Date", CALCULATE ( MAX ( CombinedTable[Trans_Date] ), CombinedTable[Type] = "Positive" )
+			            ),
+			            "QTY_Sum", [Negative_QTY] + [Positive_QTY]
+			        ),
+			        [QTY_Sum] = 0 && [Negative_Trans_Date] <> [Positive_Trans_Date]
+			    ),
+			    CombinedTable[Part_No],
+			    "Negative_QTY", [Negative_QTY],
+			    "Negative_Trans_Date", [Negative_Trans_Date],
+			    "Positive_QTY", [Positive_QTY],
+			    "Positive_Trans_Date", [Positive_Trans_Date]
+			)
+		lineageTag: 75ba17d1-b6a3-47bd-9e7a-70ad7139b46a
+
+	column Part_No
+		lineageTag: a760aedd-5d44-414a-ab2f-199c298a2236
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Part_No]
+
+		annotation SummarizationSetBy = Automatic
+
+	column QTY
+		lineageTag: 5331da3f-8c62-43a8-8c52-0941cceb60c1
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [QTY]
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column Trans_Date
+		formatString: General Date
+		lineageTag: 8a8a2575-2f9c-46c2-b076-16cf3be8fc89
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Trans_Date]
+
+		variation Variation
+			isDefault
+			relationship: 7079fe9c-02da-4d4c-b333-6fed11c12b58
+			defaultHierarchy: LocalDateTable_7862f79e-8c34-451f-b4a6-79d13f21fcbf.'Date Hierarchy'
+
+		annotation SummarizationSetBy = Automatic
+
+	column Type
+		lineageTag: 59595e74-ad37-4cb5-b5d4-550fbd097e42
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Type]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition CombinedTable = calculated
+		mode: import
+		source =
+				
+				UNION (
+				    SELECTCOLUMNS (
+				        NegativeTable,
+				        "Part_No", NegativeTable[Part_No],
+				        "QTY", NegativeTable[Negative_QTY],
+				        "Trans_Date", NegativeTable[Negative_Trans_Date],
+				        "Type", "Negative"
+				    ),
+				    SELECTCOLUMNS (
+				        PositiveTable,
+				        "Part_No", PositiveTable[Part_No],
+				        "QTY", PositiveTable[Positive_QTY],
+				        "Trans_Date", PositiveTable[Positive_Trans_Date],
+				        "Type", "Positive"
+				    )
+				)
+
+	annotation PBI_Id = 1d73627544de4eb4a7b18d9d6115bc30
+
