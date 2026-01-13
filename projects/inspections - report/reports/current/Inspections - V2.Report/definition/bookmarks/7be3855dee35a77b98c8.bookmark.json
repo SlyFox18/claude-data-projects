@@ -12,1202 +12,6 @@
     "sections": {
       "30a66c2b13c2a8e9f495": {
         "visualContainers": {
-          "597fbf99e82effc9a1f2": {
-            "filters": {
-              "byExpr": [
-                {
-                  "name": "6a2382b368dae54be6da",
-                  "type": "Advanced",
-                  "expression": {
-                    "Aggregation": {
-                      "Expression": {
-                        "Column": {
-                          "Expression": {
-                            "SourceRef": {
-                              "Entity": "Data Refresh"
-                            }
-                          },
-                          "Property": "CurrentDateTime"
-                        }
-                      },
-                      "Function": 3
-                    }
-                  },
-                  "howCreated": 0
-                }
-              ]
-            },
-            "singleVisual": {
-              "visualType": "card",
-              "objects": {}
-            }
-          },
-          "626e53e393e6bc4a3d0c": {
-            "singleVisual": {
-              "visualType": "textbox",
-              "objects": {}
-            }
-          },
-          "bd2912d19640de5c6eca": {
-            "filters": {
-              "byExpr": [
-                {
-                  "name": "ceb1a375a6e0b79870cc",
-                  "type": "Categorical",
-                  "filter": {
-                    "Version": 2,
-                    "From": [
-                      {
-                        "Name": "f",
-                        "Entity": "Fact_LaborJobSummary",
-                        "Type": 0
-                      }
-                    ],
-                    "Where": [
-                      {
-                        "Condition": {
-                          "In": {
-                            "Expressions": [
-                              {
-                                "Column": {
-                                  "Expression": {
-                                    "SourceRef": {
-                                      "Source": "f"
-                                    }
-                                  },
-                                  "Property": "IsInspection"
-                                }
-                              }
-                            ],
-                            "Values": [
-                              [
-                                {
-                                  "Literal": {
-                                    "Value": "true"
-                                  }
-                                }
-                              ]
-                            ]
-                          }
-                        }
-                      }
-                    ]
-                  },
-                  "expression": {
-                    "Column": {
-                      "Expression": {
-                        "SourceRef": {
-                          "Entity": "Fact_LaborJobSummary"
-                        }
-                      },
-                      "Property": "IsInspection"
-                    }
-                  },
-                  "howCreated": 1
-                },
-                {
-                  "name": "1e0526aff3c7723dc263",
-                  "type": "Categorical",
-                  "filter": {
-                    "Version": 2,
-                    "From": [
-                      {
-                        "Name": "f",
-                        "Entity": "Fact_LaborJobSummary",
-                        "Type": 0
-                      }
-                    ],
-                    "Where": [
-                      {
-                        "Condition": {
-                          "Not": {
-                            "Expression": {
-                              "In": {
-                                "Expressions": [
-                                  {
-                                    "Column": {
-                                      "Expression": {
-                                        "SourceRef": {
-                                          "Source": "f"
-                                        }
-                                      },
-                                      "Property": "BranchName"
-                                    }
-                                  }
-                                ],
-                                "Values": [
-                                  [
-                                    {
-                                      "Literal": {
-                                        "Value": "'4 - Mesquite'"
-                                      }
-                                    }
-                                  ],
-                                  [
-                                    {
-                                      "Literal": {
-                                        "Value": "'8 - Big Spring'"
-                                      }
-                                    }
-                                  ],
-                                  [
-                                    {
-                                      "Literal": {
-                                        "Value": "'2 - Tornillo'"
-                                      }
-                                    }
-                                  ]
-                                ]
-                              }
-                            }
-                          }
-                        }
-                      }
-                    ]
-                  },
-                  "expression": {
-                    "Column": {
-                      "Expression": {
-                        "SourceRef": {
-                          "Entity": "Fact_LaborJobSummary"
-                        }
-                      },
-                      "Property": "BranchName"
-                    }
-                  },
-                  "howCreated": 0
-                },
-                {
-                  "name": "b9d258890b72ba258e24",
-                  "type": "Categorical",
-                  "expression": {
-                    "Column": {
-                      "Expression": {
-                        "SourceRef": {
-                          "Entity": "Fact_LaborJobSummary"
-                        }
-                      },
-                      "Property": "JobCode"
-                    }
-                  },
-                  "howCreated": 0
-                },
-                {
-                  "name": "2eb0a0253a945a874271",
-                  "type": "Advanced",
-                  "expression": {
-                    "Measure": {
-                      "Expression": {
-                        "SourceRef": {
-                          "Entity": "_Measures"
-                        }
-                      },
-                      "Property": "Inspection Count by Job Code"
-                    }
-                  },
-                  "howCreated": 0
-                },
-                {
-                  "name": "463485cde552654e1d7a",
-                  "type": "Advanced",
-                  "expression": {
-                    "Measure": {
-                      "Expression": {
-                        "SourceRef": {
-                          "Entity": "_Measures"
-                        }
-                      },
-                      "Property": "Parts Discount by Job Code"
-                    }
-                  },
-                  "howCreated": 0
-                },
-                {
-                  "name": "193f9f30e07545030e07",
-                  "type": "Advanced",
-                  "expression": {
-                    "Measure": {
-                      "Expression": {
-                        "SourceRef": {
-                          "Entity": "_Measures"
-                        }
-                      },
-                      "Property": "Avg Parts $ by Job Code"
-                    }
-                  },
-                  "howCreated": 0
-                },
-                {
-                  "name": "e6dd08ed8b09d9b8024b",
-                  "type": "Advanced",
-                  "expression": {
-                    "Measure": {
-                      "Expression": {
-                        "SourceRef": {
-                          "Entity": "_Measures"
-                        }
-                      },
-                      "Property": "Avg Part Discount by Job Code"
-                    }
-                  },
-                  "howCreated": 0
-                },
-                {
-                  "name": "4a6a9dae0b06880eeebe",
-                  "type": "Advanced",
-                  "expression": {
-                    "Measure": {
-                      "Expression": {
-                        "SourceRef": {
-                          "Entity": "_Measures"
-                        }
-                      },
-                      "Property": "Avg Labor $ by Job Code"
-                    }
-                  },
-                  "howCreated": 0
-                },
-                {
-                  "name": "25b4148d8977dda7b9ee",
-                  "type": "Advanced",
-                  "expression": {
-                    "Measure": {
-                      "Expression": {
-                        "SourceRef": {
-                          "Entity": "_Measures"
-                        }
-                      },
-                      "Property": "Labor Discount by Job Code"
-                    }
-                  },
-                  "howCreated": 0
-                },
-                {
-                  "name": "45bffc0000d090e710a0",
-                  "type": "Advanced",
-                  "expression": {
-                    "Measure": {
-                      "Expression": {
-                        "SourceRef": {
-                          "Entity": "_Measures"
-                        }
-                      },
-                      "Property": "Avg Labor Discount by Job Code"
-                    }
-                  },
-                  "howCreated": 0
-                },
-                {
-                  "name": "5b3694e44086c93d03e8",
-                  "type": "Advanced",
-                  "expression": {
-                    "Measure": {
-                      "Expression": {
-                        "SourceRef": {
-                          "Entity": "_Measures"
-                        }
-                      },
-                      "Property": "Avg Labor & Parts by Job Code"
-                    }
-                  },
-                  "howCreated": 0
-                },
-                {
-                  "name": "4e7c4c8b4db3cbd3e97d",
-                  "type": "Advanced",
-                  "expression": {
-                    "Measure": {
-                      "Expression": {
-                        "SourceRef": {
-                          "Entity": "_Measures"
-                        }
-                      },
-                      "Property": "Total $ - Discounts by Job Code"
-                    }
-                  },
-                  "howCreated": 0
-                },
-                {
-                  "name": "f96dbe5d22cc70bd14c8",
-                  "type": "Advanced",
-                  "expression": {
-                    "Measure": {
-                      "Expression": {
-                        "SourceRef": {
-                          "Entity": "_Measures"
-                        }
-                      },
-                      "Property": "Avg % Discounted by Job Code"
-                    }
-                  },
-                  "howCreated": 0
-                },
-                {
-                  "name": "790beb3506d525979857",
-                  "type": "Advanced",
-                  "expression": {
-                    "Measure": {
-                      "Expression": {
-                        "SourceRef": {
-                          "Entity": "_Measures"
-                        }
-                      },
-                      "Property": "WO List - Total Parts"
-                    }
-                  },
-                  "howCreated": 0
-                },
-                {
-                  "name": "a7d558a657c0456a0a63",
-                  "type": "Advanced",
-                  "expression": {
-                    "Measure": {
-                      "Expression": {
-                        "SourceRef": {
-                          "Entity": "_Measures"
-                        }
-                      },
-                      "Property": "WO List - Total Labor"
-                    }
-                  },
-                  "howCreated": 0
-                }
-              ]
-            },
-            "singleVisual": {
-              "visualType": "pivotTable",
-              "objects": {},
-              "orderBy": [
-                {
-                  "Direction": 2,
-                  "Expression": {
-                    "Measure": {
-                      "Expression": {
-                        "SourceRef": {
-                          "Entity": "_Measures"
-                        }
-                      },
-                      "Property": "Parts Discount by Job Code"
-                    }
-                  }
-                }
-              ],
-              "activeProjections": {
-                "Rows": [
-                  {
-                    "Column": {
-                      "Expression": {
-                        "SourceRef": {
-                          "Entity": "Fact_LaborJobSummary"
-                        }
-                      },
-                      "Property": "BranchName"
-                    }
-                  },
-                  {
-                    "Column": {
-                      "Expression": {
-                        "SourceRef": {
-                          "Entity": "Fact_LaborJobSummary"
-                        }
-                      },
-                      "Property": "JobCode"
-                    }
-                  }
-                ]
-              },
-              "expansionStates": [
-                {
-                  "roles": [
-                    "Rows"
-                  ],
-                  "levels": [
-                    {
-                      "queryRefs": [
-                        "Fact_LaborJobSummary.BranchName"
-                      ],
-                      "isCollapsed": true,
-                      "identityKeys": [
-                        {
-                          "Column": {
-                            "Expression": {
-                              "SourceRef": {
-                                "Entity": "Fact_LaborJobSummary"
-                              }
-                            },
-                            "Property": "BranchName"
-                          }
-                        }
-                      ],
-                      "isPinned": true
-                    },
-                    {
-                      "queryRefs": [
-                        "Fact_LaborJobSummary.JobCode"
-                      ],
-                      "isCollapsed": true,
-                      "identityKeys": [
-                        {
-                          "Column": {
-                            "Expression": {
-                              "SourceRef": {
-                                "Entity": "Fact_LaborJobSummary"
-                              }
-                            },
-                            "Property": "JobCode"
-                          }
-                        }
-                      ],
-                      "isPinned": true
-                    }
-                  ],
-                  "root": {
-                    "identityValues": [],
-                    "children": [
-                      {
-                        "identityValues": [
-                          {
-                            "Literal": {
-                              "Value": "'96 - Snyder'"
-                            }
-                          }
-                        ],
-                        "isToggled": true
-                      },
-                      {
-                        "identityValues": [
-                          {
-                            "Literal": {
-                              "Value": "'95 - Abernathy'"
-                            }
-                          }
-                        ],
-                        "isToggled": true
-                      },
-                      {
-                        "identityValues": [
-                          {
-                            "Literal": {
-                              "Value": "'93 - Lubbock'"
-                            }
-                          }
-                        ],
-                        "isToggled": true
-                      },
-                      {
-                        "identityValues": [
-                          {
-                            "Literal": {
-                              "Value": "'92 - Slaton'"
-                            }
-                          }
-                        ],
-                        "isToggled": true
-                      },
-                      {
-                        "identityValues": [
-                          {
-                            "Literal": {
-                              "Value": "'91 - Lorenzo'"
-                            }
-                          }
-                        ],
-                        "isToggled": true
-                      },
-                      {
-                        "identityValues": [
-                          {
-                            "Literal": {
-                              "Value": "'6 - San Angelo'"
-                            }
-                          }
-                        ],
-                        "isToggled": true
-                      },
-                      {
-                        "identityValues": [
-                          {
-                            "Literal": {
-                              "Value": "'17 - Tahoka'"
-                            }
-                          }
-                        ],
-                        "isToggled": true
-                      },
-                      {
-                        "identityValues": [
-                          {
-                            "Literal": {
-                              "Value": "'16 - Morton'"
-                            }
-                          }
-                        ],
-                        "isToggled": true
-                      },
-                      {
-                        "identityValues": [
-                          {
-                            "Literal": {
-                              "Value": "'15 - Levelland'"
-                            }
-                          }
-                        ],
-                        "isToggled": true
-                      },
-                      {
-                        "identityValues": [
-                          {
-                            "Literal": {
-                              "Value": "'14 - Littlefield'"
-                            }
-                          }
-                        ],
-                        "isToggled": true
-                      },
-                      {
-                        "identityValues": [
-                          {
-                            "Literal": {
-                              "Value": "'13 - Lamesa'"
-                            }
-                          }
-                        ],
-                        "isToggled": true
-                      },
-                      {
-                        "identityValues": [
-                          {
-                            "Literal": {
-                              "Value": "'11 - Brownfield'"
-                            }
-                          }
-                        ],
-                        "isToggled": true
-                      },
-                      {
-                        "identityValues": [
-                          {
-                            "Literal": {
-                              "Value": "'1 - Seminole'"
-                            }
-                          }
-                        ],
-                        "isToggled": true
-                      }
-                    ]
-                  }
-                }
-              ],
-              "display": {
-                "mode": "hidden"
-              }
-            }
-          },
-          "b7dcdce5ddc023eb0a2a": {
-            "singleVisual": {
-              "visualType": "shape",
-              "objects": {}
-            }
-          },
-          "31baf36331014ee90ae6": {
-            "singleVisual": {
-              "visualType": "image",
-              "objects": {}
-            }
-          },
-          "78579855e85d6e90ccd9": {
-            "singleVisual": {
-              "visualType": "image",
-              "objects": {}
-            }
-          },
-          "5517a004eb66549d8147": {
-            "singleVisual": {
-              "visualType": "image",
-              "objects": {}
-            }
-          },
-          "afa4235cb90700c05b0a": {
-            "singleVisual": {
-              "visualType": "image",
-              "objects": {}
-            }
-          },
-          "ebe046dcb61ecd0052d9": {
-            "singleVisual": {
-              "visualType": "image",
-              "objects": {}
-            }
-          },
-          "18a7cd4579eab9369ad1": {
-            "singleVisual": {
-              "visualType": "shape",
-              "objects": {}
-            }
-          },
-          "1994701d60644d6d0bab": {
-            "singleVisual": {
-              "visualType": "image",
-              "objects": {}
-            }
-          },
-          "14d0b1537ac6a06876b4": {
-            "singleVisual": {
-              "visualType": "shape",
-              "objects": {},
-              "display": {
-                "mode": "hidden"
-              }
-            }
-          },
-          "61fcb7ae1508e99a830e": {
-            "singleVisual": {
-              "visualType": "image",
-              "objects": {},
-              "display": {
-                "mode": "hidden"
-              }
-            }
-          },
-          "7852bd14eb80de0090e6": {
-            "filters": {
-              "byExpr": [
-                {
-                  "name": "9d88e0a8090627c6359d",
-                  "type": "Advanced",
-                  "expression": {
-                    "Measure": {
-                      "Expression": {
-                        "SourceRef": {
-                          "Entity": "_Measures"
-                        }
-                      },
-                      "Property": "Detail - Header"
-                    }
-                  },
-                  "howCreated": 0
-                }
-              ]
-            },
-            "singleVisual": {
-              "visualType": "htmlContent443BE3AD55E043BF878BED274D3A6855",
-              "objects": {}
-            }
-          },
-          "c6f829cfe711156b648d": {
-            "singleVisual": {
-              "visualType": "pageNavigator",
-              "objects": {},
-              "display": {
-                "mode": "hidden"
-              }
-            }
-          },
-          "e27a37340045222a7254": {
-            "singleVisual": {
-              "visualType": "image",
-              "objects": {}
-            }
-          },
-          "2ccd572bd91a29188202": {
-            "filters": {
-              "byExpr": [
-                {
-                  "name": "ce3b8237a3030ebe48b9",
-                  "type": "Categorical",
-                  "filter": {
-                    "Version": 2,
-                    "From": [
-                      {
-                        "Name": "d",
-                        "Entity": "dim_BranchLocation",
-                        "Type": 0
-                      }
-                    ],
-                    "Where": [
-                      {
-                        "Condition": {
-                          "In": {
-                            "Expressions": [
-                              {
-                                "Column": {
-                                  "Expression": {
-                                    "SourceRef": {
-                                      "Source": "d"
-                                    }
-                                  },
-                                  "Property": "Branch"
-                                }
-                              }
-                            ],
-                            "Values": [
-                              [
-                                {
-                                  "Literal": {
-                                    "Value": "'4 - Las Cruces'"
-                                  }
-                                }
-                              ],
-                              [
-                                {
-                                  "Literal": {
-                                    "Value": "'4 - Mesquite'"
-                                  }
-                                }
-                              ],
-                              [
-                                {
-                                  "Literal": {
-                                    "Value": "'97 - Colorado City'"
-                                  }
-                                }
-                              ],
-                              [
-                                {
-                                  "Literal": {
-                                    "Value": "'12 - O''Donnell'"
-                                  }
-                                }
-                              ]
-                            ]
-                          }
-                        }
-                      }
-                    ]
-                  },
-                  "expression": {
-                    "Column": {
-                      "Expression": {
-                        "SourceRef": {
-                          "Entity": "dim_BranchLocation"
-                        }
-                      },
-                      "Property": "Branch"
-                    }
-                  },
-                  "howCreated": 1
-                },
-                {
-                  "name": "80d7c6394c58268768de",
-                  "type": "Advanced",
-                  "filter": {
-                    "Version": 2,
-                    "From": [
-                      {
-                        "Name": "d",
-                        "Entity": "dim_DateTable",
-                        "Type": 0
-                      }
-                    ],
-                    "Where": [
-                      {
-                        "Condition": {
-                          "And": {
-                            "Left": {
-                              "Comparison": {
-                                "ComparisonKind": 1,
-                                "Left": {
-                                  "Column": {
-                                    "Expression": {
-                                      "SourceRef": {
-                                        "Source": "d"
-                                      }
-                                    },
-                                    "Property": "Date"
-                                  }
-                                },
-                                "Right": {
-                                  "DateSpan": {
-                                    "Expression": {
-                                      "Literal": {
-                                        "Value": "datetime'2024-01-01T00:00:00'"
-                                      }
-                                    },
-                                    "TimeUnit": 5
-                                  }
-                                }
-                              }
-                            },
-                            "Right": {
-                              "Not": {
-                                "Expression": {
-                                  "Comparison": {
-                                    "ComparisonKind": 0,
-                                    "Left": {
-                                      "Column": {
-                                        "Expression": {
-                                          "SourceRef": {
-                                            "Source": "d"
-                                          }
-                                        },
-                                        "Property": "Date"
-                                      }
-                                    },
-                                    "Right": {
-                                      "Literal": {
-                                        "Value": "null"
-                                      }
-                                    }
-                                  }
-                                }
-                              }
-                            }
-                          }
-                        }
-                      }
-                    ]
-                  },
-                  "expression": {
-                    "Column": {
-                      "Expression": {
-                        "SourceRef": {
-                          "Entity": "dim_DateTable"
-                        }
-                      },
-                      "Property": "Date"
-                    }
-                  },
-                  "howCreated": 0
-                },
-                {
-                  "name": "6e0c63a6aca69135a862",
-                  "type": "Categorical",
-                  "filter": {
-                    "Version": 2,
-                    "From": [
-                      {
-                        "Name": "d",
-                        "Entity": "dim_DateTable",
-                        "Type": 0
-                      }
-                    ],
-                    "Where": [
-                      {
-                        "Condition": {
-                          "Not": {
-                            "Expression": {
-                              "In": {
-                                "Expressions": [
-                                  {
-                                    "Column": {
-                                      "Expression": {
-                                        "SourceRef": {
-                                          "Source": "d"
-                                        }
-                                      },
-                                      "Property": "Year"
-                                    }
-                                  }
-                                ],
-                                "Values": [
-                                  [
-                                    {
-                                      "Literal": {
-                                        "Value": "2027L"
-                                      }
-                                    }
-                                  ],
-                                  [
-                                    {
-                                      "Literal": {
-                                        "Value": "2028L"
-                                      }
-                                    }
-                                  ],
-                                  [
-                                    {
-                                      "Literal": {
-                                        "Value": "2029L"
-                                      }
-                                    }
-                                  ],
-                                  [
-                                    {
-                                      "Literal": {
-                                        "Value": "2030L"
-                                      }
-                                    }
-                                  ],
-                                  [
-                                    {
-                                      "Literal": {
-                                        "Value": "2026L"
-                                      }
-                                    }
-                                  ]
-                                ]
-                              }
-                            }
-                          }
-                        }
-                      }
-                    ]
-                  },
-                  "expression": {
-                    "Column": {
-                      "Expression": {
-                        "SourceRef": {
-                          "Entity": "dim_DateTable"
-                        }
-                      },
-                      "Property": "Year"
-                    }
-                  },
-                  "howCreated": 1
-                }
-              ]
-            },
-            "singleVisual": {
-              "visualType": "slicer",
-              "objects": {
-                "merge": {
-                  "general": [
-                    {
-                      "properties": {
-                        "filter": {
-                          "filter": {
-                            "Version": 2,
-                            "From": [
-                              {
-                                "Name": "d",
-                                "Entity": "dim_DateTable",
-                                "Type": 0
-                              }
-                            ],
-                            "Where": [
-                              {
-                                "Condition": {
-                                  "And": {
-                                    "Left": {
-                                      "Comparison": {
-                                        "ComparisonKind": 2,
-                                        "Left": {
-                                          "Column": {
-                                            "Expression": {
-                                              "SourceRef": {
-                                                "Source": "d"
-                                              }
-                                            },
-                                            "Property": "Date"
-                                          }
-                                        },
-                                        "Right": {
-                                          "Literal": {
-                                            "Value": "datetime'2024-12-01T00:00:00'"
-                                          }
-                                        }
-                                      }
-                                    },
-                                    "Right": {
-                                      "Comparison": {
-                                        "ComparisonKind": 3,
-                                        "Left": {
-                                          "Column": {
-                                            "Expression": {
-                                              "SourceRef": {
-                                                "Source": "d"
-                                              }
-                                            },
-                                            "Property": "Date"
-                                          }
-                                        },
-                                        "Right": {
-                                          "Literal": {
-                                            "Value": "datetime'2025-11-14T00:00:00'"
-                                          }
-                                        }
-                                      }
-                                    }
-                                  }
-                                }
-                              }
-                            ]
-                          }
-                        }
-                      }
-                    }
-                  ],
-                  "data": [
-                    {
-                      "properties": {
-                        "startDate": {
-                          "expr": {
-                            "Literal": {
-                              "Value": "datetime'2024-12-01T00:00:00'"
-                            }
-                          }
-                        },
-                        "endDate": {
-                          "expr": {
-                            "Literal": {
-                              "Value": "datetime'2025-11-13T00:00:00'"
-                            }
-                          }
-                        },
-                        "mode": {
-                          "expr": {
-                            "Literal": {
-                              "Value": "'Between'"
-                            }
-                          }
-                        }
-                      }
-                    }
-                  ]
-                }
-              },
-              "orderBy": [
-                {
-                  "Direction": 1,
-                  "Expression": {
-                    "Column": {
-                      "Expression": {
-                        "SourceRef": {
-                          "Entity": "dim_DateTable"
-                        }
-                      },
-                      "Property": "Date"
-                    }
-                  }
-                }
-              ],
-              "activeProjections": {
-                "Values": [
-                  {
-                    "Column": {
-                      "Expression": {
-                        "SourceRef": {
-                          "Entity": "dim_DateTable"
-                        }
-                      },
-                      "Property": "Date"
-                    }
-                  }
-                ]
-              },
-              "display": {
-                "mode": "hidden"
-              }
-            }
-          },
-          "44306bc98d74a9c8a814": {
-            "filters": {
-              "byExpr": [
-                {
-                  "name": "ce3b8237a3030ebe48b9",
-                  "type": "Categorical",
-                  "filter": {
-                    "Version": 2,
-                    "From": [
-                      {
-                        "Name": "d",
-                        "Entity": "dim_BranchLocation",
-                        "Type": 0
-                      }
-                    ],
-                    "Where": [
-                      {
-                        "Condition": {
-                          "In": {
-                            "Expressions": [
-                              {
-                                "Column": {
-                                  "Expression": {
-                                    "SourceRef": {
-                                      "Source": "d"
-                                    }
-                                  },
-                                  "Property": "Branch"
-                                }
-                              }
-                            ],
-                            "Values": [
-                              [
-                                {
-                                  "Literal": {
-                                    "Value": "'4 - Las Cruces'"
-                                  }
-                                }
-                              ],
-                              [
-                                {
-                                  "Literal": {
-                                    "Value": "'4 - Mesquite'"
-                                  }
-                                }
-                              ],
-                              [
-                                {
-                                  "Literal": {
-                                    "Value": "'97 - Colorado City'"
-                                  }
-                                }
-                              ],
-                              [
-                                {
-                                  "Literal": {
-                                    "Value": "'12 - O''Donnell'"
-                                  }
-                                }
-                              ]
-                            ]
-                          }
-                        }
-                      }
-                    ]
-                  },
-                  "expression": {
-                    "Column": {
-                      "Expression": {
-                        "SourceRef": {
-                          "Entity": "dim_BranchLocation"
-                        }
-                      },
-                      "Property": "Branch"
-                    }
-                  },
-                  "howCreated": 0
-                }
-              ]
-            },
-            "singleVisual": {
-              "visualType": "slicer",
-              "objects": {
-                "merge": {
-                  "data": [
-                    {
-                      "properties": {
-                        "mode": {
-                          "expr": {
-                            "Literal": {
-                              "Value": "'Dropdown'"
-                            }
-                          }
-                        }
-                      }
-                    }
-                  ]
-                }
-              },
-              "activeProjections": {
-                "Values": [
-                  {
-                    "Column": {
-                      "Expression": {
-                        "SourceRef": {
-                          "Entity": "dim_BranchLocation"
-                        }
-                      },
-                      "Property": "Branch"
-                    }
-                  }
-                ]
-              },
-              "display": {
-                "mode": "hidden"
-              }
-            }
-          },
           "1401aa2e094056908a34": {
             "filters": {
               "byExpr": [
@@ -1268,63 +72,6 @@
                 {
                   "name": "1e0526aff3c7723dc263",
                   "type": "Categorical",
-                  "filter": {
-                    "Version": 2,
-                    "From": [
-                      {
-                        "Name": "f",
-                        "Entity": "Fact_LaborJobSummary",
-                        "Type": 0
-                      }
-                    ],
-                    "Where": [
-                      {
-                        "Condition": {
-                          "Not": {
-                            "Expression": {
-                              "In": {
-                                "Expressions": [
-                                  {
-                                    "Column": {
-                                      "Expression": {
-                                        "SourceRef": {
-                                          "Source": "f"
-                                        }
-                                      },
-                                      "Property": "BranchName"
-                                    }
-                                  }
-                                ],
-                                "Values": [
-                                  [
-                                    {
-                                      "Literal": {
-                                        "Value": "'4 - Mesquite'"
-                                      }
-                                    }
-                                  ],
-                                  [
-                                    {
-                                      "Literal": {
-                                        "Value": "'8 - Big Spring'"
-                                      }
-                                    }
-                                  ],
-                                  [
-                                    {
-                                      "Literal": {
-                                        "Value": "'2 - Tornillo'"
-                                      }
-                                    }
-                                  ]
-                                ]
-                              }
-                            }
-                          }
-                        }
-                      }
-                    ]
-                  },
                   "expression": {
                     "Column": {
                       "Expression": {
@@ -1338,7 +85,22 @@
                   "howCreated": 0
                 },
                 {
-                  "name": "5b31153085a6b470807d",
+                  "name": "d6b141e3100d822e0b95",
+                  "type": "Categorical",
+                  "expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "Fact_LaborJobSummary"
+                        }
+                      },
+                      "Property": "JobCode"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "28e8d0fe770ee8c71807",
                   "type": "Advanced",
                   "expression": {
                     "Measure": {
@@ -1353,142 +115,7 @@
                   "howCreated": 0
                 },
                 {
-                  "name": "c15d20c00a0a0a68277e",
-                  "type": "Advanced",
-                  "expression": {
-                    "Measure": {
-                      "Expression": {
-                        "SourceRef": {
-                          "Entity": "_Measures"
-                        }
-                      },
-                      "Property": "Parts Discount by Job Code"
-                    }
-                  },
-                  "howCreated": 0
-                },
-                {
-                  "name": "286a6eb3535dcb7e3aa4",
-                  "type": "Advanced",
-                  "expression": {
-                    "Measure": {
-                      "Expression": {
-                        "SourceRef": {
-                          "Entity": "_Measures"
-                        }
-                      },
-                      "Property": "Avg Parts $ by Job Code"
-                    }
-                  },
-                  "howCreated": 0
-                },
-                {
-                  "name": "c671361bae3580088174",
-                  "type": "Advanced",
-                  "expression": {
-                    "Measure": {
-                      "Expression": {
-                        "SourceRef": {
-                          "Entity": "_Measures"
-                        }
-                      },
-                      "Property": "Avg Part Discount by Job Code"
-                    }
-                  },
-                  "howCreated": 0
-                },
-                {
-                  "name": "fcf52de0c321a97ecd9b",
-                  "type": "Advanced",
-                  "expression": {
-                    "Measure": {
-                      "Expression": {
-                        "SourceRef": {
-                          "Entity": "_Measures"
-                        }
-                      },
-                      "Property": "Avg Labor $ by Job Code"
-                    }
-                  },
-                  "howCreated": 0
-                },
-                {
-                  "name": "5fa8e40aae8b5c1d2616",
-                  "type": "Advanced",
-                  "expression": {
-                    "Measure": {
-                      "Expression": {
-                        "SourceRef": {
-                          "Entity": "_Measures"
-                        }
-                      },
-                      "Property": "Labor Discount by Job Code"
-                    }
-                  },
-                  "howCreated": 0
-                },
-                {
-                  "name": "6f4b32be1cc22b743024",
-                  "type": "Advanced",
-                  "expression": {
-                    "Measure": {
-                      "Expression": {
-                        "SourceRef": {
-                          "Entity": "_Measures"
-                        }
-                      },
-                      "Property": "Avg Labor Discount by Job Code"
-                    }
-                  },
-                  "howCreated": 0
-                },
-                {
-                  "name": "b3a0061ca8e4c623e39c",
-                  "type": "Advanced",
-                  "expression": {
-                    "Measure": {
-                      "Expression": {
-                        "SourceRef": {
-                          "Entity": "_Measures"
-                        }
-                      },
-                      "Property": "Avg Labor & Parts by Job Code"
-                    }
-                  },
-                  "howCreated": 0
-                },
-                {
-                  "name": "c84d329a0bc087156804",
-                  "type": "Advanced",
-                  "expression": {
-                    "Measure": {
-                      "Expression": {
-                        "SourceRef": {
-                          "Entity": "_Measures"
-                        }
-                      },
-                      "Property": "Total $ - Discounts by Job Code"
-                    }
-                  },
-                  "howCreated": 0
-                },
-                {
-                  "name": "d93735d5a3e2bc4a4acb",
-                  "type": "Advanced",
-                  "expression": {
-                    "Measure": {
-                      "Expression": {
-                        "SourceRef": {
-                          "Entity": "_Measures"
-                        }
-                      },
-                      "Property": "Avg % Discounted by Job Code"
-                    }
-                  },
-                  "howCreated": 0
-                },
-                {
-                  "name": "f3c6925b2c3c05dc0e89",
+                  "name": "798a581e3e9725ce5837",
                   "type": "Advanced",
                   "expression": {
                     "Measure": {
@@ -1503,7 +130,52 @@
                   "howCreated": 0
                 },
                 {
-                  "name": "1730e6716c9085bb2046",
+                  "name": "02f9eeb54ab8120d19dc",
+                  "type": "Advanced",
+                  "expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "Parts Discount by Job Code"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "08a15b9455c02c732c3b",
+                  "type": "Advanced",
+                  "expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "Avg Parts $ by Job Code"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "607bd10fa71a5728c4d8",
+                  "type": "Advanced",
+                  "expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "Avg Part Discount by Job Code"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "394ef1d84a3b3c9a9de5",
                   "type": "Advanced",
                   "expression": {
                     "Measure": {
@@ -1518,16 +190,91 @@
                   "howCreated": 0
                 },
                 {
-                  "name": "f99c52dc576873440b62",
-                  "type": "Categorical",
+                  "name": "27fead2fe10b2a98e398",
+                  "type": "Advanced",
                   "expression": {
-                    "Column": {
+                    "Measure": {
                       "Expression": {
                         "SourceRef": {
-                          "Entity": "Fact_LaborJobSummary"
+                          "Entity": "_Measures"
                         }
                       },
-                      "Property": "JobCode"
+                      "Property": "Avg Labor $ by Job Code"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "b8b0c6810161db48d8ed",
+                  "type": "Advanced",
+                  "expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "Labor Discount by Job Code"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "06c12f819964ea9a6405",
+                  "type": "Advanced",
+                  "expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "Avg Labor Discount by Job Code"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "22c9128fa5e0d0856825",
+                  "type": "Advanced",
+                  "expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "Avg Labor & Parts by Job Code"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "78bb53f48070007bd5e2",
+                  "type": "Advanced",
+                  "expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "Total $ - Discounts by Job Code"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "588452815ee477847a20",
+                  "type": "Advanced",
+                  "expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "Avg % Discounted by Job Code"
                     }
                   },
                   "howCreated": 0
@@ -2450,6 +1197,27 @@
               ]
             }
           },
+          "14d0b1537ac6a06876b4": {
+            "singleVisual": {
+              "visualType": "shape",
+              "objects": {},
+              "display": {
+                "mode": "hidden"
+              }
+            }
+          },
+          "18a7cd4579eab9369ad1": {
+            "singleVisual": {
+              "visualType": "shape",
+              "objects": {}
+            }
+          },
+          "1994701d60644d6d0bab": {
+            "singleVisual": {
+              "visualType": "image",
+              "objects": {}
+            }
+          },
           "229ae583b0d3c00de190": {
             "singleVisual": {
               "visualType": "actionButton",
@@ -2459,9 +1227,1139 @@
               }
             }
           },
+          "2ccd572bd91a29188202": {
+            "filters": {
+              "byExpr": [
+                {
+                  "name": "ce3b8237a3030ebe48b9",
+                  "type": "Categorical",
+                  "filter": {
+                    "Version": 2,
+                    "From": [
+                      {
+                        "Name": "d",
+                        "Entity": "dim_BranchLocation",
+                        "Type": 0
+                      }
+                    ],
+                    "Where": [
+                      {
+                        "Condition": {
+                          "In": {
+                            "Expressions": [
+                              {
+                                "Column": {
+                                  "Expression": {
+                                    "SourceRef": {
+                                      "Source": "d"
+                                    }
+                                  },
+                                  "Property": "Branch"
+                                }
+                              }
+                            ],
+                            "Values": [
+                              [
+                                {
+                                  "Literal": {
+                                    "Value": "'4 - Las Cruces'"
+                                  }
+                                }
+                              ],
+                              [
+                                {
+                                  "Literal": {
+                                    "Value": "'4 - Mesquite'"
+                                  }
+                                }
+                              ],
+                              [
+                                {
+                                  "Literal": {
+                                    "Value": "'97 - Colorado City'"
+                                  }
+                                }
+                              ],
+                              [
+                                {
+                                  "Literal": {
+                                    "Value": "'12 - O''Donnell'"
+                                  }
+                                }
+                              ]
+                            ]
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  "expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "dim_BranchLocation"
+                        }
+                      },
+                      "Property": "Branch"
+                    }
+                  },
+                  "howCreated": 1
+                },
+                {
+                  "name": "80d7c6394c58268768de",
+                  "type": "Advanced",
+                  "filter": {
+                    "Version": 2,
+                    "From": [
+                      {
+                        "Name": "d",
+                        "Entity": "dim_DateTable",
+                        "Type": 0
+                      }
+                    ],
+                    "Where": [
+                      {
+                        "Condition": {
+                          "And": {
+                            "Left": {
+                              "Comparison": {
+                                "ComparisonKind": 1,
+                                "Left": {
+                                  "Column": {
+                                    "Expression": {
+                                      "SourceRef": {
+                                        "Source": "d"
+                                      }
+                                    },
+                                    "Property": "Date"
+                                  }
+                                },
+                                "Right": {
+                                  "DateSpan": {
+                                    "Expression": {
+                                      "Literal": {
+                                        "Value": "datetime'2024-01-01T00:00:00'"
+                                      }
+                                    },
+                                    "TimeUnit": 5
+                                  }
+                                }
+                              }
+                            },
+                            "Right": {
+                              "Not": {
+                                "Expression": {
+                                  "Comparison": {
+                                    "ComparisonKind": 0,
+                                    "Left": {
+                                      "Column": {
+                                        "Expression": {
+                                          "SourceRef": {
+                                            "Source": "d"
+                                          }
+                                        },
+                                        "Property": "Date"
+                                      }
+                                    },
+                                    "Right": {
+                                      "Literal": {
+                                        "Value": "null"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  "expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "dim_DateTable"
+                        }
+                      },
+                      "Property": "Date"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "6e0c63a6aca69135a862",
+                  "type": "Categorical",
+                  "filter": {
+                    "Version": 2,
+                    "From": [
+                      {
+                        "Name": "d",
+                        "Entity": "dim_DateTable",
+                        "Type": 0
+                      }
+                    ],
+                    "Where": [
+                      {
+                        "Condition": {
+                          "Not": {
+                            "Expression": {
+                              "In": {
+                                "Expressions": [
+                                  {
+                                    "Column": {
+                                      "Expression": {
+                                        "SourceRef": {
+                                          "Source": "d"
+                                        }
+                                      },
+                                      "Property": "Year"
+                                    }
+                                  }
+                                ],
+                                "Values": [
+                                  [
+                                    {
+                                      "Literal": {
+                                        "Value": "2027L"
+                                      }
+                                    }
+                                  ],
+                                  [
+                                    {
+                                      "Literal": {
+                                        "Value": "2028L"
+                                      }
+                                    }
+                                  ],
+                                  [
+                                    {
+                                      "Literal": {
+                                        "Value": "2029L"
+                                      }
+                                    }
+                                  ],
+                                  [
+                                    {
+                                      "Literal": {
+                                        "Value": "2030L"
+                                      }
+                                    }
+                                  ]
+                                ]
+                              }
+                            }
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  "expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "dim_DateTable"
+                        }
+                      },
+                      "Property": "Year"
+                    }
+                  },
+                  "howCreated": 1
+                }
+              ]
+            },
+            "singleVisual": {
+              "visualType": "slicer",
+              "objects": {
+                "merge": {
+                  "general": [
+                    {
+                      "properties": {
+                        "filter": {
+                          "filter": {
+                            "Version": 2,
+                            "From": [
+                              {
+                                "Name": "d",
+                                "Entity": "dim_DateTable",
+                                "Type": 0
+                              }
+                            ],
+                            "Where": [
+                              {
+                                "Condition": {
+                                  "And": {
+                                    "Left": {
+                                      "Comparison": {
+                                        "ComparisonKind": 2,
+                                        "Left": {
+                                          "Column": {
+                                            "Expression": {
+                                              "SourceRef": {
+                                                "Source": "d"
+                                              }
+                                            },
+                                            "Property": "Date"
+                                          }
+                                        },
+                                        "Right": {
+                                          "Literal": {
+                                            "Value": "datetime'2024-12-01T00:00:00'"
+                                          }
+                                        }
+                                      }
+                                    },
+                                    "Right": {
+                                      "Comparison": {
+                                        "ComparisonKind": 3,
+                                        "Left": {
+                                          "Column": {
+                                            "Expression": {
+                                              "SourceRef": {
+                                                "Source": "d"
+                                              }
+                                            },
+                                            "Property": "Date"
+                                          }
+                                        },
+                                        "Right": {
+                                          "Literal": {
+                                            "Value": "datetime'2026-01-13T00:00:00'"
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    }
+                  ],
+                  "data": [
+                    {
+                      "properties": {
+                        "startDate": {
+                          "expr": {
+                            "Literal": {
+                              "Value": "datetime'2024-12-01T00:00:00'"
+                            }
+                          }
+                        },
+                        "endDate": {
+                          "expr": {
+                            "Literal": {
+                              "Value": "datetime'2026-01-12T00:00:00'"
+                            }
+                          }
+                        },
+                        "mode": {
+                          "expr": {
+                            "Literal": {
+                              "Value": "'Between'"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "orderBy": [
+                {
+                  "Direction": 1,
+                  "Expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "dim_DateTable"
+                        }
+                      },
+                      "Property": "Date"
+                    }
+                  }
+                }
+              ],
+              "activeProjections": {
+                "Values": [
+                  {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "dim_DateTable"
+                        }
+                      },
+                      "Property": "Date"
+                    }
+                  }
+                ]
+              },
+              "display": {
+                "mode": "hidden"
+              }
+            }
+          },
+          "31baf36331014ee90ae6": {
+            "singleVisual": {
+              "visualType": "image",
+              "objects": {}
+            }
+          },
+          "44306bc98d74a9c8a814": {
+            "filters": {
+              "byExpr": [
+                {
+                  "name": "ce3b8237a3030ebe48b9",
+                  "type": "Categorical",
+                  "filter": {
+                    "Version": 2,
+                    "From": [
+                      {
+                        "Name": "d",
+                        "Entity": "dim_BranchLocation",
+                        "Type": 0
+                      }
+                    ],
+                    "Where": [
+                      {
+                        "Condition": {
+                          "Not": {
+                            "Expression": {
+                              "In": {
+                                "Expressions": [
+                                  {
+                                    "Column": {
+                                      "Expression": {
+                                        "SourceRef": {
+                                          "Source": "d"
+                                        }
+                                      },
+                                      "Property": "Branch"
+                                    }
+                                  }
+                                ],
+                                "Values": [
+                                  [
+                                    {
+                                      "Literal": {
+                                        "Value": "'4 - Las Cruces'"
+                                      }
+                                    }
+                                  ]
+                                ]
+                              }
+                            }
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  "expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "dim_BranchLocation"
+                        }
+                      },
+                      "Property": "Branch"
+                    }
+                  },
+                  "howCreated": 0
+                }
+              ]
+            },
+            "singleVisual": {
+              "visualType": "slicer",
+              "objects": {
+                "merge": {
+                  "data": [
+                    {
+                      "properties": {
+                        "mode": {
+                          "expr": {
+                            "Literal": {
+                              "Value": "'Dropdown'"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "activeProjections": {
+                "Values": [
+                  {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "dim_BranchLocation"
+                        }
+                      },
+                      "Property": "Branch"
+                    }
+                  }
+                ]
+              },
+              "display": {
+                "mode": "hidden"
+              }
+            }
+          },
+          "50cfc8d94977699036a0": {
+            "singleVisual": {
+              "visualType": "image",
+              "objects": {}
+            }
+          },
+          "5517a004eb66549d8147": {
+            "singleVisual": {
+              "visualType": "image",
+              "objects": {}
+            }
+          },
+          "597fbf99e82effc9a1f2": {
+            "filters": {
+              "byExpr": [
+                {
+                  "name": "a6de48d4de704dce06a6",
+                  "type": "Advanced",
+                  "expression": {
+                    "Aggregation": {
+                      "Expression": {
+                        "Column": {
+                          "Expression": {
+                            "SourceRef": {
+                              "Entity": "Data Refresh"
+                            }
+                          },
+                          "Property": "CurrentDateTime"
+                        }
+                      },
+                      "Function": 3
+                    }
+                  },
+                  "howCreated": 0
+                }
+              ]
+            },
+            "singleVisual": {
+              "visualType": "card",
+              "objects": {}
+            }
+          },
+          "61fcb7ae1508e99a830e": {
+            "singleVisual": {
+              "visualType": "image",
+              "objects": {},
+              "display": {
+                "mode": "hidden"
+              }
+            }
+          },
+          "626e53e393e6bc4a3d0c": {
+            "singleVisual": {
+              "visualType": "textbox",
+              "objects": {}
+            }
+          },
+          "7852bd14eb80de0090e6": {
+            "filters": {
+              "byExpr": [
+                {
+                  "name": "8868c9a6d060e32eb86d",
+                  "type": "Advanced",
+                  "expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "Detail - Header"
+                    }
+                  },
+                  "howCreated": 0
+                }
+              ]
+            },
+            "singleVisual": {
+              "visualType": "htmlContent443BE3AD55E043BF878BED274D3A6855",
+              "objects": {}
+            }
+          },
+          "78579855e85d6e90ccd9": {
+            "singleVisual": {
+              "visualType": "image",
+              "objects": {}
+            }
+          },
           "86c962ed5b7147d37b57": {
             "singleVisual": {
               "visualType": "actionButton",
+              "objects": {}
+            }
+          },
+          "afa4235cb90700c05b0a": {
+            "singleVisual": {
+              "visualType": "image",
+              "objects": {}
+            }
+          },
+          "b7dcdce5ddc023eb0a2a": {
+            "singleVisual": {
+              "visualType": "shape",
+              "objects": {}
+            }
+          },
+          "bd2912d19640de5c6eca": {
+            "filters": {
+              "byExpr": [
+                {
+                  "name": "ceb1a375a6e0b79870cc",
+                  "type": "Categorical",
+                  "filter": {
+                    "Version": 2,
+                    "From": [
+                      {
+                        "Name": "f",
+                        "Entity": "Fact_LaborJobSummary",
+                        "Type": 0
+                      }
+                    ],
+                    "Where": [
+                      {
+                        "Condition": {
+                          "In": {
+                            "Expressions": [
+                              {
+                                "Column": {
+                                  "Expression": {
+                                    "SourceRef": {
+                                      "Source": "f"
+                                    }
+                                  },
+                                  "Property": "IsInspection"
+                                }
+                              }
+                            ],
+                            "Values": [
+                              [
+                                {
+                                  "Literal": {
+                                    "Value": "true"
+                                  }
+                                }
+                              ]
+                            ]
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  "expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "Fact_LaborJobSummary"
+                        }
+                      },
+                      "Property": "IsInspection"
+                    }
+                  },
+                  "howCreated": 1
+                },
+                {
+                  "name": "1e0526aff3c7723dc263",
+                  "type": "Categorical",
+                  "expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "Fact_LaborJobSummary"
+                        }
+                      },
+                      "Property": "BranchName"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "68c09740b4902e8aca77",
+                  "type": "Categorical",
+                  "expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "Fact_LaborJobSummary"
+                        }
+                      },
+                      "Property": "JobCode"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "e9343367738a9b55e86d",
+                  "type": "Advanced",
+                  "expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "Inspection Count by Job Code"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "65a7e836a22652d1db8d",
+                  "type": "Advanced",
+                  "expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "WO List - Total Parts"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "e17de8b14085a1180b27",
+                  "type": "Advanced",
+                  "expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "Parts Discount by Job Code"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "1cc27390db701c0038c6",
+                  "type": "Advanced",
+                  "expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "Avg Parts $ by Job Code"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "37ed6a02de6dbd945333",
+                  "type": "Advanced",
+                  "expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "Avg Part Discount by Job Code"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "43735703000a18306c3c",
+                  "type": "Advanced",
+                  "expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "WO List - Total Labor"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "47820e635abcb4173aa9",
+                  "type": "Advanced",
+                  "expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "Avg Labor $ by Job Code"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "efa64a3aa4034eea0428",
+                  "type": "Advanced",
+                  "expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "Labor Discount by Job Code"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "48fbae40e3058aeda6e1",
+                  "type": "Advanced",
+                  "expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "Avg Labor Discount by Job Code"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "c7b3d1ff52350a720492",
+                  "type": "Advanced",
+                  "expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "Avg Labor & Parts by Job Code"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "f671581c7ddd68392d40",
+                  "type": "Advanced",
+                  "expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "Total $ - Discounts by Job Code"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "becff43f0ab0dcb85d60",
+                  "type": "Advanced",
+                  "expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "Avg % Discounted by Job Code"
+                    }
+                  },
+                  "howCreated": 0
+                }
+              ]
+            },
+            "singleVisual": {
+              "visualType": "pivotTable",
+              "objects": {},
+              "orderBy": [
+                {
+                  "Direction": 2,
+                  "Expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "Parts Discount by Job Code"
+                    }
+                  }
+                }
+              ],
+              "activeProjections": {
+                "Rows": [
+                  {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "Fact_LaborJobSummary"
+                        }
+                      },
+                      "Property": "BranchName"
+                    }
+                  },
+                  {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "Fact_LaborJobSummary"
+                        }
+                      },
+                      "Property": "JobCode"
+                    }
+                  }
+                ]
+              },
+              "expansionStates": [
+                {
+                  "roles": [
+                    "Rows"
+                  ],
+                  "levels": [
+                    {
+                      "queryRefs": [
+                        "Fact_LaborJobSummary.BranchName"
+                      ],
+                      "isCollapsed": true,
+                      "identityKeys": [
+                        {
+                          "Column": {
+                            "Expression": {
+                              "SourceRef": {
+                                "Entity": "Fact_LaborJobSummary"
+                              }
+                            },
+                            "Property": "BranchName"
+                          }
+                        }
+                      ],
+                      "isPinned": true
+                    },
+                    {
+                      "queryRefs": [
+                        "Fact_LaborJobSummary.JobCode"
+                      ],
+                      "isCollapsed": true,
+                      "identityKeys": [
+                        {
+                          "Column": {
+                            "Expression": {
+                              "SourceRef": {
+                                "Entity": "Fact_LaborJobSummary"
+                              }
+                            },
+                            "Property": "JobCode"
+                          }
+                        }
+                      ],
+                      "isPinned": true
+                    }
+                  ],
+                  "root": {
+                    "identityValues": [],
+                    "children": [
+                      {
+                        "identityValues": [
+                          {
+                            "Literal": {
+                              "Value": "'96 - Snyder'"
+                            }
+                          }
+                        ],
+                        "isToggled": true
+                      },
+                      {
+                        "identityValues": [
+                          {
+                            "Literal": {
+                              "Value": "'95 - Abernathy'"
+                            }
+                          }
+                        ],
+                        "isToggled": true
+                      },
+                      {
+                        "identityValues": [
+                          {
+                            "Literal": {
+                              "Value": "'93 - Lubbock'"
+                            }
+                          }
+                        ],
+                        "isToggled": true
+                      },
+                      {
+                        "identityValues": [
+                          {
+                            "Literal": {
+                              "Value": "'92 - Slaton'"
+                            }
+                          }
+                        ],
+                        "isToggled": true
+                      },
+                      {
+                        "identityValues": [
+                          {
+                            "Literal": {
+                              "Value": "'91 - Lorenzo'"
+                            }
+                          }
+                        ],
+                        "isToggled": true
+                      },
+                      {
+                        "identityValues": [
+                          {
+                            "Literal": {
+                              "Value": "'6 - San Angelo'"
+                            }
+                          }
+                        ],
+                        "isToggled": true
+                      },
+                      {
+                        "identityValues": [
+                          {
+                            "Literal": {
+                              "Value": "'17 - Tahoka'"
+                            }
+                          }
+                        ],
+                        "isToggled": true
+                      },
+                      {
+                        "identityValues": [
+                          {
+                            "Literal": {
+                              "Value": "'16 - Morton'"
+                            }
+                          }
+                        ],
+                        "isToggled": true
+                      },
+                      {
+                        "identityValues": [
+                          {
+                            "Literal": {
+                              "Value": "'15 - Levelland'"
+                            }
+                          }
+                        ],
+                        "isToggled": true
+                      },
+                      {
+                        "identityValues": [
+                          {
+                            "Literal": {
+                              "Value": "'14 - Littlefield'"
+                            }
+                          }
+                        ],
+                        "isToggled": true
+                      },
+                      {
+                        "identityValues": [
+                          {
+                            "Literal": {
+                              "Value": "'13 - Lamesa'"
+                            }
+                          }
+                        ],
+                        "isToggled": true
+                      },
+                      {
+                        "identityValues": [
+                          {
+                            "Literal": {
+                              "Value": "'11 - Brownfield'"
+                            }
+                          }
+                        ],
+                        "isToggled": true
+                      },
+                      {
+                        "identityValues": [
+                          {
+                            "Literal": {
+                              "Value": "'1 - Seminole'"
+                            }
+                          }
+                        ],
+                        "isToggled": true
+                      },
+                      {
+                        "identityValues": [
+                          {
+                            "Literal": {
+                              "Value": "'8 - Big Spring'"
+                            }
+                          }
+                        ],
+                        "isToggled": true
+                      },
+                      {
+                        "identityValues": [
+                          {
+                            "Literal": {
+                              "Value": "'4 - Mesquite'"
+                            }
+                          }
+                        ],
+                        "isToggled": true
+                      },
+                      {
+                        "identityValues": [
+                          {
+                            "Literal": {
+                              "Value": "'2 - Tornillo'"
+                            }
+                          }
+                        ],
+                        "isToggled": true
+                      }
+                    ]
+                  }
+                }
+              ],
+              "display": {
+                "mode": "hidden"
+              }
+            }
+          },
+          "c6f829cfe711156b648d": {
+            "singleVisual": {
+              "visualType": "pageNavigator",
+              "objects": {},
+              "display": {
+                "mode": "hidden"
+              }
+            }
+          },
+          "e27a37340045222a7254": {
+            "singleVisual": {
+              "visualType": "image",
+              "objects": {}
+            }
+          },
+          "ebe046dcb61ecd0052d9": {
+            "singleVisual": {
+              "visualType": "image",
               "objects": {}
             }
           }
@@ -2476,7 +2374,7 @@
               "expanded": {
                 "expr": {
                   "Literal": {
-                    "Value": "true"
+                    "Value": "false"
                   }
                 }
               }
