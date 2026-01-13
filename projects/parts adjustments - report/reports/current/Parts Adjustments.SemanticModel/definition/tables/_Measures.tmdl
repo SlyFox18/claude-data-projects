@@ -223,34 +223,22 @@ table _Measures
 			VAR PctLines = [Adjustment Lines to Inventory Lines]
 			
 			// Number formatting for display
-			VAR AdjText = 
-			    IF(TotalAdjustments >= 1000000,
-			        "$" & FORMAT(TotalAdjustments/1000000, "#,##0.0") & "M",
-			        "$" & FORMAT(TotalAdjustments/1000, "#,##0") & "K"
-			    )
+			VAR AdjText = "$" & FORMAT(TotalAdjustments, "#,##0")
+			
 			VAR InvText = 
 			    IF(TotalInventory >= 1000000,
 			        "$" & FORMAT(TotalInventory/1000000, "#,##0.0") & "M",
 			        "$" & FORMAT(TotalInventory/1000, "#,##0") & "K"
 			    )
-			VAR QtyText = 
-			    IF(TotalQty >= 1000000,
-			        FORMAT(TotalQty/1000000, "#,##0.0") & "M",
-			        IF(TotalQty >= 1000,
-			            FORMAT(TotalQty/1000, "#,##0") & "K",
-			            FORMAT(TotalQty, "#,##0")
-			        )
-			    )
+			VAR QtyText = FORMAT(TotalQty, "#,##0")
+			
 			VAR OnHandText = 
 			    IF(OnHandQty >= 1000000,
 			        FORMAT(OnHandQty/1000000, "#,##0.0") & "M",
 			        FORMAT(OnHandQty/1000, "#,##0") & "K"
 			    )
-			VAR LinesText = 
-			    IF(TotalLines >= 1000,
-			        FORMAT(TotalLines/1000, "#,##0") & "K",
-			        FORMAT(TotalLines, "#,##0")
-			    )
+			VAR LinesText = FORMAT(TotalLines, "#,##0")
+			
 			VAR PartsText = 
 			    IF(TotalParts >= 1000000,
 			        FORMAT(TotalParts/1000000, "#,##0.0") & "M",
@@ -429,34 +417,22 @@ table _Measures
 			VAR LinesColor = IF(NetLines >= 0, "#4ade80", "#ef4444")
 			
 			// Number formatting for display
-			VAR AdjText = 
-			    IF(ABS(NetAdjustments) >= 1000000,
-			        IF(NetAdjustments >= 0, "", "-") & "$" & FORMAT(ABS(NetAdjustments)/1000000, "#,##0.0") & "M",
-			        IF(NetAdjustments >= 0, "", "-") & "$" & FORMAT(ABS(NetAdjustments)/1000, "#,##0.0") & "K"
-			    )
+			VAR AdjText = "$" & FORMAT(NetAdjustments, "#,##0")
+			
 			VAR InvText = 
 			    IF(TotalInventory >= 1000000,
 			        "$" & FORMAT(TotalInventory/1000000, "#,##0.0") & "M",
 			        "$" & FORMAT(TotalInventory/1000, "#,##0") & "K"
 			    )
-			VAR QtyText = 
-			    IF(ABS(NetQty) >= 1000000,
-			        FORMAT(NetQty/1000000, "#,##0.0") & "M",
-			        IF(ABS(NetQty) >= 1000,
-			            FORMAT(NetQty/1000, "#,##0") & "K",
-			            FORMAT(NetQty, "#,##0")
-			        )
-			    )
+			VAR QtyText = FORMAT(NetQty, "#,##0")
+			
 			VAR OnHandText = 
 			    IF(OnHandQty >= 1000000,
 			        FORMAT(OnHandQty/1000000, "#,##0.0") & "M",
 			        FORMAT(OnHandQty/1000, "#,##0") & "K"
 			    )
-			VAR LinesText = 
-			    IF(ABS(NetLines) >= 1000,
-			        FORMAT(NetLines/1000, "#,##0") & "K",
-			        FORMAT(NetLines, "#,##0")
-			    )
+			VAR LinesText = FORMAT(NetLines, "#,##0")
+			
 			VAR PartsText = 
 			    IF(TotalParts >= 1000000,
 			        FORMAT(TotalParts/1000000, "#,##0.0") & "M",
