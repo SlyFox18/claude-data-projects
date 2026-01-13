@@ -1,0 +1,14 @@
+relationship 8cf79cff-060f-5fa6-8add-32c8fb783e91
+	fromColumn: Parts_Open_Tickets.Location
+	toColumn: Dim_Branch.BranchID
+
+relationship 3c62c3a5-db20-97be-2fb2-3da632aae098
+	fromColumn: Parts_Open_Tickets.Order_Date
+	toColumn: dimDate.Date
+
+relationship a896cd3c-0e43-e64d-6804-09cba31ed525
+	crossFilteringBehavior: bothDirections
+	toCardinality: many
+	fromColumn: Parts_Open_Tickets_Details.Order_No
+	toColumn: Parts_Open_Tickets.Order_No
+

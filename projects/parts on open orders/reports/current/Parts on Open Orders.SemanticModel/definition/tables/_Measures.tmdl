@@ -1,0 +1,1778 @@
+table _Measures
+	lineageTag: 22e4b9e3-99b6-4634-9836-9ade5a5ea5a5
+
+	measure 'Home - Header' =
+			
+			// Get user name
+			VAR _User = USERPRINCIPALNAME()
+			VAR _Position = SEARCH("@", _User, 1)
+			VAR _Name = LEFT(_User, _Position - 1)
+			VAR _FirstLetter = UPPER(LEFT(_Name, 1))
+			VAR _LastName = MID(_Name, 2, LEN(_Name) - 1)
+			VAR _FormattedLastName =
+			    UPPER(LEFT(_LastName, 1)) & LOWER(MID(_LastName, 2, LEN(_LastName)))
+			VAR WelcomeName = _FirstLetter & "." & _FormattedLastName
+			
+			// Get current date/time info
+			VAR CurrentDate = TODAY()
+			VAR DateDisplay = FORMAT(CurrentDate, "MMM D, YYYY")
+			VAR CurrentHour = HOUR(NOW())
+			VAR TimeGreeting =
+			    IF(CurrentHour < 12, "Good Morning",
+			    IF(CurrentHour < 17, "Good Afternoon",
+			    "Good Evening"))
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    height: 85px;
+			    padding: 15px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 10px;
+			    color: white;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-between;
+			    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    box-sizing: border-box;
+			'>
+			    <!-- Left side: Dashboard Title -->
+			    <div style='display: flex; align-items: center; gap: 15px;'>
+			        <!-- Home icon -->
+			        <div style='
+			            width: 40px;
+			            height: 40px;
+			            background: rgba(255,255,255,0.15);
+			            border-radius: 8px;
+			            display: flex;
+			            align-items: center;
+			            justify-content: center;
+			            font-size: 20px;
+			        '>
+			            🏠
+			        </div>
+			
+			        <!-- Title -->
+			        <div>
+			            <div style='font-size: 12px; opacity: 0.85; margin-bottom: 4px; letter-spacing: 0.5px;'>
+			                REPORT
+			            </div>
+			            <div style='font-size: 26px; font-weight: 700; line-height: 1;'>
+			                Overview - Parts on Open Orders
+			            </div>
+			        </div>
+			    </div>
+			
+			    <!-- Right side: Welcome & Date -->
+			    <div style='text-align: right;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 6px;'>
+			            " & TimeGreeting & ", " & WelcomeName & "
+			        </div>
+			        <div style='font-size: 16px; font-weight: 600;'>
+			            📅 " & DateDisplay & "
+			        </div>
+			    </div>
+			</div>
+			"
+		displayFolder: UI & Navigation
+		lineageTag: 49efea2a-3c06-4cab-8367-26b26caa141e
+
+	measure '# Parts On Order' = SUM(Fact_Parts_Open_Tickets[#_Parts_On_Order])
+		formatString: 0
+		displayFolder: Core Metrics
+		lineageTag: 438a52ae-ec03-4063-8cb6-5b1d00c0e959
+
+	measure 'Order Total' = SUM(Fact_Parts_Open_Tickets[Order_Total_$$])
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		displayFolder: Core Metrics
+		lineageTag: 58cb7d2b-6103-4cc1-90e9-0d5d125513d3
+
+	measure '$$ not BO' = SUM(Fact_Parts_Open_Tickets[$$_Available])
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		displayFolder: Core Metrics
+		lineageTag: bc50a102-8e84-4f7f-b89a-04d351fc853c
+
+	measure Deposit = SUM(Fact_Parts_Open_Tickets[Deposit])
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		displayFolder: Core Metrics
+		lineageTag: d2817a15-c4e9-494d-9a0e-39b592886dc0
+
+	measure '# on Back Order' = SUM(Fact_Parts_Open_Tickets[#_On_Back_Order])
+		formatString: 0
+		displayFolder: Core Metrics
+		lineageTag: 4af4aa1c-7929-4766-8ece-f5e62525c589
+
+	measure 'Backordered $$' = SUM(Fact_Parts_Open_Tickets[$$_BackOrdered])
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		displayFolder: Core Metrics
+		lineageTag: 58a03e2d-2bbc-421a-80dd-666d4867c5b0
+
+	measure 'Backordered Line Count' = ```
+			
+			CALCULATE(
+			    COUNTROWS(Fact_Parts_Open_Tickets_Details),
+			    Fact_Parts_Open_Tickets_Details[BackOrdered_QTY] > 0
+			)
+			
+			```
+		formatString: 0
+		displayFolder: Core Metrics
+		lineageTag: b46bd42a-dc0e-4791-bcf2-dd401f610245
+
+	measure 'Parts Line Count' = COUNT(Fact_Parts_Open_Tickets_Details[Part_No])
+		formatString: 0
+		displayFolder: Core Metrics
+		lineageTag: 3af0074b-175c-4538-b412-0da8d4662981
+
+	measure 'Line Count' = COUNT(Fact_Parts_Open_Tickets_Details[Part_No])
+		formatString: 0
+		displayFolder: Core Metrics
+		lineageTag: ce0f1581-4c29-47ea-8667-fd6304bbffff
+
+	measure 'Order Count' = COUNTROWS(Fact_Parts_Open_Tickets)
+		formatString: 0
+		displayFolder: Core Metrics
+		lineageTag: 190d900c-1675-428c-8c49-54b53e9d3e98
+
+	measure 'Total # of Orders' = COUNTROWS(Fact_Parts_Open_Tickets)
+		formatString: 0
+		displayFolder: Core Metrics
+		lineageTag: 9bf882f6-05b4-463d-b90a-001ee459213f
+
+	measure 'Orders with Backordered Parts' = CALCULATE(COUNTROWS(Fact_Parts_Open_Tickets), Fact_Parts_Open_Tickets[#_On_Back_Order] > 0)
+		formatString: 0
+		displayFolder: Core Metrics
+		lineageTag: 84f003b1-2849-4ad3-80b4-b8fa215f982d
+
+	measure 'Average Days Open' = AVERAGE(Fact_Parts_Open_Tickets[Days_Open])
+		displayFolder: Core Metrics
+		lineageTag: d3a21533-709d-42c8-a9b4-568f8f91e45e
+
+	measure 'Total Backorder Impact' = SUM(Fact_Parts_Open_Tickets[$$_BackOrdered])
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		displayFolder: Core Metrics
+		lineageTag: 1ce13c8c-ff84-4b67-bc77-2968f001c422
+
+	measure '% of Parts on Back Order' = DIVIDE([# on Back Order], [# Parts On Order], 0)
+		formatString: 0.00%;-0.00%;0.00%
+		displayFolder: Percentages
+		lineageTag: 8b6de6f4-6a40-46a5-ab83-4094534d8a13
+
+	measure '% # of Parts by line count' = DIVIDE([Parts Line Count], [# Parts On Order], 0)
+		formatString: 0.00%;-0.00%;0.00%
+		displayFolder: Percentages
+		lineageTag: 8c4a2a49-83ad-47d2-ac96-2d3d996d928d
+
+	measure '% # Backordered by Line Count' = DIVIDE([Backordered Line Count], [# on Back Order], 0)
+		formatString: 0.00%;-0.00%;0.00%
+		displayFolder: Percentages
+		lineageTag: c300168e-7012-4b39-a47b-666d3707adb7
+
+	measure 'Selected Top N' = SELECTEDVALUE('TopN Selector'[TopN], -1)
+		formatString: 0
+		displayFolder: Customer Analysis
+		lineageTag: 68a9c8f5-3a1d-4e6f-b9c5-7d8e9f0a1b2c
+
+	measure 'Customer Rank - Order Count' = RANKX(ALL(Fact_Parts_Open_Tickets[Customer]), CALCULATE(COUNT(Fact_Parts_Open_Tickets[Order_No])), , DESC, DENSE)
+		formatString: 0
+		displayFolder: Customer Analysis
+		lineageTag: 79b0d9e6-4b2e-4f7f-a8d6-8e9f0a1b2c3d
+
+	measure 'Customer Rank - Order Total' = RANKX(ALL(Fact_Parts_Open_Tickets[Customer]), [Order Total], , DESC, DENSE)
+		formatString: 0
+		displayFolder: Customer Analysis
+		lineageTag: 80c1e0f7-5c3f-4080-b9e7-9f0a1b2c3d4e
+
+	measure 'Filtered Order Count' = VAR _TopN = [Selected Top N] RETURN IF(_TopN = -1 || [Customer Rank - Order Count] <= _TopN, COUNT(Fact_Parts_Open_Tickets[Order_No]))
+		formatString: 0
+		displayFolder: Customer Analysis
+		lineageTag: 91d2f1g8-6d40-5191-c0f8-0a1b2c3d4e5f
+
+	measure 'Filtered Order Total' = VAR _TopN = [Selected Top N] RETURN IF(_TopN = -1 || [Customer Rank - Order Total] <= _TopN, [Order Total])
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		displayFolder: Customer Analysis
+		lineageTag: a2e3g2h9-7e51-6202-d1g9-1b2c3d4e5f60
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Order Count 1' = CALCULATE(COUNT(Fact_Parts_Open_Tickets[Order_No]))
+		formatString: 0
+		displayFolder: Customer Analysis
+		lineageTag: b3f4h3i0-8f62-7313-e2h0-2c3d4e5f6071
+
+	measure 'Customer Rank' = VAR BaseTable = ADDCOLUMNS(VALUES(Fact_Parts_Open_Tickets[Customer]), "OrderCount", [Order Count 1]) RETURN RANKX(BaseTable, [Order Count 1], , DESC, DENSE)
+		formatString: 0
+		displayFolder: Customer Analysis
+		lineageTag: c4g5i4j1-9073-8424-f3i1-3d4e5f607182
+
+	measure 'Is In Top N' = VAR _TopN = [Selected Top N] RETURN IF(_TopN = -1 || [Customer Rank] <= _TopN, TRUE(), FALSE())
+		displayFolder: Customer Analysis
+		lineageTag: d5h6j5k2-0184-9535-04j2-4e5f60718293
+
+	measure 'Bar Color Hex - Customer Count' = VAR ThisCustomer = SELECTEDVALUE(Fact_Parts_Open_Tickets[Customer]) VAR ThisValue = CALCULATE(COUNT(Fact_Parts_Open_Tickets[Order_No])) VAR MaxValue = CALCULATE(MAXX(VALUES(Fact_Parts_Open_Tickets[Customer]), CALCULATE(COUNT(Fact_Parts_Open_Tickets[Order_No]))), REMOVEFILTERS(Fact_Parts_Open_Tickets[Customer])) VAR MinValue = CALCULATE(MINX(VALUES(Fact_Parts_Open_Tickets[Customer]), CALCULATE(COUNT(Fact_Parts_Open_Tickets[Order_No]))), REMOVEFILTERS(Fact_Parts_Open_Tickets[Customer])) RETURN IF(ThisValue = MaxValue || ThisValue = MinValue, "#446FA7", "#B3B3B3")
+		displayFolder: Customer Analysis
+		lineageTag: e6i7k6l3-1295-0646-15k3-5f6071829304
+
+	measure 'Bar Color Hex - Customer Total' = VAR ThisCustomer = SELECTEDVALUE(Fact_Parts_Open_Tickets[Customer]) VAR ThisValue = [Order Total] VAR MaxValue = CALCULATE(MAXX(VALUES(Fact_Parts_Open_Tickets[Customer]), [Order Total]), REMOVEFILTERS(Fact_Parts_Open_Tickets[Customer])) VAR MinValue = CALCULATE(MINX(VALUES(Fact_Parts_Open_Tickets[Customer]), [Order Total]), REMOVEFILTERS(Fact_Parts_Open_Tickets[Customer])) RETURN IF(ThisValue = MaxValue || ThisValue = MinValue, 1, 0)
+		formatString: 0
+		displayFolder: Customer Analysis
+		lineageTag: f7j8l7m4-2306-1757-26l4-60718293a415
+
+	measure 'Salesman Rank - Order Count' = RANKX(ALL(Fact_Parts_Open_Tickets[Salesman]), CALCULATE(COUNT(Fact_Parts_Open_Tickets[Order_No])), , DESC, DENSE)
+		formatString: 0
+		displayFolder: Salesman Analysis
+		lineageTag: 08k9m8n5-3417-2868-37m5-718293a4b526
+
+	measure 'Salesman Rank - Order Total' = RANKX(ALL(Fact_Parts_Open_Tickets[Salesman]), [Order Total], , DESC, DENSE)
+		formatString: 0
+		displayFolder: Salesman Analysis
+		lineageTag: 19l0n9o6-4528-3979-48n6-8293a4b5c637
+
+	measure 'Filtered Order Count - Salesman' = VAR _TopN = [Selected Top N] RETURN IF(_TopN = -1 || [Salesman Rank - Order Count] <= _TopN, COUNT(Fact_Parts_Open_Tickets[Order_No]))
+		formatString: 0
+		displayFolder: Salesman Analysis
+		lineageTag: 20m1o0p7-5639-4080-59o7-93a4b5c6d748
+
+	measure 'Filtered Order Total - Salesman' = VAR _TopN = [Selected Top N] RETURN IF(_TopN = -1 || [Salesman Rank - Order Total] <= _TopN, [Order Total])
+		formatString: \$#,0.000;(\$#,0.000);\$#,0.000
+		displayFolder: Salesman Analysis
+		lineageTag: 31n2p1q8-6740-5191-60p8-a4b5c6d7e859
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Bar Color Hex - Salesman Count' = VAR ThisSalesman = SELECTEDVALUE(Fact_Parts_Open_Tickets[Salesman]) VAR ThisValue = COUNT(Fact_Parts_Open_Tickets[Order_No]) VAR MaxValue = CALCULATE(MAXX(VALUES(Fact_Parts_Open_Tickets[Salesman]), CALCULATE(COUNT(Fact_Parts_Open_Tickets[Order_No]))), REMOVEFILTERS(Fact_Parts_Open_Tickets[Salesman])) VAR MinValue = CALCULATE(MINX(VALUES(Fact_Parts_Open_Tickets[Salesman]), CALCULATE(COUNT(Fact_Parts_Open_Tickets[Order_No]))), REMOVEFILTERS(Fact_Parts_Open_Tickets[Salesman])) RETURN IF(ThisValue = MaxValue || ThisValue = MinValue, 1, 0)
+		formatString: 0
+		displayFolder: Salesman Analysis
+		lineageTag: 42o3q2r9-7851-6202-71q9-b5c6d7e8f960
+
+	measure 'Bar Color Hex - Salesman Total' = VAR ThisSalesman = SELECTEDVALUE(Fact_Parts_Open_Tickets[Salesman]) VAR ThisValue = [Order Total] VAR MaxValue = CALCULATE(MAXX(VALUES(Fact_Parts_Open_Tickets[Salesman]), [Order Total]), REMOVEFILTERS(Fact_Parts_Open_Tickets[Salesman])) VAR MinValue = CALCULATE(MINX(VALUES(Fact_Parts_Open_Tickets[Salesman]), [Order Total]), REMOVEFILTERS(Fact_Parts_Open_Tickets[Salesman])) RETURN IF(ThisValue = MaxValue || ThisValue = MinValue, 1, 0)
+		formatString: 0
+		displayFolder: Salesman Analysis
+		lineageTag: 53p4r3s0-8962-7313-82r0-c6d7e8f9g071
+
+	measure 'Order Total Same Period Last Year' = CALCULATE([Order Total], SAMEPERIODLASTYEAR(Fact_Parts_Open_Tickets[Order_Date]))
+		displayFolder: Time Intelligence
+		lineageTag: 64q5s4t1-9073-8424-93s1-d7e8f9g0h182
+
+	measure 'Page 2 - Details - Header' =
+			
+			// Get user name
+			VAR _User = USERPRINCIPALNAME()
+			VAR _Position = SEARCH("@", _User, 1)
+			VAR _Name = LEFT(_User, _Position - 1)
+			VAR _FirstLetter = UPPER(LEFT(_Name, 1))
+			VAR _LastName = MID(_Name, 2, LEN(_Name) - 1)
+			VAR _FormattedLastName =
+			    UPPER(LEFT(_LastName, 1)) & LOWER(MID(_LastName, 2, LEN(_LastName)))
+			VAR WelcomeName = _FirstLetter & "." & _FormattedLastName
+			
+			// Get current date/time info
+			VAR CurrentDate = TODAY()
+			VAR DateDisplay = FORMAT(CurrentDate, "MMM D, YYYY")
+			VAR CurrentHour = HOUR(NOW())
+			VAR TimeGreeting =
+			    IF(CurrentHour < 12, "Good Morning",
+			    IF(CurrentHour < 17, "Good Afternoon",
+			    "Good Evening"))
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    height: 85px;
+			    padding: 15px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 10px;
+			    color: white;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-between;
+			    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    box-sizing: border-box;
+			'>
+			    <!-- Left side: Dashboard Title -->
+			    <div style='display: flex; align-items: center; gap: 15px;'>
+			        <!-- Home icon -->
+			        <div style='
+			            width: 40px;
+			            height: 40px;
+			            background: rgba(255,255,255,0.15);
+			            border-radius: 8px;
+			            display: flex;
+			            align-items: center;
+			            justify-content: center;
+			            font-size: 20px;
+			        '>
+			            🏠
+			        </div>
+			
+			        <!-- Title -->
+			        <div>
+			            <div style='font-size: 12px; opacity: 0.85; margin-bottom: 4px; letter-spacing: 0.5px;'>
+			                REPORT
+			            </div>
+			            <div style='font-size: 26px; font-weight: 700; line-height: 1;'>
+			                Details - Parts on Open Orders
+			            </div>
+			        </div>
+			    </div>
+			
+			    <!-- Right side: Welcome & Date -->
+			    <div style='text-align: right;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 6px;'>
+			            " & TimeGreeting & ", " & WelcomeName & "
+			        </div>
+			        <div style='font-size: 16px; font-weight: 600;'>
+			            📅 " & DateDisplay & "
+			        </div>
+			    </div>
+			</div>
+			"
+		displayFolder: UI & Navigation
+		lineageTag: 0b8e6a9a-8ecc-486e-95eb-82953d011105
+
+	measure 'Page 3 - Comparison - Header' =
+			
+			// Get user name
+			VAR _User = USERPRINCIPALNAME()
+			VAR _Position = SEARCH("@", _User, 1)
+			VAR _Name = LEFT(_User, _Position - 1)
+			VAR _FirstLetter = UPPER(LEFT(_Name, 1))
+			VAR _LastName = MID(_Name, 2, LEN(_Name) - 1)
+			VAR _FormattedLastName =
+			    UPPER(LEFT(_LastName, 1)) & LOWER(MID(_LastName, 2, LEN(_LastName)))
+			VAR WelcomeName = _FirstLetter & "." & _FormattedLastName
+			
+			// Get current date/time info
+			VAR CurrentDate = TODAY()
+			VAR DateDisplay = FORMAT(CurrentDate, "MMM D, YYYY")
+			VAR CurrentHour = HOUR(NOW())
+			VAR TimeGreeting =
+			    IF(CurrentHour < 12, "Good Morning",
+			    IF(CurrentHour < 17, "Good Afternoon",
+			    "Good Evening"))
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    height: 85px;
+			    padding: 15px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 10px;
+			    color: white;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-between;
+			    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    box-sizing: border-box;
+			'>
+			    <!-- Left side: Dashboard Title -->
+			    <div style='display: flex; align-items: center; gap: 15px;'>
+			        <!-- Home icon -->
+			        <div style='
+			            width: 40px;
+			            height: 40px;
+			            background: rgba(255,255,255,0.15);
+			            border-radius: 8px;
+			            display: flex;
+			            align-items: center;
+			            justify-content: center;
+			            font-size: 20px;
+			        '>
+			            🏠
+			        </div>
+			
+			        <!-- Title -->
+			        <div>
+			            <div style='font-size: 12px; opacity: 0.85; margin-bottom: 4px; letter-spacing: 0.5px;'>
+			                REPORT
+			            </div>
+			            <div style='font-size: 26px; font-weight: 700; line-height: 1;'>
+			                Comparison - Parts on Open Orders
+			            </div>
+			        </div>
+			    </div>
+			
+			    <!-- Right side: Welcome & Date -->
+			    <div style='text-align: right;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 6px;'>
+			            " & TimeGreeting & ", " & WelcomeName & "
+			        </div>
+			        <div style='font-size: 16px; font-weight: 600;'>
+			            📅 " & DateDisplay & "
+			        </div>
+			    </div>
+			</div>
+			"
+		displayFolder: UI & Navigation
+		lineageTag: a653ca06-d2ea-4ccc-9b58-73e5ada50b57
+
+	measure 'Page 4 - Score Card - Header' =
+			
+			// Get user name
+			VAR _User = USERPRINCIPALNAME()
+			VAR _Position = SEARCH("@", _User, 1)
+			VAR _Name = LEFT(_User, _Position - 1)
+			VAR _FirstLetter = UPPER(LEFT(_Name, 1))
+			VAR _LastName = MID(_Name, 2, LEN(_Name) - 1)
+			VAR _FormattedLastName =
+			    UPPER(LEFT(_LastName, 1)) & LOWER(MID(_LastName, 2, LEN(_LastName)))
+			VAR WelcomeName = _FirstLetter & "." & _FormattedLastName
+			
+			// Get current date/time info
+			VAR CurrentDate = TODAY()
+			VAR DateDisplay = FORMAT(CurrentDate, "MMM D, YYYY")
+			VAR CurrentHour = HOUR(NOW())
+			VAR TimeGreeting =
+			    IF(CurrentHour < 12, "Good Morning",
+			    IF(CurrentHour < 17, "Good Afternoon",
+			    "Good Evening"))
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    height: 85px;
+			    padding: 15px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 10px;
+			    color: white;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-between;
+			    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    box-sizing: border-box;
+			'>
+			    <!-- Left side: Dashboard Title -->
+			    <div style='display: flex; align-items: center; gap: 15px;'>
+			        <!-- Home icon -->
+			        <div style='
+			            width: 40px;
+			            height: 40px;
+			            background: rgba(255,255,255,0.15);
+			            border-radius: 8px;
+			            display: flex;
+			            align-items: center;
+			            justify-content: center;
+			            font-size: 20px;
+			        '>
+			            🏠
+			        </div>
+			
+			        <!-- Title -->
+			        <div>
+			            <div style='font-size: 12px; opacity: 0.85; margin-bottom: 4px; letter-spacing: 0.5px;'>
+			                REPORT
+			            </div>
+			            <div style='font-size: 26px; font-weight: 700; line-height: 1;'>
+			                Score Card - Charts - Parts on Open Orders
+			            </div>
+			        </div>
+			    </div>
+			
+			    <!-- Right side: Welcome & Date -->
+			    <div style='text-align: right;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 6px;'>
+			            " & TimeGreeting & ", " & WelcomeName & "
+			        </div>
+			        <div style='font-size: 16px; font-weight: 600;'>
+			            📅 " & DateDisplay & "
+			        </div>
+			    </div>
+			</div>
+			"
+		displayFolder: UI & Navigation
+		lineageTag: 1b140cc5-bb01-4cad-a1d0-30da53d09123
+
+	measure 'KPI SVG - Parts On Order vs Back Order (Modern)' = ```
+			
+			-- ============================================================
+			-- VALUES & CALCULATIONS
+			-- ============================================================
+			VAR TotalParts = [# Parts On Order]
+			VAR BackOrderParts = [# on Back Order]
+			VAR NotBackOrderParts = TotalParts - BackOrderParts
+			
+			VAR pct_BackOrder = DIVIDE(BackOrderParts, TotalParts, 0)
+			VAR pct_NotBackOrder = DIVIDE(NotBackOrderParts, TotalParts, 0)
+			
+			-- ============================================================
+			-- DIMENSIONS & LAYOUT
+			-- ============================================================
+			VAR BarWidth = 320
+			VAR BarHeight = 26          // Slightly taller for better presence
+			VAR SVG_Height = 68
+			VAR BarCornerRadius = 4     // Rounded corners
+			
+			-- ============================================================
+			-- COLOR SCHEME (Modern, Sophisticated)
+			-- ============================================================
+			VAR NotBO_Color = "#4A5B73"           // Deep slate blue
+			VAR NotBO_Color_Dark = "#3d4d5f"      // Darker shade for gradient
+			VAR BO_Color = IF(pct_BackOrder > 0.1, "#D45353", "#808080")
+			VAR BO_Color_Dark = IF(pct_BackOrder > 0.1, "#b93f3f", "#6b6b6b")
+			
+			VAR LabelColor = "#2c3e50"            // Dark charcoal for text
+			VAR PercentColor = "#FFFFFF"          // White for bar percentages
+			
+			-- ============================================================
+			-- FORMATTING
+			-- ============================================================
+			VAR TitleText = "Not Backordered vs. Backordered (Parts)"
+			VAR NotBO_Label = FORMAT(NotBackOrderParts, "#,0")
+			VAR BO_Label = FORMAT(BackOrderParts, "#,0")
+			VAR NotBO_Percent = FORMAT(pct_NotBackOrder, "0%")
+			VAR BO_Percent = FORMAT(pct_BackOrder, "0%")
+			
+			-- ============================================================
+			-- POSITIONING
+			-- ============================================================
+			VAR Title_Y = 14
+			VAR Labels_Y = 32
+			VAR Bar_Y = 40
+			VAR PercentLabel_Y = Bar_Y + (BarHeight / 2) + 6
+			
+			VAR NotBO_Width = ROUND(pct_NotBackOrder * BarWidth, 0)
+			VAR BO_Width = BarWidth - NotBO_Width
+			
+			VAR NotBO_Percent_X = NotBO_Width / 2
+			VAR BO_Percent_X = NotBO_Width + (BO_Width / 2)
+			
+			-- ============================================================
+			-- SVG GENERATION (Modern Styled)
+			-- ============================================================
+			VAR SVG =
+			    "<svg width='" & BarWidth & "' height='" & SVG_Height & "' xmlns='http://www.w3.org/2000/svg'>" &
+			        
+			        // ===== GRADIENTS & FILTERS (Add depth) =====
+			        "<defs>" &
+			            // Not Backordered gradient
+			            "<linearGradient id='notBOGrad' x1='0%' y1='0%' x2='0%' y2='100%'>" &
+			                "<stop offset='0%' style='stop-color:" & NotBO_Color & ";stop-opacity:1' />" &
+			                "<stop offset='100%' style='stop-color:" & NotBO_Color_Dark & ";stop-opacity:1' />" &
+			            "</linearGradient>" &
+			            // Backordered gradient
+			            "<linearGradient id='boGrad' x1='0%' y1='0%' x2='0%' y2='100%'>" &
+			                "<stop offset='0%' style='stop-color:" & BO_Color & ";stop-opacity:1' />" &
+			                "<stop offset='100%' style='stop-color:" & BO_Color_Dark & ";stop-opacity:1' />" &
+			            "</linearGradient>" &
+			            // Subtle shadow
+			            "<filter id='shadow' x='-20%' y='-20%' width='140%' height='140%'>" &
+			                "<feGaussianBlur in='SourceAlpha' stdDeviation='1'/>" &
+			                "<feOffset dx='0' dy='1' result='offsetblur'/>" &
+			                "<feComponentTransfer><feFuncA type='linear' slope='0.2'/></feComponentTransfer>" &
+			                "<feMerge><feMergeNode/><feMergeNode in='SourceGraphic'/></feMerge>" &
+			            "</filter>" &
+			        "</defs>" &
+			        
+			        // ===== TITLE =====
+			        "<text x='" & (BarWidth / 2) & "' y='" & Title_Y & "' " &
+			              "text-anchor='middle' font-size='12' fill='" & LabelColor & "' " &
+			              "font-family='Segoe UI, Arial' font-weight='600'>" &
+			            TitleText &
+			        "</text>" &
+			        
+			        // ===== COUNT LABELS =====
+			        "<text x='12' y='" & Labels_Y & "' " &
+			              "text-anchor='start' font-size='11' fill='" & LabelColor & "' " &
+			              "font-family='Segoe UI, Arial' font-weight='600'>" &
+			            NotBO_Label &
+			        "</text>" &
+			        "<text x='" & (BarWidth - 12) & "' y='" & Labels_Y & "' " &
+			              "text-anchor='end' font-size='11' fill='" & LabelColor & "' " &
+			              "font-family='Segoe UI, Arial' font-weight='600'>" &
+			            BO_Label &
+			        "</text>" &
+			        
+			        // ===== BAR CONTAINER WITH SHADOW =====
+			        "<g filter='url(#shadow)'>" &
+			            // Not Backordered segment (with gradient & rounded left corners)
+			            "<rect x='0' y='" & Bar_Y & "' width='" & NotBO_Width & "' height='" & BarHeight & "' " &
+			                  "fill='url(#notBOGrad)' " &
+			                  "rx='" & BarCornerRadius & "' ry='" & BarCornerRadius & "'/>" &
+			            // Cover right corners if BO segment exists
+			            IF(BO_Width > 0, 
+			                "<rect x='" & (NotBO_Width - BarCornerRadius) & "' y='" & Bar_Y & "' " &
+			                      "width='" & BarCornerRadius & "' height='" & BarHeight & "' " &
+			                      "fill='url(#notBOGrad)' />", 
+			                ""
+			            ) &
+			            // Backordered segment (with gradient & rounded right corners)
+			            IF(BO_Width > 0,
+			                "<rect x='" & NotBO_Width & "' y='" & Bar_Y & "' width='" & BO_Width & "' height='" & BarHeight & "' " &
+			                      "fill='url(#boGrad)' " &
+			                      "rx='" & BarCornerRadius & "' ry='" & BarCornerRadius & "'/>" &
+			                // Cover left corners
+			                "<rect x='" & NotBO_Width & "' y='" & Bar_Y & "' " &
+			                      "width='" & BarCornerRadius & "' height='" & BarHeight & "' " &
+			                      "fill='url(#boGrad)' />",
+			                ""
+			            ) &
+			        "</g>" &
+			        
+			        // ===== PERCENTAGE LABELS =====
+			        IF(NotBO_Width > 40,  // Only show if segment is wide enough
+			            "<text x='" & NotBO_Percent_X & "' y='" & PercentLabel_Y & "' " &
+			                  "text-anchor='middle' font-size='14' fill='" & PercentColor & "' " &
+			                  "font-family='Segoe UI, Arial' font-weight='700'>" &
+			                NotBO_Percent &
+			            "</text>",
+			            ""
+			        ) &
+			        IF(BO_Width > 40,  // Only show if segment is wide enough
+			            "<text x='" & BO_Percent_X & "' y='" & PercentLabel_Y & "' " &
+			                  "text-anchor='middle' font-size='14' fill='" & PercentColor & "' " &
+			                  "font-family='Segoe UI, Arial' font-weight='700'>" &
+			                BO_Percent &
+			            "</text>",
+			            ""
+			        ) &
+			    "</svg>"
+			
+			RETURN "data:image/svg+xml;utf8," & SVG
+			```
+		displayFolder: Core Metrics
+		lineageTag: 7a65cb42-8496-46f1-9af6-6855c706ef53
+		dataCategory: ImageUrl
+
+	measure 'KPI SVG - Order Total vs Backordered (Modern)' = ```
+			
+			-- ============================================================
+			-- VALUES & CALCULATIONS
+			-- ============================================================
+			VAR TotalOrderValue = [Order Total]
+			VAR BackorderedValue = SUM(Fact_Parts_Open_Tickets[$$_BackOrdered])
+			VAR AvailableValue = SUM(Fact_Parts_Open_Tickets[$$_Available])
+			
+			VAR pct_Backordered = DIVIDE(BackorderedValue, TotalOrderValue, 0)
+			VAR pct_Available = DIVIDE(AvailableValue, TotalOrderValue, 0)
+			
+			-- ============================================================
+			-- DIMENSIONS & LAYOUT
+			-- ============================================================
+			VAR BarWidth = 320
+			VAR BarHeight = 26
+			VAR SVG_Height = 68
+			VAR BarCornerRadius = 4
+			
+			-- ============================================================
+			-- COLOR SCHEME (Modern, Sophisticated)
+			-- ============================================================
+			VAR Available_Color = "#4A5B73"
+			VAR Available_Color_Dark = "#3d4d5f"
+			VAR BO_Color = IF(pct_Backordered > 0.1, "#D45353", "#808080")
+			VAR BO_Color_Dark = IF(pct_Backordered > 0.1, "#b93f3f", "#6b6b6b")
+			
+			VAR LabelColor = "#2c3e50"
+			VAR PercentColor = "#FFFFFF"
+			
+			-- ============================================================
+			-- FORMATTING
+			-- ============================================================
+			VAR TitleText = "Not Backordered vs. Backordered"
+			VAR Available_Label = FORMAT(AvailableValue, "$#,0")
+			VAR BO_Label = FORMAT(BackorderedValue, "$#,0")
+			VAR Available_Percent = FORMAT(pct_Available, "0%")
+			VAR BO_Percent = FORMAT(pct_Backordered, "0%")
+			
+			-- ============================================================
+			-- POSITIONING
+			-- ============================================================
+			VAR Title_Y = 14
+			VAR Labels_Y = 32
+			VAR Bar_Y = 40
+			VAR PercentLabel_Y = Bar_Y + (BarHeight / 2) + 6
+			
+			VAR Available_Width = ROUND(pct_Available * BarWidth, 0)
+			VAR BO_Width = BarWidth - Available_Width
+			
+			VAR Available_Percent_X = Available_Width / 2
+			VAR BO_Percent_X = Available_Width + (BO_Width / 2)
+			
+			-- ============================================================
+			-- SVG GENERATION (Modern Styled)
+			-- ============================================================
+			VAR SVG =
+			    "<svg width='" & BarWidth & "' height='" & SVG_Height & "' xmlns='http://www.w3.org/2000/svg'>" &
+			        
+			        // ===== GRADIENTS & FILTERS =====
+			        "<defs>" &
+			            "<linearGradient id='availGrad' x1='0%' y1='0%' x2='0%' y2='100%'>" &
+			                "<stop offset='0%' style='stop-color:" & Available_Color & ";stop-opacity:1' />" &
+			                "<stop offset='100%' style='stop-color:" & Available_Color_Dark & ";stop-opacity:1' />" &
+			            "</linearGradient>" &
+			            "<linearGradient id='boGrad' x1='0%' y1='0%' x2='0%' y2='100%'>" &
+			                "<stop offset='0%' style='stop-color:" & BO_Color & ";stop-opacity:1' />" &
+			                "<stop offset='100%' style='stop-color:" & BO_Color_Dark & ";stop-opacity:1' />" &
+			            "</linearGradient>" &
+			            "<filter id='shadow' x='-20%' y='-20%' width='140%' height='140%'>" &
+			                "<feGaussianBlur in='SourceAlpha' stdDeviation='1'/>" &
+			                "<feOffset dx='0' dy='1' result='offsetblur'/>" &
+			                "<feComponentTransfer><feFuncA type='linear' slope='0.2'/></feComponentTransfer>" &
+			                "<feMerge><feMergeNode/><feMergeNode in='SourceGraphic'/></feMerge>" &
+			            "</filter>" &
+			        "</defs>" &
+			        
+			        // ===== TITLE =====
+			        "<text x='" & (BarWidth / 2) & "' y='" & Title_Y & "' " &
+			              "text-anchor='middle' font-size='12' fill='" & LabelColor & "' " &
+			              "font-family='Segoe UI, Arial' font-weight='600'>" &
+			            TitleText &
+			        "</text>" &
+			        
+			        // ===== DOLLAR LABELS =====
+			        "<text x='12' y='" & Labels_Y & "' " &
+			              "text-anchor='start' font-size='11' fill='" & LabelColor & "' " &
+			              "font-family='Segoe UI, Arial' font-weight='600'>" &
+			            Available_Label &
+			        "</text>" &
+			        "<text x='" & (BarWidth - 12) & "' y='" & Labels_Y & "' " &
+			              "text-anchor='end' font-size='11' fill='" & LabelColor & "' " &
+			              "font-family='Segoe UI, Arial' font-weight='600'>" &
+			            BO_Label &
+			        "</text>" &
+			        
+			        // ===== BAR CONTAINER WITH SHADOW =====
+			        "<g filter='url(#shadow)'>" &
+			            "<rect x='0' y='" & Bar_Y & "' width='" & Available_Width & "' height='" & BarHeight & "' " &
+			                  "fill='url(#availGrad)' " &
+			                  "rx='" & BarCornerRadius & "' ry='" & BarCornerRadius & "'/>" &
+			            IF(BO_Width > 0, 
+			                "<rect x='" & (Available_Width - BarCornerRadius) & "' y='" & Bar_Y & "' " &
+			                      "width='" & BarCornerRadius & "' height='" & BarHeight & "' " &
+			                      "fill='url(#availGrad)' />", 
+			                ""
+			            ) &
+			            IF(BO_Width > 0,
+			                "<rect x='" & Available_Width & "' y='" & Bar_Y & "' width='" & BO_Width & "' height='" & BarHeight & "' " &
+			                      "fill='url(#boGrad)' " &
+			                      "rx='" & BarCornerRadius & "' ry='" & BarCornerRadius & "'/>" &
+			                "<rect x='" & Available_Width & "' y='" & Bar_Y & "' " &
+			                      "width='" & BarCornerRadius & "' height='" & BarHeight & "' " &
+			                      "fill='url(#boGrad)' />",
+			                ""
+			            ) &
+			        "</g>" &
+			        
+			        // ===== PERCENTAGE LABELS =====
+			        IF(Available_Width > 40,
+			            "<text x='" & Available_Percent_X & "' y='" & PercentLabel_Y & "' " &
+			                  "text-anchor='middle' font-size='14' fill='" & PercentColor & "' " &
+			                  "font-family='Segoe UI, Arial' font-weight='700'>" &
+			                Available_Percent &
+			            "</text>",
+			            ""
+			        ) &
+			        IF(BO_Width > 40,
+			            "<text x='" & BO_Percent_X & "' y='" & PercentLabel_Y & "' " &
+			                  "text-anchor='middle' font-size='14' fill='" & PercentColor & "' " &
+			                  "font-family='Segoe UI, Arial' font-weight='700'>" &
+			                BO_Percent &
+			            "</text>",
+			            ""
+			        ) &
+			    "</svg>"
+			
+			RETURN "data:image/svg+xml;utf8," & SVG
+			```
+		displayFolder: Core Metrics
+		lineageTag: 69bdcd50-d6fb-4b19-a0c7-9487f92d4f3d
+
+	measure 'KPI SVG - Line Count vs Backordered Line (Modern)' = ```
+			
+			-- ============================================================
+			-- VALUES & CALCULATIONS
+			-- ============================================================
+			VAR TotalLines = [Parts Line Count]
+			VAR BackorderedLines = CALCULATE(
+			    COUNT(Fact_Parts_Open_Tickets_Details[Part_No]),
+			    Fact_Parts_Open_Tickets_Details[BackOrdered_QTY] > 0
+			)
+			VAR NotBackorderedLines = TotalLines - BackorderedLines
+			
+			VAR pct_Backordered = DIVIDE(BackorderedLines, TotalLines, 0)
+			VAR pct_NotBackordered = DIVIDE(NotBackorderedLines, TotalLines, 0)
+			
+			-- ============================================================
+			-- DIMENSIONS & LAYOUT
+			-- ============================================================
+			VAR BarWidth = 320
+			VAR BarHeight = 26
+			VAR SVG_Height = 68
+			VAR BarCornerRadius = 4
+			
+			-- ============================================================
+			-- COLOR SCHEME (Modern, Sophisticated)
+			-- ============================================================
+			VAR NotBO_Color = "#4A5B73"
+			VAR NotBO_Color_Dark = "#3d4d5f"
+			VAR BO_Color = IF(pct_Backordered > 0.1, "#D45353", "#808080")
+			VAR BO_Color_Dark = IF(pct_Backordered > 0.1, "#b93f3f", "#6b6b6b")
+			
+			VAR LabelColor = "#2c3e50"
+			VAR PercentColor = "#FFFFFF"
+			
+			-- ============================================================
+			-- FORMATTING
+			-- ============================================================
+			VAR TitleText = "Not Backordered vs. Backordered (Lines)"
+			VAR NotBO_Label = FORMAT(NotBackorderedLines, "#,0")
+			VAR BO_Label = FORMAT(BackorderedLines, "#,0")
+			VAR NotBO_Percent = FORMAT(pct_NotBackordered, "0%")
+			VAR BO_Percent = FORMAT(pct_Backordered, "0%")
+			
+			-- ============================================================
+			-- POSITIONING
+			-- ============================================================
+			VAR Title_Y = 14
+			VAR Labels_Y = 32
+			VAR Bar_Y = 40
+			VAR PercentLabel_Y = Bar_Y + (BarHeight / 2) + 6
+			
+			VAR NotBO_Width = ROUND(pct_NotBackordered * BarWidth, 0)
+			VAR BO_Width = BarWidth - NotBO_Width
+			
+			VAR NotBO_Percent_X = NotBO_Width / 2
+			VAR BO_Percent_X = NotBO_Width + (BO_Width / 2)
+			
+			-- ============================================================
+			-- SVG GENERATION (Modern Styled)
+			-- ============================================================
+			VAR SVG =
+			    "<svg width='" & BarWidth & "' height='" & SVG_Height & "' xmlns='http://www.w3.org/2000/svg'>" &
+			        
+			        // ===== GRADIENTS & FILTERS =====
+			        "<defs>" &
+			            "<linearGradient id='notBOGrad' x1='0%' y1='0%' x2='0%' y2='100%'>" &
+			                "<stop offset='0%' style='stop-color:" & NotBO_Color & ";stop-opacity:1' />" &
+			                "<stop offset='100%' style='stop-color:" & NotBO_Color_Dark & ";stop-opacity:1' />" &
+			            "</linearGradient>" &
+			            "<linearGradient id='boGrad' x1='0%' y1='0%' x2='0%' y2='100%'>" &
+			                "<stop offset='0%' style='stop-color:" & BO_Color & ";stop-opacity:1' />" &
+			                "<stop offset='100%' style='stop-color:" & BO_Color_Dark & ";stop-opacity:1' />" &
+			            "</linearGradient>" &
+			            "<filter id='shadow' x='-20%' y='-20%' width='140%' height='140%'>" &
+			                "<feGaussianBlur in='SourceAlpha' stdDeviation='1'/>" &
+			                "<feOffset dx='0' dy='1' result='offsetblur'/>" &
+			                "<feComponentTransfer><feFuncA type='linear' slope='0.2'/></feComponentTransfer>" &
+			                "<feMerge><feMergeNode/><feMergeNode in='SourceGraphic'/></feMerge>" &
+			            "</filter>" &
+			        "</defs>" &
+			        
+			        // ===== TITLE =====
+			        "<text x='" & (BarWidth / 2) & "' y='" & Title_Y & "' " &
+			              "text-anchor='middle' font-size='12' fill='" & LabelColor & "' " &
+			              "font-family='Segoe UI, Arial' font-weight='600'>" &
+			            TitleText &
+			        "</text>" &
+			        
+			        // ===== COUNT LABELS =====
+			        "<text x='12' y='" & Labels_Y & "' " &
+			              "text-anchor='start' font-size='11' fill='" & LabelColor & "' " &
+			              "font-family='Segoe UI, Arial' font-weight='600'>" &
+			            NotBO_Label &
+			        "</text>" &
+			        "<text x='" & (BarWidth - 12) & "' y='" & Labels_Y & "' " &
+			              "text-anchor='end' font-size='11' fill='" & LabelColor & "' " &
+			              "font-family='Segoe UI, Arial' font-weight='600'>" &
+			            BO_Label &
+			        "</text>" &
+			        
+			        // ===== BAR CONTAINER WITH SHADOW =====
+			        "<g filter='url(#shadow)'>" &
+			            "<rect x='0' y='" & Bar_Y & "' width='" & NotBO_Width & "' height='" & BarHeight & "' " &
+			                  "fill='url(#notBOGrad)' " &
+			                  "rx='" & BarCornerRadius & "' ry='" & BarCornerRadius & "'/>" &
+			            IF(BO_Width > 0, 
+			                "<rect x='" & (NotBO_Width - BarCornerRadius) & "' y='" & Bar_Y & "' " &
+			                      "width='" & BarCornerRadius & "' height='" & BarHeight & "' " &
+			                      "fill='url(#notBOGrad)' />", 
+			                ""
+			            ) &
+			            IF(BO_Width > 0,
+			                "<rect x='" & NotBO_Width & "' y='" & Bar_Y & "' width='" & BO_Width & "' height='" & BarHeight & "' " &
+			                      "fill='url(#boGrad)' " &
+			                      "rx='" & BarCornerRadius & "' ry='" & BarCornerRadius & "'/>" &
+			                "<rect x='" & NotBO_Width & "' y='" & Bar_Y & "' " &
+			                      "width='" & BarCornerRadius & "' height='" & BarHeight & "' " &
+			                      "fill='url(#boGrad)' />",
+			                ""
+			            ) &
+			        "</g>" &
+			        
+			        // ===== PERCENTAGE LABELS =====
+			        IF(NotBO_Width > 40,
+			            "<text x='" & NotBO_Percent_X & "' y='" & PercentLabel_Y & "' " &
+			                  "text-anchor='middle' font-size='14' fill='" & PercentColor & "' " &
+			                  "font-family='Segoe UI, Arial' font-weight='700'>" &
+			                NotBO_Percent &
+			            "</text>",
+			            ""
+			        ) &
+			        IF(BO_Width > 40,
+			            "<text x='" & BO_Percent_X & "' y='" & PercentLabel_Y & "' " &
+			                  "text-anchor='middle' font-size='14' fill='" & PercentColor & "' " &
+			                  "font-family='Segoe UI, Arial' font-weight='700'>" &
+			                BO_Percent &
+			            "</text>",
+			            ""
+			        ) &
+			    "</svg>"
+			
+			RETURN "data:image/svg+xml;utf8," & SVG
+			```
+		displayFolder: Core Metrics
+		lineageTag: d8d5bfac-20cd-4c52-bece-cb40e587dc0d
+
+	measure 'KPI SVG - Orders vs Orders with BO Parts (Modern)' = ```
+			
+			-- ============================================================
+			-- VALUES & CALCULATIONS
+			-- ============================================================
+			VAR TotalOrders = [Total # of Orders]
+			VAR OrdersWithBO = CALCULATE(
+			    [Total # of Orders],
+			    Fact_Parts_Open_Tickets[#_On_Back_Order] > 0
+			)
+			VAR OrdersWithoutBO = TotalOrders - OrdersWithBO
+			
+			VAR pct_WithBO = DIVIDE(OrdersWithBO, TotalOrders, 0)
+			VAR pct_WithoutBO = DIVIDE(OrdersWithoutBO, TotalOrders, 0)
+			
+			-- ============================================================
+			-- DIMENSIONS & LAYOUT
+			-- ============================================================
+			VAR BarWidth = 320
+			VAR BarHeight = 26
+			VAR SVG_Height = 68
+			VAR BarCornerRadius = 4
+			
+			-- ============================================================
+			-- COLOR SCHEME (Modern, Sophisticated)
+			-- ============================================================
+			VAR NotBO_Color = "#4A5B73"
+			VAR NotBO_Color_Dark = "#3d4d5f"
+			VAR BO_Color = IF(pct_WithBO > 0.1, "#D45353", "#808080")
+			VAR BO_Color_Dark = IF(pct_WithBO > 0.1, "#b93f3f", "#6b6b6b")
+			
+			VAR LabelColor = "#2c3e50"
+			VAR PercentColor = "#FFFFFF"
+			
+			-- ============================================================
+			-- FORMATTING
+			-- ============================================================
+			VAR TitleText = "Orders without BO Part vs. with BO Part"
+			VAR NotBO_Label = FORMAT(OrdersWithoutBO, "#,0")
+			VAR BO_Label = FORMAT(OrdersWithBO, "#,0")
+			VAR NotBO_Percent = FORMAT(pct_WithoutBO, "0%")
+			VAR BO_Percent = FORMAT(pct_WithBO, "0%")
+			
+			-- ============================================================
+			-- POSITIONING
+			-- ============================================================
+			VAR Title_Y = 14
+			VAR Labels_Y = 32
+			VAR Bar_Y = 40
+			VAR PercentLabel_Y = Bar_Y + (BarHeight / 2) + 6
+			
+			VAR NotBO_Width = ROUND(pct_WithoutBO * BarWidth, 0)
+			VAR BO_Width = BarWidth - NotBO_Width
+			
+			VAR NotBO_Percent_X = NotBO_Width / 2
+			VAR BO_Percent_X = NotBO_Width + (BO_Width / 2)
+			
+			-- ============================================================
+			-- SVG GENERATION (Modern Styled)
+			-- ============================================================
+			VAR SVG =
+			    "<svg width='" & BarWidth & "' height='" & SVG_Height & "' xmlns='http://www.w3.org/2000/svg'>" &
+			        
+			        // ===== GRADIENTS & FILTERS =====
+			        "<defs>" &
+			            "<linearGradient id='notBOGrad' x1='0%' y1='0%' x2='0%' y2='100%'>" &
+			                "<stop offset='0%' style='stop-color:" & NotBO_Color & ";stop-opacity:1' />" &
+			                "<stop offset='100%' style='stop-color:" & NotBO_Color_Dark & ";stop-opacity:1' />" &
+			            "</linearGradient>" &
+			            "<linearGradient id='boGrad' x1='0%' y1='0%' x2='0%' y2='100%'>" &
+			                "<stop offset='0%' style='stop-color:" & BO_Color & ";stop-opacity:1' />" &
+			                "<stop offset='100%' style='stop-color:" & BO_Color_Dark & ";stop-opacity:1' />" &
+			            "</linearGradient>" &
+			            "<filter id='shadow' x='-20%' y='-20%' width='140%' height='140%'>" &
+			                "<feGaussianBlur in='SourceAlpha' stdDeviation='1'/>" &
+			                "<feOffset dx='0' dy='1' result='offsetblur'/>" &
+			                "<feComponentTransfer><feFuncA type='linear' slope='0.2'/></feComponentTransfer>" &
+			                "<feMerge><feMergeNode/><feMergeNode in='SourceGraphic'/></feMerge>" &
+			            "</filter>" &
+			        "</defs>" &
+			        
+			        // ===== TITLE =====
+			        "<text x='" & (BarWidth / 2) & "' y='" & Title_Y & "' " &
+			              "text-anchor='middle' font-size='12' fill='" & LabelColor & "' " &
+			              "font-family='Segoe UI, Arial' font-weight='600'>" &
+			            TitleText &
+			        "</text>" &
+			        
+			        // ===== COUNT LABELS =====
+			        "<text x='12' y='" & Labels_Y & "' " &
+			              "text-anchor='start' font-size='11' fill='" & LabelColor & "' " &
+			              "font-family='Segoe UI, Arial' font-weight='600'>" &
+			            NotBO_Label &
+			        "</text>" &
+			        "<text x='" & (BarWidth - 12) & "' y='" & Labels_Y & "' " &
+			              "text-anchor='end' font-size='11' fill='" & LabelColor & "' " &
+			              "font-family='Segoe UI, Arial' font-weight='600'>" &
+			            BO_Label &
+			        "</text>" &
+			        
+			        // ===== BAR CONTAINER WITH SHADOW =====
+			        "<g filter='url(#shadow)'>" &
+			            "<rect x='0' y='" & Bar_Y & "' width='" & NotBO_Width & "' height='" & BarHeight & "' " &
+			                  "fill='url(#notBOGrad)' " &
+			                  "rx='" & BarCornerRadius & "' ry='" & BarCornerRadius & "'/>" &
+			            IF(BO_Width > 0, 
+			                "<rect x='" & (NotBO_Width - BarCornerRadius) & "' y='" & Bar_Y & "' " &
+			                      "width='" & BarCornerRadius & "' height='" & BarHeight & "' " &
+			                      "fill='url(#notBOGrad)' />", 
+			                ""
+			            ) &
+			            IF(BO_Width > 0,
+			                "<rect x='" & NotBO_Width & "' y='" & Bar_Y & "' width='" & BO_Width & "' height='" & BarHeight & "' " &
+			                      "fill='url(#boGrad)' " &
+			                      "rx='" & BarCornerRadius & "' ry='" & BarCornerRadius & "'/>" &
+			                "<rect x='" & NotBO_Width & "' y='" & Bar_Y & "' " &
+			                      "width='" & BarCornerRadius & "' height='" & BarHeight & "' " &
+			                      "fill='url(#boGrad)' />",
+			                ""
+			            ) &
+			        "</g>" &
+			        
+			        // ===== PERCENTAGE LABELS =====
+			        IF(NotBO_Width > 40,
+			            "<text x='" & NotBO_Percent_X & "' y='" & PercentLabel_Y & "' " &
+			                  "text-anchor='middle' font-size='14' fill='" & PercentColor & "' " &
+			                  "font-family='Segoe UI, Arial' font-weight='700'>" &
+			                NotBO_Percent &
+			            "</text>",
+			            ""
+			        ) &
+			        IF(BO_Width > 40,
+			            "<text x='" & BO_Percent_X & "' y='" & PercentLabel_Y & "' " &
+			                  "text-anchor='middle' font-size='14' fill='" & PercentColor & "' " &
+			                  "font-family='Segoe UI, Arial' font-weight='700'>" &
+			                BO_Percent &
+			            "</text>",
+			            ""
+			        ) &
+			    "</svg>"
+			
+			RETURN "data:image/svg+xml;utf8," & SVG
+			```
+		displayFolder: Core Metrics
+		lineageTag: 59d536cd-6dc0-48ff-89f5-3c3f3a7f20ca
+
+	measure 'HTML - Parts Overview Dashboard' =
+			
+			"<!DOCTYPE html><html><head><meta charset='UTF-8'>" & [_HTML_CSS] & "</head><body>" & [_HTML_Bucket1] & [_HTML_Bucket2] & [_HTML_Bucket3] & [_HTML_Bucket4] & [_HTML_Bucket5] & [_HTML_Bucket6] & "</body></html>"
+		displayFolder: Core Metrics
+		lineageTag: aa86e6cf-a2cf-4c93-8ff4-d6704b75754e
+
+	measure 'Available $$' = SUM(Fact_Parts_Open_Tickets[$$_Available])
+		displayFolder: Core Metrics
+		lineageTag: b736fa61-01d4-448d-80b3-ecc78f7b7384
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Parts Available' = [# Parts On Order] - [# on Back Order]
+		displayFolder: Core Metrics
+		lineageTag: cc8835da-fb46-4058-8379-246ed0390136
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Lines Available' = ```
+			
+			    CALCULATE(
+			        COUNTROWS(Fact_Parts_Open_Tickets_Details),
+			        OR(
+			            Fact_Parts_Open_Tickets_Details[BackOrdered_QTY] = 0,
+			            ISBLANK(Fact_Parts_Open_Tickets_Details[BackOrdered_QTY])
+			        )
+			    )
+			```
+		formatString: 0
+		displayFolder: Core Metrics
+		lineageTag: 5ad0c02b-01f1-422f-b316-206bb96a2ba9
+
+	measure 'Lines BackOrdered' = ```
+			
+			    CALCULATE(
+			        COUNTROWS(Fact_Parts_Open_Tickets_Details),
+			        Fact_Parts_Open_Tickets_Details[BackOrdered_QTY] > 0
+			    )
+			```
+		formatString: 0
+		displayFolder: Core Metrics
+		lineageTag: 3806aed2-c239-4af5-988a-2884eef703f6
+
+	measure 'Orders without BO' = ```
+			
+			    CALCULATE(
+			        [Total # of Orders],
+			        OR(
+			            Fact_Parts_Open_Tickets[#_On_Back_Order] = 0,
+			            ISBLANK(Fact_Parts_Open_Tickets[#_On_Back_Order])
+			        )
+			    )
+			```
+		formatString: 0
+		displayFolder: Core Metrics
+		lineageTag: b086f10f-1357-4d3d-8651-19c7be0452a6
+
+	measure 'Orders with BO' = ```
+			
+			    CALCULATE(
+			        [Total # of Orders],
+			        Fact_Parts_Open_Tickets[#_On_Back_Order] > 0
+			    )
+			```
+		formatString: 0
+		displayFolder: Core Metrics
+		lineageTag: 0ad63ec5-22f8-4f1d-9209-aa58576d8d44
+
+	measure _HTML_CSS = "<style>* { margin: 0; padding: 0; box-sizing: border-box; }body { font-family: Segoe UI, Arial, sans-serif; background: #f5f7fa; padding: 12px; }.aging-bucket { background: white; border-radius: 8px; margin-bottom: 16px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }.bucket-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 2px solid #f0f0f0; }.bucket-title { font-size: 18px; font-weight: 700; letter-spacing: 0.5px; }.bucket-avg { font-size: 13px; color: #666; font-weight: 600; background: #f5f5f5; padding: 4px 12px; border-radius: 12px; }.metrics-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }.metric-card { background: #fafafa; border-radius: 6px; padding: 14px; border: 1px solid #e8e8e8; text-align: center; }.metric-value { font-size: 24px; font-weight: 700; color: #2c3e50; margin-bottom: 4px; }.metric-label { font-size: 15px; font-weight: 600; color: #666; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }.metric-sublabel { font-size: 12px; color: #888; margin-bottom: 6px; font-weight: 600; }.bar-labels { display: flex; justify-content: space-between; font-size: 10px; font-weight: 600; color: #444; margin-bottom: 4px; }.comparison-bar { display: flex; height: 26px; border-radius: 4px; overflow: hidden; box-shadow: inset 0 1px 3px rgba(0,0,0,0.1); }.bar-segment { display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: white; }.bar-good { background: linear-gradient(to bottom, #4A5B73, #3d4d5f); }.bar-warning { background: linear-gradient(to bottom, #D45353, #b93f3f); }.bar-neutral { background: linear-gradient(to bottom, #808080, #6b6b6b); }</style>"
+		displayFolder: Core Metrics
+		lineageTag: b6da1266-dd96-4147-a57f-fcc6e6e806cb
+
+	measure _HTML_Bucket1 =
+			
+			VAR Lbl = "90+ days"  // CHANGE FOR EACH: "90+ days", "61-90 days", "31-60 days", "15-30 days", "8-14 days", "0-7 days"
+			VAR Clr = "#cf1322"   // CHANGE COLORS: #cf1322, #f5222d, #fa8c16, #faad14, #52c41a, #27ae60
+			VAR ClrLt = "#ffe0e0" // CHANGE LIGHT: #ffe0e0, #ffe6e6, #fff1e6, #fff7e6, #e6f7d9, #d5f4e6
+			VAR _Avg = CALCULATE([Average Days Open], Fact_Parts_Open_Tickets[Aging] = Lbl)
+			VAR OT = CALCULATE([Order Total], Fact_Parts_Open_Tickets[Aging] = Lbl)
+			VAR OA = CALCULATE([Available $$], Fact_Parts_Open_Tickets[Aging] = Lbl)
+			VAR OB = CALCULATE([Backordered $$], Fact_Parts_Open_Tickets[Aging] = Lbl)
+			VAR PT = CALCULATE([# Parts On Order], Fact_Parts_Open_Tickets[Aging] = Lbl)
+			VAR PA = CALCULATE([Parts Available], Fact_Parts_Open_Tickets[Aging] = Lbl)
+			VAR PB = CALCULATE([# on Back Order], Fact_Parts_Open_Tickets[Aging] = Lbl)
+			VAR LT = CALCULATE([Parts Line Count], Fact_Parts_Open_Tickets[Aging] = Lbl)
+			VAR LA = CALCULATE([Lines Available], Fact_Parts_Open_Tickets[Aging] = Lbl)
+			VAR LB = CALCULATE([Lines BackOrdered], Fact_Parts_Open_Tickets[Aging] = Lbl)
+			VAR OrT = CALCULATE([Total # of Orders], Fact_Parts_Open_Tickets[Aging] = Lbl)
+			VAR OrN = CALCULATE([Orders without BO], Fact_Parts_Open_Tickets[Aging] = Lbl)
+			VAR OrB = CALCULATE([Orders with BO], Fact_Parts_Open_Tickets[Aging] = Lbl)
+			VAR OPctA = DIVIDE(OA, OT, 0) * 100
+			VAR OPctB = DIVIDE(OB, OT, 0) * 100
+			VAR PPctA = DIVIDE(PA, PT, 0) * 100
+			VAR PPctB = DIVIDE(PB, PT, 0) * 100
+			VAR LPctA = DIVIDE(LA, LT, 0) * 100
+			VAR LPctB = DIVIDE(LB, LT, 0) * 100
+			VAR OrPctN = DIVIDE(OrN, OrT, 0) * 100
+			VAR OrPctB = DIVIDE(OrB, OrT, 0) * 100
+			RETURN "<div class='aging-bucket' style='border-left: 4px solid " & Clr & "; background: linear-gradient(to right, " & ClrLt & " 0%, #ffffff 3%);'><div class='bucket-header'><div class='bucket-title' style='color: " & Clr & ";'>" & Lbl & "</div><div class='bucket-avg'>Avg: " & FORMAT(_Avg, "0.0") & " days</div></div><div class='metrics-grid'><div class='metric-card'><div class='metric-value'>" & FORMAT(OT, "$#,##0") & "</div><div class='metric-label'>Order Total</div><div class='metric-sublabel'>Not Backordered vs. Backordered</div><div class='bar-labels'><span>" & FORMAT(OA, "$#,##0") & "</span><span>" & FORMAT(OB, "$#,##0") & "</span></div><div class='comparison-bar'><div class='bar-segment bar-good' style='width: " & OPctA & "%;'>" & IF(OPctA > 15, FORMAT(OPctA/100, "0%"), "") & "</div><div class='bar-segment " & IF(OPctB > 10, "bar-warning", "bar-neutral") & "' style='width: " & OPctB & "%;'>" & IF(OPctB > 15, FORMAT(OPctB/100, "0%"), "") & "</div></div></div><div class='metric-card'><div class='metric-value'>" & FORMAT(PT, "#,##0") & "</div><div class='metric-label'># Parts on Order</div><div class='metric-sublabel'>Not Backordered vs. Backordered (Parts)</div><div class='bar-labels'><span>" & FORMAT(PA, "#,##0") & "</span><span>" & FORMAT(PB, "#,##0") & "</span></div><div class='comparison-bar'><div class='bar-segment bar-good' style='width: " & PPctA & "%;'>" & IF(PPctA > 15, FORMAT(PPctA/100, "0%"), "") & "</div><div class='bar-segment " & IF(PPctB > 10, "bar-warning", "bar-neutral") & "' style='width: " & PPctB & "%;'>" & IF(PPctB > 15, FORMAT(PPctB/100, "0%"), "") & "</div></div></div><div class='metric-card'><div class='metric-value'>" & FORMAT(LT, "#,##0") & "</div><div class='metric-label'>Parts Line Count</div><div class='metric-sublabel'>Not Backordered vs. Backordered (Lines)</div><div class='bar-labels'><span>" & FORMAT(LA, "#,##0") & "</span><span>" & FORMAT(LB, "#,##0") & "</span></div><div class='comparison-bar'><div class='bar-segment bar-good' style='width: " & LPctA & "%;'>" & IF(LPctA > 15, FORMAT(LPctA/100, "0%"), "") & "</div><div class='bar-segment " & IF(LPctB > 10, "bar-warning", "bar-neutral") & "' style='width: " & LPctB & "%;'>" & IF(LPctB > 15, FORMAT(LPctB/100, "0%"), "") & "</div></div></div><div class='metric-card'><div class='metric-value'>" & FORMAT(OrT, "#,##0") & "</div><div class='metric-label'>Total # of Orders</div><div class='metric-sublabel'>Orders without BO Part vs. with BO Part</div><div class='bar-labels'><span>" & FORMAT(OrN, "#,##0") & "</span><span>" & FORMAT(OrB, "#,##0") & "</span></div><div class='comparison-bar'><div class='bar-segment bar-good' style='width: " & OrPctN & "%;'>" & IF(OrPctN > 15, FORMAT(OrPctN/100, "0%"), "") & "</div><div class='bar-segment " & IF(OrPctB > 10, "bar-warning", "bar-neutral") & "' style='width: " & OrPctB & "%;'>" & IF(OrPctB > 15, FORMAT(OrPctB/100, "0%"), "") & "</div></div></div></div></div>"
+		displayFolder: Core Metrics
+		lineageTag: 927781df-7939-4d77-9271-4ea8da16909e
+
+	measure _HTML_Bucket2 =
+			
+			VAR Lbl = "61-90 days"  // CHANGE FOR EACH: "90+ days", "61-90 days", "31-60 days", "15-30 days", "8-14 days", "0-7 days"
+			VAR Clr = "#f5222d"   // CHANGE COLORS: #cf1322, #f5222d, #fa8c16, #faad14, #52c41a, #27ae60
+			VAR ClrLt = "#ffe6e6" // CHANGE LIGHT: #ffe0e0, #ffe6e6, #fff1e6, #fff7e6, #e6f7d9, #d5f4e6
+			VAR _Avg = CALCULATE([Average Days Open], Fact_Parts_Open_Tickets[Aging] = Lbl)
+			VAR OT = CALCULATE([Order Total], Fact_Parts_Open_Tickets[Aging] = Lbl)
+			VAR OA = CALCULATE([Available $$], Fact_Parts_Open_Tickets[Aging] = Lbl)
+			VAR OB = CALCULATE([Backordered $$], Fact_Parts_Open_Tickets[Aging] = Lbl)
+			VAR PT = CALCULATE([# Parts On Order], Fact_Parts_Open_Tickets[Aging] = Lbl)
+			VAR PA = CALCULATE([Parts Available], Fact_Parts_Open_Tickets[Aging] = Lbl)
+			VAR PB = CALCULATE([# on Back Order], Fact_Parts_Open_Tickets[Aging] = Lbl)
+			VAR LT = CALCULATE([Parts Line Count], Fact_Parts_Open_Tickets[Aging] = Lbl)
+			VAR LA = CALCULATE([Lines Available], Fact_Parts_Open_Tickets[Aging] = Lbl)
+			VAR LB = CALCULATE([Lines BackOrdered], Fact_Parts_Open_Tickets[Aging] = Lbl)
+			VAR OrT = CALCULATE([Total # of Orders], Fact_Parts_Open_Tickets[Aging] = Lbl)
+			VAR OrN = CALCULATE([Orders without BO], Fact_Parts_Open_Tickets[Aging] = Lbl)
+			VAR OrB = CALCULATE([Orders with BO], Fact_Parts_Open_Tickets[Aging] = Lbl)
+			VAR OPctA = DIVIDE(OA, OT, 0) * 100
+			VAR OPctB = DIVIDE(OB, OT, 0) * 100
+			VAR PPctA = DIVIDE(PA, PT, 0) * 100
+			VAR PPctB = DIVIDE(PB, PT, 0) * 100
+			VAR LPctA = DIVIDE(LA, LT, 0) * 100
+			VAR LPctB = DIVIDE(LB, LT, 0) * 100
+			VAR OrPctN = DIVIDE(OrN, OrT, 0) * 100
+			VAR OrPctB = DIVIDE(OrB, OrT, 0) * 100
+			RETURN "<div class='aging-bucket' style='border-left: 4px solid " & Clr & "; background: linear-gradient(to right, " & ClrLt & " 0%, #ffffff 3%);'><div class='bucket-header'><div class='bucket-title' style='color: " & Clr & ";'>" & Lbl & "</div><div class='bucket-avg'>Avg: " & FORMAT(_Avg, "0.0") & " days</div></div><div class='metrics-grid'><div class='metric-card'><div class='metric-value'>" & FORMAT(OT, "$#,##0") & "</div><div class='metric-label'>Order Total</div><div class='metric-sublabel'>Not Backordered vs. Backordered</div><div class='bar-labels'><span>" & FORMAT(OA, "$#,##0") & "</span><span>" & FORMAT(OB, "$#,##0") & "</span></div><div class='comparison-bar'><div class='bar-segment bar-good' style='width: " & OPctA & "%;'>" & IF(OPctA > 15, FORMAT(OPctA/100, "0%"), "") & "</div><div class='bar-segment " & IF(OPctB > 10, "bar-warning", "bar-neutral") & "' style='width: " & OPctB & "%;'>" & IF(OPctB > 15, FORMAT(OPctB/100, "0%"), "") & "</div></div></div><div class='metric-card'><div class='metric-value'>" & FORMAT(PT, "#,##0") & "</div><div class='metric-label'># Parts on Order</div><div class='metric-sublabel'>Not Backordered vs. Backordered (Parts)</div><div class='bar-labels'><span>" & FORMAT(PA, "#,##0") & "</span><span>" & FORMAT(PB, "#,##0") & "</span></div><div class='comparison-bar'><div class='bar-segment bar-good' style='width: " & PPctA & "%;'>" & IF(PPctA > 15, FORMAT(PPctA/100, "0%"), "") & "</div><div class='bar-segment " & IF(PPctB > 10, "bar-warning", "bar-neutral") & "' style='width: " & PPctB & "%;'>" & IF(PPctB > 15, FORMAT(PPctB/100, "0%"), "") & "</div></div></div><div class='metric-card'><div class='metric-value'>" & FORMAT(LT, "#,##0") & "</div><div class='metric-label'>Parts Line Count</div><div class='metric-sublabel'>Not Backordered vs. Backordered (Lines)</div><div class='bar-labels'><span>" & FORMAT(LA, "#,##0") & "</span><span>" & FORMAT(LB, "#,##0") & "</span></div><div class='comparison-bar'><div class='bar-segment bar-good' style='width: " & LPctA & "%;'>" & IF(LPctA > 15, FORMAT(LPctA/100, "0%"), "") & "</div><div class='bar-segment " & IF(LPctB > 10, "bar-warning", "bar-neutral") & "' style='width: " & LPctB & "%;'>" & IF(LPctB > 15, FORMAT(LPctB/100, "0%"), "") & "</div></div></div><div class='metric-card'><div class='metric-value'>" & FORMAT(OrT, "#,##0") & "</div><div class='metric-label'>Total # of Orders</div><div class='metric-sublabel'>Orders without BO Part vs. with BO Part</div><div class='bar-labels'><span>" & FORMAT(OrN, "#,##0") & "</span><span>" & FORMAT(OrB, "#,##0") & "</span></div><div class='comparison-bar'><div class='bar-segment bar-good' style='width: " & OrPctN & "%;'>" & IF(OrPctN > 15, FORMAT(OrPctN/100, "0%"), "") & "</div><div class='bar-segment " & IF(OrPctB > 10, "bar-warning", "bar-neutral") & "' style='width: " & OrPctB & "%;'>" & IF(OrPctB > 15, FORMAT(OrPctB/100, "0%"), "") & "</div></div></div></div></div>"
+		displayFolder: Core Metrics
+		lineageTag: e640f62c-dc7e-43a0-b1e9-a9ad8af790b6
+
+	measure _HTML_Bucket3 =
+			
+			VAR Lbl = "31-60 days"  // CHANGE FOR EACH: "90+ days", "61-90 days", "31-60 days", "15-30 days", "8-14 days", "0-7 days"
+			VAR Clr = "#fa8c16"   // CHANGE COLORS: #cf1322, #f5222d, #fa8c16, #faad14, #52c41a, #27ae60
+			VAR ClrLt = "#fff1e6" // CHANGE LIGHT: #ffe0e0, #ffe6e6, #fff1e6, #fff7e6, #e6f7d9, #d5f4e6
+			VAR _Avg = CALCULATE([Average Days Open], Fact_Parts_Open_Tickets[Aging] = Lbl)
+			VAR OT = CALCULATE([Order Total], Fact_Parts_Open_Tickets[Aging] = Lbl)
+			VAR OA = CALCULATE([Available $$], Fact_Parts_Open_Tickets[Aging] = Lbl)
+			VAR OB = CALCULATE([Backordered $$], Fact_Parts_Open_Tickets[Aging] = Lbl)
+			VAR PT = CALCULATE([# Parts On Order], Fact_Parts_Open_Tickets[Aging] = Lbl)
+			VAR PA = CALCULATE([Parts Available], Fact_Parts_Open_Tickets[Aging] = Lbl)
+			VAR PB = CALCULATE([# on Back Order], Fact_Parts_Open_Tickets[Aging] = Lbl)
+			VAR LT = CALCULATE([Parts Line Count], Fact_Parts_Open_Tickets[Aging] = Lbl)
+			VAR LA = CALCULATE([Lines Available], Fact_Parts_Open_Tickets[Aging] = Lbl)
+			VAR LB = CALCULATE([Lines BackOrdered], Fact_Parts_Open_Tickets[Aging] = Lbl)
+			VAR OrT = CALCULATE([Total # of Orders], Fact_Parts_Open_Tickets[Aging] = Lbl)
+			VAR OrN = CALCULATE([Orders without BO], Fact_Parts_Open_Tickets[Aging] = Lbl)
+			VAR OrB = CALCULATE([Orders with BO], Fact_Parts_Open_Tickets[Aging] = Lbl)
+			VAR OPctA = DIVIDE(OA, OT, 0) * 100
+			VAR OPctB = DIVIDE(OB, OT, 0) * 100
+			VAR PPctA = DIVIDE(PA, PT, 0) * 100
+			VAR PPctB = DIVIDE(PB, PT, 0) * 100
+			VAR LPctA = DIVIDE(LA, LT, 0) * 100
+			VAR LPctB = DIVIDE(LB, LT, 0) * 100
+			VAR OrPctN = DIVIDE(OrN, OrT, 0) * 100
+			VAR OrPctB = DIVIDE(OrB, OrT, 0) * 100
+			RETURN "<div class='aging-bucket' style='border-left: 4px solid " & Clr & "; background: linear-gradient(to right, " & ClrLt & " 0%, #ffffff 3%);'><div class='bucket-header'><div class='bucket-title' style='color: " & Clr & ";'>" & Lbl & "</div><div class='bucket-avg'>Avg: " & FORMAT(_Avg, "0.0") & " days</div></div><div class='metrics-grid'><div class='metric-card'><div class='metric-value'>" & FORMAT(OT, "$#,##0") & "</div><div class='metric-label'>Order Total</div><div class='metric-sublabel'>Not Backordered vs. Backordered</div><div class='bar-labels'><span>" & FORMAT(OA, "$#,##0") & "</span><span>" & FORMAT(OB, "$#,##0") & "</span></div><div class='comparison-bar'><div class='bar-segment bar-good' style='width: " & OPctA & "%;'>" & IF(OPctA > 15, FORMAT(OPctA/100, "0%"), "") & "</div><div class='bar-segment " & IF(OPctB > 10, "bar-warning", "bar-neutral") & "' style='width: " & OPctB & "%;'>" & IF(OPctB > 15, FORMAT(OPctB/100, "0%"), "") & "</div></div></div><div class='metric-card'><div class='metric-value'>" & FORMAT(PT, "#,##0") & "</div><div class='metric-label'># Parts on Order</div><div class='metric-sublabel'>Not Backordered vs. Backordered (Parts)</div><div class='bar-labels'><span>" & FORMAT(PA, "#,##0") & "</span><span>" & FORMAT(PB, "#,##0") & "</span></div><div class='comparison-bar'><div class='bar-segment bar-good' style='width: " & PPctA & "%;'>" & IF(PPctA > 15, FORMAT(PPctA/100, "0%"), "") & "</div><div class='bar-segment " & IF(PPctB > 10, "bar-warning", "bar-neutral") & "' style='width: " & PPctB & "%;'>" & IF(PPctB > 15, FORMAT(PPctB/100, "0%"), "") & "</div></div></div><div class='metric-card'><div class='metric-value'>" & FORMAT(LT, "#,##0") & "</div><div class='metric-label'>Parts Line Count</div><div class='metric-sublabel'>Not Backordered vs. Backordered (Lines)</div><div class='bar-labels'><span>" & FORMAT(LA, "#,##0") & "</span><span>" & FORMAT(LB, "#,##0") & "</span></div><div class='comparison-bar'><div class='bar-segment bar-good' style='width: " & LPctA & "%;'>" & IF(LPctA > 15, FORMAT(LPctA/100, "0%"), "") & "</div><div class='bar-segment " & IF(LPctB > 10, "bar-warning", "bar-neutral") & "' style='width: " & LPctB & "%;'>" & IF(LPctB > 15, FORMAT(LPctB/100, "0%"), "") & "</div></div></div><div class='metric-card'><div class='metric-value'>" & FORMAT(OrT, "#,##0") & "</div><div class='metric-label'>Total # of Orders</div><div class='metric-sublabel'>Orders without BO Part vs. with BO Part</div><div class='bar-labels'><span>" & FORMAT(OrN, "#,##0") & "</span><span>" & FORMAT(OrB, "#,##0") & "</span></div><div class='comparison-bar'><div class='bar-segment bar-good' style='width: " & OrPctN & "%;'>" & IF(OrPctN > 15, FORMAT(OrPctN/100, "0%"), "") & "</div><div class='bar-segment " & IF(OrPctB > 10, "bar-warning", "bar-neutral") & "' style='width: " & OrPctB & "%;'>" & IF(OrPctB > 15, FORMAT(OrPctB/100, "0%"), "") & "</div></div></div></div></div>"
+		displayFolder: Core Metrics
+		lineageTag: 34f2bd96-5dfe-4446-af20-dbea3d25f87e
+
+	measure _HTML_Bucket4 =
+			
+			VAR Lbl = "15-30 days"  // CHANGE FOR EACH: "90+ days", "61-90 days", "31-60 days", "15-30 days", "8-14 days", "0-7 days"
+			VAR Clr = "#faad14"   // CHANGE COLORS: #cf1322, #f5222d, #fa8c16, #faad14, #52c41a, #27ae60
+			VAR ClrLt = "#fff7e6" // CHANGE LIGHT: #ffe0e0, #ffe6e6, #fff1e6, #fff7e6, #e6f7d9, #d5f4e6
+			VAR _Avg = CALCULATE([Average Days Open], Fact_Parts_Open_Tickets[Aging] = Lbl)
+			VAR OT = CALCULATE([Order Total], Fact_Parts_Open_Tickets[Aging] = Lbl)
+			VAR OA = CALCULATE([Available $$], Fact_Parts_Open_Tickets[Aging] = Lbl)
+			VAR OB = CALCULATE([Backordered $$], Fact_Parts_Open_Tickets[Aging] = Lbl)
+			VAR PT = CALCULATE([# Parts On Order], Fact_Parts_Open_Tickets[Aging] = Lbl)
+			VAR PA = CALCULATE([Parts Available], Fact_Parts_Open_Tickets[Aging] = Lbl)
+			VAR PB = CALCULATE([# on Back Order], Fact_Parts_Open_Tickets[Aging] = Lbl)
+			VAR LT = CALCULATE([Parts Line Count], Fact_Parts_Open_Tickets[Aging] = Lbl)
+			VAR LA = CALCULATE([Lines Available], Fact_Parts_Open_Tickets[Aging] = Lbl)
+			VAR LB = CALCULATE([Lines BackOrdered], Fact_Parts_Open_Tickets[Aging] = Lbl)
+			VAR OrT = CALCULATE([Total # of Orders], Fact_Parts_Open_Tickets[Aging] = Lbl)
+			VAR OrN = CALCULATE([Orders without BO], Fact_Parts_Open_Tickets[Aging] = Lbl)
+			VAR OrB = CALCULATE([Orders with BO], Fact_Parts_Open_Tickets[Aging] = Lbl)
+			VAR OPctA = DIVIDE(OA, OT, 0) * 100
+			VAR OPctB = DIVIDE(OB, OT, 0) * 100
+			VAR PPctA = DIVIDE(PA, PT, 0) * 100
+			VAR PPctB = DIVIDE(PB, PT, 0) * 100
+			VAR LPctA = DIVIDE(LA, LT, 0) * 100
+			VAR LPctB = DIVIDE(LB, LT, 0) * 100
+			VAR OrPctN = DIVIDE(OrN, OrT, 0) * 100
+			VAR OrPctB = DIVIDE(OrB, OrT, 0) * 100
+			RETURN "<div class='aging-bucket' style='border-left: 4px solid " & Clr & "; background: linear-gradient(to right, " & ClrLt & " 0%, #ffffff 3%);'><div class='bucket-header'><div class='bucket-title' style='color: " & Clr & ";'>" & Lbl & "</div><div class='bucket-avg'>Avg: " & FORMAT(_Avg, "0.0") & " days</div></div><div class='metrics-grid'><div class='metric-card'><div class='metric-value'>" & FORMAT(OT, "$#,##0") & "</div><div class='metric-label'>Order Total</div><div class='metric-sublabel'>Not Backordered vs. Backordered</div><div class='bar-labels'><span>" & FORMAT(OA, "$#,##0") & "</span><span>" & FORMAT(OB, "$#,##0") & "</span></div><div class='comparison-bar'><div class='bar-segment bar-good' style='width: " & OPctA & "%;'>" & IF(OPctA > 15, FORMAT(OPctA/100, "0%"), "") & "</div><div class='bar-segment " & IF(OPctB > 10, "bar-warning", "bar-neutral") & "' style='width: " & OPctB & "%;'>" & IF(OPctB > 15, FORMAT(OPctB/100, "0%"), "") & "</div></div></div><div class='metric-card'><div class='metric-value'>" & FORMAT(PT, "#,##0") & "</div><div class='metric-label'># Parts on Order</div><div class='metric-sublabel'>Not Backordered vs. Backordered (Parts)</div><div class='bar-labels'><span>" & FORMAT(PA, "#,##0") & "</span><span>" & FORMAT(PB, "#,##0") & "</span></div><div class='comparison-bar'><div class='bar-segment bar-good' style='width: " & PPctA & "%;'>" & IF(PPctA > 15, FORMAT(PPctA/100, "0%"), "") & "</div><div class='bar-segment " & IF(PPctB > 10, "bar-warning", "bar-neutral") & "' style='width: " & PPctB & "%;'>" & IF(PPctB > 15, FORMAT(PPctB/100, "0%"), "") & "</div></div></div><div class='metric-card'><div class='metric-value'>" & FORMAT(LT, "#,##0") & "</div><div class='metric-label'>Parts Line Count</div><div class='metric-sublabel'>Not Backordered vs. Backordered (Lines)</div><div class='bar-labels'><span>" & FORMAT(LA, "#,##0") & "</span><span>" & FORMAT(LB, "#,##0") & "</span></div><div class='comparison-bar'><div class='bar-segment bar-good' style='width: " & LPctA & "%;'>" & IF(LPctA > 15, FORMAT(LPctA/100, "0%"), "") & "</div><div class='bar-segment " & IF(LPctB > 10, "bar-warning", "bar-neutral") & "' style='width: " & LPctB & "%;'>" & IF(LPctB > 15, FORMAT(LPctB/100, "0%"), "") & "</div></div></div><div class='metric-card'><div class='metric-value'>" & FORMAT(OrT, "#,##0") & "</div><div class='metric-label'>Total # of Orders</div><div class='metric-sublabel'>Orders without BO Part vs. with BO Part</div><div class='bar-labels'><span>" & FORMAT(OrN, "#,##0") & "</span><span>" & FORMAT(OrB, "#,##0") & "</span></div><div class='comparison-bar'><div class='bar-segment bar-good' style='width: " & OrPctN & "%;'>" & IF(OrPctN > 15, FORMAT(OrPctN/100, "0%"), "") & "</div><div class='bar-segment " & IF(OrPctB > 10, "bar-warning", "bar-neutral") & "' style='width: " & OrPctB & "%;'>" & IF(OrPctB > 15, FORMAT(OrPctB/100, "0%"), "") & "</div></div></div></div></div>"
+		displayFolder: Core Metrics
+		lineageTag: 40666d0a-2245-4032-8a09-add262662c42
+
+	measure _HTML_Bucket5 =
+			
+			VAR Lbl = "8-14 days"  // CHANGE FOR EACH: "90+ days", "61-90 days", "31-60 days", "15-30 days", "8-14 days", "0-7 days"
+			VAR Clr = "#52c41a"   // CHANGE COLORS: #cf1322, #f5222d, #fa8c16, #faad14, #52c41a, #27ae60
+			VAR ClrLt = "#e6f7d9" // CHANGE LIGHT: #ffe0e0, #ffe6e6, #fff1e6, #fff7e6, #e6f7d9, #d5f4e6
+			VAR _Avg = CALCULATE([Average Days Open], Fact_Parts_Open_Tickets[Aging] = Lbl)
+			VAR OT = CALCULATE([Order Total], Fact_Parts_Open_Tickets[Aging] = Lbl)
+			VAR OA = CALCULATE([Available $$], Fact_Parts_Open_Tickets[Aging] = Lbl)
+			VAR OB = CALCULATE([Backordered $$], Fact_Parts_Open_Tickets[Aging] = Lbl)
+			VAR PT = CALCULATE([# Parts On Order], Fact_Parts_Open_Tickets[Aging] = Lbl)
+			VAR PA = CALCULATE([Parts Available], Fact_Parts_Open_Tickets[Aging] = Lbl)
+			VAR PB = CALCULATE([# on Back Order], Fact_Parts_Open_Tickets[Aging] = Lbl)
+			VAR LT = CALCULATE([Parts Line Count], Fact_Parts_Open_Tickets[Aging] = Lbl)
+			VAR LA = CALCULATE([Lines Available], Fact_Parts_Open_Tickets[Aging] = Lbl)
+			VAR LB = CALCULATE([Lines BackOrdered], Fact_Parts_Open_Tickets[Aging] = Lbl)
+			VAR OrT = CALCULATE([Total # of Orders], Fact_Parts_Open_Tickets[Aging] = Lbl)
+			VAR OrN = CALCULATE([Orders without BO], Fact_Parts_Open_Tickets[Aging] = Lbl)
+			VAR OrB = CALCULATE([Orders with BO], Fact_Parts_Open_Tickets[Aging] = Lbl)
+			VAR OPctA = DIVIDE(OA, OT, 0) * 100
+			VAR OPctB = DIVIDE(OB, OT, 0) * 100
+			VAR PPctA = DIVIDE(PA, PT, 0) * 100
+			VAR PPctB = DIVIDE(PB, PT, 0) * 100
+			VAR LPctA = DIVIDE(LA, LT, 0) * 100
+			VAR LPctB = DIVIDE(LB, LT, 0) * 100
+			VAR OrPctN = DIVIDE(OrN, OrT, 0) * 100
+			VAR OrPctB = DIVIDE(OrB, OrT, 0) * 100
+			RETURN "<div class='aging-bucket' style='border-left: 4px solid " & Clr & "; background: linear-gradient(to right, " & ClrLt & " 0%, #ffffff 3%);'><div class='bucket-header'><div class='bucket-title' style='color: " & Clr & ";'>" & Lbl & "</div><div class='bucket-avg'>Avg: " & FORMAT(_Avg, "0.0") & " days</div></div><div class='metrics-grid'><div class='metric-card'><div class='metric-value'>" & FORMAT(OT, "$#,##0") & "</div><div class='metric-label'>Order Total</div><div class='metric-sublabel'>Not Backordered vs. Backordered</div><div class='bar-labels'><span>" & FORMAT(OA, "$#,##0") & "</span><span>" & FORMAT(OB, "$#,##0") & "</span></div><div class='comparison-bar'><div class='bar-segment bar-good' style='width: " & OPctA & "%;'>" & IF(OPctA > 15, FORMAT(OPctA/100, "0%"), "") & "</div><div class='bar-segment " & IF(OPctB > 10, "bar-warning", "bar-neutral") & "' style='width: " & OPctB & "%;'>" & IF(OPctB > 15, FORMAT(OPctB/100, "0%"), "") & "</div></div></div><div class='metric-card'><div class='metric-value'>" & FORMAT(PT, "#,##0") & "</div><div class='metric-label'># Parts on Order</div><div class='metric-sublabel'>Not Backordered vs. Backordered (Parts)</div><div class='bar-labels'><span>" & FORMAT(PA, "#,##0") & "</span><span>" & FORMAT(PB, "#,##0") & "</span></div><div class='comparison-bar'><div class='bar-segment bar-good' style='width: " & PPctA & "%;'>" & IF(PPctA > 15, FORMAT(PPctA/100, "0%"), "") & "</div><div class='bar-segment " & IF(PPctB > 10, "bar-warning", "bar-neutral") & "' style='width: " & PPctB & "%;'>" & IF(PPctB > 15, FORMAT(PPctB/100, "0%"), "") & "</div></div></div><div class='metric-card'><div class='metric-value'>" & FORMAT(LT, "#,##0") & "</div><div class='metric-label'>Parts Line Count</div><div class='metric-sublabel'>Not Backordered vs. Backordered (Lines)</div><div class='bar-labels'><span>" & FORMAT(LA, "#,##0") & "</span><span>" & FORMAT(LB, "#,##0") & "</span></div><div class='comparison-bar'><div class='bar-segment bar-good' style='width: " & LPctA & "%;'>" & IF(LPctA > 15, FORMAT(LPctA/100, "0%"), "") & "</div><div class='bar-segment " & IF(LPctB > 10, "bar-warning", "bar-neutral") & "' style='width: " & LPctB & "%;'>" & IF(LPctB > 15, FORMAT(LPctB/100, "0%"), "") & "</div></div></div><div class='metric-card'><div class='metric-value'>" & FORMAT(OrT, "#,##0") & "</div><div class='metric-label'>Total # of Orders</div><div class='metric-sublabel'>Orders without BO Part vs. with BO Part</div><div class='bar-labels'><span>" & FORMAT(OrN, "#,##0") & "</span><span>" & FORMAT(OrB, "#,##0") & "</span></div><div class='comparison-bar'><div class='bar-segment bar-good' style='width: " & OrPctN & "%;'>" & IF(OrPctN > 15, FORMAT(OrPctN/100, "0%"), "") & "</div><div class='bar-segment " & IF(OrPctB > 10, "bar-warning", "bar-neutral") & "' style='width: " & OrPctB & "%;'>" & IF(OrPctB > 15, FORMAT(OrPctB/100, "0%"), "") & "</div></div></div></div></div>"
+		displayFolder: Core Metrics
+		lineageTag: a3d64d40-6e05-4bad-8d20-e7b343326e0a
+
+	measure _HTML_Bucket6 =
+			
+			VAR Lbl = "0-7 days"  // CHANGE FOR EACH: "90+ days", "61-90 days", "31-60 days", "15-30 days", "8-14 days", "0-7 days"
+			VAR Clr = "#27ae60"   // CHANGE COLORS: #cf1322, #f5222d, #fa8c16, #faad14, #52c41a, #27ae60
+			VAR ClrLt = "#d5f4e6" // CHANGE LIGHT: #ffe0e0, #ffe6e6, #fff1e6, #fff7e6, #e6f7d9, #d5f4e6
+			VAR _Avg = CALCULATE([Average Days Open], Fact_Parts_Open_Tickets[Aging] = Lbl)
+			VAR OT = CALCULATE([Order Total], Fact_Parts_Open_Tickets[Aging] = Lbl)
+			VAR OA = CALCULATE([Available $$], Fact_Parts_Open_Tickets[Aging] = Lbl)
+			VAR OB = CALCULATE([Backordered $$], Fact_Parts_Open_Tickets[Aging] = Lbl)
+			VAR PT = CALCULATE([# Parts On Order], Fact_Parts_Open_Tickets[Aging] = Lbl)
+			VAR PA = CALCULATE([Parts Available], Fact_Parts_Open_Tickets[Aging] = Lbl)
+			VAR PB = CALCULATE([# on Back Order], Fact_Parts_Open_Tickets[Aging] = Lbl)
+			VAR LT = CALCULATE([Parts Line Count], Fact_Parts_Open_Tickets[Aging] = Lbl)
+			VAR LA = CALCULATE([Lines Available], Fact_Parts_Open_Tickets[Aging] = Lbl)
+			VAR LB = CALCULATE([Lines BackOrdered], Fact_Parts_Open_Tickets[Aging] = Lbl)
+			VAR OrT = CALCULATE([Total # of Orders], Fact_Parts_Open_Tickets[Aging] = Lbl)
+			VAR OrN = CALCULATE([Orders without BO], Fact_Parts_Open_Tickets[Aging] = Lbl)
+			VAR OrB = CALCULATE([Orders with BO], Fact_Parts_Open_Tickets[Aging] = Lbl)
+			VAR OPctA = DIVIDE(OA, OT, 0) * 100
+			VAR OPctB = DIVIDE(OB, OT, 0) * 100
+			VAR PPctA = DIVIDE(PA, PT, 0) * 100
+			VAR PPctB = DIVIDE(PB, PT, 0) * 100
+			VAR LPctA = DIVIDE(LA, LT, 0) * 100
+			VAR LPctB = DIVIDE(LB, LT, 0) * 100
+			VAR OrPctN = DIVIDE(OrN, OrT, 0) * 100
+			VAR OrPctB = DIVIDE(OrB, OrT, 0) * 100
+			RETURN "<div class='aging-bucket' style='border-left: 4px solid " & Clr & "; background: linear-gradient(to right, " & ClrLt & " 0%, #ffffff 3%);'><div class='bucket-header'><div class='bucket-title' style='color: " & Clr & ";'>" & Lbl & "</div><div class='bucket-avg'>Avg: " & FORMAT(_Avg, "0.0") & " days</div></div><div class='metrics-grid'><div class='metric-card'><div class='metric-value'>" & FORMAT(OT, "$#,##0") & "</div><div class='metric-label'>Order Total</div><div class='metric-sublabel'>Not Backordered vs. Backordered</div><div class='bar-labels'><span>" & FORMAT(OA, "$#,##0") & "</span><span>" & FORMAT(OB, "$#,##0") & "</span></div><div class='comparison-bar'><div class='bar-segment bar-good' style='width: " & OPctA & "%;'>" & IF(OPctA > 15, FORMAT(OPctA/100, "0%"), "") & "</div><div class='bar-segment " & IF(OPctB > 10, "bar-warning", "bar-neutral") & "' style='width: " & OPctB & "%;'>" & IF(OPctB > 15, FORMAT(OPctB/100, "0%"), "") & "</div></div></div><div class='metric-card'><div class='metric-value'>" & FORMAT(PT, "#,##0") & "</div><div class='metric-label'># Parts on Order</div><div class='metric-sublabel'>Not Backordered vs. Backordered (Parts)</div><div class='bar-labels'><span>" & FORMAT(PA, "#,##0") & "</span><span>" & FORMAT(PB, "#,##0") & "</span></div><div class='comparison-bar'><div class='bar-segment bar-good' style='width: " & PPctA & "%;'>" & IF(PPctA > 15, FORMAT(PPctA/100, "0%"), "") & "</div><div class='bar-segment " & IF(PPctB > 10, "bar-warning", "bar-neutral") & "' style='width: " & PPctB & "%;'>" & IF(PPctB > 15, FORMAT(PPctB/100, "0%"), "") & "</div></div></div><div class='metric-card'><div class='metric-value'>" & FORMAT(LT, "#,##0") & "</div><div class='metric-label'>Parts Line Count</div><div class='metric-sublabel'>Not Backordered vs. Backordered (Lines)</div><div class='bar-labels'><span>" & FORMAT(LA, "#,##0") & "</span><span>" & FORMAT(LB, "#,##0") & "</span></div><div class='comparison-bar'><div class='bar-segment bar-good' style='width: " & LPctA & "%;'>" & IF(LPctA > 15, FORMAT(LPctA/100, "0%"), "") & "</div><div class='bar-segment " & IF(LPctB > 10, "bar-warning", "bar-neutral") & "' style='width: " & LPctB & "%;'>" & IF(LPctB > 15, FORMAT(LPctB/100, "0%"), "") & "</div></div></div><div class='metric-card'><div class='metric-value'>" & FORMAT(OrT, "#,##0") & "</div><div class='metric-label'>Total # of Orders</div><div class='metric-sublabel'>Orders without BO Part vs. with BO Part</div><div class='bar-labels'><span>" & FORMAT(OrN, "#,##0") & "</span><span>" & FORMAT(OrB, "#,##0") & "</span></div><div class='comparison-bar'><div class='bar-segment bar-good' style='width: " & OrPctN & "%;'>" & IF(OrPctN > 15, FORMAT(OrPctN/100, "0%"), "") & "</div><div class='bar-segment " & IF(OrPctB > 10, "bar-warning", "bar-neutral") & "' style='width: " & OrPctB & "%;'>" & IF(OrPctB > 15, FORMAT(OrPctB/100, "0%"), "") & "</div></div></div></div></div>"
+		displayFolder: Core Metrics
+		lineageTag: 7f018eea-a907-45d2-87fc-789b3c083265
+
+	measure 'Hero Card - Parts Open Tickets' = ```
+			
+			VAR OrderTotal = [Order Total]
+			VAR PartsOnOrder = [# Parts On Order]
+			VAR LinesCount = [Line Count]
+			VAR TotalOrders = [Total # of Orders]
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    padding: 30px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 12px;
+			    box-shadow: 0 8px 24px rgba(0,0,0,0);
+			    color: white;
+			    height: 185px;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-around;
+			'>
+			    <!-- Section 1: Order Total -->
+			    <div style='text-align: center; flex: 1;'>
+			        <div style='font-size: 14px; opacity: 0.9; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px;'>
+			            Order Total
+			        </div>
+			        <div style='font-size: 64px; font-weight: 700; line-height: 1;'>
+			            " & FORMAT(OrderTotal, "$#,##0") & "
+			        </div>
+			        <div style='font-size: 16px; margin-top: 10px; opacity: 0.9;'>
+			            Total Parts Value
+			        </div>
+			    </div>
+			    
+			    <!-- Divider -->
+			    <div style='width: 2px; height: 120px; background: rgba(255,255,255,0.3); margin: 0 30px;'></div>
+			    
+			    <!-- Section 2: Total Parts on Order -->
+			    <div style='text-align: center; flex: 1;'>
+			        <div style='font-size: 14px; opacity: 0.9; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px;'>
+			            Total Parts on Order
+			        </div>
+			        <div style='font-size: 56px; font-weight: 700; line-height: 1;'>
+			            " & FORMAT(PartsOnOrder, "#,##0") & "
+			        </div>
+			        <div style='font-size: 16px; margin-top: 10px; opacity: 0.9;'>
+			            Parts Quantity
+			        </div>
+			    </div>
+			    
+			    <!-- Divider -->
+			    <div style='width: 2px; height: 120px; background: rgba(255,255,255,0.3); margin: 0 30px;'></div>
+			    
+			    <!-- Section 3: Parts Line Count -->
+			    <div style='text-align: center; flex: 1;'>
+			        <div style='font-size: 14px; opacity: 0.9; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px;'>
+			            Parts Line Count
+			        </div>
+			        <div style='font-size: 56px; font-weight: 700; line-height: 1;'>
+			            " & FORMAT(LinesCount, "#,##0") & "
+			        </div>
+			        <div style='font-size: 16px; margin-top: 10px; opacity: 0.9;'>
+			            Detail Lines
+			        </div>
+			    </div>
+			    
+			    <!-- Divider -->
+			    <div style='width: 2px; height: 120px; background: rgba(255,255,255,0.3); margin: 0 30px;'></div>
+			    
+			    <!-- Section 4: Total Orders -->
+			    <div style='text-align: center; flex: 1;'>
+			        <div style='font-size: 14px; opacity: 0.9; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px;'>
+			            Total Orders
+			        </div>
+			        <div style='font-size: 56px; font-weight: 700; line-height: 1;'>
+			            " & FORMAT(TotalOrders, "#,##0") & "
+			        </div>
+			        <div style='font-size: 16px; margin-top: 10px; opacity: 0.9;'>
+			            Open Tickets
+			        </div>
+			    </div>
+			</div>
+			"
+			```
+		displayFolder: Core Metrics
+		lineageTag: 694c9a63-5c85-44b7-9153-df1d784df5c9
+
+	measure 'Page 5 - Details DT - Header' =
+			
+			// Get user name
+			VAR _User = USERPRINCIPALNAME()
+			VAR _Position = SEARCH("@", _User, 1)
+			VAR _Name = LEFT(_User, _Position - 1)
+			VAR _FirstLetter = UPPER(LEFT(_Name, 1))
+			VAR _LastName = MID(_Name, 2, LEN(_Name) - 1)
+			VAR _FormattedLastName =
+			    UPPER(LEFT(_LastName, 1)) & LOWER(MID(_LastName, 2, LEN(_LastName)))
+			VAR WelcomeName = _FirstLetter & "." & _FormattedLastName
+			
+			// Get current date/time info
+			VAR CurrentDate = TODAY()
+			VAR DateDisplay = FORMAT(CurrentDate, "MMM D, YYYY")
+			VAR CurrentHour = HOUR(NOW())
+			VAR TimeGreeting =
+			    IF(CurrentHour < 12, "Good Morning",
+			    IF(CurrentHour < 17, "Good Afternoon",
+			    "Good Evening"))
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    height: 85px;
+			    padding: 15px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 10px;
+			    color: white;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-between;
+			    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    box-sizing: border-box;
+			'>
+			    <!-- Left side: Dashboard Title -->
+			    <div style='display: flex; align-items: center; gap: 15px;'>
+			        <!-- Home icon -->
+			        <div style='
+			            width: 40px;
+			            height: 40px;
+			            background: rgba(255,255,255,0.15);
+			            border-radius: 8px;
+			            display: flex;
+			            align-items: center;
+			            justify-content: center;
+			            font-size: 20px;
+			        '>
+			            🏠
+			        </div>
+			
+			        <!-- Title -->
+			        <div>
+			            <div style='font-size: 12px; opacity: 0.85; margin-bottom: 4px; letter-spacing: 0.5px;'>
+			                REPORT
+			            </div>
+			            <div style='font-size: 26px; font-weight: 700; line-height: 1;'>
+			                Details - Drill Through - Parts on Open Orders
+			            </div>
+			        </div>
+			    </div>
+			
+			    <!-- Right side: Welcome & Date -->
+			    <div style='text-align: right;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 6px;'>
+			            " & TimeGreeting & ", " & WelcomeName & "
+			        </div>
+			        <div style='font-size: 16px; font-weight: 600;'>
+			            📅 " & DateDisplay & "
+			        </div>
+			    </div>
+			</div>
+			"
+		displayFolder: UI & Navigation
+		lineageTag: 67ca4a1c-f128-4541-870e-9bd6b2b7b61d
+
+	measure 'Bar Color Order Count' =
+			
+			VAR ThisLocation =
+			    SELECTEDVALUE ( dim_BranchLocation[LocationID] )
+			VAR ThisOrderCount = [Order Count]
+			VAR MaxOrderCount =
+			    CALCULATE (
+			        MAXX ( VALUES ( dim_BranchLocation[LocationID] ), [Order Count] ),
+			        REMOVEFILTERS ( dim_BranchLocation )
+			    )
+			VAR MinOrderCount =
+			    CALCULATE (
+			        MINX ( VALUES ( dim_BranchLocation[LocationID] ), [Order Count] ),
+			        REMOVEFILTERS ( dim_BranchLocation )
+			    )
+			RETURN
+			    IF (
+			        ThisOrderCount = MaxOrderCount
+			            || ThisOrderCount = MinOrderCount,
+			        1,
+			        // Highlight
+			        0 // Grey
+			    )
+		formatString: 0
+		displayFolder: Core Metrics
+		lineageTag: fc24e71f-bc53-4b3f-bb77-975a1c8e8c3a
+
+	measure 'Bar Color Hex Order Total' = ```
+			
+			VAR ThisLocation =
+			    SELECTEDVALUE ( dim_BranchLocation[LocationID] )
+			VAR ThisOrderTotal = [Order Total]
+			VAR MaxOrderTotal =
+			    CALCULATE (
+			        MAXX ( VALUES ( dim_BranchLocation[LocationID] ), [Order Total] ),
+			        REMOVEFILTERS ( dim_BranchLocation )
+			    )
+			VAR MinOrderTotal =
+			    CALCULATE (
+			        MINX ( VALUES ( dim_BranchLocation[LocationID] ), [Order Total] ),
+			        REMOVEFILTERS ( dim_BranchLocation )
+			    )
+			RETURN
+			    IF (
+			        ThisOrderTotal = MaxOrderTotal
+			            || ThisOrderTotal = MinOrderTotal,
+			        1,
+			        // Highlight 
+			        0 // Grey
+			    )
+			```
+		formatString: 0
+		displayFolder: Core Metrics
+		lineageTag: 990ec5da-b5fd-46d7-82d6-0e081e453d99
+
+	measure 'Bar Color Hex Back Order' = ```
+			
+			VAR ThisLocation =
+			    SELECTEDVALUE ( dim_BranchLocation[LocationID] )
+			VAR ThisBackOrderCount = [# on Back Order]
+			VAR MaxBackOrder =
+			    CALCULATE (
+			        MAXX ( VALUES ( dim_BranchLocation[LocationID] ), [# on Back Order] ),
+			        REMOVEFILTERS ( dim_BranchLocation )
+			    )
+			VAR MinBackOrder =
+			    CALCULATE (
+			        MINX ( VALUES ( dim_BranchLocation[LocationID] ), [# on Back Order] ),
+			        REMOVEFILTERS ( dim_BranchLocation )
+			    )
+			RETURN
+			    IF (
+			        ThisBackOrderCount = MaxBackOrder
+			            || ThisBackOrderCount = MinBackOrder,
+			        1,
+			        // Highlight 
+			        0 // Grey
+			    )
+			```
+		formatString: 0
+		displayFolder: Core Metrics
+		lineageTag: fd9f4ff1-1001-4c69-9647-c9cb02ec8a40
+
+	measure 'Bar Color Hex $$ not BO' = ```
+			
+			VAR ThisLocation =
+			    SELECTEDVALUE ( dim_BranchLocation[LocationID] )
+			VAR ThisValue = [$$ not BO]
+			VAR MaxValue =
+			    CALCULATE (
+			        MAXX ( VALUES ( dim_BranchLocation[LocationID] ), [$$ not BO] ),
+			        REMOVEFILTERS ( dim_BranchLocation )
+			    )
+			VAR MinValue =
+			    CALCULATE (
+			        MINX ( VALUES ( dim_BranchLocation[LocationID] ), [$$ not BO] ),
+			        REMOVEFILTERS ( dim_BranchLocation )
+			    )
+			RETURN
+			    IF (
+			        ThisValue = MaxValue
+			            || ThisValue = MinValue,
+			        1,
+			        // Highlight 
+			        0 // Grey
+			    )
+			```
+		formatString: 0
+		displayFolder: Core Metrics
+		lineageTag: 408c2bd2-a5ba-44cd-90d0-55eb47996051
+
+	measure 'Hero Card - Parts Open Tickets V2' = ```
+			
+			VAR OrderTotal = [Order Total]
+			VAR OrderAvailable = [Available $$]
+			VAR OrderBackordered = [Backordered $$]
+			VAR OPctA = DIVIDE(OrderAvailable, OrderTotal, 0) * 100
+			VAR OPctB = DIVIDE(OrderBackordered, OrderTotal, 0) * 100
+			
+			VAR PartsOnOrder = [# Parts On Order]
+			VAR PartsAvailable = [Parts Available]
+			VAR PartsBackordered = [# on Back Order]
+			VAR PPctA = DIVIDE(PartsAvailable, PartsOnOrder, 0) * 100
+			VAR PPctB = DIVIDE(PartsBackordered, PartsOnOrder, 0) * 100
+			
+			VAR LinesCount = [Line Count]
+			VAR LinesAvailable = [Lines Available]
+			VAR LinesBackordered = [Lines BackOrdered]
+			VAR LPctA = DIVIDE(LinesAvailable, LinesCount, 0) * 100
+			VAR LPctB = DIVIDE(LinesBackordered, LinesCount, 0) * 100
+			
+			VAR TotalOrders = [Total # of Orders]
+			VAR OrdersNoBO = [Orders without BO]
+			VAR OrdersWithBO = [Orders with BO]
+			VAR OrPctN = DIVIDE(OrdersNoBO, TotalOrders, 0) * 100
+			VAR OrPctB = DIVIDE(OrdersWithBO, TotalOrders, 0) * 100
+			
+			RETURN
+			"
+			<style>
+			.comparison-bar { display: flex; height: 22px; border-radius: 4px; overflow: hidden; box-shadow: inset 0 1px 3px rgba(0,0,0,0.2); margin-top: 12px; }
+			.bar-segment { display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: white; }
+			.bar-good { background: linear-gradient(to bottom, #4A5B73, #3d4d5f); }
+			.bar-warning { background: linear-gradient(to bottom, #D45353, #b93f3f); }
+			.bar-neutral { background: linear-gradient(to bottom, #808080, #6b6b6b); }
+			.bar-labels { display: flex; justify-content: space-between; font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.9); margin-top: 8px; margin-bottom: 4px; }
+			</style>
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    padding: 30px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 12px;
+			    box-shadow: 0 8px 24px rgba(0,0,0,0);
+			    color: white;
+			    height: 240px;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-around;
+			'>
+			    <!-- Section 1: Order Total -->
+			    <div style='text-align: center; flex: 1;'>
+			        <div style='font-size: 14px; opacity: 0.9; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px;'>
+			            Order Total
+			        </div>
+			        <div style='font-size: 56px; font-weight: 700; line-height: 1;'>
+			            " & FORMAT(OrderTotal, "$#,##0") & "
+			        </div>
+			        <div style='font-size: 13px; margin-top: 8px; opacity: 0.85;'>
+			            Available vs. Backordered
+			        </div>
+			        <div class='bar-labels'>
+			            <span>" & FORMAT(OrderAvailable, "$#,##0") & "</span>
+			            <span>" & FORMAT(OrderBackordered, "$#,##0") & "</span>
+			        </div>
+			        <div class='comparison-bar'>
+			            <div class='bar-segment bar-good' style='width: " & OPctA & "%;'>
+			                " & IF(OPctA > 15, FORMAT(OPctA/100, "0%"), "") & "
+			            </div>
+			            <div class='bar-segment " & IF(OPctB > 10, "bar-warning", "bar-neutral") & "' style='width: " & OPctB & "%;'>
+			                " & IF(OPctB > 15, FORMAT(OPctB/100, "0%"), "") & "
+			            </div>
+			        </div>
+			    </div>
+			    
+			    <!-- Divider -->
+			    <div style='width: 2px; height: 160px; background: rgba(255,255,255,0.3); margin: 0 30px;'></div>
+			    
+			    <!-- Section 2: Total Parts on Order -->
+			    <div style='text-align: center; flex: 1;'>
+			        <div style='font-size: 14px; opacity: 0.9; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px;'>
+			            Total Parts on Order
+			        </div>
+			        <div style='font-size: 56px; font-weight: 700; line-height: 1;'>
+			            " & FORMAT(PartsOnOrder, "#,##0") & "
+			        </div>
+			        <div style='font-size: 13px; margin-top: 8px; opacity: 0.85;'>
+			            Available vs. Backordered (Parts)
+			        </div>
+			        <div class='bar-labels'>
+			            <span>" & FORMAT(PartsAvailable, "#,##0") & "</span>
+			            <span>" & FORMAT(PartsBackordered, "#,##0") & "</span>
+			        </div>
+			        <div class='comparison-bar'>
+			            <div class='bar-segment bar-good' style='width: " & PPctA & "%;'>
+			                " & IF(PPctA > 15, FORMAT(PPctA/100, "0%"), "") & "
+			            </div>
+			            <div class='bar-segment " & IF(PPctB > 10, "bar-warning", "bar-neutral") & "' style='width: " & PPctB & "%;'>
+			                " & IF(PPctB > 15, FORMAT(PPctB/100, "0%"), "") & "
+			            </div>
+			        </div>
+			    </div>
+			    
+			    <!-- Divider -->
+			    <div style='width: 2px; height: 160px; background: rgba(255,255,255,0.3); margin: 0 30px;'></div>
+			    
+			    <!-- Section 3: Parts Line Count -->
+			    <div style='text-align: center; flex: 1;'>
+			        <div style='font-size: 14px; opacity: 0.9; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px;'>
+			            Parts Line Count
+			        </div>
+			        <div style='font-size: 56px; font-weight: 700; line-height: 1;'>
+			            " & FORMAT(LinesCount, "#,##0") & "
+			        </div>
+			        <div style='font-size: 13px; margin-top: 8px; opacity: 0.85;'>
+			            Available vs. Backordered (Lines)
+			        </div>
+			        <div class='bar-labels'>
+			            <span>" & FORMAT(LinesAvailable, "#,##0") & "</span>
+			            <span>" & FORMAT(LinesBackordered, "#,##0") & "</span>
+			        </div>
+			        <div class='comparison-bar'>
+			            <div class='bar-segment bar-good' style='width: " & LPctA & "%;'>
+			                " & IF(LPctA > 15, FORMAT(LPctA/100, "0%"), "") & "
+			            </div>
+			            <div class='bar-segment " & IF(LPctB > 10, "bar-warning", "bar-neutral") & "' style='width: " & LPctB & "%;'>
+			                " & IF(LPctB > 15, FORMAT(LPctB/100, "0%"), "") & "
+			            </div>
+			        </div>
+			    </div>
+			    
+			    <!-- Divider -->
+			    <div style='width: 2px; height: 160px; background: rgba(255,255,255,0.3); margin: 0 30px;'></div>
+			    
+			    <!-- Section 4: Total Orders -->
+			    <div style='text-align: center; flex: 1;'>
+			        <div style='font-size: 14px; opacity: 0.9; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px;'>
+			            Total Orders
+			        </div>
+			        <div style='font-size: 56px; font-weight: 700; line-height: 1;'>
+			            " & FORMAT(TotalOrders, "#,##0") & "
+			        </div>
+			        <div style='font-size: 13px; margin-top: 8px; opacity: 0.85;'>
+			            Without BO vs. With BO Parts
+			        </div>
+			        <div class='bar-labels'>
+			            <span>" & FORMAT(OrdersNoBO, "#,##0") & "</span>
+			            <span>" & FORMAT(OrdersWithBO, "#,##0") & "</span>
+			        </div>
+			        <div class='comparison-bar'>
+			            <div class='bar-segment bar-good' style='width: " & OrPctN & "%;'>
+			                " & IF(OrPctN > 15, FORMAT(OrPctN/100, "0%"), "") & "
+			            </div>
+			            <div class='bar-segment " & IF(OrPctB > 10, "bar-warning", "bar-neutral") & "' style='width: " & OrPctB & "%;'>
+			                " & IF(OrPctB > 15, FORMAT(OrPctB/100, "0%"), "") & "
+			            </div>
+			        </div>
+			    </div>
+			</div>
+			"
+			```
+		displayFolder: Core Metrics
+		lineageTag: 6324946c-adb2-45aa-b670-f807213afddd
+
+	column Value
+		isHidden
+		lineageTag: da2dfa23-0c4c-4e9d-8014-3cc5710e756b
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Value]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition _Measures = calculated
+		mode: import
+		source = { "This table holds all measures for the Parts Reorder Monitoring report" }
+
+	annotation PBI_Id = da82ad85df114f0dbe8c17ce73f079a8
+

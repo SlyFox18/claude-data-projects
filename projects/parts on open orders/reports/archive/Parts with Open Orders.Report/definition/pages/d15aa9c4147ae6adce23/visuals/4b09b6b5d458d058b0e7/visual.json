@@ -1,0 +1,271 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.4.0/schema.json",
+  "name": "4b09b6b5d458d058b0e7",
+  "position": {
+    "x": 35.365239294710364,
+    "y": 139.10327455919395,
+    "z": 9500,
+    "height": 161.50125944584383,
+    "width": 689,
+    "tabOrder": 14013
+  },
+  "visual": {
+    "visualType": "InforiverFilterF39DAE8D57A743EF89F5C3809DEE2B69",
+    "query": {
+      "queryState": {
+        "column": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Parts_Open_Tickets"
+                    }
+                  },
+                  "Property": "Order_Date"
+                }
+              },
+              "queryRef": "Parts_Open_Tickets.Order_Date",
+              "nativeQueryRef": "Order_Date"
+            }
+          ]
+        }
+      }
+    },
+    "objects": {
+      "migration": [
+        {
+          "properties": {
+            "hasToMigrate": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            },
+            "migrationSettings": {
+              "expr": {
+                "Literal": {
+                  "Value": "'{\"v1_0_0_0\":{\"hierarchyStyle\":{\"isResolved\":true}},\"v2_0_0_0\":{\"appearance\":{\"isResolved\":true}},\"v5_7_0_0\":{\"appearance\":{\"isResolved\":true}}}'"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "general": [
+        {
+          "properties": {
+            "uniqueId": {
+              "expr": {
+                "Literal": {
+                  "Value": "'UID-1758722246806'"
+                }
+              }
+            },
+            "filter": {
+              "filter": {
+                "Version": 2,
+                "From": [
+                  {
+                    "Name": "p",
+                    "Entity": "Parts_Open_Tickets",
+                    "Type": 0
+                  }
+                ],
+                "Where": [
+                  {
+                    "Condition": {
+                      "And": {
+                        "Left": {
+                          "Comparison": {
+                            "ComparisonKind": 2,
+                            "Left": {
+                              "Column": {
+                                "Expression": {
+                                  "SourceRef": {
+                                    "Source": "p"
+                                  }
+                                },
+                                "Property": "Order_Date"
+                              }
+                            },
+                            "Right": {
+                              "DateSpan": {
+                                "Expression": {
+                                  "Literal": {
+                                    "Value": "datetime'2017-09-29T00:00:00'"
+                                  }
+                                },
+                                "TimeUnit": 5
+                              }
+                            }
+                          }
+                        },
+                        "Right": {
+                          "Comparison": {
+                            "ComparisonKind": 4,
+                            "Left": {
+                              "Column": {
+                                "Expression": {
+                                  "SourceRef": {
+                                    "Source": "p"
+                                  }
+                                },
+                                "Property": "Order_Date"
+                              }
+                            },
+                            "Right": {
+                              "DateSpan": {
+                                "Expression": {
+                                  "Literal": {
+                                    "Value": "datetime'2026-12-31T23:59:59.059'"
+                                  }
+                                },
+                                "TimeUnit": 5
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      ],
+      "appearance": [
+        {
+          "properties": {
+            "filterNoData": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            },
+            "dateTooltip": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "measureTooltip": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "varianceTooltip": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "enableCanvasMode": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "dataPoint": [
+        {
+          "properties": {
+            "visualName": {
+              "expr": {
+                "Literal": {
+                  "Value": "'FCV_1758722288572'"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "columnHeaders": [
+        {
+          "properties": {
+            "enableToolbar": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "presets": [
+        {
+          "properties": {
+            "enablePreset": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "filter": [
+        {
+          "properties": {
+            "customPresets": {
+              "expr": {
+                "Literal": {
+                  "Value": "'[{\"type\":\"date\",\"key\":\"date-this-1-month\",\"label\":\"This Month\",\"layout\":\"square.withIcon\",\"icon\":\"presetCalendar\",\"iconColor\":\"#444444\"},{\"type\":\"date\",\"key\":\"date-last-1-month\",\"label\":\"Last Month\",\"layout\":\"square.withIcon\",\"icon\":\"presetCalendar\",\"iconColor\":\"#444444\"},{\"type\":\"date\",\"key\":\"date-this-1-year\",\"label\":\"This Year\",\"layout\":\"square.withIcon\",\"icon\":\"presetCalendar\",\"iconColor\":\"#444444\"},{\"type\":\"date\",\"key\":\"date-last-1-year\",\"label\":\"Last Year\",\"layout\":\"square.withIcon\",\"icon\":\"presetCalendar\",\"iconColor\":\"#444444\"},{\"type\":\"date\",\"key\":\"date-this-1-quarter\",\"label\":\"This Quarter\",\"layout\":\"square.withIcon\",\"icon\":\"presetCalendar\",\"iconColor\":\"#444444\"},{\"type\":\"date\",\"key\":\"date-last-1-quarter\",\"label\":\"Last Quarter\",\"layout\":\"square.withIcon\",\"icon\":\"presetCalendar\",\"iconColor\":\"#444444\"}]'"
+                }
+              }
+            },
+            "selectedDatePreset": {
+              "expr": {
+                "Literal": {
+                  "Value": "'[]'"
+                }
+              }
+            },
+            "customImages": {
+              "expr": {
+                "Literal": {
+                  "Value": "'[]'"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "dateCard": [
+        {
+          "properties": {
+            "staticSliderScale": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "defaultDateRangeSelection": {
+              "expr": {
+                "Literal": {
+                  "Value": "'user_defined'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "drillFilterOtherVisuals": true
+  },
+  "parentGroupName": "68b31c2e47494912c205"
+}
