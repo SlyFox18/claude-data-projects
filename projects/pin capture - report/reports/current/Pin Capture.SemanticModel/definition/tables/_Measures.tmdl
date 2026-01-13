@@ -1479,41 +1479,13 @@ table _Measures
 			VAR InvoicesShownText = FORMAT(InvoicesShown, "#,##0")
 			VAR CaptureRateText = FORMAT(PinCaptureRate, "0.0%")
 			
-			VAR TotalCostText = 
-			    IF(TotalCost >= 1000000,
-			        FORMAT(TotalCost / 1000000, "$#,##0.0") & "M",
-			        IF(TotalCost >= 1000,
-			            FORMAT(TotalCost / 1000, "$#,##0") & "K",
-			            FORMAT(TotalCost, "$#,##0")
-			        )
-			    )
+			VAR TotalCostText = FORMAT(TotalCost, "$#,##0")
+			 
+			VAR TotalSalesText = FORMAT(TotalSales, "$#,##0")
 			
-			VAR TotalSalesText = 
-			    IF(TotalSales >= 1000000,
-			        FORMAT(TotalSales / 1000000, "$#,##0.0") & "M",
-			        IF(TotalSales >= 1000,
-			            FORMAT(TotalSales / 1000, "$#,##0") & "K",
-			            FORMAT(TotalSales, "$#,##0")
-			        )
-			    )
+			VAR TotalMarginText = FORMAT(TotalMargin, "$#,##0")
 			
-			VAR TotalMarginText = 
-			    IF(TotalMargin >= 1000000,
-			        FORMAT(TotalMargin / 1000000, "$#,##0.0") & "M",
-			        IF(TotalMargin >= 1000,
-			            FORMAT(TotalMargin / 1000, "$#,##0") & "K",
-			            FORMAT(TotalMargin, "$#,##0")
-			        )
-			    )
-			
-			VAR AvgInvoiceText = 
-			    IF(AvgInvoice >= 1000000,
-			        FORMAT(AvgInvoice / 1000000, "$#,##0.0") & "M",
-			        IF(AvgInvoice >= 1000,
-			            FORMAT(AvgInvoice / 1000, "$#,##0") & "K",
-			            FORMAT(AvgInvoice, "$#,##0")
-			        )
-			    )
+			VAR AvgInvoiceText = FORMAT(AvgInvoice, "$#,##0")
 			
 			VAR MarginPctText = FORMAT(MarginPct, "0.0%")
 			
@@ -1664,32 +1636,11 @@ table _Measures
 			VAR MarginColor = IF(MarginPct >= 0.30, "#4ade80", IF(MarginPct >= 0.20, "#fbbf24", "#ef4444"))
 			
 			// *** SMART NUMBER FORMATTING ***
-			VAR TotalCostText = 
-			    IF(TotalCost >= 1000000,
-			        "$" & FORMAT(TotalCost / 1000000, "#,##0.0") & "M",
-			        IF(TotalCost >= 1000,
-			            "$" & FORMAT(TotalCost / 1000, "#,##0") & "K",
-			            "$" & FORMAT(TotalCost, "#,##0")
-			        )
-			    )
+			VAR TotalCostText = FORMAT(TotalCost, "$#,##0")
+			    
+			VAR TotalSalesText = FORMAT(TotalSales, "$#,##0")
 			
-			VAR TotalSalesText = 
-			    IF(TotalSales >= 1000000,
-			        "$" & FORMAT(TotalSales / 1000000, "#,##0.0") & "M",
-			        IF(TotalSales >= 1000,
-			            "$" & FORMAT(TotalSales / 1000, "#,##0") & "K",
-			            "$" & FORMAT(TotalSales, "#,##0")
-			        )
-			    )
-			
-			VAR TotalMarginText = 
-			    IF(TotalMargin >= 1000000,
-			        "$" & FORMAT(TotalMargin / 1000000, "#,##0.0") & "M",
-			        IF(TotalMargin >= 1000,
-			            "$" & FORMAT(TotalMargin / 1000, "#,##0") & "K",
-			            "$" & FORMAT(TotalMargin, "#,##0")
-			        )
-			    )
+			VAR TotalMarginText = FORMAT(TotalMargin, "$#,##0")
 			
 			RETURN
 			"<div style='
@@ -1806,11 +1757,8 @@ table _Measures
 			VAR ChangeText = IF(ShowComparison, FORMAT(MonthChange, "+0.0%;-0.0%;0.0%"), "—")
 			
 			// Smart number formatting
-			VAR CostFormatted = 
-			    IF(TotalCostWithPins >= 1000000, 
-			        "$" & FORMAT(TotalCostWithPins/1000000, "#,##0.0") & "M",
-			        "$" & FORMAT(TotalCostWithPins/1000, "#,##0") & "K"
-			    )
+			VAR CostFormatted = "$" & FORMAT(TotalCostWithPins, "#,##0")
+			
 			
 			VAR TransFormatted = FORMAT(TotalTrans, "#,##0")
 			VAR PinsFormatted = FORMAT(TransWithPins, "#,##0")
@@ -2132,11 +2080,8 @@ table _Measures
 			    )
 			
 			// Format Franchise D numbers
-			VAR FranchiseD_CostText = 
-			    IF(FranchiseD_Cost >= 1000000,
-			        FORMAT(FranchiseD_Cost / 1000000, "$#,##0.0") & "M",
-			        FORMAT(FranchiseD_Cost / 1000, "$#,##0") & "K"
-			    )
+			VAR FranchiseD_CostText = "$" & FORMAT(FranchiseD_Cost, "#,##0")
+			 
 			VAR FranchiseD_TransText = 
 			    IF(FranchiseD_Transactions >= 1000,
 			        FORMAT(FranchiseD_Transactions / 1000, "#,##0.0") & "K",
@@ -2414,11 +2359,9 @@ table _Measures
 			VAR ChangeText = IF(ShowTrend, FORMAT(MonthChange, "+0.0%;-0.0%;0.0%"), "—")
 			
 			// Number formatting
-			VAR CostText = 
-			    IF(TotalCostWithPins >= 1000000,
-			        "$" & FORMAT(TotalCostWithPins/1000000, "#,##0.0") & "M",
-			        "$" & FORMAT(TotalCostWithPins/1000, "#,##0") & "K"
-			    )
+			// Number formatting
+			VAR CostText = "$" & FORMAT(TotalCostWithPins, "#,##0")
+			    
 			VAR TotalCostText = 
 			    IF(TotalCost >= 1000000,
 			        "$" & FORMAT(TotalCost/1000000, "#,##0.0") & "M",
