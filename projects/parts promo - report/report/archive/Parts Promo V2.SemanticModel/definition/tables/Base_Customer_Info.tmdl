@@ -1,0 +1,127 @@
+table Base_Customer_Info
+	lineageTag: 6e664880-f18f-4aaa-ac77-70c81266c55b
+
+	column Territory
+		dataType: string
+		lineageTag: cd927397-680a-4a6e-bef6-21756f995a5c
+		summarizeBy: none
+		sourceColumn: Territory
+
+		annotation SummarizationSetBy = Automatic
+
+	column Account
+		dataType: int64
+		formatString: 0
+		lineageTag: 34cfc042-17f8-4975-a439-b7249ffa7486
+		summarizeBy: none
+		sourceColumn: Account
+
+		annotation SummarizationSetBy = Automatic
+
+	column Customer
+		dataType: string
+		lineageTag: 7225b553-9d74-4535-abb7-0d0548328007
+		summarizeBy: none
+		sourceColumn: Customer
+
+		annotation SummarizationSetBy = Automatic
+
+	column Class
+		dataType: string
+		lineageTag: ef3c7032-ed3f-454b-911a-14945b27dead
+		summarizeBy: none
+		sourceColumn: Class
+
+		annotation SummarizationSetBy = Automatic
+
+	column ContactClass
+		dataType: string
+		lineageTag: f2a82037-51cd-47cd-8d9e-a5eb3d7f66c3
+		summarizeBy: none
+		sourceColumn: ContactClass
+
+		annotation SummarizationSetBy = Automatic
+
+	column Addr1
+		dataType: string
+		lineageTag: feec5326-87e0-442a-a18c-97dcb0ecdec7
+		summarizeBy: none
+		sourceColumn: Addr1
+
+		annotation SummarizationSetBy = Automatic
+
+	column Addr2
+		dataType: string
+		lineageTag: f8df105c-dbd8-45ac-afb9-15861db9c682
+		summarizeBy: none
+		sourceColumn: Addr2
+
+		annotation SummarizationSetBy = Automatic
+
+	column city
+		dataType: string
+		lineageTag: 3ee453fd-44f7-45b5-ba3d-d2c44f2d53f9
+		summarizeBy: none
+		sourceColumn: city
+
+		annotation SummarizationSetBy = Automatic
+
+	column state
+		dataType: string
+		lineageTag: b1c5afb5-a044-44a7-bfd6-ef073c1661e5
+		summarizeBy: none
+		sourceColumn: state
+
+		annotation SummarizationSetBy = Automatic
+
+	column zip
+		dataType: string
+		lineageTag: 7474b9e2-8e65-4698-9157-be751bf6ff39
+		summarizeBy: none
+		sourceColumn: zip
+
+		annotation SummarizationSetBy = Automatic
+
+	column HomePhone
+		dataType: string
+		lineageTag: 3a30ec71-255c-4da9-9c58-0e37a1a88b6d
+		summarizeBy: none
+		sourceColumn: HomePhone
+
+		annotation SummarizationSetBy = Automatic
+
+	column BusinessPhone
+		dataType: string
+		lineageTag: 63886788-670b-49cb-867e-41d947b39150
+		summarizeBy: none
+		sourceColumn: BusinessPhone
+
+		annotation SummarizationSetBy = Automatic
+
+	column CellPhone
+		dataType: string
+		lineageTag: 5206642a-8231-4578-a51c-ae19c540586f
+		summarizeBy: none
+		sourceColumn: CellPhone
+
+		annotation SummarizationSetBy = Automatic
+
+	column Email
+		dataType: string
+		lineageTag: 12b52c66-df3c-4a36-aeb6-d7297217c278
+		summarizeBy: none
+		sourceColumn: Email
+
+		annotation SummarizationSetBy = Automatic
+
+	partition Base_Customer_Info = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-ch6iiwox4jveda3rmgudwi6hey.datawarehouse.fabric.microsoft.com", "LH_Parts_Reports_Data"),
+				    dbo_Base_Customer_Info = Source{[Schema="dbo",Item="Base_Customer_Info"]}[Data]
+				in
+				    dbo_Base_Customer_Info
+
+	annotation PBI_ResultType = Table
+

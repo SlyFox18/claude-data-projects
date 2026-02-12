@@ -1,0 +1,97 @@
+ID,Name,Model,DataCategory,Description,IsHidden,StorageMode,TableStorage,Expression,ShowAsVariationOnly,IsPrivate,CalculationGroupPrecedence,LineageTag
+10,Dim_Branch,66d12a79-ff8b-4580-840f-dcbf8973aa4b,Regular,,False,Import,,,False,False,,f70c5d9e-0f72-4eab-8c19-d537dbacb5d2
+13,Base_Customer_Info,66d12a79-ff8b-4580-840f-dcbf8973aa4b,Regular,,False,Import,,,False,False,,6e664880-f18f-4aaa-ac77-70c81266c55b
+16,Parts_Promo,66d12a79-ff8b-4580-840f-dcbf8973aa4b,Regular,,False,Import,,,False,False,,a65ed4f3-5bfe-403a-bd11-5d58798769eb
+19,MeasuresTable,66d12a79-ff8b-4580-840f-dcbf8973aa4b,Regular,,False,Import,,"Row(""Value"", BLANK(), ""DummyColumn"", BLANK())",False,False,,2a2cea53-6ea8-43bd-97a1-491aa144e275
+22,Data Refresh,66d12a79-ff8b-4580-840f-dcbf8973aa4b,Regular,,False,Import,,,False,False,,c9b8a2ef-95ee-4d50-9419-6cce08849320
+25,DateAutoTemplate,66d12a79-ff8b-4580-840f-dcbf8973aa4b,Time,,True,Import,,"
+--  
+--     Configuration
+--  
+VAR __FirstDayOfWeek = 0
+----------------------------------------
+VAR __WeekDayCalculationType = IF ( __FirstDayOfWeek = 0, 7, __FirstDayOfWeek ) + 10
+VAR __Calendar = 
+    VAR __FirstYear = YEAR ( MINX ( { MIN ( 'Parts_Promo'[Trans_Datetime] ), MIN ( 'Data Refresh'[CurrentDateTime] ), MIN ( 'Data Refresh'[Date] ) }, ''[Value] ) )
+    VAR __LastYear =  YEAR ( MAXX ( { MAX ( 'Parts_Promo'[Trans_Datetime] ), MAX ( 'Data Refresh'[CurrentDateTime] ), MAX ( 'Data Refresh'[Date] ) }, ''[Value] ) )
+    RETURN CALENDAR (
+        DATE ( __FirstYear, 1, 1 ),
+        DATE ( __LastYear, 12, 31 )
+    )
+VAR __Step3 = 
+    GENERATE (
+        __Calendar,
+        VAR __IsStandardLocale = IF ( FORMAT( DATE( 2000, 1, 1 ), ""oooo"" ) = ""oooo"", TRUE, FALSE )
+        VAR __MonthFormatString = IF( __IsStandardLocale, ""mmm"", ""ooo"" )
+        VAR __DayFormatString = IF( __IsStandardLocale, ""ddd"", ""aaa"" )
+        VAR __LastTransactionDate = MAXX ( { MAX ( 'Parts_Promo'[Trans_Datetime] ), MAX ( 'Data Refresh'[CurrentDateTime] ), MAX ( 'Data Refresh'[Date] ) }, ''[Value] )
+        VAR __Date = [Date]
+        VAR __YearNumber = YEAR ( __Date )
+        VAR __QuarterNumber = QUARTER ( __Date )
+        VAR __YearQuarterNumber = CONVERT ( __YearNumber * 4 + __QuarterNumber - 1, INTEGER )
+        VAR __MonthNumber = MONTH ( __Date )
+        VAR __WeekDayNumber = WEEKDAY ( __Date, __WeekDayCalculationType )
+        VAR __WeekDay = FORMAT ( __Date, __DayFormatString )
+        RETURN ROW ( 
+            ""Year"", __YearNumber,
+            ""Year Quarter Number"", __YearQuarterNumber,
+            ""Year Quarter"", FORMAT ( __QuarterNumber, ""\Q0"" ) & ""-"" & FORMAT ( __YearNumber, ""0000"" ),
+            ""Quarter"", FORMAT( __QuarterNumber, ""\Q0"" ),
+            ""Year Month"", FORMAT ( __Date, __MonthFormatString & "" yyyy"" ),
+            ""Year Month Number"", __YearNumber * 12 + __MonthNumber - 1,
+            ""Month"", FORMAT ( __Date, __MonthFormatString ),
+            ""Month Number"", __MonthNumber,
+            ""Day of Week Number"", __WeekDayNumber,
+            ""Day of Week"", __WeekDay,
+            ""DateWithTransactions"", __Date <= __LastTransactionDate 
+        )
+    )
+RETURN
+    __Step3",False,False,,2d4b19b1-78f2-4b64-933f-de530b7d9bab
+28,Date,66d12a79-ff8b-4580-840f-dcbf8973aa4b,Time,,False,Import,,DateAutoTemplate,False,False,,237a2ef9-e437-4f40-a27d-cf0df5dcdc97
+31,InTrans_All_Promo,66d12a79-ff8b-4580-840f-dcbf8973aa4b,Regular,,False,Import,,,False,False,,4ab5ad95-424c-4495-bb2e-0e4902b63794
+34,MeasureSelector,66d12a79-ff8b-4580-840f-dcbf8973aa4b,Regular,,False,Import,,"
+DATATABLE(
+    ""MeasureName"", STRING,
+    ""MeasureIndex"", INTEGER,
+    ""SortOrder"", INTEGER,
+    {
+        {""Promo Count"", 0, 1},
+        {""Net Sales"", 1, 2}
+    }
+)",False,False,,bd0a25b7-7752-47b7-ad72-e51d4c847979
+37,DateTable,66d12a79-ff8b-4580-840f-dcbf8973aa4b,Regular,,False,Import,,"
+CALENDAR(
+    MIN(InTrans_All_Promo[Trans_Datetime]),
+    MAX(InTrans_All_Promo[Trans_Datetime])
+)",False,False,,07f081f7-717b-4427-a62d-b06e6d419d51
+10814,MonthlySalesTable,66d12a79-ff8b-4580-840f-dcbf8973aa4b,Regular,,False,Import,,"
+SUMMARIZE(
+    InTrans_All_Promo,
+    InTrans_All_Promo[Trans_Datetime],
+    ""Year"", YEAR(InTrans_All_Promo[Trans_Datetime]),
+    ""Month"", FORMAT(InTrans_All_Promo[Trans_Datetime], ""MMM""),
+    ""MonthNumber"", MONTH(InTrans_All_Promo[Trans_Datetime]),
+    ""TotalSaleVal"", SUM(InTrans_All_Promo[SALE_VAL])
+)",False,False,,a1590385-cc34-44fd-85b2-eabe56d5c854
+12394,CalculatedTable,66d12a79-ff8b-4580-840f-dcbf8973aa4b,Regular,,False,Import,,"
+SUMMARIZE(
+    Parts_Promo,
+    Parts_Promo[PART_NO],
+    Parts_Promo[BRANCH],
+    Parts_Promo[Date],
+    ""Net Sales Value"", SUM(Parts_Promo[Net Sales Value])
+)",False,False,,8fe38cb4-5131-4907-aef2-63699756359b
+13297,DateTable1,66d12a79-ff8b-4580-840f-dcbf8973aa4b,Regular,,False,Import,,"
+ADDCOLUMNS(
+    DateTable,
+    ""Year"", YEAR([Date]),
+    ""Month"", FORMAT([Date], ""MMM""),
+    ""MonthNumber"", MONTH([Date]),
+    ""Day"", DAY([Date])
+)",False,False,,a9eb53f5-94a1-48d3-92ec-44ebefc02794
+25260,Pagnation Table,66d12a79-ff8b-4580-840f-dcbf8973aa4b,Regular,,False,Import,,,False,False,,c83a7f78-e369-41ed-a730-654b4f99861e
+38348,Old Report - Parts Promo Tables,66d12a79-ff8b-4580-840f-dcbf8973aa4b,Regular,,False,Import,,INFO.VIEW.TABLES(),False,False,,753dcdaf-b46e-4c80-9c04-5d170b0390b7
+38867,Old Report - Parts Promo Columns,66d12a79-ff8b-4580-840f-dcbf8973aa4b,Regular,,False,Import,,INFO.VIEW.COLUMNS(),False,False,,ed009a06-8473-493c-904d-e7d8d5fb6099
+40247,Old Report - Parts Promo Relationships,66d12a79-ff8b-4580-840f-dcbf8973aa4b,Regular,,False,Import,,INFO.VIEW.RELATIONSHIPS(),False,False,,e9579880-e84f-450a-a50d-94f5cc7e4366
+42323,Old Report - Parts Promo Measures,66d12a79-ff8b-4580-840f-dcbf8973aa4b,Regular,,False,Import,,INFO.VIEW.MEASURES(),False,False,,308f41fc-5c46-4b94-9de6-1924b22222eb

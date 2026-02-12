@@ -1,0 +1,43 @@
+table 'Pagnation Table'
+	lineageTag: c83a7f78-e369-41ed-a730-654b4f99861e
+
+	column 'Page Number'
+		dataType: int64
+		formatString: 0
+		lineageTag: 37e7068f-6fe2-494f-a262-6bdd69368ce2
+		summarizeBy: sum
+		sourceColumn: Page Number
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Min Row'
+		dataType: int64
+		formatString: 0
+		lineageTag: 4bef5432-8a2f-471d-b75b-2621da4b3c35
+		summarizeBy: sum
+		sourceColumn: Min Row
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Max Row'
+		dataType: int64
+		formatString: 0
+		lineageTag: 7ae0500c-09fd-4f90-ac81-b743a1bb6322
+		summarizeBy: sum
+		sourceColumn: Max Row
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Pagnation Table' = m
+		mode: import
+		source =
+				let
+				    Source = Table.FromRows(Json.Document(Binary.Decompress(Binary.FromText("JYzBDQAhCAR74e0DROWsxdh/G+fuPiBDZsI5FtY002471oHrrXTeCYQf8gMIv+QnEL7koQpryxeQ/13BR0YRXckms0k14TwYub/q/g==", BinaryEncoding.Base64), Compression.Deflate)), let _t = ((type nullable text) meta [Serialized.Text = true]) in type table [#"Page Number" = _t, #"Min Row" = _t, #"Max Row" = _t]),
+				    #"Changed Type" = Table.TransformColumnTypes(Source,{{"Page Number", Int64.Type}, {"Min Row", Int64.Type}, {"Max Row", Int64.Type}})
+				in
+				    #"Changed Type"
+
+	annotation PBI_ResultType = Table
+
+	annotation PBI_NavigationStepName = Navigation
+

@@ -1,0 +1,243 @@
+table Fact_Parts_Open_Tickets
+	lineageTag: 9de46ef8-7389-4191-a927-5704bf70a225
+
+	column Location
+		dataType: string
+		lineageTag: 4500de8f-787f-489a-88aa-61ba8e1f165a
+		summarizeBy: none
+		sourceColumn: Location
+
+		annotation SummarizationSetBy = Automatic
+
+	column Location_Name
+		dataType: string
+		lineageTag: ed60d401-bbcd-4b9f-a91d-bacff7e1af58
+		summarizeBy: none
+		sourceColumn: Location_Name
+
+		annotation SummarizationSetBy = Automatic
+
+	column Order_No
+		dataType: int64
+		formatString: 0
+		lineageTag: e77128e8-c465-4eff-846d-2f7f2e78eb63
+		summarizeBy: none
+		sourceColumn: Order_No
+
+		annotation SummarizationSetBy = Automatic
+
+	column Invoice_Type
+		dataType: string
+		lineageTag: 969af593-185c-40a1-b255-c3cc7b4cfbba
+		summarizeBy: none
+		sourceColumn: Invoice_Type
+
+		annotation SummarizationSetBy = Automatic
+
+	column Order_Date
+		dataType: dateTime
+		formatString: Short Date
+		lineageTag: 429ad8c8-1a83-4149-82cf-45c20af50156
+		summarizeBy: none
+		sourceColumn: Order_Date
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column Created_On
+		dataType: dateTime
+		formatString: Short Date
+		lineageTag: 1beec716-17a4-4303-8616-329c8e6572ac
+		summarizeBy: none
+		sourceColumn: Created_On
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column WO_Creation_Date
+		dataType: dateTime
+		formatString: Short Date
+		lineageTag: 2c3d5bf8-fa58-4673-b4e9-fcba7fbe7e2d
+		summarizeBy: none
+		sourceColumn: WO_Creation_Date
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column Days_Open
+		dataType: int64
+		formatString: 0
+		lineageTag: 840b3326-f857-4464-b167-d8f0b3d8c466
+		summarizeBy: sum
+		sourceColumn: Days_Open
+
+		annotation SummarizationSetBy = Automatic
+
+	column Aging
+		dataType: string
+		lineageTag: 525c6ae7-9ee7-4703-a009-9427626ac9fb
+		summarizeBy: none
+		sourceColumn: Aging
+		sortByColumn: Aging_Sort_Order
+
+		changedProperty = SortByColumn
+
+		annotation SummarizationSetBy = Automatic
+
+	column Aging_Sort_Order
+		dataType: int64
+		formatString: 0
+		lineageTag: 62872577-3126-4083-a545-7d1dc99f9939
+		summarizeBy: sum
+		sourceColumn: Aging_Sort_Order
+
+		annotation SummarizationSetBy = Automatic
+
+	column Aging_Date_Source
+		dataType: string
+		lineageTag: a14cfb26-7226-42bd-a2d6-5410902481c1
+		summarizeBy: none
+		sourceColumn: Aging_Date_Source
+
+		annotation SummarizationSetBy = Automatic
+
+	column #_Parts_On_Order
+		dataType: double
+		lineageTag: ac6c846a-9fd8-4df2-b358-766776a655bb
+		summarizeBy: sum
+		sourceColumn: #_Parts_On_Order
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column #_On_Back_Order
+		dataType: double
+		lineageTag: e215b1d6-58f4-40b1-864c-e642e8250b86
+		summarizeBy: sum
+		sourceColumn: #_On_Back_Order
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column Order_Total_$$
+		dataType: double
+		lineageTag: 0f9c8678-2185-4151-ab0e-d68f19d08beb
+		summarizeBy: sum
+		sourceColumn: Order_Total_$$
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column $$_Available
+		dataType: double
+		lineageTag: 57bc97a2-601c-4c77-8382-a91e49ec519a
+		summarizeBy: sum
+		sourceColumn: $$_Available
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column $$_BackOrdered
+		dataType: double
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 370185f1-78b0-4347-9168-4634464ff0dd
+		summarizeBy: sum
+		sourceColumn: $$_BackOrdered
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	column Backorder_Pct
+		dataType: double
+		lineageTag: 765c441f-48fd-40d3-aae7-433227b68795
+		summarizeBy: sum
+		sourceColumn: Backorder_Pct
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column Deposit
+		dataType: double
+		lineageTag: 1d799bfb-f3ff-4d61-8800-9859ecaaa24b
+		summarizeBy: sum
+		sourceColumn: Deposit
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column Salesman
+		dataType: string
+		lineageTag: f604b2f1-4800-481f-ba51-f050a6ddcab9
+		summarizeBy: none
+		sourceColumn: Salesman
+
+		annotation SummarizationSetBy = Automatic
+
+	column Contact_Code
+		dataType: string
+		lineageTag: a95bd345-d79c-4e84-b01f-094827a4b53c
+		summarizeBy: none
+		sourceColumn: Contact_Code
+
+		annotation SummarizationSetBy = Automatic
+
+	column AR_Acct
+		dataType: int64
+		formatString: 0
+		lineageTag: 413429a2-5885-4028-a772-5e89db6f4b42
+		summarizeBy: sum
+		sourceColumn: AR_Acct
+
+		annotation SummarizationSetBy = Automatic
+
+	column Customer
+		dataType: string
+		lineageTag: 00303db8-df06-47e7-a5ef-4f15e6a555ea
+		summarizeBy: none
+		sourceColumn: Customer
+
+		annotation SummarizationSetBy = Automatic
+
+	column Aging_Base_Date
+		dataType: dateTime
+		formatString: Short Date
+		lineageTag: 1d6ea340-94a3-4ac8-be74-705cf402c3ce
+		summarizeBy: none
+		sourceColumn: Aging_Base_Date
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column 'Order Count' =
+			
+			VAR _CurrentOrderNo = Fact_Parts_Open_Tickets[Order_No]
+			RETURN
+			COUNTROWS(FILTER(Fact_Parts_Open_Tickets, Fact_Parts_Open_Tickets[Order_No] =
+			_CurrentOrderNo)
+			)
+		formatString: 0
+		lineageTag: 8a7071d1-d5fe-4a92-9189-79a752dc3c72
+		summarizeBy: sum
+
+		annotation SummarizationSetBy = Automatic
+
+	partition Fact_Parts_Open_Tickets = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-gxnyznhdptpenfw724g3o5sjzm.datawarehouse.fabric.microsoft.com", "LH_Master_Data"),
+				    dbo_Fact_Parts_Open_Tickets = Source{[Schema="dbo",Item="Fact_Parts_Open_Tickets"]}[Data]
+				in
+				    dbo_Fact_Parts_Open_Tickets
+

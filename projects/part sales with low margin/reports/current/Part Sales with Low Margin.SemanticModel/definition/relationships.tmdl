@@ -1,0 +1,17 @@
+relationship AutoDetected_5a385b93-75db-4783-86d5-122bd8fc986f
+	fromColumn: Fact_InTrans.Branch
+	toColumn: dim_BranchLocation.BranchID
+
+relationship cf0b4bd5-2738-b7b7-a278-934c6bb5d8b9
+	fromColumn: Fact_InTrans.TransDatetime
+	toColumn: dim_DateTable.Date
+
+relationship c3102e9d-7088-b716-e0a4-9d17462a0aa2
+	fromColumn: Fact_InTrans.CustomerNo
+	toColumn: dim_CustomerList.AccountNumber
+
+relationship d9e091ab-de29-57d7-34f4-2df03bbe4dd5
+	crossFilteringBehavior: bothDirections
+	fromColumn: dim_Parts_LowMargin.Branch
+	toColumn: dim_BranchLocation.BranchID
+

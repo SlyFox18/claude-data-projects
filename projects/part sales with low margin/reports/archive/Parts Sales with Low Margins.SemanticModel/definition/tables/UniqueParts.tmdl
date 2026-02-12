@@ -1,0 +1,24 @@
+table UniqueParts
+	lineageTag: b7d9a523-d2c8-4514-ba86-057b2923ad10
+
+	column PART_NO
+		lineageTag: e2ade505-1bfe-42ab-b7a3-387c2834afdc
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [PART_NO]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition UniqueParts = calculated
+		mode: import
+		source =
+				DISTINCT(
+				    UNION(
+				        SELECTCOLUMNS(InMaster_Combine_Vault, "PART_NO", InMaster_Combine_Vault[PART_NO]),
+				        SELECTCOLUMNS(InTrans_Low_Margin, "PART_NO", InTrans_Low_Margin[Part No]),
+				        SELECTCOLUMNS(Parts_Low_Margin_jdis_InMaster, "PART_NO", Parts_Low_Margin_jdis_InMaster[Part No])
+				    )
+				)
+
+	annotation PBI_Id = 37d5eaa5e7b946e5b8f1390d089bb52a
+

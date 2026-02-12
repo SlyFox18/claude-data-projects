@@ -1,0 +1,32 @@
+model Model
+	culture: en-US
+	defaultPowerBIDataSourceVersion: powerBI_V3
+	sourceQueryCulture: en-US
+	dataAccessOptions
+		legacyRedirects
+		returnErrorValuesAsNull
+
+annotation __PBI_TimeIntelligenceEnabled = 0
+
+annotation PBI_QueryOrder = ["Data Refresh","dim_BranchLocation","dim_DateTable","dim_Parts","dim_RepairOrder","Fact_PartsPromo","Fact_InTrans_AllPromo","dim_PromoType","dim_CustomerList"]
+
+annotation PBI_ProTooling = ["DevMode","MCP-PBIModeling"]
+
+ref table 'Data Refresh'
+ref table dim_BranchLocation
+ref table dim_DateTable
+ref table 'New Report Tables'
+ref table 'New Report Relationships'
+ref table 'New Report Columns'
+ref table _Measures
+ref table dim_Parts
+ref table dim_RepairOrder
+ref table Fact_PartsPromo
+ref table Fact_InTrans_AllPromo
+ref table 'New Report Measures'
+ref table dim_PromoType
+ref table dim_CustomerList
+ref table 'Sales Category'
+
+ref cultureInfo en-US
+

@@ -1,0 +1,223 @@
+table Fact_InTrans_AllPromo
+	lineageTag: 0207b607-3837-4035-9428-ca0b82f7c5bc
+
+	column Branch
+		dataType: string
+		lineageTag: c1ac2a88-a7a1-434f-bc51-5a3d096eadf5
+		summarizeBy: none
+		sourceColumn: Branch
+
+		annotation SummarizationSetBy = Automatic
+
+	column DateKey
+		dataType: dateTime
+		formatString: Long Date
+		lineageTag: 81a65f3a-12b7-447a-919d-6da002556d3e
+		summarizeBy: none
+		sourceColumn: DateKey
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column REF_NO
+		dataType: string
+		lineageTag: b279d028-9589-47b3-a3fc-34b62013f945
+		summarizeBy: none
+		sourceColumn: REF_NO
+
+		annotation SummarizationSetBy = Automatic
+
+	column PART_NO
+		dataType: string
+		lineageTag: 40042eb6-84e5-4027-bab4-14a24b4e76c5
+		summarizeBy: none
+		sourceColumn: PART_NO
+
+		annotation SummarizationSetBy = Automatic
+
+	column TransDatetime
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: c3689cc6-3b7f-4cac-b84f-e2ea754795af
+		summarizeBy: none
+		sourceColumn: TransDatetime
+
+		annotation SummarizationSetBy = Automatic
+
+	column CustomerNo
+		dataType: string
+		lineageTag: 9fa83281-97c7-423e-921b-1b437432b970
+		summarizeBy: none
+		sourceColumn: CustomerNo
+
+		annotation SummarizationSetBy = Automatic
+
+	column Franchise
+		dataType: string
+		lineageTag: d1470a55-b078-4a97-943e-7ecec00df4a5
+		summarizeBy: none
+		sourceColumn: Franchise
+
+		annotation SummarizationSetBy = Automatic
+
+	column Type
+		dataType: string
+		lineageTag: b9236046-6151-4aff-a8e2-ef5f9cf9834d
+		summarizeBy: none
+		sourceColumn: Type
+
+		annotation SummarizationSetBy = Automatic
+
+	column Description
+		dataType: string
+		lineageTag: a638b15b-9258-4e13-a327-ce09a2c67a97
+		summarizeBy: none
+		sourceColumn: Description
+
+		annotation SummarizationSetBy = Automatic
+
+	column SaleValue
+		dataType: double
+		lineageTag: 4775cfe7-f231-49d4-b48c-e21d03893cdf
+		summarizeBy: sum
+		sourceColumn: SaleValue
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column CostValue
+		dataType: double
+		lineageTag: 66382157-4259-42c3-8538-d7b30a4b2af0
+		summarizeBy: sum
+		sourceColumn: CostValue
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column Qty
+		dataType: double
+		lineageTag: 40c11a05-53fd-4243-8878-ed7b2f3af40d
+		summarizeBy: sum
+		sourceColumn: Qty
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	partition Fact_InTrans_AllPromo = m
+		mode: import
+		source =
+				/*
+				============================================================================
+				FACT_INTRANS_ALLPROMO - FOR USE IN POWER BI REPORT (NOT DATAFLOW)
+				============================================================================
+				
+				📋 PURPOSE:
+				This query is designed to be used directly in the Power BI semantic model,
+				NOT in a Fabric Dataflow. It queries InTrans_Incremental directly.
+				
+				🔧 HOW TO USE:
+				1. In Power BI Desktop, go to Transform Data (Power Query Editor)
+				2. Create a new Blank Query
+				3. Open Advanced Editor
+				4. Paste the let...in block below
+				5. Rename the query to "Fact_InTrans_AllPromo"
+				
+				============================================================================
+				*/
+				
+				let
+				    StartDate = #datetime(2023, 1, 1, 0, 0, 0),
+				
+				    Source = Lakehouse.Contents([HierarchicalNavigation = null]),
+				    Workspace = Source{[workspaceId = "b48cdb35-7ce3-46de-96df-d70db77649cb"]}[Data],
+				    Lakehouse = Workspace{[lakehouseId = "3e74497b-8c51-4a1a-91a1-888c59118f48"]}[Data],
+				    InTrans = Lakehouse{[Id = "InTrans_Incremental", ItemKind = "Table"]}[Data],
+				
+				    // Filter to 2023 onwards
+				    FilterByDate = Table.SelectRows(InTrans, each
+				        [TransDatetime] >= StartDate
+				    ),
+				
+				    // Select columns (Branch stays as text, Qty included)
+				    SelectColumns = Table.SelectColumns(FilterByDate, {
+				        "Branch",
+				        "Franchise",
+				        "CustomerNo",
+				        "PartNumber",
+				        "TransDatetime",
+				        "Type",
+				        "Qty",
+				        "RONumber",
+				        "SaleValue",
+				        "CostValue",
+				        "Description"
+				    }),
+				
+				    // Rename for consistency with model
+				    RenameColumns = Table.RenameColumns(SelectColumns, {
+				        {"PartNumber", "PART_NO"},
+				        {"RONumber", "REF_NO"}
+				    }),
+				
+				    // Add DateKey for dim_DateTable relationship
+				    AddDateKey = Table.AddColumn(RenameColumns, "DateKey", each
+				        Date.From([TransDatetime]),
+				        type date
+				    ),
+				
+				    // Handle Qty - convert to number, null if not convertible
+				    CleanQty = Table.TransformColumns(AddDateKey, {
+				        {"Qty", each try Number.From(_) otherwise null, type number}
+				    }),
+				
+				    // ========================================================================
+				    // DEDUPLICATE: Remove duplicates from InTrans_Incremental watermark issues
+				    // ========================================================================
+				    // The InTrans_Incremental table may contain duplicate rows due to watermark
+				    // strategy issues (introduced ~December 2024). Since duplicates are exact
+				    // copies, Table.Distinct is more efficient than Table.Group.
+				    Deduplicate = Table.Distinct(CleanQty),
+				
+				    // Set data types (Branch is TEXT, not Int64)
+				    SetTypes = Table.TransformColumnTypes(Deduplicate, {
+				        {"Branch", type text},
+				        {"Franchise", type text},
+				        {"CustomerNo", type text},
+				        {"PART_NO", type text},
+				        {"TransDatetime", type datetime},
+				        {"Type", type text},
+				        {"Qty", type number},
+				        {"REF_NO", type text},
+				        {"SaleValue", type number},
+				        {"CostValue", type number},
+				        {"Description", type text},
+				        {"DateKey", type date}
+				    }),
+				
+				    // Reorder columns
+				    ReorderColumns = Table.ReorderColumns(SetTypes, {
+				        "Branch",
+				        "DateKey",
+				        "REF_NO",
+				        "PART_NO",
+				        "TransDatetime",
+				        "CustomerNo",
+				        "Franchise",
+				        "Type",
+				        "Description",
+				        "Qty",
+				        "SaleValue",
+				        "CostValue"
+				    })
+				
+				in
+				    ReorderColumns
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

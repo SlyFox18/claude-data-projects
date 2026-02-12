@@ -1,0 +1,52 @@
+ID,Name,Model,DataCategory,Description,IsHidden,StorageMode,TableStorage,Expression,ShowAsVariationOnly,IsPrivate,CalculationGroupPrecedence,LineageTag
+10,ArMaster_Customer_Low,3cc2e14c-c8ea-4d70-9fca-9b43a737cbde,Regular,,False,Import,,,False,False,,deaf39bf-05fe-4f1a-9df7-a8fb6e53d245
+13,InTrans_Low_Margin,3cc2e14c-c8ea-4d70-9fca-9b43a737cbde,Regular,,False,Import,,,False,False,,7253e0f6-5cda-4503-8e5d-7a2876b9ee63
+16,DateTableTemplate_9e6d13fd-b361-49cf-a3b4-2cc5a84ee11b,3cc2e14c-c8ea-4d70-9fca-9b43a737cbde,Regular,,True,Import,,"Calendar(Date(2015,1,1), Date(2015,1,1))",False,True,,83010e09-9390-4a82-8c44-0791931235e4
+19,Dim_Branch,3cc2e14c-c8ea-4d70-9fca-9b43a737cbde,Regular,,False,Import,,,False,False,,d8326383-4d8c-44ac-b14c-5ab3662beade
+25,MeasuresTable,3cc2e14c-c8ea-4d70-9fca-9b43a737cbde,Regular,,False,Import,,"ADDCOLUMNS( 
+    GENERATESERIES(1, 1), 
+    ""DummyColumn"", 1 
+)",False,False,,bd95bae6-b92a-4277-a321-d8de93eeb1c3
+28,Percentage Filter,3cc2e14c-c8ea-4d70-9fca-9b43a737cbde,Regular,,False,Import,,"GENERATESERIES(-50, 100, 0.0001)",False,False,,d099e0f1-3f13-4f97-b594-2fbe1310ae8e
+31,Parts_Low_Margin_jdis_InMaster,3cc2e14c-c8ea-4d70-9fca-9b43a737cbde,Regular,,False,Import,,,False,False,,037947ce-7ad8-4171-9595-f474828f11b7
+40,dimDate,3cc2e14c-c8ea-4d70-9fca-9b43a737cbde,Time,,False,Import,,"
+VAR MinDate = CALCULATE(MIN(InTrans_Low_Margin[Date]))
+VAR MaxDate = CALCULATE(MAX(InTrans_Low_Margin[Date]))
+RETURN
+ADDCOLUMNS(
+    ADDCOLUMNS(
+        CALENDAR(MinDate, MaxDate),
+        ""Index"", RANKX(CALENDARAUTO(), [Date], , ASC)
+    ),
+    ""Year"", YEAR([Date]),
+    ""Quarter No"", QUARTER([Date]),
+    ""Quarter"", ""Q"" & QUARTER([Date]),
+    ""Month No"", MONTH([Date]),
+    ""Month"", FORMAT([Date], ""MMM""),
+    ""Day"", DAY([Date]),
+    ""Slicer Date"",
+    IF(
+        [Date] = TODAY(),
+        ""Today"",
+        IF(
+            [Date] < TODAY(),
+            [Date] & """"
+        )
+    )
+)",False,False,,182bf08a-c014-437e-8610-31da07af0898
+43,InMaster_Combine_Vault,3cc2e14c-c8ea-4d70-9fca-9b43a737cbde,Regular,,False,Import,,,False,False,,1b52c6aa-fa97-4767-bdc2-1df9714b292c
+16913,UniqueParts,3cc2e14c-c8ea-4d70-9fca-9b43a737cbde,Regular,,False,Import,,"DISTINCT(
+    UNION(
+        SELECTCOLUMNS(InMaster_Combine_Vault, ""PART_NO"", InMaster_Combine_Vault[PART_NO]),
+        SELECTCOLUMNS(InTrans_Low_Margin, ""PART_NO"", InTrans_Low_Margin[Part No]),
+        SELECTCOLUMNS(Parts_Low_Margin_jdis_InMaster, ""PART_NO"", Parts_Low_Margin_jdis_InMaster[Part No])
+    )
+)",False,False,,b7d9a523-d2c8-4514-ba86-057b2923ad10
+28972,Data Refresh,3cc2e14c-c8ea-4d70-9fca-9b43a737cbde,Regular,,False,Import,,,False,False,,e6e823ab-df54-46c5-859e-0dfe63f43647
+28975,LocalDateTable_b0de20af-3411-4395-83b6-9ca6f679ea60,3cc2e14c-c8ea-4d70-9fca-9b43a737cbde,Regular,,True,Import,,"Calendar(Date(Year(MIN('Data Refresh'[Date])), 1, 1), Date(Year(MAX('Data Refresh'[Date])), 12, 31))",True,False,,92b73c64-5741-46f3-9260-3d023802bc40
+44519,LocalDateTable_c92e6afb-2011-45c1-aa80-1f20ef42382c,3cc2e14c-c8ea-4d70-9fca-9b43a737cbde,Regular,,True,Import,,"Calendar(Date(Year(MIN('Parts_Low_Margin_jdis_InMaster'[Date Last Requested])), 1, 1), Date(Year(MAX('Parts_Low_Margin_jdis_InMaster'[Date Last Requested])), 12, 31))",True,False,,a7e24983-f005-460b-8f60-21c83af4385f
+44522,LocalDateTable_0d258976-f40e-4bd7-8b8d-a1257cb779db,3cc2e14c-c8ea-4d70-9fca-9b43a737cbde,Regular,,True,Import,,"Calendar(Date(Year(MIN('Parts_Low_Margin_jdis_InMaster'[Stock Take Date])), 1, 1), Date(Year(MAX('Parts_Low_Margin_jdis_InMaster'[Stock Take Date])), 12, 31))",True,False,,7b188d57-2cf0-44c4-be87-f6a52bd128e5
+48689,Old Report Tables,3cc2e14c-c8ea-4d70-9fca-9b43a737cbde,Regular,,False,Import,,INFO.VIEW.TABLES(),False,False,,233c1215-ed80-4b1e-b31b-cb7d4420d35a
+49516,Old Report Relationships,3cc2e14c-c8ea-4d70-9fca-9b43a737cbde,Regular,,False,Import,,INFO.VIEW.RELATIONSHIPS(),False,False,,30c1caee-8826-4d57-bf83-26eb0aaeea49
+50906,Old Report Measures,3cc2e14c-c8ea-4d70-9fca-9b43a737cbde,Regular,,False,Import,,INFO.VIEW.MEASURES(),False,False,,8812943c-c9aa-422a-bbfc-210d357e7092
+52924,Old Report Columns,3cc2e14c-c8ea-4d70-9fca-9b43a737cbde,Regular,,False,Import,,INFO.VIEW.COLUMNS(),False,False,,90cb2311-f81b-4e7c-b55b-3a33e7370d3e

@@ -1,0 +1,215 @@
+table Parts_Promo
+	lineageTag: a65ed4f3-5bfe-403a-bd11-5d58798769eb
+
+	column BRANCH
+		dataType: string
+		lineageTag: 76b6614f-a483-468b-af8d-ac78ccf5eba4
+		summarizeBy: none
+		sourceColumn: BRANCH
+
+		annotation SummarizationSetBy = Automatic
+
+	column FRANCHISE
+		dataType: string
+		lineageTag: d33a1abb-e4eb-4023-ad40-2404d7721ea4
+		summarizeBy: none
+		sourceColumn: FRANCHISE
+
+		annotation SummarizationSetBy = Automatic
+
+	column customer_no
+		dataType: string
+		lineageTag: 02453f3d-0e86-484a-9ec2-963178d04d44
+		summarizeBy: none
+		sourceColumn: customer_no
+
+		annotation SummarizationSetBy = Automatic
+
+	column PART_NO
+		dataType: string
+		lineageTag: 1f2b13f2-d89e-4353-b630-67720405f639
+		summarizeBy: none
+		sourceColumn: PART_NO
+
+		annotation SummarizationSetBy = Automatic
+
+	column Trans_Datetime
+		dataType: dateTime
+		formatString: Short Date
+		lineageTag: ff9013ed-1015-4c22-903f-37a9e30e886c
+		summarizeBy: none
+		sourceColumn: Trans_Datetime
+
+		changedProperty = DataType
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column TYPE
+		dataType: string
+		lineageTag: 31601031-3dd8-4c5e-bd52-2948c1aca202
+		summarizeBy: none
+		sourceColumn: TYPE
+
+		annotation SummarizationSetBy = Automatic
+
+	column QTY
+		dataType: double
+		lineageTag: a58f663e-6272-4dd7-bd8c-0d73e04ed6b2
+		summarizeBy: sum
+		sourceColumn: QTY
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column REF_NO
+		dataType: string
+		lineageTag: 6e02427e-1b71-41d1-acac-b5925b1b4cd1
+		summarizeBy: none
+		sourceColumn: REF_NO
+
+		annotation SummarizationSetBy = Automatic
+
+	column SALE_VAL
+		dataType: double
+		lineageTag: e130e965-2412-44d9-ad52-1c29a19ab4c8
+		summarizeBy: sum
+		sourceColumn: SALE_VAL
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column COST_VAL
+		dataType: double
+		lineageTag: 345ab4ec-d6b8-4344-8a64-ae71e342fb74
+		summarizeBy: sum
+		sourceColumn: COST_VAL
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column DESCRIPTION
+		dataType: string
+		lineageTag: 39897792-837d-47e2-bb08-792a09fde8de
+		summarizeBy: none
+		sourceColumn: DESCRIPTION
+
+		annotation SummarizationSetBy = Automatic
+
+	column Part_Sales
+		dataType: double
+		lineageTag: e119eb17-7206-4b3b-b553-464bf3ff8061
+		summarizeBy: sum
+		sourceColumn: Part_Sales
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column Part_Cost
+		dataType: double
+		lineageTag: 4bf5dad3-e089-485d-902a-1bb697637041
+		summarizeBy: sum
+		sourceColumn: Part_Cost
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column Parts_Count
+		dataType: int64
+		formatString: 0
+		lineageTag: afd221a5-d8bb-4005-81ab-0c9717d687fd
+		summarizeBy: sum
+		sourceColumn: Parts_Count
+
+		annotation SummarizationSetBy = Automatic
+
+	column Rolling12MonthFlag =
+			
+			VAR CurrentDate = 'Parts_Promo'[Trans_Datetime]
+			RETURN
+			IF(
+			    'Parts_Promo'[Trans_Datetime] >= EDATE(TODAY(), -12) &&
+			    'Parts_Promo'[Trans_Datetime] <= TODAY(),
+			    1,
+			    0
+			)
+		formatString: 0
+		lineageTag: 2f379967-246b-4a16-ade8-cc3acad23c74
+		summarizeBy: sum
+
+		annotation SummarizationSetBy = Automatic
+
+	column PreviousYearRollingFlag =
+			
+			VAR CurrentDate = 'Parts_Promo'[Trans_Datetime]
+			RETURN
+			IF(
+			    'Parts_Promo'[Trans_Datetime] >= EDATE(TODAY(), -24) &&
+			    'Parts_Promo'[Trans_Datetime] <= EDATE(TODAY(), -12),
+			    1,
+			    0
+			)
+		formatString: 0
+		lineageTag: a4e6f1df-6019-453d-82b3-97fef085167f
+		summarizeBy: sum
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Net Sales Value' = Parts_Promo[Part_Sales] + Parts_Promo[SALE_VAL]
+		lineageTag: f30cdff8-9f8a-4321-a7f8-a689105aa711
+		summarizeBy: sum
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column MonthNumber = MONTH(Parts_Promo[Trans_Datetime])
+		formatString: 0
+		lineageTag: eaf374e8-a3ce-4e9b-8858-180f5f124bc7
+		summarizeBy: sum
+
+		annotation SummarizationSetBy = Automatic
+
+	column Day = 1
+		formatString: 0
+		lineageTag: 604de040-2124-490d-bf39-5a2bd6c91a38
+		summarizeBy: sum
+
+		annotation SummarizationSetBy = Automatic
+
+	column Date = DATE(YEAR(Parts_Promo[Trans_Datetime]), Parts_Promo[MonthNumber], Parts_Promo[Day])
+		formatString: General Date
+		lineageTag: a96a64c9-8d6a-4309-b42c-f2fe5acf56de
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	column Index
+		dataType: int64
+		formatString: 0
+		lineageTag: 4ba5175b-fa13-4f5f-9523-4fb9e7c36df5
+		summarizeBy: sum
+		sourceColumn: Index
+
+		annotation SummarizationSetBy = Automatic
+
+	partition Parts_Promo = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-ch6iiwox4jveda3rmgudwi6hey.datawarehouse.fabric.microsoft.com", "LH_Parts_Reports_Data"),
+				    dbo_Parts_Promo = Source{[Schema="dbo",Item="Parts_Promo"]}[Data],
+				    #"Added Index" = Table.AddIndexColumn(dbo_Parts_Promo, "Index", 1, 1, Int64.Type)
+				in
+				    #"Added Index"
+
+	annotation PBI_ResultType = Table
+
+	annotation PBI_NavigationStepName = Navigation
+

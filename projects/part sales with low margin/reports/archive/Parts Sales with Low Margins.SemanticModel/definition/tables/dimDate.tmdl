@@ -1,0 +1,115 @@
+table dimDate
+	lineageTag: 182bf08a-c014-437e-8610-31da07af0898
+	dataCategory: Time
+
+	column Date
+		isKey
+		formatString: General Date
+		lineageTag: 2962837e-15be-4d66-815b-3989a88ec248
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Date]
+
+		annotation SummarizationSetBy = Automatic
+
+	column Year
+		formatString: 0
+		lineageTag: b78dfc9a-69cf-4ad6-bb6e-176bb4a39b16
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Year]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Quarter No'
+		formatString: 0
+		lineageTag: fc1388cf-2e84-4c1c-b625-6e48731705ee
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Quarter No]
+
+		annotation SummarizationSetBy = Automatic
+
+	column Quarter
+		lineageTag: df89d95a-a1a8-43d8-b1e5-5f562d300760
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Quarter]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Month No'
+		formatString: 0
+		lineageTag: 19e0f3ea-1b8d-4dd5-80e9-5d50532e8a80
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Month No]
+
+		annotation SummarizationSetBy = Automatic
+
+	column Month
+		lineageTag: 3ccaff25-d6b8-48d3-a701-b3c421634333
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Month]
+
+		annotation SummarizationSetBy = Automatic
+
+	column Day
+		formatString: 0
+		lineageTag: bd4e6ffa-b283-4bd0-afa9-1163647f7648
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Day]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Slicer Date'
+		lineageTag: 037be235-5ca1-4d82-a4f2-5cfb97e9fd2e
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Slicer Date]
+		sortByColumn: Index
+
+		annotation SummarizationSetBy = Automatic
+
+	column Index
+		formatString: 0
+		lineageTag: 35f7ecff-2ac8-49d7-87a7-9fe5399e4d98
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Index]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dimDate = calculated
+		mode: import
+		source =
+				
+				VAR MinDate = CALCULATE(MIN(InTrans_Low_Margin[Date]))
+				VAR MaxDate = CALCULATE(MAX(InTrans_Low_Margin[Date]))
+				RETURN
+				ADDCOLUMNS(
+				    ADDCOLUMNS(
+				        CALENDAR(MinDate, MaxDate),
+				        "Index", RANKX(CALENDARAUTO(), [Date], , ASC)
+				    ),
+				    "Year", YEAR([Date]),
+				    "Quarter No", QUARTER([Date]),
+				    "Quarter", "Q" & QUARTER([Date]),
+				    "Month No", MONTH([Date]),
+				    "Month", FORMAT([Date], "MMM"),
+				    "Day", DAY([Date]),
+				    "Slicer Date",
+				    IF(
+				        [Date] = TODAY(),
+				        "Today",
+				        IF(
+				            [Date] < TODAY(),
+				            [Date] & ""
+				        )
+				    )
+				)
+
+	annotation PBI_Id = 045a4dd4ce624eee97a7ffc0a283d429
+

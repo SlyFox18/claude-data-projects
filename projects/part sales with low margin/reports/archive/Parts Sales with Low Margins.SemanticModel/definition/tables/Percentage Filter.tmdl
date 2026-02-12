@@ -1,0 +1,19 @@
+table 'Percentage Filter'
+	lineageTag: d099e0f1-3f13-4f97-b594-2fbe1310ae8e
+
+	column Value
+		lineageTag: 83246f04-266f-4113-a99d-2302eee73ecf
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [Value]
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	partition 'Percentage Filter' = calculated
+		mode: import
+		source = GENERATESERIES(-50, 100, 0.0001)
+
+	annotation PBI_Id = 093bdb025ed44fc3aa12c0b523405bd7
+

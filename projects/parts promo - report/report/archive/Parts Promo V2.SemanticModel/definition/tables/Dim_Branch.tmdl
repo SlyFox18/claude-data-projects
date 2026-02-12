@@ -1,0 +1,64 @@
+table Dim_Branch
+	lineageTag: f70c5d9e-0f72-4eab-8c19-d537dbacb5d2
+
+	column BranchID
+		dataType: string
+		lineageTag: 06a4343f-9849-4ebe-a895-ca2f3550b114
+		summarizeBy: none
+		sourceColumn: BranchID
+
+		annotation SummarizationSetBy = Automatic
+
+	column LocationID
+		dataType: string
+		lineageTag: 241e6c41-eafe-4879-b980-5505529d8246
+		summarizeBy: none
+		sourceColumn: LocationID
+
+		annotation SummarizationSetBy = Automatic
+
+	column City
+		dataType: string
+		lineageTag: d4c25e48-1924-47f0-b4ff-ff42d689e8a3
+		summarizeBy: none
+		sourceColumn: City
+
+		annotation SummarizationSetBy = Automatic
+
+	column State
+		dataType: string
+		lineageTag: 33556ec1-9ddc-4e39-b84e-b10ba1712bc5
+		summarizeBy: none
+		sourceColumn: State
+
+		annotation SummarizationSetBy = Automatic
+
+	column Branch
+		dataType: string
+		lineageTag: 57c6565c-7ed1-4fa0-9beb-7c368cf9dc32
+		summarizeBy: none
+		sourceColumn: Branch
+
+		annotation SummarizationSetBy = Automatic
+
+	column Sub-Branch
+		dataType: string
+		lineageTag: 1ccc529a-3d95-4409-ba25-ae46126d9465
+		summarizeBy: none
+		sourceColumn: Sub-Branch
+
+		annotation SummarizationSetBy = Automatic
+
+	partition Dim_Branch = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-ch6iiwox4jveda3rmgudwi6hey.datawarehouse.fabric.microsoft.com", "LH_Parts_Reports_Data"),
+				    dbo_Dim_Branch = Source{[Schema="dbo",Item="Dim_Branch"]}[Data]
+				in
+				    dbo_Dim_Branch
+
+	annotation PBI_ResultType = Exception
+
+	annotation PBI_NavigationStepName = Navigation
+

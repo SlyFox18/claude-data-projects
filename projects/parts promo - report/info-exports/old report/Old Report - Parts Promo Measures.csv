@@ -1,0 +1,717 @@
+ID,Name,Table,Description,DataType,Expression,FormatString,IsHidden,State,KPIID,IsSimpleMeasure,DisplayFolder,DetailRowsDefinition,DataCategory,FormatStringDefinition,LineageTag
+140,Discount,MeasuresTable,,,"
+SUM ( Parts_Promo[SALE_VAL] )",,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",20f0cc50-8f4d-4faa-b68d-b336037b0c3d
+141,Cost Value,MeasuresTable,,,"
+SUM ( Parts_Promo[Part_Cost] )",,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",b0fa8323-c500-46df-b110-8a2b9bf0ca7a
+142,Original Sale Value,MeasuresTable,,,"
+SUM ( Parts_Promo[Part_Sales] )",,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",53a7da8b-62f8-429b-b432-fee345fe085c
+143,Original Margin $,MeasuresTable,,,"
+[Original Sale Value] - [Cost Value]",,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",079397c2-a9a0-465e-8525-f3443c0816d7
+144,Original Margin %,MeasuresTable,,,"
+DIVIDE ( [Original Margin $], [Original Sale Value] )",,False,Valid,,False,,,,"""0.00%;-0.00%;0.00%""",083e6c93-828c-4947-8c33-67e198e92d0d
+145,Net Sales Value,MeasuresTable,,,"
+[Original Sale Value] + [Discount]",,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",dce02a37-32c3-4c69-aa6e-758484ba890d
+146,Net Margin $,MeasuresTable,,,"
+[Net Sales Value] - [Cost Value]",,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",8f6c80ab-7f56-4243-b37c-67ea1c47c5fe
+147,Net Margin %,MeasuresTable,,,"
+DIVIDE ( [Net Margin $], [Net Sales Value] )",,False,Valid,,False,,,,"""0.00%;-0.00%;0.00%""",c0afe6e1-78d6-4356-b2fd-554514ec408e
+148,Discount %,MeasuresTable,,,"
+DIVIDE ( ABS ( [Discount] ), [Original Sale Value] )",,False,Valid,,False,,,,"""0.00%;-0.00%;0.00%""",3dc1fcb3-6693-419a-b36c-150b9e431a71
+149,Rolling12MonthCount,MeasuresTable,,,"
+CALCULATE (
+    COUNTROWS ( 'Parts_Promo' ),
+    FILTER (
+        'Parts_Promo',
+        'Parts_Promo'[Rolling12MonthFlag] = 1
+            && 'Parts_Promo'[PART_NO] = MAX ( 'Parts_Promo'[PART_NO] )
+    )
+)",,False,Valid,,False,,,,"""0""",f52f52b6-f96a-4a3c-bd8c-4ed38f68a8ce
+150,PreviousYearRollingCount,MeasuresTable,,,"
+CALCULATE (
+    COUNTROWS ( 'Parts_Promo' ),
+    FILTER (
+        'Parts_Promo',
+        'Parts_Promo'[PreviousYearRollingFlag] = 1
+            && 'Parts_Promo'[PART_NO] = MAX ( 'Parts_Promo'[PART_NO] )
+    )
+)",,False,Valid,,False,,,,"""0""",af7ed383-bdad-4ae8-9566-776877c95f20
+151,PercentChangeRolling,MeasuresTable,,,"
+DIVIDE (
+    [Rolling12MonthCount] - [PreviousYearRollingCount],
+    [PreviousYearRollingCount],
+    0
+)",,False,Valid,,False,,,,"""0.0%;-0.0%;0.0%""",181870e6-0af4-430d-ba9a-2c23fab1635f
+152,Rolling12MonthNetSalesValue,MeasuresTable,,,"
+CALCULATE (
+    SUMX (
+        FILTER (
+            'Parts_Promo',
+            'Parts_Promo'[Trans_Datetime] >= EDATE ( TODAY (), -12 )
+                && 'Parts_Promo'[Trans_Datetime] <= TODAY ()
+        ),
+        [Net Sales Value]
+    ),
+    FILTER (
+        ALL ( 'Parts_Promo' ),
+        'Parts_Promo'[PART_NO] = MAX ( 'Parts_Promo'[PART_NO] )
+    )
+)",,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",1cfa737a-1c27-497c-9b55-a0c293d7f045
+153,PreviousYearRollingNetSalesValue,MeasuresTable,,,"
+CALCULATE (
+    SUMX (
+        FILTER (
+            'Parts_Promo',
+            'Parts_Promo'[Trans_Datetime] >= EDATE ( TODAY (), -24 )
+                && 'Parts_Promo'[Trans_Datetime] <= EDATE ( TODAY (), -12 )
+        ),
+        [Net Sales Value]
+    ),
+    FILTER (
+        ALL ( 'Parts_Promo' ),
+        'Parts_Promo'[PART_NO] = MAX ( 'Parts_Promo'[PART_NO] )
+    )
+)",,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",b8d2a4bc-5cc6-4dd4-a847-026f628b413e
+154,PercentChangeNetSalesValue,MeasuresTable,,,"
+DIVIDE (
+    [Rolling12MonthNetSalesValue] - [PreviousYearRollingNetSalesValue],
+    [PreviousYearRollingNetSalesValue],
+    0
+)",,False,Valid,,False,,,,,e3340740-1167-40a9-a826-26c72e3a3f4a
+155,HTML RO Tooltip Info,MeasuresTable,,,"
+VAR _PART =
+    MAX ( 'Parts_Promo'[PART_NO] )
+RETURN
+    ""
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+    <meta charset='UTF-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'> 
+
+    <style>
+        /* Animation for text appearance with a blur effect */
+        @keyframes text-focus-in {
+            0% {
+                transform: scale(1);
+                opacity: 0;
+                filter: blur(10px);
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .text-focus-in {
+            -webkit-animation: text-focus-in 0.6s cubic-bezier(0.550, 0.085, 0.680, 0.530) both;
+            animation: text-focus-in 0.6s cubic-bezier(0.550, 0.085, 0.680, 0.530) both;
+            color: #BEBEBE;  /* Light grey text color */
+            font-family: 'Segoe UI';  /* Sets font */
+            margin-top: -1px;  /* Adjusts position slightly */
+            display: flex;  /* Enables flexbox for alignment */
+            align-items: center;  /* Centers items vertically */
+            gap: 8px;  /* Space between the icon and text */
+        }
+
+        .dark-blue {
+            color: #303E6E;  /* Dark blue text color */
+            font-weight: bold;  /* Makes text bold */
+        }
+
+        .calendar-icon {
+            width: 14px;  /* Sets icon size */
+            height: 14px;
+            fill: #303E6E;  /* Calendar icon color */
+        }
+    </style>
+</head>
+<body>
+    <p class='text-focus-in'>  <!-- Animated text container -->
+        <!-- SVG calendar icon -->
+        <svg class='custom-icon' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' width='14' height='14'>
+    <path fill='#303E6E' d='M24 32.041h-18c-1.105 0-2-0.893-2-1.996v-24.097c0-1.102 0.895-1.995 2-1.995h5v2.079h-4c-0.552 0-1 0.446-1 0.998v22.017c0 0.553 0.448 0.998 1 0.998h16c0.553 0 1-0.445 1-0.998v-22.017c0-0.552-0.447-0.998-1-0.998h-4v-2.079h5c1.104 0 2 0.894 2 1.995v24.097c0 1.103-0.896 1.996-2 1.996zM11 12.019h11v0.998h-11v-0.998zM11 15.013h11v0.998h-11v-0.998zM11 18.008h11v0.998h-11v-0.998zM11 21.002h11v0.998h-11v-0.998zM22 27.986h-11v-0.996h11v0.996zM11 23.996h11v0.998h-11v-0.998zM8 11.999h1v0.998h-1v-0.998zM8 14.993h1v0.998h-1v-0.998zM8 17.986h1v0.998h-1v-0.998zM8 20.98h1v0.998h-1v-0.998zM9 27.967h-1v-0.998h1v0.998zM8 23.975h1v0.998h-1v-0.998zM21 7.091c0.553 0 1 0.447 1 0.999s0 1.933 0 1.933h-14c0 0 0-1.382 0-1.933s0.447-0.999 1-0.999h3c0 0 0.012-1.419 0.012-3.041 0-1.684 1.3-3.092 2.988-3.092s3.033 1.48 3.033 3.102c0 1.747-0.033 3.031-0.033 3.031h3zM15 3.953c-0.553 0-1 0.446-1 0.997 0 0.552 0.447 0.998 1 0.998s1-0.446 1-0.998c0-0.551-0.447-0.997-1-0.997z'/>
+    </svg>
+        <span class='dark-blue'>"" & _PART & ""</span>  <!-- Displays the formatted date from DAX -->
+    </p>
+</body>
+</html>
+""",,False,Valid,,False,,,,,dbfe030a-b828-43d6-a441-1173b5faa407
+156,HTML Tooltip Hours_Paid_Difference,MeasuresTable,,,"
+""<!DOCTYPE html>
+<html lang='en'>
+<head>
+    <meta charset='UTF-8'>  
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>  
+    <style>
+        @keyframes slide-in-blurred-top {
+            0% {
+                transform: translateY(-100%);
+                opacity: 0;
+                filter: blur(10px);
+            }
+            100% {
+                transform: translateY(0);
+                opacity: 1;
+                filter: blur(0);
+            }
+        }
+
+        .slide-in-blurred-top {
+            -webkit-animation: slide-in-blurred-top 1.5s cubic-bezier(0.230, 1.000, 0.320, 1.000) both;
+            animation: slide-in-blurred-top 1.5s cubic-bezier(0.230, 1.000, 0.320, 1.000) both;
+            animation-delay: 0.75s;
+            color: #013E72;
+            font-family: 'Segoe UI';
+            margin: 10px;
+            opacity: 0;
+            animation-fill-mode: forwards;
+        }
+
+        .category-name {
+            color: #333242;
+            position: relative;
+            padding-left: 20px;
+        }
+
+        .R12-Count::before, .PY-Count::before, .percent-change::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: calc(50% + 1px);
+            transform: translateY(-50%);
+            width: 10px;
+            height: 10px;
+            border-radius: 10px;
+        }
+
+        .R12-Count::before { background-color: #2A497B; }
+        .PY-Count::before { background-color: #CCCCCC; }
+        .percent-change::before { background-color: #75B6CA; }
+
+        .value {
+            color: #464648;
+            font-weight: 600;
+        }
+
+        .arrow {
+            font-size: 14px;
+            margin-left: 5px;
+        }
+
+        .up-arrow {
+            color: green;
+        }
+
+        .down-arrow {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <div class='slide-in-blurred-top'>
+        ""
+    & IF (
+        NOT ( ISBLANK ( [Rolling12MonthCount] ) ),
+        ""<p><span class='category-name R12-Count'>Rolling 12: </span><span class='value' id='current'>""
+            & FORMAT ( [Rolling12MonthCount], ""#,0"" ) & ""</span></p>"",
+        """"
+    )
+    & IF (
+        NOT ( ISBLANK ( [PreviousYearRollingCount] ) ),
+        ""<p><span class='category-name PY-Count'>PY R12: </span><span class='value' id='previous'>""
+            & FORMAT ( [PreviousYearRollingCount], ""#,0"" ) & ""</span></p>"",
+        """"
+    )
+    & IF (
+        NOT ( ISBLANK ( [PercentChangeRolling] ) ),
+        ""<p><span class='category-name percent-change'>% Change: </span><span class='value' id='current'>""
+            & FORMAT ( [PercentChangeRolling], ""#,0.00%"" )
+            & IF (
+                [PercentChangeRolling] > 0,
+                ""<span class='arrow up-arrow'>&#9650;</span>"",
+                /* Green up arrow */
+                ""<span class='arrow down-arrow'>&#9660;</span>"" /* Red down arrow */
+            ) & ""</span></p>"",
+        """"
+    ) & ""
+    </div>
+</body>
+</html>""",,False,Valid,,False,,,,,eed6864d-f690-4d58-84e6-e1dfb1a91b0a
+157,HTML Tooltip Net_Sales,MeasuresTable,,,"
+""<!DOCTYPE html>
+<html lang='en'>
+<head>
+    <meta charset='UTF-8'>  
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>  
+    <style>
+        @keyframes slide-in-blurred-top {
+            0% {
+                transform: translateY(-100%);
+                opacity: 0;
+                filter: blur(10px);
+            }
+            100% {
+                transform: translateY(0);
+                opacity: 1;
+                filter: blur(0);
+            }
+        }
+
+        .slide-in-blurred-top {
+            -webkit-animation: slide-in-blurred-top 1.5s cubic-bezier(0.230, 1.000, 0.320, 1.000) both;
+            animation: slide-in-blurred-top 1.5s cubic-bezier(0.230, 1.000, 0.320, 1.000) both;
+            animation-delay: 0.75s;
+            color: #013E72;
+            font-family: 'Segoe UI';
+            margin: 10px;
+            opacity: 0;
+            animation-fill-mode: forwards;
+        }
+
+        .category-name {
+            color: #333242;
+            position: relative;
+            padding-left: 20px;
+        }
+
+        .R12-NetSales::before, .PY-NetSales::before, .percent-change::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: calc(50% + 1px);
+            transform: translateY(-50%);
+            width: 10px;
+            height: 10px;
+            border-radius: 10px;
+        }
+
+        .R12-NetSales::before { background-color: #2A497B; }
+        .PY-NetSales::before { background-color: #CCCCCC; }
+        .percent-change::before { background-color: #75B6CA; }
+
+        .value {
+            color: #464648;
+            font-weight: 600;
+        }
+
+        .arrow {
+            font-size: 14px;
+            margin-left: 5px;
+        }
+
+        .up-arrow {
+            color: green;
+        }
+
+        .down-arrow {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <div class='slide-in-blurred-top'>
+        ""
+    & IF (
+        NOT ( ISBLANK ( [Rolling12MonthNetSalesValue] ) ),
+        ""<p><span class='category-name R12-NetSales'>R12 Net Sales: </span><span class='value' id='current'>""
+            & FORMAT ( [Rolling12MonthNetSalesValue], ""$#,##0.00"" ) & ""</span></p>"",
+        """"
+    )
+    & IF (
+        NOT ( ISBLANK ( [PreviousYearRollingNetSalesValue] ) ),
+        ""<p><span class='category-name PY-NetSales'>PY R12 Net Sales: </span><span class='value' id='previous'>""
+            & FORMAT ( [PreviousYearRollingNetSalesValue], ""$#,##0.00"" ) & ""</span></p>"",
+        """"
+    )
+    & IF (
+        NOT ( ISBLANK ( [PercentChangeNetSalesValue] ) ),
+        ""<p><span class='category-name percent-change'>% Change: </span><span class='value' id='current'>""
+            & FORMAT ( [PercentChangeNetSalesValue], ""#,0.00%"" )
+            & IF (
+                [PercentChangeNetSalesValue] > 0,
+                ""<span class='arrow up-arrow'>&#9650;</span>"",
+                /* Green up arrow */
+                ""<span class='arrow down-arrow'>&#9660;</span>"" /* Red down arrow */
+            ) & ""</span></p>"",
+        """"
+    ) & ""
+    </div>
+</body>
+</html>""",,False,Valid,,False,,,,,e802b70d-ce8e-4060-b5fc-4c53973db38a
+158,HTML Tooltip Info,MeasuresTable,,,"
+VAR _PART =
+    MAX ( 'Parts_Promo'[PART_NO] )
+RETURN
+    ""
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+    <meta charset='UTF-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'> 
+
+    <style>
+        /* Animation for text appearance with a blur effect */
+        @keyframes text-focus-in {
+            0% {
+                transform: scale(1);
+                opacity: 0;
+                filter: blur(10px);
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .text-focus-in {
+            -webkit-animation: text-focus-in 0.6s cubic-bezier(0.550, 0.085, 0.680, 0.530) both;
+            animation: text-focus-in 0.6s cubic-bezier(0.550, 0.085, 0.680, 0.530) both;
+            color: #BEBEBE;  /* Light grey text color */
+            font-family: 'Segoe UI';  /* Sets font */
+            margin-top: -1px;  /* Adjusts position slightly */
+            display: flex;  /* Enables flexbox for alignment */
+            align-items: center;  /* Centers items vertically */
+            gap: 8px;  /* Space between the icon and text */
+        }
+
+        .dark-blue {
+            color: #303E6E;  /* Dark blue text color */
+            font-weight: bold;  /* Makes text bold */
+        }
+
+        .calendar-icon {
+            width: 14px;  /* Sets icon size */
+            height: 14px;
+            fill: #303E6E;  /* Calendar icon color */
+        }
+    </style>
+</head>
+<body>
+    <p class='text-focus-in'>  <!-- Animated text container -->
+        <!-- SVG calendar icon -->
+        <svg class='custom-icon' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' width='14' height='14'>
+            <path d='M24 32.041h-18c-1.105 0-2-0.893-2-1.996v-24.097c0-1.102 0.895-1.995 2-1.995h5v2.079h-4c-0.552 0-1 0.446-1 0.998v22.017c0 0.553 0.448 0.998 1 0.998h16c0.553 0 1-0.445 1-0.998v-22.017c0-0.552-0.447-0.998-1-0.998h-4v-2.079h5c1.104 0 2 0.894 2 1.995v24.097c0 1.103-0.896 1.996-2 1.996zM11 12.019h11v0.998h-11v-0.998zM11 15.013h11v0.998h-11v-0.998zM11 18.008h11v0.998h-11v-0.998zM11 21.002h11v0.998h-11v-0.998zM22 27.986h-11v-0.996h11v0.996zM11 23.996h11v0.998h-11v-0.998zM8 11.999h1v0.998h-1v-0.998zM8 14.993h1v0.998h-1v-0.998zM8 17.986h1v0.998h-1v-0.998zM8 20.98h1v0.998h-1v-0.998zM9 27.967h-1v-0.998h1v0.998zM8 23.975h1v0.998h-1v-0.998zM21 7.091c0.553 0 1 0.447 1 0.999s0 1.933 0 1.933h-14c0 0 0-1.382 0-1.933s0.447-0.999 1-0.999h3c0 0 0.012-1.419 0.012-3.041 0-1.684 1.3-3.092 2.988-3.092s3.033 1.48 3.033 3.102c0 1.747-0.033 3.031-0.033 3.031h3zM15 3.953c-0.553 0-1 0.446-1 0.997 0 0.552 0.447 0.998 1 0.998s1-0.446 1-0.998c0-0.551-0.447-0.997-1-0.997z'/>
+        </svg>
+        <span class='dark-blue'>"" & _PART & ""</span>  <!-- Displays the formatted date from DAX -->
+    </p>
+</body>
+</html>
+""",,False,Valid,,False,,,,,e5206e7c-0edf-4634-aaf0-58c62752ea57
+159,HTML Date Tooltip Info,MeasuresTable,,,"
+VAR _date =
+    FORMAT ( MAX ( Parts_Promo[Trans_Datetime] ), ""MM/DD/YYYY"" )
+RETURN
+    ""
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+    <meta charset='UTF-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'> 
+
+    <style>
+        /* Animation for text appearance with a blur effect */
+        @keyframes text-focus-in {
+            0% {
+                transform: scale(1);
+                opacity: 0;
+                filter: blur(10px);
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .text-focus-in {
+            -webkit-animation: text-focus-in 0.6s cubic-bezier(0.550, 0.085, 0.680, 0.530) both;
+            animation: text-focus-in 0.6s cubic-bezier(0.550, 0.085, 0.680, 0.530) both;
+            color: #BEBEBE;  /* Light grey text color */
+            font-family: 'Segoe UI';  /* Sets font */
+            margin-top: -1px;  /* Adjusts position slightly */
+            display: flex;  /* Enables flexbox for alignment */
+            align-items: center;  /* Centers items vertically */
+            gap: 8px;  /* Space between the icon and text */
+        }
+
+        .dark-blue {
+            color: #303E6E;  /* Dark blue text color */
+            font-weight: bold;  /* Makes text bold */
+        }
+
+        .calendar-icon {
+            width: 14px;  /* Sets icon size */
+            height: 14px;
+            fill: #303E6E;  /* Calendar icon color */
+        }
+    </style>
+</head>
+<body>
+    <p class='text-focus-in'>  <!-- Animated text container -->
+        <!-- SVG calendar icon -->
+        <svg class='calendar-icon' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'>
+            <path d='M19 4h-1V2h-2v2H8V2H6v2H5C3.897 4 3 4.897 3 6v14c0 1.103 0.897 2 2 2h14c1.103 0 2-0.897 2-2V6c0-1.103-0.897-2-2-2zm0 16H5V10h14v10zM5 8V6h14l0.002 2H5z'/>
+        </svg>
+        <span class='dark-blue'>"" & _date & ""</span>  <!-- Displays the formatted date from DAX -->
+    </p>
+</body>
+</html>
+""",,False,Valid,,False,,,,,b7c875d0-a4b5-4c20-87c9-21bf9689482e
+160,HTML Tooltip Details,MeasuresTable,,,"
+""<!DOCTYPE html>
+<html lang='en'>
+<head>
+    <meta charset='UTF-8'>  
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>  
+    <style>
+        @keyframes slide-in-blurred-top {
+            0% {
+                transform: translateY(-100%);
+                opacity: 0;
+                filter: blur(10px);
+            }
+            100% {
+                transform: translateY(0);
+                opacity: 1;
+                filter: blur(0);
+            }
+        }
+
+        .slide-in-blurred-top {
+            -webkit-animation: slide-in-blurred-top 1.5s cubic-bezier(0.230, 1.000, 0.320, 1.000) both;
+            animation: slide-in-blurred-top 1.5s cubic-bezier(0.230, 1.000, 0.320, 1.000) both;
+            animation-delay: 0.75s;
+            color: #013E72;
+            font-family: 'Segoe UI';
+            margin: 10px;
+            opacity: 0;
+            animation-fill-mode: forwards;
+        }
+
+        .category-name {
+            color: #333242;
+            position: relative;
+            padding-left: 20px;
+        }
+
+        .R12-NetSales::before, .PY-NetSales::before, .percent-change::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: calc(50% + 1px);
+            transform: translateY(-50%);
+            width: 10px;
+            height: 10px;
+            border-radius: 10px;
+        }
+
+        .R12-NetSales::before { background-color: #2A497B; }
+        .PY-NetSales::before { background-color: #CCCCCC; }
+        .percent-change::before { background-color: #75B6CA; }
+
+        .value {
+            color: #464648;
+            font-weight: 600;
+        }
+
+        .arrow {
+            font-size: 14px;
+            margin-left: 5px;
+        }
+
+        .up-arrow {
+            color: green;
+        }
+
+        .down-arrow {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <div class='slide-in-blurred-top'>
+        ""
+    & IF (
+        NOT ( ISBLANK ( [Discount %] ) ),
+        ""<p><span class='category-name R12-NetSales'>Discount: </span><span class='value' id='current'>""
+            & FORMAT ( [Discount %], ""#,#0.00%"" ) & ""</span></p>"",
+        """"
+    )
+    & IF (
+        NOT ( ISBLANK ( [Net Sales Value] ) ),
+        ""<p><span class='category-name PY-NetSales'>Net Sales: </span><span class='value' id='previous'>""
+            & FORMAT ( [Net Sales Value], ""$#,##0.00"" ) & ""</span></p>"",
+        """"
+    )
+    & IF (
+        NOT ( ISBLANK ( [Original Sale Value] ) ),
+        ""<p><span class='category-name percent-change'>Original Sales: </span><span class='value' id='current'>""
+            & FORMAT ( [Original Sale Value], ""$#,##0.00"" ) & ""</span></p>"",
+        """"
+    ) & ""
+    </div>
+</body>
+</html>""",,False,Valid,,False,,,,,b08f9211-180e-4e96-aa5b-cc025a12e8ce
+161,Color Discount %,MeasuresTable,,,"
+SWITCH (
+    TRUE (),
+    [Discount %] <= 0.10, ""#AFCBAA"",
+    // Red for 10% and below
+    [Discount %] > 0.10
+        && [Discount %] <= 0.15, ""#FFF299"",
+    // Yellow for 11% to 15%
+    [Discount %] > 0.15, ""#EFB5B9"",
+    // Green for 16% and above
+    ""#FFFFFF"" // Default color (white)
+)",,False,Valid,,False,,,,,f9747ed1-c1be-463a-8c52-0696187bbcfc
+3915,Total Net Sales Value,MeasuresTable,,,"
+SUMX (
+    FILTER ( Parts_Promo, LEFT ( Parts_Promo[PART_NO], 1 ) = ""*"" ),
+    Parts_Promo[Part_Sales] + Parts_Promo[SALE_VAL]
+)",,False,Valid,,False,,,,,13d0543a-d94b-46d9-8b58-7f44b885712a
+4130,Total SALE_VAL,MeasuresTable,,,"
+SUM ( InTrans_All_Promo[SALE_VAL] )",,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",a936e8ab-a7d9-4bed-9505-bc479ade6572
+11109,Percent to Sale Val,MeasuresTable,,,"
+DIVIDE ( [Net Sales Value], [Total SALE_VAL], 0 )",,False,Valid,,False,,,,"""0.00%;-0.00%;0.00%""",fe33a090-c5c4-419e-85c3-e769940db282
+12134,NetSalesValueByPartNo,MeasuresTable,,,"
+CALCULATE (
+    SUM ( Parts_Promo[Net Sales Value] ),
+    FILTER (
+        Parts_Promo,
+        Parts_Promo[PART_NO] IN VALUES ( InTrans_All_Promo[PART_NO] )
+    )
+)",,False,Valid,,False,,,,,0ba967d5-a652-4849-a792-1dbe327943f1
+12221,PercentToSaleVal,MeasuresTable,,,"
+DIVIDE ( [NetSalesValueByPartNo], [Total SALE_VAL], 0 )",,False,Valid,,False,,,,"""0.00%;-0.00%;0.00%""",c898e9cf-356c-4112-bb6b-402756886064
+18855,Greeting,MeasuresTable,,,"
+VAR CurrentHour = HOUR(NOW())
+VAR AdjustedHour = MOD(CurrentHour - 6, 24)
+RETURN
+    SWITCH (
+        TRUE(),
+        AdjustedHour < 12, ""Good morning, "",
+        AdjustedHour < 18, ""Good afternoon, "",
+        ""Good evening, ""
+    )",,False,Valid,,False,,,,,3b1e9019-1b35-4ae5-9b37-30c7facb6d65
+18983,User,MeasuresTable,,,"
+VAR _user =
+    USERNAME ()
+RETURN
+    RIGHT ( USERNAME (), LEN ( _user ) - SEARCH ( ""\"", _user ) )",,False,Valid,,False,,,,,eadcfe55-ab1e-4978-ba8a-c6034c072cc3
+19852,CombinedTableNetSales,MeasuresTable,,,"
+MAX ( 'CalculatedTable'[Net Sales Value] )",,False,Valid,,False,,,,,58bb6bd1-b607-44c4-8e9a-78f1645752e2
+20023,HTML Tooltip Net Sales %,MeasuresTable,,,"
+""<!DOCTYPE html>
+<html lang='en'>
+<head>
+    <meta charset='UTF-8'>  
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>  
+    <style>
+        @keyframes slide-in-blurred-top {
+            0% {
+                transform: translateY(-100%);
+                opacity: 0;
+                filter: blur(10px);
+            }
+            100% {
+                transform: translateY(0);
+                opacity: 1;
+                filter: blur(0);
+            }
+        }
+
+        .slide-in-blurred-top {
+            -webkit-animation: slide-in-blurred-top 1.5s cubic-bezier(0.230, 1.000, 0.320, 1.000) both;
+            animation: slide-in-blurred-top 1.5s cubic-bezier(0.230, 1.000, 0.320, 1.000) both;
+            animation-delay: 0.75s;
+            color: #013E72;
+            font-family: 'Segoe UI';
+            margin: 10px;
+            opacity: 0;
+            animation-fill-mode: forwards;
+        }
+
+        .category-name {
+            color: #333242;
+            position: relative;
+            padding-left: 20px;
+        }
+
+        .R12-NetSales::before, .PY-NetSales::before, .percent-change::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: calc(50% + 1px);
+            transform: translateY(-50%);
+            width: 10px;
+            height: 10px;
+            border-radius: 10px;
+        }
+
+        .R12-NetSales::before { background-color: #2A497B; }
+        .PY-NetSales::before { background-color: #CCCCCC; }
+        .percent-change::before { background-color: #75B6CA; }
+
+        .value {
+            color: #464648;
+            font-weight: 600;
+        }
+
+        .arrow {
+            font-size: 14px;
+            margin-left: 5px;
+        }
+
+        .up-arrow {
+            color: green;
+        }
+
+        .down-arrow {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <div class='slide-in-blurred-top'>
+        ""
+    & IF (
+        NOT ( ISBLANK ( [CombinedTableNetSales] ) ),
+        ""<p><span class='category-name R12-NetSales'>Net Sales: </span><span class='value' id='current'>""
+            & FORMAT ( [CombinedTableNetSales], ""$#,##0.00"" ) & ""</span></p>"",
+        """"
+    )
+    & IF (
+        NOT ( ISBLANK ( [Total SALE_VAL] ) ),
+        ""<p><span class='category-name PY-NetSales'>Total Sales: </span><span class='value' id='previous'>""
+            & FORMAT ( [Total SALE_VAL], ""$#,##0.00"" ) & ""</span></p>"",
+        """"
+    )
+    & IF (
+        NOT ( ISBLANK ( [Original Sale Value] ) ),
+        ""<p><span class='category-name percent-change'>Original Sales: </span><span class='value' id='current'>""
+            & FORMAT ( [Original Sale Value], ""$#,##0.00"" ) & ""</span></p>"",
+        """"
+    ) & ""
+    </div>
+</body>
+</html>""",,False,Valid,,False,,,,,e6be984d-517c-4058-b9fc-a173a5d0cc5b
+26561,ShowRow,MeasuresTable,,,"
+VAR minRow = [SelectedMinRow]
+VAR maxRow = [SelectedMaxRow]
+RETURN
+IF(SELECTEDVALUE('Parts_Promo'[Index]) >= minRow && SELECTEDVALUE('Parts_Promo'[Index]) <= maxRow, 1, 0)",,False,Valid,,False,,,,,6b09bd21-1506-4dd3-9e3d-335fd2f772fe
+26647,SelectedMaxRow,MeasuresTable,,,"
+MAXX(FILTER('Pagnation Table', 'Pagnation Table'[Page Number] = SELECTEDVALUE('Pagnation Table'[Page Number])),'Pagnation Table'[Max Row])",,False,Valid,,False,,,,"""0""",cae00a16-0f11-4f78-bf77-d85947a834e6
+26817,SelectedMinRow,MeasuresTable,,,"
+MINX(FILTER('Pagnation Table', 'Pagnation Table'[Page Number] = SELECTEDVALUE('Pagnation Table'[Page Number])), 'Pagnation Table'[Min Row])",,False,Valid,,False,,,,"""0""",bcdd4467-f254-4bf6-ab15-5b5283996d48
+162,_ShowValueForDates,Date,,,"
+VAR __LastDateWithData =
+    CALCULATE (
+        MAXX ( { MAX ( 'Parts_Promo'[Trans_Datetime] ), MAX ( 'Data Refresh'[CurrentDateTime] ), MAX ( 'Data Refresh'[Date] ) }, ''[Value] ),
+        REMOVEFILTERS ()
+    )
+VAR __FirstDateVisible =
+    MIN ( 'Date'[Date] )
+VAR __Result =
+    __FirstDateVisible <= __LastDateWithData
+RETURN
+    __Result",,True,Valid,,False,Hidden Time Intelligence,,,,5ab6a8f5-6047-4dde-9a72-3560e933c416

@@ -1,0 +1,52 @@
+table 'TopN Selector'
+	lineageTag: 936e8de2-fb1e-4123-8abc-825933156529
+
+	column TopN
+		formatString: 0
+		lineageTag: 0afe7ad4-2c98-4523-95f7-7afebb385ce6
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [TopN]
+
+		annotation SummarizationSetBy = Automatic
+
+	column Label
+		lineageTag: 748a597b-cc2d-4a63-a7e2-b12ebf9433c9
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Label]
+		sortByColumn: SortOrder
+
+		annotation SummarizationSetBy = Automatic
+
+	column SortOrder
+		formatString: 0
+		lineageTag: 8e5f3da0-c554-40f1-b1fb-6d212c4ea7b7
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [SortOrder]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'TopN Selector' = calculated
+		mode: import
+		source = ```
+				
+				DATATABLE(
+				    "TopN", INTEGER,
+				    "Label", STRING,
+				    "SortOrder", INTEGER,
+				    {
+				        {5,  "Top 5",    1},
+				        {10, "Top 10",   2},
+				        {15, "Top 15",   3},
+				        {20, "Top 20",   4},
+				        {25, "Top 25",   5},
+				        {-1, "Show All", 6}
+				    }
+				)
+				
+				```
+
+	annotation PBI_Id = ed8efe4bc4ab411aa6c736eb95cfe839
+

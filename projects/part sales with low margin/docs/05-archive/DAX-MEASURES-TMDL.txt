@@ -1,0 +1,269 @@
+// ============================================================================
+// DAX MEASURES FOR _MEASURES TABLE - TMDL FORMAT
+// ============================================================================
+// Instructions: Add these measures to your _Measures.tmdl file
+// Location: Part Sales with Low Margin.SemanticModel/definition/tables/_Measures.tmdl
+//
+// Add these AFTER the existing "Home - Header" measure and BEFORE the "column Value" section
+// ============================================================================
+
+	// ========================================================================
+	// TRANSACTION SALES MEASURES (Page 1: Parts Sales with Low Margins)
+	// ========================================================================
+
+	measure 'Sale $' = SUM(Fact_InTrans[SaleValue])
+		formatString: "\$#,0.00;(\$#,0.00);\$#,0.00"
+		lineageTag: sale-dollars-measure
+
+	measure 'Cost $' = SUM(Fact_InTrans[CostValue])
+		formatString: "\$#,0.00;(\$#,0.00);\$#,0.00"
+		lineageTag: cost-dollars-measure
+
+	measure Qty = SUM(Fact_InTrans[Qty])
+		formatString: "#,##0"
+		lineageTag: qty-measure
+
+	// ========================================================================
+	// MARGIN MEASURES - PRE-CALCULATED (FAST!)
+	// ========================================================================
+
+	measure 'Actual Margin $' = SUM(Fact_InTrans[ActualMarginDollars])
+		formatString: "\$#,0.00;(\$#,0.00);\$#,0.00"
+		lineageTag: actual-margin-dollars-measure
+
+	measure 'Original Margin $' = SUM(Fact_InTrans[OriginalMarginDollars])
+		formatString: "\$#,0.00;(\$#,0.00);\$#,0.00"
+		lineageTag: original-margin-dollars-measure
+
+	measure 'Margin Discrepancy $' = SUM(Fact_InTrans[MarginDiscrepancyDollars])
+		formatString: "\$#,0.00;(\$#,0.00);\$#,0.00"
+		lineageTag: margin-discrepancy-dollars-measure
+
+	// ========================================================================
+	// MARGIN PERCENTAGE MEASURES
+	// ========================================================================
+
+	measure 'Margin Value %' =
+		DIVIDE(
+		    [Actual Margin $],
+		    [Sale $],
+		    0
+		)
+		formatString: "0.00%;-0.00%;0.00%"
+		lineageTag: margin-value-pct-measure
+
+	measure 'Original Margin %' =
+		DIVIDE(
+		    [Original Margin $],
+		    [Sale $],
+		    0
+		)
+		formatString: "0.00%;-0.00%;0.00%"
+		lineageTag: original-margin-pct-measure
+
+	// ========================================================================
+	// CONDITIONAL FORMATTING MEASURES
+	// ========================================================================
+
+	measure 'Margin Color Code' = ```
+		SWITCH(
+		    TRUE(),
+		    [Margin Value %] < 0, 1,                                    // Red (negative margin)
+		    [Margin Value %] >= 0 && [Margin Value %] < 0.05, 2,       // Pink (0-5%)
+		    [Margin Value %] >= 0.05 && [Margin Value %] < 0.10, 3,    // Orange (5-10%)
+		    [Margin Value %] >= 0.10 && [Margin Value %] <= 0.1499, 4, // Yellow (10-14.99%)
+		    BLANK()                                                     // No color for 15%+
+		)
+		```
+		formatString: "0"
+		lineageTag: margin-color-code-measure
+
+	measure 'Margin $ Discrepancy Color Code' = ```
+		SWITCH(
+		    TRUE(),
+		    [Margin Discrepancy $] > 1, 1,                                              // Dark Green
+		    [Margin Discrepancy $] >= 0.75 && [Margin Discrepancy $] <= 1, 2,           // Green
+		    [Margin Discrepancy $] >= 0.50 && [Margin Discrepancy $] < 0.75, 3,         // Light Green
+		    [Margin Discrepancy $] >= 0.25 && [Margin Discrepancy $] < 0.50, 4,         // Lighter Green
+		    [Margin Discrepancy $] > 0 && [Margin Discrepancy $] < 0.25, 5,             // Even Lighter Green
+		    [Margin Discrepancy $] = 0, 6,                                               // White (neutral)
+		    [Margin Discrepancy $] < 0 && [Margin Discrepancy $] >= -0.25, 7,           // Real Light Red
+		    [Margin Discrepancy $] < -0.25 && [Margin Discrepancy $] >= -0.50, 8,       // Lighter Red
+		    [Margin Discrepancy $] < -0.50 && [Margin Discrepancy $] >= -0.75, 9,       // Light Red
+		    [Margin Discrepancy $] < -0.75 && [Margin Discrepancy $] >= -1, 10,         // Red
+		    [Margin Discrepancy $] < -1, 11,                                             // Dark Red
+		    BLANK()
+		)
+		```
+		formatString: "0"
+		lineageTag: margin-discrepancy-color-code-measure
+
+	// ========================================================================
+	// INVENTORY ANALYSIS MEASURES (Pages 2 & 3)
+	// ========================================================================
+
+	measure 'Total SOH Qty' =
+		SUM(dim_Parts_LowMargin[OnHandQty])
+		formatString: "#,##0"
+		lineageTag: total-soh-qty-measure
+
+	measure 'Inventory Cost' = SUM(dim_Parts_LowMargin[InventoryCost])
+		formatString: "\$#,0.00;(\$#,0.00);\$#,0.00"
+		lineageTag: inventory-cost-measure
+
+	measure 'MDP Value' =
+		SUM(dim_Parts_LowMargin[StockOrderPrice]) * [Total SOH Qty]
+		formatString: "\$#,0.00;(\$#,0.00);\$#,0.00"
+		lineageTag: mdp-value-measure
+
+	measure 'Sell Price' = SUM(dim_Parts_LowMargin[SellPrice1])
+		formatString: "\$#,0.00;(\$#,0.00);\$#,0.00"
+		lineageTag: sell-price-measure
+
+	measure 'List Price' = SUM(dim_Parts_LowMargin[ListPrice])
+		formatString: "\$#,0.00;(\$#,0.00);\$#,0.00"
+		lineageTag: list-price-measure
+
+	measure 'Stock Order Price' = MIN(dim_Parts_LowMargin[StockOrderPrice])
+		formatString: "\$#,0.00;(\$#,0.00);\$#,0.00"
+		lineageTag: stock-order-price-measure
+
+	// ========================================================================
+	// INVENTORY MARGIN CALCULATIONS
+	// ========================================================================
+
+	measure 'Sell Value' = [Sell Price] * [Total SOH Qty]
+		formatString: "\$#,0.00;(\$#,0.00);\$#,0.00"
+		lineageTag: sell-value-measure
+
+	measure 'Desired Margin $' = [Sell Value] - [MDP Value]
+		formatString: "\$#,0.00;(\$#,0.00);\$#,0.00"
+		lineageTag: desired-margin-dollars-measure
+
+	measure 'Desired Margin %' =
+		DIVIDE(
+		    [Desired Margin $],
+		    [Sell Value],
+		    0
+		)
+		formatString: "0.0%;-0.0%;0.0%"
+		lineageTag: desired-margin-pct-measure
+
+	measure 'Actual Margin $ (INV)' = [Sell Value] - [Inventory Cost]
+		formatString: "\$#,0.00;(\$#,0.00);\$#,0.00"
+		lineageTag: actual-margin-inv-dollars-measure
+
+	measure 'Actual Margin % (INV)' =
+		DIVIDE(
+		    [Actual Margin $ (INV)],
+		    [Sell Value],
+		    0
+		)
+		formatString: "0.0%;-0.0%;0.0%"
+		lineageTag: actual-margin-inv-pct-measure
+
+	// ========================================================================
+	// COST VARIANCE ANALYSIS (Page 3: Low Action Items)
+	// ========================================================================
+
+	measure '% Difference' = ```
+		DIVIDE(
+		    ([MDP Value] - [Inventory Cost]),
+		    ([MDP Value] + [Inventory Cost]) / 2,
+		    0
+		)
+		```
+		formatString: "0.0%;-0.0%;0.0%"
+		lineageTag: pct-difference-measure
+
+	measure '% Diff Discr (Low) Color Code' = ```
+		SWITCH(
+		    TRUE(),
+		    [% Difference] >= 0, 1,                                         // Green (cost lower than MDP)
+		    [% Difference] <= -0.000001 && [% Difference] > -0.05, 2,      // Light yellow (-0.1% to -5%)
+		    [% Difference] <= -0.051 && [% Difference] > -0.1, 3,          // Yellow (-5.1% to -10%)
+		    [% Difference] <= -0.10 && [% Difference] > -0.15, 8,          // Light orange (-10.1% to -15%)
+		    [% Difference] <= -0.15, 4,                                     // Red (-15% and worse)
+		    BLANK()
+		)
+		```
+		formatString: "0"
+		lineageTag: pct-diff-color-code-measure
+
+	// ========================================================================
+	// MARGIN DISCREPANCY SPLIT (for Page 2 cards)
+	// ========================================================================
+
+	measure 'Positive Margin $ Discrepancy' = ```
+		SUMX(
+		    FILTER(
+		        ADDCOLUMNS(
+		            dim_Parts_LowMargin,
+		            "MarginDiscrepancy", [Actual Margin $ (INV)] - [Desired Margin $]
+		        ),
+		        [MarginDiscrepancy] > 0
+		    ),
+		    [MarginDiscrepancy]
+		)
+		```
+		formatString: "\$#,0.00;(\$#,0.00);\$#,0.00"
+		lineageTag: positive-margin-discrepancy-measure
+
+	measure 'Negative Margin $ Discrepancy' = ```
+		SUMX(
+		    FILTER(
+		        ADDCOLUMNS(
+		            dim_Parts_LowMargin,
+		            "MarginDiscrepancy", [Actual Margin $ (INV)] - [Desired Margin $]
+		        ),
+		        [MarginDiscrepancy] < 0
+		    ),
+		    [MarginDiscrepancy]
+		)
+		```
+		formatString: "\$#,0.00;(\$#,0.00);\$#,0.00"
+		lineageTag: negative-margin-discrepancy-measure
+
+	measure 'Net Margin $ Discrepancy' =
+		[Positive Margin $ Discrepancy] + [Negative Margin $ Discrepancy]
+		formatString: "\$#,0.00;(\$#,0.00);\$#,0.00"
+		lineageTag: net-margin-discrepancy-measure
+
+	// ========================================================================
+	// VALIDATION MEASURES
+	// ========================================================================
+
+	measure 'Total Transactions' = COUNTROWS(Fact_InTrans)
+		formatString: "#,##0"
+		lineageTag: total-transactions-measure
+
+	measure 'Type Check' = ```
+		VAR TypeCount = CALCULATE(COUNTROWS(Fact_InTrans), Fact_InTrans[Type] <> "I")
+		RETURN
+		IF(TypeCount = 0, "✅ All TYPE = I", "⚠️ Non-invoice records found!")
+		```
+		lineageTag: type-check-measure
+
+	measure 'Margin Calc Check' = ```
+		VAR ActualSum = SUM(Fact_InTrans[ActualMarginDollars])
+		VAR CalcSum = [Sale $] - [Cost $]
+		VAR Diff = ActualSum - CalcSum
+		RETURN
+		IF(ABS(Diff) < 0.01, "✅ Margins match", "⚠️ Margin mismatch: " & FORMAT(Diff, "\$#,##0.00"))
+		```
+		lineageTag: margin-calc-check-measure
+
+// ============================================================================
+// END OF MEASURES
+// ============================================================================
+//
+// NEXT STEPS:
+// 1. Copy everything from line 12 to line 255 (all the measure definitions)
+// 2. Open: Part Sales with Low Margin.SemanticModel/definition/tables/_Measures.tmdl
+// 3. Find the line with "column Value" (around line 81)
+// 4. Paste all the measures ABOVE the "column Value" line
+// 5. Save the file
+// 6. Open Power BI Desktop and reload the model
+// 7. All measures will appear in the _Measures table
+//
+// ============================================================================

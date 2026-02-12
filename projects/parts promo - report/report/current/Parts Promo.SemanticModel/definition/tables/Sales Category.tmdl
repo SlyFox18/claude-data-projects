@@ -1,0 +1,37 @@
+table 'Sales Category'
+	lineageTag: fc1ab8ab-5e8d-4a04-b1fc-265548ffbb30
+
+	column Category
+		lineageTag: 4fde6890-be80-49b7-8ba1-078a1b2c3d7e
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Category]
+
+		annotation SummarizationSetBy = Automatic
+
+	column SortOrder
+		formatString: 0
+		lineageTag: 6d6239f1-bada-492a-af1e-5ac0504baa77
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [SortOrder]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Sales Category' = calculated
+		mode: import
+		source = ```
+				
+				DATATABLE(
+				    "Category", STRING,
+				    "SortOrder", INTEGER,
+				    {
+				        {"Net Sales (Promo Orders)", 1},
+				        {"Other Sales", 2}
+				    }
+				)
+				
+				```
+
+	annotation PBI_Id = 963bf810468c43528e420c1c0f62a20f
+

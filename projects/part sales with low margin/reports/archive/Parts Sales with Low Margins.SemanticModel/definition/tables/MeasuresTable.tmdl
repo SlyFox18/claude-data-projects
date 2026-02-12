@@ -1,0 +1,415 @@
+table MeasuresTable
+	lineageTag: bd95bae6-b92a-4277-a321-d8de93eeb1c3
+
+	measure 'Cost $' = SUM(InTrans_Low_Margin[COST_VAL])
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 2d4d9475-503c-4b9a-8951-624530abc74d
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Sale $' = CALCULATE( SUM('InTrans_Low_Margin'[SALE_VAL]), 'InTrans_Low_Margin'[TYPE] = "I" )
+		lineageTag: 549834f7-0594-4920-ac14-e1d98d2258df
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Margin Value' = [Sale $] - [Cost $]
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 30e67e62-1998-4ce8-a040-fd9a92c3208b
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Margin Value %' = ```
+			
+			DIVIDE(
+			    [Margin Value],
+			    [Sale $],
+			    0
+			) 
+			```
+		formatString: 0.00%;-0.00%;0.00%
+		lineageTag: c19709e1-ce32-40cf-bdab-591a0345f7b1
+
+	measure 'Measure Filter' =
+			
+			VAR MinValue = MIN('Percentage Filter'[Value])
+			VAR MaxValue = MAX('Percentage Filter'[Value])
+			VAR CurrentMeasureValue = [Margin Value %]
+			RETURN
+			IF(
+			    CurrentMeasureValue >= MinValue && CurrentMeasureValue <= MaxValue,
+			    1,
+			    0
+			)
+		formatString: 0
+		lineageTag: 487d03d0-7a7f-4a9b-ae63-2f1b09528e34
+
+	measure 'Margin Color Code' =
+			
+			SWITCH(
+			    TRUE(),
+			    [Margin Value %] < 0, 1,    -- Red
+			    [Margin Value %] >= 0 && [Margin Value %] < 0.05, 2,    -- Pink
+			    [Margin Value %] >= 0.05 && [Margin Value %] < 0.10, 3,   -- Orange
+			    [Margin Value %] >= 0.10 && [Margin Value %] <= 0.1499, 4,  -- Yellow
+			    BLANK()
+			)
+		formatString: 0
+		lineageTag: cd534c8e-d49a-4fe2-8b00-db44c720dcdb
+
+	measure Cost = SUM('Parts_Low_Margin_jdis_InMaster'[Cost])
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: ee9aeb8d-04f4-4a04-9205-c0f76009209a
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Sell Price' = SUM('Parts_Low_Margin_jdis_InMaster'[Sell Price])
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 85598e74-d300-4736-aec3-3a7ba996e8c9
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Cost Value' = [Cost] * [Total SOH Qty]
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: b29ada5a-cfed-4f16-94d9-7bbd2b5a16ff
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Sell Value' = [Sell Price] * [Total SOH Qty]
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 735e8341-28bb-46fd-b9c7-41d2aecf7314
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Desired Margin $' = [Sell Value] - [Cost Value]
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 40480baa-37a6-44f2-a05a-54cd35312854
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Desired Margin %' = DIVIDE([Desired Margin $], [Sell Value], 0)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 532e1a50-73d3-4bc0-99e2-7fb42db8a089
+
+	measure 'Inventory Cost' = SUM('Parts_Low_Margin_jdis_InMaster'[Inventory Cost])
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: bf2867af-4b8d-4e68-8f96-caf98d8c967a
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Actual Margin $' = [Sell Value] - [Inventory Cost]
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 90e62518-2de4-47a0-97aa-02009243f984
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Actual Margin %' = DIVIDE([Actual Margin $], [Sell Value], 0)
+		formatString: #,0.0%;-#,0.0%;#,0.0%
+		lineageTag: cc8e78ed-cba1-4387-9b16-f17fa512ef8f
+
+	measure 'Margin $ Discrepancy' = [Actual Margin $] - [Desired Margin $]
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: e438b9fc-fba3-4f0d-8067-5d321bc7ff47
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Sum of Positive Margin $ Discrepancy' =
+			
+			SUMX(
+			    FILTER(
+			        ADDCOLUMNS(
+			            'Parts_Low_Margin_jdis_InMaster',
+			            "MarginDiscrepancy", [Margin $ Discrepancy]
+			        ),
+			        [MarginDiscrepancy] > 0
+			    ),
+			    [MarginDiscrepancy]
+			)
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 66a35714-9640-4dd6-86a6-dd489e2ac350
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Sum of Negative Margin $ Discrepancy' =
+			
+			SUMX(
+			    FILTER(
+			        ADDCOLUMNS(
+			            'Parts_Low_Margin_jdis_InMaster',
+			            "MarginDiscrepancy", [Margin $ Discrepancy]
+			        ),
+			        [MarginDiscrepancy] < 0
+			    ),
+			    [MarginDiscrepancy]
+			)
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 19aec11d-8aee-4d6f-9377-65b67a4b5297
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Net Margin $ Discrepancy' =
+			
+			[Sum of Positive Margin $ Discrepancy] + [Sum of Negative Margin $ Discrepancy]
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 645ac71d-0639-4034-8857-3d2c9ff999c2
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Measure Filter 2' =
+			
+			VAR MinValue = MIN('Percentage Filter'[Value])
+			VAR MaxValue = MAX('Percentage Filter'[Value])
+			VAR CurrentMeasureValue = [Actual Margin %]
+			RETURN
+			IF(
+			    CurrentMeasureValue >= MinValue && CurrentMeasureValue <= MaxValue,
+			    1,
+			    0
+			)
+		formatString: 0
+		lineageTag: e6addb71-a27b-428a-86ff-769b0c9d6281
+
+	measure 'Margin % Color Code' =
+			
+			SWITCH(
+			    TRUE(),
+			    [Actual Margin %] >= .39999, 1,  // Dark Green
+			    [Actual Margin %] >= 0.305 && [Actual Margin %] <= 0.4, 3,  // Green
+			    [Actual Margin %] = .3 && [Actual Margin %] = 0.30, 2,  // White
+			    [Actual Margin %] >= 0.199 && [Actual Margin %] < 0.299, 4,  // Yellow
+			    [Actual Margin %] >= 0.099 && [Actual Margin %] < 0.199, 5,  // Orange
+			    [Actual Margin %] >= 0 && [Actual Margin %] < 0.099, 6,  // Red
+			    [Actual Margin %] <= 0, 7,  // Dark Red
+			    BLANK()
+			)
+		formatString: 0
+		lineageTag: b1a5ea2b-485d-4d7a-b34c-df84496ef574
+
+	measure 'Margin $ Discrepancy Color Code' =
+			
+			SWITCH(
+			    TRUE(),
+			    [Margin $ Discrepancy] > 1, 1,  // Dark Green
+			    [Margin $ Discrepancy] >= 0.75 && [Margin $ Discrepancy] <= 1, 2,  // Green
+			    [Margin $ Discrepancy] >= 0.50 && [Margin $ Discrepancy] < 0.75, 3,  // Light Green
+			    [Margin $ Discrepancy] >= 0.25 && [Margin $ Discrepancy] < 0.50, 4,  // Lighter Green
+			    [Margin $ Discrepancy] > 0 && [Margin $ Discrepancy] < 0.25, 5,  // Even Lighter Green
+			    [Margin $ Discrepancy] = 0, 6,  // White
+			    [Margin $ Discrepancy] < 0 && [Margin $ Discrepancy] >= -0.25, 7,  // Real Light Red
+			    [Margin $ Discrepancy] < -0.25 && [Margin $ Discrepancy] >= -0.50, 8,  // Lighter Red
+			    [Margin $ Discrepancy] < -0.50 && [Margin $ Discrepancy] >= -0.75, 9,  // Light Red
+			    [Margin $ Discrepancy] < -0.75 && [Margin $ Discrepancy] >= -1, 10,  // Red
+			    [Margin $ Discrepancy] < -1, 11,  // Dark Red
+			    BLANK()
+			)
+		formatString: 0
+		lineageTag: 1ac2de1e-6cf3-4f0e-aa95-d48c0ed6351c
+
+	measure 'Total SOH Qty' = SUM('Parts_Low_Margin_jdis_InMaster'[Bulk Bin Qty]) + SUM('Parts_Low_Margin_jdis_InMaster'[On Hand Qty])
+		formatString: 0
+		lineageTag: 2e3ae7ec-74e4-492c-a562-ce15b7ca0905
+
+	measure 'New Sell Price' = DIVIDE(ABS([Margin $ Discrepancy]), [Total SOH Qty], 0) + [List Price]
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 312edb57-dda3-46f1-aa7c-a052d6ef8de4
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'List Price' = SUM('Parts_Low_Margin_jdis_InMaster'[List Price])
+		lineageTag: 481077c4-ced7-429d-8766-e2555fcaeab7
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Stock Order Price' = MIN('Parts_Low_Margin_jdis_InMaster'[STK_ORDER_PRICE])
+		lineageTag: ba8709db-aed6-4fd4-8807-d6c8c765a1f1
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Original MDP Value' = [Stock Order Price] * [Total SOH Qty]
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: c0b6d67a-ccc0-4b03-8dea-b8514f0e676a
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure '% Difference' = ```
+			
+			DIVIDE(
+			    ([Original MDP Value] - [Inventory Cost]), 
+			    ([Original MDP Value] + [Inventory Cost]) / 2, 
+			    0
+			)
+			```
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: fbf88aab-8d81-42ce-b348-3c6f974ed849
+
+	measure 'Measure Filter 3' =
+			
+			VAR MinValue = MIN('Percentage Filter'[Value])
+			VAR MaxValue = MAX('Percentage Filter'[Value])
+			VAR CurrentMeasureValue = [% Difference]
+			RETURN
+			IF(
+			    CurrentMeasureValue >= MinValue && CurrentMeasureValue <= MaxValue,
+			    1,
+			    0
+			)
+		formatString: 0
+		lineageTag: cff4c317-2a6e-44ce-b153-e71d15732e2f
+
+	measure '% Difference Discrepancy Color Code' =
+			
+			SWITCH(
+			    TRUE(),
+			    [% Difference] > 5, 1,  // > 500%
+			    [% Difference] > 2.5, 2,  // > 250%
+			    [% Difference] > 1, 3,  // > 100%
+			    [% Difference] > 0.5, 4,  // 50% - 100%
+			    [% Difference] > .001, 5,  // >0% - 50%
+			    [% Difference] = 0.00001, 6,
+			    [% Difference] > -0.005, 7,  // <0% - -50%
+			    [% Difference] >= -1, 8,  // <-50% - -100%
+			    [% Difference] >= -2, 9,  // -100% - -200%
+			    [% Difference] >= -4, 10,  // -200% - -400%
+			    [% Difference] < -4, 11,  // -400% or lower
+			    BLANK()
+			)
+		formatString: 0
+		lineageTag: af602226-7d37-493b-a894-059ce8eee0a9
+
+	measure '% Diff Discr (Low) Color Code' =
+			
+			SWITCH(
+			    TRUE(),
+			    [% Difference] >= 0, 1,  // Green gradient for > 0%
+			    [% Difference] <= -.000001 && [% Difference] > -0.05, 2,  // Light yellow for -0.1% through -5%
+			    [% Difference] <= -0.051 && [% Difference] > -0.1, 3,  // Light yellow for -0.1% through -5%
+			    [% Difference] <= -5 && [% Difference] > -10, 8,  // Light orange for -5.1% through -10%
+			    [% Difference] <= -.10, 4,  // Red gradient for -10.1% and lower
+			    BLANK()
+			)
+		formatString: 0
+		lineageTag: 13d0d388-a89c-43b1-9a38-532d59bd894b
+
+	measure Qty =
+			CALCULATE(
+			    SUM('InTrans_Low_Margin'[QTY]),
+			    'InTrans_Low_Margin'[TYPE] = "I"
+			)
+		lineageTag: 094ab942-d00b-4a12-bb8f-a44d79cf0935
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Original Margin $' =
+			CALCULATE(
+			    SUMX(
+			        'InTrans_Low_Margin',
+			        ([List Price Manuf] - [Stock Order Price]) * [Qty]
+			    ),
+			    'InTrans_Low_Margin'[TYPE] = "I"
+			)
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: aa7c27c2-40bc-4fdf-bff7-d164bc58493b
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Actual Margin' = ```
+			
+			    SUM('InTrans_Low_Margin'[SALE_VAL]) - SUM('InTrans_Low_Margin'[COST_VAL])
+			
+			```
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 3cb514ca-8850-4faf-90b5-3c057ca9dd0c
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Captured Margin' = [Actual Margin] - [Original Margin Test]
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 9913d454-5461-4ab6-8411-290531126e1a
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Total Cost' = SUMX(InTrans_Low_Margin, InTrans_Low_Margin[COST_VAL] * InTrans_Low_Margin[QTY])
+		lineageTag: 1fa638ef-fa09-4832-850d-8c835a3ffb2f
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Cost Val' =
+			CALCULATE(
+			    SUM('InTrans_Low_Margin'[COST_VAL]),
+			    'InTrans_Low_Margin'[TYPE] = "I"
+			)
+		lineageTag: b30708ed-ce96-4c1e-b1ad-201fb2d97a7a
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Merge Qty' = MIN('InTrans_Low_Margin'[QTY])
+		formatString: 0
+		lineageTag: f5728a99-0c27-494a-b91e-7e1940992b32
+
+	measure 'List Price Manuf' = MIN('Parts_Low_Margin_jdis_InMaster'[List Price Manuf])
+		lineageTag: d5a8790a-e2f2-43ef-b6b3-a5f2dbbbe714
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Original Margin Test' = ```
+			SUM('Parts_Low_Margin_jdis_InMaster'[List Price Manuf]) - SUM('Parts_Low_Margin_jdis_InMaster'[STK_ORDER_PRICE]) 
+			```
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 2e4c7ed5-f019-4e94-8d3f-4d4d87fd7947
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Row Count' = COUNTROWS('Parts_Low_Margin_jdis_InMaster')
+		formatString: 0
+		lineageTag: 495fa2bd-1040-487c-bd25-7bb162e0f107
+
+	measure 'Test Old Report Direct Calc' = ```
+			
+			SUMX(
+			    FILTER(
+			        ADDCOLUMNS(
+			            'Parts_Low_Margin_jdis_InMaster',
+			            "_DirectCalc",
+			                (([Sell Price] * ([On Hand Qty] + [Bulk Bin Qty])) - [Inventory Cost]) -
+			                (([Sell Price] * ([On Hand Qty] + [Bulk Bin Qty])) - ([Cost] * ([On Hand Qty] + [Bulk Bin Qty])))
+			        ),
+			        [_DirectCalc] > 0
+			    ),
+			    [_DirectCalc]
+			)
+			
+			```
+		lineageTag: c5e91c38-e55a-4a59-9def-887d3c052d46
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column Value
+		isHidden
+		formatString: 0
+		lineageTag: 79c972d1-f095-4368-8b15-fce2924c0fb9
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [Value]
+
+		annotation SummarizationSetBy = Automatic
+
+	column DummyColumn
+		isHidden
+		formatString: 0
+		lineageTag: e2743d5d-759d-4d9c-8e3b-efeea5c05981
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [DummyColumn]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition MeasuresTable = calculated
+		mode: import
+		source = ```
+				ADDCOLUMNS( 
+				    GENERATESERIES(1, 1), 
+				    "DummyColumn", 1 
+				)
+				```
+
+	annotation PBI_Id = 54a41f54ef804fdcb87552d957b86d27
+

@@ -1,0 +1,54 @@
+table 'Data Refresh'
+	lineageTag: e6e823ab-df54-46c5-859e-0dfe63f43647
+
+	column CurrentDateTime
+		dataType: string
+		lineageTag: 80bf0ea3-805a-4bfd-abd3-22ff28578665
+		summarizeBy: none
+		sourceColumn: CurrentDateTime
+
+		annotation SummarizationSetBy = Automatic
+
+	column Date
+		dataType: dateTime
+		formatString: Long Date
+		lineageTag: 560c0a64-5e7d-4b78-b2dc-898b243a0d6c
+		summarizeBy: none
+		sourceColumn: Date
+
+		variation Variation
+			isDefault
+			relationship: 8a270438-91f4-4261-8e74-3239e3c93a94
+			defaultHierarchy: LocalDateTable_b0de20af-3411-4395-83b6-9ca6f679ea60.'Date Hierarchy'
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column Time
+		dataType: dateTime
+		formatString: Long Time
+		lineageTag: 80446ad2-7cdd-4991-a51f-2fd2c2bcbd99
+		summarizeBy: none
+		sourceColumn: Time
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Time
+
+	partition 'Data Refresh' = m
+		mode: import
+		source =
+				let
+				    Source = #table({"CurrentDateTime"}, {{DateTime.LocalNow() - #duration(0,6,0,0)}}),
+				    #"Duplicated Column" = Table.DuplicateColumn(Source, "CurrentDateTime", "CurrentDateTime - Copy"),
+				    #"Duplicated Column1" = Table.DuplicateColumn(#"Duplicated Column", "CurrentDateTime - Copy", "CurrentDateTime - Copy - Copy"),
+				    #"Changed Type" = Table.TransformColumnTypes(#"Duplicated Column1",{{"CurrentDateTime - Copy", type date}, {"CurrentDateTime - Copy - Copy", type time}}),
+				    #"Renamed Columns" = Table.RenameColumns(#"Changed Type",{{"CurrentDateTime - Copy", "Date"}, {"CurrentDateTime - Copy - Copy", "Time"}})
+				in
+				    #"Renamed Columns"
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

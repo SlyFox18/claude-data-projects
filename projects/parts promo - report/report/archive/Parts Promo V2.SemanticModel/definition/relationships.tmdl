@@ -1,0 +1,42 @@
+relationship AutoDetected_ce39b37a-08fa-4c66-9095-41479bd5591b
+	fromColumn: Parts_Promo.BRANCH
+	toColumn: Dim_Branch.BranchID
+
+relationship 4b4056d7-73ec-c233-5170-bea7e424c398
+	fromColumn: Parts_Promo.customer_no
+	toColumn: Base_Customer_Info.Account
+
+relationship fdeb0cf6-3ee0-5c11-c0f6-cdf4dfe1def6
+	fromColumn: Parts_Promo.Trans_Datetime
+	toColumn: Date.Date
+
+relationship AutoDetected_364b7d11-4a60-43af-949f-288ac798e277
+	fromColumn: InTrans_All_Promo.BRANCH
+	toColumn: Dim_Branch.BranchID
+
+relationship 38ae3332-33de-bc42-e643-9306a60c17b6
+	crossFilteringBehavior: bothDirections
+	toCardinality: many
+	fromColumn: Parts_Promo.REF_NO
+	toColumn: InTrans_All_Promo.REF_NO
+
+relationship 6746a5ce-9f04-b77c-d7b4-3fc4dd9a62d8
+	fromColumn: Parts_Promo.Trans_Datetime
+	toColumn: DateTable.Date
+
+relationship c81c1c88-f18f-87d0-ef1d-f60835d13ec5
+	fromColumn: InTrans_All_Promo.Trans_Datetime
+	toColumn: DateTable.Date
+
+relationship 60c65d10-1d27-3355-c76a-f063e723e8a6
+	fromColumn: InTrans_All_Promo.Trans_Datetime
+	toColumn: DateTable1.Date
+
+relationship eb52615a-6603-be37-514c-00191a89bb7d
+	fromColumn: CalculatedTable.BRANCH
+	toColumn: Dim_Branch.BranchID
+
+relationship eef1e095-1600-f393-b766-e7c88d6d1401
+	fromColumn: CalculatedTable.Date
+	toColumn: DateTable1.Date
+

@@ -1,0 +1,66 @@
+table InMaster_Combine_Vault
+	lineageTag: 1b52c6aa-fa97-4767-bdc2-1df9714b292c
+
+	column BRANCH
+		dataType: string
+		lineageTag: f2b800ba-dffa-4980-a43c-ce2dbd9ced5b
+		summarizeBy: none
+		sourceColumn: BRANCH
+
+		annotation SummarizationSetBy = Automatic
+
+	column FRANCHISE
+		dataType: string
+		lineageTag: 06fb0d67-9891-4a15-8180-1da7f84e7bbb
+		summarizeBy: none
+		sourceColumn: FRANCHISE
+
+		annotation SummarizationSetBy = Automatic
+
+	column PART_NO
+		dataType: string
+		lineageTag: 639eee17-2e79-41aa-b7fd-f612051f74a9
+		summarizeBy: none
+		sourceColumn: PART_NO
+
+		annotation SummarizationSetBy = Automatic
+
+	column PART_DESC
+		dataType: string
+		lineageTag: a37e6e10-29d1-47e5-a562-fc6195cf4fb2
+		summarizeBy: none
+		sourceColumn: PART_DESC
+
+		annotation SummarizationSetBy = Automatic
+
+	column STK_ORDER_PRICE
+		dataType: double
+		lineageTag: ae216b13-c7d3-446c-b69f-10f80b845d0e
+		summarizeBy: sum
+		sourceColumn: STK_ORDER_PRICE
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column user_field_3
+		dataType: string
+		lineageTag: 1237e6e5-0abb-41dd-8e4d-0557b02933b3
+		summarizeBy: none
+		sourceColumn: user_field_3
+
+		annotation SummarizationSetBy = Automatic
+
+	partition InMaster_Combine_Vault = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-ch6iiwox4jveda3rmgudwi6hey.datawarehouse.fabric.microsoft.com", "LH_Parts_Reports_Data"),
+				    dbo_InMaster_Combine_Vault = Source{[Schema="dbo",Item="InMaster_Combine_Vault"]}[Data]
+				in
+				    dbo_InMaster_Combine_Vault
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

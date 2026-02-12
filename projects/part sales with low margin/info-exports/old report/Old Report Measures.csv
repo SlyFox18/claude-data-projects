@@ -1,0 +1,171 @@
+ID,Name,Table,Description,DataType,Expression,FormatString,IsHidden,State,KPIID,IsSimpleMeasure,DisplayFolder,DetailRowsDefinition,DataCategory,FormatStringDefinition,LineageTag
+260,Cost $,MeasuresTable,,,SUM(InTrans_Low_Margin[COST_VAL]),,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",2d4d9475-503c-4b9a-8951-624530abc74d
+261,Sale $,MeasuresTable,,,"CALCULATE( SUM('InTrans_Low_Margin'[SALE_VAL]), 'InTrans_Low_Margin'[TYPE] = ""I"" )",,False,Valid,,False,,,,,549834f7-0594-4920-ac14-e1d98d2258df
+262,Margin Value,MeasuresTable,,,[Sale $] - [Cost $],,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",30e67e62-1998-4ce8-a040-fd9a92c3208b
+263,Margin Value %,MeasuresTable,,,"
+DIVIDE(
+    [Margin Value],
+    [Sale $],
+    0
+) ",,False,Valid,,False,,,,"""0.00%;-0.00%;0.00%""",c19709e1-ce32-40cf-bdab-591a0345f7b1
+264,Measure Filter,MeasuresTable,,,"
+VAR MinValue = MIN('Percentage Filter'[Value])
+VAR MaxValue = MAX('Percentage Filter'[Value])
+VAR CurrentMeasureValue = [Margin Value %]
+RETURN
+IF(
+    CurrentMeasureValue >= MinValue && CurrentMeasureValue <= MaxValue,
+    1,
+    0
+)",,False,Valid,,False,,,,"""0""",487d03d0-7a7f-4a9b-ae63-2f1b09528e34
+265,Margin Color Code,MeasuresTable,,,"
+SWITCH(
+    TRUE(),
+    [Margin Value %] < 0, 1,    -- Red
+    [Margin Value %] >= 0 && [Margin Value %] < 0.05, 2,    -- Pink
+    [Margin Value %] >= 0.05 && [Margin Value %] < 0.10, 3,   -- Orange
+    [Margin Value %] >= 0.10 && [Margin Value %] <= 0.1499, 4,  -- Yellow
+    BLANK()
+)",,False,Valid,,False,,,,"""0""",cd534c8e-d49a-4fe2-8b00-db44c720dcdb
+266,Cost,MeasuresTable,,,SUM('Parts_Low_Margin_jdis_InMaster'[Cost]),,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",ee9aeb8d-04f4-4a04-9205-c0f76009209a
+267,Sell Price,MeasuresTable,,,SUM('Parts_Low_Margin_jdis_InMaster'[Sell Price]),,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",85598e74-d300-4736-aec3-3a7ba996e8c9
+268,Cost Value,MeasuresTable,,,[Cost] * [Total SOH Qty],,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",b29ada5a-cfed-4f16-94d9-7bbd2b5a16ff
+269,Sell Value,MeasuresTable,,,[Sell Price] * [Total SOH Qty],,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",735e8341-28bb-46fd-b9c7-41d2aecf7314
+270,Desired Margin $,MeasuresTable,,,[Sell Value] - [Cost Value],,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",40480baa-37a6-44f2-a05a-54cd35312854
+271,Desired Margin %,MeasuresTable,,,"DIVIDE([Desired Margin $], [Sell Value], 0)",,False,Valid,,False,,,,"""0.0%;-0.0%;0.0%""",532e1a50-73d3-4bc0-99e2-7fb42db8a089
+272,Inventory Cost,MeasuresTable,,,SUM('Parts_Low_Margin_jdis_InMaster'[Inventory Cost]),,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",bf2867af-4b8d-4e68-8f96-caf98d8c967a
+273,Actual Margin $,MeasuresTable,,,[Sell Value] - [Inventory Cost],,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",90e62518-2de4-47a0-97aa-02009243f984
+274,Actual Margin %,MeasuresTable,,,"DIVIDE([Actual Margin $], [Sell Value], 0)",,False,Valid,,False,,,,"""#,0.0%;-#,0.0%;#,0.0%""",cc8e78ed-cba1-4387-9b16-f17fa512ef8f
+275,Margin $ Discrepancy,MeasuresTable,,,[Actual Margin $] - [Desired Margin $],,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",e438b9fc-fba3-4f0d-8067-5d321bc7ff47
+276,Sum of Positive Margin $ Discrepancy,MeasuresTable,,,"
+SUMX(
+    FILTER(
+        ADDCOLUMNS(
+            'Parts_Low_Margin_jdis_InMaster',
+            ""MarginDiscrepancy"", [Margin $ Discrepancy]
+        ),
+        [MarginDiscrepancy] > 0
+    ),
+    [MarginDiscrepancy]
+)",,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",66a35714-9640-4dd6-86a6-dd489e2ac350
+277,Sum of Negative Margin $ Discrepancy,MeasuresTable,,,"
+SUMX(
+    FILTER(
+        ADDCOLUMNS(
+            'Parts_Low_Margin_jdis_InMaster',
+            ""MarginDiscrepancy"", [Margin $ Discrepancy]
+        ),
+        [MarginDiscrepancy] < 0
+    ),
+    [MarginDiscrepancy]
+)",,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",19aec11d-8aee-4d6f-9377-65b67a4b5297
+278,Net Margin $ Discrepancy,MeasuresTable,,,"
+[Sum of Positive Margin $ Discrepancy] + [Sum of Negative Margin $ Discrepancy]",,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",645ac71d-0639-4034-8857-3d2c9ff999c2
+279,Measure Filter 2,MeasuresTable,,,"
+VAR MinValue = MIN('Percentage Filter'[Value])
+VAR MaxValue = MAX('Percentage Filter'[Value])
+VAR CurrentMeasureValue = [Actual Margin %]
+RETURN
+IF(
+    CurrentMeasureValue >= MinValue && CurrentMeasureValue <= MaxValue,
+    1,
+    0
+)",,False,Valid,,False,,,,"""0""",e6addb71-a27b-428a-86ff-769b0c9d6281
+280,Margin % Color Code,MeasuresTable,,,"
+SWITCH(
+    TRUE(),
+    [Actual Margin %] >= .39999, 1,  // Dark Green
+    [Actual Margin %] >= 0.305 && [Actual Margin %] <= 0.4, 3,  // Green
+    [Actual Margin %] = .3 && [Actual Margin %] = 0.30, 2,  // White
+    [Actual Margin %] >= 0.199 && [Actual Margin %] < 0.299, 4,  // Yellow
+    [Actual Margin %] >= 0.099 && [Actual Margin %] < 0.199, 5,  // Orange
+    [Actual Margin %] >= 0 && [Actual Margin %] < 0.099, 6,  // Red
+    [Actual Margin %] <= 0, 7,  // Dark Red
+    BLANK()
+)",,False,Valid,,False,,,,"""0""",b1a5ea2b-485d-4d7a-b34c-df84496ef574
+281,Margin $ Discrepancy Color Code,MeasuresTable,,,"
+SWITCH(
+    TRUE(),
+    [Margin $ Discrepancy] > 1, 1,  // Dark Green
+    [Margin $ Discrepancy] >= 0.75 && [Margin $ Discrepancy] <= 1, 2,  // Green
+    [Margin $ Discrepancy] >= 0.50 && [Margin $ Discrepancy] < 0.75, 3,  // Light Green
+    [Margin $ Discrepancy] >= 0.25 && [Margin $ Discrepancy] < 0.50, 4,  // Lighter Green
+    [Margin $ Discrepancy] > 0 && [Margin $ Discrepancy] < 0.25, 5,  // Even Lighter Green
+    [Margin $ Discrepancy] = 0, 6,  // White
+    [Margin $ Discrepancy] < 0 && [Margin $ Discrepancy] >= -0.25, 7,  // Real Light Red
+    [Margin $ Discrepancy] < -0.25 && [Margin $ Discrepancy] >= -0.50, 8,  // Lighter Red
+    [Margin $ Discrepancy] < -0.50 && [Margin $ Discrepancy] >= -0.75, 9,  // Light Red
+    [Margin $ Discrepancy] < -0.75 && [Margin $ Discrepancy] >= -1, 10,  // Red
+    [Margin $ Discrepancy] < -1, 11,  // Dark Red
+    BLANK()
+)",,False,Valid,,False,,,,"""0""",1ac2de1e-6cf3-4f0e-aa95-d48c0ed6351c
+282,Total SOH Qty,MeasuresTable,,,SUM('Parts_Low_Margin_jdis_InMaster'[Bulk Bin Qty]) + SUM('Parts_Low_Margin_jdis_InMaster'[On Hand Qty]),,False,Valid,,False,,,,"""0""",2e3ae7ec-74e4-492c-a562-ce15b7ca0905
+283,New Sell Price,MeasuresTable,,,"DIVIDE(ABS([Margin $ Discrepancy]), [Total SOH Qty], 0) + [List Price]",,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",312edb57-dda3-46f1-aa7c-a052d6ef8de4
+284,List Price,MeasuresTable,,,SUM('Parts_Low_Margin_jdis_InMaster'[List Price]),,False,Valid,,False,,,,,481077c4-ced7-429d-8766-e2555fcaeab7
+285,Stock Order Price,MeasuresTable,,,MIN('Parts_Low_Margin_jdis_InMaster'[STK_ORDER_PRICE]),,False,Valid,,False,,,,,ba8709db-aed6-4fd4-8807-d6c8c765a1f1
+286,Original MDP Value,MeasuresTable,,,[Stock Order Price] * [Total SOH Qty],,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",c0b6d67a-ccc0-4b03-8dea-b8514f0e676a
+287,% Difference,MeasuresTable,,,"
+DIVIDE(
+    ([Original MDP Value] - [Inventory Cost]), 
+    ([Original MDP Value] + [Inventory Cost]) / 2, 
+    0
+)",,False,Valid,,False,,,,"""0.0%;-0.0%;0.0%""",fbf88aab-8d81-42ce-b348-3c6f974ed849
+288,Measure Filter 3,MeasuresTable,,,"
+VAR MinValue = MIN('Percentage Filter'[Value])
+VAR MaxValue = MAX('Percentage Filter'[Value])
+VAR CurrentMeasureValue = [% Difference]
+RETURN
+IF(
+    CurrentMeasureValue >= MinValue && CurrentMeasureValue <= MaxValue,
+    1,
+    0
+)",,False,Valid,,False,,,,"""0""",cff4c317-2a6e-44ce-b153-e71d15732e2f
+289,% Difference Discrepancy Color Code,MeasuresTable,,,"
+SWITCH(
+    TRUE(),
+    [% Difference] > 5, 1,  // > 500%
+    [% Difference] > 2.5, 2,  // > 250%
+    [% Difference] > 1, 3,  // > 100%
+    [% Difference] > 0.5, 4,  // 50% - 100%
+    [% Difference] > .001, 5,  // >0% - 50%
+    [% Difference] = 0.00001, 6,
+    [% Difference] > -0.005, 7,  // <0% - -50%
+    [% Difference] >= -1, 8,  // <-50% - -100%
+    [% Difference] >= -2, 9,  // -100% - -200%
+    [% Difference] >= -4, 10,  // -200% - -400%
+    [% Difference] < -4, 11,  // -400% or lower
+    BLANK()
+)",,False,Valid,,False,,,,"""0""",af602226-7d37-493b-a894-059ce8eee0a9
+290,% Diff Discr (Low) Color Code,MeasuresTable,,,"
+SWITCH(
+    TRUE(),
+    [% Difference] >= 0, 1,  // Green gradient for > 0%
+    [% Difference] <= -.000001 && [% Difference] > -0.05, 2,  // Light yellow for -0.1% through -5%
+    [% Difference] <= -0.051 && [% Difference] > -0.1, 3,  // Light yellow for -0.1% through -5%
+    [% Difference] <= -5 && [% Difference] > -10, 8,  // Light orange for -5.1% through -10%
+    [% Difference] <= -.10, 4,  // Red gradient for -10.1% and lower
+    BLANK()
+)",,False,Valid,,False,,,,"""0""",13d0d388-a89c-43b1-9a38-532d59bd894b
+291,Qty,MeasuresTable,,,"CALCULATE(
+    SUM('InTrans_Low_Margin'[QTY]),
+    'InTrans_Low_Margin'[TYPE] = ""I""
+)",,False,Valid,,False,,,,,094ab942-d00b-4a12-bb8f-a44d79cf0935
+292,Original Margin $,MeasuresTable,,,"CALCULATE(
+    SUMX(
+        'InTrans_Low_Margin',
+        ([List Price Manuf] - [Stock Order Price]) * [Qty]
+    ),
+    'InTrans_Low_Margin'[TYPE] = ""I""
+)",,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",aa7c27c2-40bc-4fdf-bff7-d164bc58493b
+293,Actual Margin,MeasuresTable,,,"
+    SUM('InTrans_Low_Margin'[SALE_VAL]) - SUM('InTrans_Low_Margin'[COST_VAL])
+",,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",3cb514ca-8850-4faf-90b5-3c057ca9dd0c
+294,Captured Margin,MeasuresTable,,,[Actual Margin] - [Original Margin Test],,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",9913d454-5461-4ab6-8411-290531126e1a
+295,Total Cost,MeasuresTable,,,"SUMX(InTrans_Low_Margin, InTrans_Low_Margin[COST_VAL] * InTrans_Low_Margin[QTY])",,False,Valid,,False,,,,,1fa638ef-fa09-4832-850d-8c835a3ffb2f
+297,Cost Val,MeasuresTable,,,"CALCULATE(
+    SUM('InTrans_Low_Margin'[COST_VAL]),
+    'InTrans_Low_Margin'[TYPE] = ""I""
+)",,False,Valid,,False,,,,,b30708ed-ce96-4c1e-b1ad-201fb2d97a7a
+298,Merge Qty,MeasuresTable,,,MIN('InTrans_Low_Margin'[QTY]),,False,Valid,,False,,,,"""0""",f5728a99-0c27-494a-b91e-7e1940992b32
+19403,List Price Manuf,MeasuresTable,,,MIN('Parts_Low_Margin_jdis_InMaster'[List Price Manuf]),,False,Valid,,False,,,,,d5a8790a-e2f2-43ef-b6b3-a5f2dbbbe714
+23914,Original Margin Test,MeasuresTable,,,"SUM('Parts_Low_Margin_jdis_InMaster'[List Price Manuf]) - SUM('Parts_Low_Margin_jdis_InMaster'[STK_ORDER_PRICE]) ",,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",2e4c7ed5-f019-4e94-8d3f-4d4d87fd7947

@@ -1,0 +1,157 @@
+table dim_RepairOrder
+	lineageTag: 63c68105-5dad-43c3-bef2-915b0dc03768
+
+	column REF_NO
+		dataType: string
+		lineageTag: 875bfa9a-8c72-49ef-aa98-ee130754da72
+		summarizeBy: none
+		sourceColumn: REF_NO
+
+		annotation SummarizationSetBy = Automatic
+
+	column BranchKey
+		dataType: int64
+		formatString: 0
+		lineageTag: b419ab05-3e13-4b32-9bb8-f91f741388b4
+		summarizeBy: count
+		sourceColumn: BranchKey
+
+		annotation SummarizationSetBy = Automatic
+
+	column CustomerNo
+		dataType: string
+		lineageTag: 146acf78-5c98-44fd-a735-f6e60aa55e45
+		summarizeBy: none
+		sourceColumn: CustomerNo
+
+		annotation SummarizationSetBy = Automatic
+
+	column OrderDate
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: 3262b5fa-a279-4d47-a741-5b2f2bbf79ac
+		summarizeBy: none
+		sourceColumn: OrderDate
+
+		annotation SummarizationSetBy = Automatic
+
+	column LastActivityDate
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: 8cf76b4f-8d9d-4054-8ccb-37b2289215eb
+		summarizeBy: none
+		sourceColumn: LastActivityDate
+
+		annotation SummarizationSetBy = Automatic
+
+	column TotalPartsSales
+		dataType: double
+		lineageTag: b040695d-d53f-4a82-ba04-6445673b99b3
+		summarizeBy: sum
+		sourceColumn: TotalPartsSales
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column TotalPartsCost
+		dataType: double
+		lineageTag: 491c6215-6b23-450b-92a8-d5a37c4d489b
+		summarizeBy: sum
+		sourceColumn: TotalPartsCost
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column PartsCount
+		dataType: int64
+		formatString: 0
+		lineageTag: 3afafb5f-aadb-41fc-ad59-e47fc64bc42a
+		summarizeBy: sum
+		sourceColumn: PartsCount
+
+		annotation SummarizationSetBy = Automatic
+
+	column TotalPromoDiscount
+		dataType: double
+		lineageTag: 23d84d95-d702-489d-9509-dfeb8ed86efb
+		summarizeBy: sum
+		sourceColumn: TotalPromoDiscount
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column PromoCount
+		dataType: int64
+		formatString: 0
+		lineageTag: 38bb1ef0-9bc3-400f-bea8-b9373e659ec2
+		summarizeBy: sum
+		sourceColumn: PromoCount
+
+		annotation SummarizationSetBy = Automatic
+
+	column NetOrderValue
+		dataType: double
+		lineageTag: 6a5cd7f9-69b8-44c2-87b2-50c8cc9b49d4
+		summarizeBy: sum
+		sourceColumn: NetOrderValue
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column OriginalMargin
+		dataType: double
+		lineageTag: eef2f9ca-cbcd-491a-a3bd-7c834c2f6822
+		summarizeBy: sum
+		sourceColumn: OriginalMargin
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column NetMargin
+		dataType: double
+		lineageTag: 562a1f2a-6ffe-4677-aabc-7994e3d92363
+		summarizeBy: sum
+		sourceColumn: NetMargin
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column DiscountAmount
+		dataType: double
+		lineageTag: cc6bdc12-9d0b-4860-9df0-62ee558810fd
+		summarizeBy: sum
+		sourceColumn: DiscountAmount
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column DiscountPercent
+		dataType: double
+		lineageTag: ff732f8c-34b7-41fc-97fc-fa782237e942
+		summarizeBy: sum
+		sourceColumn: DiscountPercent
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	partition dim_RepairOrder = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-gxnyznhdptpenfw724g3o5sjzm.datawarehouse.fabric.microsoft.com", "LH_Master_Data"),
+				    dbo_dim_RepairOrder = Source{[Schema="dbo",Item="dim_RepairOrder"]}[Data]
+				in
+				    dbo_dim_RepairOrder
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

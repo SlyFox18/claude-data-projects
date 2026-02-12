@@ -1,0 +1,739 @@
+table _Measures
+	lineageTag: 22e4b9e3-99b6-4634-9836-9ade5a5ea5a5
+
+	measure 'Page 1 Home - Header' = ```
+			
+			// Get user name
+			VAR _User = USERPRINCIPALNAME()
+			VAR _Position = SEARCH("@", _User, 1)
+			VAR _Name = LEFT(_User, _Position - 1)
+			VAR _FirstLetter = UPPER(LEFT(_Name, 1))
+			VAR _LastName = MID(_Name, 2, LEN(_Name) - 1)
+			VAR _FormattedLastName = 
+			    UPPER(LEFT(_LastName, 1)) & LOWER(MID(_LastName, 2, LEN(_LastName)))
+			VAR WelcomeName = _FirstLetter & "." & _FormattedLastName
+			
+			// Get current date/time info
+			VAR CurrentDate = TODAY()
+			VAR DateDisplay = FORMAT(CurrentDate, "MMM D, YYYY")
+			VAR CurrentHour = HOUR(NOW())
+			VAR TimeGreeting = 
+			    IF(CurrentHour < 12, "Good Morning",
+			    IF(CurrentHour < 17, "Good Afternoon",
+			    "Good Evening"))
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    height: 85px;
+			    padding: 15px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 10px;
+			    color: white;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-between;
+			    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    box-sizing: border-box;
+			'>
+			    <!-- Left side: Dashboard Title -->
+			    <div style='display: flex; align-items: center; gap: 15px;'>
+			        <!-- Home icon -->
+			        <div style='
+			            width: 40px;
+			            height: 40px;
+			            background: rgba(255,255,255,0.15);
+			            border-radius: 8px;
+			            display: flex;
+			            align-items: center;
+			            justify-content: center;
+			            font-size: 20px;
+			        '>
+			            🏠
+			        </div>
+			        
+			        <!-- Title -->
+			        <div>
+			            <div style='font-size: 12px; opacity: 0.85; margin-bottom: 4px; letter-spacing: 0.5px;'>
+			                REPORT
+			            </div>
+			            <div style='font-size: 26px; font-weight: 700; line-height: 1;'>
+			                Parts Promos - Rolling 12 - PY Rolling 12
+			            </div>
+			        </div>
+			    </div>
+			    
+			    <!-- Right side: Welcome & Date -->
+			    <div style='text-align: right;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 6px;'>
+			            " & TimeGreeting & ", " & WelcomeName & "
+			        </div>
+			        <div style='font-size: 16px; font-weight: 600;'>
+			            📅 " & DateDisplay & "
+			        </div>
+			    </div>
+			</div>
+			"
+			```
+		lineageTag: 49efea2a-3c06-4cab-8367-26b26caa141e
+
+	/// Total discount amount (absolute value of negative SaleValue)
+	measure Discount = ABS(SUM(Fact_PartsPromo[SaleValue]))
+		formatString: "$"#,0.00;("$"#,0.00);"$"#,0.00
+		lineageTag: 987cf3e9-ba98-4d29-b0b1-0d29822c9f5e
+
+	/// Total parts cost from orders with promos. Uses LOOKUPVALUE for detail rows, SUM for aggregations. This is the cost of non-promo parts on the order (matches old report Part_Cost).
+	measure 'Cost Value' =
+			VAR _SingleREF = SELECTEDVALUE(Fact_PartsPromo[REF_NO])
+			RETURN
+			IF(
+			    NOT(ISBLANK(_SingleREF)),
+			    LOOKUPVALUE(dim_RepairOrder[TotalPartsCost], dim_RepairOrder[REF_NO], _SingleREF),
+			    SUM(dim_RepairOrder[TotalPartsCost])
+			)
+		formatString: "$"#,0.00;("$"#,0.00);"$"#,0.00
+		lineageTag: 206a1de6-9a4e-4546-9896-11e6860e8620
+
+	/// Count of promo transactions
+	measure 'Promo Count' = COUNTROWS(Fact_PartsPromo)
+		formatString: #,0
+		lineageTag: 95b09a74-78c0-49fd-8b78-cae3c097cd76
+
+	/// Count of distinct orders with promo discounts
+	measure 'Orders with Promos' = DISTINCTCOUNT(Fact_PartsPromo[REF_NO])
+		formatString: #,0
+		lineageTag: cca8bf50-7d1f-4170-900c-8ba2bb53fb2f
+
+	/// Total parts sales from orders with promos. Uses LOOKUPVALUE for detail rows, SUM for aggregations.
+	measure 'Original Sale Value' = ```
+			
+			VAR _SingleREF = SELECTEDVALUE(Fact_PartsPromo[REF_NO])
+			RETURN
+			IF(
+			    NOT(ISBLANK(_SingleREF)),
+			    -- Detail row context: get value for this specific REF_NO
+			    LOOKUPVALUE(dim_RepairOrder[TotalPartsSales], dim_RepairOrder[REF_NO], _SingleREF),
+			    -- Aggregated context: sum all
+			    SUM(dim_RepairOrder[TotalPartsSales])
+			)
+			
+			```
+		formatString: "$"#,0.00;("$"#,0.00);"$"#,0.00
+		lineageTag: d38c0053-a188-46d3-afaf-976f08b7cac3
+
+	/// Original margin before discount. Uses LOOKUPVALUE for detail rows, SUM for aggregations.
+	measure 'Original Margin $' = ```
+			
+			VAR _SingleREF = SELECTEDVALUE(Fact_PartsPromo[REF_NO])
+			RETURN
+			IF(
+			    NOT(ISBLANK(_SingleREF)),
+			    -- Detail row context: get margin for this specific REF_NO
+			    LOOKUPVALUE(dim_RepairOrder[OriginalMargin], dim_RepairOrder[REF_NO], _SingleREF),
+			    -- Aggregated context: sum all
+			    SUM(dim_RepairOrder[OriginalMargin])
+			)
+			
+			```
+		formatString: "$"#,0.00;("$"#,0.00);"$"#,0.00
+		lineageTag: a1b19eb8-98fe-4db0-b721-4ebaa289c4ef
+
+	/// Original margin percentage
+	measure 'Original Margin %' = DIVIDE([Original Margin $], [Original Sale Value], 0)
+		formatString: 0.00%;-0.00%;0.00%
+		lineageTag: 704b5bc1-32e3-4776-8907-2713986d85a4
+
+	/// Net sales after discount. Uses LOOKUPVALUE for detail rows, calculation for aggregations.
+	measure 'Net Sales Value' = ```
+			
+			VAR _SingleREF = SELECTEDVALUE(Fact_PartsPromo[REF_NO])
+			RETURN
+			IF(
+			    NOT(ISBLANK(_SingleREF)),
+			    -- Detail row context: get net order value for this specific REF_NO
+			    LOOKUPVALUE(dim_RepairOrder[NetOrderValue], dim_RepairOrder[REF_NO], _SingleREF),
+			    -- Aggregated context: original sales + discount
+			    [Original Sale Value] + SUM(Fact_PartsPromo[SaleValue])
+			)
+			
+			```
+		formatString: "$"#,0.00;("$"#,0.00);"$"#,0.00
+		lineageTag: 29a95484-7509-472d-b2ad-3ddaeddead11
+
+	/// Net margin after discount. Uses LOOKUPVALUE for detail rows, calculation for aggregations.
+	measure 'Net Margin $' = ```
+			
+			VAR _SingleREF = SELECTEDVALUE(Fact_PartsPromo[REF_NO])
+			RETURN
+			IF(
+			    NOT(ISBLANK(_SingleREF)),
+			    -- Detail row context: get net margin for this specific REF_NO
+			    LOOKUPVALUE(dim_RepairOrder[NetMargin], dim_RepairOrder[REF_NO], _SingleREF),
+			    -- Aggregated context: net sales - cost
+			    [Net Sales Value] - SUM(dim_RepairOrder[TotalPartsCost])
+			)
+			
+			```
+		formatString: "$"#,0.00;("$"#,0.00);"$"#,0.00
+		lineageTag: 82b7dca7-3564-4c7e-98c1-d85a58e1d59a
+
+	/// Net margin percentage
+	measure 'Net Margin %' = DIVIDE([Net Margin $], [Net Sales Value], 0)
+		formatString: 0.00%;-0.00%;0.00%
+		lineageTag: 24434c5d-89cb-4cf0-9469-5c845079e993
+
+	/// Discount as percentage of original sales
+	measure 'Discount %' = DIVIDE(ABS(SUM(Fact_PartsPromo[SaleValue])), [Original Sale Value], 0)
+		formatString: 0.00%;-0.00%;0.00%
+		lineageTag: 9ac4cb31-4532-4743-a00b-edf1b1bed4f2
+
+	/// Rolling 12 month discount total
+	measure 'Rolling 12M Discount' =
+			CALCULATE(
+			    ABS(SUM(Fact_PartsPromo[SaleValue])),
+			    DATESINPERIOD(dim_DateTable[Date], TODAY(), -12, MONTH)
+			)
+		formatString: "$"#,0.00;("$"#,0.00);"$"#,0.00
+		lineageTag: 27fff6d9-a417-49b2-ad0c-40536e3d281d
+
+	/// Rolling 12 month net sales
+	measure 'Rolling 12M Net Sales' =
+			CALCULATE(
+			    [Net Sales Value],
+			    DATESINPERIOD(dim_DateTable[Date], TODAY(), -12, MONTH)
+			)
+		formatString: "$"#,0.00;("$"#,0.00);"$"#,0.00
+		lineageTag: 16bfbafa-d10f-495b-b515-cc671aaf4341
+
+	/// Previous year rolling 12 month discount (12-24 months ago)
+	measure 'PY Rolling 12M Discount' =
+			CALCULATE(
+			    ABS(SUM(Fact_PartsPromo[SaleValue])),
+			    DATESBETWEEN(
+			        dim_DateTable[Date],
+			        EDATE(TODAY(), -24),
+			        EDATE(TODAY(), -12)
+			    )
+			)
+		formatString: "$"#,0.00;("$"#,0.00);"$"#,0.00
+		lineageTag: f3300a22-78a6-44f4-8de2-2b91f5550d25
+
+	/// Previous year rolling 12 month net sales
+	measure 'PY Rolling 12M Net Sales' =
+			CALCULATE(
+			    [Net Sales Value],
+			    DATESBETWEEN(
+			        dim_DateTable[Date],
+			        EDATE(TODAY(), -24),
+			        EDATE(TODAY(), -12)
+			    )
+			)
+		formatString: "$"#,0.00;("$"#,0.00);"$"#,0.00
+		lineageTag: 0155a441-69a7-401a-ae3e-5e2c4702ea37
+
+	/// Year over year change in discount
+	measure 'YoY Change Discount %' =
+			DIVIDE(
+			    [Rolling 12M Discount] - [PY Rolling 12M Discount],
+			    [PY Rolling 12M Discount],
+			    0
+			)
+		formatString: 0.00%;-0.00%;0.00%
+		lineageTag: 86ac8506-2ddb-4764-ad4d-7d11d6525299
+
+	/// Year over year change in net sales
+	measure 'YoY Change Net Sales %' =
+			DIVIDE(
+			    [Rolling 12M Net Sales] - [PY Rolling 12M Net Sales],
+			    [PY Rolling 12M Net Sales],
+			    0
+			)
+		formatString: 0.00%;-0.00%;0.00%
+		lineageTag: 7477cc9d-bac1-4fc7-86e6-bf07da7c8305
+
+	/// Total sales from all ZP franchise transactions
+	measure 'Total InTrans Sales' = SUM(Fact_InTrans_AllPromo[SaleValue])
+		formatString: "$"#,0.00;("$"#,0.00);"$"#,0.00
+		lineageTag: 0ca89979-0883-4cd8-b695-6db15380492a
+
+	/// Promo net sales as percentage of total InTrans sales
+	measure 'Promo % of Total' = DIVIDE([Net Sales Value], [Total InTrans Sales], 0)
+		formatString: 0.00%;-0.00%;0.00%
+		lineageTag: 68e7eaea-19b1-4496-bc10-3de977e62df1
+
+	/// Average discount amount per order
+	measure 'Avg Discount per Order' =
+			DIVIDE(
+			    ABS(SUM(Fact_PartsPromo[SaleValue])),
+			    DISTINCTCOUNT(Fact_PartsPromo[REF_NO]),
+			    0
+			)
+		formatString: "$"#,0.00;("$"#,0.00);"$"#,0.00
+		lineageTag: dbd76460-ca52-4ea2-abc7-1e250c9d9434
+
+	/// Average order value for orders with promos
+	measure 'Avg Order Value' =
+			DIVIDE(
+			    [Original Sale Value],
+			    DISTINCTCOUNT(Fact_PartsPromo[REF_NO]),
+			    0
+			)
+		formatString: "$"#,0.00;("$"#,0.00);"$"#,0.00
+		lineageTag: 1d6decb6-3d14-41c2-9720-d146c294c33e
+
+	/// Conditional color for discount % (green/yellow/red)
+	measure 'Color Discount %' =
+			SWITCH(
+			    TRUE(),
+			    [Discount %] <= 0.10, "#AFCBAA",
+			    [Discount %] <= 0.15, "#FFF299",
+			    [Discount %] > 0.15, "#EFB5B9",
+			    "#FFFFFF"
+			)
+		lineageTag: aed84dec-d1b2-40e1-a8a3-a32720b54db3
+
+	/// Time-based greeting
+	measure Greeting =
+			VAR CurrentHour = HOUR(NOW())
+			VAR AdjustedHour = MOD(CurrentHour - 6, 24)
+			RETURN
+			    SWITCH(
+			        TRUE(),
+			        AdjustedHour < 12, "Good morning, ",
+			        AdjustedHour < 18, "Good afternoon, ",
+			        "Good evening, "
+			    )
+		lineageTag: 28c80a0a-0339-4496-8a1b-55a133e30cb4
+
+	/// Current user display name
+	measure User =
+			VAR _user = USERNAME()
+			RETURN
+			    RIGHT(_user, LEN(_user) - SEARCH("\", _user))
+		lineageTag: fc563359-0bd8-45fb-b402-eb96797ac3bc
+
+	/// Count of promo transactions in rolling 12 months. Deduplication now handled at Power Query level.
+	measure 'Rolling 12M Count' = ```
+			
+			VAR _CurrentPart = MAX(Fact_PartsPromo[PART_NO])
+			VAR _EndDate = TODAY()
+			VAR _StartDate = EDATE(TODAY(), -12)
+			RETURN
+			CALCULATE(
+			    COUNTROWS(Fact_PartsPromo),
+			    Fact_PartsPromo[TransDatetime] >= _StartDate,
+			    Fact_PartsPromo[TransDatetime] <= _EndDate,
+			    Fact_PartsPromo[PART_NO] = _CurrentPart
+			)
+			
+			```
+		formatString: #,0
+		lineageTag: 639cbef6-2319-4b21-9e91-4bff39e659fe
+
+	/// Count of promo transactions in prior year rolling 12 months (12-24 months ago). Deduplication now handled at Power Query level.
+	measure 'PY Rolling 12M Count' = ```
+			
+			VAR _CurrentPart = MAX(Fact_PartsPromo[PART_NO])
+			VAR _EndDate = EDATE(TODAY(), -12)
+			VAR _StartDate = EDATE(TODAY(), -24)
+			RETURN
+			CALCULATE(
+			    COUNTROWS(Fact_PartsPromo),
+			    Fact_PartsPromo[TransDatetime] >= _StartDate,
+			    Fact_PartsPromo[TransDatetime] < _EndDate,
+			    Fact_PartsPromo[PART_NO] = _CurrentPart
+			)
+			
+			```
+		formatString: #,0
+		lineageTag: d4baa591-b1b1-4146-b893-981e646db9cc
+
+	/// Net sales value (original parts sales + discount) for rolling 12 months by part.
+	measure 'Rolling 12M Net Sales by Part' = ```
+			
+			VAR _CurrentPart = MAX(Fact_PartsPromo[PART_NO])
+			VAR _EndDate = TODAY()
+			VAR _StartDate = EDATE(TODAY(), -12)
+			-- Get unique orders for this part in the date range
+			VAR _UniqueOrders = 
+			    CALCULATETABLE(
+			        VALUES(Fact_PartsPromo[REF_NO]),
+			        Fact_PartsPromo[TransDatetime] >= _StartDate,
+			        Fact_PartsPromo[TransDatetime] <= _EndDate,
+			        Fact_PartsPromo[PART_NO] = _CurrentPart
+			    )
+			-- Sum TotalPartsSales once per order (use current row's REF_NO from iteration)
+			VAR _TotalPartsSales = 
+			    SUMX(
+			        _UniqueOrders,
+			        VAR _CurrentREF = Fact_PartsPromo[REF_NO]
+			        RETURN LOOKUPVALUE(dim_RepairOrder[TotalPartsSales], dim_RepairOrder[REF_NO], _CurrentREF)
+			    )
+			-- Sum discount for all transactions
+			VAR _TotalDiscount =
+			    CALCULATE(
+			        SUM(Fact_PartsPromo[SaleValue]),
+			        Fact_PartsPromo[TransDatetime] >= _StartDate,
+			        Fact_PartsPromo[TransDatetime] <= _EndDate,
+			        Fact_PartsPromo[PART_NO] = _CurrentPart
+			    )
+			RETURN
+			_TotalPartsSales + _TotalDiscount
+			
+			```
+		formatString: $#,##0.00
+		lineageTag: a21628d2-fca1-469f-820a-8874d48ffabc
+
+	/// Net sales value for prior year rolling 12 months (12-24 months ago) by part. Deduplication now handled at Power Query level.
+	measure 'PY Rolling 12M Net Sales by Part' = ```
+			
+			VAR _CurrentPart = MAX(Fact_PartsPromo[PART_NO])
+			VAR _EndDate = EDATE(TODAY(), -12)
+			VAR _StartDate = EDATE(TODAY(), -24)
+			-- Get unique orders for this part in the PY date range
+			VAR _UniqueOrders = 
+			    CALCULATETABLE(
+			        VALUES(Fact_PartsPromo[REF_NO]),
+			        Fact_PartsPromo[TransDatetime] >= _StartDate,
+			        Fact_PartsPromo[TransDatetime] < _EndDate,
+			        Fact_PartsPromo[PART_NO] = _CurrentPart
+			    )
+			-- Sum TotalPartsSales once per order
+			VAR _TotalPartsSales = 
+			    SUMX(
+			        _UniqueOrders,
+			        LOOKUPVALUE(dim_RepairOrder[TotalPartsSales], dim_RepairOrder[REF_NO], Fact_PartsPromo[REF_NO])
+			    )
+			-- Sum discount for all transactions (deduplication now in PQ)
+			VAR _TotalDiscount =
+			    CALCULATE(
+			        SUM(Fact_PartsPromo[SaleValue]),
+			        Fact_PartsPromo[TransDatetime] >= _StartDate,
+			        Fact_PartsPromo[TransDatetime] < _EndDate,
+			        Fact_PartsPromo[PART_NO] = _CurrentPart
+			    )
+			RETURN
+			_TotalPartsSales + _TotalDiscount
+			
+			```
+		formatString: $#,##0.00
+		lineageTag: 6fca0c07-0c01-4d34-8af5-b7739aef785a
+
+	measure 'Page 2 Details - Header' = ```
+			
+			// Get user name
+			VAR _User = USERPRINCIPALNAME()
+			VAR _Position = SEARCH("@", _User, 1)
+			VAR _Name = LEFT(_User, _Position - 1)
+			VAR _FirstLetter = UPPER(LEFT(_Name, 1))
+			VAR _LastName = MID(_Name, 2, LEN(_Name) - 1)
+			VAR _FormattedLastName = 
+			    UPPER(LEFT(_LastName, 1)) & LOWER(MID(_LastName, 2, LEN(_LastName)))
+			VAR WelcomeName = _FirstLetter & "." & _FormattedLastName
+			
+			// Get current date/time info
+			VAR CurrentDate = TODAY()
+			VAR DateDisplay = FORMAT(CurrentDate, "MMM D, YYYY")
+			VAR CurrentHour = HOUR(NOW())
+			VAR TimeGreeting = 
+			    IF(CurrentHour < 12, "Good Morning",
+			    IF(CurrentHour < 17, "Good Afternoon",
+			    "Good Evening"))
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    height: 85px;
+			    padding: 15px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 10px;
+			    color: white;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-between;
+			    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    box-sizing: border-box;
+			'>
+			    <!-- Left side: Dashboard Title -->
+			    <div style='display: flex; align-items: center; gap: 15px;'>
+			        <!-- Home icon -->
+			        <div style='
+			            width: 40px;
+			            height: 40px;
+			            background: rgba(255,255,255,0.15);
+			            border-radius: 8px;
+			            display: flex;
+			            align-items: center;
+			            justify-content: center;
+			            font-size: 20px;
+			        '>
+			            🏠
+			        </div>
+			        
+			        <!-- Title -->
+			        <div>
+			            <div style='font-size: 12px; opacity: 0.85; margin-bottom: 4px; letter-spacing: 0.5px;'>
+			                REPORT
+			            </div>
+			            <div style='font-size: 26px; font-weight: 700; line-height: 1;'>
+			                Parts Promos - Details
+			            </div>
+			        </div>
+			    </div>
+			    
+			    <!-- Right side: Welcome & Date -->
+			    <div style='text-align: right;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 6px;'>
+			            " & TimeGreeting & ", " & WelcomeName & "
+			        </div>
+			        <div style='font-size: 16px; font-weight: 600;'>
+			            📅 " & DateDisplay & "
+			        </div>
+			    </div>
+			</div>
+			"
+			```
+		lineageTag: 1433dbe7-88d6-4b9d-96f0-83a9f1d114b2
+
+	measure 'HTML Tooltip Part Header' =
+			
+			VAR _PART = MAX(Fact_PartsPromo[PART_NO])
+			RETURN
+			"
+			<!DOCTYPE html>
+			<html lang='en'>
+			<head>
+			    <meta charset='UTF-8'>
+			    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+			    <style>
+			        @keyframes text-focus-in {
+			            0% { transform: scale(1); opacity: 0; filter: blur(10px); }
+			            100% { transform: scale(1); opacity: 1; }
+			        }
+			        .text-focus-in {
+			            -webkit-animation: text-focus-in 0.6s cubic-bezier(0.550, 0.085, 0.680, 0.530) both;
+			            animation: text-focus-in 0.6s cubic-bezier(0.550, 0.085, 0.680, 0.530) both;
+			            color: #BEBEBE;
+			            font-family: 'Segoe UI';
+			            margin-top: -1px;
+			            display: flex;
+			            align-items: center;
+			            gap: 8px;
+			        }
+			        .dark-blue { color: #303E6E; font-weight: bold; }
+			    </style>
+			</head>
+			<body>
+			    <p class='text-focus-in'>
+			        <svg class='custom-icon' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' width='14' height='14'>
+			            <path fill='#303E6E' d='M24 32.041h-18c-1.105 0-2-0.893-2-1.996v-24.097c0-1.102 0.895-1.995 2-1.995h5v2.079h-4c-0.552 0-1 0.446-1 0.998v22.017c0 0.553 0.448 0.998 1 0.998h16c0.553 0 1-0.445 1-0.998v-22.017c0-0.552-0.447-0.998-1-0.998h-4v-2.079h5c1.104 0 2 0.894 2 1.995v24.097c0 1.103-0.896 1.996-2 1.996zM11 12.019h11v0.998h-11v-0.998zM11 15.013h11v0.998h-11v-0.998zM11 18.008h11v0.998h-11v-0.998zM11 21.002h11v0.998h-11v-0.998zM22 27.986h-11v-0.996h11v0.996zM11 23.996h11v0.998h-11v-0.998zM8 11.999h1v0.998h-1v-0.998zM8 14.993h1v0.998h-1v-0.998zM8 17.986h1v0.998h-1v-0.998zM8 20.98h1v0.998h-1v-0.998zM9 27.967h-1v-0.998h1v0.998zM8 23.975h1v0.998h-1v-0.998zM21 7.091c0.553 0 1 0.447 1 0.999s0 1.933 0 1.933h-14c0 0 0-1.382 0-1.933s0.447-0.999 1-0.999h3c0 0 0.012-1.419 0.012-3.041 0-1.684 1.3-3.092 2.988-3.092s3.033 1.48 3.033 3.102c0 1.747-0.033 3.031-0.033 3.031h3zM15 3.953c-0.553 0-1 0.446-1 0.997 0 0.552 0.447 0.998 1 0.998s1-0.446 1-0.998c0-0.551-0.447-0.997-1-0.997z'/>
+			        </svg>
+			        <span class='dark-blue'>" & _PART & "</span>
+			    </p>
+			</body>
+			</html>
+			"
+		lineageTag: 12d36644-88e9-4f1f-aede-167853dcc5a2
+
+	measure 'Total Sales' = SUM(Fact_InTrans_AllPromo[SaleValue])
+		formatString: \$#,0.0;(\$#,0.0);\$#,0.0
+		lineageTag: 33b303e0-87fc-4e8b-a1db-7b0d74f310ac
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Non-Promo Sales' = ```
+			[Total Sales] - [Net Sales Value (Date Filtered)] 
+			```
+		lineageTag: e67a4395-9858-47a3-aa22-b44c130c7c7e
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Pie Chart Sales Value' =
+			
+			VAR _Category = SELECTEDVALUE('Sales Category'[Category])
+			VAR _TotalSales = CALCULATE([Total Sales], REMOVEFILTERS('Sales Category'))
+			VAR _NetSales = CALCULATE([Net Sales Value (Filtered)], REMOVEFILTERS('Sales Category'))
+			VAR _OtherSales = _TotalSales - _NetSales
+			RETURN
+			    SWITCH(
+			        _Category,
+			        "Net Sales (Promo Orders)", _NetSales,
+			        "Other Sales", _OtherSales,
+			        BLANK()
+			    )
+		formatString: \$#,0.0;(\$#,0.0);\$#,0.0
+		lineageTag: 9999f2eb-97f7-41ad-9917-ec9bb5fbd46f
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Net Sales % of Total' =
+			
+			DIVIDE(
+			    [Net Sales Value],
+			    [Total Sales],
+			    0
+			)
+		lineageTag: f1bc9a29-b693-4a5d-9ee7-bbacf8507f4a
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Page 3 Net Sales % - Header' = ```
+			
+			// Get user name
+			VAR _User = USERPRINCIPALNAME()
+			VAR _Position = SEARCH("@", _User, 1)
+			VAR _Name = LEFT(_User, _Position - 1)
+			VAR _FirstLetter = UPPER(LEFT(_Name, 1))
+			VAR _LastName = MID(_Name, 2, LEN(_Name) - 1)
+			VAR _FormattedLastName = 
+			    UPPER(LEFT(_LastName, 1)) & LOWER(MID(_LastName, 2, LEN(_LastName)))
+			VAR WelcomeName = _FirstLetter & "." & _FormattedLastName
+			
+			// Get current date/time info
+			VAR CurrentDate = TODAY()
+			VAR DateDisplay = FORMAT(CurrentDate, "MMM D, YYYY")
+			VAR CurrentHour = HOUR(NOW())
+			VAR TimeGreeting = 
+			    IF(CurrentHour < 12, "Good Morning",
+			    IF(CurrentHour < 17, "Good Afternoon",
+			    "Good Evening"))
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    height: 85px;
+			    padding: 15px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 10px;
+			    color: white;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-between;
+			    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    box-sizing: border-box;
+			'>
+			    <!-- Left side: Dashboard Title -->
+			    <div style='display: flex; align-items: center; gap: 15px;'>
+			        <!-- Home icon -->
+			        <div style='
+			            width: 40px;
+			            height: 40px;
+			            background: rgba(255,255,255,0.15);
+			            border-radius: 8px;
+			            display: flex;
+			            align-items: center;
+			            justify-content: center;
+			            font-size: 20px;
+			        '>
+			            🏠
+			        </div>
+			        
+			        <!-- Title -->
+			        <div>
+			            <div style='font-size: 12px; opacity: 0.85; margin-bottom: 4px; letter-spacing: 0.5px;'>
+			                REPORT
+			            </div>
+			            <div style='font-size: 26px; font-weight: 700; line-height: 1;'>
+			                Parts Promos - Net Sales %
+			            </div>
+			        </div>
+			    </div>
+			    
+			    <!-- Right side: Welcome & Date -->
+			    <div style='text-align: right;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 6px;'>
+			            " & TimeGreeting & ", " & WelcomeName & "
+			        </div>
+			        <div style='font-size: 16px; font-weight: 600;'>
+			            📅 " & DateDisplay & "
+			        </div>
+			    </div>
+			</div>
+			"
+			```
+		lineageTag: d6a5a690-652a-4a15-9c9e-51768b380dd8
+
+	measure 'Net Sales Value (Date Filtered)' = ```
+			
+			VAR _FilteredREFs = VALUES(Fact_PartsPromo[REF_NO])
+			RETURN
+			CALCULATE(
+			    SUM(dim_RepairOrder[TotalPartsSales]),
+			    TREATAS(_FilteredREFs, dim_RepairOrder[REF_NO])
+			) + SUM(Fact_PartsPromo[SaleValue])
+			
+			```
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 7deb3ade-c220-4edf-a567-773e1a17930a
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Original Sale Value (Filtered)' =
+			
+			VAR _FilteredREFs = VALUES(Fact_PartsPromo[REF_NO])
+			RETURN
+			CALCULATE(
+			    SUM(dim_RepairOrder[TotalPartsSales]),
+			    TREATAS(_FilteredREFs, dim_RepairOrder[REF_NO])
+			)
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: e560b384-5e01-468b-8e38-dc15e4993474
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Net Sales Value (Filtered)' =
+			
+			[Original Sale Value (Filtered)] + SUM(Fact_PartsPromo[SaleValue])
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 7c462a6e-5dfc-4bce-b356-43dd0e8313ce
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Net Sales %' = DIVIDE([Net Sales Value (Filtered)], [Total Sales], 0)
+		formatString: 0.00%;-0.00%;0.00%
+		lineageTag: bee40c61-1ab3-45c5-ac5f-ce2217620032
+
+	measure 'Selected TransDatetime Range' = ```
+			
+			VAR _MinDate = MIN(Fact_PartsPromo[TransDatetime])
+			VAR _MaxDate = MAX(Fact_PartsPromo[TransDatetime])
+			RETURN
+			    IF(
+			        _MinDate = _MaxDate,
+			        FORMAT(_MinDate, "M/D/YYYY"),
+			        FORMAT(_MinDate, "M/D/YYYY") & " - " & FORMAT(_MaxDate, "M/D/YYYY")
+			    )
+			
+			```
+		lineageTag: 32fa5d3e-1a85-43aa-ad99-ffd16bfc64ce
+
+	measure 'Selected Date Range' =
+			
+			VAR _MinDate = MIN(dim_DateTable[Date])
+			VAR _MaxDate = MAX(dim_DateTable[Date])
+			RETURN
+			    IF(
+			        _MinDate = _MaxDate,
+			        FORMAT(_MinDate, "M/D/YYYY"),
+			        FORMAT(_MinDate, "M/D/YYYY") & " - " & FORMAT(_MaxDate, "M/D/YYYY")
+			    )
+		lineageTag: 7d2830d7-2903-4a87-b432-7e73f5511124
+
+	column Value
+		isHidden
+		lineageTag: da2dfa23-0c4c-4e9d-8014-3cc5710e756b
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Value]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition _Measures = calculated
+		mode: import
+		source = { "This table holds all measures for the Parts Reorder Monitoring report" }
+
+	annotation PBI_Id = da82ad85df114f0dbe8c17ce73f079a8
+

@@ -1,0 +1,23 @@
+table DateTable
+	lineageTag: 07f081f7-717b-4427-a62d-b06e6d419d51
+
+	column Date
+		formatString: General Date
+		lineageTag: aabcfa4e-c0be-4a08-b8a6-abe28730dd46
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Date]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition DateTable = calculated
+		mode: import
+		source =
+				
+				CALENDAR(
+				    MIN(InTrans_All_Promo[Trans_Datetime]),
+				    MAX(InTrans_All_Promo[Trans_Datetime])
+				)
+
+	annotation PBI_Id = 75dabf57ba164f92991b18ee62d3c078
+

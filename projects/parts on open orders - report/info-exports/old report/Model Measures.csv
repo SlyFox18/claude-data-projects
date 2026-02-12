@@ -1,0 +1,1117 @@
+ID,Name,Table,Description,DataType,Expression,FormatString,IsHidden,State,KPIID,IsSimpleMeasure,DisplayFolder,DetailRowsDefinition,DataCategory,FormatStringDefinition,LineageTag
+1255,# Parts On Order,MeasuresTable,Calculates the total number of parts currently on order by summing the '#_Parts_On_Order' column in the 'Parts_Open_Tickets' table.,,"
+SUM ( Parts_Open_Tickets[#_Parts_On_Order] )",,False,Valid,,False,,,,"""0""",7c60f383-2995-4011-97a4-34dd25fb3c3d
+1258,Order Total,MeasuresTable,Calculates the sum of the 'Order_Total_$$' column from the 'Parts_Open_Tickets' table.,,"
+SUM ( Parts_Open_Tickets[Order_Total_$$] )",,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",b6644e54-2073-4ea7-bf57-fd4ebe724078
+1263,$$ not BO,MeasuresTable,Sums the values in the Parts_Open_Tickets[$$_not_BO] column.,,"
+SUM ( Parts_Open_Tickets[$$_Available] )",,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",c98d145b-b9a3-4ea7-857d-011dd526e33a
+1268,Deposit,MeasuresTable,Calculates the total sum of deposits from the Parts_Open_Tickets table.,,"
+SUM ( Parts_Open_Tickets[Deposit] )",,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",95667655-0dae-4432-9715-3b6be677fbf4
+2056,# on Back Order,MeasuresTable,Calculates the total number of items on back order by summing the values in the #_On_Back_Order column of the Parts_Open_Tickets table.,,"
+SUM ( Parts_Open_Tickets[#_On_Back_Order] )",,False,Valid,,False,,,,"""0""",e4d34ff0-a51f-4800-a1fb-b00d92841672
+2059,Show Filter 1,MeasuresTable,"Displays a concatenated string of the top filtered values for various columns in the Parts_Open_Tickets and Dim_Branch tables, with a maximum of 3 filters shown per column.",,"
+VAR MaxFilters = 3
+RETURN
+    IF (
+        ISFILTERED ( Parts_Open_Tickets[Aging] ),
+        VAR ___f =
+            FILTERS ( Parts_Open_Tickets[Aging] )
+        VAR ___r =
+            COUNTROWS ( ___f )
+        VAR ___t =
+            TOPN ( MaxFilters, ___f, Parts_Open_Tickets[Aging] )
+        VAR ___d =
+            CONCATENATEX ( ___t, Parts_Open_Tickets[Aging], "", "" )
+        VAR ___x =
+            ""Aging:  "" & ___d
+                & IF ( ___r > MaxFilters, "", ... ["" & ___r & "" items selected]"" ) & "" ""
+        RETURN
+            ___x & UNICHAR ( 13 )
+                & UNICHAR ( 10 )
+    )
+        & IF (
+            ISFILTERED ( Dim_Branch[Branch] ),
+            VAR ___f =
+                FILTERS ( Dim_Branch[Branch] )
+            VAR ___r =
+                COUNTROWS ( ___f )
+            VAR ___t =
+                TOPN ( MaxFilters, ___f, Dim_Branch[Branch] )
+            VAR ___d =
+                CONCATENATEX ( ___t, Dim_Branch[Branch], "", "" )
+            VAR ___x =
+                ""Branch:  "" & ___d
+                    & IF ( ___r > MaxFilters, "", ... ["" & ___r & "" items selected]"" ) & "" ""
+            RETURN
+                ___x & UNICHAR ( 13 )
+                    & UNICHAR ( 10 )
+        )
+        & IF (
+            ISFILTERED ( Parts_Open_Tickets[Invoice_Type] ),
+            VAR ___f =
+                FILTERS ( Parts_Open_Tickets[Invoice_Type] )
+            VAR ___r =
+                COUNTROWS ( ___f )
+            VAR ___t =
+                TOPN ( MaxFilters, ___f, Parts_Open_Tickets[Invoice_Type] )
+            VAR ___d =
+                CONCATENATEX ( ___t, Parts_Open_Tickets[Invoice_Type], "", "" )
+            VAR ___x =
+                ""Type:  "" & ___d
+                    & IF ( ___r > MaxFilters, "", ... ["" & ___r & "" items selected]"" ) & "" ""
+            RETURN
+                ___x & UNICHAR ( 13 )
+                    & UNICHAR ( 10 )
+        )
+        & IF (
+            ISFILTERED ( Parts_Open_Tickets[Order_Date] ),
+            VAR ___f =
+                FILTERS ( Parts_Open_Tickets[Order_Date] )
+            VAR ___r =
+                COUNTROWS ( ___f )
+            VAR ___t =
+                TOPN ( MaxFilters, ___f, Parts_Open_Tickets[Order_Date] )
+            VAR ___d =
+                CONCATENATEX ( ___t, Parts_Open_Tickets[Order_Date], "", "" )
+            VAR ___x =
+                ""Date:  "" & ___d
+                    & IF ( ___r > MaxFilters, "", ... ["" & ___r & "" items selected]"" ) & "" ""
+            RETURN
+                ___x & UNICHAR ( 13 )
+                    & UNICHAR ( 10 )
+        )
+        & IF (
+            ISFILTERED ( Parts_Open_Tickets[Customer] ),
+            VAR ___f =
+                FILTERS ( Parts_Open_Tickets[Customer] )
+            VAR ___r =
+                COUNTROWS ( ___f )
+            VAR ___t =
+                TOPN ( MaxFilters, ___f, Parts_Open_Tickets[Customer] )
+            VAR ___d =
+                CONCATENATEX ( ___t, Parts_Open_Tickets[Customer], "", "" )
+            VAR ___x =
+                ""Customer:  "" & ___d
+                    & IF ( ___r > MaxFilters, "", ... ["" & ___r & "" items selected]"" ) & "" ""
+            RETURN
+                ___x & UNICHAR ( 13 )
+                    & UNICHAR ( 10 )
+        )
+        & IF (
+            ISFILTERED ( Parts_Open_Tickets[Contact_Code] ),
+            VAR ___f =
+                FILTERS ( Parts_Open_Tickets[Contact_Code] )
+            VAR ___r =
+                COUNTROWS ( ___f )
+            VAR ___t =
+                TOPN ( MaxFilters, ___f, Parts_Open_Tickets[Contact_Code] )
+            VAR ___d =
+                CONCATENATEX ( ___t, Parts_Open_Tickets[Contact_Code], "", "" )
+            VAR ___x =
+                ""Contact Code:  "" & ___d
+                    & IF ( ___r > MaxFilters, "", ... ["" & ___r & "" items selected]"" ) & "" ""
+            RETURN
+                ___x & UNICHAR ( 13 )
+                    & UNICHAR ( 10 )
+        )
+---- MODEL MEASURES END ----",,False,Valid,,False,,,,,9f13d257-918e-4dc1-bc76-48862edae745
+2170,Show Aging,MeasuresTable,"Displays a concatenated string of the top aging values from the Parts_Open_Tickets table, limited to a maximum of 3 filters.",,"
+VAR MaxFilters = 3
+RETURN
+    IF (
+        ISFILTERED ( Parts_Open_Tickets[Aging] ),
+        VAR ___f =
+            FILTERS ( Parts_Open_Tickets[Aging] )
+        VAR ___r =
+            COUNTROWS ( ___f )
+        VAR ___t =
+            TOPN ( MaxFilters, ___f, Parts_Open_Tickets[Aging] )
+        VAR ___d =
+            CONCATENATEX ( ___t, Parts_Open_Tickets[Aging], "", "" )
+        VAR ___x =
+            ""Aging:  "" & ___d
+                & IF ( ___r > MaxFilters, "", ... ["" & ___r & "" items selected]"" ) & "" ""
+        RETURN
+            ___x & UNICHAR ( 13 )
+                & UNICHAR ( 10 )
+    )",,False,Valid,,False,,,,,2b2c7de5-341e-4d15-977e-c0c220677baa
+2173,HighestValueCount,MeasuresTable,Calculates the maximum order count across all branches.,,"
+MAXX ( VALUES ( Dim_Branch[Branch] ), [Order Count] )",,False,Valid,,False,,,,"""0""",f4285572-950a-4eec-bcd6-4ba11e22327e
+2229,LowestValueCount,MeasuresTable,Calculates the minimum order count across all branches.,,"
+MINX ( VALUES ( Dim_Branch[Branch] ), [Order Count] )",,False,Valid,,False,,,,"""0""",d3c41382-a40f-4da7-9482-23d6bfedd900
+2231,Bar Color Order Count,MeasuresTable,"Determines if the order count for the selected location is either the maximum or minimum order count across all locations, returning 1 if true and 0 otherwise.",,"
+VAR ThisLocation =
+    SELECTEDVALUE ( Dim_Branch[LocationID] )
+VAR ThisOrderCount = [Order Count]
+VAR MaxOrderCount =
+    CALCULATE (
+        MAXX ( VALUES ( Dim_Branch[LocationID] ), [Order Count] ),
+        REMOVEFILTERS ( Dim_Branch )
+    )
+VAR MinOrderCount =
+    CALCULATE (
+        MINX ( VALUES ( Dim_Branch[LocationID] ), [Order Count] ),
+        REMOVEFILTERS ( Dim_Branch )
+    )
+RETURN
+    IF (
+        ThisOrderCount = MaxOrderCount
+            || ThisOrderCount = MinOrderCount,
+        1,
+        // Highlight
+        0 // Grey
+    )",,False,Valid,,False,,,,"""0""",15814614-711b-4b0e-8140-e3ef10119673
+2233,Order Count,MeasuresTable,Counts the number of rows in the Parts_Open_Tickets table.,,"
+COUNTROWS ( Parts_Open_Tickets )",,False,Valid,,False,,,,"""0""",ecb8f5b1-a0f5-4359-ab93-a77e0518ffa2
+2256,Bar Color Hex Order Total,MeasuresTable,"Determines if the order total for the selected location is either the maximum or minimum order total across all locations, returning 1 if true and 0 otherwise.",,"
+VAR ThisLocation =
+    SELECTEDVALUE ( Dim_Branch[LocationID] )
+VAR ThisOrderTotal = [Order Total]
+VAR MaxOrderTotal =
+    CALCULATE (
+        MAXX ( VALUES ( Dim_Branch[LocationID] ), [Order Total] ),
+        REMOVEFILTERS ( Dim_Branch )
+    )
+VAR MinOrderTotal =
+    CALCULATE (
+        MINX ( VALUES ( Dim_Branch[LocationID] ), [Order Total] ),
+        REMOVEFILTERS ( Dim_Branch )
+    )
+RETURN
+    IF (
+        ThisOrderTotal = MaxOrderTotal
+            || ThisOrderTotal = MinOrderTotal,
+        1,
+        // Highlight 
+        0 // Grey
+    )",,False,Valid,,False,,,,"""0""",41d63bcb-d786-487b-90f6-ae40c25064dd
+2258,Bar Color Hex Back Order,MeasuresTable,"Determines if the back order count for a location is either the maximum or minimum among all locations, returning 1 if true and 0 otherwise.",,"
+VAR ThisLocation =
+    SELECTEDVALUE ( Dim_Branch[LocationID] )
+VAR ThisBackOrderCount = [# on Back Order]
+VAR MaxBackOrder =
+    CALCULATE (
+        MAXX ( VALUES ( Dim_Branch[LocationID] ), [# on Back Order] ),
+        REMOVEFILTERS ( Dim_Branch )
+    )
+VAR MinBackOrder =
+    CALCULATE (
+        MINX ( VALUES ( Dim_Branch[LocationID] ), [# on Back Order] ),
+        REMOVEFILTERS ( Dim_Branch )
+    )
+RETURN
+    IF (
+        ThisBackOrderCount = MaxBackOrder
+            || ThisBackOrderCount = MinBackOrder,
+        1,
+        // Highlight 
+        0 // Grey
+    )",,False,Valid,,False,,,,"""0""",c18882b8-f8eb-4878-8f9d-e00e4c931d9c
+2260,Bar Color Hex $$ not BO,MeasuresTable,"Determines if the current value of '$$ not BO' for a specific location is either the maximum or minimum value across all locations, returning 1 if true and 0 otherwise.",,"
+VAR ThisLocation =
+    SELECTEDVALUE ( Dim_Branch[LocationID] )
+VAR ThisValue = [$$ not BO]
+VAR MaxValue =
+    CALCULATE (
+        MAXX ( VALUES ( Dim_Branch[LocationID] ), [$$ not BO] ),
+        REMOVEFILTERS ( Dim_Branch )
+    )
+VAR MinValue =
+    CALCULATE (
+        MINX ( VALUES ( Dim_Branch[LocationID] ), [$$ not BO] ),
+        REMOVEFILTERS ( Dim_Branch )
+    )
+RETURN
+    IF (
+        ThisValue = MaxValue
+            || ThisValue = MinValue,
+        1,
+        // Highlight 
+        0 // Grey
+    )",,False,Valid,,False,,,,"""0""",0bd82a3d-24d1-476b-af46-3a41db319efa
+2262,Back Order Label,MeasuresTable,Determines if the current location's back order count is the maximum or minimum among all locations and returns a corresponding string label.,,"
+VAR ThisLocation =
+    SELECTEDVALUE ( Dim_Branch[LocationID] )
+VAR ThisBackOrder = [# on Back Order]
+VAR MaxBackOrder =
+    CALCULATE (
+        MAXX ( VALUES ( Dim_Branch[LocationID] ), [# on Back Order] ),
+        REMOVEFILTERS ( Dim_Branch )
+    )
+VAR MinBackOrder =
+    CALCULATE (
+        MINX ( VALUES ( Dim_Branch[LocationID] ), [# on Back Order] ),
+        REMOVEFILTERS ( Dim_Branch )
+    )
+RETURN
+    SWITCH (
+        TRUE (),
+        ThisBackOrder = MaxBackOrder, ""Highest Back Order"",
+        ThisBackOrder = MinBackOrder, ""Lowest Back Order"",
+        BLANK ()
+    )",,False,Valid,,False,,,,,c4fa3d45-a0d5-4677-8e39-fe7770c8cf5a
+2385,Selected Top N,MeasuresTable,"Returns the selected value from the 'TopN Selector' table, or -1 if no value is selected.",,"
+SELECTEDVALUE ( 'TopN Selector'[TopN], -1 )",,False,Valid,,False,,,,"""0""",afa60f8d-4bc2-450c-8fb4-81c84d08a885
+2387,Customer Rank - Order Count,MeasuresTable,"Ranks customers based on the count of their orders in descending order, using a dense ranking method.",,"
+RANKX (
+    ALL ( Parts_Open_Tickets[Customer] ),
+    CALCULATE ( COUNT ( Parts_Open_Tickets[Order_No] ) ),
+    ,
+    DESC,
+    DENSE
+)",,False,Valid,,False,,,,"""0""",3bd449cf-2032-4b21-9a7d-1d1e62764c2c
+2389,Customer Rank - Order Total,MeasuresTable,Ranks customers based on their order total in descending order using a dense ranking method.,,"
+RANKX ( ALL ( Parts_Open_Tickets[Customer] ), [Order Total],, DESC, DENSE )",,False,Valid,,False,,,,"""0""",38d97d33-bae4-4455-a936-8b50bbeada51
+2391,Filtered Order Count,MeasuresTable,Counts the number of orders based on the selected top N customers by order count.,,"
+VAR _TopN = [Selected Top N]
+RETURN
+    IF (
+        _TopN = -1
+            || [Customer Rank - Order Count] <= _TopN,
+        COUNT ( Parts_Open_Tickets[Order_No] )
+    )",,False,Valid,,False,,,,"""0""",49125fe7-4494-409e-b678-be289b62cec5
+2393,Filtered Order Total,MeasuresTable,Returns the order total for customers within the selected top N rank.,,"
+VAR _TopN = [Selected Top N]
+RETURN
+    IF ( _TopN = -1 || [Customer Rank - Order Total] <= _TopN, [Order Total] )",,False,Valid,,False,,,,,ca27a943-ee4e-4f94-8a8e-dcbae7af32ea
+2477,Salesman Rank - Order Count,MeasuresTable,"Ranks salesmen based on the count of orders in descending order, using a dense ranking method.",,"
+RANKX (
+    ALL ( Parts_Open_Tickets[Salesman] ),
+    CALCULATE ( COUNT ( Parts_Open_Tickets[Order_No] ) ),
+    ,
+    DESC,
+    DENSE
+)",,False,Valid,,False,,,,"""0""",5d40b685-27f7-4703-80f3-0afa0861c0f2
+2479,Salesman Rank - Order Total,MeasuresTable,"Ranks salesmen based on their total order value in descending order, using a dense ranking method.",,"
+RANKX ( ALL ( Parts_Open_Tickets[Salesman] ), [Order Total],, DESC, DENSE )",,False,Valid,,False,,,,"""0""",7f6f8cc9-b0d7-401e-b38a-d4bb7dadcde1
+2481,Filtered Order Count - Salesman,MeasuresTable,"Counts the number of orders for a salesman, filtered by the selected top N rank.",,"
+VAR _TopN = [Selected Top N]
+RETURN
+    IF (
+        _TopN = -1
+            || [Salesman Rank - Order Count] <= _TopN,
+        COUNT ( Parts_Open_Tickets[Order_No] )
+    )",,False,Valid,,False,,,,"""0""",32fc8864-5eed-4ae5-bce6-77649da46974
+2483,Filtered Order Total - Salesman,MeasuresTable,Returns the order total for salesmen filtered by the selected top N rank.,,"
+VAR _TopN = [Selected Top N]
+RETURN
+    IF ( _TopN = -1 || [Salesman Rank - Order Total] <= _TopN, [Order Total] )",,False,Valid,,False,,,,,86a01b50-111b-44ac-bbf6-8d2a47f04607
+2486,Bar Color Hex - Customer Count,MeasuresTable,Determines the bar color hex value for customer count based on whether the count is the maximum or minimum value.,,"
+VAR ThisCustomer =
+    SELECTEDVALUE ( Parts_Open_Tickets[Customer] )
+VAR ThisValue =
+    CALCULATE ( COUNT ( Parts_Open_Tickets[Order_No] ) )
+VAR MaxValue =
+    CALCULATE (
+        MAXX (
+            VALUES ( Parts_Open_Tickets[Customer] ),
+            CALCULATE ( COUNT ( Parts_Open_Tickets[Order_No] ) )
+        ),
+        REMOVEFILTERS ( Parts_Open_Tickets[Customer] )
+    )
+VAR MinValue =
+    CALCULATE (
+        MINX (
+            VALUES ( Parts_Open_Tickets[Customer] ),
+            CALCULATE ( COUNT ( Parts_Open_Tickets[Order_No] ) )
+        ),
+        REMOVEFILTERS ( Parts_Open_Tickets[Customer] )
+    )
+RETURN
+    IF (
+        ThisValue = MaxValue
+            || ThisValue = MinValue,
+        ""#446FA7"",
+        // Highlight
+        ""#B3B3B3"" // Default
+    )",,False,Valid,,False,,,,,8aa6c707-f83c-4eff-b0c4-c0d75558ee8b
+2488,Bar Color Hex - Customer Total,MeasuresTable,"Determines if the order total for a selected customer is either the maximum or minimum value among all customers, returning 1 if true and 0 otherwise.",,"
+VAR ThisCustomer =
+    SELECTEDVALUE ( Parts_Open_Tickets[Customer] )
+VAR ThisValue = [Order Total]
+VAR MaxValue =
+    CALCULATE (
+        MAXX ( VALUES ( Parts_Open_Tickets[Customer] ), [Order Total] ),
+        REMOVEFILTERS ( Parts_Open_Tickets[Customer] )
+    )
+VAR MinValue =
+    CALCULATE (
+        MINX ( VALUES ( Parts_Open_Tickets[Customer] ), [Order Total] ),
+        REMOVEFILTERS ( Parts_Open_Tickets[Customer] )
+    )
+RETURN
+    IF (
+        ThisValue = MaxValue
+            || ThisValue = MinValue,
+        1,
+        // Light Salmon for highlight
+        0
+    )",,False,Valid,,False,,,,"""0""",d22acde1-68d0-45fe-a6bd-3f244168b197
+2490,Bar Color Hex - Salesman Count,MeasuresTable,"Determines if the count of orders for a selected salesman is either the maximum or minimum among all salesmen, returning 1 if true and 0 otherwise.",,"
+VAR ThisSalesman =
+    SELECTEDVALUE ( Parts_Open_Tickets[Salesman] )
+VAR ThisValue =
+    COUNT ( Parts_Open_Tickets[Order_No] )
+VAR MaxValue =
+    CALCULATE (
+        MAXX (
+            VALUES ( Parts_Open_Tickets[Salesman] ),
+            CALCULATE ( COUNT ( Parts_Open_Tickets[Order_No] ) )
+        ),
+        REMOVEFILTERS ( Parts_Open_Tickets[Salesman] )
+    )
+VAR MinValue =
+    CALCULATE (
+        MINX (
+            VALUES ( Parts_Open_Tickets[Salesman] ),
+            CALCULATE ( COUNT ( Parts_Open_Tickets[Order_No] ) )
+        ),
+        REMOVEFILTERS ( Parts_Open_Tickets[Salesman] )
+    )
+RETURN
+    IF ( ThisValue = MaxValue || ThisValue = MinValue, 1, // Lime Green
+        0 )",,False,Valid,,False,,,,"""0""",3fc4ec29-6ebd-4638-90b7-4c942ad0ebdc
+2492,Bar Color Hex - Salesman Total,MeasuresTable,"Determines if the order total for a selected salesman is either the maximum or minimum value among all salesmen, returning 1 if true and 0 otherwise.",,"
+VAR ThisSalesman =
+    SELECTEDVALUE ( Parts_Open_Tickets[Salesman] )
+VAR ThisValue = [Order Total]
+VAR MaxValue =
+    CALCULATE (
+        MAXX ( VALUES ( Parts_Open_Tickets[Salesman] ), [Order Total] ),
+        REMOVEFILTERS ( Parts_Open_Tickets[Salesman] )
+    )
+VAR MinValue =
+    CALCULATE (
+        MINX ( VALUES ( Parts_Open_Tickets[Salesman] ), [Order Total] ),
+        REMOVEFILTERS ( Parts_Open_Tickets[Salesman] )
+    )
+RETURN
+    IF ( ThisValue = MaxValue || ThisValue = MinValue, 1, // Medium Purple
+        0 )",,False,Valid,,False,,,,"""0""",6f22696e-dc57-4047-9120-1d45b1638b8d
+2527,Order Count 1,MeasuresTable,Calculates the total number of orders by counting the 'Order_No' in the 'Parts_Open_Tickets' table.,,"
+CALCULATE ( COUNT ( Parts_Open_Tickets[Order_No] ) )",,False,Valid,,False,,,,"""0""",1ea443b7-10df-4f21-bcc7-a4be2a44b2b9
+2529,Customer Rank,MeasuresTable,"Ranks customers based on their order count in descending order, with ties assigned the same rank.",,"
+VAR BaseTable =
+    ADDCOLUMNS (
+        VALUES ( Parts_Open_Tickets[Customer] ),
+        ""OrderCount"", [Order Count 1]
+    )
+RETURN
+    RANKX ( BaseTable, [Order Count 1],, DESC, DENSE )",,False,Valid,,False,,,,"""0""",c79e7dcc-34a4-4d4e-8837-0fbf27c6a11a
+2531,Is In Top N,MeasuresTable,Determines if a customer is within the selected top N rank.,,"
+VAR _TopN = [Selected Top N]
+RETURN
+    IF ( _TopN = -1 || [Customer Rank] <= _TopN, TRUE (), FALSE () )",,False,Valid,,False,,,,"""""""TRUE"""";""""TRUE"""";""""FALSE""""""",bd6372e0-57bc-4924-aecf-d55ef535f81b
+2535,Order Total Same Period Last Year,MeasuresTable,Calculates the total order value for the same period in the previous year.,,"
+CALCULATE (
+    [Order Total],
+    SAMEPERIODLASTYEAR ( Parts_Open_Tickets[Order_Date] )
+)",,False,Valid,,False,,,,,4f87da81-b7d6-4f5b-a142-0f03e89ae87b
+35979,% of Parts on Back Order,MeasuresTable,,,"DIVIDE(
+    [# on Back Order], [# Parts On Order], 0)",,False,Valid,,False,,,,"""0.00%;-0.00%;0.00%""",050706d6-c2de-4a7a-86e8-09089ac9eaaf
+49633,Backordered $$,MeasuresTable,,,SUM(Parts_Open_Tickets[$$_BackOrdered]),,False,Valid,,False,,,,"""\$#,0.00;(\$#,0.00);\$#,0.00""",70b8e4ee-d85c-4c1a-9c8f-faf6f99eb5dc
+51993,Backordered Line Count,MeasuresTable,,,SUM(Parts_Open_Tickets_Details[BackOrdered Flag]),,False,Valid,,False,,,,"""0""",1407a0bc-ca8f-42d0-9653-de45b7586db8
+62657,Parts Line Count,MeasuresTable,,,COUNT(Parts_Open_Tickets_Details[Part_No]),,False,Valid,,False,,,,"""0""",071a7ae0-57b2-48ef-91d3-10175139d39b
+65011,% # of Parts by line count,MeasuresTable,,,"DIVIDE([Parts Line Count], [# Parts On Order], 0)",,False,Valid,,False,,,,"""0.00%;-0.00%;0.00%""",6b61c453-ec03-483f-a130-e2bb37fb279a
+67366,% # Backordered by Line Count,MeasuresTable,,,"DIVIDE([Backordered Line Count], [# on Back Order], 0)",,False,Valid,,False,,,,"""0.00%;-0.00%;0.00%""",d6b9c446-39f8-4878-9ac2-a3f43092d0d3
+75604,KPI SVG - Not Backordered vs Backordered (Conditional Color),MeasuresTable,,,"
+VAR Total = [Order Total]
+VAR BO = [Backordered $$]
+VAR NotBO = Total - BO
+
+VAR pct_BO = DIVIDE(BO, Total, 0)
+VAR pct_NotBO = DIVIDE(NotBO, Total, 0)
+
+VAR BarWidth = 320
+VAR BarHeight = 32
+VAR SVG_Height = 110
+
+VAR LabelFontColor = ""#000000""
+VAR PercentFontColor = ""#FFFFFF""
+VAR NotBO_Color = ""#4A5B73""
+// Conditionally format Backordered bar color
+VAR BO_Color = IF(pct_BO > 0.1, ""#D45353"", ""#808080"")
+
+VAR TitleText = ""Not Backordered vs. Backordered""
+VAR TitleFontSize = 15
+
+VAR NotBO_Dollar_Label = FORMAT(NotBO, ""$#,0"")
+VAR BO_Dollar_Label = FORMAT(BO, ""$#,0"")
+
+VAR NotBO_Percent_Label = FORMAT(pct_NotBO, ""0%"")
+VAR BO_Percent_Label = FORMAT(pct_BO, ""0%"")
+
+// X positions
+VAR LabelMargin = 4
+VAR NotBO_Label_X = LabelMargin + 1
+VAR BO_Label_X = BarWidth - LabelMargin - 1
+VAR Title_X = BarWidth / 2
+
+// Y positions
+VAR Title_Y = 22
+VAR DollarLabels_Y = 54
+VAR Bar_Y = 75
+VAR PercentLabel_Y = Bar_Y + (BarHeight / 2) + 6
+
+// Bar segment widths
+VAR NotBO_Width = ROUND(pct_NotBO * BarWidth, 0)
+VAR BO_Width = BarWidth - NotBO_Width
+
+// X positions for percent labels (centered in each bar segment)
+VAR NotBO_Percent_X = NotBO_Width / 2
+VAR BO_Percent_X = NotBO_Width + (BO_Width / 2)
+
+VAR SVG =
+    ""<svg width='"" & BarWidth & ""' height='"" & SVG_Height & ""' viewBox='0 0 "" & BarWidth & "" "" & SVG_Height & ""' xmlns='http://www.w3.org/2000/svg'>"" &
+        // Title (centered at top)
+        ""<text x='"" & Title_X & ""' y='"" & Title_Y & ""' text-anchor='middle' font-size='"" & TitleFontSize & ""' fill='"" & LabelFontColor & ""' font-family='Segoe UI' font-weight='bold'>"" &
+            TitleText &
+        ""</text>"" &
+        // Not Backordered $ label (above bar, far left)
+        ""<text x='"" & NotBO_Label_X & ""' y='"" & DollarLabels_Y & ""' text-anchor='start' font-size='13' fill='"" & LabelFontColor & ""' font-family='Segoe UI' font-weight='bold'>"" &
+            NotBO_Dollar_Label &
+        ""</text>"" &
+        // Backordered $ label (above bar, far right)
+        ""<text x='"" & BO_Label_X & ""' y='"" & DollarLabels_Y & ""' text-anchor='end' font-size='13' fill='"" & LabelFontColor & ""' font-family='Segoe UI' font-weight='bold'>"" &
+            BO_Dollar_Label &
+        ""</text>"" &
+        // Not Backordered Bar (bottom)
+        ""<rect x='0' y='"" & Bar_Y & ""' width='"" & NotBO_Width & ""' height='"" & BarHeight & ""' fill='"" & NotBO_Color & ""' />"" &
+        // Backordered Bar (bottom, conditional color)
+        ""<rect x='"" & NotBO_Width & ""' y='"" & Bar_Y & ""' width='"" & BO_Width & ""' height='"" & BarHeight & ""' fill='"" & BO_Color & ""' />"" &
+        // Not Backordered percent label (inside bar)
+        IF(
+            NotBO_Width > 28,
+            ""<text x='"" & NotBO_Percent_X & ""' y='"" & PercentLabel_Y & ""' text-anchor='middle' font-size='15' fill='"" & PercentFontColor & ""' font-family='Segoe UI' font-weight='bold'>"" &
+                NotBO_Percent_Label &
+            ""</text>"",
+            """"
+        ) &
+        // Backordered percent label (inside bar)
+        IF(
+            BO_Width > 28,
+            ""<text x='"" & BO_Percent_X & ""' y='"" & PercentLabel_Y & ""' text-anchor='middle' font-size='15' fill='"" & PercentFontColor & ""' font-family='Segoe UI' font-weight='bold'>"" &
+                BO_Percent_Label &
+            ""</text>"",
+            """"
+        ) &
+    ""</svg>""
+
+RETURN
+    ""data:image/svg+xml;utf8,"" & SVG
+",,False,Valid,,False,,,,,a759dde2-262a-49f9-b4da-b666e5dbb2bc
+102655,KPI SVG - Parts On Order vs Back Order (Conditional Color),MeasuresTable,,,"
+VAR TotalParts = [# Parts On Order]
+VAR BackOrderParts = [# on Back Order]
+VAR NotBackOrderParts = TotalParts - BackOrderParts
+
+VAR pct_BackOrder = DIVIDE(BackOrderParts, TotalParts, 0)
+VAR pct_NotBackOrder = DIVIDE(NotBackOrderParts, TotalParts, 0)
+
+VAR BarWidth = 320
+VAR BarHeight = 32
+VAR SVG_Height = 110
+
+VAR LabelFontColor = ""#000000""
+VAR PercentFontColor = ""#FFFFFF""
+VAR NotBO_Color = ""#4A5B73""
+// Conditional coloring for Backordered segment
+VAR BO_Color = IF(pct_BackOrder > 0.1, ""#D45353"", ""#808080"")
+
+VAR TitleText = ""Not Backordered vs. Backordered (Parts)""
+VAR TitleFontSize = 15
+
+VAR NotBO_Dollar_Label = FORMAT(NotBackOrderParts, ""#,0"")
+VAR BO_Dollar_Label = FORMAT(BackOrderParts, ""#,0"")
+
+VAR NotBO_Percent_Label = FORMAT(pct_NotBackOrder, ""0%"")
+VAR BO_Percent_Label = FORMAT(pct_BackOrder, ""0%"")
+
+// X positions
+VAR LabelMargin = 4
+VAR NotBO_Label_X = LabelMargin + 1
+VAR BO_Label_X = BarWidth - LabelMargin - 1
+VAR Title_X = BarWidth / 2
+
+// Y positions
+VAR Title_Y = 22
+VAR DollarLabels_Y = 54
+VAR Bar_Y = 75
+VAR PercentLabel_Y = Bar_Y + (BarHeight / 2) + 6
+
+// Bar segment widths
+VAR NotBO_Width = ROUND(pct_NotBackOrder * BarWidth, 0)
+VAR BO_Width = BarWidth - NotBO_Width
+
+// X positions for percent labels (centered in each bar segment)
+VAR NotBO_Percent_X = NotBO_Width / 2
+VAR BO_Percent_X = NotBO_Width + (BO_Width / 2)
+
+VAR SVG =
+    ""<svg width='"" & BarWidth & ""' height='"" & SVG_Height & ""' viewBox='0 0 "" & BarWidth & "" "" & SVG_Height & ""' xmlns='http://www.w3.org/2000/svg'>"" &
+        // Title (centered at top)
+        ""<text x='"" & Title_X & ""' y='"" & Title_Y & ""' text-anchor='middle' font-size='"" & TitleFontSize & ""' fill='"" & LabelFontColor & ""' font-family='Segoe UI' font-weight='bold'>"" &
+            TitleText &
+        ""</text>"" &
+        // Not Backordered count label (above bar, far left)
+        ""<text x='"" & NotBO_Label_X & ""' y='"" & DollarLabels_Y & ""' text-anchor='start' font-size='13' fill='"" & LabelFontColor & ""' font-family='Segoe UI' font-weight='bold'>"" &
+            NotBO_Dollar_Label &
+        ""</text>"" &
+        // Backordered count label (above bar, far right)
+        ""<text x='"" & BO_Label_X & ""' y='"" & DollarLabels_Y & ""' text-anchor='end' font-size='13' fill='"" & LabelFontColor & ""' font-family='Segoe UI' font-weight='bold'>"" &
+            BO_Dollar_Label &
+        ""</text>"" &
+        // Not Backordered Bar (bottom)
+        ""<rect x='0' y='"" & Bar_Y & ""' width='"" & NotBO_Width & ""' height='"" & BarHeight & ""' fill='"" & NotBO_Color & ""' />"" &
+        // Backordered Bar (bottom, conditional color)
+        ""<rect x='"" & NotBO_Width & ""' y='"" & Bar_Y & ""' width='"" & BO_Width & ""' height='"" & BarHeight & ""' fill='"" & BO_Color & ""' />"" &
+        // Not Backordered percent label (inside bar)
+        IF(
+            NotBO_Width > 28,
+            ""<text x='"" & NotBO_Percent_X & ""' y='"" & PercentLabel_Y & ""' text-anchor='middle' font-size='15' fill='"" & PercentFontColor & ""' font-family='Segoe UI' font-weight='bold'>"" &
+                NotBO_Percent_Label &
+            ""</text>"",
+            """"
+        ) &
+        // Backordered percent label (inside bar)
+        IF(
+            BO_Width > 28,
+            ""<text x='"" & BO_Percent_X & ""' y='"" & PercentLabel_Y & ""' text-anchor='middle' font-size='15' fill='"" & PercentFontColor & ""' font-family='Segoe UI' font-weight='bold'>"" &
+                BO_Percent_Label &
+            ""</text>"",
+            """"
+        ) &
+    ""</svg>""
+
+RETURN
+    ""data:image/svg+xml;utf8,"" & SVG
+",,False,Valid,,False,,,,,20273258-4b55-41bd-a6c8-1ad9583c1e10
+105009,Line Count,MeasuresTable,,,COUNT(Parts_Open_Tickets_Details[Part_No]),,False,Valid,,False,,,,"""0""",b397f4de-f662-4bd2-bb41-aa7577c42fe4
+108540,KPI SVG - Line Count vs Backordered Line (Conditional Color),MeasuresTable,,,"
+VAR TotalLines = [Line Count]
+VAR BackorderedLines = [Backordered Line Count]
+VAR NotBackorderedLines = TotalLines - BackorderedLines
+
+VAR pct_Backordered = DIVIDE(BackorderedLines, TotalLines, 0)
+VAR pct_NotBackordered = DIVIDE(NotBackorderedLines, TotalLines, 0)
+
+VAR BarWidth = 320
+VAR BarHeight = 32
+VAR SVG_Height = 110
+
+VAR LabelFontColor = ""#000000""
+VAR PercentFontColor = ""#FFFFFF""
+VAR NotBO_Color = ""#4A5B73""
+// Conditional coloring based on backordered %
+VAR BO_Color = IF(pct_Backordered > 0.1, ""#D45353"", ""#808080"")
+
+VAR TitleText = ""Not Backordered vs. Backordered (Lines)""
+VAR TitleFontSize = 15
+
+VAR NotBO_Label = FORMAT(NotBackorderedLines, ""#,0"")
+VAR BO_Label = FORMAT(BackorderedLines, ""#,0"")
+
+VAR NotBO_Percent_Label = FORMAT(pct_NotBackordered, ""0%"")
+VAR BO_Percent_Label = FORMAT(pct_Backordered, ""0%"")
+
+// X positions
+VAR LabelMargin = 4
+VAR NotBO_Label_X = LabelMargin + 1
+VAR BO_Label_X = BarWidth - LabelMargin - 1
+VAR Title_X = BarWidth / 2
+
+// Y positions
+VAR Title_Y = 22
+VAR Labels_Y = 54
+VAR Bar_Y = 75
+VAR PercentLabel_Y = Bar_Y + (BarHeight / 2) + 6
+
+// Bar segment widths
+VAR NotBO_Width = ROUND(pct_NotBackordered * BarWidth, 0)
+VAR BO_Width = BarWidth - NotBO_Width
+
+// X positions for percent labels (centered in each bar segment)
+VAR NotBO_Percent_X = NotBO_Width / 2
+VAR BO_Percent_X = NotBO_Width + (BO_Width / 2)
+
+VAR SVG =
+    ""<svg width='"" & BarWidth & ""' height='"" & SVG_Height & ""' viewBox='0 0 "" & BarWidth & "" "" & SVG_Height & ""' xmlns='http://www.w3.org/2000/svg'>"" &
+        // Title (centered at top)
+        ""<text x='"" & Title_X & ""' y='"" & Title_Y & ""' text-anchor='middle' font-size='"" & TitleFontSize & ""' fill='"" & LabelFontColor & ""' font-family='Segoe UI' font-weight='bold'>"" &
+            TitleText &
+        ""</text>"" &
+        // Not Backordered line count (above bar, far left)
+        ""<text x='"" & NotBO_Label_X & ""' y='"" & Labels_Y & ""' text-anchor='start' font-size='13' fill='"" & LabelFontColor & ""' font-family='Segoe UI' font-weight='bold'>"" &
+            NotBO_Label &
+        ""</text>"" &
+        // Backordered line count (above bar, far right)
+        ""<text x='"" & BO_Label_X & ""' y='"" & Labels_Y & ""' text-anchor='end' font-size='13' fill='"" & LabelFontColor & ""' font-family='Segoe UI' font-weight='bold'>"" &
+            BO_Label &
+        ""</text>"" &
+        // Not Backordered Bar (bottom)
+        ""<rect x='0' y='"" & Bar_Y & ""' width='"" & NotBO_Width & ""' height='"" & BarHeight & ""' fill='"" & NotBO_Color & ""' />"" &
+        // Backordered Bar (bottom, conditional color)
+        ""<rect x='"" & NotBO_Width & ""' y='"" & Bar_Y & ""' width='"" & BO_Width & ""' height='"" & BarHeight & ""' fill='"" & BO_Color & ""' />"" &
+        // Not Backordered percent label (inside bar)
+        IF(
+            NotBO_Width > 28,
+            ""<text x='"" & NotBO_Percent_X & ""' y='"" & PercentLabel_Y & ""' text-anchor='middle' font-size='15' fill='"" & PercentFontColor & ""' font-family='Segoe UI' font-weight='bold'>"" &
+                NotBO_Percent_Label &
+            ""</text>"",
+            """"
+        ) &
+        // Backordered percent label (inside bar)
+        IF(
+            BO_Width > 28,
+            ""<text x='"" & BO_Percent_X & ""' y='"" & PercentLabel_Y & ""' text-anchor='middle' font-size='15' fill='"" & PercentFontColor & ""' font-family='Segoe UI' font-weight='bold'>"" &
+                BO_Percent_Label &
+            ""</text>"",
+            """"
+        ) &
+    ""</svg>""
+
+RETURN
+    ""data:image/svg+xml;utf8,"" & SVG
+",,False,Valid,,False,,,,,8b7c95ad-9a69-4b94-ac23-2a7ac24dc6d5
+110896,Total # of Orders,MeasuresTable,,,SUM('Parts_Open_Tickets'[Order Count]),,False,Valid,,False,,,,"""0""",14e29c47-cc9f-4ddf-84ae-166dd4077a01
+115656,Orders with Backordered Parts,MeasuresTable,,,SUM(Parts_Open_Tickets[Order with BO Part]),,False,Valid,,False,,,,"""0""",10ed5bea-08c3-4b33-b3cd-9538e5e3db38
+118010,KPI SVG - Orders vs Orders with BO Parts (Conditional Color),MeasuresTable,,,"
+VAR TotalOrders = [Total # of Orders]
+VAR OrdersWithBO = [Orders with Backordered Parts]
+VAR OrdersWithoutBO = TotalOrders - OrdersWithBO
+
+VAR pct_WithBO = DIVIDE(OrdersWithBO, TotalOrders, 0)
+VAR pct_WithoutBO = DIVIDE(OrdersWithoutBO, TotalOrders, 0)
+
+VAR BarWidth = 320
+VAR BarHeight = 32
+VAR SVG_Height = 110
+
+VAR LabelFontColor = ""#000000""
+VAR PercentFontColor = ""#FFFFFF""
+VAR NotBO_Color = ""#4A5B73""
+// Conditional coloring for the Backordered segment
+VAR BO_Color = IF(pct_WithBO > 0.1, ""#D45353"", ""#808080"")
+
+VAR TitleText = ""Orders without BO Part vs. with BO Part""
+VAR TitleFontSize = 15
+
+VAR NotBO_Label = FORMAT(OrdersWithoutBO, ""#,0"")
+VAR BO_Label = FORMAT(OrdersWithBO, ""#,0"")
+
+VAR NotBO_Percent_Label = FORMAT(pct_WithoutBO, ""0%"")
+VAR BO_Percent_Label = FORMAT(pct_WithBO, ""0%"")
+
+// X positions
+VAR LabelMargin = 4
+VAR NotBO_Label_X = LabelMargin + 1
+VAR BO_Label_X = BarWidth - LabelMargin - 1
+VAR Title_X = BarWidth / 2
+
+// Y positions
+VAR Title_Y = 22
+VAR Labels_Y = 54
+VAR Bar_Y = 75
+VAR PercentLabel_Y = Bar_Y + (BarHeight / 2) + 6
+
+// Bar segment widths
+VAR NotBO_Width = ROUND(pct_WithoutBO * BarWidth, 0)
+VAR BO_Width = BarWidth - NotBO_Width
+
+// X positions for percent labels (centered in each bar segment)
+VAR NotBO_Percent_X = NotBO_Width / 2
+VAR BO_Percent_X = NotBO_Width + (BO_Width / 2)
+
+VAR SVG =
+    ""<svg width='"" & BarWidth & ""' height='"" & SVG_Height & ""' viewBox='0 0 "" & BarWidth & "" "" & SVG_Height & ""' xmlns='http://www.w3.org/2000/svg'>"" &
+        // Title (centered at top)
+        ""<text x='"" & Title_X & ""' y='"" & Title_Y & ""' text-anchor='middle' font-size='"" & TitleFontSize & ""' fill='"" & LabelFontColor & ""' font-family='Segoe UI' font-weight='bold'>"" &
+            TitleText &
+        ""</text>"" &
+        // Orders without BO label (above bar, far left)
+        ""<text x='"" & NotBO_Label_X & ""' y='"" & Labels_Y & ""' text-anchor='start' font-size='13' fill='"" & LabelFontColor & ""' font-family='Segoe UI' font-weight='bold'>"" &
+            NotBO_Label &
+        ""</text>"" &
+        // Orders with BO label (above bar, far right)
+        ""<text x='"" & BO_Label_X & ""' y='"" & Labels_Y & ""' text-anchor='end' font-size='13' fill='"" & LabelFontColor & ""' font-family='Segoe UI' font-weight='bold'>"" &
+            BO_Label &
+        ""</text>"" &
+        // Orders without BO Bar (bottom)
+        ""<rect x='0' y='"" & Bar_Y & ""' width='"" & NotBO_Width & ""' height='"" & BarHeight & ""' fill='"" & NotBO_Color & ""' />"" &
+        // Orders with BO Bar (bottom, conditional color)
+        ""<rect x='"" & NotBO_Width & ""' y='"" & Bar_Y & ""' width='"" & BO_Width & ""' height='"" & BarHeight & ""' fill='"" & BO_Color & ""' />"" &
+        // Orders without BO percent label (inside bar)
+        IF(
+            NotBO_Width > 28,
+            ""<text x='"" & NotBO_Percent_X & ""' y='"" & PercentLabel_Y & ""' text-anchor='middle' font-size='15' fill='"" & PercentFontColor & ""' font-family='Segoe UI' font-weight='bold'>"" &
+                NotBO_Percent_Label &
+            ""</text>"",
+            """"
+        ) &
+        // Orders with BO percent label (inside bar)
+        IF(
+            BO_Width > 28,
+            ""<text x='"" & BO_Percent_X & ""' y='"" & PercentLabel_Y & ""' text-anchor='middle' font-size='15' fill='"" & PercentFontColor & ""' font-family='Segoe UI' font-weight='bold'>"" &
+                BO_Percent_Label &
+            ""</text>"",
+            """"
+        ) &
+    ""</svg>""
+
+RETURN
+    ""data:image/svg+xml;utf8,"" & SVG
+",,False,Valid,,False,,,,,a3d7c9f3-83e1-4cd0-aa18-a25f7f291064
+126244,"Copy KPI SVG - Not Backordered vs Backordered (Compact, Square Bars)",MeasuresTable,,,"
+VAR Total = [Order Total]
+VAR BO = [Backordered $$]
+VAR NotBO = Total - BO
+
+VAR pct_BO = DIVIDE(BO, Total, 0)
+VAR pct_NotBO = DIVIDE(NotBO, Total, 0)
+
+VAR BarWidth = 320
+VAR BarHeight = 24
+VAR SVG_Height = 65   // Compact viewBox
+
+VAR LabelFontColor = ""#000000""
+VAR PercentFontColor = ""#FFFFFF""
+VAR NotBO_Color = ""#4A5B73""
+VAR BO_Color = IF(pct_BO > 0.1, ""#D45353"", ""#808080"")
+
+VAR TitleText = ""Not Backordered vs. Backordered""
+VAR TitleFontSize = 12
+
+VAR NotBO_Dollar_Label = FORMAT(NotBO, ""$#,0"")
+VAR BO_Dollar_Label = FORMAT(BO, ""$#,0"")
+
+VAR NotBO_Percent_Label = FORMAT(pct_NotBO, ""0%"")
+VAR BO_Percent_Label = FORMAT(pct_BO, ""0%"")
+
+// X positions
+VAR LabelMargin = 12
+VAR NotBO_Label_X = LabelMargin
+VAR BO_Label_X = BarWidth - LabelMargin
+VAR Title_X = BarWidth / 2
+
+// Y positions (all numbers reduced!)
+VAR Title_Y = 14
+VAR DollarLabels_Y = 30
+VAR Bar_Y = 38
+VAR PercentLabel_Y = Bar_Y + (BarHeight / 2) + 5
+
+// Bar segment widths
+VAR NotBO_Width = ROUND(pct_NotBO * BarWidth, 0)
+VAR BO_Width = BarWidth - NotBO_Width
+
+// X positions for percent labels (centered in each bar segment)
+VAR NotBO_Percent_X = NotBO_Width / 2
+VAR BO_Percent_X = NotBO_Width + (BO_Width / 2)
+
+VAR SVG =
+    ""<svg width='"" & BarWidth & ""' height='"" & SVG_Height & ""' viewBox='0 0 "" & BarWidth & "" "" & SVG_Height & ""' xmlns='http://www.w3.org/2000/svg'>"" &
+        // Title
+        ""<text x='"" & Title_X & ""' y='"" & Title_Y & ""' text-anchor='middle' font-size='"" & TitleFontSize & ""' fill='"" & LabelFontColor & ""' font-family='Segoe UI' font-weight='bold'>"" &
+            TitleText &
+        ""</text>"" &
+        // Not Backordered $ label (left)
+        ""<text x='"" & NotBO_Label_X & ""' y='"" & DollarLabels_Y & ""' text-anchor='start' font-size='11' fill='"" & LabelFontColor & ""' font-family='Segoe UI' font-weight='bold'>"" &
+            NotBO_Dollar_Label &
+        ""</text>"" &
+        // Backordered $ label (right)
+        ""<text x='"" & BO_Label_X & ""' y='"" & DollarLabels_Y & ""' text-anchor='end' font-size='11' fill='"" & LabelFontColor & ""' font-family='Segoe UI' font-weight='bold'>"" &
+            BO_Dollar_Label &
+        ""</text>"" &
+        // Not Backordered Bar (no rounding)
+        ""<rect x='0' y='"" & Bar_Y & ""' width='"" & NotBO_Width & ""' height='"" & BarHeight & ""' fill='"" & NotBO_Color & ""' />"" &
+        // Backordered Bar (no rounding)
+        ""<rect x='"" & NotBO_Width & ""' y='"" & Bar_Y & ""' width='"" & BO_Width & ""' height='"" & BarHeight & ""' fill='"" & BO_Color & ""' />"" &
+        // Not Backordered percent label
+        IF(
+            NotBO_Width > 36,
+            ""<text x='"" & NotBO_Percent_X & ""' y='"" & PercentLabel_Y & ""' text-anchor='middle' font-size='15' fill='"" & PercentFontColor & ""' font-family='Segoe UI' font-weight='bold'>"" &
+                NotBO_Percent_Label &
+            ""</text>"",
+            """"
+        ) &
+        // Backordered percent label
+        IF(
+            BO_Width > 36,
+            ""<text x='"" & BO_Percent_X & ""' y='"" & PercentLabel_Y & ""' text-anchor='middle' font-size='15' fill='"" & PercentFontColor & ""' font-family='Segoe UI' font-weight='bold'>"" &
+                BO_Percent_Label &
+            ""</text>"",
+            """"
+        ) &
+    ""</svg>""
+
+RETURN
+    ""data:image/svg+xml;utf8,"" & SVG
+",,False,Valid,,False,,,,,7597da85-2073-42bb-af82-f7673cdb0cab
+136830,"copy KPI SVG - Parts On Order vs Back Order (Compact, Square Bars)",MeasuresTable,,,"
+VAR TotalParts = [# Parts On Order]
+VAR BackOrderParts = [# on Back Order]
+VAR NotBackOrderParts = TotalParts - BackOrderParts
+
+VAR pct_BackOrder = DIVIDE(BackOrderParts, TotalParts, 0)
+VAR pct_NotBackOrder = DIVIDE(NotBackOrderParts, TotalParts, 0)
+
+VAR BarWidth = 320
+VAR BarHeight = 24
+VAR SVG_Height = 65   // Compact height for card grid
+
+VAR LabelFontColor = ""#000000""
+VAR PercentFontColor = ""#FFFFFF""
+VAR NotBO_Color = ""#4A5B73""
+VAR BO_Color = IF(pct_BackOrder > 0.1, ""#D45353"", ""#808080"")
+
+VAR TitleText = ""Not Backordered vs. Backordered (Parts)""
+VAR TitleFontSize = 12
+
+VAR NotBO_Dollar_Label = FORMAT(NotBackOrderParts, ""#,0"")
+VAR BO_Dollar_Label = FORMAT(BackOrderParts, ""#,0"")
+
+VAR NotBO_Percent_Label = FORMAT(pct_NotBackOrder, ""0%"")
+VAR BO_Percent_Label = FORMAT(pct_BackOrder, ""0%"")
+
+// X positions
+VAR LabelMargin = 12
+VAR NotBO_Label_X = LabelMargin
+VAR BO_Label_X = BarWidth - LabelMargin
+VAR Title_X = BarWidth / 2
+
+// Y positions (compact!)
+VAR Title_Y = 14
+VAR DollarLabels_Y = 30
+VAR Bar_Y = 38
+VAR PercentLabel_Y = Bar_Y + (BarHeight / 2) + 5
+
+// Bar segment widths
+VAR NotBO_Width = ROUND(pct_NotBackOrder * BarWidth, 0)
+VAR BO_Width = BarWidth - NotBO_Width
+
+// X positions for percent labels
+VAR NotBO_Percent_X = NotBO_Width / 2
+VAR BO_Percent_X = NotBO_Width + (BO_Width / 2)
+
+VAR SVG =
+    ""<svg width='"" & BarWidth & ""' height='"" & SVG_Height & ""' viewBox='0 0 "" & BarWidth & "" "" & SVG_Height & ""' xmlns='http://www.w3.org/2000/svg'>"" &
+        // Title
+        ""<text x='"" & Title_X & ""' y='"" & Title_Y & ""' text-anchor='middle' font-size='"" & TitleFontSize & ""' fill='"" & LabelFontColor & ""' font-family='Segoe UI' font-weight='bold'>"" &
+            TitleText &
+        ""</text>"" &
+        // Not Backordered count label (far left)
+        ""<text x='"" & NotBO_Label_X & ""' y='"" & DollarLabels_Y & ""' text-anchor='start' font-size='11' fill='"" & LabelFontColor & ""' font-family='Segoe UI' font-weight='bold'>"" &
+            NotBO_Dollar_Label &
+        ""</text>"" &
+        // Backordered count label (far right)
+        ""<text x='"" & BO_Label_X & ""' y='"" & DollarLabels_Y & ""' text-anchor='end' font-size='11' fill='"" & LabelFontColor & ""' font-family='Segoe UI' font-weight='bold'>"" &
+            BO_Dollar_Label &
+        ""</text>"" &
+        // Not Backordered Bar (no rounded corners)
+        ""<rect x='0' y='"" & Bar_Y & ""' width='"" & NotBO_Width & ""' height='"" & BarHeight & ""' fill='"" & NotBO_Color & ""' />"" &
+        // Backordered Bar (conditional color, no rounded corners)
+        ""<rect x='"" & NotBO_Width & ""' y='"" & Bar_Y & ""' width='"" & BO_Width & ""' height='"" & BarHeight & ""' fill='"" & BO_Color & ""' />"" &
+        // Not Backordered percent label
+        IF(
+            NotBO_Width > 36,
+            ""<text x='"" & NotBO_Percent_X & ""' y='"" & PercentLabel_Y & ""' text-anchor='middle' font-size='15' fill='"" & PercentFontColor & ""' font-family='Segoe UI' font-weight='bold'>"" &
+                NotBO_Percent_Label &
+            ""</text>"",
+            """"
+        ) &
+        // Backordered percent label
+        IF(
+            BO_Width > 36,
+            ""<text x='"" & BO_Percent_X & ""' y='"" & PercentLabel_Y & ""' text-anchor='middle' font-size='15' fill='"" & PercentFontColor & ""' font-family='Segoe UI' font-weight='bold'>"" &
+                BO_Percent_Label &
+            ""</text>"",
+            """"
+        ) &
+    ""</svg>""
+
+RETURN
+    ""data:image/svg+xml;utf8,"" & SVG
+",,False,Valid,,False,,,,,b23852e1-d2ed-4fd1-9c41-1f47c9e20984
+139184,"copy KPI SVG - Orders vs Orders with BO Parts (Compact, Square Bars)",MeasuresTable,,,"
+VAR TotalOrders = [Total # of Orders]
+VAR OrdersWithBO = [Orders with Backordered Parts]
+VAR OrdersWithoutBO = TotalOrders - OrdersWithBO
+
+VAR pct_WithBO = DIVIDE(OrdersWithBO, TotalOrders, 0)
+VAR pct_WithoutBO = DIVIDE(OrdersWithoutBO, TotalOrders, 0)
+
+VAR BarWidth = 320
+VAR BarHeight = 24
+VAR SVG_Height = 65   // Compact for card grid
+
+VAR LabelFontColor = ""#000000""
+VAR PercentFontColor = ""#FFFFFF""
+VAR NotBO_Color = ""#4A5B73""
+VAR BO_Color = IF(pct_WithBO > 0.1, ""#D45353"", ""#808080"")
+
+VAR TitleText = ""Orders without BO Part vs. with BO Part""
+VAR TitleFontSize = 12
+
+VAR NotBO_Label = FORMAT(OrdersWithoutBO, ""#,0"")
+VAR BO_Label = FORMAT(OrdersWithBO, ""#,0"")
+
+VAR NotBO_Percent_Label = FORMAT(pct_WithoutBO, ""0%"")
+VAR BO_Percent_Label = FORMAT(pct_WithBO, ""0%"")
+
+// X positions
+VAR LabelMargin = 12
+VAR NotBO_Label_X = LabelMargin
+VAR BO_Label_X = BarWidth - LabelMargin
+VAR Title_X = BarWidth / 2
+
+// Y positions (compact!)
+VAR Title_Y = 14
+VAR Labels_Y = 30
+VAR Bar_Y = 38
+VAR PercentLabel_Y = Bar_Y + (BarHeight / 2) + 5
+
+// Bar segment widths
+VAR NotBO_Width = ROUND(pct_WithoutBO * BarWidth, 0)
+VAR BO_Width = BarWidth - NotBO_Width
+
+// X positions for percent labels
+VAR NotBO_Percent_X = NotBO_Width / 2
+VAR BO_Percent_X = NotBO_Width + (BO_Width / 2)
+
+VAR SVG =
+    ""<svg width='"" & BarWidth & ""' height='"" & SVG_Height & ""' viewBox='0 0 "" & BarWidth & "" "" & SVG_Height & ""' xmlns='http://www.w3.org/2000/svg'>"" &
+        // Title
+        ""<text x='"" & Title_X & ""' y='"" & Title_Y & ""' text-anchor='middle' font-size='"" & TitleFontSize & ""' fill='"" & LabelFontColor & ""' font-family='Segoe UI' font-weight='bold'>"" &
+            TitleText &
+        ""</text>"" &
+        // Orders without BO label (far left)
+        ""<text x='"" & NotBO_Label_X & ""' y='"" & Labels_Y & ""' text-anchor='start' font-size='11' fill='"" & LabelFontColor & ""' font-family='Segoe UI' font-weight='bold'>"" &
+            NotBO_Label &
+        ""</text>"" &
+        // Orders with BO label (far right)
+        ""<text x='"" & BO_Label_X & ""' y='"" & Labels_Y & ""' text-anchor='end' font-size='11' fill='"" & LabelFontColor & ""' font-family='Segoe UI' font-weight='bold'>"" &
+            BO_Label &
+        ""</text>"" &
+        // Orders without BO Bar (square)
+        ""<rect x='0' y='"" & Bar_Y & ""' width='"" & NotBO_Width & ""' height='"" & BarHeight & ""' fill='"" & NotBO_Color & ""' />"" &
+        // Orders with BO Bar (square, conditional color)
+        ""<rect x='"" & NotBO_Width & ""' y='"" & Bar_Y & ""' width='"" & BO_Width & ""' height='"" & BarHeight & ""' fill='"" & BO_Color & ""' />"" &
+        // Orders without BO percent label
+        IF(
+            NotBO_Width > 36,
+            ""<text x='"" & NotBO_Percent_X & ""' y='"" & PercentLabel_Y & ""' text-anchor='middle' font-size='15' fill='"" & PercentFontColor & ""' font-family='Segoe UI' font-weight='bold'>"" &
+                NotBO_Percent_Label &
+            ""</text>"",
+            """"
+        ) &
+        // Orders with BO percent label
+        IF(
+            BO_Width > 36,
+            ""<text x='"" & BO_Percent_X & ""' y='"" & PercentLabel_Y & ""' text-anchor='middle' font-size='15' fill='"" & PercentFontColor & ""' font-family='Segoe UI' font-weight='bold'>"" &
+                BO_Percent_Label &
+            ""</text>"",
+            """"
+        ) &
+    ""</svg>""
+
+RETURN
+    ""data:image/svg+xml;utf8,"" & SVG
+",,False,Valid,,False,,,,,aaf0e3b2-53fa-4895-a6cc-a84703c69baf
+141539,"copy KPI SVG - Line Count vs Backordered Line (Compact, Square Bars)",MeasuresTable,,,"
+VAR TotalLines = [Line Count]
+VAR BackorderedLines = [Backordered Line Count]
+VAR NotBackorderedLines = TotalLines - BackorderedLines
+
+VAR pct_Backordered = DIVIDE(BackorderedLines, TotalLines, 0)
+VAR pct_NotBackordered = DIVIDE(NotBackorderedLines, TotalLines, 0)
+
+VAR BarWidth = 320
+VAR BarHeight = 24
+VAR SVG_Height = 65   // Compact for card grid
+
+VAR LabelFontColor = ""#000000""
+VAR PercentFontColor = ""#FFFFFF""
+VAR NotBO_Color = ""#4A5B73""
+// Conditional coloring for backordered segment
+VAR BO_Color = IF(pct_Backordered > 0.1, ""#D45353"", ""#808080"")
+
+VAR TitleText = ""Not Backordered vs. Backordered (Lines)""
+VAR TitleFontSize = 12
+
+VAR NotBO_Label = FORMAT(NotBackorderedLines, ""#,0"")
+VAR BO_Label = FORMAT(BackorderedLines, ""#,0"")
+
+VAR NotBO_Percent_Label = FORMAT(pct_NotBackordered, ""0%"")
+VAR BO_Percent_Label = FORMAT(pct_Backordered, ""0%"")
+
+// X positions
+VAR LabelMargin = 12
+VAR NotBO_Label_X = LabelMargin
+VAR BO_Label_X = BarWidth - LabelMargin
+VAR Title_X = BarWidth / 2
+
+// Y positions (compact)
+VAR Title_Y = 14
+VAR Labels_Y = 30
+VAR Bar_Y = 38
+VAR PercentLabel_Y = Bar_Y + (BarHeight / 2) + 5
+
+// Bar segment widths
+VAR NotBO_Width = ROUND(pct_NotBackordered * BarWidth, 0)
+VAR BO_Width = BarWidth - NotBO_Width
+
+// X positions for percent labels (centered in each bar segment)
+VAR NotBO_Percent_X = NotBO_Width / 2
+VAR BO_Percent_X = NotBO_Width + (BO_Width / 2)
+
+VAR SVG =
+    ""<svg width='"" & BarWidth & ""' height='"" & SVG_Height & ""' viewBox='0 0 "" & BarWidth & "" "" & SVG_Height & ""' xmlns='http://www.w3.org/2000/svg'>"" &
+        // Title
+        ""<text x='"" & Title_X & ""' y='"" & Title_Y & ""' text-anchor='middle' font-size='"" & TitleFontSize & ""' fill='"" & LabelFontColor & ""' font-family='Segoe UI' font-weight='bold'>"" &
+            TitleText &
+        ""</text>"" &
+        // Not Backordered line count (far left)
+        ""<text x='"" & NotBO_Label_X & ""' y='"" & Labels_Y & ""' text-anchor='start' font-size='11' fill='"" & LabelFontColor & ""' font-family='Segoe UI' font-weight='bold'>"" &
+            NotBO_Label &
+        ""</text>"" &
+        // Backordered line count (far right)
+        ""<text x='"" & BO_Label_X & ""' y='"" & Labels_Y & ""' text-anchor='end' font-size='11' fill='"" & LabelFontColor & ""' font-family='Segoe UI' font-weight='bold'>"" &
+            BO_Label &
+        ""</text>"" &
+        // Not Backordered Bar (square)
+        ""<rect x='0' y='"" & Bar_Y & ""' width='"" & NotBO_Width & ""' height='"" & BarHeight & ""' fill='"" & NotBO_Color & ""' />"" &
+        // Backordered Bar (conditional color, square)
+        ""<rect x='"" & NotBO_Width & ""' y='"" & Bar_Y & ""' width='"" & BO_Width & ""' height='"" & BarHeight & ""' fill='"" & BO_Color & ""' />"" &
+        // Not Backordered percent label
+        IF(
+            NotBO_Width > 36,
+            ""<text x='"" & NotBO_Percent_X & ""' y='"" & PercentLabel_Y & ""' text-anchor='middle' font-size='15' fill='"" & PercentFontColor & ""' font-family='Segoe UI' font-weight='bold'>"" &
+                NotBO_Percent_Label &
+            ""</text>"",
+            """"
+        ) &
+        // Backordered percent label
+        IF(
+            BO_Width > 36,
+            ""<text x='"" & BO_Percent_X & ""' y='"" & PercentLabel_Y & ""' text-anchor='middle' font-size='15' fill='"" & PercentFontColor & ""' font-family='Segoe UI' font-weight='bold'>"" &
+                BO_Percent_Label &
+            ""</text>"",
+            """"
+        ) &
+    ""</svg>""
+
+RETURN
+    ""data:image/svg+xml;utf8,"" & SVG
+",,False,Valid,,False,,,,,2a2fe3a0-bcd2-4bd5-bfdd-a250f6f50d35
+143893,ShowFilterBranch,MeasuresTable,,,"
+IF (
+    ISFILTERED ( Dim_Branch[Branch] ),
+    VAR _Location =
+        VALUES ( Dim_Branch[Branch] )
+    VAR _Itemscombined =
+        CONCATENATEX ( _Location, Dim_Branch[Branch], UNICHAR ( 10 ) )
+    RETURN
+        _Itemscombined & UNICHAR ( 10 ),
+    """"
+)",,False,Valid,,False,,,,,1dbc7825-6cd6-48b2-97ca-c06c95b9de59
+184176,Average Days Open,MeasuresTable,,,AVERAGE(Parts_Open_Tickets[Days_Open]),,False,Valid,,False,,,,,3f927ea0-c3c8-4220-9157-8f5671501052
+186531,Total Backorder Impact,MeasuresTable,,,SUM(Parts_Open_Tickets[$$_BackOrdered]),,False,Valid,,False,,,,,c9b6c80c-23bd-4282-966d-e2a52e3497a8

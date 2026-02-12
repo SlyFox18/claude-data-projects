@@ -1,0 +1,93 @@
+table ArMaster_Customer_Low
+	lineageTag: deaf39bf-05fe-4f1a-9df7-a8fb6e53d245
+
+	column contact_code
+		dataType: string
+		lineageTag: 60d85773-e3de-477a-a818-08f202251d14
+		summarizeBy: none
+		sourceColumn: contact_code
+
+		annotation SummarizationSetBy = Automatic
+
+	column ACC_TYPE
+		dataType: string
+		lineageTag: d0e133d8-fa0c-4d1b-b93b-9b14550f6361
+		summarizeBy: none
+		sourceColumn: ACC_TYPE
+
+		annotation SummarizationSetBy = Automatic
+
+	column TRADE_TYPE
+		dataType: string
+		lineageTag: a5d964ad-1764-47e2-ae2d-3ffae46e7118
+		summarizeBy: none
+		sourceColumn: TRADE_TYPE
+
+		annotation SummarizationSetBy = Automatic
+
+	column TERRITORY
+		dataType: string
+		lineageTag: ced0890b-8608-4369-8094-9dd348bea7e5
+		summarizeBy: none
+		sourceColumn: TERRITORY
+
+		annotation SummarizationSetBy = Automatic
+
+	column Customer_No
+		dataType: int64
+		formatString: 0
+		lineageTag: 2e7b1dbd-dc2c-45a7-a9fd-41b1a3779af3
+		summarizeBy: none
+		sourceColumn: Customer_No
+
+		annotation SummarizationSetBy = Automatic
+
+	column surname
+		dataType: string
+		lineageTag: c0855cb7-c2bd-4deb-8124-671110a1c380
+		summarizeBy: none
+		sourceColumn: surname
+
+		annotation SummarizationSetBy = Automatic
+
+	column name
+		dataType: string
+		lineageTag: 6dcb1c57-cf0a-4a9b-ac90-d75d29186925
+		summarizeBy: none
+		sourceColumn: name
+
+		annotation SummarizationSetBy = Automatic
+
+	column company_name
+		dataType: string
+		lineageTag: 0073aebe-27e6-46e9-a97e-c5d334623ea2
+		summarizeBy: none
+		sourceColumn: company_name
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Trade Type'
+		dataType: string
+		lineageTag: cacccceb-a5ea-4e15-a550-40c1d42ebd80
+		summarizeBy: none
+		sourceColumn: Trade Type
+
+		annotation SummarizationSetBy = Automatic
+
+	partition ArMaster_Customer_Low = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-ch6iiwox4jveda3rmgudwi6hey.datawarehouse.fabric.microsoft.com", "LH_Parts_Reports_Data"),
+				    dbo_ArMaster_Customer_Low = Source{[Schema="dbo",Item="ArMaster_Customer_Low"]}[Data],
+				    #"Added Custom" = Table.AddColumn(dbo_ArMaster_Customer_Low, "Trade Type", each if [TRADE_TYPE] = "W" then "Warranty" else "Retail"),
+				    #"Changed Type" = Table.TransformColumnTypes(#"Added Custom",{{"Trade Type", type text}}),
+				    #"Filtered Rows" = Table.SelectRows(#"Changed Type", each true),
+				    #"Capitalized Each Word" = Table.TransformColumns(#"Filtered Rows",{{"surname", Text.Proper, type text}, {"name", Text.Proper, type text}, {"company_name", Text.Proper, type text}})
+				in
+				    #"Capitalized Each Word"
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

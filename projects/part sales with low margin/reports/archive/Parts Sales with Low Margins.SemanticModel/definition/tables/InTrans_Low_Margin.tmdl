@@ -1,0 +1,151 @@
+table InTrans_Low_Margin
+	lineageTag: 7253e0f6-5cda-4503-8e5d-7a2876b9ee63
+
+	column Branch
+		dataType: string
+		lineageTag: 6c029f74-7608-4918-8b81-aa5408e54e92
+		summarizeBy: none
+		sourceColumn: Branch
+
+		annotation SummarizationSetBy = Automatic
+
+	column Franchise
+		dataType: string
+		lineageTag: 788f4249-7006-4410-93db-76822d809c0b
+		summarizeBy: none
+		sourceColumn: Franchise
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Part No'
+		dataType: string
+		lineageTag: 0c7e6d43-2b6c-4670-a1a0-dabd0cc64387
+		summarizeBy: none
+		sourceColumn: Part No
+
+		annotation SummarizationSetBy = Automatic
+
+	column Date
+		dataType: dateTime
+		formatString: Short Date
+		lineageTag: ebbbbd05-8597-4a66-87d7-77dbc51de866
+		summarizeBy: none
+		sourceColumn: Date
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column 'Customer No'
+		dataType: string
+		lineageTag: b5d0fd14-342f-4bb6-8611-194e8cc116f1
+		summarizeBy: none
+		sourceColumn: Customer No
+
+		annotation SummarizationSetBy = Automatic
+
+	column TYPE
+		dataType: string
+		lineageTag: 18cd0a10-6968-459d-988e-4361eab25090
+		summarizeBy: none
+		sourceColumn: TYPE
+
+		annotation SummarizationSetBy = Automatic
+
+	column Invoice/WO
+		dataType: string
+		lineageTag: fb02a03f-9f2b-48dc-a47d-4f77f3a0731d
+		summarizeBy: none
+		sourceColumn: Invoice/WO
+
+		annotation SummarizationSetBy = Automatic
+
+	column QTY
+		dataType: double
+		formatString: 0
+		lineageTag: 6f6b3a08-b426-41d0-b691-08f5dfbf979a
+		summarizeBy: sum
+		sourceColumn: QTY
+
+		annotation SummarizationSetBy = Automatic
+
+	column SALE_VAL
+		dataType: double
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: c82ede75-e66b-4d04-b11c-179c0c829e65
+		summarizeBy: sum
+		sourceColumn: SALE_VAL
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	column COST_VAL
+		dataType: double
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: cf03df8d-82c6-4a37-92ac-1e232ca109a6
+		summarizeBy: sum
+		sourceColumn: COST_VAL
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	column TRADE_TYPE
+		dataType: string
+		lineageTag: c3ed8474-d637-4b82-9e78-062d03ccbb53
+		summarizeBy: none
+		sourceColumn: TRADE_TYPE
+
+		annotation SummarizationSetBy = Automatic
+
+	column DESCRIPTION
+		dataType: string
+		lineageTag: c60d0f23-4374-4083-abc3-b49c616fd11e
+		summarizeBy: none
+		sourceColumn: DESCRIPTION
+
+		annotation SummarizationSetBy = Automatic
+
+	column LIST_PRICE
+		dataType: double
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 97669f0d-6c15-46a6-a365-dd95ba53d52d
+		summarizeBy: sum
+		sourceColumn: LIST_PRICE
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	column Salesman
+		dataType: string
+		lineageTag: 42be8ce2-1ddb-498d-80af-bbcd4609e588
+		summarizeBy: none
+		sourceColumn: Salesman
+
+		annotation SummarizationSetBy = Automatic
+
+	column REF_NO2
+		dataType: string
+		lineageTag: e50d1891-3128-48ba-8a88-0e4773a0ed26
+		summarizeBy: none
+		sourceColumn: REF_NO2
+
+		annotation SummarizationSetBy = Automatic
+
+	partition InTrans_Low_Margin = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-ch6iiwox4jveda3rmgudwi6hey.datawarehouse.fabric.microsoft.com", "LH_Parts_Reports_Data"),
+				    dbo_InTrans_Low_Margin = Source{[Schema="dbo",Item="InTrans_Low_Margin"]}[Data],
+				    #"Changed Type" = Table.TransformColumnTypes(dbo_InTrans_Low_Margin,{{"Trans_Datetime", type date}}),
+				    #"Renamed Columns" = Table.RenameColumns(#"Changed Type",{{"BRANCH", "Branch"}, {"FRANCHISE", "Franchise"}, {"PART_NO", "Part No"}, {"Trans_Datetime", "Date"}, {"customer_no", "Customer No"}, {"REF_NO", "Invoice/WO"}})
+				in
+				    #"Renamed Columns"
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

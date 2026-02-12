@@ -1,0 +1,125 @@
+table Fact_PartsPromo
+	lineageTag: a0af90fc-20e2-4c34-a079-7c734ef39612
+
+	column DateKey
+		dataType: dateTime
+		formatString: Long Date
+		lineageTag: 92891cc2-d1f7-4bf3-9484-ad84663eecc7
+		summarizeBy: none
+		sourceColumn: DateKey
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column REF_NO
+		dataType: string
+		lineageTag: 2c6364ff-6b78-4644-b86b-2dea223c5450
+		summarizeBy: none
+		sourceColumn: REF_NO
+
+		annotation SummarizationSetBy = Automatic
+
+	column PART_NO
+		dataType: string
+		lineageTag: 783a8890-e05f-465e-82d2-a98b5b82b9ce
+		summarizeBy: none
+		sourceColumn: PART_NO
+
+		annotation SummarizationSetBy = Automatic
+
+	column TransDatetime
+		dataType: dateTime
+		formatString: Long Date
+		lineageTag: d096ea11-661e-4472-ae63-19886bde24e2
+		summarizeBy: none
+		sourceColumn: TransDatetime
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column CustomerNo
+		dataType: string
+		lineageTag: a7ce8f16-0829-46e9-8672-596009c4c08e
+		summarizeBy: none
+		sourceColumn: CustomerNo
+
+		annotation SummarizationSetBy = Automatic
+
+	column Franchise
+		dataType: string
+		lineageTag: 2340b8ea-694b-4fa0-8f07-02a02d33b81f
+		summarizeBy: none
+		sourceColumn: Franchise
+
+		annotation SummarizationSetBy = Automatic
+
+	column Type
+		dataType: string
+		lineageTag: 1ab06cdf-4bbf-45d6-95e8-18e9dd6eaeda
+		summarizeBy: none
+		sourceColumn: Type
+
+		annotation SummarizationSetBy = Automatic
+
+	column Description
+		dataType: string
+		lineageTag: a0bb338a-419b-4e4f-b1cf-3538a29ba3d4
+		summarizeBy: none
+		sourceColumn: Description
+
+		annotation SummarizationSetBy = Automatic
+
+	column Qty
+		dataType: double
+		lineageTag: 01818da1-2c42-439a-84b2-0928b0a37b09
+		summarizeBy: sum
+		sourceColumn: Qty
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column SaleValue
+		dataType: double
+		lineageTag: c5dd000b-e9c6-42f5-8358-d734360e4acc
+		summarizeBy: sum
+		sourceColumn: SaleValue
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column CostValue
+		dataType: double
+		lineageTag: ed3acb3c-37aa-4ada-aa9e-cf75e735e72a
+		summarizeBy: sum
+		sourceColumn: CostValue
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column Branch
+		dataType: string
+		lineageTag: 306456e0-9c01-4f1e-862c-f67518067819
+		summarizeBy: none
+		sourceColumn: Branch
+
+		annotation SummarizationSetBy = Automatic
+
+	partition Fact_PartsPromo = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-gxnyznhdptpenfw724g3o5sjzm.datawarehouse.fabric.microsoft.com", "LH_Master_Data"),
+				    dbo_Fact_PartsPromo = Source{[Schema="dbo",Item="Fact_PartsPromo"]}[Data],
+				    #"Extracted Date" = Table.TransformColumns(dbo_Fact_PartsPromo,{{"TransDatetime", DateTime.Date, type date}})
+				in
+				    #"Extracted Date"
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

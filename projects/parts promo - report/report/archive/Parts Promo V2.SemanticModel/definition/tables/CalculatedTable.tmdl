@@ -1,0 +1,53 @@
+table CalculatedTable
+	lineageTag: 8fe38cb4-5131-4907-aef2-63699756359b
+
+	column PART_NO
+		lineageTag: 0fd5f9fe-ebd8-4af9-a0b2-6a96f32616bc
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: Parts_Promo[PART_NO]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Net Sales Value'
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: d7605daf-df5b-4907-96c1-2656e0adbbe5
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [Net Sales Value]
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	column BRANCH
+		lineageTag: e61f6570-9fa5-46c1-ac11-0630e61a6dc8
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: Parts_Promo[BRANCH]
+
+		annotation SummarizationSetBy = Automatic
+
+	column Date
+		formatString: Short Date
+		lineageTag: d7af3aae-dbfa-400a-ac4f-1689b10d4afc
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: Parts_Promo[Date]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition CalculatedTable = calculated
+		mode: import
+		source =
+				
+				SUMMARIZE(
+				    Parts_Promo,
+				    Parts_Promo[PART_NO],
+				    Parts_Promo[BRANCH],
+				    Parts_Promo[Date],
+				    "Net Sales Value", SUM(Parts_Promo[Net Sales Value])
+				)
+
+	annotation PBI_Id = 497a5fa228e7437fbc872d77d8b1a01e
+

@@ -1,0 +1,43 @@
+relationship AutoDetected_8eaeda95-a617-4917-9ee2-eddbef5cdb30
+	fromColumn: InTrans_Low_Margin.Branch
+	toColumn: Dim_Branch.BranchID
+
+relationship fc70355d-699b-a460-79f6-a4f37adb79ac
+	fromColumn: InTrans_Low_Margin.'Customer No'
+	toColumn: ArMaster_Customer_Low.Customer_No
+
+relationship AutoDetected_33132c52-c15b-4e9a-9d8f-81aff870c06b
+	fromColumn: Parts_Low_Margin_jdis_InMaster.Branch
+	toColumn: Dim_Branch.BranchID
+
+relationship 61a0e3cc-7d54-e0c6-558e-5d27e6bd7cfc
+	fromColumn: InTrans_Low_Margin.Date
+	toColumn: dimDate.Date
+
+relationship AutoDetected_f1069980-5804-4d60-93cc-db3cecdfe5fc
+	fromColumn: InMaster_Combine_Vault.BRANCH
+	toColumn: Dim_Branch.BranchID
+
+relationship 8a270438-91f4-4261-8e74-3239e3c93a94
+	joinOnDateBehavior: datePartOnly
+	fromColumn: 'Data Refresh'.Date
+	toColumn: LocalDateTable_b0de20af-3411-4395-83b6-9ca6f679ea60.Date
+
+relationship 4441f745-2e82-4024-a86a-e8450058b9fc
+	joinOnDateBehavior: datePartOnly
+	fromColumn: Parts_Low_Margin_jdis_InMaster.'Date Last Requested'
+	toColumn: LocalDateTable_c92e6afb-2011-45c1-aa80-1f20ef42382c.Date
+
+relationship 6d6a4840-920c-4e9e-bb9e-1766b20896d2
+	joinOnDateBehavior: datePartOnly
+	fromColumn: Parts_Low_Margin_jdis_InMaster.'Stock Take Date'
+	toColumn: LocalDateTable_0d258976-f40e-4bd7-8b8d-a1257cb779db.Date
+
+relationship 8befbb44-9bcd-9de6-def8-87419e2c764e
+	fromColumn: InTrans_Low_Margin.'Part No'
+	toColumn: UniqueParts.PART_NO
+
+relationship 9efda9c3-7ff6-5f73-eed9-f352c43bfdc7
+	fromColumn: InMaster_Combine_Vault.PART_NO
+	toColumn: UniqueParts.PART_NO
+

@@ -1,0 +1,67 @@
+table dim_PromoType
+	lineageTag: 1bf0397a-80f1-4926-95d2-21e5d409564d
+
+	column PromoPartNo
+		dataType: string
+		lineageTag: 5b2433eb-520c-4b26-b1e1-089a288bcb02
+		summarizeBy: none
+		sourceColumn: PromoPartNo
+
+		annotation SummarizationSetBy = Automatic
+
+	column PromoDescription
+		dataType: string
+		lineageTag: 5f52a696-d0c5-4940-a384-2aba8ff60f0f
+		summarizeBy: none
+		sourceColumn: PromoDescription
+
+		annotation SummarizationSetBy = Automatic
+
+	column PromoCategory
+		dataType: string
+		lineageTag: baa87ac5-cba1-49e7-bd11-9b9e482fd197
+		summarizeBy: none
+		sourceColumn: PromoCategory
+
+		annotation SummarizationSetBy = Automatic
+
+	column FirstSeen
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: 826dfb8f-1892-471e-ad0d-8ca25eb82227
+		summarizeBy: none
+		sourceColumn: FirstSeen
+
+		annotation SummarizationSetBy = Automatic
+
+	column LastSeen
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: 0aa3ea7d-e79e-41f4-819d-4a5b0e03064c
+		summarizeBy: none
+		sourceColumn: LastSeen
+
+		annotation SummarizationSetBy = Automatic
+
+	column UsageCount
+		dataType: int64
+		formatString: 0
+		lineageTag: 26473f8e-2850-4cfa-815d-1ca06e77afbf
+		summarizeBy: none
+		sourceColumn: UsageCount
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dim_PromoType = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-gxnyznhdptpenfw724g3o5sjzm.datawarehouse.fabric.microsoft.com", "LH_Master_Data"),
+				    dbo_dim_PromoType = Source{[Schema="dbo",Item="dim_PromoType"]}[Data]
+				in
+				    dbo_dim_PromoType
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

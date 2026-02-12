@@ -1,0 +1,586 @@
+table _Measures
+	lineageTag: 22e4b9e3-99b6-4634-9836-9ade5a5ea5a5
+
+	measure 'Home - Header' = ```
+			
+			// Get user name
+			VAR _User = USERPRINCIPALNAME()
+			VAR _Position = SEARCH("@", _User, 1)
+			VAR _Name = LEFT(_User, _Position - 1)
+			VAR _FirstLetter = UPPER(LEFT(_Name, 1))
+			VAR _LastName = MID(_Name, 2, LEN(_Name) - 1)
+			VAR _FormattedLastName = 
+			    UPPER(LEFT(_LastName, 1)) & LOWER(MID(_LastName, 2, LEN(_LastName)))
+			VAR WelcomeName = _FirstLetter & "." & _FormattedLastName
+			
+			// Get current date/time info
+			VAR CurrentDate = TODAY()
+			VAR DateDisplay = FORMAT(CurrentDate, "MMM D, YYYY")
+			VAR CurrentHour = HOUR(NOW())
+			VAR TimeGreeting = 
+			    IF(CurrentHour < 12, "Good Morning",
+			    IF(CurrentHour < 17, "Good Afternoon",
+			    "Good Evening"))
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    height: 85px;
+			    padding: 15px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 10px;
+			    color: white;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-between;
+			    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    box-sizing: border-box;
+			'>
+			    <!-- Left side: Dashboard Title -->
+			    <div style='display: flex; align-items: center; gap: 15px;'>
+			        <!-- Home icon -->
+			        <div style='
+			            width: 40px;
+			            height: 40px;
+			            background: rgba(255,255,255,0.15);
+			            border-radius: 8px;
+			            display: flex;
+			            align-items: center;
+			            justify-content: center;
+			            font-size: 20px;
+			        '>
+			            🏠
+			        </div>
+			        
+			        <!-- Title -->
+			        <div>
+			            <div style='font-size: 12px; opacity: 0.85; margin-bottom: 4px; letter-spacing: 0.5px;'>
+			                REPORT
+			            </div>
+			            <div style='font-size: 26px; font-weight: 700; line-height: 1;'>
+			                Part Sales with Low Margin
+			            </div>
+			        </div>
+			    </div>
+			    
+			    <!-- Right side: Welcome & Date -->
+			    <div style='text-align: right;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 6px;'>
+			            " & TimeGreeting & ", " & WelcomeName & "
+			        </div>
+			        <div style='font-size: 16px; font-weight: 600;'>
+			            📅 " & DateDisplay & "
+			        </div>
+			    </div>
+			</div>
+			"
+			```
+		lineageTag: 49efea2a-3c06-4cab-8367-26b26caa141e
+
+	measure 'Sale $' = SUM(Fact_InTrans[SaleValue])
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: sale-dollars-measure
+
+	measure 'Cost $' = SUM(Fact_InTrans[CostValue])
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: cost-dollars-measure
+
+	measure Qty = SUM(Fact_InTrans[Qty])
+		formatString: #,##0
+		lineageTag: qty-measure
+
+	measure 'Actual Margin $' = SUM(Fact_InTrans[ActualMarginDollars])
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: actual-margin-dollars-measure
+
+	measure 'Original Margin $' = SUM(Fact_InTrans[OriginalMarginDollars])
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: original-margin-dollars-measure
+
+	measure 'Margin Discrepancy $' = SUM(Fact_InTrans[MarginDiscrepancyDollars])
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: margin-discrepancy-dollars-measure
+
+	measure 'Margin Value %' = DIVIDE([Actual Margin $], [Sale $], 0)
+		formatString: 0.00%;-0.00%;0.00%
+		lineageTag: margin-value-pct-measure
+
+	measure 'Original Margin %' = DIVIDE([Original Margin $], [Sale $], 0)
+		formatString: 0.00%;-0.00%;0.00%
+		lineageTag: original-margin-pct-measure
+
+	measure 'Margin Color Code' =
+			SWITCH(
+			    TRUE(),
+			    [Margin Value %] < 0, 1,
+			    [Margin Value %] >= 0 && [Margin Value %] < 0.05, 2,
+			    [Margin Value %] >= 0.05 && [Margin Value %] < 0.10, 3,
+			    [Margin Value %] >= 0.10 && [Margin Value %] <= 0.1499, 4,
+			    BLANK()
+			)
+		formatString: 0
+		lineageTag: margin-color-code-measure
+
+	measure 'Margin $ Discrepancy Color Code' =
+			SWITCH(
+			    TRUE(),
+			    [Margin $ Discrepancy] > 1, 1,
+			    [Margin $ Discrepancy] >= 0.75 && [Margin $ Discrepancy] <= 1, 2,
+			    [Margin $ Discrepancy] >= 0.50 && [Margin $ Discrepancy] < 0.75, 3,
+			    [Margin $ Discrepancy] >= 0.25 && [Margin $ Discrepancy] < 0.50, 4,
+			    [Margin $ Discrepancy] > 0 && [Margin $ Discrepancy] < 0.25, 5,
+			    [Margin $ Discrepancy] = 0, 6,
+			    [Margin $ Discrepancy] < 0 && [Margin $ Discrepancy] >= -0.25, 7,
+			    [Margin $ Discrepancy] < -0.25 && [Margin $ Discrepancy] >= -0.50, 8,
+			    [Margin $ Discrepancy] < -0.50 && [Margin $ Discrepancy] >= -0.75, 9,
+			    [Margin $ Discrepancy] < -0.75 && [Margin $ Discrepancy] >= -1, 10,
+			    [Margin $ Discrepancy] < -1, 11,
+			    BLANK()
+			)
+		formatString: 0
+		lineageTag: margin-discrepancy-color-code-measure
+
+	measure 'Total SOH Qty' = SUM(dim_Parts_LowMargin[OnHandQty])
+		formatString: #,##0
+		lineageTag: total-soh-qty-measure
+
+	measure 'Inventory Cost' = SUM(dim_Parts_LowMargin[InventoryCost])
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: inventory-cost-measure
+
+	measure 'MDP Value' = [Cost Value]
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: mdp-value-measure
+
+	measure 'Sell Price' = SUM(dim_Parts_LowMargin[SellPrice1])
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: sell-price-measure
+
+	measure 'List Price' = SUM(dim_Parts_LowMargin[ListPrice])
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: list-price-measure
+
+	measure 'Stock Order Price' = MIN(dim_Parts_LowMargin[StockOrderPrice])
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: stock-order-price-measure
+
+	measure 'Sell Value' = [Sell Price] * [Total SOH Qty]
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: sell-value-measure
+
+	measure 'Desired Margin $' = [Sell Value] - [Cost Value]
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: desired-margin-dollars-measure
+
+	measure 'Desired Margin %' = DIVIDE([Desired Margin $], [Sell Value], 0)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: desired-margin-pct-measure
+
+	measure 'Actual Margin $ (INV)' = [Sell Value] - [Inventory Cost]
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: actual-margin-inv-dollars-measure
+
+	measure 'Actual Margin % (INV)' = DIVIDE([Actual Margin $ (INV)], [Sell Value], 0)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: actual-margin-inv-pct-measure
+
+	measure '% Difference' =
+			DIVIDE(
+			    ([Original MDP Value] - [Inventory Cost]),
+			    ([Original MDP Value] + [Inventory Cost]) / 2,
+			    0
+			)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: pct-difference-measure
+
+	measure '% Diff Discr (Low) Color Code' =
+			SWITCH(
+			    TRUE(),
+			    [% Difference] >= 0, 1,
+			    [% Difference] <= -0.000001 && [% Difference] > -0.05, 2,
+			    [% Difference] <= -0.051 && [% Difference] > -0.1, 3,
+			    [% Difference] <= -0.10 && [% Difference] > -0.15, 8,
+			    [% Difference] <= -0.15, 4,
+			    BLANK()
+			)
+		formatString: 0
+		lineageTag: pct-diff-color-code-measure
+
+	measure 'Positive Margin $ Discrepancy' =
+			
+			VAR DetailTable =
+			    ADDCOLUMNS(
+			        dim_Parts_LowMargin,
+			        "_SellValue", [SellPrice1] * [OnHandQty],
+			        "_MDPValue", [StockOrderPrice] * [OnHandQty],
+			        "_DesiredMarginDollars", ([SellPrice1] * [OnHandQty]) - ([StockOrderPrice] * [OnHandQty]),
+			        "_ActualMarginDollars", ([SellPrice1] * [OnHandQty]) - [InventoryCost],
+			        "_MarginDiscrepancy",
+			            (([SellPrice1] * [OnHandQty]) - [InventoryCost]) -
+			            (([SellPrice1] * [OnHandQty]) - ([StockOrderPrice] * [OnHandQty]))
+			    )
+			RETURN
+			SUMX(
+			    FILTER(DetailTable, [_MarginDiscrepancy] > 0),
+			    [_MarginDiscrepancy]
+			)
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: positive-margin-discrepancy-measure
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Negative Margin $ Discrepancy' =
+			
+			VAR DetailTable =
+			    ADDCOLUMNS(
+			        dim_Parts_LowMargin,
+			        "_SellValue", [SellPrice1] * [OnHandQty],
+			        "_MDPValue", [StockOrderPrice] * [OnHandQty],
+			        "_DesiredMarginDollars", ([SellPrice1] * [OnHandQty]) - ([StockOrderPrice] * [OnHandQty]),
+			        "_ActualMarginDollars", ([SellPrice1] * [OnHandQty]) - [InventoryCost],
+			        "_MarginDiscrepancy",
+			            (([SellPrice1] * [OnHandQty]) - [InventoryCost]) -
+			            (([SellPrice1] * [OnHandQty]) - ([StockOrderPrice] * [OnHandQty]))
+			    )
+			RETURN
+			SUMX(
+			    FILTER(DetailTable, [_MarginDiscrepancy] < 0),
+			    [_MarginDiscrepancy]
+			)
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: negative-margin-discrepancy-measure
+
+	measure 'Net Margin $ Discrepancy' = [Positive Margin $ Discrepancy] + [Negative Margin $ Discrepancy]
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: net-margin-discrepancy-measure
+
+	measure 'Total Transactions' = COUNTROWS(Fact_InTrans)
+		formatString: #,##0
+		lineageTag: total-transactions-measure
+
+	measure 'Type Check' =
+			VAR TypeCount = CALCULATE(COUNTROWS(Fact_InTrans), Fact_InTrans[Type] <> "I")
+			RETURN
+			IF(TypeCount = 0, "✅ All TYPE = I", "⚠️ Non-invoice records found!")
+		lineageTag: type-check-measure
+
+	measure 'Margin Calc Check' =
+			VAR ActualSum = SUM(Fact_InTrans[ActualMarginDollars])
+			VAR CalcSum = [Sale $] - [Cost $]
+			VAR Diff = ActualSum - CalcSum
+			RETURN
+			IF(ABS(Diff) < 0.01, "✅ Margins match", "⚠️ Margin mismatch: " & FORMAT(Diff, "\$#,##0.00"))
+		lineageTag: margin-calc-check-measure
+
+	measure 'Measure Filter' =
+			
+			VAR MinValue = MIN('Percentage Filter'[Value])
+			VAR MaxValue = MAX('Percentage Filter'[Value])
+			VAR CurrentMeasureValue = [Margin Value %]
+			RETURN
+			IF(
+			    CurrentMeasureValue >= MinValue && CurrentMeasureValue <= MaxValue,
+			    1,
+			    0
+			)
+		formatString: 0
+		lineageTag: 49f8b6bf-4336-4d86-b7f2-4eaa329d5ec4
+
+	measure 'Page 2 - Header' = ```
+			
+			// Get user name
+			VAR _User = USERPRINCIPALNAME()
+			VAR _Position = SEARCH("@", _User, 1)
+			VAR _Name = LEFT(_User, _Position - 1)
+			VAR _FirstLetter = UPPER(LEFT(_Name, 1))
+			VAR _LastName = MID(_Name, 2, LEN(_Name) - 1)
+			VAR _FormattedLastName = 
+			    UPPER(LEFT(_LastName, 1)) & LOWER(MID(_LastName, 2, LEN(_LastName)))
+			VAR WelcomeName = _FirstLetter & "." & _FormattedLastName
+			
+			// Get current date/time info
+			VAR CurrentDate = TODAY()
+			VAR DateDisplay = FORMAT(CurrentDate, "MMM D, YYYY")
+			VAR CurrentHour = HOUR(NOW())
+			VAR TimeGreeting = 
+			    IF(CurrentHour < 12, "Good Morning",
+			    IF(CurrentHour < 17, "Good Afternoon",
+			    "Good Evening"))
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    height: 85px;
+			    padding: 15px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 10px;
+			    color: white;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-between;
+			    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    box-sizing: border-box;
+			'>
+			    <!-- Left side: Dashboard Title -->
+			    <div style='display: flex; align-items: center; gap: 15px;'>
+			        <!-- Home icon -->
+			        <div style='
+			            width: 40px;
+			            height: 40px;
+			            background: rgba(255,255,255,0.15);
+			            border-radius: 8px;
+			            display: flex;
+			            align-items: center;
+			            justify-content: center;
+			            font-size: 20px;
+			        '>
+			            🏠
+			        </div>
+			        
+			        <!-- Title -->
+			        <div>
+			            <div style='font-size: 12px; opacity: 0.85; margin-bottom: 4px; letter-spacing: 0.5px;'>
+			                REPORT
+			            </div>
+			            <div style='font-size: 26px; font-weight: 700; line-height: 1;'>
+			                Inventory Cost Discrepancy
+			            </div>
+			        </div>
+			    </div>
+			    
+			    <!-- Right side: Welcome & Date -->
+			    <div style='text-align: right;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 6px;'>
+			            " & TimeGreeting & ", " & WelcomeName & "
+			        </div>
+			        <div style='font-size: 16px; font-weight: 600;'>
+			            📅 " & DateDisplay & "
+			        </div>
+			    </div>
+			</div>
+			"
+			```
+		lineageTag: 40dc4e57-2997-41b1-a141-a26cb3df6a5d
+
+	measure 'Margin $ Discrepancy' = [Actual Margin $ (INV)] - [Desired Margin $]
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: ff9dbbce-1f75-447d-b5b2-c84bf9ce6d4e
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Part Description' = ```
+			
+			    VAR CurrentPartNumber = SELECTEDVALUE(dim_Parts_LowMargin[PartNumber])
+			    VAR FromDimParts =
+			        LOOKUPVALUE(
+			            dim_Parts[Description],
+			            dim_Parts[PartNumber], CurrentPartNumber
+			        )
+			    RETURN
+			    IF(FromDimParts <> BLANK(), FromDimParts, "")
+			```
+		lineageTag: 83241c09-9496-4872-ad93-56e6b46be05b
+
+	measure 'Measure Filter 2' =
+			
+			VAR MinValue = MIN('Percentage Filter'[Value])
+			VAR MaxValue = MAX('Percentage Filter'[Value])
+			VAR CurrentMeasureValue = [Actual Margin % (INV)]
+			RETURN
+			IF(
+			    CurrentMeasureValue >= MinValue && CurrentMeasureValue <= MaxValue,
+			    1,
+			    0
+			)
+		formatString: 0
+		lineageTag: 87f82fbc-2743-47e3-85be-edef9cd35801
+
+	measure Cost = SUM(dim_Parts_LowMargin[Cost])
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: dcd80539-9f39-435c-9337-8e47226cbe5a
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Cost Value' = [Cost] * [Total SOH Qty]
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 3cfd2f1a-77ca-4a0d-bb61-5b0256482fff
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'New Sell Price' = ```
+			
+			    DIVIDE(
+			        ABS([Margin $ Discrepancy]),
+			        [Total SOH Qty],
+			        0
+			    ) + [List Price]
+			```
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 85aac12d-10b5-4f8b-9fe6-bc7f8af66743
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Margin % Color Code' =
+			
+			SWITCH(
+			    TRUE(),
+			    [Actual Margin % (INV)] >= .39999, 1,  // Dark Green
+			    [Actual Margin % (INV)] >= 0.305 && [Actual Margin % (INV)] <= 0.4, 3,  // Green
+			    [Actual Margin % (INV)] = .3 && [Actual Margin % (INV)] = 0.30, 2,  // White
+			    [Actual Margin % (INV)] >= 0.199 && [Actual Margin % (INV)] < 0.299, 4,  // Yellow
+			    [Actual Margin % (INV)] >= 0.099 && [Actual Margin % (INV)] < 0.199, 5,  // Orange
+			    [Actual Margin % (INV)] >= 0 && [Actual Margin % (INV)] < 0.099, 6,  // Red
+			    [Actual Margin % (INV)] <= 0, 7,  // Dark Red
+			    BLANK()
+			)
+		formatString: 0
+		lineageTag: 3a8c5f3b-d5a1-4463-af7c-a98a974bdd05
+
+	measure 'Test Row Count' = COUNTROWS(dim_Parts_LowMargin)
+		formatString: 0
+		lineageTag: 8fa42cc6-a9e1-4593-b09a-10d570b04dfc
+
+	measure 'Test NULL Check' = ```
+			
+			VAR NullPartNumber = CALCULATE(COUNTROWS(Fact_InTrans), ISBLANK(Fact_InTrans[PartNumber]))
+			VAR NullBranch = CALCULATE(COUNTROWS(Fact_InTrans), ISBLANK(Fact_InTrans[Branch]))
+			VAR NullFranchise = CALCULATE(COUNTROWS(Fact_InTrans), ISBLANK(Fact_InTrans[Franchise]))
+			RETURN
+			"NULL PartNumber: " & NullPartNumber & 
+			" | NULL Branch: " & NullBranch & 
+			" | NULL Franchise: " & NullFranchise
+			
+			```
+		lineageTag: 273bb89c-b591-4b22-8370-5488282587c7
+
+	measure 'Test Manual Sum Positive' = ```
+			
+			VAR TableWithCalc = 
+			    ADDCOLUMNS(
+			        dim_Parts_LowMargin,
+			        "_Discrepancy",
+			            (([SellPrice1] * [OnHandQty]) - [InventoryCost]) -
+			            (([SellPrice1] * [OnHandQty]) - ([Cost] * [OnHandQty]))
+			    )
+			VAR PositiveOnly = FILTER(TableWithCalc, [_Discrepancy] > 0)
+			RETURN
+			"Positive Sum: " & FORMAT(SUMX(PositiveOnly, [_Discrepancy]), "$#,##0.00")
+			    & " | Row Count: " & COUNTROWS(PositiveOnly)
+			
+			```
+		lineageTag: 2a51dda8-891c-465d-857e-539a1bbe33d8
+
+	measure 'Page 3 - Header' = ```
+			
+			// Get user name
+			VAR _User = USERPRINCIPALNAME()
+			VAR _Position = SEARCH("@", _User, 1)
+			VAR _Name = LEFT(_User, _Position - 1)
+			VAR _FirstLetter = UPPER(LEFT(_Name, 1))
+			VAR _LastName = MID(_Name, 2, LEN(_Name) - 1)
+			VAR _FormattedLastName = 
+			    UPPER(LEFT(_LastName, 1)) & LOWER(MID(_LastName, 2, LEN(_LastName)))
+			VAR WelcomeName = _FirstLetter & "." & _FormattedLastName
+			
+			// Get current date/time info
+			VAR CurrentDate = TODAY()
+			VAR DateDisplay = FORMAT(CurrentDate, "MMM D, YYYY")
+			VAR CurrentHour = HOUR(NOW())
+			VAR TimeGreeting = 
+			    IF(CurrentHour < 12, "Good Morning",
+			    IF(CurrentHour < 17, "Good Afternoon",
+			    "Good Evening"))
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    height: 85px;
+			    padding: 15px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 10px;
+			    color: white;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-between;
+			    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    box-sizing: border-box;
+			'>
+			    <!-- Left side: Dashboard Title -->
+			    <div style='display: flex; align-items: center; gap: 15px;'>
+			        <!-- Home icon -->
+			        <div style='
+			            width: 40px;
+			            height: 40px;
+			            background: rgba(255,255,255,0.15);
+			            border-radius: 8px;
+			            display: flex;
+			            align-items: center;
+			            justify-content: center;
+			            font-size: 20px;
+			        '>
+			            🏠
+			        </div>
+			        
+			        <!-- Title -->
+			        <div>
+			            <div style='font-size: 12px; opacity: 0.85; margin-bottom: 4px; letter-spacing: 0.5px;'>
+			                REPORT
+			            </div>
+			            <div style='font-size: 26px; font-weight: 700; line-height: 1;'>
+			                Low Action Items
+			            </div>
+			        </div>
+			    </div>
+			    
+			    <!-- Right side: Welcome & Date -->
+			    <div style='text-align: right;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 6px;'>
+			            " & TimeGreeting & ", " & WelcomeName & "
+			        </div>
+			        <div style='font-size: 16px; font-weight: 600;'>
+			            📅 " & DateDisplay & "
+			        </div>
+			    </div>
+			</div>
+			"
+			```
+		lineageTag: c4a43380-d475-4a3e-9393-0522097fc454
+
+	measure 'Original MDP Value' = [Stock Order Price] * [Total SOH Qty]
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 46ebf0cb-9402-4883-b0f0-fd555e23afa2
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Measure Filter 3' =
+			
+			VAR MinValue = MIN('Percentage Filter'[Value])
+			VAR MaxValue = MAX('Percentage Filter'[Value])
+			VAR CurrentMeasureValue = [% Difference]
+			RETURN
+			IF(
+			    CurrentMeasureValue >= MinValue && CurrentMeasureValue <= MaxValue,
+			    1,
+			    0
+			)
+		formatString: 0
+		lineageTag: 299a138b-b1b8-42df-b45e-d166233cceb9
+
+	column Value
+		isHidden
+		lineageTag: da2dfa23-0c4c-4e9d-8014-3cc5710e756b
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Value]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition _Measures = calculated
+		mode: import
+		source = { "This table holds all measures for the Parts Reorder Monitoring report" }
+
+	annotation PBI_Id = da82ad85df114f0dbe8c17ce73f079a8
+

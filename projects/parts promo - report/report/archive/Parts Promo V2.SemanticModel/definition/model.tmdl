@@ -1,0 +1,67 @@
+model Model
+	culture: en-US
+	defaultPowerBIDataSourceVersion: powerBI_V3
+	sourceQueryCulture: en-US
+	dataAccessOptions
+		legacyRedirects
+		returnErrorValuesAsNull
+
+extendedProperty SQLBI_BRAVO_ManageDatesConfiguration =
+		{
+		  "templateUri": "file:///C:/Users/bfox/AppData/Local/Bravo/.temp/ManageDates/Templates/Config-01.template.json",
+		  "isCurrent": false,
+		  "isCustom": false,
+		  "name": "Config-01",
+		  "description": "Standard gregorian calendar",
+		  "autoScan": 127,
+		  "onlyTablesColumns": [],
+		  "exceptTablesColumns": [],
+		  "isoCountry": "US",
+		  "autoNaming": 1,
+		  "targetMeasures": [],
+		  "defaults": {
+		    "firstDayOfWeek": 0
+		  },
+		  "dateAvailable": true,
+		  "dateEnabled": true,
+		  "dateTableName": "Date",
+		  "dateTableValidation": 1,
+		  "dateReferenceTableName": "DateAutoTemplate",
+		  "dateReferenceTableValidation": 1,
+		  "holidaysAvailable": true,
+		  "holidaysEnabled": false,
+		  "holidaysTableName": "Holidays",
+		  "holidaysTableValidation": 0,
+		  "holidaysDefinitionTableName": "HolidaysDefinition",
+		  "holidaysDefinitionTableValidation": 0,
+		  "timeIntelligenceAvailable": true,
+		  "timeIntelligenceEnabled": true
+		}
+
+annotation __PBI_TimeIntelligenceEnabled = 0
+
+annotation PBI_QueryOrder = ["Dim_Branch","Base_Customer_Info","Parts_Promo","Data Refresh","InTrans_All_Promo","Pagnation Table"]
+
+annotation PBI_ProTooling = ["DevMode"]
+
+ref table Dim_Branch
+ref table Base_Customer_Info
+ref table Parts_Promo
+ref table MeasuresTable
+ref table 'Data Refresh'
+ref table DateAutoTemplate
+ref table Date
+ref table InTrans_All_Promo
+ref table MeasureSelector
+ref table DateTable
+ref table MonthlySalesTable
+ref table CalculatedTable
+ref table DateTable1
+ref table 'Pagnation Table'
+ref table 'Old Report - Parts Promo Tables'
+ref table 'Old Report - Parts Promo Columns'
+ref table 'Old Report - Parts Promo Relationships'
+ref table 'Old Report - Parts Promo Measures'
+
+ref cultureInfo en-US
+

@@ -1,0 +1,112 @@
+table InTrans_All_Promo
+	lineageTag: 4ab5ad95-424c-4495-bb2e-0e4902b63794
+
+	column BRANCH
+		dataType: string
+		lineageTag: fd1d600c-c41d-4df9-92fa-b826fa63f516
+		summarizeBy: none
+		sourceColumn: BRANCH
+
+		annotation SummarizationSetBy = Automatic
+
+	column FRANCHISE
+		dataType: string
+		lineageTag: 15d765dd-932e-4a9e-b280-9ebe5cba4940
+		summarizeBy: none
+		sourceColumn: FRANCHISE
+
+		annotation SummarizationSetBy = Automatic
+
+	column customer_no
+		dataType: string
+		lineageTag: 90deb40f-2fe4-439f-b6c5-ebdee5bf29a3
+		summarizeBy: none
+		sourceColumn: customer_no
+
+		annotation SummarizationSetBy = Automatic
+
+	column PART_NO
+		dataType: string
+		lineageTag: 689981e9-8583-423a-8dfd-bdf2adec6156
+		summarizeBy: none
+		sourceColumn: PART_NO
+
+		annotation SummarizationSetBy = Automatic
+
+	column Trans_Datetime
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: 6c94d202-c441-42a7-aa27-f788d99a2c71
+		summarizeBy: none
+		sourceColumn: Trans_Datetime
+
+		annotation SummarizationSetBy = Automatic
+
+	column TYPE
+		dataType: string
+		lineageTag: 717d0476-a249-42a9-adc2-5c65e435a3e6
+		summarizeBy: none
+		sourceColumn: TYPE
+
+		annotation SummarizationSetBy = Automatic
+
+	column QTY
+		dataType: double
+		lineageTag: 489df4cd-3102-4887-9d7c-8a35d6ca6fbf
+		summarizeBy: sum
+		sourceColumn: QTY
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column REF_NO
+		dataType: string
+		lineageTag: 964c34be-b6ef-4415-84af-c67c6014265b
+		summarizeBy: none
+		sourceColumn: REF_NO
+
+		annotation SummarizationSetBy = Automatic
+
+	column SALE_VAL
+		dataType: double
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: adc97c0e-2bdb-4f8b-a16d-007dcae2ddf6
+		summarizeBy: sum
+		sourceColumn: SALE_VAL
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	column COST_VAL
+		dataType: double
+		lineageTag: 3a317db7-3a9d-4b2b-ac9e-6f0f5ec9a87d
+		summarizeBy: sum
+		sourceColumn: COST_VAL
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column DESCRIPTION
+		dataType: string
+		lineageTag: d371aee2-8e6a-4ef2-bc49-616f06bc19e4
+		summarizeBy: none
+		sourceColumn: DESCRIPTION
+
+		annotation SummarizationSetBy = Automatic
+
+	partition InTrans_All_Promo = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-ch6iiwox4jveda3rmgudwi6hey.datawarehouse.fabric.microsoft.com", "LH_Parts_Reports_Data"),
+				    dbo_InTrans_All_Promo = Source{[Schema="dbo",Item="InTrans_All_Promo"]}[Data]
+				in
+				    dbo_InTrans_All_Promo
+
+	annotation PBI_ResultType = Exception
+
+	annotation PBI_NavigationStepName = Navigation
+

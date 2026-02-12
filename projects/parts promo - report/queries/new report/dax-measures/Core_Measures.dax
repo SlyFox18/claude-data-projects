@@ -1,0 +1,323 @@
+/*
+================================================================================
+PARTS PROMO - NEW MODEL DAX MEASURES
+================================================================================
+
+This file contains DAX measures adapted for the new star schema model.
+
+MODEL STRUCTURE:
+- Fact_PartsPromo: Promo transactions (SaleValue = discount amount, typically negative)
+- Fact_InTrans_AllPromo: All promo-related transactions (ZP franchise)
+- dim_RepairOrder: Order-level aggregations (TotalPartsSales, TotalPartsCost, etc.)
+- dim_DateTable: Date dimension
+- dim_BranchLocation: Branch dimension
+- dim_Parts: Parts dimension
+- dim_PromoType: Promo categorization
+
+KEY DIFFERENCES FROM OLD MODEL:
+- Old: Parts_Promo[Part_Sales], Parts_Promo[Part_Cost] (pre-calculated in query)
+- New: Get order-level sales/cost from dim_RepairOrder via relationship
+
+================================================================================
+*/
+
+-- ============================================================================
+-- SECTION 1: CORE PROMO METRICS (from Fact_PartsPromo)
+-- ============================================================================
+
+-- Discount Amount (make positive from negative SaleValue)
+Discount =
+ABS(SUM(Fact_PartsPromo[SaleValue]))
+
+-- Alternative: Keep sign for proper accounting
+Discount Raw =
+SUM(Fact_PartsPromo[SaleValue])
+
+-- Cost Value from promo transactions
+Cost Value =
+SUM(Fact_PartsPromo[CostValue])
+
+-- Count of promo transactions
+Promo Count =
+COUNTROWS(Fact_PartsPromo)
+
+-- Distinct orders with promos
+Orders with Promos =
+DISTINCTCOUNT(Fact_PartsPromo[REF_NO])
+
+
+-- ============================================================================
+-- SECTION 2: ORDER-LEVEL METRICS (from dim_RepairOrder via relationship)
+-- ============================================================================
+
+-- Original Sale Value (total parts sales on orders that have promos)
+Original Sale Value =
+SUM(dim_RepairOrder[TotalPartsSales])
+
+-- Original Cost (total parts cost on orders that have promos)
+Original Cost =
+SUM(dim_RepairOrder[TotalPartsCost])
+
+-- Original Margin $
+Original Margin $ =
+[Original Sale Value] - [Original Cost]
+
+-- Original Margin %
+Original Margin % =
+DIVIDE([Original Margin $], [Original Sale Value], 0)
+
+
+-- ============================================================================
+-- SECTION 3: NET METRICS (after discount applied)
+-- ============================================================================
+
+-- Net Sales Value (original sales minus discount)
+-- Note: SaleValue is negative, so we ADD it
+Net Sales Value =
+[Original Sale Value] + SUM(Fact_PartsPromo[SaleValue])
+
+-- Alternative using dim_RepairOrder pre-calculated column
+Net Sales Value v2 =
+SUM(dim_RepairOrder[NetOrderValue])
+
+-- Net Margin $
+Net Margin $ =
+[Net Sales Value] - [Cost Value]
+
+-- Net Margin %
+Net Margin % =
+DIVIDE([Net Margin $], [Net Sales Value], 0)
+
+-- Discount % (discount as percentage of original sales)
+Discount % =
+DIVIDE(
+    ABS(SUM(Fact_PartsPromo[SaleValue])),
+    [Original Sale Value],
+    0
+)
+
+
+-- ============================================================================
+-- SECTION 4: ROLLING 12 MONTH CALCULATIONS
+-- ============================================================================
+
+-- Rolling 12 Month Discount
+Rolling 12M Discount =
+CALCULATE(
+    ABS(SUM(Fact_PartsPromo[SaleValue])),
+    DATESINPERIOD(dim_DateTable[Date], TODAY(), -12, MONTH)
+)
+
+-- Rolling 12 Month Net Sales
+Rolling 12M Net Sales =
+CALCULATE(
+    [Net Sales Value],
+    DATESINPERIOD(dim_DateTable[Date], TODAY(), -12, MONTH)
+)
+
+-- Previous Year Rolling 12M Discount (12-24 months ago)
+PY Rolling 12M Discount =
+CALCULATE(
+    ABS(SUM(Fact_PartsPromo[SaleValue])),
+    DATESBETWEEN(
+        dim_DateTable[Date],
+        EDATE(TODAY(), -24),
+        EDATE(TODAY(), -12)
+    )
+)
+
+-- Previous Year Rolling 12M Net Sales
+PY Rolling 12M Net Sales =
+CALCULATE(
+    [Net Sales Value],
+    DATESBETWEEN(
+        dim_DateTable[Date],
+        EDATE(TODAY(), -24),
+        EDATE(TODAY(), -12)
+    )
+)
+
+-- YoY % Change - Discount
+YoY Change Discount % =
+DIVIDE(
+    [Rolling 12M Discount] - [PY Rolling 12M Discount],
+    [PY Rolling 12M Discount],
+    0
+)
+
+-- YoY % Change - Net Sales
+YoY Change Net Sales % =
+DIVIDE(
+    [Rolling 12M Net Sales] - [PY Rolling 12M Net Sales],
+    [PY Rolling 12M Net Sales],
+    0
+)
+
+
+-- ============================================================================
+-- SECTION 5: INTRANS ALL PROMO METRICS (ZP Franchise totals)
+-- ============================================================================
+
+-- Total InTrans Sales (all ZP franchise transactions)
+Total InTrans Sales =
+SUM(Fact_InTrans_AllPromo[SaleValue])
+
+-- Promo % of Total Sales
+Promo % of Total =
+DIVIDE(
+    [Net Sales Value],
+    [Total InTrans Sales],
+    0
+)
+
+
+-- ============================================================================
+-- SECTION 6: AVERAGES AND RATIOS
+-- ============================================================================
+
+-- Average Discount per Order
+Avg Discount per Order =
+DIVIDE(
+    ABS(SUM(Fact_PartsPromo[SaleValue])),
+    DISTINCTCOUNT(Fact_PartsPromo[REF_NO]),
+    0
+)
+
+-- Average Discount per Transaction
+Avg Discount per Transaction =
+DIVIDE(
+    ABS(SUM(Fact_PartsPromo[SaleValue])),
+    COUNTROWS(Fact_PartsPromo),
+    0
+)
+
+-- Average Order Value (orders with promos)
+Avg Order Value =
+DIVIDE(
+    [Original Sale Value],
+    DISTINCTCOUNT(Fact_PartsPromo[REF_NO]),
+    0
+)
+
+
+-- ============================================================================
+-- SECTION 7: CONDITIONAL FORMATTING
+-- ============================================================================
+
+-- Color for Discount % (traffic light)
+Color Discount % =
+SWITCH(
+    TRUE(),
+    [Discount %] <= 0.10, "#AFCBAA",  -- Green: 10% and below
+    [Discount %] <= 0.15, "#FFF299",  -- Yellow: 11% to 15%
+    [Discount %] > 0.15, "#EFB5B9",   -- Red: above 15%
+    "#FFFFFF"  -- Default white
+)
+
+
+-- ============================================================================
+-- SECTION 8: USER/GREETING MEASURES
+-- ============================================================================
+
+-- Greeting based on time of day
+Greeting =
+VAR CurrentHour = HOUR(NOW())
+VAR AdjustedHour = MOD(CurrentHour - 6, 24)
+RETURN
+    SWITCH(
+        TRUE(),
+        AdjustedHour < 12, "Good morning, ",
+        AdjustedHour < 18, "Good afternoon, ",
+        "Good evening, "
+    )
+
+-- Current User (display name only)
+User =
+VAR _user = USERNAME()
+RETURN
+    RIGHT(_user, LEN(_user) - SEARCH("\", _user))
+
+
+-- ============================================================================
+-- SECTION 9: PIE CHART MEASURES (Net Sales % Page)
+-- ============================================================================
+/*
+These measures support the pie chart showing Net Sales from Promo Orders
+vs. Total Sales.
+
+IMPORTANT: dim_RepairOrder does NOT have a direct relationship to dim_DateTable
+(would cause ambiguous path). Instead, we filter dim_RepairOrder indirectly
+through the REF_NOs that exist in the filtered Fact_PartsPromo.
+
+The pie chart uses a helper table "Sales Category" with two rows:
+- "Net Sales (Promo Orders)"
+- "Other Sales"
+*/
+
+-- Total Sales (all transactions from Fact_InTrans_AllPromo)
+Total Sales =
+SUM(Fact_InTrans_AllPromo[SaleValue])
+
+-- Original Sale Value (Date Filtered via Fact_PartsPromo)
+-- This version filters dim_RepairOrder by REF_NOs in the current filter context
+Original Sale Value (Filtered) =
+VAR _FilteredREFs = VALUES(Fact_PartsPromo[REF_NO])
+RETURN
+CALCULATE(
+    SUM(dim_RepairOrder[TotalPartsSales]),
+    TREATAS(_FilteredREFs, dim_RepairOrder[REF_NO])
+)
+
+-- Net Sales Value (Date Filtered)
+-- Uses the filtered Original Sale Value
+Net Sales Value (Filtered) =
+[Original Sale Value (Filtered)] + SUM(Fact_PartsPromo[SaleValue])
+
+-- Non-Promo Sales (Total minus Net Sales from promo orders)
+Non-Promo Sales =
+[Total Sales] - [Net Sales Value (Filtered)]
+
+-- Pie Chart Value (used with Sales Category table)
+-- Use this measure in the pie chart VALUES field
+Pie Chart Sales Value =
+VAR _Category = SELECTEDVALUE('Sales Category'[Category])
+VAR _TotalSales = CALCULATE([Total Sales], REMOVEFILTERS('Sales Category'))
+VAR _NetSales = CALCULATE([Net Sales Value (Filtered)], REMOVEFILTERS('Sales Category'))
+VAR _OtherSales = _TotalSales - _NetSales
+RETURN
+    SWITCH(
+        _Category,
+        "Net Sales (Promo Orders)", _NetSales,
+        "Other Sales", _OtherSales,
+        BLANK()
+    )
+
+-- Net Sales % of Total (for KPI card or label)
+Net Sales % of Total =
+DIVIDE(
+    [Net Sales Value (Filtered)],
+    [Total Sales],
+    0
+)
+
+
+-- ============================================================================
+-- CALCULATED TABLE: Sales Category (create in Power BI)
+-- ============================================================================
+/*
+Create this calculated table in Power BI Desktop:
+
+Sales Category =
+DATATABLE(
+    "Category", STRING,
+    "SortOrder", INTEGER,
+    {
+        {"Net Sales (Promo Orders)", 1},
+        {"Other Sales", 2}
+    }
+)
+
+Then use:
+- Sales Category[Category] in the Legend/Details field
+- [Pie Chart Sales Value] in the Values field
+*/

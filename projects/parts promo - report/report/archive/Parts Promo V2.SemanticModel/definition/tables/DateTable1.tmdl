@@ -1,0 +1,68 @@
+table DateTable1
+	lineageTag: a9eb53f5-94a1-48d3-92ec-44ebefc02794
+
+	column Date
+		formatString: General Date
+		lineageTag: 81dd9d9f-08b3-4dd5-872c-899e871c27e0
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: DateTable[Date]
+
+		annotation SummarizationSetBy = Automatic
+
+	column Year
+		formatString: 0
+		lineageTag: 3f34de91-0995-4805-916e-27dce008756b
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [Year]
+
+		annotation SummarizationSetBy = Automatic
+
+	column Month
+		lineageTag: 03fbb282-3de8-4bb6-abbf-a6108e30711f
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Month]
+		sortByColumn: MonthNumber
+
+		annotation SummarizationSetBy = Automatic
+
+	column Day
+		formatString: 0
+		lineageTag: f2391fb8-d2ad-4285-a5e8-fff35c5601f7
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [Day]
+
+		annotation SummarizationSetBy = Automatic
+
+	column MonthNumber
+		formatString: 0
+		lineageTag: 49a3b657-75b3-4e09-8e01-06546cfcc771
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [MonthNumber]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Month Year' = [Month] & " " & [Year]
+		lineageTag: 1e20eab8-5acb-4dc0-892a-0bd718844ca3
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	partition DateTable1 = calculated
+		mode: import
+		source =
+				
+				ADDCOLUMNS(
+				    DateTable,
+				    "Year", YEAR([Date]),
+				    "Month", FORMAT([Date], "MMM"),
+				    "MonthNumber", MONTH([Date]),
+				    "Day", DAY([Date])
+				)
+
+	annotation PBI_Id = c44027b097434907baea05d8c2d88be9
+

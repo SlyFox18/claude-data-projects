@@ -1,0 +1,63 @@
+table MonthlySalesTable
+	lineageTag: a1590385-cc34-44fd-85b2-eabe56d5c854
+
+	column Trans_Datetime
+		formatString: General Date
+		lineageTag: 2c4c60c6-8eb6-4803-9645-7a4a87705260
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: InTrans_All_Promo[Trans_Datetime]
+
+		annotation SummarizationSetBy = Automatic
+
+	column Year
+		formatString: 0
+		lineageTag: 4d296748-c8c6-4090-9266-784b2606361a
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [Year]
+
+		annotation SummarizationSetBy = Automatic
+
+	column Month
+		lineageTag: 5e498804-0840-4e9a-93d8-da787d7eb309
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Month]
+
+		annotation SummarizationSetBy = Automatic
+
+	column MonthNumber
+		formatString: 0
+		lineageTag: 2ccd40c3-50d5-40a5-a064-779340a3f508
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [MonthNumber]
+
+		annotation SummarizationSetBy = Automatic
+
+	column TotalSaleVal
+		lineageTag: d0e1fab9-28c9-4df6-b772-123d991a8fd6
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [TotalSaleVal]
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	partition MonthlySalesTable = calculated
+		mode: import
+		source =
+				
+				SUMMARIZE(
+				    InTrans_All_Promo,
+				    InTrans_All_Promo[Trans_Datetime],
+				    "Year", YEAR(InTrans_All_Promo[Trans_Datetime]),
+				    "Month", FORMAT(InTrans_All_Promo[Trans_Datetime], "MMM"),
+				    "MonthNumber", MONTH(InTrans_All_Promo[Trans_Datetime]),
+				    "TotalSaleVal", SUM(InTrans_All_Promo[SALE_VAL])
+				)
+
+	annotation PBI_Id = 6c49461241f042008f0f9a865e911ca2
+

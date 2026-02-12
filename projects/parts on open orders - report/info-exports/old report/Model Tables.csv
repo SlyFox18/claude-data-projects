@@ -1,0 +1,88 @@
+ID,Name,Model,DataCategory,Description,IsHidden,StorageMode,TableStorage,Expression,ShowAsVariationOnly,IsPrivate,CalculationGroupPrecedence,LineageTag
+14,Parts_Open_Tickets,c92e95ff-295e-4e52-8d4c-ff902e67585e,Regular,,False,Import,,,False,False,,02124ea8-d252-4cfd-81e8-5084dbc03116
+17,Dim_Branch,c92e95ff-295e-4e52-8d4c-ff902e67585e,Regular,,False,Import,,,False,False,,0bf0952e-3951-4621-811e-7a69b41524de
+710,MeasuresTable,c92e95ff-295e-4e52-8d4c-ff902e67585e,Regular,,False,Import,,"ADDCOLUMNS( GENERATESERIES(1, 1), ""DummyColumn"", 1 )",False,False,,2ec15280-f5d8-4dd8-b8c3-37750988f4c1
+1700,Parts_Open_Tickets_Details,c92e95ff-295e-4e52-8d4c-ff902e67585e,Regular,,False,Import,,,False,False,,4aa71bdc-d3d0-4bc4-a1c1-f4695863fa78
+2064,Data Refresh,c92e95ff-295e-4e52-8d4c-ff902e67585e,Regular,,True,Import,,,False,False,,2b51219e-fbb2-4493-aa19-8d535d35ba39
+2264,TopN Selector,c92e95ff-295e-4e52-8d4c-ff902e67585e,Regular,,False,Import,,"
+DATATABLE(
+    ""TopN"", INTEGER,
+    ""Label"", STRING,
+    ""SortOrder"", INTEGER,
+    {
+        {5,  ""Top 5"",    1},
+        {10, ""Top 10"",   2},
+        {15, ""Top 15"",   3},
+        {20, ""Top 20"",   4},
+        {25, ""Top 25"",   5},
+        {-1, ""Show All"", 6}
+    }
+)
+",False,False,,637101c8-e5b3-4fdd-8c42-c52f75378446
+2540,dimDate,c92e95ff-295e-4e52-8d4c-ff902e67585e,Time,,False,Import,,"
+ADDCOLUMNS(
+    CALENDARAUTO(),
+    ""Year"", YEAR( [Date] ),
+    ""Quarter"", FORMAT( [Date] , ""\QQ""),
+    ""QuarterNo"", QUARTER( [Date] ),
+    ""Month"", FORMAT( [Date], ""MMM"" ),
+    ""MonthNo"", MONTH( [Date] ),
+    ""Weekday"", WEEKDAY( [Date] ),
+    ""WeekdayNo"", WEEKDAY( [Date] ),
+    ""MonthYear"", FORMAT(MONTH([Date]), ""00"") & "" "" & YEAR([Date]),
+    ""Day"", FORMAT(DAY( [Date] ), ""DD"")
+)",False,False,,c3fc2cb1-70fa-4482-a17a-01813aa63162
+2926,Model Measures,c92e95ff-295e-4e52-8d4c-ff902e67585e,Regular,,True,Import,,INFO.VIEW.MEASURES(),False,False,,34123c17-a32d-4f59-a994-44df33e179aa
+4133,Model Columns,c92e95ff-295e-4e52-8d4c-ff902e67585e,Regular,,True,Import,,INFO.VIEW.COLUMNS(),False,False,,7f383ab8-dd79-4608-aa01-3f0057121d10
+5597,Model Tables,c92e95ff-295e-4e52-8d4c-ff902e67585e,Regular,,True,Import,,INFO.VIEW.TABLES(),False,False,,b9112908-d7c0-4525-923b-44b3f9f9c3bc
+7684,Model Relationship,c92e95ff-295e-4e52-8d4c-ff902e67585e,Regular,,True,Import,,INFO.VIEW.RELATIONSHIPS(),False,False,,14161a59-e4d1-490a-8f45-7988dc8cd9ec
+10334,Data Dictionary,c92e95ff-295e-4e52-8d4c-ff902e67585e,Regular,,True,Import,,"
+VAR _columns = SELECTCOLUMNS(
+    FILTER(
+        INFO.VIEW.COLUMNS(),
+        [Table] <> ""Data Dictionary"" && NOT([IsHidden])
+    ),
+    ""Type"", ""Column"",
+    ""Name"", [Name],
+    ""Description"", [Description],
+    ""Location"", [Table],
+    ""Expression"", [Expression]
+)
+
+VAR _measures = SELECTCOLUMNS(
+    FILTER(
+        INFO.VIEW.MEASURES(),
+        [Table] <> ""Data Dictionary"" && NOT([IsHidden])
+    ),
+    ""Type"", ""Measure"",
+    ""Name"", [Name],
+    ""Description"", [Description],
+    ""Location"", [Table],
+    ""Expression"", [Expression]
+)
+
+VAR _tables = SELECTCOLUMNS(
+    FILTER(
+        INFO.VIEW.TABLES(),
+        [Name] <> ""Data Dictionary"" && [Name] <> ""Calculations"" && NOT([IsHidden])
+    ),
+    ""Type"", ""Table"",
+    ""Name"", [Name],
+    ""Description"", [Description],
+    ""Location"", BLANK(),
+    ""Expression"", [Expression]
+)
+
+VAR _relationships = SELECTCOLUMNS(
+    INFO.VIEW.RELATIONSHIPS(),
+    ""Type"", ""Relationship"",
+    ""Name"", [Relationship],
+    ""Description"", BLANK(),
+    ""Location"", [FromTable],
+    ""Expression"", [Relationship]
+)
+
+RETURN
+UNION(_columns, _measures, _tables, _relationships)
+
+",False,False,,e1a30fc9-78bc-4356-9ec6-2d97dc2cbe2f
