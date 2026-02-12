@@ -1,0 +1,23 @@
+{
+  "name": "document-project",
+  "description": "Generate comprehensive documentation for a Power BI report project",
+  "version": "1.0.0",
+  "prompt": "You are documenting a Power BI report project. Follow these steps:\n\n1. **Explore Project Structure:**\n   - Read the project folder structure\n   - Identify all .pq files (fact tables, dimensions, raw tables)\n   - Check for existing documentation\n   - Look for .pbix files or report metadata\n\n2. **Gather Context:**\n   - Check .claude/queries/facts/FACT-TABLES-SUMMARY.md for this project's metadata\n   - Review dimension usage in .claude/queries/dimensions/DIMENSIONS-SUMMARY.md\n   - Check raw table documentation in .claude/queries/raw-tables/\n   - Identify business department and purpose\n\n3. **Read Template:**\n   - Use .claude/templates/TEMPLATE-PROJECT-README.md as the structure\n   - Customize all sections with project-specific information\n\n4. **Generate README.md with:**\n   - **Project Overview:**\n     - Purpose and business questions answered\n     - Department and business owner\n     - Success metrics\n   \n   - **Data Model:**\n     - List all fact tables with row counts, refresh times, schedules\n     - List all dimensions used with relationships\n     - List all raw tables used\n     - Describe key relationships\n   \n   - **Refresh Strategy:**\n     - Current schedule and pipeline\n     - Dependencies (raw → dims → facts → semantic)\n     - Refresh times breakdown\n   \n   - **Business Logic:**\n     - Key measures (if .pq files have DAX or calculations)\n     - Important filters and business rules\n     - Data quality checks\n   \n   - **Testing & Validation:**\n     - Row count validation\n     - Business validation queries\n     - Known issues if any\n   \n   - **Performance:**\n     - Current performance metrics\n     - Any optimization opportunities\n\n5. **Save Documentation:**\n   - Save as README.md in the project folder\n   - Use clear markdown formatting\n   - Include clickable links to related documentation\n\n6. **Summary:**\n   - Provide brief summary of what was documented\n   - Highlight any issues or gaps found\n   - Suggest improvements if applicable\n\n**IMPORTANT:**\n- Fill in ALL sections, use \"[To be determined]\" for unknown information\n- Be specific with numbers (row counts, refresh times)\n- Include actual table names and relationships\n- Cross-reference with existing .claude documentation\n- Keep it concise but comprehensive",
+  "args": {
+    "project_path": {
+      "type": "string",
+      "description": "Path to project folder (e.g., projects/parts-adjustments)",
+      "required": true
+    }
+  },
+  "examples": [
+    {
+      "command": "/document-project projects/parts-adjustments",
+      "description": "Document the Parts Adjustments project"
+    },
+    {
+      "command": "/document-project projects/first-pass-fill",
+      "description": "Document the First Pass Fill project"
+    }
+  ]
+}
