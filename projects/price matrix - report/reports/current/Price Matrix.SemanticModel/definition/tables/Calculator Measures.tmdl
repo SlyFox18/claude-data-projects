@@ -1,0 +1,466 @@
+table 'Calculator Measures'
+	lineageTag: 97c998cf-13c6-4554-980c-40b51febfbe5
+
+	measure 'Current Markup %' =
+			
+			IF(
+			    HASONEVALUE(Price_Matrix[value_from]) && HASONEVALUE(Price_Matrix[value_to]),
+			    SELECTEDVALUE(Price_Matrix[price_percent]) / 100,
+			    BLANK()
+			)
+		formatString: 0.00%;-0.00%;0.00%
+		lineageTag: 148a16c9-ad27-4aae-bb51-eaaef47a5b1b
+
+	measure 'Is Range Selected for Changes' =
+			
+			VAR SelectedRanges = VALUES('Range Selection'[Range])
+			VAR CurrentRange = SELECTEDVALUE(Price_Matrix[Range])
+			VAR IsNoneSelected = "None Selected" IN SelectedRanges
+			VAR CountSelected = COUNTROWS(SelectedRanges)
+			
+			RETURN
+			IF(
+			    ISBLANK(CurrentRange),
+			    FALSE(),
+			    IF(
+			        IsNoneSelected && CountSelected = 1,
+			        // Only "None Selected" is chosen
+			        FALSE(),
+			        IF(
+			            IsNoneSelected && CountSelected > 1,
+			            // "None Selected" + other ranges chosen - ignore "None Selected"
+			            CurrentRange IN EXCEPT(SelectedRanges, ROW("Range", "None Selected")),
+			            // No "None Selected" - normal logic
+			            CurrentRange IN SelectedRanges
+			        )
+			    )
+			)
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 8cc1d459-55ce-4105-9e2e-7d1e2aef69f1
+
+	measure 'Applied Markup %' =
+			
+			IF(
+			    [Is Range Selected for Changes],
+			    SELECTEDVALUE('New Markup %'[New Markup %]) / 100,
+			    [Current Markup %]
+			)
+		formatString: 0.00%;-0.00%;0.00%
+		lineageTag: b96f0f85-e2ee-4393-aabe-e99d3e941b26
+
+	measure 'Current Average Cost' = ```
+			
+			VAR CurrentSellingPrice = [Current Average Selling Price]
+			VAR CurrentMarkupDecimal = [Current Markup %]
+			RETURN
+			IF(
+			    NOT ISBLANK(CurrentSellingPrice) && NOT ISBLANK(CurrentMarkupDecimal),
+			    DIVIDE(CurrentSellingPrice, (1 + CurrentMarkupDecimal)),
+			    BLANK()
+			)
+			
+			```
+		lineageTag: 6f96dee2-f664-4b37-9e74-6a692158d8bd
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Projected Selling Price' = ```
+			
+			VAR AppliedMarkupDecimal = [Applied Markup %]
+			VAR AvgCost = [Current Average Cost]
+			RETURN
+			IF(
+			    NOT ISBLANK(AvgCost) && NOT ISBLANK(AppliedMarkupDecimal),
+			    AvgCost * (1 + AppliedMarkupDecimal),
+			    BLANK()
+			)
+			
+			```
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 22501a23-3622-4180-a522-bad7c82ac7d0
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Current Average Selling Price' =
+			
+			DIVIDE([Transaction Sales $ for Parts in Range], [Transaction Quantity for Parts in Range])
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 5cde44e3-52bd-47fe-8b00-894a989c93cf
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Price Change per Unit' =
+			
+			IF(
+			    [Is Range Selected for Changes],
+			    [Projected Selling Price] - [Current Average Selling Price],
+			    0
+			)
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 52f4158d-1e6e-4604-b561-03dc88a21882
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Revenue Impact (Same Volume)' =
+			
+			IF(
+			    HASONEVALUE(Price_Matrix[Range]),
+			    // Individual range calculation
+			    IF(
+			        [Is Range Selected for Changes],
+			        [Price Change per Unit] * [Transaction Quantity for Parts in Range],
+			        0
+			    ),
+			    // Total calculation - sum across all ranges
+			    SUMX(
+			        VALUES(Price_Matrix[Range]),
+			        IF(
+			            [Is Range Selected for Changes],
+			            [Price Change per Unit] * [Transaction Quantity for Parts in Range],
+			            0
+			        )
+			    )
+			)
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 50680334-3676-4257-b96d-44c905e742e4
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Margin Change per Unit' =
+			
+			IF(
+			    [Is Range Selected for Changes],
+			    VAR CurrentMarginPerUnit = [Current Average Selling Price] - [Current Average Cost]
+			    VAR ProjectedMarginPerUnit = [Projected Selling Price] - [Current Average Cost]
+			    RETURN
+			    ProjectedMarginPerUnit - CurrentMarginPerUnit,
+			    0
+			)
+		lineageTag: e875bdfd-af0a-4719-8af7-652fe2a295c8
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Margin Impact (Same Volume)' =
+			
+			IF(
+			    HASONEVALUE(Price_Matrix[Range]),
+			    // Individual range calculation
+			    IF(
+			        [Is Range Selected for Changes],
+			        [Margin Change per Unit] * [Transaction Quantity for Parts in Range],
+			        0
+			    ),
+			    // Total calculation - sum across all ranges
+			    SUMX(
+			        VALUES(Price_Matrix[Range]),
+			        IF(
+			            [Is Range Selected for Changes],
+			            [Margin Change per Unit] * [Transaction Quantity for Parts in Range],
+			            0
+			        )
+			    )
+			)
+		lineageTag: f0e4222f-8cc6-473e-9cb7-97ec60d6eaf2
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Price Change %' = ```
+			
+			DIVIDE([Price Change per Unit], [Current Average Selling Price])
+			
+			```
+		lineageTag: 6750ede0-574e-4c55-bc99-fe430bdad689
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Margin Change %' =
+			
+			VAR CurrentMarginPerUnit = [Current Average Selling Price] - [Current Average Cost]
+			RETURN
+			DIVIDE([Margin Change per Unit], CurrentMarginPerUnit)
+		lineageTag: 112eee0f-4149-4afc-82e3-b9e5e31f34b7
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Change Status' =
+			
+			IF(
+			    [Is Range Selected for Changes],
+			    "🔄 CHANGED",
+			    "⚪ Current"
+			)
+		lineageTag: 37224883-53db-4ff8-a8ee-2db88b2aeabc
+
+	measure 'Range Impact Summary' = ```
+			
+			IF(
+			    [Is Range Selected for Changes],
+			    "Markup: " & FORMAT([Current Markup %]/100, "0%") & " → " & FORMAT([Applied Markup %]/100, "0%") & 
+			    " | Price: $" & FORMAT([Current Average Selling Price], "#,0.00") & " → $" & FORMAT([Projected Selling Price], "#,0.00") &
+			    " | Revenue Impact: " & FORMAT([Revenue Impact (Same Volume)], "+$#,##0;-$#,##0"),
+			    "No changes applied"
+			)
+			```
+		lineageTag: a1dc0519-530b-4c41-b251-7910ca859c6a
+
+	measure 'Current Average Cost (Transaction Based)' = ```
+			
+			IF(
+			    HASONEVALUE(Price_Matrix[value_from]) && HASONEVALUE(Price_Matrix[value_to]),
+			    VAR CurrentFrom = SELECTEDVALUE(Price_Matrix[value_from])
+			    VAR CurrentTo = SELECTEDVALUE(Price_Matrix[value_to])
+			    VAR PartsInRange = 
+			        CALCULATETABLE(
+			            VALUES('Fact_Inventory'[PartNumber]),
+			            'Fact_Inventory'[ListPrice] >= CurrentFrom,
+			            'Fact_Inventory'[ListPrice] <= CurrentTo,
+			            'Fact_Inventory'[Current12MoSales] > 0
+			        )
+			    VAR TotalCostAmount = 
+			        CALCULATE(
+			            SUM('Fact_Part_Transactions'[CostAmount]),
+			            'Fact_Part_Transactions'[PartNumber] IN PartsInRange,
+			            'Fact_Part_Transactions'[SaleAmount] > 0
+			        )
+			    VAR TotalQuantity = 
+			        CALCULATE(
+			            SUM('Fact_Part_Transactions'[Quantity]),
+			            'Fact_Part_Transactions'[PartNumber] IN PartsInRange,
+			            'Fact_Part_Transactions'[SaleAmount] > 0
+			        )
+			    RETURN
+			    DIVIDE(TotalCostAmount, TotalQuantity),
+			    BLANK()
+			)
+			```
+		lineageTag: 1fba11b6-d013-419c-b475-70550701cbb0
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Gross Profit Impact (Same Volume)' =
+			
+			IF(
+			    HASONEVALUE(Price_Matrix[Range]),
+			    // Individual range calculation
+			    IF(
+			        [Is Range Selected for Changes],
+			        VAR CurrentMargin = ([Current Average Selling Price] - [Current Average Cost]) * [Transaction Quantity for Parts in Range]
+			        VAR ProjectedMargin = ([Projected Selling Price] - [Current Average Cost]) * [Transaction Quantity for Parts in Range]
+			        RETURN ProjectedMargin - CurrentMargin,
+			        0
+			    ),
+			    // Total calculation
+			    SUMX(
+			        VALUES(Price_Matrix[Range]),
+			        IF(
+			            [Is Range Selected for Changes],
+			            VAR CurrentMargin = ([Current Average Selling Price] - [Current Average Cost]) * [Transaction Quantity for Parts in Range]
+			            VAR ProjectedMargin = ([Projected Selling Price] - [Current Average Cost]) * [Transaction Quantity for Parts in Range]
+			            RETURN ProjectedMargin - CurrentMargin,
+			            0
+			        )
+			    )
+			)
+		lineageTag: 49379579-bd89-49f0-9fb7-53bcf1d19a6d
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Total Revenue Impact' =
+			
+			SUMX(
+			    ALL(Price_Matrix[Range]),
+			    IF(
+			        [Is Range Selected for Changes],
+			        [Price Change per Unit] * [Transaction Quantity for Parts in Range],
+			        0
+			    )
+			)
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 3655746c-5149-4c1f-87a9-e3b5e13b09cb
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Total Ranges Changed' =
+			
+			SUMX(
+			    ALL(Price_Matrix[Range]),
+			    IF([Is Range Selected for Changes], 1, 0)
+			)
+		formatString: 0
+		lineageTag: e44f482a-e839-471d-8e29-da895ba1a3ea
+
+	measure 'Calculator Summary' = ```
+			
+			VAR TotalRevenue = [Total Revenue Impact]
+			VAR RangesChanged = [Total Ranges Changed]
+			VAR NewMarkup = SELECTEDVALUE('New Markup %'[New Markup %], 50)
+			RETURN
+			"New Markup: " & FORMAT(NewMarkup/100, "0%") & 
+			" | Ranges Changed: " & RangesChanged &
+			" | Total Revenue Impact: " & FORMAT(TotalRevenue, "+$#,##0;-$#,##0;$0")
+			```
+		lineageTag: f3a5a4af-cbb2-46cb-9ee3-9dccca6be075
+
+	measure 'Current Markup % (Card)' = ```
+			
+			VAR SelectedRangesList = VALUES('Range Selection'[Range])
+			VAR IsNoneSelected = "None Selected" IN SelectedRangesList
+			VAR CountSelected = COUNTROWS(SelectedRangesList)
+			
+			VAR SelectedMarkupSum = 
+			    SUMX(
+			        ALL(Price_Matrix),
+			        IF(
+			            AND(
+			                NOT IsNoneSelected,
+			                Price_Matrix[Range] IN SelectedRangesList
+			            ),
+			            Price_Matrix[price_percent] / 100,
+			            0
+			        )
+			    )
+			
+			VAR SelectedRangeCount = 
+			    SUMX(
+			        ALL(Price_Matrix),
+			        IF(
+			            AND(
+			                NOT IsNoneSelected,
+			                Price_Matrix[Range] IN SelectedRangesList
+			            ),
+			            1,
+			            0
+			        )
+			    )
+			
+			VAR AllRangesAvg = 
+			    AVERAGEX(
+			        ALL(Price_Matrix),
+			        Price_Matrix[price_percent] / 100
+			    )
+			
+			RETURN
+			IF(
+			    IsNoneSelected || SelectedRangeCount = 0,
+			    AllRangesAvg,
+			    DIVIDE(SelectedMarkupSum, SelectedRangeCount)
+			)
+			```
+		formatString: 0.00%;-0.00%;0.00%
+		lineageTag: 3676bc70-9029-40ba-82c2-251cf7402d32
+
+	measure 'Applied Markup % (Card)' =
+			
+			VAR SelectedRanges = VALUES('Range Selection'[Range])
+			VAR IsNoneSelected = "None Selected" IN SelectedRanges
+			RETURN
+			IF(
+			    IsNoneSelected,
+			    BLANK(),
+			    SELECTEDVALUE('New Markup %'[New Markup %]) / 100
+			)
+		formatString: 0.00%;-0.00%;0.00%
+		lineageTag: 349591e5-f582-4e1f-8e6f-bf233c126f66
+
+	measure 'Ranges Being Changed' =
+			
+			VAR SelectedRanges = VALUES('Range Selection'[Range])
+			VAR IsNoneSelected = "None Selected" IN SelectedRanges
+			RETURN
+			IF(
+			    IsNoneSelected,
+			    0,
+			    COUNTROWS(SelectedRanges) - IF("None Selected" IN SelectedRanges, 1, 0)
+			)
+		formatString: 0
+		lineageTag: 46f61e92-7a20-4d01-8b9f-5d32523d872b
+
+	measure 'Change Status Card' = ```
+			
+			VAR RangesChanged = [Ranges Being Changed]
+			RETURN
+			SWITCH(
+			    TRUE(),
+			    RangesChanged = 0, "No Changes",
+			    RangesChanged = 1, "1 Range Selected", 
+			    RangesChanged & " Ranges Selected"
+			)
+			```
+		lineageTag: 1711a0fd-ceea-4318-bcc7-6e941defcb1e
+
+	measure 'Projected Price Simple Average' =
+			
+			VAR SelectedRangesList = VALUES('Range Selection'[Range])
+			VAR IsNoneSelected = "None Selected" IN SelectedRangesList
+			
+			RETURN
+			IF(
+			    IsNoneSelected,
+			    BLANK(),
+			    AVERAGEX(
+			        FILTER(
+			            ALL(Price_Matrix),
+			            Price_Matrix[Range] IN SelectedRangesList
+			        ),
+			        VAR CurrentRange = Price_Matrix[Range]
+			        RETURN
+			        CALCULATE(
+			            [Projected Selling Price],
+			            Price_Matrix[Range] = CurrentRange
+			        )
+			    )
+			)
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: b71e5884-db58-4a51-9516-416ba2936347
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Show Range Selected' =
+			
+			VAR MaxFilters = 7
+			RETURN
+			    IF (
+			        ISFILTERED ( 'Range Selection'[Range] ),
+			        VAR ___f =
+			            FILTERS ( 'Range Selection'[Range] )
+			        VAR ___r =
+			            COUNTROWS ( ___f )
+			        VAR ___t =
+			            TOPN ( MaxFilters, ___f, 'Range Selection'[Range] )
+			        VAR ___d =
+			            CONCATENATEX ( ___t, 'Range Selection'[Range], ", " )
+			        VAR ___x =
+			            "Range:  " & ___d
+			                & IF ( ___r > MaxFilters, ", ... [" & ___r & " items selected]" ) & " "
+			        RETURN
+			            ___x & UNICHAR ( 13 )
+			                & UNICHAR ( 10 )
+			    )
+		lineageTag: 1e071e17-3cf9-46c8-b981-83a96336958c
+
+	column Value
+		isHidden
+		formatString: 0
+		lineageTag: 79ea6c20-e63c-4117-a2b9-8219461e3257
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [Value]
+
+		annotation SummarizationSetBy = Automatic
+
+	column DummyColumn
+		isHidden
+		formatString: 0
+		lineageTag: 8ba0c5f0-db7c-4931-93d1-c62410a156b1
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [DummyColumn]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Calculator Measures' = calculated
+		mode: import
+		source = ADDCOLUMNS( GENERATESERIES(1, 1), "DummyColumn", 1 )
+
+	annotation PBI_Id = 689c7a285562443fb46f64d68695da53
+

@@ -1,0 +1,40 @@
+model Model
+	culture: en-US
+	defaultPowerBIDataSourceVersion: powerBI_V3
+	sourceQueryCulture: en-US
+	dataAccessOptions
+		legacyRedirects
+		returnErrorValuesAsNull
+
+annotation __PBI_TimeIntelligenceEnabled = 0
+
+annotation PBI_QueryOrder = ["Data Refresh","Price_Matrix","dim_BranchLocation","dim_Parts","Fact_Inventory","dim_Franchise","Fact_Part_Transactions","dim_DealerGroupCode","dim_Source","dim_SLC","dim_VendorCode","dim_DateTable"]
+
+annotation PBI_ProTooling = ["DevMode"]
+
+annotation __TEdtr = 1
+
+ref table MeasuresTable
+ref table 'Data Refresh'
+ref table Price_Matrix
+ref table dim_BranchLocation
+ref table dim_Parts
+ref table Fact_Inventory
+ref table dim_Franchise
+ref table Fact_Part_Transactions
+ref table 'Table DAX Measures'
+ref table 'Tables Info'
+ref table 'Table Columns'
+ref table 'Table Relationships'
+ref table 'New Markup %'
+ref table 'Calculator Measures'
+ref table dim_DealerGroupCode
+ref table dim_Source
+ref table dim_SLC
+ref table dim_VendorCode
+ref table dim_DateTable
+ref table 'Range Selection'
+ref table 'Range $0.01 - $0.99 New Markup'
+
+ref cultureInfo en-US
+

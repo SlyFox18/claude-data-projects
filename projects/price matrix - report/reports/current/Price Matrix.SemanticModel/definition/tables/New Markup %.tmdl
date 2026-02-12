@@ -1,0 +1,28 @@
+table 'New Markup %'
+	lineageTag: 0abf60b7-a250-4c03-bd11-1e44eedf7450
+
+	measure 'New Markup % Value' = SELECTEDVALUE('New Markup %'[New Markup %], 50)
+		lineageTag: 5010d97c-876c-4b85-ab8e-8d26940ac977
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column 'New Markup %'
+		dataType: double
+		formatString: 0
+		lineageTag: e8286915-7fc3-4a79-a075-4ccc320d33ef
+		summarizeBy: none
+		sourceColumn: [Value]
+
+		extendedProperty ParameterMetadata =
+				{
+				  "version": 0
+				}
+
+		annotation SummarizationSetBy = User
+
+	partition 'New Markup %' = calculated
+		mode: import
+		source = GENERATESERIES(0, 200, 1)
+
+	annotation PBI_Id = 10853f0ca9524873adb6a76c0041cf0a
+

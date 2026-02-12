@@ -1,0 +1,145 @@
+table dim_Franchise
+	lineageTag: 0b48009f-073e-49a5-9bbc-6024dd5e48c7
+
+	column FranchiseKey
+		dataType: int64
+		formatString: 0
+		lineageTag: dfb97d15-41e1-4265-afa8-d590e8d2dc35
+		summarizeBy: none
+		sourceColumn: FranchiseKey
+
+		annotation SummarizationSetBy = Automatic
+
+	column Franchise
+		dataType: string
+		lineageTag: b8cec8bd-52b3-49eb-90c8-ea4f543db981
+		summarizeBy: none
+		sourceColumn: Franchise
+
+		annotation SummarizationSetBy = Automatic
+
+	column FranchiseCode
+		dataType: string
+		lineageTag: d3ee314b-5a12-470f-8b58-47b06ac39801
+		summarizeBy: none
+		sourceColumn: FranchiseCode
+
+		annotation SummarizationSetBy = Automatic
+
+	column FranchiseDisplayName
+		dataType: string
+		lineageTag: 73c31c0f-b542-4b4c-844f-89ddb26d273a
+		summarizeBy: none
+		sourceColumn: FranchiseDisplayName
+
+		annotation SummarizationSetBy = Automatic
+
+	column FranchiseType
+		dataType: string
+		lineageTag: ba9de6fb-5932-4e27-b2cf-0e8add427fcd
+		summarizeBy: none
+		sourceColumn: FranchiseType
+
+		annotation SummarizationSetBy = Automatic
+
+	column FranchiseCategory
+		dataType: string
+		lineageTag: 010e5fc4-4442-438d-87b9-f832e8a1d66d
+		summarizeBy: none
+		sourceColumn: FranchiseCategory
+
+		annotation SummarizationSetBy = Automatic
+
+	column FranchiseSortOrder
+		dataType: double
+		lineageTag: 676a2f91-b6c6-43a1-89c7-2ca705f9962e
+		summarizeBy: sum
+		sourceColumn: FranchiseSortOrder
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column FranchiseStatus
+		dataType: string
+		lineageTag: 7809fb70-148a-462c-9ecf-fcbdb825e6f6
+		summarizeBy: none
+		sourceColumn: FranchiseStatus
+
+		annotation SummarizationSetBy = Automatic
+
+	column IsActive
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 48d8fd22-c4e4-4ffd-80d6-822875e60822
+		summarizeBy: none
+		sourceColumn: IsActive
+
+		annotation SummarizationSetBy = Automatic
+
+	column IsPrimaryBrand
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 6840e4df-9992-4420-9d82-995ff751bc4d
+		summarizeBy: none
+		sourceColumn: IsPrimaryBrand
+
+		annotation SummarizationSetBy = Automatic
+
+	column MarketPosition
+		dataType: string
+		lineageTag: f59fb405-73eb-4eb0-ac2a-ae2857e55f80
+		summarizeBy: none
+		sourceColumn: MarketPosition
+
+		annotation SummarizationSetBy = Automatic
+
+	column ServiceComplexity
+		dataType: string
+		lineageTag: c13420e4-34ff-443b-aaa2-c32bc3429f40
+		summarizeBy: none
+		sourceColumn: ServiceComplexity
+
+		annotation SummarizationSetBy = Automatic
+
+	column BusinessPriority
+		dataType: double
+		lineageTag: 6c2c3f94-a632-4a71-994c-0e2c1635dec0
+		summarizeBy: sum
+		sourceColumn: BusinessPriority
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column IsAgriculturalBrand
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 876f2da2-07ee-4985-8547-abb9b9d62e63
+		summarizeBy: none
+		sourceColumn: IsAgriculturalBrand
+
+		annotation SummarizationSetBy = Automatic
+
+	column IsMajorBrand
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 640d9201-9d46-4916-b6e8-185319c0f6fd
+		summarizeBy: none
+		sourceColumn: IsMajorBrand
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dim_Franchise = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-gxnyznhdptpenfw724g3o5sjzm.datawarehouse.fabric.microsoft.com", "LH_Master_Data"),
+				    dbo_dim_Franchise = Source{[Schema="dbo",Item="dim_Franchise"]}[Data]
+				in
+				    dbo_dim_Franchise
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

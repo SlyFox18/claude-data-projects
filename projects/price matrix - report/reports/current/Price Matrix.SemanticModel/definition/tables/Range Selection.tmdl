@@ -1,0 +1,38 @@
+table 'Range Selection'
+	lineageTag: f9f52576-7014-49bc-adce-a61a741c97f6
+
+	column Range
+		lineageTag: c2c67388-b64b-4b2d-96b8-313094a862ea
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Range]
+		sortByColumn: 'Range Sort'
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Range Sort'
+		lineageTag: e584808d-5029-43de-b916-1debdb27fd6d
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Range Sort]
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	partition 'Range Selection' = calculated
+		mode: import
+		source = ```
+				
+				UNION(
+				    ROW("Range", "None Selected", "Range Sort", -1),
+				    ADDCOLUMNS(
+				        DISTINCT(Price_Matrix[Range]),
+				        "Range Sort", 
+				        CALCULATE(MIN(Price_Matrix[value_from]))
+				    )
+				)
+				```
+
+	annotation PBI_Id = d4fd1b567dde4a0f959450e087ad1e6f
+

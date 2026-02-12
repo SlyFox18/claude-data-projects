@@ -1,0 +1,34 @@
+table dim_VendorCode
+	lineageTag: fb19362b-bc93-458d-8df5-61e90c11502c
+
+	column VendorCodeKey
+		dataType: int64
+		formatString: 0
+		lineageTag: 30fc5354-4b9b-4996-b99e-bc1e7d015106
+		summarizeBy: none
+		sourceColumn: VendorCodeKey
+
+		annotation SummarizationSetBy = Automatic
+
+	column VendorCode
+		dataType: int64
+		formatString: 0
+		lineageTag: 6a23d8dd-e5fe-465d-98c9-5c306d33addc
+		summarizeBy: none
+		sourceColumn: VendorCode
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dim_VendorCode = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-gxnyznhdptpenfw724g3o5sjzm.datawarehouse.fabric.microsoft.com", "LH_Master_Data"),
+				    dbo_dim_VendorCode = Source{[Schema="dbo",Item="dim_VendorCode"]}[Data]
+				in
+				    dbo_dim_VendorCode
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

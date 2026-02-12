@@ -1,0 +1,33 @@
+table dim_SLC
+	lineageTag: 1d131ac6-0aca-484b-be1c-36ddda22cd74
+
+	column SLCKey
+		dataType: int64
+		formatString: 0
+		lineageTag: ec793816-4eee-456a-a6a6-02605be8e062
+		summarizeBy: none
+		sourceColumn: SLCKey
+
+		annotation SummarizationSetBy = Automatic
+
+	column SLC
+		dataType: string
+		lineageTag: e8d54280-d524-4d4f-bf61-8d27dff9d84f
+		summarizeBy: none
+		sourceColumn: SLC
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dim_SLC = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-gxnyznhdptpenfw724g3o5sjzm.datawarehouse.fabric.microsoft.com", "LH_Master_Data"),
+				    dbo_dim_SLC = Source{[Schema="dbo",Item="dim_SLC"]}[Data]
+				in
+				    dbo_dim_SLC
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

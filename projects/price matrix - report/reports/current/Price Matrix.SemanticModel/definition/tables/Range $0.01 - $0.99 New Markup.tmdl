@@ -1,0 +1,26 @@
+table 'Range $0.01 - $0.99 New Markup'
+	lineageTag: c184c2e4-edc7-4980-b66e-caa39d0d3e48
+
+	measure 'Range $0.01 - $0.99 New Markup Value' = SELECTEDVALUE('Range $0.01 - $0.99 New Markup'[Range $0.01 - $0.99 New Markup])
+		formatString: 0
+		lineageTag: 4ee59c8c-4b1a-4b84-91ff-8c3e46a56f1e
+
+	column 'Range $0.01 - $0.99 New Markup'
+		formatString: 0
+		lineageTag: 76ecd26d-e003-44d4-94b9-95df6ece959e
+		summarizeBy: none
+		sourceColumn: [Value]
+
+		extendedProperty ParameterMetadata =
+				{
+				  "version": 0
+				}
+
+		annotation SummarizationSetBy = User
+
+	partition 'Range $0.01 - $0.99 New Markup' = calculated
+		mode: import
+		source = GENERATESERIES(0, 200, 1)
+
+	annotation PBI_Id = 0c3f46ca5fcf44fdab02ee7c647d66c3
+

@@ -1,0 +1,57 @@
+relationship AutoDetected_9aa32814-33d0-4773-b321-1ca89c0b0317
+	fromColumn: Fact_Inventory.BranchKey
+	toColumn: dim_BranchLocation.BranchKey
+
+relationship AutoDetected_5f40732f-846d-48e9-913a-64d22d97d28d
+	fromColumn: Fact_Inventory.PartNumberKey
+	toColumn: dim_Parts.PartNumberKey
+
+relationship AutoDetected_056981f8-bda8-4589-994b-d58ccc42fcd9
+	fromColumn: Fact_Inventory.FranchiseKey
+	toColumn: dim_Franchise.FranchiseKey
+
+relationship AutoDetected_b447a8a1-8403-49de-85ef-5bb2027c383b
+	fromColumn: Fact_Part_Transactions.PartNumberKey
+	toColumn: dim_Parts.PartNumberKey
+
+relationship AutoDetected_cdcb1f96-aae6-445d-9e29-71f864e926b9
+	fromColumn: Fact_Part_Transactions.FranchiseKey
+	toColumn: dim_Franchise.FranchiseKey
+
+relationship AutoDetected_519ab105-440c-41f5-9f21-4479aa61ece7
+	fromColumn: Fact_Part_Transactions.BranchKey
+	toColumn: dim_BranchLocation.BranchKey
+
+relationship AutoDetected_65da9f28-99e8-4beb-bd0a-312e0bb0c4b3
+	fromColumn: Fact_Inventory.VendorCodeKey
+	toColumn: dim_VendorCode.VendorCodeKey
+
+relationship AutoDetected_77b3844f-8cbd-4466-a55e-7d18d92509e9
+	fromColumn: Fact_Inventory.SourceKey
+	toColumn: dim_Source.SourceKey
+
+relationship AutoDetected_bab90842-180f-48ea-8e49-18dd7f4c7509
+	fromColumn: Fact_Inventory.SLCKey
+	toColumn: dim_SLC.SLCKey
+
+relationship AutoDetected_b9da0f09-c7b3-467f-b242-2b24943917b9
+	fromColumn: Fact_Inventory.DealerGroupKey
+	toColumn: dim_DealerGroupCode.DealerGroupKey
+
+relationship 3d3bec5a-1322-c1f8-2681-fea88a3f23e3
+	fromColumn: Fact_Part_Transactions.TransactionDate
+	toColumn: dim_DateTable.Date
+
+relationship e6062e89-5502-3144-9a72-2581c629b30a
+	fromColumn: Price_Matrix.Range
+	toColumn: 'Range Selection'.Range
+
+relationship AutoDetected_96a782f7-d6c5-45e7-b5dd-5f85b4b8cc3b
+	fromColumn: Price_Matrix.franchise
+	toColumn: dim_Franchise.FranchiseCode
+
+relationship AutoDetected_710253fc-f37e-4541-9a57-ea4143cee123
+	isActive: false
+	fromColumn: dim_Parts.Franchise
+	toColumn: dim_Franchise.FranchiseCode
+
