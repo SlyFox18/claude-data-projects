@@ -1,0 +1,89 @@
+table ConditionalFormatMeasures
+	lineageTag: 553700be-8cab-444f-bda0-35398a173c89
+
+	measure 'CF R12 vs P12' =
+			
+			IF (
+			    NOT ( ISBLANK ( [Previous 12 Sales] ) )
+			        && NOT ( ISBLANK ( [Rolling12_Sales] ) )
+			            && [Previous 12 Sales] > [Rolling12_Sales],
+			    1,
+			    0
+			)
+		formatString: 0
+		lineageTag: cb415cac-9538-48c2-948f-94bde1ae88ce
+
+	measure 'CF R12 vs P24' =
+			
+			IF (
+			    NOT ( ISBLANK ( [Previous 24 Sales] ) )
+			        && NOT ( ISBLANK ( [Rolling12_Sales] ) )
+			            && [Previous 24 Sales] > [Rolling12_Sales],
+			    1,
+			    0
+			)
+		formatString: 0
+		lineageTag: 6a779aea-5f1e-483d-b52f-af700aeaaae2
+
+	measure 'CF R12 vs P36' =
+			
+			IF (
+			    NOT ( ISBLANK ( [Previous 36 Sales] ) )
+			        && NOT ( ISBLANK ( [Rolling12_Sales] ) )
+			            && [Previous 36 Sales] > [Rolling12_Sales],
+			    1,
+			    0
+			)
+		formatString: 0
+		lineageTag: 9a5636aa-f9cb-4a3c-aaa5-8b2cc8fd9f45
+
+	measure 'CF R12 vs P48' =
+			
+			IF (
+			    NOT ( ISBLANK ( [Previous 48 Sales] ) )
+			        && NOT ( ISBLANK ( [Rolling12_Sales] ) )
+			            && [Previous 48 Sales] > [Rolling12_Sales],
+			    1,
+			    0
+			)
+		formatString: 0
+		lineageTag: ce4e3965-9b25-423b-b4a9-eb3179bfd37a
+
+	measure 'CF R12 vs P60' =
+			
+			IF (
+			    NOT ( ISBLANK ( [Previous 60 Sales] ) )
+			        && NOT ( ISBLANK ( [Rolling12_Sales] ) )
+			            && [Previous 60 Sales] > [Rolling12_Sales],
+			    1,
+			    0
+			)
+		formatString: 0
+		lineageTag: a26acdc6-ac9a-4773-baa2-d6c1d59528a1
+
+	column Value
+		isHidden
+		formatString: 0
+		lineageTag: 081e4db6-7da5-46c4-9e21-893b93f9744b
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [Value]
+
+		annotation SummarizationSetBy = Automatic
+
+	column DummyColumn
+		isHidden
+		formatString: 0
+		lineageTag: ea9d3077-cf91-4114-91b0-3b5990d4bdd2
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [DummyColumn]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition ConditionalFormatMeasures = calculated
+		mode: import
+		source = ADDCOLUMNS( GENERATESERIES(1, 1), "DummyColumn", 1 )
+
+	annotation PBI_Id = fe9e125afa494654bcf884dee4c20875
+

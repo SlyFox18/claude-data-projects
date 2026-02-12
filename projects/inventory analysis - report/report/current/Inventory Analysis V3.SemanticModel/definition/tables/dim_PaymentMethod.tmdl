@@ -1,0 +1,58 @@
+table dim_PaymentMethod
+	lineageTag: e21762e0-7c88-48ec-8b8f-80965a08f510
+
+	column PaymentMethodKey
+		dataType: int64
+		formatString: 0
+		lineageTag: 0cbb2534-fc24-4d15-96ba-4a7a6448cd18
+		summarizeBy: none
+		sourceColumn: PaymentMethodKey
+
+		annotation SummarizationSetBy = Automatic
+
+	column PaymentMethod
+		dataType: string
+		lineageTag: e610dbf9-1dc8-474a-b1e0-cbab3c8a5b12
+		summarizeBy: none
+		sourceColumn: PaymentMethod
+
+		annotation SummarizationSetBy = Automatic
+
+	column PaymentMethodDescription
+		dataType: string
+		lineageTag: e751d59d-5647-4e30-b396-2e6e81d1dfc7
+		summarizeBy: none
+		sourceColumn: PaymentMethodDescription
+
+		annotation SummarizationSetBy = Automatic
+
+	column PaymentCategory
+		dataType: string
+		lineageTag: b4b5bbb9-1a48-4917-adb3-5373121156ea
+		summarizeBy: none
+		sourceColumn: PaymentCategory
+
+		annotation SummarizationSetBy = Automatic
+
+	column SortOrder
+		dataType: int64
+		formatString: 0
+		lineageTag: f3c2dbc8-0c6a-40e3-ab94-9a94c5b8e917
+		summarizeBy: none
+		sourceColumn: SortOrder
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dim_PaymentMethod = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-gxnyznhdptpenfw724g3o5sjzm.datawarehouse.fabric.microsoft.com", "LH_Master_Data"),
+				    dbo_dim_PaymentMethod = Source{[Schema="dbo",Item="dim_PaymentMethod"]}[Data]
+				in
+				    dbo_dim_PaymentMethod
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

@@ -1,0 +1,36 @@
+table dim_DealerGroupCode
+	lineageTag: 76ff5334-4d7b-4261-bbc8-472edba6ee67
+
+	column DealerGroupKey
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: fbf9c01e-86ac-460d-b804-930b42e9175d
+		summarizeBy: none
+		sourceColumn: DealerGroupKey
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column DealerGroupCode
+		dataType: string
+		lineageTag: 669fdda4-78e9-4c6d-a9cb-78dd5d36fc6b
+		summarizeBy: none
+		sourceColumn: DealerGroupCode
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dim_DealerGroupCode = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-gxnyznhdptpenfw724g3o5sjzm.datawarehouse.fabric.microsoft.com", "LH_Master_Data"),
+				    dbo_dim_DealerGroupCode = Source{[Schema="dbo",Item="dim_DealerGroupCode"]}[Data]
+				in
+				    dbo_dim_DealerGroupCode
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

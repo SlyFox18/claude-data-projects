@@ -1,0 +1,41 @@
+model Model
+	culture: en-US
+	defaultPowerBIDataSourceVersion: powerBI_V3
+	sourceQueryCulture: en-US
+	dataAccessOptions
+		legacyRedirects
+		returnErrorValuesAsNull
+
+annotation __PBI_TimeIntelligenceEnabled = 0
+
+annotation PBI_QueryOrder = ["Fact_Part_Transactions","Fact_Inventory","dim_VendorCode","dim_Source","dim_SLC","dim_Parts","dim_Franchise","dim_DealerGroupCode","dim_Date","dim_CommodityCode","Data Refresh","dim_BranchLocation","dim_ModuleType","Fact_Invoice_InventoryAnalysis","dim_PaymentMethod","HeroCard Settings"]
+
+annotation PBI_ProTooling = ["DevMode","Copilot","CopilotMeasureDescriptions","TMDLView_Desktop"]
+
+ref table dim_DateFilter
+ref table MeasuresTable
+ref table Fact_Part_Transactions
+ref table Fact_Inventory
+ref table dim_VendorCode
+ref table dim_Source
+ref table dim_SLC
+ref table dim_Parts
+ref table dim_Franchise
+ref table dim_DealerGroupCode
+ref table dim_Date
+ref table dim_CommodityCode
+ref table ConditionalFormatMeasures
+ref table BranchFranchiseSlicer
+ref table 'Measures Table'
+ref table Tables
+ref table 'Relationships Table'
+ref table 'Data Refresh'
+ref table dim_BranchLocation
+ref table dim_ModuleType
+ref table Fact_Invoice_InventoryAnalysis
+ref table dim_PaymentMethod
+ref table PackageQtyMeasures
+ref table 'HeroCard Settings'
+
+ref cultureInfo en-US
+

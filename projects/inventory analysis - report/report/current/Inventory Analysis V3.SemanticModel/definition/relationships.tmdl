@@ -1,0 +1,65 @@
+relationship AutoDetected_1b2743b4-dc57-4a50-9f7f-84e8d94be35c
+	fromColumn: Fact_Part_Transactions.FranchiseKey
+	toColumn: dim_Franchise.FranchiseKey
+
+relationship AutoDetected_1a403027-ddc5-449e-8ae0-638af4d4f703
+	fromColumn: Fact_Inventory.FranchiseKey
+	toColumn: dim_Franchise.FranchiseKey
+
+relationship AutoDetected_3ad332de-5e0f-4885-994f-4071256751c5
+	fromColumn: Fact_Part_Transactions.PartNumberKey
+	toColumn: dim_Parts.PartNumberKey
+
+relationship AutoDetected_07bbad08-b6b7-43c4-ba71-32fc54bae016
+	fromColumn: Fact_Inventory.PartNumberKey
+	toColumn: dim_Parts.PartNumberKey
+
+relationship AutoDetected_c4810f6e-6e4a-4761-93a1-e27cbe17054e
+	fromColumn: Fact_Inventory.SourceKey
+	toColumn: dim_Source.SourceKey
+
+relationship AutoDetected_353109f9-6959-43a2-bc28-44819daea513
+	fromColumn: Fact_Inventory.SLCKey
+	toColumn: dim_SLC.SLCKey
+
+relationship AutoDetected_943f3c3c-b507-4603-becc-31af811c5cbd
+	fromColumn: Fact_Inventory.DealerGroupKey
+	toColumn: dim_DealerGroupCode.DealerGroupKey
+
+relationship AutoDetected_4f891226-edc6-4e15-8d0c-b9f1ab16e3a5
+	fromColumn: Fact_Inventory.CommodityCodeKey
+	toColumn: dim_CommodityCode.CommodityCodeKey
+
+relationship AutoDetected_522480a5-7c1d-4639-bcce-fee137c23e2d
+	fromColumn: Fact_Inventory.VendorCodeKey
+	toColumn: dim_VendorCode.VendorCodeKey
+
+relationship a447a416-91b2-d88c-f4a7-07ff2c3dbc68
+	fromColumn: Fact_Part_Transactions.TransactionDate
+	toColumn: dim_Date.Date
+
+relationship AutoDetected_1066c91b-34ca-4d72-99a4-9fb19c5a04ae
+	fromColumn: Fact_Inventory.BranchKey
+	toColumn: dim_BranchLocation.BranchKey
+
+relationship AutoDetected_4a58000d-d6bc-424a-a304-7878e068da8e
+	fromColumn: Fact_Invoice_InventoryAnalysis.ModuleTypeKey
+	toColumn: dim_ModuleType.ModuleTypeKey
+
+relationship 3c6bb569-b694-722a-c884-5666b51dff5b
+	crossFilteringBehavior: bothDirections
+	fromColumn: Fact_Invoice_InventoryAnalysis.InvoiceDate
+	toColumn: dim_Date.Date
+
+relationship 5f3ab259-8a28-84f5-8651-006367e05bc0
+	fromColumn: Fact_Invoice_InventoryAnalysis.Branch
+	toColumn: dim_BranchLocation.BranchID
+
+relationship fe0a5c9e-ca35-6643-014b-1deb5c68e035
+	fromColumn: Fact_Part_Transactions.Branch
+	toColumn: dim_BranchLocation.BranchID
+
+relationship 9f743a3f-d96b-63df-cdd5-c8471b417c01
+	fromColumn: Fact_Invoice_InventoryAnalysis.PaymentMethodKey
+	toColumn: dim_PaymentMethod.PaymentMethodKey
+

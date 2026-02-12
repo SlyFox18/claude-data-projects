@@ -1,0 +1,36 @@
+table dim_Source
+	lineageTag: 21189984-b7a9-4c25-b300-52f641c84b23
+
+	column SourceKey
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: bbe75c44-c342-43c6-8462-4217709c3bf9
+		summarizeBy: none
+		sourceColumn: SourceKey
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column Source
+		dataType: string
+		lineageTag: ef176f97-71d3-4fd8-a0e9-08d69f0c3f8e
+		summarizeBy: none
+		sourceColumn: Source
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dim_Source = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-gxnyznhdptpenfw724g3o5sjzm.datawarehouse.fabric.microsoft.com", "LH_Master_Data"),
+				    dbo_dim_Source = Source{[Schema="dbo",Item="dim_Source"]}[Data]
+				in
+				    dbo_dim_Source
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

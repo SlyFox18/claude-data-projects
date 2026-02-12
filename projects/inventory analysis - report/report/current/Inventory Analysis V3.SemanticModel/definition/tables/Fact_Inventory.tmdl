@@ -1,0 +1,490 @@
+table Fact_Inventory
+	lineageTag: 50939ea0-e838-453b-9806-1797f6a1c4e8
+
+	column FranchiseKey
+		dataType: int64
+		formatString: 0
+		lineageTag: 3b50c031-86bc-4c26-b1d6-e7484510c89d
+		summarizeBy: none
+		sourceColumn: FranchiseKey
+
+		annotation SummarizationSetBy = Automatic
+
+	column PartNumberKey
+		dataType: int64
+		formatString: 0
+		lineageTag: 9e1e7a90-5ed8-46f1-9e06-bd0642dbc0f7
+		summarizeBy: none
+		sourceColumn: PartNumberKey
+
+		annotation SummarizationSetBy = Automatic
+
+	column SourceKey
+		dataType: int64
+		formatString: 0
+		lineageTag: 5dbf741e-c55c-49cb-842e-7094919ec342
+		summarizeBy: none
+		sourceColumn: SourceKey
+
+		annotation SummarizationSetBy = Automatic
+
+	column SLCKey
+		dataType: int64
+		formatString: 0
+		lineageTag: 2ba6264f-12bc-454e-9f8c-9639a89ccc3c
+		summarizeBy: none
+		sourceColumn: SLCKey
+
+		annotation SummarizationSetBy = Automatic
+
+	column DealerGroupKey
+		dataType: int64
+		formatString: 0
+		lineageTag: 8b50d2a1-4e4c-4cad-bcdb-bc7c69c0ea00
+		summarizeBy: none
+		sourceColumn: DealerGroupKey
+
+		annotation SummarizationSetBy = Automatic
+
+	column CommodityCodeKey
+		dataType: int64
+		formatString: 0
+		lineageTag: 843d62dd-3b4d-4834-91ab-3e70b5e93081
+		summarizeBy: none
+		sourceColumn: CommodityCodeKey
+
+		annotation SummarizationSetBy = Automatic
+
+	column VendorCodeKey
+		dataType: int64
+		formatString: 0
+		lineageTag: 60f6a62b-8969-4c48-be77-f6526ac77ea9
+		summarizeBy: none
+		sourceColumn: VendorCodeKey
+
+		annotation SummarizationSetBy = Automatic
+
+	column InventoryCost
+		dataType: double
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: ce47203b-c211-4cb0-9754-97a165fb4976
+		summarizeBy: sum
+		sourceColumn: InventoryCost
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	column QuantityOnHand
+		dataType: double
+		formatString: 0
+		lineageTag: ab5d55ec-7dbe-4e71-9199-703a9584b387
+		summarizeBy: sum
+		sourceColumn: QuantityOnHand
+
+		annotation SummarizationSetBy = Automatic
+
+	column Description
+		dataType: string
+		lineageTag: b5d2cd10-8bf7-404a-ab52-53c3558309b5
+		summarizeBy: none
+		sourceColumn: Description
+
+		annotation SummarizationSetBy = Automatic
+
+	column BinQty
+		dataType: double
+		formatString: 0
+		lineageTag: c2768f11-4206-4d63-82f7-c6601b999718
+		summarizeBy: sum
+		sourceColumn: BinQty
+
+		annotation SummarizationSetBy = Automatic
+
+	column SellPrice1
+		dataType: double
+		lineageTag: 90b3dc9b-3496-4b09-b054-f8448b7f235b
+		summarizeBy: sum
+		sourceColumn: SellPrice1
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column Cost
+		dataType: double
+		lineageTag: f16ac38a-8625-4d7b-9798-1656aeb449a9
+		summarizeBy: sum
+		sourceColumn: Cost
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column Current12MoSales
+		dataType: double
+		formatString: 0
+		lineageTag: d3d1a4ff-a722-4a34-91d6-669d116218fe
+		summarizeBy: sum
+		sourceColumn: Current12MoSales
+
+		annotation SummarizationSetBy = Automatic
+
+	column BackOrderQty
+		dataType: double
+		lineageTag: 49ff51ad-9d16-4608-b2b4-10953f844475
+		summarizeBy: sum
+		sourceColumn: BackOrderQty
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column PartNumber
+		dataType: string
+		lineageTag: 688b239d-bb5a-4d13-997c-66969678aefc
+		summarizeBy: none
+		sourceColumn: PartNumber
+
+		annotation SummarizationSetBy = Automatic
+
+	column DateLastRequested
+		dataType: dateTime
+		formatString: Short Date
+		lineageTag: 6536ece4-56f3-4348-a5ab-6a3deeebd1e1
+		summarizeBy: none
+		sourceColumn: DateLastRequested
+
+		changedProperty = DataType
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column DateCreated
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: 11730f9c-32f7-404c-9172-a236e1cc4166
+		summarizeBy: none
+		sourceColumn: DateCreated
+
+		annotation SummarizationSetBy = Automatic
+
+	column InventoryCategory = ```
+			
+			VAR TodayDate = TODAY()
+			VAR DateRequested = Fact_Inventory[DateLastRequested]
+			VAR SalesQty = Fact_Inventory[Current12MoSales]
+			VAR QtyOnHand = Fact_Inventory[QuantityOnHand]
+			VAR InventoryCost = Fact_Inventory[InventoryCost]
+			VAR ExcessQty = QtyOnHand - SalesQty
+			
+			RETURN
+			    SWITCH (
+			        TRUE(),
+			
+			        // Exclude any rows with no cost or no inventory
+			        InventoryCost <= 0 || QtyOnHand <= 0, "Uncategorized",
+			
+			        // Excess first, but only if there are some sales
+			        SalesQty > 0 && ExcessQty > 0, "Excess",
+			
+			        // Now assign Zero Sales based on DateLastRequested
+			        SalesQty = 0 && DateRequested >= TodayDate - 365, "ZeroSales12",
+			        SalesQty = 0 && DateRequested >= TodayDate - 730, "ZeroSales24",
+			        SalesQty = 0 && DateRequested >= TodayDate - 1095, "ZeroSales36",
+			
+			        // Then Active
+			        SalesQty > 0 && DateRequested >= TodayDate - 365, "Active",
+			
+			        // Catch anything else
+			        "Uncategorized"
+			    )
+			
+			```
+		lineageTag: c2d2e4a9-1e85-4a44-b0da-fc7f160bea7f
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	column ExcessQtyFlag =
+			
+			VAR _BinQty = Fact_Inventory[BinQty]
+			VAR _SalesQty = Fact_Inventory[Current12MoSales]
+			RETURN
+			    IF(
+			        _BinQty > _SalesQty && _SalesQty > 0,
+			        _BinQty - _SalesQty,
+			        BLANK()
+			    )
+		formatString: 0
+		lineageTag: 3156bd9c-1701-4ca0-9bbb-0b3be830a3b3
+		summarizeBy: sum
+
+		annotation SummarizationSetBy = Automatic
+
+	column ExcessInventoryCostPerRow =
+			
+			VAR _ExcessQty = [ExcessQtyFlag]
+			VAR _UnitCost = DIVIDE([InventoryCost], [QuantityOnHand])
+			RETURN IF(NOT ISBLANK(_ExcessQty), _ExcessQty * _UnitCost)
+		lineageTag: 0d9df473-73f0-4640-968f-33fa3a3f6f37
+		summarizeBy: sum
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column InventoryStatusCategory = ```
+			
+			VAR TodayDate = TODAY()
+			VAR DateLast = Fact_Inventory[DateLastRequested]
+			VAR OnHand = Fact_Inventory[QuantityOnHand]
+			VAR Bin = Fact_Inventory[BinQty]
+			VAR Sales = Fact_Inventory[Current12MoSales]
+			
+			RETURN
+			    SWITCH(
+			        TRUE(),
+			        // No sales in last 36 months (i.e., last sale was more than 3 years ago)
+			        OnHand > 0 && DateLast < TodayDate - 1095, "No Sales - 36 Months",
+			        // No sales in last 24 months
+			        OnHand > 0 && DateLast < TodayDate - 730, "No Sales - 24 Months",
+			        // No sales in last 12 months
+			        OnHand > 0 && DateLast < TodayDate - 365, "No Sales - 12 Months",
+			        // Excess Stock
+			        Sales > 0 && Bin > Sales && OnHand > 0, "Excess Stock",
+			        BLANK()
+			    )
+			
+			```
+		lineageTag: 6e40f07c-c1f0-4395-b2cc-0d375f349b4c
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	column ExcessQty = ```
+			
+			VAR _OnHand = Fact_Inventory[QuantityOnHand]
+			VAR _Sales12Mo = Fact_Inventory[Current12MoSales]
+			VAR _EstExcess = _OnHand - _Sales12Mo
+			RETURN
+			IF(
+			    _OnHand > 0 &&
+			    _Sales12Mo > 0 &&
+			    _EstExcess > 0,
+			    _EstExcess,
+			    BLANK()
+			)
+			
+			```
+		formatString: 0
+		lineageTag: 1f245a12-0d70-4b13-bc8d-45d52a988586
+		summarizeBy: sum
+
+		annotation SummarizationSetBy = Automatic
+
+	column ExcessLevel = ```
+			
+			SWITCH(
+			    TRUE(),
+			    Fact_Inventory[ExcessQty] >= 50, "High",
+			    Fact_Inventory[ExcessQty] >= 10, "Medium",
+			    Fact_Inventory[ExcessQty] > 0, "Low",
+			    BLANK()
+			)
+			
+			```
+		lineageTag: 5d8e694f-6fb4-4217-82f6-49258d12b7da
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	column ExcessStockFlag =
+			
+			IF(Fact_Inventory[ExcessQty] > 0, 1, 0)
+		formatString: 0
+		lineageTag: b1f4adbb-a305-42aa-aeeb-c78f54cac4a0
+		summarizeBy: sum
+
+		annotation SummarizationSetBy = Automatic
+
+	column DeadStockFlag =
+			
+			VAR TodayDate = TODAY()
+			VAR Last12Start = EDATE(TodayDate, -12)
+			VAR Last24Start = EDATE(TodayDate, -24)
+			VAR Last36Start = EDATE(TodayDate, -36)
+			VAR LastRequested = Fact_Inventory[DateLastRequested]
+			VAR QtyOnHand = Fact_Inventory[QuantityOnHand]
+			
+			RETURN
+			SWITCH(
+			    TRUE(),
+			    QtyOnHand > 0 && LastRequested <= Last12Start && LastRequested > Last24Start, 1,   // 12M
+			    QtyOnHand > 0 && LastRequested <= Last24Start && LastRequested > Last36Start, 2,   // 24M
+			    QtyOnHand > 0 && LastRequested <= Last36Start, 3,                                  // 36M
+			    0
+			)
+		formatString: 0
+		lineageTag: 5a7afcd9-5a5d-4ed7-9584-ace8c6073864
+		summarizeBy: sum
+
+		annotation SummarizationSetBy = Automatic
+
+	column SalesCategory = ```
+			
+			VAR _DateLast = Fact_Inventory[DateLastRequested]
+			VAR _Sales12Mo = Fact_Inventory[Current12MoSales]
+			VAR _Today = TODAY()
+			
+			RETURN
+			SWITCH(
+			    TRUE(),
+			    
+			    // Case 1: No demand history (blank or sentinel date)
+			    ISBLANK(_DateLast) || _DateLast = DATE(1900,1,1),
+			        "Active Stock No Demand",
+			    
+			    // Case 2: Has sales in last 12 months
+			    NOT ISBLANK(_Sales12Mo) && _Sales12Mo > 0,
+			        "Active",
+			    
+			    // Case 3: Requested in last 12 months (even if no sales)
+			    _DateLast >= _Today - 365,
+			        "Active",
+			    
+			    // Case 4: Last requested 12-24 months ago
+			    _DateLast >= _Today - 730,
+			        "Zero Sales 12",
+			    
+			    // Case 5: Last requested 24-36 months ago
+			    _DateLast >= _Today - 1095,
+			        "Zero Sales 24",
+			    
+			    // Case 6: Last requested 36-48 months ago
+			    _DateLast >= _Today - 1460,
+			        "Zero Sales 36",
+			    
+			    // Case 7: Last requested 48+ months ago
+			    _DateLast < _Today - 1460,
+			        "Zero Sales 48 Plus",
+			    
+			    // DEFAULT CASE - catches everything else
+			    "Uncategorized"
+			)
+			```
+		lineageTag: d191a720-15d9-4e02-96e2-5f242417d000
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	column BranchKey
+		dataType: int64
+		formatString: 0
+		lineageTag: f9a8d487-83df-40fe-96c8-16d3541d69e7
+		summarizeBy: none
+		sourceColumn: BranchKey
+
+		annotation SummarizationSetBy = Automatic
+
+	column ListPrice
+		dataType: double
+		lineageTag: 7be8f302-40ad-4e9c-91e0-9614a694223c
+		summarizeBy: sum
+		sourceColumn: ListPrice
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column Current12MoDollars
+		dataType: double
+		lineageTag: 9cf585e8-fbba-4f52-9b8f-d583177b956d
+		summarizeBy: sum
+		sourceColumn: Current12MoDollars
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column Returnable
+		dataType: string
+		lineageTag: 1d4551fe-b709-46c3-ae87-5e70a73eaaa8
+		summarizeBy: none
+		sourceColumn: Returnable
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Is Returnable' =
+			
+			SWITCH(
+			    TRUE(),
+			    Fact_Inventory[Returnable] = "R", "Yes",
+			    Fact_Inventory[Returnable] = "N", "No",
+			    Fact_Inventory[Returnable] = "D", "D",
+			    BLANK()
+			)
+		lineageTag: 177df22a-644c-488b-8b05-4da28221e485
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	column Previous12MoSales
+		dataType: double
+		lineageTag: a3fd82ff-2f0c-45c8-a32c-6b4acfc9d7ea
+		summarizeBy: sum
+		sourceColumn: Previous12MoSales
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column Previous12MoDollars
+		dataType: double
+		lineageTag: 09d990bd-7ef2-43ae-9930-4be102d20efe
+		summarizeBy: sum
+		sourceColumn: Previous12MoDollars
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column PackageQty
+		dataType: int64
+		formatString: 0
+		lineageTag: 0b8415b3-6511-4fc2-9f92-6431a3aa9e71
+		summarizeBy: sum
+		sourceColumn: PackageQty
+
+		annotation SummarizationSetBy = Automatic
+
+	column CategoryIcon =
+			
+			SWITCH([SalesCategory],
+			    "Active", "✅",
+			    "Active Stock No Demand", "⚠️",
+			    "Zero Sales 12", "📊",
+			    "Zero Sales 24", "📉",
+			    "Zero Sales 36", "⚠️",
+			    "Zero Sales 48 Plus", "🚨",
+			    "Excess", "📦"
+			) & " " & [SalesCategory]
+		lineageTag: 756db110-d463-4b7f-8412-47e4655d29ef
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	partition Fact_Inventory = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-gxnyznhdptpenfw724g3o5sjzm.datawarehouse.fabric.microsoft.com", "LH_Master_Data"),
+				    dbo_Fact_Inventory = Source{[Schema="dbo",Item="Fact_Inventory"]}[Data]
+				in
+				    dbo_Fact_Inventory
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

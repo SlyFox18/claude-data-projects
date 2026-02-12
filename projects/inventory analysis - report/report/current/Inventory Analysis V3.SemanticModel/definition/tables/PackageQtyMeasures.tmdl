@@ -1,0 +1,764 @@
+table PackageQtyMeasures
+	lineageTag: 3307ccbb-d31b-4c58-a328-6f37b9cc9957
+
+	measure 'TrueActiveInventory - Packaged' = ```
+			
+			VAR ActivePackaged = 
+			    CALCULATE(
+			        [TotalInventory_Active],
+			        Fact_Inventory[PackageQty] > 1
+			    )
+			VAR ExcessPackaged = 
+			    SUMX(
+			        FILTER(
+			            Fact_Inventory,
+			            Fact_Inventory[Current12MoSales] > 0
+			                && Fact_Inventory[QuantityOnHand] > Fact_Inventory[Current12MoSales]
+			                && Fact_Inventory[QuantityOnHand] > 0
+			                && Fact_Inventory[InventoryCost] > 0
+			                && Fact_Inventory[PackageQty] > 1
+			        ),
+			        VAR _ExcessQty = Fact_Inventory[QuantityOnHand] - Fact_Inventory[Current12MoSales]
+			        VAR _UnitCost = DIVIDE(Fact_Inventory[InventoryCost], Fact_Inventory[QuantityOnHand])
+			        RETURN _ExcessQty * _UnitCost
+			    )
+			RETURN ActivePackaged - ExcessPackaged
+			```
+		lineageTag: 18a1eecc-cfb5-4f87-9690-6ae1da71d83b
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'TrueActiveInventory - Single' = ```
+			
+			VAR ActiveSingle = 
+			    CALCULATE(
+			        [TotalInventory_Active],
+			        OR(
+			            Fact_Inventory[PackageQty] = 1,
+			            ISBLANK(Fact_Inventory[PackageQty])
+			        )
+			    )
+			VAR ExcessSingle = 
+			    SUMX(
+			        FILTER(
+			            Fact_Inventory,
+			            Fact_Inventory[Current12MoSales] > 0
+			                && Fact_Inventory[QuantityOnHand] > Fact_Inventory[Current12MoSales]
+			                && Fact_Inventory[QuantityOnHand] > 0
+			                && Fact_Inventory[InventoryCost] > 0
+			                && (Fact_Inventory[PackageQty] = 1 || ISBLANK(Fact_Inventory[PackageQty]))
+			        ),
+			        VAR _ExcessQty = Fact_Inventory[QuantityOnHand] - Fact_Inventory[Current12MoSales]
+			        VAR _UnitCost = DIVIDE(Fact_Inventory[InventoryCost], Fact_Inventory[QuantityOnHand])
+			        RETURN _ExcessQty * _UnitCost
+			    )
+			RETURN ActiveSingle - ExcessSingle
+			```
+		lineageTag: f4f9a894-7c10-4b0b-8c4a-171599b6df0b
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'TrueActiveInventory - Package %' =
+			
+			DIVIDE(
+			    [TrueActiveInventory - Packaged],
+			    [TrueActiveInventory],
+			    0
+			)
+		lineageTag: 7bf4c00f-d673-4810-8ebf-7b1432f079c8
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'TrueActiveInventory - Tooltip' =
+			
+			VAR Total = [TrueActiveInventory]
+			VAR Packaged = [TrueActiveInventory - Packaged]
+			VAR Single = [TrueActiveInventory - Single]
+			VAR PackagePct = [TrueActiveInventory - Package %]
+			RETURN
+			    IF(
+			        ISBLANK(Total) || Total = 0,
+			        BLANK(),
+			        "Total: " & FORMAT(Total, "$#,##0") & UNICHAR(10) &
+			        "In Packages: " & FORMAT(Packaged, "$#,##0") & " (" & FORMAT(PackagePct, "0.0%") & ")" & UNICHAR(10) &
+			        "Single Units: " & FORMAT(Single, "$#,##0") & " (" & FORMAT(1 - PackagePct, "0.0%") & ")"
+			    )
+		lineageTag: 969997e2-7639-42db-9b14-ab74344abcf2
+
+	measure 'TotalInventory_ZeroSales12 - Packaged' =
+			
+			CALCULATE(
+			    [Total Inventory],
+			    Fact_Inventory[SalesCategory] = "Zero Sales 12",
+			    Fact_Inventory[PackageQty] > 1
+			)
+		lineageTag: 93c74e58-5a18-4dfe-9f2c-aecc9914f656
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'TotalInventory_ZeroSales12 - Single' =
+			
+			CALCULATE(
+			    [Total Inventory],
+			    Fact_Inventory[SalesCategory] = "Zero Sales 12",
+			    OR(
+			        Fact_Inventory[PackageQty] = 1,
+			        ISBLANK(Fact_Inventory[PackageQty])
+			    )
+			)
+		lineageTag: 5bd03872-1b7b-494b-a6c1-2fae1f519a47
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'TotalInventory_ZeroSales12 - Package %' =
+			
+			DIVIDE(
+			    [TotalInventory_ZeroSales12 - Packaged],
+			    [TotalInventory_ZeroSales12],
+			    0
+			)
+		lineageTag: d6844129-1a91-4231-8d8f-5c81a5c9a6d6
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'TotalInventory_ZeroSales12 - Tooltip' = ```
+			
+			VAR Total = [TotalInventory_ZeroSales12]
+			VAR Packaged = [TotalInventory_ZeroSales12 - Packaged]
+			VAR Single = [TotalInventory_ZeroSales12 - Single]
+			VAR PackagePct = [TotalInventory_ZeroSales12 - Package %]
+			RETURN
+			    IF(
+			        ISBLANK(Total) || Total = 0,
+			        BLANK(),
+			        "Total: " & FORMAT(Total, "$#,##0") & UNICHAR(10) &
+			        "In Packages: " & FORMAT(Packaged, "$#,##0") & " (" & FORMAT(PackagePct, "0.0%") & ")" & UNICHAR(10) &
+			        "Single Units: " & FORMAT(Single, "$#,##0") & " (" & FORMAT(1 - PackagePct, "0.0%") & ")"
+			    )
+			
+			```
+		lineageTag: 7c8f22a1-7535-484c-87ee-7cb3d8c8331c
+
+	measure 'TotalInventory_ZeroSales24 - Packaged' =
+			
+			CALCULATE(
+			    [Total Inventory],
+			    Fact_Inventory[SalesCategory] = "Zero Sales 24",
+			    Fact_Inventory[PackageQty] > 1
+			)
+		lineageTag: 67789bd9-e577-4a35-b886-c2b423491c99
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'TotalInventory_ZeroSales24 - Single' =
+			
+			CALCULATE(
+			    [Total Inventory],
+			    Fact_Inventory[SalesCategory] = "Zero Sales 24",
+			    OR(
+			        Fact_Inventory[PackageQty] = 1,
+			        ISBLANK(Fact_Inventory[PackageQty])
+			    )
+			)
+		lineageTag: 7defb15d-4a64-417d-b572-637f0848913a
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'TotalInventory_ZeroSales24 - Package %' =
+			
+			DIVIDE(
+			    [TotalInventory_ZeroSales24 - Packaged],
+			    [TotalInventory_ZeroSales24],
+			    0
+			)
+		lineageTag: 07cb6176-2e7d-4810-9056-e9f083e7fb53
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'TotalInventory_ZeroSales24 - Tooltip' =
+			
+			VAR Total = [TotalInventory_ZeroSales24]
+			VAR Packaged = [TotalInventory_ZeroSales24 - Packaged]
+			VAR Single = [TotalInventory_ZeroSales24 - Single]
+			VAR PackagePct = [TotalInventory_ZeroSales24 - Package %]
+			RETURN
+			    IF(
+			        ISBLANK(Total) || Total = 0,
+			        BLANK(),
+			        "Total: " & FORMAT(Total, "$#,##0") & UNICHAR(10) &
+			        "In Packages: " & FORMAT(Packaged, "$#,##0") & " (" & FORMAT(PackagePct, "0.0%") & ")" & UNICHAR(10) &
+			        "Single Units: " & FORMAT(Single, "$#,##0") & " (" & FORMAT(1 - PackagePct, "0.0%") & ")"
+			    )
+		lineageTag: 5981c92b-fbc7-471b-932a-12bdaf1c827f
+
+	measure 'TotalInventory_ZeroSales36 - Packaged' =
+			
+			CALCULATE(
+			    [Total Inventory],
+			    Fact_Inventory[SalesCategory] = "Zero Sales 36",
+			    Fact_Inventory[PackageQty] > 1
+			)
+		lineageTag: d0f2b7d0-6b36-43f5-a0fb-2c072a4c13cf
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'TotalInventory_ZeroSales36 - Single' =
+			
+			CALCULATE(
+			    [Total Inventory],
+			    Fact_Inventory[SalesCategory] = "Zero Sales 36",
+			    OR(
+			        Fact_Inventory[PackageQty] = 1,
+			        ISBLANK(Fact_Inventory[PackageQty])
+			    )
+			)
+		lineageTag: 82078224-9b99-4aa3-a096-30c2785c8a60
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'TotalInventory_ZeroSales36 - Package %' =
+			
+			DIVIDE(
+			    [TotalInventory_ZeroSales36 - Packaged],
+			    [TotalInventory_ZeroSales36],
+			    0
+			)
+		lineageTag: e64558d6-36fa-41df-afcb-aeeea754d17e
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'TotalInventory_ZeroSales36 - Tooltip' =
+			
+			VAR Total = [TotalInventory_ZeroSales36]
+			VAR Packaged = [TotalInventory_ZeroSales36 - Packaged]
+			VAR Single = [TotalInventory_ZeroSales36 - Single]
+			VAR PackagePct = [TotalInventory_ZeroSales36 - Package %]
+			RETURN
+			    IF(
+			        ISBLANK(Total) || Total = 0,
+			        BLANK(),
+			        "Total: " & FORMAT(Total, "$#,##0") & UNICHAR(10) &
+			        "In Packages: " & FORMAT(Packaged, "$#,##0") & " (" & FORMAT(PackagePct, "0.0%") & ")" & UNICHAR(10) &
+			        "Single Units: " & FORMAT(Single, "$#,##0") & " (" & FORMAT(1 - PackagePct, "0.0%") & ")"
+			    )
+		lineageTag: 94fdf119-2447-46f4-b217-627d5a6dd841
+
+	measure 'ExcessStockInventoryCost - Packaged' =
+			
+			SUMX(
+			    FILTER(
+			        Fact_Inventory,
+			        Fact_Inventory[Current12MoSales] > 0
+			            && Fact_Inventory[QuantityOnHand] > Fact_Inventory[Current12MoSales]
+			            && Fact_Inventory[QuantityOnHand] > 0
+			            && Fact_Inventory[InventoryCost] > 0
+			            && Fact_Inventory[PackageQty] > 1
+			    ),
+			    VAR _ExcessQty = Fact_Inventory[QuantityOnHand] - Fact_Inventory[Current12MoSales]
+			    VAR _UnitCost = DIVIDE(Fact_Inventory[InventoryCost], Fact_Inventory[QuantityOnHand])
+			    RETURN _ExcessQty * _UnitCost
+			)
+		lineageTag: ecf6c625-f705-4725-84fd-c8462656b998
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'ExcessStockInventoryCost - Single' =
+			
+			SUMX(
+			    FILTER(
+			        Fact_Inventory,
+			        Fact_Inventory[Current12MoSales] > 0
+			            && Fact_Inventory[QuantityOnHand] > Fact_Inventory[Current12MoSales]
+			            && Fact_Inventory[QuantityOnHand] > 0
+			            && Fact_Inventory[InventoryCost] > 0
+			            && (Fact_Inventory[PackageQty] = 1 || ISBLANK(Fact_Inventory[PackageQty]))
+			    ),
+			    VAR _ExcessQty = Fact_Inventory[QuantityOnHand] - Fact_Inventory[Current12MoSales]
+			    VAR _UnitCost = DIVIDE(Fact_Inventory[InventoryCost], Fact_Inventory[QuantityOnHand])
+			    RETURN _ExcessQty * _UnitCost
+			)
+		lineageTag: f8ddf4d3-d114-46e3-9bbf-a292c0eef3cc
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'ExcessStockInventoryCost - Package %' =
+			
+			DIVIDE(
+			    [ExcessStockInventoryCost - Packaged],
+			    [ExcessStockInventoryCost],
+			    0
+			)
+		lineageTag: 69917f21-3f7b-45f1-bc88-449858374bf8
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'ExcessStockInventoryCost - Tooltip' =
+			
+			VAR Total = [ExcessStockInventoryCost]
+			VAR Packaged = [ExcessStockInventoryCost - Packaged]
+			VAR Single = [ExcessStockInventoryCost - Single]
+			VAR PackagePct = [ExcessStockInventoryCost - Package %]
+			RETURN
+			    IF(
+			        ISBLANK(Total) || Total = 0,
+			        BLANK(),
+			        "Total: " & FORMAT(Total, "$#,##0") & UNICHAR(10) &
+			        "In Packages: " & FORMAT(Packaged, "$#,##0") & " (" & FORMAT(PackagePct, "0.0%") & ")" & UNICHAR(10) &
+			        "Single Units: " & FORMAT(Single, "$#,##0") & " (" & FORMAT(1 - PackagePct, "0.0%") & ")"
+			    )
+		lineageTag: 2e5ce927-06fd-4802-95cf-0aec98eadd93
+
+	measure 'Total Inventory - Packaged' =
+			
+			CALCULATE(
+			    SUM(Fact_Inventory[InventoryCost]),
+			    Fact_Inventory[PackageQty] > 1
+			)
+		lineageTag: 132fe5a5-b1eb-42c2-a420-f2bfec972d5e
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Total Inventory - Single' =
+			
+			CALCULATE(
+			    SUM(Fact_Inventory[InventoryCost]),
+			    OR(
+			        Fact_Inventory[PackageQty] = 1,
+			        ISBLANK(Fact_Inventory[PackageQty])
+			    )
+			)
+		lineageTag: 9468f2e3-d2c9-406b-b4ff-742597bc44c9
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Total Inventory - Package %' =
+			
+			DIVIDE(
+			    [Total Inventory - Packaged],
+			    [Total Inventory],
+			    0
+			)
+		lineageTag: 5e60281e-e0fe-43ea-a981-43704b8b64a4
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Total Inventory - Tooltip' =
+			
+			VAR Total = [Total Inventory]
+			VAR Packaged = [Total Inventory - Packaged]
+			VAR Single = [Total Inventory - Single]
+			VAR PackagePct = [Total Inventory - Package %]
+			RETURN
+			    IF(
+			        ISBLANK(Total) || Total = 0,
+			        BLANK(),
+			        "Total: " & FORMAT(Total, "$#,##0") & UNICHAR(10) &
+			        "In Packages: " & FORMAT(Packaged, "$#,##0") & " (" & FORMAT(PackagePct, "0.0%") & ")" & UNICHAR(10) &
+			        "Single Units: " & FORMAT(Single, "$#,##0") & " (" & FORMAT(1 - PackagePct, "0.0%") & ")"
+			    )
+		lineageTag: 72769ddf-d213-4b2c-945c-3bd098c0d961
+
+	measure 'TrueActiveInventory - Tooltip HTML' =
+			
+			VAR Total = [TrueActiveInventory]
+			VAR Packaged = [TrueActiveInventory - Packaged]
+			VAR Single = [TrueActiveInventory - Single]
+			VAR PackagePct = [TrueActiveInventory - Package %]
+			VAR SinglePct = 1 - PackagePct
+			RETURN
+			IF(
+			    ISBLANK(Total) || Total = 0,
+			    BLANK(),
+			    "<div style='font-family: Segoe UI; padding: 12px; background: #ffffff; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);'>
+			        <div style='font-size: 11px; font-weight: 600; color: #2d5f3f; letter-spacing: 0.3px; margin-bottom: 8px; border-bottom: 1px solid #e0e0e0; padding-bottom: 6px;'>
+			            ACTIVE INVENTORY BREAKDOWN
+			        </div>
+			        <div style='margin-bottom: 10px;'>
+			            <div style='font-size: 10px; color: #666; margin-bottom: 2px;'>Total Value</div>
+			            <div style='font-size: 16px; font-weight: 700; color: #1a1a1a;'>" & FORMAT(Total, "$#,##0") & "</div>
+			        </div>
+			        <div style='display: flex; gap: 12px;'>
+			            <div style='flex: 1; padding: 8px; background: #fff3e0; border-radius: 3px; border-left: 3px solid #f57c00;'>
+			                <div style='font-size: 9px; font-weight: 600; color: #e65100; letter-spacing: 0.3px; margin-bottom: 3px;'>📦 IN PACKAGES</div>
+			                <div style='font-size: 13px; font-weight: 700; color: #f57c00;'>" & FORMAT(Packaged, "$#,##0") & "</div>
+			                <div style='font-size: 10px; color: #e65100; margin-top: 2px;'>" & FORMAT(PackagePct, "0.0%") & " of total</div>
+			            </div>
+			            <div style='flex: 1; padding: 8px; background: #e8f5e9; border-radius: 3px; border-left: 3px solid #4caf50;'>
+			                <div style='font-size: 9px; font-weight: 600; color: #2e7d32; letter-spacing: 0.3px; margin-bottom: 3px;'>✓ SINGLE UNITS</div>
+			                <div style='font-size: 13px; font-weight: 700; color: #4caf50;'>" & FORMAT(Single, "$#,##0") & "</div>
+			                <div style='font-size: 10px; color: #2e7d32; margin-top: 2px;'>" & FORMAT(SinglePct, "0.0%") & " of total</div>
+			            </div>
+			        </div>
+			        <div style='margin-top: 8px; padding: 6px; background: #f5f5f5; border-radius: 3px; font-size: 9px; color: #666; line-height: 1.3;'>
+			            <span style='font-weight: 600;'>Note:</span> Package inventory represents multi-unit sets with limited liquidity
+			        </div>
+			    </div>"
+			)
+		lineageTag: 48064a4d-645b-431e-9214-33740df1eed0
+
+	measure 'TrueActiveInventory - Tooltip HTML 2' =
+			
+			VAR Total = [TrueActiveInventory]
+			VAR Packaged = [TrueActiveInventory - Packaged]
+			VAR Single = [TrueActiveInventory - Single]
+			VAR PackagePct = [TrueActiveInventory - Package %]
+			VAR SinglePct = 1 - PackagePct
+			RETURN
+			IF(
+			    ISBLANK(Total) || Total = 0,
+			    BLANK(),
+			    "<div style='font-family: Segoe UI; padding: 12px; background: #ffffff; border-radius: 4px;'>
+			        <div style='font-size: 10px; font-weight: 600; color: #2d5f3f; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;'>
+			            Active Inventory Breakdown
+			        </div>
+			        <table style='width: 100%; border-collapse: collapse; font-size: 11px;'>
+			            <tr style='background: #f5f5f5; border-bottom: 1px solid #e0e0e0;'>
+			                <th style='text-align: left; padding: 6px; font-weight: 600; color: #666; font-size: 9px;'>TYPE</th>
+			                <th style='text-align: right; padding: 6px; font-weight: 600; color: #666; font-size: 9px;'>VALUE</th>
+			                <th style='text-align: right; padding: 6px; font-weight: 600; color: #666; font-size: 9px;'>% OF TOTAL</th>
+			            </tr>
+			            <tr style='border-bottom: 1px solid #e0e0e0;'>
+			                <td style='padding: 8px; font-weight: 600; color: #1a1a1a;'>Total</td>
+			                <td style='text-align: right; padding: 8px; font-weight: 700; color: #1a1a1a;'>" & FORMAT(Total, "$#,##0") & "</td>
+			                <td style='text-align: right; padding: 8px; color: #666;'>100.0%</td>
+			            </tr>
+			            <tr style='background: #fff3e0;'>
+			                <td style='padding: 8px;'><span style='color: #f57c00;'>📦</span> In Packages</td>
+			                <td style='text-align: right; padding: 8px; font-weight: 600; color: #f57c00;'>" & FORMAT(Packaged, "$#,##0") & "</td>
+			                <td style='text-align: right; padding: 8px; font-weight: 600; color: #f57c00;'>" & FORMAT(PackagePct, "0.0%") & "</td>
+			            </tr>
+			            <tr style='background: #e8f5e9;'>
+			                <td style='padding: 8px;'><span style='color: #4caf50;'>✓</span> Single Units</td>
+			                <td style='text-align: right; padding: 8px; font-weight: 600; color: #4caf50;'>" & FORMAT(Single, "$#,##0") & "</td>
+			                <td style='text-align: right; padding: 8px; font-weight: 600; color: #4caf50;'>" & FORMAT(SinglePct, "0.0%") & "</td>
+			            </tr>
+			        </table>
+			    </div>"
+			)
+		lineageTag: 10320bba-e147-4bf5-96bb-291f5dc5b1fb
+
+	measure 'TrueActiveInventory - Tooltip HTML 3' =
+			
+			VAR Total = [TrueActiveInventory]
+			VAR Packaged = [TrueActiveInventory - Packaged]
+			VAR Single = [TrueActiveInventory - Single]
+			VAR PackagePct = [TrueActiveInventory - Package %]
+			VAR SinglePct = 1 - PackagePct
+			RETURN
+			IF(
+			    ISBLANK(Total) || Total = 0,
+			    BLANK(),
+			    "<div style='font-family: Segoe UI; padding: 10px; background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%); border-radius: 4px; border: 1px solid #e0e0e0;'>
+			        <div style='font-size: 13px; font-weight: 700; color: #1a1a1a; margin-bottom: 8px;'>" & FORMAT(Total, "$#,##0") & "</div>
+			        <div style='font-size: 10px; line-height: 1.6;'>
+			            <div style='margin-bottom: 3px;'>
+			                <span style='background: #fff3e0; padding: 2px 6px; border-radius: 2px; color: #f57c00; font-weight: 600;'>📦 " & FORMAT(PackagePct, "0.0%") & "</span>
+			                <span style='color: #666; margin-left: 6px;'>" & FORMAT(Packaged, "$#,##0") & "</span>
+			            </div>
+			            <div>
+			                <span style='background: #e8f5e9; padding: 2px 6px; border-radius: 2px; color: #4caf50; font-weight: 600;'>✓ " & FORMAT(SinglePct, "0.0%") & "</span>
+			                <span style='color: #666; margin-left: 6px;'>" & FORMAT(Single, "$#,##0") & "</span>
+			            </div>
+			        </div>
+			    </div>"
+			)
+		lineageTag: 58c75f8e-8643-4f8c-8032-29a79cc4cd75
+
+	measure 'TrueActiveInventory - Tooltip HTML 4' = ```
+			
+			VAR Total = [TrueActiveInventory]
+			VAR Packaged = [TrueActiveInventory - Packaged]
+			VAR Single = [TrueActiveInventory - Single]
+			VAR PackagePct = [TrueActiveInventory - Package %]
+			VAR SinglePct = 1 - PackagePct
+			RETURN
+			IF(
+			    ISBLANK(Total) || Total = 0,
+			    BLANK(),
+			    "<div style='font-family: Segoe UI; padding: 14px; background: #ffffff; border-radius: 4px; min-width: 280px;'>
+			        <div style='font-size: 12px; font-weight: 600; color: #2d5f3f; margin-bottom: 10px;'>
+			            Active Inventory: " & FORMAT(Total, "$#,##0") & "
+			        </div>
+			        
+			        <!-- Progress Bar -->
+			        <div style='height: 28px; background: #e0e0e0; border-radius: 4px; overflow: hidden; display: flex; margin-bottom: 10px;'>
+			            <div style='background: linear-gradient(135deg, #f57c00 0%, #ff9800 100%); width: " & FORMAT(PackagePct, "0.0%") & "; display: flex; align-items: center; justify-content: center;'>
+			                <span style='font-size: 10px; font-weight: 700; color: white;'>" & FORMAT(PackagePct, "0.0%") & "</span>
+			            </div>
+			            <div style='background: linear-gradient(135deg, #4caf50 0%, #66bb6a 100%); width: " & FORMAT(SinglePct, "0.0%") & "; display: flex; align-items: center; justify-content: center;'>
+			                <span style='font-size: 10px; font-weight: 700; color: white;'>" & FORMAT(SinglePct, "0.0%") & "</span>
+			            </div>
+			        </div>
+			        
+			        <!-- Values -->
+			        <div style='display: flex; justify-content: space-between; gap: 10px;'>
+			            <div>
+			                <div style='font-size: 9px; color: #e65100; font-weight: 600; margin-bottom: 2px;'>📦 PACKAGES</div>
+			                <div style='font-size: 13px; font-weight: 700; color: #f57c00;'>" & FORMAT(Packaged, "$#,##0") & "</div>
+			            </div>
+			            <div style='text-align: right;'>
+			                <div style='font-size: 9px; color: #2e7d32; font-weight: 600; margin-bottom: 2px;'>SINGLE UNITS ✓</div>
+			                <div style='font-size: 13px; font-weight: 700; color: #4caf50;'>" & FORMAT(Single, "$#,##0") & "</div>
+			            </div>
+			        </div>
+			    </div>"
+			)
+			
+			```
+		lineageTag: 49b8c17d-4e79-4bd2-a0a3-3ef7c8afdc4a
+
+	measure 'Inventory Breakdown - Unified Tooltip' = ```
+			
+			VAR ActiveTotal = [TrueActiveInventory]
+			VAR ActivePkg = [TrueActiveInventory - Packaged]
+			VAR ActiveSingle = [TrueActiveInventory - Single]
+			VAR ActivePkgPct = [TrueActiveInventory - Package %]
+			
+			VAR ZS12Total = [TotalInventory_ZeroSales12]
+			VAR ZS12Pkg = [TotalInventory_ZeroSales12 - Packaged]
+			VAR ZS12Single = [TotalInventory_ZeroSales12 - Single]
+			VAR ZS12PkgPct = [TotalInventory_ZeroSales12 - Package %]
+			
+			VAR ZS24Total = [TotalInventory_ZeroSales24]
+			VAR ZS24Pkg = [TotalInventory_ZeroSales24 - Packaged]
+			VAR ZS24Single = [TotalInventory_ZeroSales24 - Single]
+			VAR ZS24PkgPct = [TotalInventory_ZeroSales24 - Package %]
+			
+			VAR ZS36Total = [TotalInventory_ZeroSales36]
+			VAR ZS36Pkg = [TotalInventory_ZeroSales36 - Packaged]
+			VAR ZS36Single = [TotalInventory_ZeroSales36 - Single]
+			VAR ZS36PkgPct = [TotalInventory_ZeroSales36 - Package %]
+			
+			VAR ExcessTotal = [ExcessStockInventoryCost]
+			VAR ExcessPkg = [ExcessStockInventoryCost - Packaged]
+			VAR ExcessSingle = [ExcessStockInventoryCost - Single]
+			VAR ExcessPkgPct = [ExcessStockInventoryCost - Package %]
+			
+			VAR TotalInv = [Total Inventory]
+			VAR TotalPkg = [Total Inventory - Packaged]
+			VAR TotalSingle = [Total Inventory - Single]
+			VAR TotalPkgPct = [Total Inventory - Package %]
+			
+			RETURN
+			"<div style='font-family: Segoe UI; padding: 14px; background: #ffffff; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); min-width: 420px;'>
+			    <div style='font-size: 14px; font-weight: 700; color: #2d5f3f; letter-spacing: 0.3px; margin-bottom: 12px; border-bottom: 2px solid #2d5f3f; padding-bottom: 8px;'>
+			        📊 INVENTORY COMPOSITION - PACKAGE vs. SINGLE UNIT
+			    </div>
+			    
+			    <table style='width: 100%; border-collapse: collapse; font-size: 12px;'>
+			        <!-- Header Row -->
+			        <tr style='background: #f5f5f5; border-bottom: 1px solid #e0e0e0;'>
+			            <th style='text-align: left; padding: 6px 8px; font-weight: 600; color: #666; font-size: 9px; letter-spacing: 0.3px;'>CATEGORY</th>
+			            <th style='text-align: right; padding: 6px 8px; font-weight: 600; color: #666; font-size: 9px;'>TOTAL</th>
+			            <th style='text-align: right; padding: 6px 8px; font-weight: 600; color: #f57c00; font-size: 9px;'>📦 PACKAGES</th>
+			            <th style='text-align: right; padding: 6px 8px; font-weight: 600; color: #4caf50; font-size: 9px;'>✓ SINGLES</th>
+			        </tr>
+			        
+			        <!-- Active Stock -->
+			        <tr style='border-bottom: 1px solid #e8e8e8;'>
+			            <td style='padding: 7px 8px; font-weight: 600; color: #1a1a1a;'>Active Stock</td>
+			            <td style='text-align: right; padding: 7px 8px; color: #1a1a1a; font-weight: 600;'>" & FORMAT(ActiveTotal, "$#,##0") & "</td>
+			            <td style='text-align: right; padding: 7px 8px;'>
+			                <span style='color: #f57c00; font-weight: 600;'>" & FORMAT(ActivePkg, "$#,##0") & "</span>
+			                <span style='color: #999; font-size: 12px; margin-left: 4px;'>(" & FORMAT(ActivePkgPct, "0.0%") & ")</span>
+			            </td>
+			            <td style='text-align: right; padding: 7px 8px;'>
+			                <span style='color: #4caf50; font-weight: 600;'>" & FORMAT(ActiveSingle, "$#,##0") & "</span>
+			                <span style='color: #999; font-size: 12px; margin-left: 4px;'>(" & FORMAT(1 - ActivePkgPct, "0.0%") & ")</span>
+			            </td>
+			        </tr>
+			        
+			        <!-- Zero Sales 12M -->
+			        <tr style='border-bottom: 1px solid #e8e8e8;'>
+			            <td style='padding: 7px 8px; font-weight: 500; color: #333;'>Zero Sales 12M</td>
+			            <td style='text-align: right; padding: 7px 8px; color: #1a1a1a; font-weight: 600;'>" & FORMAT(ZS12Total, "$#,##0") & "</td>
+			            <td style='text-align: right; padding: 7px 8px;'>
+			                <span style='color: #f57c00; font-weight: 600;'>" & FORMAT(ZS12Pkg, "$#,##0") & "</span>
+			                <span style='color: #999; font-size: 12px; margin-left: 4px;'>(" & FORMAT(ZS12PkgPct, "0.0%") & ")</span>
+			            </td>
+			            <td style='text-align: right; padding: 7px 8px;'>
+			                <span style='color: #4caf50; font-weight: 600;'>" & FORMAT(ZS12Single, "$#,##0") & "</span>
+			                <span style='color: #999; font-size: 12px; margin-left: 4px;'>(" & FORMAT(1 - ZS12PkgPct, "0.0%") & ")</span>
+			            </td>
+			        </tr>
+			        
+			        <!-- Zero Sales 24M -->
+			        <tr style='border-bottom: 1px solid #e8e8e8;'>
+			            <td style='padding: 7px 8px; font-weight: 500; color: #333;'>Zero Sales 24M</td>
+			            <td style='text-align: right; padding: 7px 8px; color: #1a1a1a; font-weight: 600;'>" & FORMAT(ZS24Total, "$#,##0") & "</td>
+			            <td style='text-align: right; padding: 7px 8px;'>
+			                <span style='color: #f57c00; font-weight: 600;'>" & FORMAT(ZS24Pkg, "$#,##0") & "</span>
+			                <span style='color: #999; font-size: 12px; margin-left: 4px;'>(" & FORMAT(ZS24PkgPct, "0.0%") & ")</span>
+			            </td>
+			            <td style='text-align: right; padding: 7px 8px;'>
+			                <span style='color: #4caf50; font-weight: 600;'>" & FORMAT(ZS24Single, "$#,##0") & "</span>
+			                <span style='color: #999; font-size: 12px; margin-left: 4px;'>(" & FORMAT(1 - ZS24PkgPct, "0.0%") & ")</span>
+			            </td>
+			        </tr>
+			        
+			        <!-- Zero Sales 36M -->
+			        <tr style='border-bottom: 1px solid #e8e8e8;'>
+			            <td style='padding: 7px 8px; font-weight: 500; color: #333;'>Zero Sales 36M</td>
+			            <td style='text-align: right; padding: 7px 8px; color: #1a1a1a; font-weight: 600;'>" & FORMAT(ZS36Total, "$#,##0") & "</td>
+			            <td style='text-align: right; padding: 7px 8px;'>
+			                <span style='color: #f57c00; font-weight: 600;'>" & FORMAT(ZS36Pkg, "$#,##0") & "</span>
+			                <span style='color: #999; font-size: 12px; margin-left: 4px;'>(" & FORMAT(ZS36PkgPct, "0.0%") & ")</span>
+			            </td>
+			            <td style='text-align: right; padding: 7px 8px;'>
+			                <span style='color: #4caf50; font-weight: 600;'>" & FORMAT(ZS36Single, "$#,##0") & "</span>
+			                <span style='color: #999; font-size: 12px; margin-left: 4px;'>(" & FORMAT(1 - ZS36PkgPct, "0.0%") & ")</span>
+			            </td>
+			        </tr>
+			        
+			        <!-- Excess Stock -->
+			        <tr style='border-bottom: 1px solid #e8e8e8; background: #ffebee;'>
+			            <td style='padding: 7px 8px; font-weight: 600; color: #c62828;'>⚠️ Excess Stock</td>
+			            <td style='text-align: right; padding: 7px 8px; color: #c62828; font-weight: 700;'>" & FORMAT(ExcessTotal, "$#,##0") & "</td>
+			            <td style='text-align: right; padding: 7px 8px;'>
+			                <span style='color: #d84315; font-weight: 700;'>" & FORMAT(ExcessPkg, "$#,##0") & "</span>
+			                <span style='color: #999; font-size: 12px; margin-left: 4px;'>(" & FORMAT(ExcessPkgPct, "0.0%") & ")</span>
+			            </td>
+			            <td style='text-align: right; padding: 7px 8px;'>
+			                <span style='color: #388e3c; font-weight: 600;'>" & FORMAT(ExcessSingle, "$#,##0") & "</span>
+			                <span style='color: #999; font-size: 12px; margin-left: 4px;'>(" & FORMAT(1 - ExcessPkgPct, "0.0%") & ")</span>
+			            </td>
+			        </tr>
+			        
+			        <!-- Total Row -->
+			        <tr style='background: #f5f5f5; border-top: 2px solid #2d5f3f;'>
+			            <td style='padding: 9px 8px; font-weight: 700; color: #2d5f3f; font-size: 11px;'>TOTAL INVENTORY</td>
+			            <td style='text-align: right; padding: 9px 8px; color: #2d5f3f; font-weight: 700; font-size: 11px;'>" & FORMAT(TotalInv, "$#,##0") & "</td>
+			            <td style='text-align: right; padding: 9px 8px;'>
+			                <span style='color: #f57c00; font-weight: 700; font-size: 11px;'>" & FORMAT(TotalPkg, "$#,##0") & "</span>
+			                <span style='color: #666; font-size: 12px; margin-left: 4px;'>(" & FORMAT(TotalPkgPct, "0.0%") & ")</span>
+			            </td>
+			            <td style='text-align: right; padding: 9px 8px;'>
+			                <span style='color: #4caf50; font-weight: 700; font-size: 11px;'>" & FORMAT(TotalSingle, "$#,##0") & "</span>
+			                <span style='color: #666; font-size: 12px; margin-left: 4px;'>(" & FORMAT(1 - TotalPkgPct, "0.0%") & ")</span>
+			            </td>
+			        </tr>
+			    </table>
+			    
+			    <div style='margin-top: 10px; padding: 8px; background: #fff9e6; border-left: 3px solid #ffa726; border-radius: 3px;'>
+			        <div style='font-size: 9px; color: #e65100; line-height: 1.4;'>
+			            <span style='font-weight: 700;'>📦 Liquidity Risk:</span> Package inventory requires multi-unit sales. High package % in Zero Sales categories indicates trapped capital.
+			        </div>
+			    </div>
+			</div>"
+			```
+		lineageTag: 46fec434-98ce-4774-891c-ee65cd8e004e
+
+	measure 'Inventory Breakdown - Unified Tooltip 2' = ```
+			
+			VAR ActiveTotal = [TrueActiveInventory]
+			VAR ActivePkg = [TrueActiveInventory - Packaged]
+			VAR ActivePkgPct = [TrueActiveInventory - Package %]
+			
+			VAR ZS12Total = [TotalInventory_ZeroSales12]
+			VAR ZS12Pkg = [TotalInventory_ZeroSales12 - Packaged]
+			VAR ZS12PkgPct = [TotalInventory_ZeroSales12 - Package %]
+			
+			VAR ZS24Total = [TotalInventory_ZeroSales24]
+			VAR ZS24Pkg = [TotalInventory_ZeroSales24 - Packaged]
+			VAR ZS24PkgPct = [TotalInventory_ZeroSales24 - Package %]
+			
+			VAR ZS36Total = [TotalInventory_ZeroSales36]
+			VAR ZS36Pkg = [TotalInventory_ZeroSales36 - Packaged]
+			VAR ZS36PkgPct = [TotalInventory_ZeroSales36 - Package %]
+			
+			VAR ExcessTotal = [ExcessStockInventoryCost]
+			VAR ExcessPkg = [ExcessStockInventoryCost - Packaged]
+			VAR ExcessPkgPct = [ExcessStockInventoryCost - Package %]
+			
+			VAR TotalInv = [Total Inventory]
+			VAR TotalPkg = [Total Inventory - Packaged]
+			VAR TotalPkgPct = [Total Inventory - Package %]
+			
+			RETURN
+			"<div style='font-family: Segoe UI; padding: 14px; background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%); border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); width: 480px;'>
+			    <div style='font-size: 12px; font-weight: 700; color: #2d5f3f; margin-bottom: 12px; text-align: center;'>
+			        📊 INVENTORY PACKAGE vs. SINGLE UNIT ANALYSIS
+			    </div>
+			    
+			    <!-- Grid of Cards -->
+			    <div style='display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 10px;'>
+			        
+			        <!-- Active Stock Card -->
+			        <div style='background: #e8f5e9; padding: 8px; border-radius: 4px; border-left: 3px solid #4caf50;'>
+			            <div style='font-size: 8px; font-weight: 600; color: #2e7d32; letter-spacing: 0.3px; margin-bottom: 3px;'>ACTIVE STOCK</div>
+			            <div style='font-size: 12px; font-weight: 700; color: #1a1a1a; margin-bottom: 4px;'>" & FORMAT(ActiveTotal, "$#,##0") & "</div>
+			            <div style='font-size: 9px; color: #f57c00;'>📦 " & FORMAT(ActivePkgPct, "0.0%") & "</div>
+			        </div>
+			        
+			        <!-- Zero Sales 12M Card -->
+			        <div style='background: #fff3e0; padding: 8px; border-radius: 4px; border-left: 3px solid #ff9800;'>
+			            <div style='font-size: 8px; font-weight: 600; color: #e65100; letter-spacing: 0.3px; margin-bottom: 3px;'>ZERO SALES 12M</div>
+			            <div style='font-size: 12px; font-weight: 700; color: #1a1a1a; margin-bottom: 4px;'>" & FORMAT(ZS12Total, "$#,##0") & "</div>
+			            <div style='font-size: 9px; color: #f57c00;'>📦 " & FORMAT(ZS12PkgPct, "0.0%") & "</div>
+			        </div>
+			        
+			        <!-- Zero Sales 24M Card -->
+			        <div style='background: #ffe0b2; padding: 8px; border-radius: 4px; border-left: 3px solid #f57c00;'>
+			            <div style='font-size: 8px; font-weight: 600; color: #e65100; letter-spacing: 0.3px; margin-bottom: 3px;'>ZERO SALES 24M</div>
+			            <div style='font-size: 12px; font-weight: 700; color: #1a1a1a; margin-bottom: 4px;'>" & FORMAT(ZS24Total, "$#,##0") & "</div>
+			            <div style='font-size: 9px; color: #f57c00;'>📦 " & FORMAT(ZS24PkgPct, "0.0%") & "</div>
+			        </div>
+			        
+			        <!-- Zero Sales 36M Card -->
+			        <div style='background: #ffccbc; padding: 8px; border-radius: 4px; border-left: 3px solid #ff5722;'>
+			            <div style='font-size: 8px; font-weight: 600; color: #d84315; letter-spacing: 0.3px; margin-bottom: 3px;'>ZERO SALES 36M</div>
+			            <div style='font-size: 12px; font-weight: 700; color: #1a1a1a; margin-bottom: 4px;'>" & FORMAT(ZS36Total, "$#,##0") & "</div>
+			            <div style='font-size: 9px; color: #f57c00;'>📦 " & FORMAT(ZS36PkgPct, "0.0%") & "</div>
+			        </div>
+			        
+			        <!-- Excess Stock Card -->
+			        <div style='background: #ffebee; padding: 8px; border-radius: 4px; border-left: 3px solid #e53935;'>
+			            <div style='font-size: 8px; font-weight: 600; color: #c62828; letter-spacing: 0.3px; margin-bottom: 3px;'>⚠️ EXCESS STOCK</div>
+			            <div style='font-size: 12px; font-weight: 700; color: #c62828; margin-bottom: 4px;'>" & FORMAT(ExcessTotal, "$#,##0") & "</div>
+			            <div style='font-size: 9px; color: #d84315;'>📦 " & FORMAT(ExcessPkgPct, "0.0%") & "</div>
+			        </div>
+			        
+			        <!-- Total Inventory Card -->
+			        <div style='background: #f5f5f5; padding: 8px; border-radius: 4px; border: 2px solid #2d5f3f;'>
+			            <div style='font-size: 8px; font-weight: 600; color: #2d5f3f; letter-spacing: 0.3px; margin-bottom: 3px;'>TOTAL INVENTORY</div>
+			            <div style='font-size: 12px; font-weight: 700; color: #2d5f3f; margin-bottom: 4px;'>" & FORMAT(TotalInv, "$#,##0") & "</div>
+			            <div style='font-size: 9px; color: #f57c00;'>📦 " & FORMAT(TotalPkgPct, "0.0%") & "</div>
+			        </div>
+			    </div>
+			    
+			    <div style='background: #fff9e6; padding: 8px; border-radius: 4px; border-left: 3px solid #ffa726;'>
+			        <div style='font-size: 9px; color: #e65100; line-height: 1.4;'>
+			            <span style='font-weight: 700;'>📦 Package %</span> indicates portion requiring multi-unit sales. Higher % = Lower liquidity.
+			        </div>
+			    </div>
+			</div>"
+			
+			```
+		lineageTag: 7b1d7e12-5cc6-4c0b-92b3-8a77268f21eb
+
+	column Value
+		isHidden
+		formatString: 0
+		lineageTag: 4e93cb1c-fe46-499d-837b-6bf3efd07983
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [Value]
+
+		annotation SummarizationSetBy = Automatic
+
+	column DummyColumn
+		isHidden
+		formatString: 0
+		lineageTag: e11a9a5b-96b4-4896-8aff-5a79ad54dc43
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [DummyColumn]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition PackageQtyMeasures = calculated
+		mode: import
+		source = ADDCOLUMNS( GENERATESERIES(1, 1), "DummyColumn", 1 )
+
+	annotation PBI_Id = b5027a1c4f844b64ae8dce73d8aedcd2
+

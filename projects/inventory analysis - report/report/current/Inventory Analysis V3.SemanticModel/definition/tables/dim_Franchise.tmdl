@@ -1,0 +1,172 @@
+table dim_Franchise
+	lineageTag: 3ecdfc2c-645a-42b4-98f2-f7f82ef670f7
+
+	column Franchise
+		dataType: string
+		lineageTag: 5d2013fa-4935-4c62-9f54-1b0978ad2a8b
+		summarizeBy: none
+		sourceColumn: Franchise
+
+		annotation SummarizationSetBy = Automatic
+
+	column FranchiseKey
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: 8720322b-8297-499d-b1e2-b5240639745f
+		summarizeBy: none
+		sourceColumn: FranchiseKey
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column FranchiseCode
+		dataType: string
+		lineageTag: a49b4719-798f-4fa4-b85b-114d3d6ceb7f
+		summarizeBy: none
+		sourceColumn: FranchiseCode
+
+		annotation SummarizationSetBy = Automatic
+
+	column FranchiseDisplayName
+		dataType: string
+		lineageTag: 746ccb88-bb97-40cf-a975-765074e1cad1
+		summarizeBy: none
+		sourceColumn: FranchiseDisplayName
+
+		annotation SummarizationSetBy = Automatic
+
+	column FranchiseType
+		dataType: string
+		lineageTag: 064b0a10-d5b1-43b5-9417-28d01c28a27a
+		summarizeBy: none
+		sourceColumn: FranchiseType
+
+		annotation SummarizationSetBy = Automatic
+
+	column FranchiseCategory
+		dataType: string
+		lineageTag: 3d8bf10d-c1a8-4242-b838-3876c8192353
+		summarizeBy: none
+		sourceColumn: FranchiseCategory
+
+		annotation SummarizationSetBy = Automatic
+
+	column MarketPosition
+		dataType: string
+		lineageTag: b22721de-94ad-4bf2-80fc-b8d42c76c663
+		summarizeBy: none
+		sourceColumn: MarketPosition
+
+		annotation SummarizationSetBy = Automatic
+
+	column ServiceComplexity
+		dataType: string
+		lineageTag: 1b95093e-5f6e-4a19-9245-5cac1ae3aa6d
+		summarizeBy: none
+		sourceColumn: ServiceComplexity
+
+		annotation SummarizationSetBy = Automatic
+
+	column FranchiseSortOrder
+		dataType: double
+		lineageTag: da09c842-1aaf-46b2-89df-82dd707f9acb
+		summarizeBy: sum
+		sourceColumn: FranchiseSortOrder
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column BusinessPriority
+		dataType: double
+		lineageTag: 8bfb35d8-e607-457a-977a-9275f969d98b
+		summarizeBy: sum
+		sourceColumn: BusinessPriority
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column FranchiseStatus
+		dataType: string
+		lineageTag: 827c3cfd-0ae4-4f49-a806-66ca20f544ed
+		summarizeBy: none
+		sourceColumn: FranchiseStatus
+
+		annotation SummarizationSetBy = Automatic
+
+	column IsActive
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 3d243857-997e-4cfe-a66f-cc32740877ff
+		summarizeBy: none
+		sourceColumn: IsActive
+
+		annotation SummarizationSetBy = Automatic
+
+	column IsPrimaryBrand
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: de26767f-d081-4238-b343-b8c694744e69
+		summarizeBy: none
+		sourceColumn: IsPrimaryBrand
+
+		annotation SummarizationSetBy = Automatic
+
+	column IsAgriculturalBrand
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 4206bbab-70a7-4d2a-b023-b5dd43b62ffe
+		summarizeBy: none
+		sourceColumn: IsAgriculturalBrand
+
+		annotation SummarizationSetBy = Automatic
+
+	column IsMajorBrand
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: d29716c7-e114-45fd-8ac2-cf8e2546dfd3
+		summarizeBy: none
+		sourceColumn: IsMajorBrand
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Franchise Group' =
+			
+			IF(
+			    dim_Franchise[Franchise] = "D",
+			    "1. Core Operations (D)",
+			    "2. Regional Franchises"
+			)
+		lineageTag: fb25120b-4dad-4ff5-b2f7-5099c89a5987
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Franchise Display' =
+			
+			IF(
+			    dim_Franchise[Franchise] = "D",
+			    "🏢 " & dim_Franchise[Franchise],
+			    "📍 " & dim_Franchise[Franchise]
+			)
+		lineageTag: 7e278ab7-9875-4420-b95d-98a02afed006
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dim_Franchise = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-gxnyznhdptpenfw724g3o5sjzm.datawarehouse.fabric.microsoft.com", "LH_Master_Data"),
+				    dbo_dim_Franchise = Source{[Schema="dbo",Item="dim_Franchise"]}[Data]
+				in
+				    dbo_dim_Franchise
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

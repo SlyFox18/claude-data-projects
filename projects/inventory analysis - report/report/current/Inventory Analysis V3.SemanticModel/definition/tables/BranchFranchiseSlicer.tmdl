@@ -1,0 +1,37 @@
+table BranchFranchiseSlicer
+	lineageTag: 51ff1f7e-1536-4959-8f15-430af6b2cdbf
+
+	column Flag
+		formatString: 0
+		lineageTag: db658ae9-108d-41e4-aaaf-b32f4f246874
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [Flag]
+
+		annotation SummarizationSetBy = Automatic
+
+	column Label
+		lineageTag: 5484de9e-c92c-4133-8b6b-1370d3ee8d83
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Label]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition BranchFranchiseSlicer = calculated
+		mode: import
+		source = ```
+				
+				DATATABLE(
+				    "Flag", INTEGER,
+				    "Label", STRING,
+				    {
+				        { 1, "Branch" },
+				        { 2, "Franchise" }
+				    }
+				)
+				
+				```
+
+	annotation PBI_Id = 418a0f3b0357429e9ff12344905e5596
+

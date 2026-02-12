@@ -1,0 +1,62 @@
+table dim_ModuleType
+	lineageTag: 5690de31-57d7-4c53-a7f5-4ffb6bb804c5
+
+	column ModuleTypeKey
+		dataType: int64
+		formatString: 0
+		lineageTag: f2f8ae6c-32de-4c59-86c5-9311e79e7ece
+		summarizeBy: none
+		sourceColumn: ModuleTypeKey
+
+		annotation SummarizationSetBy = Automatic
+
+	column ModuleTypeDescription
+		dataType: string
+		lineageTag: f1a27ed8-0b9b-45c8-8ea2-fd8b5b0d21cf
+		summarizeBy: none
+		sourceColumn: ModuleTypeDescription
+		sortByColumn: SortOrder
+
+		changedProperty = SortByColumn
+
+		annotation SummarizationSetBy = Automatic
+
+	column SortOrder
+		dataType: int64
+		formatString: 0
+		lineageTag: 96bd253a-e539-4308-94b0-8b09b7f77aa5
+		summarizeBy: none
+		sourceColumn: SortOrder
+
+		annotation SummarizationSetBy = Automatic
+
+	column RecordCount
+		dataType: int64
+		formatString: 0
+		lineageTag: 34c82e91-c928-4cb0-86db-574c5b036577
+		summarizeBy: none
+		sourceColumn: RecordCount
+
+		annotation SummarizationSetBy = Automatic
+
+	column BusinessGrouping
+		dataType: string
+		lineageTag: fca730a0-4ad5-448a-9b6f-5a664525c16f
+		summarizeBy: none
+		sourceColumn: BusinessGrouping
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dim_ModuleType = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-gxnyznhdptpenfw724g3o5sjzm.datawarehouse.fabric.microsoft.com", "LH_Master_Data"),
+				    dbo_dim_ModuleType = Source{[Schema="dbo",Item="dim_ModuleType"]}[Data]
+				in
+				    dbo_dim_ModuleType
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

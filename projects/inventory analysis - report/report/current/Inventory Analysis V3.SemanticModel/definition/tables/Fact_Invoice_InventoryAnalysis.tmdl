@@ -1,0 +1,153 @@
+table Fact_Invoice_InventoryAnalysis
+	lineageTag: 3fdf5268-bb12-45df-88d7-f1c01dd860bc
+
+	column InvoiceNumber
+		dataType: string
+		lineageTag: 8aab170d-f19c-4dac-8336-9f667b4e5ee0
+		summarizeBy: none
+		sourceColumn: InvoiceNumber
+
+		annotation SummarizationSetBy = Automatic
+
+	column InvoiceDate
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: b3a8ef99-387f-43aa-a0b1-99668854d263
+		summarizeBy: none
+		sourceColumn: InvoiceDate
+
+		annotation SummarizationSetBy = Automatic
+
+	column Branch
+		dataType: string
+		lineageTag: 402da4a5-3cca-41af-af0b-17d8a91be55b
+		summarizeBy: none
+		sourceColumn: Branch
+
+		annotation SummarizationSetBy = Automatic
+
+	column ModuleTypeKey
+		dataType: int64
+		formatString: 0
+		lineageTag: 570b8777-f31e-4788-8317-b8156a2a1603
+		summarizeBy: none
+		sourceColumn: ModuleTypeKey
+
+		annotation SummarizationSetBy = Automatic
+
+	column CustomerNumber
+		dataType: string
+		lineageTag: 7a6d9963-d530-4ee1-a2ca-68b444c67bcf
+		summarizeBy: none
+		sourceColumn: CustomerNumber
+
+		annotation SummarizationSetBy = Automatic
+
+	column CompanyName
+		dataType: string
+		lineageTag: 64333b38-a6ba-42e3-8838-a14acc89ab58
+		summarizeBy: none
+		sourceColumn: CompanyName
+
+		annotation SummarizationSetBy = Automatic
+
+	column FirstName
+		dataType: string
+		lineageTag: ac469279-479e-4a61-b895-33a7205e10de
+		summarizeBy: none
+		sourceColumn: FirstName
+
+		annotation SummarizationSetBy = Automatic
+
+	column LastName
+		dataType: string
+		lineageTag: 6c9edf91-064b-4e05-8036-dbc8fe82d2e6
+		summarizeBy: none
+		sourceColumn: LastName
+
+		annotation SummarizationSetBy = Automatic
+
+	column PartsSaleValue
+		dataType: double
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 57d47832-dc0e-4ea7-bb52-a0356f25fa8d
+		summarizeBy: sum
+		sourceColumn: PartsSaleValue
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	column PartsCostValue
+		dataType: double
+		lineageTag: be4beca7-1755-49bd-b482-e2d1fb3b7d80
+		summarizeBy: sum
+		sourceColumn: PartsCostValue
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column PartsMargin
+		dataType: double
+		lineageTag: 7aba5095-3d87-4aea-b21c-65432d436608
+		summarizeBy: sum
+		sourceColumn: PartsMargin
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column PartsMarginPct
+		dataType: double
+		lineageTag: b782d998-f642-420b-88b8-eb4c0b039347
+		summarizeBy: sum
+		sourceColumn: PartsMarginPct
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column ModifiedDate
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: 5f5e0ce5-2a41-4ad9-8845-89c9866bfabc
+		summarizeBy: none
+		sourceColumn: ModifiedDate
+
+		annotation SummarizationSetBy = Automatic
+
+	column ModuleType
+		dataType: string
+		lineageTag: 3ffcb1a4-1fa5-4a2f-af35-9b5999e7766e
+		summarizeBy: none
+		sourceColumn: ModuleType
+
+		annotation SummarizationSetBy = Automatic
+
+	column PaymentMethod
+		dataType: string
+		lineageTag: b8e631b7-f59a-4cdf-a539-6d81e4a30467
+		summarizeBy: none
+		sourceColumn: PaymentMethod
+
+		annotation SummarizationSetBy = Automatic
+
+	column PaymentMethodKey
+		dataType: int64
+		formatString: 0
+		lineageTag: fa124d03-5104-4417-944a-59b41095232f
+		summarizeBy: none
+		sourceColumn: PaymentMethodKey
+
+		annotation SummarizationSetBy = Automatic
+
+	partition Fact_Invoice_InventoryAnalysis = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-gxnyznhdptpenfw724g3o5sjzm.datawarehouse.fabric.microsoft.com", "LH_Master_Data"),
+				    dbo_Fact_Invoice_InventoryAnalysis = Source{[Schema="dbo",Item="Fact_Invoice_InventoryAnalysis"]}[Data]
+				in
+				    dbo_Fact_Invoice_InventoryAnalysis
+

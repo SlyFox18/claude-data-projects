@@ -1,0 +1,34 @@
+table dim_DateFilter
+	lineageTag: 9d1aee96-b163-4726-b58d-82f2b266a904
+
+	column DateRange
+		lineageTag: 95cde2ca-2e0a-4247-ad37-d80a46fc9b43
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [DateRange]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dim_DateFilter = calculated
+		mode: import
+		source = ```
+				
+				DATATABLE(
+				    "DateRange", STRING,
+				    {
+				        {"Rolling 12 Months"},
+				        {"Rolling 24 Months"},
+				        {"Rolling 36 Months"},
+				        {"Rolling 48 Months"},
+				        {"Rolling 60 Months"},
+				        {"MTD"},
+				        {"YTD"},
+				        {"This Year"},
+				        {"Last Year"}
+				    }
+				)
+				
+				```
+
+	annotation PBI_Id = fe6cb387e1e74497b753b952a850948b
+

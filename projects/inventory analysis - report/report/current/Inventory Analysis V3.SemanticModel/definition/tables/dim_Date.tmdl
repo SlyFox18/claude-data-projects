@@ -1,0 +1,127 @@
+table dim_Date
+	lineageTag: 192922c1-24e6-483e-89f1-eb6bbc6ae6db
+	dataCategory: Time
+
+	column Date
+		dataType: dateTime
+		isKey
+		formatString: Long Date
+		lineageTag: 60bb4946-af6e-443a-b53c-98b15748b97b
+		summarizeBy: none
+		sourceColumn: Date
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column Year
+		dataType: int64
+		formatString: 0
+		lineageTag: f32344c4-57d9-4b95-b5dd-9ad5b110a4c5
+		summarizeBy: sum
+		sourceColumn: Year
+
+		annotation SummarizationSetBy = Automatic
+
+	column Month
+		dataType: int64
+		formatString: 0
+		lineageTag: 4b94683e-7edd-4265-879a-3e4e866524b8
+		summarizeBy: sum
+		sourceColumn: Month
+
+		annotation SummarizationSetBy = Automatic
+
+	column MonthName
+		dataType: string
+		lineageTag: 4883882c-84dd-47e1-8b67-6be98c08c81e
+		summarizeBy: none
+		sourceColumn: MonthName
+		sortByColumn: Month
+
+		changedProperty = SortByColumn
+
+		annotation SummarizationSetBy = Automatic
+
+	column MonthShort
+		dataType: string
+		lineageTag: 4c756ebe-7e30-410e-a5f8-7153f97bf953
+		summarizeBy: none
+		sourceColumn: MonthShort
+
+		annotation SummarizationSetBy = Automatic
+
+	column Day
+		dataType: int64
+		formatString: 0
+		lineageTag: 55695b90-be98-4594-8d71-f71a7586d558
+		summarizeBy: sum
+		sourceColumn: Day
+
+		annotation SummarizationSetBy = Automatic
+
+	column Weekday
+		dataType: int64
+		formatString: 0
+		lineageTag: 0c98422f-4ca4-4981-a646-bb8320a7fb3e
+		summarizeBy: sum
+		sourceColumn: Weekday
+
+		annotation SummarizationSetBy = Automatic
+
+	column WeekdayName
+		dataType: string
+		lineageTag: acf4bad9-1299-4779-819f-20af48282856
+		summarizeBy: none
+		sourceColumn: WeekdayName
+
+		annotation SummarizationSetBy = Automatic
+
+	column WeekOfYear
+		dataType: int64
+		formatString: 0
+		lineageTag: 39bef784-d1e7-4c48-935e-95042f8a8686
+		summarizeBy: sum
+		sourceColumn: WeekOfYear
+
+		annotation SummarizationSetBy = Automatic
+
+	column Quarter
+		dataType: int64
+		formatString: 0
+		lineageTag: 4851d701-ab6a-4018-8b75-2d241ebcf1c2
+		summarizeBy: sum
+		sourceColumn: Quarter
+
+		annotation SummarizationSetBy = Automatic
+
+	column YearMonth
+		dataType: string
+		lineageTag: 184cba63-6942-4d35-96f2-5f5a16961646
+		summarizeBy: none
+		sourceColumn: YearMonth
+
+		annotation SummarizationSetBy = Automatic
+
+	column IsWeekend
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 6e18b399-eb6d-47f8-a3e9-98c580b3e344
+		summarizeBy: none
+		sourceColumn: IsWeekend
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dim_Date = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-gxnyznhdptpenfw724g3o5sjzm.datawarehouse.fabric.microsoft.com", "LH_Master_Data"),
+				    dbo_dim_Date = Source{[Schema="dbo",Item="dim_Date"]}[Data]
+				in
+				    dbo_dim_Date
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

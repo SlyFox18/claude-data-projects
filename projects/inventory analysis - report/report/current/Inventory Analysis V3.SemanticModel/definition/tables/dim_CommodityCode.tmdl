@@ -1,0 +1,36 @@
+table dim_CommodityCode
+	lineageTag: a39f0bc7-682a-4232-9bae-6a3e672c5e99
+
+	column CommodityCodeKey
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: acc74c9f-9e1c-4475-aae8-dc4d2c074f8a
+		summarizeBy: none
+		sourceColumn: CommodityCodeKey
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column CommodityCode
+		dataType: string
+		lineageTag: a2276cf2-3846-4649-a1ef-3766470daeca
+		summarizeBy: none
+		sourceColumn: CommodityCode
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dim_CommodityCode = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-gxnyznhdptpenfw724g3o5sjzm.datawarehouse.fabric.microsoft.com", "LH_Master_Data"),
+				    dbo_dim_CommodityCode = Source{[Schema="dbo",Item="dim_CommodityCode"]}[Data]
+				in
+				    dbo_dim_CommodityCode
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+
