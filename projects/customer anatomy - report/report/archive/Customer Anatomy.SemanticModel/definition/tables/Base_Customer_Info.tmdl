@@ -1,0 +1,186 @@
+table Base_Customer_Info
+	lineageTag: aa5fdcc8-72fa-447d-aa9b-3cdbd0b82f10
+
+	column Territory
+		dataType: string
+		lineageTag: 54892492-d0ca-47d6-88a1-84b0960240a2
+		summarizeBy: none
+		sourceColumn: Territory
+
+		annotation SummarizationSetBy = Automatic
+
+	column Account
+		dataType: int64
+		formatString: 0
+		lineageTag: cd292afd-f903-4e98-aabf-cd98887b6ca9
+		summarizeBy: none
+		sourceColumn: Account
+
+		annotation SummarizationSetBy = Automatic
+
+	column Customer
+		dataType: string
+		lineageTag: 2825987a-61bf-49f4-bd0b-81b8b99c91db
+		summarizeBy: none
+		sourceColumn: Customer
+
+		annotation SummarizationSetBy = Automatic
+
+	column Class
+		dataType: string
+		lineageTag: 2c2189c1-de6e-49f4-9bb2-40e168595503
+		summarizeBy: none
+		sourceColumn: Class
+
+		annotation SummarizationSetBy = Automatic
+
+	column Addr1
+		dataType: string
+		lineageTag: f3fce0db-beab-4465-b60e-5d79cb01972a
+		summarizeBy: none
+		sourceColumn: Addr1
+
+		annotation SummarizationSetBy = Automatic
+
+	column Addr2
+		dataType: string
+		lineageTag: 09acaabe-af87-4d69-b4f4-b0aba2fd9ae8
+		summarizeBy: none
+		sourceColumn: Addr2
+
+		annotation SummarizationSetBy = Automatic
+
+	column city
+		dataType: string
+		lineageTag: 5c592e34-2da5-477f-949c-1dc871962b81
+		summarizeBy: none
+		sourceColumn: city
+
+		annotation SummarizationSetBy = Automatic
+
+	column state
+		dataType: string
+		lineageTag: e77921ee-5324-4555-b8b1-309a730cc638
+		summarizeBy: none
+		sourceColumn: state
+
+		annotation SummarizationSetBy = Automatic
+
+	column zip
+		dataType: string
+		lineageTag: e27f2bb7-34f5-4275-9433-0f191adbdb3b
+		summarizeBy: none
+		sourceColumn: zip
+
+		annotation SummarizationSetBy = Automatic
+
+	column HomePhone
+		dataType: string
+		lineageTag: aef07194-d244-43c4-ba32-0996d8723951
+		summarizeBy: none
+		sourceColumn: HomePhone
+
+		annotation SummarizationSetBy = Automatic
+
+	column BusinessPhone
+		dataType: string
+		lineageTag: c9d486fd-8bcf-47dd-8815-6dac2e26254d
+		summarizeBy: none
+		sourceColumn: BusinessPhone
+
+		annotation SummarizationSetBy = Automatic
+
+	column CellPhone
+		dataType: string
+		lineageTag: 8f8f786a-dcd9-4965-a88d-1f9095efb211
+		summarizeBy: none
+		sourceColumn: CellPhone
+
+		annotation SummarizationSetBy = Automatic
+
+	column Email
+		dataType: string
+		lineageTag: 22659e20-b9b4-4009-940d-9b4fe49821b6
+		summarizeBy: none
+		sourceColumn: Email
+
+		annotation SummarizationSetBy = Automatic
+
+	column UsedPromoCurrentYear =
+			
+			IF(
+			    [PromoUsedCurrentYear] > 0,
+			    "Yes",
+			    "No"
+			)
+		lineageTag: 063c19e7-386b-4419-8208-a723abfd7464
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	column ContactClass
+		dataType: string
+		lineageTag: e8974a7d-4325-42a5-8e79-25a5e252b354
+		summarizeBy: none
+		sourceColumn: ContactClass
+
+		annotation SummarizationSetBy = Automatic
+
+	column CSM = ```
+			
+			IF (
+			    'Base_Customer_Info'[Account] IN {
+			        1410, 2323, 11744, 12093, 12394, 12395, 12421, 12422, 13452, 13917,
+			        14603, 14604, 14862, 14950, 14951, 15118, 15120, 15123, 15134, 15142,
+			        15178, 15216, 15240, 15249, 15260, 15697, 15894, 15896, 15901, 15902,
+			        15903, 15904, 15905, 15920, 16074, 16079, 16249, 16255, 16260, 16305,
+			        16311, 16314, 16519, 16545, 16572, 16589, 16592, 16593, 16599, 16840,
+			        17296, 17384, 17487, 18094, 18489, 18500, 18697, 18701, 18875, 18878,
+			        19105, 19617, 19638, 19651, 19652, 19662, 19694, 19735, 19741, 20143,
+			        21315, 21367, 21378, 21576, 21659, 21730, 21776, 22399, 23002, 25018,
+			        25603, 26998, 39609, 39632, 39965, 42122, 43003
+			    },
+			    "San Anglo CSM",
+			    BLANK()
+			)
+			
+			```
+		lineageTag: 75d25a39-b358-4706-a7e4-a20703e4ad56
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Route Day' = ```
+			
+			SWITCH(
+			    TRUE(),
+			    'Base_Customer_Info'[Account] IN {1410, 2323, 12093, 13917, 14950, 14951, 16249, 16255, 16260, 18875, 18878, 21776, 23002, 25018, 39965, 43003}, "Thursday",
+			    'Base_Customer_Info'[Account] IN {11744, 12394, 12421, 12422, 13452, 15142, 15240, 15249, 15697, 15920, 16074, 16079, 16305, 16314, 16545, 17384, 17487, 18094, 19105, 19735, 19741, 22399, 26998, 39609, 42122}, "Wednesday",
+			    'Base_Customer_Info'[Account] IN {12395, 14862, 15118, 15120, 15178, 15260, 16572, 16589, 16592, 16593, 16599, 18500, 18697, 18701, 19662, 20143, 21315, 21378, 25603, 39632}, "Tuesday",
+			    'Base_Customer_Info'[Account] IN {14603, 14604, 15123, 15134, 15216, 15894, 15896, 15901, 15902, 15903, 15904, 15905, 16311, 16840, 19617, 19638, 19651, 19652, 19694, 21367, 21576}, "Monday",
+			    'Base_Customer_Info'[Account] IN {16519, 17296, 18489, 21659, 21730}, "Friday",
+			    BLANK()
+			)
+			
+			```
+		lineageTag: b602b53a-8c8c-4ed6-8215-142cd3d4fba8
+		summarizeBy: none
+
+		changedProperty = SortByColumn
+
+		annotation SummarizationSetBy = Automatic
+
+	partition Base_Customer_Info = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-ch6iiwox4jveda3rmgudwi6hey.datawarehouse.fabric.microsoft.com", "LH_Parts_Reports_Data"),
+				    dbo_Base_Customer_Info = Source{[Schema="dbo",Item="Base_Customer_Info"]}[Data],
+				    #"Replaced Value" = Table.ReplaceValue(dbo_Base_Customer_Info,"08","8",Replacer.ReplaceText,{"Territory"})
+				in
+				    #"Replaced Value"
+
+	annotation PBI_ResultType = Table
+
+	annotation PBI_NavigationStepName = Navigation
+

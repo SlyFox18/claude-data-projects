@@ -1,0 +1,145 @@
+table Sales_Data_YTD
+	isHidden
+	lineageTag: 14e448cd-55f8-4118-be2f-0cc780d0a214
+
+	column Account
+		dataType: string
+		isHidden
+		lineageTag: a6e0ef07-371d-4176-b14f-efb45528f55b
+		summarizeBy: none
+		sourceColumn: Account
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column Customer
+		dataType: string
+		isHidden
+		lineageTag: b4cfccfc-58fb-4367-a3b0-9ca720bd22d0
+		summarizeBy: none
+		sourceColumn: Customer
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column Territory
+		dataType: string
+		isHidden
+		lineageTag: 766a4d75-3faa-4a11-aed6-d3d1264643a7
+		summarizeBy: none
+		sourceColumn: Territory
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column Class
+		dataType: string
+		isHidden
+		lineageTag: a72da7bc-bbe9-49b5-a9be-fd4689454805
+		summarizeBy: none
+		sourceColumn: Class
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column InvoiceMonth
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: 66f05a2e-6c03-4c5f-9069-a5618fd3f73b
+		summarizeBy: sum
+		sourceColumn: InvoiceMonth
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column InvoiceYear
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: afa7b52b-b8f6-4b4f-a2c4-51d9ea6a10e9
+		summarizeBy: sum
+		sourceColumn: InvoiceYear
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column MonthYear = FORMAT(DATE(Sales_Data_YTD[InvoiceYear], Sales_Data_YTD[InvoiceMonth], 1), "MMM YYYY")
+		isHidden
+		lineageTag: 5ce440fc-4cf5-4ded-8cf7-cab3600357ab
+		summarizeBy: none
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Sales Counts YTD'
+		dataType: int64
+		formatString: 0
+		lineageTag: bfd138f4-5bc4-4bf1-8b1a-0944e6120de1
+		summarizeBy: sum
+		sourceColumn: Sales Counts YTD
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Sales YTD'
+		dataType: double
+		lineageTag: cdfba251-4f8b-49b7-8e34-626de6ad9451
+		summarizeBy: sum
+		sourceColumn: Sales YTD
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column 'Cost YTD'
+		dataType: double
+		lineageTag: eca2b638-f3de-4f3d-9cf1-56471c425867
+		summarizeBy: sum
+		sourceColumn: Cost YTD
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column 'Margin YTD'
+		dataType: double
+		lineageTag: 58a1a1a5-228e-4842-9c80-7ae2e1777df6
+		summarizeBy: sum
+		sourceColumn: Margin YTD
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column 'GP % YTD'
+		dataType: double
+		lineageTag: 5c79e141-d6c7-41f6-99ca-04cb858998fa
+		summarizeBy: sum
+		sourceColumn: GP % YTD
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	partition Sales_Data_YTD = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-ch6iiwox4jveda3rmgudwi6hey.datawarehouse.fabric.microsoft.com", "LH_Parts_Reports_Data"),
+				    dbo_Sales_Data_YTD = Source{[Schema="dbo",Item="Sales_Data_YTD"]}[Data]
+				in
+				    dbo_Sales_Data_YTD
+
+	changedProperty = IsHidden
+
+	annotation PBI_ResultType = Table
+
+	annotation PBI_NavigationStepName = Navigation
+

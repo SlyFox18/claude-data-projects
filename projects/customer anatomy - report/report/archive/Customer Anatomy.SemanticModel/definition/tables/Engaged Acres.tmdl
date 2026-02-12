@@ -1,0 +1,107 @@
+table 'Engaged Acres'
+	lineageTag: 73e4cedb-e34a-4b94-8edc-3b17151f4feb
+
+	column 'Account Number'
+		dataType: int64
+		formatString: 0
+		lineageTag: bc75a3a7-393c-4669-b4e8-70e29f352fcb
+		summarizeBy: none
+		sourceColumn: Account Number
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Engagement Level'
+		dataType: string
+		lineageTag: a3fcc529-a7f1-4160-aa9c-b164785df969
+		summarizeBy: none
+		sourceColumn: Engagement Level
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Estimated Acres'
+		dataType: int64
+		formatString: 0
+		lineageTag: ef58a564-a69c-4417-a8a5-3f66c149ee7f
+		summarizeBy: sum
+		sourceColumn: Estimated Acres
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Engaged Acre Breadth'
+		dataType: int64
+		formatString: 0
+		lineageTag: bfdfb942-9c3c-4cbb-9787-9bdcc5c8a7a4
+		summarizeBy: sum
+		sourceColumn: Engaged Acre Breadth
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Engaged Acre Depth'
+		dataType: int64
+		formatString: 0
+		lineageTag: 9113d98c-58f7-40b5-9d2a-abb783f07028
+		summarizeBy: sum
+		sourceColumn: Engaged Acre Depth
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Highly Engaged Acres'
+		dataType: int64
+		formatString: 0
+		lineageTag: 8e142cbd-533d-4c7e-b390-f2719593fb20
+		summarizeBy: sum
+		sourceColumn: Highly Engaged Acres
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Prepare Acres'
+		dataType: int64
+		formatString: 0
+		lineageTag: 4438484f-0e3a-4277-81cb-bcc5436b5273
+		summarizeBy: sum
+		sourceColumn: Prepare Acres
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Plant Acres'
+		dataType: int64
+		formatString: 0
+		lineageTag: 9ceb816f-6e7e-4f03-ac8e-943ea0f3acfc
+		summarizeBy: sum
+		sourceColumn: Plant Acres
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Apply Acres'
+		dataType: int64
+		formatString: 0
+		lineageTag: 66b3382a-04f4-4598-ad3a-4c9e075bbc41
+		summarizeBy: sum
+		sourceColumn: Apply Acres
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Harvest Acres'
+		dataType: int64
+		formatString: 0
+		lineageTag: eef5c1a4-b703-4cf1-a6a9-1f41c8eff623
+		summarizeBy: sum
+		sourceColumn: Harvest Acres
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Engaged Acres' = m
+		mode: import
+		source =
+				let
+				    Source = Csv.Document(Web.Contents("https://spitractor-my.sharepoint.com/personal/bfox_spitractor_com/Documents/Power%20BI%20-%20Vis/Data/Engaged%20Acre/3.24.25-export.csv"),[Delimiter=",", Columns=10, Encoding=1252, QuoteStyle=QuoteStyle.None]),
+				    #"Promoted Headers" = Table.PromoteHeaders(Source, [PromoteAllScalars=true]),
+				    #"Changed Type" = Table.TransformColumnTypes(#"Promoted Headers",{{"Account Number", Int64.Type}, {"Engagement Level", type text}, {"Estimated Acres", Int64.Type}, {"Engaged Acre Breadth", Int64.Type}, {"Engaged Acre Depth", Int64.Type}, {"Highly Engaged Acres", Int64.Type}, {"Prepare Acres", Int64.Type}, {"Plant Acres", Int64.Type}, {"Apply Acres", Int64.Type}, {"Harvest Acres", Int64.Type}}),
+				    #"Removed Errors" = Table.RemoveRowsWithErrors(#"Changed Type", {"Account Number"})
+				in
+				    #"Removed Errors"
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

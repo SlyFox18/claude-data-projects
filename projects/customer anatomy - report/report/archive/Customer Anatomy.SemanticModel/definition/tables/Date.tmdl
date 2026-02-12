@@ -1,0 +1,166 @@
+table Date
+	lineageTag: 2c0c88b1-ba37-407e-b8f2-712d26b8717a
+	dataCategory: Time
+
+	measure _ShowValueForDates =
+			
+			VAR __LastDateWithData =
+			    CALCULATE (
+			        MAXX ( { MAX ( 'Data Refresh'[CurrentDateTime] ), MAX ( 'Data Refresh'[Date] ) }, ''[Value] ),
+			        REMOVEFILTERS ()
+			    )
+			VAR __FirstDateVisible =
+			    MIN ( 'Date'[Date] )
+			VAR __Result =
+			    __FirstDateVisible <= __LastDateWithData
+			RETURN
+			    __Result
+		isHidden
+		displayFolder: Hidden Time Intelligence
+		lineageTag: c9ae913e-9c8d-42ec-9045-eb6aa9a6c5b5
+
+		annotation SQLBI_Template = TimeIntelligence
+
+		annotation SQLBI_TimeIntelligence = Standard
+
+		annotation SQLBI_CalendarType = Calendar
+
+	column Date
+		isKey
+		formatString: m/d/yyyy
+		lineageTag: 0c9a4e8d-8b8d-4711-a14a-0cd2f850e9d8
+		dataCategory: PaddedDateTableDates
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: DateAutoTemplate[Date]
+
+		annotation SQLBI_AttributeTypes = Date
+
+	column Year
+		lineageTag: bfb204fe-2820-4977-a1e9-2edf1aa07dbf
+		dataCategory: Years
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: DateAutoTemplate[Year]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Year Quarter Number'
+		isHidden
+		lineageTag: cd7c72a2-85ed-437b-9253-3561e4a108f5
+		dataCategory: Quarters
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: DateAutoTemplate[Year Quarter Number]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Year Quarter'
+		lineageTag: 39638895-dffd-4721-a4ad-162d71baa3b2
+		dataCategory: Quarters
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: DateAutoTemplate[Year Quarter]
+		sortByColumn: 'Year Quarter Number'
+
+	column Quarter
+		lineageTag: cb2d304f-1705-47c1-9356-164c22aa6a91
+		dataCategory: QuarterOfYear
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: DateAutoTemplate[Quarter]
+
+	column 'Year Month'
+		lineageTag: 99c17a98-e442-4d90-b84f-66a19ff09ecc
+		dataCategory: Months
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: DateAutoTemplate[Year Month]
+		sortByColumn: 'Year Month Number'
+
+	column 'Year Month Number'
+		isHidden
+		lineageTag: db6a525a-e0c8-4039-b0d8-3b6b2a62221c
+		dataCategory: Months
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: DateAutoTemplate[Year Month Number]
+
+		annotation SummarizationSetBy = Automatic
+
+	column Month
+		lineageTag: d8098882-15fc-425d-b5f8-31c0fc3d1524
+		dataCategory: MonthOfYear
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: DateAutoTemplate[Month]
+		sortByColumn: 'Month Number'
+
+	column 'Month Number'
+		isHidden
+		lineageTag: b223846e-6b06-4d3d-877f-d16d29b2acee
+		dataCategory: MonthOfYear
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: DateAutoTemplate[Month Number]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Day of Week Number'
+		isHidden
+		lineageTag: 2b15fa4f-10e7-4826-ba75-7c39ef66e40c
+		dataCategory: DayOfWeek
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: DateAutoTemplate[Day of Week Number]
+
+		annotation SQLBI_AttributeTypes = DayOfWeek
+
+		annotation SQLBI_FilterSafe = True
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Day of Week'
+		lineageTag: 92afa398-5418-4025-9c4b-4da48898aeab
+		dataCategory: DayOfWeek
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: DateAutoTemplate[Day of Week]
+		sortByColumn: 'Day of Week Number'
+
+		annotation SQLBI_FilterSafe = True
+
+	column DateWithTransactions
+		isHidden
+		lineageTag: 4fcd3bde-1eee-4ade-a01b-ac381aadd8a0
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: DateAutoTemplate[DateWithTransactions]
+
+		annotation SQLBI_AttributeTypes = DateDuration
+
+	hierarchy Calendar
+		lineageTag: 4609a74a-f57c-4ffe-9863-48c24e2b839e
+
+		level Year
+			lineageTag: 082290b4-8b68-4807-938a-1975122312f7
+			column: Year
+
+		level Month
+			lineageTag: 6b44af91-b618-4863-b402-7097247cb7e0
+			column: 'Year Month'
+
+		level Date
+			lineageTag: fe1eba30-687d-4aa7-b366-2794e2c62a10
+			column: Date
+
+	partition Date = calculated
+		mode: import
+		source = DateAutoTemplate
+
+	annotation SQLBI_Template = Dates
+
+	annotation SQLBI_TemplateTable = Date
+
+	annotation SQLBI_CalendarType = Calendar
+

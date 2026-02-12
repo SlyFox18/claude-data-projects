@@ -1,0 +1,41 @@
+table RouteDaySort
+	lineageTag: 7288243f-877e-4fdb-9135-f7263fabe352
+
+	column 'Route Day'
+		lineageTag: bd7c0acd-685b-46dd-b235-5b03625987d5
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Route Day]
+		sortByColumn: 'Sort Order'
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Sort Order'
+		formatString: 0
+		lineageTag: fc868654-9dea-4fe9-b12c-a2d5853abe13
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Sort Order]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition RouteDaySort = calculated
+		mode: import
+		source = ```
+				
+				DATATABLE(
+				    "Route Day", STRING,
+				    "Sort Order", INTEGER,
+				    {
+				        {"Monday", 1},
+				        {"Tuesday", 2},
+				        {"Wednesday", 3},
+				        {"Thursday", 4},
+				        {"Friday", 5}
+				    }
+				)
+				
+				```
+
+	annotation PBI_Id = 5e8fde8a42ef49e3b2997abf87477253
+

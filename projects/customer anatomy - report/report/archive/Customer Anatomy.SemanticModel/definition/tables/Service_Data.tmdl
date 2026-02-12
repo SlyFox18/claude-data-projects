@@ -1,0 +1,208 @@
+table Service_Data
+	lineageTag: d6c69a31-107e-42e7-94a2-1ba8aea08b2c
+
+	column Account
+		dataType: string
+		lineageTag: af76ea48-540a-47c2-aefe-434db914edaf
+		summarizeBy: none
+		sourceColumn: Account
+
+		annotation SummarizationSetBy = Automatic
+
+	column Customer
+		dataType: string
+		lineageTag: 54abadd4-c137-4f5a-a4cf-4d0d1c6b0205
+		summarizeBy: none
+		sourceColumn: Customer
+
+		annotation SummarizationSetBy = Automatic
+
+	column Territory
+		dataType: string
+		lineageTag: ea7c34c3-cf97-46e8-948f-f5a52bad49a4
+		summarizeBy: none
+		sourceColumn: Territory
+
+		annotation SummarizationSetBy = Automatic
+
+	column Class
+		dataType: string
+		lineageTag: 2b2d1425-6b4a-4c03-a3da-426aee9d79aa
+		summarizeBy: none
+		sourceColumn: Class
+
+		annotation SummarizationSetBy = Automatic
+
+	column InvoiceMonth
+		dataType: int64
+		formatString: 0
+		lineageTag: 8c1075b6-5531-452c-bc2b-86d2431a8c79
+		summarizeBy: sum
+		sourceColumn: InvoiceMonth
+
+		annotation SummarizationSetBy = Automatic
+
+	column InvoiceYear
+		dataType: int64
+		formatString: 0
+		lineageTag: 745d4f8f-170f-4fff-9886-5ff9883fda62
+		summarizeBy: sum
+		sourceColumn: InvoiceYear
+
+		annotation SummarizationSetBy = Automatic
+
+	column MonthYear = FORMAT(DATE(Service_Data[InvoiceYear], Service_Data[InvoiceMonth], 1), "MMM YYYY")
+		lineageTag: 814e544e-9ca6-405b-8396-6acb2ced5ed5
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Invoice Counts YTD'
+		dataType: int64
+		formatString: 0
+		lineageTag: e2eabb46-55f2-4b0a-9133-a74ecaa28e91
+		summarizeBy: sum
+		sourceColumn: Invoice Counts YTD
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Sales YTD'
+		dataType: double
+		lineageTag: 4b67b51a-d65b-4d47-b16f-9b564cee5cf4
+		summarizeBy: sum
+		sourceColumn: Sales YTD
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column 'Parts Sales YTD'
+		dataType: double
+		lineageTag: 5cf8cc9e-898c-4548-bf91-203e42d64508
+		summarizeBy: sum
+		sourceColumn: Parts Sales YTD
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column 'Labor Sales YTD'
+		dataType: double
+		lineageTag: ad48029e-6e6c-4a60-a995-a82861106689
+		summarizeBy: sum
+		sourceColumn: Labor Sales YTD
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column 'Cost YTD'
+		dataType: double
+		lineageTag: 811f6e18-9cf2-48ce-961f-ad515ff44a02
+		summarizeBy: sum
+		sourceColumn: Cost YTD
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column 'Margin YTD'
+		dataType: double
+		lineageTag: 8feb3a5a-0f38-42c4-92ac-58f805da325e
+		summarizeBy: sum
+		sourceColumn: Margin YTD
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column 'GP % YTD'
+		dataType: double
+		lineageTag: d683c8ba-78f5-419d-b826-1fbaa0a0d2ec
+		summarizeBy: sum
+		sourceColumn: GP % YTD
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column 'Invoice Counts PYTD'
+		dataType: int64
+		formatString: 0
+		lineageTag: a467e322-3c22-4160-b487-0848b3c9e75a
+		summarizeBy: sum
+		sourceColumn: Invoice Counts PYTD
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Sales PYTD'
+		dataType: double
+		lineageTag: 0fd72980-ed39-4e6c-81d1-5c034c9a2482
+		summarizeBy: sum
+		sourceColumn: Sales PYTD
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column 'Parts Sales PYTD'
+		dataType: double
+		lineageTag: e1529512-ecb6-4ec6-825d-6196bb577e49
+		summarizeBy: sum
+		sourceColumn: Parts Sales PYTD
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column 'Labor Sales PYTD'
+		dataType: double
+		lineageTag: 5f5eb7f2-9b4c-4b97-bac0-faebe8e44baf
+		summarizeBy: sum
+		sourceColumn: Labor Sales PYTD
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column 'Cost PYTD'
+		dataType: double
+		lineageTag: 905792da-bdaf-43ca-9d18-9f1a7068e7c9
+		summarizeBy: sum
+		sourceColumn: Cost PYTD
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column 'Margin PYTD'
+		dataType: double
+		lineageTag: 255c9d22-f409-430b-b7c0-b06cfbb9dd4d
+		summarizeBy: sum
+		sourceColumn: Margin PYTD
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column 'GP % PYTD'
+		dataType: double
+		lineageTag: 16ee2b7b-70e7-4568-9ce0-a7565d87921a
+		summarizeBy: sum
+		sourceColumn: GP % PYTD
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	partition Service_Data = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-ch6iiwox4jveda3rmgudwi6hey.datawarehouse.fabric.microsoft.com", "LH_Parts_Reports_Data"),
+				    dbo_Service_Data = Source{[Schema="dbo",Item="Service_Data"]}[Data]
+				in
+				    dbo_Service_Data
+
+	annotation PBI_ResultType = Table
+

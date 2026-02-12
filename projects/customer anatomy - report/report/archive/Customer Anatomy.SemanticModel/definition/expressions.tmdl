@@ -1,0 +1,92 @@
+expression Parameter1 = #"Sample File" meta [IsParameterQuery=true, BinaryIdentifier=#"Sample File", Type="Binary", IsParameterQueryRequired=true]
+	lineageTag: a78a05d3-114e-4193-af49-d7ca33a8e752
+	queryGroup: 'Transform File from Query1\Helper Queries'
+
+	annotation PBI_ResultType = Binary
+
+expression 'Transform Sample File' =
+		let
+		    Source = Excel.Workbook(Parameter1, null, true),
+		    #"3.24.25-export_Sheet" = Source{[Item="3.24.25-export",Kind="Sheet"]}[Data],
+		    #"Promoted Headers" = Table.PromoteHeaders(#"3.24.25-export_Sheet", [PromoteAllScalars=true])
+		in
+		    #"Promoted Headers"
+	lineageTag: 82bb60c9-1a3e-47db-a79e-3e42782aa545
+	queryGroup: 'Transform File from Query1'
+
+	annotation PBI_ResultType = Table
+
+expression 'Sample File' =
+		let
+		    Source = SharePoint.Files("https://spitractor.sharepoint.com/sites/SouthPlainsImplement-ReportSite", [ApiVersion = 15]),
+		    #"Engaged_Acres_export xlsx_https://spitractor sharepoint com/sites/SouthPlainsImplement-ReportSite/App Data/Engaged Acre Exports/" = Source{[Name="Engaged_Acres_export.xlsx",#"Folder Path"="https://spitractor.sharepoint.com/sites/SouthPlainsImplement-ReportSite/App Data/Engaged Acre Exports/"]}[Content]
+		in
+		    #"Engaged_Acres_export xlsx_https://spitractor sharepoint com/sites/SouthPlainsImplement-ReportSite/App Data/Engaged Acre Exports/"
+	lineageTag: ada16e52-bde0-4201-b114-c82b54fbbd85
+	queryGroup: 'Transform File from Query1\Helper Queries'
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Binary
+
+expression 'Transform File' =
+		let
+		    Source = (Parameter1 as binary) => let
+		    Source = Excel.Workbook(Parameter1, null, true),
+		    #"3.24.25-export_Sheet" = Source{[Item="3.24.25-export",Kind="Sheet"]}[Data],
+		    #"Promoted Headers" = Table.PromoteHeaders(#"3.24.25-export_Sheet", [PromoteAllScalars=true])
+		in
+		    #"Promoted Headers"
+		in
+		    Source
+	mAttributes: [ FunctionQueryBinding = "{""exemplarFormulaName"":""Transform Sample File""}" ]
+	lineageTag: b7e59678-65b8-43f4-811b-63847c16b5e9
+	queryGroup: 'Transform File from Query1\Helper Queries'
+
+	annotation PBI_ResultType = Function
+
+expression Parameter2 = #"Sample File (2)" meta [IsParameterQuery=true, BinaryIdentifier=#"Sample File (2)", Type="Binary", IsParameterQueryRequired=true]
+	lineageTag: d8b6c224-de2d-4dfa-a54b-37179f8908c1
+	queryGroup: 'Transform File from Query1 (2)\Helper Queries'
+
+	annotation PBI_ResultType = Binary
+
+expression 'Transform Sample File (2)' =
+		let
+		    Source = Excel.Workbook(Parameter2, null, true),
+		    Table1_Table = Source{[Item="Table1",Kind="Table"]}[Data]
+		in
+		    Table1_Table
+	lineageTag: 237b82db-b59b-40a7-a1e0-1a7ecef3d8d6
+	queryGroup: 'Transform File from Query1 (2)'
+
+	annotation PBI_ResultType = Table
+
+expression 'Sample File (2)' =
+		let
+		    Source = SharePoint.Files("https://spitractor.sharepoint.com/sites/SouthPlainsImplement-ReportSite", [ApiVersion = 15]),
+		    #"Engaged_Acres_export xlsx_https://spitractor sharepoint com/sites/SouthPlainsImplement-ReportSite/App Data/Engaged Acre Exports/" = Source{[Name="Engaged_Acres_export.xlsx",#"Folder Path"="https://spitractor.sharepoint.com/sites/SouthPlainsImplement-ReportSite/App Data/Engaged Acre Exports/"]}[Content]
+		in
+		    #"Engaged_Acres_export xlsx_https://spitractor sharepoint com/sites/SouthPlainsImplement-ReportSite/App Data/Engaged Acre Exports/"
+	lineageTag: 5b4a0f9f-10db-4c7d-a570-f1ea2ce8a9fd
+	queryGroup: 'Transform File from Query1 (2)\Helper Queries'
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Binary
+
+expression 'Transform File (2)' =
+		let
+		    Source = (Parameter2 as binary) => let
+		    Source = Excel.Workbook(Parameter2, null, true),
+		    Table1_Table = Source{[Item="Table1",Kind="Table"]}[Data]
+		in
+		    Table1_Table
+		in
+		    Source
+	mAttributes: [ FunctionQueryBinding = "{""exemplarFormulaName"":""Transform Sample File (2)""}" ]
+	lineageTag: b95fd32c-aebd-4508-97b0-5272319d2adc
+	queryGroup: 'Transform File from Query1 (2)\Helper Queries'
+
+	annotation PBI_ResultType = Function
+

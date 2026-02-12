@@ -1,0 +1,204 @@
+table Combined_Sales_Data
+	lineageTag: a92856eb-1ce8-4d92-9712-71aea9609e27
+
+	column Account
+		lineageTag: 1fcf4e96-e098-438d-8f94-fe91db570b8c
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Account]
+
+		annotation SummarizationSetBy = Automatic
+
+	column Customer
+		lineageTag: afa955cf-c5ef-414f-91af-b3c23cebd18d
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Customer]
+
+		annotation SummarizationSetBy = Automatic
+
+	column Territory
+		lineageTag: ab255649-db1e-4ddf-8542-cc79d3f6e6d8
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Territory]
+
+		annotation SummarizationSetBy = Automatic
+
+	column Class
+		lineageTag: 33ad4f58-071b-4952-b715-2feb6860bd74
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Class]
+
+		annotation SummarizationSetBy = Automatic
+
+	column InvoiceMonth
+		formatString: 0
+		lineageTag: e45b5c45-4296-4154-b859-e43b292d1fdf
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [InvoiceMonth]
+
+		annotation SummarizationSetBy = Automatic
+
+	column InvoiceYear
+		formatString: 0
+		lineageTag: 73baea3a-9e91-4d56-a7a7-7380dace2e91
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [InvoiceYear]
+
+		annotation SummarizationSetBy = Automatic
+
+	column Units
+		formatString: 0
+		lineageTag: 29d282c9-d89a-4a09-94f2-d02c699a1c14
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [Units]
+
+		annotation SummarizationSetBy = Automatic
+
+	column Sales_YTD
+		lineageTag: e3c7a7b0-8fc4-4a87-8af0-adde08ee6014
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [Sales_YTD]
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column Cost_YTD
+		lineageTag: cf8fd3aa-b487-410f-8747-233659547f8d
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [Cost_YTD]
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column Margin_YTD
+		lineageTag: 3817ea46-b734-43a6-bd9c-0de7a4f1eb4c
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [Margin_YTD]
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column GP_%_YTD
+		lineageTag: 30347d73-fdbd-4c2b-9628-d455ef6095d3
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [GP_%_YTD]
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column Sales_Counts_PYTD
+		formatString: 0
+		lineageTag: 48ead484-4836-4b02-ad63-227aeda7a7b3
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [Sales_Counts_PYTD]
+
+		annotation SummarizationSetBy = Automatic
+
+	column Sales_PYTD
+		lineageTag: 933be82a-463e-44f3-82eb-669f2ce513cd
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [Sales_PYTD]
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column Cost_PYTD
+		lineageTag: 495471a5-f5c3-40f4-a310-cf06ca680ad9
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [Cost_PYTD]
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column Margin_PYTD
+		lineageTag: 279c1c00-3051-4b15-aba3-db3ec8683186
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [Margin_PYTD]
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column GP_%_PYTD
+		lineageTag: a58a3718-c700-4eb9-ad6d-fb52a2f8dfdb
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [GP_%_PYTD]
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column MonthYear = FORMAT(DATE(Combined_Sales_Data[InvoiceYear], Combined_Sales_Data[InvoiceMonth], 1), "MMM YYYY")
+		lineageTag: fb916a86-b106-421e-8dc9-163c21bbb662
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	partition Combined_Sales_Data = calculated
+		mode: import
+		source =
+				
+				UNION(
+				    SELECTCOLUMNS(
+				        Sales_Data_YTD_New,
+				        "Account", Sales_Data_YTD_New[Account],
+				        "Customer", Sales_Data_YTD_New[Customer],
+				        "Territory", Sales_Data_YTD_New[Territory],
+				        "Class", Sales_Data_YTD_New[Class],
+				        "InvoiceMonth", Sales_Data_YTD_New[InvoiceMonth],
+				        "InvoiceYear", Sales_Data_YTD_New[InvoiceYear],
+				        "Units", Sales_Data_YTD_New[Sales Counts YTD],
+				        "Sales_YTD", Sales_Data_YTD_New[Sales YTD],
+				        "Cost_YTD", Sales_Data_YTD_New[Cost YTD],
+				        "Margin_YTD", Sales_Data_YTD_New[Margin YTD],
+				        "GP_%_YTD", Sales_Data_YTD_New[GP % YTD],
+				        "Sales_Counts_PYTD", 0,
+				        "Sales_PYTD", 0,
+				        "Cost_PYTD", 0,
+				        "Margin_PYTD", 0,
+				        "GP_%_PYTD", 0
+				    ),
+				    SELECTCOLUMNS(
+				        Sales_Data_PYTD,
+				        "Account", Sales_Data_PYTD[Account],
+				        "Customer", Sales_Data_PYTD[Customer],
+				        "Territory", Sales_Data_PYTD[Territory],
+				        "Class", Sales_Data_PYTD[Class],
+				        "InvoiceMonth", Sales_Data_PYTD[InvoiceMonth],
+				        "InvoiceYear", Sales_Data_PYTD[InvoiceYear],
+				        "Units", 0,
+				        "Sales_YTD", 0,
+				        "Cost_YTD", 0,
+				        "Margin_YTD", 0,
+				        "GP_%_YTD", 0,
+				        "Sales_Counts_PYTD", Sales_Data_PYTD[Sales Counts PYTD],
+				        "Sales_PYTD", Sales_Data_PYTD[Sales PYTD],
+				        "Cost_PYTD", Sales_Data_PYTD[Cost PYTD],
+				        "Margin_PYTD", Sales_Data_PYTD[Margin PYTD],
+				        "GP_%_PYTD", Sales_Data_PYTD[GP % PYTD]
+				    )
+				)
+
+	annotation PBI_Id = c56a83b1ae1a446088ced5cd99d7108f
+

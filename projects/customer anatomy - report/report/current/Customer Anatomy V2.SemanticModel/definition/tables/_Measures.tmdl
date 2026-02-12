@@ -1,0 +1,3647 @@
+table _Measures
+	lineageTag: 22e4b9e3-99b6-4634-9836-9ade5a5ea5a5
+
+	measure 'Page 1 Home - Header' = ```
+			
+			// Get user name
+			VAR _User = USERPRINCIPALNAME()
+			VAR _Position = SEARCH("@", _User, 1)
+			VAR _Name = LEFT(_User, _Position - 1)
+			VAR _FirstLetter = UPPER(LEFT(_Name, 1))
+			VAR _LastName = MID(_Name, 2, LEN(_Name) - 1)
+			VAR _FormattedLastName = 
+			    UPPER(LEFT(_LastName, 1)) & LOWER(MID(_LastName, 2, LEN(_LastName)))
+			VAR WelcomeName = _FirstLetter & "." & _FormattedLastName
+			
+			// Get current date/time info
+			VAR CurrentDate = TODAY()
+			VAR DateDisplay = FORMAT(CurrentDate, "MMM D, YYYY")
+			VAR CurrentHour = HOUR(NOW())
+			VAR TimeGreeting = 
+			    IF(CurrentHour < 12, "Good Morning",
+			    IF(CurrentHour < 17, "Good Afternoon",
+			    "Good Evening"))
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    height: 85px;
+			    padding: 15px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 10px;
+			    color: white;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-between;
+			    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    box-sizing: border-box;
+			'>
+			    <!-- Left side: Dashboard Title -->
+			    <div style='display: flex; align-items: center; gap: 15px;'>
+			        <!-- Home icon -->
+			        <div style='
+			            width: 40px;
+			            height: 40px;
+			            background: rgba(255,255,255,0.15);
+			            border-radius: 8px;
+			            display: flex;
+			            align-items: center;
+			            justify-content: center;
+			            font-size: 20px;
+			        '>
+			            🏠
+			        </div>
+			        
+			        <!-- Title -->
+			        <div>
+			            <div style='font-size: 12px; opacity: 0.85; margin-bottom: 4px; letter-spacing: 0.5px;'>
+			                REPORT
+			            </div>
+			            <div style='font-size: 26px; font-weight: 700; line-height: 1;'>
+			                Customer Anatomy - Executive Summary
+			            </div>
+			        </div>
+			    </div>
+			    
+			    <!-- Right side: Welcome & Date -->
+			    <div style='text-align: right;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 6px;'>
+			            " & TimeGreeting & ", " & WelcomeName & "
+			        </div>
+			        <div style='font-size: 16px; font-weight: 600;'>
+			            📅 " & DateDisplay & "
+			        </div>
+			    </div>
+			</div>
+			"
+			```
+		lineageTag: 49efea2a-3c06-4cab-8367-26b26caa141e
+
+	/// LEVEL 1 MEASURES - CUSTOMER PERFORMANCE (Fact_CustomerPerformance)
+	measure 'Active Customers' = DISTINCTCOUNT(Fact_CustomerPerformance[CustomerKey])
+		formatString: #,##0
+		lineageTag: a1b2c3d4-0001-0001-0001-000000000001
+
+	measure 'Total Revenue' = SUM(Fact_CustomerPerformance[TotalSales])
+		formatString: "$"#,##0
+		lineageTag: a1b2c3d4-0001-0001-0001-000000000002
+
+	measure 'Total Cost' = SUM(Fact_CustomerPerformance[TotalCost])
+		formatString: "$"#,##0
+		lineageTag: a1b2c3d4-0001-0001-0001-000000000003
+
+	measure 'Total Margin' = SUM(Fact_CustomerPerformance[TotalMargin])
+		formatString: "$"#,##0
+		lineageTag: a1b2c3d4-0001-0001-0001-000000000004
+
+	measure 'Total GP%' = DIVIDE([Total Margin], [Total Revenue], 0)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: a1b2c3d4-0001-0001-0001-000000000005
+
+	measure 'Parts Revenue' = SUM(Fact_CustomerPerformance[PartsSales])
+		formatString: "$"#,##0
+		lineageTag: a1b2c3d4-0001-0001-0001-000000000006
+
+	measure 'Parts Cost (L1)' = SUM(Fact_CustomerPerformance[PartsCost])
+		formatString: "$"#,##0
+		lineageTag: a1b2c3d4-0001-0001-0001-000000000007
+
+	measure 'Parts Margin (L1)' = SUM(Fact_CustomerPerformance[PartsMargin])
+		formatString: "$"#,##0
+		lineageTag: a1b2c3d4-0001-0001-0001-000000000008
+
+	measure 'Service Revenue' = SUM(Fact_CustomerPerformance[ServiceSales])
+		formatString: "$"#,##0
+		lineageTag: a1b2c3d4-0001-0001-0001-000000000009
+
+	measure 'Service Cost (L1)' = SUM(Fact_CustomerPerformance[ServiceCost])
+		formatString: "$"#,##0
+		lineageTag: a1b2c3d4-0001-0001-0001-000000000010
+
+	measure 'Service Margin (L1)' = SUM(Fact_CustomerPerformance[ServiceMargin])
+		formatString: "$"#,##0
+		lineageTag: a1b2c3d4-0001-0001-0001-000000000011
+
+	measure 'Equipment Revenue' = SUM(Fact_CustomerPerformance[EquipmentSales])
+		formatString: "$"#,##0
+		lineageTag: a1b2c3d4-0001-0001-0001-000000000012
+
+	measure 'Equipment Cost (L1)' = SUM(Fact_CustomerPerformance[EquipmentCost])
+		formatString: "$"#,##0
+		lineageTag: a1b2c3d4-0001-0001-0001-000000000013
+
+	measure 'Equipment Margin (L1)' = SUM(Fact_CustomerPerformance[EquipmentMargin])
+		formatString: "$"#,##0
+		lineageTag: a1b2c3d4-0001-0001-0001-000000000014
+
+	measure 'Parts Mix %' = DIVIDE([Parts Revenue], [Total Revenue], 0)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: a1b2c3d4-0001-0001-0001-000000000015
+
+	measure 'Service Mix %' = DIVIDE([Service Revenue], [Total Revenue], 0)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: a1b2c3d4-0001-0001-0001-000000000016
+
+	measure 'Equipment Mix %' = DIVIDE([Equipment Revenue], [Total Revenue], 0)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: a1b2c3d4-0001-0001-0001-000000000017
+
+	measure 'Total Transaction Count' = SUM(Fact_CustomerPerformance[TotalTransactionCount])
+		formatString: #,##0
+		lineageTag: a1b2c3d4-0001-0001-0001-000000000018
+
+	/// LEVEL 2 MEASURES - PARTS INVOICES (Fact_Parts_Invoices)
+	measure 'Parts Invoice Count' = COUNTROWS(Fact_Parts_Invoices)
+		formatString: #,##0
+		lineageTag: a1b2c3d4-0002-0001-0001-000000000001
+
+	measure 'Parts Sales' = SUM(Fact_Parts_Invoices[PartsSaleValue])
+		formatString: "$"#,##0
+		lineageTag: a1b2c3d4-0002-0001-0001-000000000002
+
+	measure 'Parts Cost' = SUM(Fact_Parts_Invoices[PartsCostValue])
+		formatString: "$"#,##0
+		lineageTag: a1b2c3d4-0002-0001-0001-000000000003
+
+	measure 'Parts Margin' = SUM(Fact_Parts_Invoices[PartsMargin])
+		formatString: "$"#,##0
+		lineageTag: a1b2c3d4-0002-0001-0001-000000000004
+
+	measure 'Parts GP%' = DIVIDE([Parts Margin], [Parts Sales], 0)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: a1b2c3d4-0002-0001-0001-000000000005
+
+	/// LEVEL 2 MEASURES - SERVICE INVOICES (Fact_Service_Invoices)
+	measure 'Service Invoice Count' = COUNTROWS(Fact_Service_Invoices)
+		formatString: #,##0
+		lineageTag: a1b2c3d4-0003-0001-0001-000000000001
+
+	measure 'Service Labour Sales' = SUM(Fact_Service_Invoices[LabourSaleValue])
+		formatString: "$"#,##0
+		lineageTag: a1b2c3d4-0003-0001-0001-000000000002
+
+	measure 'Service Labour Cost' = SUM(Fact_Service_Invoices[LabourCostValue])
+		formatString: "$"#,##0
+		lineageTag: a1b2c3d4-0003-0001-0001-000000000003
+
+	measure 'Service Labour Margin' = SUM(Fact_Service_Invoices[LabourMargin])
+		formatString: "$"#,##0
+		lineageTag: a1b2c3d4-0003-0001-0001-000000000004
+
+	measure 'Service Labour GP%' = DIVIDE([Service Labour Margin], [Service Labour Sales], 0)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: a1b2c3d4-0003-0001-0001-000000000005
+
+	measure 'Service Invoice Total Sales' = SUM(Fact_Service_Invoices[TotalNetSales])
+		formatString: "$"#,##0
+		lineageTag: a1b2c3d4-0003-0001-0001-000000000006
+
+	measure 'Service Invoice Total Cost' = SUM(Fact_Service_Invoices[TotalCost])
+		formatString: "$"#,##0
+		lineageTag: a1b2c3d4-0003-0001-0001-000000000007
+
+	measure 'Service Invoice Total Margin' = SUM(Fact_Service_Invoices[TotalMargin])
+		formatString: "$"#,##0
+		lineageTag: a1b2c3d4-0003-0001-0001-000000000008
+
+	measure 'Service Invoice GP%' = DIVIDE([Service Invoice Total Margin], [Service Invoice Total Sales], 0)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: a1b2c3d4-0003-0001-0001-000000000009
+
+	/// LEVEL 2 MEASURES - EQUIPMENT SALES (Fact_Equipment_Sales)
+	measure 'Equipment Unit Count' = COUNTROWS(Fact_Equipment_Sales)
+		formatString: #,##0
+		lineageTag: a1b2c3d4-0004-0001-0001-000000000001
+
+	measure 'Equipment Sales Value' = SUM(Fact_Equipment_Sales[SalesValue])
+		formatString: "$"#,##0
+		lineageTag: a1b2c3d4-0004-0001-0001-000000000002
+
+	measure 'Equipment Base Cost' = SUM(Fact_Equipment_Sales[TotalBaseCost])
+		formatString: "$"#,##0
+		lineageTag: a1b2c3d4-0004-0001-0001-000000000003
+
+	measure 'Equipment Margin' = [Equipment Sales Value] - [Equipment Base Cost]
+		formatString: "$"#,##0
+		lineageTag: a1b2c3d4-0004-0001-0001-000000000004
+
+	measure 'Equipment GP%' = DIVIDE([Equipment Margin], [Equipment Sales Value], 0)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: a1b2c3d4-0004-0001-0001-000000000005
+
+	measure 'Equipment Trade Allowance' = SUM(Fact_Equipment_Sales[TotalTradeAllowance])
+		formatString: "$"#,##0
+		lineageTag: a1b2c3d4-0004-0001-0001-000000000006
+
+	/// LEVEL 3 MEASURES - PARTS DETAIL (Fact_Parts_Detail)
+	measure 'Parts Detail Lines' = COUNTROWS(Fact_Parts_Detail)
+		formatString: #,##0
+		lineageTag: a1b2c3d4-0005-0001-0001-000000000001
+
+	measure 'Parts Detail Sales' = SUM(Fact_Parts_Detail[SaleValue])
+		formatString: "$"#,##0
+		lineageTag: a1b2c3d4-0005-0001-0001-000000000002
+
+	measure 'Parts Detail Cost' = SUM(Fact_Parts_Detail[CostValue])
+		formatString: "$"#,##0
+		lineageTag: a1b2c3d4-0005-0001-0001-000000000003
+
+	measure 'Parts Detail Margin' = SUM(Fact_Parts_Detail[LineMargin])
+		formatString: "$"#,##0
+		lineageTag: a1b2c3d4-0005-0001-0001-000000000004
+
+	measure 'Parts Detail GP%' = DIVIDE([Parts Detail Margin], [Parts Detail Sales], 0)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: a1b2c3d4-0005-0001-0001-000000000005
+
+	measure 'Parts Qty Sold' = SUM(Fact_Parts_Detail[Qty])
+		formatString: #,##0
+		lineageTag: a1b2c3d4-0005-0001-0001-000000000006
+
+	measure 'Parts Sundry Sales' = CALCULATE([Parts Detail Sales], Fact_Parts_Detail[IsSundryPart] = TRUE)
+		formatString: "$"#,##0
+		lineageTag: a1b2c3d4-0005-0001-0001-000000000007
+
+	measure 'Parts Sundry Cost' = CALCULATE([Parts Detail Cost], Fact_Parts_Detail[IsSundryPart] = TRUE)
+		formatString: "$"#,##0
+		lineageTag: a1b2c3d4-0005-0001-0001-000000000008
+
+	measure 'Parts Sales Ex Sundry' = [Parts Detail Sales] - [Parts Sundry Sales]
+		formatString: "$"#,##0
+		lineageTag: a1b2c3d4-0005-0001-0001-000000000009
+
+	measure 'Parts Cost Ex Sundry' = [Parts Detail Cost] - [Parts Sundry Cost]
+		formatString: "$"#,##0
+		lineageTag: a1b2c3d4-0005-0001-0001-000000000010
+
+	/// LEVEL 3 MEASURES - SERVICE DETAIL (Fact_Service_Detail)
+	measure 'Service Jobs' = COUNTROWS(Fact_Service_Detail)
+		formatString: #,##0
+		lineageTag: a1b2c3d4-0006-0001-0001-000000000001
+
+	measure 'Service Labor Revenue' = SUM(Fact_Service_Detail[InvLabor])
+		formatString: "$"#,##0
+		lineageTag: a1b2c3d4-0006-0001-0001-000000000002
+
+	measure 'Service Labor Cost' = SUM(Fact_Service_Detail[ActLabor])
+		formatString: "$"#,##0
+		lineageTag: a1b2c3d4-0006-0001-0001-000000000003
+
+	measure 'Service Labor Margin' = SUM(Fact_Service_Detail[LaborMargin])
+		formatString: "$"#,##0
+		lineageTag: a1b2c3d4-0006-0001-0001-000000000004
+
+	measure 'Service Parts Revenue' = SUM(Fact_Service_Detail[InvParts])
+		formatString: "$"#,##0
+		lineageTag: a1b2c3d4-0006-0001-0001-000000000005
+
+	measure 'Service Parts Cost' = SUM(Fact_Service_Detail[ActParts])
+		formatString: "$"#,##0
+		lineageTag: a1b2c3d4-0006-0001-0001-000000000006
+
+	measure 'Service Parts Margin' = SUM(Fact_Service_Detail[PartsMargin])
+		formatString: "$"#,##0
+		lineageTag: a1b2c3d4-0006-0001-0001-000000000007
+
+	measure 'Service Job Total Revenue' = SUM(Fact_Service_Detail[TotalInvoiced])
+		formatString: "$"#,##0
+		lineageTag: a1b2c3d4-0006-0001-0001-000000000008
+
+	measure 'Service Job Total Margin' = SUM(Fact_Service_Detail[TotalJobMargin])
+		formatString: "$"#,##0
+		lineageTag: a1b2c3d4-0006-0001-0001-000000000009
+
+	measure 'Service Job GP%' = DIVIDE([Service Job Total Margin], [Service Job Total Revenue], 0)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: a1b2c3d4-0006-0001-0001-000000000010
+
+	measure 'Warranty Jobs' = CALCULATE([Service Jobs], Fact_Service_Detail[IsWarrantyJob] = TRUE)
+		formatString: #,##0
+		lineageTag: a1b2c3d4-0006-0001-0001-000000000011
+
+	measure 'Customer Pay Jobs' = CALCULATE([Service Jobs], Fact_Service_Detail[IsWarrantyJob] = FALSE)
+		formatString: #,##0
+		lineageTag: a1b2c3d4-0006-0001-0001-000000000012
+
+	measure 'Warranty Revenue' = CALCULATE([Service Job Total Revenue], Fact_Service_Detail[IsWarrantyJob] = TRUE)
+		formatString: "$"#,##0
+		lineageTag: a1b2c3d4-0006-0001-0001-000000000013
+
+	measure 'Customer Pay Revenue' = CALCULATE([Service Job Total Revenue], Fact_Service_Detail[IsWarrantyJob] = FALSE)
+		formatString: "$"#,##0
+		lineageTag: a1b2c3d4-0006-0001-0001-000000000014
+
+	/// EXECUTIVE INTELLIGENCE MEASURES
+	measure 'Customer Health Score' =
+			VAR Revenue = [Total Revenue]
+			VAR Margin = [Total Margin]
+			VAR GPPct = [Total GP%]
+			VAR TransactionCount = SUM(Fact_CustomerPerformance[TotalTransactionCount])
+			VAR DeptCount =
+			    (IF([Parts Revenue] > 0, 1, 0) +
+			     IF([Service Revenue] > 0, 1, 0) +
+			     IF([Equipment Revenue] > 0, 1, 0))
+			RETURN
+			    (DIVIDE(Revenue, 100000, 0) * 0.3) +
+			    (DIVIDE(Margin, 50000, 0) * 0.3) +
+			    (GPPct * 0.2) +
+			    (DeptCount / 3 * 0.2)
+		formatString: 0.00
+		lineageTag: a1b2c3d4-0007-0001-0001-000000000001
+
+	measure 'Cross-Sell Opportunity' =
+			VAR HasParts = IF([Parts Revenue] > 0, 1, 0)
+			VAR HasService = IF([Service Revenue] > 0, 1, 0)
+			VAR HasEquipment = IF([Equipment Revenue] > 0, 1, 0)
+			VAR DeptCount = HasParts + HasService + HasEquipment
+			RETURN
+			    SWITCH(
+			        TRUE(),
+			        DeptCount = 3, "Full Engagement",
+			        DeptCount = 2, "Growth Potential",
+			        DeptCount = 1, "Cross-Sell Target",
+			        "No Activity"
+			    )
+		lineageTag: a1b2c3d4-0007-0001-0001-000000000002
+
+	measure 'Strategic Value' =
+			VAR Revenue = [Total Revenue]
+			VAR GPPct = [Total GP%]
+			RETURN
+			    SWITCH(
+			        TRUE(),
+			        Revenue > 100000 && GPPct > 0.25, "Premium",
+			        Revenue > 50000 && GPPct > 0.20, "High Value",
+			        Revenue > 20000, "Standard",
+			        Revenue > 5000, "Developing",
+			        "Low Activity"
+			    )
+		lineageTag: a1b2c3d4-0007-0001-0001-000000000003
+
+	measure 'Departments Engaged' =
+			VAR HasParts = IF([Parts Revenue] > 0, 1, 0)
+			VAR HasService = IF([Service Revenue] > 0, 1, 0)
+			VAR HasEquipment = IF([Equipment Revenue] > 0, 1, 0)
+			RETURN HasParts + HasService + HasEquipment
+		formatString: 0
+		lineageTag: a1b2c3d4-0007-0001-0001-000000000004
+
+	/// TIME INTELLIGENCE MEASURES - YTD / PYTD
+	measure 'Total Revenue YTD' = CALCULATE([Total Revenue], DATESYTD(dim_DateTable[Date]))
+		formatString: "$"#,##0
+		lineageTag: a1b2c3d4-0008-0001-0001-000000000001
+
+	measure 'Total Revenue PYTD' = CALCULATE([Total Revenue], SAMEPERIODLASTYEAR(DATESYTD(dim_DateTable[Date])))
+		formatString: "$"#,##0
+		lineageTag: a1b2c3d4-0008-0001-0001-000000000002
+
+	measure 'Revenue YoY Growth' = DIVIDE([Total Revenue YTD] - [Total Revenue PYTD], [Total Revenue PYTD], 0)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: a1b2c3d4-0008-0001-0001-000000000003
+
+	measure 'Total Margin YTD' = CALCULATE([Total Margin], DATESYTD(dim_DateTable[Date]))
+		formatString: "$"#,##0
+		lineageTag: a1b2c3d4-0008-0001-0001-000000000004
+
+	measure 'Total Margin PYTD' = CALCULATE([Total Margin], SAMEPERIODLASTYEAR(DATESYTD(dim_DateTable[Date])))
+		formatString: "$"#,##0
+		lineageTag: a1b2c3d4-0008-0001-0001-000000000005
+
+	measure 'Margin YoY Growth' = DIVIDE([Total Margin YTD] - [Total Margin PYTD], [Total Margin PYTD], 0)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: a1b2c3d4-0008-0001-0001-000000000006
+
+	measure 'Parts Sales YTD' = CALCULATE([Parts Sales], DATESYTD(dim_DateTable[Date]))
+		formatString: "$"#,##0
+		lineageTag: a1b2c3d4-0008-0001-0001-000000000007
+
+	measure 'Parts Sales PYTD' = CALCULATE([Parts Sales], SAMEPERIODLASTYEAR(DATESYTD(dim_DateTable[Date])))
+		formatString: "$"#,##0
+		lineageTag: a1b2c3d4-0008-0001-0001-000000000008
+
+	measure 'Service Sales YTD' = CALCULATE([Service Revenue], DATESYTD(dim_DateTable[Date]))
+		formatString: "$"#,##0
+		lineageTag: a1b2c3d4-0008-0001-0001-000000000009
+
+	measure 'Service Sales PYTD' = CALCULATE([Service Revenue], SAMEPERIODLASTYEAR(DATESYTD(dim_DateTable[Date])))
+		formatString: "$"#,##0
+		lineageTag: a1b2c3d4-0008-0001-0001-000000000010
+
+	measure 'Equipment Sales YTD' = CALCULATE([Equipment Sales Value], DATESYTD(dim_DateTable[Date]))
+		formatString: "$"#,##0
+		lineageTag: a1b2c3d4-0008-0001-0001-000000000011
+
+	measure 'Equipment Sales PYTD' = CALCULATE([Equipment Sales Value], SAMEPERIODLASTYEAR(DATESYTD(dim_DateTable[Date])))
+		formatString: "$"#,##0
+		lineageTag: a1b2c3d4-0008-0001-0001-000000000012
+
+	measure 'Page 2 Equip Sales - Header' = ```
+			
+			// Get user name
+			VAR _User = USERPRINCIPALNAME()
+			VAR _Position = SEARCH("@", _User, 1)
+			VAR _Name = LEFT(_User, _Position - 1)
+			VAR _FirstLetter = UPPER(LEFT(_Name, 1))
+			VAR _LastName = MID(_Name, 2, LEN(_Name) - 1)
+			VAR _FormattedLastName = 
+			    UPPER(LEFT(_LastName, 1)) & LOWER(MID(_LastName, 2, LEN(_LastName)))
+			VAR WelcomeName = _FirstLetter & "." & _FormattedLastName
+			
+			// Get current date/time info
+			VAR CurrentDate = TODAY()
+			VAR DateDisplay = FORMAT(CurrentDate, "MMM D, YYYY")
+			VAR CurrentHour = HOUR(NOW())
+			VAR TimeGreeting = 
+			    IF(CurrentHour < 12, "Good Morning",
+			    IF(CurrentHour < 17, "Good Afternoon",
+			    "Good Evening"))
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    height: 85px;
+			    padding: 15px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 10px;
+			    color: white;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-between;
+			    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    box-sizing: border-box;
+			'>
+			    <!-- Left side: Dashboard Title -->
+			    <div style='display: flex; align-items: center; gap: 15px;'>
+			        <!-- Home icon -->
+			        <div style='
+			            width: 40px;
+			            height: 40px;
+			            background: rgba(255,255,255,0.15);
+			            border-radius: 8px;
+			            display: flex;
+			            align-items: center;
+			            justify-content: center;
+			            font-size: 20px;
+			        '>
+			            🏠
+			        </div>
+			        
+			        <!-- Title -->
+			        <div>
+			            <div style='font-size: 12px; opacity: 0.85; margin-bottom: 4px; letter-spacing: 0.5px;'>
+			                REPORT
+			            </div>
+			            <div style='font-size: 26px; font-weight: 700; line-height: 1;'>
+			                Customer Anatomy - Equipment Sales Summary
+			            </div>
+			        </div>
+			    </div>
+			    
+			    <!-- Right side: Welcome & Date -->
+			    <div style='text-align: right;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 6px;'>
+			            " & TimeGreeting & ", " & WelcomeName & "
+			        </div>
+			        <div style='font-size: 16px; font-weight: 600;'>
+			            📅 " & DateDisplay & "
+			        </div>
+			    </div>
+			</div>
+			"
+			```
+		lineageTag: 330d8750-e0bb-4d51-8bb2-3af4af8bae72
+
+	measure 'Equipment Sales YoY Growth' = DIVIDE([Equipment Sales YTD] - [Equipment Sales PYTD], [Equipment Sales PYTD], 0)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: a1b2c3d4-0008-0001-0001-000000000013
+
+	measure 'Equipment Margin YTD' = CALCULATE([Equipment Margin], DATESYTD(dim_DateTable[Date]))
+		formatString: "$"#,##0
+		lineageTag: a1b2c3d4-0008-0001-0001-000000000014
+
+	measure 'Equipment Margin PYTD' = CALCULATE([Equipment Margin], SAMEPERIODLASTYEAR(DATESYTD(dim_DateTable[Date])))
+		formatString: "$"#,##0
+		lineageTag: a1b2c3d4-0008-0001-0001-000000000015
+
+	measure 'Equipment Margin YoY Growth' = DIVIDE([Equipment Margin YTD] - [Equipment Margin PYTD], [Equipment Margin PYTD], 0)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: a1b2c3d4-0008-0001-0001-000000000016
+
+	measure 'Equipment Units YTD' = CALCULATE([Equipment Unit Count], DATESYTD(dim_DateTable[Date]))
+		formatString: #,##0
+		lineageTag: a1b2c3d4-0008-0001-0001-000000000017
+
+	measure 'Equipment Units PYTD' = CALCULATE([Equipment Unit Count], SAMEPERIODLASTYEAR(DATESYTD(dim_DateTable[Date])))
+		formatString: #,##0
+		lineageTag: a1b2c3d4-0008-0001-0001-000000000018
+
+	measure 'Equipment GP% YTD' = DIVIDE([Equipment Margin YTD], [Equipment Sales YTD], 0)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: a1b2c3d4-0008-0001-0001-000000000019
+
+	measure 'Equipment GP% PYTD' = DIVIDE([Equipment Margin PYTD], [Equipment Sales PYTD], 0)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: a1b2c3d4-0008-0001-0001-000000000020
+
+	measure 'Equipment Trade Allowance YTD' = CALCULATE([Equipment Trade Allowance], DATESYTD(dim_DateTable[Date]))
+		formatString: "$"#,##0
+		lineageTag: a1b2c3d4-0008-0001-0001-000000000021
+
+	measure 'Page 3 Parts - Header' = ```
+			
+			// Get user name
+			VAR _User = USERPRINCIPALNAME()
+			VAR _Position = SEARCH("@", _User, 1)
+			VAR _Name = LEFT(_User, _Position - 1)
+			VAR _FirstLetter = UPPER(LEFT(_Name, 1))
+			VAR _LastName = MID(_Name, 2, LEN(_Name) - 1)
+			VAR _FormattedLastName = 
+			    UPPER(LEFT(_LastName, 1)) & LOWER(MID(_LastName, 2, LEN(_LastName)))
+			VAR WelcomeName = _FirstLetter & "." & _FormattedLastName
+			
+			// Get current date/time info
+			VAR CurrentDate = TODAY()
+			VAR DateDisplay = FORMAT(CurrentDate, "MMM D, YYYY")
+			VAR CurrentHour = HOUR(NOW())
+			VAR TimeGreeting = 
+			    IF(CurrentHour < 12, "Good Morning",
+			    IF(CurrentHour < 17, "Good Afternoon",
+			    "Good Evening"))
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    height: 85px;
+			    padding: 15px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 10px;
+			    color: white;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-between;
+			    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    box-sizing: border-box;
+			'>
+			    <!-- Left side: Dashboard Title -->
+			    <div style='display: flex; align-items: center; gap: 15px;'>
+			        <!-- Home icon -->
+			        <div style='
+			            width: 40px;
+			            height: 40px;
+			            background: rgba(255,255,255,0.15);
+			            border-radius: 8px;
+			            display: flex;
+			            align-items: center;
+			            justify-content: center;
+			            font-size: 20px;
+			        '>
+			            🏠
+			        </div>
+			        
+			        <!-- Title -->
+			        <div>
+			            <div style='font-size: 12px; opacity: 0.85; margin-bottom: 4px; letter-spacing: 0.5px;'>
+			                REPORT
+			            </div>
+			            <div style='font-size: 26px; font-weight: 700; line-height: 1;'>
+			                Customer Anatomy - Parts Summary
+			            </div>
+			        </div>
+			    </div>
+			    
+			    <!-- Right side: Welcome & Date -->
+			    <div style='text-align: right;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 6px;'>
+			            " & TimeGreeting & ", " & WelcomeName & "
+			        </div>
+			        <div style='font-size: 16px; font-weight: 600;'>
+			            📅 " & DateDisplay & "
+			        </div>
+			    </div>
+			</div>
+			"
+			```
+		lineageTag: 94c4bc6d-b716-4e4b-8883-0f1d7c975ed6
+
+	measure 'Parts Sales YoY Growth' = DIVIDE([Parts Sales YTD] - [Parts Sales PYTD], [Parts Sales PYTD], 0)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: a1b2c3d4-0008-0002-0001-000000000001
+
+	measure 'Parts Margin YTD' = CALCULATE([Parts Margin], DATESYTD(dim_DateTable[Date]))
+		formatString: "$"#,##0
+		lineageTag: a1b2c3d4-0008-0002-0001-000000000002
+
+	measure 'Parts Margin PYTD' = CALCULATE([Parts Margin], SAMEPERIODLASTYEAR(DATESYTD(dim_DateTable[Date])))
+		formatString: "$"#,##0
+		lineageTag: a1b2c3d4-0008-0002-0001-000000000003
+
+	measure 'Parts Margin YoY Growth' = DIVIDE([Parts Margin YTD] - [Parts Margin PYTD], [Parts Margin PYTD], 0)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: a1b2c3d4-0008-0002-0001-000000000004
+
+	measure 'Parts Invoice Count YTD' = CALCULATE([Parts Invoice Count], DATESYTD(dim_DateTable[Date]))
+		formatString: #,##0
+		lineageTag: a1b2c3d4-0008-0002-0001-000000000005
+
+	measure 'Parts Invoice Count PYTD' = CALCULATE([Parts Invoice Count], SAMEPERIODLASTYEAR(DATESYTD(dim_DateTable[Date])))
+		formatString: #,##0
+		lineageTag: a1b2c3d4-0008-0002-0001-000000000006
+
+	measure 'Parts GP% YTD' = DIVIDE([Parts Margin YTD], [Parts Sales YTD], 0)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: a1b2c3d4-0008-0002-0001-000000000007
+
+	measure 'Parts GP% PYTD' = DIVIDE([Parts Margin PYTD], [Parts Sales PYTD], 0)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: a1b2c3d4-0008-0002-0001-000000000008
+
+	measure 'Page 4 Service - Header' = ```
+			
+			// Get user name
+			VAR _User = USERPRINCIPALNAME()
+			VAR _Position = SEARCH("@", _User, 1)
+			VAR _Name = LEFT(_User, _Position - 1)
+			VAR _FirstLetter = UPPER(LEFT(_Name, 1))
+			VAR _LastName = MID(_Name, 2, LEN(_Name) - 1)
+			VAR _FormattedLastName = 
+			    UPPER(LEFT(_LastName, 1)) & LOWER(MID(_LastName, 2, LEN(_LastName)))
+			VAR WelcomeName = _FirstLetter & "." & _FormattedLastName
+			
+			// Get current date/time info
+			VAR CurrentDate = TODAY()
+			VAR DateDisplay = FORMAT(CurrentDate, "MMM D, YYYY")
+			VAR CurrentHour = HOUR(NOW())
+			VAR TimeGreeting = 
+			    IF(CurrentHour < 12, "Good Morning",
+			    IF(CurrentHour < 17, "Good Afternoon",
+			    "Good Evening"))
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    height: 85px;
+			    padding: 15px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 10px;
+			    color: white;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-between;
+			    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    box-sizing: border-box;
+			'>
+			    <!-- Left side: Dashboard Title -->
+			    <div style='display: flex; align-items: center; gap: 15px;'>
+			        <!-- Home icon -->
+			        <div style='
+			            width: 40px;
+			            height: 40px;
+			            background: rgba(255,255,255,0.15);
+			            border-radius: 8px;
+			            display: flex;
+			            align-items: center;
+			            justify-content: center;
+			            font-size: 20px;
+			        '>
+			            🏠
+			        </div>
+			        
+			        <!-- Title -->
+			        <div>
+			            <div style='font-size: 12px; opacity: 0.85; margin-bottom: 4px; letter-spacing: 0.5px;'>
+			                REPORT
+			            </div>
+			            <div style='font-size: 26px; font-weight: 700; line-height: 1;'>
+			                Customer Anatomy - Service Summary
+			            </div>
+			        </div>
+			    </div>
+			    
+			    <!-- Right side: Welcome & Date -->
+			    <div style='text-align: right;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 6px;'>
+			            " & TimeGreeting & ", " & WelcomeName & "
+			        </div>
+			        <div style='font-size: 16px; font-weight: 600;'>
+			            📅 " & DateDisplay & "
+			        </div>
+			    </div>
+			</div>
+			"
+			```
+		lineageTag: 6d61c640-e23d-4c6e-8ebc-c3498ca0b427
+
+	measure 'Service Sales YoY Growth' = DIVIDE([Service Sales YTD] - [Service Sales PYTD], [Service Sales PYTD], 0)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: a1b2c3d4-0008-0003-0001-000000000001
+
+	measure 'Service Margin YTD' = CALCULATE([Service Invoice Total Margin], DATESYTD(dim_DateTable[Date]))
+		formatString: "$"#,##0
+		lineageTag: a1b2c3d4-0008-0003-0001-000000000002
+
+	measure 'Service Margin PYTD' = CALCULATE([Service Invoice Total Margin], SAMEPERIODLASTYEAR(DATESYTD(dim_DateTable[Date])))
+		formatString: "$"#,##0
+		lineageTag: a1b2c3d4-0008-0003-0001-000000000003
+
+	measure 'Service Margin YoY Growth' = DIVIDE([Service Margin YTD] - [Service Margin PYTD], [Service Margin PYTD], 0)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: a1b2c3d4-0008-0003-0001-000000000004
+
+	measure 'Service Invoice Count YTD' = CALCULATE([Service Invoice Count], DATESYTD(dim_DateTable[Date]))
+		formatString: #,##0
+		lineageTag: a1b2c3d4-0008-0003-0001-000000000005
+
+	measure 'Service Invoice Count PYTD' = CALCULATE([Service Invoice Count], SAMEPERIODLASTYEAR(DATESYTD(dim_DateTable[Date])))
+		formatString: #,##0
+		lineageTag: a1b2c3d4-0008-0003-0001-000000000006
+
+	measure 'Service GP% YTD' = DIVIDE([Service Margin YTD], [Service Sales YTD], 0)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: a1b2c3d4-0008-0003-0001-000000000007
+
+	measure 'Service GP% PYTD' = DIVIDE([Service Margin PYTD], [Service Sales PYTD], 0)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: a1b2c3d4-0008-0003-0001-000000000008
+
+	measure 'Page 5 Retention - Header' =
+			
+			// Get user name
+			VAR _User = USERPRINCIPALNAME()
+			VAR _Position = SEARCH("@", _User, 1)
+			VAR _Name = LEFT(_User, _Position - 1)
+			VAR _FirstLetter = UPPER(LEFT(_Name, 1))
+			VAR _LastName = MID(_Name, 2, LEN(_Name) - 1)
+			VAR _FormattedLastName =
+			    UPPER(LEFT(_LastName, 1)) & LOWER(MID(_LastName, 2, LEN(_LastName)))
+			VAR WelcomeName = _FirstLetter & "." & _FormattedLastName
+			
+			// Get current date/time info
+			VAR CurrentDate = TODAY()
+			VAR DateDisplay = FORMAT(CurrentDate, "MMM D, YYYY")
+			VAR CurrentHour = HOUR(NOW())
+			VAR TimeGreeting =
+			    IF(CurrentHour < 12, "Good Morning",
+			    IF(CurrentHour < 17, "Good Afternoon",
+			    "Good Evening"))
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    height: 85px;
+			    padding: 15px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 10px;
+			    color: white;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-between;
+			    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    box-sizing: border-box;
+			'>
+			    <!-- Left side: Dashboard Title -->
+			    <div style='display: flex; align-items: center; gap: 15px;'>
+			        <!-- Home icon -->
+			        <div style='
+			            width: 40px;
+			            height: 40px;
+			            background: rgba(255,255,255,0.15);
+			            border-radius: 8px;
+			            display: flex;
+			            align-items: center;
+			            justify-content: center;
+			            font-size: 20px;
+			        '>
+			            🏠
+			        </div>
+			
+			        <!-- Title -->
+			        <div>
+			            <div style='font-size: 12px; opacity: 0.85; margin-bottom: 4px; letter-spacing: 0.5px;'>
+			                REPORT
+			            </div>
+			            <div style='font-size: 26px; font-weight: 700; line-height: 1;'>
+			                Customer Anatomy - Customer Retention
+			            </div>
+			        </div>
+			    </div>
+			
+			    <!-- Right side: Welcome & Date -->
+			    <div style='text-align: right;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 6px;'>
+			            " & TimeGreeting & ", " & WelcomeName & "
+			        </div>
+			        <div style='font-size: 16px; font-weight: 600;'>
+			            📅 " & DateDisplay & "
+			        </div>
+			    </div>
+			</div>
+			"
+		lineageTag: e5f0b6be-6dcb-4765-a28c-7cac3c27b398
+
+	/// CUSTOMER RETENTION / CHURN ANALYSIS MEASURES
+	measure 'Revenue Change $' = [Total Revenue YTD] - [Total Revenue PYTD]
+		formatString: "$"#,##0;("$"#,##0);"$"0
+		lineageTag: a1b2c3d4-0009-0001-0001-000000000001
+
+	measure 'Revenue Change %' = DIVIDE([Total Revenue YTD] - [Total Revenue PYTD], [Total Revenue PYTD], 0)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: a1b2c3d4-0009-0001-0001-000000000002
+
+	measure 'Customer Status' =
+			VAR YTDRev = [Total Revenue YTD]
+			VAR PYTDRev = [Total Revenue PYTD]
+			VAR ChangeRatio = DIVIDE(YTDRev, PYTDRev, 0)
+			RETURN
+			SWITCH(
+			    TRUE(),
+			    PYTDRev > 0 && YTDRev = 0, "Churned",
+			    PYTDRev > 0 && ChangeRatio < 0.5, "At Risk",
+			    PYTDRev > 0 && ChangeRatio < 0.8, "Declining",
+			    PYTDRev = 0 && YTDRev > 0, "New Customer",
+			    ChangeRatio >= 0.8 && ChangeRatio <= 1.2, "Stable",
+			    ChangeRatio > 1.2, "Growing",
+			    "No Activity"
+			)
+		lineageTag: a1b2c3d4-0009-0001-0001-000000000003
+
+	measure 'Equipment Change $' = [Equipment Sales YTD] - [Equipment Sales PYTD]
+		formatString: "$"#,##0;("$"#,##0);"$"0
+		lineageTag: a1b2c3d4-0009-0001-0001-000000000004
+
+	measure 'Parts Change $' = [Parts Sales YTD] - [Parts Sales PYTD]
+		formatString: "$"#,##0;("$"#,##0);"$"0
+		lineageTag: a1b2c3d4-0009-0001-0001-000000000005
+
+	measure 'Service Change $' = [Service Sales YTD] - [Service Sales PYTD]
+		formatString: "$"#,##0;("$"#,##0);"$"0
+		lineageTag: a1b2c3d4-0009-0001-0001-000000000006
+
+	measure 'Equipment Status' =
+			VAR YTDRev = [Equipment Sales YTD]
+			VAR PYTDRev = [Equipment Sales PYTD]
+			RETURN
+			SWITCH(
+			    TRUE(),
+			    PYTDRev > 0 && YTDRev = 0, "Lost",
+			    PYTDRev = 0 && YTDRev > 0, "New",
+			    PYTDRev > 0 && YTDRev > 0, "Active",
+			    "None"
+			)
+		lineageTag: a1b2c3d4-0009-0001-0001-000000000007
+
+	measure 'Parts Status' =
+			VAR YTDRev = [Parts Sales YTD]
+			VAR PYTDRev = [Parts Sales PYTD]
+			RETURN
+			SWITCH(
+			    TRUE(),
+			    PYTDRev > 0 && YTDRev = 0, "Lost",
+			    PYTDRev = 0 && YTDRev > 0, "New",
+			    PYTDRev > 0 && YTDRev > 0, "Active",
+			    "None"
+			)
+		lineageTag: a1b2c3d4-0009-0001-0001-000000000008
+
+	measure 'Service Status' =
+			VAR YTDRev = [Service Sales YTD]
+			VAR PYTDRev = [Service Sales PYTD]
+			RETURN
+			SWITCH(
+			    TRUE(),
+			    PYTDRev > 0 && YTDRev = 0, "Lost",
+			    PYTDRev = 0 && YTDRev > 0, "New",
+			    PYTDRev > 0 && YTDRev > 0, "Active",
+			    "None"
+			)
+		lineageTag: a1b2c3d4-0009-0001-0001-000000000009
+
+	measure 'Churned Customer Count' =
+			SUMX(
+			    FILTER(
+			        SUMMARIZE(dim_CustomerList, dim_CustomerList[CustomerKey]),
+			        CALCULATE([Total Revenue PYTD]) > 0 && CALCULATE([Total Revenue YTD]) = 0
+			    ),
+			    1
+			)
+		formatString: #,##0
+		lineageTag: a1b2c3d4-0009-0001-0001-000000000012
+
+	measure 'At Risk Customer Count' =
+			SUMX(
+			    FILTER(
+			        SUMMARIZE(dim_CustomerList, dim_CustomerList[CustomerKey]),
+			        CALCULATE([Total Revenue PYTD]) > 0 &&
+			        DIVIDE(CALCULATE([Total Revenue YTD]), CALCULATE([Total Revenue PYTD]), 0) < 0.5 &&
+			        DIVIDE(CALCULATE([Total Revenue YTD]), CALCULATE([Total Revenue PYTD]), 0) > 0
+			    ),
+			    1
+			)
+		formatString: #,##0
+		lineageTag: a1b2c3d4-0009-0001-0001-000000000013
+
+	measure 'Declining Customer Count' =
+			SUMX(
+			    FILTER(
+			        SUMMARIZE(dim_CustomerList, dim_CustomerList[CustomerKey]),
+			        VAR Ratio = DIVIDE(CALCULATE([Total Revenue YTD]), CALCULATE([Total Revenue PYTD]), 0)
+			        RETURN CALCULATE([Total Revenue PYTD]) > 0 && Ratio >= 0.5 && Ratio < 0.8
+			    ),
+			    1
+			)
+		formatString: #,##0
+		lineageTag: a1b2c3d4-0009-0001-0001-000000000014
+
+	measure 'Growing Customer Count' =
+			SUMX(
+			    FILTER(
+			        SUMMARIZE(dim_CustomerList, dim_CustomerList[CustomerKey]),
+			        CALCULATE([Total Revenue YTD]) > CALCULATE([Total Revenue PYTD]) * 1.2
+			    ),
+			    1
+			)
+		formatString: #,##0
+		lineageTag: a1b2c3d4-0009-0001-0001-000000000015
+
+	measure 'New Customer Count' =
+			SUMX(
+			    FILTER(
+			        SUMMARIZE(dim_CustomerList, dim_CustomerList[CustomerKey]),
+			        CALCULATE([Total Revenue PYTD]) = 0 && CALCULATE([Total Revenue YTD]) > 0
+			    ),
+			    1
+			)
+		formatString: #,##0
+		lineageTag: a1b2c3d4-0009-0001-0001-000000000016
+
+	measure 'Page 6 Top Customers - Header' =
+			
+			// Get user name
+			VAR _User = USERPRINCIPALNAME()
+			VAR _Position = SEARCH("@", _User, 1)
+			VAR _Name = LEFT(_User, _Position - 1)
+			VAR _FirstLetter = UPPER(LEFT(_Name, 1))
+			VAR _LastName = MID(_Name, 2, LEN(_Name) - 1)
+			VAR _FormattedLastName =
+			    UPPER(LEFT(_LastName, 1)) & LOWER(MID(_LastName, 2, LEN(_LastName)))
+			VAR WelcomeName = _FirstLetter & "." & _FormattedLastName
+			
+			// Get current date/time info
+			VAR CurrentDate = TODAY()
+			VAR DateDisplay = FORMAT(CurrentDate, "MMM D, YYYY")
+			VAR CurrentHour = HOUR(NOW())
+			VAR TimeGreeting =
+			    IF(CurrentHour < 12, "Good Morning",
+			    IF(CurrentHour < 17, "Good Afternoon",
+			    "Good Evening"))
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    height: 85px;
+			    padding: 15px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 10px;
+			    color: white;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-between;
+			    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    box-sizing: border-box;
+			'>
+			    <!-- Left side: Dashboard Title -->
+			    <div style='display: flex; align-items: center; gap: 15px;'>
+			        <!-- Home icon -->
+			        <div style='
+			            width: 40px;
+			            height: 40px;
+			            background: rgba(255,255,255,0.15);
+			            border-radius: 8px;
+			            display: flex;
+			            align-items: center;
+			            justify-content: center;
+			            font-size: 20px;
+			        '>
+			            🏠
+			        </div>
+			
+			        <!-- Title -->
+			        <div>
+			            <div style='font-size: 12px; opacity: 0.85; margin-bottom: 4px; letter-spacing: 0.5px;'>
+			                REPORT
+			            </div>
+			            <div style='font-size: 26px; font-weight: 700; line-height: 1;'>
+			                Customer Anatomy - Top Customers
+			            </div>
+			        </div>
+			    </div>
+			
+			    <!-- Right side: Welcome & Date -->
+			    <div style='text-align: right;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 6px;'>
+			            " & TimeGreeting & ", " & WelcomeName & "
+			        </div>
+			        <div style='font-size: 16px; font-weight: 600;'>
+			            📅 " & DateDisplay & "
+			        </div>
+			    </div>
+			</div>
+			"
+		lineageTag: a857434e-778c-445e-a79c-74194b7bb305
+
+	measure 'Avg Revenue/Customer' = DIVIDE([Total Revenue YTD], [Active Customers], 0)
+		formatString: \$#,0;(\$#,0);\$#,0
+		lineageTag: 3455444b-f937-4402-9056-483a75f2b27a
+
+	measure 'Page 7 Drill level 2 - Header' =
+			
+			// Get user name
+			VAR _User = USERPRINCIPALNAME()
+			VAR _Position = SEARCH("@", _User, 1)
+			VAR _Name = LEFT(_User, _Position - 1)
+			VAR _FirstLetter = UPPER(LEFT(_Name, 1))
+			VAR _LastName = MID(_Name, 2, LEN(_Name) - 1)
+			VAR _FormattedLastName =
+			    UPPER(LEFT(_LastName, 1)) & LOWER(MID(_LastName, 2, LEN(_LastName)))
+			VAR WelcomeName = _FirstLetter & "." & _FormattedLastName
+			
+			// Get current date/time info
+			VAR CurrentDate = TODAY()
+			VAR DateDisplay = FORMAT(CurrentDate, "MMM D, YYYY")
+			VAR CurrentHour = HOUR(NOW())
+			VAR TimeGreeting =
+			    IF(CurrentHour < 12, "Good Morning",
+			    IF(CurrentHour < 17, "Good Afternoon",
+			    "Good Evening"))
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    height: 85px;
+			    padding: 15px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 10px;
+			    color: white;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-between;
+			    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    box-sizing: border-box;
+			'>
+			    <!-- Left side: Dashboard Title -->
+			    <div style='display: flex; align-items: center; gap: 15px;'>
+			        <!-- Home icon -->
+			        <div style='
+			            width: 40px;
+			            height: 40px;
+			            background: rgba(255,255,255,0.15);
+			            border-radius: 8px;
+			            display: flex;
+			            align-items: center;
+			            justify-content: center;
+			            font-size: 20px;
+			        '>
+			            🏠
+			        </div>
+			
+			        <!-- Title -->
+			        <div>
+			            <div style='font-size: 12px; opacity: 0.85; margin-bottom: 4px; letter-spacing: 0.5px;'>
+			                REPORT
+			            </div>
+			            <div style='font-size: 26px; font-weight: 700; line-height: 1;'>
+			                Customer Anatomy - Drill Details - Customer Invoices
+			            </div>
+			        </div>
+			    </div>
+			
+			    <!-- Right side: Welcome & Date -->
+			    <div style='text-align: right;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 6px;'>
+			            " & TimeGreeting & ", " & WelcomeName & "
+			        </div>
+			        <div style='font-size: 16px; font-weight: 600;'>
+			            📅 " & DateDisplay & "
+			        </div>
+			    </div>
+			</div>
+			"
+		lineageTag: 744a4200-2575-4d45-a635-af2fb53e973f
+
+	measure 'Page 8 Drill level 3 - Header' =
+			
+			// Get user name
+			VAR _User = USERPRINCIPALNAME()
+			VAR _Position = SEARCH("@", _User, 1)
+			VAR _Name = LEFT(_User, _Position - 1)
+			VAR _FirstLetter = UPPER(LEFT(_Name, 1))
+			VAR _LastName = MID(_Name, 2, LEN(_Name) - 1)
+			VAR _FormattedLastName =
+			    UPPER(LEFT(_LastName, 1)) & LOWER(MID(_LastName, 2, LEN(_LastName)))
+			VAR WelcomeName = _FirstLetter & "." & _FormattedLastName
+			
+			// Get current date/time info
+			VAR CurrentDate = TODAY()
+			VAR DateDisplay = FORMAT(CurrentDate, "MMM D, YYYY")
+			VAR CurrentHour = HOUR(NOW())
+			VAR TimeGreeting =
+			    IF(CurrentHour < 12, "Good Morning",
+			    IF(CurrentHour < 17, "Good Afternoon",
+			    "Good Evening"))
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    height: 85px;
+			    padding: 15px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 10px;
+			    color: white;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-between;
+			    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    box-sizing: border-box;
+			'>
+			    <!-- Left side: Dashboard Title -->
+			    <div style='display: flex; align-items: center; gap: 15px;'>
+			        <!-- Home icon -->
+			        <div style='
+			            width: 40px;
+			            height: 40px;
+			            background: rgba(255,255,255,0.15);
+			            border-radius: 8px;
+			            display: flex;
+			            align-items: center;
+			            justify-content: center;
+			            font-size: 20px;
+			        '>
+			            🏠
+			        </div>
+			
+			        <!-- Title -->
+			        <div>
+			            <div style='font-size: 12px; opacity: 0.85; margin-bottom: 4px; letter-spacing: 0.5px;'>
+			                REPORT
+			            </div>
+			            <div style='font-size: 26px; font-weight: 700; line-height: 1;'>
+			                Customer Anatomy - Drill Details - Parts Invoices
+			            </div>
+			        </div>
+			    </div>
+			
+			    <!-- Right side: Welcome & Date -->
+			    <div style='text-align: right;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 6px;'>
+			            " & TimeGreeting & ", " & WelcomeName & "
+			        </div>
+			        <div style='font-size: 16px; font-weight: 600;'>
+			            📅 " & DateDisplay & "
+			        </div>
+			    </div>
+			</div>
+			"
+		lineageTag: 6ac584f7-2bb5-4027-b93f-deb05274aae1
+
+	measure 'Exec Summary Hero Card' = ```
+			
+			// ============================================
+			// METRIC CALCULATIONS
+			// ============================================
+			VAR _Revenue = [Total Revenue]
+			VAR _PriorRevenue = CALCULATE([Total Revenue], SAMEPERIODLASTYEAR(dim_DateTable[Date]))
+			VAR _RevenueChange = _Revenue - _PriorRevenue
+			VAR _RevenueChangePct = DIVIDE(_RevenueChange, _PriorRevenue, 0)
+			
+			VAR _Margin = [Total Margin]
+			VAR _PriorMargin = CALCULATE([Total Margin], SAMEPERIODLASTYEAR(dim_DateTable[Date]))
+			VAR _MarginChange = _Margin - _PriorMargin
+			VAR _MarginChangePct = DIVIDE(_MarginChange, _PriorMargin, 0)
+			
+			VAR _GP = DIVIDE(_Margin, _Revenue, 0)
+			VAR _PriorGP = DIVIDE(_PriorMargin, _PriorRevenue, 0)
+			VAR _GPChange = _GP - _PriorGP
+			
+			VAR _Customers = [Active Customers]
+			
+			// Date Context
+			VAR _MinDate = MIN(dim_DateTable[Date])
+			VAR _MaxDate = MAX(dim_DateTable[Date])
+			VAR _DateRange = FORMAT(_MinDate, "MMM D, YYYY") & " - " & FORMAT(_MaxDate, "MMM D, YYYY")
+			
+			// Formatting Helpers
+			VAR _RevArrow = IF(_RevenueChange > 0, "▲", IF(_RevenueChange < 0, "▼", "─"))
+			VAR _RevColor = IF(_RevenueChange > 0, "#86efac", IF(_RevenueChange < 0, "#fca5a5", "#d1d5db"))
+			VAR _MarArrow = IF(_MarginChange > 0, "▲", IF(_MarginChange < 0, "▼", "─"))
+			VAR _MarColor = IF(_MarginChange > 0, "#86efac", IF(_MarginChange < 0, "#fca5a5", "#d1d5db"))
+			VAR _GPArrow = IF(_GPChange > 0, "▲", IF(_GPChange < 0, "▼", "─"))
+			VAR _GPColor = IF(_GPChange > 0, "#86efac", IF(_GPChange < 0, "#fca5a5", "#d1d5db"))
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    padding: 20px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 12px;
+			    box-shadow: 0 8px 24px rgba(0,0,0,0);
+			    color: white;
+			    height: 160px;
+			    display: flex;
+			    flex-direction: column;
+			'>
+			    <!-- Date Context Banner -->
+			    <div style='
+			        text-align: center;
+			        font-size: 11px;
+			        opacity: 0.9;
+			        margin-bottom: 12px;
+			        padding: 6px 12px;
+			        background: rgba(255,255,255,0.1);
+			        border-radius: 6px;
+			        letter-spacing: 0.5px;
+			    '>
+			        📅 SELECTED PERIOD: " & _DateRange & "
+			    </div>
+			    
+			    <!-- Metrics Row -->
+			    <div style='display: flex; align-items: center; justify-content: space-around; flex: 1;'>
+			        
+			        <!-- Total Revenue -->
+			        <div style='text-align: center; flex: 1;'>
+			            <div style='font-size: 14px; opacity: 0.85; text-transform: uppercase; letter-spacing: 0.5px;'>
+			                Total Revenue
+			            </div>
+			            <div style='font-size: 32px; font-weight: 700; line-height: 1.2; margin: 4px 0;'>
+			                " & FORMAT(_Revenue, "$#,##0") & "
+			            </div>
+			            <div style='font-size: 18px; font-weight: 600; color: " & _RevColor & ";'>
+			                " & _RevArrow & " " & FORMAT(_RevenueChangePct, "+0.0%;-0.0%") & " vs PY
+			            </div>
+			        </div>
+			        
+			        <!-- Divider -->
+			        <div style='width: 1px; height: 70px; background: rgba(255,255,255,0.25);'></div>
+			        
+			        <!-- Total Margin -->
+			        <div style='text-align: center; flex: 1;'>
+			            <div style='font-size: 14px; opacity: 0.85; text-transform: uppercase; letter-spacing: 0.5px;'>
+			                Total Margin
+			            </div>
+			            <div style='font-size: 32px; font-weight: 700; line-height: 1.2; margin: 4px 0;'>
+			                " & FORMAT(_Margin, "$#,##0") & "
+			            </div>
+			            <div style='font-size: 18px; font-weight: 600; color: " & _MarColor & ";'>
+			                " & _MarArrow & " " & FORMAT(_MarginChangePct, "+0.0%;-0.0%") & " vs PY
+			            </div>
+			        </div>
+			        
+			        <!-- Divider -->
+			        <div style='width: 1px; height: 70px; background: rgba(255,255,255,0.25);'></div>
+			        
+			        <!-- GP% -->
+			        <div style='text-align: center; flex: 1;'>
+			            <div style='font-size: 14px; opacity: 0.85; text-transform: uppercase; letter-spacing: 0.5px;'>
+			                Gross Profit %
+			            </div>
+			            <div style='font-size: 32px; font-weight: 700; line-height: 1.2; margin: 4px 0; color: #fcd34d;'>
+			                " & FORMAT(_GP, "0.0%") & "
+			            </div>
+			            <div style='font-size: 18px; font-weight: 600; color: " & _GPColor & ";'>
+			                " & _GPArrow & " " & FORMAT(_GPChange, "+0.0%;-0.0%") & " vs PY
+			            </div>
+			        </div>
+			        
+			        <!-- Divider -->
+			        <div style='width: 1px; height: 70px; background: rgba(255,255,255,0.25);'></div>
+			        
+			        <!-- Active Customers -->
+			        <div style='text-align: center; flex: 1;'>
+			            <div style='font-size: 14px; opacity: 0.85; text-transform: uppercase; letter-spacing: 0.5px;'>
+			                Active Customers
+			            </div>
+			            <div style='font-size: 32px; font-weight: 700; line-height: 1.2; margin: 4px 0;'>
+			                " & FORMAT(_Customers, "#,##0") & "
+			            </div>
+			            <div style='font-size: 18px; opacity: 0.7;'>
+			                Unique Accounts
+			            </div>
+			        </div>
+			    </div>
+			</div>
+			"
+			
+			```
+		lineageTag: c480794a-522f-4c38-b017-202f6fb7e3d3
+
+	measure 'Dept Breakdown Card' = ```
+			
+			// ============================================
+			// DEPARTMENT METRICS
+			// ============================================
+			// Equipment
+			VAR _EquipRev = [Equipment Revenue]
+			VAR _EquipMargin = [Equipment Margin (L1)]
+			VAR _EquipGP = DIVIDE(_EquipMargin, _EquipRev, 0)
+			
+			// Parts
+			VAR _PartsRev = [Parts Revenue]
+			VAR _PartsMargin = [Parts Margin (L1)]
+			VAR _PartsGP = DIVIDE(_PartsMargin, _PartsRev, 0)
+			
+			// Service
+			VAR _ServiceRev = [Service Revenue]
+			VAR _ServiceMargin = [Service Margin (L1)]
+			VAR _ServiceGP = DIVIDE(_ServiceMargin, _ServiceRev, 0)
+			
+			// Totals & Mix %
+			VAR _TotalRev = _EquipRev + _PartsRev + _ServiceRev
+			VAR _EquipMix = DIVIDE(_EquipRev, _TotalRev, 0) * 100
+			VAR _PartsMix = DIVIDE(_PartsRev, _TotalRev, 0) * 100
+			VAR _ServiceMix = DIVIDE(_ServiceRev, _TotalRev, 0) * 100
+			
+			// Colors
+			VAR _EquipColor = "#3b82f6"    // Blue
+			VAR _PartsColor = "#22c55e"    // Green
+			VAR _ServiceColor = "#f59e0b"  // Amber
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    padding: 20px;
+			    background: #ffffff;
+			    border-radius: 12px;
+			    box-shadow: 0 4px 12px rgba(0,0,0,0);
+			    border: 1px solid #e5e7eb;
+			'>
+			    
+			    <!-- Department Metrics Grid -->
+			    <div style='display: flex; justify-content: space-between; margin-bottom: 20px;'>
+			        
+			        <!-- Equipment -->
+			        <div style='flex: 1; text-align: center; padding: 0 10px; border-left: 4px solid " & _EquipColor & ";'>
+			            <div style='font-size: 14px; color: #6b7280; text-transform: uppercase; margin-bottom: 6px;'>Sales</div>
+			            <div style='font-size: 32px; font-weight: 700; color: #1f2937;'>" & FORMAT(_EquipRev, "$#,##0") & "</div>
+			            <div style='font-size: 14px; color: #6b7280; margin-top: 4px;'>
+			                Margin: " & FORMAT(_EquipMargin, "$#,##0") & "
+			            </div>
+			            <div style='font-size: 14px; font-weight: 600; color: " & _EquipColor & "; margin-top: 2px;'>
+			                GP: " & FORMAT(_EquipGP, "0.0%") & "
+			            </div>
+			        </div>
+			        
+			        <!-- Parts -->
+			        <div style='flex: 1; text-align: center; padding: 0 10px; border-left: 4px solid " & _PartsColor & ";'>
+			            <div style='font-size: 14px; color: #6b7280; text-transform: uppercase; margin-bottom: 6px;'>Parts</div>
+			            <div style='font-size: 32px; font-weight: 700; color: #1f2937;'>" & FORMAT(_PartsRev, "$#,##0") & "</div>
+			            <div style='font-size: 14px; color: #6b7280; margin-top: 4px;'>
+			                Margin: " & FORMAT(_PartsMargin, "$#,##0") & "
+			            </div>
+			            <div style='font-size: 14px; font-weight: 600; color: " & _PartsColor & "; margin-top: 2px;'>
+			                GP: " & FORMAT(_PartsGP, "0.0%") & "
+			            </div>
+			        </div>
+			        
+			        <!-- Service -->
+			        <div style='flex: 1; text-align: center; padding: 0 10px; border-left: 4px solid " & _ServiceColor & ";'>
+			            <div style='font-size: 14px; color: #6b7280; text-transform: uppercase; margin-bottom: 6px;'>Service</div>
+			            <div style='font-size: 32px; font-weight: 700; color: #1f2937;'>" & FORMAT(_ServiceRev, "$#,##0") & "</div>
+			            <div style='font-size: 14px; color: #6b7280; margin-top: 4px;'>
+			                Margin: " & FORMAT(_ServiceMargin, "$#,##0") & "
+			            </div>
+			            <div style='font-size: 14px; font-weight: 600; color: " & _ServiceColor & "; margin-top: 2px;'>
+			                GP: " & FORMAT(_ServiceGP, "0.0%") & "
+			            </div>
+			        </div>
+			    </div>
+			    
+			    <!-- Revenue Mix Label -->
+			    <div style='font-size: 11px; color: #6b7280; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.5px;'>
+			        Revenue Mix
+			    </div>
+			    
+			    <!-- Stacked Bar Chart -->
+			    <div style='display: flex; height: 28px; border-radius: 6px; overflow: hidden; box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);'>
+			        <div style='width: " & FORMAT(_EquipMix, "0.0") & "%; background: " & _EquipColor & "; display: flex; align-items: center; justify-content: center;'>
+			            <span style='font-size: 11px; font-weight: 600; color: white;'>" & FORMAT(_EquipMix/100, "0.0%") & "</span>
+			        </div>
+			        <div style='width: " & FORMAT(_PartsMix, "0.0") & "%; background: " & _PartsColor & "; display: flex; align-items: center; justify-content: center;'>
+			            <span style='font-size: 11px; font-weight: 600; color: white;'>" & FORMAT(_PartsMix/100, "0.0%") & "</span>
+			        </div>
+			        <div style='width: " & FORMAT(_ServiceMix, "0.0") & "%; background: " & _ServiceColor & "; display: flex; align-items: center; justify-content: center;'>
+			            <span style='font-size: 11px; font-weight: 600; color: white;'>" & FORMAT(_ServiceMix/100, "0.0%") & "</span>
+			        </div>
+			    </div>
+			"
+			
+			```
+		lineageTag: c84714cf-f2d5-4adc-bd01-80fefc7e3a43
+
+	measure 'Prior Period Revenue' = ```
+			
+			CALCULATE(
+			    [Total Revenue], 
+			    SAMEPERIODLASTYEAR(dim_DateTable[Date])
+			)
+			
+			```
+		formatString: \$#,0;(\$#,0);\$#,0
+		lineageTag: 09305241-752b-4bdb-8f09-ac3b13c4fcbf
+
+	measure 'Prior Period Margin' = ```
+			
+			CALCULATE(
+			    [Total Margin], 
+			    SAMEPERIODLASTYEAR(dim_DateTable[Date])
+			)
+			
+			```
+		formatString: \$#,0;(\$#,0);\$#,0
+		lineageTag: fbb98255-1821-461a-9b1d-e37389bd0f72
+
+	measure 'Revenue Icon' =
+			
+			VAR TotalValue   = [Total Revenue]
+			VAR CurrentValue = [Prior Period Revenue]
+			RETURN
+			IF(
+			    OR(ISBLANK(TotalValue), ISBLANK(CurrentValue)),
+			    BLANK(),                                      -- hides icons when either side is blank
+			    SWITCH(
+			        TRUE(),
+			        TotalValue > CurrentValue, 1,             -- positive
+			        TotalValue < CurrentValue, 2,             -- negative
+			        0                                         -- equal (neutral)
+			    )
+			)
+		formatString: 0
+		lineageTag: fca090f8-c489-4a2a-b2ab-417006ba3753
+
+	measure 'Margin Icon' =
+			
+			VAR TotalValue   = [Total Margin]
+			VAR CurrentValue = [Prior Period Margin]
+			RETURN
+			IF(
+			    OR(ISBLANK(TotalValue), ISBLANK(CurrentValue)),
+			    BLANK(),                                      -- hides icons when either side is blank
+			    SWITCH(
+			        TRUE(),
+			        TotalValue > CurrentValue, 1,             -- positive
+			        TotalValue < CurrentValue, 2,             -- negative
+			        0                                         -- equal (neutral)
+			    )
+			)
+		formatString: 0
+		lineageTag: 38ffb646-a201-4b0f-9e94-2d108211c1d9
+
+	measure 'Equipment Sales Hero Card' = ```
+			
+			// ============================================
+			// METRIC CALCULATIONS
+			// ============================================
+			VAR _Sales = [Equipment Revenue]
+			VAR _PriorSales = CALCULATE([Equipment Revenue], SAMEPERIODLASTYEAR(dim_DateTable[Date]))
+			VAR _SalesChange = _Sales - _PriorSales
+			VAR _SalesChangePct = DIVIDE(_SalesChange, _PriorSales, 0)
+			
+			VAR _Margin = [Equipment Margin (L1)]
+			VAR _PriorMargin = CALCULATE([Equipment Margin (L1)], SAMEPERIODLASTYEAR(dim_DateTable[Date]))
+			VAR _MarginChange = _Margin - _PriorMargin
+			VAR _MarginChangePct = DIVIDE(_MarginChange, _PriorMargin, 0)
+			
+			VAR _GP = DIVIDE(_Margin, _Sales, 0)
+			VAR _PriorGP = DIVIDE(_PriorMargin, _PriorSales, 0)
+			VAR _GPChange = _GP - _PriorGP
+			
+			VAR _Units = [Equipment Unit Count]
+			VAR _PriorUnits = CALCULATE([Equipment Unit Count], SAMEPERIODLASTYEAR(dim_DateTable[Date]))
+			VAR _UnitsChange = _Units - _PriorUnits
+			VAR _UnitsChangePct = DIVIDE(_UnitsChange, _PriorUnits, 0)
+			
+			// Date Context
+			VAR _MinDate = MIN(dim_DateTable[Date])
+			VAR _MaxDate = MAX(dim_DateTable[Date])
+			VAR _DateRange = FORMAT(_MinDate, "MMM D, YYYY") & " - " & FORMAT(_MaxDate, "MMM D, YYYY")
+			
+			// Formatting Helpers
+			VAR _SalesArrow = IF(_SalesChange > 0, "▲", IF(_SalesChange < 0, "▼", "─"))
+			VAR _SalesColor = IF(_SalesChange > 0, "#86efac", IF(_SalesChange < 0, "#fca5a5", "#d1d5db"))
+			VAR _MarArrow = IF(_MarginChange > 0, "▲", IF(_MarginChange < 0, "▼", "─"))
+			VAR _MarColor = IF(_MarginChange > 0, "#86efac", IF(_MarginChange < 0, "#fca5a5", "#d1d5db"))
+			VAR _GPArrow = IF(_GPChange > 0, "▲", IF(_GPChange < 0, "▼", "─"))
+			VAR _GPColor = IF(_GPChange > 0, "#86efac", IF(_GPChange < 0, "#fca5a5", "#d1d5db"))
+			VAR _UnitsArrow = IF(_UnitsChange > 0, "▲", IF(_UnitsChange < 0, "▼", "─"))
+			VAR _UnitsColor = IF(_UnitsChange > 0, "#86efac", IF(_UnitsChange < 0, "#fca5a5", "#d1d5db"))
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    padding: 20px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 12px;
+			    color: white;
+			    height: 160px;
+			    display: flex;
+			    flex-direction: column;
+			'>
+			    <!-- Date Context Banner -->
+			    <div style='
+			        text-align: center;
+			        font-size: 11px;
+			        opacity: 0.9;
+			        margin-bottom: 12px;
+			        padding: 6px 12px;
+			        background: rgba(255,255,255,0.1);
+			        border-radius: 6px;
+			        letter-spacing: 0.5px;
+			    '>
+			        📅 SELECTED PERIOD: " & _DateRange & "
+			    </div>
+			    
+			    <!-- Metrics Row -->
+			    <div style='display: flex; align-items: center; justify-content: space-around; flex: 1;'>
+			        
+			        <!-- Sales Revenue -->
+			        <div style='text-align: center; flex: 1;'>
+			            <div style='font-size: 14px; opacity: 0.85; text-transform: uppercase; letter-spacing: 0.5px;'>
+			                Sales Revenue
+			            </div>
+			            <div style='font-size: 32px; font-weight: 700; line-height: 1.2; margin: 4px 0;'>
+			                " & FORMAT(_Sales, "$#,##0") & "
+			            </div>
+			            <div style='font-size: 18px; font-weight: 600; color: " & _SalesColor & ";'>
+			                " & _SalesArrow & " " & FORMAT(_SalesChangePct, "+0.0%;-0.0%") & " vs PY
+			            </div>
+			        </div>
+			        
+			        <!-- Divider -->
+			        <div style='width: 1px; height: 70px; background: rgba(255,255,255,0.25);'></div>
+			        
+			        <!-- Margin -->
+			        <div style='text-align: center; flex: 1;'>
+			            <div style='font-size: 14px; opacity: 0.85; text-transform: uppercase; letter-spacing: 0.5px;'>
+			                Sales Margin
+			            </div>
+			            <div style='font-size: 32px; font-weight: 700; line-height: 1.2; margin: 4px 0;'>
+			                " & FORMAT(_Margin, "$#,##0") & "
+			            </div>
+			            <div style='font-size: 18px; font-weight: 600; color: " & _MarColor & ";'>
+			                " & _MarArrow & " " & FORMAT(_MarginChangePct, "+0.0%;-0.0%") & " vs PY
+			            </div>
+			        </div>
+			        
+			        <!-- Divider -->
+			        <div style='width: 1px; height: 70px; background: rgba(255,255,255,0.25);'></div>
+			        
+			        <!-- GP% -->
+			        <div style='text-align: center; flex: 1;'>
+			            <div style='font-size: 14px; opacity: 0.85; text-transform: uppercase; letter-spacing: 0.5px;'>
+			                Gross Profit %
+			            </div>
+			            <div style='font-size: 32px; font-weight: 700; line-height: 1.2; margin: 4px 0; color: #fcd34d;'>
+			                " & FORMAT(_GP, "0.0%") & "
+			            </div>
+			            <div style='font-size: 18px; font-weight: 600; color: " & _GPColor & ";'>
+			                " & _GPArrow & " " & FORMAT(_GPChange, "+0.0%;-0.0%") & " vs PY
+			            </div>
+			        </div>
+			        
+			        <!-- Divider -->
+			        <div style='width: 1px; height: 70px; background: rgba(255,255,255,0.25);'></div>
+			        
+			        <!-- Units -->
+			        <div style='text-align: center; flex: 1;'>
+			            <div style='font-size: 14px; opacity: 0.85; text-transform: uppercase; letter-spacing: 0.5px;'>
+			                Units Sold
+			            </div>
+			            <div style='font-size: 32px; font-weight: 700; line-height: 1.2; margin: 4px 0;'>
+			                " & FORMAT(_Units, "#,##0") & "
+			            </div>
+			            <div style='font-size: 18px; font-weight: 600; color: " & _UnitsColor & ";'>
+			                " & _UnitsArrow & " " & FORMAT(_UnitsChangePct, "+0.0%;-0.0%") & " vs PY
+			            </div>
+			        </div>
+			    </div>
+			</div>
+			"
+			
+			```
+		lineageTag: 4a89fab2-6291-4942-8c01-75d55cc65096
+
+	measure 'Prior Period Equipment Revenue' = ```
+			
+			CALCULATE(
+			    [Equipment Revenue], 
+			    SAMEPERIODLASTYEAR(dim_DateTable[Date])
+			)
+			
+			```
+		formatString: \$#,0;(\$#,0);\$#,0
+		lineageTag: d2bf00eb-7099-4647-805e-841c57710053
+
+	measure 'Prior Period Equipment Margin' = ```
+			
+			CALCULATE(
+			    [Equipment Margin (L1)], 
+			    SAMEPERIODLASTYEAR(dim_DateTable[Date])
+			)
+			
+			```
+		formatString: \$#,0;(\$#,0);\$#,0
+		lineageTag: d744a280-7f9c-4943-abd4-009e2b164610
+
+	measure 'Prior Period Equipment Units' = ```
+			
+			CALCULATE(
+			    [Equipment Unit Count], 
+			    SAMEPERIODLASTYEAR(dim_DateTable[Date])
+			)
+			
+			```
+		formatString: 0
+		lineageTag: 557bc33c-5311-4434-9c0b-2d5d004e5840
+
+	measure 'Sales Icon' =
+			
+			VAR TotalValue   = [Equipment Revenue]
+			VAR CurrentValue = [Prior Period Equipment Revenue]
+			RETURN
+			IF(
+			    OR(ISBLANK(TotalValue), ISBLANK(CurrentValue)),
+			    BLANK(),                                      -- hides icons when either side is blank
+			    SWITCH(
+			        TRUE(),
+			        TotalValue > CurrentValue, 1,             -- positive
+			        TotalValue < CurrentValue, 2,             -- negative
+			        0                                         -- equal (neutral)
+			    )
+			)
+		formatString: 0
+		lineageTag: 836fc1fc-cdc3-494f-ac0d-d54eefb1c960
+
+	measure 'Sales Margin Icon' =
+			
+			VAR TotalValue   = [Equipment Margin (L1)]
+			VAR CurrentValue = [Prior Period Equipment Margin]
+			RETURN
+			IF(
+			    OR(ISBLANK(TotalValue), ISBLANK(CurrentValue)),
+			    BLANK(),                                      -- hides icons when either side is blank
+			    SWITCH(
+			        TRUE(),
+			        TotalValue > CurrentValue, 1,             -- positive
+			        TotalValue < CurrentValue, 2,             -- negative
+			        0                                         -- equal (neutral)
+			    )
+			)
+		formatString: 0
+		lineageTag: bc73e7f7-6bc7-4499-892c-52b42f3aad17
+
+	measure 'Parts Summary Hero Card' = ```
+			
+			// ============================================
+			// METRIC CALCULATIONS - Using Level 2 (Invoice) measures
+			// ============================================
+			VAR _Sales = [Parts Sales]
+			VAR _PriorSales = CALCULATE([Parts Sales], SAMEPERIODLASTYEAR(dim_DateTable[Date]))
+			VAR _SalesChange = _Sales - _PriorSales
+			VAR _SalesChangePct = DIVIDE(_SalesChange, _PriorSales, 0)
+			
+			VAR _Margin = [Parts Margin]
+			VAR _PriorMargin = CALCULATE([Parts Margin], SAMEPERIODLASTYEAR(dim_DateTable[Date]))
+			VAR _MarginChange = _Margin - _PriorMargin
+			VAR _MarginChangePct = DIVIDE(_MarginChange, _PriorMargin, 0)
+			
+			VAR _GP = DIVIDE(_Margin, _Sales, 0)
+			VAR _PriorGP = DIVIDE(_PriorMargin, _PriorSales, 0)
+			VAR _GPChange = _GP - _PriorGP
+			
+			VAR _Invoices = [Parts Invoice Count]
+			VAR _PriorInvoices = CALCULATE([Parts Invoice Count], SAMEPERIODLASTYEAR(dim_DateTable[Date]))
+			VAR _InvoicesChange = _Invoices - _PriorInvoices
+			VAR _InvoicesChangePct = DIVIDE(_InvoicesChange, _PriorInvoices, 0)
+			
+			// Date Context
+			VAR _MinDate = MIN(dim_DateTable[Date])
+			VAR _MaxDate = MAX(dim_DateTable[Date])
+			VAR _DateRange = FORMAT(_MinDate, "MMM D, YYYY") & " - " & FORMAT(_MaxDate, "MMM D, YYYY")
+			
+			// Formatting Helpers
+			VAR _SalesArrow = IF(_SalesChange > 0, "▲", IF(_SalesChange < 0, "▼", "─"))
+			VAR _SalesColor = IF(_SalesChange > 0, "#86efac", IF(_SalesChange < 0, "#fca5a5", "#d1d5db"))
+			VAR _MarArrow = IF(_MarginChange > 0, "▲", IF(_MarginChange < 0, "▼", "─"))
+			VAR _MarColor = IF(_MarginChange > 0, "#86efac", IF(_MarginChange < 0, "#fca5a5", "#d1d5db"))
+			VAR _GPArrow = IF(_GPChange > 0, "▲", IF(_GPChange < 0, "▼", "─"))
+			VAR _GPColor = IF(_GPChange > 0, "#86efac", IF(_GPChange < 0, "#fca5a5", "#d1d5db"))
+			VAR _InvArrow = IF(_InvoicesChange > 0, "▲", IF(_InvoicesChange < 0, "▼", "─"))
+			VAR _InvColor = IF(_InvoicesChange > 0, "#86efac", IF(_InvoicesChange < 0, "#fca5a5", "#d1d5db"))
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    padding: 20px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 12px;
+			    color: white;
+			    height: 160px;
+			    display: flex;
+			    flex-direction: column;
+			'>
+			    <!-- Date Context Banner -->
+			    <div style='
+			        text-align: center;
+			        font-size: 11px;
+			        opacity: 0.9;
+			        margin-bottom: 12px;
+			        padding: 6px 12px;
+			        background: rgba(255,255,255,0.1);
+			        border-radius: 6px;
+			        letter-spacing: 0.5px;
+			    '>
+			        📅 SELECTED PERIOD: " & _DateRange & "
+			    </div>
+			    
+			    <!-- Metrics Row -->
+			    <div style='display: flex; align-items: center; justify-content: space-around; flex: 1;'>
+			        
+			        <!-- Parts Sales -->
+			        <div style='text-align: center; flex: 1;'>
+			            <div style='font-size: 14px; opacity: 0.85; text-transform: uppercase; letter-spacing: 0.5px;'>
+			                Parts Sales
+			            </div>
+			            <div style='font-size: 32px; font-weight: 700; line-height: 1.2; margin: 4px 0;'>
+			                " & FORMAT(_Sales, "$#,##0") & "
+			            </div>
+			            <div style='font-size: 18px; font-weight: 600; color: " & _SalesColor & ";'>
+			                " & _SalesArrow & " " & FORMAT(_SalesChangePct, "+0.0%;-0.0%") & " vs PY
+			            </div>
+			        </div>
+			        
+			        <!-- Divider -->
+			        <div style='width: 1px; height: 70px; background: rgba(255,255,255,0.25);'></div>
+			        
+			        <!-- Parts Margin -->
+			        <div style='text-align: center; flex: 1;'>
+			            <div style='font-size: 14px; opacity: 0.85; text-transform: uppercase; letter-spacing: 0.5px;'>
+			                Parts Margin
+			            </div>
+			            <div style='font-size: 32px; font-weight: 700; line-height: 1.2; margin: 4px 0;'>
+			                " & FORMAT(_Margin, "$#,##0") & "
+			            </div>
+			            <div style='font-size: 18px; font-weight: 600; color: " & _MarColor & ";'>
+			                " & _MarArrow & " " & FORMAT(_MarginChangePct, "+0.0%;-0.0%") & " vs PY
+			            </div>
+			        </div>
+			        
+			        <!-- Divider -->
+			        <div style='width: 1px; height: 70px; background: rgba(255,255,255,0.25);'></div>
+			        
+			        <!-- GP% -->
+			        <div style='text-align: center; flex: 1;'>
+			            <div style='font-size: 14px; opacity: 0.85; text-transform: uppercase; letter-spacing: 0.5px;'>
+			                Gross Profit %
+			            </div>
+			            <div style='font-size: 32px; font-weight: 700; line-height: 1.2; margin: 4px 0; color: #fcd34d;'>
+			                " & FORMAT(_GP, "0.0%") & "
+			            </div>
+			            <div style='font-size: 18px; font-weight: 600; color: " & _GPColor & ";'>
+			                " & _GPArrow & " " & FORMAT(_GPChange, "+0.0%;-0.0%") & " vs PY
+			            </div>
+			        </div>
+			        
+			        <!-- Divider -->
+			        <div style='width: 1px; height: 70px; background: rgba(255,255,255,0.25);'></div>
+			        
+			        <!-- Invoices -->
+			        <div style='text-align: center; flex: 1;'>
+			            <div style='font-size: 14px; opacity: 0.85; text-transform: uppercase; letter-spacing: 0.5px;'>
+			                Invoices
+			            </div>
+			            <div style='font-size: 32px; font-weight: 700; line-height: 1.2; margin: 4px 0;'>
+			                " & FORMAT(_Invoices, "#,##0") & "
+			            </div>
+			            <div style='font-size: 18px; font-weight: 600; color: " & _InvColor & ";'>
+			                " & _InvArrow & " " & FORMAT(_InvoicesChangePct, "+0.0%;-0.0%") & " vs PY
+			            </div>
+			        </div>
+			    </div>
+			</div>
+			"
+			
+			```
+		lineageTag: 060f5d99-140b-456b-89c6-4a5be4264c26
+
+	measure 'Prior Period Parts Sales' = ```
+			
+			CALCULATE(
+			    [Parts Sales], 
+			    SAMEPERIODLASTYEAR(dim_DateTable[Date])
+			)
+			
+			
+			```
+		formatString: \$#,0;(\$#,0);\$#,0
+		lineageTag: a8c2b033-1b3a-4708-9389-c781f7d93454
+
+	measure 'Prior Period Parts Margin L2' = ```
+			
+			CALCULATE(
+			    [Parts Margin], 
+			    SAMEPERIODLASTYEAR(dim_DateTable[Date])
+			)
+			
+			
+			```
+		formatString: \$#,0;(\$#,0);\$#,0
+		lineageTag: d48c7d1e-a661-402c-ada6-e6ef0f84fb5c
+
+	measure 'Prior Period Parts Invoices' = ```
+			
+			CALCULATE(
+			    [Parts Invoice Count], 
+			    SAMEPERIODLASTYEAR(dim_DateTable[Date])
+			)
+			
+			```
+		formatString: 0
+		lineageTag: c34ae667-d8f3-4970-8431-94cf5dfa5d05
+
+	measure 'Parts Icon' =
+			
+			VAR TotalValue   = [Parts Sales]
+			VAR CurrentValue = [Prior Period Parts Sales]
+			RETURN
+			IF(
+			    OR(ISBLANK(TotalValue), ISBLANK(CurrentValue)),
+			    BLANK(),                                      -- hides icons when either side is blank
+			    SWITCH(
+			        TRUE(),
+			        TotalValue > CurrentValue, 1,             -- positive
+			        TotalValue < CurrentValue, 2,             -- negative
+			        0                                         -- equal (neutral)
+			    )
+			)
+		formatString: 0
+		lineageTag: 912d1dd3-a10b-4078-b163-aecfdcd7e5f7
+
+	measure 'Parts Margin Icon' =
+			
+			VAR TotalValue   = [Parts Margin (L1)]
+			VAR CurrentValue = [Prior Period Parts Margin L2]
+			RETURN
+			IF(
+			    OR(ISBLANK(TotalValue), ISBLANK(CurrentValue)),
+			    BLANK(),                                      -- hides icons when either side is blank
+			    SWITCH(
+			        TRUE(),
+			        TotalValue > CurrentValue, 1,             -- positive
+			        TotalValue < CurrentValue, 2,             -- negative
+			        0                                         -- equal (neutral)
+			    )
+			)
+		formatString: 0
+		lineageTag: 4b4a06da-c204-4682-be8a-7f975488a9ad
+
+	measure 'Service Summary Hero Card' = ```
+			
+			// ============================================
+			// METRIC CALCULATIONS (Level 2 for Branch Filtering)
+			// ============================================
+			VAR _Sales = [Service Invoice Total Sales]
+			VAR _PriorSales = CALCULATE([Service Invoice Total Sales], SAMEPERIODLASTYEAR(dim_DateTable[Date]))
+			VAR _SalesChange = _Sales - _PriorSales
+			VAR _SalesChangePct = DIVIDE(_SalesChange, _PriorSales, 0)
+			
+			VAR _Margin = [Service Invoice Total Margin]
+			VAR _PriorMargin = CALCULATE([Service Invoice Total Margin], SAMEPERIODLASTYEAR(dim_DateTable[Date]))
+			VAR _MarginChange = _Margin - _PriorMargin
+			VAR _MarginChangePct = DIVIDE(_MarginChange, _PriorMargin, 0)
+			
+			VAR _GP = DIVIDE(_Margin, _Sales, 0)
+			VAR _PriorGP = DIVIDE(_PriorMargin, _PriorSales, 0)
+			VAR _GPChange = _GP - _PriorGP
+			
+			VAR _Invoices = [Service Invoice Count]
+			VAR _PriorInvoices = CALCULATE([Service Invoice Count], SAMEPERIODLASTYEAR(dim_DateTable[Date]))
+			VAR _InvoicesChange = _Invoices - _PriorInvoices
+			VAR _InvoicesChangePct = DIVIDE(_InvoicesChange, _PriorInvoices, 0)
+			
+			// Date Context
+			VAR _MinDate = MIN(dim_DateTable[Date])
+			VAR _MaxDate = MAX(dim_DateTable[Date])
+			VAR _DateRange = FORMAT(_MinDate, "MMM D, YYYY") & " - " & FORMAT(_MaxDate, "MMM D, YYYY")
+			
+			// Formatting Helpers
+			VAR _SalesArrow = IF(_SalesChange > 0, "▲", IF(_SalesChange < 0, "▼", "─"))
+			VAR _SalesColor = IF(_SalesChange > 0, "#86efac", IF(_SalesChange < 0, "#fca5a5", "#d1d5db"))
+			VAR _MarArrow = IF(_MarginChange > 0, "▲", IF(_MarginChange < 0, "▼", "─"))
+			VAR _MarColor = IF(_MarginChange > 0, "#86efac", IF(_MarginChange < 0, "#fca5a5", "#d1d5db"))
+			VAR _GPArrow = IF(_GPChange > 0, "▲", IF(_GPChange < 0, "▼", "─"))
+			VAR _GPColor = IF(_GPChange > 0, "#86efac", IF(_GPChange < 0, "#fca5a5", "#d1d5db"))
+			VAR _InvArrow = IF(_InvoicesChange > 0, "▲", IF(_InvoicesChange < 0, "▼", "─"))
+			VAR _InvColor = IF(_InvoicesChange > 0, "#86efac", IF(_InvoicesChange < 0, "#fca5a5", "#d1d5db"))
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    padding: 20px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 12px;
+			    color: white;
+			    height: 160px;
+			    display: flex;
+			    flex-direction: column;
+			'>
+			    <!-- Date Context Banner -->
+			    <div style='
+			        text-align: center;
+			        font-size: 11px;
+			        opacity: 0.9;
+			        margin-bottom: 12px;
+			        padding: 6px 12px;
+			        background: rgba(255,255,255,0.1);
+			        border-radius: 6px;
+			        letter-spacing: 0.5px;
+			    '>
+			        📅 SELECTED PERIOD: " & _DateRange & "
+			    </div>
+			
+			    <!-- Metrics Row -->
+			    <div style='display: flex; align-items: center; justify-content: space-around; flex: 1;'>
+			
+			        <!-- Service Sales -->
+			        <div style='text-align: center; flex: 1;'>
+			            <div style='font-size: 14px; opacity: 0.85; text-transform: uppercase; letter-spacing: 0.5px;'>
+			                Service Sales
+			            </div>
+			            <div style='font-size: 32px; font-weight: 700; line-height: 1.2; margin: 4px 0;'>
+			                " & FORMAT(_Sales, "$#,##0") & "
+			            </div>
+			            <div style='font-size: 18px; font-weight: 600; color: " & _SalesColor & ";'>
+			                " & _SalesArrow & " " & FORMAT(_SalesChangePct, "+0.0%;-0.0%") & " vs PY
+			            </div>
+			        </div>
+			
+			        <!-- Divider -->
+			        <div style='width: 1px; height: 70px; background: rgba(255,255,255,0.25);'></div>
+			
+			        <!-- Service Margin -->
+			        <div style='text-align: center; flex: 1;'>
+			            <div style='font-size: 14px; opacity: 0.85; text-transform: uppercase; letter-spacing: 0.5px;'>
+			                Service Margin
+			            </div>
+			            <div style='font-size: 32px; font-weight: 700; line-height: 1.2; margin: 4px 0;'>
+			                " & FORMAT(_Margin, "$#,##0") & "
+			            </div>
+			            <div style='font-size: 18px; font-weight: 600; color: " & _MarColor & ";'>
+			                " & _MarArrow & " " & FORMAT(_MarginChangePct, "+0.0%;-0.0%") & " vs PY
+			            </div>
+			        </div>
+			
+			        <!-- Divider -->
+			        <div style='width: 1px; height: 70px; background: rgba(255,255,255,0.25);'></div>
+			
+			        <!-- GP% -->
+			        <div style='text-align: center; flex: 1;'>
+			            <div style='font-size: 14px; opacity: 0.85; text-transform: uppercase; letter-spacing: 0.5px;'>
+			                Gross Profit %
+			            </div>
+			            <div style='font-size: 32px; font-weight: 700; line-height: 1.2; margin: 4px 0; color: #fcd34d;'>
+			                " & FORMAT(_GP, "0.0%") & "
+			            </div>
+			            <div style='font-size: 18px; font-weight: 600; color: " & _GPColor & ";'>
+			                " & _GPArrow & " " & FORMAT(_GPChange, "+0.0%;-0.0%") & " vs PY
+			            </div>
+			        </div>
+			
+			        <!-- Divider -->
+			        <div style='width: 1px; height: 70px; background: rgba(255,255,255,0.25);'></div>
+			
+			        <!-- Invoices -->
+			        <div style='text-align: center; flex: 1;'>
+			            <div style='font-size: 14px; opacity: 0.85; text-transform: uppercase; letter-spacing: 0.5px;'>
+			                Invoices
+			            </div>
+			            <div style='font-size: 32px; font-weight: 700; line-height: 1.2; margin: 4px 0;'>
+			                " & FORMAT(_Invoices, "#,##0") & "
+			            </div>
+			            <div style='font-size: 18px; font-weight: 600; color: " & _InvColor & ";'>
+			                " & _InvArrow & " " & FORMAT(_InvoicesChangePct, "+0.0%;-0.0%") & " vs PY
+			            </div>
+			        </div>
+			    </div>
+			</div>
+			"
+			
+			```
+		lineageTag: 4beb5972-af9c-4405-900b-de172d549357
+
+	measure 'Prior Period Service Sales' = ```
+			
+			CALCULATE(
+			    [Service Invoice Total Sales],
+			    SAMEPERIODLASTYEAR(dim_DateTable[Date])
+			)
+			
+			```
+		formatString: \$#,0;(\$#,0);\$#,0
+		lineageTag: 8e1a0d93-71a6-41a0-bf85-5ffc35cab02b
+
+	measure 'Prior Period Service Margin' = ```
+			
+			CALCULATE(
+			    [Service Invoice Total Margin],
+			    SAMEPERIODLASTYEAR(dim_DateTable[Date])
+			)
+			
+			```
+		formatString: \$#,0;(\$#,0);\$#,0
+		lineageTag: 10e3be0f-cd70-4750-9fea-c4ed68ef26f3
+
+	measure 'Prior Period Service Invoices' = ```
+			
+			CALCULATE(
+			    [Service Invoice Count],
+			    SAMEPERIODLASTYEAR(dim_DateTable[Date])
+			)
+			
+			```
+		formatString: 0
+		lineageTag: 5b9d03fd-8922-406a-aef3-669c6ea74109
+
+	measure 'Prior Period Service GP%' = ```
+			
+			VAR _PriorSales = [Prior Period Service Sales]
+			VAR _PriorMargin = [Prior Period Service Margin]
+			RETURN
+			DIVIDE(_PriorMargin, _PriorSales, 0)
+			
+			```
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 1ede6a5b-9a4a-4d0a-b368-d9cd79f6bb84
+
+	measure 'Service Icon' =
+			
+			VAR TotalValue   = [Service Invoice Total Sales]
+			VAR CurrentValue = [Prior Period Service Sales]
+			RETURN
+			IF(
+			    OR(ISBLANK(TotalValue), ISBLANK(CurrentValue)),
+			    BLANK(),                                      -- hides icons when either side is blank
+			    SWITCH(
+			        TRUE(),
+			        TotalValue > CurrentValue, 1,             -- positive
+			        TotalValue < CurrentValue, 2,             -- negative
+			        0                                         -- equal (neutral)
+			    )
+			)
+		formatString: 0
+		lineageTag: 916c3803-41ca-4c42-a2b1-78b8cad7a3b9
+
+	measure 'Service Margin Icon' =
+			
+			VAR TotalValue   = [Service Invoice Total Margin]
+			VAR CurrentValue = [Prior Period Service Margin]
+			RETURN
+			IF(
+			    OR(ISBLANK(TotalValue), ISBLANK(CurrentValue)),
+			    BLANK(),                                      -- hides icons when either side is blank
+			    SWITCH(
+			        TRUE(),
+			        TotalValue > CurrentValue, 1,             -- positive
+			        TotalValue < CurrentValue, 2,             -- negative
+			        0                                         -- equal (neutral)
+			    )
+			)
+		formatString: 0
+		lineageTag: 8a78000d-f100-46f6-9baf-0f41a9c719ed
+
+	measure 'Prior Period Parts GP%' = ```
+			
+			DIVIDE([Prior Period Parts Margin L2], [Prior Period Parts Sales], 0)
+			
+			```
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: bb03a894-cf5c-49dc-a1eb-14bbbd2f5906
+
+	measure 'Prior Period Equipment GP%' = ```
+			
+			VAR _PriorSales = CALCULATE([Equipment Revenue], SAMEPERIODLASTYEAR(dim_DateTable[Date]))
+			VAR _PriorMargin = CALCULATE([Equipment Margin (L1)], SAMEPERIODLASTYEAR(dim_DateTable[Date]))
+			RETURN
+			DIVIDE(_PriorMargin, _PriorSales, 0)
+			
+			```
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 4426c56b-0a80-47c4-9425-df71539ef765
+
+	measure 'Customer Profile Card' = ```
+			
+			// ============================================
+			// CUSTOMER DIMENSION VALUES - Using MAX for duplicate name handling
+			// ============================================
+			VAR _DisplayName = MAX(dim_CustomerList[DisplayName])
+			VAR _CompanyName = MAX(dim_CustomerList[CompanyName])
+			VAR _AccountNumber = MAX(dim_CustomerList[AccountNumber])
+			VAR _TradeType = MAX(dim_CustomerList[TradeType])
+			VAR _AccountStatus = MAX(dim_CustomerList[AccountStatus])
+			VAR _CustomerTier = MAX(dim_CustomerList[CustomerTier])
+			
+			// Boolean fields - use COUNTROWS to check if any TRUE exists
+			VAR _IsKeyCustomer = CALCULATE(COUNTROWS(dim_CustomerList), dim_CustomerList[IsKeyCustomer] = TRUE) > 0
+			VAR _IsUniqueCustomer = CALCULATE(COUNTROWS(dim_CustomerList), dim_CustomerList[IsUniqueCustomer] = TRUE) > 0
+			VAR _UniqueGroup = MAX(dim_CustomerList[UniqueCustomerGroup])
+			VAR _HasOverdue = CALCULATE(COUNTROWS(dim_CustomerList), dim_CustomerList[HasOverdueBalance] = TRUE) > 0
+			
+			// Financial Health
+			VAR _AccountBalance = MAX(dim_CustomerList[AccountBalance])
+			VAR _CreditLimit = MAX(dim_CustomerList[CreditLimit])
+			VAR _CreditUtilization = MAX(dim_CustomerList[CreditUtilization])
+			VAR _RiskLevel = MAX(dim_CustomerList[FinancialRiskLevel])
+			VAR _Aging30 = MAX(dim_CustomerList[Aging30])
+			VAR _Aging60 = MAX(dim_CustomerList[Aging60])
+			VAR _Aging90 = MAX(dim_CustomerList[Aging90])
+			VAR _CreditTerm = MAX(dim_CustomerList[CreditTerm])
+			
+			// Location & Contact
+			VAR _City = MAX(dim_CustomerList[City])
+			VAR _State = MAX(dim_CustomerList[State])
+			VAR _Territory = MAX(dim_CustomerList[Territory])
+			VAR _Phone = COALESCE(
+			    MAX(dim_CustomerList[BusinessPhone]),
+			    MAX(dim_CustomerList[PrimaryPhone]),
+			    MAX(dim_CustomerList[MobilePhone]),
+			    "-"
+			)
+			
+			// Formatting
+			VAR _KeyBadge = IF(_IsKeyCustomer, 
+			    "<span style='background: #fbbf24; color: #1f2937; padding: 4px 12px; border-radius: 12px; font-size: 13px; font-weight: 700;'>⭐ KEY CUSTOMER</span>", "")
+			VAR _UniqueBadge = IF(_IsUniqueCustomer, 
+			    "<span style='background: #818cf8; color: #ffffff; padding: 4px 12px; border-radius: 12px; font-size: 13px; font-weight: 700;'>UNIQUE: " & _UniqueGroup & "</span>", "")
+			VAR _RiskColor = SWITCH(TRUE(), 
+			    _RiskLevel = "Low" || _RiskLevel = "Minimal", "#10b981", 
+			    _RiskLevel = "Medium", "#f59e0b", 
+			    _RiskLevel = "High", "#ef4444", 
+			    "#6b7280")
+			VAR _UtilPct = IF(ISBLANK(_CreditUtilization), 0, _CreditUtilization * 100)
+			VAR _UtilColor = IF(_UtilPct > 80, "#ef4444", IF(_UtilPct > 50, "#f59e0b", "#10b981"))
+			
+			// Aging display - always show, but highlight if overdue
+			VAR _AgingBg = IF(_HasOverdue, "#fef2f2", "#f9fafb")
+			VAR _AgingBorder = IF(_HasOverdue, "#ef4444", "#e5e7eb")
+			VAR _AgingTextColor = IF(_HasOverdue, "#dc2626", "#6b7280")
+			VAR _AgingLabel = IF(_HasOverdue, "⚠️ OVERDUE", "AGING")
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    padding: 16px 24px;
+			    background: white;
+			    border-radius: 10px;
+			    border: 1px solid #e5e7eb;
+			    height: 160px;
+			    display: flex;
+			    gap: 24px;
+			    box-sizing: border-box;
+			'>
+			    <!-- LEFT: Customer Identity -->
+			    <div style='flex: 1.3; display: flex; flex-direction: column; justify-content: center; border-right: 1px solid #e5e7eb; padding-right: 24px;'>
+			        <div style='margin-bottom: 6px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;'>
+			            " & _KeyBadge & _UniqueBadge & "
+			            <span style='font-size: 14px; color: #6b7280; font-weight: 500;'>Account: " & _AccountNumber & "</span>
+			        </div>
+			        <div style='font-size: 26px; font-weight: 700; color: #1f2937; margin-bottom: 12px; line-height: 1.1;'>
+			            " & _DisplayName & "
+			        </div>
+			        <div style='display: flex; gap: 24px;'>
+			            <div>
+			                <div style='font-size: 11px; color: #9ca3af; text-transform: uppercase; font-weight: 600;'>Trade Type</div>
+			                <div style='font-size: 15px; color: #374151; font-weight: 500;'>" & IF(ISBLANK(_TradeType), "-", _TradeType) & "</div>
+			            </div>
+			            <div>
+			                <div style='font-size: 11px; color: #9ca3af; text-transform: uppercase; font-weight: 600;'>Status</div>
+			                <div style='font-size: 15px; color: #374151; font-weight: 500;'>" & IF(ISBLANK(_AccountStatus), "-", _AccountStatus) & "</div>
+			            </div>
+			            <div>
+			                <div style='font-size: 11px; color: #9ca3af; text-transform: uppercase; font-weight: 600;'>Tier</div>
+			                <div style='font-size: 15px; color: #374151; font-weight: 500;'>" & IF(ISBLANK(_CustomerTier), "-", _CustomerTier) & "</div>
+			            </div>
+			        </div>
+			    </div>
+			    
+			    <!-- CENTER: Financial Health -->
+			    <div style='flex: 1.2; display: flex; flex-direction: column; justify-content: center; border-right: 1px solid #e5e7eb; padding-right: 24px;'>
+			        <div style='display: flex; justify-content: space-between; margin-bottom: 8px;'>
+			            <div>
+			                <div style='font-size: 11px; color: #9ca3af; text-transform: uppercase; font-weight: 600;'>Balance</div>
+			                <div style='font-size: 20px; font-weight: 700; color: #1f2937;'>" & FORMAT(_AccountBalance, "$#,##0") & "</div>
+			            </div>
+			            <div style='text-align: right;'>
+			                <div style='font-size: 11px; color: #9ca3af; text-transform: uppercase; font-weight: 600;'>Credit Limit</div>
+			                <div style='font-size: 20px; font-weight: 700; color: #1f2937;'>" & FORMAT(_CreditLimit, "$#,##0") & "</div>
+			            </div>
+			        </div>
+			        <div style='background: #e5e7eb; border-radius: 4px; height: 8px; margin-bottom: 4px;'>
+			            <div style='background: " & _UtilColor & "; width: " & FORMAT(MIN(_UtilPct, 100), "0") & "%; height: 100%; border-radius: 4px;'></div>
+			        </div>
+			        <div style='display: flex; justify-content: space-between; margin-bottom: 8px;'>
+			            <span style='font-size: 12px; color: #6b7280;'>" & FORMAT(_UtilPct/100, "0%") & " Utilized</span>
+			            <span style='font-size: 12px; font-weight: 600; color: " & _RiskColor & ";'>Risk: " & IF(ISBLANK(_RiskLevel), "-", _RiskLevel) & "</span>
+			        </div>
+			        <!-- Aging Row - Fixed height -->
+			        <div style='padding: 6px 10px; background: " & _AgingBg & "; border-radius: 4px; border-left: 3px solid " & _AgingBorder & ";'>
+			            <div style='font-size: 10px; color: " & _AgingTextColor & "; font-weight: 600; margin-bottom: 2px;'>" & _AgingLabel & "</div>
+			            <div style='font-size: 12px; color: #374151;'>
+			                30d: " & FORMAT(_Aging30, "$#,##0") & " | 60d: " & FORMAT(_Aging60, "$#,##0") & " | 90+: " & FORMAT(_Aging90, "$#,##0") & "
+			            </div>
+			        </div>
+			    </div>
+			    
+			    <!-- RIGHT: Contact -->
+			    <div style='flex: 0.7; display: flex; flex-direction: column; justify-content: center;'>
+			        <div style='margin-bottom: 14px;'>
+			            <div style='font-size: 11px; color: #9ca3af; text-transform: uppercase; font-weight: 600;'>Location</div>
+			            <div style='font-size: 16px; color: #374151; font-weight: 500;'>" & IF(ISBLANK(_City), "-", _City) & ", " & IF(ISBLANK(_State), "", _State) & "</div>
+			        </div>
+			        <div style='margin-bottom: 14px;'>
+			            <div style='font-size: 11px; color: #9ca3af; text-transform: uppercase; font-weight: 600;'>Territory</div>
+			            <div style='font-size: 16px; color: #374151; font-weight: 500;'>" & IF(ISBLANK(_Territory), "-", _Territory) & "</div>
+			        </div>
+			        <div>
+			            <div style='font-size: 11px; color: #9ca3af; text-transform: uppercase; font-weight: 600;'>Phone</div>
+			            <div style='font-size: 16px; color: #374151; font-weight: 500;'>" & _Phone & "</div>
+			        </div>
+			    </div>
+			</div>
+			"
+			
+			```
+		lineageTag: 20f5697c-f081-48d0-9928-a06ef42302b6
+
+	measure 'Customer Department Card' = ```
+			
+			// ============================================
+			// DEPARTMENT PERFORMANCE - Current vs Prior Year
+			// ============================================
+			
+			// Date Context
+			VAR _MinDate = MIN(dim_DateTable[Date])
+			VAR _MaxDate = MAX(dim_DateTable[Date])
+			VAR _DateRange = FORMAT(_MinDate, "MMM D, YYYY") & " - " & FORMAT(_MaxDate, "MMM D, YYYY")
+			
+			// EQUIPMENT/SALES
+			VAR _EquipRev = [Equipment Revenue]
+			VAR _EquipRevPY = CALCULATE([Equipment Revenue], SAMEPERIODLASTYEAR(dim_DateTable[Date]))
+			VAR _EquipMargin = [Equipment Margin (L1)]
+			VAR _EquipMarginPY = CALCULATE([Equipment Margin (L1)], SAMEPERIODLASTYEAR(dim_DateTable[Date]))
+			VAR _EquipGP = DIVIDE(_EquipMargin, _EquipRev, 0)
+			VAR _EquipGPPY = DIVIDE(_EquipMarginPY, _EquipRevPY, 0)
+			VAR _EquipRevChg = DIVIDE(_EquipRev - _EquipRevPY, _EquipRevPY, 0)
+			
+			// PARTS
+			VAR _PartsRev = [Parts Sales]
+			VAR _PartsRevPY = CALCULATE([Parts Sales], SAMEPERIODLASTYEAR(dim_DateTable[Date]))
+			VAR _PartsMargin = [Parts Margin]
+			VAR _PartsMarginPY = CALCULATE([Parts Margin], SAMEPERIODLASTYEAR(dim_DateTable[Date]))
+			VAR _PartsGP = DIVIDE(_PartsMargin, _PartsRev, 0)
+			VAR _PartsGPPY = DIVIDE(_PartsMarginPY, _PartsRevPY, 0)
+			VAR _PartsRevChg = DIVIDE(_PartsRev - _PartsRevPY, _PartsRevPY, 0)
+			
+			// SERVICE
+			VAR _ServiceRev = [Service Invoice Total Sales]
+			VAR _ServiceRevPY = CALCULATE([Service Invoice Total Sales], SAMEPERIODLASTYEAR(dim_DateTable[Date]))
+			VAR _ServiceMargin = [Service Invoice Total Margin]
+			VAR _ServiceMarginPY = CALCULATE([Service Invoice Total Margin], SAMEPERIODLASTYEAR(dim_DateTable[Date]))
+			VAR _ServiceGP = DIVIDE(_ServiceMargin, _ServiceRev, 0)
+			VAR _ServiceGPPY = DIVIDE(_ServiceMarginPY, _ServiceRevPY, 0)
+			VAR _ServiceRevChg = DIVIDE(_ServiceRev - _ServiceRevPY, _ServiceRevPY, 0)
+			
+			// Formatting helpers
+			VAR _EquipArrow = IF(_EquipRevChg > 0, "▲", IF(_EquipRevChg < 0, "▼", "─"))
+			VAR _EquipColor = IF(_EquipRevChg > 0, "#10b981", IF(_EquipRevChg < 0, "#ef4444", "#6b7280"))
+			VAR _PartsArrow = IF(_PartsRevChg > 0, "▲", IF(_PartsRevChg < 0, "▼", "─"))
+			VAR _PartsColor = IF(_PartsRevChg > 0, "#10b981", IF(_PartsRevChg < 0, "#ef4444", "#6b7280"))
+			VAR _ServiceArrow = IF(_ServiceRevChg > 0, "▲", IF(_ServiceRevChg < 0, "▼", "─"))
+			VAR _ServiceColor = IF(_ServiceRevChg > 0, "#10b981", IF(_ServiceRevChg < 0, "#ef4444", "#6b7280"))
+			
+			// Section colors
+			VAR _EquipBorder = "#3b82f6"
+			VAR _PartsBorder = "#10b981"
+			VAR _ServiceBorder = "#f59e0b"
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    padding: 14px 20px;
+			    background: white;
+			    border-radius: 10px;
+			    border: 1px solid #e5e7eb;
+			    height: 160px;
+			    box-sizing: border-box;
+			'>
+			    <!-- Date Banner -->
+			    <div style='text-align: center; font-size: 11px; color: #6b7280; margin-bottom: 10px; font-weight: 500;'>
+			        📅 SELECTED PERIOD: " & _DateRange & "
+			    </div>
+			    
+			    <!-- Department Sections -->
+			    <div style='display: flex; gap: 16px; height: calc(100% - 30px);'>
+			        
+			        <!-- EQUIPMENT/SALES -->
+			        <div style='flex: 1; border-left: 4px solid " & _EquipBorder & "; padding-left: 12px; display: flex; flex-direction: column; justify-content: center;'>
+			            <div style='font-size: 14px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;'>Equipment Sales</div>
+			            <div style='display: flex; align-items: baseline; gap: 8px;'>
+			                <span style='font-size: 28px; font-weight: 700; color: #1f2937;'>" & FORMAT(_EquipRev, "$#,##0") & "</span>
+			                <span style='font-size: 14px; font-weight: 600; color: " & _EquipColor & ";'>" & _EquipArrow & " " & FORMAT(_EquipRevChg, "+0.0%;-0.0%") & "</span>
+			            </div>
+			            <div style='font-size: 14px; color: #6b7280; margin-top: 4px;'>
+			                Margin: <span style='font-weight: 600; color: #374151;'>" & FORMAT(_EquipMargin, "$#,##0") & "</span>
+			                <span style='margin-left: 8px;'>GP: <span style='font-weight: 600; color: " & _EquipBorder & ";'>" & FORMAT(_EquipGP, "0.0%") & "</span></span>
+			            </div>
+			            <div style='font-size: 14px; color: #9ca3af; margin-top: 2px;'>
+			                PY: " & FORMAT(_EquipRevPY, "$#,##0") & " | " & FORMAT(_EquipMarginPY, "$#,##0") & " | " & FORMAT(_EquipGPPY, "0.0%") & "
+			            </div>
+			        </div>
+			        
+			        <!-- PARTS -->
+			        <div style='flex: 1; border-left: 4px solid " & _PartsBorder & "; padding-left: 12px; display: flex; flex-direction: column; justify-content: center;'>
+			            <div style='font-size: 14px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;'>Parts</div>
+			            <div style='display: flex; align-items: baseline; gap: 8px;'>
+			                <span style='font-size: 28px; font-weight: 700; color: #1f2937;'>" & FORMAT(_PartsRev, "$#,##0") & "</span>
+			                <span style='font-size: 14px; font-weight: 600; color: " & _PartsColor & ";'>" & _PartsArrow & " " & FORMAT(_PartsRevChg, "+0.0%;-0.0%") & "</span>
+			            </div>
+			            <div style='font-size: 14px; color: #6b7280; margin-top: 4px;'>
+			                Margin: <span style='font-weight: 600; color: #374151;'>" & FORMAT(_PartsMargin, "$#,##0") & "</span>
+			                <span style='margin-left: 8px;'>GP: <span style='font-weight: 600; color: " & _PartsBorder & ";'>" & FORMAT(_PartsGP, "0.0%") & "</span></span>
+			            </div>
+			            <div style='font-size: 14px; color: #9ca3af; margin-top: 2px;'>
+			                PY: " & FORMAT(_PartsRevPY, "$#,##0") & " | " & FORMAT(_PartsMarginPY, "$#,##0") & " | " & FORMAT(_PartsGPPY, "0.0%") & "
+			            </div>
+			        </div>
+			        
+			        <!-- SERVICE -->
+			        <div style='flex: 1; border-left: 4px solid " & _ServiceBorder & "; padding-left: 12px; display: flex; flex-direction: column; justify-content: center;'>
+			            <div style='font-size: 14px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;'>Service</div>
+			            <div style='display: flex; align-items: baseline; gap: 8px;'>
+			                <span style='font-size: 28px; font-weight: 700; color: #1f2937;'>" & FORMAT(_ServiceRev, "$#,##0") & "</span>
+			                <span style='font-size: 14px; font-weight: 600; color: " & _ServiceColor & ";'>" & _ServiceArrow & " " & FORMAT(_ServiceRevChg, "+0.0%;-0.0%") & "</span>
+			            </div>
+			            <div style='font-size: 14px; color: #6b7280; margin-top: 4px;'>
+			                Margin: <span style='font-weight: 600; color: #374151;'>" & FORMAT(_ServiceMargin, "$#,##0") & "</span>
+			                <span style='margin-left: 8px;'>GP: <span style='font-weight: 600; color: " & _ServiceBorder & ";'>" & FORMAT(_ServiceGP, "0.0%") & "</span></span>
+			            </div>
+			            <div style='font-size: 14px; color: #9ca3af; margin-top: 2px;'>
+			                PY: " & FORMAT(_ServiceRevPY, "$#,##0") & " | " & FORMAT(_ServiceMarginPY, "$#,##0") & " | " & FORMAT(_ServiceGPPY, "0.0%") & "
+			            </div>
+			        </div>
+			        
+			    </div>
+			</div>
+			"
+			
+			```
+		lineageTag: b398587a-6c07-4b56-986c-62ac6a627381
+
+	measure 'Parts Invoice Header Card' = ```
+			
+			// ============================================
+			// CUSTOMER & INVOICE CONTEXT
+			// ============================================
+			VAR _DisplayName = MAX(dim_CustomerList[DisplayName])
+			VAR _AccountNumber = MAX(dim_CustomerList[AccountNumber])
+			VAR _InvoiceNumber = MAX(Fact_Parts_Detail[InvoiceNumber])
+			VAR _InvoiceDate = MAX(Fact_Parts_Detail[TransDatetime])
+			VAR _Branch = MAX(Fact_Parts_Detail[Branch])
+			
+			// Invoice Totals
+			VAR _Sales = SUM(Fact_Parts_Detail[SaleValue])
+			VAR _Cost = SUM(Fact_Parts_Detail[CostValue])
+			VAR _Margin = SUM(Fact_Parts_Detail[LineMargin])
+			VAR _GP = DIVIDE(_Margin, _Sales, 0)
+			VAR _LineCount = COUNTROWS(Fact_Parts_Detail)
+			VAR _TotalQty = SUM(Fact_Parts_Detail[Qty])
+			
+			// Formatting
+			VAR _GPColor = IF(_GP >= 0.35, "#10b981", IF(_GP >= 0.20, "#f59e0b", "#ef4444"))
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    padding: 16px 24px;
+			    background: white;
+			    border-radius: 10px;
+			    border: 1px solid #e5e7eb;
+			    height: 120px;
+			    display: flex;
+			    gap: 24px;
+			    box-sizing: border-box;
+			'>
+			    <!-- LEFT: Customer & Invoice Info -->
+			    <div style='flex: 1; display: flex; flex-direction: column; justify-content: center; border-right: 1px solid #e5e7eb; padding-right: 24px;'>
+			        <div style='font-size: 22px; font-weight: 700; color: #1f2937; margin-bottom: 6px;'>
+			            " & _DisplayName & "
+			        </div>
+			        <div style='display: flex; gap: 20px; font-size: 13px; color: #6b7280;'>
+			            <span>Account: <strong style='color: #374151;'>" & _AccountNumber & "</strong></span>
+			        </div>
+			        <div style='display: flex; gap: 20px; margin-top: 8px;'>
+			            <div style='background: #10b981; color: white; padding: 4px 12px; border-radius: 6px; font-size: 14px; font-weight: 600;'>
+			                Invoice #" & _InvoiceNumber & "
+			            </div>
+			            <span style='font-size: 14px; color: #6b7280; display: flex; align-items: center;'>
+			                " & FORMAT(_InvoiceDate, "MMM D, YYYY") & " | Branch: " & _Branch & "
+			            </span>
+			        </div>
+			    </div>
+			    
+			    <!-- RIGHT: Invoice Totals -->
+			    <div style='flex: 1.2; display: flex; align-items: center; justify-content: space-around;'>
+			        <div style='text-align: center;'>
+			            <div style='font-size: 14px; color: #9ca3af; text-transform: uppercase; font-weight: 600;'>Sales</div>
+			            <div style='font-size: 28px; font-weight: 700; color: #1f2937;'>" & FORMAT(_Sales, "$#,##0") & "</div>
+			        </div>
+			        <div style='text-align: center;'>
+			            <div style='font-size: 14px; color: #9ca3af; text-transform: uppercase; font-weight: 600;'>Cost</div>
+			            <div style='font-size: 28px; font-weight: 700; color: #1f2937;'>" & FORMAT(_Cost, "$#,##0") & "</div>
+			        </div>
+			        <div style='text-align: center;'>
+			            <div style='font-size: 14px; color: #9ca3af; text-transform: uppercase; font-weight: 600;'>Margin</div>
+			            <div style='font-size: 28px; font-weight: 700; color: #1f2937;'>" & FORMAT(_Margin, "$#,##0") & "</div>
+			        </div>
+			        <div style='text-align: center;'>
+			            <div style='font-size: 14px; color: #9ca3af; text-transform: uppercase; font-weight: 600;'>GP%</div>
+			            <div style='font-size: 28px; font-weight: 700; color: " & _GPColor & ";'>" & FORMAT(_GP, "0.0%") & "</div>
+			        </div>
+			        <div style='text-align: center; border-left: 1px solid #e5e7eb; padding-left: 20px;'>
+			            <div style='font-size: 14px; color: #9ca3af; text-transform: uppercase; font-weight: 600;'>Lines / Qty</div>
+			            <div style='font-size: 18px; font-weight: 600; color: #374151;'>" & FORMAT(_LineCount, "#,##0") & " / " & FORMAT(_TotalQty, "#,##0") & "</div>
+			        </div>
+			    </div>
+			</div>
+			"
+			
+			```
+		lineageTag: 6c82b678-ecdb-40e9-806b-54446bdbee2c
+
+	measure 'Parts Line GP%' = ```
+			
+			DIVIDE(SUM(Fact_Parts_Detail[LineMargin]), SUM(Fact_Parts_Detail[SaleValue]), 0)
+			
+			```
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: ce4071dd-50f6-489b-ae6f-6484f5d91091
+
+	measure 'Page 9 Drill level 3 - Header' =
+			
+			// Get user name
+			VAR _User = USERPRINCIPALNAME()
+			VAR _Position = SEARCH("@", _User, 1)
+			VAR _Name = LEFT(_User, _Position - 1)
+			VAR _FirstLetter = UPPER(LEFT(_Name, 1))
+			VAR _LastName = MID(_Name, 2, LEN(_Name) - 1)
+			VAR _FormattedLastName =
+			    UPPER(LEFT(_LastName, 1)) & LOWER(MID(_LastName, 2, LEN(_LastName)))
+			VAR WelcomeName = _FirstLetter & "." & _FormattedLastName
+			
+			// Get current date/time info
+			VAR CurrentDate = TODAY()
+			VAR DateDisplay = FORMAT(CurrentDate, "MMM D, YYYY")
+			VAR CurrentHour = HOUR(NOW())
+			VAR TimeGreeting =
+			    IF(CurrentHour < 12, "Good Morning",
+			    IF(CurrentHour < 17, "Good Afternoon",
+			    "Good Evening"))
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    height: 85px;
+			    padding: 15px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 10px;
+			    color: white;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-between;
+			    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    box-sizing: border-box;
+			'>
+			    <!-- Left side: Dashboard Title -->
+			    <div style='display: flex; align-items: center; gap: 15px;'>
+			        <!-- Home icon -->
+			        <div style='
+			            width: 40px;
+			            height: 40px;
+			            background: rgba(255,255,255,0.15);
+			            border-radius: 8px;
+			            display: flex;
+			            align-items: center;
+			            justify-content: center;
+			            font-size: 20px;
+			        '>
+			            🏠
+			        </div>
+			
+			        <!-- Title -->
+			        <div>
+			            <div style='font-size: 12px; opacity: 0.85; margin-bottom: 4px; letter-spacing: 0.5px;'>
+			                REPORT
+			            </div>
+			            <div style='font-size: 26px; font-weight: 700; line-height: 1;'>
+			                Customer Anatomy - Drill Details - Service Invoices
+			            </div>
+			        </div>
+			    </div>
+			
+			    <!-- Right side: Welcome & Date -->
+			    <div style='text-align: right;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 6px;'>
+			            " & TimeGreeting & ", " & WelcomeName & "
+			        </div>
+			        <div style='font-size: 16px; font-weight: 600;'>
+			            📅 " & DateDisplay & "
+			        </div>
+			    </div>
+			</div>
+			"
+		lineageTag: d24eb0c4-21f4-46b3-bb8e-09df99ac04b7
+
+	measure 'Service Invoice Header Card' = ```
+			
+			VAR _DisplayName = MAX(dim_CustomerList[DisplayName])
+			VAR _AccountNumber = MAX(dim_CustomerList[AccountNumber])
+			VAR _InvoiceNumber = MAX(Fact_Service_Invoices[InvoiceNumber])
+			VAR _InvoiceDate = MAX(Fact_Service_Invoices[InvoiceDate])
+			VAR _Branch = MAX(Fact_Service_Invoices[Branch])
+			
+			// Accurate totals from Fact_Service_Invoices
+			VAR _LaborSales = SUM(Fact_Service_Invoices[LabourSaleValue])
+			VAR _LaborCost = SUM(Fact_Service_Invoices[LabourCostValue])
+			VAR _LaborMargin = SUM(Fact_Service_Invoices[LabourMargin])
+			VAR _PartsSales = SUM(Fact_Service_Invoices[PartsSaleValue])
+			VAR _PartsCost = SUM(Fact_Service_Invoices[PartsCostValue])
+			VAR _PartsMargin = _PartsSales - _PartsCost
+			
+			VAR _TotalSales = SUM(Fact_Service_Invoices[TotalNetSales])
+			VAR _TotalMargin = SUM(Fact_Service_Invoices[TotalMargin])
+			VAR _GP = DIVIDE(_TotalMargin, _TotalSales, 0)
+			
+			// Job count from detail table (via bidirectional relationship)
+			VAR _JobCount = COUNTROWS(Fact_Service_Detail)
+			
+			// Formatting
+			VAR _GPColor = IF(_GP >= 0.50, "#10b981", IF(_GP >= 0.30, "#f59e0b", "#ef4444"))
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    padding: 16px 24px;
+			    background: white;
+			    border-radius: 10px;
+			    border: 1px solid #e5e7eb;
+			    height: 130px;
+			    display: flex;
+			    gap: 24px;
+			    box-sizing: border-box;
+			'>
+			    <!-- LEFT: Customer & Invoice Info -->
+			    <div style='flex: 1; display: flex; flex-direction: column; justify-content: center; border-right: 1px solid #e5e7eb; padding-right: 24px;'>
+			        <div style='font-size: 22px; font-weight: 700; color: #1f2937; margin-bottom: 6px;'>
+			            " & _DisplayName & "
+			        </div>
+			        <div style='font-size: 13px; color: #6b7280; margin-bottom: 8px;'>
+			            Account: <strong style='color: #374151;'>" & _AccountNumber & "</strong>
+			        </div>
+			        <div style='display: flex; gap: 12px; align-items: center;'>
+			            <div style='background: #f59e0b; color: white; padding: 4px 12px; border-radius: 6px; font-size: 14px; font-weight: 600;'>
+			                Invoice #" & _InvoiceNumber & "
+			            </div>
+			            <span style='font-size: 14px; color: #6b7280;'>
+			                " & FORMAT(_InvoiceDate, "MMM D, YYYY") & " | Branch: " & _Branch & " | Jobs: " & _JobCount & "
+			            </span>
+			        </div>
+			    </div>
+			    
+			    <!-- CENTER: Labor & Parts Breakdown -->
+			    <div style='flex: 0.8; display: flex; flex-direction: column; justify-content: center; border-right: 1px solid #e5e7eb; padding-right: 20px;'>
+			        <div style='display: flex; justify-content: space-between; margin-bottom: 8px;'>
+			            <div>
+			                <div style='font-size: 16px; color: #9ca3af; text-transform: uppercase;'>Labor</div>
+			                <div style='font-size: 22px; font-weight: 600; color: #1f2937;'>" & FORMAT(_LaborSales, "$#,##0") & "</div>
+			                <div style='font-size: 16px; color: #6b7280;'>Margin: " & FORMAT(_LaborMargin, "$#,##0") & "</div>
+			            </div>
+			            <div style='text-align: right;'>
+			                <div style='font-size: 16px; color: #9ca3af; text-transform: uppercase;'>Parts</div>
+			                <div style='font-size: 22px; font-weight: 600; color: #1f2937;'>" & FORMAT(_PartsSales, "$#,##0") & "</div>
+			                <div style='font-size: 16px; color: #6b7280;'>Margin: " & FORMAT(_PartsMargin, "$#,##0") & "</div>
+			            </div>
+			        </div>
+			    </div>
+			    
+			    <!-- RIGHT: Invoice Totals -->
+			    <div style='flex: 1; display: flex; align-items: center; justify-content: space-around;'>
+			        <div style='text-align: center;'>
+			            <div style='font-size: 14px; color: #9ca3af; text-transform: uppercase; font-weight: 600;'>Total Sales</div>
+			            <div style='font-size: 28px; font-weight: 700; color: #1f2937;'>" & FORMAT(_TotalSales, "$#,##0") & "</div>
+			        </div>
+			        <div style='text-align: center;'>
+			            <div style='font-size: 14px; color: #9ca3af; text-transform: uppercase; font-weight: 600;'>Total Margin</div>
+			            <div style='font-size: 28px; font-weight: 700; color: #1f2937;'>" & FORMAT(_TotalMargin, "$#,##0") & "</div>
+			        </div>
+			        <div style='text-align: center;'>
+			            <div style='font-size: 14px; color: #9ca3af; text-transform: uppercase; font-weight: 600;'>GP%</div>
+			            <div style='font-size: 28px; font-weight: 700; color: " & _GPColor & ";'>" & FORMAT(_GP, "0.0%") & "</div>
+			        </div>
+			    </div>
+			</div>
+			"
+			
+			```
+		lineageTag: de81b182-6a7f-4351-87ef-3e042670021b
+
+	measure 'Top Customers Hero Card' = ```
+			
+			// ============================================
+			// METRIC CALCULATIONS (TOP N FILTERED)
+			// ============================================
+			VAR _Revenue = [Top N Total Revenue]
+			VAR _PriorRevenue = [Top N Prior Revenue]
+			VAR _RevenueChange = _Revenue - _PriorRevenue
+			VAR _RevenueChangePct = DIVIDE(_RevenueChange, _PriorRevenue, 0)
+			
+			VAR _Margin = [Top N Total Margin]
+			VAR _PriorMargin = [Top N Prior Margin]
+			VAR _MarginChange = _Margin - _PriorMargin
+			VAR _MarginChangePct = DIVIDE(_MarginChange, _PriorMargin, 0)
+			
+			VAR _GP = DIVIDE(_Margin, _Revenue, 0)
+			VAR _PriorGP = DIVIDE(_PriorMargin, _PriorRevenue, 0)
+			VAR _GPChange = _GP - _PriorGP
+			
+			VAR _Customers = [Top N Customer Count]
+			VAR _N = [Selected TopN]
+			
+			// Date Context
+			VAR _MinDate = MIN(dim_DateTable[Date])
+			VAR _MaxDate = MAX(dim_DateTable[Date])
+			VAR _DateRange = FORMAT(_MinDate, "MMM D, YYYY") & " - " & FORMAT(_MaxDate, "MMM D, YYYY")
+			
+			// Formatting Helpers
+			VAR _RevArrow = IF(_RevenueChange > 0, "▲", IF(_RevenueChange < 0, "▼", "─"))
+			VAR _RevColor = IF(_RevenueChange > 0, "#86efac", IF(_RevenueChange < 0, "#fca5a5", "#d1d5db"))
+			VAR _MarArrow = IF(_MarginChange > 0, "▲", IF(_MarginChange < 0, "▼", "─"))
+			VAR _MarColor = IF(_MarginChange > 0, "#86efac", IF(_MarginChange < 0, "#fca5a5", "#d1d5db"))
+			VAR _GPArrow = IF(_GPChange > 0, "▲", IF(_GPChange < 0, "▼", "─"))
+			VAR _GPColor = IF(_GPChange > 0, "#86efac", IF(_GPChange < 0, "#fca5a5", "#d1d5db"))
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    padding: 20px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 12px;
+			    box-shadow: 0 8px 24px rgba(0,0,0,0);
+			    color: white;
+			    height: 160px;
+			    display: flex;
+			    flex-direction: column;
+			'>
+			    <!-- Date Context Banner -->
+			    <div style='
+			        text-align: center;
+			        font-size: 11px;
+			        opacity: 0.9;
+			        margin-bottom: 12px;
+			        padding: 6px 12px;
+			        background: rgba(255,255,255,0.1);
+			        border-radius: 6px;
+			        letter-spacing: 0.5px;
+			    '>
+			        📅 SELECTED PERIOD: " & _DateRange & " &nbsp;&nbsp;|&nbsp;&nbsp; TOP " & FORMAT(_N, "0") & " CUSTOMERS
+			    </div>
+			    
+			    <!-- Metrics Row -->
+			    <div style='display: flex; align-items: center; justify-content: space-around; flex: 1;'>
+			        
+			        <!-- Total Revenue -->
+			        <div style='text-align: center; flex: 1;'>
+			            <div style='font-size: 14px; opacity: 0.85; text-transform: uppercase; letter-spacing: 0.5px;'>
+			                Total Revenue
+			            </div>
+			            <div style='font-size: 32px; font-weight: 700; line-height: 1.2; margin: 4px 0;'>
+			                " & FORMAT(_Revenue, "$#,##0") & "
+			            </div>
+			            <div style='font-size: 18px; font-weight: 600; color: " & _RevColor & ";'>
+			                " & _RevArrow & " " & FORMAT(_RevenueChangePct, "+0.0%;-0.0%") & " vs PY
+			            </div>
+			        </div>
+			        
+			        <!-- Divider -->
+			        <div style='width: 1px; height: 70px; background: rgba(255,255,255,0.25);'></div>
+			        
+			        <!-- Total Margin -->
+			        <div style='text-align: center; flex: 1;'>
+			            <div style='font-size: 14px; opacity: 0.85; text-transform: uppercase; letter-spacing: 0.5px;'>
+			                Total Margin
+			            </div>
+			            <div style='font-size: 32px; font-weight: 700; line-height: 1.2; margin: 4px 0;'>
+			                " & FORMAT(_Margin, "$#,##0") & "
+			            </div>
+			            <div style='font-size: 18px; font-weight: 600; color: " & _MarColor & ";'>
+			                " & _MarArrow & " " & FORMAT(_MarginChangePct, "+0.0%;-0.0%") & " vs PY
+			            </div>
+			        </div>
+			        
+			        <!-- Divider -->
+			        <div style='width: 1px; height: 70px; background: rgba(255,255,255,0.25);'></div>
+			        
+			        <!-- GP% -->
+			        <div style='text-align: center; flex: 1;'>
+			            <div style='font-size: 14px; opacity: 0.85; text-transform: uppercase; letter-spacing: 0.5px;'>
+			                Gross Profit %
+			            </div>
+			            <div style='font-size: 32px; font-weight: 700; line-height: 1.2; margin: 4px 0; color: #fcd34d;'>
+			                " & FORMAT(_GP, "0.0%") & "
+			            </div>
+			            <div style='font-size: 18px; font-weight: 600; color: " & _GPColor & ";'>
+			                " & _GPArrow & " " & FORMAT(_GPChange, "+0.0%;-0.0%") & " vs PY
+			            </div>
+			        </div>
+			        
+			        <!-- Divider -->
+			        <div style='width: 1px; height: 70px; background: rgba(255,255,255,0.25);'></div>
+			        
+			        <!-- Customers Shown -->
+			        <div style='text-align: center; flex: 1;'>
+			            <div style='font-size: 14px; opacity: 0.85; text-transform: uppercase; letter-spacing: 0.5px;'>
+			                Customers Shown
+			            </div>
+			            <div style='font-size: 32px; font-weight: 700; line-height: 1.2; margin: 4px 0;'>
+			                " & FORMAT(_Customers, "#,##0") & "
+			            </div>
+			            <div style='font-size: 18px; opacity: 0.7;'>
+			                of Top " & FORMAT(_N, "0") & " Selected
+			            </div>
+			        </div>
+			    </div>
+			</div>
+			"
+			
+			```
+		lineageTag: 68fd5886-6049-432d-b975-cc218c42e1a5
+
+	measure 'Selected TopN' = ```
+			SELECTEDVALUE('TopN Selector'[TopN Value], 10)
+			
+			```
+		formatString: 0
+		lineageTag: 0e0857e7-0174-4d39-b467-562d9ee802c1
+
+	measure 'Customer Rank' = ```
+			
+			IF(
+			    HASONEVALUE(dim_CustomerList[DisplayName]),
+			    RANKX(
+			        ALLSELECTED(dim_CustomerList[DisplayName]),
+			        [Total Revenue],
+			        ,
+			        DESC,
+			        Dense
+			    )
+			)
+			
+			```
+		formatString: 0
+		lineageTag: 37daa064-c46c-4d1e-a507-4706ff334409
+
+	measure 'Show Top N Customer' = ```
+			
+			VAR _Rank = [Customer Rank]
+			VAR _N = [Selected TopN]
+			RETURN
+			IF(_Rank <= _N && _Rank > 0, 1, 0)
+			
+			```
+		formatString: 0
+		lineageTag: 09dfa073-cd75-471f-b0c3-e0627ee2b287
+
+	measure 'Top N Title' = "Top " & FORMAT([Selected TopN], "0") & " Customers"
+		lineageTag: 793a2c85-c4cb-4c0f-9a44-73810972702e
+
+	measure 'Top N Total Revenue' = ```
+			
+			VAR _TopCustomers = 
+			    TOPN(
+			        [Selected TopN],
+			        ALLSELECTED(dim_CustomerList[DisplayName]),
+			        [Total Revenue],
+			        DESC
+			    )
+			RETURN
+			CALCULATE([Total Revenue], _TopCustomers)
+			
+			```
+		lineageTag: 2c740b9b-1aca-4264-a38c-eb08b1befa8a
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Top N Total Margin' = ```
+			
+			VAR _TopCustomers = 
+			    TOPN(
+			        [Selected TopN],
+			        ALLSELECTED(dim_CustomerList[DisplayName]),
+			        [Total Revenue],
+			        DESC
+			    )
+			RETURN
+			CALCULATE([Total Margin], _TopCustomers)
+			
+			```
+		lineageTag: eed37bf8-6eb7-4a28-83a6-146626a1fbcd
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Top N GP%' = ```
+			DIVIDE([Top N Total Margin], [Top N Total Revenue], 0)
+			
+			```
+		lineageTag: 3c1d1c50-d2c5-4a57-a76e-b60cf21beb04
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Top N Customer Count' = ```
+			
+			COUNTROWS(
+			    TOPN(
+			        [Selected TopN],
+			        ALLSELECTED(dim_CustomerList[DisplayName]),
+			        [Total Revenue],
+			        DESC
+			    )
+			)
+			
+			```
+		formatString: 0
+		lineageTag: ab98b70f-01c8-4ba6-9118-fa9dba8ca1e6
+
+	measure 'Top N Prior Revenue' = ```
+			
+			VAR _TopCustomers = 
+			    TOPN(
+			        [Selected TopN],
+			        ALLSELECTED(dim_CustomerList[DisplayName]),
+			        [Total Revenue],
+			        DESC
+			    )
+			RETURN
+			CALCULATE([Total Revenue], SAMEPERIODLASTYEAR(dim_DateTable[Date]), _TopCustomers)
+			
+			```
+		lineageTag: 68fb425e-7e08-4155-940d-ee28e38e0003
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Top N Prior Margin' = ```
+			
+			VAR _TopCustomers = 
+			    TOPN(
+			        [Selected TopN],
+			        ALLSELECTED(dim_CustomerList[DisplayName]),
+			        [Total Revenue],
+			        DESC
+			    )
+			RETURN
+			CALCULATE([Total Margin], SAMEPERIODLASTYEAR(dim_DateTable[Date]), _TopCustomers)
+			
+			```
+		lineageTag: ae6f0ab6-50d2-40fb-9f12-4834c7e3f7b3
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Recurring Revenue' = ```
+			[Parts Revenue] + [Service Revenue]
+			
+			```
+		formatString: \$#,0;(\$#,0);\$#,0
+		lineageTag: 6dba3be0-8716-49b5-87be-49e08e0084ed
+
+	measure 'Recurring Revenue PY' = ```
+			
+			CALCULATE([Parts Revenue], SAMEPERIODLASTYEAR(dim_DateTable[Date])) + 
+			CALCULATE([Service Revenue], SAMEPERIODLASTYEAR(dim_DateTable[Date]))
+			
+			```
+		formatString: \$#,0;(\$#,0);\$#,0
+		lineageTag: 066fa86a-2275-4da0-acb6-d6cd3ca0d299
+
+	measure 'Recurring Customer Status' = ```
+			
+			VAR _Current = [Recurring Revenue]
+			VAR _Prior = [Recurring Revenue PY]
+			VAR _Ratio = DIVIDE(_Current, _Prior, 0)
+			RETURN
+			SWITCH(
+			    TRUE(),
+			    _Prior > 0 && _Current = 0, "Churned",
+			    _Prior > 0 && _Ratio < 0.5, "At Risk",
+			    _Prior > 0 && _Ratio < 0.8, "Declining",
+			    _Prior = 0 && _Current > 0, "New",
+			    _Ratio >= 0.8 && _Ratio <= 1.2, "Stable",
+			    _Ratio > 1.2, "Growing",
+			    "No Activity"
+			)
+			
+			
+			```
+		lineageTag: 170b3ef5-46d2-4a80-9edf-769cbf63d32a
+
+	measure 'Department Engagement' = ```
+			
+			VAR _PartsCY = IF([Parts Revenue] > 0, "✔", "✘")
+			VAR _PartsPY = IF([Parts Revenue PY] > 0, "✔", "✘")
+			VAR _ServiceCY = IF([Service Revenue] > 0, "✔", "✘")
+			VAR _ServicePY = IF([Service Revenue PY] > 0, "✔", "✘")
+			VAR _EquipCY = IF([Equipment Revenue] > 0, "✔", "✘")
+			VAR _EquipPY = IF([Equipment Revenue PY] > 0, "✔", "✘")
+			RETURN
+			"P: " & _PartsPY & " → " & _PartsCY & 
+			"   S: " & _ServicePY & " → " & _ServiceCY & 
+			"   E: " & _EquipPY & " → " & _EquipCY
+			
+			
+			```
+		lineageTag: 80a0a267-6355-46c0-bed8-997d4883718f
+
+	measure 'Revenue at Risk' = ```
+			
+			SUMX(
+			    FILTER(
+			        SUMMARIZE(dim_CustomerList, dim_CustomerList[CustomerKey]),
+			        VAR _Status = CALCULATE([Recurring Customer Status])
+			        RETURN _Status IN {"Churned", "At Risk"}
+			    ),
+			    CALCULATE([Recurring Revenue PY])
+			)
+			
+			
+			```
+		formatString: \$#,0;(\$#,0);\$#,0
+		lineageTag: f183e3a9-f36b-4779-8c66-3e880352e8b1
+
+	measure 'Retention Hero Card' = ```
+			
+			VAR _Churned = [Recurring Churned Count]
+			VAR _AtRisk = [Recurring At Risk Count]
+			VAR _Declining = [Recurring Declining Count]
+			VAR _Growing = [Recurring Growing Count]
+			VAR _New = [Recurring New Count]
+			
+			VAR _MinDate = MIN(dim_DateTable[Date])
+			VAR _MaxDate = MAX(dim_DateTable[Date])
+			VAR _DateRange = FORMAT(_MinDate, "MMM D, YYYY") & " - " & FORMAT(_MaxDate, "MMM D, YYYY")
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    padding: 20px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 12px;
+			    color: white;
+			    height: 160px;
+			    display: flex;
+			    flex-direction: column;
+			'>
+			    <!-- Date Context Banner -->
+			    <div style='
+			        text-align: center;
+			        font-size: 11px;
+			        opacity: 0.9;
+			        margin-bottom: 12px;
+			        padding: 6px 12px;
+			        background: rgba(255,255,255,0.1);
+			        border-radius: 6px;
+			        letter-spacing: 0.5px;
+			    '>
+			        📅 SELECTED PERIOD: " & _DateRange & " &nbsp;&nbsp;|&nbsp;&nbsp; RECURRING REVENUE RETENTION (PARTS + SERVICE)
+			    </div>
+			    
+			    <!-- Metrics Row -->
+			    <div style='display: flex; align-items: center; justify-content: space-around; flex: 1;'>
+			        
+			        <!-- Churned -->
+			        <div style='text-align: center; flex: 1;'>
+			            <div style='font-size: 14px; opacity: 0.85; text-transform: uppercase; letter-spacing: 0.5px;'>Churned</div>
+			            <div style='font-size: 32px; font-weight: 700; line-height: 1.2; margin: 4px 0; color: #fca5a5;'>" & FORMAT(_Churned, "#,##0") & "</div>
+			            <div style='font-size: 14px; opacity: 0.7;'>No activity this period</div>
+			        </div>
+			        
+			        <div style='width: 1px; height: 70px; background: rgba(255,255,255,0.25);'></div>
+			        
+			        <!-- At Risk -->
+			        <div style='text-align: center; flex: 1;'>
+			            <div style='font-size: 14px; opacity: 0.85; text-transform: uppercase; letter-spacing: 0.5px;'>At Risk</div>
+			            <div style='font-size: 32px; font-weight: 700; line-height: 1.2; margin: 4px 0; color: #fdba74;'>" & FORMAT(_AtRisk, "#,##0") & "</div>
+			            <div style='font-size: 14px; opacity: 0.7;'>Revenue &lt; 50% of PY</div>
+			        </div>
+			        
+			        <div style='width: 1px; height: 70px; background: rgba(255,255,255,0.25);'></div>
+			        
+			        <!-- Declining -->
+			        <div style='text-align: center; flex: 1;'>
+			            <div style='font-size: 14px; opacity: 0.85; text-transform: uppercase; letter-spacing: 0.5px;'>Declining</div>
+			            <div style='font-size: 32px; font-weight: 700; line-height: 1.2; margin: 4px 0; color: #fcd34d;'>" & FORMAT(_Declining, "#,##0") & "</div>
+			            <div style='font-size: 14px; opacity: 0.7;'>Revenue 50-80% of PY</div>
+			        </div>
+			        
+			        <div style='width: 1px; height: 70px; background: rgba(255,255,255,0.25);'></div>
+			        
+			        <!-- Growing -->
+			        <div style='text-align: center; flex: 1;'>
+			            <div style='font-size: 14px; opacity: 0.85; text-transform: uppercase; letter-spacing: 0.5px;'>Growing</div>
+			            <div style='font-size: 32px; font-weight: 700; line-height: 1.2; margin: 4px 0; color: #86efac;'>" & FORMAT(_Growing, "#,##0") & "</div>
+			            <div style='font-size: 14px; opacity: 0.7;'>Revenue &gt; 120% of PY</div>
+			        </div>
+			        
+			        <div style='width: 1px; height: 70px; background: rgba(255,255,255,0.25);'></div>
+			        
+			        <!-- New -->
+			        <div style='text-align: center; flex: 1;'>
+			            <div style='font-size: 14px; opacity: 0.85; text-transform: uppercase; letter-spacing: 0.5px;'>New Customers</div>
+			            <div style='font-size: 32px; font-weight: 700; line-height: 1.2; margin: 4px 0; color: #93c5fd;'>" & FORMAT(_New, "#,##0") & "</div>
+			            <div style='font-size: 14px; opacity: 0.7;'>No prior activity</div>
+			        </div>
+			    </div>
+			</div>
+			"
+			
+			```
+		lineageTag: d379c9e7-2161-4318-8b6e-8d6eb3dba844
+
+	measure 'Recurring Revenue Change %' = ```
+			DIVIDE([Recurring Revenue] - [Recurring Revenue PY], [Recurring Revenue PY], 0)
+			
+			```
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: e6fed04c-7ea4-49d7-824d-8800202306a9
+
+	measure 'Recurring Revenue Change $' = ```
+			[Recurring Revenue] - [Recurring Revenue PY]
+			
+			```
+		formatString: \$#,0;(\$#,0);\$#,0
+		lineageTag: 7b1c803e-da6f-4d6c-ad56-9a6f7bcc2cae
+
+	measure 'Parts Revenue PY' = ```
+			CALCULATE([Parts Revenue], SAMEPERIODLASTYEAR(dim_DateTable[Date]))
+			
+			```
+		lineageTag: 27dfd682-9980-420e-ad08-ef86d59e1429
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Service Revenue PY' = ```
+			CALCULATE([Service Revenue], SAMEPERIODLASTYEAR(dim_DateTable[Date]))
+			
+			```
+		lineageTag: 89f769eb-6da7-4aff-9873-0648a6901237
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Equipment Revenue PY' = ```
+			CALCULATE([Equipment Revenue], SAMEPERIODLASTYEAR(dim_DateTable[Date]))
+			
+			```
+		lineageTag: 9a00e762-7e98-48c3-8361-7e1ce6aa763b
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Recurring Churned Count' = ```
+			
+			COUNTROWS(
+			    FILTER(
+			        SUMMARIZE(dim_CustomerList, dim_CustomerList[CustomerKey]),
+			        CALCULATE([Recurring Revenue PY]) > 0 && CALCULATE([Recurring Revenue]) = 0
+			    )
+			)
+			
+			```
+		formatString: 0
+		lineageTag: 01a8f0b3-20df-4524-9e05-f29290c98b0b
+
+	measure 'Recurring At Risk Count' = ```
+			
+			COUNTROWS(
+			    FILTER(
+			        SUMMARIZE(dim_CustomerList, dim_CustomerList[CustomerKey]),
+			        VAR _Ratio = DIVIDE(CALCULATE([Recurring Revenue]), CALCULATE([Recurring Revenue PY]), 0)
+			        RETURN CALCULATE([Recurring Revenue PY]) > 0 && _Ratio > 0 && _Ratio < 0.5
+			    )
+			)
+			
+			```
+		formatString: 0
+		lineageTag: 6a0a05af-419b-4330-9475-69d849bbfdbc
+
+	measure 'Recurring Declining Count' = ```
+			
+			COUNTROWS(
+			    FILTER(
+			        SUMMARIZE(dim_CustomerList, dim_CustomerList[CustomerKey]),
+			        VAR _Ratio = DIVIDE(CALCULATE([Recurring Revenue]), CALCULATE([Recurring Revenue PY]), 0)
+			        RETURN CALCULATE([Recurring Revenue PY]) > 0 && _Ratio >= 0.5 && _Ratio < 0.8
+			    )
+			)
+			
+			```
+		formatString: 0
+		lineageTag: d4012a96-15e5-4c06-ad9b-0351a8323803
+
+	measure 'Recurring Stable Count' = ```
+			
+			COUNTROWS(
+			    FILTER(
+			        SUMMARIZE(dim_CustomerList, dim_CustomerList[CustomerKey]),
+			        VAR _Ratio = DIVIDE(CALCULATE([Recurring Revenue]), CALCULATE([Recurring Revenue PY]), 0)
+			        RETURN CALCULATE([Recurring Revenue PY]) > 0 && _Ratio >= 0.8 && _Ratio <= 1.2
+			    )
+			)
+			
+			```
+		formatString: 0
+		lineageTag: 21ae5488-853b-48a9-88c6-857d3df0daf1
+
+	measure 'Recurring Growing Count' = ```
+			
+			COUNTROWS(
+			    FILTER(
+			        SUMMARIZE(dim_CustomerList, dim_CustomerList[CustomerKey]),
+			        CALCULATE([Recurring Revenue]) > CALCULATE([Recurring Revenue PY]) * 1.2
+			    )
+			)
+			
+			```
+		formatString: 0
+		lineageTag: cdc3dba8-1737-48db-bf5b-df62ba82ca0a
+
+	measure 'Recurring New Count' = ```
+			
+			COUNTROWS(
+			    FILTER(
+			        SUMMARIZE(dim_CustomerList, dim_CustomerList[CustomerKey]),
+			        CALCULATE([Recurring Revenue PY]) = 0 && CALCULATE([Recurring Revenue]) > 0
+			    )
+			)
+			
+			```
+		formatString: 0
+		lineageTag: 215a5b1e-a3be-445d-8dd7-dc1da3afb956
+
+	measure 'Show Filtered Status' = ```
+			
+			VAR _SelectedStatuses = VALUES('Status Selector'[Status])
+			VAR _CustomerStatus = [Recurring Customer Status]
+			RETURN
+			IF(
+			    ISFILTERED('Status Selector'[Status]),
+			    IF(CONTAINSSTRING(
+			        CONCATENATEX(_SelectedStatuses, [Status], "|"),
+			        _CustomerStatus
+			    ), 1, 0),
+			    1
+			)
+			
+			```
+		formatString: 0
+		lineageTag: 0a5a4a72-4226-419c-91f9-d0a875f732e6
+
+	measure 'Department Engagement Legend' = ```
+			
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    padding: 14px 18px;
+			    background: linear-gradient(135deg, #1D3C4E, #2E5266);
+			    border-radius: 10px;
+			    color: white;
+			    font-size: 13px;
+			    line-height: 1.8;
+			'>
+			    <div style='font-size: 14px; font-weight: 700; margin-bottom: 8px; color: #64ffda; text-transform: uppercase; letter-spacing: 0.5px;'>
+			        Department Engagement Guide
+			    </div>
+			    <div style='display: flex; gap: 30px;'>
+			        <div>
+			            <div><strong>P</strong> = Parts</div>
+			            <div><strong>S</strong> = Service</div>
+			            <div><strong>E</strong> = Equipment</div>
+			        </div>
+			        <div>
+			            <div><span style='color: #86efac;'>✔</span> = Active</div>
+			            <div><span style='color: #fca5a5;'>✘</span> = No Activity</div>
+			        </div>
+			        <div>
+			            <div style='color: #93c5fd;'>PY → Current</div>
+			            <div style='margin-top: 4px; font-size: 12px; opacity: 0.8;'>Example: P: ✔ → ✔ &nbsp; S: ✔ → ✘</div>
+			            <div style='font-size: 12px; opacity: 0.7;'>Buying parts both periods,<br/>lost service business</div>
+			        </div>
+			    </div>
+			</div>
+			"
+			
+			```
+		lineageTag: 9d8f9c66-9401-4151-8e40-e972966d34ea
+
+	measure 'Sales per Acre' =
+			
+			VAR TotalAcres = SUM(dim_EngagedAcres[EstimatedAcres])
+			RETURN
+			    DIVIDE([Total Revenue], TotalAcres, BLANK())
+		formatString: \$#,0;(\$#,0);\$#,0
+		lineageTag: ea3af7e2-6320-4a9c-8da1-d5fc709aa7a9
+
+	measure 'Sales per Engaged Acre' =
+			
+			DIVIDE(
+			    [Total Revenue],
+			    SUM(dim_EngagedAcres[EngagedAcreBreadth]),
+			    BLANK()
+			)
+		formatString: \$#,0;(\$#,0);\$#,0
+		lineageTag: 0720ccd8-ee24-4cdd-a484-73e239ef7c42
+
+	measure 'Engagement Depth %' =
+			
+			DIVIDE(
+			    SUM(dim_EngagedAcres[EngagedAcreDepth]),
+			    SUM(dim_EngagedAcres[EngagedAcreBreadth]),
+			    BLANK()
+			)
+		lineageTag: 7c11fd62-fb7c-443b-b349-0d4286bcb2f9
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Total Engaged Acres' =
+			
+			SUM(dim_EngagedAcres[EngagedAcreBreadth])
+		lineageTag: b949c35a-017c-40d4-a661-214a6d2c0974
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Avg Sales per Engaged Acre' =
+			
+			DIVIDE(
+			    [Total Revenue],
+			    [Total Engaged Acres],
+			    BLANK()
+			)
+		lineageTag: b6a973d4-fe4c-4974-95ab-ebf0a005de42
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Customers with Engagement Data' =
+			
+			CALCULATE(
+			    DISTINCTCOUNT(dim_EngagedAcres[CustomerNumber]),
+			    dim_EngagedAcres[EngagedAcreBreadth] > 0
+			)
+		formatString: 0
+		lineageTag: 90fbde8b-d462-4d50-b565-1da3312fb0e7
+
+	measure 'Parts per Engaged Acre' =
+			
+			DIVIDE(
+			    [Parts Revenue],
+			    SUM(dim_EngagedAcres[EngagedAcreBreadth]),
+			    BLANK()
+			)
+		lineageTag: 6aac148e-fd26-4e08-a0cf-d4b00625c4e1
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Service per Engaged Acre' =
+			
+			DIVIDE(
+			    [Service Revenue],
+			    SUM(dim_EngagedAcres[EngagedAcreBreadth]),
+			    BLANK()
+			)
+		lineageTag: 926098c6-d095-441d-969c-013f66ee11b6
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Engaged Acres Header Card' = ```
+			
+			VAR _CustomerCount = DISTINCTCOUNT(dim_EngagedAcres[CustomerNumber])
+			VAR _SingleCustomer = _CustomerCount = 1
+			VAR _DisplayName = IF(_SingleCustomer, MAX(dim_CustomerList[DisplayName]), "Multiple Customers")
+			VAR _AccountNumber = IF(_SingleCustomer, MAX(dim_CustomerList[AccountNumber]), FORMAT(_CustomerCount, "#,##0") & " Accounts")
+			VAR _EngagementLevel = IF(_SingleCustomer, MAX(dim_CustomerList[EngagementLevel]), "Various")
+			
+			// Acre Metrics
+			VAR _EstimatedAcres = SUM(dim_EngagedAcres[EstimatedAcres])
+			VAR _EngagedAcres = SUM(dim_EngagedAcres[EngagedAcreBreadth])
+			VAR _EngagedDepth = SUM(dim_EngagedAcres[EngagedAcreDepth])
+			VAR _HighlyEngaged = SUM(dim_EngagedAcres[HighlyEngagedAcres])
+			
+			// Lifecycle Acres
+			VAR _PrepareAcres = SUM(dim_EngagedAcres[PrepareAcres])
+			VAR _PlantAcres = SUM(dim_EngagedAcres[PlantAcres])
+			VAR _ApplyAcres = SUM(dim_EngagedAcres[ApplyAcres])
+			VAR _HarvestAcres = SUM(dim_EngagedAcres[HarvestAcres])
+			
+			// Revenue Metrics
+			VAR _TotalRevenue = [Total Revenue]
+			VAR _PartsRevenue = [Parts Revenue]
+			VAR _ServiceRevenue = [Service Revenue]
+			
+			// Calculated Metrics
+			VAR _SalesPerAcre = DIVIDE(_TotalRevenue, _EngagedAcres, 0)
+			VAR _DepthPercent = DIVIDE(_EngagedDepth, _EngagedAcres, 0)
+			
+			// Engagement Level Badge Color
+			VAR _BadgeColor = 
+			    SWITCH(
+			        TRUE(),
+			        CONTAINSSTRING(_EngagementLevel, "Highly"), "#10b981",
+			        CONTAINSSTRING(_EngagementLevel, "Land"), "#3b82f6",
+			        CONTAINSSTRING(_EngagementLevel, "R12"), "#f59e0b",
+			        "#6b7280"
+			    )
+			
+			// Depth color (green if >50%, yellow if >25%, red otherwise)
+			VAR _DepthColor = IF(_DepthPercent >= 0.50, "#10b981", IF(_DepthPercent >= 0.25, "#f59e0b", "#ef4444"))
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    padding: 16px 24px;
+			    background: white;
+			    border-radius: 10px;
+			    border: 1px solid #e5e7eb;
+			    height: 140px;
+			    display: flex;
+			    gap: 24px;
+			    box-sizing: border-box;
+			'>
+			    <!-- LEFT: Customer Info -->
+			    <div style='flex: 1; display: flex; flex-direction: column; justify-content: center; border-right: 1px solid #e5e7eb; padding-right: 24px;'>
+			        <div style='font-size: 28px; font-weight: 700; color: #1f2937; margin-bottom: 6px;'>
+			            " & _DisplayName & "
+			        </div>
+			        <div style='font-size: 16px; color: #6b7280; margin-bottom: 8px;'>
+			            " & _AccountNumber & "
+			        </div>
+			        <div style='display: flex; gap: 12px; align-items: center;'>
+			            <div style='background: " & _BadgeColor & "; color: white; padding: 4px 12px; border-radius: 6px; font-size: 16px; font-weight: 600;'>
+			                " & _EngagementLevel & "
+			            </div>
+			            <span style='font-size: 18px; color: #6b7280;'>
+			                Est. Acres: " & FORMAT(_EstimatedAcres, "#,##0") & "
+			            </span>
+			        </div>
+			    </div>
+			    
+			    <!-- CENTER: Acre Metrics -->
+			    <div style='flex: 0.8; display: flex; flex-direction: column; justify-content: center; border-right: 1px solid #e5e7eb; padding-right: 20px;'>
+			        <div style='display: flex; justify-content: space-between; margin-bottom: 8px;'>
+			            <div>
+			                <div style='font-size: 14px; color: #9ca3af; text-transform: uppercase;'>Engaged Acres</div>
+			                <div style='font-size: 26px; font-weight: 600; color: #1f2937;'>" & FORMAT(_EngagedAcres, "#,##0") & "</div>
+			                <div style='font-size: 14px; color: #6b7280;'>Highly Engaged: " & FORMAT(_HighlyEngaged, "#,##0") & "</div>
+			            </div>
+			            <div style='text-align: right;'>
+			                <div style='font-size: 14px; color: #9ca3af; text-transform: uppercase;'>Sales / Acre</div>
+			                <div style='font-size: 26px; font-weight: 600; color: #1f2937;'>" & FORMAT(_SalesPerAcre, "$#,##0") & "</div>
+			                <div style='font-size: 14px; color: " & _DepthColor & "; font-weight: 600;'>Depth: " & FORMAT(_DepthPercent, "0%") & "</div>
+			            </div>
+			        </div>
+			    </div>
+			    
+			    <!-- RIGHT: Revenue Summary -->
+			    <div style='flex: 1; display: flex; align-items: center; justify-content: space-around;'>
+			        <div style='text-align: center;'>
+			            <div style='font-size: 14px; color: #9ca3af; text-transform: uppercase; font-weight: 600;'>Total Revenue</div>
+			            <div style='font-size: 26px; font-weight: 700; color: #1f2937;'>" & FORMAT(_TotalRevenue, "$#,##0") & "</div>
+			        </div>
+			        <div style='text-align: center;'>
+			            <div style='font-size: 14px; color: #9ca3af; text-transform: uppercase; font-weight: 600;'>Parts</div>
+			            <div style='font-size: 26px; font-weight: 700; color: #1f2937;'>" & FORMAT(_PartsRevenue, "$#,##0") & "</div>
+			        </div>
+			        <div style='text-align: center;'>
+			            <div style='font-size: 14px; color: #9ca3af; text-transform: uppercase; font-weight: 600;'>Service</div>
+			            <div style='font-size: 26px; font-weight: 700; color: #1f2937;'>" & FORMAT(_ServiceRevenue, "$#,##0") & "</div>
+			        </div>
+			    </div>
+			</div>
+			"
+			
+			```
+		lineageTag: 471ab203-30f3-4230-9f98-3342b4279bd5
+
+	measure 'Per Acre Performance Card' = ```
+			
+			VAR _EngagedAcres = SUM(dim_EngagedAcres[EngagedAcreBreadth])
+			VAR _TotalRevenue = [Total Revenue]
+			VAR _PartsRevenue = [Parts Revenue]
+			VAR _ServiceRevenue = [Service Revenue]
+			
+			VAR _SalesPerAcre = DIVIDE(_TotalRevenue, _EngagedAcres, 0)
+			VAR _PartsPerAcre = DIVIDE(_PartsRevenue, _EngagedAcres, 0)
+			VAR _ServicePerAcre = DIVIDE(_ServiceRevenue, _EngagedAcres, 0)
+			
+			// Calculate percentage of total for the bar widths
+			VAR _MaxPerAcre = MAX(MAX(_SalesPerAcre, _PartsPerAcre), _ServicePerAcre)
+			VAR _SalesWidth = DIVIDE(_SalesPerAcre, _MaxPerAcre, 0) * 100
+			VAR _PartsWidth = DIVIDE(_PartsPerAcre, _MaxPerAcre, 0) * 100
+			VAR _ServiceWidth = DIVIDE(_ServicePerAcre, _MaxPerAcre, 0) * 100
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    padding: 20px 24px;
+			    background: white;
+			    border-radius: 10px;
+			    border: 1px solid #e5e7eb;
+			    height: 220px;
+			    box-sizing: border-box;
+			'>
+			    <div style='font-size: 14px; font-weight: 600; color: #6b7280; text-transform: uppercase; margin-bottom: 16px;'>
+			        Revenue Per Engaged Acre
+			    </div>
+			    
+			    <!-- Total Sales per Acre -->
+			    <div style='margin-bottom: 14px;'>
+			        <div style='display: flex; justify-content: space-between; margin-bottom: 4px;'>
+			            <span style='font-size: 13px; color: #374151; font-weight: 500;'>Total Sales</span>
+			            <span style='font-size: 16px; color: #1f2937; font-weight: 700;'>" & FORMAT(_SalesPerAcre, "$#,##0") & "</span>
+			        </div>
+			        <div style='background: #e5e7eb; border-radius: 4px; height: 8px; overflow: hidden;'>
+			            <div style='background: linear-gradient(90deg, #3b82f6, #1d4ed8); height: 100%; width: " & FORMAT(_SalesWidth, "0") & "%; border-radius: 4px;'></div>
+			        </div>
+			    </div>
+			    
+			    <!-- Parts per Acre -->
+			    <div style='margin-bottom: 14px;'>
+			        <div style='display: flex; justify-content: space-between; margin-bottom: 4px;'>
+			            <span style='font-size: 13px; color: #374151; font-weight: 500;'>Parts</span>
+			            <span style='font-size: 16px; color: #1f2937; font-weight: 700;'>" & FORMAT(_PartsPerAcre, "$#,##0") & "</span>
+			        </div>
+			        <div style='background: #e5e7eb; border-radius: 4px; height: 8px; overflow: hidden;'>
+			            <div style='background: linear-gradient(90deg, #f59e0b, #d97706); height: 100%; width: " & FORMAT(_PartsWidth, "0") & "%; border-radius: 4px;'></div>
+			        </div>
+			    </div>
+			    
+			    <!-- Service per Acre -->
+			    <div>
+			        <div style='display: flex; justify-content: space-between; margin-bottom: 4px;'>
+			            <span style='font-size: 13px; color: #374151; font-weight: 500;'>Service</span>
+			            <span style='font-size: 16px; color: #1f2937; font-weight: 700;'>" & FORMAT(_ServicePerAcre, "$#,##0") & "</span>
+			        </div>
+			        <div style='background: #e5e7eb; border-radius: 4px; height: 8px; overflow: hidden;'>
+			            <div style='background: linear-gradient(90deg, #10b981, #059669); height: 100%; width: " & FORMAT(_ServiceWidth, "0") & "%; border-radius: 4px;'></div>
+			        </div>
+			    </div>
+			</div>
+			"
+			
+			```
+		lineageTag: 402b2727-9a1d-437a-b4cb-ba3f11d15be8
+
+	measure 'Lifecycle Engagement Card' = ```
+			
+			VAR _PrepareAcres = SUM(dim_EngagedAcres[PrepareAcres])
+			VAR _PlantAcres = SUM(dim_EngagedAcres[PlantAcres])
+			VAR _ApplyAcres = SUM(dim_EngagedAcres[ApplyAcres])
+			VAR _HarvestAcres = SUM(dim_EngagedAcres[HarvestAcres])
+			VAR _TotalEngaged = SUM(dim_EngagedAcres[EngagedAcreBreadth])
+			
+			VAR _PreparePercent = DIVIDE(_PrepareAcres, _TotalEngaged, 0) * 100
+			VAR _PlantPercent = DIVIDE(_PlantAcres, _TotalEngaged, 0) * 100
+			VAR _ApplyPercent = DIVIDE(_ApplyAcres, _TotalEngaged, 0) * 100
+			VAR _HarvestPercent = DIVIDE(_HarvestAcres, _TotalEngaged, 0) * 100
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    padding: 20px 24px;
+			    background: white;
+			    border-radius: 10px;
+			    border: 1px solid #e5e7eb;
+			    height: 220px;
+			    box-sizing: border-box;
+			'>
+			    <div style='font-size: 14px; font-weight: 600; color: #6b7280; text-transform: uppercase; margin-bottom: 20px;'>
+			        Farming Lifecycle Engagement
+			    </div>
+			    
+			    <div style='display: flex; justify-content: space-between; gap: 16px;'>
+			        <!-- Prepare -->
+			        <div style='flex: 1; text-align: center;'>
+			            <div style='
+			                width: 60px; height: 60px; 
+			                background: linear-gradient(135deg, #8b5cf6, #6d28d9); 
+			                border-radius: 50%; 
+			                margin: 0 auto 8px auto;
+			                display: flex; align-items: center; justify-content: center;
+			                color: white; font-size: 18px; font-weight: 700;
+			            '>" & FORMAT(_PreparePercent, "0") & "%</div>
+			            <div style='font-size: 16px; font-weight: 600; color: #374151;'>Prepare</div>
+			            <div style='font-size: 14px; color: #6b7280;'>" & FORMAT(_PrepareAcres, "#,##0") & " ac</div>
+			        </div>
+			        
+			        <!-- Arrow -->
+			        <div style='display: flex; align-items: center; color: #d1d5db; font-size: 24px;'>→</div>
+			        
+			        <!-- Plant -->
+			        <div style='flex: 1; text-align: center;'>
+			            <div style='
+			                width: 60px; height: 60px; 
+			                background: linear-gradient(135deg, #10b981, #059669); 
+			                border-radius: 50%; 
+			                margin: 0 auto 8px auto;
+			                display: flex; align-items: center; justify-content: center;
+			                color: white; font-size: 18px; font-weight: 700;
+			            '>" & FORMAT(_PlantPercent, "0") & "%</div>
+			            <div style='font-size: 16px; font-weight: 600; color: #374151;'>Plant</div>
+			            <div style='font-size: 14px; color: #6b7280;'>" & FORMAT(_PlantAcres, "#,##0") & " ac</div>
+			        </div>
+			        
+			        <!-- Arrow -->
+			        <div style='display: flex; align-items: center; color: #d1d5db; font-size: 20px;'>→</div>
+			        
+			        <!-- Apply -->
+			        <div style='flex: 1; text-align: center;'>
+			            <div style='
+			                width: 60px; height: 60px; 
+			                background: linear-gradient(135deg, #3b82f6, #1d4ed8); 
+			                border-radius: 50%; 
+			                margin: 0 auto 8px auto;
+			                display: flex; align-items: center; justify-content: center;
+			                color: white; font-size: 18px; font-weight: 700;
+			            '>" & FORMAT(_ApplyPercent, "0") & "%</div>
+			            <div style='font-size: 16px; font-weight: 600; color: #374151;'>Apply</div>
+			            <div style='font-size: 14px; color: #6b7280;'>" & FORMAT(_ApplyAcres, "#,##0") & " ac</div>
+			        </div>
+			        
+			        <!-- Arrow -->
+			        <div style='display: flex; align-items: center; color: #d1d5db; font-size: 20px;'>→</div>
+			        
+			        <!-- Harvest -->
+			        <div style='flex: 1; text-align: center;'>
+			            <div style='
+			                width: 60px; height: 60px; 
+			                background: linear-gradient(135deg, #f59e0b, #d97706); 
+			                border-radius: 50%; 
+			                margin: 0 auto 8px auto;
+			                display: flex; align-items: center; justify-content: center;
+			                color: white; font-size: 18px; font-weight: 700;
+			            '>" & FORMAT(_HarvestPercent, "0") & "%</div>
+			            <div style='font-size: 16px; font-weight: 600; color: #374151;'>Harvest</div>
+			            <div style='font-size: 14px; color: #6b7280;'>" & FORMAT(_HarvestAcres, "#,##0") & " ac</div>
+			        </div>
+			    </div>
+			</div>
+			"
+			
+			```
+		lineageTag: 398bebc1-79bd-4345-a8f9-8beb751da200
+
+	column Value
+		isHidden
+		lineageTag: da2dfa23-0c4c-4e9d-8014-3cc5710e756b
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Value]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition _Measures = calculated
+		mode: import
+		source = { "This table holds all measures for the Customer Anatomy V2 report" }
+
+	annotation PBI_Id = da82ad85df114f0dbe8c17ce73f079a8
+

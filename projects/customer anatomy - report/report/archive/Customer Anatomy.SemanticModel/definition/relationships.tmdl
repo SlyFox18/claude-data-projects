@@ -1,0 +1,47 @@
+relationship 5df87c16-f924-b574-17fc-32fdb040700b
+	crossFilteringBehavior: bothDirections
+	fromColumn: Base_Customer_Info.Territory
+	toColumn: Dim_Branch.BranchID
+
+relationship 3e989706-a0a2-266d-e436-f32eb01c3f3e
+	crossFilteringBehavior: bothDirections
+	fromCardinality: one
+	fromColumn: Base_Customer_Info.Account
+	toColumn: 'Engaged Acres'.'Account Number'
+
+relationship a0c840c4-f69a-a672-8781-ca6d663e95f8
+	fromColumn: Service_Data.Account
+	toColumn: Base_Customer_Info.Account
+
+relationship 53b207b2-5c56-47de-922f-1fe43ef5748d
+	fromColumn: Parts_Data.Account
+	toColumn: Base_Customer_Info.Account
+
+relationship eed13cef-4313-6471-30de-fba4db51b18e
+	fromColumn: Parts_Data.MonthYear
+	toColumn: BridgingTable.'Year Month'
+
+relationship 78b106ef-c6af-2ba9-3767-ee67d271bb9d
+	fromColumn: Date.'Year Month'
+	toColumn: BridgingTable.'Year Month'
+
+relationship 00b8844f-fcc2-33e0-6df0-a1d465c5b061
+	fromColumn: Service_Data.MonthYear
+	toColumn: BridgingTable.'Year Month'
+
+relationship 2a197fd8-e1ee-811d-93f5-c2cd6a165078
+	fromColumn: Combined_Sales_Data.MonthYear
+	toColumn: BridgingTable.'Year Month'
+
+relationship 50236eea-4151-b7d0-4be3-0241b6dc6a45
+	fromColumn: InTrans_Promo.customer_no
+	toColumn: Base_Customer_Info.Account
+
+relationship 96306cf5-91d4-5bf4-3940-9ca339b2b612
+	fromColumn: Combined_Sales_Data.Account
+	toColumn: Base_Customer_Info.Account
+
+relationship 6ddc1745-116e-b55f-577a-489b3b1bdbf8
+	fromColumn: Base_Customer_Info.'Route Day'
+	toColumn: RouteDaySort.'Route Day'
+

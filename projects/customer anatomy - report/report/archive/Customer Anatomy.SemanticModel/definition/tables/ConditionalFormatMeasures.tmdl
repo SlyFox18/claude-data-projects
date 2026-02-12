@@ -1,0 +1,153 @@
+table ConditionalFormatMeasures
+	lineageTag: bf5faabc-8c95-47ee-b79a-c350a4fb83e7
+
+	measure GP_YTD_vs_PYTD_Totals = IF(NOT(ISBLANK([Total GP%])) && NOT(ISBLANK([Total GP% PYTD])) && [Total GP%] > [Total GP% PYTD], 1, 0)
+		formatString: 0
+		lineageTag: a6b6fe9e-9c03-45db-94a8-9dfd8c80b691
+
+	measure GP_YTD_vs_PYTD_Service = IF(NOT(ISBLANK([Service GP%])) && NOT(ISBLANK([Service GP% PYTD])) && [Service GP%] > [Service GP% PYTD], 1, 0)
+		formatString: 0
+		lineageTag: b8145598-3e36-43ed-a1e3-14e380dea87b
+
+	measure GP_YTD_vs_PYTD_Sales = IF(NOT(ISBLANK([Sales GP%])) && NOT(ISBLANK([Sales GP% PYTD])) && [Sales GP%] > [Sales GP% PYTD], 1, 0)
+		formatString: 0
+		lineageTag: c4ec6c98-bdea-4fb0-a5db-c3f27f76d16e
+
+	measure GP_YTD_vs_PYTD_Parts = IF(NOT(ISBLANK([Parts GP%])) && NOT(ISBLANK([Parts GP% PYTD])) && [Parts GP%] > [Parts GP% PYTD], 1, 0)
+		formatString: 0
+		lineageTag: b8d6fb7f-c2ea-4231-a8db-1229b62a44dd
+
+	measure GP_PYTD_vs_YTD_Parts = IF(NOT(ISBLANK([Parts GP% PYTD])) && NOT(ISBLANK([Parts GP%])) && [Parts GP% PYTD] > [Parts GP%], 1, 0)
+		formatString: 0
+		lineageTag: 062bf3f9-e187-45e0-bc9f-191c8be3925c
+
+	measure GP_PYTD_vs_YTD_Sales = IF(NOT(ISBLANK([Sales GP% PYTD])) && NOT(ISBLANK([Sales GP%])) && [Sales GP% PYTD] > [Sales GP%], 1, 0)
+		formatString: 0
+		lineageTag: 725b0f9c-d624-4a5a-be29-08cf6f65991c
+
+	measure GP_PYTD_vs_YTD_Service = IF(NOT(ISBLANK([Service GP% PYTD])) && NOT(ISBLANK([Service GP%])) && [Service GP% PYTD] > [Service GP%], 1, 0)
+		formatString: 0
+		lineageTag: 06599c35-c4ae-4304-9b46-acfc16e26a53
+
+	measure GP_PYTD_vs_YTD_Totals = IF(NOT(ISBLANK([Total GP% PYTD])) && NOT(ISBLANK([Total GP%])) && [Total GP% PYTD] > [Total GP%], 1, 0)
+		formatString: 0
+		lineageTag: f32eb5c2-3f44-48bb-a8c2-e8816f80d6b2
+
+	measure Sales_YTD_vs_PYTD = IF(NOT(ISBLANK([Total Sales])) && NOT(ISBLANK([Total Sales PYTD])) && [Total Sales] > [Total Sales PYTD], 1, 0)
+		formatString: 0
+		lineageTag: a0ceb983-bfe6-4a10-8af3-595de5b14d41
+
+	measure Sales_PYTD_vs_YTD = IF(NOT(ISBLANK([Total Sales PYTD])) && NOT(ISBLANK([Total Sales])) && [Total Sales PYTD] > [Total Sales], 1, 0)
+		formatString: 0
+		lineageTag: 7cb8d5a5-440e-49c8-9f9f-d498abae6b40
+
+	measure Margin_YTD_vs_PYTD = IF(NOT(ISBLANK([Total Margin])) && NOT(ISBLANK([Total Margin PYTD])) && [Total Margin] > [Total Margin PYTD], 1, 0)
+		formatString: 0
+		lineageTag: 916ce178-95e1-4490-bb38-18d4878b6376
+
+	measure Margin_PYTD_vs_YTD = IF(NOT(ISBLANK([Total Margin PYTD])) && NOT(ISBLANK([Total Margin])) && [Total Margin PYTD] > [Total Margin], 1, 0)
+		formatString: 0
+		lineageTag: d4b5cd2a-d0a6-4895-8aa5-b35c2c726810
+
+	measure 1 = 1
+		formatString: 0
+		lineageTag: cfe7f403-0b14-4db7-abdb-935c6fb508eb
+
+	measure SalesPage_YTD_vs_PYTD = IF(NOT(ISBLANK([Sales])) && NOT(ISBLANK([Sales PYTD])) && [Sales] > [Sales PYTD], 1, 0)
+		formatString: 0
+		lineageTag: d37a3b67-1aa8-4681-9644-8205ccac6468
+
+	measure MarginSales_YTD_vs_PYTD = IF(NOT(ISBLANK([Sales Margin])) && NOT(ISBLANK([Sales Margin PYTD])) && [Sales Margin] > [Sales Margin PYTD], 1, 0)
+		formatString: 0
+		lineageTag: dbd0201a-405b-40f1-922c-e3b2e2af8d24
+
+	measure UnitSales_YTD_vs_PYTD = IF(NOT(ISBLANK([Units])) && NOT(ISBLANK([Units PYTD])) && [Units] > [Units PYTD], 1, 0)
+		formatString: 0
+		lineageTag: d83afaf7-3be5-4ec0-83c4-d62d4d7b9e4f
+
+	measure UnitSales_PYTD_vs_YTD = IF(NOT(ISBLANK([Units PYTD])) && NOT(ISBLANK([Units])) && [Units PYTD] > [Units], 1, 0)
+		formatString: 0
+		lineageTag: 142dbd66-3e54-4c4f-895a-6aba7472cc8b
+
+	measure SalesPage_PYTD_vs_YTD = IF(NOT(ISBLANK([Sales PYTD])) && NOT(ISBLANK([Sales])) && [Sales PYTD] > [Sales], 1, 0)
+		formatString: 0
+		lineageTag: 2f9e8c60-e733-4872-a4b3-d7018b4f09f4
+
+	measure MarginSales_PYTD_vs_YTD = IF(NOT(ISBLANK([Sales Margin PYTD])) && NOT(ISBLANK([Sales Margin])) && [Sales Margin PYTD] > [Sales Margin], 1, 0)
+		formatString: 0
+		lineageTag: 2cb61193-81a7-4501-8bea-f5cc1c9d6e35
+
+	measure PartSales_YTD_vs_PYTD = IF(NOT(ISBLANK([Parts])) && NOT(ISBLANK([Parts PYTD])) && [Parts] > [Parts PYTD], 1, 0)
+		formatString: 0
+		lineageTag: 3c46829f-d27a-402c-86ba-8fa76b1062ad
+
+	measure PartsMargin_YTD_vs_PYTD = IF(NOT(ISBLANK([Parts Margin])) && NOT(ISBLANK([Parts Margin PYTD])) && [Parts Margin] > [Parts Margin PYTD], 1, 0)
+		formatString: 0
+		lineageTag: aa52aeb4-44de-45e7-aa00-24a8a6dca7e4
+
+	measure PartSales_PYTD_vs_YTD = IF(NOT(ISBLANK([Parts PYTD])) && NOT(ISBLANK([Parts])) && [Parts PYTD] > [Parts], 1, 0)
+		formatString: 0
+		lineageTag: cba87d33-01f6-48db-ae26-1f5b715da7be
+
+	measure PartsMargin_PYTD_vs_YTD = IF(NOT(ISBLANK([Parts Margin PYTD])) && NOT(ISBLANK([Parts Margin])) && [Parts Margin PYTD] > [Parts Margin], 1, 0)
+		formatString: 0
+		lineageTag: 03e9d3be-1be0-43da-967e-392d1ea049c3
+
+	measure ServiceSales_YTD_vs_PYTD = IF(NOT(ISBLANK([Service])) && NOT(ISBLANK([Service PYTD])) && [Service] > [Service PYTD], 1, 0)
+		formatString: 0
+		lineageTag: 79c22cd2-257d-4aac-9a98-a7e664ea4a3b
+
+	measure ServiceSales_PYTD_vs_YTD = IF(NOT(ISBLANK([Service PYTD])) && NOT(ISBLANK([Service])) && [Service PYTD] > [Service], 1, 0)
+		formatString: 0
+		lineageTag: 8d35bf4d-55f9-4a16-8ae0-31bc03f565ed
+
+	measure ServiceMargin_YTD_vs_PYTD = IF(NOT(ISBLANK([Service Margin])) && NOT(ISBLANK([Service Margin PYTD])) && [Service Margin] > [Service Margin PYTD], 1, 0)
+		formatString: 0
+		lineageTag: 33bd4251-3465-4a68-bc70-5f193304d9e8
+
+	measure ServiceMargin_PYTD_vs_YTD = IF(NOT(ISBLANK([Service Margin PYTD])) && NOT(ISBLANK([Service Margin])) && [Service Margin PYTD] > [Service Margin], 1, 0)
+		formatString: 0
+		lineageTag: 64a2bf2e-b3aa-4902-a232-f3d71a0a27d8
+
+	measure ServiceInvoices_YTD_vs_PYTD = IF(NOT(ISBLANK([Service Invoices YTD])) && NOT(ISBLANK([Service Invoices PYTD])) && [Service Invoices YTD] > [Service Invoices PYTD], 1, 0)
+		formatString: 0
+		lineageTag: 371f51b8-d020-477e-8268-dad85281a458
+
+	measure ServiceInvoices_PYTD_vs_YTD = IF(NOT(ISBLANK([Service Invoices PYTD])) && NOT(ISBLANK([Service Invoices YTD])) && [Service Invoices PYTD] > [Service Invoices YTD], 1, 0)
+		formatString: 0
+		lineageTag: 1671e9d4-8d72-4997-bd2d-360de561bc16
+
+	measure PartInvoice_YTD_vs_PYTD = IF(NOT(ISBLANK([Parts Invoices YTD])) && NOT(ISBLANK([Parts Invoices PYTD])) && [Parts Invoices YTD] > [Parts Invoices PYTD], 1, 0)
+		formatString: 0
+		lineageTag: 7ac9e130-ef2a-4e25-9dd7-74a080894505
+
+	measure PartInvoice_PYTD_vs_YTD = IF(NOT(ISBLANK([Parts Invoices PYTD])) && NOT(ISBLANK([Parts Invoices YTD])) && [Parts Invoices PYTD] > [Parts Invoices YTD], 1, 0)
+		formatString: 0
+		lineageTag: c789cab7-d69a-4349-9152-e5b174a7c1a2
+
+	column Value
+		isHidden
+		formatString: 0
+		lineageTag: 6ce09c77-8076-4399-a4fb-e38a72357ac6
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [Value]
+
+		annotation SummarizationSetBy = Automatic
+
+	column DummyColumn
+		isHidden
+		formatString: 0
+		lineageTag: 666b989f-be69-4340-95ff-0058a9090216
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [DummyColumn]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition ConditionalFormatMeasures = calculated
+		mode: import
+		source = ADDCOLUMNS( GENERATESERIES(1, 1), "DummyColumn", 1 )
+
+	annotation PBI_Id = 9cc9ba8386144944b853caa5f14da445
+

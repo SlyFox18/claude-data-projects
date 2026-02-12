@@ -1,0 +1,44 @@
+table BridgingTable
+	lineageTag: b2a360cf-3953-4553-8e9f-1405c8af33a5
+
+	column InvoiceYear
+		formatString: 0
+		lineageTag: 8305cd3b-eaea-498e-b6f7-3af48d6e71c4
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: Parts_Data[InvoiceYear]
+
+		annotation SummarizationSetBy = Automatic
+
+	column InvoiceMonth
+		formatString: 0
+		lineageTag: 497f932a-fe01-455e-bfce-f02e9e1f3a08
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: Parts_Data[InvoiceMonth]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Year Month'
+		lineageTag: ddbb2b13-a2fd-4839-bf54-e0f66a1d6847
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Year Month]
+		sortByColumn: InvoiceMonth
+
+		annotation SummarizationSetBy = Automatic
+
+	partition BridgingTable = calculated
+		mode: import
+		source =
+				
+				ADDCOLUMNS(
+				    CROSSJOIN(
+				        DISTINCT(Parts_Data[InvoiceYear]),
+				        DISTINCT(Parts_Data[InvoiceMonth])
+				    ),
+				    "Year Month", FORMAT(DATE([InvoiceYear], [InvoiceMonth], 1), "MMM YYYY")
+				)
+
+	annotation PBI_Id = 12043937648546779f41499254c48d9e
+

@@ -1,0 +1,7 @@
+// Check Service InvoiceNumbers that exist in Invoices but not in Details
+EVALUATE
+EXCEPT(
+    VALUES(Fact_Service_Invoices[InvoiceNumber]),
+    VALUES(Fact_Service_Detail[InvoiceNumber])
+)
+

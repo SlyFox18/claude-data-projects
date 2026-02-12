@@ -1,0 +1,115 @@
+table Sales_Data_YTD_New
+	lineageTag: 412acaca-97ca-454a-bebf-488eb6f57618
+
+	column Account
+		dataType: string
+		lineageTag: 8c924d1e-fe8a-467e-9db6-fa54dc9d1b85
+		summarizeBy: none
+		sourceColumn: Account
+
+		annotation SummarizationSetBy = Automatic
+
+	column Customer
+		dataType: string
+		lineageTag: 3190277c-1cf4-47dc-a1a2-86ba0735431b
+		summarizeBy: none
+		sourceColumn: Customer
+
+		annotation SummarizationSetBy = Automatic
+
+	column Territory
+		dataType: string
+		lineageTag: 8018cac7-0eb8-4940-90b5-c62c9f4eb1e2
+		summarizeBy: none
+		sourceColumn: Territory
+
+		annotation SummarizationSetBy = Automatic
+
+	column Class
+		dataType: string
+		lineageTag: ceb14a12-8052-40d1-9f2e-5e5cb9622fb3
+		summarizeBy: none
+		sourceColumn: Class
+
+		annotation SummarizationSetBy = Automatic
+
+	column InvoiceMonth
+		dataType: int64
+		formatString: 0
+		lineageTag: e2c76cc8-0ce5-414c-bdd1-ad43a8e6d3ab
+		summarizeBy: sum
+		sourceColumn: InvoiceMonth
+
+		annotation SummarizationSetBy = Automatic
+
+	column InvoiceYear
+		dataType: int64
+		formatString: 0
+		lineageTag: 756683d7-03c4-4051-9e8b-1fc108e278b0
+		summarizeBy: sum
+		sourceColumn: InvoiceYear
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Sales Counts YTD'
+		dataType: int64
+		formatString: 0
+		lineageTag: 93993122-bdd0-4698-8945-3e271d05b229
+		summarizeBy: sum
+		sourceColumn: Sales Counts YTD
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Sales YTD'
+		dataType: double
+		lineageTag: d075bb08-371f-4126-90b8-c94ba45247cf
+		summarizeBy: sum
+		sourceColumn: Sales YTD
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column 'Cost YTD'
+		dataType: double
+		lineageTag: ba332d37-cd72-4245-b040-6192f4604848
+		summarizeBy: sum
+		sourceColumn: Cost YTD
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column 'Margin YTD'
+		dataType: double
+		lineageTag: bb2ef6d9-a416-460b-93b6-405bd00022f5
+		summarizeBy: sum
+		sourceColumn: Margin YTD
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column 'GP % YTD'
+		dataType: double
+		lineageTag: c6862e2f-8c4f-42b9-b5e9-11bd715e12c1
+		summarizeBy: sum
+		sourceColumn: GP % YTD
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	partition Sales_Data_YTD_New = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-ch6iiwox4jveda3rmgudwi6hey.datawarehouse.fabric.microsoft.com", "LH_Parts_Reports_Data"),
+				    dbo_Sales_Data_YTD_New = Source{[Schema="dbo",Item="Sales_Data_YTD_New"]}[Data]
+				in
+				    dbo_Sales_Data_YTD_New
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

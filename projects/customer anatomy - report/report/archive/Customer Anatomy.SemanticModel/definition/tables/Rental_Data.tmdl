@@ -1,0 +1,144 @@
+table Rental_Data
+	lineageTag: d31eb9b9-0472-4b4e-851a-37f6a18af899
+
+	column Account
+		dataType: string
+		lineageTag: 77280aae-a36c-41a5-a351-9f4dce1337d8
+		summarizeBy: none
+		sourceColumn: Account
+
+		annotation SummarizationSetBy = Automatic
+
+	column Customer
+		dataType: string
+		lineageTag: 39a3d891-e6d6-48a1-96b2-f7a0f4860207
+		summarizeBy: none
+		sourceColumn: Customer
+
+		annotation SummarizationSetBy = Automatic
+
+	column Territory
+		dataType: string
+		lineageTag: c1214d1f-85e9-41f5-8cfd-03902dcc6835
+		summarizeBy: none
+		sourceColumn: Territory
+
+		annotation SummarizationSetBy = Automatic
+
+	column Class
+		dataType: string
+		lineageTag: 4599e7ab-18d9-48fe-9569-a5611d0ba31c
+		summarizeBy: none
+		sourceColumn: Class
+
+		annotation SummarizationSetBy = Automatic
+
+	column InvoiceMonth
+		dataType: int64
+		formatString: 0
+		lineageTag: cd7dfce7-115c-4f7d-a980-b7927a38a956
+		summarizeBy: sum
+		sourceColumn: InvoiceMonth
+
+		annotation SummarizationSetBy = Automatic
+
+	column InvoiceYear
+		dataType: int64
+		formatString: 0
+		lineageTag: ac7fc6ae-c362-4e68-b9e6-6cc4239a877a
+		summarizeBy: sum
+		sourceColumn: InvoiceYear
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Sales YTD'
+		dataType: double
+		lineageTag: 005479de-09d7-495e-9588-bb2f7174d079
+		summarizeBy: sum
+		sourceColumn: Sales YTD
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column 'Cost YTD'
+		dataType: double
+		lineageTag: 8238e5ff-4306-4f8c-9d47-cac5e9229076
+		summarizeBy: sum
+		sourceColumn: Cost YTD
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column 'Margin YTD'
+		dataType: double
+		lineageTag: 9e820ead-6559-4e4e-929e-edd58dbaf34f
+		summarizeBy: sum
+		sourceColumn: Margin YTD
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column 'GP % YTD'
+		dataType: double
+		lineageTag: 412b4785-6a45-4885-af12-aaad7e1a0a41
+		summarizeBy: sum
+		sourceColumn: GP % YTD
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column 'Sales PYTD'
+		dataType: double
+		lineageTag: 6a6fbb68-11ad-48cf-a572-fc61cc80e859
+		summarizeBy: sum
+		sourceColumn: Sales PYTD
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column 'Cost PYTD'
+		dataType: double
+		lineageTag: 1bf885a0-1b92-4cf0-89a6-0fed11b520e3
+		summarizeBy: sum
+		sourceColumn: Cost PYTD
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column 'Margin PYTD'
+		dataType: double
+		lineageTag: ab746264-9484-4b45-8cdc-5d88f3aca8c4
+		summarizeBy: sum
+		sourceColumn: Margin PYTD
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column 'GP % PYTD'
+		dataType: double
+		lineageTag: abe23592-a7ee-4003-9dbb-5d6e03801a97
+		summarizeBy: sum
+		sourceColumn: GP % PYTD
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	partition Rental_Data = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-ch6iiwox4jveda3rmgudwi6hey.datawarehouse.fabric.microsoft.com", "LH_Parts_Reports_Data"),
+				    dbo_Rental_Data = Source{[Schema="dbo",Item="Rental_Data"]}[Data]
+				in
+				    dbo_Rental_Data
+
+	annotation PBI_ResultType = Table
+

@@ -1,0 +1,170 @@
+table Parts_Data
+	lineageTag: 39d381ce-4dbf-4ed2-8699-20446917eb34
+
+	column Account
+		dataType: string
+		lineageTag: 1148367f-0a0f-47c1-a197-704abf868550
+		summarizeBy: none
+		sourceColumn: Account
+
+		annotation SummarizationSetBy = Automatic
+
+	column Customer
+		dataType: string
+		lineageTag: aa748a18-c937-49f2-b51a-41fec13dbc50
+		summarizeBy: none
+		sourceColumn: Customer
+
+		annotation SummarizationSetBy = Automatic
+
+	column Territory
+		dataType: string
+		lineageTag: c5d1bd9d-38d6-4677-ae3b-231c3b2149db
+		summarizeBy: none
+		sourceColumn: Territory
+
+		annotation SummarizationSetBy = Automatic
+
+	column Class
+		dataType: string
+		lineageTag: 612b6a89-a33b-408f-8407-152e1a1e7389
+		summarizeBy: none
+		sourceColumn: Class
+
+		annotation SummarizationSetBy = Automatic
+
+	column InvoiceMonth
+		dataType: int64
+		formatString: 0
+		lineageTag: 2126ebe9-baba-494b-b5c4-0d9f673a0421
+		summarizeBy: sum
+		sourceColumn: InvoiceMonth
+
+		annotation SummarizationSetBy = Automatic
+
+	column InvoiceYear
+		dataType: int64
+		formatString: 0
+		lineageTag: 5a2b0ace-7c44-4084-85b5-41a66040fc82
+		summarizeBy: sum
+		sourceColumn: InvoiceYear
+
+		annotation SummarizationSetBy = Automatic
+
+	column MonthYear = FORMAT(DATE(Parts_Data[InvoiceYear], Parts_Data[InvoiceMonth], 1), "MMM YYYY")
+		lineageTag: e973c28a-65d9-4d20-9ba2-4894cc8db846
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Invoice Counts YTD'
+		dataType: int64
+		formatString: 0
+		lineageTag: c92f9bf3-9202-4a3c-a42d-b4a5d360c5fe
+		summarizeBy: sum
+		sourceColumn: Invoice Counts YTD
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Sales YTD'
+		dataType: double
+		lineageTag: 092fc10a-83d0-4992-9685-c728cb602d65
+		summarizeBy: sum
+		sourceColumn: Sales YTD
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column 'Cost YTD'
+		dataType: double
+		lineageTag: 21f268a3-c938-4579-b990-6be6f481b1bc
+		summarizeBy: sum
+		sourceColumn: Cost YTD
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column 'Margin YTD'
+		dataType: double
+		lineageTag: 298d7707-714d-48b6-a5f1-644cb209773e
+		summarizeBy: sum
+		sourceColumn: Margin YTD
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column 'GP % YTD'
+		dataType: double
+		lineageTag: a719f1ae-9673-431c-a168-6ae70c26176c
+		summarizeBy: sum
+		sourceColumn: GP % YTD
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column 'Invoice Counts PYTD'
+		dataType: int64
+		formatString: 0
+		lineageTag: fec4b46d-0b4b-4a78-97c5-9bbbf95e7f87
+		summarizeBy: sum
+		sourceColumn: Invoice Counts PYTD
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Sales PYTD'
+		dataType: double
+		lineageTag: ba2021e1-63f6-4d03-8242-04e23e814903
+		summarizeBy: sum
+		sourceColumn: Sales PYTD
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column 'Cost PYTD'
+		dataType: double
+		lineageTag: 745fa692-73d4-4fe3-9abc-c0eb3715cb90
+		summarizeBy: sum
+		sourceColumn: Cost PYTD
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column 'Margin PYTD'
+		dataType: double
+		lineageTag: c4076ed5-dd1d-4bed-8de0-289011bad851
+		summarizeBy: sum
+		sourceColumn: Margin PYTD
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column 'GP % PYTD'
+		dataType: double
+		lineageTag: 30c5fbae-45e8-451b-a338-cb08d0338ffa
+		summarizeBy: sum
+		sourceColumn: GP % PYTD
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	partition Parts_Data = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-ch6iiwox4jveda3rmgudwi6hey.datawarehouse.fabric.microsoft.com", "LH_Parts_Reports_Data"),
+				    dbo_Parts_Data = Source{[Schema="dbo",Item="Parts_Data"]}[Data]
+				in
+				    dbo_Parts_Data
+
+	annotation PBI_ResultType = Table
+
+	annotation PBI_NavigationStepName = Navigation
+

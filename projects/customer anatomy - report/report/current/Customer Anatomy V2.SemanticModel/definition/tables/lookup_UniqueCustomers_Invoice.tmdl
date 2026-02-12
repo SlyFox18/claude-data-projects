@@ -1,0 +1,28 @@
+table lookup_UniqueCustomers_Invoice
+	lineageTag: 9dd37e9b-910d-44d1-ac6e-5feee0cbcbf1
+
+	column CustomerNumber
+		dataType: string
+		lineageTag: 04092f35-2019-4d49-8964-383967ee800f
+		summarizeBy: none
+		sourceColumn: CustomerNumber
+
+		annotation SummarizationSetBy = Automatic
+
+	column UniqueCustomerGroup
+		dataType: string
+		lineageTag: f6a152a6-b698-474b-803a-df40d3cfb7af
+		summarizeBy: none
+		sourceColumn: UniqueCustomerGroup
+
+		annotation SummarizationSetBy = Automatic
+
+	partition lookup_UniqueCustomers_Invoice = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-gxnyznhdptpenfw724g3o5sjzm.datawarehouse.fabric.microsoft.com", "LH_Master_Data"),
+				    dbo_lookup_UniqueCustomers_Invoice = Source{[Schema="dbo",Item="lookup_UniqueCustomers_Invoice"]}[Data]
+				in
+				    dbo_lookup_UniqueCustomers_Invoice
+

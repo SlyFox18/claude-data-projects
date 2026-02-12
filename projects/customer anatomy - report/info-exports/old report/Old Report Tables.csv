@@ -1,0 +1,126 @@
+ID,Name,Model,DataCategory,Description,IsHidden,StorageMode,TableStorage,Expression,ShowAsVariationOnly,IsPrivate,CalculationGroupPrecedence,LineageTag
+14,Base_Customer_Info,47f30e6c-91a3-4343-b947-cada7c633f53,Regular,,False,Import,,,False,False,,aa5fdcc8-72fa-447d-aa9b-3cdbd0b82f10
+17,Dim_Branch,47f30e6c-91a3-4343-b947-cada7c633f53,Regular,,False,Import,,,False,False,,719a0b13-5ea7-45a0-8764-f2fd9ae665cb
+20,Sales_Data_YTD,47f30e6c-91a3-4343-b947-cada7c633f53,Regular,,True,Import,,,False,False,,14e448cd-55f8-4118-be2f-0cc780d0a214
+23,Sales_Data_PYTD,47f30e6c-91a3-4343-b947-cada7c633f53,Regular,,True,Import,,,False,False,,bd811a48-d439-4179-995c-b4d49818d387
+26,Rental_Data,47f30e6c-91a3-4343-b947-cada7c633f53,Regular,,False,Import,,,False,False,,d31eb9b9-0472-4b4e-851a-37f6a18af899
+29,Service_Data,47f30e6c-91a3-4343-b947-cada7c633f53,Regular,,False,Import,,,False,False,,d6c69a31-107e-42e7-94a2-1ba8aea08b2c
+32,Parts_Data,47f30e6c-91a3-4343-b947-cada7c633f53,Regular,,False,Import,,,False,False,,39d381ce-4dbf-4ed2-8699-20446917eb34
+2441,MeasuresTable,47f30e6c-91a3-4343-b947-cada7c633f53,Regular,,False,Import,,"ADDCOLUMNS( GENERATESERIES(1, 1), ""DummyColumn"", 1 )",False,False,,c25d5ba8-e0eb-4100-9f6d-a4242d945e92
+2584,Data Refresh,47f30e6c-91a3-4343-b947-cada7c633f53,Regular,,True,Import,,,False,False,,06fbdcce-d148-4e6d-8163-c83105330ed9
+2778,DateAutoTemplate,47f30e6c-91a3-4343-b947-cada7c633f53,Time,,True,Import,,"
+--  
+--     Configuration
+--  
+VAR __FirstDayOfWeek = 0
+----------------------------------------
+VAR __WeekDayCalculationType = IF ( __FirstDayOfWeek = 0, 7, __FirstDayOfWeek ) + 10
+VAR __Calendar = 
+    VAR __FirstYear = YEAR ( MINX ( { MIN ( 'Data Refresh'[CurrentDateTime] ), MIN ( 'Data Refresh'[Date] ) }, ''[Value] ) )
+    VAR __LastYear =  YEAR ( MAXX ( { MAX ( 'Data Refresh'[CurrentDateTime] ), MAX ( 'Data Refresh'[Date] ) }, ''[Value] ) )
+    RETURN CALENDAR (
+        DATE ( __FirstYear, 1, 1 ),
+        DATE ( __LastYear, 12, 31 )
+    )
+VAR __Step3 = 
+    GENERATE (
+        __Calendar,
+        VAR __IsStandardLocale = IF ( FORMAT( DATE( 2000, 1, 1 ), ""oooo"" ) = ""oooo"", TRUE, FALSE )
+        VAR __MonthFormatString = IF( __IsStandardLocale, ""mmm"", ""ooo"" )
+        VAR __DayFormatString = IF( __IsStandardLocale, ""ddd"", ""aaa"" )
+        VAR __LastTransactionDate = MAXX ( { MAX ( 'Data Refresh'[CurrentDateTime] ), MAX ( 'Data Refresh'[Date] ) }, ''[Value] )
+        VAR __Date = [Date]
+        VAR __YearNumber = YEAR ( __Date )
+        VAR __QuarterNumber = QUARTER ( __Date )
+        VAR __YearQuarterNumber = CONVERT ( __YearNumber * 4 + __QuarterNumber - 1, INTEGER )
+        VAR __MonthNumber = MONTH ( __Date )
+        VAR __WeekDayNumber = WEEKDAY ( __Date, __WeekDayCalculationType )
+        VAR __WeekDay = FORMAT ( __Date, __DayFormatString )
+        RETURN ROW ( 
+            ""Year"", __YearNumber,
+            ""Year Quarter Number"", __YearQuarterNumber,
+            ""Year Quarter"", FORMAT ( __QuarterNumber, ""\Q0"" ) & ""-"" & FORMAT ( __YearNumber, ""0000"" ),
+            ""Quarter"", FORMAT( __QuarterNumber, ""\Q0"" ),
+            ""Year Month"", FORMAT ( __Date, __MonthFormatString & "" yyyy"" ),
+            ""Year Month Number"", __YearNumber * 12 + __MonthNumber - 1,
+            ""Month"", FORMAT ( __Date, __MonthFormatString ),
+            ""Month Number"", __MonthNumber,
+            ""Day of Week Number"", __WeekDayNumber,
+            ""Day of Week"", __WeekDay,
+            ""DateWithTransactions"", __Date <= __LastTransactionDate 
+        )
+    )
+RETURN
+    __Step3",False,False,,8aafc566-3b32-4f79-898c-38ab1da23a01
+2781,Date,47f30e6c-91a3-4343-b947-cada7c633f53,Time,,False,Import,,DateAutoTemplate,False,False,,2c0c88b1-ba37-407e-b8f2-712d26b8717a
+10876,Engaged Acres,47f30e6c-91a3-4343-b947-cada7c633f53,Regular,,False,Import,,,False,False,,73e4cedb-e34a-4b94-8edc-3b17151f4feb
+18412,BridgingTable,47f30e6c-91a3-4343-b947-cada7c633f53,Regular,,False,Import,,"
+ADDCOLUMNS(
+    CROSSJOIN(
+        DISTINCT(Parts_Data[InvoiceYear]),
+        DISTINCT(Parts_Data[InvoiceMonth])
+    ),
+    ""Year Month"", FORMAT(DATE([InvoiceYear], [InvoiceMonth], 1), ""MMM YYYY"")
+)",False,False,,b2a360cf-3953-4553-8e9f-1405c8af33a5
+19639,Combined_Sales_Data,47f30e6c-91a3-4343-b947-cada7c633f53,Regular,,False,Import,,"
+UNION(
+    SELECTCOLUMNS(
+        Sales_Data_YTD_New,
+        ""Account"", Sales_Data_YTD_New[Account],
+        ""Customer"", Sales_Data_YTD_New[Customer],
+        ""Territory"", Sales_Data_YTD_New[Territory],
+        ""Class"", Sales_Data_YTD_New[Class],
+        ""InvoiceMonth"", Sales_Data_YTD_New[InvoiceMonth],
+        ""InvoiceYear"", Sales_Data_YTD_New[InvoiceYear],
+        ""Units"", Sales_Data_YTD_New[Sales Counts YTD],
+        ""Sales_YTD"", Sales_Data_YTD_New[Sales YTD],
+        ""Cost_YTD"", Sales_Data_YTD_New[Cost YTD],
+        ""Margin_YTD"", Sales_Data_YTD_New[Margin YTD],
+        ""GP_%_YTD"", Sales_Data_YTD_New[GP % YTD],
+        ""Sales_Counts_PYTD"", 0,
+        ""Sales_PYTD"", 0,
+        ""Cost_PYTD"", 0,
+        ""Margin_PYTD"", 0,
+        ""GP_%_PYTD"", 0
+    ),
+    SELECTCOLUMNS(
+        Sales_Data_PYTD,
+        ""Account"", Sales_Data_PYTD[Account],
+        ""Customer"", Sales_Data_PYTD[Customer],
+        ""Territory"", Sales_Data_PYTD[Territory],
+        ""Class"", Sales_Data_PYTD[Class],
+        ""InvoiceMonth"", Sales_Data_PYTD[InvoiceMonth],
+        ""InvoiceYear"", Sales_Data_PYTD[InvoiceYear],
+        ""Units"", 0,
+        ""Sales_YTD"", 0,
+        ""Cost_YTD"", 0,
+        ""Margin_YTD"", 0,
+        ""GP_%_YTD"", 0,
+        ""Sales_Counts_PYTD"", Sales_Data_PYTD[Sales Counts PYTD],
+        ""Sales_PYTD"", Sales_Data_PYTD[Sales PYTD],
+        ""Cost_PYTD"", Sales_Data_PYTD[Cost PYTD],
+        ""Margin_PYTD"", Sales_Data_PYTD[Margin PYTD],
+        ""GP_%_PYTD"", Sales_Data_PYTD[GP % PYTD]
+    )
+)",False,False,,a92856eb-1ce8-4d92-9712-71aea9609e27
+20275,InTrans_Promo,47f30e6c-91a3-4343-b947-cada7c633f53,Regular,,False,Import,,,False,False,,6d47cf84-192f-414a-b8e0-56bb21704b50
+23948,TopN,47f30e6c-91a3-4343-b947-cada7c633f53,Regular,,False,Import,,,False,False,,91db69d7-8e62-43d0-8631-610371481cea
+33548,ConditionalFormatMeasures,47f30e6c-91a3-4343-b947-cada7c633f53,Regular,,False,Import,,"ADDCOLUMNS( GENERATESERIES(1, 1), ""DummyColumn"", 1 )",False,False,,bf5faabc-8c95-47ee-b79a-c350a4fb83e7
+38387,Sales_Data_YTD_New,47f30e6c-91a3-4343-b947-cada7c633f53,Regular,,False,Import,,,False,False,,412acaca-97ca-454a-bebf-488eb6f57618
+47574,RouteDaySort,47f30e6c-91a3-4343-b947-cada7c633f53,Regular,,False,Import,,"
+DATATABLE(
+    ""Route Day"", STRING,
+    ""Sort Order"", INTEGER,
+    {
+        {""Monday"", 1},
+        {""Tuesday"", 2},
+        {""Wednesday"", 3},
+        {""Thursday"", 4},
+        {""Friday"", 5}
+    }
+)
+",False,False,,7288243f-877e-4fdb-9135-f7263fabe352
+65402,Old Report Tables,47f30e6c-91a3-4343-b947-cada7c633f53,Regular,,False,Import,,INFO.VIEW.TABLES(),False,False,,24f0fb53-44a4-40ce-bc89-1d3fa30ebb50
+65837,Old Report Relationships,47f30e6c-91a3-4343-b947-cada7c633f53,Regular,,False,Import,,INFO.VIEW.RELATIONSHIPS(),False,False,,d7ae3472-aff4-4aca-99ae-f73cb5e09e16
+66865,Old Report Measures,47f30e6c-91a3-4343-b947-cada7c633f53,Regular,,False,Import,,INFO.VIEW.MEASURES(),False,False,,0d758506-8bed-4011-a626-cd4cff5d911b
+67932,Old Report Columns,47f30e6c-91a3-4343-b947-cada7c633f53,Regular,,False,Import,,INFO.VIEW.COLUMNS(),False,False,,5e30e8a0-e0cb-4524-a130-ff6bd602caab

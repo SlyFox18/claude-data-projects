@@ -1,0 +1,102 @@
+table dim_EngagedAcres
+	lineageTag: 16b12423-fc5d-48d9-af02-5a1fea3d7a95
+
+	column CustomerNumber
+		dataType: string
+		lineageTag: 039bfe68-4cf3-4e5a-ad9a-dcc94e549866
+		summarizeBy: none
+		sourceColumn: CustomerNumber
+
+		annotation SummarizationSetBy = Automatic
+
+	column EngagementLevel
+		dataType: string
+		lineageTag: a426dc35-eb97-44e3-ae8f-96a30773ce54
+		summarizeBy: none
+		sourceColumn: EngagementLevel
+
+		annotation SummarizationSetBy = Automatic
+
+	column EstimatedAcres
+		dataType: double
+		formatString: #,0
+		lineageTag: 507ee168-e90a-4f59-81bb-6b7bf0935956
+		summarizeBy: none
+		sourceColumn: EstimatedAcres
+
+		annotation SummarizationSetBy = Automatic
+
+	column EngagedAcreBreadth
+		dataType: double
+		formatString: #,0
+		lineageTag: 16a9ac9d-dd5d-4fc4-83a2-7b328f2ca3c0
+		summarizeBy: none
+		sourceColumn: EngagedAcreBreadth
+
+		annotation SummarizationSetBy = Automatic
+
+	column EngagedAcreDepth
+		dataType: double
+		lineageTag: b0dfe064-5519-4a9a-b776-d01ec130e032
+		summarizeBy: none
+		sourceColumn: EngagedAcreDepth
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column HighlyEngagedAcres
+		dataType: double
+		lineageTag: e0b657ac-de43-4630-b71e-e61aa29859fd
+		summarizeBy: none
+		sourceColumn: HighlyEngagedAcres
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column PrepareAcres
+		dataType: double
+		formatString: #,0
+		lineageTag: 7291de4c-0116-4b2d-ad7e-2acd85198422
+		summarizeBy: none
+		sourceColumn: PrepareAcres
+
+		annotation SummarizationSetBy = Automatic
+
+	column PlantAcres
+		dataType: double
+		formatString: #,0
+		lineageTag: c963a24d-238f-464d-a75a-750b7aa1103b
+		summarizeBy: none
+		sourceColumn: PlantAcres
+
+		annotation SummarizationSetBy = Automatic
+
+	column ApplyAcres
+		dataType: double
+		formatString: #,0
+		lineageTag: 6a93df39-5870-4713-8b13-22aba087f864
+		summarizeBy: none
+		sourceColumn: ApplyAcres
+
+		annotation SummarizationSetBy = Automatic
+
+	column HarvestAcres
+		dataType: double
+		formatString: #,0
+		lineageTag: 436964ed-d2c1-4f0c-b420-7bc8367f6527
+		summarizeBy: none
+		sourceColumn: HarvestAcres
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dim_EngagedAcres = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-gxnyznhdptpenfw724g3o5sjzm.datawarehouse.fabric.microsoft.com", "LH_Master_Data"),
+				    dbo_dim_EngagedAcres = Source{[Schema="dbo",Item="dim_EngagedAcres"]}[Data]
+				in
+				    dbo_dim_EngagedAcres
+

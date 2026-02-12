@@ -1,0 +1,60 @@
+table _TestMeasures
+	lineageTag: c7c9d0c9-e63a-45fa-ab21-c199a1da319c
+
+	measure Test_Duplicate_Invoices = ```
+			
+			VAR InvoiceCounts = 
+			    SUMMARIZE(
+			        Fact_Service_Invoices,
+			        Fact_Service_Invoices[InvoiceNumber],
+			        "RowCount", COUNTROWS(Fact_Service_Invoices)
+			    )
+			VAR DuplicateInvoices = 
+			    FILTER(InvoiceCounts, [RowCount] > 1)
+			RETURN
+			    COUNTROWS(DuplicateInvoices)
+			
+			```
+		formatString: 0
+		lineageTag: 811a5e52-944e-43b7-b22c-ea1b65035e87
+
+	measure Test_Max_Rows_Per_Invoice = ```
+			
+			MAXX(
+			    SUMMARIZE(
+			        Fact_Service_Invoices,
+			        Fact_Service_Invoices[InvoiceNumber],
+			        "RowCount", COUNTROWS(Fact_Service_Invoices)
+			    ),
+			    [RowCount]
+			)
+			
+			```
+		formatString: 0
+		lineageTag: 8135c353-311d-4e99-8b21-3fc1859f2215
+
+	measure Test_Blank_Invoice_Service = ```
+			
+			VAR BlankInInvoices = COUNTROWS(FILTER(Fact_Service_Invoices, ISBLANK(Fact_Service_Invoices[InvoiceNumber]) || Fact_Service_Invoices[InvoiceNumber] = ""))
+			VAR BlankInDetail = COUNTROWS(FILTER(Fact_Service_Detail, ISBLANK(Fact_Service_Detail[InvoiceNumber]) || Fact_Service_Detail[InvoiceNumber] = ""))
+			RETURN
+			    "Invoices: " & BlankInInvoices & " | Detail: " & BlankInDetail
+			
+			```
+		lineageTag: 562824eb-0fe2-4a89-8c89-e6c5d19a4be6
+
+	column Value
+		isHidden
+		lineageTag: 552979f4-5652-4915-8670-68fdcca8a13b
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Value]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition _TestMeasures = calculated
+		mode: import
+		source = { "This table holds all measures for testing and validation" }
+
+	annotation PBI_Id = 141a8972c11548ed8f2ee4b70679999f
+

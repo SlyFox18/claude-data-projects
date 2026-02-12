@@ -1,0 +1,185 @@
+table Fact_CustomerPerformance
+	lineageTag: 5b0fe49c-c37a-4326-ad46-db92fc06826f
+
+	column CustomerKey
+		dataType: int64
+		formatString: 0
+		lineageTag: e45069d2-c1d2-4fea-bf7a-52158045f6a8
+		summarizeBy: none
+		sourceColumn: CustomerKey
+
+		annotation SummarizationSetBy = Automatic
+
+	column TotalSales
+		dataType: double
+		lineageTag: 669996e7-7417-4538-90d3-567effe7d34f
+		summarizeBy: sum
+		sourceColumn: TotalSales
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column PartsSales
+		dataType: double
+		lineageTag: 1e334384-0c32-408b-8181-08d9dec6cca6
+		summarizeBy: sum
+		sourceColumn: PartsSales
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column TotalCost
+		dataType: double
+		lineageTag: ee8b5461-9a1f-49a3-bfa4-379df0bcc3de
+		summarizeBy: sum
+		sourceColumn: TotalCost
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column Year
+		dataType: int64
+		formatString: 0
+		lineageTag: 41028c17-37fe-4195-aa52-b319d4690d0c
+		summarizeBy: sum
+		sourceColumn: Year
+
+		annotation SummarizationSetBy = Automatic
+
+	column Month
+		dataType: int64
+		formatString: 0
+		lineageTag: 9884d1bd-109e-4697-9799-fa8aec5ef9d9
+		summarizeBy: sum
+		sourceColumn: Month
+
+		annotation SummarizationSetBy = Automatic
+
+	column PeriodDateKey
+		dataType: int64
+		formatString: 0
+		lineageTag: d250c0dd-f83c-4791-929a-e3c524aafb59
+		summarizeBy: none
+		sourceColumn: PeriodDateKey
+
+		annotation SummarizationSetBy = Automatic
+
+	column PartsCost
+		dataType: double
+		lineageTag: 39c25d7f-205b-43cf-a301-2f7f6ef23301
+		summarizeBy: sum
+		sourceColumn: PartsCost
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column PartsMargin
+		dataType: double
+		lineageTag: a32dd1c4-3a58-461c-893b-f7d1d26ecedc
+		summarizeBy: sum
+		sourceColumn: PartsMargin
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column ServiceSales
+		dataType: double
+		lineageTag: 1a904e9c-2b33-472e-810c-bb2edb24fd11
+		summarizeBy: sum
+		sourceColumn: ServiceSales
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column ServiceCost
+		dataType: double
+		lineageTag: 7ec084fd-a7a8-44c8-9d1d-8c7468fe8317
+		summarizeBy: sum
+		sourceColumn: ServiceCost
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column ServiceMargin
+		dataType: double
+		lineageTag: 9a44d100-633d-4bb4-82b3-caea8243edd1
+		summarizeBy: sum
+		sourceColumn: ServiceMargin
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column EquipmentSales
+		dataType: double
+		lineageTag: 7f4d85b4-43c6-40fe-af30-f22643516cec
+		summarizeBy: sum
+		sourceColumn: EquipmentSales
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column EquipmentCost
+		dataType: double
+		lineageTag: db3b5389-dc9c-41aa-ac50-b5f80234b4f8
+		summarizeBy: sum
+		sourceColumn: EquipmentCost
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column EquipmentMargin
+		dataType: double
+		lineageTag: c57ec470-e5b8-4ee4-a8ea-a10a31e9d9ba
+		summarizeBy: sum
+		sourceColumn: EquipmentMargin
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column TotalMargin
+		dataType: double
+		lineageTag: 3b99acc6-9027-4e89-be2c-eb24a90cd4cb
+		summarizeBy: sum
+		sourceColumn: TotalMargin
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column TotalTransactionCount
+		dataType: int64
+		formatString: 0
+		lineageTag: af857cf7-3808-402f-928e-60a895e4cfd0
+		summarizeBy: sum
+		sourceColumn: TotalTransactionCount
+
+		annotation SummarizationSetBy = Automatic
+
+	column Territory
+		dataType: string
+		lineageTag: 93304033-3be8-4f7f-a628-e8cfa0ae5418
+		summarizeBy: none
+		sourceColumn: Territory
+
+		annotation SummarizationSetBy = Automatic
+
+	partition Fact_CustomerPerformance = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-gxnyznhdptpenfw724g3o5sjzm.datawarehouse.fabric.microsoft.com", "LH_Master_Data"),
+				    dbo_Fact_CustomerPerformance = Source{[Schema="dbo",Item="Fact_CustomerPerformance"]}[Data]
+				in
+				    dbo_Fact_CustomerPerformance
+
