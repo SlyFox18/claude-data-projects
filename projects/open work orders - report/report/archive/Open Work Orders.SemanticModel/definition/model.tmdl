@@ -1,0 +1,65 @@
+model Model
+	culture: en-US
+	defaultPowerBIDataSourceVersion: powerBI_V3
+	sourceQueryCulture: en-US
+	dataAccessOptions
+		legacyRedirects
+		returnErrorValuesAsNull
+
+extendedProperty SQLBI_BRAVO_ManageDatesConfiguration =
+		{
+		  "templateUri": "file:///C:/Users/bfox/AppData/Local/Bravo/.temp/ManageDates/Templates/Config-01.template.json",
+		  "isCurrent": false,
+		  "isCustom": false,
+		  "name": "Config-01",
+		  "description": "Standard gregorian calendar",
+		  "autoScan": 127,
+		  "onlyTablesColumns": [],
+		  "exceptTablesColumns": [],
+		  "isoCountry": "US",
+		  "autoNaming": 1,
+		  "targetMeasures": [],
+		  "defaults": {
+		    "firstDayOfWeek": 0
+		  },
+		  "dateAvailable": true,
+		  "dateEnabled": true,
+		  "dateTableName": "Date",
+		  "dateTableValidation": 1,
+		  "dateReferenceTableName": "DateAutoTemplate",
+		  "dateReferenceTableValidation": 1,
+		  "holidaysAvailable": true,
+		  "holidaysEnabled": false,
+		  "holidaysTableName": "Holidays",
+		  "holidaysTableValidation": 0,
+		  "holidaysDefinitionTableName": "HolidaysDefinition",
+		  "holidaysDefinitionTableValidation": 0,
+		  "timeIntelligenceAvailable": true,
+		  "timeIntelligenceEnabled": true
+		}
+
+annotation __PBI_TimeIntelligenceEnabled = 0
+
+annotation PBI_QueryOrder = ["RepairOrderDetail","TechnicianPunchedDetail","TechnicianInvoiceDetail","Technician_Code_Names","Dim_Branch","Data Refresh","AgingReport","ArMaster_Customer","WKROFILE"]
+
+annotation PBI_ProTooling = ["DevMode","TMDL-Extension"]
+
+ref table RepairOrderDetail
+ref table TechnicianPunchedDetail
+ref table TechnicianInvoiceDetail
+ref table Technician_Code_Names
+ref table Dim_Branch
+ref table 'Data Refresh'
+ref table MeasuresTable
+ref table DimDate
+ref table AgingReport
+ref table ArMaster_Customer
+ref table WKROFILE
+ref table ToggleTable
+ref table 'Old Report Tables'
+ref table 'Old Report Relationships'
+ref table 'Old Report Columns'
+ref table 'Old Report Measures'
+
+ref cultureInfo en-US
+

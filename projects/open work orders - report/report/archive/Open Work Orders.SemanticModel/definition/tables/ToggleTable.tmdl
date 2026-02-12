@@ -1,0 +1,25 @@
+table ToggleTable
+	lineageTag: 125f71aa-b9cd-4e47-bb95-e1d391f8a266
+
+	column Toggle
+		lineageTag: 23845b1a-2b95-44ff-bc77-a45099dda7fd
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Toggle]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition ToggleTable = calculated
+		mode: import
+		source =
+				DATATABLE(
+				  "Toggle",
+				  STRING,
+				  {
+				    {"Hide Not Started"},
+				    {"Show Not Started"}
+				  }
+				)
+
+	annotation PBI_Id = 71bde394bcce43ec965a108c599eedd4
+

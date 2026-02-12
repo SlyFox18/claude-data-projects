@@ -1,0 +1,418 @@
+table RepairOrderDetail
+	lineageTag: 5d9c5d23-be03-45f4-bd2e-ca2096f3e7fd
+
+	column DaysSinceLastLabor
+		dataType: int64
+		formatString: 0
+		lineageTag: 289e8f1f-d356-42ec-948f-2c70ecfc7c8a
+		summarizeBy: sum
+		sourceColumn: DaysSinceLastLabor
+
+		annotation SummarizationSetBy = Automatic
+
+	column StatusDisplay
+		dataType: string
+		lineageTag: e6153652-21ac-45bb-a0a6-9400125d38d4
+		summarizeBy: none
+		sourceColumn: StatusDisplay
+
+		annotation SummarizationSetBy = Automatic
+
+	column Branch
+		dataType: string
+		lineageTag: 5cfdb8c4-1474-4ecb-9fce-53600fec2d59
+		summarizeBy: none
+		sourceColumn: Branch
+
+		annotation SummarizationSetBy = Automatic
+
+	column RONumber
+		dataType: int64
+		formatString: 0
+		lineageTag: e5b28fd8-3385-4866-b0fe-6e62e0328ddd
+		summarizeBy: none
+		sourceColumn: RONumber
+
+		annotation SummarizationSetBy = Automatic
+
+	column JobCode
+		dataType: string
+		lineageTag: 12467e17-4691-4a00-905b-b553f62d9221
+		summarizeBy: none
+		sourceColumn: JobCode
+
+		annotation SummarizationSetBy = Automatic
+
+	column JobType
+		dataType: string
+		lineageTag: 94545d81-983e-4883-93d9-9b43d84bcd3a
+		summarizeBy: none
+		sourceColumn: JobType
+
+		annotation SummarizationSetBy = Automatic
+
+	column InvoiceNumber
+		dataType: string
+		lineageTag: 6030667b-95ba-4347-90d1-0fca3a3fbfba
+		summarizeBy: none
+		sourceColumn: InvoiceNumber
+
+		annotation SummarizationSetBy = Automatic
+
+	column ROProgressStatus
+		dataType: string
+		lineageTag: 411f44c3-2f2a-4793-ad58-728b77b79dad
+		summarizeBy: none
+		sourceColumn: ROProgressStatus
+
+		annotation SummarizationSetBy = Automatic
+
+	column CreationDate
+		dataType: dateTime
+		formatString: Short Date
+		lineageTag: 5b20e262-2ba6-4ec2-83c5-5b54bb53e189
+		summarizeBy: none
+		sourceColumn: CreationDate
+
+		annotation SummarizationSetBy = Automatic
+
+	column JobStartDate
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: d92c5940-98f8-49e1-9a34-5776b165546d
+		summarizeBy: none
+		sourceColumn: JobStartDate
+
+		annotation SummarizationSetBy = Automatic
+
+	column DaysSinceROFinishDate
+		dataType: int64
+		formatString: 0
+		lineageTag: a279f9e3-f8d8-4963-8b48-2d6da97b5c73
+		summarizeBy: sum
+		sourceColumn: DaysSinceROFinishDate
+
+		annotation SummarizationSetBy = Automatic
+
+	column DaysSinceCreationDate
+		dataType: int64
+		formatString: 0
+		lineageTag: d3fc435e-c261-4d8d-9d8b-a58182aaed90
+		summarizeBy: sum
+		sourceColumn: DaysSinceCreationDate
+
+		annotation SummarizationSetBy = Automatic
+
+	column LaborSale
+		dataType: double
+		lineageTag: af647f70-99c7-4c85-b36c-b0c39988de05
+		summarizeBy: sum
+		sourceColumn: LaborSale
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column SubletSale
+		dataType: double
+		lineageTag: 7941112b-4bd5-4ce5-ac1d-a703de9a5c3b
+		summarizeBy: sum
+		sourceColumn: SubletSale
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column PartSale
+		dataType: double
+		lineageTag: ed7f05ff-c54a-4513-9677-3181f5b6a1ad
+		summarizeBy: sum
+		sourceColumn: PartSale
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column OtherSale
+		dataType: double
+		lineageTag: c8bb5362-62da-4b61-8e45-4632d4078f32
+		summarizeBy: sum
+		sourceColumn: OtherSale
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column TotalSale
+		dataType: double
+		lineageTag: 56e026d7-962d-4357-93cc-62f84969d1c8
+		summarizeBy: sum
+		sourceColumn: TotalSale
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column LastLaborPunch
+		dataType: dateTime
+		formatString: Short Date
+		lineageTag: d9965988-55be-4079-a0b0-29dd3f2a8c91
+		summarizeBy: none
+		sourceColumn: LastLaborPunch
+
+		annotation SummarizationSetBy = Automatic
+
+	column QuotationIndicator
+		dataType: string
+		lineageTag: 6796c076-ebab-4285-be32-50da7bc827b1
+		summarizeBy: none
+		sourceColumn: QuotationIndicator
+
+		annotation SummarizationSetBy = Automatic
+
+	column FirstLaborPunch
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: ae635171-8280-4afa-9aab-9fe94babb15f
+		summarizeBy: none
+		sourceColumn: FirstLaborPunch
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Progress Status' =
+			
+			SWITCH(
+			    [ROProgressStatus],
+			    "BI", "Booked In",
+			    "BY", "Booked in on Yard",
+			    "CA", "Customer Advised",
+			    "CO", "Collection",
+			    "CP", "Complete Priced",
+			    "CS", "Complete Service Manager",
+			    "CW", "Customer Waiting",
+			    "DA", "Warranty JAD",
+			    "DP", "In Delay - Part",
+			    "MI", "More Info Needed",
+			    "SC", "Sundry WO - Complete",
+			    "WC", "Warranty Complete",
+			    "WF", "Invoiced",
+			    "WJ", "Warranty JAD",
+			    "WO", "Worked",
+			    "WP", "T-Complete",
+			    "Unknown"  // Default value if no match is found
+			)
+		lineageTag: 515bc4e8-c818-4f95-997f-639e34a7d15e
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	column Aging =
+			
+			SWITCH(
+			    TRUE(),
+			    RepairOrderDetail[DaysSinceCreationDate] >= 1 && RepairOrderDetail[DaysSinceCreationDate] <= 7, "1 - 7 Days",
+			    RepairOrderDetail[DaysSinceCreationDate] >= 8 && RepairOrderDetail[DaysSinceCreationDate] <= 14, "8 - 14 Days",
+			    RepairOrderDetail[DaysSinceCreationDate] >= 15 && RepairOrderDetail[DaysSinceCreationDate] <= 30, "15 - 30 Days",
+			    RepairOrderDetail[DaysSinceCreationDate] >= 31 && RepairOrderDetail[DaysSinceCreationDate] <= 60, "31 - 60 Days",
+			    RepairOrderDetail[DaysSinceCreationDate] > 60 && RepairOrderDetail[DaysSinceCreationDate] <= 45719, "60+ Days",
+			    "Not Started"
+			)
+		lineageTag: aeba17f6-125f-4f17-995b-a7ba3d1c1568
+		summarizeBy: none
+		sortByColumn: AgingSortOrder
+
+		changedProperty = SortByColumn
+
+		annotation SummarizationSetBy = Automatic
+
+	column AgingSortOrder =
+			
+			SWITCH(
+			    TRUE(),
+			    RepairOrderDetail[DaysSinceLastLabor] >= 1 && RepairOrderDetail[DaysSinceLastLabor] <= 7, 4,
+			    RepairOrderDetail[DaysSinceLastLabor] >= 8 && RepairOrderDetail[DaysSinceLastLabor] <= 14, 3,
+			    RepairOrderDetail[DaysSinceLastLabor] >= 15 && RepairOrderDetail[DaysSinceLastLabor] <= 30, 2,
+			    RepairOrderDetail[DaysSinceLastLabor] >= 31 && RepairOrderDetail[DaysSinceLastLabor] <= 60, 1,
+			    RepairOrderDetail[DaysSinceLastLabor] > 60 && RepairOrderDetail[DaysSinceLastLabor] <= 45719, 0,
+			    RepairOrderDetail[DaysSinceLastLabor] = BLANK(), 5,
+			    5
+			)
+		formatString: 0
+		lineageTag: 4720d253-e955-44bb-aebd-70955c81b32f
+		summarizeBy: sum
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Aging Since Creation Date' =
+			
+			SWITCH(
+			    TRUE(),
+			    RepairOrderDetail[DaysSinceCreationDate] >= 1 && RepairOrderDetail[DaysSinceCreationDate] <= 7, "1 - 7 Days",
+			    RepairOrderDetail[DaysSinceCreationDate] >= 8 && RepairOrderDetail[DaysSinceCreationDate] <= 14, "8 - 14 Days",
+			    RepairOrderDetail[DaysSinceCreationDate] >= 15 && RepairOrderDetail[DaysSinceCreationDate] <= 30, "15 - 30 Days",
+			    RepairOrderDetail[DaysSinceCreationDate] >= 31 && RepairOrderDetail[DaysSinceCreationDate] <= 60, "31 - 60 Days",
+			    RepairOrderDetail[DaysSinceCreationDate] > 60 && RepairOrderDetail[DaysSinceCreationDate] <= 45719, "60+ Days",
+			    "Not Started"
+			)
+		lineageTag: 5a155deb-4ec1-4a1e-aca8-057903d1431f
+		summarizeBy: none
+		sortByColumn: AgingByCreationSortOrder
+
+		changedProperty = SortByColumn
+
+		annotation SummarizationSetBy = Automatic
+
+	column AgingByCreationSortOrder =
+			
+			SWITCH(
+			    TRUE(),
+			    RepairOrderDetail[DaysSinceCreationDate] >= 1 && RepairOrderDetail[DaysSinceCreationDate] <= 7, 4,
+			    RepairOrderDetail[DaysSinceCreationDate] >= 8 && RepairOrderDetail[DaysSinceCreationDate] <= 14, 3,
+			    RepairOrderDetail[DaysSinceCreationDate] >= 15 && RepairOrderDetail[DaysSinceCreationDate] <= 30, 2,
+			    RepairOrderDetail[DaysSinceCreationDate] >= 31 && RepairOrderDetail[DaysSinceCreationDate] <= 60, 1,
+			    RepairOrderDetail[DaysSinceCreationDate] > 60 && RepairOrderDetail[DaysSinceCreationDate] <= 45719, 0,
+			    RepairOrderDetail[DaysSinceCreationDate] = BLANK(), 5,
+			    5
+			)
+		formatString: 0
+		lineageTag: bdb0c382-a33e-4431-ba7c-e813f8a528d6
+		summarizeBy: sum
+
+		annotation SummarizationSetBy = Automatic
+
+	column TechnicianExists =
+			
+			IF(
+			    COUNTROWS(
+			        FILTER(
+			            TechnicianPunchedDetail,
+			            TechnicianPunchedDetail[RepairOrderNumber] = RepairOrderDetail[RONumber]
+			        )
+			    ) > 0,
+			    TRUE,
+			    FALSE
+			)
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 93023cb7-dec2-4cab-bcf1-d1202327eb90
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	column TechnicianAssignment =
+			
+			IF(
+			    COUNTROWS(
+			        FILTER(
+			            TechnicianPunchedDetail,
+			            TechnicianPunchedDetail[RepairOrderNumber] = RepairOrderDetail[RONumber]
+			        )
+			    ) > 0,
+			    MAXX(
+			        FILTER(
+			            TechnicianPunchedDetail,
+			            TechnicianPunchedDetail[RepairOrderNumber] = RepairOrderDetail[RONumber]
+			        ),
+			        TechnicianPunchedDetail[TechnicianName]
+			    ),
+			    "Not Assigned"
+			)
+		lineageTag: d0378a2e-cad4-4f8b-9029-1b9a0528c40d
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	column CustomerName = ```
+			
+			VAR TechnicianCustomerName = 
+			    MAXX(
+			        FILTER(
+			            TechnicianPunchedDetail,
+			            TechnicianPunchedDetail[RepairOrderNumber] = RepairOrderDetail[RONumber]
+			        ),
+			        TechnicianPunchedDetail[CustomerNameAR]
+			    )
+			RETURN 
+			    IF(
+			        NOT(ISBLANK(TechnicianCustomerName)),
+			        TechnicianCustomerName,
+			        "Customer Not Found"
+			    )
+			```
+		lineageTag: e9aeb8f5-f60c-49c5-a788-d6ba0d724650
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	column CustomerCheck = ```
+			
+			VAR TechnicianCustomerName = 
+			    MAXX(
+			        FILTER(
+			            TechnicianPunchedDetail,
+			            TechnicianPunchedDetail[RepairOrderNumber] = RepairOrderDetail[RONumber]
+			        ),
+			        TechnicianPunchedDetail[CustomerName]
+			    )
+			RETURN 
+			    IF(
+			        NOT(ISBLANK(TechnicianCustomerName)),
+			        TechnicianCustomerName,
+			        "No Customer Found"
+			    )
+			```
+		lineageTag: 3f7a88bc-38da-4bd7-9cfd-31fb3ecd170e
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	column CompanyName = ```
+			
+			LOOKUPVALUE(
+			    WKROFILE[Company Name],
+			    WKROFILE[RO_Number], 
+			    RepairOrderDetail[RONumber]
+			)
+			```
+		lineageTag: 96c8cb7c-4c10-4d02-af70-2b4b45766f78
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	column FinalCustomerName =
+			
+			IF(
+			    ISBLANK([CompanyName]),
+			    [CustomerCheck],
+			    [CompanyName]
+			)
+		lineageTag: 127a4c46-4499-4194-b512-5785a25dc94b
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	column PayMethod = ```
+			
+			LOOKUPVALUE(
+			    WKROFILE[Pay_Method],
+			    WKROFILE[RO_Number], 
+			    RepairOrderDetail[RONumber]
+			)
+			```
+		lineageTag: 980a461b-4eb2-4556-b1e7-6c554f52011f
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	partition RepairOrderDetail = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-wczpfb6a52fude7azc6zsgeuty.datawarehouse.fabric.microsoft.com", "LH_Service_Reports_Data"),
+				    dbo_RepairOrderDetail = Source{[Schema="dbo",Item="RepairOrderDetail"]}[Data]
+				in
+				    dbo_RepairOrderDetail
+
+	annotation PBI_ResultType = Exception
+
+	annotation PBI_NavigationStepName = Navigation
+

@@ -1,0 +1,612 @@
+table Fact_OpenWorkOrders
+	lineageTag: 96161d79-f90e-470d-895b-b70b65a122f5
+
+	column Branch
+		dataType: string
+		lineageTag: 94d66f46-229d-4ad3-8a5a-2824cd310de3
+		summarizeBy: none
+		sourceColumn: Branch
+
+		annotation SummarizationSetBy = Automatic
+
+	column WorkOrder
+		dataType: string
+		lineageTag: 542a008c-2bf8-470c-8ae4-bbe9177c5e86
+		summarizeBy: none
+		sourceColumn: WorkOrder
+
+		annotation SummarizationSetBy = Automatic
+
+	column JobCode
+		dataType: string
+		lineageTag: c1020942-f96a-4fdd-a59b-98a578471272
+		summarizeBy: none
+		sourceColumn: JobCode
+
+		annotation SummarizationSetBy = Automatic
+
+	column JobType
+		dataType: string
+		lineageTag: bd3ce415-f870-4cf9-b154-f812f0abd00d
+		summarizeBy: none
+		sourceColumn: JobType
+
+		annotation SummarizationSetBy = Automatic
+
+	column CreationDate
+		dataType: dateTime
+		formatString: Short Date
+		lineageTag: 84935e39-3b89-403f-9a6d-2c583dfdce39
+		summarizeBy: none
+		sourceColumn: CreationDate
+
+		changedProperty = DataType
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column JobStartDate
+		dataType: dateTime
+		formatString: Long Date
+		lineageTag: 768189d5-0208-46be-8bd4-1ba71e75068d
+		summarizeBy: none
+		sourceColumn: JobStartDate
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column FirstLaborPunch
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: 0c7383cf-771f-4a1c-83e8-ecc86e472c1d
+		summarizeBy: none
+		sourceColumn: FirstLaborPunch
+
+		annotation SummarizationSetBy = Automatic
+
+	column LastLaborPunch
+		dataType: dateTime
+		formatString: Short Date
+		lineageTag: 1dfa2f4b-2c9e-4f10-827a-b7f3ea2c0d58
+		summarizeBy: none
+		sourceColumn: LastLaborPunch
+
+		changedProperty = DataType
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column DateKey
+		dataType: dateTime
+		formatString: Long Date
+		lineageTag: 5d1912a7-be27-4069-b17e-0c33d096bd8c
+		summarizeBy: none
+		sourceColumn: DateKey
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column DaysSinceCreationDate
+		dataType: int64
+		formatString: 0
+		lineageTag: 713a37ad-1f35-4542-9139-0b3ae31fd1ed
+		summarizeBy: sum
+		sourceColumn: DaysSinceCreationDate
+
+		annotation SummarizationSetBy = Automatic
+
+	column DaysSinceLastLabor
+		dataType: int64
+		formatString: 0
+		lineageTag: 9424c678-5b0c-4446-8b02-8fe24b7de0ca
+		summarizeBy: sum
+		sourceColumn: DaysSinceLastLabor
+
+		annotation SummarizationSetBy = Automatic
+
+	column AgingBucket
+		dataType: string
+		lineageTag: 4b02a989-6ded-4281-a86f-dc35ec5422d1
+		summarizeBy: none
+		sourceColumn: AgingBucket
+		sortByColumn: AgingSortOrder
+
+		changedProperty = SortByColumn
+
+		annotation SummarizationSetBy = Automatic
+
+	column AgingSortOrder
+		dataType: int64
+		formatString: 0
+		lineageTag: a046d632-9183-4746-a585-d11c6d64fb71
+		summarizeBy: sum
+		sourceColumn: AgingSortOrder
+
+		annotation SummarizationSetBy = Automatic
+
+	column StatusDisplay
+		dataType: string
+		lineageTag: a98a02fa-865c-45ab-b095-9b23885d32e2
+		summarizeBy: none
+		sourceColumn: StatusDisplay
+
+		annotation SummarizationSetBy = Automatic
+
+	column ROProgressStatus
+		dataType: string
+		lineageTag: 87fdabf9-cf7d-407d-9f40-725c4f24d240
+		summarizeBy: none
+		sourceColumn: ROProgressStatus
+
+		annotation SummarizationSetBy = Automatic
+
+	column ProgressStatusDisplay
+		dataType: string
+		lineageTag: d8c4d9a1-1ce9-4c79-9aa8-edca7f5d833e
+		summarizeBy: none
+		sourceColumn: ProgressStatusDisplay
+
+		annotation SummarizationSetBy = Automatic
+
+	column LaborRevenue
+		dataType: double
+		lineageTag: 0e8de2e8-67aa-406d-8565-1be078f66fd2
+		summarizeBy: sum
+		sourceColumn: LaborRevenue
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column PartsRevenue
+		dataType: double
+		lineageTag: 1247b4ba-05fd-41e8-b211-16a005abc720
+		summarizeBy: sum
+		sourceColumn: PartsRevenue
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column SubletRevenue
+		dataType: double
+		lineageTag: fb022313-e319-41f8-aed9-dbb795dead04
+		summarizeBy: sum
+		sourceColumn: SubletRevenue
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column OtherRevenue
+		dataType: double
+		lineageTag: d0f0472b-4742-4880-98be-4008a6495c8a
+		summarizeBy: sum
+		sourceColumn: OtherRevenue
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column TotalRevenue
+		dataType: double
+		lineageTag: bd96c0d7-4b9c-4a95-888d-676d0cfa0309
+		summarizeBy: sum
+		sourceColumn: TotalRevenue
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column AccountNumber
+		dataType: string
+		lineageTag: 9789fa6b-f1bc-4aa0-8041-3c78b61370fd
+		summarizeBy: none
+		sourceColumn: AccountNumber
+
+		annotation SummarizationSetBy = Automatic
+
+	column AccountNumberText
+		dataType: string
+		lineageTag: 8fe8cdd1-4bf7-41b4-8603-60fe3f63f0c8
+		summarizeBy: none
+		sourceColumn: AccountNumberText
+
+		annotation SummarizationSetBy = Automatic
+
+	column CustomerNamePunch
+		dataType: string
+		lineageTag: f93a47d2-5250-417a-a2f3-bdc9af3107b6
+		summarizeBy: none
+		sourceColumn: CustomerNamePunch
+
+		annotation SummarizationSetBy = Automatic
+
+	column PayMethod
+		dataType: string
+		lineageTag: 5f657ecd-c447-46d5-af4f-af00c8cd071b
+		summarizeBy: none
+		sourceColumn: PayMethod
+
+		annotation SummarizationSetBy = Automatic
+
+	column Franchise
+		dataType: string
+		lineageTag: 0a23fc99-cda9-4719-a229-a2a6fe55111e
+		summarizeBy: none
+		sourceColumn: Franchise
+
+		annotation SummarizationSetBy = Automatic
+
+	column Registration
+		dataType: string
+		lineageTag: 322782f4-efbf-4e3a-a9ce-316b687b9a43
+		summarizeBy: none
+		sourceColumn: Registration
+
+		annotation SummarizationSetBy = Automatic
+
+	column Model
+		dataType: string
+		lineageTag: 801f2bcb-95e1-462f-9dfd-482d41a54732
+		summarizeBy: none
+		sourceColumn: Model
+
+		annotation SummarizationSetBy = Automatic
+
+	column TechCode
+		dataType: string
+		lineageTag: 683469e3-d909-4fac-949e-3135151a416c
+		summarizeBy: none
+		sourceColumn: TechCode
+
+		annotation SummarizationSetBy = Automatic
+
+	partition Fact_OpenWorkOrders = m
+		mode: import
+		source =
+				/*
+				============================================================================
+				FACT_OPENWORKORDERS - Open Work Orders for WIP Report
+				============================================================================
+				
+				📋 TABLE OVERVIEW:
+				Purpose: Track open (non-invoiced) work orders with aging analysis
+				Grain: One row per open work order (unique Branch + WorkOrder)
+				Report: Open Work Orders / WIP Report
+				Department: Service
+				
+				🎯 BUSINESS USE CASES:
+				• WIP Overview: Cards showing Total/Parts/Labor/Sublet/Other Sales
+				• Aging Analysis: 60+ Days, 31-60, 15-30, 8-14, 1-7 Days, Not Started
+				• WIP Details: Drill-down table with work order specifics
+				• Branch Performance: Open WIP by branch location
+				
+				📊 DATA SOURCES (NEW LAKEHOUSE):
+				• RepairOrderDetail: Core work order data (timeline, financials, status)
+				• WKROFILE: Customer account number, payment method
+				• TechnicianPunchedDetail: Equipment model, technician name
+				
+				🔗 RELATIONSHIPS:
+				• Branch → dim_Branch[Branch] (M:1)
+				• DateKey → dim_DateTable[Date] (M:1)
+				• AccountNumber → dim_CustomerList[AccountNumberText] (M:1)
+				
+				⚡ MIGRATION NOTES:
+				• Replaces: AgingReport, RepairOrderDetail (old ODBC), TechnicianPunchedDetail (old)
+				• Old model: ~1.7M rows across 5 tables
+				• New model: ~2-3K rows in single fact table
+				• Expected refresh: <30 seconds (was ~3:30 minutes)
+				
+				============================================================================
+				*/
+				
+				let
+				    // ========================================================================
+				    // STEP 1: SOURCE DATA FROM LAKEHOUSE (SQL Analytics Endpoint)
+				    // ========================================================================
+				    /*
+				    CONNECTION: Uses Lakehouse SQL analytics endpoint for Power BI Desktop
+				    SERVER: x6eps4xrq2xudenlfv6naeo3i4-lzqqwvhggkce5c45gst6vgup5a.datawarehouse.fabric.microsoft.com
+				    DATABASE: LH_Master_Data
+				
+				    To find your SQL endpoint:
+				    1. Open Lakehouse in Fabric
+				    2. Click "SQL analytics endpoint" in the top right
+				    3. Copy the connection string from Settings
+				    */
+				
+				    // SQL Analytics Endpoint connection
+				    SqlEndpoint = "xcrafcusadsu3d3wi4anbgp6we-gxnyznhdptpenfw724g3o5sjzm.datawarehouse.fabric.microsoft.com",
+				    DatabaseName = "LH_Master_Data",
+				
+				    // RepairOrderDetail - Core work order data (open orders only)
+				    RepairOrderDetail =
+				        let
+				            Source = Sql.Database(SqlEndpoint, DatabaseName),
+				            ROD = Source{[Schema = "dbo", Item = "RepairOrderDetail"]}[Data],
+				            // Filter to open work orders only (not invoiced)
+				            OpenOnly = Table.SelectRows(ROD, each [StatusDisplay] <> "Invoiced")
+				        in
+				            OpenOnly,
+				
+				    // WKROFILE - Work order master data (customer account, payment method)
+				    WKROFILE =
+				        let
+				            Source = Sql.Database(SqlEndpoint, DatabaseName),
+				            WKR = Source{[Schema = "dbo", Item = "WKROFILE"]}[Data]
+				        in
+				            WKR,
+				
+				    // TechnicianPunchedDetail - Technician and equipment info
+				    TechnicianPunched =
+				        let
+				            Source = Sql.Database(SqlEndpoint, DatabaseName),
+				            TPD = Source{[Schema = "dbo", Item = "TechnicianPunchedDetail"]}[Data],
+				            // Get latest punch per work order (for technician name and model)
+				            Grouped = Table.Group(TPD, {"WorkOrder"}, {
+				                {"EquipmentModel", each List.Max([EquipmentModel]), type text},
+				                {"TechnicianName", each List.Max([TechCode]), type text},
+				                {"CustomerNamePunch", each List.Max([CustomerName]), type text}
+				            })
+				        in
+				            Grouped,
+				
+				    // ========================================================================
+				    // STEP 2: JOIN WKROFILE FOR ACCOUNT NUMBER AND PAYMENT METHOD
+				    // ========================================================================
+				
+				    JoinWKROFILE = Table.NestedJoin(
+				        RepairOrderDetail,
+				        {"WorkOrder"},
+				        WKROFILE,
+				        {"WorkOrder"},
+				        "WKR",
+				        JoinKind.LeftOuter
+				    ),
+				
+				    ExpandWKROFILE = Table.ExpandTableColumn(JoinWKROFILE, "WKR", {
+				        "AccountNumber", "PaymentMethod", "Franchise", "Registration"
+				    }, {
+				        "AccountNumber", "PayMethod", "Franchise", "Registration"
+				    }),
+				
+				    // ========================================================================
+				    // STEP 3: JOIN TECHNICIAN PUNCHED FOR MODEL AND TECHNICIAN
+				    // ========================================================================
+				
+				    JoinTechPunched = Table.NestedJoin(
+				        ExpandWKROFILE,
+				        {"WorkOrder"},
+				        TechnicianPunched,
+				        {"WorkOrder"},
+				        "TechPunch",
+				        JoinKind.LeftOuter
+				    ),
+				
+				    ExpandTechPunched = Table.ExpandTableColumn(JoinTechPunched, "TechPunch", {
+				        "EquipmentModel", "TechnicianName", "CustomerNamePunch"
+				    }, {
+				        "Model", "TechCode", "CustomerNamePunch"
+				    }),
+				
+				    // ========================================================================
+				    // STEP 4: ADD CALCULATED COLUMNS
+				    // ========================================================================
+				
+				    // Calculate Days Since Last Labor FIRST (needed for aging bucket logic)
+				    AddDaysSinceLastLaborEarly = Table.AddColumn(ExpandTechPunched, "DaysSinceLastLabor", each
+				        if [LastLaborPunch] = null or [LastLaborPunch] = #date(1900, 1, 1) then null
+				        else Duration.Days(Date.From(DateTime.LocalNow()) - Date.From([LastLaborPunch])),
+				        Int64.Type
+				    ),
+				
+				    // Add Aging Bucket - MUTUALLY EXCLUSIVE buckets
+				    // Logic: "Not Started" takes PRECEDENCE over time buckets
+				    //   - If no labor punched (DaysSinceLastLabor >= 45000) → "Not Started"
+				    //   - Otherwise, categorize by DaysSinceCreationDate
+				    // Note: Source data has DaysSinceLastLabor = 46046 when no labor punch (1/1/1900 default)
+				    AddAgingBucket = Table.AddColumn(AddDaysSinceLastLaborEarly, "AgingBucket", each
+				        let
+				            days = [DaysSinceCreationDate],
+				            daysLastLabor = [DaysSinceLastLabor]
+				        in
+				            // FIRST: Check if no labor has been punched → "Not Started"
+				            if daysLastLabor = null or daysLastLabor >= 45000 then "Not Started"
+				            // THEN: Categorize by DaysSinceCreationDate (only for work orders WITH labor)
+				            else if days > 60 then "60+ Days"
+				            else if days >= 31 and days <= 60 then "31 - 60 Days"
+				            else if days >= 15 and days <= 30 then "15 - 30 Days"
+				            else if days >= 8 and days <= 14 then "8 - 14 Days"
+				            else if days >= 1 and days <= 7 then "1 - 7 Days"
+				            else "0 Days",  // Created today or null
+				        type text
+				    ),
+				
+				    // Add Aging Sort Order (60+ at top, Not Started at bottom)
+				    AddAgingSortOrder = Table.AddColumn(AddAgingBucket, "AgingSortOrder", each
+				        if [AgingBucket] = "60+ Days" then 1
+				        else if [AgingBucket] = "31 - 60 Days" then 2
+				        else if [AgingBucket] = "15 - 30 Days" then 3
+				        else if [AgingBucket] = "8 - 14 Days" then 4
+				        else if [AgingBucket] = "1 - 7 Days" then 5
+				        else 6,  // Not Started
+				        Int64.Type
+				    ),
+				
+				    // Add Progress Status (friendly names)
+				    AddProgressStatus = Table.AddColumn(AddAgingSortOrder, "ProgressStatusDisplay", each
+				        let status = [ROProgressStatus]
+				        in
+				            if status = "BI" then "Booked In"
+				            else if status = "BY" then "Booked in on Yard"
+				            else if status = "CA" then "Customer Advised"
+				            else if status = "CO" then "Collection"
+				            else if status = "CP" then "Complete Priced"
+				            else if status = "CS" then "Complete Service Manager"
+				            else if status = "CW" then "Customer Waiting"
+				            else if status = "DA" then "Warranty JAD"
+				            else if status = "DP" then "In Delay - Part"
+				            else if status = "MI" then "More Info Needed"
+				            else if status = "SC" then "Sundry WO - Complete"
+				            else if status = "WC" then "Warranty Complete"
+				            else if status = "WF" then "Invoiced"
+				            else if status = "WJ" then "Warranty JAD"
+				            else if status = "WO" then "Worked"
+				            else if status = "WP" then "T-Complete"
+				            else "Unknown",
+				        type text
+				    ),
+				
+				    // Add DateKey for date dimension relationship
+				    AddDateKey = Table.AddColumn(AddProgressStatus, "DateKey", each
+				        if [CreationDate] = null then null else Date.From([CreationDate]),
+				        type date
+				    ),
+				
+				    // Convert AccountNumber to text for dim_CustomerList join
+				    AddAccountNumberText = Table.AddColumn(AddDateKey, "AccountNumberText", each
+				        if [AccountNumber] = null then ""
+				        else Text.From([AccountNumber]),
+				        type text
+				    ),
+				
+				    // ========================================================================
+				    // STEP 5: SELECT FINAL COLUMNS
+				    // ========================================================================
+				
+				    SelectColumns = Table.SelectColumns(AddAccountNumberText, {
+				        // Core Identifiers
+				        "Branch",
+				        "WorkOrder",
+				        "JobCode",
+				        "JobType",
+				
+				        // Timeline
+				        "CreationDate",
+				        "JobStartDate",
+				        "FirstLaborPunch",
+				        "LastLaborPunch",
+				        "DateKey",
+				
+				        // Aging
+				        "DaysSinceCreationDate",
+				        "DaysSinceLastLabor",
+				        "AgingBucket",
+				        "AgingSortOrder",
+				
+				        // Status
+				        "StatusDisplay",
+				        "ROProgressStatus",
+				        "ProgressStatusDisplay",
+				
+				        // Financial
+				        "LaborRevenue",
+				        "PartsRevenue",
+				        "SubletRevenue",
+				        "OtherRevenue",
+				        "TotalRevenue",
+				
+				        // Customer & Equipment (from joins)
+				        "AccountNumber",
+				        "AccountNumberText",
+				        "CustomerNamePunch",
+				        "PayMethod",
+				        "Franchise",
+				        "Registration",
+				        "Model",
+				        "TechCode"
+				    }),
+				
+				    // ========================================================================
+				    // STEP 6: SET DATA TYPES
+				    // ========================================================================
+				
+				    SetTypes = Table.TransformColumnTypes(SelectColumns, {
+				        {"Branch", type text},
+				        {"WorkOrder", type text},
+				        {"JobCode", type text},
+				        {"JobType", type text},
+				        {"CreationDate", type datetime},
+				        {"JobStartDate", type date},
+				        {"FirstLaborPunch", type datetime},
+				        {"LastLaborPunch", type datetime},
+				        {"DateKey", type date},
+				        {"DaysSinceCreationDate", Int64.Type},
+				        {"DaysSinceLastLabor", Int64.Type},
+				        {"AgingBucket", type text},
+				        {"AgingSortOrder", Int64.Type},
+				        {"StatusDisplay", type text},
+				        {"ROProgressStatus", type text},
+				        {"ProgressStatusDisplay", type text},
+				        {"LaborRevenue", type number},
+				        {"PartsRevenue", type number},
+				        {"SubletRevenue", type number},
+				        {"OtherRevenue", type number},
+				        {"TotalRevenue", type number},
+				        {"AccountNumber", type text},
+				        {"AccountNumberText", type text},
+				        {"CustomerNamePunch", type text},
+				        {"PayMethod", type text},
+				        {"Franchise", type text},
+				        {"Registration", type text},
+				        {"Model", type text},
+				        {"TechCode", type text}
+				    }),
+				
+				    // Sort by aging (worst first) then by branch
+				    FinalSort = Table.Sort(SetTypes, {
+				        {"AgingSortOrder", Order.Ascending},
+				        {"Branch", Order.Ascending},
+				        {"WorkOrder", Order.Ascending}
+				    })
+				
+				in
+				    FinalSort
+				
+				/*
+				============================================================================
+				✅ IMPLEMENTATION NOTES
+				============================================================================
+				
+				📊 EXPECTED OUTPUT:
+				• ~2,000-3,000 rows (open work orders only)
+				• 28 columns covering all WIP report needs
+				• Pre-calculated aging buckets for fast filtering
+				
+				🔗 MODEL RELATIONSHIPS TO CREATE:
+				1. Fact_OpenWorkOrders[Branch] → dim_Branch[Branch] (M:1)
+				2. Fact_OpenWorkOrders[DateKey] → dim_DateTable[Date] (M:1)
+				3. Fact_OpenWorkOrders[AccountNumberText] → dim_CustomerList[AccountNumberText] (M:1)
+				
+				📈 DAX MEASURES NEEDED:
+				• Sales totals: SUM each revenue field
+				• Aging counts: COUNTROWS filtered by AgingBucket
+				• Aging sales: SUM filtered by AgingBucket
+				
+				🎯 REPORT VISUALS:
+				• Page 1 (WIP Overview):
+				  - KPI cards for sales metrics
+				  - Aging bucket cards with counts
+				  - Clustered column chart by branch
+				
+				• Page 2 (WIP Details):
+				  - Detail table with conditional formatting
+				  - Aging bucket filter/slicer
+				
+				⚡ PERFORMANCE:
+				• Expected refresh: <30 seconds
+				• Old model refresh: ~3:30 minutes
+				• Improvement: ~85% reduction in refresh time
+				
+				============================================================================
+				*/
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

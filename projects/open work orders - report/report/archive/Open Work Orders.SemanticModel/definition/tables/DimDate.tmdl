@@ -1,0 +1,127 @@
+table DimDate
+	lineageTag: 232b07c7-74fe-486b-9b11-087730fd8fe7
+	dataCategory: Time
+
+	column Date
+		isKey
+		formatString: Short Date
+		lineageTag: d444a8c5-132c-4eb1-9fb1-49047cbf07c3
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Date]
+
+		annotation SummarizationSetBy = Automatic
+
+	column DateInt
+		lineageTag: 432ca44f-7dcd-4e8b-a428-81af305571e4
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [DateInt]
+
+		annotation SummarizationSetBy = Automatic
+
+	column Year
+		formatString: 0
+		lineageTag: 19c81b1d-ac0e-4687-a986-cc6bd523c8b8
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Year]
+
+		annotation SummarizationSetBy = Automatic
+
+	column Monthnumber
+		lineageTag: 216779ce-2657-4104-bbfc-6e19e42622a0
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Monthnumber]
+
+		annotation SummarizationSetBy = Automatic
+
+	column Month
+		lineageTag: f1e13576-4e63-48ed-9f4a-fb3d58b32f66
+		summarizeBy: none
+		sourceColumn: [MonthNameShort]
+		sortByColumn: Monthnumber
+
+		annotation SummarizationSetBy = Automatic
+
+	column MonthNameLong
+		lineageTag: 69f85bd7-ace0-4c22-8da1-e40ff4525dd4
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [MonthNameLong]
+
+		annotation SummarizationSetBy = Automatic
+
+	column DaysOfWeekNumber
+		formatString: 0
+		lineageTag: 086083f7-412a-4997-8f89-fd0e555f2b63
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [DaysOfWeekNumber]
+
+		annotation SummarizationSetBy = Automatic
+
+	column DayOfWeek
+		lineageTag: d8c4a38c-6cdf-4f9b-8859-98e21bc386d0
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [DayOfWeek]
+
+		annotation SummarizationSetBy = Automatic
+
+	column DayOfWeekShort
+		lineageTag: a3e4e94d-39b6-4ec6-a212-4e97dbf51c21
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [DayOfWeekShort]
+
+		annotation SummarizationSetBy = Automatic
+
+	column Quarter
+		lineageTag: 67b46c6a-4723-45b4-ac3d-c5651f2e7be8
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Quarter]
+
+		annotation SummarizationSetBy = Automatic
+
+	column YearQuarter
+		lineageTag: 1d8750c2-0ea7-40d3-a3c3-dde85c4fb257
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [YearQuarter]
+
+		annotation SummarizationSetBy = Automatic
+
+	column EndOfMonth
+		formatString: Short Date
+		lineageTag: 9377226c-7679-4d78-beb9-d8c46e5c100b
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [EndOfMonth]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition DimDate = calculated
+		mode: import
+		source = ```
+				
+				ADDCOLUMNS(
+				    CALENDAR("2024-01-01", TODAY()),    
+				    "DateInt", FORMAT([Date], "YYYYMMDD"),
+				    "Year", YEAR([Date]),
+				    "Monthnumber", FORMAT ([Date], "MM"),
+				    "MonthNameShort", FORMAT ([Date], "mmm"),
+				    "MonthNameLong", FORMAT([Date], "mmmm"),
+				    "DaysOfWeekNumber", WEEKDAY([Date], 2), --Monday = 1, Sunday = 7
+				    "DayOfWeek", FORMAT([Date], "dddd"),
+				    "DayOfWeekShort", FORMAT([Date], "ddd"),
+				    "Quarter", "Q" & FORMAT([Date], "Q"),
+				    "YearQuarter", FORMAT([Date], "YYYY") & "/Q" & FORMAT([Date], "Q"),
+				    "EndOfMonth", EOMONTH([Date], 0)
+				)
+				```
+
+	annotation PBI_Id = d0fba3201c5045a8bb409aab0d87bad5
+

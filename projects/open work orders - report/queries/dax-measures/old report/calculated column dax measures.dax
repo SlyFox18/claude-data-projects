@@ -1,0 +1,152 @@
+##RepairOrderDetail table##
+
+Aging = 
+SWITCH(
+    TRUE(),
+    RepairOrderDetail[DaysSinceCreationDate] >= 1 && RepairOrderDetail[DaysSinceCreationDate] <= 7, "1 - 7 Days",
+    RepairOrderDetail[DaysSinceCreationDate] >= 8 && RepairOrderDetail[DaysSinceCreationDate] <= 14, "8 - 14 Days",
+    RepairOrderDetail[DaysSinceCreationDate] >= 15 && RepairOrderDetail[DaysSinceCreationDate] <= 30, "15 - 30 Days",
+    RepairOrderDetail[DaysSinceCreationDate] >= 31 && RepairOrderDetail[DaysSinceCreationDate] <= 60, "31 - 60 Days",
+    RepairOrderDetail[DaysSinceCreationDate] > 60 && RepairOrderDetail[DaysSinceCreationDate] <= 45719, "60+ Days",
+    "Not Started"
+)
+
+Aging Since Creation Date = 
+SWITCH(
+    TRUE(),
+    RepairOrderDetail[DaysSinceCreationDate] >= 1 && RepairOrderDetail[DaysSinceCreationDate] <= 7, "1 - 7 Days",
+    RepairOrderDetail[DaysSinceCreationDate] >= 8 && RepairOrderDetail[DaysSinceCreationDate] <= 14, "8 - 14 Days",
+    RepairOrderDetail[DaysSinceCreationDate] >= 15 && RepairOrderDetail[DaysSinceCreationDate] <= 30, "15 - 30 Days",
+    RepairOrderDetail[DaysSinceCreationDate] >= 31 && RepairOrderDetail[DaysSinceCreationDate] <= 60, "31 - 60 Days",
+    RepairOrderDetail[DaysSinceCreationDate] > 60 && RepairOrderDetail[DaysSinceCreationDate] <= 45719, "60+ Days",
+    "Not Started"
+)
+
+AgingByCreationSortOrder = 
+SWITCH(
+    TRUE(),
+    RepairOrderDetail[DaysSinceCreationDate] >= 1 && RepairOrderDetail[DaysSinceCreationDate] <= 7, 4,
+    RepairOrderDetail[DaysSinceCreationDate] >= 8 && RepairOrderDetail[DaysSinceCreationDate] <= 14, 3,
+    RepairOrderDetail[DaysSinceCreationDate] >= 15 && RepairOrderDetail[DaysSinceCreationDate] <= 30, 2,
+    RepairOrderDetail[DaysSinceCreationDate] >= 31 && RepairOrderDetail[DaysSinceCreationDate] <= 60, 1,
+    RepairOrderDetail[DaysSinceCreationDate] > 60 && RepairOrderDetail[DaysSinceCreationDate] <= 45719, 0,
+    RepairOrderDetail[DaysSinceCreationDate] = BLANK(), 5,
+    5
+)
+
+AgingSortOrder = 
+SWITCH(
+    TRUE(),
+    RepairOrderDetail[DaysSinceLastLabor] >= 1 && RepairOrderDetail[DaysSinceLastLabor] <= 7, 4,
+    RepairOrderDetail[DaysSinceLastLabor] >= 8 && RepairOrderDetail[DaysSinceLastLabor] <= 14, 3,
+    RepairOrderDetail[DaysSinceLastLabor] >= 15 && RepairOrderDetail[DaysSinceLastLabor] <= 30, 2,
+    RepairOrderDetail[DaysSinceLastLabor] >= 31 && RepairOrderDetail[DaysSinceLastLabor] <= 60, 1,
+    RepairOrderDetail[DaysSinceLastLabor] > 60 && RepairOrderDetail[DaysSinceLastLabor] <= 45719, 0,
+    RepairOrderDetail[DaysSinceLastLabor] = BLANK(), 5,
+    5
+)
+
+CompanyName = 
+LOOKUPVALUE(
+    WKROFILE[Company Name],
+    WKROFILE[RO_Number], 
+    RepairOrderDetail[RONumber]
+)
+
+CustomerCheck = 
+VAR TechnicianCustomerName = 
+    MAXX(
+        FILTER(
+            TechnicianPunchedDetail,
+            TechnicianPunchedDetail[RepairOrderNumber] = RepairOrderDetail[RONumber]
+        ),
+        TechnicianPunchedDetail[CustomerName]
+    )
+RETURN 
+    IF(
+        NOT(ISBLANK(TechnicianCustomerName)),
+        TechnicianCustomerName,
+        "No Customer Found"
+    )
+
+CustomerName = 
+VAR TechnicianCustomerName = 
+    MAXX(
+        FILTER(
+            TechnicianPunchedDetail,
+            TechnicianPunchedDetail[RepairOrderNumber] = RepairOrderDetail[RONumber]
+        ),
+        TechnicianPunchedDetail[CustomerNameAR]
+    )
+RETURN 
+    IF(
+        NOT(ISBLANK(TechnicianCustomerName)),
+        TechnicianCustomerName,
+        "Customer Not Found"
+    )
+
+FinalCustomerName = 
+IF(
+    ISBLANK([CompanyName]),
+    [CustomerCheck],
+    [CompanyName]
+)
+
+PayMethod = 
+LOOKUPVALUE(
+    WKROFILE[Pay_Method],
+    WKROFILE[RO_Number], 
+    RepairOrderDetail[RONumber]
+)
+
+Progress Status = 
+SWITCH(
+    [ROProgressStatus],
+    "BI", "Booked In",
+    "BY", "Booked in on Yard",
+    "CA", "Customer Advised",
+    "CO", "Collection",
+    "CP", "Complete Priced",
+    "CS", "Complete Service Manager",
+    "CW", "Customer Waiting",
+    "DA", "Warranty JAD",
+    "DP", "In Delay - Part",
+    "MI", "More Info Needed",
+    "SC", "Sundry WO - Complete",
+    "WC", "Warranty Complete",
+    "WF", "Invoiced",
+    "WJ", "Warranty JAD",
+    "WO", "Worked",
+    "WP", "T-Complete",
+    "Unknown"  // Default value if no match is found
+)
+
+TechnicianAssignment = 
+IF(
+    COUNTROWS(
+        FILTER(
+            TechnicianPunchedDetail,
+            TechnicianPunchedDetail[RepairOrderNumber] = RepairOrderDetail[RONumber]
+        )
+    ) > 0,
+    MAXX(
+        FILTER(
+            TechnicianPunchedDetail,
+            TechnicianPunchedDetail[RepairOrderNumber] = RepairOrderDetail[RONumber]
+        ),
+        TechnicianPunchedDetail[TechnicianName]
+    ),
+    "Not Assigned"
+)
+
+TechnicianExists = 
+IF(
+    COUNTROWS(
+        FILTER(
+            TechnicianPunchedDetail,
+            TechnicianPunchedDetail[RepairOrderNumber] = RepairOrderDetail[RONumber]
+        )
+    ) > 0,
+    TRUE,
+    FALSE
+)

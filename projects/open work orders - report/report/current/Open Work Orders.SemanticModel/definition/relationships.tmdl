@@ -1,0 +1,14 @@
+relationship AutoDetected_3461fefa-11ce-4773-9d9f-6fc1f3d5c25c
+	fromColumn: Fact_OpenWorkOrders.Branch
+	toColumn: dim_BranchLocation.BranchID
+
+relationship 9609f17f-a7aa-bb25-a62a-38ba39c68467
+	fromColumn: Fact_OpenWorkOrders.AccountNumberText
+	toColumn: dim_CustomerList.AccountNumberText
+
+relationship 180df238-254d-6d2e-3b62-baa77938f433
+	crossFilteringBehavior: bothDirections
+	toCardinality: many
+	fromColumn: Fact_OpenWorkOrders.TechCode
+	toColumn: dim_Technician_Code_Names.TechnicianCode
+

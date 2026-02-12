@@ -1,0 +1,62 @@
+relationship AutoDetected_81607868-7986-4264-bf88-a0b27f20c507
+	fromColumn: TechnicianPunchedDetail.TechnicianCode
+	toColumn: Technician_Code_Names.techniciancode
+
+relationship AutoDetected_3780e622-8d82-4fdd-8d4f-0aa948e87c30
+	fromColumn: TechnicianInvoiceDetail.TechnicianCode
+	toColumn: Technician_Code_Names.techniciancode
+
+relationship AutoDetected_bbe572c4-8b74-4443-90b0-00befdaebed2
+	fromColumn: RepairOrderDetail.Branch
+	toColumn: Dim_Branch.BranchID
+
+relationship AutoDetected_9a319458-dbe2-4de9-b355-44f6cbf22f7c
+	fromColumn: TechnicianPunchedDetail.Branch
+	toColumn: Dim_Branch.BranchID
+
+relationship AutoDetected_20631cab-6e89-4a49-843c-d33113402c81
+	fromColumn: TechnicianInvoiceDetail.Branch
+	toColumn: Dim_Branch.BranchID
+
+relationship 36a30a92-4507-a564-ba21-f02c9c8d9a37
+	fromColumn: RepairOrderDetail.CreationDate
+	toColumn: DimDate.Date
+
+relationship AutoDetected_a8a18d3a-61ef-4b0f-99f0-08a13ea58eb5
+	fromColumn: AgingReport.Branch
+	toColumn: Dim_Branch.BranchID
+
+relationship ec934210-b4d1-d218-2a04-bbfc6dc77e96
+	toCardinality: many
+	fromColumn: AgingReport.Repair_Order
+	toColumn: TechnicianPunchedDetail.RepairOrderNumber
+
+relationship 82d43163-d6a2-3460-611f-6db8be44d302
+	toCardinality: many
+	fromColumn: RepairOrderDetail.RONumber
+	toColumn: AgingReport.Repair_Order
+
+relationship be54faeb-d841-0380-cdd8-fbdb06128bb4
+	isActive: false
+	crossFilteringBehavior: bothDirections
+	toCardinality: many
+	fromColumn: TechnicianPunchedDetail.RepairOrderNumber
+	toColumn: RepairOrderDetail.RONumber
+
+relationship 91939c14-6c92-fe19-6da1-7d45cecda1ed
+	crossFilteringBehavior: bothDirections
+	toCardinality: many
+	fromColumn: TechnicianPunchedDetail.CustomerName
+	toColumn: ArMaster_Customer.FullName
+
+relationship 23a9d203-e5c0-3598-c73e-28fbf2543933
+	isActive: false
+	crossFilteringBehavior: bothDirections
+	toCardinality: many
+	fromColumn: TechnicianPunchedDetail.RepairOrderNumber
+	toColumn: RepairOrderDetail.LaborSale
+
+relationship f3100fbe-292d-701b-05f4-5beedd87e81c
+	fromColumn: RepairOrderDetail.RONumber
+	toColumn: WKROFILE.RO_NUMBER
+

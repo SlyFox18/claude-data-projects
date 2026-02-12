@@ -1,0 +1,38 @@
+ID,Name,Model,DataCategory,Description,IsHidden,StorageMode,TableStorage,Expression,ShowAsVariationOnly,IsPrivate,CalculationGroupPrecedence,LineageTag
+14,RepairOrderDetail,d8323ada-2475-4b13-8386-6b62bf375fb7,Regular,,False,Import,,,False,False,,5d9c5d23-be03-45f4-bd2e-ca2096f3e7fd
+17,TechnicianPunchedDetail,d8323ada-2475-4b13-8386-6b62bf375fb7,Regular,,False,Import,,,False,False,,d6ddea9d-55e3-4f8a-96af-55e75ba36738
+20,TechnicianInvoiceDetail,d8323ada-2475-4b13-8386-6b62bf375fb7,Regular,,False,Import,,,False,False,,a0701aa3-db3a-4d0f-97d6-e7a80aed2073
+23,Technician_Code_Names,d8323ada-2475-4b13-8386-6b62bf375fb7,Regular,,False,Import,,,False,False,,2b0da623-959f-4f65-869b-c3a47e21980b
+1709,Dim_Branch,d8323ada-2475-4b13-8386-6b62bf375fb7,Regular,,False,Import,,,False,False,,020881cc-1b69-4bd8-8c60-739ac56ffbf2
+1969,Data Refresh,d8323ada-2475-4b13-8386-6b62bf375fb7,Regular,,True,Import,,,False,False,,e5dc0f34-ba0f-4900-9f7b-4578eee46bf0
+2071,MeasuresTable,d8323ada-2475-4b13-8386-6b62bf375fb7,Regular,,False,Import,,"ADDCOLUMNS( GENERATESERIES(1, 1), ""DummyColumn"", 1 )",False,False,,c24fff90-8fff-462f-9007-829e7b23af8d
+2172,DimDate,d8323ada-2475-4b13-8386-6b62bf375fb7,Time,,False,Import,,"
+ADDCOLUMNS(
+    CALENDAR(""2024-01-01"", TODAY()),    
+    ""DateInt"", FORMAT([Date], ""YYYYMMDD""),
+    ""Year"", YEAR([Date]),
+    ""Monthnumber"", FORMAT ([Date], ""MM""),
+    ""MonthNameShort"", FORMAT ([Date], ""mmm""),
+    ""MonthNameLong"", FORMAT([Date], ""mmmm""),
+    ""DaysOfWeekNumber"", WEEKDAY([Date], 2), --Monday = 1, Sunday = 7
+    ""DayOfWeek"", FORMAT([Date], ""dddd""),
+    ""DayOfWeekShort"", FORMAT([Date], ""ddd""),
+    ""Quarter"", ""Q"" & FORMAT([Date], ""Q""),
+    ""YearQuarter"", FORMAT([Date], ""YYYY"") & ""/Q"" & FORMAT([Date], ""Q""),
+    ""EndOfMonth"", EOMONTH([Date], 0)
+)",False,False,,232b07c7-74fe-486b-9b11-087730fd8fe7
+6847,AgingReport,d8323ada-2475-4b13-8386-6b62bf375fb7,Regular,,False,Import,,,False,False,,3714eda0-f945-4c4f-bab9-00ef1164ed42
+42003,ArMaster_Customer,d8323ada-2475-4b13-8386-6b62bf375fb7,Regular,,False,Import,,,False,False,,f3950aab-7c32-400e-9bc2-b13b1c5d4f79
+80994,WKROFILE,d8323ada-2475-4b13-8386-6b62bf375fb7,Regular,,False,Import,,,False,False,,a908f959-e154-43df-b69d-670800558f61
+112290,ToggleTable,d8323ada-2475-4b13-8386-6b62bf375fb7,Regular,,False,Import,,"DATATABLE(
+  ""Toggle"",
+  STRING,
+  {
+    {""Hide Not Started""},
+    {""Show Not Started""}
+  }
+)",False,False,,125f71aa-b9cd-4e47-bb95-e1d391f8a266
+138520,Old Report Tables,d8323ada-2475-4b13-8386-6b62bf375fb7,Regular,,False,Import,,INFO.VIEW.TABLES(),False,False,,9baf2ed1-dddb-4db4-8b5e-7621d9a1003d
+139487,Old Report Relationships,d8323ada-2475-4b13-8386-6b62bf375fb7,Regular,,False,Import,,INFO.VIEW.RELATIONSHIPS(),False,False,,572b4c0b-85ad-4bf5-aa92-0c69c5f4f45c
+141017,Old Report Columns,d8323ada-2475-4b13-8386-6b62bf375fb7,Regular,,False,Import,,INFO.VIEW.COLUMNS(),False,False,,f33d824a-b9ce-4ec3-ab26-59209e8f3586
+143433,Old Report Measures,d8323ada-2475-4b13-8386-6b62bf375fb7,Regular,,False,Import,,INFO.VIEW.MEASURES(),False,False,,73a46a9f-fdae-4cfb-a3e7-ec1a69450e3a

@@ -1,0 +1,78 @@
+table ArMaster_Customer
+	lineageTag: f3950aab-7c32-400e-9bc2-b13b1c5d4f79
+
+	column ACC_TYPE
+		dataType: string
+		lineageTag: e0f6b096-ec06-4405-acc1-8085013e76ea
+		summarizeBy: none
+		sourceColumn: ACC_TYPE
+
+		annotation SummarizationSetBy = Automatic
+
+	column TERRITORY
+		dataType: string
+		lineageTag: 090814b1-fa00-432a-90de-d42b42564257
+		summarizeBy: none
+		sourceColumn: TERRITORY
+
+		annotation SummarizationSetBy = Automatic
+
+	column Customer_No
+		dataType: int64
+		formatString: 0
+		lineageTag: 1d35ac35-56c8-4803-a9bd-40f360690b0c
+		summarizeBy: sum
+		sourceColumn: Customer_No
+
+		annotation SummarizationSetBy = Automatic
+
+	column surname
+		dataType: string
+		lineageTag: 3e7d804b-d19b-44b4-b287-6216fa6cbae5
+		summarizeBy: none
+		sourceColumn: surname
+
+		annotation SummarizationSetBy = Automatic
+
+	column name
+		dataType: string
+		lineageTag: 440b567f-9ffa-444c-b5ec-9f522b55eb44
+		summarizeBy: none
+		sourceColumn: name
+
+		annotation SummarizationSetBy = Automatic
+
+	column company_name
+		dataType: string
+		lineageTag: 8fea91a7-a57d-46c3-8984-05b353886a24
+		summarizeBy: none
+		sourceColumn: company_name
+
+		annotation SummarizationSetBy = Automatic
+
+	column FullName =
+			
+			IF(
+			    ISBLANK('ArMaster_Customer'[company_name]),
+			    'ArMaster_Customer'[name] & " " & 'ArMaster_Customer'[surname],
+			    'ArMaster_Customer'[company_name]
+			)
+		lineageTag: f488dc91-a412-4410-ae3a-79da3125150a
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	partition ArMaster_Customer = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-h4diddse4pienf2bknp7qv3ade.datawarehouse.fabric.microsoft.com", "LH_Financial_Report_Data"),
+				    dbo_ArMaster_Customer = Source{[Schema="dbo",Item="ArMaster_Customer"]}[Data],
+				    #"Removed Columns" = Table.RemoveColumns(dbo_ArMaster_Customer,{"contact_code"})
+				in
+				    #"Removed Columns"
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

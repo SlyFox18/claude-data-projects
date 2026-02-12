@@ -1,0 +1,29 @@
+model Model
+	culture: en-US
+	defaultPowerBIDataSourceVersion: powerBI_V3
+	sourceQueryCulture: en-US
+	dataAccessOptions
+		legacyRedirects
+		returnErrorValuesAsNull
+
+annotation __PBI_TimeIntelligenceEnabled = 0
+
+annotation PBI_QueryOrder = ["Data Refresh","dim_BranchLocation","dim_DateTable","Fact_OpenWorkOrders","dim_Technician_Code_Names","dim_CustomerList"]
+
+annotation PBI_ProTooling = ["DevMode"]
+
+ref table 'Data Refresh'
+ref table dim_BranchLocation
+ref table dim_DateTable
+ref table 'New Report Tables'
+ref table 'New Report Relationships'
+ref table 'New Report Columns'
+ref table _Measures
+ref table Fact_OpenWorkOrders
+ref table 'New Report Measures'
+ref table dim_Technician_Code_Names
+ref table dim_CustomerList
+ref table dim_AgingBucket
+
+ref cultureInfo en-US
+

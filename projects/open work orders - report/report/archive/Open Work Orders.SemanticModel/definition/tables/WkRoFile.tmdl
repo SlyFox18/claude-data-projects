@@ -1,0 +1,114 @@
+table WKROFILE
+	lineageTag: a908f959-e154-43df-b69d-670800558f61
+
+	column BRANCH
+		dataType: string
+		lineageTag: a312ed2c-9777-4d6a-8f94-33d20f323b1b
+		summarizeBy: none
+		sourceColumn: BRANCH
+
+		annotation SummarizationSetBy = Automatic
+
+	column RO_NUMBER
+		dataType: int64
+		formatString: 0
+		lineageTag: d9f70ab9-b7ea-43c5-965f-523191171018
+		summarizeBy: none
+		sourceColumn: RO_NUMBER
+
+		annotation SummarizationSetBy = Automatic
+
+	column RO_STATUS
+		dataType: string
+		lineageTag: 974f3d4d-a3a2-47cb-97b3-43b2fae534a3
+		summarizeBy: none
+		sourceColumn: RO_STATUS
+
+		annotation SummarizationSetBy = Automatic
+
+	column ro_closed_ind
+		dataType: string
+		lineageTag: 498e32dc-37cd-4d4d-bd10-47eeae842c78
+		summarizeBy: none
+		sourceColumn: ro_closed_ind
+
+		annotation SummarizationSetBy = Automatic
+
+	column ro_progress_status
+		dataType: string
+		lineageTag: c51f404e-39b5-4e4a-be8a-69ded4b111a4
+		summarizeBy: none
+		sourceColumn: ro_progress_status
+
+		annotation SummarizationSetBy = Automatic
+
+	column Pay_Method
+		dataType: string
+		lineageTag: 2e5dab1a-dce4-4629-90ee-bd0c61ef1279
+		summarizeBy: none
+		sourceColumn: Pay_Method
+
+		annotation SummarizationSetBy = Automatic
+
+	column Creation_Date
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: fcf6340a-89d4-415c-b062-39ed60786e7a
+		summarizeBy: none
+		sourceColumn: Creation_Date
+
+		annotation SummarizationSetBy = Automatic
+
+	column contact_code
+		dataType: string
+		lineageTag: b7fda7ca-0fdc-4e68-93ac-9b0af9478319
+		summarizeBy: none
+		sourceColumn: contact_code
+
+		annotation SummarizationSetBy = Automatic
+
+	column surname
+		dataType: string
+		lineageTag: 21d8312d-7939-462a-aa9b-05454e07a9d3
+		summarizeBy: none
+		sourceColumn: surname
+
+		annotation SummarizationSetBy = Automatic
+
+	column name
+		dataType: string
+		lineageTag: 674f9bbc-9cef-4471-92e7-890ae3697038
+		summarizeBy: none
+		sourceColumn: name
+
+		annotation SummarizationSetBy = Automatic
+
+	column company_name
+		dataType: string
+		lineageTag: 9cfca50b-b80c-43c4-a6a0-d7441ac5a615
+		summarizeBy: none
+		sourceColumn: company_name
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Company Name' =
+			
+			IF(
+			    ISBLANK('WKROFILE'[company_name]),
+			    'WKROFILE'[name] & " " & 'WKROFILE'[surname],
+			    'WKROFILE'[company_name]
+			)
+		lineageTag: 4ea7a055-9e41-46ac-96fe-375e59385c35
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	partition WKROFILE = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-wczpfb6a52fude7azc6zsgeuty.datawarehouse.fabric.microsoft.com", "LH_Service_Reports_Data"),
+				    dbo_WKROFILE = Source{[Schema="dbo",Item="WKROFILE"]}[Data]
+				in
+				    dbo_WKROFILE
+

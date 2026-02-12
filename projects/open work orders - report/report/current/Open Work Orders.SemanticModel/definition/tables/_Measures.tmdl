@@ -1,0 +1,943 @@
+table _Measures
+	lineageTag: 22e4b9e3-99b6-4634-9836-9ade5a5ea5a5
+
+	measure 'Page 1 Home - Header' = ```
+			
+			// Get user name
+			VAR _User = USERPRINCIPALNAME()
+			VAR _Position = SEARCH("@", _User, 1)
+			VAR _Name = LEFT(_User, _Position - 1)
+			VAR _FirstLetter = UPPER(LEFT(_Name, 1))
+			VAR _LastName = MID(_Name, 2, LEN(_Name) - 1)
+			VAR _FormattedLastName = 
+			    UPPER(LEFT(_LastName, 1)) & LOWER(MID(_LastName, 2, LEN(_LastName)))
+			VAR WelcomeName = _FirstLetter & "." & _FormattedLastName
+			
+			// Get current date/time info
+			VAR CurrentDate = TODAY()
+			VAR DateDisplay = FORMAT(CurrentDate, "MMM D, YYYY")
+			VAR CurrentHour = HOUR(NOW())
+			VAR TimeGreeting = 
+			    IF(CurrentHour < 12, "Good Morning",
+			    IF(CurrentHour < 17, "Good Afternoon",
+			    "Good Evening"))
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    height: 85px;
+			    padding: 15px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 10px;
+			    color: white;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-between;
+			    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    box-sizing: border-box;
+			'>
+			    <!-- Left side: Dashboard Title -->
+			    <div style='display: flex; align-items: center; gap: 15px;'>
+			        <!-- Home icon -->
+			        <div style='
+			            width: 40px;
+			            height: 40px;
+			            background: rgba(255,255,255,0.15);
+			            border-radius: 8px;
+			            display: flex;
+			            align-items: center;
+			            justify-content: center;
+			            font-size: 20px;
+			        '>
+			            🏠
+			        </div>
+			        
+			        <!-- Title -->
+			        <div>
+			            <div style='font-size: 12px; opacity: 0.85; margin-bottom: 4px; letter-spacing: 0.5px;'>
+			                REPORT
+			            </div>
+			            <div style='font-size: 26px; font-weight: 700; line-height: 1;'>
+			                Open Work Orders - WIP Report
+			            </div>
+			        </div>
+			    </div>
+			    
+			    <!-- Right side: Welcome & Date -->
+			    <div style='text-align: right;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 6px;'>
+			            " & TimeGreeting & ", " & WelcomeName & "
+			        </div>
+			        <div style='font-size: 16px; font-weight: 600;'>
+			            📅 " & DateDisplay & "
+			        </div>
+			    </div>
+			</div>
+			"
+			```
+		lineageTag: 49efea2a-3c06-4cab-8367-26b26caa141e
+
+	measure 'Total Sales' = SUM(Fact_OpenWorkOrders[TotalRevenue])
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 50000001-0000-0000-0000-000000000001
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Part Sales' = SUM(Fact_OpenWorkOrders[PartsRevenue])
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 50000002-0000-0000-0000-000000000002
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Labor Sales' = SUM(Fact_OpenWorkOrders[LaborRevenue])
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 50000003-0000-0000-0000-000000000003
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Sublet Sales' = SUM(Fact_OpenWorkOrders[SubletRevenue])
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 50000004-0000-0000-0000-000000000004
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Other Sales' = SUM(Fact_OpenWorkOrders[OtherRevenue])
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 50000005-0000-0000-0000-000000000005
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Total Open Work Orders' = DISTINCTCOUNT(Fact_OpenWorkOrders[WorkOrder])
+		lineageTag: 50000006-0000-0000-0000-000000000006
+
+	measure 'WO Count - 60+ Days' =
+			CALCULATE(
+			    DISTINCTCOUNT(Fact_OpenWorkOrders[WorkOrder]),
+			    Fact_OpenWorkOrders[AgingBucket] = "60+ Days"
+			)
+		lineageTag: 50000007-0000-0000-0000-000000000007
+
+	measure 'WO Count - 31-60 Days' =
+			CALCULATE(
+			    DISTINCTCOUNT(Fact_OpenWorkOrders[WorkOrder]),
+			    Fact_OpenWorkOrders[AgingBucket] = "31 - 60 Days"
+			)
+		lineageTag: 50000008-0000-0000-0000-000000000008
+
+	measure 'WO Count - 15-30 Days' =
+			CALCULATE(
+			    DISTINCTCOUNT(Fact_OpenWorkOrders[WorkOrder]),
+			    Fact_OpenWorkOrders[AgingBucket] = "15 - 30 Days"
+			)
+		lineageTag: 50000009-0000-0000-0000-000000000009
+
+	measure 'WO Count - 8-14 Days' =
+			CALCULATE(
+			    DISTINCTCOUNT(Fact_OpenWorkOrders[WorkOrder]),
+			    Fact_OpenWorkOrders[AgingBucket] = "8 - 14 Days"
+			)
+		lineageTag: 50000010-0000-0000-0000-000000000010
+
+	measure 'WO Count - 1-7 Days' =
+			CALCULATE(
+			    DISTINCTCOUNT(Fact_OpenWorkOrders[WorkOrder]),
+			    Fact_OpenWorkOrders[AgingBucket] = "1 - 7 Days"
+			)
+		lineageTag: 50000011-0000-0000-0000-000000000011
+
+	measure 'WO Count - Not Started' =
+			CALCULATE(
+			    DISTINCTCOUNT(Fact_OpenWorkOrders[WorkOrder]),
+			    Fact_OpenWorkOrders[AgingBucket] = "Not Started"
+			)
+		lineageTag: 50000012-0000-0000-0000-000000000012
+
+	measure 'Sales - 60+ Days' =
+			CALCULATE(
+			    SUM(Fact_OpenWorkOrders[TotalRevenue]),
+			    Fact_OpenWorkOrders[AgingBucket] = "60+ Days"
+			)
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 50000013-0000-0000-0000-000000000013
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Sales - 31-60 Days' =
+			CALCULATE(
+			    SUM(Fact_OpenWorkOrders[TotalRevenue]),
+			    Fact_OpenWorkOrders[AgingBucket] = "31 - 60 Days"
+			)
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 50000014-0000-0000-0000-000000000014
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Sales - 15-30 Days' =
+			CALCULATE(
+			    SUM(Fact_OpenWorkOrders[TotalRevenue]),
+			    Fact_OpenWorkOrders[AgingBucket] = "15 - 30 Days"
+			)
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 50000015-0000-0000-0000-000000000015
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Sales - 8-14 Days' =
+			CALCULATE(
+			    SUM(Fact_OpenWorkOrders[TotalRevenue]),
+			    Fact_OpenWorkOrders[AgingBucket] = "8 - 14 Days"
+			)
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 50000016-0000-0000-0000-000000000016
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Sales - 1-7 Days' =
+			CALCULATE(
+			    SUM(Fact_OpenWorkOrders[TotalRevenue]),
+			    Fact_OpenWorkOrders[AgingBucket] = "1 - 7 Days"
+			)
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 50000017-0000-0000-0000-000000000017
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Sales - Not Started' =
+			CALCULATE(
+			    SUM(Fact_OpenWorkOrders[TotalRevenue]),
+			    Fact_OpenWorkOrders[AgingBucket] = "Not Started"
+			)
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 50000018-0000-0000-0000-000000000018
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Work Orders by Selected Aging' =
+			VAR _SelectedBucket = SELECTEDVALUE(dim_AgingBucket[AgingBucket])
+			RETURN
+			    IF(
+			        ISBLANK(_SelectedBucket),
+			        DISTINCTCOUNT(Fact_OpenWorkOrders[WorkOrder]),
+			        CALCULATE(
+			            DISTINCTCOUNT(Fact_OpenWorkOrders[WorkOrder]),
+			            Fact_OpenWorkOrders[AgingBucket] = _SelectedBucket
+			        )
+			    )
+		lineageTag: 50000019-0000-0000-0000-000000000019
+
+	measure 'Sales by Selected Aging' =
+			VAR _SelectedBucket = SELECTEDVALUE(dim_AgingBucket[AgingBucket])
+			RETURN
+			    IF(
+			        ISBLANK(_SelectedBucket),
+			        SUM(Fact_OpenWorkOrders[TotalRevenue]),
+			        CALCULATE(
+			            SUM(Fact_OpenWorkOrders[TotalRevenue]),
+			            Fact_OpenWorkOrders[AgingBucket] = _SelectedBucket
+			        )
+			    )
+		lineageTag: 50000020-0000-0000-0000-000000000020
+
+	measure 'Days Since Last Labor Color' =
+			VAR _Days = MAX(Fact_OpenWorkOrders[DaysSinceLastLabor])
+			RETURN
+			    SWITCH(
+			        TRUE(),
+			        ISBLANK(_Days), "#757575",
+			        _Days > 14, "#D32F2F",
+			        _Days > 7, "#F57C00",
+			        "#388E3C"
+			    )
+		lineageTag: 50000022-0000-0000-0000-000000000022
+
+	measure 'WO by Branch and Aging' = DISTINCTCOUNT(Fact_OpenWorkOrders[WorkOrder])
+		lineageTag: 50000023-0000-0000-0000-000000000023
+
+	measure 'Last Labor' = MIN(Fact_OpenWorkOrders[DaysSinceLastLabor])
+		formatString: 0
+		lineageTag: 0e8dd2e8-d388-4f25-88dc-b8bdadd13de2
+
+	measure 'Conditional Formatting Last Labor' =
+			
+			SWITCH (
+			    TRUE (),
+			    [Last Labor] >= 1
+			        && [Last Labor] <= 15, 1,
+			    [Last Labor] >= 16
+			        && [Last Labor] <= 30, 2,
+			    [Last Labor] >= 31
+			        && [Last Labor] <= 45, 3,
+			    [Last Labor] >= 46
+			        && [Last Labor] <= 60, 4,
+			    [Last Labor] >= 61
+			        && [Last Labor] <= 75, 5,
+			    [Last Labor] >= 76
+			        && [Last Labor] <= 90, 6,
+			    [Last Labor] >= 91
+			        && [Last Labor] < 45719, 7,
+			    BLANK ()
+			)
+		formatString: 0
+		lineageTag: c1281df8-ff21-4af1-acfb-502501ce3c8c
+
+	/// Part Sales by Bucket (for card reference labels)
+	measure 'Part Sales - 60+ Days' =
+			CALCULATE(
+			    SUM(Fact_OpenWorkOrders[PartsRevenue]),
+			    Fact_OpenWorkOrders[AgingBucket] = "60+ Days"
+			)
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 50000024-0000-0000-0000-000000000024
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Part Sales - 31-60 Days' =
+			CALCULATE(
+			    SUM(Fact_OpenWorkOrders[PartsRevenue]),
+			    Fact_OpenWorkOrders[AgingBucket] = "31 - 60 Days"
+			)
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 50000025-0000-0000-0000-000000000025
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Part Sales - 15-30 Days' =
+			CALCULATE(
+			    SUM(Fact_OpenWorkOrders[PartsRevenue]),
+			    Fact_OpenWorkOrders[AgingBucket] = "15 - 30 Days"
+			)
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 50000026-0000-0000-0000-000000000026
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Part Sales - 8-14 Days' =
+			CALCULATE(
+			    SUM(Fact_OpenWorkOrders[PartsRevenue]),
+			    Fact_OpenWorkOrders[AgingBucket] = "8 - 14 Days"
+			)
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 50000027-0000-0000-0000-000000000027
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Part Sales - 1-7 Days' =
+			CALCULATE(
+			    SUM(Fact_OpenWorkOrders[PartsRevenue]),
+			    Fact_OpenWorkOrders[AgingBucket] = "1 - 7 Days"
+			)
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 50000028-0000-0000-0000-000000000028
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Part Sales - Not Started' =
+			CALCULATE(
+			    SUM(Fact_OpenWorkOrders[PartsRevenue]),
+			    Fact_OpenWorkOrders[AgingBucket] = "Not Started"
+			)
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 50000029-0000-0000-0000-000000000029
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	/// Labor Sales by Bucket (for card reference labels)
+	measure 'Labor Sales - 60+ Days' =
+			CALCULATE(
+			    SUM(Fact_OpenWorkOrders[LaborRevenue]),
+			    Fact_OpenWorkOrders[AgingBucket] = "60+ Days"
+			)
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 50000030-0000-0000-0000-000000000030
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Labor Sales - 31-60 Days' =
+			CALCULATE(
+			    SUM(Fact_OpenWorkOrders[LaborRevenue]),
+			    Fact_OpenWorkOrders[AgingBucket] = "31 - 60 Days"
+			)
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 50000031-0000-0000-0000-000000000031
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Labor Sales - 15-30 Days' =
+			CALCULATE(
+			    SUM(Fact_OpenWorkOrders[LaborRevenue]),
+			    Fact_OpenWorkOrders[AgingBucket] = "15 - 30 Days"
+			)
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 50000032-0000-0000-0000-000000000032
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Labor Sales - 8-14 Days' =
+			CALCULATE(
+			    SUM(Fact_OpenWorkOrders[LaborRevenue]),
+			    Fact_OpenWorkOrders[AgingBucket] = "8 - 14 Days"
+			)
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 50000033-0000-0000-0000-000000000033
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Labor Sales - 1-7 Days' =
+			CALCULATE(
+			    SUM(Fact_OpenWorkOrders[LaborRevenue]),
+			    Fact_OpenWorkOrders[AgingBucket] = "1 - 7 Days"
+			)
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 50000034-0000-0000-0000-000000000034
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Labor Sales - Not Started' =
+			CALCULATE(
+			    SUM(Fact_OpenWorkOrders[LaborRevenue]),
+			    Fact_OpenWorkOrders[AgingBucket] = "Not Started"
+			)
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 50000035-0000-0000-0000-000000000035
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Page 2 Details - Header' = ```
+			
+			// Get user name
+			VAR _User = USERPRINCIPALNAME()
+			VAR _Position = SEARCH("@", _User, 1)
+			VAR _Name = LEFT(_User, _Position - 1)
+			VAR _FirstLetter = UPPER(LEFT(_Name, 1))
+			VAR _LastName = MID(_Name, 2, LEN(_Name) - 1)
+			VAR _FormattedLastName = 
+			    UPPER(LEFT(_LastName, 1)) & LOWER(MID(_LastName, 2, LEN(_LastName)))
+			VAR WelcomeName = _FirstLetter & "." & _FormattedLastName
+			
+			// Get current date/time info
+			VAR CurrentDate = TODAY()
+			VAR DateDisplay = FORMAT(CurrentDate, "MMM D, YYYY")
+			VAR CurrentHour = HOUR(NOW())
+			VAR TimeGreeting = 
+			    IF(CurrentHour < 12, "Good Morning",
+			    IF(CurrentHour < 17, "Good Afternoon",
+			    "Good Evening"))
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    height: 85px;
+			    padding: 15px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 10px;
+			    color: white;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-between;
+			    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    box-sizing: border-box;
+			'>
+			    <!-- Left side: Dashboard Title -->
+			    <div style='display: flex; align-items: center; gap: 15px;'>
+			        <!-- Home icon -->
+			        <div style='
+			            width: 40px;
+			            height: 40px;
+			            background: rgba(255,255,255,0.15);
+			            border-radius: 8px;
+			            display: flex;
+			            align-items: center;
+			            justify-content: center;
+			            font-size: 20px;
+			        '>
+			            🏠
+			        </div>
+			        
+			        <!-- Title -->
+			        <div>
+			            <div style='font-size: 12px; opacity: 0.85; margin-bottom: 4px; letter-spacing: 0.5px;'>
+			                REPORT
+			            </div>
+			            <div style='font-size: 26px; font-weight: 700; line-height: 1;'>
+			                Open Work Orders - WIP Details
+			            </div>
+			        </div>
+			    </div>
+			    
+			    <!-- Right side: Welcome & Date -->
+			    <div style='text-align: right;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 6px;'>
+			            " & TimeGreeting & ", " & WelcomeName & "
+			        </div>
+			        <div style='font-size: 16px; font-weight: 600;'>
+			            📅 " & DateDisplay & "
+			        </div>
+			    </div>
+			</div>
+			"
+			```
+		lineageTag: ac78da1a-ffaf-474c-98bb-15598547c891
+
+	measure 'Hero Card Page 1' = ```
+			
+			VAR TotalSales = [Total Sales]
+			VAR Parts = [Part Sales]
+			VAR Labor = [Labor Sales]
+			VAR Sublet = [Sublet Sales]
+			VAR Other = [Other Sales]
+			
+			// Percent-of-total (safe divide)
+			VAR PartsPct = DIVIDE(Parts, TotalSales)
+			VAR LaborPct = DIVIDE(Labor, TotalSales)
+			VAR SubletPct = DIVIDE(Sublet, TotalSales)
+			VAR OtherPct = DIVIDE(Other, TotalSales)
+			
+			// Formatted text
+			VAR TotalSalesText = FORMAT(TotalSales, "$#,##0")
+			VAR PartsText = FORMAT(Parts, "$#,##0")
+			VAR LaborText = FORMAT(Labor, "$#,##0")
+			VAR SubletText = FORMAT(Sublet, "$#,##0")
+			VAR OtherText = FORMAT(Other, "$#,##0")
+			
+			RETURN
+			"<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    padding: 20px 30px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 12px;
+			    box-shadow: 0 8px 24px rgba(0,0,0,0);
+			    color: white;
+			    height: 130px;
+			    display: flex;
+			    justify-content: space-between;
+			    align-items: center;
+			    gap: 15px;
+			'>
+			
+			    <!-- Section: Total Sales -->
+			    <div style='flex: 1.2; text-align: center; border-right: 1px solid rgba(255,255,255,0.2); padding-right: 15px;'>
+			        <div style='font-size: 18px; opacity: 0.85; margin-bottom: 6px;'>Total Sales</div>
+			        <div style='font-size: 40px; font-weight: 700; margin-bottom: 4px;'>" & TotalSalesText & "</div>
+			        <div style='font-size: 18px; opacity: 0.75;'>Revenue total</div>
+			    </div>
+			
+			    <!-- Section: Parts -->
+			    <div style='flex: 0.9; text-align: center; border-right: 1px solid rgba(255,255,255,0.2); padding-right: 15px;'>
+			        <div style='font-size: 18px; opacity: 0.85; margin-bottom: 6px;'>Parts</div>
+			        <div style='font-size: 40px; font-weight: 700; margin-bottom: 4px;'>" & PartsText & "</div>
+			        <div style='font-size: 18px; opacity: 0.75;'>" & FORMAT(PartsPct, "0.0%") & " of total</div>
+			    </div>
+			
+			    <!-- Section: Labor -->
+			    <div style='flex: 0.9; text-align: center; border-right: 1px solid rgba(255,255,255,0.2); padding-right: 15px;'>
+			        <div style='font-size: 18px; opacity: 0.85; margin-bottom: 6px;'>Labor</div>
+			        <div style='font-size: 40px; font-weight: 700; margin-bottom: 4px;'>" & LaborText & "</div>
+			        <div style='font-size: 18px; opacity: 0.75;'>" & FORMAT(LaborPct, "0.0%") & " of total</div>
+			    </div>
+			
+			    <!-- Section: Sublet -->
+			    <div style='flex: 0.9; text-align: center; border-right: 1px solid rgba(255,255,255,0.2); padding-right: 15px;'>
+			        <div style='font-size: 18px; opacity: 0.85; margin-bottom: 6px;'>Sublet</div>
+			        <div style='font-size: 40px; font-weight: 700; margin-bottom: 4px;'>" & SubletText & "</div>
+			        <div style='font-size: 18px; opacity: 0.75;'>" & FORMAT(SubletPct, "0.0%") & " of total</div>
+			    </div>
+			
+			    <!-- Section: Other -->
+			    <div style='flex: 0.9; text-align: center;'>
+			        <div style='font-size: 18px; opacity: 0.85; margin-bottom: 6px;'>Other</div>
+			        <div style='font-size: 40px; font-weight: 700; margin-bottom: 4px;'>" & OtherText & "</div>
+			        <div style='font-size: 18px; opacity: 0.75;'>" & FORMAT(OtherPct, "0.0%") & " of total</div>
+			    </div>
+			
+			</div>"
+			
+			```
+		lineageTag: 7409cb81-a9c1-475f-a6c8-a0b3ff7cf83d
+
+	measure 'Open WO - Aging Summary Card (HTML)' = ```
+			
+			VAR c60 = "#dc2626"   // 60+ Days
+			VAR c31 = "#f87171"   // 31 - 60 Days
+			VAR c15 = "#f59e0b"   // 15 - 30 Days
+			VAR c8  = "#eab308"   // 8 - 14 Days
+			VAR c1  = "#84cc16"   // 1 - 7 Days
+			VAR cNS = "#9ca3af"   // Not Started
+			
+			// ------- Currency format (adjust here if you want cents) -------
+			VAR fmt = "$#,##0"           // Use "$#,##0.00" for two decimals
+			
+			// Data for 60+ Days
+			VAR WO_60 = COALESCE(CALCULATE(DISTINCTCOUNT(Fact_OpenWorkOrders[WorkOrder]), Fact_OpenWorkOrders[AgingBucket] = "60+ Days"), 0)
+			VAR TS_60 = COALESCE(CALCULATE(SUM(Fact_OpenWorkOrders[TotalRevenue]),        Fact_OpenWorkOrders[AgingBucket] = "60+ Days"), 0)
+			VAR PS_60 = COALESCE(CALCULATE(SUM(Fact_OpenWorkOrders[PartsRevenue]),        Fact_OpenWorkOrders[AgingBucket] = "60+ Days"), 0)
+			VAR LS_60 = COALESCE(CALCULATE(SUM(Fact_OpenWorkOrders[LaborRevenue]),        Fact_OpenWorkOrders[AgingBucket] = "60+ Days"), 0)
+			
+			// Data for 31 - 60 Days
+			VAR WO_31 = COALESCE(CALCULATE(DISTINCTCOUNT(Fact_OpenWorkOrders[WorkOrder]), Fact_OpenWorkOrders[AgingBucket] = "31 - 60 Days"), 0)
+			VAR TS_31 = COALESCE(CALCULATE(SUM(Fact_OpenWorkOrders[TotalRevenue]),        Fact_OpenWorkOrders[AgingBucket] = "31 - 60 Days"), 0)
+			VAR PS_31 = COALESCE(CALCULATE(SUM(Fact_OpenWorkOrders[PartsRevenue]),        Fact_OpenWorkOrders[AgingBucket] = "31 - 60 Days"), 0)
+			VAR LS_31 = COALESCE(CALCULATE(SUM(Fact_OpenWorkOrders[LaborRevenue]),        Fact_OpenWorkOrders[AgingBucket] = "31 - 60 Days"), 0)
+			
+			// Data for 15 - 30 Days
+			VAR WO_15 = COALESCE(CALCULATE(DISTINCTCOUNT(Fact_OpenWorkOrders[WorkOrder]), Fact_OpenWorkOrders[AgingBucket] = "15 - 30 Days"), 0)
+			VAR TS_15 = COALESCE(CALCULATE(SUM(Fact_OpenWorkOrders[TotalRevenue]),        Fact_OpenWorkOrders[AgingBucket] = "15 - 30 Days"), 0)
+			VAR PS_15 = COALESCE(CALCULATE(SUM(Fact_OpenWorkOrders[PartsRevenue]),        Fact_OpenWorkOrders[AgingBucket] = "15 - 30 Days"), 0)
+			VAR LS_15 = COALESCE(CALCULATE(SUM(Fact_OpenWorkOrders[LaborRevenue]),        Fact_OpenWorkOrders[AgingBucket] = "15 - 30 Days"), 0)
+			
+			// Data for 8 - 14 Days
+			VAR WO_8  = COALESCE(CALCULATE(DISTINCTCOUNT(Fact_OpenWorkOrders[WorkOrder]), Fact_OpenWorkOrders[AgingBucket] = "8 - 14 Days"), 0)
+			VAR TS_8  = COALESCE(CALCULATE(SUM(Fact_OpenWorkOrders[TotalRevenue]),        Fact_OpenWorkOrders[AgingBucket] = "8 - 14 Days"), 0)
+			VAR PS_8  = COALESCE(CALCULATE(SUM(Fact_OpenWorkOrders[PartsRevenue]),        Fact_OpenWorkOrders[AgingBucket] = "8 - 14 Days"), 0)
+			VAR LS_8  = COALESCE(CALCULATE(SUM(Fact_OpenWorkOrders[LaborRevenue]),        Fact_OpenWorkOrders[AgingBucket] = "8 - 14 Days"), 0)
+			
+			// Data for 1 - 7 Days
+			VAR WO_1  = COALESCE(CALCULATE(DISTINCTCOUNT(Fact_OpenWorkOrders[WorkOrder]), Fact_OpenWorkOrders[AgingBucket] = "1 - 7 Days"), 0)
+			VAR TS_1  = COALESCE(CALCULATE(SUM(Fact_OpenWorkOrders[TotalRevenue]),        Fact_OpenWorkOrders[AgingBucket] = "1 - 7 Days"), 0)
+			VAR PS_1  = COALESCE(CALCULATE(SUM(Fact_OpenWorkOrders[PartsRevenue]),        Fact_OpenWorkOrders[AgingBucket] = "1 - 7 Days"), 0)
+			VAR LS_1  = COALESCE(CALCULATE(SUM(Fact_OpenWorkOrders[LaborRevenue]),        Fact_OpenWorkOrders[AgingBucket] = "1 - 7 Days"), 0)
+			
+			// Data for Not Started
+			VAR WO_NS = COALESCE(CALCULATE(DISTINCTCOUNT(Fact_OpenWorkOrders[WorkOrder]), Fact_OpenWorkOrders[AgingBucket] = "Not Started"), 0)
+			VAR TS_NS = COALESCE(CALCULATE(SUM(Fact_OpenWorkOrders[TotalRevenue]),        Fact_OpenWorkOrders[AgingBucket] = "Not Started"), 0)
+			VAR PS_NS = COALESCE(CALCULATE(SUM(Fact_OpenWorkOrders[PartsRevenue]),        Fact_OpenWorkOrders[AgingBucket] = "Not Started"), 0)
+			VAR LS_NS = COALESCE(CALCULATE(SUM(Fact_OpenWorkOrders[LaborRevenue]),        Fact_OpenWorkOrders[AgingBucket] = "Not Started"), 0)
+			
+			// Pre-format currency text
+			VAR TS_60_T = FORMAT(TS_60, fmt)
+			VAR PS_60_T = FORMAT(PS_60, fmt)
+			VAR LS_60_T = FORMAT(LS_60, fmt)
+			
+			VAR TS_31_T = FORMAT(TS_31, fmt)
+			VAR PS_31_T = FORMAT(PS_31, fmt)
+			VAR LS_31_T = FORMAT(LS_31, fmt)
+			
+			VAR TS_15_T = FORMAT(TS_15, fmt)
+			VAR PS_15_T = FORMAT(PS_15, fmt)
+			VAR LS_15_T = FORMAT(LS_15, fmt)
+			
+			VAR TS_8_T  = FORMAT(TS_8,  fmt)
+			VAR PS_8_T  = FORMAT(PS_8,  fmt)
+			VAR LS_8_T  = FORMAT(LS_8,  fmt)
+			
+			VAR TS_1_T  = FORMAT(TS_1,  fmt)
+			VAR PS_1_T  = FORMAT(PS_1,  fmt)
+			VAR LS_1_T  = FORMAT(LS_1,  fmt)
+			
+			VAR TS_NS_T = FORMAT(TS_NS, fmt)
+			VAR PS_NS_T = FORMAT(PS_NS, fmt)
+			VAR LS_NS_T = FORMAT(LS_NS, fmt)
+			
+			// HTML
+			RETURN
+			"<div style='font-family: Segoe UI, Arial, sans-serif;
+			            background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			            border-radius: 12px; padding: 16px 16px;'>
+			  <div style='display: flex; gap: 14px; justify-content: space-between; align-items: stretch; flex-wrap: nowrap;'>
+			
+			    <!-- 60+ Days -->
+			    <div style='flex: 1 1 calc(16.66% - 12px); min-width: 160px; max-width: 280px;
+			                background: rgba(255,255,255,0.97); border: 1px solid rgba(15,23,42,0.10);
+			                border-radius: 12px; padding: 14px 14px 16px 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+			                position: relative; color: #0f172a;'>
+			      <div style='position:absolute; top:0; left:0; right:0; height:4px; background:" & c60 & ";
+			                  border-top-left-radius:12px; border-top-right-radius:12px;'></div>
+			      <div style='display:flex; align-items:center; gap:10px; margin:6px 0 4px 0;'>
+			        <div style='width:12px; height:12px; border-radius:50%; background:" & c60 & ";'></div>
+			        <div style='font-size:16px; font-weight:600; color:#334155;'>60+ Days</div>
+			      </div>
+			      <div style='font-size:44px; font-weight:800; line-height:1; margin:4px 0 8px 0;'>" & WO_60 & "</div>
+			      <div style='font-size:14px; color:#334155; opacity:0.95; line-height:1.25;'>Total Sales: " & TS_60_T & "</div>
+			      <div style='font-size:14px; color:#334155; opacity:0.95; line-height:1.25;'>Part Sales: " & PS_60_T & "</div>
+			      <div style='font-size:14px; color:#334155; opacity:0.95; line-height:1.25;'>Labor Sales: " & LS_60_T & "</div>
+			    </div>
+			
+			    <!-- 31-60 Days -->
+			    <div style='flex: 1 1 calc(16.66% - 12px); min-width: 160px; max-width: 280px;
+			                background: rgba(255,255,255,0.97); border: 1px solid rgba(15,23,42,0.10);
+			                border-radius: 12px; padding: 14px 14px 16px 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+			                position: relative; color: #0f172a;'>
+			      <div style='position:absolute; top:0; left:0; right:0; height:4px; background:" & c31 & ";
+			                  border-top-left-radius:12px; border-top-right-radius:12px;'></div>
+			      <div style='display:flex; align-items:center; gap:10px; margin:6px 0 4px 0;'>
+			        <div style='width:12px; height:12px; border-radius:50%; background:" & c31 & ";'></div>
+			        <div style='font-size:16px; font-weight:600; color:#334155;'>31-60 Days</div>
+			      </div>
+			      <div style='font-size:44px; font-weight:800; line-height:1; margin:4px 0 8px 0;'>" & WO_31 & "</div>
+			      <div style='font-size:14px; color:#334155; opacity:0.95; line-height:1.25;'>Total Sales: " & TS_31_T & "</div>
+			      <div style='font-size:14px; color:#334155; opacity:0.95; line-height:1.25;'>Part Sales: " & PS_31_T & "</div>
+			      <div style='font-size:14px; color:#334155; opacity:0.95; line-height:1.25;'>Labor Sales: " & LS_31_T & "</div>
+			    </div>
+			
+			    <!-- 15-30 Days -->
+			    <div style='flex: 1 1 calc(16.66% - 12px); min-width: 160px; max-width: 280px;
+			                background: rgba(255,255,255,0.97); border: 1px solid rgba(15,23,42,0.10);
+			                border-radius: 12px; padding: 14px 14px 16px 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+			                position: relative; color: #0f172a;'>
+			      <div style='position:absolute; top:0; left:0; right:0; height:4px; background:" & c15 & ";
+			                  border-top-left-radius:12px; border-top-right-radius:12px;'></div>
+			      <div style='display:flex; align-items:center; gap:10px; margin:6px 0 4px 0;'>
+			        <div style='width:12px; height:12px; border-radius:50%; background:" & c15 & ";'></div>
+			        <div style='font-size:16px; font-weight:600; color:#334155;'>15-30 Days</div>
+			      </div>
+			      <div style='font-size:44px; font-weight:800; line-height:1; margin:4px 0 8px 0;'>" & WO_15 & "</div>
+			      <div style='font-size:14px; color:#334155; opacity:0.95; line-height:1.25;'>Total Sales: " & TS_15_T & "</div>
+			      <div style='font-size:14px; color:#334155; opacity:0.95; line-height:1.25;'>Part Sales: " & PS_15_T & "</div>
+			      <div style='font-size:14px; color:#334155; opacity:0.95; line-height:1.25;'>Labor Sales: " & LS_15_T & "</div>
+			    </div>
+			
+			    <!-- 8-14 Days -->
+			    <div style='flex: 1 1 calc(16.66% - 12px); min-width: 160px; max-width: 280px;
+			                background: rgba(255,255,255,0.97); border: 1px solid rgba(15,23,42,0.10);
+			                border-radius: 12px; padding: 14px 14px 16px 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+			                position: relative; color: #0f172a;'>
+			      <div style='position:absolute; top:0; left:0; right:0; height:4px; background:" & c8 & ";
+			                  border-top-left-radius:12px; border-top-right-radius:12px;'></div>
+			      <div style='display:flex; align-items:center; gap:10px; margin:6px 0 4px 0;'>
+			        <div style='width:12px; height:12px; border-radius:50%; background:" & c8 & ";'></div>
+			        <div style='font-size:16px; font-weight:600; color:#334155;'>8-14 Days</div>
+			      </div>
+			      <div style='font-size:44px; font-weight:800; line-height:1; margin:4px 0 8px 0;'>" & WO_8 & "</div>
+			      <div style='font-size:14px; color:#334155; opacity:0.95; line-height:1.25;'>Total Sales: " & TS_8_T & "</div>
+			      <div style='font-size:14px; color:#334155; opacity:0.95; line-height:1.25;'>Part Sales: " & PS_8_T & "</div>
+			      <div style='font-size:14px; color:#334155; opacity:0.95; line-height:1.25;'>Labor Sales: " & LS_8_T & "</div>
+			    </div>
+			
+			    <!-- 1-7 Days -->
+			    <div style='flex: 1 1 calc(16.66% - 12px); min-width: 160px; max-width: 280px;
+			                background: rgba(255,255,255,0.97); border: 1px solid rgba(15,23,42,0.10);
+			                border-radius: 12px; padding: 14px 14px 16px 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+			                position: relative; color: #0f172a;'>
+			      <div style='position:absolute; top:0; left:0; right:0; height:4px; background:" & c1 & ";
+			                  border-top-left-radius:12px; border-top-right-radius:12px;'></div>
+			      <div style='display:flex; align-items:center; gap:10px; margin:6px 0 4px 0;'>
+			        <div style='width:12px; height:12px; border-radius:50%; background:" & c1 & ";'></div>
+			        <div style='font-size:16px; font-weight:600; color:#334155;'>1-7 Days</div>
+			      </div>
+			      <div style='font-size:44px; font-weight:800; line-height:1; margin:4px 0 8px 0;'>" & WO_1 & "</div>
+			      <div style='font-size:14px; color:#334155; opacity:0.95; line-height:1.25;'>Total Sales: " & TS_1_T & "</div>
+			      <div style='font-size:14px; color:#334155; opacity:0.95; line-height:1.25;'>Part Sales: " & PS_1_T & "</div>
+			      <div style='font-size:14px; color:#334155; opacity:0.95; line-height:1.25;'>Labor Sales: " & LS_1_T & "</div>
+			    </div>
+			
+			    <!-- Not Started -->
+			    <div style='flex: 1 1 calc(16.66% - 12px); min-width: 160px; max-width: 280px;
+			                background: rgba(255,255,255,0.97); border: 1px solid rgba(15,23,42,0.10);
+			                border-radius: 12px; padding: 14px 14px 16px 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+			                position: relative; color: #0f172a;'>
+			      <div style='position:absolute; top:0; left:0; right:0; height:4px; background:" & cNS & ";
+			                  border-top-left-radius:12px; border-top-right-radius:12px;'></div>
+			      <div style='display:flex; align-items:center; gap:10px; margin:6px 0 4px 0;'>
+			        <div style='width:12px; height:12px; border-radius:50%; background:" & cNS & ";'></div>
+			        <div style='font-size:16px; font-weight:600; color:#334155;'>Not Started</div>
+			      </div>
+			      <div style='font-size:44px; font-weight:800; line-height:1; margin:4px 0 8px 0;'>" & WO_NS & "</div>
+			      <div style='font-size:14px; color:#334155; opacity:0.95; line-height:1.25;'>Total Sales: " & TS_NS_T & "</div>
+			      <div style='font-size:14px; color:#334155; opacity:0.95; line-height:1.25;'>Part Sales: " & PS_NS_T & "</div>
+			      <div style='font-size:14px; color:#334155; opacity:0.95; line-height:1.25;'>Labor Sales: " & LS_NS_T & "</div>
+			    </div>
+			
+			  </div>
+			</div>"
+			
+			```
+		lineageTag: 4982fe3b-2c08-4f70-a0e3-a3eaff4781d1
+
+	measure 'Open WO - Branch Aging Composition (HTML) (All)' = ```
+			
+			VAR c60 = "#dc2626"   // 60+ Days
+			VAR c31 = "#f87171"   // 31 - 60 Days
+			VAR c15 = "#f59e0b"   // 15 - 30 Days
+			VAR c8  = "#eab308"   // 8 - 14 Days
+			VAR c1  = "#84cc16"   // 1 - 7 Days
+			VAR cNS = "#9ca3af"   // Not Started
+			
+			// Text color for labels
+			VAR tLight = "white"
+			VAR tDark  = "#0f172a"
+			
+			// ---- Tuning knobs ----
+			VAR MinLabelShare = 0   // show a number on a segment if >= 10% of branch
+			VAR RowH          = 26     // bar height in px (try 22–24 if you want thicker)
+			VAR MaxHeightPx   = 420    // scrollable body height
+			VAR fmtCount      = "#,##0"
+			
+			// Base table (uses your existing measures)
+			VAR BranchBase =
+			    ADDCOLUMNS(
+			        VALUES(dim_BranchLocation[Branch]),
+			        "WO_60", [WO Count - 60+ Days],
+			        "WO_31", [WO Count - 31-60 Days],
+			        "WO_15", [WO Count - 15-30 Days],
+			        "WO_8",  [WO Count - 8-14 Days],
+			        "WO_1",  [WO Count - 1-7 Days],
+			        "WO_NS", [WO Count - Not Started]
+			    )
+			
+			VAR BranchWithTotal =
+			    ADDCOLUMNS(
+			        BranchBase,
+			        "Total", [WO_60] + [WO_31] + [WO_15] + [WO_8] + [WO_1] + [WO_NS]
+			    )
+			
+			// ✅ Only branches that actually have open WOs
+			VAR BranchNonZero =
+			    FILTER(BranchWithTotal, [Total] > 0)
+			
+			// For proportional outer length
+			VAR MaxTotal = MAXX(BranchNonZero, [Total])
+			
+			// Legend
+			VAR Legend =
+			    "<div style='display:flex; gap:16px; align-items:center; flex-wrap:wrap; padding:8px 12px 6px 12px;'>
+			        <div style='display:flex; align-items:center; gap:6px; color:#334155; font-size:12px;'>
+			            <span style='width:10px; height:10px; border-radius:50%; background:" & c60 & "; display:inline-block;'></span> 60+ Days
+			        </div>
+			        <div style='display:flex; align-items:center; gap:6px; color:#334155; font-size:12px;'>
+			            <span style='width:10px; height:10px; border-radius:50%; background:" & c31 & "; display:inline-block;'></span> 31-60 Days
+			        </div>
+			        <div style='display:flex; align-items:center; gap:6px; color:#334155; font-size:12px;'>
+			            <span style='width:10px; height:10px; border-radius:50%; background:" & c15 & "; display:inline-block;'></span> 15-30 Days
+			        </div>
+			        <div style='display:flex; align-items:center; gap:6px; color:#334155; font-size:12px;'>
+			            <span style='width:10px; height:10px; border-radius:50%; background:" & c8  & "; display:inline-block;'></span> 8-14 Days
+			        </div>
+			        <div style='display:flex; align-items:center; gap:6px; color:#334155; font-size:12px;'>
+			            <span style='width:10px; height:10px; border-radius:50%; background:" & c1  & "; display:inline-block;'></span> 1-7 Days
+			        </div>
+			        <div style='display:flex; align-items:center; gap:6px; color:#334155; font-size:12px;'>
+			            <span style='width:10px; height:10px; border-radius:50%; background:" & cNS & "; display:inline-block;'></span> Not Started
+			        </div>
+			    </div>"
+			
+			// Rows: ALL branches with Total>0, sorted by Total DESC
+			VAR RowsHtml =
+			    CONCATENATEX(
+			        BranchNonZero,
+			        VAR B   = dim_BranchLocation[Branch]
+			        VAR T   = [Total]
+			        VAR W60 = [WO_60]
+			        VAR W31 = [WO_31]
+			        VAR W15 = [WO_15]
+			        VAR W8  = [WO_8]
+			        VAR W1  = [WO_1]
+			        VAR WNS = [WO_NS]
+			
+			        // Outer bar length proportional to global max
+			        VAR OuterPct = IF(MaxTotal > 0, FORMAT(DIVIDE(T, MaxTotal), "0.0%"), "0%")
+			
+			        // Shares within branch
+			        VAR S60 = DIVIDE(W60, T)
+			        VAR S31 = DIVIDE(W31, T)
+			        VAR S15 = DIVIDE(W15, T)
+			        VAR S8  = DIVIDE(W8,  T)
+			        VAR S1  = DIVIDE(W1,  T)
+			        VAR SNS = DIVIDE(WNS, T)
+			
+			        VAR W60W = IF(T > 0, FORMAT(S60, "0.0%"), "0%")
+			        VAR W31W = IF(T > 0, FORMAT(S31, "0.0%"), "0%")
+			        VAR W15W = IF(T > 0, FORMAT(S15, "0.0%"), "0%")
+			        VAR W8W  = IF(T > 0, FORMAT(S8,  "0.0%"), "0%")
+			        VAR W1W  = IF(T > 0, FORMAT(S1,  "0.0%"), "0%")
+			        VAR WNSW = IF(T > 0, FORMAT(SNS, "0.0%"), "0%")
+			
+			        // Labels when share is large enough
+			        VAR L60 = IF(S60 >= MinLabelShare, FORMAT(W60, fmtCount), "")
+			        VAR L31 = IF(S31 >= MinLabelShare, FORMAT(W31, fmtCount), "")
+			        VAR L15 = IF(S15 >= MinLabelShare, FORMAT(W15, fmtCount), "")
+			        VAR L8  = IF(S8  >= MinLabelShare, FORMAT(W8,  fmtCount), "")
+			        VAR L1  = IF(S1  >= MinLabelShare, FORMAT(W1,  fmtCount), "")
+			        VAR LNS = IF(SNS >= MinLabelShare, FORMAT(WNS, fmtCount), "")
+			
+			        // Label text color by fill
+			        VAR C60Text = tLight
+			        VAR C31Text = tLight
+			        VAR C15Text = tLight
+			        VAR C8Text  = tDark
+			        VAR C1Text  = tDark
+			        VAR CNSText = tDark
+			
+			        VAR TText = FORMAT(T, fmtCount)
+			
+			        // ✅ IMPORTANT: parent is flex so segments lay out horizontally
+			        VAR _Row =
+			        "<tr style='height:" & (RowH + 18) & "px;'>
+			            <td style='padding:8px 10px; white-space:nowrap; color:#0f172a; font-weight:600; font-size:14px;'>" & B & "</td>
+			            <td style='padding:8px 10px; text-align:right; color:#0f172a; font-weight:700; font-size:14px;'>" & TText & "</td>
+			            <td style='padding:8px 10px; width:100%;'>
+			              <div style='width:100%;'>
+			                <div style='width:" & OuterPct & "; min-width:40px; height:" & RowH & "px; border-radius:" & INT(RowH/2) & "px; overflow:hidden; background:rgba(15,23,42,0.06); display:flex; flex-direction:row;'>
+			
+			                  <div title='60+ Days: " & W60 & "' style='width:" & W60W & "; height:100%; background:" & c60 & "; position:relative;'>
+			                    <div style='position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:" & C60Text & "; font-size:11px; font-weight:700; line-height:" & RowH & "px; pointer-events:none;'>" & L60 & "</div>
+			                  </div>
+			
+			                  <div title='31-60 Days: " & W31 & "' style='width:" & W31W & "; height:100%; background:" & c31 & "; position:relative;'>
+			                    <div style='position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:" & C31Text & "; font-size:11px; font-weight:700; line-height:" & RowH & "px; pointer-events:none;'>" & L31 & "</div>
+			                  </div>
+			
+			                  <div title='15-30 Days: " & W15 & "' style='width:" & W15W & "; height:100%; background:" & c15 & "; position:relative;'>
+			                    <div style='position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:" & C15Text & "; font-size:11px; font-weight:700; line-height:" & RowH & "px; pointer-events:none;'>" & L15 & "</div>
+			                  </div>
+			
+			                  <div title='8-14 Days: " & W8  & "' style='width:" & W8W  & "; height:100%; background:" & c8  & "; position:relative;'>
+			                    <div style='position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:" & C8Text  & "; font-size:11px; font-weight:700; line-height:" & RowH & "px; pointer-events:none;'>" & L8 & "</div>
+			                  </div>
+			
+			                  <div title='1-7 Days: "  & W1  & "' style='width:" & W1W  & "; height:100%; background:" & c1  & "; position:relative;'>
+			                    <div style='position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:" & C1Text  & "; font-size:11px; font-weight:700; line-height:" & RowH & "px; pointer-events:none;'>" & L1 & "</div>
+			                  </div>
+			
+			                  <div title='Not Started: " & WNS & "' style='width:" & WNSW & "; height:100%; background:" & cNS & "; position:relative;'>
+			                    <div style='position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:" & CNSText & "; font-size:11px; font-weight:700; line-height:" & RowH & "px; pointer-events:none;'>" & LNS & "</div>
+			                  </div>
+			
+			                </div>
+			              </div>
+			            </td>
+			        </tr>"
+			        RETURN _Row,
+			        "",                                 // delimiter
+			        [Total], DESC, dim_BranchLocation[Branch], ASC
+			    )
+			
+			RETURN
+			"<div style='font-family: Segoe UI, Arial, sans-serif; background:#ffffff; border:1px solid rgba(15,23,42,0.08); border-radius:12px; padding:8px;'>
+			   " & Legend & "
+			   <div style='padding:4px 8px 8px 8px;'>
+			     <div style='max-height:" & MaxHeightPx & "px; overflow:auto;'>
+			       <table style='width:100%; border-collapse:separate; border-spacing:0 8px;'>
+			         <thead>
+			           <tr>
+			             <th style='text-align:left; padding:6px 10px; color:#334155; font-weight:600; font-size:12px;'>Branch</th>
+			             <th style='text-align:right; padding:6px 10px; color:#334155; font-weight:600; font-size:12px;'>Total WOs</th>
+			             <th style='text-align:left; padding:6px 10px; color:#334155; font-weight:600; font-size:12px;'>Aging Mix</th>
+			           </tr>
+			         </thead>
+			         <tbody>
+			           " & RowsHtml & "
+			         </tbody>
+			       </table>
+			     </div>
+			   </div>
+			</div>"
+			
+			```
+		lineageTag: fda102fe-2648-4717-bc4c-e4a60feb57d0
+
+	column Value
+		isHidden
+		lineageTag: da2dfa23-0c4c-4e9d-8014-3cc5710e756b
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Value]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition _Measures = calculated
+		mode: import
+		source = { "This table holds all measures for the Parts Reorder Monitoring report" }
+
+	annotation PBI_Id = da82ad85df114f0dbe8c17ce73f079a8
+

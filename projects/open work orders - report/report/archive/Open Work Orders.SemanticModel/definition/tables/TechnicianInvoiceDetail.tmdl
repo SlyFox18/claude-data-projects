@@ -1,0 +1,116 @@
+table TechnicianInvoiceDetail
+	lineageTag: a0701aa3-db3a-4d0f-97d6-e7a80aed2073
+
+	column Branch
+		dataType: string
+		lineageTag: b73162cd-bdc5-4cf3-a259-32bf7ae4e1df
+		summarizeBy: none
+		sourceColumn: Branch
+
+		annotation SummarizationSetBy = Automatic
+
+	column RepairOrderNumber
+		dataType: int64
+		formatString: 0
+		lineageTag: 36310bb7-e265-4b63-99d4-b819a2143f96
+		summarizeBy: sum
+		sourceColumn: RepairOrderNumber
+
+		annotation SummarizationSetBy = Automatic
+
+	column TechnicianCode
+		dataType: string
+		lineageTag: 7faf5598-4e49-4be3-ae2d-0362bed016ee
+		summarizeBy: none
+		sourceColumn: TechnicianCode
+
+		annotation SummarizationSetBy = Automatic
+
+	column HoursPunched
+		dataType: double
+		lineageTag: e7f001b2-f750-4a61-805b-5225e3c62af6
+		summarizeBy: sum
+		sourceColumn: HoursPunched
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column InvoiceHours
+		dataType: double
+		lineageTag: 9412d226-6585-4a1e-ab45-457040be4e72
+		summarizeBy: sum
+		sourceColumn: InvoiceHours
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column ReworkHours
+		dataType: double
+		lineageTag: eb4e6320-ab4d-4cea-aff8-d626208ee284
+		summarizeBy: sum
+		sourceColumn: ReworkHours
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column GainLossHours
+		dataType: double
+		lineageTag: 054e48b8-f98c-43de-859e-2e5e8e222ea1
+		summarizeBy: sum
+		sourceColumn: GainLossHours
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column LaborCost
+		dataType: double
+		lineageTag: 9d2c4011-b29d-4611-9ce3-f43b2e48b087
+		summarizeBy: sum
+		sourceColumn: LaborCost
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column LaborSale
+		dataType: double
+		lineageTag: b77db956-9092-4868-aa73-cbd576477589
+		summarizeBy: sum
+		sourceColumn: LaborSale
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column JobCode
+		dataType: string
+		lineageTag: 15ddd044-bbaa-4771-8dab-d666512d2d20
+		summarizeBy: none
+		sourceColumn: JobCode
+
+		annotation SummarizationSetBy = Automatic
+
+	column JobType
+		dataType: string
+		lineageTag: 10c5bc1f-5978-440e-9cd4-e8585bcbfc5c
+		summarizeBy: none
+		sourceColumn: JobType
+
+		annotation SummarizationSetBy = Automatic
+
+	partition TechnicianInvoiceDetail = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-wczpfb6a52fude7azc6zsgeuty.datawarehouse.fabric.microsoft.com", "LH_Service_Reports_Data"),
+				    dbo_TechnicianInvoiceDetail = Source{[Schema="dbo",Item="TechnicianInvoiceDetail"]}[Data],
+				    #"Removed Columns" = Table.RemoveColumns(dbo_TechnicianInvoiceDetail,{"InvoiceNumber"})
+				in
+				    #"Removed Columns"
+
+	annotation PBI_ResultType = Table
+

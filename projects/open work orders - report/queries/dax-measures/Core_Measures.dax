@@ -1,0 +1,234 @@
+/*
+============================================================================
+OPEN WORK ORDERS - CORE DAX MEASURES
+============================================================================
+
+PURPOSE: Core measures for Open Work Orders / WIP Report
+TABLE: _Measures (or any measures table)
+REPORT: Open Work Orders (WIP Report)
+
+============================================================================
+*/
+
+// ============================================================================
+// SALES TOTALS (Page 1 KPI Cards)
+// ============================================================================
+
+Total Sales =
+SUM(Fact_OpenWorkOrders[TotalRevenue])
+
+Part Sales =
+SUM(Fact_OpenWorkOrders[PartsRevenue])
+
+Labor Sales =
+SUM(Fact_OpenWorkOrders[LaborRevenue])
+
+Sublet Sales =
+SUM(Fact_OpenWorkOrders[SubletRevenue])
+
+Other Sales =
+SUM(Fact_OpenWorkOrders[OtherRevenue])
+
+
+// ============================================================================
+// WORK ORDER COUNTS
+// ============================================================================
+
+Total Open Work Orders =
+COUNTROWS(Fact_OpenWorkOrders)
+
+
+// ============================================================================
+// AGING BUCKET COUNTS (Page 1 Aging Cards)
+// ============================================================================
+
+WO Count - 60+ Days =
+CALCULATE(
+    COUNTROWS(Fact_OpenWorkOrders),
+    Fact_OpenWorkOrders[AgingBucket] = "60+ Days"
+)
+
+WO Count - 31-60 Days =
+CALCULATE(
+    COUNTROWS(Fact_OpenWorkOrders),
+    Fact_OpenWorkOrders[AgingBucket] = "31 - 60 Days"
+)
+
+WO Count - 15-30 Days =
+CALCULATE(
+    COUNTROWS(Fact_OpenWorkOrders),
+    Fact_OpenWorkOrders[AgingBucket] = "15 - 30 Days"
+)
+
+WO Count - 8-14 Days =
+CALCULATE(
+    COUNTROWS(Fact_OpenWorkOrders),
+    Fact_OpenWorkOrders[AgingBucket] = "8 - 14 Days"
+)
+
+WO Count - 1-7 Days =
+CALCULATE(
+    COUNTROWS(Fact_OpenWorkOrders),
+    Fact_OpenWorkOrders[AgingBucket] = "1 - 7 Days"
+)
+
+WO Count - Not Started =
+CALCULATE(
+    COUNTROWS(Fact_OpenWorkOrders),
+    Fact_OpenWorkOrders[AgingBucket] = "Not Started"
+)
+
+
+// ============================================================================
+// AGING BUCKET SALES (for aging cards subtitle or detail)
+// ============================================================================
+
+Sales - 60+ Days =
+CALCULATE(
+    SUM(Fact_OpenWorkOrders[TotalRevenue]),
+    Fact_OpenWorkOrders[AgingBucket] = "60+ Days"
+)
+
+Sales - 31-60 Days =
+CALCULATE(
+    SUM(Fact_OpenWorkOrders[TotalRevenue]),
+    Fact_OpenWorkOrders[AgingBucket] = "31 - 60 Days"
+)
+
+Sales - 15-30 Days =
+CALCULATE(
+    SUM(Fact_OpenWorkOrders[TotalRevenue]),
+    Fact_OpenWorkOrders[AgingBucket] = "15 - 30 Days"
+)
+
+Sales - 8-14 Days =
+CALCULATE(
+    SUM(Fact_OpenWorkOrders[TotalRevenue]),
+    Fact_OpenWorkOrders[AgingBucket] = "8 - 14 Days"
+)
+
+Sales - 1-7 Days =
+CALCULATE(
+    SUM(Fact_OpenWorkOrders[TotalRevenue]),
+    Fact_OpenWorkOrders[AgingBucket] = "1 - 7 Days"
+)
+
+Sales - Not Started =
+CALCULATE(
+    SUM(Fact_OpenWorkOrders[TotalRevenue]),
+    Fact_OpenWorkOrders[AgingBucket] = "Not Started"
+)
+
+
+// ============================================================================
+// DYNAMIC MEASURES (for use with dim_AgingBucket disconnected slicer)
+// ============================================================================
+
+/*
+These measures work with the dim_AgingBucket disconnected slicer table.
+They read the selected aging bucket and filter accordingly.
+*/
+
+Work Orders by Selected Aging =
+VAR _SelectedBucket = SELECTEDVALUE(dim_AgingBucket[AgingBucket])
+RETURN
+    IF(
+        ISBLANK(_SelectedBucket),
+        COUNTROWS(Fact_OpenWorkOrders),
+        CALCULATE(
+            COUNTROWS(Fact_OpenWorkOrders),
+            Fact_OpenWorkOrders[AgingBucket] = _SelectedBucket
+        )
+    )
+
+Sales by Selected Aging =
+VAR _SelectedBucket = SELECTEDVALUE(dim_AgingBucket[AgingBucket])
+RETURN
+    IF(
+        ISBLANK(_SelectedBucket),
+        SUM(Fact_OpenWorkOrders[TotalRevenue]),
+        CALCULATE(
+            SUM(Fact_OpenWorkOrders[TotalRevenue]),
+            Fact_OpenWorkOrders[AgingBucket] = _SelectedBucket
+        )
+    )
+
+
+// ============================================================================
+// CUSTOMER NAME DISPLAY (for WIP Details table)
+// ============================================================================
+
+/*
+Customer Name display logic:
+1. First try dim_CustomerList (via AccountNumberText relationship)
+2. Fall back to CustomerNamePunch from TechnicianPunchedDetail
+3. Final fallback: "Customer Not Found"
+*/
+
+Customer Name =
+VAR _CustomerFromDim = RELATED(dim_CustomerList[DisplayName])
+VAR _CustomerFromPunch = MAX(Fact_OpenWorkOrders[CustomerNamePunch])
+RETURN
+    IF(
+        NOT(ISBLANK(_CustomerFromDim)) && _CustomerFromDim <> "Unknown Customer",
+        _CustomerFromDim,
+        IF(
+            NOT(ISBLANK(_CustomerFromPunch)),
+            _CustomerFromPunch,
+            "Customer Not Found"
+        )
+    )
+
+
+// ============================================================================
+// CONDITIONAL FORMATTING MEASURES
+// ============================================================================
+
+/*
+Days Since Last Labor - Color coding:
+- Red (>14 days): Work order may be stalled
+- Yellow (8-14 days): Needs attention
+- Green (<8 days): Normal progress
+*/
+
+Days Since Last Labor Color =
+VAR _Days = MAX(Fact_OpenWorkOrders[DaysSinceLastLabor])
+RETURN
+    SWITCH(
+        TRUE(),
+        ISBLANK(_Days), "#757575",  -- Gray for null
+        _Days > 14, "#D32F2F",      -- Red
+        _Days > 7, "#F57C00",       -- Orange
+        "#388E3C"                    -- Green
+    )
+
+
+// ============================================================================
+// CHART MEASURES (for Branch Analysis)
+// ============================================================================
+
+/*
+These measures can be used in the clustered column chart
+showing work order counts by branch and aging bucket.
+*/
+
+WO by Branch and Aging =
+COUNTROWS(Fact_OpenWorkOrders)
+-- Use with AgingBucket in legend and Branch on axis
+
+
+/*
+============================================================================
+MEASURE TABLE SETUP
+============================================================================
+
+Create a measures table in Power BI:
+1. Enter Data → Create empty table named "_Measures"
+2. Delete default column after adding first measure
+3. Add all measures above to this table
+
+Or create via DAX:
+_Measures = {BLANK()}
+
+============================================================================
+*/

@@ -1,0 +1,68 @@
+table dim_AgingBucket
+	lineageTag: b0914def-074e-43f3-8f96-b22007b806fe
+
+	column AgingBucket
+		lineageTag: 84af4fba-25b8-4913-8b60-020cb636aef9
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [AgingBucket]
+
+		annotation SummarizationSetBy = Automatic
+
+	column AgingSortOrder
+		formatString: 0
+		lineageTag: 3448047d-857c-481b-a53c-34e0d7b4ab3e
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [AgingSortOrder]
+
+		annotation SummarizationSetBy = Automatic
+
+	column MinDays
+		formatString: 0
+		lineageTag: 9e26dbda-5d3a-4b0f-82c5-c78e0ce85f1a
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [MinDays]
+
+		annotation SummarizationSetBy = Automatic
+
+	column MaxDays
+		formatString: 0
+		lineageTag: edd06d2e-1106-4ce3-9aa7-3cfa27adaeb7
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [MaxDays]
+
+		annotation SummarizationSetBy = Automatic
+
+	column DisplayColor
+		lineageTag: 254501a3-0b19-41c8-b6d4-bcf49da28bcc
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [DisplayColor]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dim_AgingBucket = calculated
+		mode: import
+		source =
+				
+				DATATABLE(
+				    "AgingBucket", STRING,
+				    "AgingSortOrder", INTEGER,
+				    "MinDays", INTEGER,
+				    "MaxDays", INTEGER,
+				    "DisplayColor", STRING,
+				    {
+				        {"60+ Days", 1, 61, 99998, "#D32F2F"},        -- Red (critical)
+				        {"31 - 60 Days", 2, 31, 60, "#F57C00"},       -- Orange (warning)
+				        {"15 - 30 Days", 3, 15, 30, "#FBC02D"},       -- Yellow (attention)
+				        {"8 - 14 Days", 4, 8, 14, "#388E3C"},         -- Green (normal)
+				        {"1 - 7 Days", 5, 1, 7, "#1976D2"},           -- Blue (new)
+				        {"Not Started", 6, 99999, 99999, "#757575"}  -- Gray (not started)
+				    }
+				)
+
+	annotation PBI_Id = b0ebd9b3d5b44af6a333650ddce7d197
+

@@ -1,0 +1,46 @@
+/*
+============================================================================
+DIM_AGINGBUCKET - Aging Bucket Dimension (Disconnected Slicer)
+============================================================================
+
+PURPOSE: Provides a slicer table for filtering work orders by aging bucket
+USAGE: Disconnected slicer - no direct relationship to fact table
+NOTE: This is a DAX calculated table - create in Power BI Desktop
+
+============================================================================
+*/
+
+dim_AgingBucket =
+DATATABLE(
+    "AgingBucket", STRING,
+    "AgingSortOrder", INTEGER,
+    "MinDays", INTEGER,
+    "MaxDays", INTEGER,
+    "DisplayColor", STRING,
+    {
+        {"60+ Days", 1, 61, 99998, "#D32F2F"},        -- Red (critical)
+        {"31 - 60 Days", 2, 31, 60, "#F57C00"},       -- Orange (warning)
+        {"15 - 30 Days", 3, 15, 30, "#FBC02D"},       -- Yellow (attention)
+        {"8 - 14 Days", 4, 8, 14, "#388E3C"},         -- Green (normal)
+        {"1 - 7 Days", 5, 1, 7, "#1976D2"},           -- Blue (new)
+        {"Not Started", 6, 99999, 99999, "#757575"}  -- Gray (not started)
+    }
+)
+
+/*
+============================================================================
+USAGE NOTES:
+============================================================================
+
+This is a DISCONNECTED SLICER table - it has NO relationship to Fact_OpenWorkOrders.
+
+The measures use SELECTEDVALUE to read the selected aging bucket and filter
+the fact table accordingly.
+
+ALTERNATIVE APPROACH:
+If you prefer a direct relationship, use the AgingBucket column already
+calculated in Fact_OpenWorkOrders and create a relationship:
+- Fact_OpenWorkOrders[AgingBucket] → dim_AgingBucket[AgingBucket] (M:1)
+
+============================================================================
+*/

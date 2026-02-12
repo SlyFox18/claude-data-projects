@@ -1,0 +1,51 @@
+table Technician_Code_Names
+	lineageTag: 2b0da623-959f-4f65-869b-c3a47e21980b
+
+	column techniciancode
+		dataType: string
+		lineageTag: 2f38cf90-bab8-4aa7-8bf1-06cbb1adc1ea
+		summarizeBy: none
+		sourceColumn: techniciancode
+
+		annotation SummarizationSetBy = Automatic
+
+	column firstname
+		dataType: string
+		lineageTag: 43bdf71b-6674-48c3-91ed-3773aaefb5fe
+		summarizeBy: none
+		sourceColumn: firstname
+
+		annotation SummarizationSetBy = Automatic
+
+	column lastname
+		dataType: string
+		lineageTag: 466334e7-51d6-4417-a00d-cd8ef25d671f
+		summarizeBy: none
+		sourceColumn: lastname
+
+		annotation SummarizationSetBy = Automatic
+
+	column Name
+		dataType: string
+		lineageTag: aa518ddb-0861-4620-b0de-8a43ac69799d
+		summarizeBy: none
+		sourceColumn: Name
+
+		annotation SummarizationSetBy = Automatic
+
+	partition Technician_Code_Names = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-wczpfb6a52fude7azc6zsgeuty.datawarehouse.fabric.microsoft.com", "LH_Service_Reports_Data"),
+				    dbo_Technician_Code_Names = Source{[Schema="dbo",Item="Technician_Code_Names"]}[Data],
+				    #"Added Custom" = Table.AddColumn(dbo_Technician_Code_Names, "Name", each [firstname] & " " & [lastname]),
+				    #"Changed Type" = Table.TransformColumnTypes(#"Added Custom",{{"Name", type text}}),
+				    #"Capitalized Each Word" = Table.TransformColumns(#"Changed Type",{{"Name", Text.Proper, type text}})
+				in
+				    #"Capitalized Each Word"
+
+	annotation PBI_ResultType = Table
+
+	annotation PBI_NavigationStepName = Navigation
+
