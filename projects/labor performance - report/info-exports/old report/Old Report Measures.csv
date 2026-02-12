@@ -1,0 +1,130 @@
+ID,Name,Table,Description,DataType,Expression,FormatString,IsHidden,State,KPIID,IsSimpleMeasure,DisplayFolder,DetailRowsDefinition,DataCategory,FormatStringDefinition,LineageTag
+3783,LY Hours,TechnicianInvoice,,,"
+CALCULATE(
+    SUM(TechnicianInvoice[InvoiceHours]),
+    SAMEPERIODLASTYEAR('dDate'[Date])
+)
+",,False,Valid,,False,,,,"""0""",0ed752cb-7280-4cfd-b124-a3f78f4f609a
+3788,Total Invoice Hours by Branch,TechnicianInvoice,,,"
+    SUM(TechnicianInvoice[InvoiceHours])
+
+",,False,Valid,,False,,,,"""0""",0a17390e-f8b3-433f-be3b-8f9ba07c9cbd
+3791,Max InvoiceHours,TechnicianInvoice,,,"MAXX(ALL(TechnicianInvoice), TechnicianInvoice[InvoiceHours])",,False,Valid,,False,,,,,2061b955-4f0b-4a4f-a9fb-2467a463b4a0
+3794,Min InvoiceHours,TechnicianInvoice,,,"MINX(ALL(TechnicianInvoice), TechnicianInvoice[InvoiceHours])",,False,Valid,,False,,,,,4caa7ee8-553f-4b05-9d38-e8cedd2e8815
+3797,Max Last Year Hours,TechnicianInvoice,,,"
+MAXX(
+    ALL(TechnicianInvoice),
+    [LY Hours]
+)",,False,Valid,,False,,,,,3992b873-cd04-4d07-92ac-e8223410354f
+3800,Min Last Year Hours,TechnicianInvoice,,,"
+MINX(
+    ALL(TechnicianInvoice),
+    [LY Hours]
+)
+",,False,Valid,,False,,,,,2c21abe9-d0fb-47f7-8a3c-9c239e94ebfb
+3803,InvoiceHours Color,TechnicianInvoice,,,"
+SWITCH(
+    TRUE(),
+    [Is InvoiceHours Greater] = 1, ""#A2F0B7"",  // Green if InvoiceHours is greater
+    [Is Last Year Hours Greater] = 1, ""#EEF09E"",  // Yellow if Last Year Hours is greater
+    ""#FFFFFF""  // Default color (white)
+)",,False,Valid,,False,,,,,46e9f8f8-3681-4b71-ae48-c0f99b697921
+3805,Last Year Hours Color,TechnicianInvoice,,,"
+SWITCH(
+    TRUE(),
+    [Is Last Year Hours Greater] = 1, ""#A2F0B7"",  // Green if Last Year Hours is greater
+    [Is InvoiceHours Greater] = 1, ""#EEF09E"",  // Yellow if InvoiceHours is greater
+    ""#FFFFFF""  // Default color (white)
+)",,False,Valid,,False,,,,,293ce026-be02-41fd-9c42-60c676b4887e
+3808,Is InvoiceHours Greater,TechnicianInvoice,,,"
+IF(
+    [Total InvoiceHours] > [LY Hours],
+    1,
+    0
+)
+",,False,Valid,,False,,,,"""0""",b24ddff7-8127-4f11-856a-8546a36590f9
+3810,Is Last Year Hours Greater,TechnicianInvoice,,,"
+IF(
+    [LY Hours] > [Total InvoiceHours],
+    1,
+    0
+)",,False,Valid,,False,,,,"""0""",47b2b5a7-d0db-4deb-9b81-0ab5dc855522
+3812,Total InvoiceHours,TechnicianInvoice,,,SUM(TechnicianInvoice[InvoiceHours]),,False,Valid,,False,,,,,8848b4ac-acbe-413c-8a23-ab64e8236c8a
+3815,InvoiceHours Symbol,TechnicianInvoice,,,"
+IF(
+    [Is InvoiceHours Greater] = 1,
+    ""▲"",  // Up arrow
+    ""▼""   // Down arrow
+)",,False,Valid,,False,,,,,54322b6d-047c-495d-b52a-aaf46bc23a65
+3817,Last Year Hours Symbol,TechnicianInvoice,,,"
+IF(
+    [Is Last Year Hours Greater] = 1,
+    ""▲"",  // Up arrow
+    ""▼""   // Down arrow
+)",,False,Valid,,False,,,,,65478453-0e82-4e23-a247-2c5a51985e1f
+3819,InvoiceHours Symbol Color,TechnicianInvoice,,,"
+IF(
+    [Is InvoiceHours Greater] = 1,
+    ""#73B761"",  // Green for up arrow
+    ""#DB271C""   // Red for down arrow
+)",,False,Valid,,False,,,,,ce01c16e-1f03-48d0-9ca3-b3e3e55aa14b
+3821,Last Year Hours Symbol Color,TechnicianInvoice,,,"
+IF(
+    [Is Last Year Hours Greater] = 1,
+    ""#73B761"",  // Green for up arrow
+    ""#DB271C""   // Red for down arrow
+)",,False,Valid,,False,,,,,c5358e13-b205-4daf-9e95-b080fbb5b094
+5208,YTD Hours,TechnicianInvoice,,,"
+TOTALYTD(
+    SUM('TechnicianInvoice'[InvoiceHours]),
+    'dDate'[Date]
+)
+",,False,Valid,,False,,,,"""#,0""",4061a467-4ae0-4668-adc8-f5fb5b04b659
+5211,PYTD Hours,TechnicianInvoice,,,"
+CALCULATE(
+    [YTD Hours],
+    SAMEPERIODLASTYEAR('dDate'[Date])
+)
+",,False,Valid,,False,,,,"""#,0""",2a60a3a8-ace2-4675-b587-321344b88933
+5214,Difference,TechnicianInvoice,,,[YTD Hours] - [PYTD Hours],,False,Valid,,False,,,,"""#,0""",dcde7879-1054-4ab4-9e7a-f7a86f7018b9
+5222,Efficiency,TechnicianInvoice,,,"
+DIVIDE(
+    SUM('TechnicianInvoice'[EfficiencyRateNumerator]),
+    SUM('TechnicianInvoice'[EfficiencyRateDenominator]),
+    0
+)
+",,False,Valid,,False,,,,"""0.00%;-0.00%;0.00%""",86a68dcc-c39d-41fc-8dfe-52af858ba407
+8625,Productivity,TechnicianInvoice,,,"
+DIVIDE(
+    SUM('TechnicianPunchedTime'[HoursWorked]),
+    SUM('TechnicianAttendance'[Hours]),
+    0
+)
+
+
+
+
+
+
+
+
+",,False,Valid,,False,,,,"""0.00%;-0.00%;0.00%""",5fe57c9d-4e6a-4602-8828-891ea2959bc0
+8628,Labor Performance,TechnicianInvoice,,,[Efficiency] * [Productivity],,False,Valid,,False,,,,"""0.00%;-0.00%;0.00%""",b2584492-e767-4f60-9f26-f63015c95b24
+18551,Hours,MeasuresTable,,,SUM('TechnicianInvoice'[InvoiceHours]),,False,Valid,,False,,,,,4ea054c4-726b-4e49-a8a0-b6167e196719
+18554,HoursLastYear,MeasuresTable,,,"
+CALCULATE(
+    SUM('TechnicianInvoice'[InvoiceHours]),
+    YEAR('TechnicianInvoice'[Date]) = YEAR(TODAY()) - 1
+)",,False,Valid,,False,,,,,f7a1a19c-c7b3-4ce8-839d-a4fd92032547
+18557,MonthlyHours2024,MeasuresTable,,,"
+CALCULATE(
+    SUM('TechnicianInvoice'[InvoiceHours]),
+    YEAR('TechnicianInvoice'[Date]) = 2024,
+    VALUES('TechnicianInvoice'[Date])
+)",,False,Valid,,False,,,,,88d6d271-fced-4241-b7a5-992a4c7374f1
+18560,L Hours,MeasuresTable,,,"
+CALCULATE(
+    SUM(TechnicianInvoice[InvoiceHours]),
+    SAMEPERIODLASTYEAR('dDate'[Date])
+)",,False,Valid,,False,,,,,e608cbb0-b916-4d72-afd4-1d4aa2d37821
+20068,MaxValue,MeasuresTable,,,"MAXX(ALL('TechnicianInvoice'), 'TechnicianInvoice'[InvoiceHours])",,False,Valid,,False,,,,,2c79dcaa-cd86-4e69-80f5-ff264923b2fc

@@ -1,0 +1,152 @@
+table dim_Technician_Code_Names
+	lineageTag: 9b6572d3-faca-4d6d-bc42-35533c681bcb
+
+	column TechnicianKey
+		dataType: int64
+		formatString: 0
+		lineageTag: 99774a1c-7585-4933-bba9-1e7df6d9e001
+		summarizeBy: count
+		sourceColumn: TechnicianKey
+
+		annotation SummarizationSetBy = Automatic
+
+	column TechnicianCode
+		dataType: string
+		lineageTag: 367092e0-bce9-41d9-9360-809e0ceab60e
+		summarizeBy: none
+		sourceColumn: TechnicianCode
+
+		annotation SummarizationSetBy = Automatic
+
+	column TechnicianFirstName
+		dataType: string
+		lineageTag: a40a9f7f-5ca9-4c5a-89cf-387c27cd499c
+		summarizeBy: none
+		sourceColumn: TechnicianFirstName
+
+		annotation SummarizationSetBy = Automatic
+
+	column TechnicianLastName
+		dataType: string
+		lineageTag: 73badb3a-4397-487e-afd8-ae21797bf25f
+		summarizeBy: none
+		sourceColumn: TechnicianLastName
+
+		annotation SummarizationSetBy = Automatic
+
+	column TechnicianFullName
+		dataType: string
+		lineageTag: d296a4a7-a7b5-4319-8cbd-abda261076e3
+		summarizeBy: none
+		sourceColumn: TechnicianFullName
+
+		annotation SummarizationSetBy = Automatic
+
+	column TechnicianDisplayName
+		dataType: string
+		lineageTag: ddc0bd98-0e29-42fb-a291-9d5e2e9e9678
+		summarizeBy: none
+		sourceColumn: TechnicianDisplayName
+
+		annotation SummarizationSetBy = Automatic
+
+	column TechnicianShortName
+		dataType: string
+		lineageTag: 3fa59205-5025-499c-b40e-30a5ab17b0f6
+		summarizeBy: none
+		sourceColumn: TechnicianShortName
+
+		annotation SummarizationSetBy = Automatic
+
+	column PreferredDisplayName
+		dataType: string
+		lineageTag: ab13a10d-135d-44c8-b8d8-444f78dda98c
+		summarizeBy: none
+		sourceColumn: PreferredDisplayName
+
+		annotation SummarizationSetBy = Automatic
+
+	column SearchableName
+		dataType: string
+		lineageTag: eff4fadc-b880-4365-a00d-f9c6832e8dc6
+		summarizeBy: none
+		sourceColumn: SearchableName
+
+		annotation SummarizationSetBy = Automatic
+
+	column TechnicianStatus
+		dataType: string
+		lineageTag: c5049940-4b3c-4f61-80bd-9c48aca23f31
+		summarizeBy: none
+		sourceColumn: TechnicianStatus
+
+		annotation SummarizationSetBy = Automatic
+
+	column TechnicianType
+		dataType: string
+		lineageTag: 2cbbd82d-358c-43bd-af91-ed9f576d8dbc
+		summarizeBy: none
+		sourceColumn: TechnicianType
+
+		annotation SummarizationSetBy = Automatic
+
+	column IsActive
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 682cf00f-65fa-41dc-8b14-f01ef3af7aba
+		summarizeBy: none
+		sourceColumn: IsActive
+
+		annotation SummarizationSetBy = Automatic
+
+	column HasFullName
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: bdb16b41-25db-433a-8b04-c683906fef3e
+		summarizeBy: none
+		sourceColumn: HasFullName
+
+		annotation SummarizationSetBy = Automatic
+
+	column HasValidCode
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 673b4d30-1310-4b57-bf97-e857cd425315
+		summarizeBy: none
+		sourceColumn: HasValidCode
+
+		annotation SummarizationSetBy = Automatic
+
+	column HasLongName
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 298b3e2b-d19b-40d3-8ced-5965e582f651
+		summarizeBy: none
+		sourceColumn: HasLongName
+
+		annotation SummarizationSetBy = Automatic
+
+	column DataQualityScore
+		dataType: double
+		lineageTag: 27e880ca-7866-4832-8a1b-9e6e717b4286
+		summarizeBy: sum
+		sourceColumn: DataQualityScore
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	partition dim_Technician_Code_Names = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-gxnyznhdptpenfw724g3o5sjzm.datawarehouse.fabric.microsoft.com", "LH_Master_Data"),
+				    dbo_dim_Technician_Code_Names = Source{[Schema="dbo",Item="dim_Technician_Code_Names"]}[Data],
+				    #"Filtered Rows" = Table.SelectRows(dbo_dim_Technician_Code_Names, each ([TechnicianCode] <> "T200"))
+				in
+				    #"Filtered Rows"
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

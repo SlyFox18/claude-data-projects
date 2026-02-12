@@ -1,0 +1,182 @@
+table TechnicianEfficiency
+	lineageTag: 8f70840d-3d50-491a-a3e8-d7c16d774669
+
+	column branch
+		dataType: string
+		lineageTag: c6e91905-7d95-46ff-be51-177e18ffea35
+		summarizeBy: none
+		sourceColumn: branch
+
+		annotation SummarizationSetBy = Automatic
+
+	column techniciancode
+		dataType: string
+		lineageTag: e4858a00-6f87-4d75-bd86-94518ec0a34a
+		summarizeBy: none
+		sourceColumn: techniciancode
+
+		annotation SummarizationSetBy = Automatic
+
+	column year
+		dataType: int64
+		formatString: 0
+		lineageTag: 26275d9a-9344-45f6-b195-51b4a45406ae
+		summarizeBy: sum
+		sourceColumn: year
+
+		annotation SummarizationSetBy = Automatic
+
+	column month
+		dataType: int64
+		formatString: 0
+		lineageTag: 52f2e792-f2e3-452b-87cf-9ff0e1308cab
+		summarizeBy: sum
+		sourceColumn: month
+
+		annotation SummarizationSetBy = Automatic
+
+	column TechnicianName
+		dataType: string
+		lineageTag: 2e56a6f4-51e2-4152-abd6-a434d24a6e56
+		summarizeBy: none
+		sourceColumn: TechnicianName
+
+		annotation SummarizationSetBy = Automatic
+
+	column AvailableHours
+		dataType: double
+		lineageTag: 7534a919-3296-4695-84d0-220b6442676c
+		summarizeBy: sum
+		sourceColumn: AvailableHours
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column WorkedHours
+		dataType: double
+		lineageTag: 447f0ace-efb6-4fb4-a021-a067b5221c3f
+		summarizeBy: sum
+		sourceColumn: WorkedHours
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column invoicehours
+		dataType: double
+		lineageTag: 6de95d7a-3e37-41f1-abab-8908d5d12c3c
+		summarizeBy: sum
+		sourceColumn: invoicehours
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column reworkhours
+		dataType: double
+		lineageTag: c38830eb-de71-45c4-8268-124da939fc9d
+		summarizeBy: sum
+		sourceColumn: reworkhours
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column BilledHours
+		dataType: double
+		lineageTag: 9cbd1c93-d217-45ba-8d7c-761883c53a22
+		summarizeBy: sum
+		sourceColumn: BilledHours
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column delayhours
+		dataType: double
+		lineageTag: ed9b5211-cb9f-435d-a0be-58c86f09491b
+		summarizeBy: sum
+		sourceColumn: delayhours
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column gainlosshours
+		dataType: double
+		lineageTag: 64f24208-7304-4823-ad33-fd46d0e0768d
+		summarizeBy: sum
+		sourceColumn: gainlosshours
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column otherhours
+		dataType: double
+		lineageTag: d701f9b8-f2cd-4050-94d9-8856c50fc088
+		summarizeBy: sum
+		sourceColumn: otherhours
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column losthours
+		dataType: double
+		lineageTag: 8049df50-d87b-4663-b047-6b9da69a202b
+		summarizeBy: sum
+		sourceColumn: losthours
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column efficiencyratenumerator
+		dataType: double
+		lineageTag: 034a56ea-2df0-4f8f-ad6d-4e259cd22bb7
+		summarizeBy: sum
+		sourceColumn: efficiencyratenumerator
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column efficiencyratedenominator
+		dataType: double
+		lineageTag: f86e0c84-df2f-47ef-9173-6b5e66e1b6af
+		summarizeBy: sum
+		sourceColumn: efficiencyratedenominator
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column Date
+		dataType: dateTime
+		formatString: Long Date
+		lineageTag: 23b7e6bb-7fa8-4fc5-9140-331d3bca29fc
+		summarizeBy: none
+		sourceColumn: Date
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	partition TechnicianEfficiency = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-wczpfb6a52fude7azc6zsgeuty.datawarehouse.fabric.microsoft.com", "LH_Service_Reports_Data"),
+				    dbo_TechnicianEfficiency = Source{[Schema="dbo",Item="TechnicianEfficiency"]}[Data],
+				    #"Added Custom" = Table.AddColumn(dbo_TechnicianEfficiency, "dDateCustom", each #date([year], [month], 1)),
+				    #"Changed Type" = Table.TransformColumnTypes(#"Added Custom",{{"dDateCustom", type date}}),
+				    #"Renamed Columns" = Table.RenameColumns(#"Changed Type",{{"dDateCustom", "Date"}})
+				in
+				    #"Renamed Columns"
+
+	annotation PBI_ResultType = Table
+
+	annotation PBI_NavigationStepName = Navigation
+

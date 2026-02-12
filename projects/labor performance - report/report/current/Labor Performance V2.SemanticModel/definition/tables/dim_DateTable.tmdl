@@ -1,0 +1,621 @@
+table dim_DateTable
+	lineageTag: 37b958bf-49c8-4ebf-a200-391a3fc9f50d
+	dataCategory: Time
+
+	column DateKey
+		dataType: int64
+		formatString: 0
+		lineageTag: df051d8a-59f0-44d4-9aa9-909bc9d37e6c
+		summarizeBy: count
+		sourceColumn: DateKey
+
+		annotation SummarizationSetBy = Automatic
+
+	column Date
+		dataType: dateTime
+		isKey
+		formatString: Long Date
+		lineageTag: 6bd8f45a-916f-4991-94f0-af80f4a6108e
+		summarizeBy: none
+		sourceColumn: Date
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column Year
+		dataType: int64
+		formatString: 0
+		lineageTag: 88e3e073-e5d1-4888-99a7-6452241f150a
+		summarizeBy: sum
+		sourceColumn: Year
+
+		annotation SummarizationSetBy = Automatic
+
+	column Quarter
+		dataType: int64
+		formatString: 0
+		lineageTag: 21bab600-a96b-4355-8950-92a24b265dbb
+		summarizeBy: sum
+		sourceColumn: Quarter
+
+		annotation SummarizationSetBy = Automatic
+
+	column Month
+		dataType: int64
+		formatString: 0
+		lineageTag: 5282496a-9399-457c-ad4a-755d8fbc2ed4
+		summarizeBy: sum
+		sourceColumn: Month
+
+		annotation SummarizationSetBy = Automatic
+
+	column Day
+		dataType: int64
+		formatString: 0
+		lineageTag: c91b65d3-9c37-4e5d-b344-5e1e357585c3
+		summarizeBy: sum
+		sourceColumn: Day
+
+		annotation SummarizationSetBy = Automatic
+
+	column WeekOfYear
+		dataType: int64
+		formatString: 0
+		lineageTag: 95afc78b-657f-4d86-8951-ae1394793095
+		summarizeBy: sum
+		sourceColumn: WeekOfYear
+
+		annotation SummarizationSetBy = Automatic
+
+	column DayOfWeek
+		dataType: int64
+		formatString: 0
+		lineageTag: d18ba318-d2f1-4a45-a125-b2a3f4d02071
+		summarizeBy: sum
+		sourceColumn: DayOfWeek
+
+		annotation SummarizationSetBy = Automatic
+
+	column MonthName
+		dataType: string
+		lineageTag: 7d67b960-45db-44bc-89e6-b6036051b544
+		summarizeBy: none
+		sourceColumn: MonthName
+
+		annotation SummarizationSetBy = Automatic
+
+	column MonthNameShort
+		dataType: string
+		lineageTag: d2a5088b-07b0-4c28-8bd4-714da0cfaee2
+		summarizeBy: none
+		sourceColumn: MonthNameShort
+		sortByColumn: Month
+
+		changedProperty = SortByColumn
+
+		annotation SummarizationSetBy = Automatic
+
+	column DayOfWeekName
+		dataType: string
+		lineageTag: 5be643dd-18b5-454c-93e3-0cd360cb5a2b
+		summarizeBy: none
+		sourceColumn: DayOfWeekName
+
+		annotation SummarizationSetBy = Automatic
+
+	column DayOfWeekNameShort
+		dataType: string
+		lineageTag: ca3029c4-7c89-499c-8d95-26b0f1d012da
+		summarizeBy: none
+		sourceColumn: DayOfWeekNameShort
+
+		annotation SummarizationSetBy = Automatic
+
+	column MonthYear
+		dataType: string
+		lineageTag: acd88923-b4b8-4aa6-873a-06f346a113a7
+		summarizeBy: none
+		sourceColumn: MonthYear
+		sortByColumn: SortableMonthYear
+
+		changedProperty = SortByColumn
+
+		annotation SummarizationSetBy = Automatic
+
+	column QuarterYear
+		dataType: string
+		lineageTag: 265dcc1c-dfca-497c-80da-7afbc20e3f63
+		summarizeBy: none
+		sourceColumn: QuarterYear
+
+		annotation SummarizationSetBy = Automatic
+
+	column DateDisplayName
+		dataType: string
+		lineageTag: 12b5542c-b850-4dd5-bed8-9a2c4d6cd561
+		summarizeBy: none
+		sourceColumn: DateDisplayName
+
+		annotation SummarizationSetBy = Automatic
+
+	column IsWeekend
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 367ca3fd-227a-4779-bb24-84075e33b850
+		summarizeBy: none
+		sourceColumn: IsWeekend
+
+		annotation SummarizationSetBy = Automatic
+
+	column IsWeekday
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: fd262802-5ae2-4982-99a8-46d161fcf59b
+		summarizeBy: none
+		sourceColumn: IsWeekday
+
+		annotation SummarizationSetBy = Automatic
+
+	column IsCurrentYear
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 4e8303d2-7e27-4d53-829f-eecada4ed46c
+		summarizeBy: none
+		sourceColumn: IsCurrentYear
+
+		annotation SummarizationSetBy = Automatic
+
+	column IsCurrentMonth
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: d9c9b44c-8dba-469f-bf49-169919c521cb
+		summarizeBy: none
+		sourceColumn: IsCurrentMonth
+
+		annotation SummarizationSetBy = Automatic
+
+	column DaysFromToday
+		dataType: int64
+		formatString: 0
+		lineageTag: bf8107c2-3232-41dc-b04a-f91286181f62
+		summarizeBy: sum
+		sourceColumn: DaysFromToday
+
+		annotation SummarizationSetBy = Automatic
+
+	column SortableMonthYear
+		dataType: string
+		lineageTag: dc4331a2-76c8-4630-b7c8-bacadf8fac11
+		summarizeBy: none
+		sourceColumn: SortableMonthYear
+
+		annotation SummarizationSetBy = Automatic
+
+	column Season
+		dataType: string
+		lineageTag: 51d2d88e-35b0-43e8-8b2d-54e106e60c01
+		summarizeBy: none
+		sourceColumn: Season
+
+		annotation SummarizationSetBy = Automatic
+
+	column IsPeakSeason
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: c4d4b8c8-b158-4026-bf61-5d8e6d80facf
+		summarizeBy: none
+		sourceColumn: IsPeakSeason
+
+		annotation SummarizationSetBy = Automatic
+
+	column FiscalYear
+		dataType: int64
+		formatString: 0
+		lineageTag: fd4c0b09-4f4a-42f0-8468-26b610a4de28
+		summarizeBy: sum
+		sourceColumn: FiscalYear
+
+		annotation SummarizationSetBy = Automatic
+
+	column FiscalQuarter
+		dataType: int64
+		formatString: 0
+		lineageTag: 5b9a7c6c-e383-4636-972a-b611c908c9d4
+		summarizeBy: sum
+		sourceColumn: FiscalQuarter
+
+		annotation SummarizationSetBy = Automatic
+
+	column MonthSort
+		dataType: double
+		lineageTag: a46e6bd1-d51f-443c-be38-095062d7c1b1
+		summarizeBy: sum
+		sourceColumn: MonthSort
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column QuarterSort
+		dataType: double
+		lineageTag: 0fecf99e-bd31-4c06-9be2-d0da693309ff
+		summarizeBy: sum
+		sourceColumn: QuarterSort
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column YearOffset
+		dataType: int64
+		formatString: 0
+		lineageTag: 2e048f8e-784a-4e3d-96c9-2b1e2a6ee10b
+		summarizeBy: sum
+		sourceColumn: YearOffset
+
+		annotation SummarizationSetBy = Automatic
+
+	column IsBusinessDay
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: e36eeeec-7d6c-4ebe-bd27-d3d4b25bff40
+		summarizeBy: none
+		sourceColumn: IsBusinessDay
+
+		annotation SummarizationSetBy = Automatic
+
+	column WorkingDaysInMonth
+		dataType: int64
+		formatString: 0
+		lineageTag: 603d62ef-2921-45e8-bbe8-6f476e62fac9
+		summarizeBy: sum
+		sourceColumn: WorkingDaysInMonth
+
+		annotation SummarizationSetBy = Automatic
+
+	column WorkingDaysInQuarter
+		dataType: int64
+		formatString: 0
+		lineageTag: ec2be3bd-7b71-4598-8903-1ae4a7ab8ac8
+		summarizeBy: sum
+		sourceColumn: WorkingDaysInQuarter
+
+		annotation SummarizationSetBy = Automatic
+
+	column WorkingDaysInYear
+		dataType: int64
+		formatString: 0
+		lineageTag: c82e1905-d8c6-4ef2-8b27-f07f355426c9
+		summarizeBy: sum
+		sourceColumn: WorkingDaysInYear
+
+		annotation SummarizationSetBy = Automatic
+
+	column IsPreviousYear
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 5469caf1-b608-44d5-850f-47aa18f0c663
+		summarizeBy: none
+		sourceColumn: IsPreviousYear
+
+		annotation SummarizationSetBy = Automatic
+
+	column IsPreviousMonth
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 8e7645d6-7165-4c2d-87f2-e555fbedcacd
+		summarizeBy: none
+		sourceColumn: IsPreviousMonth
+
+		annotation SummarizationSetBy = Automatic
+
+	column IsPreviousQuarter
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: b80dfb06-6bca-464f-a951-d814fec140b4
+		summarizeBy: none
+		sourceColumn: IsPreviousQuarter
+
+		annotation SummarizationSetBy = Automatic
+
+	column IsYearToDate
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 72f7b536-cf57-44b9-a8a0-49ae642291ed
+		summarizeBy: none
+		sourceColumn: IsYearToDate
+
+		annotation SummarizationSetBy = Automatic
+
+	column IsQuarterToDate
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 73f514a6-984b-4216-bde3-b99de17de91f
+		summarizeBy: none
+		sourceColumn: IsQuarterToDate
+
+		annotation SummarizationSetBy = Automatic
+
+	column IsMonthToDate
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 5cee8e68-4cf4-412f-8285-552efcc6c66c
+		summarizeBy: none
+		sourceColumn: IsMonthToDate
+
+		annotation SummarizationSetBy = Automatic
+
+	column IsRolling6Months
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: adc9560b-f033-4f1b-bad5-0c6e5933ec5e
+		summarizeBy: none
+		sourceColumn: IsRolling6Months
+
+		annotation SummarizationSetBy = Automatic
+
+	column IsRolling12Months
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: a89fe68a-1123-4db4-bf32-6b8cb601951d
+		summarizeBy: none
+		sourceColumn: IsRolling12Months
+
+		annotation SummarizationSetBy = Automatic
+
+	column IsRolling24Months
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 456afd60-2ef3-416b-8700-71a3160eae81
+		summarizeBy: none
+		sourceColumn: IsRolling24Months
+
+		annotation SummarizationSetBy = Automatic
+
+	column IsRolling36Months
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: b63c609e-66a2-4579-a5bf-cd0689b9c056
+		summarizeBy: none
+		sourceColumn: IsRolling36Months
+
+		annotation SummarizationSetBy = Automatic
+
+	column IsRolling48Months
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 49f7aba8-44ea-46e8-a0d3-dd5b0a7f360d
+		summarizeBy: none
+		sourceColumn: IsRolling48Months
+
+		annotation SummarizationSetBy = Automatic
+
+	column IsRolling4Quarters
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: b140dada-9f58-48f5-8eb2-de675d7d61f1
+		summarizeBy: none
+		sourceColumn: IsRolling4Quarters
+
+		annotation SummarizationSetBy = Automatic
+
+	column IsRolling8Quarters
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 5d631922-a46a-4011-9f29-99b13e25733a
+		summarizeBy: none
+		sourceColumn: IsRolling8Quarters
+
+		annotation SummarizationSetBy = Automatic
+
+	column IsRolling52Weeks
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: c37cc8f0-6fdd-4a42-914e-9db6a5357070
+		summarizeBy: none
+		sourceColumn: IsRolling52Weeks
+
+		annotation SummarizationSetBy = Automatic
+
+	column IsRolling365Days
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 4e7e32e5-189a-404e-85fd-2d769bd458ae
+		summarizeBy: none
+		sourceColumn: IsRolling365Days
+
+		annotation SummarizationSetBy = Automatic
+
+	column IsRolling730Days
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 5f975d2e-3cc7-4375-ba60-82bd8c479543
+		summarizeBy: none
+		sourceColumn: IsRolling730Days
+
+		annotation SummarizationSetBy = Automatic
+
+	column IsRolling1095Days
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: b8deffa7-a5aa-4949-b370-7002aa2e1141
+		summarizeBy: none
+		sourceColumn: IsRolling1095Days
+
+		annotation SummarizationSetBy = Automatic
+
+	column IsRolling1460Days
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 80d5c9d0-984e-469c-b52e-70cb8f6c5d2f
+		summarizeBy: none
+		sourceColumn: IsRolling1460Days
+
+		annotation SummarizationSetBy = Automatic
+
+	column IsRolling180Days
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 2a6592cc-1ef2-4f6f-aeec-4b181d1b80b7
+		summarizeBy: none
+		sourceColumn: IsRolling180Days
+
+		annotation SummarizationSetBy = Automatic
+
+	column IsRolling545Days
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: eab7d21a-03fa-41cf-a2aa-fc38a24665bf
+		summarizeBy: none
+		sourceColumn: IsRolling545Days
+
+		annotation SummarizationSetBy = Automatic
+
+	column IsRolling45Days
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: ef4af313-4fc7-4ceb-9485-024a95fe5819
+		summarizeBy: none
+		sourceColumn: IsRolling45Days
+
+		annotation SummarizationSetBy = Automatic
+
+	column IsRolling120Days
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 8577feae-8517-4b49-a55d-9f56ed3eb482
+		summarizeBy: none
+		sourceColumn: IsRolling120Days
+
+		annotation SummarizationSetBy = Automatic
+
+	column IsRolling270Days
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: dd90af62-8583-4f0c-b75f-653949f9dfeb
+		summarizeBy: none
+		sourceColumn: IsRolling270Days
+
+		annotation SummarizationSetBy = Automatic
+
+	column IsRolling450Days
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 7ce6c0d6-b677-46bb-9d4d-fc5afa017959
+		summarizeBy: none
+		sourceColumn: IsRolling450Days
+
+		annotation SummarizationSetBy = Automatic
+
+	column IsRolling13Weeks
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: cd6af62f-c543-4358-aaee-988fcf295145
+		summarizeBy: none
+		sourceColumn: IsRolling13Weeks
+
+		annotation SummarizationSetBy = Automatic
+
+	column IsRolling26Weeks
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: dc8949c7-c1e9-49af-81ff-b202799c2766
+		summarizeBy: none
+		sourceColumn: IsRolling26Weeks
+
+		annotation SummarizationSetBy = Automatic
+
+	column IsRolling104Weeks
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: d80f4c82-e905-4ca2-b558-f1517b692c6d
+		summarizeBy: none
+		sourceColumn: IsRolling104Weeks
+
+		annotation SummarizationSetBy = Automatic
+
+	column IsRolling156Weeks
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: e32c0ef3-a281-471b-bb08-83029b4db109
+		summarizeBy: none
+		sourceColumn: IsRolling156Weeks
+
+		annotation SummarizationSetBy = Automatic
+
+	column IsLast30Days
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 9160ea88-e253-4365-bdc5-4c8e0a2b9fda
+		summarizeBy: none
+		sourceColumn: IsLast30Days
+
+		annotation SummarizationSetBy = Automatic
+
+	column IsLast60Days
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: f03f8a9d-4a4f-4019-a891-e18db0dc3489
+		summarizeBy: none
+		sourceColumn: IsLast60Days
+
+		annotation SummarizationSetBy = Automatic
+
+	column IsLast90Days
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 3d8398b4-f50f-4bc2-a8df-ff192ccf83e6
+		summarizeBy: none
+		sourceColumn: IsLast90Days
+
+		annotation SummarizationSetBy = Automatic
+
+	column IsNext30Days
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 09306298-f4f8-4a82-92c9-f6d69ebc1433
+		summarizeBy: none
+		sourceColumn: IsNext30Days
+
+		annotation SummarizationSetBy = Automatic
+
+	column IsSameMonthLastYear
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: f86ebc71-4052-428e-a649-d9684fbb9c41
+		summarizeBy: none
+		sourceColumn: IsSameMonthLastYear
+
+		annotation SummarizationSetBy = Automatic
+
+	column IsSameQuarterLastYear
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 77516319-2d7f-47c0-9cef-4c5a0c9c1499
+		summarizeBy: none
+		sourceColumn: IsSameQuarterLastYear
+
+		annotation SummarizationSetBy = Automatic
+
+	column RollingPeriodCategory
+		dataType: string
+		lineageTag: 780296d6-4b9f-4aee-a306-32142e55a9b5
+		summarizeBy: none
+		sourceColumn: RollingPeriodCategory
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dim_DateTable = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-gxnyznhdptpenfw724g3o5sjzm.datawarehouse.fabric.microsoft.com", "LH_Master_Data"),
+				    dbo_dim_DateTable = Source{[Schema="dbo",Item="dim_DateTable"]}[Data]
+				in
+				    dbo_dim_DateTable
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

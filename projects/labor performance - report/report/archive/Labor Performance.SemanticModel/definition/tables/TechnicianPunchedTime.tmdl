@@ -1,0 +1,170 @@
+table TechnicianPunchedTime
+	lineageTag: 081aa16f-4a42-48e8-8d0f-05fc330a6b7d
+
+	column Branch
+		dataType: string
+		lineageTag: 98517540-bea4-4fd7-baa2-f63378411a87
+		summarizeBy: none
+		sourceColumn: Branch
+
+		annotation SummarizationSetBy = Automatic
+
+	column TechnicianCode
+		dataType: string
+		lineageTag: 1bcd7b63-9215-4f3f-8073-215e88b4049c
+		summarizeBy: none
+		sourceColumn: TechnicianCode
+
+		annotation SummarizationSetBy = Automatic
+
+	column JobType
+		dataType: string
+		lineageTag: fe9cc017-71f5-49c1-a97f-879f74ed4e1f
+		summarizeBy: none
+		sourceColumn: JobType
+
+		annotation SummarizationSetBy = Automatic
+
+	column JobCode
+		dataType: string
+		lineageTag: 5320599c-e17d-4835-8f9e-a98b78b1b9af
+		summarizeBy: none
+		sourceColumn: JobCode
+
+		annotation SummarizationSetBy = Automatic
+
+	column Year
+		dataType: int64
+		formatString: 0
+		lineageTag: a51b6859-df30-430d-a2ee-8bdffad6ddf1
+		summarizeBy: sum
+		sourceColumn: Year
+
+		annotation SummarizationSetBy = Automatic
+
+	column Month
+		dataType: int64
+		formatString: 0
+		lineageTag: 50b4af29-0eea-4a7c-b753-d0adb13bf588
+		summarizeBy: sum
+		sourceColumn: Month
+
+		annotation SummarizationSetBy = Automatic
+
+	column HoursWorked
+		dataType: double
+		lineageTag: 049000a2-f50f-4ce3-be49-a6a0391eefe7
+		summarizeBy: sum
+		sourceColumn: HoursWorked
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column HoursSold
+		dataType: double
+		lineageTag: bc9c6dca-0071-4623-8e5a-a897fd903a6a
+		summarizeBy: sum
+		sourceColumn: HoursSold
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column HoursInternal
+		dataType: double
+		lineageTag: 14452b4c-d373-4ff4-9e7f-aac10247f028
+		summarizeBy: sum
+		sourceColumn: HoursInternal
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column HoursWarranty
+		dataType: double
+		lineageTag: 09fcf933-adc6-4e57-a93c-51ac68b90e7e
+		summarizeBy: sum
+		sourceColumn: HoursWarranty
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column HoursRetail
+		dataType: double
+		lineageTag: 82d538de-6461-48c3-9ac2-c57fd16c8035
+		summarizeBy: sum
+		sourceColumn: HoursRetail
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column HoursSundry
+		dataType: double
+		lineageTag: 69108e45-0a7d-4250-816e-b8ef093d65b2
+		summarizeBy: sum
+		sourceColumn: HoursSundry
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column HoursFleet
+		dataType: double
+		lineageTag: 3deee4b0-bf53-4db0-88a7-dc627d8a64a7
+		summarizeBy: sum
+		sourceColumn: HoursFleet
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column HoursAgreement
+		dataType: double
+		lineageTag: d87cfbab-f34a-426d-be27-daacb06d9f20
+		summarizeBy: sum
+		sourceColumn: HoursAgreement
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column HoursOther
+		dataType: double
+		lineageTag: c5a19644-02a1-49a4-b971-98703f9b61d3
+		summarizeBy: sum
+		sourceColumn: HoursOther
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column Date
+		dataType: dateTime
+		formatString: Long Date
+		lineageTag: e61a905b-9b8b-4a71-8f57-46f966b54982
+		summarizeBy: none
+		sourceColumn: Date
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	partition TechnicianPunchedTime = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-wczpfb6a52fude7azc6zsgeuty.datawarehouse.fabric.microsoft.com", "LH_Service_Reports_Data"),
+				    dbo_TechnicianPunchedTime = Source{[Schema="dbo",Item="TechnicianPunchedTime"]}[Data],
+				    #"Added Custom" = Table.AddColumn(dbo_TechnicianPunchedTime, "dDateCustom", each #date([Year], [Month], 1)),
+				    #"Changed Type" = Table.TransformColumnTypes(#"Added Custom",{{"dDateCustom", type date}}),
+				    #"Renamed Columns" = Table.RenameColumns(#"Changed Type",{{"dDateCustom", "Date"}})
+				in
+				    #"Renamed Columns"
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

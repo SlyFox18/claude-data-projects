@@ -1,0 +1,71 @@
+table TechnicianAttendance
+	lineageTag: c1c2c3c4-d5d6-e7e8-f9f0-a1a2a3a4a5a6
+
+	column Year
+		dataType: int64
+		formatString: 0
+		lineageTag: ta-year-1111-1111-1111-111111111111
+		summarizeBy: none
+		sourceColumn: Year
+
+		annotation SummarizationSetBy = User
+
+	column Month
+		dataType: int64
+		formatString: 0
+		lineageTag: ta-month-2222-2222-2222-222222222222
+		summarizeBy: none
+		sourceColumn: Month
+
+		annotation SummarizationSetBy = User
+
+	column DateKey
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: ta-datekey-3333-3333-3333-333333333333
+		summarizeBy: none
+		sourceColumn: DateKey
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column Branch
+		dataType: string
+		lineageTag: ta-branch-4444-4444-4444-444444444444
+		summarizeBy: none
+		sourceColumn: Branch
+
+		annotation SummarizationSetBy = Automatic
+
+	column TechCode
+		dataType: string
+		lineageTag: ta-techcode-5555-5555-5555-555555555555
+		summarizeBy: none
+		sourceColumn: TechCode
+
+		annotation SummarizationSetBy = Automatic
+
+	column AttendanceHours
+		dataType: double
+		lineageTag: c5315121-67b3-4239-ac9a-c0d83fd946b2
+		summarizeBy: sum
+		sourceColumn: AttendanceHours
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	partition TechnicianAttendance = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-gxnyznhdptpenfw724g3o5sjzm.datawarehouse.fabric.microsoft.com", "LH_Master_Data"),
+				    dbo_TechnicianAttendance = Source{[Schema="dbo",Item="TechnicianAttendance"]}[Data]
+				in
+				    dbo_TechnicianAttendance
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

@@ -1,0 +1,50 @@
+table Technician_Code_Names
+	lineageTag: 69b3c3be-0b2c-4775-9cc9-3d8683ddfe9b
+
+	column techniciancode
+		dataType: string
+		lineageTag: 44a0bb6a-b1a4-4d3f-a90c-393b6df83470
+		summarizeBy: none
+		sourceColumn: techniciancode
+
+		annotation SummarizationSetBy = Automatic
+
+	column firstname
+		dataType: string
+		lineageTag: 34d87312-2878-4536-8d2a-fcea2b792a31
+		summarizeBy: none
+		sourceColumn: firstname
+
+		annotation SummarizationSetBy = Automatic
+
+	column lastname
+		dataType: string
+		lineageTag: 20b8d315-3462-48ba-a483-526519b4e709
+		summarizeBy: none
+		sourceColumn: lastname
+
+		annotation SummarizationSetBy = Automatic
+
+	column Name
+		dataType: string
+		lineageTag: 93f20b9d-83c0-459b-ad9b-59bd9f8ff91f
+		summarizeBy: none
+		sourceColumn: Name
+
+		annotation SummarizationSetBy = Automatic
+
+	partition Technician_Code_Names = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-wczpfb6a52fude7azc6zsgeuty.datawarehouse.fabric.microsoft.com", "LH_Service_Reports_Data"),
+				    dbo_Technician_Code_Names = Source{[Schema="dbo",Item="Technician_Code_Names"]}[Data],
+				    #"Capitalized Each Word" = Table.TransformColumns(dbo_Technician_Code_Names,{{"firstname", Text.Proper, type text}, {"lastname", Text.Proper, type text}}),
+				    #"Added Custom" = Table.AddColumn(#"Capitalized Each Word", "Name", each [firstname] & " " & [lastname])
+				in
+				    #"Added Custom"
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Exception
+

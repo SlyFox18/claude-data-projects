@@ -1,0 +1,70 @@
+table MeasuresTable
+	lineageTag: 79662b0b-a784-46db-bac2-d48e9770b428
+
+	measure Hours = SUM('TechnicianInvoice'[InvoiceHours])
+		lineageTag: 4ea054c4-726b-4e49-a8a0-b6167e196719
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure HoursLastYear =
+			
+			CALCULATE(
+			    SUM('TechnicianInvoice'[InvoiceHours]),
+			    YEAR('TechnicianInvoice'[Date]) = YEAR(TODAY()) - 1
+			)
+		lineageTag: f7a1a19c-c7b3-4ce8-839d-a4fd92032547
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure MonthlyHours2024 =
+			
+			CALCULATE(
+			    SUM('TechnicianInvoice'[InvoiceHours]),
+			    YEAR('TechnicianInvoice'[Date]) = 2024,
+			    VALUES('TechnicianInvoice'[Date])
+			)
+		lineageTag: 88d6d271-fced-4241-b7a5-992a4c7374f1
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'L Hours' =
+			
+			CALCULATE(
+			    SUM(TechnicianInvoice[InvoiceHours]),
+			    SAMEPERIODLASTYEAR('dDate'[Date])
+			)
+		lineageTag: e608cbb0-b916-4d72-afd4-1d4aa2d37821
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure MaxValue = MAXX(ALL('TechnicianInvoice'), 'TechnicianInvoice'[InvoiceHours])
+		lineageTag: 2c79dcaa-cd86-4e69-80f5-ff264923b2fc
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column Value
+		isHidden
+		formatString: 0
+		lineageTag: b1a0179b-ac1d-4997-b2c3-08338a4c7366
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [Value]
+
+		annotation SummarizationSetBy = Automatic
+
+	column DummyColumn
+		isHidden
+		formatString: 0
+		lineageTag: 9ec3b2ce-6dae-4b9d-b676-6954d77a13f7
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [DummyColumn]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition MeasuresTable = calculated
+		mode: import
+		source = ADDCOLUMNS( GENERATESERIES(1, 1), "DummyColumn", 1 )
+
+	annotation PBI_Id = d4d86265abe549518d7842572689a8fe
+

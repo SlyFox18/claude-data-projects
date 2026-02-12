@@ -1,0 +1,384 @@
+table _Measures
+	lineageTag: 22e4b9e3-99b6-4634-9836-9ade5a5ea5a5
+
+	measure 'Page 1 Home - Header' =
+			
+			// Get user name
+			VAR _User = USERPRINCIPALNAME()
+			VAR _Position = SEARCH("@", _User, 1)
+			VAR _Name = LEFT(_User, _Position - 1)
+			VAR _FirstLetter = UPPER(LEFT(_Name, 1))
+			VAR _LastName = MID(_Name, 2, LEN(_Name) - 1)
+			VAR _FormattedLastName =
+			    UPPER(LEFT(_LastName, 1)) & LOWER(MID(_LastName, 2, LEN(_LastName)))
+			VAR WelcomeName = _FirstLetter & "." & _FormattedLastName
+			
+			// Get current date/time info
+			VAR CurrentDate = TODAY()
+			VAR DateDisplay = FORMAT(CurrentDate, "MMM D, YYYY")
+			VAR CurrentHour = HOUR(NOW())
+			VAR TimeGreeting =
+			    IF(CurrentHour < 12, "Good Morning",
+			    IF(CurrentHour < 17, "Good Afternoon",
+			    "Good Evening"))
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    height: 85px;
+			    padding: 15px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 10px;
+			    color: white;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-between;
+			    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    box-sizing: border-box;
+			'>
+			    <!-- Left side: Dashboard Title -->
+			    <div style='display: flex; align-items: center; gap: 15px;'>
+			        <!-- Home icon -->
+			        <div style='
+			            width: 40px;
+			            height: 40px;
+			            background: rgba(255,255,255,0.15);
+			            border-radius: 8px;
+			            display: flex;
+			            align-items: center;
+			            justify-content: center;
+			            font-size: 20px;
+			        '>
+			            🏠
+			        </div>
+			
+			        <!-- Title -->
+			        <div>
+			            <div style='font-size: 12px; opacity: 0.85; margin-bottom: 4px; letter-spacing: 0.5px;'>
+			                REPORT
+			            </div>
+			            <div style='font-size: 26px; font-weight: 700; line-height: 1;'>
+			                Labor Performance
+			            </div>
+			        </div>
+			    </div>
+			
+			    <!-- Right side: Welcome & Date -->
+			    <div style='text-align: right;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 6px;'>
+			            " & TimeGreeting & ", " & WelcomeName & "
+			        </div>
+			        <div style='font-size: 16px; font-weight: 600;'>
+			            📅 " & DateDisplay & "
+			        </div>
+			    </div>
+			</div>
+			"
+		lineageTag: 49efea2a-3c06-4cab-8367-26b26caa141e
+
+	measure Efficiency =
+			DIVIDE(
+			    SUM(TechnicianEfficiency[EfficiencyRateNumerator]),
+			    SUM(TechnicianEfficiency[EfficiencyRateDenominator]),
+			    0
+			)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: m0001-eff1-c1c1-d1d1-e1e1e1e1e1e1
+
+	measure Productivity =
+			DIVIDE(
+			    SUM(TechnicianPunchedTime[HoursWorked]),
+			    SUM(TechnicianAttendance[AttendanceHours]),
+			    0
+			)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: m0002-prod-c2c2-d2d2-e2e2e2e2e2e2
+
+	measure 'Labor Performance' = [Efficiency] * [Productivity]
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: m0003-lp01-c3c3-d3d3-e3e3e3e3e3e3
+
+	measure 'Total Hours' = SUM(TechnicianEfficiency[InvoiceHours])
+		formatString: 0
+		lineageTag: m0004-hrs1-c4c4-d4d4-e4e4e4e4e4e4
+
+	measure 'Available Hours' = SUM(TechnicianAttendance[AttendanceHours])
+		formatString: #,##0.00
+		lineageTag: m0005-hrs2-c5c5-d5d5-e5e5e5e5e5e5
+
+	measure 'Worked Hours' = SUM(TechnicianPunchedTime[HoursWorked])
+		formatString: #,##0.00
+		lineageTag: m0006-hrs3-c6c6-d6d6-e6e6e6e6e6e6
+
+	measure 'Rework Hours' = SUM(TechnicianEfficiency[ReworkHours])
+		formatString: #,##0.00
+		lineageTag: m0007-hrs4-c7c7-d7d7-e7e7e7e7e7e7
+
+	measure 'LY Hours' =
+			CALCULATE(
+			    [Total Hours],
+			    SAMEPERIODLASTYEAR(dim_DateTable[Date])
+			)
+		formatString: 0
+		lineageTag: m0008-ly01-c8c8-d8d8-e8e8e8e8e8e8
+
+	measure 'LY Efficiency' =
+			CALCULATE(
+			    [Efficiency],
+			    SAMEPERIODLASTYEAR(dim_DateTable[Date])
+			)
+		formatString: 0.00%;-0.00%;0.00%
+		lineageTag: m0009-ly02-c9c9-d9d9-e9e9e9e9e9e9
+
+	measure 'LY Productivity' =
+			CALCULATE(
+			    [Productivity],
+			    SAMEPERIODLASTYEAR(dim_DateTable[Date])
+			)
+		formatString: 0.00%;-0.00%;0.00%
+		lineageTag: m0010-ly03-caca-dada-eaeaeaeaeaea
+
+	measure 'LY Labor Performance' =
+			CALCULATE(
+			    [Labor Performance],
+			    SAMEPERIODLASTYEAR(dim_DateTable[Date])
+			)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: m0011-ly04-cbcb-dbdb-ebebebebebeb
+
+	measure 'YTD Hours' =
+			TOTALYTD(
+			    [Total Hours],
+			    dim_DateTable[Date]
+			)
+		formatString: #,##0.00
+		lineageTag: m0012-ytd1-cccc-dcdc-ecececececec
+
+	measure 'YTD Efficiency' =
+			CALCULATE(
+			    [Efficiency],
+			    DATESYTD(dim_DateTable[Date])
+			)
+		formatString: 0.00%;-0.00%;0.00%
+		lineageTag: m0013-ytd2-cdcd-dddd-edededededed
+
+	measure 'YTD Productivity' =
+			CALCULATE(
+			    [Productivity],
+			    DATESYTD(dim_DateTable[Date])
+			)
+		formatString: 0.00%;-0.00%;0.00%
+		lineageTag: m0014-ytd3-cece-dede-eeeeeeeeeeee
+
+	measure 'PYTD Hours' =
+			CALCULATE(
+			    [YTD Hours],
+			    SAMEPERIODLASTYEAR(dim_DateTable[Date])
+			)
+		formatString: #,##0.00
+		lineageTag: m0015-pyt1-cfcf-dfdf-efefefefefef
+
+	measure 'PYTD Efficiency' =
+			CALCULATE(
+			    [YTD Efficiency],
+			    SAMEPERIODLASTYEAR(dim_DateTable[Date])
+			)
+		formatString: 0.00%;-0.00%;0.00%
+		lineageTag: m0016-pyt2-c0c0-d0d0-e0e0e0e0e0e0
+
+	measure 'PYTD Productivity' =
+			CALCULATE(
+			    [YTD Productivity],
+			    SAMEPERIODLASTYEAR(dim_DateTable[Date])
+			)
+		formatString: 0.00%;-0.00%;0.00%
+		lineageTag: m0017-pyt3-c1d1-d1e1-e1f1f1f1f1f1
+
+	measure 'Hours YoY Variance' = [Total Hours] - [LY Hours]
+		formatString: #,##0.00
+		lineageTag: m0018-var1-c2d2-d2e2-e2f2f2f2f2f2
+
+	measure 'Efficiency YoY Variance' = [Efficiency] - [LY Efficiency]
+		formatString: 0.00%;-0.00%;0.00%
+		lineageTag: m0019-var2-c3d3-d3e3-e3f3f3f3f3f3
+
+	measure 'Productivity YoY Variance' = [Productivity] - [LY Productivity]
+		formatString: 0.00%;-0.00%;0.00%
+		lineageTag: m0020-var3-c4d4-d4e4-e4f4f4f4f4f4
+
+	measure 'YTD vs PYTD Hours' = [YTD Hours] - [PYTD Hours]
+		formatString: #,##0.00
+		lineageTag: m0021-var4-c5d5-d5e5-e5f5f5f5f5f5
+
+	measure 'PM Hours' =
+			CALCULATE(
+			    [Total Hours],
+			    DATEADD(dim_DateTable[Date], -1, MONTH)
+			)
+		formatString: 0
+		lineageTag: m0022-pm01-a1a1-b1b1-c1c1c1c1c1c1
+
+	measure 'PM Efficiency' =
+			CALCULATE(
+			    [Efficiency],
+			    DATEADD(dim_DateTable[Date], -1, MONTH)
+			)
+		formatString: 0.00%;-0.00%;0.00%
+		lineageTag: m0023-pm02-a2a2-b2b2-c2c2c2c2c2c2
+
+	measure 'PM Productivity' =
+			CALCULATE(
+			    [Productivity],
+			    DATEADD(dim_DateTable[Date], -1, MONTH)
+			)
+		formatString: 0.00%;-0.00%;0.00%
+		lineageTag: m0024-pm03-a3a3-b3b3-c3c3c3c3c3c3
+
+	measure 'PM Labor Performance' =
+			CALCULATE(
+			    [Labor Performance],
+			    DATEADD(dim_DateTable[Date], -1, MONTH)
+			)
+		formatString: 0.00%;-0.00%;0.00%
+		lineageTag: m0025-pm04-a4a4-b4b4-c4c4c4c4c4c4
+
+	measure 'MoM Hours Variance' = [Total Hours] - [PM Hours]
+		formatString: 0
+		lineageTag: m0026-mom1-a5a5-b5b5-c5c5c5c5c5c5
+
+	measure 'MoM Efficiency Variance' = [Efficiency] - [PM Efficiency]
+		formatString: 0.00%;-0.00%;0.00%
+		lineageTag: m0027-mom2-a6a6-b6b6-c6c6c6c6c6c6
+
+	measure 'MoM Productivity Variance' = [Productivity] - [PM Productivity]
+		formatString: 0.00%;-0.00%;0.00%
+		lineageTag: m0028-mom3-a7a7-b7b7-c7c7c7c7c7c7
+
+	measure 'MoM Labor Performance Variance' = [Labor Performance] - [PM Labor Performance]
+		formatString: 0.00%;-0.00%;0.00%
+		lineageTag: m0029-mom4-a8a8-b8b8-c8c8c8c8c8c8
+
+	/// Color measure for PM Hours conditional formatting
+	/// Green if PM Hours > Total Hours (last month was higher)
+	/// Red if PM Hours < Total Hours (last month was lower)
+	measure 'PM Hours Color' =
+			VAR PMValue = [PM Hours]
+			VAR CurrentValue = [Total Hours]
+			RETURN
+			    SWITCH(
+			        TRUE(),
+			        ISBLANK(PMValue) || ISBLANK(CurrentValue), "#FFFFFF",
+			        PMValue > CurrentValue, "#A2F0B7",
+			        PMValue < CurrentValue, "#EEF09E",
+			        "#FFFFFF"
+			    )
+		lineageTag: m0030-clr1-b1b1-c1c1-d1d1d1d1d1d1
+
+	measure 'Total Hours Color' =
+			VAR TotalValue = [Total Hours]
+			VAR CurrentValue = [LY Hours]
+			RETURN
+			    SWITCH(
+			        TRUE(),
+			        ISBLANK(TotalValue) || ISBLANK(CurrentValue), "#FFFFFF",
+			        TotalValue > CurrentValue, "#A2F0B7",
+			        TotalValue < CurrentValue, "#EEF09E",
+			        "#FFFFFF"
+			    )
+		lineageTag: d17eea27-56d3-4a0e-b05e-272d0e426d16
+
+	measure 'Total Hours Icon' = ```
+			
+			VAR TotalValue   = [Total Hours]
+			VAR CurrentValue = [LY Hours]
+			RETURN
+			IF(
+			    OR(ISBLANK(TotalValue), ISBLANK(CurrentValue)),
+			    BLANK(),                                      -- hides icons when either side is blank
+			    SWITCH(
+			        TRUE(),
+			        TotalValue > CurrentValue, 1,             -- positive
+			        TotalValue < CurrentValue, 2,             -- negative
+			        0                                         -- equal (neutral)
+			    )
+			)
+			
+			```
+		formatString: 0
+		lineageTag: 45e7905d-7341-4488-a08a-41a4219ce26f
+
+	measure 'Total LY Hours Color' =
+			VAR TotalValue = [Total Hours]
+			VAR CurrentValue = [LY Hours]
+			RETURN
+			    SWITCH(
+			        TRUE(),
+			        ISBLANK(TotalValue) || ISBLANK(CurrentValue), "#FFFFFF",
+			        TotalValue > CurrentValue, "#EEF09E",
+			        TotalValue < CurrentValue, "#A2F0B7",
+			        "#FFFFFF"
+			    )
+		lineageTag: 541d4f12-0ebd-40d2-b3fe-8dd02cf4f551
+
+	measure 'MoM Var Icon' = ```
+			
+			VAR TotalValue = [MoM Hours Variance]
+			RETURN
+			IF(
+			    ISBLANK(TotalValue) || TotalValue = 0,
+			    BLANK(),
+			    IF(TotalValue > 0, 1, 2)
+			)
+			
+			```
+		formatString: 0
+		lineageTag: 5212dea2-10e7-4df9-b301-530664bba4dd
+
+	measure 'MoM Labor Icon' =
+			
+			VAR TotalValue = [MoM Labor Performance Variance]
+			RETURN
+			IF(
+			    ISBLANK(TotalValue) || TotalValue = 0,
+			    BLANK(),
+			    IF(TotalValue > 0, 1, 2)
+			)
+		formatString: 0
+		lineageTag: 1f2de7ee-073e-4e5f-a42d-82b020d6b896
+
+	measure 'LY Hours Variance' = [Total Hours] - [LY Hours]
+		formatString: 0
+		lineageTag: 99a9f835-9750-4d28-b09e-6432b52f6e5e
+
+	measure 'LY Labor Performance Variance' = [Labor Performance] - [LY Labor Performance]
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 35eae6db-9872-49f0-abcb-7a3560ab71a5
+
+	measure 'LY Labor Icon' =
+			
+			VAR TotalValue = [LY Labor Performance Variance]
+			RETURN
+			IF(
+			    ISBLANK(TotalValue) || TotalValue = 0,
+			    BLANK(),
+			    IF(TotalValue > 0, 1, 2)
+			)
+		formatString: 0
+		lineageTag: e927b186-c99b-4e21-953e-bd1e203fa6b3
+
+	column Value
+		isHidden
+		lineageTag: da2dfa23-0c4c-4e9d-8014-3cc5710e756b
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Value]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition _Measures = calculated
+		mode: import
+		source = { "This table holds all measures for the Labor Performance report" }
+
+	annotation PBI_Id = da82ad85df114f0dbe8c17ce73f079a8
+

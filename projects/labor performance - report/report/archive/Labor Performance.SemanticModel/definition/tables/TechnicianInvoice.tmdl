@@ -1,0 +1,356 @@
+table TechnicianInvoice
+	lineageTag: 9fbddf9a-30c3-429b-a43f-47e483c5557e
+
+	measure 'LY Hours' = ```
+			
+			CALCULATE(
+			    SUM(TechnicianInvoice[InvoiceHours]),
+			    SAMEPERIODLASTYEAR('dDate'[Date])
+			)
+			
+			```
+		formatString: 0
+		lineageTag: 0ed752cb-7280-4cfd-b124-a3f78f4f609a
+
+	measure 'Total Invoice Hours by Branch' = ```
+			
+			    SUM(TechnicianInvoice[InvoiceHours])
+			
+			
+			```
+		formatString: 0
+		lineageTag: 0a17390e-f8b3-433f-be3b-8f9ba07c9cbd
+
+	measure 'Max InvoiceHours' = MAXX(ALL(TechnicianInvoice), TechnicianInvoice[InvoiceHours])
+		lineageTag: 2061b955-4f0b-4a4f-a9fb-2467a463b4a0
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Min InvoiceHours' = MINX(ALL(TechnicianInvoice), TechnicianInvoice[InvoiceHours])
+		lineageTag: 4caa7ee8-553f-4b05-9d38-e8cedd2e8815
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Max Last Year Hours' =
+			
+			MAXX(
+			    ALL(TechnicianInvoice),
+			    [LY Hours]
+			)
+		lineageTag: 3992b873-cd04-4d07-92ac-e8223410354f
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Min Last Year Hours' = ```
+			
+			MINX(
+			    ALL(TechnicianInvoice),
+			    [LY Hours]
+			)
+			
+			```
+		lineageTag: 2c21abe9-d0fb-47f7-8a3c-9c239e94ebfb
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'InvoiceHours Color' =
+			
+			SWITCH(
+			    TRUE(),
+			    [Is InvoiceHours Greater] = 1, "#A2F0B7",  // Green if InvoiceHours is greater
+			    [Is Last Year Hours Greater] = 1, "#EEF09E",  // Yellow if Last Year Hours is greater
+			    "#FFFFFF"  // Default color (white)
+			)
+		lineageTag: 46e9f8f8-3681-4b71-ae48-c0f99b697921
+
+	measure 'Last Year Hours Color' =
+			
+			SWITCH(
+			    TRUE(),
+			    [Is Last Year Hours Greater] = 1, "#A2F0B7",  // Green if Last Year Hours is greater
+			    [Is InvoiceHours Greater] = 1, "#EEF09E",  // Yellow if InvoiceHours is greater
+			    "#FFFFFF"  // Default color (white)
+			)
+		lineageTag: 293ce026-be02-41fd-9c42-60c676b4887e
+
+	measure 'Is InvoiceHours Greater' = ```
+			
+			IF(
+			    [Total InvoiceHours] > [LY Hours],
+			    1,
+			    0
+			)
+			
+			```
+		formatString: 0
+		lineageTag: b24ddff7-8127-4f11-856a-8546a36590f9
+
+	measure 'Is Last Year Hours Greater' =
+			
+			IF(
+			    [LY Hours] > [Total InvoiceHours],
+			    1,
+			    0
+			)
+		formatString: 0
+		lineageTag: 47b2b5a7-d0db-4deb-9b81-0ab5dc855522
+
+	measure 'Total InvoiceHours' = SUM(TechnicianInvoice[InvoiceHours])
+		lineageTag: 8848b4ac-acbe-413c-8a23-ab64e8236c8a
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'InvoiceHours Symbol' =
+			
+			IF(
+			    [Is InvoiceHours Greater] = 1,
+			    "▲",  // Up arrow
+			    "▼"   // Down arrow
+			)
+		lineageTag: 54322b6d-047c-495d-b52a-aaf46bc23a65
+
+	measure 'Last Year Hours Symbol' =
+			
+			IF(
+			    [Is Last Year Hours Greater] = 1,
+			    "▲",  // Up arrow
+			    "▼"   // Down arrow
+			)
+		lineageTag: 65478453-0e82-4e23-a247-2c5a51985e1f
+
+	measure 'InvoiceHours Symbol Color' =
+			
+			IF(
+			    [Is InvoiceHours Greater] = 1,
+			    "#73B761",  // Green for up arrow
+			    "#DB271C"   // Red for down arrow
+			)
+		lineageTag: ce01c16e-1f03-48d0-9ca3-b3e3e55aa14b
+
+	measure 'Last Year Hours Symbol Color' =
+			
+			IF(
+			    [Is Last Year Hours Greater] = 1,
+			    "#73B761",  // Green for up arrow
+			    "#DB271C"   // Red for down arrow
+			)
+		lineageTag: c5358e13-b205-4daf-9e95-b080fbb5b094
+
+	measure 'YTD Hours' = ```
+			
+			TOTALYTD(
+			    SUM('TechnicianInvoice'[InvoiceHours]),
+			    'dDate'[Date]
+			)
+			
+			```
+		formatString: #,0
+		lineageTag: 4061a467-4ae0-4668-adc8-f5fb5b04b659
+
+	measure 'PYTD Hours' = ```
+			
+			CALCULATE(
+			    [YTD Hours],
+			    SAMEPERIODLASTYEAR('dDate'[Date])
+			)
+			
+			```
+		formatString: #,0
+		lineageTag: 2a60a3a8-ace2-4675-b587-321344b88933
+
+	measure Difference = [YTD Hours] - [PYTD Hours]
+		formatString: #,0
+		lineageTag: dcde7879-1054-4ab4-9e7a-f7a86f7018b9
+
+	measure Efficiency = ```
+			
+			DIVIDE(
+			    SUM('TechnicianInvoice'[EfficiencyRateNumerator]),
+			    SUM('TechnicianInvoice'[EfficiencyRateDenominator]),
+			    0
+			)
+			
+			```
+		formatString: 0.00%;-0.00%;0.00%
+		lineageTag: 86a68dcc-c39d-41fc-8dfe-52af858ba407
+
+	measure Productivity =
+			
+			DIVIDE(
+			    SUM('TechnicianPunchedTime'[HoursWorked]),
+			    SUM('TechnicianAttendance'[Hours]),
+			    0
+			)
+		formatString: 0.00%;-0.00%;0.00%
+		lineageTag: 5fe57c9d-4e6a-4602-8828-891ea2959bc0
+
+	measure 'Labor Performance' = [Efficiency] * [Productivity]
+		formatString: 0.00%;-0.00%;0.00%
+		lineageTag: b2584492-e767-4f60-9f26-f63015c95b24
+
+	column Year
+		dataType: int64
+		formatString: 0
+		lineageTag: 9890abcc-a446-4d29-a6ea-a4f60c993608
+		summarizeBy: sum
+		sourceColumn: Year
+
+		annotation SummarizationSetBy = Automatic
+
+	column Month
+		dataType: int64
+		formatString: 0
+		lineageTag: 6ef16677-cc7a-4e71-88c2-6c27422aa84b
+		summarizeBy: sum
+		sourceColumn: Month
+
+		annotation SummarizationSetBy = Automatic
+
+	column Branch
+		dataType: string
+		lineageTag: c117e866-f570-450f-9fde-a0ba93103300
+		summarizeBy: none
+		sourceColumn: Branch
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Tech #'
+		dataType: string
+		lineageTag: 0a7d4387-d413-4fcb-910f-74c53eecc574
+		summarizeBy: none
+		sourceColumn: Tech #
+
+		annotation SummarizationSetBy = Automatic
+
+	column HoursPunched
+		dataType: double
+		lineageTag: 52d59a01-4b18-488e-a930-4b09606c0503
+		summarizeBy: sum
+		sourceColumn: HoursPunched
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column InvoiceHours
+		dataType: double
+		formatString: 0
+		lineageTag: 5c0469e1-fd36-4a73-9402-3e6697060bc9
+		summarizeBy: sum
+		sourceColumn: InvoiceHours
+
+		annotation SummarizationSetBy = Automatic
+
+	column ReworkHours
+		dataType: double
+		lineageTag: e3702446-d011-43bd-8bc3-8463916f3045
+		summarizeBy: sum
+		sourceColumn: ReworkHours
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column EfficiencyRateNumerator
+		dataType: double
+		lineageTag: aa852c7e-67a5-4b98-beb8-9eb0cfb7ac91
+		summarizeBy: sum
+		sourceColumn: EfficiencyRateNumerator
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column DelayHours
+		dataType: double
+		lineageTag: c67fdc33-261d-43c0-a73b-963d5aa3e46b
+		summarizeBy: sum
+		sourceColumn: DelayHours
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column GainLossHours
+		dataType: double
+		lineageTag: fb7ef111-a3c2-4118-b18e-3e7131491590
+		summarizeBy: sum
+		sourceColumn: GainLossHours
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column OtherHours
+		dataType: double
+		lineageTag: 68857a8e-6b10-4b37-801d-cfc75b61bd24
+		summarizeBy: sum
+		sourceColumn: OtherHours
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column EfficiencyRateDenominator
+		dataType: double
+		lineageTag: d38acaf2-bc14-471e-9fa9-5770a04622bb
+		summarizeBy: sum
+		sourceColumn: EfficiencyRateDenominator
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column LostHours
+		dataType: double
+		lineageTag: ec574e8a-cc23-4a79-bea1-55db78af66fd
+		summarizeBy: sum
+		sourceColumn: LostHours
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column JobCode
+		dataType: string
+		lineageTag: b8ad8198-a688-402c-9322-43ba15fb561b
+		summarizeBy: none
+		sourceColumn: JobCode
+
+		annotation SummarizationSetBy = Automatic
+
+	column JobType
+		dataType: string
+		lineageTag: 4163dad3-4fb3-4a6b-a9db-f44470e8bbcc
+		summarizeBy: none
+		sourceColumn: JobType
+
+		annotation SummarizationSetBy = Automatic
+
+	column Date
+		dataType: dateTime
+		formatString: Short Date
+		lineageTag: d1e7af3b-26e2-4cc5-b92c-604e37668375
+		summarizeBy: none
+		sourceColumn: Date
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	partition TechnicianInvoice = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-wczpfb6a52fude7azc6zsgeuty.datawarehouse.fabric.microsoft.com", "LH_Service_Reports_Data"),
+				    dbo_TechnicianInvoice = Source{[Schema="dbo",Item="TechnicianInvoice"]}[Data],
+				    #"Added Custom" = Table.AddColumn(dbo_TechnicianInvoice, "dDateCustom", each #date([Year], [Month], 1)),
+				    #"Changed Type" = Table.TransformColumnTypes(#"Added Custom",{{"dDateCustom", type date}}),
+				    #"Renamed Columns" = Table.RenameColumns(#"Changed Type",{{"dDateCustom", "Date"}, {"TechnicianCode", "Tech #"}})
+				in
+				    #"Renamed Columns"
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

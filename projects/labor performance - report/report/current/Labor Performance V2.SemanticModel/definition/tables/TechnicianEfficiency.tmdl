@@ -1,0 +1,179 @@
+table TechnicianEfficiency
+	lineageTag: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+
+	column Year
+		dataType: int64
+		formatString: 0
+		lineageTag: 11111111-1111-1111-1111-111111111111
+		summarizeBy: none
+		sourceColumn: Year
+
+		annotation SummarizationSetBy = User
+
+	column Month
+		dataType: int64
+		formatString: 0
+		lineageTag: 22222222-2222-2222-2222-222222222222
+		summarizeBy: none
+		sourceColumn: Month
+
+		annotation SummarizationSetBy = User
+
+	column DateKey
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: 33333333-3333-3333-3333-333333333333
+		summarizeBy: none
+		sourceColumn: DateKey
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column Branch
+		dataType: string
+		lineageTag: 44444444-4444-4444-4444-444444444444
+		summarizeBy: none
+		sourceColumn: Branch
+
+		annotation SummarizationSetBy = Automatic
+
+	column TechCode
+		dataType: string
+		lineageTag: 55555555-5555-5555-5555-555555555555
+		summarizeBy: none
+		sourceColumn: TechCode
+
+		annotation SummarizationSetBy = Automatic
+
+	column TechnicianName
+		dataType: string
+		lineageTag: 66666666-6666-6666-6666-666666666666
+		summarizeBy: none
+		sourceColumn: TechnicianName
+
+		annotation SummarizationSetBy = Automatic
+
+	column AvailableHours
+		dataType: double
+		formatString: 0
+		lineageTag: 77777777-7777-7777-7777-777777777777
+		summarizeBy: sum
+		sourceColumn: AvailableHours
+
+		annotation SummarizationSetBy = Automatic
+
+	column WorkedHours
+		dataType: double
+		lineageTag: 88888888-8888-8888-8888-888888888888
+		summarizeBy: sum
+		sourceColumn: WorkedHours
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column InvoiceHours
+		dataType: double
+		formatString: 0
+		lineageTag: 99999999-9999-9999-9999-999999999999
+		summarizeBy: sum
+		sourceColumn: InvoiceHours
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isDecimal":true}
+
+	column ReworkHours
+		dataType: double
+		lineageTag: aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa
+		summarizeBy: sum
+		sourceColumn: ReworkHours
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column BilledHours
+		dataType: double
+		lineageTag: bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb
+		summarizeBy: sum
+		sourceColumn: BilledHours
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column DelayHours
+		dataType: double
+		lineageTag: cccccccc-cccc-cccc-cccc-cccccccccccc
+		summarizeBy: sum
+		sourceColumn: DelayHours
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column GainLossHours
+		dataType: double
+		lineageTag: dddddddd-dddd-dddd-dddd-dddddddddddd
+		summarizeBy: sum
+		sourceColumn: GainLossHours
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column OtherHours
+		dataType: double
+		lineageTag: eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee
+		summarizeBy: sum
+		sourceColumn: OtherHours
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column LostHours
+		dataType: double
+		lineageTag: ffffffff-ffff-ffff-ffff-ffffffffffff
+		summarizeBy: sum
+		sourceColumn: LostHours
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column EfficiencyRateNumerator
+		dataType: double
+		lineageTag: 12121212-1212-1212-1212-121212121212
+		summarizeBy: sum
+		sourceColumn: EfficiencyRateNumerator
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column EfficiencyRateDenominator
+		dataType: double
+		lineageTag: 13131313-1313-1313-1313-131313131313
+		summarizeBy: sum
+		sourceColumn: EfficiencyRateDenominator
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	partition TechnicianEfficiency = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-gxnyznhdptpenfw724g3o5sjzm.datawarehouse.fabric.microsoft.com", "LH_Master_Data"),
+				    dbo_TechnicianEfficiency = Source{[Schema="dbo",Item="TechnicianEfficiency"]}[Data]
+				in
+				    dbo_TechnicianEfficiency
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

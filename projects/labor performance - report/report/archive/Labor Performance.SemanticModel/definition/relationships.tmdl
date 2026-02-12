@@ -1,0 +1,66 @@
+relationship AutoDetected_d2d79f6e-6b3d-459c-b4b8-4bd54321d76f
+	fromColumn: TechnicianInvoice.'Tech #'
+	toColumn: Technician_Code_Names.techniciancode
+
+relationship ed385ed3-f7cf-63c2-4e5f-c6c912491a2a
+	fromColumn: TechnicianInvoice.Date
+	toColumn: dDate.Date
+
+relationship AutoDetected_99860de9-07a7-4859-bedb-95cb44da1384
+	fromColumn: TechnicianAttendance.TechnicianCode
+	toColumn: Technician_Code_Names.techniciancode
+
+relationship AutoDetected_1569d727-0d60-4bbe-9ea3-a15afdb8dee2
+	fromColumn: TechnicianPunchedTime.TechnicianCode
+	toColumn: Technician_Code_Names.techniciancode
+
+relationship AutoDetected_7fbc5a67-e441-4635-8459-5073d1b404df
+	crossFilteringBehavior: bothDirections
+	fromColumn: TechnicianEfficiency.techniciancode
+	toColumn: Technician_Code_Names.techniciancode
+
+relationship 5c75f61e-0725-df4e-c8b0-fc0d85d71b7f
+	fromColumn: TechnicianEfficiency.Date
+	toColumn: dDate.Date
+
+relationship c286d2ec-ed52-ea96-53a0-b5848ccf133e
+	fromColumn: TechnicianAttendance.Date
+	toColumn: dDate.Date
+
+relationship 2538503e-06bc-c598-3563-bed0ef5729b3
+	fromColumn: TechnicianPunchedTime.Date
+	toColumn: dDate.Date
+
+relationship 72111cd3-8963-0ad5-2ff0-bf922a14ad29
+	crossFilteringBehavior: bothDirections
+	toCardinality: many
+	fromColumn: TechnicianPunchedTime.TechnicianCode
+	toColumn: TechnicianInvoice.'Tech #'
+
+relationship AutoDetected_abf8eadd-b1a6-45fc-83dc-892a8c2b7e14
+	fromColumn: TechnicianInvoice.Branch
+	toColumn: Dim_Branch.BranchID
+
+relationship AutoDetected_90c211b7-4007-4a5c-a662-44d0236423f2
+	fromColumn: TechnicianAttendance.Branch
+	toColumn: Dim_Branch.BranchID
+
+relationship AutoDetected_c263e663-cf16-411f-a901-6bb1370f0e26
+	isActive: false
+	fromColumn: TechnicianPunchedTime.Branch
+	toColumn: Dim_Branch.BranchID
+
+relationship AutoDetected_e1c7c9a9-13f3-454f-8f06-b6c4c719092c
+	fromColumn: TechnicianEfficiency.branch
+	toColumn: Dim_Branch.BranchID
+
+relationship 993f8a8f-4abf-40ca-a808-3c7efe0cb23e
+	joinOnDateBehavior: datePartOnly
+	fromColumn: 'Data Refresh'.CurrentDateTime
+	toColumn: LocalDateTable_28b92214-baa3-4f84-9231-91b84cfa87b0.Date
+
+relationship 542caf32-c315-4981-8952-7b2092846c79
+	joinOnDateBehavior: datePartOnly
+	fromColumn: 'Data Refresh'.Date
+	toColumn: LocalDateTable_465f7202-054a-4fb7-bbcc-8b9da85a7038.Date
+

@@ -1,0 +1,33 @@
+model Model
+	culture: en-US
+	defaultPowerBIDataSourceVersion: powerBI_V3
+	sourceQueryCulture: en-US
+	dataAccessOptions
+		legacyRedirects
+		returnErrorValuesAsNull
+
+annotation PBI_QueryOrder = ["Technician_Code_Names","TechnicianInvoice","TechnicianAttendance","TechnicianPunchedTime","TechnicianEfficiency","Dim_Branch","Data Refresh"]
+
+annotation __PBI_TimeIntelligenceEnabled = 1
+
+annotation PBI_ProTooling = ["DevMode"]
+
+ref table Technician_Code_Names
+ref table TechnicianInvoice
+ref table dDate
+ref table TechnicianAttendance
+ref table TechnicianPunchedTime
+ref table TechnicianEfficiency
+ref table Dim_Branch
+ref table MeasuresTable
+ref table 'Data Refresh'
+ref table DateTableTemplate_e3cdadb3-d129-4bdc-8c49-33dda75815ff
+ref table LocalDateTable_28b92214-baa3-4f84-9231-91b84cfa87b0
+ref table LocalDateTable_465f7202-054a-4fb7-bbcc-8b9da85a7038
+ref table 'Old Report Tables'
+ref table 'Old Report Measures'
+ref table 'Old Report Columns'
+ref table 'Old Report Relationships'
+
+ref cultureInfo en-US
+

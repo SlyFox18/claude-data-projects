@@ -1,0 +1,167 @@
+table TechnicianPunchedTime
+	lineageTag: b1b2b3b4-c5c6-d7d8-e9e0-f1f2f3f4f5f6
+
+	column Year
+		dataType: int64
+		formatString: 0
+		lineageTag: pt-year-1111-1111-1111-111111111111
+		summarizeBy: none
+		sourceColumn: Year
+
+		annotation SummarizationSetBy = User
+
+	column Month
+		dataType: int64
+		formatString: 0
+		lineageTag: pt-month-2222-2222-2222-222222222222
+		summarizeBy: none
+		sourceColumn: Month
+
+		annotation SummarizationSetBy = User
+
+	column DateKey
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: pt-datekey-3333-3333-3333-333333333333
+		summarizeBy: none
+		sourceColumn: DateKey
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column Branch
+		dataType: string
+		lineageTag: pt-branch-4444-4444-4444-444444444444
+		summarizeBy: none
+		sourceColumn: Branch
+
+		annotation SummarizationSetBy = Automatic
+
+	column TechCode
+		dataType: string
+		lineageTag: pt-techcode-5555-5555-5555-555555555555
+		summarizeBy: none
+		sourceColumn: TechCode
+
+		annotation SummarizationSetBy = Automatic
+
+	column HoursWorked
+		dataType: double
+		lineageTag: pt-hrsworked-7777-7777-7777-777777777777
+		summarizeBy: sum
+		sourceColumn: HoursWorked
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column HoursRetail
+		dataType: double
+		lineageTag: pt-hrsretail-8888-8888-8888-888888888888
+		summarizeBy: sum
+		sourceColumn: HoursRetail
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column HoursWarranty
+		dataType: double
+		lineageTag: pt-hrswarranty-9999-9999-9999-999999999999
+		summarizeBy: sum
+		sourceColumn: HoursWarranty
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column HoursInternal
+		dataType: double
+		lineageTag: pt-hrsinternal-aaaa-aaaa-aaaa-aaaaaaaaaaaa
+		summarizeBy: sum
+		sourceColumn: HoursInternal
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column JobCode
+		dataType: string
+		lineageTag: 80241126-dd19-4e8b-8bd3-d0b46efa5def
+		summarizeBy: none
+		sourceColumn: JobCode
+
+		annotation SummarizationSetBy = Automatic
+
+	column JobType
+		dataType: string
+		lineageTag: 67a5302e-6878-4261-b99d-f4b959a6cde7
+		summarizeBy: none
+		sourceColumn: JobType
+
+		annotation SummarizationSetBy = Automatic
+
+	column HoursSold
+		dataType: double
+		lineageTag: eacd00c5-855c-47e9-b23a-e10e3b0cf9f4
+		summarizeBy: sum
+		sourceColumn: HoursSold
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column HoursSundry
+		dataType: double
+		lineageTag: d8019fd0-81ce-43aa-81a1-106defd9da0e
+		summarizeBy: sum
+		sourceColumn: HoursSundry
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column HoursFleet
+		dataType: double
+		lineageTag: 5b698b06-5c34-4f98-b35e-ee7333cf7e70
+		summarizeBy: sum
+		sourceColumn: HoursFleet
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column HoursAgreement
+		dataType: double
+		lineageTag: 8a83e18d-9e67-412b-91e5-07b61024b7af
+		summarizeBy: sum
+		sourceColumn: HoursAgreement
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column HoursOther
+		dataType: double
+		lineageTag: aa147554-132a-4e12-b2bb-79e90ac9aeef
+		summarizeBy: sum
+		sourceColumn: HoursOther
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	partition TechnicianPunchedTime = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-gxnyznhdptpenfw724g3o5sjzm.datawarehouse.fabric.microsoft.com", "LH_Master_Data"),
+				    dbo_TechnicianPunchedTime = Source{[Schema="dbo",Item="TechnicianPunchedTime"]}[Data]
+				in
+				    dbo_TechnicianPunchedTime
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+
