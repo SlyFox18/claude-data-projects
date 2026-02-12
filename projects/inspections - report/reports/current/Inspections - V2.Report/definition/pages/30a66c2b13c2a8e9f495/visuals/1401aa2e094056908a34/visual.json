@@ -1,5 +1,5 @@
 {
-  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.4.0/schema.json",
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.5.0/schema.json",
   "name": "1401aa2e094056908a34",
   "position": {
     "x": 62.478589420654913,
@@ -7,7 +7,7 @@
     "z": 3000,
     "height": 799.25440806045344,
     "width": 1580.8261964735516,
-    "tabOrder": 17000
+    "tabOrder": 5000
   },
   "visual": {
     "visualType": "pivotTable",
@@ -1169,7 +1169,7 @@
             "fontSize": {
               "expr": {
                 "Literal": {
-                  "Value": "11D"
+                  "Value": "10D"
                 }
               }
             },
@@ -1187,7 +1187,14 @@
             "titleAlignment": {
               "expr": {
                 "Literal": {
-                  "Value": "'Left'"
+                  "Value": "'Center'"
+                }
+              }
+            },
+            "alignment": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Center'"
                 }
               }
             }
@@ -1200,7 +1207,7 @@
             "fontSize": {
               "expr": {
                 "Literal": {
-                  "Value": "13D"
+                  "Value": "11D"
                 }
               }
             },
@@ -1274,7 +1281,7 @@
             "value": {
               "expr": {
                 "Literal": {
-                  "Value": "87.13263018378326D"
+                  "Value": "77.75670224733682D"
                 }
               }
             }
@@ -1344,7 +1351,7 @@
             "value": {
               "expr": {
                 "Literal": {
-                  "Value": "86.80948930936295D"
+                  "Value": "95.08068361808903D"
                 }
               }
             }
@@ -1386,13 +1393,27 @@
             "value": {
               "expr": {
                 "Literal": {
-                  "Value": "144.91302198109761D"
+                  "Value": "110.6530873820719D"
                 }
               }
             }
           },
           "selector": {
             "metadata": "_Measures.WO List - Total Labor"
+          }
+        },
+        {
+          "properties": {
+            "value": {
+              "expr": {
+                "Literal": {
+                  "Value": "98.25189170607305D"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "_Measures.WO List - Total Parts"
           }
         }
       ],
@@ -1409,7 +1430,7 @@
             "showExpandCollapseButtons": {
               "expr": {
                 "Literal": {
-                  "Value": "false"
+                  "Value": "true"
                 }
               }
             },
@@ -1819,6 +1840,60 @@
             }
           ]
         }
+      },
+      {
+        "name": "0e7f21abcd0219165691",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Fact_LaborJobSummary"
+              }
+            },
+            "Property": "IsPendingInspection"
+          }
+        },
+        "type": "Categorical",
+        "filter": {
+          "Version": 2,
+          "From": [
+            {
+              "Name": "f",
+              "Entity": "Fact_LaborJobSummary",
+              "Type": 0
+            }
+          ],
+          "Where": [
+            {
+              "Condition": {
+                "In": {
+                  "Expressions": [
+                    {
+                      "Column": {
+                        "Expression": {
+                          "SourceRef": {
+                            "Source": "f"
+                          }
+                        },
+                        "Property": "IsPendingInspection"
+                      }
+                    }
+                  ],
+                  "Values": [
+                    [
+                      {
+                        "Literal": {
+                          "Value": "false"
+                        }
+                      }
+                    ]
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        "howCreated": "User"
       }
     ]
   },

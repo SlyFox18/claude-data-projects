@@ -84,7 +84,7 @@ Result: 10,540.23 hours across 7,295 labor records
 
 ```sql
 -- PROBLEMATIC JOINS IN OLD QUERY:
-FROM wkrofile rof 
+FROM WKROFILE rof 
 LEFT OUTER JOIN wkvehfl vf ON rof.reg = vf.reg           -- Join by registration
 LEFT OUTER JOIN vhstock vhs ON rof.stock_no = vhs.no    -- Join by stock number
 ...
@@ -263,7 +263,7 @@ GROUP BY
 - **Primary Tables:** 
   - Raw_wkothsub (job financial data)
   - Raw_wkmechwk (labor hours)
-  - Raw_wkrofile (work order context)
+  - Raw_WKROFILE (work order context)
 - **Fact Table:** Fact_LaborJobSummary
 - **Grain:** One row per job code per work order
 

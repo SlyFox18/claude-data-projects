@@ -67,7 +67,7 @@
 - **Fabric Dataflows (6 Raw Tables):**
   - Raw_wkothsub (incremental refresh 2023+)
   - Raw_wkmechwk (incremental refresh 2023+)
-  - Raw_wkrofile (incremental refresh 2023+)
+  - Raw_WKROFILE (incremental refresh 2023+)
   - Raw_InTrans (date filter 2024+)
   - Raw_RepairOrderDetail (full refresh)
   - Raw_TechnicianPunchedDetail (full refresh)
@@ -155,7 +155,7 @@ Each fact table grain carefully chosen for business analysis needs:
 └───────┬───────────┘
         │ LEFT JOIN
 ┌───────▼───────────┐
-│  Raw_wkrofile     │  (Context: Work order status)
+│  Raw_WKROFILE     │  (Context: Work order status)
 │  Grain: Work Order│
 └───────────────────┘
 ```
@@ -619,7 +619,7 @@ Each fact table grain carefully chosen for business analysis needs:
 ### **Optimization Strategies Implemented**
 
 1. **Incremental Refresh (Raw Tables)**
-   - **Applied To:** Raw_wkothsub, Raw_wkmechwk, Raw_wkrofile
+   - **Applied To:** Raw_wkothsub, Raw_wkmechwk, Raw_WKROFILE
    - **Strategy:** 2023+ scope, ModifiedDate filtering
    - **Benefit:** Only processes changed/new records
    - **Impact:** Reduced raw table refresh from 30+ min to ~3 min

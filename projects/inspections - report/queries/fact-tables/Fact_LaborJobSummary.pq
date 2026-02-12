@@ -8,7 +8,7 @@ Purpose: Complete job-level inspection analytics with labor hours and work order
 Grain: One row per job code per work order
 Refresh Strategy: Leverages incremental refresh from source Raw tables (2023+ scope)
 Performance: Target 2-3 minutes (3 raw table joins with aggregation)
-Source Dependencies: Raw_wkothsub, Raw_wkmechwk, Raw_wkrofile
+Source Dependencies: Raw_wkothsub, Raw_wkmechwk, Raw_WKROFILE
 
 🎯 BUSINESS USE CASES:
 - Inspection Tracking: Complete inspection identification and financial analysis
@@ -66,7 +66,7 @@ Source Dependencies: Raw_wkothsub, Raw_wkmechwk, Raw_wkrofile
 **Multi-Source Integration Strategy:**
 - Primary Source: Raw_wkothsub (job-level financial data)
 - Grain Aggregation: Raw_wkmechwk aggregated from punch-level to job-level
-- Context Enhancement: Raw_wkrofile provides work order header context
+- Context Enhancement: Raw_WKROFILE provides work order header context
 - Join Strategy: LEFT OUTER joins preserve all jobs (not all have labor/status)
 
 **Inspection Identification Logic:**
@@ -85,7 +85,7 @@ Source Dependencies: Raw_wkothsub, Raw_wkmechwk, Raw_wkrofile
 - Pre-Aggregation: wkmechwk aggregated before join (reduces join complexity)
 - Incremental Refresh: Inherits from Raw_wkothsub ModifiedDate filtering
 - Query Folding: Maintained where possible through Power Query best practices
-- Column Selection: Only essential fields from wkrofile (avoids unnecessary data transfer)
+- Column Selection: Only essential fields from WKROFILE (avoids unnecessary data transfer)
 
 🎯 INSPECTION JOB CODE COVERAGE:
 
@@ -112,8 +112,8 @@ Source Dependencies: Raw_wkothsub, Raw_wkmechwk, Raw_wkrofile
 
 ⚠️ KNOWN LIMITATIONS & DESIGN TRADE-OFFS:
 
-**Missing from wkrofile:**
-- Expected_DateTime: Not available in Raw_wkrofile (only CreatedOn and ClosedDate)
+**Missing from WKROFILE:**
+- Expected_DateTime: Not available in Raw_WKROFILE (only CreatedOn and ClosedDate)
 - Business Impact: Cannot calculate expected vs actual timeline variance
 - Workaround: Use CreatedOn + business rules in DAX if needed
 
@@ -142,7 +142,7 @@ Source Dependencies: Raw_wkothsub, Raw_wkmechwk, Raw_wkrofile
 - Result: Job-level labor hours (matches target grain)
 
 **Step 3: Work Order Context Selection**
-- Source: Raw_wkrofile (work order master records)
+- Source: Raw_WKROFILE (work order master records)
 - Column Filter: Only status and date fields (performance optimization)
 - Grain: One row per work order (many-to-one to job grain)
 
@@ -238,7 +238,7 @@ Source Dependencies: Raw_wkothsub, Raw_wkmechwk, Raw_wkrofile
 **Status Population Validation:**
 - Expected: WorkOrderStatus populated for 100% of rows
 - Test: COUNT(WorkOrderStatus IS NULL)
-- Alert: Investigate any NULLs (indicates missing wkrofile records)
+- Alert: Investigate any NULLs (indicates missing WKROFILE records)
 
 **Financial Totals Reconciliation:**
 - Test: SUM(TotalInvoicedAmount) should match sum of labor + parts
@@ -254,7 +254,7 @@ Source Dependencies: Raw_wkothsub, Raw_wkmechwk, Raw_wkrofile
 
 **Pre-Deployment:**
 □ Confirm Raw_wkmechwk loaded in dataflow
-□ Confirm Raw_wkrofile loaded in dataflow
+□ Confirm Raw_WKROFILE loaded in dataflow
 □ Test query refresh time (target: 2-3 minutes)
 □ Validate row count matches Raw_wkothsub
 □ Spot-check inspection flag accuracy
@@ -419,14 +419,14 @@ let
     LaborHoursSource = Raw_wkmechwk,
     
     // Group by Branch, WorkOrder, JobCode to aggregate hours to job level
-    AggregatedHours = Table.Group(
-        LaborHoursSource,
-        {"Branch", "WorkOrder", "JobCode"},
-        {
-            {"ActualHoursWorked", each List.Sum([HoursWorked]), type nullable number},
-            {"InvoicedHours", each List.Sum([InvoiceHours]), type nullable number}
-        }
-    ),
+        AggregatedHours = Table.Group(
+            LaborHoursSource,
+            {"Branch", "WorkOrder", "JobCode", "JobType"},  // ✅ All 4 keys
+            {
+                {"ActualHoursWorked", each List.Sum([HoursWorked]), type nullable number},
+                {"InvoicedHours", each List.Sum([InvoiceHours]), type nullable number}
+            }
+        ),
     
     // ========================================================================
     // STEP 3: GET WORK ORDER STATUS AND DATES FROM RAW_WKROFILE
@@ -435,12 +435,12 @@ let
     PURPOSE: Add work order header context for filtering and aging analysis
     GRAIN: One row per work order (many jobs can belong to one work order)
     FIELDS SELECTED: Only status and date fields (performance optimization)
-    COLUMN NAMES: Using actual Raw_wkrofile column names (ProgressStatus, CreatedOn, ClosedDate)
+    COLUMN NAMES: Using actual Raw_WKROFILE column names (ProgressStatus, CreatedOn, ClosedDate)
     */
     
-    WorkOrderSource = Raw_wkrofile,
+    WorkOrderSource = Raw_WKROFILE,
     
-    // Select only the columns we need from wkrofile (performance optimization)
+    // Select only the columns we need from WKROFILE (performance optimization)
     WorkOrderContext = Table.SelectColumns(
         WorkOrderSource,
         {"Branch", "WorkOrder", "ProgressStatus", "CreatedOn", "ClosedDate"}
@@ -505,14 +505,14 @@ let
     EXPECTED: ~70-80% join rate (business varies - some jobs are parts-only)
     */
     
-    JoinLaborHours = Table.NestedJoin(
-        RemoveMatchColumn,
-        {"Branch", "WorkOrder", "JobCode"},
-        AggregatedHours,
-        {"Branch", "WorkOrder", "JobCode"},
-        "LaborHours",
-        JoinKind.LeftOuter
-    ),
+        JoinLaborHours = Table.NestedJoin(
+            RemoveMatchColumn,
+            {"Branch", "WorkOrder", "JobCode", "JobType"},  // ✅ All 4 keys
+            AggregatedHours,
+            {"Branch", "WorkOrder", "JobCode", "JobType"},  // ✅ All 4 keys
+            "LaborHours",
+            JoinKind.LeftOuter
+        ),
     
     // Expand aggregated hours columns into main table
     ExpandLaborHours = Table.ExpandTableColumn(
@@ -677,9 +677,10 @@ let
             {"IsInspection", type logical},
             {"IsPending", type logical}
         }
-    )
+    ),
+  #"Calculated date" = Table.TransformColumns(SetDataTypes, {{"WorkOrderCreationDate", each DateTime.Date(_), type nullable date}})
 in
-    SetDataTypes
+    #"Calculated date"
 
 /*
 ============================================================================
@@ -724,7 +725,7 @@ in
 - Business Alignment: Annual review with stakeholders on inspection definitions
 
 ⚠️ KNOWN LIMITATIONS:
-- No Expected Date: Raw_wkrofile lacks expected_datetime field
+- No Expected Date: Raw_WKROFILE lacks expected_datetime field
 - Tech Detail Lost: Aggregation eliminates individual technician performance tracking
 - Punch Granularity: Clock-in/out times not preserved at job level
 - Status Assumptions: IsPending logic based on current status code understanding

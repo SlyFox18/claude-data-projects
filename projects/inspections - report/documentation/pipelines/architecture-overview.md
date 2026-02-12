@@ -279,7 +279,7 @@ The solution follows modern data engineering best practices:
 │  │ Fact_LaborJobSummary│  │ Fact_PendingInspect  │      │
 │  │ Uses: wkothsub,     │  │ Uses: RepairOrderDet,│      │
 │  │       wkmechwk,     │  │       TechPunchedDet │      │
-│  │       wkrofile      │  │                      │      │
+│  │       WKROFILE      │  │                      │      │
 │  │ Duration: 4-5 min   │  │ Duration: 1-2 min    │      │
 │  └──────────┬──────────┘  └──────────┬───────────┘      │
 │             │                         │                  │
@@ -334,7 +334,7 @@ The solution follows modern data engineering best practices:
 **Tables Refreshed:**
 - wkothsub (work order detail)
 - wkmechwk (labor entries)
-- wkrofile (work order headers)
+- WKROFILE (work order headers)
 - InTrans (parts transactions - source for Phase 2)
 - RepairOrderDetail (RO detail)
 - TechnicianPunchedDetail (tech time)

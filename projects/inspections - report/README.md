@@ -62,7 +62,7 @@ inspections-report/
 │   ├── raw-tables/
 │   │   ├── Raw_wkothsub.pq           # Work order job details (2023+ incremental)
 │   │   ├── Raw_wkmechwk.pq           # Labor punch details (2023+ incremental)
-│   │   ├── Raw_wkrofile.pq           # Work order headers (2023+ incremental)
+│   │   ├── Raw_WKROFILE.pq           # Work order headers (2023+ incremental)
 │   │   ├── Raw_InTrans.pq            # Parts transactions (2024+ filter)
 │   │   ├── Raw_RepairOrderDetail.pq  # Work order summary (for pending)
 │   │   └── Raw_TechnicianPunchedDetail.pq # Tech hours (for pending)
@@ -410,7 +410,7 @@ Fact_Pending   (Hours Track)  Fact_Labor  (Revenue)
 ### **Data Limitations**
 
 1. **No Expected Date Field**
-   - Raw_wkrofile lacks `expected_datetime` field
+   - Raw_WKROFILE lacks `expected_datetime` field
    - Cannot calculate expected vs actual timeline variance
    - Using CreatedOn + business rules as workaround
 

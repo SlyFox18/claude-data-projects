@@ -327,6 +327,20 @@ table Fact_LaborJobSummary
 
 		annotation SummarizationSetBy = Automatic
 
+	column IsPendingInspection =
+			
+			COUNTROWS(
+			    FILTER(
+			        Fact_PendingInspections,
+			        Fact_PendingInspections[WorkOrderNumber] = Fact_LaborJobSummary[WorkOrderNumber]
+			    )
+			) > 0
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 31c9ac5a-8718-4da5-944b-7f4434a09c0f
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
 	partition Fact_LaborJobSummary = m
 		mode: import
 		source =

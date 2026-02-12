@@ -4,11 +4,11 @@ RAW_WKROFILE - PERFORMANCE-OPTIMIZED WORK ORDER MASTER DATA EXTRACTION
 ============================================================================
 
 📋 TABLE OVERVIEW:
-Purpose: Clean, efficient extraction of work order master data from wkrofile system table
+Purpose: Clean, efficient extraction of work order master data from WKROFILE system table
 Grain: One row per work order (master work order record)
 Refresh Strategy: Incremental refresh using ModifiedDate filtering (2023+ historical scope)
 Performance: Target 1m 30s - 2m refresh time (tested with 20-column optimized set)
-Source Dependencies: wkrofile table (primary work order system)
+Source Dependencies: WKROFILE table (primary work order system)
 
 🎯 BUSINESS USE CASES:
 • Fact Table Foundation: Primary data source for Fact_WorkOrderHeader and related work order tables
@@ -212,7 +212,7 @@ let
         Closed_Date AS ClosedDate, #(lf)
         ModifiedDate AS ModifiedDate #(lf)
         
-    FROM wkrofile #(lf)
+    FROM WKROFILE #(lf)
     WHERE ModifiedDate >= " & StartStr & " #(lf)
       AND ModifiedDate < " & EndStr,
   

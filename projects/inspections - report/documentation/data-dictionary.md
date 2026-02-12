@@ -36,7 +36,7 @@
 **Purpose:** Complete job-level inspection analytics with labor hours and work order context  
 **Grain:** One row per job code per work order  
 **Refresh Time:** ~3 minutes  
-**Source Tables:** Raw_wkothsub, Raw_wkmechwk, Raw_wkrofile  
+**Source Tables:** Raw_wkothsub, Raw_wkmechwk, Raw_WKROFILE  
 **Row Count:** ~500,000+ rows (6 years of history, 2023+)
 
 ### Business Use Cases

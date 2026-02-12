@@ -1,9 +1,16 @@
 {
-  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/bookmark/1.4.0/schema.json",
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/bookmark/2.0.0/schema.json",
   "displayName": "Show Nav - Recommend",
   "name": "12a9af9289cc26e40896",
   "options": {
-    "targetVisualNames": [],
+    "targetVisualNames": [
+      "c8848d08ec1dcb41caa7",
+      "cade921140ef1b2bb264",
+      "a049d79157fb5b9e8b70",
+      "eb52aa818873aafe2beb",
+      "1c8398a0e2caa2689d25",
+      "5a3ede8d46eaba42de35"
+    ],
     "suppressData": true
   },
   "explorationState": {
@@ -61,7 +68,22 @@
                   "howCreated": 1
                 },
                 {
-                  "name": "9ff5d14fe2974b5b502e",
+                  "name": "9c06c680b698e3543a1e",
+                  "type": "Categorical",
+                  "expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "ServiceRecommendations"
+                        }
+                      },
+                      "Property": "JobCode"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "785edf57ffe5cb4b2927",
                   "type": "Advanced",
                   "expression": {
                     "Aggregation": {
@@ -81,7 +103,7 @@
                   "howCreated": 0
                 },
                 {
-                  "name": "d6e2b8efc3a0abed5999",
+                  "name": "594b422d393a7885cb1a",
                   "type": "Advanced",
                   "expression": {
                     "Measure": {
@@ -96,7 +118,7 @@
                   "howCreated": 0
                 },
                 {
-                  "name": "07c813430d1ab1239c7b",
+                  "name": "1b1827aae5db4bf7ee08",
                   "type": "Advanced",
                   "expression": {
                     "Measure": {
@@ -111,7 +133,7 @@
                   "howCreated": 0
                 },
                 {
-                  "name": "ae8d0fc44d07c68e0b6c",
+                  "name": "2127403e4d6b9c88678d",
                   "type": "Advanced",
                   "expression": {
                     "Measure": {
@@ -126,7 +148,7 @@
                   "howCreated": 0
                 },
                 {
-                  "name": "4308512b137144bcc80d",
+                  "name": "a7604cb4c3d3ad751c2a",
                   "type": "Advanced",
                   "expression": {
                     "Measure": {
@@ -136,21 +158,6 @@
                         }
                       },
                       "Property": "Est Service Revenue"
-                    }
-                  },
-                  "howCreated": 0
-                },
-                {
-                  "name": "96d512e960e03dd90882",
-                  "type": "Categorical",
-                  "expression": {
-                    "Column": {
-                      "Expression": {
-                        "SourceRef": {
-                          "Entity": "ServiceRecommendations"
-                        }
-                      },
-                      "Property": "JobCode"
                     }
                   },
                   "howCreated": 0
@@ -164,18 +171,13 @@
                 {
                   "Direction": 2,
                   "Expression": {
-                    "Aggregation": {
+                    "Measure": {
                       "Expression": {
-                        "Column": {
-                          "Expression": {
-                            "SourceRef": {
-                              "Entity": "ServiceRecommendations"
-                            }
-                          },
-                          "Property": "TimesAdded"
+                        "SourceRef": {
+                          "Entity": "_Measures"
                         }
                       },
-                      "Function": 0
+                      "Property": "Service Frequency %"
                     }
                   }
                 }
@@ -185,6 +187,12 @@
           "258b511f0651db00b259": {
             "singleVisual": {
               "visualType": "textbox",
+              "objects": {}
+            }
+          },
+          "2efb42e09acccd001198": {
+            "singleVisual": {
+              "visualType": "shape",
               "objects": {}
             }
           },
@@ -247,67 +255,7 @@
                   "howCreated": 1
                 },
                 {
-                  "name": "a4dd0ea77422c5b6e802",
-                  "type": "Advanced",
-                  "expression": {
-                    "Measure": {
-                      "Expression": {
-                        "SourceRef": {
-                          "Entity": "_Measures"
-                        }
-                      },
-                      "Property": "Part Sold Count - For JobCode"
-                    }
-                  },
-                  "howCreated": 0
-                },
-                {
-                  "name": "98076d3d3a01c9500b9b",
-                  "type": "Advanced",
-                  "expression": {
-                    "Measure": {
-                      "Expression": {
-                        "SourceRef": {
-                          "Entity": "_Measures"
-                        }
-                      },
-                      "Property": "Part Frequency % - For JobCode"
-                    }
-                  },
-                  "howCreated": 0
-                },
-                {
-                  "name": "d107c0b74a38350b5779",
-                  "type": "Advanced",
-                  "expression": {
-                    "Measure": {
-                      "Expression": {
-                        "SourceRef": {
-                          "Entity": "_Measures"
-                        }
-                      },
-                      "Property": "Avg Part Quantity - For JobCode"
-                    }
-                  },
-                  "howCreated": 0
-                },
-                {
-                  "name": "7f50386f07b539c75c58",
-                  "type": "Advanced",
-                  "expression": {
-                    "Measure": {
-                      "Expression": {
-                        "SourceRef": {
-                          "Entity": "_Measures"
-                        }
-                      },
-                      "Property": "Est Quantity Needed - For Pending"
-                    }
-                  },
-                  "howCreated": 0
-                },
-                {
-                  "name": "6f193e11a0d0615c3cd0",
+                  "name": "b430297853966753ffbc",
                   "type": "Categorical",
                   "expression": {
                     "Column": {
@@ -322,7 +270,7 @@
                   "howCreated": 0
                 },
                 {
-                  "name": "60e44a3f7867b0525968",
+                  "name": "63ee9c250a6a2c7e8f05",
                   "type": "Categorical",
                   "expression": {
                     "Column": {
@@ -337,7 +285,7 @@
                   "howCreated": 0
                 },
                 {
-                  "name": "d604a7e91e09eb02318a",
+                  "name": "b248206841194323c2dc",
                   "type": "Advanced",
                   "expression": {
                     "Measure": {
@@ -346,13 +294,58 @@
                           "Entity": "_Measures"
                         }
                       },
-                      "Property": "Est Parts Value - For Pending"
+                      "Property": "Part Sold Count - For JobCode"
                     }
                   },
                   "howCreated": 0
                 },
                 {
-                  "name": "4e8e2051d5e463a9e357",
+                  "name": "207316d39cbd983c2bb6",
+                  "type": "Advanced",
+                  "expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "Part Frequency % - For JobCode"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "de601cd620b3df84488a",
+                  "type": "Advanced",
+                  "expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "Avg Part Quantity - For JobCode"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "019c00bf887652a13ff2",
+                  "type": "Advanced",
+                  "expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "Est Quantity Needed - For Pending"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "30de3752620b973f82ce",
                   "type": "Advanced",
                   "expression": {
                     "Column": {
@@ -362,6 +355,21 @@
                         }
                       },
                       "Property": "SellPrice1"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "5cfbf949b805f106a4de",
+                  "type": "Advanced",
+                  "expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "Est Parts Value - For Pending"
                     }
                   },
                   "howCreated": 0
@@ -392,7 +400,7 @@
             "filters": {
               "byExpr": [
                 {
-                  "name": "31d96354d1e1725a89a0",
+                  "name": "1ba1ca635824fb76180d",
                   "type": "Advanced",
                   "expression": {
                     "Measure": {
@@ -417,7 +425,7 @@
             "filters": {
               "byExpr": [
                 {
-                  "name": "d55139fded79660ec5c4",
+                  "name": "e91f68b03cc838cfdd6e",
                   "type": "Advanced",
                   "expression": {
                     "Measure": {
@@ -451,7 +459,7 @@
             "filters": {
               "byExpr": [
                 {
-                  "name": "a1c5453940d45c9464e1",
+                  "name": "3201a55fda132abb110d",
                   "type": "Advanced",
                   "expression": {
                     "Measure": {
@@ -476,7 +484,7 @@
             "filters": {
               "byExpr": [
                 {
-                  "name": "08f987db005b6163c242",
+                  "name": "9d258ee7a6025a75e4d8",
                   "type": "Advanced",
                   "expression": {
                     "Measure": {
@@ -504,7 +512,7 @@
             "filters": {
               "byExpr": [
                 {
-                  "name": "114a8c9be1dae611ba18",
+                  "name": "b4d9b64d16c096d1e638",
                   "type": "Advanced",
                   "expression": {
                     "Aggregation": {
@@ -530,11 +538,20 @@
               "objects": {}
             }
           },
+          "b1112021a192bd160cad": {
+            "singleVisual": {
+              "visualType": "image",
+              "objects": {},
+              "display": {
+                "mode": "hidden"
+              }
+            }
+          },
           "cade921140ef1b2bb264": {
             "filters": {
               "byExpr": [
                 {
-                  "name": "c1ae8bba514944b9eec2",
+                  "name": "6fddd28b99fb2a4b7c8f",
                   "type": "Categorical",
                   "expression": {
                     "Column": {
@@ -632,68 +649,95 @@
               }
             }
           },
-          "2efb42e09acccd001198": {
+          "e9b2df1283d6babb595d": {
+            "filters": {
+              "byExpr": [
+                {
+                  "name": "c9a794523dcee8e6c7cb",
+                  "type": "Advanced",
+                  "expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "Recommend - Header"
+                    }
+                  },
+                  "howCreated": 0
+                }
+              ]
+            },
+            "singleVisual": {
+              "visualType": "htmlContent443BE3AD55E043BF878BED274D3A6855",
+              "objects": {}
+            }
+          },
+          "7fe38bc0de6768bd2d80": {
+            "singleVisual": {
+              "visualType": "image",
+              "objects": {}
+            }
+          },
+          "36b72d9c28336b4ba1fd": {
+            "singleVisual": {
+              "visualType": "image",
+              "objects": {}
+            }
+          },
+          "4cfe6d8656ccd893bdad": {
+            "singleVisual": {
+              "visualType": "image",
+              "objects": {}
+            }
+          },
+          "dac1637e0ce376c1ce62": {
+            "singleVisual": {
+              "visualType": "image",
+              "objects": {}
+            }
+          },
+          "d76e58bbe3e5c229c92f": {
+            "singleVisual": {
+              "visualType": "image",
+              "objects": {}
+            }
+          },
+          "2a460c0bfc462405ecaf": {
             "singleVisual": {
               "visualType": "shape",
               "objects": {}
             }
           },
-          "17c45d433ebca448b00b": {
+          "e9b291d39624675df152": {
             "singleVisual": {
               "visualType": "image",
               "objects": {}
             }
           },
-          "6fa09f0dd9d0ea09662e": {
+          "a049d79157fb5b9e8b70": {
             "singleVisual": {
               "visualType": "image",
               "objects": {}
             }
           },
-          "61ab216057b06643cad8": {
+          "1c8398a0e2caa2689d25": {
             "singleVisual": {
-              "visualType": "image",
+              "visualType": "pageNavigator",
               "objects": {}
             }
           },
-          "2c5390b7ce00131cc0bb": {
-            "singleVisual": {
-              "visualType": "image",
-              "objects": {}
-            }
-          },
-          "b1112021a192bd160cad": {
-            "singleVisual": {
-              "visualType": "image",
-              "objects": {},
-              "display": {
-                "mode": "hidden"
-              }
-            }
-          },
-          "4ae5d1d78605b2848baa": {
+          "5a3ede8d46eaba42de35": {
             "singleVisual": {
               "visualType": "shape",
               "objects": {}
             }
-          },
-          "76e353a32189a6d78ca0": {
-            "singleVisual": {
-              "visualType": "image",
-              "objects": {}
-            }
-          },
-          "c1b1a00003d19ec9de30": {
-            "singleVisual": {
-              "visualType": "shape",
-              "objects": {}
-            }
-          },
-          "f2706b866acc70695625": {
-            "singleVisual": {
-              "visualType": "image",
-              "objects": {}
-            }
+          }
+        },
+        "visualContainerGroups": {
+          "c8848d08ec1dcb41caa7": {
+            "isHidden": false
           }
         }
       }
