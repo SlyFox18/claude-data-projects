@@ -1,0 +1,23 @@
+{
+  "name": "new-report",
+  "description": "Scaffold a new Power BI report project with standard folder structure, README stub, and FACT-TABLES-SUMMARY placeholder",
+  "version": "1.0.0",
+  "prompt": "You are scaffolding a new Power BI report project in the data-projects repository. The report name will be provided as an argument.\n\n**IMPORTANT: All work must be done on the `dev` branch. Verify you are on `dev` before creating any files.**\n\n## Steps\n\n### 1. Confirm branch\nRun: `git branch --show-current`\nIf not on `dev`, switch: `git checkout dev`\n\n### 2. Determine folder name\nUse the naming convention: `[report-name] - report` (lowercase, hyphenated)\nExamples:\n- \"Labor Performance\" → `labor performance - report`\n- \"Parts Promo\" → `parts promo - report`\n- \"Open Work Orders\" → `open work orders - report`\n\n### 3. Create folder structure\nCreate the following under `projects/[folder-name]/`:\n```\nprojects/[folder-name]/\n├── queries/\n│   ├── fact-tables/     (always create)\n│   ├── dimensions/      (always create, may stay empty)\n│   └── raw-tables/      (always create, may stay empty)\n├── reports/             (placeholder for .pbip files)\n└── README.md            (from template below)\n```\nCreate a `.gitkeep` file in each empty subfolder so git tracks them.\n\n### 4. Generate README.md\nUse `.claude/templates/TEMPLATE-PROJECT-README.md` as the base structure.\nReplace all placeholders with the actual report name and today's date.\nFor unknown fields use `[To be determined]` — do NOT leave empty brackets.\nSet **Status** to `🚧 In Development`.\n\n### 5. Update FACT-TABLES-SUMMARY.md\nOpen `.claude/queries/facts/FACT-TABLES-SUMMARY.md`.\nAdd a new placeholder section at the bottom:\n```markdown\n---\n\n### **Project: [Report Display Name]**\n**Location:** `projects/[folder-name]/queries/fact-tables/`\n**Department:** [To be determined]\n**Created:** [Today's date] | **Modified:** [Today's date]\n\n| Fact Table | Dataflow | Rows | Refresh Time | Schedule | Purpose |\n|------------|----------|------|--------------|----------|---------|\n| Fact_[Name] | df_Fact_[Name] | TBD | TBD | TBD | TBD |\n\n**Raw Tables:** TBD\n**Dimensions:** dim_DateTable, dim_BranchLocation (minimum expected)\n**Business Context:** [To be determined]\n**Status:** 🚧 In Development\n```\n\n### 6. Summarize what was created\nList:\n- Folder path created\n- Files created\n- What still needs to be filled in (README sections, fact table details)\n- Remind user: push to `dev`, validate in RP - Sandbox, then PR to `main` when ready\n\n**Do NOT create any .pq query files** — those are written during actual development, not scaffolding.",
+  "args": {
+    "report_name": {
+      "type": "string",
+      "description": "Display name of the report (e.g., 'Labor Performance', 'Parts Promo')",
+      "required": true
+    }
+  },
+  "examples": [
+    {
+      "command": "/new-report \"Labor Performance\"",
+      "description": "Scaffold the Labor Performance report project"
+    },
+    {
+      "command": "/new-report \"60+ Day Past Due\"",
+      "description": "Scaffold the 60+ Day Past Due report project"
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "name": "sync-query",
+  "description": "Copy a finished .pq query file from a project folder into the .claude/queries/ shared library. Keeps the gold-standard reference library in sync with actual project queries.",
+  "version": "1.0.0",
+  "prompt": "You are syncing a Power Query (.pq) file from a project folder into the shared `.claude/queries/` library so it serves as the gold-standard reference for future work.\n\n## Steps\n\n### 1. Read the source file\nRead the .pq file at the provided path.\n\n### 2. Determine the query type\nBased on the filename and content, classify it as one of:\n- **raw-table**: Pulls from ODBC source (dsn=EquipRDB64). Filename pattern: `Raw_*` or source table name.\n- **dimension**: Builds a dim_ or lookup_ table. Filename pattern: `dim_*` or `lookup_*`.\n- **fact**: Builds a Fact_ table. Filename pattern: `Fact_*`.\n\nIf uncertain, ask the user before proceeding.\n\n### 3. Verify the header comment is present\nEvery query in the shared library must have the standard header comment block (/* ... */) with:\n- Purpose / TABLE OVERVIEW\n- Business use cases\n- Key columns or grain\n- Source and dependencies\n\nIf the header is missing or incomplete:\n- Do NOT sync it yet\n- Tell the user what's missing\n- Offer to add the header before syncing\n\n### 4. Determine the destination path\n- raw-table → `.claude/queries/raw-tables/[filename].pq`\n- dimension → `.claude/queries/dimensions/[filename].pq`\n- fact → `.claude/queries/facts/[filename].pq` (note: facts/ is metadata-only; ask if user wants to add it here or just update FACT-TABLES-SUMMARY.md)\n\nIf a file with the same name already exists in the destination:\n- Show a diff of the key differences\n- Confirm with the user before overwriting\n\n### 5. Copy the file\nWrite the file to the destination path.\n\n### 6. Update the relevant summary document\n- For raw-tables: check `.claude/queries/RAW-TABLES-SUMMARY.md` — add or update the entry for this table\n- For dimensions: check `.claude/queries/dimensions/` for a DIMENSIONS-SUMMARY.md — add entry if one exists\n- For facts: check `.claude/queries/facts/FACT-TABLES-SUMMARY.md` — update the entry for this project\n\n### 7. Confirm and summarize\n- Source path\n- Destination path\n- Summary doc updated\n- Remind: commit the sync to `dev` branch as part of your normal workflow",
+  "args": {
+    "file_path": {
+      "type": "string",
+      "description": "Path to the .pq file to sync (e.g., 'projects/parts-adjustments - report/queries/fact-tables/Fact_PartsAdjustments.pq')",
+      "required": true
+    }
+  },
+  "examples": [
+    {
+      "command": "/sync-query projects/parts adjustments - report/queries/fact-tables/Fact_PartsAdjustments.pq",
+      "description": "Sync the Parts Adjustments fact table to the shared query library"
+    },
+    {
+      "command": "/sync-query projects/labor performance - report/queries/fact-tables/Fact_LaborPerformance.pq",
+      "description": "Sync the Labor Performance fact table to the shared query library"
+    }
+  ]
+}

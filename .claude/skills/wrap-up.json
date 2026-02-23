@@ -1,0 +1,23 @@
+{
+  "name": "wrap-up",
+  "description": "End-of-session helper. Commits all work to dev, checks for unsynced queries, drafts a PR description, and gives a clear next-steps summary.",
+  "version": "1.0.0",
+  "prompt": "You are wrapping up a development session. Perform a clean, orderly close-out of all work done.\n\n**IMPORTANT: Only commit to `dev` branch. Never commit directly to `main`.**\n\n## Steps\n\n### 1. Check current branch\n```bash\ngit -C \"C:/Users/bfox/Documents/Git-Projects/data-projects\" branch --show-current\n```\nIf not on `dev`, switch: `git checkout dev`\n\n### 2. Check what changed\n```bash\ngit -C \"C:/Users/bfox/Documents/Git-Projects/data-projects\" status\ngit -C \"C:/Users/bfox/Documents/Git-Projects/data-projects\" diff --stat\n```\n\n### 3. Check for unsynced queries\nLook at modified .pq files in `projects/`. For each one:\n- Is it a finished, production-ready query?\n- Does it exist in `.claude/queries/` (raw-tables/, dimensions/)?\n- If not synced, flag it: \"Consider running /sync-query on [filename] to update the shared library\"\n\n### 4. Stage and commit\nGroup changes into logical commits:\n- Query/data model changes → one commit\n- Documentation changes → separate commit\n- Config/settings changes → separate commit\n\nWrite clear commit messages following the pattern:\n`[Action]: [What changed] - [Brief why]`\nExamples:\n- `Add Fact_LaborPerformance - initial build with branch and date dimensions`\n- `Update dim_CustomerList - add EngagementLevel calculated column`\n- `Document Labor Performance project - README and FACT-TABLES-SUMMARY entry`\n\nAlways add the co-author footer:\n```\nCo-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>\n```\n\n### 5. Push to dev\n```bash\ngit -C \"C:/Users/bfox/Documents/Git-Projects/data-projects\" push origin dev\n```\n\n### 6. Draft PR description\nUsing the `.github/PULL_REQUEST_TEMPLATE/dev_to_main.md` structure, draft a PR description based on the work done this session. Include:\n- Summary bullet points (what was built/changed)\n- Reports/projects table filled in\n- Data model changes checklist filled in\n- Refresh pipeline impact\n- Testing checklist (pre-filled based on what you know was done)\n- Deployment notes\n\nPresent this as a markdown block the user can copy directly into GitHub when opening the PR.\n\n### 7. Next steps summary\nProvide a clear, prioritized list:\n1. **Validate in RP - Sandbox** — what to check (refresh, specific visuals, row counts)\n2. **Open PR when ready** — link reminder: https://github.com/SlyFox18/claude-data-projects\n3. **Any unfinished work** — what was left incomplete this session\n4. **Any follow-up tasks** — things that came up during the session that need future work",
+  "args": {
+    "session_summary": {
+      "type": "string",
+      "description": "Optional: brief description of what was worked on this session, to help write better commit messages and PR description",
+      "required": false
+    }
+  },
+  "examples": [
+    {
+      "command": "/wrap-up",
+      "description": "Wrap up the current session - commit, push to dev, draft PR description"
+    },
+    {
+      "command": "/wrap-up \"Added incremental refresh to Fact_WorkOrderParts\"",
+      "description": "Wrap up with context about what was done for better commit messages"
+    }
+  ]
+}
