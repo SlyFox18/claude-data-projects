@@ -85,6 +85,39 @@ Source System (ODBC) → Raw Tables (Lakehouse) → Dimensions → Fact Tables �
 2. Create Dataflow Gen2 to read from Files, transform, and output to Lakehouse table
 3. Always rename columns to remove spaces in the dataflow (Delta compatibility)
 
+## Refresh Pipeline
+
+### Architecture
+```
+3:30 AM CST Mon-Fri → Pipeline_Master_Orchestrator
+  Phase 1: Raw Data (26 DFs, parallel) → Phase 2: InTrans (incremental)
+  → Phase 3: Dimensions (14+ DFs) → Phase 4: Facts (24 DFs, 5-wave batches)
+  → Phase 5: Semantic Models (17 reports) → Phase 6: Tier 2 reports
+  Total: ~80-95 min, complete by ~5:00 AM
+```
+
+### Key Constraints
+- **F4 Capacity:** 4 CU sustained, keep concurrent DFs to 4-5 per wave
+- **Source System:** ODBC performs well off-peak (3-6 AM), degrades during business hours
+- **Dependencies:** Raw → InTrans → Dims → Facts → Semantic Models (strict order)
+
+### Report Tiers
+- **Tier 1 (12 reports):** Fresh by 8 AM daily - Customer Anatomy, Inspections, Inventory Analysis, 60+ Past Due, Open Work Orders, Parts on Open Orders, First Pass Fill, Negative On Hand, Parts Adjustments, Part Sales Low Margin, Parts Promo, Parts Not Re-Ordered
+- **Tier 2 (5 reports):** Daily, can finish after 8 AM - Labor Performance, Unique Parts Customers, Combine Vault Sales, Pin Capture, Physical Inventory
+- **Tier 3 (2 reports):** Weekly Monday 5 AM - Price Matrix, Bin Location
+
+### Workspaces
+- **Production:** RP - Parts Reports, RP - Service Reports, RP - Financial Reports
+- **Sandbox:** RP - Sandbox (Customer Anatomy V2, Inventory Analysis V3, Parts Promo pending promotion)
+- **Pipeline Home:** LH_Master_Data (all dataflows, pipelines, notebooks)
+
+### Documentation
+- Full pipeline docs: `projects/refresh-pipeline/`
+- Schedule reference: `projects/refresh-pipeline/pipeline-schedule.md`
+- Performance baselines: `.claude/queries/REFRESH-TIMES.md`
+
+---
+
 ## Related Repositories & Knowledge Bases
 
 ### Fabric Workspace (Production)

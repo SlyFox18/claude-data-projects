@@ -323,6 +323,92 @@ Run 3: Feb 23, 2026, ~11:07 AM CST. All 24 succeeded, no retries. **Total: ~41m 
 
 ---
 
+## Pipeline_SemanticModels - Daily (17 SMs, 6 Waves of 3)
+
+Run 1 (Successful): Feb 23, 2026, ~2:01 PM CST. 16/16 active SMs succeeded. InventoryAnalysis V3 inactive (OOM). **Total: ~43m 6s**
+
+> **Note:** Measured during business hours (2 PM). CustomerAnatomy was unusually fast (3m 28s) due to warm Spark from prior testing.
+> At 3:30 AM cold-start, expect Spark startup overhead (~2-4 min per session vs ~6-8 min mid-day), but overall total may be comparable or faster due to less contention.
+> Inventory Analysis V3 requires incremental refresh implementation before it can be re-enabled (model is 1404 MB; F4 refresh limit ~1667 MB).
+
+### Wave A1 - Heaviest Tier 1 SMs (3 concurrent, ~9m 18s)
+
+| Semantic Model | Workspace | Refresh Time | Timeout | Notes |
+|----------------|-----------|-------------|---------|-------|
+| Customer Anatomy V2 | RP - Sandbox | 3m 28s | 40m | Unusually fast - warm Spark from prior testing |
+| Inspections V2 | RP - Service | 9m 16s | 30m | Bottleneck for this wave |
+| Inventory Analysis V3 | RP - Sandbox | **Inactive** | 20m | OOM: needs 1690 MB, F4 limit 1667 MB |
+
+### Wave A2 - Tier 1 SMs (3 concurrent, ~5m 43s)
+
+| Semantic Model | Workspace | Refresh Time | Notes |
+|----------------|-----------|-------------|-------|
+| 60+ Days Past Due | RP - Financial | 5m 40s | Bottleneck |
+| Open Work Orders | RP - Service | 3m 41s | |
+| Parts on Open Orders | RP - Parts | 1m 52s | Fastest wave member |
+
+### Wave A3 - Tier 1 SMs (3 concurrent, ~7m 13s)
+
+| Semantic Model | Workspace | Refresh Time | Notes |
+|----------------|-----------|-------------|-------|
+| First Pass Fill | RP - Parts | 5m 09s | |
+| Negative On Hand | RP - Parts | 7m 11s | Bottleneck |
+| Parts Adjustments | RP - Parts | 1m 53s | |
+
+### Wave A4 - Tier 1 SMs (3 concurrent, ~9m 43s)
+
+| Semantic Model | Workspace | Refresh Time | Notes |
+|----------------|-----------|-------------|-------|
+| Part Sales Low Margin | RP - Parts | 3m 37s | |
+| Parts Promo V2 | RP - Sandbox | 9m 41s | Bottleneck - surprisingly slow for small model |
+| Parts Not Re-Ordered | RP - Parts | 5m 39s | |
+
+### Wave B1 - Tier 2 SMs (3 concurrent, ~4m 42s)
+
+| Semantic Model | Workspace | Refresh Time | Notes |
+|----------------|-----------|-------------|-------|
+| Labor Performance V2 | RP - Service | 0m 51s | Very fast |
+| Unique Parts Customers | RP - Parts | 3m 08s | |
+| Combine Vault Sales | RP - Parts | 4m 40s | Bottleneck |
+
+### Wave B2 - Tier 2 SMs (2 concurrent, ~6m 12s)
+
+| Semantic Model | Workspace | Refresh Time | Notes |
+|----------------|-----------|-------------|-------|
+| Pin Capture | RP - Parts | 6m 10s | Bottleneck - slow for small model |
+| Physical Inventory | RP - Parts | 1m 27s | |
+
+### Pipeline_SemanticModels Wave Summary
+
+| Wave | SMs | Duration | Bottleneck |
+|------|-----|----------|------------|
+| A1 | 3 (1 inactive) | ~9m 18s | Inspections (9m 16s) |
+| A2 | 3 | ~5m 43s | 60+ Past Due (5m 40s) |
+| A3 | 3 | ~7m 13s | Negative On Hand (7m 11s) |
+| A4 | 3 | ~9m 43s | Parts Promo (9m 41s) |
+| B1 | 3 | ~4m 42s | Combine Vault (4m 40s) |
+| B2 | 2 | ~6m 12s | Pin Capture (6m 10s) |
+| **Total** | **16 active** | **~43m 6s** ✅ | |
+
+### Architecture Notes
+- **3 concurrent max per wave** - F4 can only handle ~4 concurrent Spark/Livy sessions before HTTP 430 throttling
+- Each notebook activity has ~2-8 min Spark cold-start overhead (less at 3:30 AM off-peak)
+- Waves are gated by 1-second Wait activities; failure of a wave gate triggers failure alert email
+- InventoryAnalysis disabled via `"state": "Inactive"` - re-enable after incremental refresh implementation
+
+### Projected End-to-End Timeline (3:30 AM)
+
+| Phase | Expected | Estimated Faster at 3:30 AM |
+|-------|----------|-----------------------------|
+| Raw Data | 24m 35s | ~20-22m (less ODBC contention) |
+| InTrans | ~3m | ~2-3m |
+| Dimensions | ~8m 26s | ~7-8m |
+| Facts | ~41m | ~28-33m (less ODBC contention) |
+| Semantic Models | ~43m | ~35-40m (less Spark competition) |
+| **Total** | **~2h** | **~1h 35-45m** → **~5:05-5:15 AM** |
+
+---
+
 ## CU Optimization Notes
 
 ### Pipeline_Raw_Data Performance (Batched, Feb 2026)
@@ -364,4 +450,4 @@ Run 3: Feb 23, 2026, ~11:07 AM CST. All 24 succeeded, no retries. **Total: ~41m 
 **Pipeline_Dimensions:** 8m 26s (9 DFs, 2 batches) - measured Feb 19 ~12 PM
 **Pipeline_Dimensions_Monthly:** 13m 17s (13 DFs, 3 batches) - measured Feb 19 ~12 PM
 **Pipeline_Facts:** ~41m clean (Run 3, Feb 23 ~11 AM) - WorkOrderParts 22m is consistent bottleneck
-**Pipeline_SemanticModels:** Restructured to 6 waves of 3 after TooManyRequestsForCapacity (430) at 12 concurrent Spark sessions
+**Pipeline_SemanticModels:** ~43m (Run 1, Feb 23 ~2 PM, 16/16 active SMs) - 6 waves of 3; InventoryAnalysis V3 disabled (OOM)
