@@ -94,7 +94,7 @@ After the sync completes:
 
 1. Open **Pipeline_Raw_Data** in the pipeline editor
 2. You should see the new structure:
-   - Batch 1 (5 DFs) starting immediately
+   - Batch 1 (5 DFs) starting immediatelyIs there 
    - **Wait_Batch1_Gate** connecting to Batch 2
    - **Wait_Batch2_Gate** connecting to Batch 3
    - **Wait_Batch3_Gate** connecting to Batch 4
