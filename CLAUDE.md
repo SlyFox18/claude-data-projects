@@ -118,6 +118,51 @@ Source System (ODBC) → Raw Tables (Lakehouse) → Dimensions → Fact Tables �
 
 ---
 
+## Git Workflow
+
+### Branch Strategy
+
+| Branch | Purpose | Fabric Workspace |
+|--------|---------|-----------------|
+| `main` | Production — protected, PR required | RP - Parts Reports, RP - Service Reports, RP - Financial Reports |
+| `dev` | Sandbox development and testing | RP - Sandbox |
+| `feature/*` | Individual report/feature work (optional) | Local only |
+
+**Same branching strategy applies to both repos:**
+- `data-projects` (GitHub: SlyFox18/claude-data-projects) — queries, docs, TMDL files
+- `fabric-workspace-docs` (GitHub: SlyFox18/fabric-workspace-docs) — Fabric Git Integration mirror
+
+### Standard Workflow
+
+```
+1. Work on dev branch (or feature/* branch off dev)
+2. Push to origin/dev
+   → Fabric auto-syncs RP - Sandbox from dev branch
+3. Validate in RP - Sandbox (refresh, check visuals, spot-check measures)
+4. Open PR: dev → main  (PR template auto-loads from .github/PULL_REQUEST_TEMPLATE/)
+5. Merge PR
+   → Production workspaces pull from main
+```
+
+### Branch Protection
+
+- `main` on `claude-data-projects`: **Protected** — requires PR, 0 approvers required (solo dev), enforced on admins
+- `main` on `fabric-workspace-docs`: **Not enforceable** — GitHub Free plan limitation for private repos; Fabric access control serves as the gate
+- Direct pushes to `main` should be avoided even on fabric-workspace-docs
+
+### PR Templates
+
+Located at `.github/PULL_REQUEST_TEMPLATE/dev_to_main.md` in both repos.
+Covers: reports changed, data model changes, refresh pipeline impact, sandbox testing checklist, query library updates, deployment notes.
+
+### When Claude Is Helping With Development
+
+- **Always work on `dev` branch**, not `main`
+- After completing work: commit to `dev`, push, then remind to validate in RP - Sandbox before merging to `main`
+- Never commit directly to `main` unless it's a docs-only change with no Fabric impact
+
+---
+
 ## Related Repositories & Knowledge Bases
 
 ### Fabric Workspace (Production)
