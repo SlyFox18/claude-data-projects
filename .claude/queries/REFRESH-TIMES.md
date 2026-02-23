@@ -238,78 +238,79 @@ Baselines measured Feb 19, 2026, 12:48 PM CST. Run manually or on monthly schedu
 
 Run 1: Feb 19, 2026, ~4:08 PM CST. All succeeded. **Total: ~39m 10s**
 Run 2: Feb 23, 2026, ~9:50 AM CST. 3 transient failures (all retried successfully). **Total: ~65m** (inflated by retries at business hours).
+Run 3: Feb 23, 2026, ~11:07 AM CST. All 24 succeeded, no retries. **Total: ~41m 12s** ✅ Clean business-hours run.
 
-> **Note:** Both runs were during business hours with ODBC contention. Expect significantly faster times at 3:30 AM.
+> **Note:** All runs were during business hours with ODBC contention. Expect significantly faster times at 3:30 AM.
 
 ### Wave A (6 concurrent)
 
-| Dataflow | Run 1 | Run 2 | Wave (Pipeline_Facts) | Notes |
-|----------|-------|-------|-----------------------|-------|
-| Refresh_Fact_WorkOrderParts | 16m 46s | 21m 46s (retry) | A | First run faster; Run 2 hit gateway timeout on attempt 1 |
-| Refresh_Fact_Service_Invoices | 8m 43s | 11m 16s | A | |
-| Refresh_Fact_Parts_Details | 8m 43s | 10m 17s | A | |
-| Refresh_Fact_Inventory | 8m 13s | 9m 16s | A | |
-| Refresh_Fact_Service_Detail | 6m 44s | 8m 15s | A | |
-| Refresh_FactPartTransactions_Incremental | 9m 7s | 13m 41s (retry) | A | Timed out at 15m in Run 2; timeout raised to 25m |
+| Dataflow | Run 1 | Run 2 | Run 3 | Notes |
+|----------|-------|-------|-------|-------|
+| Refresh_Fact_WorkOrderParts | 16m 46s | 21m 46s (retry) | 22m 21s | Run 2 hit gateway timeout on attempt 1 |
+| Refresh_Fact_Service_Invoices | 8m 43s | 11m 16s | 10m 16s | |
+| Refresh_Fact_Parts_Details | 8m 43s | 10m 17s | 9m 15s | |
+| Refresh_Fact_Inventory | 8m 13s | 9m 16s | 9m 17s | |
+| Refresh_Fact_Service_Detail | 6m 44s | 8m 15s | 14m 19s | Run 3 slower - unexplained |
+| Refresh_FactPartTransactions_Incremental | 9m 7s | 13m 41s (retry) | 13m 48s | Timeout raised to 25m after Run 2 |
 
-**Wave A duration: Run 1 ~16m 48s / Run 2 ~40m (WorkOrderParts retry cycle)**
+**Wave A duration: Run 1 ~16m 48s / Run 2 ~40m (WorkOrderParts retry) / Run 3 ~22m 23s**
 
 ### Wave B (6 concurrent)
 
-| Dataflow | Run 1 | Run 2 | Wave | Notes |
-|----------|-------|-------|------|-------|
-| Refresh_Fact_Invoice_UniqueCustomers | 7m 37s | 8m 10s | B | Moved from Wave D after Run 1 |
-| Refresh_Fact_Parts_Invoices | 5m 37s | 7m 12s | B | |
-| Refresh_Fact_FirstPassFill | 5m 7s | 6m 10s | B | |
-| Refresh_Fact_LaborJobSummary | 5m 9s | 5m 44s | B | |
-| Refresh_Fact_CustomerPerformance | 4m 6s | 5m 8s | B | |
-| Refresh_Fact_Service_Parts_Detail | 3m 36s | 5m 11s | B | |
+| Dataflow | Run 1 | Run 2 | Run 3 | Notes |
+|----------|-------|-------|-------|-------|
+| Refresh_Fact_Invoice_UniqueCustomers | 7m 37s | 8m 10s | 8m 11s | Moved from Wave D after Run 1 |
+| Refresh_Fact_Parts_Invoices | 5m 37s | 7m 12s | 7m 39s | |
+| Refresh_Fact_FirstPassFill | 5m 7s | 6m 10s | 6m 9s | |
+| Refresh_Fact_LaborJobSummary | 5m 9s | 5m 44s | 6m 9s | |
+| Refresh_Fact_CustomerPerformance | 4m 6s | 5m 8s | 4m 39s | |
+| Refresh_Fact_Service_Parts_Detail | 3m 36s | 5m 11s | 4m 8s | |
 
-**Wave B duration: Run 1 ~5m 39s / Run 2 ~8m 19s**
+**Wave B duration: Run 1 ~5m 39s / Run 2 ~8m 19s / Run 3 ~8m 13s**
 
 ### Wave C (5 concurrent)
 
-| Dataflow | Run 1 | Run 2 | Wave | Notes |
-|----------|-------|-------|------|-------|
-| Refresh_Fact_PartSales_24Hours | 4m 6s | 4m 41s (retry) | C | Transient fail in Run 2, retry succeeded |
-| Refresh_Fact_Invoice_InventoryAnalysis | 3m 7s | 3m 42s | C | |
-| Refresh_Fact_PartsAdjustments | 3m 7s | 3m 12s | C | |
-| Refresh_Fact_Parts_Open_Orders | 2m 36s | 3m 11s | C | |
-| Refresh_Fact_Branch12_Transactions | 2m 6s | 2m 41s | C | |
+| Dataflow | Run 1 | Run 2 | Run 3 | Notes |
+|----------|-------|-------|-------|-------|
+| Refresh_Fact_PartSales_24Hours | 4m 6s | 4m 41s (retry) | 4m 8s | Transient fail in Run 2, clean in Run 3 |
+| Refresh_Fact_Invoice_InventoryAnalysis | 3m 7s | 3m 42s | 3m 37s | |
+| Refresh_Fact_PartsAdjustments | 3m 7s | 3m 12s | 3m 7s | |
+| Refresh_Fact_Parts_Open_Orders | 2m 36s | 3m 11s | 2m 37s | |
+| Refresh_Fact_Branch12_Transactions | 2m 6s | 2m 41s | 2m 37s | |
 
-**Wave C duration: Run 1 ~4m 8s / Run 2 ~7m 37s (PartSales_24Hours retry)**
+**Wave C duration: Run 1 ~4m 8s / Run 2 ~7m 37s (PartSales retry) / Run 3 ~4m 11s**
 
 ### Wave D (3 concurrent)
 
-| Dataflow | Run 1 | Run 2 | Wave | Notes |
-|----------|-------|-------|------|-------|
-| Refresh_Fact_PendingInspections | 2m 7s | 3m 41s | D | |
-| Refresh_Fact_InTrans_UniqueCustomers | 2m 37s | 3m 12s | D | |
-| Refresh_Fact_Equipment_Sales | 2m 37s | 2m 42s | D | |
+| Dataflow | Run 1 | Run 2 | Run 3 | Notes |
+|----------|-------|-------|-------|-------|
+| Refresh_Fact_PendingInspections | 2m 7s | 3m 41s | 2m 40s | |
+| Refresh_Fact_InTrans_UniqueCustomers | 2m 37s | 3m 12s | 2m 37s | |
+| Refresh_Fact_Equipment_Sales | 2m 37s | 2m 42s | 2m 38s | |
 
-**Wave D duration: Run 1 ~9m 10s (5 DFs) / Run 2 ~3m 57s (3 DFs after rebalance)**
+**Wave D duration: Run 1 ~9m 10s (5 DFs) / Run 2 ~3m 57s (3 DFs after rebalance) / Run 3 ~2m 43s**
 
 ### Wave E (4 concurrent)
 
-| Dataflow | Run 1 | Run 2 | Wave | Notes |
-|----------|-------|-------|------|-------|
-| Refresh_Fact_Top50_JobCodes | 3m 7s | 3m 45s | E | |
-| Refresh_Fact_PartsPromo | 2m 7s | 2m 13s | E | |
-| Refresh_Fact_NegativeOnHand | 2m 7s | 2m 13s | E | |
-| Refresh_Fact_InSalOrd_InSalPar | 2m 6s | 2m 13s | E | |
+| Dataflow | Run 1 | Run 2 | Run 3 | Notes |
+|----------|-------|-------|-------|-------|
+| Refresh_Fact_Top50_JobCodes | 3m 7s | 3m 45s | 3m 16s | |
+| Refresh_Fact_PartsPromo | 2m 7s | 2m 13s | 2m 8s | |
+| Refresh_Fact_NegativeOnHand | 2m 7s | 2m 13s | 2m 8s | |
+| Refresh_Fact_InSalOrd_InSalPar | 2m 6s | 2m 13s | 2m 10s | |
 
-**Wave E duration: Run 1 ~3m 10s / Run 2 ~4m 4s**
+**Wave E duration: Run 1 ~3m 10s / Run 2 ~4m 4s / Run 3 ~3m 20s**
 
 ### Pipeline_Facts Wave Summary
 
-| Wave | DFs | Run 1 | Run 2 | Bottleneck |
-|------|-----|-------|-------|------------|
-| A | 6 | 16m 48s | ~40m (retry) | WorkOrderParts |
-| B | 6 | 5m 39s | 8m 19s | Invoice_UniqueCustomers |
-| C | 5 | 4m 8s | 7m 37s | PartSales_24Hours (retry) |
-| D | 3 | 9m 10s* | 3m 57s | PendingInspections |
-| E | 4 | 3m 10s | 4m 4s | Top50_JobCodes |
-| **Total** | **24** | **~39m 10s** | **~65m** | |
+| Wave | DFs | Run 1 | Run 2 | Run 3 | Bottleneck |
+|------|-----|-------|-------|-------|------------|
+| A | 6 | 16m 48s | ~40m (retry) | 22m 23s | WorkOrderParts |
+| B | 6 | 5m 39s | 8m 19s | 8m 13s | Invoice_UniqueCustomers |
+| C | 5 | 4m 8s | 7m 37s | 4m 11s | PartSales_24Hours |
+| D | 3 | 9m 10s* | 3m 57s | 2m 43s | PendingInspections |
+| E | 4 | 3m 10s | 4m 4s | 3m 20s | Top50_JobCodes |
+| **Total** | **24** | **~39m 10s** | **~65m** | **~41m 12s** ✅ | |
 
 *Wave D was 5 DFs in Run 1, restructured to 3 DFs after that run.
 
@@ -339,7 +340,7 @@ Run 2: Feb 23, 2026, ~9:50 AM CST. 3 transient failures (all retried successfull
 - **InTrans:** After raw tables (incremental, ~3 min)
 - **Dimensions:** After InTrans (all parallel, ~10-12 min)
 - **Facts:** After dimensions (5 waves of 5 concurrent, ~32-35 min)
-- **Semantic Models:** After facts (3 waves, ~10-12 min)
+- **Semantic Models:** After facts (6 waves of 3 concurrent, ~17-20 min) - limited to 3/wave by F4 Spark session cap
 - **Tier 2:** After Tier 1 SMs (~2-3 min)
 
 ### Total Daily CU Consumption
@@ -358,8 +359,9 @@ Run 2: Feb 23, 2026, ~9:50 AM CST. 3 transient failures (all retried successfull
 ---
 
 **Last Updated:** February 23, 2026
-**F4 Capacity:** 4 CU sustained, 5,760 CU-min/day
+**F4 Capacity:** 4 CU sustained, 5,760 CU-min/day; ~4 concurrent Spark sessions max
 **Pipeline_Raw_Data:** 24m 35s (32 DFs, 5 batches) - measured Feb 12 ~3 PM
 **Pipeline_Dimensions:** 8m 26s (9 DFs, 2 batches) - measured Feb 19 ~12 PM
 **Pipeline_Dimensions_Monthly:** 13m 17s (13 DFs, 3 batches) - measured Feb 19 ~12 PM
-**Pipeline_Facts:** ~39m clean run / ~65m with retries (24 DFs, 5 waves) - measured Feb 19 & Feb 23 ~business hours
+**Pipeline_Facts:** ~41m clean (Run 3, Feb 23 ~11 AM) - WorkOrderParts 22m is consistent bottleneck
+**Pipeline_SemanticModels:** Restructured to 6 waves of 3 after TooManyRequestsForCapacity (430) at 12 concurrent Spark sessions
