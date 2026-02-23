@@ -2,114 +2,364 @@
 
 Track average refresh times for capacity planning and CU optimization (F4 capacity).
 
-## Raw Tables (01 - Raw Sources)
+---
 
-| Table Name | Dataflow | Approx Rows | Avg Refresh Time | Refresh Schedule | Last Updated | Notes |
-|------------|----------|-------------|------------------|------------------|--------------|-------|
-| jdis_Part_Information | df_jdis_Part_Information_Raw | 1,081,494 | ~8 minutes | 7:30am, 9:30am, 4:00pm | 12/01/2025 | Most frequently changing - optimization opportunity |
-| ArMaster_Contact | df_ArMaster_Contact_Raw | 53,470 | ~6-8 min 🚨 | 7:30am weekdays (pipeline) | 10/21/2025 | WAS 1-2min - Part of ArMaster pipeline issue |
-| ArMaster_Customer | df_ArMaster_Customer_Raw | 53,470 | ~6-8 min 🚨 | 7:30am weekdays (pipeline) | 08/11/2025 | WAS 1-2min - Part of ArMaster pipeline issue |
-| armaster | df_armaster_Raw | 53,470 | ~6-7 min 🚨 (today 3:30) | 7:30am weekdays (pipeline) | 12/23/2025 | WAS 1-2min - INTERMITTENT! Has ModifiedDate |
-| Branch_Name | [No dataflow - on-demand] | 99 | ~1:12 | On-demand (monthly or less) | 12/30/2025 | ✅ OPTIMAL - Foundation for dim_BranchLocation (ALL reports!) |
-| BranchOperational | df_BranchOperational_Raw | 99 | ~1:20 | On-demand (monthly or less) | 07/02/2025 | ✅ OPTIMAL - LocationID key for relationships! Refresh with Branch_Name |
-| contact | df_CONTACT_Raw | 81,648 | ~6-8 min 🚨 (today 4:23) | 7:30am weekdays (pipeline) | 08/11/2025 | WAS 1:30-2min - Part of 7:30 AM SYSTEMIC ISSUE! Has ModifiedDate |
-| GlTrans | df_GlTrans_Raw | 208,637 | ~6-8 min 🚨 (today 4:32) | 7:30am weekdays (pipeline) | 12/22/2025 | WAS 2-3min - Master Orchestrator Pipeline! |
-| InHist_PmManage | df_InHist_PmManage_Raw | 721,295 | ~8-9 min 🚨 (today 5:20) | 7:30am weekdays (pipeline) | 09/02/2025 | WAS 3min - 200%+ increase! Has PeriodDate for incremental |
-| InMaster | df_InMaster_Raw | 1,081,485 | ~4-5 min ✅ | NOT SCHEDULED YET | 01/09/2026 | ✅ BASELINE! 1M+ rows in 4-5min proves 7:30 AM is the problem! Low Margin Flag |
-| insalord | df_INSALORD_Raw | 8,631 | ~6-7 min 🚨🚨 | 7:30am weekdays (pipeline) | 12/30/2025 | WAS 1min - 600% INCREASE! Tiny table proves it's NOT row count! |
-| insalpar | df_INSALPAR_Raw | 13,373 | ~6-7 min 🚨🚨 (today 5:21) | 7:30am weekdays (pipeline) | 12/30/2025 | WAS 1-1:30min - 400-600% increase! Another tiny table! |
-| Invoice | df_Invoice_Raw | 1,402,683 | ~10-12 min 🚨🚨 (today 7:46) | 7:30am weekdays (pipeline) | 08/28/2025 | WAS 4-5min - 200-250% increase! 9th affected table! Has InvoiceDate for incremental |
-| RepairOrderDetail | df_RepairOrderDetail_Raw | 2,003 | ~6-7 min 🚨🚨🚨 (today 4:35) | 7:30am weekdays (pipeline) | 11/03/2025 | WAS 1-1:30min - 400-600% INCREASE! TINY TABLE = SMOKING GUN! Has CreationDate |
-| Technician | df_Technician_Raw | 1,424 | ~6-7 min 🚨🚨🚨 (today 4:20) | 7:30am weekdays (pipeline) | 07/03/2025 | WAS 1-1:30min - 400-600% INCREASE! 1.4K rows, 3 cols = ABSURD! User says daily refresh probably not needed |
-| TechnicianInvoiceDetail | df_TechnicianInvoiceDetail_Raw | 330,096 | ~6-7 min 🚨🚨 (today 7:21) | 7:30am weekdays (pipeline) | 11/03/2025 | WAS 1:30-2min - 300-400% increase! Has ModifiedDate incremental ALREADY - proves timing is issue! |
-| TechnicianPunchedDetail | df_TechnicianPunchedDetail_Raw | 319,043 | ~7-8 min 🚨🚨 (today 5:39) | 7:30am weekdays (pipeline) | 11/03/2025 | WAS 1:30-3min - 200-400% increase! Has CreationDate incremental - 2nd labor table proving incremental doesn't fix timing! |
-| vhstock | df_VHSTOCK_Raw | 24,469 | ~6-7 min 🚨🚨 (today 3:06) | 7:30am weekdays (pipeline) | 08/14/2025 | WAS 1-1:30min - 400-600% increase! Has SaleDate incremental - 4th table with incremental proving timing is root cause! |
-| VhStockAccess | df_VhStockAccess_Raw | 683,129 | ~2 min ✅ | NOT SCHEDULED YET | 08/14/2025 | ✅ BASELINE! Large table (683K rows) refreshing in 2 min - not used in reports yet, may be used in future |
-| WarClaim | df_WarClaim_Raw | 10,801 | ~1:10 ✅ | NOT SCHEDULED YET | 11/03/2025 | ✅ BASELINE! SAME SIZE as insalord (8.6K) but 5-6x FASTER! Has RepairDate incremental - proves 7:30 AM is the problem! |
-| WarsubCl_Labour | df_WARSUBCI_LABOUR_Raw | 65,741 | ~1:30 ✅ | NOT SCHEDULED YET | 07/03/2025 | ✅ BASELINE! MEDIUM size (66K) - SAME as ArMaster (53K) but 4-5x FASTER! Complete baseline coverage! |
-| WkInvReg | df_WKINVREG_Raw | 40,582 | ~8-9 min 🚨🚨 (today 4:48) | 7:30am weekdays (pipeline) | 11/03/2025 | WAS 1-2min - 400-700% increase! Has ModifiedDate incremental (2023+ scope) - 5th table proving incremental doesn't fix timing! 15 TABLES CONFIRMED! |
-| wkmechwk | df_WKMECHWK_Raw | 307,819 | ~6-8 min 🚨🚨 (today 4:30) | 7:30am weekdays (pipeline) | 11/03/2025 | WAS 1-2min - 300-400% increase! Has ModifiedDate incremental - 6th table with incremental proving timing is root cause! 16 TABLES = 405-495 min/week wasted! |
-| wkothsub | df_WKOTHSUB_Raw | 350,305 | ~6-7 min 🚨🚨 (today 4:30) | 7:30am weekdays (pipeline) | 11/03/2025 | WAS 2min - 300-350% increase! Has ModifiedDate incremental (21 cols optimized) - 7th table proving incremental doesn't fix timing! 17 TABLES = 425-520 min/week! |
-| wkrodesc | df_WKRODESC_Raw | 904,014 | ~6-8 min 🚨🚨 (today 5:24) | 7:30am weekdays (pipeline) | 08/27/2025 | WAS 1:30-3min - 200-400% increase! LARGE dataset, SIMPLEST query (6 cols, LINE_NO=1 filter) - proves complexity NOT issue! 18 TABLES = 440-545 min/week! |
-| WKROFILE | df_WKROFILE_Raw | 111,650 | ~7-8 min 🚨🚨 (today 5:15) | 7:30am weekdays (pipeline) | 11/03/2025 | WAS 1-2min - 400-700% increase! Has ModifiedDate incremental (20 cols) - 8th table with incremental proving timing is root cause! 19 TABLES = 465-575 min/week! |
-| WKVEHFL | df_WKVEHFL_Raw | 48,316 | ~7-8 min 🚨🚨 (today 4:34) | 7:30am weekdays (pipeline) | 08/27/2025 | WAS 1-2min - 400-700% increase! Has ModifiedDate incremental (16 cols) - 9th table with incremental! 20 TABLES = 490-605 min/week = 8-10 HOURS/WEEK! |
-| InTrans_Incremental | df_InTrans_Incremental | 10,245,764 | ~2-3 min ✅🏆 | 3x daily (dedicated pipeline) | 01/05/2026 | ✅ **GOLD STANDARD!** 10M+ rows with watermark-based incremental refresh. 2-3 min vs 30+ min full refresh. Powers 9+ fact tables. 6+ years history. TEMPLATE for Fact_WorkOrderParts optimization! |
-| [Other] | [Dataflow name] | [X] | [X min/sec] | [Schedule] | [Date] | |
+## Batched Pipeline Baselines (3:30 AM Target, Feb 2026)
 
-## Dimensions (03 - Dimensions)
+Pipeline_Raw_Data restructured into 5 sequential batches with concurrent DFs per batch.
+Baselines measured from Run 4 (Feb 12, 2026, 3:05 PM CST) after InTrans_PartsCounter optimization.
+**Total Pipeline_Raw_Data: 24m 35s**
 
-| Dimension | Dataflow | Approx Rows | Avg Refresh Time | Refresh Schedule | Last Updated | Dependencies | Notes |
-|-----------|----------|-------------|------------------|------------------|--------------|--------------|-------|
-| dim_AdjustmentType | df_Dim_AdjustmentType | 7 | ~1 min ✅ | Not scheduled (static) | 12/23/2025 | None (hard-coded) | Type 0 - Static dimension for parts adjustments. Recommend monthly refresh |
-| dim_Branch12_Parts | df_Dim_Branch12_Parts | 1,485 | ~1:30 ✅ | Daily weekdays (7:45-7:55 AM) | 10/17/2025 | jdis_Part_Information, Fact_Branch12_Transactions | Type 1 - Branch 12 parts with R12 metrics. Part of dimensional pipeline after raw data refresh. Full description preserved |
-| dim_CommodityCode | df_Dim_CommodityCode | 780 | ~1:30 ✅ | Not scheduled (recommend monthly) | 06/23/2025 | jdis_Part_Information, UnknownCommodityCode | Type 1 - Distinct commodity codes from parts. Self-updating, recommend monthly refresh with reference data pipeline |
-| dim_DateTable | df_Dim_Date | 4,018 | <15 sec ✅ | Daily weekdays (7:45-7:55 AM) | 11/25/2025 | None (mathematically generated) | Type 0 - Comprehensive time intelligence dimension. 76 columns including rolling periods, YTD/QTD/MTD flags, agricultural seasonality. 2020-2030 date range. Daily refresh required for dynamic flags |
-| dim_DealerGroupCode | df_Dim_DealerGroupCode | 1,813 | ~1:40 ⚠️ | Not scheduled (recommend monthly) | 06/23/2025 | jdis_Part_Information, UnknownDealerGroupCode | Type 1 - Distinct dealer group codes from parts. Self-updating, UPPERCASE normalized. ⚠️ OPTIMIZATION OPPORTUNITY: Redundant operations (4 distinct, 3 appends, 3 sorts) - can reduce to ~1:00 |
-| dim_Franchise | df_Dim_Franchise | 43 | ~1:30 ✅ | Not scheduled (recommend monthly) | 08/20/2025 | jdis_Part_Information | Type 1 - Comprehensive manufacturer dimension. 15 columns of business intelligence: classification, market position, service complexity, priority scoring. Pattern-based John Deere/Case IH/Caterpillar/Kubota/New Holland categorization |
-| Dim_JobType | df_Dim_JobType | 7 | ~2 min ⚠️ | Not scheduled (recommend monthly) | 10/07/2025 | Raw_WorkOrderDesc | Type 1 - Work order type classification. 7 columns: billing type (Insurance Claim, Customer Pay, Fleet Account, etc.), category grouping. 7 job types: A/F/I/P/R/S/W. ⚠️ 2 min for 7 rows seems high (not urgent) |
-| dim_BranchLocation | df_Dim_Location | 69 | ~1:30 ✅ | Not scheduled (recommend monthly) | 08/20/2025 | Raw_BranchOperational | Type 1 - Branch/location dimension. 16 columns: branch type (Main/IS Shop/Set-Up/CP), service capacity, market presence, regional classification, operational priority (1-10). **CRITICAL FIX**: Smart filtering (not Table.Skip) - all 69 operational branches included (Seminole restored). Used in ALL reports |
-| dim_ModuleType | df_Dim_ModuleType | 11 | ~1:30 ⚠️ | Not scheduled (recommend monthly) | 09/25/2025 | Invoice | Type 1 - Invoice module type classification. 5 columns: explicit keys (1-11), business grouping (Counter/Work Order/Internal/Warranty/Tag/Other), sort order. Internal customers (71-87, 9001-9007) and Warranty customers (41-57, 9051-9057) override logic. ⚠️ 1:30 for 11 rows (large Invoice source) |
-| dim_Parts | df_Dim_Part | 308,709 | ~5-6 min ⚠️ | Daily weekdays (~7:45 AM pipeline) | 01/12/2026 | jdis_Part_Information | Type 1 - Master parts dimension with inventory, pricing, sales intelligence. **OPTIMIZED VERSION**: Early blank removal/dedup (saves 20s), Text.Upper instead of Text.Proper on Description (saves 30-60s), strategic column selection. Target: <5 min (15-25% improvement). **CRITICAL FIX**: Final deduplication prevents duplicate PartNumber relationship errors. 22 columns: surrogate key, business filters, inventory status, pricing, activity flags. ⚠️ Future optimization opportunity revisit |
-| dim_PaymentMethod | df_Dim_PaymentMethod | 5 | ~1:30 ✅ | Not scheduled (recommend monthly) | 10/15/2025 | Invoice | Type 1 - Payment method classification dimension. Self-updating from Invoice distinct values. 5 columns: surrogate key, PaymentMethod, PaymentMethodDescription, PaymentCategory (Cash/Electronic/Check/Account/Finance), SortOrder (business-logical order, Cash first). Enables payment pattern analysis, cash flow management, branch comparison. Rarely changes - monthly refresh adequate or even quarterly |
-| dim_SLC | df_Dim_SLC | 123 | ~1:30 ✅ | Not scheduled (recommend monthly) | 06/23/2025 | jdis_Part_Information | Type 1 - Stock Location Code/Stock Line Code classification. Self-updating from jdis_Part_Information distinct values. 2 columns: SLCKey, SLC. Unknown record pattern (SLCKey=-1) for missing values. Text trim/clean for data quality. Standard parts classification dimension. 1:30 reasonable for extracting 123 distinct from 1M+ parts |
-| dim_Source | df_Dim_Source | 267 | ~1:30 ✅ | Not scheduled (recommend monthly) | 06/23/2025 | jdis_Part_Information | Type 1 - Source classification for parts. Self-updating from jdis_Part_Information distinct values. 2 columns: SourceKey, Source. Unknown record pattern (SourceKey=-1). Text cleaning AFTER Unknown append for consistency. 267 codes suggests detailed source classification. Similar pattern to dim_SLC but with late-stage text cleaning |
-| dim_Technician_Code_Names | df_Dim_Technicans | 1,417 | ~1:30 ✅ | Not scheduled (recommend monthly) | 08/18/2025 | Raw_Technician | Type 1 - Comprehensive technician master dimension. 16 columns: surrogate key, code, name components, MULTIPLE display formats (DisplayName, FullName, ShortName, PreferredDisplayName, SearchableName), status/type classification, BI flags (IsActive, HasFullName, HasValidCode, HasLongName, DataQualityScore 0-100). Unknown record pattern (TechnicianKey=-1). Intelligent name fallbacks, pre-calculated display names eliminate DAX complexity. Labor analysis, performance tracking, resource planning |
-| dim_UniqueCustomers | df_Dim_UniqueCustomers | 11 | ~1:30 ✅ | Daily weekdays (~7:45 AM pipeline) | 11/04/2025 | In-memory table (manual) | Type 1 with soft deletes - High-value customer tracking dimension. 7 columns: CustomerKey, CustomerName, DataSource (InTrans/Invoice), IdentificationMethod (5 types), IdentificationRule, IsActive, CreatedDate. **DUAL-FACT ARCHITECTURE**: Serves both Fact_InTrans_UniqueCustomers (location-based) and Fact_Invoice_UniqueCustomers (text-pattern). 5 identification methods: TradeType, TradeType+Branch, CustomerOrderNumber, CustomerOrderNumber+Branch, CustomerNo. 11 customers: 3 locations (Pearsall/Dell City/Tornillo), 5 Invoice (Manuel/Jim/David/Danny/Oscar), 3 InTrans (Dallyn/Benny/Owen). **DAILY REFRESH REQUIRED** - must stay in sync with fact tables |
-| dim_Vehicle | df_Dim_Vehicle | 71,640 | ~2 min ✅ | **NOT SCHEDULED - Awaiting deployment** | 08/15/2025 | Raw_VehicleFleet, Raw_VehicleStock | Type 1 - **FUTURE POTENTIAL** Comprehensive vehicle/equipment master dimension. 26 columns: VehicleKey, PrimaryLookup (CRITICAL for work orders), dual-source integration (Fleet+Stock), identification (Registration/StockNumber/VIN), specifications (Make/Model/Year/Engine), age analysis (VehicleAge/AgeCategory), service intelligence (ServiceComplexity/WarrantyLikelihood/PartsAvailability/MaintenancePriority 1-10), equipment categorization (Heavy Equipment/Commercial Truck/Domestic/Import), multiple display formats, DataQualityScore 0-100. **POWERFUL FOR SERVICE REPORTS** when deployed. Ready for incremental refresh. Determine schedule when use cases defined (daily for service ops, weekly for analytics, monthly for planning) |
-| dim_VendorCode | df_Dim_VendorCode | 1,311 | ~1:30 ✅ | Not scheduled (recommend monthly) | 05/29/2025 | jdis_Part_Information | Type 1 - Vendor code classification for supplier analysis. Self-updating from jdis_Part_Information distinct values. 2 columns: VendorCodeKey, VendorCode. Simple structure, alphabetically sorted. **PARTS DIMENSION FAMILY** (SLC/Source/Commodity/Dealer/Vendor). 1,311 vendors suggests substantial supplier base. Procurement analytics, vendor performance, sourcing strategy. ⚠️ **NO Unknown record** (unlike other parts dimensions) - consider adding for consistency if NULL vendors exist in facts |
-| dim_CustomerList | df_Dim_CustomerList | [X] | [X min/sec] | [Schedule] | [Date] | [Raw tables used] | |
-| dim_Parts_LowMargin | df_Dim_Parts_LowMargin | [X] | [X min/sec] | [Schedule] | [Date] | Multiple sources | Report-specific |
+> **Note:** These baselines were measured during business hours (~3 PM). True 3:30 AM baselines
+> (zero source contention) are expected to be equal or faster. Update after first production run.
 
-## Fact Tables (04 - Fact)
+### Batch 1 - Heaviest DFs (6 concurrent, 9m 14s)
 
-| Fact Table | Dataflow | Approx Rows | Avg Refresh Time | Last Updated | Dependencies | Report |
-|------------|----------|-------------|------------------|--------------|--------------|--------|
-| Fact_PartsAdjustment | df_Fact_PartsAdjustment | [X] | [X min/sec] | [Date] | [Raw tables] | Parts Adjustment |
-| Fact_LaborJobs | df_Fact_LaborJobs | [X] | [X min/sec] | [Date] | [Raw tables] | Labor Jobs |
-| [Other] | [Dataflow name] | [X] | [X min/sec] | [Date] | [Raw tables] | [Report name] |
+| Dataflow | Table | Refresh Time | Approx Rows |
+|----------|-------|-------------|-------------|
+| df_JDIS_PART_INFORMATION_Raw | jdis_Part_Information | 9m 13s | 1,081,494 |
+| df_InTrans_PartsCounter_Raw | InTrans_PartsCounter | 7m 43s | ~500K |
+| df_Invoice_Raw | Invoice | 7m 13s | 1,402,683 |
+| df_InHist_PmManage_Raw | InHist_PmManage | 4m 42s | 721,295 |
+| df_GlTrans_Raw | GlTrans | 3m 43s | 208,637 |
+| df_WKROFILE_Raw | WKROFILE | 3m 12s | 111,650 |
 
-## Snapshots (05 - Snapshots)
+**Bottleneck:** JDIS at 9m 13s
 
-| Snapshot | Dataflow | Approx Rows | Avg Refresh Time | Schedule | Notes |
-|----------|----------|-------------|------------------|----------|-------|
-| jdis_Part_Information (Daily) | df_Snapshot_Parts_Daily | [X] | [X min/sec] | Daily | |
-| jdis_Part_Information (Weekly) | df_Snapshot_Parts_Weekly | [X] | [X min/sec] | Weekly | |
+### Batch 2 - WK Tables (5 concurrent, 3m 38s)
+
+| Dataflow | Table | Refresh Time | Approx Rows |
+|----------|-------|-------------|-------------|
+| df_WKRODESC_Raw | wkrodesc | 3m 36s | 904,014 |
+| df_WKMECHWK_Raw | wkmechwk | 3m 36s | 307,819 |
+| df_WKVEHFL_Raw | WKVEHFL | 3m 06s | 48,316 |
+| df_WKINVREG_Raw | WkInvReg | 2m 36s | 40,582 |
+| df_WKOTHSUB_Raw | wkothsub | 2m 35s | 350,305 |
+
+**Bottleneck:** WKRODESC/WKMECHWK tied at 3m 36s
+
+### Batch 3 - Tech Detail & Short DFs (6 concurrent, 4m 10s)
+
+| Dataflow | Table | Refresh Time | Approx Rows |
+|----------|-------|-------------|-------------|
+| df_TechnicianInvoiceDetail_Raw | TechnicianInvoiceDetail | 4m 07s | 330,096 |
+| df_TechnicianPunchedDetail_Raw | TechnicianPunchedDetail | 3m 36s | 319,043 |
+| df_InSalPar_Raw | insalpar | 3m 36s | 13,373 |
+| df_VHStock_Raw | vhstock | 2m 37s | 24,469 |
+| df_RepairOrderDetail_Raw | RepairOrderDetail | 2m 36s | 2,003 |
+| df_Insalord_Raw | insalord | 2m 06s | 8,631 |
+
+**Bottleneck:** TechnicianInvoiceDetail at 4m 07s
+
+### Batch 4 - Tech Summaries & Vehicle (6 concurrent, 4m 10s)
+
+| Dataflow | Table | Refresh Time | Approx Rows |
+|----------|-------|-------------|-------------|
+| df_TechnicianPunchedTime_Raw | TechnicianPunchedTime | 4m 07s | ~100K |
+| df_TechnicianAttendance_Raw | TechnicianAttendance | 3m 07s | ~50K |
+| df_TechnicianEfficiency_Raw | TechnicianEfficiency | 3m 07s | ~50K |
+| df_VhStockAccess_Raw | VhStockAccess | 2m 37s | 683,129 |
+| df_VhTrans_Raw | VhTrans | 2m 37s | ~100K |
+| df_TechnicianInvoice_Raw | TechnicianInvoice | 2m 36s | ~100K |
+
+**Bottleneck:** TechnicianPunchedTime at 4m 07s
+
+### Batch 5 - Remaining DFs (9 concurrent, 3m 11s)
+
+| Dataflow | Table | Refresh Time | Approx Rows |
+|----------|-------|-------------|-------------|
+| df_CONTACT_Raw | contact | 3m 08s | 81,648 |
+| df_ArMaster_Contact_Raw | ArMaster_Contact | 3m 07s | 53,470 |
+| df_ARMASTER_Raw | armaster | 3m 07s | 53,470 |
+| df_WarClaim_Raw | WarClaim | 3m 07s | 10,801 |
+| df_ArMaster_Customer_Raw | ArMaster_Customer | 2m 38s | 53,470 |
+| df_BranchOperational_Raw | BranchOperational | 2m 38s | 99 |
+| df_WARSUBCI_LABOR_Raw | WARSUBCI_LABOR | 2m 37s | 65,741 |
+| df_Branch_Name_Raw | Branch_Name | 2m 36s | 99 |
+| df_Technician_Raw | Technician | 2m 35s | 1,424 |
+
+**Bottleneck:** CONTACT at 3m 08s
+
+### Batch Duration Summary
+
+| Batch | DFs | Duration | Bottleneck |
+|-------|-----|----------|------------|
+| Batch 1 | 6 | 9m 14s | JDIS (9m 13s) |
+| Batch 2 | 5 | 3m 38s | WKRODESC (3m 36s) |
+| Batch 3 | 6 | 4m 10s | TechInvoiceDetail (4m 07s) |
+| Batch 4 | 6 | 4m 10s | TechPunchedTime (4m 07s) |
+| Batch 5 | 9 | 3m 11s | CONTACT (3m 08s) |
+| **Total** | **32** | **24m 35s** | |
+
+### Optimization History
+
+| Change | Before | After | Saved |
+|--------|--------|-------|-------|
+| Move InTrans_PartsCounter to Batch 1 | 27m 41s (Run 3) | 24m 35s (Run 4) | ~3 min |
+| Split dims: 9 daily + 13 monthly, 2 batches | 9m 46s (15 concurrent) | 8m 26s (9 batched) | ~1m 20s + healthier DF times |
+
+---
+
+## Historical: 7:30 AM Pipeline (Deprecated)
+
+> The 7:30 AM pipeline was disabled due to 200-600% performance degradation caused by
+> source system contention + 20+ concurrent dataflows overwhelming F4 capacity.
+> These times are preserved for reference only.
+
+### Raw Tables at 7:30 AM (Degraded Performance)
+
+| Table | Dataflow | Rows | 7:30 AM Time | Baseline | Degradation |
+|-------|----------|------|-------------|----------|-------------|
+| jdis_Part_Information | df_jdis_Part_Information_Raw | 1,081,494 | ~8 min | ~8 min | ~1x (large table masks it) |
+| ArMaster_Contact | df_ArMaster_Contact_Raw | 53,470 | ~6-8 min | ~1-2 min | 300-400% |
+| ArMaster_Customer | df_ArMaster_Customer_Raw | 53,470 | ~6-8 min | ~1-2 min | 300-400% |
+| armaster | df_armaster_Raw | 53,470 | ~6-7 min | ~1-2 min | 300-350% |
+| contact | df_CONTACT_Raw | 81,648 | ~6-8 min | ~1:30-2 min | 300-400% |
+| GlTrans | df_GlTrans_Raw | 208,637 | ~6-8 min | ~2-3 min | 200-300% |
+| InHist_PmManage | df_InHist_PmManage_Raw | 721,295 | ~8-9 min | ~3 min | 200-300% |
+| insalord | df_INSALORD_Raw | 8,631 | ~6-7 min | ~1 min | 600% |
+| insalpar | df_INSALPAR_Raw | 13,373 | ~6-7 min | ~1-1:30 min | 400-600% |
+| Invoice | df_Invoice_Raw | 1,402,683 | ~10-12 min | ~4-5 min | 200-250% |
+| RepairOrderDetail | df_RepairOrderDetail_Raw | 2,003 | ~6-7 min | ~1-1:30 min | 400-600% |
+| Technician | df_Technician_Raw | 1,424 | ~6-7 min | ~1-1:30 min | 400-600% |
+| TechnicianInvoiceDetail | df_TechnicianInvoiceDetail_Raw | 330,096 | ~6-7 min | ~1:30-2 min | 300-400% |
+| TechnicianPunchedDetail | df_TechnicianPunchedDetail_Raw | 319,043 | ~7-8 min | ~1:30-3 min | 200-400% |
+| vhstock | df_VHSTOCK_Raw | 24,469 | ~6-7 min | ~1-1:30 min | 400-600% |
+| WkInvReg | df_WKINVREG_Raw | 40,582 | ~8-9 min | ~1-2 min | 400-700% |
+| wkmechwk | df_WKMECHWK_Raw | 307,819 | ~6-8 min | ~1-2 min | 300-400% |
+| wkothsub | df_WKOTHSUB_Raw | 350,305 | ~6-7 min | ~2 min | 300-350% |
+| wkrodesc | df_WKRODESC_Raw | 904,014 | ~6-8 min | ~1:30-3 min | 200-400% |
+| WKROFILE | df_WKROFILE_Raw | 111,650 | ~7-8 min | ~1-2 min | 400-700% |
+| WKVEHFL | df_WKVEHFL_Raw | 48,316 | ~7-8 min | ~1-2 min | 400-700% |
+
+**Root cause:** Source system (ODBC/EquipRDB64) under business load at 7:30 AM + 20+ concurrent DFs spiking CU to 214%.
+
+### Standalone Baselines (No Contention)
+
+| Table | Dataflow | Rows | Solo Time | Notes |
+|-------|----------|------|-----------|-------|
+| InTrans_Incremental | df_InTrans_Incremental | 10,245,764 | ~2-3 min | Gold standard incremental pattern |
+| InMaster | df_InMaster_Raw | 1,081,485 | ~4-5 min | 1M+ rows at baseline proves timing was the issue |
+| VhStockAccess | df_VhStockAccess_Raw | 683,129 | ~2 min | Large table at baseline |
+| WarClaim | df_WarClaim_Raw | 10,801 | ~1:10 | Same size as insalord but 5-6x faster than 7:30 AM |
+| WarsubCl_Labour | df_WARSUBCI_LABOUR_Raw | 65,741 | ~1:30 | Same as ArMaster size but 4-5x faster than 7:30 AM |
+
+---
+
+## Pipeline_Dimensions - Daily (9 DFs, 2 Batches)
+
+Baselines measured Feb 19, 2026, 12:16 PM CST.
+**Total Pipeline_Dimensions: ~8m 26s**
+
+> **Note:** Measured during business hours (~12 PM). Expect faster at 3:30 AM.
+
+### Batch 1 (5 concurrent, 5m 44s)
+
+| Dataflow | Table | Refresh Time | Notes |
+|----------|-------|-------------|-------|
+| df_Dim_Part | dim_Parts | 5m 43s | Bottleneck, ~5-6 min solo baseline |
+| df_UniqueCustomer_Lookup | lookup_UniqueCustomers_Invoice | 4m 43s | New addition, Customer Anatomy |
+| df_Dim_Customer | dim_CustomerList | 3m 42s | |
+| df_CustomerLookup | CustomerLookup | 2m 42s | Fact-building helper |
+| df_Dim_Date | dim_DateTable | 2m 42s | Should be <15s solo; CU contention |
+
+### Batch 2 (4 concurrent, 2m 38s)
+
+| Dataflow | Table | Refresh Time | Notes |
+|----------|-------|-------------|-------|
+| df_Dim_Branch12_Parts | dim_Branch12_Parts | 2m 37s | |
+| df_Dim_JobCode | dim_JobCode | 2m 36s | New addition |
+| df_Dim_UniqueCustomers | dim_UniqueCustomers | 2m 6s | |
+| df_Dim_Technicans | dim_Technician_Code_Names | 2m 6s | |
+
+### Daily Batch Summary
+
+| Batch | DFs | Duration | Bottleneck |
+|-------|-----|----------|------------|
+| Batch 1 | 5 | 5m 44s | dim_Parts (5m 43s) |
+| Batch 2 | 4 | 2m 38s | Branch12Parts (2m 37s) |
+| **Total** | **9** | **~8m 26s** | |
+
+### Optimization History
+
+| Change | Before | After | Saved |
+|--------|--------|-------|-------|
+| Batch 9 DFs (2 batches) vs 15 all-parallel | 9m 46s (15 concurrent) | 8m 26s (batched) | ~1m 20s total, individual DFs 42-60% faster |
+
+---
+
+## Pipeline_Dimensions_Monthly (13 DFs, 3 Batches)
+
+Baselines measured Feb 19, 2026, 12:48 PM CST. Run manually or on monthly schedule.
+**Total Pipeline_Dimensions_Monthly: ~13m 17s**
+
+### Batch 1 (5 concurrent, 3m 14s)
+
+| Dataflow | Table | Refresh Time | Notes |
+|----------|-------|-------------|-------|
+| df_Dim_DealerGroupCode | dim_DealerGroupCode | 3m 12s | Bottleneck |
+| df_Dim_SLC | dim_SLC | 2m 43s | |
+| df_Dim_Location | dim_BranchLocation | 2m 42s | Used by 22 reports |
+| df_Dim_Source | dim_Source | 2m 42s | |
+| df_Dim_Franchise | dim_Franchise | 2m 42s | |
+
+### Batch 2 (5 concurrent, ~5m 16s)
+
+| Dataflow | Table | Refresh Time | Notes |
+|----------|-------|-------------|-------|
+| df_Dim_AdjustmentType | dim_AdjustmentType | 2m 6s | |
+| df_Dim_CommodityCode | dim_CommodityCode | 2m 35s | |
+| df_Dim_VendorCode | dim_VendorCode | 2m 35s + retry | Failed once, succeeded on retry |
+| df_Dim_ModuleType | dim_ModuleType | 2m 5s | |
+| df_Dim_PaymentMethod | dim_PaymentMethod | 1m 36s | Fastest dimension |
+
+### Batch 3 (3 concurrent, 4m 42s)
+
+| Dataflow | Table | Refresh Time | Notes |
+|----------|-------|-------------|-------|
+| df_Dim_PromoType | dim_PromoType | 4m 37s | Surprisingly slow for small table |
+| df_Dim_RepairOrder | dim_RepairOrder | 3m 7s | |
+| df_Dim_JobType | Dim_JobType | 2m 5s | |
+
+### Monthly Batch Summary
+
+| Batch | DFs | Duration | Bottleneck |
+|-------|-----|----------|------------|
+| Batch 1 | 5 | 3m 14s | DealerGroupCode (3m 12s) |
+| Batch 2 | 5 | ~5m 16s | VendorCode retry |
+| Batch 3 | 3 | 4m 42s | PromoType (4m 37s) |
+| **Total** | **13** | **~13m 17s** | |
+
+**Phase 3 bottleneck:** dim_Parts at 5m 43s (daily pipeline)
+
+---
+
+## Pipeline_Facts - Daily (24 DFs, 5 Waves)
+
+Run 1: Feb 19, 2026, ~4:08 PM CST. All succeeded. **Total: ~39m 10s**
+Run 2: Feb 23, 2026, ~9:50 AM CST. 3 transient failures (all retried successfully). **Total: ~65m** (inflated by retries at business hours).
+
+> **Note:** Both runs were during business hours with ODBC contention. Expect significantly faster times at 3:30 AM.
+
+### Wave A (6 concurrent)
+
+| Dataflow | Run 1 | Run 2 | Wave (Pipeline_Facts) | Notes |
+|----------|-------|-------|-----------------------|-------|
+| Refresh_Fact_WorkOrderParts | 16m 46s | 21m 46s (retry) | A | First run faster; Run 2 hit gateway timeout on attempt 1 |
+| Refresh_Fact_Service_Invoices | 8m 43s | 11m 16s | A | |
+| Refresh_Fact_Parts_Details | 8m 43s | 10m 17s | A | |
+| Refresh_Fact_Inventory | 8m 13s | 9m 16s | A | |
+| Refresh_Fact_Service_Detail | 6m 44s | 8m 15s | A | |
+| Refresh_FactPartTransactions_Incremental | 9m 7s | 13m 41s (retry) | A | Timed out at 15m in Run 2; timeout raised to 25m |
+
+**Wave A duration: Run 1 ~16m 48s / Run 2 ~40m (WorkOrderParts retry cycle)**
+
+### Wave B (6 concurrent)
+
+| Dataflow | Run 1 | Run 2 | Wave | Notes |
+|----------|-------|-------|------|-------|
+| Refresh_Fact_Invoice_UniqueCustomers | 7m 37s | 8m 10s | B | Moved from Wave D after Run 1 |
+| Refresh_Fact_Parts_Invoices | 5m 37s | 7m 12s | B | |
+| Refresh_Fact_FirstPassFill | 5m 7s | 6m 10s | B | |
+| Refresh_Fact_LaborJobSummary | 5m 9s | 5m 44s | B | |
+| Refresh_Fact_CustomerPerformance | 4m 6s | 5m 8s | B | |
+| Refresh_Fact_Service_Parts_Detail | 3m 36s | 5m 11s | B | |
+
+**Wave B duration: Run 1 ~5m 39s / Run 2 ~8m 19s**
+
+### Wave C (5 concurrent)
+
+| Dataflow | Run 1 | Run 2 | Wave | Notes |
+|----------|-------|-------|------|-------|
+| Refresh_Fact_PartSales_24Hours | 4m 6s | 4m 41s (retry) | C | Transient fail in Run 2, retry succeeded |
+| Refresh_Fact_Invoice_InventoryAnalysis | 3m 7s | 3m 42s | C | |
+| Refresh_Fact_PartsAdjustments | 3m 7s | 3m 12s | C | |
+| Refresh_Fact_Parts_Open_Orders | 2m 36s | 3m 11s | C | |
+| Refresh_Fact_Branch12_Transactions | 2m 6s | 2m 41s | C | |
+
+**Wave C duration: Run 1 ~4m 8s / Run 2 ~7m 37s (PartSales_24Hours retry)**
+
+### Wave D (3 concurrent)
+
+| Dataflow | Run 1 | Run 2 | Wave | Notes |
+|----------|-------|-------|------|-------|
+| Refresh_Fact_PendingInspections | 2m 7s | 3m 41s | D | |
+| Refresh_Fact_InTrans_UniqueCustomers | 2m 37s | 3m 12s | D | |
+| Refresh_Fact_Equipment_Sales | 2m 37s | 2m 42s | D | |
+
+**Wave D duration: Run 1 ~9m 10s (5 DFs) / Run 2 ~3m 57s (3 DFs after rebalance)**
+
+### Wave E (4 concurrent)
+
+| Dataflow | Run 1 | Run 2 | Wave | Notes |
+|----------|-------|-------|------|-------|
+| Refresh_Fact_Top50_JobCodes | 3m 7s | 3m 45s | E | |
+| Refresh_Fact_PartsPromo | 2m 7s | 2m 13s | E | |
+| Refresh_Fact_NegativeOnHand | 2m 7s | 2m 13s | E | |
+| Refresh_Fact_InSalOrd_InSalPar | 2m 6s | 2m 13s | E | |
+
+**Wave E duration: Run 1 ~3m 10s / Run 2 ~4m 4s**
+
+### Pipeline_Facts Wave Summary
+
+| Wave | DFs | Run 1 | Run 2 | Bottleneck |
+|------|-----|-------|-------|------------|
+| A | 6 | 16m 48s | ~40m (retry) | WorkOrderParts |
+| B | 6 | 5m 39s | 8m 19s | Invoice_UniqueCustomers |
+| C | 5 | 4m 8s | 7m 37s | PartSales_24Hours (retry) |
+| D | 3 | 9m 10s* | 3m 57s | PendingInspections |
+| E | 4 | 3m 10s | 4m 4s | Top50_JobCodes |
+| **Total** | **24** | **~39m 10s** | **~65m** | |
+
+*Wave D was 5 DFs in Run 1, restructured to 3 DFs after that run.
+
+### Optimization History (Pipeline_Facts)
+
+| Change | Before | After | Saved |
+|--------|--------|-------|-------|
+| Move FactPartTransactions (Wave D→A), Invoice_UniqueCustomers (Wave D→B) | Run 1 Wave D: 9m 10s | Run 2 Wave D: 3m 57s | ~5m in Wave D |
+| Raise FactPartTransactions timeout 15m→25m, retry interval 30s→60s | Timed out in Run 2 | Applied for Run 3 | Prevents dedup retry chain |
 
 ---
 
 ## CU Optimization Notes
 
-### Longest Running Dataflows:
-1. [Table name] - [X minutes]
-2. [Table name] - [X minutes]
-3. [Table name] - [X minutes]
+### Pipeline_Raw_Data Performance (Batched, Feb 2026)
+- **Total:** 24m 35s with 5 batches of 5-9 concurrent DFs
+- **Peak CU:** ~2 CU (well within F4 limit of 4 CU sustained)
+- **Batch balance:** Excellent - 9m / 3.5m / 4m / 4m / 3m
 
-### Optimization Opportunities:
-- [ ] [Potential optimization 1]
-- [ ] [Potential optimization 2]
-- [ ] [Potential optimization 3]
+### Top Optimization Targets
+1. **Fact_WorkOrderParts** (18.5 min) - Implement watermark-based incremental (target: 3-5 min)
+2. **Fact_Service_Invoices** (10 min) - Query optimization or incremental refresh
+3. **JDIS_PART_INFORMATION** (9m 13s) - Largest raw table bottleneck (Batch 1)
 
-### Refresh Schedule Strategy:
-- **Raw tables:** [When they run]
-- **Dimensions:** [When they run] (after raw tables complete)
-- **Facts:** [When they run] (after dimensions complete)
-- **Stagger times to avoid capacity spikes**
+### Refresh Schedule Strategy
+- **Raw tables:** 3:30 AM in Pipeline_Raw_Data (5 sequential batches)
+- **InTrans:** After raw tables (incremental, ~3 min)
+- **Dimensions:** After InTrans (all parallel, ~10-12 min)
+- **Facts:** After dimensions (5 waves of 5 concurrent, ~32-35 min)
+- **Semantic Models:** After facts (3 waves, ~10-12 min)
+- **Tier 2:** After Tier 1 SMs (~2-3 min)
 
-### Total Daily CU Consumption:
-- Estimated: [X CU per day]
-- Target: [Stay under Y CU to avoid throttling]
+### Total Daily CU Consumption
+- **Estimated:** ~215 CU-minutes (3.7% of F4 daily budget of 5,760)
+- **Target:** Stay under 75% sustained CU per phase
 
 ---
 
 ## How to Update This Document
 
-1. **After making query changes** - Test refresh time and update
-2. **Monthly review** - Check if patterns have changed
-3. **When adding new tables** - Add row to appropriate section
-4. **When optimizing** - Document before/after times
+1. **After test runs** - Update batch times with measured values
+2. **After 3:30 AM production run** - Replace "3 PM baseline" note with true off-peak baselines
+3. **When optimizing facts** - Document before/after times
+4. **When adding new tables** - Add row to appropriate section
 
 ---
 
-**Last Updated:** [Date]
-**F4 Capacity Limit:** [Check Fabric capacity metrics]
-**Current Daily Usage:** [Check actual usage]
+**Last Updated:** February 23, 2026
+**F4 Capacity:** 4 CU sustained, 5,760 CU-min/day
+**Pipeline_Raw_Data:** 24m 35s (32 DFs, 5 batches) - measured Feb 12 ~3 PM
+**Pipeline_Dimensions:** 8m 26s (9 DFs, 2 batches) - measured Feb 19 ~12 PM
+**Pipeline_Dimensions_Monthly:** 13m 17s (13 DFs, 3 batches) - measured Feb 19 ~12 PM
+**Pipeline_Facts:** ~39m clean run / ~65m with retries (24 DFs, 5 waves) - measured Feb 19 & Feb 23 ~business hours
