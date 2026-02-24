@@ -1,6 +1,6 @@
 ﻿# Data Freshness Report
 
-**Generated:** 2026-02-24 12:26:26
+**Generated:** 2026-02-24 14:03:58
 **Workspace:** LH_Master_Data
 
 ---
@@ -9,7 +9,7 @@
 
 | Status | Count | Percentage |
 |--------|-------|------------|
-| Fresh | 0 | 0% |
+| Fresh |  | 0% |
 | Stale | 0 | 0% |
 | Critical | 0 | 0% |
 
@@ -117,6 +117,7 @@
 
 | Dataflow | Last Refresh | Hours Ago | Status |
 |----------|--------------|-----------|--------|
+| df_ArMaster_Contact_Raw | 2026-02-23 15:43:45 | 22.3 | [OK] Fresh |
 | df_TechnicianPunchedTime_Raw | Error | 0 | [?] Error |
 | df_TechnicianPunchedDetail_Raw | Error | 0 | [?] Error |
 | df_VhStockAccess_Raw | Error | 0 | [?] Error |
@@ -134,24 +135,23 @@
 | df_WarClaim_Raw | Error | 0 | [?] Error |
 | df_WKMECHWK_Raw | Error | 0 | [?] Error |
 | df_WKINVREG_Raw | Error | 0 | [?] Error |
-| df_Technician_Raw | Error | 0 | [?] Error |
-| df_CONTACT_Raw | Error | 0 | [?] Error |
-| df_BranchOperational_Raw | Error | 0 | [?] Error |
-| df_GlTrans_Raw | Error | 0 | [?] Error |
 | df_CustomerAnatomy_Raw | Error | 0 | [?] Error |
-| df_ArMaster_Customer_Raw | Error | 0 | [?] Error |
-| df_ArMaster_Contact_Raw | Error | 0 | [?] Error |
-| df_Branch_Name_Raw | Error | 0 | [?] Error |
-| df_ARMASTER_Raw | Error | 0 | [?] Error |
+| df_CONTACT_Raw | Error | 0 | [?] Error |
 | df_InHist_PmManage_Raw | Error | 0 | [?] Error |
-| df_Invoice_Raw | Error | 0 | [?] Error |
-| df_INTRANS_Raw | Error | 0 | [?] Error |
-| df_RepairOrderDetail_Raw | Error | 0 | [?] Error |
-| df_JDIS_PART_INFORMATION_Raw | Error | 0 | [?] Error |
-| df_INSALORD_Raw | Error | 0 | [?] Error |
+| df_GlTrans_Raw | Error | 0 | [?] Error |
+| df_ARMASTER_Raw | Error | 0 | [?] Error |
+| df_ArMaster_Customer_Raw | Error | 0 | [?] Error |
+| df_BranchOperational_Raw | Error | 0 | [?] Error |
+| df_Branch_Name_Raw | Error | 0 | [?] Error |
 | df_InMaster_Raw | Error | 0 | [?] Error |
-| df_InTrans_PartsCounter_Raw | Error | 0 | [?] Error |
+| df_JDIS_PART_INFORMATION_Raw | Error | 0 | [?] Error |
+| df_Invoice_Raw | Error | 0 | [?] Error |
+| df_Technician_Raw | Error | 0 | [?] Error |
+| df_RepairOrderDetail_Raw | Error | 0 | [?] Error |
 | df_INSALPAR_Raw | Error | 0 | [?] Error |
+| df_INSALORD_Raw | Error | 0 | [?] Error |
+| df_INTRANS_Raw | Error | 0 | [?] Error |
+| df_InTrans_PartsCounter_Raw | Error | 0 | [?] Error |
 
 ### Transformation
 
