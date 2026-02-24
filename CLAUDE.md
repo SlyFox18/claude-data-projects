@@ -167,11 +167,22 @@ Covers: reports changed, data model changes, refresh pipeline impact, sandbox te
 
 ### Fabric Workspace (Production)
 **Path:** `C:\Users\bfox\Documents\Git-Projects\fabric-workspace-docs`
-- Fabric Git Integration mirror - the actual deployed artifacts
+- Pure Fabric Git Integration mirror — workspace artifacts only (no scripts/logs/docs)
 - 220+ items across 9 workspaces (LH_Master_Data, RP - Parts Reports, RP - Service Reports, etc.)
 - 83 dataflows in LH_Master_Data, 531 .tmdl files, 122 mashup.pq files
 - Contains the production Power Query (mashup.pq) for every dataflow
 - Use this to verify what's actually deployed vs what's in development here
+
+### Fabric Monitoring
+**Path:** `projects/fabric-monitoring/` (in this repo)
+- Windows Task Scheduler automation for post-pipeline monitoring (runs 6 AM Mon-Fri)
+- `scripts/scheduled/` — Get-FreshToken.ps1, Run-PostPipeline-Monitoring.ps1, Register-ScheduledTasks.ps1
+- `scripts/enhanced/` — 6 active monitoring scripts (Discover, Backfill, Freshness, CU, Changes, Dashboard)
+- `scripts/Startup-AzureLogin.ps1` — Azure credential refresh (7 AM task)
+- `logs/` — daily post-pipeline-YYYY-MM-DD.log files
+- `documentation/` — auto-updated CSVs and markdown reports (committed to dev by the scheduled task)
+- Teams notification: set `$TeamsWebhookUrl` in Run-PostPipeline-Monitoring.ps1 (Power Automate webhook)
+- See `scripts/scheduled/README.md` for setup guide and troubleshooting
 
 ### Obsidian Knowledge Base
 **Path:** `C:\Users\bfox\Documents\Obsidian Vault`

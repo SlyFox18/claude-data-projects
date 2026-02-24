@@ -1,0 +1,10 @@
+DataflowName,Workspace,Category,RefreshFrequency,RefreshTime,Priority,DependsOn,EstimatedDurationMinutes,CUProfile,Status,Notes
+df_Source_ERP,LH_Master_Data,RawSource,Daily,02:00,High,,15,Medium,Active,Main ERP system
+df_Source_CRM,LH_Master_Data,RawSource,Daily,02:15,High,,10,Low,Active,Customer data
+df_Source_Financial,LH_Master_Data,RawSource,Daily,02:30,High,,20,High,Active,Financial transactions
+df_Dim_Customer,LH_Master_Data,Dimension,Daily,03:00,High,df_Source_CRM,5,Low,Active,Customer dimension
+df_Dim_Product,LH_Master_Data,Dimension,Daily,03:05,High,df_Source_ERP,8,Low,Active,Product master
+df_Dim_Date,LH_Master_Data,Dimension,Weekly,Sunday-02:00,Medium,,2,Low,Active,Date dimension
+df_Dim_Branch12_Parts,LH_Master_Data,Dimension,Daily,03:10,High,"df_Source_ERP,df_Source_Parts",10,Medium,Active,Branch 12 parts data
+df_Fact_Sales,LH_Master_Data,FactTable,Daily,04:00,High,"df_Dim_Customer,df_Dim_Product,df_Dim_Date",25,High,Active,Sales transactions
+df_Fact_Branch12_Transactions,LH_Master_Data,FactTable,Daily,04:30,High,"df_Dim_Branch12_Parts,df_Dim_Date",20,High,Active,Branch 12 transactions

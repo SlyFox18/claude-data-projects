@@ -1,0 +1,23 @@
+{
+  "name": "check-refresh",
+  "description": "Check Fabric dataflow refresh status using existing PowerShell monitoring scripts. Summarizes recent refresh history, failures, and timing.",
+  "version": "1.0.0",
+  "prompt": "You are checking the Microsoft Fabric dataflow refresh status using the monitoring scripts in the fabric-workspace-docs repository.\n\n**Scripts location:** `C:/Users/bfox/Documents/Git-Projects/fabric-workspace-docs/scripts/enhanced/`\n\n## Steps\n\n### 1. Run System Status\nExecute the system status script for a quick overview:\n```bash\npowershell -File \"C:/Users/bfox/Documents/Git-Projects/fabric-workspace-docs/scripts/System-Status.ps1\"\n```\nIf that fails due to auth, note it and proceed to step 2.\n\n### 2. Check Refresh History File\nThe scripts log refresh history to CSV. Check the most recent data:\n```bash\n# Check the refresh history CSV directly\npowershell -Command \"Import-Csv 'C:/Users/bfox/Documents/Git-Projects/fabric-workspace-docs/documentation/Dataflow-Refresh-History.csv' | Sort-Object -Property Timestamp -Descending | Select-Object -First 20 | Format-Table -AutoSize\"\n```\n\n### 3. Check for Recent Failures\n```bash\npowershell -Command \"Import-Csv 'C:/Users/bfox/Documents/Git-Projects/fabric-workspace-docs/documentation/Dataflow-Refresh-History.csv' | Where-Object { \\$_.Status -ne 'Succeeded' } | Sort-Object -Property Timestamp -Descending | Select-Object -First 10 | Format-Table -AutoSize\"\n```\n\n### 4. Check Log Files\nLook at the most recent orchestration log:\n```bash\npowershell -Command \"\\$log = Get-ChildItem 'C:/Users/bfox/Documents/Git-Projects/fabric-workspace-docs/logs' -Filter '*.log' -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1; if (\\$log) { Get-Content \\$log.FullName | Select-Object -Last 30 } else { Write-Host 'No log files found' }\"\n```\n\n### 5. Summarize Results\nProvide a clear summary:\n- **Overall status:** All good / Issues found\n- **Last successful run:** Date and time\n- **Any failures:** Dataflow name, error, timestamp\n- **Refresh timing:** How long the pipeline took vs baseline (~80-95 min expected)\n- **Recommendations:** Any actions needed (re-run, investigate, etc.)\n\n### Key Baselines (from REFRESH-TIMES.md)\n- Full pipeline: ~80-95 min\n- Fact_WorkOrderParts: ~18.5 min (known bottleneck)\n- InTrans_Incremental: ~2-3 min\n- If a dataflow takes 2x its baseline, flag it\n\n### If Scripts Require Authentication\nNote that scripts may require Azure login. If auth fails:\n- Check `C:/Users/bfox/Documents/Git-Projects/fabric-workspace-docs/documentation/Dataflow-Freshness-Report.csv` directly\n- Check `C:/Users/bfox/Documents/Git-Projects/fabric-workspace-docs/documentation/Dataflow-Refresh-History.csv` directly\n- Advise user to run `Get-FabricToken.ps1` in a PowerShell terminal first",
+  "args": {
+    "scope": {
+      "type": "string",
+      "description": "Optional: filter to specific dataflow or pipeline name (e.g., 'Fact_WorkOrderParts', 'Pipeline_Facts'). Leave empty for full status.",
+      "required": false
+    }
+  },
+  "examples": [
+    {
+      "command": "/check-refresh",
+      "description": "Check overall refresh status across all dataflows"
+    },
+    {
+      "command": "/check-refresh Fact_WorkOrderParts",
+      "description": "Check refresh history for a specific fact table"
+    }
+  ]
+}
