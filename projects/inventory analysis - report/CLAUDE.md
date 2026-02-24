@@ -45,6 +45,9 @@ Configuration tables for visual formatting. Values here drive conditional format
 - `Fact_Invoice_InventoryAnalysis.pq` — invoice detail
 - `Fact_Part_Transactions_Incremental.pq` — uses RangeStart/RangeEnd, sources from InTrans_Incremental
 
+## Documentation Status
+- Obsidian stakeholder docs: ✅ Complete — `Data Projects/Reports/Inventory Analysis.md`
+
 ## Promotion Checklist (before moving to production)
 - [ ] Validate row counts match between Sandbox and expected production values
 - [ ] Confirm InTrans_Incremental refresh completes within F4 capacity limits

@@ -250,4 +250,5 @@ Covers: reports changed, data model changes, refresh pipeline impact, sandbox te
 | Add DAX measure | `/add-measure "report" "description"` | Adding a new measure to any report |
 | Debug pipeline failure | `/debug-pipeline "problem"` | Pipeline failed or data is stale |
 | Sync query library | `/sync-query` | After modifying a .pq dataflow query |
+| Document report | `/document-report "report"` | Create stakeholder Obsidian docs for a report that doesn't have them yet |
 | Wrap up session | `/wrap-up` | End of a work session |

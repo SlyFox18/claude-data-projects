@@ -68,3 +68,6 @@ Customer health and engagement dashboard. Shows parts/service/equipment revenue 
 - `UNIQUE-CUSTOMER-FLAGS.md` — complete unique customer group reference (patterns, edge cases)
 - `IMPLEMENTATION-PLAN-Service-Parts-Detail.md` — fix plan for Unknown Customer issue
 - `INVESTIGATION-PLAN-Unknown-Customers.md` — diagnostic SQL queries
+
+## Documentation Status
+- Obsidian stakeholder docs: ✅ Complete — `Data Projects/Reports/Customer Anatomy.md`

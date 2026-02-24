@@ -61,3 +61,6 @@ Old report inflated by 101% due to vehicle table join duplicates — never use o
 - `validation-doc-hours.md` — validation methodology and results
 - `documentation/dax/dax-measures-library.md` — all DAX measures with descriptions
 - `documentation/pipelines/troubleshooting-guide.md` — pipeline failure runbook
+
+## Documentation Status
+- Obsidian stakeholder docs: ✅ Complete — `Data Projects/Reports/Inspections.md`

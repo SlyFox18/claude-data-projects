@@ -1,0 +1,27 @@
+{
+  "name": "document-report",
+  "description": "Create or update a stakeholder-facing Obsidian note for a Power BI report in the Data Projects vault. Reads existing project docs (CLAUDE.md, README, etc.) and generates a plain-English note with business context, key metrics, report pages, data sources, and a Mermaid diagram. Also updates Home.md and the project's CLAUDE.md documentation status.",
+  "version": "1.0.0",
+  "prompt": "You are creating a stakeholder-facing Obsidian documentation note for a Power BI report. The audience is non-technical business users (branch managers, CSMs, executives) who understand the business data but not Power Query, DAX, or GitHub.\n\n**Vault location:** `C:/Users/bfox/Documents/Obsidian Vault/Data Projects/`\n**Template:** `_templates/Report Note Template.md`\n\n## Steps\n\n### 1. Find the project folder\n```bash\nls projects/ | grep -i \"[report-name]\"\n```\n\n### 2. Read all available project documentation\nRead as many of these as exist:\n- `projects/[folder]/CLAUDE.md` — technical context and fact tables\n- `projects/[folder]/README.md` — project overview\n- `projects/[folder]/ARCHITECTURE.md` — design decisions\n- `projects/[folder]/documentation/` — any additional docs\n\n### 3. Read the template\n```\nC:/Users/bfox/Documents/Obsidian Vault/Data Projects/_templates/Report Note Template.md\n```\n\n### 4. Check existing data source notes\nList what's already in the vault so you know which [[links]] already exist:\n```bash\nls \"C:/Users/bfox/Documents/Obsidian Vault/Data Projects/Data Sources/\"\nls \"C:/Users/bfox/Documents/Obsidian Vault/Data Projects/Reports/\"\n```\n\n### 5. Draft the Obsidian note\nApply these rules strictly:\n- **No technical jargon**: No Power Query, DAX, TMDL, mashup.pq, RangeStart, etc.\n- **No code**: No M code, no SQL, no DAX formulas\n- **Plain English metrics**: \"Count of completed inspection jobs\" not \"COUNTROWS(FILTER(Fact_LaborJobSummary, [IsInspection]))\" \n- **Avoid internal table names in body text**: Say \"work order data\" not \"Fact_WorkOrderParts\" or \"wkothsub\"\n- **Data sources section**: Use [[wikilinks]] to link to existing Data Source notes; create new ones if needed\n- **Mermaid diagram**: Simple flowchart showing EquipRDB → key tables → this report\n- **Business context**: Who uses each page and why — from a business perspective\n- **Status line at bottom**: Production ✅ / Sandbox / Development\n\n### 6. Write the note\nSave to: `C:/Users/bfox/Documents/Obsidian Vault/Data Projects/Reports/[Report Display Name].md`\n\nUse a clean display name (e.g., \"Inspections\", \"Customer Anatomy\", \"First Pass Fill\") — not the folder name with dashes.\n\n### 7. Create any missing data source notes\nIf the report uses data sources that don't yet have a note in `Data Sources/`, create a stub:\n```markdown\n# [Source Name]\n\n**What it is:** [One sentence]\n\n[Brief description of what it contains and what reports use it]\n\n*Source: [[Source System (EquipRDB)]]*\n```\n\n### 8. Update Home.md\nFind the row for this report in the Reports table in `Home.md` and change `❌` to `✅`.\nIf the report isn't in the table yet, add it in the correct alphabetical position.\n\n### 9. Update the project's CLAUDE.md documentation status\nIn `projects/[folder]/CLAUDE.md`, find the `## Documentation Status` section and update it:\n```markdown\n## Documentation Status\n- Obsidian stakeholder docs: ✅ Complete — `Data Projects/Reports/[Report Name].md`\n```\nIf no Documentation Status section exists, add it before the last section.\n\n### 10. Remind\nTell the user:\n- The note is created at the vault path\n- Open Obsidian and hit Ctrl+G to see the graph view — links to data sources will show as connections\n- If any data source notes are stubs, they can be fleshed out later with `/document-report` or manually",
+  "args": {
+    "report_name": {
+      "type": "string",
+      "description": "Report folder name or display name (e.g., 'first pass fill - report', 'Labor Performance', 'parts promo - report')",
+      "required": true
+    }
+  },
+  "examples": [
+    {
+      "command": "/document-report \"first pass fill - report\"",
+      "description": "Create stakeholder Obsidian docs for the First Pass Fill report"
+    },
+    {
+      "command": "/document-report \"labor performance - report\"",
+      "description": "Create stakeholder Obsidian docs for the Labor Performance report"
+    },
+    {
+      "command": "/document-report \"parts adjustments - report\"",
+      "description": "Create stakeholder Obsidian docs for the Parts Adjustments report"
+    }
+  ]
+}
