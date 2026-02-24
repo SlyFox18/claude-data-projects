@@ -1,0 +1,147 @@
+<#
+.SYNOPSIS
+    Backfills refresh history from Fabric API
+.DESCRIPTION
+    Queries Fabric API for actual refresh history and updates local CSV
+#>
+
+param(
+    [string]$WorkspaceName = "LH_Master_Data",
+    [int]$DaysBack = 1,
+    [string]$DocumentationPath = "$PSScriptRoot\..\..\documentation"
+)
+
+Write-Host "========================================" -ForegroundColor Cyan
+Write-Host "  Backfill Refresh History" -ForegroundColor Cyan
+Write-Host "========================================" -ForegroundColor Cyan
+Write-Host ""
+
+# Get token
+$tokenFile = Join-Path $PSScriptRoot "..\\.token"
+$token = Get-Content $tokenFile -Raw
+$token = $token.Trim()
+
+$headers = @{
+    "Authorization" = "Bearer $token"
+    "Content-Type" = "application/json"
+}
+
+# Get workspace
+$workspacesFile = Join-Path $DocumentationPath "workspaces.json"
+$workspaces = Get-Content $workspacesFile | ConvertFrom-Json
+$workspace = $workspaces | Where-Object { $_.displayName -eq $WorkspaceName }
+$workspaceId = $workspace.id
+
+# Load inventory
+$inventoryFile = Join-Path $DocumentationPath "Dataflow-Inventory-Discovered.csv"
+$inventory = Import-Csv $inventoryFile
+
+Write-Host "[INFO] Pulling refresh history for last $DaysBack days..." -ForegroundColor Cyan
+Write-Host "[INFO] Checking $($inventory.Count) dataflows..." -ForegroundColor Gray
+Write-Host ""
+
+$cutoffDate = (Get-Date).AddDays(-$DaysBack)
+$allRefreshes = @()
+$checked = 0
+
+foreach ($df in $inventory) {
+    $checked++
+    Write-Progress -Activity "Checking dataflows" -Status "$checked of $($inventory.Count)" -PercentComplete (($checked / $inventory.Count) * 100)
+    
+    try {
+        # Get refresh history
+        $url = "https://api.fabric.microsoft.com/v1/workspaces/$workspaceId/items/$($df.DataflowId)/jobs/instances?jobType=Refresh"
+        $refreshes = Invoke-RestMethod -Uri $url -Headers $headers -Method Get
+        
+        if ($refreshes) {
+            foreach ($refresh in $refreshes) {
+                if ($refresh.startTime) {
+                    $startTime = [datetime]::Parse($refresh.startTime)
+                    
+                    if ($startTime -ge $cutoffDate) {
+                        $endTime = if ($refresh.endTime) { [datetime]::Parse($refresh.endTime) } else { Get-Date }
+                        $duration = ($endTime - $startTime).TotalMinutes
+                        
+                        $status = switch ($refresh.status) {
+                            "Completed" { "Success" }
+                            "Succeeded" { "Success" }
+                            "Failed" { "Failed" }
+                            default { $refresh.status }
+                        }
+                        
+                        $allRefreshes += [PSCustomObject]@{
+                            Timestamp = $startTime.ToString('yyyy-MM-dd HH:mm:ss')
+                            DataflowName = $df.DataflowName
+                            Category = $df.Category
+                            Status = $status
+                            DurationMinutes = [math]::Round($duration, 1)
+                            Error = if ($refresh.error) { $refresh.error } else { "" }
+                        }
+                    }
+                }
+            }
+        }
+        
+        # Rate limit protection
+        Start-Sleep -Milliseconds 200
+        
+    } catch {
+        Write-Host "[WARNING] Failed to get history for $($df.DataflowName): $($_.Exception.Message)" -ForegroundColor Yellow
+        Start-Sleep -Seconds 2
+    }
+}
+
+Write-Progress -Activity "Checking dataflows" -Completed
+
+Write-Host ""
+Write-Host "Found $($allRefreshes.Count) refresh operations in last $DaysBack days" -ForegroundColor Green
+Write-Host ""
+
+if ($allRefreshes.Count -gt 0) {
+    # Sort by timestamp
+    $allRefreshes = $allRefreshes | Sort-Object Timestamp
+    
+    # Show summary
+    $byDate = $allRefreshes | Group-Object { ([datetime]::Parse($_.Timestamp)).Date }
+    
+    Write-Host "By Date:" -ForegroundColor Yellow
+    foreach ($date in $byDate) {
+        $dateStr = ([datetime]$date.Name).ToString('yyyy-MM-dd')
+        $success = ($date.Group | Where-Object { $_.Status -eq "Success" }).Count
+        $failed = ($date.Group | Where-Object { $_.Status -eq "Failed" }).Count
+        
+        Write-Host "  $dateStr : $($date.Count) total ($success success, $failed failed)" -ForegroundColor White
+    }
+    
+    Write-Host ""
+    
+    # Save to history file
+    $historyFile = Join-Path $DocumentationPath "Dataflow-Refresh-History.csv"
+    
+    # Load existing history
+    if (Test-Path $historyFile) {
+        $existingHistory = Import-Csv $historyFile
+        
+        # Merge and deduplicate
+        $combined = $existingHistory + $allRefreshes
+        $unique = $combined | Sort-Object Timestamp -Unique
+        
+        Write-Host "[INFO] Merging with existing history..." -ForegroundColor Cyan
+        Write-Host "  Old records: $($existingHistory.Count)" -ForegroundColor Gray
+        Write-Host "  New records: $($allRefreshes.Count)" -ForegroundColor Gray
+        Write-Host "  Total unique: $($unique.Count)" -ForegroundColor Gray
+        
+        $unique | Export-Csv -Path $historyFile -NoTypeInformation -Encoding UTF8
+        
+    } else {
+        $allRefreshes | Export-Csv -Path $historyFile -NoTypeInformation -Encoding UTF8
+    }
+    
+    Write-Host ""
+    Write-Host "[SUCCESS] History file updated: $historyFile" -ForegroundColor Green
+    
+} else {
+    Write-Host "[WARNING] No refresh history found in last $DaysBack days" -ForegroundColor Yellow
+}
+
+Write-Host ""
