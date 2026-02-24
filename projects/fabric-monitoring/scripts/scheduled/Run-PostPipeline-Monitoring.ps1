@@ -200,14 +200,36 @@ Scheduled task: Run-PostPipeline-Monitoring
 # ── Step 9: Send Teams notification ─────────────────────────────────────────
 if ($TeamsEnabled) {
     Invoke-Step "Send Teams notification" {
-        $statusText  = if ($FailedSteps.Count -eq 0) { "SUCCESS" } else { "FAILED" }
-        $statusIcon  = if ($FailedSteps.Count -eq 0) { "&#x2705;" } else { "&#x274C;" }
-        $elapsed     = [math]::Round(((Get-Date) - $script:startTime).TotalSeconds)
-        $date        = Get-Date -Format "yyyy-MM-dd"
-        $failedLine  = if ($FailedSteps.Count -gt 0) {
-            "<br>Failed steps: $($FailedSteps -join ', ')"
+        $statusText = if ($FailedSteps.Count -eq 0) { "SUCCESS" } else { "FAILED" }
+        $statusIcon = if ($FailedSteps.Count -eq 0) { "&#x2705;" } else { "&#x274C;" }
+        $elapsed    = [math]::Round(((Get-Date) - $script:startTime).TotalSeconds)
+        $date       = Get-Date -Format "yyyy-MM-dd"
+
+        # Pull freshness stats from the report written by Step 4
+        $freshnessLine = ""
+        $criticalLine  = ""
+        $freshnessFile = Join-Path $DocDir "Dataflow-Freshness-Report.csv"
+        if (Test-Path $freshnessFile) {
+            $fr           = Import-Csv $freshnessFile
+            $freshCount   = ($fr | Where-Object { $_.Status -eq "Fresh" }).Count
+            $staleCount   = ($fr | Where-Object { $_.Status -eq "Stale" }).Count
+            $criticalCount= ($fr | Where-Object { $_.Status -eq "Critical" -or $_.Status -eq "Never Refreshed" }).Count
+            $freshnessLine = "<br><b>Freshness:</b> &#x1F7E2; $freshCount Fresh &nbsp; &#x1F7E1; $staleCount Stale &nbsp; &#x1F534; $criticalCount Critical"
+            if ($criticalCount -gt 0) {
+                $names = ($fr | Where-Object { $_.Status -eq "Critical" -or $_.Status -eq "Never Refreshed" } |
+                    Select-Object -ExpandProperty DataflowName | Sort-Object) -join ", "
+                $criticalLine = "<br><b>Critical:</b> $names"
+            }
+        }
+
+        # Failed steps line
+        $failedLine = if ($FailedSteps.Count -gt 0) {
+            "<br><b>Failed steps:</b> $($FailedSteps -join ', ')"
         } else { "" }
-        $html = "$statusIcon <b>Fabric Monitoring &mdash; $date</b><br>Status: $statusText &nbsp; Duration: ${elapsed}s$failedLine"
+
+        $html = "$statusIcon <b>Fabric Monitoring &mdash; $date</b>" +
+                "<br>Status: $statusText &nbsp;&nbsp; Duration: ${elapsed}s" +
+                $freshnessLine + $criticalLine + $failedLine
 
         Connect-MgGraph -TenantId $TenantId -NoWelcome -ErrorAction Stop
         $body = @{ body = @{ contentType = "html"; content = $html } }
