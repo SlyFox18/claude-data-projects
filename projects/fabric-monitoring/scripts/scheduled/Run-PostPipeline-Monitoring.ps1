@@ -38,9 +38,10 @@ $DocDir      = Resolve-Path "$RepoRoot\documentation"
 $FailedSteps = @()
 $script:startTime = Get-Date
 
-# Teams webhook URL (Power Automate HTTP trigger). Set to "" to disable.
-# Setup: flow.microsoft.com → New flow → "When an HTTP request is received" trigger
-#        → "Post message in a chat or channel" (Teams) → Save → copy URL here.
+# Teams webhook URL. Set to "" to disable (default).
+# To enable: register an Azure AD app with ChannelMessage.Send permission,
+# or use the Microsoft.Graph PowerShell module (Connect-MgGraph).
+# See README.md for setup instructions.
 $TeamsWebhookUrl = ""
 
 # ── Logging helper ──────────────────────────────────────────────────────────
@@ -205,7 +206,10 @@ if (-not [string]::IsNullOrEmpty($TeamsWebhookUrl)) {
             failedSteps = ($FailedSteps -join ", ")
             duration    = "${elapsed}s"
         } | ConvertTo-Json
-        Invoke-RestMethod -Uri $TeamsWebhookUrl -Method Post -ContentType "application/json" -Body $payload -ErrorAction Stop
+        # Power Platform Direct API requires OAuth - get a token using the cached Az context
+        $ppToken  = (Get-AzAccessToken -ResourceUrl "https://api.powerplatform.com" -ErrorAction Stop).Token
+        $authHeaders = @{ Authorization = "Bearer $ppToken" }
+        Invoke-RestMethod -Uri $TeamsWebhookUrl -Method Post -ContentType "application/json" -Body $payload -Headers $authHeaders -ErrorAction Stop
     }
 }
 
