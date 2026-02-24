@@ -1,0 +1,23 @@
+{
+  "name": "promote-sandbox",
+  "description": "Checklist and guidance for promoting a report from RP-Sandbox (dev branch) to production workspaces (main branch). Covers validation, pipeline impact, TMDL review, and PR steps.",
+  "version": "1.0.0",
+  "prompt": "You are helping promote a Power BI report from the RP-Sandbox workspace (dev branch) to production (main branch). The report name will be provided as an argument.\n\n**IMPORTANT:** Never push directly to main. Always go through a PR.\n\n## Pre-Promotion Checklist\n\n### 1. Confirm current branch and report location\n```bash\ngit branch --show-current\n```\nMust be on `dev`. Find the report's SemanticModel folder:\n```bash\nfind projects/ -name '*.SemanticModel' -type d\n```\n\n### 2. Review TMDL changes\nShow what changed in this report since it was last on main:\n```bash\ngit diff main -- \"projects/[report-folder]/\"\n```\nSummarize:\n- New measures added\n- Tables added or removed\n- Relationships changed\n- Any calculated columns added (these affect refresh time)\n\n### 3. Check the semantic model for common issues\nRead the `model.tmdl` and `relationships.tmdl` files. Flag any:\n- Relationships with `crossFilteringBehavior: bothDirections` (performance risk)\n- Missing `isNullable` on key columns\n- Calculated tables (these refresh in memory, not from Lakehouse)\n- Measures referencing tables that don't exist in the Lakehouse\n\n### 4. Verify pipeline impact\nCheck `projects/refresh-pipeline/pipeline-schedule.md` and confirm:\n- Is this report already in the Phase 5 semantic model refresh wave?\n- If new: which wave should it go in? (Tier 1 = must be fresh by 8 AM, Tier 2 = OK after 8 AM)\n- Does it add new fact tables that need a Phase 4 dataflow?\n- Estimate CU impact: each semantic model refresh = ~0.5-1 min at moderate CU\n\n### 5. Check query library sync\nVerify that any new .pq files in the project's `queries/` folder are also saved to `.claude/queries/` in the appropriate subfolder:\n```bash\nls .claude/queries/\n```\n\n### 6. Sandbox validation sign-off\nConfirm the following have been checked in RP-Sandbox:\n- [ ] Report visuals load without errors\n- [ ] Key measures match expected values (spot-check against source)\n- [ ] Slicers and filters work correctly\n- [ ] Drill-through pages work (if applicable)\n- [ ] Data refresh completed successfully at least once\n- [ ] Row counts are reasonable (not 0, not suspiciously high)\n\n### 7. Open the PR\nPR title format: `Promote [Report Name] to production`\n\nPR body must include:\n- What changed in the semantic model\n- Pipeline phase assignment (which wave)\n- Sandbox test results (pass/fail for each checklist item)\n- Any deployment notes (e.g., \"add to Phase 5 Wave 2 in Pipeline_Master_Orchestrator\")\n\n```bash\ngh pr create --base main --head dev --title \"Promote [Report Name] to production\"\n```\n\n### 8. Post-merge deployment steps\nAfter PR merges to main:\n1. Fabric auto-syncs production workspace from main branch\n2. Manually trigger one full refresh in production to validate\n3. Confirm report appears in the correct workspace (RP-Parts Reports, RP-Service Reports, or RP-Financial Reports)\n4. If new fact tables were added, update `Pipeline_Master_Orchestrator` in Fabric to include them\n5. Update `projects/refresh-pipeline/pipeline-schedule.md` if pipeline changed\n\n## Production Workspace Routing\n- Parts reports → RP-Parts Reports\n- Service/inspections reports → RP-Service Reports  \n- Financial reports → RP-Financial Reports",
+  "args": {
+    "report_name": {
+      "type": "string",
+      "description": "Display name of the report being promoted (e.g., 'Inventory Analysis V3', 'Customer Anatomy V2')",
+      "required": true
+    }
+  },
+  "examples": [
+    {
+      "command": "/promote-sandbox \"Inventory Analysis V3\"",
+      "description": "Run the promotion checklist for Inventory Analysis V3"
+    },
+    {
+      "command": "/promote-sandbox \"Customer Anatomy V2\"",
+      "description": "Run the promotion checklist for Customer Anatomy V2"
+    }
+  ]
+}
