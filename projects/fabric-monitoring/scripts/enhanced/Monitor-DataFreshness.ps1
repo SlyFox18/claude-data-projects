@@ -78,13 +78,18 @@ foreach ($df in $activeDataflows) {
     Write-Host "Checking: $($df.DataflowName)" -ForegroundColor Gray
     
     try {
-        # Get refresh history for this dataflow
-        $refreshUrl = "https://api.fabric.microsoft.com/v1/workspaces/$workspaceId/dataflows/$($df.DataflowId)/refreshes?`$top=1"
+        # Get refresh history for this dataflow (jobs/instances endpoint works for Dataflow Gen2)
+        $refreshUrl = "https://api.fabric.microsoft.com/v1/workspaces/$workspaceId/items/$($df.DataflowId)/jobs/instances?jobType=Refresh"
         $refreshHistory = Invoke-RestMethod -Uri $refreshUrl -Headers $headers -Method Get
-        
-        if ($refreshHistory.value -and $refreshHistory.value.Count -gt 0) {
-            $lastRefresh = $refreshHistory.value[0]
-            $lastRefreshTime = [datetime]::Parse($lastRefresh.endTime)
+
+        # Handle paged response (.value array) — Fabric returns startTimeUtc/endTimeUtc
+        $refreshItems = if ($null -ne $refreshHistory.value) { $refreshHistory.value } else { @() }
+        # Sort descending to get the most recent first
+        $refreshItems = $refreshItems | Where-Object { $_.startTimeUtc } | Sort-Object { [datetime]$_.startTimeUtc } -Descending
+
+        if ($refreshItems -and $refreshItems.Count -gt 0) {
+            $lastRefresh = $refreshItems[0]
+            $lastRefreshTime = [datetime]::Parse($lastRefresh.endTimeUtc)
             $hoursAgo = [math]::Round(((Get-Date) - $lastRefreshTime).TotalHours, 1)
             
             # Determine status
@@ -113,7 +118,7 @@ foreach ($df in $activeDataflows) {
                 LastRefreshStatus = $lastRefresh.status
             }
             
-        } else {
+        } elseif ($refreshItems.Count -eq 0) {
             Write-Host "  Never refreshed" -ForegroundColor Red
             
             $freshnessData += [PSCustomObject]@{

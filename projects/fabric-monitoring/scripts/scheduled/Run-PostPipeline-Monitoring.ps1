@@ -38,11 +38,14 @@ $DocDir      = Resolve-Path "$RepoRoot\documentation"
 $FailedSteps = @()
 $script:startTime = Get-Date
 
-# Teams webhook URL. Set to "" to disable (default).
-# To enable: register an Azure AD app with ChannelMessage.Send permission,
-# or use the Microsoft.Graph PowerShell module (Connect-MgGraph).
-# See README.md for setup instructions.
-$TeamsWebhookUrl = ""
+# Teams notification via Microsoft.Graph module.
+# Run once interactively to cache credentials:
+#   Connect-MgGraph -Scopes "ChannelMessage.Send" -UseDeviceCode -TenantId $TenantId
+# Then set $TeamsEnabled = $true below.
+$TeamsEnabled   = $true
+$TenantId       = "8a02a2b8-0092-4de5-8f76-4700d099feb1"
+$TeamsTeamId    = "75d69eaf-2d57-4c84-a71a-0d3822bb60c4"
+$TeamsChannelId = "19:ldjrYoLypYQcH6H4pg4TGYTzQEfcN1xHXXXd6HDcHkc1@thread.tacv2"
 
 # ── Logging helper ──────────────────────────────────────────────────────────
 function Write-Log {
@@ -195,21 +198,42 @@ Scheduled task: Run-PostPipeline-Monitoring
 }
 
 # ── Step 9: Send Teams notification ─────────────────────────────────────────
-if (-not [string]::IsNullOrEmpty($TeamsWebhookUrl)) {
+if ($TeamsEnabled) {
     Invoke-Step "Send Teams notification" {
         $statusText = if ($FailedSteps.Count -eq 0) { "SUCCESS" } else { "FAILED" }
+        $statusIcon = if ($FailedSteps.Count -eq 0) { "&#x2705;" } else { "&#x274C;" }
         $elapsed    = [math]::Round(((Get-Date) - $script:startTime).TotalSeconds)
-        $payload    = @{
-            date        = (Get-Date -Format "yyyy-MM-dd")
-            status      = $statusText
-            failedCount = $FailedSteps.Count
-            failedSteps = ($FailedSteps -join ", ")
-            duration    = "${elapsed}s"
-        } | ConvertTo-Json
-        # Power Platform Direct API requires OAuth - get a token using the cached Az context
-        $ppToken  = (Get-AzAccessToken -ResourceUrl "https://api.powerplatform.com" -ErrorAction Stop).Token
-        $authHeaders = @{ Authorization = "Bearer $ppToken" }
-        Invoke-RestMethod -Uri $TeamsWebhookUrl -Method Post -ContentType "application/json" -Body $payload -Headers $authHeaders -ErrorAction Stop
+        $date       = Get-Date -Format "yyyy-MM-dd"
+
+        # Pull freshness stats from the report written by Step 4
+        $freshnessLine = ""
+        $criticalLine  = ""
+        $freshnessFile = Join-Path $DocDir "Dataflow-Freshness-Report.csv"
+        if (Test-Path $freshnessFile) {
+            $fr           = Import-Csv $freshnessFile
+            $freshCount   = ($fr | Where-Object { $_.Status -eq "Fresh" }).Count
+            $staleCount   = ($fr | Where-Object { $_.Status -eq "Stale" }).Count
+            $criticalCount= ($fr | Where-Object { $_.Status -eq "Critical" -or $_.Status -eq "Never Refreshed" }).Count
+            $freshnessLine = "<br><b>Freshness:</b> &#x1F7E2; $freshCount Fresh &nbsp; &#x1F7E1; $staleCount Stale &nbsp; &#x1F534; $criticalCount Critical"
+            if ($criticalCount -gt 0) {
+                $names = ($fr | Where-Object { $_.Status -eq "Critical" -or $_.Status -eq "Never Refreshed" } |
+                    Select-Object -ExpandProperty DataflowName | Sort-Object) -join ", "
+                $criticalLine = "<br><b>Critical:</b> $names"
+            }
+        }
+
+        # Failed steps line
+        $failedLine = if ($FailedSteps.Count -gt 0) {
+            "<br><b>Failed steps:</b> $($FailedSteps -join ', ')"
+        } else { "" }
+
+        $html = "$statusIcon <b>Fabric Monitoring &mdash; $date</b>" +
+                "<br>Status: $statusText &nbsp;&nbsp; Duration: ${elapsed}s" +
+                $freshnessLine + $criticalLine + $failedLine
+
+        Connect-MgGraph -TenantId $TenantId -NoWelcome -ErrorAction Stop
+        $body = @{ body = @{ contentType = "html"; content = $html } }
+        New-MgTeamChannelMessage -TeamId $TeamsTeamId -ChannelId $TeamsChannelId -BodyParameter $body -ErrorAction Stop
     }
 }
 

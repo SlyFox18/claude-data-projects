@@ -53,13 +53,13 @@ foreach ($df in $inventory) {
         $url = "https://api.fabric.microsoft.com/v1/workspaces/$workspaceId/items/$($df.DataflowId)/jobs/instances?jobType=Refresh"
         $refreshes = Invoke-RestMethod -Uri $url -Headers $headers -Method Get
         
-        if ($refreshes) {
-            foreach ($refresh in $refreshes) {
-                if ($refresh.startTime) {
-                    $startTime = [datetime]::Parse($refresh.startTime)
-                    
+        if ($refreshes.value) {
+            foreach ($refresh in $refreshes.value) {
+                if ($refresh.startTimeUtc) {
+                    $startTime = [datetime]::Parse($refresh.startTimeUtc)
+
                     if ($startTime -ge $cutoffDate) {
-                        $endTime = if ($refresh.endTime) { [datetime]::Parse($refresh.endTime) } else { Get-Date }
+                        $endTime = if ($refresh.endTimeUtc) { [datetime]::Parse($refresh.endTimeUtc) } else { Get-Date }
                         $duration = ($endTime - $startTime).TotalMinutes
                         
                         $status = switch ($refresh.status) {
