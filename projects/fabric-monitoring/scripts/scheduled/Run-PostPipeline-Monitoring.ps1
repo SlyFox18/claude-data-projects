@@ -208,6 +208,7 @@ if ($TeamsEnabled) {
         # Pull freshness stats from the report written by Step 4
         $freshnessLine = ""
         $criticalLine  = ""
+        $pipelineLine  = ""
         $freshnessFile = Join-Path $DocDir "Dataflow-Freshness-Report.csv"
         if (Test-Path $freshnessFile) {
             $fr           = Import-Csv $freshnessFile
@@ -220,6 +221,23 @@ if ($TeamsEnabled) {
                     Select-Object -ExpandProperty DataflowName | Sort-Object) -join ", "
                 $criticalLine = "<br><b>Critical:</b> $names"
             }
+
+            # Infer whether the pipeline ran today: if 5+ raw source dataflows
+            # refreshed in the last 8 hours, Pipeline_Master_Orchestrator ran.
+            $recentRaw = $fr | Where-Object {
+                ($_.DataflowName -like "*_Raw" -or $_.Category -eq "RawSource") -and
+                [double]$_.HoursAgo -lt 8
+            }
+            $pIcon = "&#x2705;"
+            $pText = "Ran today ($($recentRaw.Count) raw tables refreshed)"
+            if ($recentRaw.Count -lt 5 -and $recentRaw.Count -gt 0) {
+                $pIcon = "&#x26A0;"
+                $pText = "Partial run - only $($recentRaw.Count) raw tables refreshed (check for failures)"
+            } elseif ($recentRaw.Count -eq 0) {
+                $pIcon = "&#x274C;"
+                $pText = "Did NOT run today - no raw tables refreshed in last 8 hours"
+            }
+            $pipelineLine = "<br><b>Pipeline:</b> $pIcon $pText"
         }
 
         # Failed steps line
@@ -229,7 +247,7 @@ if ($TeamsEnabled) {
 
         $html = "$statusIcon <b>Fabric Monitoring &mdash; $date</b>" +
                 "<br>Status: $statusText &nbsp;&nbsp; Duration: ${elapsed}s" +
-                $freshnessLine + $criticalLine + $failedLine
+                $pipelineLine + $freshnessLine + $criticalLine + $failedLine
 
         Connect-MgGraph -TenantId $TenantId -NoWelcome -ErrorAction Stop
         $body = @{ body = @{ contentType = "html"; content = $html } }

@@ -181,7 +181,7 @@ Covers: reports changed, data model changes, refresh pipeline impact, sandbox te
 - `scripts/Startup-AzureLogin.ps1` — Azure credential refresh (7 AM task)
 - `logs/` — daily post-pipeline-YYYY-MM-DD.log files
 - `documentation/` — auto-updated CSVs and markdown reports (committed to dev by the scheduled task)
-- Teams notification: set `$TeamsWebhookUrl` in Run-PostPipeline-Monitoring.ps1 (Power Automate webhook)
+- Teams notification: uses Microsoft.Graph module (`Connect-MgGraph -Scopes "ChannelMessage.Send"`), posts to Fabric Monitoring channel
 - See `scripts/scheduled/README.md` for setup guide and troubleshooting
 
 ### Obsidian Knowledge Base
@@ -211,3 +211,43 @@ Covers: reports changed, data model changes, refresh pipeline impact, sandbox te
 - Update project-level docs when making significant changes
 - Keep `.claude/queries/` files in sync with actual dataflow queries
 - Update FACT-TABLES-SUMMARY.md when adding/modifying fact tables
+
+---
+
+## Known Issues & Gotchas
+
+### Power Query / Dataflows
+- **Delta column names:** Delta tables reject column names with spaces — always rename columns in the dataflow before loading to Lakehouse
+- **InTrans join key:** `InTrans.REF_NO` = invoice number, NOT work order number. Using work order number produces ~186 rows instead of ~150K (caused the Inspections bug)
+- **Incremental refresh parameters:** `RangeStart`/`RangeEnd` must be **datetime** type, not date. Using date type causes silent failures or incorrect filtering
+- **Query folding:** Avoid operations that break query folding (type conversions on folded columns, unsupported functions). Breaking folding causes full data transfer from source
+- **Fabric API for Gen2 dataflows:** `/v1/workspaces/{id}/dataflows/{id}/refreshes` returns 404 for Dataflow Gen2. Use `/v1/workspaces/{id}/items/{id}/jobs/instances?jobType=Refresh` instead. Field names are `startTimeUtc`/`endTimeUtc`, not `startTime`/`endTime`
+
+### DAX / Semantic Models
+- **Cross-table flags:** Always use `LOOKUPVALUE` on calculated columns — do NOT create model relationships for flag/lookup tables (`lookup_UniqueCustomers_Invoice`, `dim_EngagedAcres`). Relationships cause circular dependency issues
+- **Bidirectional relationships:** Avoid `crossFilteringBehavior: bothDirections` — significant performance risk, causes ambiguous filter paths
+- **Calculated columns and refresh order:** `dim_CustomerList` calculated columns (CSM, EngagementLevel, UniqueCustomerGroup, IsUniqueCustomer) depend on `lookup_UniqueCustomers_Invoice` being refreshed first. If the lookup table changes, re-run dim refresh
+
+### Pipeline / Capacity
+- **F4 CU limit:** Max 4-5 concurrent dataflows per wave. Exceeding this causes throttling and cascading failures. Phase 4 uses 5-wave batching for this reason
+- **ODBC source hours:** `dsn=EquipRDB64` performs well 3–6 AM. Queries during business hours degrade significantly — avoid ad-hoc full refreshes during the day
+- **Phase dependency:** Raw → InTrans → Dims → Facts → Semantic Models is a strict order. If a phase fails, all downstream phases produce stale data even if they "succeed"
+- **Fact_WorkOrderParts bottleneck:** Consistently ~18.5 min, the pipeline's longest step. Do not add dependencies to it without considering impact on total runtime
+
+### Customer Anatomy Specific
+- **Unknown Customer in service data:** `Invoice.BillToAccount` does not match `dim_CustomerList.CustomerNumber` for service invoices (~$1.6M revenue unattributed). Parts work correctly. See `INVESTIGATION-PLAN-Unknown-Customers.md`
+- **CustomerNumber 25227:** Matches multiple unique customer patterns — resolves to Manuel/MR Tractor by priority order in the lookup table
+
+---
+
+## Skills Available
+
+| Skill | Command | Use When |
+|-------|---------|----------|
+| Check refresh status | `/check-refresh` | Morning check, investigating staleness |
+| New report scaffold | `/new-report "Name"` | Starting a brand new report project |
+| Promote to production | `/promote-sandbox "Name"` | Moving sandbox report to production |
+| Add DAX measure | `/add-measure "report" "description"` | Adding a new measure to any report |
+| Debug pipeline failure | `/debug-pipeline "problem"` | Pipeline failed or data is stale |
+| Sync query library | `/sync-query` | After modifying a .pq dataflow query |
+| Wrap up session | `/wrap-up` | End of a work session |
