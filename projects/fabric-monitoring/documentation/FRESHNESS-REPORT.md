@@ -1,6 +1,6 @@
 ﻿# Data Freshness Report
 
-**Generated:** 2026-02-24 14:12:25
+**Generated:** 2026-02-24 14:53:58
 **Workspace:** LH_Master_Data
 
 ---
@@ -117,7 +117,7 @@
 
 | Dataflow | Last Refresh | Hours Ago | Status |
 |----------|--------------|-----------|--------|
-| df_ArMaster_Contact_Raw | 2026-02-23 15:43:45 | 22.5 | [OK] Fresh |
+| df_ArMaster_Contact_Raw | 2026-02-23 15:43:45 | 23.2 | [OK] Fresh |
 | df_TechnicianPunchedTime_Raw | Error | 0 | [?] Error |
 | df_TechnicianPunchedDetail_Raw | Error | 0 | [?] Error |
 | df_VhStockAccess_Raw | Error | 0 | [?] Error |
