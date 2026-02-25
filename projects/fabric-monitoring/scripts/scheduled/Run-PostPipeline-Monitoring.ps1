@@ -222,23 +222,44 @@ if ($TeamsEnabled) {
                 $criticalLine = "<br><b>Critical:</b> $names"
             }
 
-            # Infer whether the pipeline ran today: if 5+ raw source dataflows
-            # refreshed in the last 8 hours, Pipeline_Master_Orchestrator ran.
-            $recentRaw = $fr | Where-Object {
-                ($_.DataflowName -like "*_Raw" -or $_.Category -eq "RawSource") -and
-                [double]$_.HoursAgo -lt 8
-            }
-            $pIcon = "&#x2705;"
-            $pText = "Ran today ($($recentRaw.Count) raw tables refreshed)"
-            if ($recentRaw.Count -lt 5 -and $recentRaw.Count -gt 0) {
-                $pIcon = "&#x26A0;"
-                $pText = "Partial run - only $($recentRaw.Count) raw tables refreshed (check for failures)"
-            } elseif ($recentRaw.Count -eq 0) {
-                $pIcon = "&#x274C;"
-                $pText = "Did NOT run today - no raw tables refreshed in last 8 hours"
-            }
-            $pipelineLine = "<br><b>Pipeline:</b> $pIcon $pText"
         }
+
+        # Check Pipeline_Master_Orchestrator run status via Fabric Pipeline API
+        $masterWorkspaceId = "b48cdb35-7ce3-46de-96df-d70db77649cb"
+        $masterPipelineId  = "52f5270a-4ac9-9f33-4a70-56fd291983ff"
+        $pipelineJobsUrl   = "https://api.fabric.microsoft.com/v1/workspaces/$masterWorkspaceId/items/$masterPipelineId/jobs/instances?jobType=Pipeline"
+        try {
+            $pipelineRuns = Invoke-RestMethod -Uri $pipelineJobsUrl -Headers $headers -Method Get -ErrorAction Stop
+            $todayStart   = (Get-Date).Date
+            $todayRuns    = $pipelineRuns.value |
+                Where-Object { $_.startTimeUtc -and [datetime]$_.startTimeUtc -gt $todayStart } |
+                Sort-Object { [datetime]$_.startTimeUtc } -Descending
+            if ($todayRuns -and $todayRuns.Count -gt 0) {
+                $latestRun = $todayRuns[0]
+                $runStart  = ([datetime]$latestRun.startTimeUtc).ToLocalTime()
+                $pIcon = switch ($latestRun.status) {
+                    "Succeeded"  { "&#x2705;" }
+                    "Failed"     { "&#x274C;" }
+                    "InProgress" { "&#x23F3;" }
+                    "Cancelled"  { "&#x26A0;" }
+                    default      { "&#x26A0;" }
+                }
+                $pText = switch ($latestRun.status) {
+                    "Succeeded"  { "Succeeded (started $($runStart.ToString('HH:mm')) CST)" }
+                    "Failed"     { "FAILED &#x2014; check Pipeline_Master_Orchestrator run history" }
+                    "InProgress" { "Still running (started $($runStart.ToString('HH:mm')) CST)" }
+                    "Cancelled"  { "Cancelled" }
+                    default      { "Unknown status: $($latestRun.status)" }
+                }
+            } else {
+                $pIcon = "&#x274C;"
+                $pText = "Did NOT run today &#x2014; no pipeline runs found"
+            }
+        } catch {
+            $pIcon = "&#x26A0;"
+            $pText = "Could not check pipeline status: $($_.Exception.Message)"
+        }
+        $pipelineLine = "<br><b>Pipeline:</b> $pIcon $pText"
 
         # Failed steps line
         $failedLine = if ($FailedSteps.Count -gt 0) {
@@ -246,7 +267,7 @@ if ($TeamsEnabled) {
         } else { "" }
 
         $html = "$statusIcon <b>Fabric Monitoring &mdash; $date</b>" +
-                "<br>Status: $statusText &nbsp;&nbsp; Duration: ${elapsed}s" +
+                "<br>Monitoring: $statusText &nbsp;&nbsp; Duration: ${elapsed}s" +
                 $pipelineLine + $freshnessLine + $criticalLine + $failedLine
 
         Connect-MgGraph -TenantId $TenantId -NoWelcome -ErrorAction Stop
