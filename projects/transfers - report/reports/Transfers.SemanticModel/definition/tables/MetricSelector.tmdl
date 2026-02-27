@@ -1,0 +1,36 @@
+table MetricSelector
+	lineageTag: b1c2d3e4-0001-4000-8000-000000000001
+
+	column Metric
+		lineageTag: 1ce5f7b1-b066-4a9e-8ea8-7146dab809ba
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Metric]
+		sortByColumn: SortOrder
+
+		annotation SummarizationSetBy = Automatic
+
+	column SortOrder
+		formatString: 0
+		lineageTag: 9d9b97b4-ab01-49ce-976d-6c2062ad1199
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [SortOrder]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition MetricSelector = calculated
+		mode: import
+		source =
+				DATATABLE(
+				    "Metric",    STRING,
+				    "SortOrder", INTEGER,
+				    {
+				        { "Qty",    1 },
+				        { "Lines",  3 },
+				        { "Cost $", 2 }
+				    }
+				)
+
+	annotation PBI_Id = MetricSelector
+

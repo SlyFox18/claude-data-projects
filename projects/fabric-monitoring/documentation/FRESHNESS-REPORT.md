@@ -1,6 +1,6 @@
 ﻿# Data Freshness Report
 
-**Generated:** 2026-02-24 14:12:25
+**Generated:** 2026-02-26 06:01:53
 **Workspace:** LH_Master_Data
 
 ---
@@ -9,7 +9,7 @@
 
 | Status | Count | Percentage |
 |--------|-------|------------|
-| Fresh |  | 0% |
+| Fresh | 0 | 0% |
 | Stale | 0 | 0% |
 | Critical | 0 | 0% |
 
@@ -84,16 +84,16 @@
 | df_Fact_Parts_Invoices | Error | 0 | [?] Error |
 | df_Fact_PartSales_24Hours | Error | 0 | [?] Error |
 | df_Fact_PartsAdjustments | Error | 0 | [?] Error |
+| df_Fact_Service_Parts_Detail | Error | 0 | [?] Error |
 | df_Fact_WorkOrderLabor | Error | 0 | [?] Error |
 | df_Fact_WorkOrderJobs | Error | 0 | [?] Error |
 | df_FactPartTransactions_Incremental | Error | 0 | [?] Error |
 | df_Fact_WorkOrderParts | Error | 0 | [?] Error |
 | df_Fact_WorkOrderHeader | Error | 0 | [?] Error |
+| df_Fact_Transfers | Error | 0 | [?] Error |
 | df_Fact_Top50_JobCodes | Error | 0 | [?] Error |
-| df_Fact_Service_Parts_Detail | Error | 0 | [?] Error |
 | df_Fact_WorkOrderComprehensive | Error | 0 | [?] Error |
 | df_Fact_WarrantyClaims | Error | 0 | [?] Error |
-| df_Fact_Parts_Details | Error | 0 | [?] Error |
 | df_Fact_Inventory | Error | 0 | [?] Error |
 | df_Fact_InTrans_UniqueCustomers | Error | 0 | [?] Error |
 | df_Fact_Invoice_UniqueCustomers | Error | 0 | [?] Error |
@@ -103,55 +103,57 @@
 | df_Fact_Branch12_Transactions | Error | 0 | [?] Error |
 | df_Fact_First_Pass_Fill | Error | 0 | [?] Error |
 | df_Fact_Equipment_Sales | Error | 0 | [?] Error |
-| df_Fact_Machines_Serviced | Error | 0 | [?] Error |
-| df_Fact_LaborWIP | Error | 0 | [?] Error |
-| df_Fact_Part_Transactions | Error | 0 | [?] Error |
-| df_Fact_NegativeOnHand_OnHandNoBin | Error | 0 | [?] Error |
-| df_Fact_LaborPunches | Error | 0 | [?] Error |
-| df_Fact_LaborInvoiced | Error | 0 | [?] Error |
 | df_Fact_InvoiceHeader | Error | 0 | [?] Error |
-| df_Fact_LaborJobSummary | Error | 0 | [?] Error |
+| df_Fact_NegativeOnHand_OnHandNoBin | Error | 0 | [?] Error |
+| df_Fact_Machines_Serviced | Error | 0 | [?] Error |
+| df_Fact_Parts_Details | Error | 0 | [?] Error |
+| df_Fact_Part_Transactions | Error | 0 | [?] Error |
+| df_Fact_LaborWIP | Error | 0 | [?] Error |
 | df_Fact_LaborJobs | Error | 0 | [?] Error |
+| df_Fact_LaborInvoiced | Error | 0 | [?] Error |
+| df_Fact_LaborPunches | Error | 0 | [?] Error |
+| df_Fact_LaborJobSummary | Error | 0 | [?] Error |
 
 ### RawSource
 
 | Dataflow | Last Refresh | Hours Ago | Status |
 |----------|--------------|-----------|--------|
-| df_ArMaster_Contact_Raw | 2026-02-23 15:43:45 | 22.5 | [OK] Fresh |
 | df_TechnicianPunchedTime_Raw | Error | 0 | [?] Error |
 | df_TechnicianPunchedDetail_Raw | Error | 0 | [?] Error |
 | df_VhStockAccess_Raw | Error | 0 | [?] Error |
 | df_VHSTOCK_Raw | Error | 0 | [?] Error |
-| df_TechnicianEfficiency_Raw | Error | 0 | [?] Error |
-| df_TechnicianAttendance_Raw | Error | 0 | [?] Error |
 | df_TechnicianInvoiceDetail_Raw | Error | 0 | [?] Error |
+| df_TechnicianAttendance_Raw | Error | 0 | [?] Error |
+| df_Technician_Raw | Error | 0 | [?] Error |
 | df_TechnicianInvoice_Raw | Error | 0 | [?] Error |
-| df_VhTrans_Raw | Error | 0 | [?] Error |
+| df_TechnicianEfficiency_Raw | Error | 0 | [?] Error |
 | df_WKRODESC_Raw | Error | 0 | [?] Error |
 | df_WKOTHSUB_Raw | Error | 0 | [?] Error |
 | df_WKVEHFL_Raw | Error | 0 | [?] Error |
 | df_WKROFILE_Raw | Error | 0 | [?] Error |
-| df_WARSUBCI_LABOUR_Raw | Error | 0 | [?] Error |
-| df_WarClaim_Raw | Error | 0 | [?] Error |
 | df_WKMECHWK_Raw | Error | 0 | [?] Error |
+| df_WarClaim_Raw | Error | 0 | [?] Error |
+| df_VhTrans_Raw | Error | 0 | [?] Error |
 | df_WKINVREG_Raw | Error | 0 | [?] Error |
+| df_WARSUBCI_LABOUR_Raw | Error | 0 | [?] Error |
 | df_CustomerAnatomy_Raw | Error | 0 | [?] Error |
 | df_CONTACT_Raw | Error | 0 | [?] Error |
 | df_InHist_PmManage_Raw | Error | 0 | [?] Error |
 | df_GlTrans_Raw | Error | 0 | [?] Error |
-| df_ARMASTER_Raw | Error | 0 | [?] Error |
-| df_ArMaster_Customer_Raw | Error | 0 | [?] Error |
 | df_BranchOperational_Raw | Error | 0 | [?] Error |
+| df_ArMaster_Customer_Raw | Error | 0 | [?] Error |
+| df_ArMaster_Contact_Raw | Error | 0 | [?] Error |
 | df_Branch_Name_Raw | Error | 0 | [?] Error |
-| df_InMaster_Raw | Error | 0 | [?] Error |
+| df_ARMASTER_Raw | Error | 0 | [?] Error |
 | df_JDIS_PART_INFORMATION_Raw | Error | 0 | [?] Error |
 | df_Invoice_Raw | Error | 0 | [?] Error |
-| df_Technician_Raw | Error | 0 | [?] Error |
 | df_RepairOrderDetail_Raw | Error | 0 | [?] Error |
-| df_INSALPAR_Raw | Error | 0 | [?] Error |
-| df_INSALORD_Raw | Error | 0 | [?] Error |
+| df_Parts_InterbranchTransfer_Raw | Error | 0 | [?] Error |
 | df_INTRANS_Raw | Error | 0 | [?] Error |
+| df_INSALORD_Raw | Error | 0 | [?] Error |
+| df_InMaster_Raw | Error | 0 | [?] Error |
 | df_InTrans_PartsCounter_Raw | Error | 0 | [?] Error |
+| df_INSALPAR_Raw | Error | 0 | [?] Error |
 
 ### Transformation
 

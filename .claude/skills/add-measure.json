@@ -1,0 +1,28 @@
+{
+  "name": "add-measure",
+  "description": "Scaffold and add a new DAX measure to a report's semantic model. Reads existing measures for context, writes the new measure following project conventions, and reminds you to test it.",
+  "version": "1.0.0",
+  "prompt": "You are adding a new DAX measure to a Power BI semantic model. The report name and measure description will be provided.\n\n**IMPORTANT:** Always work on the `dev` branch. Read existing measures first for context before writing.\n\n## Steps\n\n### 1. Confirm branch\n```bash\ngit branch --show-current\n```\n\n### 2. Find the measures file\nLocate the _Measures.tmdl file for this report:\n```bash\nfind projects/ -name '_Measures.tmdl' -path \"*[report-name]*\"\n```\nRead the full file to understand:\n- Existing measure naming conventions (PascalCase? spaces? prefixes?)\n- Format strings used (currency, percentage, number)\n- Common patterns (CALCULATE, FILTER, time intelligence)\n- Any measure groups or display folders\n\n### 3. Check for related measures\nSearch for measures that are conceptually related to the new one — they may share CALCULATE patterns or reference the same base table:\n```bash\ngrep -r \"[keyword]\" projects/[report-folder]/reports/current/ --include=\"*.tmdl\"\n```\n\n### 4. Draft the measure\nApply these conventions:\n- **Format:** Match the naming style of existing measures in the file\n- **Display folder:** Group with related measures using `displayFolder` if other measures use folders\n- **Format string:** Use `\"$#,0.00\"` for currency, `\"0.0%\"` for percentages, `\"#,0\"` for counts\n- **Description:** Add a `description` property explaining what the measure calculates\n- **BLANK handling:** Use `IF(ISBLANK([base]), BLANK(), ...)` pattern to avoid showing zeros where data doesn't exist\n- **Time intelligence:** For YTD/PYTD measures, use `dim_DateTable` with `DATESYTD` or `SAMEPERIODLASTYEAR`\n\n**DAX measure template in .tmdl format:**\n```\n\t\tmeasure '[Measure Name]' = [DAX EXPRESSION]\n\t\t\tformatString: #,0\n\t\t\tdisplayFolder: '[Folder Name]'\n\t\t\tdescription: '[What this measure calculates]'\n```\n\n### 5. Write the measure\nAdd the measure to the correct location in `_Measures.tmdl`. Keep measures grouped by category (totals together, ratios together, YTD together).\n\n### 6. Check for cross-table flags (if needed)\nIf the measure needs to filter by customer group, engagement level, or unique customer:\n- Use `LOOKUPVALUE` pattern, not a model relationship\n- Reference `dim_CustomerList[UniqueCustomerGroup]` or `dim_CustomerList[EngagementLevel]`\n- See `UNIQUE-CUSTOMER-FLAGS.md` in Customer Anatomy project for the full pattern\n\n### 7. Commit and remind\n```bash\ngit add projects/[report-folder]/reports/current/\ngit commit -m \"Add [measure name] measure to [report name]\"\n```\n\nRemind the user:\n- Test in Power BI Desktop or Fabric before declaring done\n- Check the measure with different slicer combinations (branch, date range)\n- If it's a KPI measure, verify against source data for at least one branch",
+  "args": {
+    "report_name": {
+      "type": "string",
+      "description": "Report folder name or display name (e.g., 'inspections - report', 'Customer Anatomy')",
+      "required": true
+    },
+    "measure_description": {
+      "type": "string",
+      "description": "What the measure should calculate (e.g., 'YTD parts revenue for unique customers only', 'inspection completion rate by branch')",
+      "required": true
+    }
+  },
+  "examples": [
+    {
+      "command": "/add-measure \"inspections - report\" \"inspection completion rate as completed jobs divided by total scheduled jobs\"",
+      "description": "Add a completion rate measure to the Inspections report"
+    },
+    {
+      "command": "/add-measure \"customer anatomy - report\" \"YTD parts revenue for unique customers only\"",
+      "description": "Add a unique customer YTD parts measure to Customer Anatomy"
+    }
+  ]
+}

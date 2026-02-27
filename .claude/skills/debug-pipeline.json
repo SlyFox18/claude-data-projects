@@ -1,0 +1,27 @@
+{
+  "name": "debug-pipeline",
+  "description": "Investigate a Fabric pipeline failure or unexpected refresh result. Checks monitoring logs, freshness data, and pipeline docs to identify root cause and recommend next steps.",
+  "version": "1.0.0",
+  "prompt": "You are investigating a Microsoft Fabric pipeline issue. The problem description will be provided as an argument.\n\n## Investigation Steps\n\n### 1. Check today's monitoring log\nRead the most recent post-pipeline log for errors and failures:\n```bash\npowershell -Command \"Get-Content (Get-ChildItem 'C:/Users/bfox/Documents/Git-Projects/data-projects/projects/fabric-monitoring/logs' -Filter 'post-pipeline-*.log' | Sort-Object LastWriteTime -Descending | Select-Object -First 1 -ExpandProperty FullName)\"\n```\n\n### 2. Check freshness report for affected dataflows\n```bash\npowershell -Command \"Import-Csv 'C:/Users/bfox/Documents/Git-Projects/data-projects/projects/fabric-monitoring/documentation/Dataflow-Freshness-Report.csv' | Where-Object { $_.Status -ne 'Fresh' } | Sort-Object HoursAgo -Descending | Format-Table DataflowName, Category, Status, LastRefreshTime, HoursAgo -AutoSize\"\n```\n\n### 3. Check refresh history for the affected dataflow(s)\n```bash\npowershell -Command \"Import-Csv 'C:/Users/bfox/Documents/Git-Projects/data-projects/projects/fabric-monitoring/documentation/Dataflow-Refresh-History.csv' | Where-Object { $_.DataflowName -like '*[dataflow]*' } | Sort-Object Timestamp -Descending | Select-Object -First 10 | Format-Table -AutoSize\"\n```\n\n### 4. Identify the pipeline phase\nCheck which phase the affected dataflow belongs to:\n- **Phase 1 (Raw):** `df_*_Raw` tables — source ODBC issues, connection problems\n- **Phase 2 (InTrans):** `df_InTrans_Incremental` — large data volume, RangeStart/RangeEnd issues\n- **Phase 3 (Dimensions):** `df_Dim_*` — dependency on Phase 1/2, schema changes\n- **Phase 4 (Facts):** `df_Fact_*` — dependency on dimensions, join failures\n- **Phase 5 (Semantic Models):** Report refresh — dependency on facts\n\n### 5. Apply the troubleshooting runbook\nRead the relevant section from the pipeline documentation:\n```bash\ncat projects/refresh-pipeline/runbook.md\n```\n\nCommon failure patterns:\n| Symptom | Likely Cause | Resolution |\n|---------|-------------|------------|\n| All Phase 1 raw tables fail | ODBC source system down or slow | Check EquipRDB64 connection, retry after 30 min |\n| One raw table fails, others OK | Schema change in source table | Check column changes, update query |\n| Dimension fails after raw succeeds | Dependency timing issue | Re-run dimension phase manually |\n| Fact table fails | Dimension not ready, join key mismatch | Verify dimension refreshed first |\n| Semantic model fails | Fact table not ready | Re-run semantic model refresh |\n| InTrans takes >10 min | Large delta, RangeStart too far back | Check parameter values |\n| F4 capacity errors | Too many concurrent dataflows | Reduce wave size, stagger refreshes |\n\n### 6. Check for known issues\nReview the project's CLAUDE.md if the failure is report-specific:\n- Inspections: Fact_WorkOrderParts uses invoice number join (not work order) — verify InTrans.REF_NO\n- Inventory Analysis: InTrans_Incremental must use RangeStart/RangeEnd parameters\n- Customer Anatomy: Unknown Customer issue in service invoices is a known data gap, not a pipeline error\n\n### 7. Recommend next steps\nBased on findings, recommend one of:\n- **Re-run:** Specific phase to re-trigger (safe to re-run any phase)\n- **Investigate:** Specific query or dataflow to examine in Fabric UI\n- **Fix required:** Describe the code change needed\n- **Wait:** Issue is transient (source system load), retry next scheduled run\n- **Escalate:** Issue requires Fabric admin or source system access\n\n### 8. Document the incident\nIf this is a recurring issue or required a fix, note it in the project's CLAUDE.md gotchas section.",
+  "args": {
+    "problem": {
+      "type": "string",
+      "description": "Description of the issue (e.g., 'Fact_WorkOrderParts failed this morning', 'all dimensions showing stale', 'Customer Anatomy report not refreshing')",
+      "required": true
+    }
+  },
+  "examples": [
+    {
+      "command": "/debug-pipeline \"Fact_WorkOrderParts failed this morning and the Inspections report shows yesterday's data\"",
+      "description": "Investigate a fact table refresh failure"
+    },
+    {
+      "command": "/debug-pipeline \"all dimension dataflows showing as Critical in freshness report\"",
+      "description": "Investigate why dimensions haven't refreshed"
+    },
+    {
+      "command": "/debug-pipeline \"pipeline didn't run this morning\"",
+      "description": "Investigate a full pipeline no-show"
+    }
+  ]
+}
