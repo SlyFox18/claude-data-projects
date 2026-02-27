@@ -1897,8 +1897,8 @@ table _Measures
 
 	measure 'Parts Margin Icon' =
 
-			VAR TotalValue   = [Parts Margin (L1)]
-			VAR CurrentValue = CALCULATE([Parts Margin (L1)], SAMEPERIODLASTYEAR(dim_DateTable[Date]))
+			VAR TotalValue   = [Parts Margin]
+			VAR CurrentValue = [Prior Period Parts Margin L2]
 			RETURN
 			IF(
 			    OR(ISBLANK(TotalValue), ISBLANK(CurrentValue)),
