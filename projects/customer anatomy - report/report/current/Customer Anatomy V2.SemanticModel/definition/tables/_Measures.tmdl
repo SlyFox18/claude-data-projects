@@ -1896,9 +1896,9 @@ table _Measures
 		lineageTag: 912d1dd3-a10b-4078-b163-aecfdcd7e5f7
 
 	measure 'Parts Margin Icon' =
-			
+
 			VAR TotalValue   = [Parts Margin (L1)]
-			VAR CurrentValue = [Prior Period Parts Margin L2]
+			VAR CurrentValue = CALCULATE([Parts Margin (L1)], SAMEPERIODLASTYEAR(dim_DateTable[Date]))
 			RETURN
 			IF(
 			    OR(ISBLANK(TotalValue), ISBLANK(CurrentValue)),
