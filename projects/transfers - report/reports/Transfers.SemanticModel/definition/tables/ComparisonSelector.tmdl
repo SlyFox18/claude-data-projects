@@ -1,0 +1,29 @@
+table ComparisonSelector
+	lineageTag: e2f3a4b5-0001-4000-8000-000000000001
+
+	column Comparison
+		lineageTag: 3492275c-7d03-4e75-8e9d-d00c8cfa452e
+		isNameInferred
+		sourceColumn: [Comparison]
+		sortByColumn: SortOrder
+
+	column SortOrder
+		lineageTag: 00f1dea1-348a-4304-9915-fe4e6a127314
+		isNameInferred
+		sourceColumn: [SortOrder]
+
+	partition ComparisonSelector = calculated
+		mode: import
+		source =
+				DATATABLE(
+				    "Comparison", STRING,
+				    "SortOrder",  INTEGER,
+				    {
+				        { "Inventory", 1 },
+				        { "Sales",     2 },
+				        { "Purchases", 3 }
+				    }
+				)
+
+	annotation PBI_Id = ComparisonSelector
+

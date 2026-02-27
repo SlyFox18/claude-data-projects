@@ -1,0 +1,21 @@
+relationship AutoDetected_0b357026-04dd-4655-a468-bdcd0b891f86
+	fromColumn: Fact_Transfers.DateKey
+	toColumn: dim_DateTable.DateKey
+
+relationship AutoDetected_82306708-9f5d-4502-b82d-8bb486517a40
+	fromColumn: Fact_Transfers.PartNumber
+	toColumn: dim_Parts.PartNumber
+
+relationship AutoDetected_052ca782-529d-4be0-9325-7174c4d5391f
+	fromColumn: Fact_Transfers.Branch
+	toColumn: dim_BranchLocation.BranchID
+
+relationship TransferBranch_to_BranchLocation
+	isActive: false
+	fromColumn: Fact_Transfers.TransferBranch
+	toColumn: dim_BranchLocation.BranchID
+
+relationship Inv_Snapshot_to_BranchLocation
+	fromColumn: Inv_Snapshot.Branch
+	toColumn: dim_BranchLocation.BranchID
+

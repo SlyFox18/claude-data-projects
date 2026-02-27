@@ -1,0 +1,986 @@
+table _Measures
+	lineageTag: 22e4b9e3-99b6-4634-9836-9ade5a5ea5a5
+
+	measure 'Home - Header' =
+			
+			VAR _User = USERPRINCIPALNAME()
+			VAR _Position = SEARCH("@", _User, 1)
+			VAR _Name = LEFT(_User, _Position - 1)
+			VAR _FirstLetter = UPPER(LEFT(_Name, 1))
+			VAR _LastName = MID(_Name, 2, LEN(_Name) - 1)
+			VAR _FormattedLastName =
+			    UPPER(LEFT(_LastName, 1)) & LOWER(MID(_LastName, 2, LEN(_LastName)))
+			VAR WelcomeName = _FirstLetter & "." & _FormattedLastName
+			VAR CurrentDate = TODAY()
+			VAR DateDisplay = FORMAT(CurrentDate, "MMM D, YYYY")
+			VAR CurrentHour = HOUR(NOW())
+			VAR TimeGreeting =
+			    IF(CurrentHour < 12, "Good Morning",
+			    IF(CurrentHour < 17, "Good Afternoon",
+			    "Good Evening"))
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    height: 85px;
+			    padding: 15px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 10px;
+			    color: white;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-between;
+			    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    box-sizing: border-box;
+			'>
+			    <div style='display: flex; align-items: center; gap: 15px;'>
+			        <div style='
+			            width: 40px; height: 40px;
+			            background: rgba(255,255,255,0.15);
+			            border-radius: 8px;
+			            display: flex; align-items: center; justify-content: center;
+			            font-size: 20px;
+			        '>🔄</div>
+			        <div>
+			            <div style='font-size: 12px; opacity: 0.85; margin-bottom: 4px; letter-spacing: 0.5px;'>REPORT</div>
+			            <div style='font-size: 26px; font-weight: 700; line-height: 1;'>Transfers</div>
+			        </div>
+			    </div>
+			    <div style='text-align: right;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 6px;'>" & TimeGreeting & ", " & WelcomeName & "</div>
+			        <div style='font-size: 16px; font-weight: 600;'>📅 " & DateDisplay & "</div>
+			    </div>
+			</div>
+			"
+		lineageTag: 49efea2a-3c06-4cab-8367-26b26caa141e
+
+	measure 'Transfer Qty' =
+			// Net per-branch: positive = branch is a net receiver, negative = net sender.
+			// NOTE: Two records exist per physical transfer (one sending, one receiving).
+			// SUM across all branches = ~0. Use Transfers Out / In for butterfly visuals.
+			CALCULATE(
+			    SUM(Fact_Transfers[Qty]),
+			    Fact_Transfers[Type] = "T"
+			)
+		formatString: #,##0
+		lineageTag: a1b2c3d4-0001-4000-8000-000000000001
+
+	measure 'Transfer Lines' =
+			// Parts LEAVING a branch: sending records (Qty < 0), one per physical movement.
+			// Butterfly chart LEFT bar (lines view). Two records per transfer — counting
+			// only the sending side avoids doubling the line count in total/grand-total views.
+			CALCULATE(
+			    COUNTROWS(Fact_Transfers),
+			    Fact_Transfers[Type] = "T",
+			    Fact_Transfers[Qty] < 0
+			)
+		formatString: #,##0
+		lineageTag: a1b2c3d4-0002-4000-8000-000000000002
+
+	measure 'Transfer Cost $' =
+			// Parts LEAVING a branch: sending records have negative CostValue. ABS for display.
+			// Butterfly chart LEFT bar (dollar view). Confirmed: CostValue is signed per SQL.
+			CALCULATE(
+			    ABS(SUM(Fact_Transfers[CostValue])),
+			    Fact_Transfers[Type] = "T",
+			    Fact_Transfers[Qty] < 0
+			)
+		formatString: $#,##0.00
+		lineageTag: a1b2c3d4-0003-4000-8000-000000000003
+
+	measure 'WO Transfer Qty' =
+			// Sending records only (Qty < 0), ABS for positive display.
+			CALCULATE(
+			    ABS(SUM(Fact_Transfers[Qty])),
+			    Fact_Transfers[Type] = "T",
+			    Fact_Transfers[TransferSubType] = "Work Order",
+			    Fact_Transfers[Qty] < 0
+			)
+		formatString: #,##0
+		lineageTag: a1b2c3d4-0004-4000-8000-000000000004
+
+	measure 'WO Transfer Lines' =
+			// Sending records only — one row per physical transfer.
+			CALCULATE(
+			    COUNTROWS(Fact_Transfers),
+			    Fact_Transfers[Type] = "T",
+			    Fact_Transfers[TransferSubType] = "Work Order",
+			    Fact_Transfers[Qty] < 0
+			)
+		formatString: #,##0
+		lineageTag: a1b2c3d4-0005-4000-8000-000000000005
+
+	measure 'WO Transfer Cost $' =
+			// Sending records only, ABS to show positive cost value.
+			CALCULATE(
+			    ABS(SUM(Fact_Transfers[CostValue])),
+			    Fact_Transfers[Type] = "T",
+			    Fact_Transfers[TransferSubType] = "Work Order",
+			    Fact_Transfers[Qty] < 0
+			)
+		formatString: $#,##0.00
+		lineageTag: a1b2c3d4-0006-4000-8000-000000000006
+
+	measure 'Counter Transfer Qty' =
+			// Sending records only (Qty < 0), ABS for positive display.
+			CALCULATE(
+			    ABS(SUM(Fact_Transfers[Qty])),
+			    Fact_Transfers[Type] = "T",
+			    Fact_Transfers[TransferSubType] = "Counter",
+			    Fact_Transfers[Qty] < 0
+			)
+		formatString: #,##0
+		lineageTag: a1b2c3d4-0007-4000-8000-000000000007
+
+	measure 'Counter Transfer Lines' =
+			// Sending records only — one row per physical transfer.
+			CALCULATE(
+			    COUNTROWS(Fact_Transfers),
+			    Fact_Transfers[Type] = "T",
+			    Fact_Transfers[TransferSubType] = "Counter",
+			    Fact_Transfers[Qty] < 0
+			)
+		formatString: #,##0
+		lineageTag: a1b2c3d4-0008-4000-8000-000000000008
+
+	measure 'Counter Transfer Cost $' =
+			// Sending records only, ABS to show positive cost value.
+			CALCULATE(
+			    ABS(SUM(Fact_Transfers[CostValue])),
+			    Fact_Transfers[Type] = "T",
+			    Fact_Transfers[TransferSubType] = "Counter",
+			    Fact_Transfers[Qty] < 0
+			)
+		formatString: $#,##0.00
+		lineageTag: a1b2c3d4-0009-4000-8000-000000000009
+
+	measure 'Stock Transfer Qty' =
+			// Sending records only (Qty < 0), ABS for positive display.
+			CALCULATE(
+			    ABS(SUM(Fact_Transfers[Qty])),
+			    Fact_Transfers[Type] = "T",
+			    Fact_Transfers[TransferSubType] = "Stock",
+			    Fact_Transfers[Qty] < 0
+			)
+		formatString: #,##0
+		lineageTag: a1b2c3d4-0010-4000-8000-000000000010
+
+	measure 'Stock Transfer Lines' =
+			// Sending records only — one row per physical transfer.
+			CALCULATE(
+			    COUNTROWS(Fact_Transfers),
+			    Fact_Transfers[Type] = "T",
+			    Fact_Transfers[TransferSubType] = "Stock",
+			    Fact_Transfers[Qty] < 0
+			)
+		formatString: #,##0
+		lineageTag: a1b2c3d4-0011-4000-8000-000000000011
+
+	measure 'Stock Transfer Cost $' =
+			// Sending records only, ABS to show positive cost value.
+			CALCULATE(
+			    ABS(SUM(Fact_Transfers[CostValue])),
+			    Fact_Transfers[Type] = "T",
+			    Fact_Transfers[TransferSubType] = "Stock",
+			    Fact_Transfers[Qty] < 0
+			)
+		formatString: $#,##0.00
+		lineageTag: a1b2c3d4-0012-4000-8000-000000000012
+
+	measure 'Sales Qty' =
+			CALCULATE(
+			    SUM(Fact_Transfers[Qty]),
+			    Fact_Transfers[Type] IN {"I", "C"}
+			)
+		formatString: #,##0
+		lineageTag: a1b2c3d4-0016-4000-8000-000000000016
+
+	measure 'Sales Lines' =
+			CALCULATE(
+			    COUNTROWS(Fact_Transfers),
+			    Fact_Transfers[Type] IN {"I", "C"}
+			)
+		formatString: #,##0
+		lineageTag: a1b2c3d4-0017-4000-8000-000000000017
+
+	measure 'Sales Cost $' =
+			CALCULATE(
+			    SUM(Fact_Transfers[CostValue]),
+			    Fact_Transfers[Type] IN {"I", "C"}
+			)
+		formatString: $#,##0.00
+		lineageTag: a1b2c3d4-0018-4000-8000-000000000018
+
+	measure 'Purchase Qty' =
+			CALCULATE(
+			    SUM(Fact_Transfers[Qty]),
+			    Fact_Transfers[Type] = "P"
+			)
+		formatString: #,##0
+		lineageTag: a1b2c3d4-0019-4000-8000-000000000019
+
+	measure 'Purchase Lines' =
+			CALCULATE(
+			    COUNTROWS(Fact_Transfers),
+			    Fact_Transfers[Type] = "P"
+			)
+		formatString: #,##0
+		lineageTag: a1b2c3d4-0020-4000-8000-000000000020
+
+	measure 'Purchase Cost $' =
+			CALCULATE(
+			    SUM(Fact_Transfers[CostValue]),
+			    Fact_Transfers[Type] = "P"
+			)
+		formatString: $#,##0.00
+		lineageTag: a1b2c3d4-0021-4000-8000-000000000021
+
+	measure 'Transfer % of Sales Qty' =
+			// Outbound transfers as a % of sales — uses Transfers Out (Qty) for the numerator.
+			VAR _TransferQty = [Transfers Out (Qty)]
+			VAR _SalesQty    = [Sales Qty]
+			RETURN
+			    IF(
+			        _SalesQty = 0 || ISBLANK(_SalesQty),
+			        BLANK(),
+			        DIVIDE(_TransferQty, _SalesQty)
+			    )
+		formatString: 0.0%
+		lineageTag: a1b2c3d4-0022-4000-8000-000000000022
+
+	measure 'Transfer % of Sales Cost' =
+			// Outbound transfer cost as a % of sales cost.
+			VAR _TransferCost = [Transfer Cost $]
+			VAR _SalesCost    = [Sales Cost $]
+			RETURN
+			    IF(
+			        _SalesCost = 0 || ISBLANK(_SalesCost),
+			        BLANK(),
+			        DIVIDE(_TransferCost, _SalesCost)
+			    )
+		formatString: 0.0%
+		lineageTag: a1b2c3d4-0023-4000-8000-000000000023
+
+	measure 'Transfer % of Purchase Qty' =
+			// Outbound transfers as a % of purchases.
+			VAR _TransferQty  = [Transfers Out (Qty)]
+			VAR _PurchaseQty  = [Purchase Qty]
+			RETURN
+			    IF(
+			        _PurchaseQty = 0 || ISBLANK(_PurchaseQty),
+			        BLANK(),
+			        DIVIDE(_TransferQty, _PurchaseQty)
+			    )
+		formatString: 0.0%
+		lineageTag: a1b2c3d4-0024-4000-8000-000000000024
+
+	measure 'Transfers Out (Qty)' =
+			// Parts LEAVING a branch: sending records have Qty < 0; returned as positive.
+			// Butterfly chart LEFT bar — filter context: Branch = the sending branch.
+			CALCULATE(
+			    ABS(SUM(Fact_Transfers[Qty])),
+			    Fact_Transfers[Type] = "T",
+			    Fact_Transfers[Qty] < 0
+			)
+		formatString: #,##0
+		lineageTag: a1b2c3d4-0025-4000-8000-000000000025
+
+	measure 'Transfers In (Qty)' =
+			// Parts ARRIVING at a branch: receiving records have Qty > 0.
+			// Butterfly chart RIGHT bar — filter context: Branch = the receiving branch.
+			CALCULATE(
+			    SUM(Fact_Transfers[Qty]),
+			    Fact_Transfers[Type] = "T",
+			    Fact_Transfers[Qty] > 0
+			)
+		formatString: #,##0
+		lineageTag: a1b2c3d4-0026-4000-8000-000000000026
+
+	measure 'Net Transfer Qty' = ```
+			
+			    [Transfers In (Qty)] - [Transfers Out (Qty)]
+			
+			```
+		formatString: 0
+		lineageTag: 4fe6d30e-f81e-43fe-aae6-6a1247783621
+
+	measure 'Transfers In Cost $' =
+			// Parts ARRIVING at a branch: receiving records have positive CostValue.
+			// Butterfly chart RIGHT bar (dollar view). Confirmed: CostValue is signed per SQL.
+			CALCULATE(
+			    SUM(Fact_Transfers[CostValue]),
+			    Fact_Transfers[Type] = "T",
+			    Fact_Transfers[Qty] > 0
+			)
+		formatString: $#,##0.00
+		lineageTag: a1b2c3d4-0027-4000-8000-000000000027
+
+	measure 'Net Transfer Cost' = ```
+			
+			    [Transfers In Cost $] - [Transfer Cost $]
+			```
+		formatString: \$#,0;(\$#,0);\$#,0
+		lineageTag: 98f7b8f1-dc7b-489e-b518-4b7c7a50ae6a
+
+	measure 'Transfers In (Lines)' =
+			// Parts ARRIVING at a branch: receiving records (Qty > 0).
+			// Butterfly chart RIGHT bar (lines view).
+			CALCULATE(
+			    COUNTROWS(Fact_Transfers),
+			    Fact_Transfers[Type] = "T",
+			    Fact_Transfers[Qty] > 0
+			)
+		formatString: #,##0
+		lineageTag: a1b2c3d4-0028-4000-8000-000000000028
+
+	measure 'Net Transfer Lines' = ```
+			
+			    [Transfers In (Lines)] - [Transfer Lines]
+			```
+		formatString: 0
+		lineageTag: 37f676de-919c-42ac-a73f-efc5984ab6d2
+
+	measure 'Transfer Balance % (Lines)' =
+			// How balanced is this branch? Positive = net receiver, Negative = net sender.
+			// Formula: Net / (In + Out). Range: -100% to +100%. Zero = perfectly balanced.
+			// Use as data label on the Net Transfer Lines bar in the balance chart.
+			DIVIDE(
+			    [Net Transfer Lines],
+			    [Transfers In (Lines)] + [Transfer Lines],
+			    0
+			)
+		formatString: +0.0%;-0.0%;0.0%
+		lineageTag: a1b2c3d4-0031-4000-8000-000000000031
+
+	measure 'Transfer Balance % (Qty)' =
+			// Same balance score as Lines version, using Qty as the weight.
+			DIVIDE(
+			    [Net Transfer Qty],
+			    [Transfers In (Qty)] + [Transfers Out (Qty)],
+			    0
+			)
+		formatString: +0.0%;-0.0%;0.0%
+		lineageTag: a1b2c3d4-0032-4000-8000-000000000032
+
+	measure 'Transfer Balance % (Cost)' =
+			// Same balance score using Cost value as the weight.
+			DIVIDE(
+			    [Net Transfer Cost],
+			    [Transfers In Cost $] + [Transfer Cost $],
+			    0
+			)
+		formatString: +0.0%;-0.0%;0.0%
+		lineageTag: a1b2c3d4-0033-4000-8000-000000000033
+
+	measure 'Net Lines Label' =
+			// Combined data label for the Net Transfer Lines bar in the balance chart.
+			// Shows net count AND balance % together: e.g. "-1,235 (-10.1%)"
+			// Use as a Field Value data label on the Net Transfer Lines series only.
+			VAR NetVal  = [Net Transfer Lines]
+			VAR BalPct  = [Transfer Balance % (Lines)]
+			RETURN
+			    FORMAT(NetVal, "+#,##0;-#,##0;0") & "  (" & FORMAT(BalPct, "+0.0%;-0.0%;0.0%") & ")"
+		lineageTag: a1b2c3d4-0034-4000-8000-000000000034
+
+	measure 'Transfer Out % (Lines)' =
+			// Out / (In + Out). 50% = perfectly balanced. > 50% = net sender. < 50% = net receiver.
+			// Use to SORT the balance chart: descending = biggest net senders at top.
+			// Different from Transfer Balance % (Lines) which is Net-based and ranges -100 to +100.
+			DIVIDE(
+			    [Transfer Lines],
+			    [Transfers In (Lines)] + [Transfer Lines],
+			    0
+			)
+		formatString: 0%
+		lineageTag: a1b2c3d4-0035-4000-8000-000000000035
+
+	measure 'Transfer Out % (Qty)' =
+			// Out / (In + Out) for Qty. Use to sort the Qty version of the balance chart.
+			DIVIDE(
+			    [Transfers Out (Qty)],
+			    [Transfers In (Qty)] + [Transfers Out (Qty)],
+			    0
+			)
+		formatString: 0%
+		lineageTag: a1b2c3d4-0036-4000-8000-000000000036
+
+	measure 'Transfer Out % (Cost)' =
+			// Out / (In + Out) for Cost. Use to sort the Cost $ version of the balance chart.
+			DIVIDE(
+			    [Transfer Cost $],
+			    [Transfers In Cost $] + [Transfer Cost $],
+			    0
+			)
+		formatString: 0%
+		lineageTag: a1b2c3d4-0037-4000-8000-000000000037
+
+	measure 'Transfer In Lines Label' =
+			// Combined label for the Transfers In (Lines) bar.
+			// Shows: inbound count + out% side by side. e.g. "2,881  (38%)"
+			// The % = Transfer Lines (out) / total — shows what share of activity is outbound.
+			// Apply as Field Value data label on the Transfers In (Lines) series only.
+			VAR InVal  = [Transfers In (Lines)]
+			VAR OutVal = [Transfer Lines]
+			VAR OutPct = DIVIDE(OutVal, InVal + OutVal, 0)
+			RETURN
+			    FORMAT(InVal, "#,##0") & "  (" & FORMAT(OutPct, "0%") & ")"
+		lineageTag: a1b2c3d4-0038-4000-8000-000000000038
+
+	measure 'Transfer In Qty Label' =
+			// Combined label for the Transfers In (Qty) bar.
+			// Shows: inbound qty + out% side by side. e.g. "171,535  (43%)"
+			VAR InVal  = [Transfers In (Qty)]
+			VAR OutVal = [Transfers Out (Qty)]
+			VAR OutPct = DIVIDE(OutVal, InVal + OutVal, 0)
+			RETURN
+			    FORMAT(InVal, "#,##0") & "  (" & FORMAT(OutPct, "0%") & ")"
+		lineageTag: a1b2c3d4-0039-4000-8000-000000000039
+
+	measure 'Transfer In Cost Label' =
+			// Combined label for the Transfers In Cost $ bar.
+			// Shows: inbound cost + out% side by side. e.g. "$12,450  (43%)"
+			VAR InVal  = [Transfers In Cost $]
+			VAR OutVal = [Transfer Cost $]
+			VAR OutPct = DIVIDE(OutVal, InVal + OutVal, 0)
+			RETURN
+			    FORMAT(InVal, "$#,##0") & "  (" & FORMAT(OutPct, "0%") & ")"
+		lineageTag: a1b2c3d4-0040-4000-8000-000000000040
+
+	measure 'Transfer SubType Hero (A)' =
+			// OPTION A: Total + 3 sub-type sections. Shows both raw value and % badge per type.
+			// Responds to MetricSelector slicer (Qty / Lines / Cost $).
+			// Layout: [ Total ] | [ Work Order ] | [ Counter ] | [ Stock ]
+			VAR SelectedMetric = SELECTEDVALUE(MetricSelector[Metric], "Qty")
+			VAR TotalVal = SWITCH(SelectedMetric,
+			    "Qty",    [Transfers Out (Qty)],
+			    "Lines",  [Transfer Lines],
+			    "Cost $", [Transfer Cost $]
+			)
+			VAR WOVal = SWITCH(SelectedMetric,
+			    "Qty",    [WO Transfer Qty],
+			    "Lines",  [WO Transfer Lines],
+			    "Cost $", [WO Transfer Cost $]
+			)
+			VAR CounterVal = SWITCH(SelectedMetric,
+			    "Qty",    [Counter Transfer Qty],
+			    "Lines",  [Counter Transfer Lines],
+			    "Cost $", [Counter Transfer Cost $]
+			)
+			VAR StockVal = SWITCH(SelectedMetric,
+			    "Qty",    [Stock Transfer Qty],
+			    "Lines",  [Stock Transfer Lines],
+			    "Cost $", [Stock Transfer Cost $]
+			)
+			VAR WOPct      = DIVIDE(WOVal,      TotalVal, 0)
+			VAR CounterPct = DIVIDE(CounterVal, TotalVal, 0)
+			VAR StockPct   = DIVIDE(StockVal,   TotalVal, 0)
+			VAR MetricLabel = SWITCH(SelectedMetric,
+			    "Qty",    "Transfer Qty",
+			    "Lines",  "Transfer Lines",
+			    "Cost $", "Transfer Cost"
+			)
+			VAR ValFmt = SWITCH(SelectedMetric, "Cost $", "$#,##0", "#,##0")
+			VAR TotalText      = FORMAT(TotalVal,   ValFmt)
+			VAR WOText         = FORMAT(WOVal,      ValFmt)
+			VAR CounterText    = FORMAT(CounterVal, ValFmt)
+			VAR StockText      = FORMAT(StockVal,   ValFmt)
+			VAR WOPctText      = FORMAT(WOPct,      "0.0%")
+			VAR CounterPctText = FORMAT(CounterPct, "0.0%")
+			VAR StockPctText   = FORMAT(StockPct,   "0.0%")
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    padding: 20px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 12px;
+			    color: white;
+			    height: 140px;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-around;
+			    box-sizing: border-box;
+			'>
+			    <div style='text-align: center; flex: 1.2;'>
+			        <div style='font-size: 11px; opacity: 0.8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;'>
+			            " & MetricLabel & "
+			        </div>
+			        <div style='font-size: 38px; font-weight: 700; line-height: 1;'>
+			            " & TotalText & "
+			        </div>
+			        <div style='font-size: 11px; margin-top: 8px; opacity: 0.7;'>
+			            All Transfer Types
+			        </div>
+			    </div>
+			    <div style='width: 1.5px; height: 90px; background: rgba(255,255,255,0.25); margin: 0 12px;'></div>
+			    <div style='text-align: center; flex: 1;'>
+			        <div style='font-size: 11px; opacity: 0.8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;'>
+			            Work Order
+			        </div>
+			        <div style='font-size: 34px; font-weight: 700; line-height: 1;'>
+			            " & WOText & "
+			        </div>
+			        <div style='margin-top: 8px;'>
+			            <span style='background: rgba(147,197,253,0.2); color: #93c5fd; font-size: 12px; font-weight: 600; padding: 2px 10px; border-radius: 10px;'>
+			                " & WOPctText & "
+			            </span>
+			        </div>
+			    </div>
+			    <div style='width: 1.5px; height: 90px; background: rgba(255,255,255,0.25); margin: 0 12px;'></div>
+			    <div style='text-align: center; flex: 1;'>
+			        <div style='font-size: 11px; opacity: 0.8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;'>
+			            Counter
+			        </div>
+			        <div style='font-size: 34px; font-weight: 700; line-height: 1;'>
+			            " & CounterText & "
+			        </div>
+			        <div style='margin-top: 8px;'>
+			            <span style='background: rgba(252,211,77,0.2); color: #fcd34d; font-size: 12px; font-weight: 600; padding: 2px 10px; border-radius: 10px;'>
+			                " & CounterPctText & "
+			            </span>
+			        </div>
+			    </div>
+			    <div style='width: 1.5px; height: 90px; background: rgba(255,255,255,0.25); margin: 0 12px;'></div>
+			    <div style='text-align: center; flex: 1;'>
+			        <div style='font-size: 11px; opacity: 0.8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;'>
+			            Stock
+			        </div>
+			        <div style='font-size: 34px; font-weight: 700; line-height: 1;'>
+			            " & StockText & "
+			        </div>
+			        <div style='margin-top: 8px;'>
+			            <span style='background: rgba(134,239,172,0.2); color: #86efac; font-size: 12px; font-weight: 600; padding: 2px 10px; border-radius: 10px;'>
+			                " & StockPctText & "
+			            </span>
+			        </div>
+			    </div>
+			</div>
+			"
+		lineageTag: a1b2c3d4-0029-4000-8000-000000000029
+
+	measure 'Transfer SubType Hero (B)' =
+			// OPTION B: Total + 3 sub-type sections, percentage-first for sub-types.
+			// Responds to MetricSelector slicer (Qty / Lines / Cost $).
+			// Layout: [ Total ] | [ Work Order % ] | [ Counter % ] | [ Stock % ]
+			VAR SelectedMetric = SELECTEDVALUE(MetricSelector[Metric], "Qty")
+			VAR TotalVal =
+			    // ALL(TransferSubType) ensures hero card always shows grand-total breakdown.
+			    // Percentages always sum to 100% regardless of TransferSubType slicer.
+			    CALCULATE(
+			        SWITCH(SelectedMetric,
+			            "Qty",    [Transfers Out (Qty)],
+			            "Lines",  [Transfer Lines],
+			            "Cost $", [Transfer Cost $]
+			        ),
+			        ALL(Fact_Transfers[TransferSubType])
+			    )
+			VAR WOVal = SWITCH(SelectedMetric,
+			    "Qty",    [WO Transfer Qty],
+			    "Lines",  [WO Transfer Lines],
+			    "Cost $", [WO Transfer Cost $]
+			)
+			VAR CounterVal = SWITCH(SelectedMetric,
+			    "Qty",    [Counter Transfer Qty],
+			    "Lines",  [Counter Transfer Lines],
+			    "Cost $", [Counter Transfer Cost $]
+			)
+			VAR StockVal = SWITCH(SelectedMetric,
+			    "Qty",    [Stock Transfer Qty],
+			    "Lines",  [Stock Transfer Lines],
+			    "Cost $", [Stock Transfer Cost $]
+			)
+			VAR WOPct      = DIVIDE(WOVal,      TotalVal, 0)
+			VAR CounterPct = DIVIDE(CounterVal, TotalVal, 0)
+			VAR StockPct   = DIVIDE(StockVal,   TotalVal, 0)
+			VAR MetricLabel = SWITCH(SelectedMetric,
+			    "Qty",    "Transfer Qty",
+			    "Lines",  "Transfer Lines",
+			    "Cost $", "Transfer Cost"
+			)
+			VAR ValFmt = SWITCH(SelectedMetric, "Cost $", "$#,##0", "#,##0")
+			VAR TotalText      = FORMAT(TotalVal,   ValFmt)
+			VAR WOText         = FORMAT(WOVal,      ValFmt)
+			VAR CounterText    = FORMAT(CounterVal, ValFmt)
+			VAR StockText      = FORMAT(StockVal,   ValFmt)
+			VAR WOPctText      = FORMAT(WOPct,      "0.0%")
+			VAR CounterPctText = FORMAT(CounterPct, "0.0%")
+			VAR StockPctText   = FORMAT(StockPct,   "0.0%")
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    padding: 20px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 12px;
+			    color: white;
+			    height: 140px;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-around;
+			    box-sizing: border-box;
+			'>
+			    <div style='text-align: center; flex: 1.2;'>
+			        <div style='font-size: 11px; opacity: 0.8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;'>
+			            " & MetricLabel & "
+			        </div>
+			        <div style='font-size: 38px; font-weight: 700; line-height: 1;'>
+			            " & TotalText & "
+			        </div>
+			        <div style='font-size: 11px; margin-top: 8px; opacity: 0.7;'>
+			            All Transfer Types
+			        </div>
+			    </div>
+			    <div style='width: 1.5px; height: 90px; background: rgba(255,255,255,0.25); margin: 0 12px;'></div>
+			    <div style='text-align: center; flex: 1;'>
+			        <div style='font-size: 11px; opacity: 0.8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;'>
+			            Work Order
+			        </div>
+			        <div style='font-size: 44px; font-weight: 700; line-height: 1; color: #93c5fd;'>
+			            " & WOPctText & "
+			        </div>
+			        <div style='font-size: 13px; font-weight: 600; margin-top: 6px; opacity: 0.85;'>
+			            " & WOText & "
+			        </div>
+			    </div>
+			    <div style='width: 1.5px; height: 90px; background: rgba(255,255,255,0.25); margin: 0 12px;'></div>
+			    <div style='text-align: center; flex: 1;'>
+			        <div style='font-size: 11px; opacity: 0.8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;'>
+			            Counter
+			        </div>
+			        <div style='font-size: 44px; font-weight: 700; line-height: 1; color: #fcd34d;'>
+			            " & CounterPctText & "
+			        </div>
+			        <div style='font-size: 13px; font-weight: 600; margin-top: 6px; opacity: 0.85;'>
+			            " & CounterText & "
+			        </div>
+			    </div>
+			    <div style='width: 1.5px; height: 90px; background: rgba(255,255,255,0.25); margin: 0 12px;'></div>
+			    <div style='text-align: center; flex: 1;'>
+			        <div style='font-size: 11px; opacity: 0.8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;'>
+			            Stock
+			        </div>
+			        <div style='font-size: 44px; font-weight: 700; line-height: 1; color: #86efac;'>
+			            " & StockPctText & "
+			        </div>
+			        <div style='font-size: 13px; font-weight: 600; margin-top: 6px; opacity: 0.85;'>
+			            " & StockText & "
+			        </div>
+			    </div>
+			</div>
+			"
+		lineageTag: a1b2c3d4-0030-4000-8000-000000000030
+
+	measure 'Transfers Out (Selected)' =
+			// Left/Out bar for the SWITCH chart. Responds to MetricSelector slicer.
+			VAR M = SELECTEDVALUE(MetricSelector[Metric], "Qty")
+			RETURN SWITCH(M,
+			    "Qty",    [Transfers Out (Qty)],
+			    "Lines",  [Transfer Lines],
+			    "Cost $", [Transfer Cost $]
+			)
+		formatString: 0
+		lineageTag: b1c2d3e4-0010-4000-8000-000000000010
+
+	measure 'Transfers In (Selected)' =
+			// Right/In bar for the SWITCH chart. Responds to MetricSelector slicer.
+			VAR M = SELECTEDVALUE(MetricSelector[Metric], "Qty")
+			RETURN SWITCH(M,
+			    "Qty",    [Transfers In (Qty)],
+			    "Lines",  [Transfers In (Lines)],
+			    "Cost $", [Transfers In Cost $]
+			)
+		formatString: #,0
+		lineageTag: b1c2d3e4-0011-4000-8000-000000000011
+
+	measure 'Transfer Out % (Selected)' =
+			// Sort measure for the SWITCH chart. Add to Values, sort descending, hide bar.
+			VAR M = SELECTEDVALUE(MetricSelector[Metric], "Qty")
+			RETURN SWITCH(M,
+			    "Qty",    [Transfer Out % (Qty)],
+			    "Lines",  [Transfer Out % (Lines)],
+			    "Cost $", [Transfer Out % (Cost)]
+			)
+		formatString: 0%
+		lineageTag: b1c2d3e4-0012-4000-8000-000000000012
+
+	measure 'Transfer In Label (Selected)' =
+			// Plain value label for the Transfers In bar. Handles format per metric.
+			VAR M      = SELECTEDVALUE(MetricSelector[Metric], "Qty")
+			VAR InVal  = [Transfers In (Selected)]
+			VAR ValFmt = SWITCH(M, "Cost $", "$#,##0", "#,##0")
+			RETURN FORMAT(InVal, ValFmt)
+		lineageTag: b1c2d3e4-0013-4000-8000-000000000013
+
+	measure 'Transfer Out Label (Selected)' =
+			// Combined label for the Transfers Out bar: value + out%. Handles format per metric.
+			// e.g. Qty: "10,814  (80%)"  |  Cost: "$4,200  (54%)"
+			// Out% = Out / (In + Out) — shows what share of total branch activity is outbound.
+			VAR M      = SELECTEDVALUE(MetricSelector[Metric], "Qty")
+			VAR InVal  = [Transfers In (Selected)]
+			VAR OutVal = [Transfers Out (Selected)]
+			VAR OutPct = DIVIDE(OutVal, InVal + OutVal, 0)
+			VAR ValFmt = SWITCH(M, "Cost $", "$#,##0", "#,##0")
+			RETURN FORMAT(OutVal, ValFmt) & "  (" & FORMAT(OutPct, "0%") & ")"
+		lineageTag: b1c2d3e4-0014-4000-8000-000000000014
+
+	measure 'Balance Chart Title' =
+			// Dynamic title for the SWITCH chart visual.
+			VAR M = SELECTEDVALUE(MetricSelector[Metric], "Qty")
+			RETURN "Transfer Balance by Branch — " & M
+		lineageTag: b1c2d3e4-0015-4000-8000-000000000015
+
+	measure 'Transfer % of Sales Lines' =
+			// Outbound transfer lines as a % of sales lines.
+			VAR _TransferLines = [Transfer Lines]
+			VAR _SalesLines    = [Sales Lines]
+			RETURN
+			    IF(
+			        _SalesLines = 0 || ISBLANK(_SalesLines),
+			        BLANK(),
+			        DIVIDE(_TransferLines, _SalesLines)
+			    )
+		formatString: 0.0%
+		lineageTag: a1b2c3d4-0041-4000-8000-000000000041
+
+	measure 'Transfer % of Purchase Cost' =
+			// Outbound transfer cost as a % of purchase cost.
+			VAR _TransferCost = [Transfer Cost $]
+			VAR _PurchaseCost = [Purchase Cost $]
+			RETURN
+			    IF(
+			        _PurchaseCost = 0 || ISBLANK(_PurchaseCost),
+			        BLANK(),
+			        DIVIDE(_TransferCost, _PurchaseCost)
+			    )
+		formatString: 0.0%
+		lineageTag: a1b2c3d4-0042-4000-8000-000000000042
+
+	measure 'Transfer % of Purchase Lines' =
+			// Outbound transfer lines as a % of purchase lines.
+			VAR _TransferLines = [Transfer Lines]
+			VAR _PurchaseLines = [Purchase Lines]
+			RETURN
+			    IF(
+			        _PurchaseLines = 0 || ISBLANK(_PurchaseLines),
+			        BLANK(),
+			        DIVIDE(_TransferLines, _PurchaseLines)
+			    )
+		formatString: 0.0%
+		lineageTag: a1b2c3d4-0043-4000-8000-000000000043
+
+	measure 'Inventory Qty' =
+			// Total on-hand quantity across all stocked parts at the selected branch.
+			// Source: Inv_Snapshot (jdis_Part_Information, InventoryCost <> 0 filter applied).
+			SUM(Inv_Snapshot[QuantityOnHand])
+		formatString: #,##0
+		lineageTag: a1b2c3d4-0044-4000-8000-000000000044
+
+	measure 'Inventory Cost $' =
+			// Total inventory value at the selected branch (cost basis, not selling price).
+			SUM(Inv_Snapshot[InventoryCost])
+		formatString: $#,##0
+		lineageTag: a1b2c3d4-0045-4000-8000-000000000045
+
+	measure 'Inventory Lines' =
+			// Count of distinct stocked SKUs (part-branch rows with InventoryCost <> 0).
+			COUNTROWS(Inv_Snapshot)
+		formatString: #,##0
+		lineageTag: a1b2c3d4-0046-4000-8000-000000000046
+
+	measure 'Transfer % of Inventory (Qty)' =
+			// Outbound transfer qty as a % of total on-hand inventory qty.
+			// Answers: "What fraction of inventory moved via transfers?"
+			DIVIDE([Transfers Out (Qty)], [Inventory Qty], BLANK())
+		formatString: 0.0%
+		lineageTag: a1b2c3d4-0047-4000-8000-000000000047
+
+	measure 'Transfer % of Inventory (Cost)' =
+			// Outbound transfer cost as a % of total inventory value.
+			DIVIDE([Transfer Cost $], [Inventory Cost $], BLANK())
+		formatString: 0.0%
+		lineageTag: a1b2c3d4-0048-4000-8000-000000000048
+
+	measure 'Transfer % of Inventory (Lines)' =
+			// Transfer lines as a % of total stocked SKU count.
+			// Answers: "What fraction of the catalog was involved in transfers?"
+			DIVIDE([Transfer Lines], [Inventory Lines], BLANK())
+		formatString: 0.0%
+		lineageTag: a1b2c3d4-0049-4000-8000-000000000049
+
+	measure 'Comparison (Selected)' =
+			// Page 2 right bar: the context value that Transfers are measured against.
+			// Responds to BOTH MetricSelector (Qty/Lines/Cost $) AND ComparisonSelector (Inventory/Sales/Purchases).
+			VAR M = SELECTEDVALUE(MetricSelector[Metric],      "Qty")
+			VAR C = SELECTEDVALUE(ComparisonSelector[Comparison], "Inventory")
+			RETURN
+			    SWITCH(C,
+			        "Inventory", SWITCH(M,
+			            "Qty",    [Inventory Qty],
+			            "Lines",  [Inventory Lines],
+			            "Cost $", [Inventory Cost $]
+			        ),
+			        "Sales", SWITCH(M,
+			            "Qty",    [Sales Qty],
+			            "Lines",  [Sales Lines],
+			            "Cost $", [Sales Cost $]
+			        ),
+			        "Purchases", SWITCH(M,
+			            "Qty",    [Purchase Qty],
+			            "Lines",  [Purchase Lines],
+			            "Cost $", [Purchase Cost $]
+			        )
+			    )
+		formatString: 0
+		lineageTag: b1c2d3e4-0016-4000-8000-000000000016
+
+	measure 'Transfer % of Comparison (Selected)' =
+			// Transfers In / Comparison context. Use to sort Page 2 chart (highest ratio = most transfer-dependent branch).
+			DIVIDE([Transfers In (Selected)], [Comparison (Selected)], BLANK())
+		formatString: 0%
+		lineageTag: b1c2d3e4-0017-4000-8000-000000000017
+
+	measure 'Comparison Label (Selected)' =
+			// Label for the Comparison (right) bar: context value + (transfers in%).
+			// e.g. Inventory: "1,234,567  (18%)"  |  Sales Cost: "$42,000  (31%)"
+			VAR M      = SELECTEDVALUE(MetricSelector[Metric], "Qty")
+			VAR CompVal   = [Comparison (Selected)]
+			VAR TransVal  = [Transfers In (Selected)]
+			VAR TransPct  = DIVIDE(TransVal, CompVal, 0)
+			VAR ValFmt    = SWITCH(M, "Cost $", "$#,##0", "#,##0")
+			RETURN
+			    FORMAT(CompVal, ValFmt) & "  (" & FORMAT(TransPct, "0%") & ")"
+		lineageTag: b1c2d3e4-0018-4000-8000-000000000018
+
+	measure 'Page 2 Chart Title' =
+			// Dynamic title for the Page 2 SWITCH chart.
+			VAR M = SELECTEDVALUE(MetricSelector[Metric],         "Qty")
+			VAR C = SELECTEDVALUE(ComparisonSelector[Comparison], "Inventory")
+			RETURN "Transfers In vs " & C & " by Branch — " & M
+		lineageTag: b1c2d3e4-0019-4000-8000-000000000019
+
+	measure 'Page 2 Context Hero' =
+			// Page 2 hero card: shows Transfers In alongside all three context ratios.
+			// Responds to ComparisonSelector — selected comparison is highlighted, others dimmed.
+			// Responds to MetricSelector (Qty / Lines / Cost $) for all values.
+			// Layout: [ Transfers In ] | [ vs Inventory % ] | [ vs Sales % ] | [ vs Purchases % ]
+			VAR M        = SELECTEDVALUE(MetricSelector[Metric], "Qty")
+			VAR SelComp  = SELECTEDVALUE(ComparisonSelector[Comparison], "Inventory")
+			VAR ValFmt   = SWITCH(M, "Cost $", "$#,##0", "#,##0")
+			VAR MetricLabel = SWITCH(M,
+			    "Qty",    "Transfer In Qty",
+			    "Lines",  "Transfer In Lines",
+			    "Cost $", "Transfer In Cost"
+			)
+			VAR TransVal = SWITCH(M,
+			    "Qty",    [Transfers In (Qty)],
+			    "Lines",  [Transfers In (Lines)],
+			    "Cost $", [Transfers In Cost $]
+			)
+			VAR InvVal = SWITCH(M,
+			    "Qty",    [Inventory Qty],
+			    "Lines",  [Inventory Lines],
+			    "Cost $", [Inventory Cost $]
+			)
+			VAR SalesVal = SWITCH(M,
+			    "Qty",    [Sales Qty],
+			    "Lines",  [Sales Lines],
+			    "Cost $", [Sales Cost $]
+			)
+			VAR PurchVal = SWITCH(M,
+			    "Qty",    [Purchase Qty],
+			    "Lines",  [Purchase Lines],
+			    "Cost $", [Purchase Cost $]
+			)
+			VAR InvPct   = DIVIDE(TransVal, InvVal,   0)
+			VAR SalesPct = DIVIDE(TransVal, SalesVal, 0)
+			VAR PurchPct = DIVIDE(TransVal, PurchVal, 0)
+			VAR TransText    = FORMAT(TransVal,  ValFmt)
+			VAR InvText      = FORMAT(InvVal,    ValFmt)
+			VAR SalesText    = FORMAT(SalesVal,  ValFmt)
+			VAR PurchText    = FORMAT(PurchVal,  ValFmt)
+			VAR InvPctText   = FORMAT(InvPct,    "0.0%")
+			VAR SalesPctText = FORMAT(SalesPct,  "0.0%")
+			VAR PurchPctText = FORMAT(PurchPct,  "0.0%")
+			VAR InvOpacity   = IF(SelComp = "Inventory",  "opacity: 1;",  "opacity: 0.35;")
+			VAR SalesOpacity = IF(SelComp = "Sales",      "opacity: 1;",  "opacity: 0.35;")
+			VAR PurchOpacity = IF(SelComp = "Purchases",  "opacity: 1;",  "opacity: 0.35;")
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    padding: 20px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 12px;
+			    color: white;
+			    height: 140px;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-around;
+			    box-sizing: border-box;
+			'>
+			    <div style='text-align: center; flex: 1.2;'>
+			        <div style='font-size: 11px; opacity: 0.8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;'>
+			            " & MetricLabel & "
+			        </div>
+			        <div style='font-size: 38px; font-weight: 700; line-height: 1;'>
+			            " & TransText & "
+			        </div>
+			        <div style='font-size: 11px; margin-top: 8px; opacity: 0.7;'>
+			            Transfers In
+			        </div>
+			    </div>
+			    <div style='width: 1.5px; height: 90px; background: rgba(255,255,255,0.25); margin: 0 12px;'></div>
+			    <div style='text-align: center; flex: 1; " & InvOpacity & "'>
+			        <div style='font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;'>
+			            vs Inventory
+			        </div>
+			        <div style='font-size: 44px; font-weight: 700; line-height: 1; color: #2dd4bf;'>
+			            " & InvPctText & "
+			        </div>
+			        <div style='font-size: 13px; font-weight: 600; margin-top: 6px;'>
+			            " & InvText & "
+			        </div>
+			    </div>
+			    <div style='width: 1.5px; height: 90px; background: rgba(255,255,255,0.25); margin: 0 12px;'></div>
+			    <div style='text-align: center; flex: 1; " & SalesOpacity & "'>
+			        <div style='font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;'>
+			            vs Sales
+			        </div>
+			        <div style='font-size: 44px; font-weight: 700; line-height: 1; color: #fbbf24;'>
+			            " & SalesPctText & "
+			        </div>
+			        <div style='font-size: 13px; font-weight: 600; margin-top: 6px;'>
+			            " & SalesText & "
+			        </div>
+			    </div>
+			    <div style='width: 1.5px; height: 90px; background: rgba(255,255,255,0.25); margin: 0 12px;'></div>
+			    <div style='text-align: center; flex: 1; " & PurchOpacity & "'>
+			        <div style='font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;'>
+			            vs Purchases
+			        </div>
+			        <div style='font-size: 44px; font-weight: 700; line-height: 1; color: #c084fc;'>
+			            " & PurchPctText & "
+			        </div>
+			        <div style='font-size: 13px; font-weight: 600; margin-top: 6px;'>
+			            " & PurchText & "
+			        </div>
+			    </div>
+			</div>
+			"
+		lineageTag: b1c2d3e4-0020-4000-8000-000000000020
+
+	column Value
+		isHidden
+		lineageTag: da2dfa23-0c4c-4e9d-8014-3cc5710e756b
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Value]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition _Measures = calculated
+		mode: import
+		source = { "Measures for the Transfers report" }
+
+	annotation PBI_Id = da82ad85df114f0dbe8c17ce73f079a8
+

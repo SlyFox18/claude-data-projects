@@ -1,0 +1,176 @@
+table Fact_Transfers
+	lineageTag: f612cb1e-eb03-429b-97c4-ecc70aa0d694
+
+	column DateKey
+		dataType: int64
+		formatString: 0
+		lineageTag: b8a0d174-bcaa-4a62-b011-3651555117f8
+		summarizeBy: none
+		sourceColumn: DateKey
+
+		annotation SummarizationSetBy = Automatic
+
+	column Date
+		dataType: dateTime
+		formatString: Long Date
+		lineageTag: 10a4c9d2-4279-45ab-9481-13135a1967e0
+		summarizeBy: none
+		sourceColumn: Date
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column TransId
+		dataType: int64
+		formatString: 0
+		lineageTag: 28b1f9da-5560-43b1-97f5-6f78db879347
+		summarizeBy: count
+		sourceColumn: TransId
+
+		annotation SummarizationSetBy = Automatic
+
+	column TransDatetime
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: 590db82f-69ce-4932-bc81-b6770131a345
+		summarizeBy: none
+		sourceColumn: TransDatetime
+
+		annotation SummarizationSetBy = Automatic
+
+	column RONumber
+		dataType: string
+		lineageTag: 4e577fae-e8d4-4b06-8de4-79b202307c94
+		summarizeBy: none
+		sourceColumn: RONumber
+
+		annotation SummarizationSetBy = Automatic
+
+	column Branch
+		dataType: string
+		lineageTag: 201113f3-3978-4e90-a595-b8915faac106
+		summarizeBy: none
+		sourceColumn: Branch
+
+		annotation SummarizationSetBy = Automatic
+
+	column TransferBranch
+		dataType: string
+		lineageTag: fcc622b0-3804-4005-ab4d-5b6307e96297
+		summarizeBy: none
+		sourceColumn: TransferBranch
+
+		annotation SummarizationSetBy = Automatic
+
+	column PartNumber
+		dataType: string
+		lineageTag: e35d4dda-bfe7-4ecf-803c-987976564b3c
+		summarizeBy: none
+		sourceColumn: PartNumber
+
+		annotation SummarizationSetBy = Automatic
+
+	column Franchise
+		dataType: string
+		lineageTag: 3fe7486c-2388-4962-833a-4878d83b56c6
+		summarizeBy: none
+		sourceColumn: Franchise
+
+		annotation SummarizationSetBy = Automatic
+
+	column Type
+		dataType: string
+		lineageTag: ffec3b7c-556f-46ab-91a1-b1463128ddac
+		summarizeBy: none
+		sourceColumn: Type
+
+		annotation SummarizationSetBy = Automatic
+
+	column TransferSubType
+		dataType: string
+		lineageTag: 38a6473b-3406-41fc-b73f-b4a4f6317e12
+		summarizeBy: none
+		sourceColumn: TransferSubType
+		sortByColumn: TransferSubTypeSortOrder
+
+		changedProperty = SortByColumn
+
+		annotation SummarizationSetBy = Automatic
+
+	column Qty
+		dataType: double
+		lineageTag: ce847a85-ccea-4f97-bed6-85309a7907d6
+		summarizeBy: sum
+		sourceColumn: Qty
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column CostValue
+		dataType: double
+		lineageTag: 40f2e265-7181-4b82-82fd-546953721677
+		summarizeBy: sum
+		sourceColumn: CostValue
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column OrderQty
+		dataType: double
+		lineageTag: d40d924c-b5fc-4528-8251-eb40cae31823
+		summarizeBy: sum
+		sourceColumn: OrderQty
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column ShippedQty
+		dataType: double
+		lineageTag: eaa0e2d6-e974-493e-9607-d8ce8e53d2e6
+		summarizeBy: sum
+		sourceColumn: ShippedQty
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column OrderSalesman
+		dataType: string
+		lineageTag: 08a2add2-f850-494c-bfe3-3b6e979af8fe
+		summarizeBy: none
+		sourceColumn: OrderSalesman
+
+		annotation SummarizationSetBy = Automatic
+
+	column TransferSubTypeSortOrder
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: c9d0e1f2-0001-4000-8000-000000000001
+		summarizeBy: none
+		sourceColumn: TransferSubTypeSortOrder
+
+		annotation SummarizationSetBy = Automatic
+
+	partition Fact_Transfers = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-gxnyznhdptpenfw724g3o5sjzm.datawarehouse.fabric.microsoft.com", "LH_Master_Data"),
+				    dbo_Fact_Transfers = Source{[Schema="dbo",Item="Fact_Transfers"]}[Data],
+				    AddSortOrder = Table.AddColumn(
+				        dbo_Fact_Transfers,
+				        "TransferSubTypeSortOrder",
+				        each if [TransferSubType] = "Work Order" then 1
+				             else if [TransferSubType] = "Counter"    then 2
+				             else if [TransferSubType] = "Stock"       then 3
+				             else 4,
+				        Int64.Type
+				    )
+				in
+				    AddSortOrder
+
