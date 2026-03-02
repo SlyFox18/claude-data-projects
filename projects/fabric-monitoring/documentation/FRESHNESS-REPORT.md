@@ -1,6 +1,6 @@
 ﻿# Data Freshness Report
 
-**Generated:** 2026-02-26 06:01:53
+**Generated:** 2026-03-02 06:01:33
 **Workspace:** LH_Master_Data
 
 ---
@@ -9,12 +9,66 @@
 
 | Status | Count | Percentage |
 |--------|-------|------------|
-| Fresh | 0 | 0% |
+| Fresh | 68 | 56.7% |
 | Stale | 0 | 0% |
-| Critical | 0 | 0% |
+| Critical | 47 | 39.2% |
 
 **Alert Threshold:** 36 hours
 **Critical Threshold:** 72 hours
+
+---
+
+## Critical - Immediate Attention Required
+
+The following dataflows need immediate attention:
+
+- **df_Fact_PartTransactions** (FactTable) - Never refreshed!
+- **df_Fact_Part_Transactions** (FactTable) - Never refreshed!
+- **df_Fact_WarrantyClaims** (FactTable) - Never refreshed!
+- **df_Fact_WorkOrderHeader** (FactTable) - Never refreshed!
+- **df_Fact_WorkOrderComprehensive** (FactTable) - Never refreshed!
+- **df_Fact_Machines_Serviced** (FactTable) - Never refreshed!
+- **df_Fact_LaborInvoiced** (FactTable) - Never refreshed!
+- **df_Fact_InvoiceHeader** (FactTable) - Never refreshed!
+- **df_Fact_LaborJobs** (FactTable) - Never refreshed!
+- **df_Fact_LaborWIP** (FactTable) - Never refreshed!
+- **df_Fact_LaborPunches** (FactTable) - Never refreshed!
+- **df_Transform_Jobs** (Transformation) - Never refreshed!
+- **df_Transform_jdis_Part_Information** (Transformation) - Never refreshed!
+- **df_Transform_Parts** (Transformation) - Never refreshed!
+- **Equipment Service - Data Quality Validation** (AdHoc) - Never refreshed!
+- **df_Transform_Vehicles** (Transformation) - Never refreshed!
+- **df_Transform_Customers** (Transformation) - Never refreshed!
+- **df_Fact_WorkOrderLabor** (FactTable) - Never refreshed!
+- **df_Fact_WorkOrderJobs** (FactTable) - Never refreshed!
+- **df_INTRANS_Raw** (RawSource) - Never refreshed!
+- **df_Part_Master_Duplicate_Analysis** (AdHoc) - Never refreshed!
+- **df_jdis_Part_Information_Verification** (AdHoc) - Never refreshed!
+- **df_Dim_BranchFranchise** (Dimension) - Never refreshed!
+- **df_DealerGroupCode_Analysis** (AdHoc) - Never refreshed!
+- **df_Dim_SlicerControl** (Dimension) - Never refreshed!
+- **df_Dim_InvoiceType** (Dimension) - Never refreshed!
+- **df_Dim_InvoiceLookup** (Dimension) - Never refreshed!
+- **df_CustomerAnatomy_Raw** (RawSource) - Never refreshed!
+- **df_Dim_WorkOrderStatus** (Dimension) - Never refreshed!
+- **df_Dim_WorkOrderType** (Dimension) - Never refreshed!
+- **df_Customer_ID_Analysis** (AdHoc) - Never refreshed!
+- **df_Dim_WorkOrderLookup** (Dimension) - Never refreshed!
+- **df_Dim_WorkOrderMaster** (Dimension) - Never refreshed!
+- **df_Dim_Branch** (Dimension) - Last refreshed: 2026-02-11 21:37:52 (440.4 hours ago)
+- **df_Engaged_Acres** (AdHoc) - Last refreshed: 2026-02-11 21:57:52 (440.1 hours ago)
+- **df_InMaster_Raw** (RawSource) - Last refreshed: 2026-02-13 14:36:17 (399.4 hours ago)
+- **df_Dim_Vehicle** (Dimension) - Last refreshed: 2026-02-19 15:53:04 (254.1 hours ago)
+- **df_Dim_Source** (Dimension) - Last refreshed: 2026-02-19 18:51:32 (251.2 hours ago)
+- **df_Dim_DealerGroupCode** (Dimension) - Last refreshed: 2026-02-19 18:52:02 (251.2 hours ago)
+- **df_Dim_Franchise** (Dimension) - Last refreshed: 2026-02-19 18:51:32 (251.2 hours ago)
+- **df_Dim_Location** (Dimension) - Last refreshed: 2026-02-19 18:51:32 (251.2 hours ago)
+- **df_Dim_SLC** (Dimension) - Last refreshed: 2026-02-19 18:51:33 (251.2 hours ago)
+- **df_Dim_VendorCode** (Dimension) - Last refreshed: 2026-02-19 18:57:19 (251.1 hours ago)
+- **df_Dim_ModuleType** (Dimension) - Last refreshed: 2026-02-19 18:54:12 (251.1 hours ago)
+- **df_Dim_RepairOrder** (Dimension) - Last refreshed: 2026-02-19 19:00:28 (251 hours ago)
+- **df_Parts_InterbranchTransfer_Raw** (RawSource) - Last refreshed: 2026-02-25 20:58:37 (105 hours ago)
+- **df_Fact_Transfers** (FactTable) - Last refreshed: 2026-02-26 16:20:27 (85.7 hours ago)
 
 ---
 
@@ -24,146 +78,141 @@
 
 | Dataflow | Last Refresh | Hours Ago | Status |
 |----------|--------------|-----------|--------|
-| DF_PartMaster_Snapshot_Daily | Error | 0 | [?] Error |
-| df_Part_Master_Duplicate_Analysis | Error | 0 | [?] Error |
-| DF_PartMaster_Snapshot_Weekly | Error | 0 | [?] Error |
-| Equipment Service - Data Quality Validation | Error | 0 | [?] Error |
-| df_UniqueCustomer_Lookup | Error | 0 | [?] Error |
-| df_jdis_Part_Information_Verification | Error | 0 | [?] Error |
-| df_CustomerLookup | Error | 0 | [?] Error |
-| df_Customer_ID_Analysis | Error | 0 | [?] Error |
-| df_DealerGroupCode_Analysis | Error | 0 | [?] Error |
-| df_InTrans_Incremental | Error | 0 | [?] Error |
-| df_Engaged_Acres | Error | 0 | [?] Error |
+| df_jdis_Part_Information_Verification | Never | 999999 | [NEVER] Never Refreshed |
+| df_Part_Master_Duplicate_Analysis | Never | 999999 | [NEVER] Never Refreshed |
+| Equipment Service - Data Quality Validation | Never | 999999 | [NEVER] Never Refreshed |
+| df_DealerGroupCode_Analysis | Never | 999999 | [NEVER] Never Refreshed |
+| df_Customer_ID_Analysis | Never | 999999 | [NEVER] Never Refreshed |
+| df_Engaged_Acres | 2026-02-11 21:57:52 | 440.1 | [CRIT] Critical |
+| DF_PartMaster_Snapshot_Weekly | 2026-03-01 07:04:32 | 22.9 | [OK] Fresh |
+| DF_PartMaster_Snapshot_Daily | 2026-03-02 08:06:31 | -2.1 | [OK] Fresh |
+| df_InTrans_Incremental | 2026-03-02 10:45:45 | -4.7 | [OK] Fresh |
+| df_CustomerLookup | 2026-03-02 10:47:58 | -4.8 | [OK] Fresh |
+| df_UniqueCustomer_Lookup | 2026-03-02 10:50:28 | -4.8 | [OK] Fresh |
 
 ### Dimension
 
 | Dataflow | Last Refresh | Hours Ago | Status |
 |----------|--------------|-----------|--------|
-| df_Dim_SLC | Error | 0 | [?] Error |
-| df_Dim_SlicerControl | Error | 0 | [?] Error |
-| df_Dim_Source | Error | 0 | [?] Error |
-| df_Dim_RepairOrder | Error | 0 | [?] Error |
-| df_Dim_Part | Error | 0 | [?] Error |
-| df_Dim_PaymentMethod | Error | 0 | [?] Error |
-| df_Dim_PromoType | Error | 0 | [?] Error |
-| df_Dim_Technicans | Error | 0 | [?] Error |
-| df_Dim_WorkOrderMaster | Error | 0 | [?] Error |
-| df_Dim_WorkOrderStatus | Error | 0 | [?] Error |
-| df_Dim_WorkOrderType | Error | 0 | [?] Error |
-| df_Dim_WorkOrderLookup | Error | 0 | [?] Error |
-| df_Dim_UniqueCustomers | Error | 0 | [?] Error |
-| df_Dim_Vehicle | Error | 0 | [?] Error |
-| df_Dim_VendorCode | Error | 0 | [?] Error |
-| df_Dim_CommodityCode | Error | 0 | [?] Error |
-| df_Dim_Customer | Error | 0 | [?] Error |
-| df_Dim_Date | Error | 0 | [?] Error |
-| df_Dim_BranchFranchise | Error | 0 | [?] Error |
-| df_Dim_AdjustmentType | Error | 0 | [?] Error |
-| df_Dim_Branch | Error | 0 | [?] Error |
-| df_Dim_Branch12_Parts | Error | 0 | [?] Error |
-| df_Dim_DealerGroupCode | Error | 0 | [?] Error |
-| df_Dim_JobType | Error | 0 | [?] Error |
-| df_Dim_Location | Error | 0 | [?] Error |
-| df_Dim_ModuleType | Error | 0 | [?] Error |
-| df_Dim_JobCode | Error | 0 | [?] Error |
-| df_Dim_Franchise | Error | 0 | [?] Error |
-| df_Dim_InvoiceLookup | Error | 0 | [?] Error |
-| df_Dim_InvoiceType | Error | 0 | [?] Error |
+| df_Dim_SlicerControl | Never | 999999 | [NEVER] Never Refreshed |
+| df_Dim_WorkOrderLookup | Never | 999999 | [NEVER] Never Refreshed |
+| df_Dim_InvoiceType | Never | 999999 | [NEVER] Never Refreshed |
+| df_Dim_InvoiceLookup | Never | 999999 | [NEVER] Never Refreshed |
+| df_Dim_WorkOrderType | Never | 999999 | [NEVER] Never Refreshed |
+| df_Dim_WorkOrderStatus | Never | 999999 | [NEVER] Never Refreshed |
+| df_Dim_WorkOrderMaster | Never | 999999 | [NEVER] Never Refreshed |
+| df_Dim_BranchFranchise | Never | 999999 | [NEVER] Never Refreshed |
+| df_Dim_Branch | 2026-02-11 21:37:52 | 440.4 | [CRIT] Critical |
+| df_Dim_Vehicle | 2026-02-19 15:53:04 | 254.1 | [CRIT] Critical |
+| df_Dim_SLC | 2026-02-19 18:51:33 | 251.2 | [CRIT] Critical |
+| df_Dim_DealerGroupCode | 2026-02-19 18:52:02 | 251.2 | [CRIT] Critical |
+| df_Dim_Source | 2026-02-19 18:51:32 | 251.2 | [CRIT] Critical |
+| df_Dim_Franchise | 2026-02-19 18:51:32 | 251.2 | [CRIT] Critical |
+| df_Dim_Location | 2026-02-19 18:51:32 | 251.2 | [CRIT] Critical |
+| df_Dim_VendorCode | 2026-02-19 18:57:19 | 251.1 | [CRIT] Critical |
+| df_Dim_ModuleType | 2026-02-19 18:54:12 | 251.1 | [CRIT] Critical |
+| df_Dim_RepairOrder | 2026-02-19 19:00:28 | 251 | [CRIT] Critical |
+| df_Dim_Customer | 2026-03-02 10:48:58 | -4.8 | [OK] Fresh |
+| df_Dim_Date | 2026-03-02 10:48:28 | -4.8 | [OK] Fresh |
+| df_Dim_Part | 2026-03-02 10:51:28 | -4.8 | [OK] Fresh |
+| df_Dim_Branch12_Parts | 2026-03-02 10:53:38 | -4.9 | [OK] Fresh |
+| df_Dim_JobCode | 2026-03-02 10:53:38 | -4.9 | [OK] Fresh |
+| df_Dim_Technicans | 2026-03-02 10:53:38 | -4.9 | [OK] Fresh |
+| df_Dim_UniqueCustomers | 2026-03-02 10:53:38 | -4.9 | [OK] Fresh |
 
 ### FactTable
 
 | Dataflow | Last Refresh | Hours Ago | Status |
 |----------|--------------|-----------|--------|
-| df_Fact_PendingInspections | Error | 0 | [?] Error |
-| df_Fact_PartTransactions | Error | 0 | [?] Error |
-| df_Fact_Service_Invoices | Error | 0 | [?] Error |
-| df_Fact_Service_Detail | Error | 0 | [?] Error |
-| df_Fact_PartsPromo | Error | 0 | [?] Error |
-| df_Fact_Parts_With_Open_Orders | Error | 0 | [?] Error |
-| df_Fact_Parts_Invoices | Error | 0 | [?] Error |
-| df_Fact_PartSales_24Hours | Error | 0 | [?] Error |
-| df_Fact_PartsAdjustments | Error | 0 | [?] Error |
-| df_Fact_Service_Parts_Detail | Error | 0 | [?] Error |
-| df_Fact_WorkOrderLabor | Error | 0 | [?] Error |
-| df_Fact_WorkOrderJobs | Error | 0 | [?] Error |
-| df_FactPartTransactions_Incremental | Error | 0 | [?] Error |
-| df_Fact_WorkOrderParts | Error | 0 | [?] Error |
-| df_Fact_WorkOrderHeader | Error | 0 | [?] Error |
-| df_Fact_Transfers | Error | 0 | [?] Error |
-| df_Fact_Top50_JobCodes | Error | 0 | [?] Error |
-| df_Fact_WorkOrderComprehensive | Error | 0 | [?] Error |
-| df_Fact_WarrantyClaims | Error | 0 | [?] Error |
-| df_Fact_Inventory | Error | 0 | [?] Error |
-| df_Fact_InTrans_UniqueCustomers | Error | 0 | [?] Error |
-| df_Fact_Invoice_UniqueCustomers | Error | 0 | [?] Error |
-| df_Fact_Invoice_InventoryAnalysis | Error | 0 | [?] Error |
-| df_Fact_InSalOrd_InSalPar | Error | 0 | [?] Error |
-| df_Fact_CustomerPerformance | Error | 0 | [?] Error |
-| df_Fact_Branch12_Transactions | Error | 0 | [?] Error |
-| df_Fact_First_Pass_Fill | Error | 0 | [?] Error |
-| df_Fact_Equipment_Sales | Error | 0 | [?] Error |
-| df_Fact_InvoiceHeader | Error | 0 | [?] Error |
-| df_Fact_NegativeOnHand_OnHandNoBin | Error | 0 | [?] Error |
-| df_Fact_Machines_Serviced | Error | 0 | [?] Error |
-| df_Fact_Parts_Details | Error | 0 | [?] Error |
-| df_Fact_Part_Transactions | Error | 0 | [?] Error |
-| df_Fact_LaborWIP | Error | 0 | [?] Error |
-| df_Fact_LaborJobs | Error | 0 | [?] Error |
-| df_Fact_LaborInvoiced | Error | 0 | [?] Error |
-| df_Fact_LaborPunches | Error | 0 | [?] Error |
-| df_Fact_LaborJobSummary | Error | 0 | [?] Error |
+| df_Fact_InvoiceHeader | Never | 999999 | [NEVER] Never Refreshed |
+| df_Fact_PartTransactions | Never | 999999 | [NEVER] Never Refreshed |
+| df_Fact_LaborWIP | Never | 999999 | [NEVER] Never Refreshed |
+| df_Fact_LaborInvoiced | Never | 999999 | [NEVER] Never Refreshed |
+| df_Fact_LaborPunches | Never | 999999 | [NEVER] Never Refreshed |
+| df_Fact_Machines_Serviced | Never | 999999 | [NEVER] Never Refreshed |
+| df_Fact_LaborJobs | Never | 999999 | [NEVER] Never Refreshed |
+| df_Fact_Part_Transactions | Never | 999999 | [NEVER] Never Refreshed |
+| df_Fact_WorkOrderJobs | Never | 999999 | [NEVER] Never Refreshed |
+| df_Fact_WorkOrderLabor | Never | 999999 | [NEVER] Never Refreshed |
+| df_Fact_WorkOrderHeader | Never | 999999 | [NEVER] Never Refreshed |
+| df_Fact_WarrantyClaims | Never | 999999 | [NEVER] Never Refreshed |
+| df_Fact_WorkOrderComprehensive | Never | 999999 | [NEVER] Never Refreshed |
+| df_Fact_Transfers | 2026-02-26 16:20:27 | 85.7 | [CRIT] Critical |
+| df_Fact_Parts_Details | 2026-03-02 11:02:02 | -5 | [OK] Fresh |
+| df_Fact_Inventory | 2026-03-02 11:01:02 | -5 | [OK] Fresh |
+| df_Fact_Service_Invoices | 2026-03-02 11:03:02 | -5 | [OK] Fresh |
+| df_Fact_Service_Detail | 2026-03-02 11:00:32 | -5 | [OK] Fresh |
+| df_FactPartTransactions_Incremental | 2026-03-02 11:08:02 | -5.1 | [OK] Fresh |
+| df_Fact_WorkOrderParts | 2026-03-02 11:11:02 | -5.2 | [OK] Fresh |
+| df_Fact_Service_Parts_Detail | 2026-03-02 11:15:17 | -5.2 | [OK] Fresh |
+| df_Fact_Parts_Invoices | 2026-03-02 11:22:17 | -5.3 | [OK] Fresh |
+| df_Fact_CustomerPerformance | 2026-03-02 11:20:16 | -5.3 | [OK] Fresh |
+| df_Fact_LaborJobSummary | 2026-03-02 11:24:22 | -5.4 | [OK] Fresh |
+| df_Fact_Invoice_UniqueCustomers | 2026-03-02 11:25:18 | -5.4 | [OK] Fresh |
+| df_Fact_First_Pass_Fill | 2026-03-02 11:22:47 | -5.4 | [OK] Fresh |
+| df_Fact_Branch12_Transactions | 2026-03-02 11:28:02 | -5.4 | [OK] Fresh |
+| df_Fact_Parts_With_Open_Orders | 2026-03-02 11:28:01 | -5.4 | [OK] Fresh |
+| df_Fact_InTrans_UniqueCustomers | 2026-03-02 11:32:45 | -5.5 | [OK] Fresh |
+| df_Fact_PartsAdjustments | 2026-03-02 11:28:31 | -5.5 | [OK] Fresh |
+| df_Fact_Equipment_Sales | 2026-03-02 11:32:45 | -5.5 | [OK] Fresh |
+| df_Fact_PartSales_24Hours | 2026-03-02 11:29:32 | -5.5 | [OK] Fresh |
+| df_Fact_PendingInspections | 2026-03-02 11:32:15 | -5.5 | [OK] Fresh |
+| df_Fact_Invoice_InventoryAnalysis | 2026-03-02 11:28:32 | -5.5 | [OK] Fresh |
+| df_Fact_NegativeOnHand_OnHandNoBin | 2026-03-02 11:36:58 | -5.6 | [OK] Fresh |
+| df_Fact_PartsPromo | 2026-03-02 11:35:28 | -5.6 | [OK] Fresh |
+| df_Fact_InSalOrd_InSalPar | 2026-03-02 11:37:34 | -5.6 | [OK] Fresh |
+| df_Fact_Top50_JobCodes | 2026-03-02 11:36:57 | -5.6 | [OK] Fresh |
 
 ### RawSource
 
 | Dataflow | Last Refresh | Hours Ago | Status |
 |----------|--------------|-----------|--------|
-| df_TechnicianPunchedTime_Raw | Error | 0 | [?] Error |
-| df_TechnicianPunchedDetail_Raw | Error | 0 | [?] Error |
-| df_VhStockAccess_Raw | Error | 0 | [?] Error |
-| df_VHSTOCK_Raw | Error | 0 | [?] Error |
-| df_TechnicianInvoiceDetail_Raw | Error | 0 | [?] Error |
-| df_TechnicianAttendance_Raw | Error | 0 | [?] Error |
-| df_Technician_Raw | Error | 0 | [?] Error |
-| df_TechnicianInvoice_Raw | Error | 0 | [?] Error |
-| df_TechnicianEfficiency_Raw | Error | 0 | [?] Error |
-| df_WKRODESC_Raw | Error | 0 | [?] Error |
-| df_WKOTHSUB_Raw | Error | 0 | [?] Error |
-| df_WKVEHFL_Raw | Error | 0 | [?] Error |
-| df_WKROFILE_Raw | Error | 0 | [?] Error |
-| df_WKMECHWK_Raw | Error | 0 | [?] Error |
-| df_WarClaim_Raw | Error | 0 | [?] Error |
-| df_VhTrans_Raw | Error | 0 | [?] Error |
-| df_WKINVREG_Raw | Error | 0 | [?] Error |
-| df_WARSUBCI_LABOUR_Raw | Error | 0 | [?] Error |
-| df_CustomerAnatomy_Raw | Error | 0 | [?] Error |
-| df_CONTACT_Raw | Error | 0 | [?] Error |
-| df_InHist_PmManage_Raw | Error | 0 | [?] Error |
-| df_GlTrans_Raw | Error | 0 | [?] Error |
-| df_BranchOperational_Raw | Error | 0 | [?] Error |
-| df_ArMaster_Customer_Raw | Error | 0 | [?] Error |
-| df_ArMaster_Contact_Raw | Error | 0 | [?] Error |
-| df_Branch_Name_Raw | Error | 0 | [?] Error |
-| df_ARMASTER_Raw | Error | 0 | [?] Error |
-| df_JDIS_PART_INFORMATION_Raw | Error | 0 | [?] Error |
-| df_Invoice_Raw | Error | 0 | [?] Error |
-| df_RepairOrderDetail_Raw | Error | 0 | [?] Error |
-| df_Parts_InterbranchTransfer_Raw | Error | 0 | [?] Error |
-| df_INTRANS_Raw | Error | 0 | [?] Error |
-| df_INSALORD_Raw | Error | 0 | [?] Error |
-| df_InMaster_Raw | Error | 0 | [?] Error |
-| df_InTrans_PartsCounter_Raw | Error | 0 | [?] Error |
-| df_INSALPAR_Raw | Error | 0 | [?] Error |
+| df_INTRANS_Raw | Never | 999999 | [NEVER] Never Refreshed |
+| df_CustomerAnatomy_Raw | Never | 999999 | [NEVER] Never Refreshed |
+| df_InMaster_Raw | 2026-02-13 14:36:17 | 399.4 | [CRIT] Critical |
+| df_Parts_InterbranchTransfer_Raw | 2026-02-25 20:58:37 | 105 | [CRIT] Critical |
+| df_WKROFILE_Raw | 2026-03-02 10:19:29 | -4.3 | [OK] Fresh |
+| df_GlTrans_Raw | 2026-03-02 10:21:27 | -4.3 | [OK] Fresh |
+| df_InHist_PmManage_Raw | 2026-03-02 10:21:31 | -4.3 | [OK] Fresh |
+| df_InTrans_PartsCounter_Raw | 2026-03-02 10:22:28 | -4.4 | [OK] Fresh |
+| df_JDIS_PART_INFORMATION_Raw | 2026-03-02 10:26:26 | -4.4 | [OK] Fresh |
+| df_Invoice_Raw | 2026-03-02 10:22:57 | -4.4 | [OK] Fresh |
+| df_WKRODESC_Raw | 2026-03-02 10:30:11 | -4.5 | [OK] Fresh |
+| df_WKOTHSUB_Raw | 2026-03-02 10:30:08 | -4.5 | [OK] Fresh |
+| df_WKINVREG_Raw | 2026-03-02 10:29:08 | -4.5 | [OK] Fresh |
+| df_VHSTOCK_Raw | 2026-03-02 10:32:50 | -4.5 | [OK] Fresh |
+| df_WKMECHWK_Raw | 2026-03-02 10:29:39 | -4.5 | [OK] Fresh |
+| df_WKVEHFL_Raw | 2026-03-02 10:29:08 | -4.5 | [OK] Fresh |
+| df_TechnicianPunchedDetail_Raw | 2026-03-02 10:34:19 | -4.5 | [OK] Fresh |
+| df_INSALORD_Raw | 2026-03-02 10:32:49 | -4.5 | [OK] Fresh |
+| df_RepairOrderDetail_Raw | 2026-03-02 10:32:50 | -4.5 | [OK] Fresh |
+| df_VhStockAccess_Raw | 2026-03-02 10:39:03 | -4.6 | [OK] Fresh |
+| df_TechnicianPunchedTime_Raw | 2026-03-02 10:39:33 | -4.6 | [OK] Fresh |
+| df_VhTrans_Raw | 2026-03-02 10:38:33 | -4.6 | [OK] Fresh |
+| df_TechnicianInvoiceDetail_Raw | 2026-03-02 10:35:50 | -4.6 | [OK] Fresh |
+| df_TechnicianAttendance_Raw | 2026-03-02 10:38:03 | -4.6 | [OK] Fresh |
+| df_INSALPAR_Raw | 2026-03-02 10:35:20 | -4.6 | [OK] Fresh |
+| df_TechnicianEfficiency_Raw | 2026-03-02 10:38:33 | -4.6 | [OK] Fresh |
+| df_TechnicianInvoice_Raw | 2026-03-02 10:38:33 | -4.6 | [OK] Fresh |
+| df_ARMASTER_Raw | 2026-03-02 10:42:47 | -4.7 | [OK] Fresh |
+| df_Branch_Name_Raw | 2026-03-02 10:42:17 | -4.7 | [OK] Fresh |
+| df_ArMaster_Contact_Raw | 2026-03-02 10:42:17 | -4.7 | [OK] Fresh |
+| df_ArMaster_Customer_Raw | 2026-03-02 10:42:48 | -4.7 | [OK] Fresh |
+| df_Technician_Raw | 2026-03-02 10:42:17 | -4.7 | [OK] Fresh |
+| df_CONTACT_Raw | 2026-03-02 10:42:17 | -4.7 | [OK] Fresh |
+| df_WarClaim_Raw | 2026-03-02 10:41:47 | -4.7 | [OK] Fresh |
+| df_BranchOperational_Raw | 2026-03-02 10:42:17 | -4.7 | [OK] Fresh |
+| df_WARSUBCI_LABOUR_Raw | 2026-03-02 10:42:17 | -4.7 | [OK] Fresh |
 
 ### Transformation
 
 | Dataflow | Last Refresh | Hours Ago | Status |
 |----------|--------------|-----------|--------|
-| df_Transform_Parts | Error | 0 | [?] Error |
-| df_Transform_Vehicles | Error | 0 | [?] Error |
-| df_Transform_Jobs | Error | 0 | [?] Error |
-| df_Transform_Customers | Error | 0 | [?] Error |
-| df_Transform_jdis_Part_Information | Error | 0 | [?] Error |
+| df_Transform_Parts | Never | 999999 | [NEVER] Never Refreshed |
+| df_Transform_Vehicles | Never | 999999 | [NEVER] Never Refreshed |
+| df_Transform_Jobs | Never | 999999 | [NEVER] Never Refreshed |
+| df_Transform_Customers | Never | 999999 | [NEVER] Never Refreshed |
+| df_Transform_jdis_Part_Information | Never | 999999 | [NEVER] Never Refreshed |
 
 ---
 
