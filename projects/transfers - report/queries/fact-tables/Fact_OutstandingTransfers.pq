@@ -4,233 +4,245 @@ FACT_OUTSTANDINGTRANSFERS - OPEN INTER-BRANCH TRANSFER ORDERS
 ============================================================================
 
 📋 TABLE OVERVIEW:
-Purpose:    Tracks inter-branch parts transfer orders that have not yet been
-            fully fulfilled (OpenQty > 0). Each row represents the receiving
-            branch's perspective on a single outstanding transfer part line.
+Purpose:    Tracks inter-branch parts transfer orders that are currently
+            outstanding. Each row represents one part line on one
+            outstanding transfer ticket.
             Supports Page 3 (Outstanding Transfers) of the Transfers report.
-Grain:      One row per outstanding transfer part line (positive-Qty side only)
-Date Range: 2023-01-01 to current
-Source:     InTrans_Incremental (Lakehouse table, LH_Master_Data)
+Grain:      One row per outstanding part line (FILE_NO + Line_No from InSalPar)
+Source:     TWO ODBC sources joined:
+              1. Parts_InterbranchTransfers  — outstanding ticket validation,
+                                               RequestingBranch, SupplyingBranch,
+                                               OrderAge
+              2. InSalPar                   — part-line detail (PartNumber,
+                                               Franchise, quantities, dates)
 Dataflow:   df_Fact_OutstandingTransfers
 
-🎯 KEY BUSINESS LOGIC:
+🎯 KEY DESIGN DECISION — SOURCE ARCHITECTURE:
 
-ROW SELECTION — TWO FILTERS APPLIED:
-  1. Qty > 0 (receiving/requesting branch perspective)
-     Each transfer creates TWO paired rows in InTrans per part:
-       • +Qty at receiving branch ("Trf. from X/D/...")  ← KEEP this row
-       • -Qty at sending branch   ("Trf. to X/D/...")    ← excluded by Qty > 0
-     Keeping only the positive row:
-       a) Avoids double-counting (one row per transfer line)
-       b) Correctly identifies RequestingBranch (Branch col on positive row)
-          and SupplyingBranch (TransferBranch col on positive row)
+  Parts_InterbranchTransfers is a VIEW (not a base table) built from InSalOrd
+  WHERE type = 'T'. It has no PartNumber column — it is a ticket-level summary.
 
-  2. OrderQty > ShippedQty (unfulfilled)
-     Rows where all parts have shipped (OrderQty = ShippedQty) are complete
-     and excluded. Only open/in-transit transfer lines are retained.
+  InSalPar is the Parts Sales Order Details table. For transfer orders,
+  FILE_NO = PartTicket (the transfer ticket number). Each FILE_NO has one
+  row per part line, with PART_NO, FRANCHISE, ORDER_QTY, SHIPPED_QTY,
+  SUPPLIED_QTY, and SO_RO_Ref.
 
-NULL FULFILLMENT EXCLUSION:
-  Rows where OrderQty or ShippedQty is NULL have no quantity tracking and
-  cannot be assessed for fulfillment status. These are excluded (~6,000 rows
-  in 2023+ data, concentrated in 2023, all have PartLineStatus = null).
-  They should NOT be treated as outstanding — they are untracked.
+  The correct OpenQty per line is:
+    SHIPPED_QTY - SUPPLIED_QTY
+    (shipped from supplying branch minus confirmed received at requesting branch)
 
-🔍 PARTLINESTATUS — WHY IT IS NOT USED HERE:
-  PartLineStatus stores a numeric LINE-TYPE code (11, 12, 13, 14...),
-  NOT a fulfillment status. Validated 2026-02-27: the same numeric codes
-  appear in both outstanding and completed transfers:
-    • Status 11: 492 outstanding rows vs 165,550 completed rows
-    • Status 12: 114 outstanding rows vs  27,854 completed rows
-  PartLineStatus cannot be used to identify open transfers.
-  OrderQty > ShippedQty is the correct and only reliable filter.
+  Parts_InterbranchTransfers is used ONLY for:
+    • Authoritative outstanding filter (InTransitQuantity > 0 per ticket)
+    • RequestingBranch (not available in InSalPar)
+    • SupplyingBranch (validation cross-check)
+    • OrderAge (pre-calculated by source system — days since transfer placed)
 
-🔀 TRANSFER SUB-TYPE CLASSIFICATION (same logic as Fact_Transfers):
-  • SoRoRef null or < 100,000       → "Stock"      (replenishment)
-  • 100,000 – 999,999  (6 digits)   → "Work Order" (Repair Order demand)
-  • 1,000,000 – 9,999,999 (7 digits) → "Counter"   (Sales Order demand)
-  • ≥ 10,000,000                    → "Unknown"    (future-proof)
+🔍 JOIN KEY VALIDATION (2026-03-03):
+  InSalPar.FILE_NO = Parts_InterbranchTransfers.PartTicket — confirmed:
+    PartTicket 1459307 → InSalPar FILE_NO 1459307:
+      Line 1: PART_NO=961870,  ORDER_QTY=1, SHIPPED=1, SUPPLIED=0 → OpenQty=1
+      Line 2: PART_NO=403279,  ORDER_QTY=2, SHIPPED=2, SUPPLIED=0 → OpenQty=2
+  These exactly match the two Parts_InterbranchTransfers rows for PartTicket
+  1459307 (InTransitQuantity 1 and 2).
 
-🚫 BRANCH 12 EXCLUSION:
-  Same as Fact_Transfers — any record where either RequestingBranch or
-  SupplyingBranch starts with "12" is excluded. Text.StartsWith("12")
-  catches all sub-variants (12I, 12S, etc.).
+  PREVIOUS APPROACH (WRONG — superseded 2026-03-03):
+    Attempted join on InTrans.Trans_Id = PartTicket. This produced coincidental
+    matches — InTrans.Trans_Id values are in the 13M+ range; PartTickets are in
+    the 1M–2M range. Trans_Id values numerically overlapping PartTickets are
+    completely unrelated transactions from 2014.
+    InTrans.REF_NO = PartTicket is valid only for Type='T' rows, but InTrans is
+    only populated AFTER parts ship — most outstanding transfers are pre-shipment
+    and have no InTrans record. InSalPar is the correct and complete source.
+
+📊 OUTSTANDING FILTER:
+  InTransitQuantity > 0 from Parts_InterbranchTransfers identifies outstanding
+  tickets. InSalPar.SHIPPED_QTY > InSalPar.SUPPLIED_QTY identifies the specific
+  outstanding part lines within those tickets.
 
 📊 COMPUTED COLUMNS:
-  • OpenQty = OrderQty - ShippedQty (parts still in transit / not yet shipped)
+  • OpenQty           = SHIPPED_QTY - SUPPLIED_QTY (per-line from InSalPar)
+  • DateKey           = YYYYMMDD integer from InSalPar.Creation_Datetime
+  • TransferSubType   = classified from InSalPar.SO_RO_Ref (same logic as
+                        Fact_Transfers — Stock / Work Order / Counter / Unknown)
+  • FulfillmentStatus = ORDER_QTY vs SHIPPED_QTY:
+                        "Pending" — ShippedQty = 0 (nothing dispatched yet)
+                        "Partial" — 0 < ShippedQty < OrderQty (partially dispatched)
+                        "Shipped" — ShippedQty = OrderQty (fully dispatched, in transit)
+
+🚫 BRANCH 12 EXCLUSION:
+  Same as Fact_Transfers — records where either branch starts with "12"
+  are excluded (O'Donnell supply location, covered by Combine Vault Sales).
 
 🔗 DIMENSIONAL RELATIONSHIPS:
-  • Fact_OutstandingTransfers[DateKey]           → dim_DateTable[DateKey]        (Many-to-One)
-  • Fact_OutstandingTransfers[RequestingBranch]  → dim_BranchLocation[BranchID]  (Many-to-One)
-  • Fact_OutstandingTransfers[SupplyingBranch]   → dim_BranchLocation[BranchID]  (Many-to-One)
-  • Fact_OutstandingTransfers[PartNumber]        → dim_Parts[PartNumber]          (Many-to-One)
+  • Fact_OutstandingTransfers[DateKey]           → dim_DateTable[DateKey]
+  • Fact_OutstandingTransfers[RequestingBranch]  → dim_BranchLocation[BranchID]
+  • Fact_OutstandingTransfers[SupplyingBranch]   → dim_BranchLocation[BranchID] (inactive)
+  • Fact_OutstandingTransfers[PartNumber]        → dim_Parts[PartNumber]
 
 📊 REPORT PAGES SUPPORTED:
-  • Page 3 — Outstanding Transfers:
-      No date filter needed — all rows are outstanding by definition.
-      Slice by RequestingBranch, SupplyingBranch, TransferSubType.
-      Transfer age is a DAX measure: DATEDIFF([Date], TODAY(), DAY)
-
-📈 KEY DAX MEASURES (suggested):
-  • Outstanding Lines  = COUNTROWS(Fact_OutstandingTransfers)
-  • Open Qty          = SUM(Fact_OutstandingTransfers[OpenQty])
-  • Avg Age (Days)    = AVERAGEX(Fact_OutstandingTransfers,
-                          DATEDIFF([Date], TODAY(), DAY))
-  • Oldest Transfer   = DATEDIFF(MIN([Date]), TODAY(), DAY)
+  • Page 3 — Outstanding Transfers
 
 ============================================================================
 */
 
 let
     // ========================================================================
-    // STEP 1: LOAD SOURCE TABLE FROM LAKEHOUSE
+    // STEP 1: LOAD OUTSTANDING TRANSFER TICKETS — CURRENT STATE
     // ========================================================================
     /*
-    Same source as Fact_Transfers. 10M+ rows — all types and dates.
-    Refreshed daily by Phase 2 (InTrans incremental) of the master pipeline.
+    Parts_InterbranchTransfers is a VIEW on InSalOrd (Type='T' records only).
+    InTransitQuantity > 0 is the authoritative outstanding filter.
+    OrderAge (days since placed) is pre-calculated by the source system.
+    This table has NO PartNumber — it is a ticket-level summary only.
+    Multiple rows per PartTicket exist (one per part line); we GROUP to
+    get one row per ticket for the header attributes used in the join.
     */
 
-    Source = InTrans_Incremental,
-
-    // ========================================================================
-    // STEP 2: FILTER TO DATE RANGE
-    // ========================================================================
-    /*
-    2023-01-01 forward — consistent with Fact_Transfers date range.
-    Pre-2023 data has less consistent OrderQty/ShippedQty population and
-    is unlikely to have genuinely outstanding transfers at this point.
-    */
-
-    FilterDates = Table.SelectRows(Source, each
-        [TransDatetime] >= #datetime(2023, 1, 1, 0, 0, 0)
+    OutstandingSource = Odbc.Query(
+        "dsn=EquipRDB64",
+        "SELECT
+            PartTicket,
+            RequestingBranch,
+            SupplyingBranch,
+            MAX(OrderAge) AS OrderAge
+        FROM Parts_InterbranchTransfers
+        WHERE InTransitQuantity > 0
+        GROUP BY PartTicket, RequestingBranch, SupplyingBranch"
     ),
 
     // ========================================================================
-    // STEP 3: FILTER TO TRANSFERS — RECEIVING SIDE ONLY
+    // STEP 2: LOAD PART-LINE DETAIL FROM InSalPar — ODBC DIRECT
     // ========================================================================
     /*
-    Type = "T": transfers only (no invoices, credits, purchases).
-    Qty > 0:    keeps only the receiving branch row (positive quantity).
-                Each transfer creates a paired +Qty / -Qty row in InTrans.
-                The positive row identifies:
-                  Branch         = RequestingBranch (receiving party)
-                  TransferBranch = SupplyingBranch  (sending party)
+    InSalPar is the Parts Sales Order Details table.
+    FILE_NO = the transfer ticket number (= PartTicket in Parts_InterbranchTransfers).
+    One row per part line per transfer order.
+    SHIPPED_QTY > SUPPLIED_QTY filters to lines still outstanding:
+      SHIPPED_QTY  = quantity dispatched from supplying branch
+      SUPPLIED_QTY = quantity confirmed received at requesting branch
     */
 
-    FilterReceivingSide = Table.SelectRows(FilterDates, each
-        [Type] = "T" and [Qty] > 0
+    TransferLines = Odbc.Query(
+        "dsn=EquipRDB64",
+        "SELECT
+            FILE_NO           AS PartTicket,
+            Line_No,
+            PART_NO           AS PartNumber,
+            ORDER_QTY,
+            SHIPPED_QTY,
+            SUPPLIED_QTY,
+            SO_RO_Ref         AS SoRoRef,
+            Creation_Datetime AS TransDatetime
+        FROM InSalPar
+        WHERE SHIPPED_QTY > SUPPLIED_QTY"
     ),
 
     // ========================================================================
-    // STEP 4: FILTER TO OUTSTANDING ONLY
+    // STEP 3: EXCLUDE BRANCH 12
     // ========================================================================
     /*
-    OrderQty > ShippedQty → transfer is partially or fully unfulfilled.
-    Rows with NULL OrderQty or ShippedQty are excluded — no tracking data,
-    cannot be assessed for fulfillment. These are NOT treated as outstanding.
+    O'Donnell supply location — covered by Combine Vault Sales report.
+    Text.StartsWith("12") catches all sub-branches (12I, 12S, etc.).
+    Applied before the join to minimize rows processed.
     */
 
-    FilterOutstanding = Table.SelectRows(FilterReceivingSide, each
-        [OrderQty] <> null and
-        [ShippedQty] <> null and
-        [OrderQty] > [ShippedQty]
+    FilterBranch12 = Table.SelectRows(OutstandingSource, each
+        not Text.StartsWith(Text.From([RequestingBranch] ?? ""), "12") and
+        not Text.StartsWith(Text.From([SupplyingBranch]  ?? ""), "12")
     ),
 
     // ========================================================================
-    // STEP 5: EXCLUDE BRANCH 12 (SUPPLY LOCATION)
+    // STEP 4: JOIN TICKET HEADER TO PART LINES
     // ========================================================================
     /*
-    Same exclusion logic as Fact_Transfers.
-    Branch 12 (O'Donnell) is a supply/warehouse location covered by the
-    Combine Vault Sales report. Text.StartsWith("12") catches all sub-branches.
-    Null-safe: Text.From([col] ?? "") converts null → "" before check.
+    LEFT JOIN from outstanding tickets to InSalPar lines.
+    A ticket in Parts_InterbranchTransfers should always have corresponding
+    InSalPar rows — the view is built from InSalOrd which InSalPar joins to.
+    Left outer is defensive for data integrity only.
     */
 
-    FilterBranch12 = Table.SelectRows(FilterOutstanding, each
-        not Text.StartsWith(Text.From([Branch]         ?? ""), "12") and
-        not Text.StartsWith(Text.From([TransferBranch] ?? ""), "12")
+    JoinDetail = Table.NestedJoin(
+        FilterBranch12, "PartTicket",
+        TransferLines,  "PartTicket",
+        "LineDetail",
+        JoinKind.LeftOuter
+    ),
+
+    ExpandDetail = Table.ExpandTableColumn(
+        JoinDetail,
+        "LineDetail",
+        {"Line_No", "PartNumber", "ORDER_QTY", "SHIPPED_QTY",
+         "SUPPLIED_QTY", "SoRoRef", "TransDatetime"}
     ),
 
     // ========================================================================
-    // STEP 6: SELECT ESSENTIAL COLUMNS
+    // STEP 5: COMPUTE OpenQty PER LINE
     // ========================================================================
     /*
-    Note: Type is excluded — this table is Type = "T" only by definition.
-    Note: Qty and CostValue are excluded — OpenQty (computed below) is the
-          relevant measure. CostValue not available on outstanding transfers
-          in a meaningful way (transfer cost flows through Fact_Transfers).
-    Note: SoRoRef is included here only to derive TransferSubType (Step 9).
+    OpenQty at the line level = SHIPPED_QTY - SUPPLIED_QTY.
+    This is the per-part outstanding quantity for this specific part line.
+    Parts_InterbranchTransfers.InTransitQuantity is a ticket-level total
+    and is NOT used here — use per-line calculation instead.
     */
 
-    SelectColumns = Table.SelectColumns(FilterBranch12, {
-        // === TRANSACTION IDENTIFICATION ===
-        "TransId",              // Natural grain key — unique per transaction
-        "TransDatetime",        // Transaction timestamp (used for DateKey + age)
-        "RONumber",             // Reference number
-
-        // === LOCATION (positive-Qty row: Branch = requester, TransferBranch = supplier) ===
-        "Branch",               // RequestingBranch — renamed in Step 7
-        "TransferBranch",       // SupplyingBranch  — renamed in Step 7
-
-        // === PART ===
-        "PartNumber",           // Part number — joins to dim_Parts
-        "Franchise",            // Manufacturer/brand code
-
-        // === FULFILLMENT MEASURES ===
-        "OrderQty",             // Quantity originally requested
-        "ShippedQty",           // Quantity fulfilled so far
-
-        // === CLASSIFICATION INPUT ===
-        "SoRoRef",              // SO/RO reference — used to derive TransferSubType; dropped after
-
-        // === CONTEXT ===
-        "OrderSalesman"         // Who initiated the transfer
-    }),
+    AddOpenQty = Table.AddColumn(ExpandDetail, "OpenQty", each
+        if [SHIPPED_QTY] = null or [SUPPLIED_QTY] = null then null
+        else [SHIPPED_QTY] - [SUPPLIED_QTY],
+        type number
+    ),
 
     // ========================================================================
-    // STEP 7: RENAME BRANCH COLUMNS FOR CLARITY
+    // STEP 5.5: ADD FULFILLMENT STATUS
     // ========================================================================
     /*
-    On the positive-Qty (receiving) rows:
-      Branch         = the branch REQUESTING parts (destination of transfer)
-      TransferBranch = the branch SUPPLYING parts  (origin of transfer)
-    Renaming makes the direction explicit in the semantic model and report.
+    Classifies each part line by how much of the ordered quantity has shipped
+    from the supplying branch (ORDER_QTY vs SHIPPED_QTY):
+
+      • "Pending"  — nothing has shipped yet (ShippedQty = 0 or null)
+      • "Partial"  — some qty has shipped but not all (0 < ShippedQty < OrderQty)
+      • "Shipped"  — full order qty has shipped (ShippedQty = OrderQty)
+
+    Note: all rows in this table already have SHIPPED_QTY > SUPPLIED_QTY
+    (the InSalPar filter), meaning they are still outstanding at the
+    requesting branch. "Shipped" here means fully dispatched but not yet
+    confirmed received — it is still an outstanding transfer.
+
+    Uses pre-rename column names (ORDER_QTY / SHIPPED_QTY) — rename
+    to OrderQty / ShippedQty happens later in Step 9.
     */
 
-    RenameBranches = Table.RenameColumns(SelectColumns, {
-        {"Branch",         "RequestingBranch"},
-        {"TransferBranch", "SupplyingBranch"}
-    }),
+    AddFulfillmentStatus = Table.AddColumn(AddOpenQty, "FulfillmentStatus", each
+        if   [ORDER_QTY] = null or [SHIPPED_QTY] = null then "Pending"
+        else if [ORDER_QTY] = [SHIPPED_QTY]              then "Shipped"
+        else if [SHIPPED_QTY] > 0                        then "Partial"
+        else                                                  "Pending",
+        type text
+    ),
 
     // ========================================================================
-    // STEP 8: CLEAN TEXT FIELDS
+    // STEP 6: CLEAN TEXT FIELDS
     // ========================================================================
     /*
-    Branch codes (e.g., "8I", "95I", "93C") are valid sub-branch identifiers
-    — do NOT strip letters. Apply null-safe trim only.
+    Branch codes (e.g., "8I", "95I") are valid — do NOT strip letters.
+    Null-safe trim only.
     */
 
-    CleanText = Table.TransformColumns(RenameBranches, {
+    CleanText = Table.TransformColumns(AddFulfillmentStatus, {
         {"RequestingBranch", each if _ = null then null else Text.Trim(Text.From(_)), type text},
         {"SupplyingBranch",  each if _ = null then null else Text.Trim(Text.From(_)), type text},
-        {"PartNumber",       each Text.Upper(Text.Trim(Text.From(_ ?? ""))),          type text},
-        {"Franchise",        each Text.Upper(Text.Trim(Text.From(_ ?? ""))),          type text},
-        {"RONumber",         each Text.Upper(Text.Trim(Text.From(_ ?? ""))),          type text},
-        {"OrderSalesman",    each Text.Upper(Text.Trim(Text.From(_ ?? ""))),          type text}
+        {"PartNumber",       each Text.Upper(Text.Trim(Text.From(_ ?? ""))),          type text}
     }),
 
     // ========================================================================
-    // STEP 9: ADD TRANSFER SUB-TYPE CLASSIFICATION
+    // STEP 7: ADD TRANSFER SUB-TYPE CLASSIFICATION
     // ========================================================================
     /*
-    Identical logic to Fact_Transfers Step 7.
-    Classifies the transfer by what triggered it (work order demand,
-    counter/sales order demand, or stock replenishment).
-
-    CLASSIFICATION LOGIC (numeric range):
-      • SoRoRef null or < 100,000       → "Stock"
-      • 100,000 – 999,999  (6 digits)   → "Work Order"
-      • 1,000,000 – 9,999,999 (7 digits) → "Counter"
-      • ≥ 10,000,000                    → "Unknown"
+    Identical logic to Fact_Transfers.
+    CLASSIFICATION (numeric range on SoRoRef):
+      • null or < 100,000       → "Stock"      (replenishment)
+      • 100,000 – 999,999       → "Work Order" (Repair Order demand)
+      • 1,000,000 – 9,999,999   → "Counter"    (Sales Order demand)
+      • ≥ 10,000,000            → "Unknown"
     */
 
     AddTransferSubType = Table.AddColumn(CleanText, "TransferSubType", each
@@ -246,116 +258,83 @@ let
         type text
     ),
 
-    // ========================================================================
-    // STEP 10: DROP CLASSIFICATION INPUT COLUMN
-    // ========================================================================
-
     DropSoRoRef = Table.RemoveColumns(AddTransferSubType, {"SoRoRef"}),
 
     // ========================================================================
-    // STEP 11: ADD OPEN QTY (PARTS STILL IN TRANSIT)
-    // ========================================================================
-    /*
-    OpenQty = the quantity not yet shipped. This is the key fulfillment gap.
-    By definition > 0 for all rows in this table (filtered in Step 4).
-    */
-
-    AddOpenQty = Table.AddColumn(DropSoRoRef, "OpenQty", each
-        [OrderQty] - [ShippedQty],
-        type number
-    ),
-
-    // ========================================================================
-    // STEP 12: ADD DATE KEY AND DATE
+    // STEP 8: ADD DATE KEY AND DATE
     // ========================================================================
     /*
     DateKey (YYYYMMDD integer) for relationship to dim_DateTable.
-    Date (date) as a convenience field for DAX age calculations.
-    Pattern consistent with all other fact tables in this data model.
+    Date (date) as a convenience field.
+    TransDatetime = InSalPar.Creation_Datetime (when the transfer line was placed).
     */
 
-    AddDateKey = Table.AddColumn(AddOpenQty, "DateKey", each
-        let
-            txDate = DateTime.Date([TransDatetime])
-        in
-            Date.Year(txDate) * 10000 + Date.Month(txDate) * 100 + Date.Day(txDate),
+    AddDateKey = Table.AddColumn(DropSoRoRef, "DateKey", each
+        if [TransDatetime] = null then null
+        else
+            let txDate = DateTime.Date([TransDatetime])
+            in Date.Year(txDate) * 10000 + Date.Month(txDate) * 100 + Date.Day(txDate),
         Int64.Type
     ),
 
     AddDate = Table.AddColumn(AddDateKey, "Date", each
-        DateTime.Date([TransDatetime]),
+        if [TransDatetime] = null then null
+        else DateTime.Date([TransDatetime]),
         type date
     ),
 
     // ========================================================================
-    // STEP 13: REORDER COLUMNS
+    // STEP 9: RENAME WORKING COLUMNS
     // ========================================================================
-    /*
-    ORDER: Keys → Identifiers → Location → Part → Classification → Fulfillment → Context
-    */
 
-    ReorderColumns = Table.ReorderColumns(AddDate, {
-        // ===== DIMENSION KEYS =====
-        "DateKey",              // → dim_DateTable
-        "Date",                 // Convenience date field (for DAX age: DATEDIFF([Date], TODAY(), DAY))
-
-        // ===== TRANSACTION IDENTIFICATION =====
-        "TransId",              // Natural key — links back to Fact_Transfers if needed
-        "TransDatetime",        // Full timestamp
-        "RONumber",             // Reference number
-
-        // ===== LOCATION =====
-        "RequestingBranch",     // Branch receiving parts → dim_BranchLocation[BranchID]
-        "SupplyingBranch",      // Branch sending parts  → dim_BranchLocation[BranchID]
-
-        // ===== PART =====
-        "PartNumber",           // → dim_Parts (description, category available via join)
-        "Franchise",            // Manufacturer code
-
-        // ===== CLASSIFICATION =====
-        "TransferSubType",      // Work Order / Counter / Stock
-
-        // ===== FULFILLMENT =====
-        "OrderQty",             // Originally requested
-        "ShippedQty",           // Fulfilled so far
-        "OpenQty",              // Still outstanding (OrderQty - ShippedQty)
-
-        // ===== CONTEXT =====
-        "OrderSalesman"         // Initiator / salesperson
+    RenameColumns = Table.RenameColumns(AddDate, {
+        {"ORDER_QTY",    "OrderQty"},
+        {"SHIPPED_QTY",  "ShippedQty"},
+        {"SUPPLIED_QTY", "SuppliedQty"}
     }),
 
     // ========================================================================
-    // STEP 14: FINAL DATA TYPES
+    // STEP 10: REORDER COLUMNS
+    // ========================================================================
+
+    ReorderColumns = Table.ReorderColumns(RenameColumns, {
+        "DateKey",
+        "Date",
+        "PartTicket",
+        "Line_No",
+        "TransDatetime",
+        "RequestingBranch",
+        "SupplyingBranch",
+        "PartNumber",
+        "TransferSubType",
+        "FulfillmentStatus",
+        "OrderQty",
+        "ShippedQty",
+        "SuppliedQty",
+        "OpenQty",
+        "OrderAge"
+    }),
+
+    // ========================================================================
+    // STEP 11: FINAL DATA TYPES
     // ========================================================================
 
     FinalTypes = Table.TransformColumnTypes(ReorderColumns, {
-        // Keys
-        {"DateKey",          Int64.Type},
-        {"Date",             type date},
-
-        // Transaction identification
-        {"TransId",          Int64.Type},
-        {"TransDatetime",    type datetime},
-        {"RONumber",         type text},
-
-        // Location
-        {"RequestingBranch", type text},
-        {"SupplyingBranch",  type text},
-
-        // Part
-        {"PartNumber",       type text},
-        {"Franchise",        type text},
-
-        // Classification
-        {"TransferSubType",  type text},
-
-        // Fulfillment
-        {"OrderQty",         type number},
-        {"ShippedQty",       type number},
-        {"OpenQty",          type number},
-
-        // Context
-        {"OrderSalesman",    type text}
+        {"DateKey",            Int64.Type},
+        {"Date",               type date},
+        {"PartTicket",         Int64.Type},
+        {"Line_No",            Int64.Type},
+        {"TransDatetime",      type datetime},
+        {"RequestingBranch",   type text},
+        {"SupplyingBranch",    type text},
+        {"PartNumber",         type text},
+        {"TransferSubType",    type text},
+        {"FulfillmentStatus",  type text},
+        {"OrderQty",           type number},
+        {"ShippedQty",         type number},
+        {"SuppliedQty",        type number},
+        {"OpenQty",            type number},
+        {"OrderAge",           Int64.Type}
     })
 
 in
@@ -366,43 +345,38 @@ in
 ✅ FACT_OUTSTANDINGTRANSFERS — VALIDATION CHECKLIST
 ============================================================================
 
-After deploying df_Fact_OutstandingTransfers, validate with these checks:
+1. ROW COUNT:
+   Expected: more rows than PartTickets (one per part line per ticket).
+   Total depends on multi-line tickets. Cross-check:
+   SELECT COUNT(*) FROM InSalPar ip
+   INNER JOIN (SELECT DISTINCT PartTicket FROM Parts_InterbranchTransfers
+               WHERE InTransitQuantity > 0) pit ON pit.PartTicket = ip.FILE_NO
+   WHERE ip.SHIPPED_QTY > ip.SUPPLIED_QTY
+   should match (minus Branch 12 exclusions).
 
-1. ROW COUNT (spot-check against stakeholder-known values):
-   Total outstanding lines: COUNTROWS(Fact_OutstandingTransfers)
-   Total open qty:          SUM(Fact_OutstandingTransfers[OpenQty])
-   Compare against a known open transfer ticket from the source system.
+2. PART NUMBER COVERAGE:
+   Nearly 100% of rows should have PartNumber populated (InSalPar join).
+   Any null PartNumber indicates a ticket with no matching InSalPar FILE_NO
+   — investigate if found.
 
-2. NO COMPLETED TRANSFERS INCLUDED:
-   MIN(OpenQty) should be 1 or greater — never 0 or negative.
-   If any OpenQty = 0 exists, the Step 4 filter has a gap.
+3. BRANCH 12 EXCLUSION:
+   Filter rows where LEFT(RequestingBranch, 2) = "12" → must return 0 rows.
+   Same check on SupplyingBranch.
 
-3. POSITIVE QTY ONLY (no negative rows):
-   MIN(OrderQty) > 0 and MIN(ShippedQty) >= 0.
-   No negative ShippedQty should exist.
+4. OPENQTY ALL POSITIVE:
+   MIN(OpenQty) > 0 by construction (SHIPPED_QTY > SUPPLIED_QTY filter).
 
-4. BRANCH 12 EXCLUSION:
-   FILTER(Fact_OutstandingTransfers, LEFT([RequestingBranch], 2) = "12")
-   → Must return zero rows. Same check on SupplyingBranch.
+5. ORDERAGE REASONABLENESS:
+   MIN(OrderAge) >= 0.
+   MAX(OrderAge) may be large (hundreds of days) — expected and correct.
 
-5. TRANSFER SUB-TYPE DISTRIBUTION:
-   Matrix: TransferSubType vs COUNTROWS
-   Confirm Work Order, Counter, and Stock are all present.
-   "Unknown" should be zero or near-zero rows.
+6. TRANSFERSUBTYPE DISTRIBUTION:
+   All three types (Work Order, Counter, Stock) should be present.
+   "Unknown" should be 0 or near-zero.
 
-6. DATE RANGE:
-   MIN(Date) = 2023 or later.
-   MAX(Date) = today or yesterday (confirms incremental data is flowing).
-
-7. CROSS-CHECK WITH FACT_TRANSFERS:
-   Outstanding transfers should exist in Fact_Transfers (same TransId).
-   SELECT TransId FROM Fact_OutstandingTransfers
-   should all appear in Fact_Transfers with Type = "T".
-
-8. STAKEHOLDER SPOT-CHECK:
-   Pull a specific PartNumber + RequestingBranch combination that a
-   stakeholder knows is outstanding. Confirm it appears here with the
-   correct OpenQty.
+7. DATE COVERAGE:
+   MIN(Date) should reflect when the oldest outstanding transfer was placed.
+   MAX(Date) should be recent (within the last few days).
 
 ============================================================================
 */
