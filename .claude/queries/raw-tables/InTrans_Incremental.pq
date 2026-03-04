@@ -79,17 +79,9 @@ WHERE Trans_Datetime > '" & WatermarkText & "'",
     
     // Remove duplicates based on TransId (primary key)
     // Protects against watermark overlap from system failures, maintenance windows, or concurrent runs
-    RemoveDuplicates = Table.Distinct(
-    Source, 
-    {
-        "Branch",
-        "RONumber",  
-        "PartNumber",
-        "TransDatetime",
-        "Type",
-        "Qty",
-        "SaleValue"
-    }
-)
+    // NOTE: TransId is the true primary key — do NOT use a composite key here.
+    // Using a composite key caused ~7x duplicate accumulation in Dec 2025 – Feb 2026 when
+    // the watermark stopped advancing and each pipeline run re-appended the same rows.
+    RemoveDuplicates = Table.Distinct(Source, {"TransId"})
 in
     RemoveDuplicates

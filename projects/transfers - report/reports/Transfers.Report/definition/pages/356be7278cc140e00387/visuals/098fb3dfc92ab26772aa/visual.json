@@ -2,15 +2,203 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.6.0/schema.json",
   "name": "098fb3dfc92ab26772aa",
   "position": {
-    "x": 66.015113350125944,
-    "y": 643.647355163728,
-    "z": 2000,
-    "height": 261.70277078085644,
-    "width": 1572.5743073047859,
+    "x": 55.405541561712845,
+    "y": 266.41813602015117,
+    "z": 0,
+    "height": 638.93198992443331,
+    "width": 1587.8992443324937,
     "tabOrder": 0
   },
   "visual": {
     "visualType": "tableEx",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Fact_OutstandingTransfers"
+                    }
+                  },
+                  "Property": "RequestingBranch"
+                }
+              },
+              "queryRef": "Fact_OutstandingTransfers.RequestingBranch",
+              "nativeQueryRef": "Requesting Branch",
+              "displayName": "Requesting Branch"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Fact_OutstandingTransfers"
+                    }
+                  },
+                  "Property": "SupplyingBranch"
+                }
+              },
+              "queryRef": "Fact_OutstandingTransfers.SupplyingBranch",
+              "nativeQueryRef": "Supplying Branch",
+              "displayName": "Supplying Branch"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Fact_OutstandingTransfers"
+                    }
+                  },
+                  "Property": "PartTicket"
+                }
+              },
+              "queryRef": "Sum(Fact_OutstandingTransfers.PartTicket)",
+              "nativeQueryRef": "Part Ticket",
+              "displayName": "Part Ticket"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Fact_OutstandingTransfers"
+                    }
+                  },
+                  "Property": "Date"
+                }
+              },
+              "queryRef": "Fact_OutstandingTransfers.Date",
+              "nativeQueryRef": "Date"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Fact_OutstandingTransfers"
+                    }
+                  },
+                  "Property": "PartNumber"
+                }
+              },
+              "queryRef": "Fact_OutstandingTransfers.PartNumber",
+              "nativeQueryRef": "Part Number",
+              "displayName": "Part Number"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "dim_Parts"
+                    }
+                  },
+                  "Property": "Description"
+                }
+              },
+              "queryRef": "dim_Parts.Description",
+              "nativeQueryRef": "Description"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Fact_OutstandingTransfers"
+                    }
+                  },
+                  "Property": "TransferSubType"
+                }
+              },
+              "queryRef": "Fact_OutstandingTransfers.TransferSubType",
+              "nativeQueryRef": "Transfer Type",
+              "displayName": "Transfer Type"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Fact_OutstandingTransfers"
+                    }
+                  },
+                  "Property": "OrderQty"
+                }
+              },
+              "queryRef": "Sum(Fact_OutstandingTransfers.OrderQty)",
+              "nativeQueryRef": "Order Qty",
+              "displayName": "Order Qty"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Fact_OutstandingTransfers"
+                    }
+                  },
+                  "Property": "ShippedQty"
+                }
+              },
+              "queryRef": "Sum(Fact_OutstandingTransfers.ShippedQty)",
+              "nativeQueryRef": "Shipped Qty",
+              "displayName": "Shipped Qty"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Fact_OutstandingTransfers"
+                    }
+                  },
+                  "Property": "OrderAge"
+                }
+              },
+              "queryRef": "Sum(Fact_OutstandingTransfers.OrderAge)",
+              "nativeQueryRef": "Order Age",
+              "displayName": "Order Age"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Fact_OutstandingTransfers"
+                    }
+                  },
+                  "Property": "FulfillmentStatus"
+                }
+              },
+              "queryRef": "Fact_OutstandingTransfers.FulfillmentStatus",
+              "nativeQueryRef": "Status",
+              "displayName": "Status"
+            }
+          ]
+        }
+      },
+      "sortDefinition": {
+        "sort": [
+          {
+            "field": {
+              "Column": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "Fact_OutstandingTransfers"
+                  }
+                },
+                "Property": "FulfillmentStatus"
+              }
+            },
+            "direction": "Ascending"
+          }
+        ]
+      }
+    },
     "objects": {
       "grid": [
         {
@@ -118,7 +306,14 @@
             "fontSize": {
               "expr": {
                 "Literal": {
-                  "Value": "11D"
+                  "Value": "13D"
+                }
+              }
+            },
+            "alignment": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Center'"
                 }
               }
             }
@@ -131,7 +326,7 @@
             "fontSize": {
               "expr": {
                 "Literal": {
-                  "Value": "11D"
+                  "Value": "13D"
                 }
               }
             },
@@ -150,6 +345,247 @@
               }
             }
           }
+        },
+        {
+          "properties": {
+            "backColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Conditional": {
+                      "Cases": [
+                        {
+                          "Condition": {
+                            "Comparison": {
+                              "ComparisonKind": 0,
+                              "Left": {
+                                "Measure": {
+                                  "Expression": {
+                                    "SourceRef": {
+                                      "Entity": "_Measures"
+                                    }
+                                  },
+                                  "Property": "Age Band"
+                                }
+                              },
+                              "Right": {
+                                "Literal": {
+                                  "Value": "4D"
+                                }
+                              }
+                            }
+                          },
+                          "Value": {
+                            "Literal": {
+                              "Value": "'#F38888'"
+                            }
+                          }
+                        },
+                        {
+                          "Condition": {
+                            "Comparison": {
+                              "ComparisonKind": 0,
+                              "Left": {
+                                "Measure": {
+                                  "Expression": {
+                                    "SourceRef": {
+                                      "Entity": "_Measures"
+                                    }
+                                  },
+                                  "Property": "Age Band"
+                                }
+                              },
+                              "Right": {
+                                "Literal": {
+                                  "Value": "3D"
+                                }
+                              }
+                            }
+                          },
+                          "Value": {
+                            "Literal": {
+                              "Value": "'#EDC380'"
+                            }
+                          }
+                        },
+                        {
+                          "Condition": {
+                            "Comparison": {
+                              "ComparisonKind": 0,
+                              "Left": {
+                                "Measure": {
+                                  "Expression": {
+                                    "SourceRef": {
+                                      "Entity": "_Measures"
+                                    }
+                                  },
+                                  "Property": "Age Band"
+                                }
+                              },
+                              "Right": {
+                                "Literal": {
+                                  "Value": "2D"
+                                }
+                              }
+                            }
+                          },
+                          "Value": {
+                            "Literal": {
+                              "Value": "'#F8F99E'"
+                            }
+                          }
+                        },
+                        {
+                          "Condition": {
+                            "Comparison": {
+                              "ComparisonKind": 0,
+                              "Left": {
+                                "Measure": {
+                                  "Expression": {
+                                    "SourceRef": {
+                                      "Entity": "_Measures"
+                                    }
+                                  },
+                                  "Property": "Age Band"
+                                }
+                              },
+                              "Right": {
+                                "Literal": {
+                                  "Value": "1D"
+                                }
+                              }
+                            }
+                          },
+                          "Value": {
+                            "Literal": {
+                              "Value": "'#AAF4AC'"
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "selector": {
+            "data": [
+              {
+                "dataViewWildcard": {
+                  "matchingOption": 1
+                }
+              }
+            ],
+            "metadata": "Sum(Fact_OutstandingTransfers.OrderAge)"
+          }
+        },
+        {
+          "properties": {
+            "backColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Conditional": {
+                      "Cases": [
+                        {
+                          "Condition": {
+                            "Comparison": {
+                              "ComparisonKind": 0,
+                              "Left": {
+                                "Measure": {
+                                  "Expression": {
+                                    "SourceRef": {
+                                      "Entity": "_Measures"
+                                    }
+                                  },
+                                  "Property": "FulfillmentStatus Color Key"
+                                }
+                              },
+                              "Right": {
+                                "Literal": {
+                                  "Value": "3D"
+                                }
+                              }
+                            }
+                          },
+                          "Value": {
+                            "Literal": {
+                              "Value": "'#F38888'"
+                            }
+                          }
+                        },
+                        {
+                          "Condition": {
+                            "Comparison": {
+                              "ComparisonKind": 0,
+                              "Left": {
+                                "Measure": {
+                                  "Expression": {
+                                    "SourceRef": {
+                                      "Entity": "_Measures"
+                                    }
+                                  },
+                                  "Property": "FulfillmentStatus Color Key"
+                                }
+                              },
+                              "Right": {
+                                "Literal": {
+                                  "Value": "2D"
+                                }
+                              }
+                            }
+                          },
+                          "Value": {
+                            "Literal": {
+                              "Value": "'#F8F99E'"
+                            }
+                          }
+                        },
+                        {
+                          "Condition": {
+                            "Comparison": {
+                              "ComparisonKind": 0,
+                              "Left": {
+                                "Measure": {
+                                  "Expression": {
+                                    "SourceRef": {
+                                      "Entity": "_Measures"
+                                    }
+                                  },
+                                  "Property": "FulfillmentStatus Color Key"
+                                }
+                              },
+                              "Right": {
+                                "Literal": {
+                                  "Value": "1D"
+                                }
+                              }
+                            }
+                          },
+                          "Value": {
+                            "Literal": {
+                              "Value": "'#AAF4AC'"
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "selector": {
+            "data": [
+              {
+                "dataViewWildcard": {
+                  "matchingOption": 1
+                }
+              }
+            ],
+            "metadata": "Fact_OutstandingTransfers.FulfillmentStatus"
+          }
         }
       ],
       "total": [
@@ -165,7 +601,7 @@
             "totals": {
               "expr": {
                 "Literal": {
-                  "Value": "true"
+                  "Value": "false"
                 }
               }
             }
@@ -175,6 +611,220 @@
       "general": [
         {
           "properties": {}
+        }
+      ],
+      "columnFormatting": [
+        {
+          "properties": {
+            "alignment": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Center'"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "Fact_OutstandingTransfers.RequestingBranch"
+          }
+        },
+        {
+          "properties": {
+            "alignment": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Center'"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "Fact_OutstandingTransfers.SupplyingBranch"
+          }
+        },
+        {
+          "properties": {
+            "alignment": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Center'"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "Sum(Fact_OutstandingTransfers.PartTicket)"
+          }
+        },
+        {
+          "properties": {
+            "alignment": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Center'"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "Fact_OutstandingTransfers.Date"
+          }
+        },
+        {
+          "properties": {
+            "alignment": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Center'"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "Fact_OutstandingTransfers.PartNumber"
+          }
+        },
+        {
+          "properties": {
+            "alignment": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Center'"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "dim_Parts.Description"
+          }
+        },
+        {
+          "properties": {
+            "alignment": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Center'"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "Fact_OutstandingTransfers.TransferSubType"
+          }
+        },
+        {
+          "properties": {
+            "alignment": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Center'"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "Sum(Fact_OutstandingTransfers.OrderAge)"
+          }
+        },
+        {
+          "properties": {
+            "alignment": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Center'"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "Fact_OutstandingTransfers.FulfillmentStatus"
+          }
+        }
+      ],
+      "columnWidth": [
+        {
+          "properties": {
+            "value": {
+              "expr": {
+                "Literal": {
+                  "Value": "121.36404680889348D"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "Fact_OutstandingTransfers.Date"
+          }
+        },
+        {
+          "properties": {
+            "value": {
+              "expr": {
+                "Literal": {
+                  "Value": "138.04616487134984D"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "Sum(Fact_OutstandingTransfers.PartTicket)"
+          }
+        },
+        {
+          "properties": {
+            "value": {
+              "expr": {
+                "Literal": {
+                  "Value": "148.64986271433546D"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "Fact_OutstandingTransfers.PartNumber"
+          }
+        },
+        {
+          "properties": {
+            "value": {
+              "expr": {
+                "Literal": {
+                  "Value": "104.18904965617462D"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "Sum(Fact_OutstandingTransfers.OrderAge)"
+          }
+        },
+        {
+          "properties": {
+            "value": {
+              "expr": {
+                "Literal": {
+                  "Value": "292.144612236708D"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "dim_Parts.Description"
+          }
+        },
+        {
+          "properties": {
+            "value": {
+              "expr": {
+                "Literal": {
+                  "Value": "92.6826109480228D"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "Fact_OutstandingTransfers.FulfillmentStatus"
+          }
         }
       ]
     },
@@ -329,7 +979,7 @@
             "radius": {
               "expr": {
                 "Literal": {
-                  "Value": "25D"
+                  "Value": "10D"
                 }
               }
             },
@@ -357,5 +1007,221 @@
       ]
     },
     "drillFilterOtherVisuals": true
+  },
+  "filterConfig": {
+    "filters": [
+      {
+        "name": "affe3103dcd29952866d",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Fact_OutstandingTransfers"
+              }
+            },
+            "Property": "RequestingBranch"
+          }
+        },
+        "type": "Categorical"
+      },
+      {
+        "name": "64bbfae77bb87106c9d0",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Fact_OutstandingTransfers"
+              }
+            },
+            "Property": "SupplyingBranch"
+          }
+        },
+        "type": "Categorical"
+      },
+      {
+        "name": "f9c3604532c2611edbe3",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Fact_OutstandingTransfers"
+              }
+            },
+            "Property": "PartTicket"
+          }
+        },
+        "type": "Advanced"
+      },
+      {
+        "name": "365c9b7302775c368684",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Fact_OutstandingTransfers"
+              }
+            },
+            "Property": "Date"
+          }
+        },
+        "type": "Categorical"
+      },
+      {
+        "name": "0acaa98c00648c8bca36",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Fact_OutstandingTransfers"
+              }
+            },
+            "Property": "PartNumber"
+          }
+        },
+        "type": "Categorical",
+        "filter": {
+          "Version": 2,
+          "From": [
+            {
+              "Name": "f",
+              "Entity": "Fact_OutstandingTransfers",
+              "Type": 0
+            }
+          ],
+          "Where": [
+            {
+              "Condition": {
+                "Not": {
+                  "Expression": {
+                    "In": {
+                      "Expressions": [
+                        {
+                          "Column": {
+                            "Expression": {
+                              "SourceRef": {
+                                "Source": "f"
+                              }
+                            },
+                            "Property": "PartNumber"
+                          }
+                        }
+                      ],
+                      "Values": [
+                        [
+                          {
+                            "Literal": {
+                              "Value": "''"
+                            }
+                          }
+                        ]
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "objects": {
+          "general": [
+            {
+              "properties": {
+                "isInvertedSelectionMode": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "true"
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        }
+      },
+      {
+        "name": "ea6b5c6689ea4ac3d2d6",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "dim_Parts"
+              }
+            },
+            "Property": "Description"
+          }
+        },
+        "type": "Categorical"
+      },
+      {
+        "name": "eb7bed96dd48608b5672",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Fact_OutstandingTransfers"
+              }
+            },
+            "Property": "TransferSubType"
+          }
+        },
+        "type": "Categorical"
+      },
+      {
+        "name": "c6a3d2f19ab81d348c94",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Fact_OutstandingTransfers"
+              }
+            },
+            "Property": "OrderAge"
+          }
+        },
+        "type": "Advanced"
+      },
+      {
+        "name": "863af86dd6eb2d823949",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Fact_OutstandingTransfers"
+              }
+            },
+            "Property": "FulfillmentStatus"
+          }
+        },
+        "type": "Categorical"
+      },
+      {
+        "name": "c4c070a4d04c44a24540",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Fact_OutstandingTransfers"
+              }
+            },
+            "Property": "OrderQty"
+          }
+        },
+        "type": "Advanced"
+      },
+      {
+        "name": "2d27268db507a0a60090",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Fact_OutstandingTransfers"
+              }
+            },
+            "Property": "ShippedQty"
+          }
+        },
+        "type": "Advanced"
+      }
+    ]
   }
 }

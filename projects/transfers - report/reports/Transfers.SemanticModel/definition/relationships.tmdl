@@ -19,3 +19,20 @@ relationship Inv_Snapshot_to_BranchLocation
 	fromColumn: Inv_Snapshot.Branch
 	toColumn: dim_BranchLocation.BranchID
 
+relationship AutoDetected_f980231b-81f2-4956-97fa-126d6039a839
+	fromColumn: Fact_OutstandingTransfers.DateKey
+	toColumn: dim_DateTable.DateKey
+
+relationship AutoDetected_e4b1f98e-a1c7-4217-9357-8953c7e63279
+	fromColumn: Fact_OutstandingTransfers.PartNumber
+	toColumn: dim_Parts.PartNumber
+
+relationship 771dd249-d70f-c6a5-c83a-0d3f8f1e7634
+	fromColumn: Fact_OutstandingTransfers.RequestingBranch
+	toColumn: dim_BranchLocation.BranchID
+
+relationship aa8ce795-efc0-d66f-05ee-b2beeaae2663
+	isActive: false
+	fromColumn: Fact_OutstandingTransfers.SupplyingBranch
+	toColumn: dim_BranchLocation.BranchID
+

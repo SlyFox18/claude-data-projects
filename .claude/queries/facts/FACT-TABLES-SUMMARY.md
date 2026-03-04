@@ -830,6 +830,23 @@ See "Fact Tables by Project" section above
 
 ---
 
-*Last Updated: January 15, 2026*
+### **Project: Transfers**
+**Location:** `projects/transfers - report/queries/fact-tables/`
+**Department:** Parts | Operations
+**Created:** 02/25/2026 | **Modified:** 02/25/2026
+
+| Fact Table | Dataflow | Rows | Refresh Time | Schedule | Purpose |
+|------------|----------|------|--------------|----------|---------|
+| Fact_Transfers | df_Fact_Transfers | TBD | TBD | Daily | Inter-branch transfer transaction history |
+| Fact_InterbranchTransfers_Outstanding | TBD | TBD | TBD | Daily | Open/outstanding transfers (Phase 2) |
+
+**Raw Tables:** InTrans_Incremental, jdis_Part_Information, Parts_InterbranchTransfers *(new — not yet in Lakehouse)*
+**Dimensions:** dim_DateTable, dim_BranchLocation, dim_Parts
+**Business Context:** Daily parts runs between locations. Tracks transfer qty/cost/lines by branch and type (WO, Counter, Stock). Answers whether branches have stocking issues or over-reliance on transfers vs. supplier orders.
+**Status:** 🚧 In Development
+
+---
+
+*Last Updated: February 25, 2026*
 *Maintained by: Brian Fox / Claude Code Assistant*
 *Next Review: Weekly (as facts are documented)*

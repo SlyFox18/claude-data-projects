@@ -1,7 +1,7 @@
 table _Measures
 	lineageTag: 22e4b9e3-99b6-4634-9836-9ade5a5ea5a5
 
-	measure 'Home - Header' =
+	measure 'Home - Header' = ```
 			
 			VAR _User = USERPRINCIPALNAME()
 			VAR _Position = SEARCH("@", _User, 1)
@@ -18,6 +18,14 @@ table _Measures
 			    IF(CurrentHour < 12, "Good Morning",
 			    IF(CurrentHour < 17, "Good Afternoon",
 			    "Good Evening"))
+			VAR MinDate = MIN(dim_DateTable[Date])
+			VAR MaxDate = MAX(dim_DateTable[Date])
+			VAR DateRangeDisplay =
+			    IF(
+			        MinDate = MaxDate,
+			        FORMAT(MinDate, "MMM D, YYYY"),
+			        FORMAT(MinDate, "MMM D") & " – " & FORMAT(MaxDate, "MMM D, YYYY")
+			    )
 			RETURN
 			"
 			<div style='
@@ -44,6 +52,7 @@ table _Measures
 			        <div>
 			            <div style='font-size: 12px; opacity: 0.85; margin-bottom: 4px; letter-spacing: 0.5px;'>REPORT</div>
 			            <div style='font-size: 26px; font-weight: 700; line-height: 1;'>Transfers</div>
+			            <div style='font-size: 11px; opacity: 0.75; margin-top: 4px;'>📅 " & DateRangeDisplay & "</div>
 			        </div>
 			    </div>
 			    <div style='text-align: right;'>
@@ -52,6 +61,8 @@ table _Measures
 			    </div>
 			</div>
 			"
+			
+			```
 		lineageTag: 49efea2a-3c06-4cab-8367-26b26caa141e
 
 	measure 'Transfer Qty' =
@@ -452,32 +463,32 @@ table _Measures
 			// Layout: [ Total ] | [ Work Order ] | [ Counter ] | [ Stock ]
 			VAR SelectedMetric = SELECTEDVALUE(MetricSelector[Metric], "Qty")
 			VAR TotalVal = SWITCH(SelectedMetric,
-			    "Qty",    [Transfers Out (Qty)],
-			    "Lines",  [Transfer Lines],
-			    "Cost $", [Transfer Cost $]
+			    "Qty",    [Transfers In (Qty)],
+			    "Lines",  [Transfers In (Lines)],
+			    "Cost $", [Transfers In Cost $]
 			)
 			VAR WOVal = SWITCH(SelectedMetric,
-			    "Qty",    [WO Transfer Qty],
-			    "Lines",  [WO Transfer Lines],
-			    "Cost $", [WO Transfer Cost $]
+			    "Qty",    [WO Transfer In Qty],
+			    "Lines",  [WO Transfer In Lines],
+			    "Cost $", [WO Transfer In Cost $]
 			)
 			VAR CounterVal = SWITCH(SelectedMetric,
-			    "Qty",    [Counter Transfer Qty],
-			    "Lines",  [Counter Transfer Lines],
-			    "Cost $", [Counter Transfer Cost $]
+			    "Qty",    [Counter Transfer In Qty],
+			    "Lines",  [Counter Transfer In Lines],
+			    "Cost $", [Counter Transfer In Cost $]
 			)
 			VAR StockVal = SWITCH(SelectedMetric,
-			    "Qty",    [Stock Transfer Qty],
-			    "Lines",  [Stock Transfer Lines],
-			    "Cost $", [Stock Transfer Cost $]
+			    "Qty",    [Stock Transfer In Qty],
+			    "Lines",  [Stock Transfer In Lines],
+			    "Cost $", [Stock Transfer In Cost $]
 			)
 			VAR WOPct      = DIVIDE(WOVal,      TotalVal, 0)
 			VAR CounterPct = DIVIDE(CounterVal, TotalVal, 0)
 			VAR StockPct   = DIVIDE(StockVal,   TotalVal, 0)
 			VAR MetricLabel = SWITCH(SelectedMetric,
-			    "Qty",    "Transfer Qty",
-			    "Lines",  "Transfer Lines",
-			    "Cost $", "Transfer Cost"
+			    "Qty",    "Transfers In Qty",
+			    "Lines",  "Transfers In Lines",
+			    "Cost $", "Transfers In Cost"
 			)
 			VAR ValFmt = SWITCH(SelectedMetric, "Cost $", "$#,##0", "#,##0")
 			VAR TotalText      = FORMAT(TotalVal,   ValFmt)
@@ -558,7 +569,7 @@ table _Measures
 			"
 		lineageTag: a1b2c3d4-0029-4000-8000-000000000029
 
-	measure 'Transfer SubType Hero (B)' =
+	measure 'Page 1 Contex Hero' =
 			// OPTION B: Total + 3 sub-type sections, percentage-first for sub-types.
 			// Responds to MetricSelector slicer (Qty / Lines / Cost $).
 			// Layout: [ Total ] | [ Work Order % ] | [ Counter % ] | [ Stock % ]
@@ -568,34 +579,34 @@ table _Measures
 			    // Percentages always sum to 100% regardless of TransferSubType slicer.
 			    CALCULATE(
 			        SWITCH(SelectedMetric,
-			            "Qty",    [Transfers Out (Qty)],
-			            "Lines",  [Transfer Lines],
-			            "Cost $", [Transfer Cost $]
+			            "Qty",    [Transfers In (Qty)],
+			            "Lines",  [Transfers In (Lines)],
+			            "Cost $", [Transfers In Cost $]
 			        ),
 			        ALL(Fact_Transfers[TransferSubType])
 			    )
 			VAR WOVal = SWITCH(SelectedMetric,
-			    "Qty",    [WO Transfer Qty],
-			    "Lines",  [WO Transfer Lines],
-			    "Cost $", [WO Transfer Cost $]
+			    "Qty",    [WO Transfer In Qty],
+			    "Lines",  [WO Transfer In Lines],
+			    "Cost $", [WO Transfer In Cost $]
 			)
 			VAR CounterVal = SWITCH(SelectedMetric,
-			    "Qty",    [Counter Transfer Qty],
-			    "Lines",  [Counter Transfer Lines],
-			    "Cost $", [Counter Transfer Cost $]
+			    "Qty",    [Counter Transfer In Qty],
+			    "Lines",  [Counter Transfer In Lines],
+			    "Cost $", [Counter Transfer In Cost $]
 			)
 			VAR StockVal = SWITCH(SelectedMetric,
-			    "Qty",    [Stock Transfer Qty],
-			    "Lines",  [Stock Transfer Lines],
-			    "Cost $", [Stock Transfer Cost $]
+			    "Qty",    [Stock Transfer In Qty],
+			    "Lines",  [Stock Transfer In Lines],
+			    "Cost $", [Stock Transfer In Cost $]
 			)
 			VAR WOPct      = DIVIDE(WOVal,      TotalVal, 0)
 			VAR CounterPct = DIVIDE(CounterVal, TotalVal, 0)
 			VAR StockPct   = DIVIDE(StockVal,   TotalVal, 0)
 			VAR MetricLabel = SWITCH(SelectedMetric,
-			    "Qty",    "Transfer Qty",
-			    "Lines",  "Transfer Lines",
-			    "Cost $", "Transfer Cost"
+			    "Qty",    "Transfers In Qty",
+			    "Lines",  "Transfers In Lines",
+			    "Cost $", "Transfers In Cost"
 			)
 			VAR ValFmt = SWITCH(SelectedMetric, "Cost $", "$#,##0", "#,##0")
 			VAR TotalText      = FORMAT(TotalVal,   ValFmt)
@@ -605,6 +616,10 @@ table _Measures
 			VAR WOPctText      = FORMAT(WOPct,      "0.0%")
 			VAR CounterPctText = FORMAT(CounterPct, "0.0%")
 			VAR StockPctText   = FORMAT(StockPct,   "0.0%")
+			VAR SelType        = SELECTEDVALUE(Fact_Transfers[TransferSubType])
+			VAR WOOpacity      = IF(ISBLANK(SelType) || SelType = "Work Order", "opacity: 1;", "opacity: 0.35;")
+			VAR CounterOpacity = IF(ISBLANK(SelType) || SelType = "Counter",    "opacity: 1;", "opacity: 0.35;")
+			VAR StockOpacity   = IF(ISBLANK(SelType) || SelType = "Stock",      "opacity: 1;", "opacity: 0.35;")
 			RETURN
 			"
 			<div style='
@@ -620,49 +635,49 @@ table _Measures
 			    box-sizing: border-box;
 			'>
 			    <div style='text-align: center; flex: 1.2;'>
-			        <div style='font-size: 11px; opacity: 0.8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;'>
+			        <div style='font-size: 14px; opacity: 0.8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;'>
 			            " & MetricLabel & "
 			        </div>
 			        <div style='font-size: 38px; font-weight: 700; line-height: 1;'>
 			            " & TotalText & "
 			        </div>
-			        <div style='font-size: 11px; margin-top: 8px; opacity: 0.7;'>
+			        <div style='font-size: 14px; margin-top: 8px; opacity: 0.7;'>
 			            All Transfer Types
 			        </div>
 			    </div>
 			    <div style='width: 1.5px; height: 90px; background: rgba(255,255,255,0.25); margin: 0 12px;'></div>
-			    <div style='text-align: center; flex: 1;'>
-			        <div style='font-size: 11px; opacity: 0.8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;'>
+			    <div style='text-align: center; flex: 1; " & WOOpacity & "'>
+			        <div style='font-size: 14px; opacity: 0.8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;'>
 			            Work Order
 			        </div>
 			        <div style='font-size: 44px; font-weight: 700; line-height: 1; color: #93c5fd;'>
 			            " & WOPctText & "
 			        </div>
-			        <div style='font-size: 13px; font-weight: 600; margin-top: 6px; opacity: 0.85;'>
+			        <div style='font-size: 14px; font-weight: 600; margin-top: 6px; opacity: 0.85;'>
 			            " & WOText & "
 			        </div>
 			    </div>
 			    <div style='width: 1.5px; height: 90px; background: rgba(255,255,255,0.25); margin: 0 12px;'></div>
-			    <div style='text-align: center; flex: 1;'>
-			        <div style='font-size: 11px; opacity: 0.8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;'>
+			    <div style='text-align: center; flex: 1; " & CounterOpacity & "'>
+			        <div style='font-size: 14px; opacity: 0.8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;'>
 			            Counter
 			        </div>
 			        <div style='font-size: 44px; font-weight: 700; line-height: 1; color: #fcd34d;'>
 			            " & CounterPctText & "
 			        </div>
-			        <div style='font-size: 13px; font-weight: 600; margin-top: 6px; opacity: 0.85;'>
+			        <div style='font-size: 14px; font-weight: 600; margin-top: 6px; opacity: 0.85;'>
 			            " & CounterText & "
 			        </div>
 			    </div>
 			    <div style='width: 1.5px; height: 90px; background: rgba(255,255,255,0.25); margin: 0 12px;'></div>
-			    <div style='text-align: center; flex: 1;'>
-			        <div style='font-size: 11px; opacity: 0.8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;'>
+			    <div style='text-align: center; flex: 1; " & StockOpacity & "'>
+			        <div style='font-size: 14px; opacity: 0.8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;'>
 			            Stock
 			        </div>
 			        <div style='font-size: 44px; font-weight: 700; line-height: 1; color: #86efac;'>
 			            " & StockPctText & "
 			        </div>
-			        <div style='font-size: 13px; font-weight: 600; margin-top: 6px; opacity: 0.85;'>
+			        <div style='font-size: 14px; font-weight: 600; margin-top: 6px; opacity: 0.85;'>
 			            " & StockText & "
 			        </div>
 			    </div>
@@ -919,55 +934,514 @@ table _Measures
 			    box-sizing: border-box;
 			'>
 			    <div style='text-align: center; flex: 1.2;'>
-			        <div style='font-size: 11px; opacity: 0.8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;'>
+			        <div style='font-size: 14px; opacity: 0.8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;'>
 			            " & MetricLabel & "
 			        </div>
 			        <div style='font-size: 38px; font-weight: 700; line-height: 1;'>
 			            " & TransText & "
 			        </div>
-			        <div style='font-size: 11px; margin-top: 8px; opacity: 0.7;'>
+			        <div style='font-size: 14px; margin-top: 8px; opacity: 0.7;'>
 			            Transfers In
 			        </div>
 			    </div>
 			    <div style='width: 1.5px; height: 90px; background: rgba(255,255,255,0.25); margin: 0 12px;'></div>
 			    <div style='text-align: center; flex: 1; " & InvOpacity & "'>
-			        <div style='font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;'>
+			        <div style='font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;'>
 			            vs Inventory
 			        </div>
 			        <div style='font-size: 44px; font-weight: 700; line-height: 1; color: #2dd4bf;'>
 			            " & InvPctText & "
 			        </div>
-			        <div style='font-size: 13px; font-weight: 600; margin-top: 6px;'>
+			        <div style='font-size: 14px; font-weight: 600; margin-top: 6px;'>
 			            " & InvText & "
 			        </div>
 			    </div>
 			    <div style='width: 1.5px; height: 90px; background: rgba(255,255,255,0.25); margin: 0 12px;'></div>
 			    <div style='text-align: center; flex: 1; " & SalesOpacity & "'>
-			        <div style='font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;'>
+			        <div style='font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;'>
 			            vs Sales
 			        </div>
 			        <div style='font-size: 44px; font-weight: 700; line-height: 1; color: #fbbf24;'>
 			            " & SalesPctText & "
 			        </div>
-			        <div style='font-size: 13px; font-weight: 600; margin-top: 6px;'>
+			        <div style='font-size: 14px; font-weight: 600; margin-top: 6px;'>
 			            " & SalesText & "
 			        </div>
 			    </div>
 			    <div style='width: 1.5px; height: 90px; background: rgba(255,255,255,0.25); margin: 0 12px;'></div>
 			    <div style='text-align: center; flex: 1; " & PurchOpacity & "'>
-			        <div style='font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;'>
+			        <div style='font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;'>
 			            vs Purchases
 			        </div>
 			        <div style='font-size: 44px; font-weight: 700; line-height: 1; color: #c084fc;'>
 			            " & PurchPctText & "
 			        </div>
-			        <div style='font-size: 13px; font-weight: 600; margin-top: 6px;'>
+			        <div style='font-size: 14px; font-weight: 600; margin-top: 6px;'>
 			            " & PurchText & "
 			        </div>
 			    </div>
 			</div>
 			"
 		lineageTag: b1c2d3e4-0020-4000-8000-000000000020
+
+	measure 'Open Lines' =
+			// Count of outstanding transfer lines — one row per part line where OrderQty > ShippedQty.
+			// Filtered by RequestingBranch via the active relationship to dim_BranchLocation.
+			COUNTROWS(Fact_OutstandingTransfers)
+		formatString: #,##0
+		lineageTag: a1b2c3d4-0050-4000-8000-000000000050
+
+	measure 'Open Qty' =
+			// Total units still outstanding (OrderQty - ShippedQty). Already computed in Power Query.
+			SUM(Fact_OutstandingTransfers[OpenQty])
+		formatString: #,##0
+		lineageTag: a1b2c3d4-0051-4000-8000-000000000051
+
+	measure 'Open Order Qty' =
+			// Original quantity ordered — useful to show what was requested before any partial shipments.
+			SUM(Fact_OutstandingTransfers[OrderQty])
+		formatString: #,##0
+		lineageTag: a1b2c3d4-0052-4000-8000-000000000052
+
+	measure 'WO Open Lines' = CALCULATE(COUNTROWS(Fact_OutstandingTransfers), Fact_OutstandingTransfers[TransferSubType] = "Work Order")
+		formatString: #,##0
+		lineageTag: a1b2c3d4-0054-4000-8000-000000000054
+
+	measure 'WO Open Qty' = CALCULATE(SUM(Fact_OutstandingTransfers[OpenQty]), Fact_OutstandingTransfers[TransferSubType] = "Work Order")
+		formatString: #,##0
+		lineageTag: a1b2c3d4-0055-4000-8000-000000000055
+
+	measure 'Counter Open Lines' = CALCULATE(COUNTROWS(Fact_OutstandingTransfers), Fact_OutstandingTransfers[TransferSubType] = "Counter")
+		formatString: #,##0
+		lineageTag: a1b2c3d4-0056-4000-8000-000000000056
+
+	measure 'Counter Open Qty' = CALCULATE(SUM(Fact_OutstandingTransfers[OpenQty]), Fact_OutstandingTransfers[TransferSubType] = "Counter")
+		formatString: #,##0
+		lineageTag: a1b2c3d4-0057-4000-8000-000000000057
+
+	measure 'Stock Open Lines' = CALCULATE(COUNTROWS(Fact_OutstandingTransfers), Fact_OutstandingTransfers[TransferSubType] = "Stock")
+		formatString: #,##0
+		lineageTag: a1b2c3d4-0058-4000-8000-000000000058
+
+	measure 'Stock Open Qty' = CALCULATE(SUM(Fact_OutstandingTransfers[OpenQty]), Fact_OutstandingTransfers[TransferSubType] = "Stock")
+		formatString: #,##0
+		lineageTag: a1b2c3d4-0059-4000-8000-000000000059
+
+	measure 'Avg Days Outstanding' =
+			// Average age of outstanding transfers in calendar days.
+			// OrderAge is pre-calculated by the source system (Parts_InterbranchTransfers)
+			// and is always current as of the last dataflow refresh.
+			AVERAGE(Fact_OutstandingTransfers[OrderAge])
+		formatString: #,##0.0
+		lineageTag: a1b2c3d4-0060-4000-8000-000000000060
+
+	measure 'Outstanding Transfer Hero' =
+			// Summary card for the Outstanding Transfers page header.
+			// Shows: Open Lines | Open Qty | Open Cost — broken out by sub-type with % badges.
+			VAR TotalLines  = [Open Lines]
+			VAR TotalQty    = [Open Qty]
+			VAR WOLines     = [WO Open Lines]
+			VAR CtrLines    = [Counter Open Lines]
+			VAR StkLines    = [Stock Open Lines]
+			VAR WOPct       = DIVIDE(WOLines,  TotalLines, 0)
+			VAR CtrPct      = DIVIDE(CtrLines, TotalLines, 0)
+			VAR StkPct      = DIVIDE(StkLines, TotalLines, 0)
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    padding: 20px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 12px;
+			    color: white;
+			    height: 140px;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-around;
+			    box-sizing: border-box;
+			'>
+			    <div style='text-align: center; flex: 1.2;'>
+			        <div style='font-size: 14px; opacity: 0.8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;'>Open Lines</div>
+			        <div style='font-size: 38px; font-weight: 700; line-height: 1;'>" & FORMAT(TotalLines, "#,##0") & "</div>
+			        <div style='font-size: 14px; opacity: 0.7; margin-top: 6px;'>Open Qty: " & FORMAT(TotalQty, "#,##0") & "</div>
+			    </div>
+			    <div style='width: 1.5px; height: 90px; background: rgba(255,255,255,0.25); margin: 0 12px;'></div>
+			    <div style='text-align: center; flex: 1;'>
+			        <div style='font-size: 14px; opacity: 0.8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;'>Work Order</div>
+			        <div style='font-size: 34px; font-weight: 700; line-height: 1;'>" & FORMAT(WOLines, "#,##0") & "</div>
+			        <div style='margin-top: 14px;'>
+			            <span style='background: rgba(147,197,253,0.2); color: #93c5fd; font-size: 12px; font-weight: 600; padding: 2px 10px; border-radius: 10px;'>" & FORMAT(WOPct, "0.0%") & "</span>
+			        </div>
+			    </div>
+			    <div style='width: 1.5px; height: 90px; background: rgba(255,255,255,0.25); margin: 0 12px;'></div>
+			    <div style='text-align: center; flex: 1;'>
+			        <div style='font-size: 14px; opacity: 0.8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;'>Counter</div>
+			        <div style='font-size: 34px; font-weight: 700; line-height: 1;'>" & FORMAT(CtrLines, "#,##0") & "</div>
+			        <div style='margin-top: 14px;'>
+			            <span style='background: rgba(252,211,77,0.2); color: #fcd34d; font-size: 12px; font-weight: 600; padding: 2px 10px; border-radius: 10px;'>" & FORMAT(CtrPct, "0.0%") & "</span>
+			        </div>
+			    </div>
+			    <div style='width: 1.5px; height: 90px; background: rgba(255,255,255,0.25); margin: 0 12px;'></div>
+			    <div style='text-align: center; flex: 1;'>
+			        <div style='font-size: 14px; opacity: 0.8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;'>Stock</div>
+			        <div style='font-size: 34px; font-weight: 700; line-height: 1;'>" & FORMAT(StkLines, "#,##0") & "</div>
+			        <div style='margin-top: 14px;'>
+			            <span style='background: rgba(134,239,172,0.2); color: #86efac; font-size: 12px; font-weight: 600; padding: 2px 10px; border-radius: 10px;'>" & FORMAT(StkPct, "0.0%") & "</span>
+			        </div>
+			    </div>
+			</div>
+			"
+		lineageTag: a1b2c3d4-0061-4000-8000-000000000061
+
+	measure 'WO Transfer In Qty' =
+			// Receiving records only (Qty > 0) for Work Order sub-type.
+			CALCULATE(
+			    SUM(Fact_Transfers[Qty]),
+			    Fact_Transfers[Type] = "T",
+			    Fact_Transfers[TransferSubType] = "Work Order",
+			    Fact_Transfers[Qty] > 0
+			)
+		formatString: #,##0
+		lineageTag: a1b2c3d4-0091-4000-8000-000000000091
+
+	measure 'WO Transfer In Lines' =
+			// Receiving records only — one row per physical transfer.
+			CALCULATE(
+			    COUNTROWS(Fact_Transfers),
+			    Fact_Transfers[Type] = "T",
+			    Fact_Transfers[TransferSubType] = "Work Order",
+			    Fact_Transfers[Qty] > 0
+			)
+		formatString: #,##0
+		lineageTag: a1b2c3d4-0092-4000-8000-000000000092
+
+	measure 'WO Transfer In Cost $' =
+			// Receiving records only, cost value of parts arriving.
+			CALCULATE(
+			    SUM(Fact_Transfers[CostValue]),
+			    Fact_Transfers[Type] = "T",
+			    Fact_Transfers[TransferSubType] = "Work Order",
+			    Fact_Transfers[Qty] > 0
+			)
+		formatString: $#,##0.00
+		lineageTag: a1b2c3d4-0093-4000-8000-000000000093
+
+	measure 'Counter Transfer In Qty' =
+			// Receiving records only (Qty > 0) for Counter sub-type.
+			CALCULATE(
+			    SUM(Fact_Transfers[Qty]),
+			    Fact_Transfers[Type] = "T",
+			    Fact_Transfers[TransferSubType] = "Counter",
+			    Fact_Transfers[Qty] > 0
+			)
+		formatString: #,##0
+		lineageTag: a1b2c3d4-0094-4000-8000-000000000094
+
+	measure 'Counter Transfer In Lines' =
+			// Receiving records only — one row per physical transfer.
+			CALCULATE(
+			    COUNTROWS(Fact_Transfers),
+			    Fact_Transfers[Type] = "T",
+			    Fact_Transfers[TransferSubType] = "Counter",
+			    Fact_Transfers[Qty] > 0
+			)
+		formatString: #,##0
+		lineageTag: a1b2c3d4-0095-4000-8000-000000000095
+
+	measure 'Counter Transfer In Cost $' =
+			// Receiving records only, cost value of parts arriving.
+			CALCULATE(
+			    SUM(Fact_Transfers[CostValue]),
+			    Fact_Transfers[Type] = "T",
+			    Fact_Transfers[TransferSubType] = "Counter",
+			    Fact_Transfers[Qty] > 0
+			)
+		formatString: $#,##0.00
+		lineageTag: a1b2c3d4-0096-4000-8000-000000000096
+
+	measure 'Stock Transfer In Qty' =
+			// Receiving records only (Qty > 0) for Stock sub-type.
+			CALCULATE(
+			    SUM(Fact_Transfers[Qty]),
+			    Fact_Transfers[Type] = "T",
+			    Fact_Transfers[TransferSubType] = "Stock",
+			    Fact_Transfers[Qty] > 0
+			)
+		formatString: #,##0
+		lineageTag: a1b2c3d4-0097-4000-8000-000000000097
+
+	measure 'Stock Transfer In Lines' =
+			// Receiving records only — one row per physical transfer.
+			CALCULATE(
+			    COUNTROWS(Fact_Transfers),
+			    Fact_Transfers[Type] = "T",
+			    Fact_Transfers[TransferSubType] = "Stock",
+			    Fact_Transfers[Qty] > 0
+			)
+		formatString: #,##0
+		lineageTag: a1b2c3d4-0098-4000-8000-000000000098
+
+	measure 'Stock Transfer In Cost $' =
+			// Receiving records only, cost value of parts arriving.
+			CALCULATE(
+			    SUM(Fact_Transfers[CostValue]),
+			    Fact_Transfers[Type] = "T",
+			    Fact_Transfers[TransferSubType] = "Stock",
+			    Fact_Transfers[Qty] > 0
+			)
+		formatString: $#,##0.00
+		lineageTag: a1b2c3d4-0099-4000-8000-000000000099
+
+	measure 'Outstanding Transfers - Header' =
+			
+			VAR _User = USERPRINCIPALNAME()
+			VAR _Position = SEARCH("@", _User, 1)
+			VAR _Name = LEFT(_User, _Position - 1)
+			VAR _FirstLetter = UPPER(LEFT(_Name, 1))
+			VAR _LastName = MID(_Name, 2, LEN(_Name) - 1)
+			VAR _FormattedLastName =
+			    UPPER(LEFT(_LastName, 1)) & LOWER(MID(_LastName, 2, LEN(_LastName)))
+			VAR WelcomeName = _FirstLetter & "." & _FormattedLastName
+			VAR CurrentDate = TODAY()
+			VAR DateDisplay = FORMAT(CurrentDate, "MMM D, YYYY")
+			VAR CurrentHour = HOUR(NOW())
+			VAR TimeGreeting =
+			    IF(CurrentHour < 12, "Good Morning",
+			    IF(CurrentHour < 17, "Good Afternoon",
+			    "Good Evening"))
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    height: 85px;
+			    padding: 15px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 10px;
+			    color: white;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-between;
+			    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    box-sizing: border-box;
+			'>
+			    <div style='display: flex; align-items: center; gap: 15px;'>
+			        <div style='
+			            width: 40px; height: 40px;
+			            background: rgba(255,255,255,0.15);
+			            border-radius: 8px;
+			            display: flex; align-items: center; justify-content: center;
+			            font-size: 20px;
+			        '>🔄</div>
+			        <div>
+			            <div style='font-size: 12px; opacity: 0.85; margin-bottom: 4px; letter-spacing: 0.5px;'>REPORT</div>
+			            <div style='font-size: 26px; font-weight: 700; line-height: 1;'>Outstanding Transfers</div>
+			        </div>
+			    </div>
+			    <div style='text-align: right;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 6px;'>" & TimeGreeting & ", " & WelcomeName & "</div>
+			        <div style='font-size: 16px; font-weight: 600;'>📅 " & DateDisplay & "</div>
+			    </div>
+			</div>
+			"
+		lineageTag: 185d779c-3e0e-41d2-93d7-b1739e5421bb
+
+	measure 'Age Band' = ```
+			
+			SWITCH(
+			    TRUE(),
+			    MAX(Fact_OutstandingTransfers[OrderAge]) <= 3,  1,
+			    MAX(Fact_OutstandingTransfers[OrderAge]) <= 7, 2,
+			    MAX(Fact_OutstandingTransfers[OrderAge]) <= 14, 3,
+			    4
+			)
+			
+			```
+		formatString: 0
+		lineageTag: ca04cdf1-3c1a-4330-bc6c-18c2b0dc9b6a
+
+	measure 'Page 1 Tooltip' = ```
+			
+			VAR M   = SELECTEDVALUE(MetricSelector[Metric], "Qty")
+			VAR Fmt = SWITCH(M, "Cost $", "$#,##0", "#,##0")
+			
+			VAR InTotal = SWITCH(M, "Qty", [Transfers In (Qty)],   "Lines", [Transfers In (Lines)],   "Cost $", [Transfers In Cost $])
+			VAR OutTotal= SWITCH(M, "Qty", [Transfers Out (Qty)],  "Lines", [Transfer Lines],          "Cost $", [Transfer Cost $])
+			VAR WOIn    = SWITCH(M, "Qty", [WO Transfer In Qty],   "Lines", [WO Transfer In Lines],   "Cost $", [WO Transfer In Cost $])
+			VAR WOOut   = SWITCH(M, "Qty", [WO Transfer Qty],      "Lines", [WO Transfer Lines],       "Cost $", [WO Transfer Cost $])
+			VAR CtIn    = SWITCH(M, "Qty", [Counter Transfer In Qty],  "Lines", [Counter Transfer In Lines],  "Cost $", [Counter Transfer In Cost $])
+			VAR CtOut   = SWITCH(M, "Qty", [Counter Transfer Qty],     "Lines", [Counter Transfer Lines],      "Cost $", [Counter Transfer Cost $])
+			VAR StIn    = SWITCH(M, "Qty", [Stock Transfer In Qty],    "Lines", [Stock Transfer In Lines],    "Cost $", [Stock Transfer In Cost $])
+			VAR StOut   = SWITCH(M, "Qty", [Stock Transfer Qty],       "Lines", [Stock Transfer Lines],        "Cost $", [Stock Transfer Cost $])
+			
+			VAR NetVal  = SWITCH(M, "Qty", [Net Transfer Qty], "Lines", [Net Transfer Lines], "Cost $", [Net Transfer Cost])
+			VAR BalPct  = SWITCH(M, "Qty", [Transfer Balance % (Qty)], "Lines", [Transfer Balance % (Lines)], "Cost $", [Transfer Balance % (Cost)])
+			VAR NetClr  = IF(NetVal >= 0, "#2dd4bf", "#f87171")
+			VAR NetSign = IF(NetVal >= 0, "+", "")
+			
+			RETURN
+			"<div style='font-family: Segoe UI, Arial, sans-serif; padding: 14px 18px; background: linear-gradient(135deg, #1D3C4E, #2E5266); border-radius: 10px; color: white; width: 340px; box-sizing: border-box;'>
+			  <div style='font-size: 10px; text-transform: uppercase; letter-spacing: 0.8px; opacity: 0.65; margin-bottom: 10px;'>Transfer Breakdown — " & M & "</div>
+			  <table style='width: 100%; border-collapse: collapse; font-size: 13px;'>
+			    <tr>
+			      <td style='width: 90px;'></td>
+			      <td style='text-align: center; font-size: 10px; color: #2dd4bf; text-transform: uppercase; letter-spacing: 0.5px; padding-bottom: 8px;'>IN</td>
+			      <td style='text-align: center; font-size: 10px; color: #f87171; text-transform: uppercase; letter-spacing: 0.5px; padding-bottom: 8px;'>OUT</td>
+			    </tr>
+			    <tr>
+			      <td style='font-size: 11px; opacity: 0.65; padding: 4px 0;'>Work Order</td>
+			      <td style='text-align: center; font-weight: 600; color: #2dd4bf;'>" & FORMAT(WOIn, Fmt) & "</td>
+			      <td style='text-align: center; font-weight: 600; color: #f87171;'>" & FORMAT(WOOut, Fmt) & "</td>
+			    </tr>
+			    <tr>
+			      <td style='font-size: 11px; opacity: 0.65; padding: 4px 0;'>Counter</td>
+			      <td style='text-align: center; font-weight: 600; color: #2dd4bf;'>" & FORMAT(CtIn, Fmt) & "</td>
+			      <td style='text-align: center; font-weight: 600; color: #f87171;'>" & FORMAT(CtOut, Fmt) & "</td>
+			    </tr>
+			    <tr>
+			      <td style='font-size: 11px; opacity: 0.65; padding: 4px 0;'>Stock</td>
+			      <td style='text-align: center; font-weight: 600; color: #2dd4bf;'>" & FORMAT(StIn, Fmt) & "</td>
+			      <td style='text-align: center; font-weight: 600; color: #f87171;'>" & FORMAT(StOut, Fmt) & "</td>
+			    </tr>
+			    <tr style='border-top: 1px solid rgba(255,255,255,0.2);'>
+			      <td style='font-size: 11px; font-weight: 700; padding-top: 8px; text-transform: uppercase;'>Total</td>
+			      <td style='text-align: center; font-size: 15px; font-weight: 700; color: #2dd4bf; padding-top: 8px;'>" & FORMAT(InTotal, Fmt) & "</td>
+			      <td style='text-align: center; font-size: 15px; font-weight: 700; color: #f87171; padding-top: 8px;'>" & FORMAT(OutTotal, Fmt) & "</td>
+			    </tr>
+			  </table>
+			  <div style='margin-top: 10px; padding: 7px 12px; background: rgba(255,255,255,0.07); border-radius: 6px; text-align: center;'>
+			    <span style='font-size: 11px; opacity: 0.6;'>NET  </span>
+			    <span style='font-size: 15px; font-weight: 700; color: " & NetClr & ";'>" & NetSign & FORMAT(NetVal, Fmt) & "</span>
+			    <span style='font-size: 11px; opacity: 0.6; margin-left: 8px;'>" & FORMAT(BalPct, "+0.0%;-0.0%;0.0%") & " balance</span>
+			  </div>
+			</div>"
+			
+			```
+		lineageTag: 2331dee4-8fc4-40d4-8b04-002b1394fe0c
+
+	measure 'Page 2 Tooltip' = ```
+			
+			VAR M       = SELECTEDVALUE(MetricSelector[Metric], "Qty")
+			VAR SelComp = SELECTEDVALUE(ComparisonSelector[Comparison], "Inventory")
+			VAR Fmt     = SWITCH(M, "Cost $", "$#,##0", "#,##0")
+			
+			VAR TransVal = SWITCH(M, "Qty", [Transfers In (Qty)], "Lines", [Transfers In (Lines)], "Cost $", [Transfers In Cost $])
+			VAR InvVal   = SWITCH(M, "Qty", [Inventory Qty],  "Lines", [Inventory Lines],  "Cost $", [Inventory Cost $])
+			VAR SalesVal = SWITCH(M, "Qty", [Sales Qty],       "Lines", [Sales Lines],      "Cost $", [Sales Cost $])
+			VAR PurchVal = SWITCH(M, "Qty", [Purchase Qty],    "Lines", [Purchase Lines],   "Cost $", [Purchase Cost $])
+			
+			VAR InvPct   = DIVIDE(TransVal, InvVal,   0)
+			VAR SalesPct = DIVIDE(TransVal, SalesVal, 0)
+			VAR PurchPct = DIVIDE(TransVal, PurchVal, 0)
+			
+			VAR InvBg   = IF(SelComp = "Inventory",  "background: rgba(45,212,191,0.15); border-radius: 6px;",  "opacity: 0.4;")
+			VAR SalesBg = IF(SelComp = "Sales",      "background: rgba(251,191,36,0.15); border-radius: 6px;",  "opacity: 0.4;")
+			VAR PurchBg = IF(SelComp = "Purchases",  "background: rgba(129,140,248,0.15); border-radius: 6px;", "opacity: 0.4;")
+			
+			RETURN
+			"<div style='font-family: Segoe UI, Arial, sans-serif; padding: 14px 18px; background: linear-gradient(135deg, #1D3C4E, #2E5266); border-radius: 10px; color: white; width: 300px; box-sizing: border-box;'>
+			  <div style='font-size: 10px; text-transform: uppercase; letter-spacing: 0.8px; opacity: 0.65; margin-bottom: 10px;'>Transfer In Context — " & M & "</div>
+			  <div style='text-align: center; margin-bottom: 14px;'>
+			    <div style='font-size: 34px; font-weight: 700;'>" & FORMAT(TransVal, Fmt) & "</div>
+			    <div style='font-size: 11px; opacity: 0.55; margin-top: 4px;'>Transfers In</div>
+			  </div>
+			  <table style='width: 100%; border-collapse: collapse; font-size: 12px;'>
+			    <tr>
+			      <td style='padding: 5px 8px; " & InvBg & "'>vs Inventory</td>
+			      <td style='text-align: right; padding: 5px 8px; opacity: 0.65; " & InvBg & "'>" & FORMAT(InvVal, Fmt) & "</td>
+			      <td style='text-align: right; padding: 5px 8px; font-size: 18px; font-weight: 700; color: #2dd4bf; " & InvBg & "'>" & FORMAT(InvPct, "0.0%") & "</td>
+			    </tr>
+			    <tr>
+			      <td style='padding: 5px 8px; " & SalesBg & "'>vs Sales</td>
+			      <td style='text-align: right; padding: 5px 8px; opacity: 0.65; " & SalesBg & "'>" & FORMAT(SalesVal, Fmt) & "</td>
+			      <td style='text-align: right; padding: 5px 8px; font-size: 18px; font-weight: 700; color: #fbbf24; " & SalesBg & "'>" & FORMAT(SalesPct, "0.0%") & "</td>
+			    </tr>
+			    <tr>
+			      <td style='padding: 5px 8px; " & PurchBg & "'>vs Purchases</td>
+			      <td style='text-align: right; padding: 5px 8px; opacity: 0.65; " & PurchBg & "'>" & FORMAT(PurchVal, Fmt) & "</td>
+			      <td style='text-align: right; padding: 5px 8px; font-size: 18px; font-weight: 700; color: #818cf8; " & PurchBg & "'>" & FORMAT(PurchPct, "0.0%") & "</td>
+			    </tr>
+			  </table>
+			</div>"
+			
+			```
+		lineageTag: 6dbbca9c-f0d1-49c6-b9dd-7990fd422cfe
+
+	measure 'Page 2 - Header' = ```
+			
+			VAR _User = USERPRINCIPALNAME()
+			VAR _Position = SEARCH("@", _User, 1)
+			VAR _Name = LEFT(_User, _Position - 1)
+			VAR _FirstLetter = UPPER(LEFT(_Name, 1))
+			VAR _LastName = MID(_Name, 2, LEN(_Name) - 1)
+			VAR _FormattedLastName =
+			    UPPER(LEFT(_LastName, 1)) & LOWER(MID(_LastName, 2, LEN(_LastName)))
+			VAR WelcomeName = _FirstLetter & "." & _FormattedLastName
+			VAR CurrentDate = TODAY()
+			VAR DateDisplay = FORMAT(CurrentDate, "MMM D, YYYY")
+			VAR CurrentHour = HOUR(NOW())
+			VAR TimeGreeting =
+			    IF(CurrentHour < 12, "Good Morning",
+			    IF(CurrentHour < 17, "Good Afternoon",
+			    "Good Evening"))
+			VAR MinDate = MIN(dim_DateTable[Date])
+			VAR MaxDate = MAX(dim_DateTable[Date])
+			VAR DateRangeDisplay =
+			    IF(
+			        MinDate = MaxDate,
+			        FORMAT(MinDate, "MMM D, YYYY"),
+			        FORMAT(MinDate, "MMM D") & " – " & FORMAT(MaxDate, "MMM D, YYYY")
+			    )
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    height: 85px;
+			    padding: 15px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 10px;
+			    color: white;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-between;
+			    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    box-sizing: border-box;
+			'>
+			    <div style='display: flex; align-items: center; gap: 15px;'>
+			        <div style='
+			            width: 40px; height: 40px;
+			            background: rgba(255,255,255,0.15);
+			            border-radius: 8px;
+			            display: flex; align-items: center; justify-content: center;
+			            font-size: 20px;
+			        '>🔄</div>
+			        <div>
+			            <div style='font-size: 12px; opacity: 0.85; margin-bottom: 4px; letter-spacing: 0.5px;'>REPORT</div>
+			            <div style='font-size: 26px; font-weight: 700; line-height: 1;'>Transfers - Inventory View</div>
+			            <div style='font-size: 11px; opacity: 0.75; margin-top: 4px;'>📅 " & DateRangeDisplay & "</div>
+			        </div>
+			    </div>
+			    <div style='text-align: right;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 6px;'>" & TimeGreeting & ", " & WelcomeName & "</div>
+			        <div style='font-size: 16px; font-weight: 600;'>📅 " & DateDisplay & "</div>
+			    </div>
+			</div>
+			"
+			
+			```
+		lineageTag: 746e6d96-e4ce-4c32-a053-9941e3c284bb
+
+	measure 'FulfillmentStatus Color Key' = ```
+			
+			SWITCH(
+			    SELECTEDVALUE(Fact_OutstandingTransfers[FulfillmentStatus]),
+			    "Shipped", 1,
+			    "Pending", 2,
+			    "Partial", 3
+			)
+			
+			```
+		formatString: 0
+		lineageTag: 29fd55fd-0c30-4798-a48b-f6645a603e7e
 
 	column Value
 		isHidden

@@ -1,0 +1,165 @@
+table Fact_OutstandingTransfers
+	lineageTag: 9ad4fad3-bef9-41c8-a2ba-312191ae21a6
+
+	column DateKey
+		dataType: int64
+		formatString: 0
+		lineageTag: b5591762-4776-4ca1-a05e-1a46161deb40
+		summarizeBy: none
+		sourceColumn: DateKey
+
+		annotation SummarizationSetBy = Automatic
+
+	column Date
+		dataType: dateTime
+		formatString: Short Date
+		lineageTag: b4eaa4d5-b9c3-4fe9-9c12-354bd5fb6e03
+		summarizeBy: none
+		sourceColumn: Date
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column TransDatetime
+		dataType: dateTime
+		formatString: Short Date
+		lineageTag: 059b3989-3ff4-4d7b-9bdc-867f5888babb
+		summarizeBy: none
+		sourceColumn: TransDatetime
+
+		changedProperty = DataType
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column RequestingBranch
+		dataType: string
+		lineageTag: b4f02b3b-5921-4369-b106-cacd3b7f8f61
+		summarizeBy: none
+		sourceColumn: RequestingBranch
+
+		annotation SummarizationSetBy = Automatic
+
+	column SupplyingBranch
+		dataType: string
+		lineageTag: 192ed598-7845-48f7-82ed-0d550e711215
+		summarizeBy: none
+		sourceColumn: SupplyingBranch
+
+		annotation SummarizationSetBy = Automatic
+
+	column PartNumber
+		dataType: string
+		lineageTag: 49fe8c43-9877-423f-ab10-1ff9b4ecc887
+		summarizeBy: none
+		sourceColumn: PartNumber
+
+		annotation SummarizationSetBy = Automatic
+
+	column TransferSubType
+		dataType: string
+		lineageTag: 14251ebe-0b35-4149-8960-6956a56a2850
+		summarizeBy: none
+		sourceColumn: TransferSubType
+
+		annotation SummarizationSetBy = Automatic
+
+	column OrderQty
+		dataType: double
+		formatString: 0
+		lineageTag: f8c54e15-b686-4223-8ae4-a238e78cffaf
+		summarizeBy: sum
+		sourceColumn: OrderQty
+
+		annotation SummarizationSetBy = Automatic
+
+	column ShippedQty
+		dataType: double
+		formatString: 0
+		lineageTag: 00d6b41f-5e8b-427b-b437-405e53324284
+		summarizeBy: sum
+		sourceColumn: ShippedQty
+
+		annotation SummarizationSetBy = Automatic
+
+	column OpenQty
+		dataType: double
+		formatString: 0
+		lineageTag: a34a25f2-b095-46c4-9d7f-f94ad35660a3
+		summarizeBy: sum
+		sourceColumn: OpenQty
+
+		annotation SummarizationSetBy = Automatic
+
+	column PartTicket
+		dataType: int64
+		formatString: 0
+		lineageTag: f1c8acd7-a8ef-42d3-8f72-72efe64b0a94
+		summarizeBy: sum
+		sourceColumn: PartTicket
+
+		annotation SummarizationSetBy = Automatic
+
+	column Line_No
+		dataType: int64
+		formatString: 0
+		lineageTag: c0d7b1b2-0864-4d65-9190-db2733afa612
+		summarizeBy: sum
+		sourceColumn: Line_No
+
+		annotation SummarizationSetBy = Automatic
+
+	column SuppliedQty
+		dataType: double
+		lineageTag: 6e0ae028-9085-424f-9c02-f9997e0e00b5
+		summarizeBy: sum
+		sourceColumn: SuppliedQty
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column OrderAge
+		dataType: int64
+		formatString: 0
+		lineageTag: 81e8360b-69a6-4258-b61e-68c297b1ae76
+		summarizeBy: sum
+		sourceColumn: OrderAge
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Aging Bucket' = ```
+			
+			    SWITCH(
+			        TRUE(),
+			        Fact_OutstandingTransfers[OrderAge] <= 7,  "0–7 Days",
+			        Fact_OutstandingTransfers[OrderAge] <= 30, "8–30 Days",
+			        Fact_OutstandingTransfers[OrderAge] <= 60, "31–60 Days",
+			        "61+ Days"
+			    )
+			
+			```
+		lineageTag: ff964045-7e82-4bee-8bf3-b09fe3c9384f
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	column FulfillmentStatus
+		dataType: string
+		lineageTag: 8e58c988-2cc3-470d-88d7-3213c5c5235e
+		summarizeBy: none
+		sourceColumn: FulfillmentStatus
+
+		annotation SummarizationSetBy = Automatic
+
+	partition Fact_OutstandingTransfers = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-gxnyznhdptpenfw724g3o5sjzm.datawarehouse.fabric.microsoft.com", "LH_Master_Data"),
+				    dbo_Fact_OutstandingTransfers = Source{[Schema="dbo",Item="Fact_OutstandingTransfers"]}[Data]
+				in
+				    dbo_Fact_OutstandingTransfers
+
