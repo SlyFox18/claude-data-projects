@@ -8,7 +8,7 @@ model Model
 
 annotation __PBI_TimeIntelligenceEnabled = 0
 
-annotation PBI_QueryOrder = ["Data Refresh","dim_BranchLocation","dim_DateTable","Fact_Parts_Open_Tickets","Fact_Parts_Open_Tickets_Details"]
+annotation PBI_QueryOrder = ["Data Refresh","dim_BranchLocation","dim_DateTable","Fact_Parts_Open_Tickets","Fact_Parts_Open_Tickets_Details","fact_parts_open_orders_snapshot","Fact_PartsInvoiced_ByBranch"]
 
 annotation PBI_ProTooling = ["DevMode"]
 
@@ -24,6 +24,9 @@ ref table Fact_Parts_Open_Tickets_Details
 ref table 'New Report Measures'
 ref table 'TopN Selector'
 ref table HTML_Parts_Overview
+ref table fact_parts_open_orders_snapshot
+ref table Fact_PartsInvoiced_ByBranch
+ref table Trailing_Months_Selector
 
 ref cultureInfo en-US
 

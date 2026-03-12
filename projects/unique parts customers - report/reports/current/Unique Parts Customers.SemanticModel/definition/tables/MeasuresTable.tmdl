@@ -1002,12 +1002,14 @@ table MeasuresTable
 			)
 		lineageTag: 9fa46b9d-97c1-4060-8a95-6a7d8847dacf
 
-	measure R12M_Sales_Difference_with_Icon =
+	measure R12M_Sales_Difference_with_Icon = ```
 			
-			VAR Difference = [R12M_Difference]
-			VAR Icon = [R12M_Sales_Difference_Icon]
-			RETURN
-			    FORMAT ( Difference, "Currency" ) & " " & Icon
+			    VAR Difference = [R12M_Sales Card] - [R12M_Sales_LY Card]
+			    VAR Icon = IF ( Difference > 0, "▲", IF ( Difference < 0, "▼", "→" ) )
+			    RETURN
+			        FORMAT ( Difference, "Currency" ) & " " & Icon
+			
+			```
 		lineageTag: 582c0bfa-4da4-4bb4-b984-69418113a492
 
 	measure 'Sales Rule 1.3' =

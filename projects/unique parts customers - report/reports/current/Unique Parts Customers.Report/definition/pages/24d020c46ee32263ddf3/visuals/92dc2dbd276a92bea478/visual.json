@@ -1,12 +1,12 @@
 {
-  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.4.0/schema.json",
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.6.0/schema.json",
   "name": "92dc2dbd276a92bea478",
   "position": {
-    "x": 504.52626436307571,
-    "y": 17.560875330723505,
+    "x": 504.26221721643731,
+    "y": 16.805130096712038,
     "z": 3000,
-    "height": 64.836272040302262,
-    "width": 545.80352644836273,
+    "height": 70.364917776037586,
+    "width": 590.283476898982,
     "tabOrder": 1000
   },
   "visual": {
@@ -104,7 +104,7 @@
             "fontSize": {
               "expr": {
                 "Literal": {
-                  "Value": "10D"
+                  "Value": "12D"
                 }
               }
             }
@@ -693,5 +693,65 @@
     },
     "drillFilterOtherVisuals": true
   },
-  "parentGroupName": "85dc6b8f4380d5dbd61a"
+  "parentGroupName": "85dc6b8f4380d5dbd61a",
+  "filterConfig": {
+    "filters": [
+      {
+        "name": "6b8519acd6ad6c02c712",
+        "field": {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "MeasuresTable"
+              }
+            },
+            "Property": "YTD_Sales"
+          }
+        },
+        "type": "Advanced"
+      },
+      {
+        "name": "6ce9748cd6a30a746aca",
+        "field": {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "MeasuresTable"
+              }
+            },
+            "Property": "Previous Year to Date Sales"
+          }
+        },
+        "type": "Advanced"
+      },
+      {
+        "name": "cf50c4863784e8dae131",
+        "field": {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "MeasuresTable"
+              }
+            },
+            "Property": "PYTD_Sales"
+          }
+        },
+        "type": "Advanced"
+      },
+      {
+        "name": "3a068de7ce379b8be0b2",
+        "field": {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "MeasuresTable"
+              }
+            },
+            "Property": "Sales Difference with Icon YTD"
+          }
+        },
+        "type": "Advanced"
+      }
+    ]
+  }
 }

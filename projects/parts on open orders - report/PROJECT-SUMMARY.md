@@ -1,52 +1,45 @@
-# Parts on Open Orders - Modernization Project Summary
+# Parts on Open Orders - Project Summary
 
-**Project Status**: 75% Complete - Ready for Power BI Desktop Implementation
-**Last Updated**: January 6, 2026
-**Completion Path**: Documentation-Driven Approach
+**Project Status**: ✅ Production — Active development (March 2026)
+**Last Updated**: March 5, 2026
+**Original Migration**: January 2026 (v2.0)
 
 ---
 
-## EXECUTIVE SUMMARY
+## CURRENT STATUS (March 2026)
 
-This project modernizes the "Parts on Open Orders" report from an outdated Lakehouse structure to a new star schema architecture optimized for F4 capacity performance. The data foundation is complete, and comprehensive documentation has been created to guide the final report build in Power BI Desktop.
+The report is fully built, in production, and receiving new feature additions. The original January 2026 modernization (flat Lakehouse → star schema) is 100% complete. Two new stakeholder-requested features were added in March 2026.
 
-### What's Been Completed
+### Active Infrastructure (March 2026)
 
-✅ **Data Architecture (100%)**
-- New fact tables created in Fabric warehouse
-- Star schema with proper relationships
-- Optimized for incremental refresh
+✅ **Monthly Snapshot** (March 2026)
+- Notebook: `nb_Snapshot_Parts_Open_Orders` in LH_Master_Data
+- Target table: `fact_parts_open_orders_snapshot` (Delta, append mode)
+- Pipeline: `Pipeline_Monthly_Open_Orders_Snapshot` — 5:30 AM on the 1st of each month
+- First snapshot: March 1, 2026. History builds from here — no backfill possible.
+- Semantic model table wired to `dim_DateTable` (via `SnapshotDate`) and `dim_BranchLocation`
 
-✅ **Semantic Model Structure (75%)**
-- Fact and dimension tables configured
-- Column formatting and sort orders set
-- 3 relationships established
+✅ **Open Invoice Ratio** (March 2026)
+- New semantic model table: `Fact_PartsInvoiced_ByBranch` — SQL endpoint native query, aggregates Invoice table by Branch + Month
+- Excludes Internal customers (71-87, 9001-9007) and Warranty customers (41-57, 9051-9057)
+- New slicer table: `Trailing_Months_Selector` (3 / 6 / 12 / 24 months)
+- New measures (display folder: "Open Order Ratio"):
+  - `Selected Trailing Months` — reads slicer, defaults to 12
+  - `Invoiced Parts (Trailing)` — SUM of PartsSaleValue for the selected trailing window
+  - `Open Order Ratio` — DIVIDE([Order Total], [Invoiced Parts (Trailing)])
+- Visual: Ratio tab on Comparison page — bar chart sorted by ratio descending
 
-✅ **DAX Measures Library (50%)**
-- 19 core measures migrated and working
-- 20 advanced measures documented (ready to add)
-- Complete reference guide created
+### What's Pending (Future Work)
 
-✅ **Documentation (100%)**
-- Migration status tracking
-- Complete DAX measures reference
-- Detailed report page specifications
-- Implementation checklist
+⏳ **Snapshot trend page** — needs a few months of data before building. Come back May/June 2026.
 
-### What Remains
+⏳ **Ratio validation** — ratios are live and calculating (0.4%–8.5% range as of March 2026). Monitor for a few months to confirm stability.
 
-⏳ **Complete DAX Measures Migration**
-- Add remaining 20 measures to TMDL or Power BI Desktop
-- Includes: Branch comparison, customer/salesman rankings, SVG KPIs
+---
 
-⏳ **Build Report Pages in Power BI Desktop**
-- 4 pages: Overview, Details, Comparison, Charts
-- Complete specifications provided
+## ORIGINAL EXECUTIVE SUMMARY (January 2026)
 
-⏳ **Testing & Deployment**
-- Validate against old report
-- Publish to Fabric workspace
-- Configure scheduled refresh
+This project modernized the "Parts on Open Orders" report from an outdated Lakehouse structure to a new star schema architecture optimized for F4 capacity performance.
 
 ---
 

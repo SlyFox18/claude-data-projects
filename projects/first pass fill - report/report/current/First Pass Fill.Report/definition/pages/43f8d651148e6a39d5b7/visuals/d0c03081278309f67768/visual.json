@@ -1,5 +1,5 @@
 {
-  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.4.0/schema.json",
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.6.0/schema.json",
   "name": "d0c03081278309f67768",
   "position": {
     "x": 0,
@@ -67,7 +67,7 @@
                           [
                             {
                               "Literal": {
-                                "Value": "'December'"
+                                "Value": "'March'"
                               }
                             }
                           ]
@@ -510,5 +510,23 @@
     },
     "drillFilterOtherVisuals": true
   },
-  "parentGroupName": "d719484778b83a7c0014"
+  "parentGroupName": "d719484778b83a7c0014",
+  "filterConfig": {
+    "filters": [
+      {
+        "name": "bb9876beac38135a9867",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "dim_DateTable"
+              }
+            },
+            "Property": "MonthName"
+          }
+        },
+        "type": "Categorical"
+      }
+    ]
+  }
 }

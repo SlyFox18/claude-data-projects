@@ -1,0 +1,468 @@
+table _Measures
+	lineageTag: 22e4b9e3-99b6-4634-9836-9ade5a5ea5a5
+
+	measure 'Home - Header' =
+			
+			// Get user name
+			VAR _User = USERPRINCIPALNAME()
+			VAR _Position = SEARCH("@", _User, 1)
+			VAR _Name = LEFT(_User, _Position - 1)
+			VAR _FirstLetter = UPPER(LEFT(_Name, 1))
+			VAR _LastName = MID(_Name, 2, LEN(_Name) - 1)
+			VAR _FormattedLastName =
+			    UPPER(LEFT(_LastName, 1)) & LOWER(MID(_LastName, 2, LEN(_LastName)))
+			VAR WelcomeName = _FirstLetter & "." & _FormattedLastName
+			
+			// Get current date/time in CDT (NOW() in service is UTC; subtract 5h for CDT)
+			VAR CurrentDate = TODAY()
+			VAR DateDisplay = FORMAT(CurrentDate, "MMM D, YYYY")
+			VAR CurrentHourCDT = HOUR(NOW() - TIME(5, 0, 0))
+			VAR TimeGreeting =
+			    IF(CurrentHourCDT < 12, "Good Morning",
+			    IF(CurrentHourCDT < 17, "Good Afternoon",
+			    "Good Evening"))
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    height: 85px;
+			    padding: 15px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 10px;
+			    color: white;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-between;
+			    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    box-sizing: border-box;
+			'>
+			    <!-- Left side: Dashboard Title -->
+			    <div style='display: flex; align-items: center; gap: 15px;'>
+			        <!-- Truck icon -->
+			        <div style='
+			            width: 40px;
+			            height: 40px;
+			            background: rgba(255,255,255,0.15);
+			            border-radius: 8px;
+			            display: flex;
+			            align-items: center;
+			            justify-content: center;
+			            font-size: 20px;
+			        '>
+			            🚚
+			        </div>
+			
+			        <!-- Title -->
+			        <div>
+			            <div style='font-size: 12px; opacity: 0.85; margin-bottom: 4px; letter-spacing: 0.5px;'>
+			                REPORT
+			            </div>
+			            <div style='font-size: 26px; font-weight: 700; line-height: 1;'>
+			                Transfer App
+			            </div>
+			        </div>
+			    </div>
+			
+			    <!-- Right side: Welcome & Date -->
+			    <div style='text-align: right;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 6px;'>
+			            " & TimeGreeting & ", " & WelcomeName & "
+			        </div>
+			        <div style='font-size: 16px; font-weight: 600;'>
+			            📅 " & DateDisplay & "
+			        </div>
+			    </div>
+			</div>
+			"
+		lineageTag: 49efea2a-3c06-4cab-8367-26b26caa141e
+
+		annotation SummarizationSetBy = Automatic
+
+	measure 'Total Shipments' = COUNTROWS('Shipment Tracking')
+		formatString: 0
+		displayFolder: Core Counts
+		lineageTag: 11111111-1111-1111-1111-111111111001
+
+		annotation SummarizationSetBy = Automatic
+
+	measure 'In Transit' =
+			CALCULATE(
+			    COUNTROWS('Shipment Tracking'),
+			    'Shipment Tracking'[StatusCode] = 1
+			)
+		formatString: 0
+		displayFolder: Core Counts
+		lineageTag: 11111111-1111-1111-1111-111111111002
+
+		annotation SummarizationSetBy = Automatic
+
+	measure Delivered =
+			CALCULATE(
+			    COUNTROWS('Shipment Tracking'),
+			    'Shipment Tracking'[StatusCode] = 2
+			)
+		formatString: 0
+		displayFolder: Core Counts
+		lineageTag: 11111111-1111-1111-1111-111111111003
+
+		annotation SummarizationSetBy = Automatic
+
+	measure 'Overdue Count' =
+			// In Transit records where pickup was more than 4 real hours ago.
+			// Stored times are UTC-7, NOW() in service is UTC (offset = 7).
+			// 4 real hours + 7 hour offset = threshold of 11 raw DATEDIFF hours.
+			VAR _OverdueThreshold = 11
+			RETURN
+			CALCULATE(
+			    COUNTROWS('Shipment Tracking'),
+			    'Shipment Tracking'[StatusCode] = 1,
+			    DATEDIFF('Shipment Tracking'[PickupDate], NOW(), HOUR) >= _OverdueThreshold
+			)
+		formatString: 0
+		displayFolder: Performance
+		lineageTag: 11111111-1111-1111-1111-111111111004
+
+		annotation SummarizationSetBy = Automatic
+
+	measure 'Avg Transit Hours' =
+			// Both PickupDate and DropoffDate are from the same UTC-7 reference,
+			// so DATEDIFF between them gives real elapsed hours — no offset needed.
+			AVERAGEX(
+			    FILTER(
+			        'Shipment Tracking',
+			        'Shipment Tracking'[StatusCode] = 2
+			            && NOT ISBLANK('Shipment Tracking'[DropoffDate])
+			            && NOT ISBLANK('Shipment Tracking'[PickupDate])
+			    ),
+			    DATEDIFF(
+			        'Shipment Tracking'[PickupDate],
+			        'Shipment Tracking'[DropoffDate],
+			        MINUTE
+			    ) / 60.0
+			)
+		formatString: 0.0
+		displayFolder: Performance
+		lineageTag: 11111111-1111-1111-1111-111111111005
+
+		annotation SummarizationSetBy = Automatic
+
+	measure 'Avg Transit Time Display' =
+			// Returns a formatted string like "2h 15m" or "45m" for card visuals
+			VAR _AvgHours = [Avg Transit Hours]
+			VAR _H = INT(_AvgHours)
+			VAR _M = INT((_AvgHours - _H) * 60)
+			RETURN
+			IF(
+			    ISBLANK(_AvgHours),
+			    "—",
+			    IF(
+			        _H >= 1,
+			        FORMAT(_H, "0") & "h " & FORMAT(_M, "0") & "m",
+			        FORMAT(_M, "0") & "m"
+			    )
+			)
+		displayFolder: Performance
+		lineageTag: 11111111-1111-1111-1111-111111111006
+
+		annotation SummarizationSetBy = Automatic
+
+	measure 'On-Time Rate %' =
+			// % of completed deliveries that took 4 hours or less
+			VAR _Delivered = [Delivered]
+			VAR _OnTime =
+			    CALCULATE(
+			        COUNTROWS('Shipment Tracking'),
+			        'Shipment Tracking'[StatusCode] = 2,
+			        NOT ISBLANK('Shipment Tracking'[DropoffDate]),
+			        NOT ISBLANK('Shipment Tracking'[PickupDate]),
+			        DATEDIFF(
+			            'Shipment Tracking'[PickupDate],
+			            'Shipment Tracking'[DropoffDate],
+			            HOUR
+			        ) <= 4
+			    )
+			RETURN
+			IF(_Delivered = 0, BLANK(), DIVIDE(_OnTime, _Delivered))
+		formatString: 0.0%;-0.0%;0.0%
+		displayFolder: Performance
+		lineageTag: 11111111-1111-1111-1111-111111111007
+
+		annotation SummarizationSetBy = Automatic
+
+	measure 'Delivered Today' =
+			// _DisplayOffset converts stored UTC-7 times to CDT for date comparison.
+			// Change to 1 when DST ends (November).
+			VAR _DisplayOffset = 2
+			VAR _Today = TODAY()
+			RETURN
+			CALCULATE(
+			    COUNTROWS('Shipment Tracking'),
+			    'Shipment Tracking'[StatusCode] = 2,
+			    INT('Shipment Tracking'[DropoffDate] + TIME(_DisplayOffset, 0, 0)) = INT(_Today)
+			)
+		formatString: 0
+		displayFolder: Time Periods
+		lineageTag: 11111111-1111-1111-1111-111111111008
+
+		annotation SummarizationSetBy = Automatic
+
+	measure 'Delivered This Week' =
+			VAR _DisplayOffset = 2
+			VAR _Today = TODAY()
+			VAR _WeekStart = _Today - WEEKDAY(_Today, 2) + 1
+			VAR _WeekEnd = _WeekStart + 7
+			RETURN
+			CALCULATE(
+			    COUNTROWS('Shipment Tracking'),
+			    'Shipment Tracking'[StatusCode] = 2,
+			    'Shipment Tracking'[DropoffDate] + TIME(_DisplayOffset, 0, 0) >= _WeekStart,
+			    'Shipment Tracking'[DropoffDate] + TIME(_DisplayOffset, 0, 0) < _WeekEnd
+			)
+		formatString: 0
+		displayFolder: Time Periods
+		lineageTag: 11111111-1111-1111-1111-111111111009
+
+		annotation SummarizationSetBy = Automatic
+
+	measure 'Delivered This Month' =
+			VAR _DisplayOffset = 2
+			VAR _Today = TODAY()
+			VAR _MonthStart = DATE(YEAR(_Today), MONTH(_Today), 1)
+			VAR _MonthEnd = DATE(YEAR(_Today), MONTH(_Today) + 1, 1)
+			RETURN
+			CALCULATE(
+			    COUNTROWS('Shipment Tracking'),
+			    'Shipment Tracking'[StatusCode] = 2,
+			    'Shipment Tracking'[DropoffDate] + TIME(_DisplayOffset, 0, 0) >= _MonthStart,
+			    'Shipment Tracking'[DropoffDate] + TIME(_DisplayOffset, 0, 0) < _MonthEnd
+			)
+		formatString: 0
+		displayFolder: Time Periods
+		lineageTag: 11111111-1111-1111-1111-111111111010
+
+		annotation SummarizationSetBy = Automatic
+
+	measure 'Pickups Today' =
+			VAR _DisplayOffset = 2
+			VAR _Today = TODAY()
+			RETURN
+			CALCULATE(
+			    COUNTROWS('Shipment Tracking'),
+			    INT('Shipment Tracking'[PickupDate] + TIME(_DisplayOffset, 0, 0)) = INT(_Today)
+			)
+		formatString: 0
+		displayFolder: Time Periods
+		lineageTag: 11111111-1111-1111-1111-111111111011
+
+		annotation SummarizationSetBy = Automatic
+
+	measure 'Pickup Date Display' =
+			// Formats PickupDate with +2h CDT offset for use in table/card visuals.
+			// Change TIME(2,0,0) to TIME(1,0,0) when DST ends (November).
+			VAR _Raw = MAX('Shipment Tracking'[PickupDate])
+			VAR _LocalTime = _Raw + TIME(2, 0, 0)
+			RETURN
+			IF(
+			    ISBLANK(_Raw),
+			    "—",
+			    FORMAT(_LocalTime, "M/D/YYYY h:mm AM/PM")
+			)
+		displayFolder: Display
+		lineageTag: 11111111-1111-1111-1111-111111111012
+
+		annotation SummarizationSetBy = Automatic
+
+	measure 'Dropoff Date Display' =
+			VAR _Raw = MAX('Shipment Tracking'[DropoffDate])
+			VAR _LocalTime = _Raw + TIME(2, 0, 0)
+			RETURN
+			IF(
+			    ISBLANK(_Raw),
+			    "—",
+			    FORMAT(_LocalTime, "M/D/YYYY h:mm AM/PM")
+			)
+		displayFolder: Display
+		lineageTag: 11111111-1111-1111-1111-111111111013
+
+		annotation SummarizationSetBy = Automatic
+
+	measure 'Hours in Transit Display' =
+			// For in-transit rows: real elapsed hours = raw DATEDIFF - 7 (UTC offset).
+			// Shows "Xh Ym" for in-transit, "Delivered" for completed rows.
+			VAR _Status = MAX('Shipment Tracking'[StatusCode])
+			VAR _RawHours = DATEDIFF(MAX('Shipment Tracking'[PickupDate]), NOW(), HOUR)
+			VAR _RealHours = _RawHours - 7
+			VAR _H = INT(_RealHours)
+			VAR _M = INT((_RealHours - _H) * 60)
+			RETURN
+			IF(
+			    _Status = 2, "Delivered",
+			    IF(
+			        ISBLANK(MAX('Shipment Tracking'[PickupDate])), "—",
+			        IF(
+			            _H >= 1,
+			            FORMAT(_H, "0") & "h " & FORMAT(_M, "0") & "m in transit",
+			            FORMAT(_M, "0") & "m in transit"
+			        )
+			    )
+			)
+		displayFolder: Display
+		lineageTag: 11111111-1111-1111-1111-111111111014
+
+		annotation SummarizationSetBy = Automatic
+
+	measure 'Home - KPI Card' =
+			VAR _InTransit = [In Transit]
+			VAR _Overdue = [Overdue Count]
+			VAR _DeliveredToday = [Delivered Today]
+			VAR _AvgTransit = [Avg Transit Time Display]
+			VAR _OverdueColor = IF(_Overdue > 0, "#F59E0B", "white")
+			RETURN
+			"<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    padding: 20px 30px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 12px;
+			    color: white;
+			    height: 120px;
+			    display: flex;
+			    justify-content: space-between;
+			    align-items: center;
+			    gap: 15px;
+			    box-sizing: border-box;
+			'>
+			
+			    <!-- In Transit -->
+			    <div style='flex: 1; text-align: center; border-right: 1px solid rgba(255,255,255,0.2); padding-right: 15px;'>
+			        <div style='font-size: 13px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.85; font-weight: 600; margin-bottom: 8px;'>In Transit</div>
+			        <div style='font-size: 44px; font-weight: 700; line-height: 1;'>" & _InTransit & "</div>
+			        <div style='font-size: 13px; opacity: 0.7; margin-top: 6px;'>active shipments</div>
+			    </div>
+			
+			    <!-- Overdue -->
+			    <div style='flex: 1; text-align: center; border-right: 1px solid rgba(255,255,255,0.2); padding-right: 15px;'>
+			        <div style='font-size: 13px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.85; font-weight: 600; margin-bottom: 8px;'>Overdue</div>
+			        <div style='font-size: 44px; font-weight: 700; line-height: 1; color: " & _OverdueColor & ";'>" & _Overdue & "</div>
+			        <div style='font-size: 13px; opacity: 0.7; margin-top: 6px;'>&gt; 4 hours in transit</div>
+			    </div>
+			
+			    <!-- Delivered Today -->
+			    <div style='flex: 1; text-align: center; border-right: 1px solid rgba(255,255,255,0.2); padding-right: 15px;'>
+			        <div style='font-size: 13px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.85; font-weight: 600; margin-bottom: 8px;'>Delivered Today</div>
+			        <div style='font-size: 44px; font-weight: 700; line-height: 1;'>" & _DeliveredToday & "</div>
+			        <div style='font-size: 13px; opacity: 0.7; margin-top: 6px;'>completed today</div>
+			    </div>
+			
+			    <!-- Avg Transit Time -->
+			    <div style='flex: 1; text-align: center;'>
+			        <div style='font-size: 13px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.85; font-weight: 600; margin-bottom: 8px;'>Avg Transit Time</div>
+			        <div style='font-size: 44px; font-weight: 700; line-height: 1;'>" & _AvgTransit & "</div>
+			        <div style='font-size: 13px; opacity: 0.7; margin-top: 6px;'>all delivered</div>
+			    </div>
+			
+			</div>"
+		displayFolder: Display
+		lineageTag: 11111111-1111-1111-1111-111111111016
+
+		annotation SummarizationSetBy = Automatic
+
+	measure 'Overdue Row Color' =
+			// Returns amber hex when a row is in-transit and overdue (> 4 real hours).
+			// Use as Background color → Field value on table columns.
+			// Stored times UTC-7, NOW() is UTC → threshold = 4 + 7 = 11 raw hours.
+			VAR _Status = MAX('Shipment Tracking'[StatusCode])
+			VAR _RawHours = DATEDIFF(MAX('Shipment Tracking'[PickupDate]), NOW(), HOUR)
+			RETURN
+			IF(
+			    _Status = 1 && _RawHours >= 11,
+			    "#F59E0B",
+			    BLANK()
+			)
+		displayFolder: Display
+		lineageTag: 11111111-1111-1111-1111-111111111015
+
+		annotation SummarizationSetBy = Automatic
+
+	measure 'Active Drivers' =
+			// Count of distinct drivers who currently have at least one in-transit shipment.
+			CALCULATE(
+			    DISTINCTCOUNT('Shipment Tracking'[DriverName]),
+			    'Shipment Tracking'[StatusCode] = 1
+			)
+		formatString: 0
+		displayFolder: Performance
+		lineageTag: 11111111-1111-1111-1111-111111111017
+
+		annotation SummarizationSetBy = Automatic
+
+	measure 'Driver - KPI Card' =
+			VAR _ActiveDrivers = [Active Drivers]
+			VAR _DeliveredWeek = [Delivered This Week]
+			VAR _OnTimeRate = [On-Time Rate %]
+			VAR _AvgTransit = [Avg Transit Time Display]
+			VAR _OnTimeText = IF(ISBLANK(_OnTimeRate), "—", FORMAT(_OnTimeRate, "0.0%"))
+			RETURN
+			"<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    padding: 20px 30px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 12px;
+			    color: white;
+			    height: 120px;
+			    display: flex;
+			    justify-content: space-between;
+			    align-items: center;
+			    gap: 15px;
+			    box-sizing: border-box;
+			'>
+			
+			    <!-- Active Drivers -->
+			    <div style='flex: 1; text-align: center; border-right: 1px solid rgba(255,255,255,0.2); padding-right: 15px;'>
+			        <div style='font-size: 13px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.85; font-weight: 600; margin-bottom: 8px;'>Active Drivers</div>
+			        <div style='font-size: 44px; font-weight: 700; line-height: 1;'>" & _ActiveDrivers & "</div>
+			        <div style='font-size: 13px; opacity: 0.7; margin-top: 6px;'>currently in transit</div>
+			    </div>
+			
+			    <!-- Deliveries This Week -->
+			    <div style='flex: 1; text-align: center; border-right: 1px solid rgba(255,255,255,0.2); padding-right: 15px;'>
+			        <div style='font-size: 13px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.85; font-weight: 600; margin-bottom: 8px;'>Deliveries This Week</div>
+			        <div style='font-size: 44px; font-weight: 700; line-height: 1;'>" & _DeliveredWeek & "</div>
+			        <div style='font-size: 13px; opacity: 0.7; margin-top: 6px;'>completed Mon–today</div>
+			    </div>
+			
+			    <!-- On-Time Rate -->
+			    <div style='flex: 1; text-align: center; border-right: 1px solid rgba(255,255,255,0.2); padding-right: 15px;'>
+			        <div style='font-size: 13px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.85; font-weight: 600; margin-bottom: 8px;'>On-Time Rate</div>
+			        <div style='font-size: 44px; font-weight: 700; line-height: 1;'>" & _OnTimeText & "</div>
+			        <div style='font-size: 13px; opacity: 0.7; margin-top: 6px;'>delivered &lt;= 4 hrs</div>
+			    </div>
+			
+			    <!-- Avg Transit Time -->
+			    <div style='flex: 1; text-align: center;'>
+			        <div style='font-size: 13px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.85; font-weight: 600; margin-bottom: 8px;'>Avg Transit Time</div>
+			        <div style='font-size: 44px; font-weight: 700; line-height: 1;'>" & _AvgTransit & "</div>
+			        <div style='font-size: 13px; opacity: 0.7; margin-top: 6px;'>all drivers</div>
+			    </div>
+			
+			</div>"
+		displayFolder: Display
+		lineageTag: 11111111-1111-1111-1111-111111111018
+
+		annotation SummarizationSetBy = Automatic
+
+	column Value
+		isHidden
+		lineageTag: da2dfa23-0c4c-4e9d-8014-3cc5710e756b
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Value]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition _Measures = calculated
+		mode: import
+		source = { "This table holds all measures for the Transfer App report" }
+
+	annotation PBI_Id = da82ad85df114f0dbe8c17ce73f079a8
+

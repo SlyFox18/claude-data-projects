@@ -1,0 +1,43 @@
+table dim_PAType
+	lineageTag: 15997ef4-28f6-46ce-8a02-d3d2a28a17e2
+
+	column PAType
+		lineageTag: 69f246e0-bf0a-4f2f-ba94-e957a461c4d7
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [PAType]
+		sortByColumn: 'PAType Sort Order'
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'PAType Sort Order'
+		formatString: 0
+		lineageTag: bb00f157-31d9-4142-8c33-2caf54a31f00
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [PAType Sort Order]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dim_PAType = calculated
+		mode: import
+		source = ```
+				
+				DATATABLE(
+				    "PAType", STRING,
+				    "PAType Sort Order", INTEGER,
+				    {
+				        { "Stock Check",  1 },
+				        { "Count Off",    2 },
+				        { "Customer BIN", 3 },
+				        { "Damaged",      4 },
+				        { "Lost",         5 },
+				        { "Overage",      6 },
+				        { "Unknown",      7 }
+				    }
+				)
+				
+				```
+
+	annotation PBI_Id = 22da540a3fd043af847ce7ba9a1c7edb
+

@@ -1750,7 +1750,7 @@ table MeasuresTable
 			    IF(
 			        ISFILTERED(dim_DateTable[MonthName]),
 			        -- When month filtered, use end of selected month in current data year
-			        EOMONTH(DATE(2025, MONTH(MAX(dim_DateTable[Date])), 1), 0),
+			        EOMONTH(DATE(IF(MONTH(MAX(dim_DateTable[Date])) <= MONTH(TODAY()), YEAR(TODAY()), YEAR(TODAY()) - 1), MONTH(MAX(dim_DateTable[Date])), 1), 0),
 			        -- When no filter, use current month
 			        EOMONTH(TODAY(), 0)
 			    )
@@ -1770,7 +1770,7 @@ table MeasuresTable
 			VAR SelectedMaxDate = 
 			    IF(
 			        ISFILTERED(dim_DateTable[MonthName]),
-			        EOMONTH(DATE(2025, MONTH(MAX(dim_DateTable[Date])), 1), 0),
+			        EOMONTH(DATE(IF(MONTH(MAX(dim_DateTable[Date])) <= MONTH(TODAY()), YEAR(TODAY()), YEAR(TODAY()) - 1), MONTH(MAX(dim_DateTable[Date])), 1), 0),
 			        EOMONTH(TODAY(), 0)
 			    )
 			VAR RollingStartDate = EOMONTH(SelectedMaxDate, -12) + 1
@@ -1787,7 +1787,7 @@ table MeasuresTable
 			VAR SelectedMaxDate = 
 			    IF(
 			        ISFILTERED(dim_DateTable[MonthName]),
-			        EOMONTH(DATE(2025, MONTH(MAX(dim_DateTable[Date])), 1), 0),
+			        EOMONTH(DATE(IF(MONTH(MAX(dim_DateTable[Date])) <= MONTH(TODAY()), YEAR(TODAY()), YEAR(TODAY()) - 1), MONTH(MAX(dim_DateTable[Date])), 1), 0),
 			        EOMONTH(TODAY(), 0)
 			    )
 			VAR PYMaxDate = EOMONTH(SelectedMaxDate, -12)  -- Same month last year
@@ -1807,7 +1807,7 @@ table MeasuresTable
 			VAR SelectedMaxDate = 
 			    IF(
 			        ISFILTERED(dim_DateTable[MonthName]),
-			        EOMONTH(DATE(2025, MONTH(MAX(dim_DateTable[Date])), 1), 0),
+			        EOMONTH(DATE(IF(MONTH(MAX(dim_DateTable[Date])) <= MONTH(TODAY()), YEAR(TODAY()), YEAR(TODAY()) - 1), MONTH(MAX(dim_DateTable[Date])), 1), 0),
 			        EOMONTH(TODAY(), 0)
 			    )
 			VAR RollingStartDate = EOMONTH(SelectedMaxDate, -12) + 1
@@ -1826,7 +1826,7 @@ table MeasuresTable
 			VAR SelectedMaxDate = 
 			    IF(
 			        ISFILTERED(dim_DateTable[MonthName]),
-			        EOMONTH(DATE(2025, MONTH(MAX(dim_DateTable[Date])), 1), 0),
+			        EOMONTH(DATE(IF(MONTH(MAX(dim_DateTable[Date])) <= MONTH(TODAY()), YEAR(TODAY()), YEAR(TODAY()) - 1), MONTH(MAX(dim_DateTable[Date])), 1), 0),
 			        EOMONTH(TODAY(), 0)
 			    )
 			VAR PYMaxDate = EOMONTH(SelectedMaxDate, -12)
@@ -1846,7 +1846,7 @@ table MeasuresTable
 			VAR SelectedMaxDate = 
 			    IF(
 			        ISFILTERED(dim_DateTable[MonthName]),
-			        EOMONTH(DATE(2025, MONTH(MAX(dim_DateTable[Date])), 1), 0),
+			        EOMONTH(DATE(IF(MONTH(MAX(dim_DateTable[Date])) <= MONTH(TODAY()), YEAR(TODAY()), YEAR(TODAY()) - 1), MONTH(MAX(dim_DateTable[Date])), 1), 0),
 			        EOMONTH(TODAY(), 0)
 			    )
 			VAR RollingStartDate = EOMONTH(SelectedMaxDate, -12) + 1
@@ -1865,7 +1865,7 @@ table MeasuresTable
 			VAR SelectedMaxDate = 
 			    IF(
 			        ISFILTERED(dim_DateTable[MonthName]),
-			        EOMONTH(DATE(2025, MONTH(MAX(dim_DateTable[Date])), 1), 0),
+			        EOMONTH(DATE(IF(MONTH(MAX(dim_DateTable[Date])) <= MONTH(TODAY()), YEAR(TODAY()), YEAR(TODAY()) - 1), MONTH(MAX(dim_DateTable[Date])), 1), 0),
 			        EOMONTH(TODAY(), 0)
 			    )
 			VAR PYMaxDate = EOMONTH(SelectedMaxDate, -12)
@@ -1885,7 +1885,7 @@ table MeasuresTable
 			VAR SelectedMaxDate = 
 			    IF(
 			        ISFILTERED(dim_DateTable[MonthName]),
-			        EOMONTH(DATE(2025, MONTH(MAX(dim_DateTable[Date])), 1), 0),
+			        EOMONTH(DATE(IF(MONTH(MAX(dim_DateTable[Date])) <= MONTH(TODAY()), YEAR(TODAY()), YEAR(TODAY()) - 1), MONTH(MAX(dim_DateTable[Date])), 1), 0),
 			        EOMONTH(TODAY(), 0)
 			    )
 			VAR RollingStartDate = EOMONTH(SelectedMaxDate, -12) + 1
@@ -1904,7 +1904,7 @@ table MeasuresTable
 			VAR SelectedMaxDate = 
 			    IF(
 			        ISFILTERED(dim_DateTable[MonthName]),
-			        EOMONTH(DATE(2025, MONTH(MAX(dim_DateTable[Date])), 1), 0),
+			        EOMONTH(DATE(IF(MONTH(MAX(dim_DateTable[Date])) <= MONTH(TODAY()), YEAR(TODAY()), YEAR(TODAY()) - 1), MONTH(MAX(dim_DateTable[Date])), 1), 0),
 			        EOMONTH(TODAY(), 0)
 			    )
 			VAR PYMaxDate = EOMONTH(SelectedMaxDate, -12)
@@ -1924,7 +1924,7 @@ table MeasuresTable
 			VAR SelectedMaxDate = 
 			    IF(
 			        ISFILTERED(dim_DateTable[MonthName]),
-			        EOMONTH(DATE(2025, MONTH(MAX(dim_DateTable[Date])), 1), 0),
+			        EOMONTH(DATE(IF(MONTH(MAX(dim_DateTable[Date])) <= MONTH(TODAY()), YEAR(TODAY()), YEAR(TODAY()) - 1), MONTH(MAX(dim_DateTable[Date])), 1), 0),
 			        EOMONTH(TODAY(), 0)
 			    )
 			VAR RollingStartDate = EOMONTH(SelectedMaxDate, -12) + 1
@@ -1943,7 +1943,7 @@ table MeasuresTable
 			VAR SelectedMaxDate = 
 			    IF(
 			        ISFILTERED(dim_DateTable[MonthName]),
-			        EOMONTH(DATE(2025, MONTH(MAX(dim_DateTable[Date])), 1), 0),
+			        EOMONTH(DATE(IF(MONTH(MAX(dim_DateTable[Date])) <= MONTH(TODAY()), YEAR(TODAY()), YEAR(TODAY()) - 1), MONTH(MAX(dim_DateTable[Date])), 1), 0),
 			        EOMONTH(TODAY(), 0)
 			    )
 			VAR PYMaxDate = EOMONTH(SelectedMaxDate, -12)
@@ -1963,7 +1963,7 @@ table MeasuresTable
 			VAR SelectedMaxDate = 
 			    IF(
 			        ISFILTERED(dim_DateTable[MonthName]),
-			        EOMONTH(DATE(2025, MONTH(MAX(dim_DateTable[Date])), 1), 0),
+			        EOMONTH(DATE(IF(MONTH(MAX(dim_DateTable[Date])) <= MONTH(TODAY()), YEAR(TODAY()), YEAR(TODAY()) - 1), MONTH(MAX(dim_DateTable[Date])), 1), 0),
 			        EOMONTH(TODAY(), 0)
 			    )
 			VAR RollingStartDate = EOMONTH(SelectedMaxDate, -12) + 1
@@ -1982,7 +1982,7 @@ table MeasuresTable
 			VAR SelectedMaxDate = 
 			    IF(
 			        ISFILTERED(dim_DateTable[MonthName]),
-			        EOMONTH(DATE(2025, MONTH(MAX(dim_DateTable[Date])), 1), 0),
+			        EOMONTH(DATE(IF(MONTH(MAX(dim_DateTable[Date])) <= MONTH(TODAY()), YEAR(TODAY()), YEAR(TODAY()) - 1), MONTH(MAX(dim_DateTable[Date])), 1), 0),
 			        EOMONTH(TODAY(), 0)
 			    )
 			VAR PYMaxDate = EOMONTH(SelectedMaxDate, -12)
