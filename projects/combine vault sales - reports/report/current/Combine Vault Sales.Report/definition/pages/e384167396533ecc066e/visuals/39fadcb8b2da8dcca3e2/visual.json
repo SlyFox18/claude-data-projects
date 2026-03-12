@@ -1,13 +1,13 @@
 {
-  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.4.0/schema.json",
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.6.0/schema.json",
   "name": "39fadcb8b2da8dcca3e2",
   "position": {
-    "x": 64,
-    "y": 265,
+    "x": 63.657430730478588,
+    "y": 267.59697732997483,
     "z": 3000,
-    "height": 410.07407407407408,
-    "width": 1083.2592592592594,
-    "tabOrder": 10000
+    "height": 410.23677581863979,
+    "width": 1083.3551637279597,
+    "tabOrder": 5000
   },
   "visual": {
     "visualType": "lineClusteredColumnComboChart",
@@ -359,14 +359,21 @@
       "valueAxis": [
         {
           "properties": {
-            "showAxisTitle": {
+            "secEnd": {
+              "expr": {
+                "Literal": {
+                  "Value": "0D"
+                }
+              }
+            },
+            "logAxisScale": {
               "expr": {
                 "Literal": {
                   "Value": "false"
                 }
               }
             },
-            "show": {
+            "invertAxis": {
               "expr": {
                 "Literal": {
                   "Value": "false"
@@ -380,10 +387,17 @@
                 }
               }
             },
-            "secEnd": {
+            "showAxisTitle": {
               "expr": {
                 "Literal": {
-                  "Value": "0D"
+                  "Value": "false"
+                }
+              }
+            },
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
                 }
               }
             }
@@ -627,10 +641,61 @@
           }
         },
         "type": "Categorical",
+        "filter": {
+          "Version": 2,
+          "From": [
+            {
+              "Name": "d",
+              "Entity": "dim_DateTable",
+              "Type": 0
+            }
+          ],
+          "Where": [
+            {
+              "Condition": {
+                "Not": {
+                  "Expression": {
+                    "In": {
+                      "Expressions": [
+                        {
+                          "Column": {
+                            "Expression": {
+                              "SourceRef": {
+                                "Source": "d"
+                              }
+                            },
+                            "Property": "MonthYear"
+                          }
+                        }
+                      ],
+                      "Values": [
+                        [
+                          {
+                            "Literal": {
+                              "Value": "'Dec 2025'"
+                            }
+                          }
+                        ]
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        },
         "objects": {
           "general": [
             {
-              "properties": {}
+              "properties": {
+                "isInvertedSelectionMode": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "true"
+                    }
+                  }
+                }
+              }
             }
           ]
         }
@@ -666,7 +731,7 @@
         "type": "Advanced"
       },
       {
-        "name": "470e8c73b1d9e90d7e21",
+        "name": "99b7d0bfa788101dd200",
         "field": {
           "Measure": {
             "Expression": {
@@ -680,7 +745,7 @@
         "type": "Advanced"
       },
       {
-        "name": "1acdf5961d48857edaf5",
+        "name": "981d720cd13ee04127cd",
         "field": {
           "Measure": {
             "Expression": {
@@ -694,7 +759,7 @@
         "type": "Advanced"
       },
       {
-        "name": "ed89ea9388796e9ebbaa",
+        "name": "39742a31269eb0b20043",
         "field": {
           "Measure": {
             "Expression": {
@@ -708,7 +773,7 @@
         "type": "Advanced"
       },
       {
-        "name": "0d73a84e258432db1726",
+        "name": "4c5df19f0a0cb9d7ca60",
         "field": {
           "Measure": {
             "Expression": {
@@ -722,7 +787,7 @@
         "type": "Advanced"
       },
       {
-        "name": "3c5f17ce57201bdd37f6",
+        "name": "28ff82df681266375834",
         "field": {
           "Measure": {
             "Expression": {
@@ -736,7 +801,7 @@
         "type": "Advanced"
       },
       {
-        "name": "e0c88ccf0c5d52057625",
+        "name": "133b181f6d820dc09c4e",
         "field": {
           "Measure": {
             "Expression": {
