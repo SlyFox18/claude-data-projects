@@ -1,0 +1,155 @@
+table 'Shipment Tracking'
+	lineageTag: c8bd7bfc-f2a5-4939-a279-64529436e59e
+
+	column ContainerID
+		dataType: string
+		lineageTag: 21834113-7a7c-40c1-ae1f-fa1feddb6cee
+		summarizeBy: none
+		sourceColumn: ContainerID
+
+		annotation SummarizationSetBy = Automatic
+
+	column DropoffLocation
+		dataType: string
+		lineageTag: 1a3cd232-1437-40b1-bdfb-8191b88910b1
+		summarizeBy: none
+		sourceColumn: DropoffLocation
+
+		annotation SummarizationSetBy = Automatic
+
+	column StatusCode
+		dataType: int64
+		lineageTag: 6e1d07ea-14c4-4010-8811-93dd9607e889
+		summarizeBy: sum
+		sourceColumn: StatusCode
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column DriverName
+		dataType: string
+		lineageTag: 13c881d5-4835-4d80-b5ba-2136244af0e5
+		summarizeBy: none
+		sourceColumn: DriverName
+
+		annotation SummarizationSetBy = Automatic
+
+	column PickupDate
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: cd67cd51-65ca-4040-a58f-1f0e5bc1de2e
+		summarizeBy: none
+		sourceColumn: PickupDate
+
+		annotation SummarizationSetBy = Automatic
+
+	column DropoffDate
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: 5fd3b043-6952-41a1-8ee5-68ddcf42f7eb
+		summarizeBy: none
+		sourceColumn: DropoffDate
+
+		annotation SummarizationSetBy = Automatic
+
+	column PickupLocation
+		dataType: string
+		lineageTag: 4d0b88e6-173a-45ed-bbe6-ede210b343ae
+		summarizeBy: none
+		sourceColumn: PickupLocation
+
+		annotation SummarizationSetBy = Automatic
+
+	column RecordID
+		dataType: int64
+		formatString: 0
+		lineageTag: bc3ee826-2b64-4cbf-83fb-3643f06a207e
+		summarizeBy: count
+		sourceColumn: RecordID
+
+		annotation SummarizationSetBy = Automatic
+
+	column RecordCreated
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: abd311f9-427c-4d47-8fdd-ecd529f17b14
+		summarizeBy: none
+		sourceColumn: RecordCreated
+
+		annotation SummarizationSetBy = Automatic
+
+	column Status
+		dataType: string
+		lineageTag: 1b60dfd5-f884-4342-b8bc-a9c0929bd308
+		summarizeBy: none
+		sourceColumn: Status
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Shipment Tracking' = m
+		mode: import
+		source =
+				let
+				    Source = SharePoint.Tables(
+				        "https://spitractor.sharepoint.com/sites/SouthPlainsImplement-ReportSite",
+				        [Implementation = "2.0", ViewMode = "All"]
+				    ),
+				    List = Source{[Id = "a3c1e818-ec80-4bf2-8ae3-6c8a3e10fdc4"]}[Items],
+				
+				    // Keep only the columns that matter
+				    Selected = Table.SelectColumns(List, {
+				        "ID",
+				        "Title",
+				        "pd_drivername",
+				        "PickupLocation",
+				        "pd_deliveryrecord",
+				        "Pickup Date",
+				        "Dropoff Date",
+				        "statuscode",
+				        "Created"
+				    }),
+				
+				    // Rename to clear, meaningful names
+				    Renamed = Table.RenameColumns(Selected, {
+				        {"ID",               "RecordID"},
+				        {"Title",            "ContainerID"},
+				        {"pd_drivername",    "DriverName"},
+				        {"PickupLocation",   "PickupLocation"},
+				        {"pd_deliveryrecord","DropoffLocation"},
+				        {"Pickup Date",      "PickupDate"},
+				        {"Dropoff Date",     "DropoffDate"},
+				        {"statuscode",       "StatusCode"},
+				        {"Created",          "RecordCreated"}
+				    }),
+				
+				    // Add a readable status label
+				    AddStatusLabel = Table.AddColumn(Renamed, "Status", each
+				        if [StatusCode] = 1 then "In Transit"
+				        else if [StatusCode] = 2 then "Delivered"
+				        else "Unknown",
+				        type text
+				    ),
+				
+				    // Set correct data types — store raw datetime from SharePoint as-is
+				    // Timezone offset is handled in DAX calculated columns in the model
+				    SetTypes = Table.TransformColumnTypes(AddStatusLabel, {
+				        {"RecordID",       Int64.Type},
+				        {"ContainerID",    type text},
+				        {"DriverName",     type text},
+				        {"PickupLocation", type text},
+				        {"DropoffLocation",type text},
+				        {"PickupDate",     type datetime},
+				        {"DropoffDate",    type datetime},
+				        {"StatusCode",     Int64.Type},
+				        {"Status",         type text},
+				        {"RecordCreated",  type datetime}
+				    })
+				
+				in
+				    SetTypes
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+
