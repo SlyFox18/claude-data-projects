@@ -1,5 +1,5 @@
 {
-  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.4.0/schema.json",
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.6.0/schema.json",
   "name": "952f2d1636a976771703",
   "position": {
     "x": 66.015113350125944,
@@ -64,14 +64,34 @@
                 "Column": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "Fact_PartsAdjustments"
+                      "Entity": "dim_Parts"
                     }
                   },
-                  "Property": "Qty"
+                  "Property": "Description"
+                }
+              },
+              "queryRef": "dim_Parts.Description",
+              "nativeQueryRef": "Description1"
+            },
+            {
+              "field": {
+                "Aggregation": {
+                  "Expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "Fact_PartsAdjustments"
+                        }
+                      },
+                      "Property": "Qty"
+                    }
+                  },
+                  "Function": 0
                 }
               },
               "queryRef": "Sum(Fact_PartsAdjustments.Qty)",
-              "nativeQueryRef": "Qty"
+              "nativeQueryRef": "Qty",
+              "displayName": "Qty"
             },
             {
               "field": {
@@ -274,7 +294,7 @@
             "fontSize": {
               "expr": {
                 "Literal": {
-                  "Value": "14D"
+                  "Value": "13D"
                 }
               }
             },
@@ -396,7 +416,7 @@
             "value": {
               "expr": {
                 "Literal": {
-                  "Value": "224.2997504235384D"
+                  "Value": "147.7764804578045D"
                 }
               }
             }
@@ -828,20 +848,6 @@
           }
         },
         "type": "Categorical"
-      },
-      {
-        "name": "9a1a77c31c5ff0355bf0",
-        "field": {
-          "Column": {
-            "Expression": {
-              "SourceRef": {
-                "Entity": "Fact_PartsAdjustments"
-              }
-            },
-            "Property": "Qty"
-          }
-        },
-        "type": "Advanced"
       },
       {
         "name": "7eb4a80efb3200d1e1df",

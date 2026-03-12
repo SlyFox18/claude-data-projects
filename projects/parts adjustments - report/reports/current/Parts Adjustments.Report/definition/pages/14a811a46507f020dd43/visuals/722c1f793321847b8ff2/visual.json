@@ -1,5 +1,5 @@
 {
-  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.4.0/schema.json",
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.6.0/schema.json",
   "name": "722c1f793321847b8ff2",
   "position": {
     "x": 100.2015113350126,
@@ -20,13 +20,13 @@
                 "Column": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "Fact_PartsAdjustments"
+                      "Entity": "dim_PAType"
                     }
                   },
                   "Property": "PAType"
                 }
               },
-              "queryRef": "Fact_PartsAdjustments.PAType",
+              "queryRef": "dim_PAType.PAType",
               "nativeQueryRef": "PAType"
             }
           ]
@@ -126,8 +126,8 @@
                 "Version": 2,
                 "From": [
                   {
-                    "Name": "f",
-                    "Entity": "Fact_PartsAdjustments",
+                    "Name": "d",
+                    "Entity": "dim_PAType",
                     "Type": 0
                   }
                 ],
@@ -140,7 +140,7 @@
                             "Column": {
                               "Expression": {
                                 "SourceRef": {
-                                  "Source": "f"
+                                  "Source": "d"
                                 }
                               },
                               "Property": "PAType"
@@ -313,23 +313,5 @@
       ]
     },
     "drillFilterOtherVisuals": true
-  },
-  "filterConfig": {
-    "filters": [
-      {
-        "name": "27f9df965c424a0ac964",
-        "field": {
-          "Column": {
-            "Expression": {
-              "SourceRef": {
-                "Entity": "Fact_PartsAdjustments"
-              }
-            },
-            "Property": "PAType"
-          }
-        },
-        "type": "Categorical"
-      }
-    ]
   }
 }
