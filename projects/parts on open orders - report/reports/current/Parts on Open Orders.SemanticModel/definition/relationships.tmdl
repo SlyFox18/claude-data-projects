@@ -10,4 +10,19 @@ relationship 5860bd95-28fc-b746-0d7f-91b49b1ed706
 	fromColumn: Fact_Parts_Open_Tickets.Order_Date
 	toColumn: dim_DateTable.Date
 
+relationship e5d91e52-9a01-35dd-80ab-fa5865bd61e6
+	fromColumn: fact_parts_open_orders_snapshot.Location
+	toColumn: dim_BranchLocation.BranchID
+
+relationship 19a01a7a-ed96-9082-0897-39e90952bde5
+	fromColumn: fact_parts_open_orders_snapshot.SnapshotDate
+	toColumn: dim_DateTable.Date
+
+relationship d4e5f6a7-b8c9-0123-defa-123456789abc
+	fromColumn: Fact_PartsInvoiced_ByBranch.Branch
+	toColumn: dim_BranchLocation.BranchID
+
+relationship e5f6a7b8-c9d0-1234-efab-23456789abcd
+	fromColumn: Fact_PartsInvoiced_ByBranch.InvoiceMonth
+	toColumn: dim_DateTable.Date
 

@@ -45,25 +45,13 @@ table 'Data Refresh'
 		mode: import
 		source =
 				let
-				    // Fabric/Power BI Service runs in UTC — DateTime.LocalNow() returns UTC, not local time.
-				    // DateTimeZone.SwitchZone converts UTC to Central Time with automatic DST handling.
-				    UtcNow    = DateTimeZone.UtcNow(),
-				    UtcDT     = DateTimeZone.RemoveZone(UtcNow),
-				    CurYear   = Date.Year(DateTime.Date(UtcDT)),
-				    Mar1      = #date(CurYear, 3, 1),
-				    Sun1Mar   = Date.AddDays(Mar1, Number.Mod(7 - Date.DayOfWeek(Mar1, Day.Sunday), 7)),
-				    DstStart  = #datetime(CurYear, 3, Date.Day(Date.AddDays(Sun1Mar, 7)), 8, 0, 0),
-				    Nov1      = #date(CurYear, 11, 1),
-				    Sun1Nov   = Date.AddDays(Nov1, Number.Mod(7 - Date.DayOfWeek(Nov1, Day.Sunday), 7)),
-				    DstEnd    = #datetime(CurYear, 11, Date.Day(Sun1Nov), 7, 0, 0),
-				    OffsetHrs = if UtcDT >= DstStart and UtcDT < DstEnd then -5 else -6,
-				    LocalDT   = DateTimeZone.RemoveZone(DateTimeZone.SwitchZone(UtcNow, OffsetHrs, 0)),
-				    Source    = #table({"CurrentDateTime"}, {{LocalDT}}),
-				    AddDate   = Table.DuplicateColumn(Source, "CurrentDateTime", "Date"),
-				    AddTime   = Table.DuplicateColumn(AddDate, "Date", "Time"),
-				    ChgTypes  = Table.TransformColumnTypes(AddTime, {{"Date", type date}, {"Time", type time}})
+				    Source = #table({"CurrentDateTime"}, {{DateTime.LocalNow()}}),
+				    #"Duplicated Column" = Table.DuplicateColumn(Source, "CurrentDateTime", "CurrentDateTime - Copy"),
+				    #"Duplicated Column1" = Table.DuplicateColumn(#"Duplicated Column", "CurrentDateTime - Copy", "CurrentDateTime - Copy - Copy"),
+				    #"Renamed Columns" = Table.RenameColumns(#"Duplicated Column1",{{"CurrentDateTime - Copy", "Date"}, {"CurrentDateTime - Copy - Copy", "Time"}}),
+				    #"Changed Type" = Table.TransformColumnTypes(#"Renamed Columns",{{"Date", type date}, {"Time", type time}})
 				in
-				    ChgTypes
+				    #"Changed Type"
 
 	changedProperty = IsHidden
 

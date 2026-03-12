@@ -25,8 +25,95 @@
 
 | Version | Release Date | Status | Major Changes |
 |---------|-------------|--------|---------------|
-| **2.0** | **January 8, 2026** | **Current (Production Ready)** | Star schema migration, critical data fixes, new analysis features |
+| **2.1** | **March 5, 2026** | **Current** | Monthly snapshot, Open Invoice Ratio feature, Charts page cleanup |
+| 2.0 | January 8, 2026 | Production | Star schema migration, critical data fixes, new analysis features |
 | 1.0 | 2023-2024 | Deprecated | Old Lakehouse structure |
+
+---
+
+## Version 2.1 — March 5, 2026
+
+### 1. Monthly Open Orders Snapshot
+
+**What**: A Fabric Notebook that captures a point-in-time snapshot of all currently open orders on the 1st of each month.
+
+**Why**: The source data (`Fact_Parts_Open_Tickets`) is current-state only — it only shows orders open *right now*. The snapshot provides month-over-month history for trend analysis.
+
+**Files**:
+- `queries/notebooks/nb_Snapshot_Parts_Open_Orders.py` — 4-cell PySpark notebook reference
+- `reports/current/.../tables/fact_parts_open_orders_snapshot.tmdl` — semantic model table
+- Relationships: `SnapshotDate → dim_DateTable`, `Location → dim_BranchLocation`
+
+**Fabric setup**:
+- Notebook: `nb_Snapshot_Parts_Open_Orders` in LH_Master_Data (default lakehouse attached)
+- Pipeline: `Pipeline_Monthly_Open_Orders_Snapshot` — Notebook activity, scheduled 5:30 AM on the 1st
+- Target Delta table: `fact_parts_open_orders_snapshot` (auto-created on first run)
+
+**Important notes**:
+- First snapshot taken March 1, 2026. No backfill of prior months is possible.
+- Notebook has duplicate guard — safe to rerun, skips if month already exists.
+- `Days_Open` and `Aging` are locked at snapshot time (GETDATE() runs at notebook execution). They do NOT drift over time. This is intentional.
+- Column names use `$$` (double dollar) to match the source fact table encoding.
+
+**Build the trend page**: When ~3 months of snapshots exist (June 2026+), add a new report page showing month-over-month open order trends.
+
+---
+
+### 2. Open Invoice Ratio (Open Order Burden by Branch)
+
+**What**: Normalizes each branch's open order total against its trailing invoiced parts sales, enabling apples-to-apples comparison across branches of different sizes.
+
+```
+Open Order Ratio = Current Open Order Total $ / Invoiced Parts $ (trailing N months)
+```
+
+**Why**: A large branch will always have more open orders in absolute dollars. The ratio shows which branches are actually carrying disproportionate backlog relative to their sales volume.
+
+**Data source**: `Fact_PartsInvoiced_ByBranch` — a new semantic model table that runs a native SQL query against the `Invoice` Lakehouse table at refresh time. Returns ~490 rows (20 branches × ~15 months). No new dataflow needed.
+
+**SQL query** (embedded in partition source as `Value.NativeQuery`):
+```sql
+SELECT Branch,
+       DATEFROMPARTS(YEAR(InvoiceDate), MONTH(InvoiceDate), 1) AS InvoiceMonth,
+       SUM(PartsSaleValue) AS Invoiced_Parts
+FROM Invoice
+WHERE ModuleType IN ('I', 'W')           -- Counter + Work Orders only
+  AND CustomerNumber NOT IN (...)         -- Excludes Internal + Warranty customers
+  AND InvoiceDate >= DATEADD(month, -15, GETDATE())
+GROUP BY Branch, DATEFROMPARTS(YEAR(InvoiceDate), MONTH(InvoiceDate), 1)
+```
+
+**ModuleType key** (Invoice table in Lakehouse, NOT InTrans):
+- `'I'` = Counter sales (completed parts counter/picking slip tickets)
+- `'W'` = Work Orders (parts on completed service work orders)
+- `'S'` = Tag transactions (excluded)
+- `'A','C','D','V'` = Other letter codes (excluded)
+
+**Excluded customers**:
+- Internal: 71, 72, 73, 74, 76, 77, 78, 81, 83, 84, 85, 86, 87, 9001–9007
+- Warranty: 41, 42, 43, 44, 46, 47, 48, 51, 53, 54, 55, 56, 57, 9051–9057
+- Source: `dim_ModuleType.pq` classification logic
+
+**New measures** (display folder: "Open Order Ratio" in `_Measures.tmdl`):
+- `Selected Trailing Months` — reads `Trailing_Months_Selector[Months]`, default 12
+- `Invoiced Parts (Trailing)` — CALCULATE with REMOVEFILTERS(dim_DateTable), direct date filter on InvoiceMonth column
+- `Open Order Ratio` — DIVIDE([Order Total], [Invoiced Parts (Trailing)])
+
+**New tables**:
+- `Trailing_Months_Selector` — calculated table, 4 rows: 3/6/12/24 months (disconnected slicer)
+- `Fact_PartsInvoiced_ByBranch` — SQL endpoint native query, import mode
+
+**Visual**: "Ratio" tab on the Comparison page — bar chart of `[Open Order Ratio]` by branch, slicer for trailing months.
+
+**Observed ratios** (March 5, 2026, 12-month window): 0.4% (Denver City) to 8.5% (Crosbyton)
+
+---
+
+### 3. Charts Page — Replaced "Average Days Open" Line Chart
+
+**Old visual**: Line chart of Average Days Open over Order_Date — confusing because it showed older orders having higher day counts (tautological, not a real trend).
+
+**Replaced with**: Bar chart of `SUM(Order_Total_$$)` by Aging bucket — shows the dollar value tied up in each aging tier, complementing the existing count donut chart on the same page.
 
 ---
 

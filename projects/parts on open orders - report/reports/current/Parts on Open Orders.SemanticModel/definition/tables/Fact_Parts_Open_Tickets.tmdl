@@ -126,13 +126,12 @@ table Fact_Parts_Open_Tickets
 
 	column Order_Total_$$
 		dataType: double
+		formatString: \$#,0;(\$#,0);\$#,0
 		lineageTag: 0f9c8678-2185-4151-ab0e-d68f19d08beb
 		summarizeBy: sum
 		sourceColumn: Order_Total_$$
 
 		annotation SummarizationSetBy = Automatic
-
-		annotation PBI_FormatHint = {"isGeneralNumber":true}
 
 	column $$_Available
 		dataType: double
@@ -146,7 +145,7 @@ table Fact_Parts_Open_Tickets
 
 	column $$_BackOrdered
 		dataType: double
-		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		formatString: \$#,0;(\$#,0);\$#,0
 		lineageTag: 370185f1-78b0-4347-9168-4634464ff0dd
 		summarizeBy: sum
 		sourceColumn: $$_BackOrdered
@@ -240,4 +239,8 @@ table Fact_Parts_Open_Tickets
 				    dbo_Fact_Parts_Open_Tickets = Source{[Schema="dbo",Item="Fact_Parts_Open_Tickets"]}[Data]
 				in
 				    dbo_Fact_Parts_Open_Tickets
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
 
