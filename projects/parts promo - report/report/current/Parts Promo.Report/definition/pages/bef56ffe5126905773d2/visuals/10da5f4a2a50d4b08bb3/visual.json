@@ -1,5 +1,5 @@
 {
-  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.5.0/schema.json",
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.6.0/schema.json",
   "name": "10da5f4a2a50d4b08bb3",
   "position": {
     "x": 66.015113350125944,
@@ -420,7 +420,7 @@
             "totals": {
               "expr": {
                 "Literal": {
-                  "Value": "false"
+                  "Value": "true"
                 }
               }
             }
@@ -473,6 +473,34 @@
           },
           "selector": {
             "metadata": "Fact_PartsPromo.Description"
+          }
+        },
+        {
+          "properties": {
+            "value": {
+              "expr": {
+                "Literal": {
+                  "Value": "121.14609636830185D"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "_Measures.Cost Value"
+          }
+        },
+        {
+          "properties": {
+            "value": {
+              "expr": {
+                "Literal": {
+                  "Value": "147.3828864225565D"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "_Measures.Net Margin %"
           }
         }
       ]
@@ -656,5 +684,239 @@
       ]
     },
     "drillFilterOtherVisuals": true
+  },
+  "filterConfig": {
+    "filters": [
+      {
+        "name": "f6c0ea07987419416a4d",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Fact_PartsPromo"
+              }
+            },
+            "Property": "Branch"
+          }
+        },
+        "type": "Categorical"
+      },
+      {
+        "name": "f6af84871a1e48d49599",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Fact_PartsPromo"
+              }
+            },
+            "Property": "PART_NO"
+          }
+        },
+        "type": "Categorical"
+      },
+      {
+        "name": "83e74fc0d9eb6b0ee643",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Fact_PartsPromo"
+              }
+            },
+            "Property": "REF_NO"
+          }
+        },
+        "type": "Categorical"
+      },
+      {
+        "name": "d60b64089a00422c5a20",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Fact_PartsPromo"
+              }
+            },
+            "Property": "CustomerNo"
+          }
+        },
+        "type": "Categorical"
+      },
+      {
+        "name": "3796a15843ad58777264",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Fact_PartsPromo"
+              }
+            },
+            "Property": "Description"
+          }
+        },
+        "type": "Categorical"
+      },
+      {
+        "name": "39282b805e4deb84a4eb",
+        "field": {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "_Measures"
+              }
+            },
+            "Property": "Discount"
+          }
+        },
+        "type": "Advanced",
+        "filter": {
+          "Version": 2,
+          "From": [
+            {
+              "Name": "_",
+              "Entity": "_Measures",
+              "Type": 0
+            }
+          ],
+          "Where": [
+            {
+              "Condition": {
+                "Comparison": {
+                  "ComparisonKind": 1,
+                  "Left": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Source": "_"
+                        }
+                      },
+                      "Property": "Discount"
+                    }
+                  },
+                  "Right": {
+                    "Literal": {
+                      "Value": "0L"
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        }
+      },
+      {
+        "name": "c66c0106a8288ac03502",
+        "field": {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "_Measures"
+              }
+            },
+            "Property": "Cost Value"
+          }
+        },
+        "type": "Advanced"
+      },
+      {
+        "name": "7d66316774d0ad28cc5b",
+        "field": {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "_Measures"
+              }
+            },
+            "Property": "Original Sale Value"
+          }
+        },
+        "type": "Advanced"
+      },
+      {
+        "name": "16676b8254481a98ddb1",
+        "field": {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "_Measures"
+              }
+            },
+            "Property": "Original Margin $"
+          }
+        },
+        "type": "Advanced"
+      },
+      {
+        "name": "0f7626b6b0005e5086c9",
+        "field": {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "_Measures"
+              }
+            },
+            "Property": "Original Margin %"
+          }
+        },
+        "type": "Advanced"
+      },
+      {
+        "name": "6357a0805253a131e5ca",
+        "field": {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "_Measures"
+              }
+            },
+            "Property": "Net Sales Value"
+          }
+        },
+        "type": "Advanced"
+      },
+      {
+        "name": "b838ec049b404cee08ce",
+        "field": {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "_Measures"
+              }
+            },
+            "Property": "Net Margin $"
+          }
+        },
+        "type": "Advanced"
+      },
+      {
+        "name": "4e93511c2a1c16986ec0",
+        "field": {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "_Measures"
+              }
+            },
+            "Property": "Net Margin %"
+          }
+        },
+        "type": "Advanced"
+      },
+      {
+        "name": "4ff12ea01ce99d90052a",
+        "field": {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "_Measures"
+              }
+            },
+            "Property": "Discount %"
+          }
+        },
+        "type": "Advanced"
+      }
+    ]
   }
 }
