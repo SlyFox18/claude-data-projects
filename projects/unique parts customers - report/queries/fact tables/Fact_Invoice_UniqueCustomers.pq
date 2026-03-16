@@ -88,14 +88,22 @@ let
     // This query should point to the raw Invoice table from your data source
     Source = ref_Invoice,
     
+    // STEP 1b: Pre-filter to rows with CustomerOrderNumber populated
+    // =============================================================
+    // CustomerOrderNumber is only present on a small subset of invoices.
+    // This filter folds to SQL (WHERE CustomerOrderNumber IS NOT NULL AND CustomerOrderNumber <> '')
+    // which means the Lakehouse returns only candidate rows before any Power Query processing.
+    // Eliminates the bulk of Invoice rows before the expensive Text.Contains scan in Step 2.
+    PreFilter = Table.SelectRows(Source, each [CustomerOrderNumber] <> null and [CustomerOrderNumber] <> ""),
+
     // STEP 2: Add CustomerKey identification logic
     // =============================================
     // This is the CORE LOGIC that identifies which customers belong in this fact table
     // Each condition checks CustomerOrderNumber for specific patterns
     // Text.Upper() ensures case-insensitive matching
     // ?? "" handles null values to prevent errors
-    
-    AddCustomerKey = Table.AddColumn(Source, "CustomerKey", each
+
+    AddCustomerKey = Table.AddColumn(PreFilter, "CustomerKey", each
         // Pattern 1: Multiple keywords with OR logic (Manuel/MR Tractor)
         if Text.Contains(Text.Upper([CustomerOrderNumber] ?? ""), "MANUEL") or 
            Text.Contains(Text.Upper([CustomerOrderNumber] ?? ""), "MR TRACTOR") then 4  // Combined Manuel/MR Tractor

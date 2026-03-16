@@ -168,8 +168,9 @@ let
         pi_Date_Last_Request AS DateLastRequested, #(lf)
         pi_Stocktake_Date AS StocktakeDate #(lf)
 
-    FROM jdis_Part_Information #(lf)
-    ORDER BY pi_Branch, pi_Part_No",
+    FROM jdis_Part_Information",
+    // NOTE: ORDER BY removed — sorting 1M rows at source adds overhead with no benefit
+    // since Delta/Lakehouse manages its own storage format regardless of row order
 
     // ========================================================================
     // EXECUTE QUERY - FULL REFRESH FOR COMPLETE ACCURACY
