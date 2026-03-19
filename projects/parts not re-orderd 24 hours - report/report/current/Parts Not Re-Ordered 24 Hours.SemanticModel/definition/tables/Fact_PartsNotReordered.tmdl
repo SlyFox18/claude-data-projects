@@ -110,7 +110,7 @@ table Fact_PartsNotReordered
 
 			VAR SaleDateTime = Fact_PartsNotReordered[TransDatetime]
 			VAR SaleDate = Fact_PartsNotReordered[SaleDate]
-			VAR CurrentDate = CONVERT( CurrentDateTime, DATE )
+			VAR CurrentDate = DATE( YEAR( CurrentDateTime ), MONTH( CurrentDateTime ), DAY( CurrentDateTime ) )
 
 			// Calculate total actual hours
 			VAR TotalHours = DATEDIFF( SaleDateTime, CurrentDateTime, HOUR )
