@@ -97,17 +97,26 @@ table Fact_PartsNotReordered
 		annotation UnderlyingDateTimeDataType = Date
 
 	column 'Business Hours Since Sale' = ```
-			
-			VAR CurrentDateTime = NOW()
+
+			// NOW() returns UTC in Power BI Service; convert to Central time (DST-aware)
+			// CDT (UTC-5): 2nd Sunday of March at 2 AM CST = 8 AM UTC
+			// CST (UTC-6): 1st Sunday of November at 2 AM CDT = 7 AM UTC
+			VAR CurrentUTC = NOW()
+			VAR IsDST =
+			    CurrentUTC >= DATE( YEAR( CurrentUTC ), 3, 8 ) + TIME( 8, 0, 0 ) &&
+			    CurrentUTC < DATE( YEAR( CurrentUTC ), 11, 1 ) + TIME( 7, 0, 0 )
+			VAR UTCOffsetHours = IF( IsDST, 5, 6 )
+			VAR CurrentDateTime = CurrentUTC - TIME( UTCOffsetHours, 0, 0 )
+
 			VAR SaleDateTime = Fact_PartsNotReordered[TransDatetime]
 			VAR SaleDate = Fact_PartsNotReordered[SaleDate]
-			VAR CurrentDate = TODAY()
-			
+			VAR CurrentDate = CONVERT( CurrentDateTime, DATE )
+
 			// Calculate total actual hours
 			VAR TotalHours = DATEDIFF( SaleDateTime, CurrentDateTime, HOUR )
-			
+
 			// Count weekend days between sale and now using dim_DateTable
-			VAR WeekendDays = 
+			VAR WeekendDays =
 			    CALCULATE(
 			        COUNTROWS( dim_DateTable ),
 			        FILTER(
@@ -117,15 +126,15 @@ table Fact_PartsNotReordered
 			            dim_DateTable[IsWeekend] = TRUE
 			        )
 			    )
-			
+
 			// Subtract 24 hours for each weekend day
 			VAR BusinessHours = TotalHours - (WeekendDays * 24)
-			
+
 			RETURN
-			    IF( 
-			        ISBLANK(SaleDateTime), 
-			        BLANK(), 
-			        BusinessHours 
+			    IF(
+			        ISBLANK(SaleDateTime),
+			        BLANK(),
+			        BusinessHours
 			    )
 			```
 		formatString: 0
