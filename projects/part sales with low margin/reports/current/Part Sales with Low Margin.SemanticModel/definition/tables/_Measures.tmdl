@@ -569,6 +569,22 @@ table _Measures
 		formatString: 0
 		lineageTag: 299a138b-b1b8-42df-b45e-d166233cceb9
 
+	measure 'Debug - Negative Discrepancy Detail' = ```
+			
+			VAR DetailTable =
+			    ADDCOLUMNS(
+			        dim_Parts_LowMargin,
+			        "_Disc", ([StockOrderPrice] * [OnHandQty]) - [InventoryCost]
+			    )
+			VAR NegRows = FILTER(DetailTable, [_Disc] < 0)
+			RETURN
+			"Count: " & COUNTROWS(NegRows) 
+			& " | Sum: " & FORMAT(SUMX(NegRows, [_Disc]), "$#,##0.00")
+			& " | Avg: " & FORMAT(DIVIDE(SUMX(NegRows, [_Disc]), COUNTROWS(NegRows), 0), "$#,##0.00")
+			
+			```
+		lineageTag: 511ffb0a-77ee-4074-aa2e-c6dd274ce5d4
+
 	column Value
 		isHidden
 		lineageTag: da2dfa23-0c4c-4e9d-8014-3cc5710e756b
