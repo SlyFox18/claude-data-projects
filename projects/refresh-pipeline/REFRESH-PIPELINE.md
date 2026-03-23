@@ -2,8 +2,13 @@
 
 **Owner:** Brian Fox
 **Capacity:** F4 (4 CU sustained)
-**Schedule:** 3:30 AM CST, Monday-Friday
-**Target Completion:** Before 5:30 AM (3+ hour buffer before 8 AM)
+**Master Orchestrator Schedule:** 4:15 AM CST, Monday-Friday
+**SM Pipeline Schedule:** 6:30 AM CST, Monday-Friday (independent)
+**Parts Not Re-Ordered Pipeline:** 11:00 AM CST, Monday-Friday (independent)
+**Master Orchestrator Target Completion:** ~5:30 AM
+**Reports Fresh By:** ~7:20 AM (after SM pipeline completes)
+
+**Why 4:15 AM:** IT restricts source system (EquipRDB) access from 11 PM onward. Access resumes at 4 AM. Pipeline starts at 4:15 to ensure the ODBC connection is fully active before the first dataflow fires.
 
 ---
 
@@ -11,39 +16,39 @@
 
 ### Overview
 
-A 6-phase sequential pipeline refreshes all dataflows and semantic models daily. Phases run sequentially to respect data dependencies (Raw → Dims → Facts → Reports). Within each phase, dataflows run in parallel waves of 4-5 concurrent to stay under F4 CU limits.
+The master orchestrator handles data (Raw → InTrans → Dims → Facts) and completes before business hours. Semantic model refreshes were separated into their own pipeline (Mar 2026) to reduce refresh errors. The SM pipeline runs independently at 6:30 AM after facts are confirmed fresh.
 
 ```
-3:30 AM  Pipeline_Master_Orchestrator
+3:30 AM  Pipeline_Master_Orchestrator  (data only — no SM refreshes)
          │
-         ├── Phase 1: Pipeline_Raw_Data (~14-16 min)
-         │   ├── Batch 1 (5 concurrent): heaviest DFs (~8 min)
-         │   ├── Batch 2 (5 concurrent): WK tables (~2.5 min)
-         │   ├── Batch 3 (5 concurrent): tech & short (~2 min)
-         │   └── Batch 4 (6 concurrent): remaining + inactive (~1 min)
+         ├── Phase 1: Pipeline_Raw_Data (~30 min)
+         │   ├── Batch 1 (7 concurrent): heaviest DFs (~8 min)
+         │   ├── Batch 2 (6 concurrent): WK tables + InMaster (~4 min)
+         │   ├── Batch 3 (6 concurrent): tech & short (~3.5 min)
+         │   └── Batch 4 (6 concurrent): remaining + inactive (~2-3 min)
          │
          ├── Phase 2: Pipeline_InTrans (~3 min)
          │   └── InTrans_Incremental + watermark update
          │
-         ├── Phase 3: Pipeline_Dimensions (~10-12 min)
-         │   └── 14+ dimension dataflows, all parallel
+         ├── Phase 3: Pipeline_Dimensions (~9 min)
+         │   └── 15 dimension dataflows, all parallel
          │
-         ├── Phase 4: Fact Tables (~32-35 min)
+         ├── Phase 4: Fact Tables (~29 min)
          │   ├── Wave A (5 concurrent): longest-running facts
          │   ├── Wave B (5 concurrent): medium facts
          │   ├── Wave C (5 concurrent): short facts
          │   ├── Wave D (5 concurrent): remaining facts
          │   └── Wave E (5 concurrent): final facts
          │
-         ├── Phase 5: Semantic Model Refreshes (~10-12 min)
-         │   ├── Wave A (3 concurrent): heaviest SMs
-         │   ├── Wave B (5 concurrent): light SMs
-         │   └── Wave C (5 concurrent): light SMs
-         │
-         └── Phase 6: Tier 2 Reports (~2-3 min)
-             └── 4 semantic model refreshes
+         └── Send_Master_Success_Email
+         ~5:27 AM complete (actual 2026-03-23)
 
-         ~4:50-5:05 AM complete
+6:30 AM  Pipeline_SemanticModels  (independent — Tier 1 + Tier 2 reports)
+         └── SM refreshes for all active reports (excl. Parts Not Re-Ordered)
+         ~7:20 AM complete
+
+11:00 AM Pipeline_PartsNotReordered  (independent)
+         └── Parts Not Re-Ordered semantic model refresh
 ```
 
 ### Why 3:30 AM?
@@ -56,7 +61,7 @@ At 3:30 AM: zero source system contention, no competing workloads, baseline refr
 
 ### Why Sequential Phases?
 
-Data flows downstream: Raw Tables → Dimensions → Fact Tables → Semantic Models. Each phase depends on the previous one completing. Running facts before dims finish would use stale data.
+Data flows downstream: Raw Tables → Dimensions → Fact Tables. Each phase depends on the previous one completing. Running facts before dims finish would use stale data. Semantic model refreshes are intentionally decoupled into a separate pipeline — they don't need to be sequential with data refreshes and separating them reduces error blast radius.
 
 ### Why Wave-Based Facts?
 
@@ -66,14 +71,14 @@ Data flows downstream: Raw Tables → Dimensions → Fact Tables → Semantic Mo
 
 ## Phase Details
 
-### Phase 1: Raw Data (~19-22 min)
+### Phase 1: Raw Data (~30 min)
 
 **Pipeline:** Pipeline_Raw_Data (existing, restructured Feb 2026)
-**Total DFs:** 32 (all active)
-**Concurrency:** 5 sequential batches of 5-6 concurrent DFs each
+**Total DFs:** 34 (all active)
+**Concurrency:** 5 sequential batches of 5-7 concurrent DFs each
 **Why batched:** Running all DFs in parallel caused 4-7x performance degradation on F4 capacity (proven by test: ArMaster_Contact solo 1:46 vs 7:45 in 21-parallel). Batches of 5-6 keep CU under limits.
 
-#### Batch 1 - Heaviest DFs (6 concurrent, ~8 min)
+#### Batch 1 - Heaviest DFs (7 concurrent, ~8 min)
 
 | Dataflow | Table | Solo Time |
 |----------|-------|-----------|
@@ -83,10 +88,11 @@ Data flows downstream: Raw Tables → Dimensions → Fact Tables → Semantic Mo
 | df_InHist_PmManage_Raw | InHist_PmManage | ~4:15 |
 | df_GlTrans_Raw | GlTrans | ~3:58 |
 | df_WKROFILE_Raw | WKROFILE | ~3:13 |
+| df_Parts_InterbranchTransfer_Raw | Parts_InterbranchTransfer | ~unknown |
 
-→ **Wait_Batch1_Gate** (all 6 must succeed)
+→ **Wait_Batch1_Gate** (all 7 must succeed)
 
-#### Batch 2 - WK Tables (5 concurrent, ~3.5 min)
+#### Batch 2 - WK Tables + InMaster (6 concurrent, ~4 min)
 
 | Dataflow | Table | Solo Time |
 |----------|-------|-----------|
@@ -95,8 +101,9 @@ Data flows downstream: Raw Tables → Dimensions → Fact Tables → Semantic Mo
 | df_WKVEHFL_Raw | WKVEHFL | ~2 min |
 | df_WKRODESC_Raw | wkrodesc | ~2 min |
 | df_WKINVREG_Raw | WkInvReg | ~1 min |
+| df_InMaster_Raw | InMaster | ~4 min (added Mar 2026) |
 
-→ **Wait_Batch2_Gate** (all 5 must succeed)
+→ **Wait_Batch2_Gate** (all 6 must succeed)
 
 #### Batch 3 - Tech Detail & Short DFs (6 concurrent, ~3.5 min)
 
@@ -143,7 +150,9 @@ Data flows downstream: Raw Tables → Dimensions → Fact Tables → Semantic Mo
 **All timeouts:** 15 minutes (increased from 10 min for safety margin)
 **Retry policy:** 2 retries, 30 second interval
 
-**Phase duration limited by:** Batch 1 bottleneck: df_JDIS_PART_INFORMATION_Raw (~7:27)
+**Phase duration limited by:** Batch 1 bottleneck: df_JDIS_PART_INFORMATION_Raw (~8 min). Batch 2 bottleneck: df_InMaster_Raw (~4 min).
+
+**⚠ Phase 1 timing is variable and not well-characterized.** The previous 19-22 min estimate was theoretical. Observed actuals range from ~30 min to ~45 min. Root cause unknown — likely a combination of source system variability at 4 AM and potential CU contention within batches. Needs investigation. Do not rely on Phase 1 duration estimates for scheduling decisions until baselines are established.
 
 ### Phase 2: InTrans Incremental (~3 min)
 
@@ -184,46 +193,62 @@ See wave composition in plan file. Key points:
 - Waves B-E complete in ~14 min combined
 - After Fact_WorkOrderParts optimization: Phase 4 drops to ~20-25 min
 
-### Phase 5: Semantic Model Refreshes (~10-12 min)
+### Pipeline_SemanticModels (Independent — 6:30 AM)
 
-Refreshes all Tier 1 report semantic models using TridentNotebook activities.
+**Decoupled from master orchestrator as of Mar 2026.** Previously Phases 5 & 6. Separated to reduce refresh errors — a SM failure no longer blocks or retries within the data pipeline.
 
-**Wave A (3 concurrent, ~6 min):** Inventory Analysis (6m), Inspections (5m), Customer Anatomy V2 (2.5m)
+Refreshes all active report semantic models. Parts Not Re-Ordered excluded (see below).
+
+**Wave A (3 concurrent, ~6 min):** Inventory Analysis, Inspections, Customer Anatomy V2
 **Wave B (5 concurrent, ~2 min):** Part Sales Low Margin, First Pass Fill, 60+ Past Due, Parts on Open Orders, Parts Adjustments
-**Wave C (5 concurrent, ~1 min):** Negative On Hand, Parts Not Re-Ordered, Open Work Orders, Parts Promo, Combine Vault Sales
+**Wave C (5 concurrent, ~1 min):** Negative On Hand, Open Work Orders, Parts Promo, Combine Vault Sales
+**Tier 2 (4 concurrent, ~2 min):** Labor Performance, Unique Parts Customers, Pin Capture, Physical Inventory
 
-### Phase 6: Tier 2 Reports (~2-3 min)
+**Actual runtime 2026-03-23:** Started 6:30 AM, completed ~7:20 AM (~50 min)
 
-**4 concurrent:** Labor Performance (1m), Unique Parts Customers (1m), Pin Capture (1.5m), Physical Inventory (1m)
+### Pipeline_PartsNotReordered (Independent — 11:00 AM)
+
+**Removed from SM pipeline as of Mar 2026.** Runs a full mini-refresh cycle for Parts Not Re-Ordered — not just the SM. Sequence (all dependencies run first, then SM):
+
+| Activity | Duration | Notes |
+|----------|----------|-------|
+| Invoke_Pipeline_InTrans + Refresh_jdis_Part_Information | ~15 min (parallel) | Both start simultaneously; gated by jdis |
+| Refresh_Fact_PartSales_24Hours | ~4 min | Runs after both above complete |
+| Refresh_PartsNotReordered_SemanticModel | ~1 min | Final step |
+| Send_Success_Email | ~7s | Completion notification |
+
+**Total: ~20 min** (actual 2026-03-20: 11:00 AM → 11:20 AM)
+
+This pipeline ensures Parts Not Re-Ordered always has fresh intraday data by midday, with its own InTrans and jdis refresh rather than relying solely on the 4:15 AM run.
 
 ---
 
 ## Report Tiers
 
-### Tier 1: Daily - Fresh by 8 AM
-| # | Report | Workspace | Fact DFs | SM Refresh |
-|---|--------|-----------|----------|------------|
-| 1 | Customer Anatomy V2 | RP - Sandbox → Parts | 8 | ~2.5 min |
-| 2 | Inspections | RP - Service Reports | 3 | ~5 min |
-| 3 | Inventory Analysis V3 | RP - Sandbox → Parts | 3 | ~6 min |
-| 4 | 60+ Days Past Due | RP - Financial Reports | 1 | ~1 min |
-| 5 | Open Work Orders | RP - Service Reports | 0 | ~1 min |
-| 6 | Parts on Open Orders | RP - Parts Reports | 2 | ~1 min |
-| 7 | First Pass Fill | RP - Parts Reports | 1 | ~1 min |
-| 8 | Negative On Hand | RP - Parts Reports | 1 | ~1 min |
-| 9 | Parts Adjustments | RP - Parts Reports | 1 | ~1 min |
-| 10 | Part Sales Low Margin | RP - Parts Reports | 0 | ~2 min |
-| 11 | Parts Promo | RP - Parts Reports | 1 | ~1 min |
-| 12 | Parts Not Re-Ordered | RP - Parts Reports | 1 | ~1 min |
+### Tier 1: Daily - Fresh by ~7:20 AM (SM pipeline completes)
+| # | Report | Workspace | Fact DFs | SM Pipeline |
+|---|--------|-----------|----------|-------------|
+| 1 | Customer Anatomy V2 | RP - Sandbox → Parts | 8 | Wave A ~6 min |
+| 2 | Inspections | RP - Service Reports | 3 | Wave A ~5 min |
+| 3 | Inventory Analysis V3 | RP - Sandbox → Parts | 3 | Wave A ~6 min |
+| 4 | 60+ Days Past Due | RP - Financial Reports | 1 | Wave B ~1 min |
+| 5 | Open Work Orders | RP - Service Reports | 0 | Wave B ~1 min |
+| 6 | Parts on Open Orders | RP - Parts Reports | 2 | Wave B ~1 min |
+| 7 | First Pass Fill | RP - Parts Reports | 1 | Wave B ~1 min |
+| 8 | Negative On Hand | RP - Parts Reports | 1 | Wave C ~1 min |
+| 9 | Parts Adjustments | RP - Parts Reports | 1 | Wave B ~1 min |
+| 10 | Part Sales Low Margin | RP - Parts Reports | 0 | Wave B ~2 min |
+| 11 | Parts Promo | RP - Parts Reports | 1 | Wave C ~1 min |
+| 12 | Parts Not Re-Ordered | RP - Parts Reports | 1 | **Independent pipeline — 11 AM** |
 
-### Tier 2: Daily - Can Finish After 8 AM
-| # | Report | Workspace | Fact DFs | SM Refresh |
-|---|--------|-----------|----------|------------|
-| 13 | Labor Performance | RP - Service Reports | 0 | ~1 min |
-| 14 | Unique Parts Customers | RP - Parts Reports | 2 | ~1 min |
-| 15 | Combine Vault Sales | RP - Parts Reports | 1 | ~1 min |
-| 16 | Pin Capture | RP - Parts Reports | 0 | ~1.5 min |
-| 17 | Physical Inventory | RP - Parts Reports | 0 | ~1 min |
+### Tier 2: Daily - Fresh by ~7:20 AM (same SM pipeline)
+| # | Report | Workspace | Fact DFs | SM Pipeline |
+|---|--------|-----------|----------|-------------|
+| 13 | Labor Performance | RP - Service Reports | 0 | Tier 2 wave ~1 min |
+| 14 | Unique Parts Customers | RP - Parts Reports | 2 | Tier 2 wave ~1 min |
+| 15 | Combine Vault Sales | RP - Parts Reports | 1 | Tier 2 wave ~1 min |
+| 16 | Pin Capture | RP - Parts Reports | 0 | Tier 2 wave ~1.5 min |
+| 17 | Physical Inventory | RP - Parts Reports | 0 | Tier 2 wave ~1 min |
 
 ### Tier 3: Weekly (Separate Pipeline - Monday 5:00 AM)
 | # | Report | Workspace | Notes |
@@ -238,10 +263,31 @@ Refreshes all Tier 1 report semantic models using TridentNotebook activities.
 
 ---
 
-## Separate Pipelines (Independent of Daily)
+## Reliability & Resilience Philosophy
+
+The pipeline experiences intermittent failures from transient errors (timeouts, duplicate refreshes starting, ODBC blips) that are difficult to prevent at the source. The architecture is designed to minimize user-visible impact rather than eliminate all failures:
+
+**Core principle:** Users seeing a report that looks current (even with a day-old data) is better than users seeing a report that clearly hasn't refreshed. A stale-but-functional report can be silently corrected with an ad-hoc refresh. A broken-looking report erodes trust and generates support questions.
+
+**How this shapes decisions:**
+- **SM pipeline is decoupled** — If the master orchestrator fails mid-run, the 6:30 AM SM pipeline still fires and refreshes reports against whatever data *is* fresh in the Lakehouse. Reports appear current even when data is one day stale.
+- **Parts Not Re-Ordered runs independently** — Its intraday data need is served by its own 11 AM pipeline, isolated from any master orchestrator failures.
+- **Ad-hoc recovery** — If a user questions numbers after a known failure, manually trigger the affected SM refresh. No need to re-run the full pipeline unless raw/fact data itself failed.
+
+**Known failure modes (ongoing):**
+- Transient ODBC timeouts on source system connections
+- Duplicate refresh instances starting simultaneously (Fabric platform issue)
+- Occasional timeout on longer-running dataflows (15 min timeout set, 2 retries)
+
+---
+
+## Separate Pipelines (Independent)
 
 | Pipeline | Schedule | Purpose |
 |----------|----------|---------|
+| Pipeline_Master_Orchestrator | 4:15 AM Mon-Fri | Raw → InTrans → Dims → Facts |
+| Pipeline_SemanticModels | 6:30 AM Mon-Fri | All SM refreshes except Parts Not Re-Ordered |
+| Pipeline_PartsNotReordered | 11:00 AM Mon-Fri | InTrans + jdis + Fact_PartSales_24Hours + SM for Parts Not Re-Ordered |
 | DF_PartMaster_Snapshot_Daily | 2:00 AM daily | Daily parts snapshot |
 | DF_PartMaster_Snapshot_Weekly | 1:00 AM Sunday | Weekly parts snapshot |
 | NB_PartMaster_Retention_Policy | 1st of month, midnight | Snapshot cleanup |
@@ -257,15 +303,15 @@ Refreshes all Tier 1 report semantic models using TridentNotebook activities.
 
 ## CU Budget
 
-| Phase | Duration | Peak CU | CU-Minutes |
-|-------|----------|---------|------------|
-| Raw Data (4 batches) | ~15 min | ~2 CU | ~30 |
+| Pipeline | Duration | Peak CU | CU-Minutes |
+|----------|----------|---------|------------|
+| Raw Data (4 batches) | ~30 min | ~2 CU | ~60 |
 | InTrans | ~3 min | ~1 CU | ~3 |
-| Dimensions | ~12 min | ~2.5 CU | ~30 |
-| Facts | ~35 min | ~3.5 CU | ~123 |
-| Semantic Models | ~10 min | ~2.5 CU | ~25 |
-| Tier 2 | ~2 min | ~2 CU | ~4 |
-| **Total** | **~77 min** | **Peak 3.5** | **~215** |
+| Dimensions | ~9 min | ~2.5 CU | ~23 |
+| Facts | ~29 min | ~3.5 CU | ~102 |
+| **Master Orchestrator Total** | **~72 min** | **Peak 3.5** | **~188** |
+| SM Pipeline (6:30 AM, separate) | ~50 min | ~2.5 CU | ~125 |
+| **All Pipelines Total** | **~122 min** | **Non-overlapping** | **~313** |
 
 **F4 daily budget:** 5,760 CU-minutes
 **Pipeline uses:** 3.7% of daily capacity

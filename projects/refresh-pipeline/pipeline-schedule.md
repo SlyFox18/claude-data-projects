@@ -3,8 +3,9 @@
 ## Active Schedules
 
 ### Pipeline_Master_Orchestrator (Daily)
-**Schedule:** 3:30 AM CST, Monday-Friday
+**Schedule:** 4:15 AM CST, Monday-Friday
 **End Date:** 2026-12-31 (extend annually)
+**Note:** Changed from 3:30 AM — IT restricts EquipRDB access until 4 AM; 4:15 ensures connection is active before first dataflow fires.
 
 ```json
 {
@@ -123,14 +124,12 @@
 Daily (Mon-Fri):
   1:00 AM  DF_PartMaster_Snapshot_Weekly (Sunday only)
   2:00 AM  DF_PartMaster_Snapshot_Daily
-  3:30 AM  Pipeline_Master_Orchestrator (Phases 1-6)
-  ~5:00 AM Pipeline complete
-
-  [Future - when enabled]
-  9:15 AM  Pipeline_InTrans_Midday
-  9:30 AM  Pipeline_PartsNotReordered_QuickRefresh
-  3:45 PM  Pipeline_InTrans_Midday
-  4:00 PM  Pipeline_PartsNotReordered_QuickRefresh
+  4:15 AM  Pipeline_Master_Orchestrator (Raw → InTrans → Dims → Facts)
+  ~5:27 AM Master Orchestrator complete
+  6:30 AM  Pipeline_SemanticModels (all reports except Parts Not Re-Ordered)
+  ~7:20 AM Reports fresh — SM pipeline complete
+  11:00 AM Pipeline_PartsNotReordered (InTrans + jdis + Fact + SM)
+  ~11:20 AM Parts Not Re-Ordered fresh
 
 Weekly (Monday only):
   5:00 AM  Pipeline_Weekly_Tier3
