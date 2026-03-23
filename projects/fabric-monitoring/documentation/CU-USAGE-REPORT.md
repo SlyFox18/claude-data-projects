@@ -1,6 +1,6 @@
 ﻿# CU Usage Report
 
-**Generated:** 2026-03-23 11:21:51
+**Generated:** 2026-03-23 11:35:24
 **Time Period:** Last 24 hours
 
 ---
@@ -28,7 +28,7 @@
 | df_GlTrans_Raw | 34 | 8.5 | 4 |
 | df_Fact_Service_Invoices | 29.6 | 29.6 | 1 |
 | df_Fact_PartSales_24Hours | 29.2 | 14.6 | 2 |
-| df_Fact_Parts_Details | 27.6 | 27.6 | 1 |
+| df_Fact_Inventory | 27.6 | 27.6 | 1 |
 
 ## Recommendations
 
