@@ -106,14 +106,27 @@ foreach ($df in $dataflows | Sort-Object displayName) {
         DependsOn = "NEEDS_MAPPING"
         EstimatedDurationMinutes = "NEEDS_BASELINE"
         CUProfile = "NEEDS_BASELINE"
-        Status = "Active"
+        Status = $status
         Notes = ""
         DataflowId = $df.id
     }
 }
 
-# Save to CSV
+# Merge with existing inventory — preserve manually-set Status values
 $csvFile = Join-Path $DocumentationPath "Dataflow-Inventory-Discovered.csv"
+if (Test-Path $csvFile) {
+    $existing = @{}
+    Import-Csv $csvFile | ForEach-Object { $existing[$_.DataflowName] = $_ }
+
+    $categorized = $categorized | ForEach-Object {
+        $prev = $existing[$_.DataflowName]
+        # Keep manually-set Status (e.g. "Inactive") — only override if previously auto-assigned
+        if ($prev -and $prev.Status -notin @("Active", "Testing", "AdHoc", "")) {
+            $_.Status = $prev.Status
+        }
+        $_
+    }
+}
 $categorized | Export-Csv -Path $csvFile -NoTypeInformation -Encoding UTF8
 
 Write-Host ""
