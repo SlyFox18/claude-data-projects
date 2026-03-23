@@ -2015,17 +2015,28 @@ table MeasuresTable
 		annotation PBI_FormatHint = {"isGeneralNumber":true}
 
 	measure 'Rolling 12 Trend' =
-			
-			VAR CurrentDate = MAX(dim_DateTable[Date])
-			VAR Rolling12Period = DATESINPERIOD(dim_DateTable[Date], CurrentDate, -12, MONTH)
+			-- Anchored to TODAY() so future dates in the date table never produce values.
+			-- Only renders months within the rolling 12 window (WindowStart → Today).
+			-- REMOVEFILTERS + FILTER(ALL(...)) makes the calculation ignore page slicers.
+			VAR Today = TODAY()
+			VAR CurrentMonthEnd = MAX(dim_DateTable[Date])
+			VAR WindowStart = EDATE(Today, -12) + 1
 			RETURN
-			CALCULATE(
-			    DIVIDE(
-			        SUM(Fact_FirstPassFill[TotalFirstPassSuccesses]),
-			        SUM(Fact_FirstPassFill[TotalFirstPassAttempts]),
-			        0
-			    ),
-			    Rolling12Period
+			IF(
+			    CurrentMonthEnd >= WindowStart && CurrentMonthEnd <= Today,
+			    CALCULATE(
+			        DIVIDE(
+			            SUM(Fact_FirstPassFill[TotalFirstPassSuccesses]),
+			            SUM(Fact_FirstPassFill[TotalFirstPassAttempts]),
+			            0
+			        ),
+			        REMOVEFILTERS(dim_DateTable),
+			        FILTER(
+			            ALL(dim_DateTable[Date]),
+			            dim_DateTable[Date] >= EDATE(CurrentMonthEnd, -12) + 1 &&
+			            dim_DateTable[Date] <= CurrentMonthEnd
+			        )
+			    )
 			)
 		formatString: 0.0%;-0.0%;0.0%
 		lineageTag: ac63c38f-6950-40e2-9917-4b9600244f27
