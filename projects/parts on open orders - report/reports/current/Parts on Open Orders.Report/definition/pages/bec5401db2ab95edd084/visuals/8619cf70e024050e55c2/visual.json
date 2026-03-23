@@ -1,13 +1,12 @@
 {
-  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.6.0/schema.json",
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.7.0/schema.json",
   "name": "8619cf70e024050e55c2",
   "position": {
-    "x": 824.01007556675063,
+    "x": 815.3187191086804,
     "y": 0,
-    "z": 7500,
-    "height": 44.795969773299745,
-    "width": 582.34760705289671,
-    "tabOrder": 0
+    "z": 0,
+    "height": 41.259445843828715,
+    "width": 745.02770780856429
   },
   "visual": {
     "visualType": "advancedSlicerVisual",
@@ -20,14 +19,14 @@
                 "Column": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "Trailing_Months_Selector"
+                      "Entity": "Ratio_Period_Selector"
                     }
                   },
-                  "Property": "MonthsLabel"
+                  "Property": "Label"
                 }
               },
-              "queryRef": "Trailing_Months_Selector.MonthsLabel",
-              "nativeQueryRef": "MonthsLabel"
+              "queryRef": "Ratio_Period_Selector.Label",
+              "nativeQueryRef": "Label"
             }
           ]
         }
@@ -40,7 +39,7 @@
             "columnCount": {
               "expr": {
                 "Literal": {
-                  "Value": "4L"
+                  "Value": "7L"
                 }
               }
             }
@@ -132,8 +131,8 @@
                 "Version": 2,
                 "From": [
                   {
-                    "Name": "t",
-                    "Entity": "Trailing_Months_Selector",
+                    "Name": "r",
+                    "Entity": "Ratio_Period_Selector",
                     "Type": 0
                   }
                 ],
@@ -146,10 +145,10 @@
                             "Column": {
                               "Expression": {
                                 "SourceRef": {
-                                  "Source": "t"
+                                  "Source": "r"
                                 }
                               },
-                              "Property": "MonthsLabel"
+                              "Property": "Label"
                             }
                           }
                         ],
@@ -157,7 +156,7 @@
                           [
                             {
                               "Literal": {
-                                "Value": "'12 Months'"
+                                "Value": "'0-7 days'"
                               }
                             }
                           ]

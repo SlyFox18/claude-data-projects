@@ -1766,26 +1766,51 @@ table _Measures
 		displayFolder: Open Order Ratio
 		lineageTag: e1a2b3c4-d5e6-f7a8-b9c0-d1e2f3a4b5c6
 
-	measure 'Invoiced Parts (Trailing)' =
+	measure 'Selected Period Days' = SELECTEDVALUE(Ratio_Period_Selector[Days], 90)
+		formatString: 0
+		displayFolder: Open Order Ratio
+		lineageTag: e5f6a7b8-c9d0-1234-efab-567890123456
+
+	measure 'Invoiced Parts (Period)' =
 			
-			VAR _months = [Selected Trailing Months]
-			VAR _currentMonthStart = DATE(YEAR(TODAY()), MONTH(TODAY()), 1)
-			VAR _startDate = EDATE(_currentMonthStart, -_months)
+			VAR _days = [Selected Period Days]
+			VAR _startDate = TODAY() - _days
 			RETURN
 			CALCULATE(
 			    SUM(Fact_PartsInvoiced_ByBranch[Invoiced_Parts]),
 			    REMOVEFILTERS(dim_DateTable),
-			    Fact_PartsInvoiced_ByBranch[InvoiceMonth] >= _startDate,
-			    Fact_PartsInvoiced_ByBranch[InvoiceMonth] < _currentMonthStart
+			    Fact_PartsInvoiced_ByBranch[InvoiceDate] >= _startDate
 			)
 		formatString: \$#,0.00;(\$#,0.00)
 		displayFolder: Open Order Ratio
-		lineageTag: f2b3c4d5-e6f7-a8b9-c0d1-e2f3a4b5c6d7
+		lineageTag: f6a7b8c9-d0e1-2345-fabc-678901234567
 
-	measure 'Open Order Ratio' = DIVIDE([Order Total], [Invoiced Parts (Trailing)])
+	measure 'Order Total (Period)' =
+			
+			VAR _days = [Selected Period Days]
+			RETURN
+			CALCULATE(
+			    [Order Total],
+			    Fact_Parts_Open_Tickets[Days_Open] <= _days
+			)
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		displayFolder: Open Order Ratio
+		lineageTag: a7b8c9d0-e1f2-3456-abcd-789012345678
+
+	measure 'Open Order Ratio (Period)' =
+			
+			VAR _days = [Selected Period Days]
+			RETURN
+			DIVIDE(
+			    CALCULATE(
+			        [Order Total],
+			        Fact_Parts_Open_Tickets[Days_Open] <= _days
+			    ),
+			    [Invoiced Parts (Period)]
+			)
 		formatString: 0.0%
 		displayFolder: Open Order Ratio
-		lineageTag: a3c4d5e6-f7a8-b9c0-d1e2-f3a4b5c6d7e8
+		lineageTag: b8c9d0e1-f2a3-4567-bcde-890123456789
 
 	column Value
 		isHidden
