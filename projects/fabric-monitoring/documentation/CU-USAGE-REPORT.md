@@ -1,6 +1,6 @@
 ﻿# CU Usage Report
 
-**Generated:** 2026-03-23 12:09:10
+**Generated:** 2026-03-23 14:24:06
 **Time Period:** Last 24 hours
 
 ---
@@ -32,7 +32,7 @@
 
 ## Recommendations
 
-- Consider spreading refreshes: 73 operations at hour 12
+- Consider spreading refreshes: 59 operations at hour 14
 
 ---
 
