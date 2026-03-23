@@ -1,5 +1,5 @@
 {
-  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/bookmark/1.4.0/schema.json",
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/bookmark/2.1.0/schema.json",
   "displayName": "Hide Slicer 5",
   "name": "19f1fdf36e82eda80044",
   "options": {
@@ -12,11 +12,45 @@
     "sections": {
       "11a7f855f1cef490c659": {
         "visualContainers": {
+          "74b9bb63676409290673": {
+            "singleVisual": {
+              "visualType": "image",
+              "objects": {},
+              "display": {
+                "mode": "hidden"
+              }
+            }
+          },
+          "789ed9ff7a5e117657fd": {
+            "filters": {
+              "byExpr": [
+                {
+                  "name": "1901ca53fb02f792b9b5",
+                  "type": "Advanced",
+                  "expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "MeasuresTable"
+                        }
+                      },
+                      "Property": "Inventory Analysis Sales Trends & Performance - Header with Filters"
+                    }
+                  },
+                  "howCreated": 0
+                }
+              ]
+            },
+            "singleVisual": {
+              "visualType": "htmlContent443BE3AD55E043BF878BED274D3A6855",
+              "objects": {}
+            }
+          },
           "991f64d38f05e373eb37": {
             "filters": {
               "byExpr": [
                 {
-                  "name": "d175837b54a7855e719f",
+                  "name": "d01b8b7baba330c11d67",
                   "type": "Advanced",
                   "expression": {
                     "Aggregation": {
@@ -68,12 +102,120 @@
               "objects": {}
             }
           },
-          "ce047f683430821356f9": {
+          "9dbefe31214443be255f": {
             "filters": {
               "byExpr": [
                 {
-                  "name": "c20235b64936f95c2e96",
-                  "type": "Advanced",
+                  "name": "f16cb11d9e65a6fd82e9",
+                  "type": "Categorical",
+                  "filter": {
+                    "Version": 2,
+                    "From": [
+                      {
+                        "Name": "d",
+                        "Entity": "dim_Date",
+                        "Type": 0
+                      }
+                    ],
+                    "Where": [
+                      {
+                        "Condition": {
+                          "Not": {
+                            "Expression": {
+                              "In": {
+                                "Expressions": [
+                                  {
+                                    "Column": {
+                                      "Expression": {
+                                        "SourceRef": {
+                                          "Source": "d"
+                                        }
+                                      },
+                                      "Property": "MonthName"
+                                    }
+                                  }
+                                ],
+                                "Values": [
+                                  [
+                                    {
+                                      "Literal": {
+                                        "Value": "null"
+                                      }
+                                    }
+                                  ]
+                                ]
+                              }
+                            }
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  "expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "dim_Date"
+                        }
+                      },
+                      "Property": "MonthName"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "2068ddc648a45b98ead0",
+                  "type": "Categorical",
+                  "filter": {
+                    "Version": 2,
+                    "From": [
+                      {
+                        "Name": "d",
+                        "Entity": "dim_Date",
+                        "Type": 0
+                      }
+                    ],
+                    "Where": [
+                      {
+                        "Condition": {
+                          "Not": {
+                            "Expression": {
+                              "In": {
+                                "Expressions": [
+                                  {
+                                    "Column": {
+                                      "Expression": {
+                                        "SourceRef": {
+                                          "Source": "d"
+                                        }
+                                      },
+                                      "Property": "Year"
+                                    }
+                                  }
+                                ],
+                                "Values": [
+                                  [
+                                    {
+                                      "Literal": {
+                                        "Value": "2020L"
+                                      }
+                                    }
+                                  ],
+                                  [
+                                    {
+                                      "Literal": {
+                                        "Value": "2021L"
+                                      }
+                                    }
+                                  ]
+                                ]
+                              }
+                            }
+                          }
+                        }
+                      }
+                    ]
+                  },
                   "expression": {
                     "Column": {
                       "Expression": {
@@ -87,37 +229,7 @@
                   "howCreated": 0
                 },
                 {
-                  "name": "f57ff55a451798788e71",
-                  "type": "Advanced",
-                  "expression": {
-                    "Measure": {
-                      "Expression": {
-                        "SourceRef": {
-                          "Entity": "MeasuresTable"
-                        }
-                      },
-                      "Property": "MarginPct_CurrentYear"
-                    }
-                  },
-                  "howCreated": 0
-                },
-                {
-                  "name": "9e4a5ec7bfa6334a0625",
-                  "type": "Advanced",
-                  "expression": {
-                    "Measure": {
-                      "Expression": {
-                        "SourceRef": {
-                          "Entity": "MeasuresTable"
-                        }
-                      },
-                      "Property": "MarginPct_2024"
-                    }
-                  },
-                  "howCreated": 0
-                },
-                {
-                  "name": "6f4f3068f689f2075103",
+                  "name": "e191d11727876ade706e",
                   "type": "Advanced",
                   "expression": {
                     "Measure": {
@@ -127,21 +239,6 @@
                         }
                       },
                       "Property": "Sales"
-                    }
-                  },
-                  "howCreated": 0
-                },
-                {
-                  "name": "6aa90d0ecff5b961b749",
-                  "type": "Advanced",
-                  "expression": {
-                    "Measure": {
-                      "Expression": {
-                        "SourceRef": {
-                          "Entity": "MeasuresTable"
-                        }
-                      },
-                      "Property": "Margin"
                     }
                   },
                   "howCreated": 0
@@ -149,23 +246,8 @@
               ]
             },
             "singleVisual": {
-              "visualType": "lineChart",
+              "visualType": "areaChart",
               "objects": {},
-              "orderBy": [
-                {
-                  "Direction": 2,
-                  "Expression": {
-                    "Measure": {
-                      "Expression": {
-                        "SourceRef": {
-                          "Entity": "MeasuresTable"
-                        }
-                      },
-                      "Property": "Sales"
-                    }
-                  }
-                }
-              ],
               "activeProjections": {
                 "Category": [
                   {
@@ -175,84 +257,109 @@
                           "Entity": "dim_Date"
                         }
                       },
-                      "Property": "Year"
+                      "Property": "MonthName"
                     }
                   }
                 ]
               }
             }
           },
-          "a3008d1b0df7c638456e": {
-            "singleVisual": {
-              "visualType": "shape",
-              "objects": {}
-            }
-          },
-          "4449e0737e9059294ab7": {
-            "singleVisual": {
-              "visualType": "shape",
-              "objects": {}
-            }
-          },
-          "c6afd72cd8d223d9ff72": {
-            "singleVisual": {
-              "visualType": "image",
-              "objects": {}
-            }
-          },
-          "527a2ac6b5dec2635cd5": {
-            "singleVisual": {
-              "visualType": "image",
-              "objects": {}
-            }
-          },
-          "194da9a1edd5b2a7964b": {
-            "singleVisual": {
-              "visualType": "image",
-              "objects": {}
-            }
-          },
-          "e95f307cc3fed02e676a": {
-            "singleVisual": {
-              "visualType": "image",
-              "objects": {}
-            }
-          },
-          "b1c1820e8af7acd73baa": {
-            "singleVisual": {
-              "visualType": "image",
-              "objects": {}
-            }
-          },
-          "1f2706bc796082a648df": {
-            "singleVisual": {
-              "visualType": "image",
-              "objects": {}
-            }
-          },
-          "69ed54c16eb186be25a7": {
-            "singleVisual": {
-              "visualType": "image",
-              "objects": {}
-            }
-          },
-          "1814c289e681ef6793ef": {
-            "singleVisual": {
-              "visualType": "image",
-              "objects": {}
-            }
-          },
-          "bd919463a609a10d8780": {
-            "singleVisual": {
-              "visualType": "image",
-              "objects": {}
-            }
-          },
-          "41f24bc5bdffc5788869": {
+          "9e96b58bf0b4f4c9f994": {
             "filters": {
               "byExpr": [
                 {
-                  "name": "90f01f0dca5da564414c",
+                  "name": "fb85d440226b7b770767",
+                  "type": "Advanced",
+                  "expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "MeasuresTable"
+                        }
+                      },
+                      "Property": "Hero Card - Calendar Years with Margin"
+                    }
+                  },
+                  "howCreated": 0
+                }
+              ]
+            },
+            "singleVisual": {
+              "visualType": "htmlContent443BE3AD55E043BF878BED274D3A6855",
+              "objects": {}
+            }
+          },
+          "bb09e2c69dd5bc4555c2": {
+            "singleVisual": {
+              "visualType": "image",
+              "objects": {}
+            }
+          },
+          "7dc24fbb490d6f3fd4b2": {
+            "singleVisual": {
+              "visualType": "image",
+              "objects": {}
+            }
+          },
+          "62a356f17d33aa6c232d": {
+            "singleVisual": {
+              "visualType": "image",
+              "objects": {}
+            }
+          },
+          "c68b5f5c3a0c6230de7c": {
+            "singleVisual": {
+              "visualType": "image",
+              "objects": {}
+            }
+          },
+          "07fa24148642b9024a72": {
+            "singleVisual": {
+              "visualType": "shape",
+              "objects": {}
+            }
+          },
+          "d9687550e0315242028e": {
+            "singleVisual": {
+              "visualType": "image",
+              "objects": {}
+            }
+          },
+          "885e9d3d10a214ab6f99": {
+            "singleVisual": {
+              "visualType": "image",
+              "objects": {}
+            }
+          },
+          "388db2313abf8b739376": {
+            "singleVisual": {
+              "visualType": "image",
+              "objects": {}
+            }
+          },
+          "a8e9e108fd3e980a69c4": {
+            "singleVisual": {
+              "visualType": "image",
+              "objects": {}
+            }
+          },
+          "e435fe4be7eb94b18aeb": {
+            "singleVisual": {
+              "visualType": "shape",
+              "objects": {}
+            }
+          },
+          "d7bc4d762857a76f199d": {
+            "singleVisual": {
+              "visualType": "image",
+              "objects": {}
+            }
+          },
+          "b25564e5b10a8ad82d28": {
+            "filters": {
+              "byExpr": [
+                {
+                  "name": "832062454b6d2a8a2dd7",
                   "type": "Categorical",
                   "expression": {
                     "Column": {
@@ -303,50 +410,19 @@
               }
             }
           },
-          "d66333c84f652e6591df": {
-            "filters": {
-              "byExpr": [
-                {
-                  "name": "b770e64fa648424e7d99",
-                  "type": "Advanced",
-                  "expression": {
-                    "Measure": {
-                      "Expression": {
-                        "SourceRef": {
-                          "Entity": "MeasuresTable"
-                        }
-                      },
-                      "Property": "Active Filters Detail"
-                    }
-                  },
-                  "howCreated": 0
-                }
-              ]
-            },
-            "singleVisual": {
-              "visualType": "card",
-              "objects": {}
-            }
-          },
-          "630c3075c9f9623c2fee": {
-            "singleVisual": {
-              "visualType": "pageNavigator",
-              "objects": {}
-            }
-          },
-          "4d782718998f9f923539": {
+          "1258360e9b73a14a8070": {
             "singleVisual": {
               "visualType": "image",
               "objects": {}
             }
           },
-          "cbd780dcbe5d455ebbc4": {
+          "34258f6e277090875cb0": {
             "singleVisual": {
               "visualType": "shape",
               "objects": {}
             }
           },
-          "3856ec7671a69f6d2cca": {
+          "a4d62287cdf4b0aad85a": {
             "filters": {
               "byExpr": [
                 {
@@ -428,7 +504,7 @@
               "objects": {}
             }
           },
-          "41b7b5675506135b1ccc": {
+          "fc542fa2f4db669f0ccc": {
             "filters": {
               "byExpr": [
                 {
@@ -526,11 +602,11 @@
               }
             }
           },
-          "74297a5311cc7426706d": {
+          "623004fb395044e6a3fd": {
             "filters": {
               "byExpr": [
                 {
-                  "name": "5a7b8b4455ea2e44a6cb",
+                  "name": "7648e5a0992f2dc15098",
                   "type": "Categorical",
                   "expression": {
                     "Column": {
@@ -581,13 +657,13 @@
               }
             }
           },
-          "c37d356010075b97cadf": {
+          "3fb0d36737ca900d39de": {
             "singleVisual": {
               "visualType": "actionButton",
               "objects": {}
             }
           },
-          "049c63f94345035e1f04": {
+          "0c6fb70a20344556d7c6": {
             "filters": {
               "byExpr": [
                 {
@@ -685,7 +761,50 @@
               }
             }
           },
-          "a727ba744d307bd8a11a": {
+          "ff0a7bed0e98d86d6210": {
+            "singleVisual": {
+              "visualType": "pageNavigator",
+              "objects": {}
+            }
+          },
+          "6b49f6f7563220f5a340": {
+            "singleVisual": {
+              "visualType": "pageNavigator",
+              "objects": {}
+            }
+          },
+          "cf47bc4c436eedace866": {
+            "singleVisual": {
+              "visualType": "pageNavigator",
+              "objects": {}
+            }
+          },
+          "56ac15a68d0d7df09c44": {
+            "filters": {
+              "byExpr": [
+                {
+                  "name": "8986559e9498bbadb816",
+                  "type": "Advanced",
+                  "expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "MeasuresTable"
+                        }
+                      },
+                      "Property": "Active Filters Detail"
+                    }
+                  },
+                  "howCreated": 0
+                }
+              ]
+            },
+            "singleVisual": {
+              "visualType": "card",
+              "objects": {}
+            }
+          },
+          "71400abaea4e1c993ac4": {
             "filters": {
               "byExpr": [
                 {
@@ -782,28 +901,13 @@
                 ]
               }
             }
-          },
-          "74b9bb63676409290673": {
-            "singleVisual": {
-              "visualType": "image",
-              "objects": {},
-              "display": {
-                "mode": "hidden"
-              }
-            }
-          },
-          "bb09e2c69dd5bc4555c2": {
-            "singleVisual": {
-              "visualType": "image",
-              "objects": {}
-            }
           }
         },
         "visualContainerGroups": {
-          "8d31711844b1a0359572": {
+          "022d58d46d13076889ba": {
             "isHidden": false
           },
-          "518812374cbf76768cba": {
+          "553db4a5f48186380910": {
             "isHidden": true
           }
         }

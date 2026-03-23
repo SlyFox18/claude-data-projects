@@ -1,13 +1,12 @@
 {
-  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.6.0/schema.json",
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.7.0/schema.json",
   "name": "b41eb1b9d1677051e07d",
   "position": {
     "x": 798.07556675062972,
-    "y": 37.72292191435767,
-    "z": 8000,
+    "y": 35.293395342829875,
+    "z": 1000,
     "height": 763.88916876574308,
-    "width": 774.49874055415614,
-    "tabOrder": 2000
+    "width": 774.49874055415614
   },
   "visual": {
     "visualType": "clusteredBarChart",
@@ -42,11 +41,12 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "Open Order Ratio"
+                  "Property": "Open Order Ratio (Period)"
                 }
               },
-              "queryRef": "_Measures.Open Order Ratio",
-              "nativeQueryRef": "Open Order Ratio"
+              "queryRef": "_Measures.Open Order Ratio (Period)",
+              "nativeQueryRef": "Open Order Ratio ",
+              "displayName": "Open Order Ratio "
             }
           ]
         },
@@ -60,12 +60,12 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "Invoiced Parts (Trailing)"
+                  "Property": "Invoiced Parts (Period)"
                 }
               },
-              "queryRef": "_Measures.Invoiced Parts (Trailing)",
-              "nativeQueryRef": "Invoiced Parts",
-              "displayName": "Invoiced Parts"
+              "queryRef": "_Measures.Invoiced Parts (Period)",
+              "nativeQueryRef": "Invoiced Parts ",
+              "displayName": "Invoiced Parts "
             },
             {
               "field": {
@@ -95,7 +95,7 @@
                     "Entity": "_Measures"
                   }
                 },
-                "Property": "Open Order Ratio"
+                "Property": "Order Total"
               }
             },
             "direction": "Descending"
@@ -169,6 +169,20 @@
           "selector": {
             "metadata": "_Measures.Order Total"
           }
+        },
+        {
+          "properties": {
+            "labelDisplayUnits": {
+              "expr": {
+                "Literal": {
+                  "Value": "1000D"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "_Measures.Invoiced Parts (Period)"
+          }
         }
       ],
       "legend": [
@@ -191,25 +205,6 @@
               "solid": {
                 "color": {
                   "expr": {
-                    "ThemeDataColor": {
-                      "ColorId": 4,
-                      "Percent": 0
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "selector": {
-            "metadata": "_Measures.Invoiced Parts (Trailing)"
-          }
-        },
-        {
-          "properties": {
-            "fill": {
-              "solid": {
-                "color": {
-                  "expr": {
                     "Literal": {
                       "Value": "'#446FA7'"
                     }
@@ -220,6 +215,25 @@
           },
           "selector": {
             "metadata": "_Measures.Order Total"
+          }
+        },
+        {
+          "properties": {
+            "fill": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "ThemeDataColor": {
+                      "ColorId": 0,
+                      "Percent": -0.3
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "_Measures.Invoiced Parts (Period)"
           }
         }
       ]

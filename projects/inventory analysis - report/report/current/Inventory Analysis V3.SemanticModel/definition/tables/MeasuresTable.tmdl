@@ -6142,78 +6142,92 @@ table MeasuresTable
 
 	measure 'Hero Card - Calendar Years with Margin' = ```
 			
+			// = ===========================================================================
+			// Calculate yearly sales and margins — DYNAMIC (auto-advances each year)
 			// ============================================================================
-			// Calculate yearly sales and margins
-			// ============================================================================
-			VAR _2020Sales = [Sales_2020]
-			VAR _2021Sales = [Sales_2021]
-			VAR _2022Sales = [Sales_2022]
-			VAR _2023Sales = [Sales_2023]
-			VAR _2024Sales = [Sales_2024]
-			VAR _2025Sales = [Sales_CurrentYear]
+			VAR _CurrentYear = YEAR(TODAY())
+			VAR _Y1 = _CurrentYear - 5
+			VAR _Y2 = _CurrentYear - 4
+			VAR _Y3 = _CurrentYear - 3
+			VAR _Y4 = _CurrentYear - 2
+			VAR _Y5 = _CurrentYear - 1
 			
-			VAR _2020Margin = DIVIDE([Sales_2020] - [Cost_2020], [Sales_2020])
-			VAR _2021Margin = DIVIDE([Sales_2021] - [Cost_2021], [Sales_2021])
-			VAR _2022Margin = DIVIDE([Sales_2022] - [Cost_2022], [Sales_2022])
-			VAR _2023Margin = DIVIDE([Sales_2023] - [Cost_2023], [Sales_2023])
-			VAR _2024Margin = DIVIDE([Sales_2024] - [Cost_2024], [Sales_2024])
-			VAR _2025Margin = DIVIDE([Sales_CurrentYear] - [Cost_CurrentYear], [Sales_CurrentYear])
+			VAR _Y1Sales = CALCULATE([Sales], dim_Date[Year] = _Y1)
+			VAR _Y2Sales = CALCULATE([Sales], dim_Date[Year] = _Y2)
+			VAR _Y3Sales = CALCULATE([Sales], dim_Date[Year] = _Y3)
+			VAR _Y4Sales = CALCULATE([Sales], dim_Date[Year] = _Y4)
+			VAR _Y5Sales = CALCULATE([Sales], dim_Date[Year] = _Y5)
+			VAR _CurrentYearSales = [Sales_CurrentYear]
+			
+			VAR _Y1Cost = CALCULATE([Cost], dim_Date[Year] = _Y1)
+			VAR _Y2Cost = CALCULATE([Cost], dim_Date[Year] = _Y2)
+			VAR _Y3Cost = CALCULATE([Cost], dim_Date[Year] = _Y3)
+			VAR _Y4Cost = CALCULATE([Cost], dim_Date[Year] = _Y4)
+			VAR _Y5Cost = CALCULATE([Cost], dim_Date[Year] = _Y5)
+			VAR _CurrentYearCost = [Cost_CurrentYear]
+			
+			VAR _Y1Margin = DIVIDE(_Y1Sales - _Y1Cost, _Y1Sales)
+			VAR _Y2Margin = DIVIDE(_Y2Sales - _Y2Cost, _Y2Sales)
+			VAR _Y3Margin = DIVIDE(_Y3Sales - _Y3Cost, _Y3Sales)
+			VAR _Y4Margin = DIVIDE(_Y4Sales - _Y4Cost, _Y4Sales)
+			VAR _Y5Margin = DIVIDE(_Y5Sales - _Y5Cost, _Y5Sales)
+			VAR _CurrentYearMargin = DIVIDE(_CurrentYearSales - _CurrentYearCost, _CurrentYearSales)
 			
 			// ============================================================================
 			// Calculate YoY growth (sales)
 			// ============================================================================
-			VAR _GrowthSales2021 = DIVIDE(_2021Sales - _2020Sales, _2020Sales)
-			VAR _GrowthSales2022 = DIVIDE(_2022Sales - _2021Sales, _2021Sales)
-			VAR _GrowthSales2023 = DIVIDE(_2023Sales - _2022Sales, _2022Sales)
-			VAR _GrowthSales2024 = DIVIDE(_2024Sales - _2023Sales, _2023Sales)
-			VAR _GrowthSales2025 = DIVIDE(_2025Sales - _2024Sales, _2024Sales)
+			VAR _GrowthY2 = DIVIDE(_Y2Sales - _Y1Sales, _Y1Sales)
+			VAR _GrowthY3 = DIVIDE(_Y3Sales - _Y2Sales, _Y2Sales)
+			VAR _GrowthY4 = DIVIDE(_Y4Sales - _Y3Sales, _Y3Sales)
+			VAR _GrowthY5 = DIVIDE(_Y5Sales - _Y4Sales, _Y4Sales)
+			VAR _GrowthCurrent = DIVIDE(_CurrentYearSales - _Y5Sales, _Y5Sales)
 			
 			// ============================================================================
 			// Format values
 			// ============================================================================
-			VAR _2020SalesText = FORMAT(_2020Sales / 1000000, "$#,##0") & "M"
-			VAR _2021SalesText = FORMAT(_2021Sales / 1000000, "$#,##0") & "M"
-			VAR _2022SalesText = FORMAT(_2022Sales / 1000000, "$#,##0") & "M"
-			VAR _2023SalesText = FORMAT(_2023Sales / 1000000, "$#,##0") & "M"
-			VAR _2024SalesText = FORMAT(_2024Sales / 1000000, "$#,##0") & "M"
-			VAR _2025SalesText = FORMAT(_2025Sales / 1000000, "$#,##0") & "M"
+			VAR _Y1SalesText       = FORMAT(_Y1Sales / 1000000, "$#,##0") & "M"
+			VAR _Y2SalesText       = FORMAT(_Y2Sales / 1000000, "$#,##0") & "M"
+			VAR _Y3SalesText       = FORMAT(_Y3Sales / 1000000, "$#,##0") & "M"
+			VAR _Y4SalesText       = FORMAT(_Y4Sales / 1000000, "$#,##0") & "M"
+			VAR _Y5SalesText       = FORMAT(_Y5Sales / 1000000, "$#,##0") & "M"
+			VAR _CurrentSalesText  = FORMAT(_CurrentYearSales / 1000000, "$#,##0") & "M"
 			
-			VAR _2020MarginText = FORMAT(_2020Margin, "0.0%")
-			VAR _2021MarginText = FORMAT(_2021Margin, "0.0%")
-			VAR _2022MarginText = FORMAT(_2022Margin, "0.0%")
-			VAR _2023MarginText = FORMAT(_2023Margin, "0.0%")
-			VAR _2024MarginText = FORMAT(_2024Margin, "0.0%")
-			VAR _2025MarginText = FORMAT(_2025Margin, "0.0%")
+			VAR _Y1MarginText      = FORMAT(_Y1Margin, "0.0%")
+			VAR _Y2MarginText      = FORMAT(_Y2Margin, "0.0%")
+			VAR _Y3MarginText      = FORMAT(_Y3Margin, "0.0%")
+			VAR _Y4MarginText      = FORMAT(_Y4Margin, "0.0%")
+			VAR _Y5MarginText      = FORMAT(_Y5Margin, "0.0%")
+			VAR _CurrentMarginText = FORMAT(_CurrentYearMargin, "0.0%")
 			
-			VAR _GrowthSales2021Text = FORMAT(_GrowthSales2021, "+0.0%;-0.0%")
-			VAR _GrowthSales2022Text = FORMAT(_GrowthSales2022, "+0.0%;-0.0%")
-			VAR _GrowthSales2023Text = FORMAT(_GrowthSales2023, "+0.0%;-0.0%")
-			VAR _GrowthSales2024Text = FORMAT(_GrowthSales2024, "+0.0%;-0.0%")
-			VAR _GrowthSales2025Text = FORMAT(_GrowthSales2025, "+0.0%;-0.0%")
+			VAR _GrowthY2Text      = FORMAT(_GrowthY2, "+0.0%;-0.0%")
+			VAR _GrowthY3Text      = FORMAT(_GrowthY3, "+0.0%;-0.0%")
+			VAR _GrowthY4Text      = FORMAT(_GrowthY4, "+0.0%;-0.0%")
+			VAR _GrowthY5Text      = FORMAT(_GrowthY5, "+0.0%;-0.0%")
+			VAR _GrowthCurrentText = FORMAT(_GrowthCurrent, "+0.0%;-0.0%")
 			
 			// ============================================================================
 			// Identify peak year
 			// ============================================================================
-			VAR _PeakSales = MAX(_2020Sales, MAX(_2021Sales, MAX(_2022Sales, MAX(_2023Sales, MAX(_2024Sales, _2025Sales)))))
-			VAR _IsPeak2021 = IF(_2021Sales = _PeakSales, TRUE(), FALSE())
-			VAR _IsPeak2022 = IF(_2022Sales = _PeakSales, TRUE(), FALSE())
-			VAR _IsPeak2023 = IF(_2023Sales = _PeakSales, TRUE(), FALSE())
-			VAR _IsPeak2024 = IF(_2024Sales = _PeakSales, TRUE(), FALSE())
+			VAR _PeakSales  = MAX(_Y1Sales, MAX(_Y2Sales, MAX(_Y3Sales, MAX(_Y4Sales, MAX(_Y5Sales, _CurrentYearSales)))))
+			VAR _IsPeakY2   = _Y2Sales = _PeakSales
+			VAR _IsPeakY3   = _Y3Sales = _PeakSales
+			VAR _IsPeakY4   = _Y4Sales = _PeakSales
+			VAR _IsPeakY5   = _Y5Sales = _PeakSales
 			
 			// ============================================================================
 			// Growth arrow colors
 			// ============================================================================
-			VAR _ArrowColor2021 = IF(_GrowthSales2021 > 0.05, "#10B981", IF(_GrowthSales2021 > -0.05, "#FCD34D", "#EF4444"))
-			VAR _ArrowColor2022 = IF(_GrowthSales2022 > 0.05, "#10B981", IF(_GrowthSales2022 > -0.05, "#FCD34D", "#EF4444"))
-			VAR _ArrowColor2023 = IF(_GrowthSales2023 > 0.05, "#10B981", IF(_GrowthSales2023 > -0.05, "#FCD34D", "#EF4444"))
-			VAR _ArrowColor2024 = IF(_GrowthSales2024 > 0.05, "#10B981", IF(_GrowthSales2024 > -0.05, "#FCD34D", "#EF4444"))
-			VAR _ArrowColor2025 = IF(_GrowthSales2025 > 0.05, "#10B981", IF(_GrowthSales2025 > -0.05, "#FCD34D", "#EF4444"))
+			VAR _ColorY2      = IF(_GrowthY2 > 0.05, "#10B981", IF(_GrowthY2 > -0.05, "#FCD34D", "#EF4444"))
+			VAR _ColorY3      = IF(_GrowthY3 > 0.05, "#10B981", IF(_GrowthY3 > -0.05, "#FCD34D", "#EF4444"))
+			VAR _ColorY4      = IF(_GrowthY4 > 0.05, "#10B981", IF(_GrowthY4 > -0.05, "#FCD34D", "#EF4444"))
+			VAR _ColorY5      = IF(_GrowthY5 > 0.05, "#10B981", IF(_GrowthY5 > -0.05, "#FCD34D", "#EF4444"))
+			VAR _ColorCurrent = IF(_GrowthCurrent > 0.05, "#10B981", IF(_GrowthCurrent > -0.05, "#FCD34D", "#EF4444"))
 			
-			VAR _Arrow2021 = IF(_GrowthSales2021 > 0.05, "↗", IF(_GrowthSales2021 > -0.05, "→", "↘"))
-			VAR _Arrow2022 = IF(_GrowthSales2022 > 0.05, "↗", IF(_GrowthSales2022 > -0.05, "→", "↘"))
-			VAR _Arrow2023 = IF(_GrowthSales2023 > 0.05, "↗", IF(_GrowthSales2023 > -0.05, "→", "↘"))
-			VAR _Arrow2024 = IF(_GrowthSales2024 > 0.05, "↗", IF(_GrowthSales2024 > -0.05, "→", "↘"))
-			VAR _Arrow2025 = IF(_GrowthSales2025 > 0.05, "↗", IF(_GrowthSales2025 > -0.05, "→", "↘"))
+			VAR _ArrowY2      = IF(_GrowthY2 > 0.05, "↗", IF(_GrowthY2 > -0.05, "→", "↘"))
+			VAR _ArrowY3      = IF(_GrowthY3 > 0.05, "↗", IF(_GrowthY3 > -0.05, "→", "↘"))
+			VAR _ArrowY4      = IF(_GrowthY4 > 0.05, "↗", IF(_GrowthY4 > -0.05, "→", "↘"))
+			VAR _ArrowY5      = IF(_GrowthY5 > 0.05, "↗", IF(_GrowthY5 > -0.05, "→", "↘"))
+			VAR _ArrowCurrent = IF(_GrowthCurrent > 0.05, "↗", IF(_GrowthCurrent > -0.05, "→", "↘"))
 			
 			RETURN
 			"<div style='
@@ -6223,7 +6237,6 @@ table MeasuresTable
 			    padding: 20px 25px;
 			    color: white;
 			'>
-			    <!-- Header -->
 			    <div style='
 			        font-size: 16px;
 			        font-weight: 700;
@@ -6232,9 +6245,8 @@ table MeasuresTable
 			        margin-bottom: 20px;
 			        opacity: 0.95;
 			        text-align: center;
-			    '>Calendar Years • 2020-2025</div>
+			    '>Calendar Years • " & _Y1 & "-" & _CurrentYear & "</div>
 			    
-			    <!-- Timeline Container -->
 			    <div style='
 			        display: flex;
 			        justify-content: space-between;
@@ -6242,7 +6254,6 @@ table MeasuresTable
 			        position: relative;
 			        padding: 15px 0;
 			    '>
-			        <!-- Connecting Line -->
 			        <div style='
 			            position: absolute;
 			            top: 55%;
@@ -6252,274 +6263,69 @@ table MeasuresTable
 			            background: linear-gradient(90deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.4) 50%, rgba(255,255,255,0.2) 100%);
 			        '></div>
 			        
-			        <!-- 2020 Node -->
-			        <div style='
-			            flex: 1;
-			            display: flex;
-			            flex-direction: column;
-			            align-items: center;
-			            z-index: 1;
-			        '>
-			            <div style='
-			                font-size: 35px;
-			                font-weight: 700;
-			                color: #B8E2E8;
-			                margin-bottom: 4px;
-			            '>" & _2020SalesText & "</div>
-			            
-			            <div style='
-			                font-size: 20px;
-			                color: #4ADE80;
-			                opacity: 0.9;
-			                margin-bottom: 8px;
-			            '>" & _2020MarginText & "</div>
-			            
-			            <div style='
-			                width: 14px;
-			                height: 14px;
-			                border-radius: 50%;
-			                background: #B8E2E8;
-			                box-shadow: 0 0 10px rgba(184, 226, 232, 0.5);
-			                margin-bottom: 6px;
-			            '></div>
-			            
-			            <div style='
-			                font-size: 12px;
-			                font-weight: 600;
-			                opacity: 0.8;
-			            '>2020</div>
+			        <!-- Y1 Node -->
+			        <div style='flex: 1; display: flex; flex-direction: column; align-items: center; z-index: 1;'>
+			            <div style='font-size: 35px; font-weight: 700; color: #B8E2E8; margin-bottom: 4px;'>" & _Y1SalesText & "</div>
+			            <div style='font-size: 20px; color: #4ADE80; opacity: 0.9; margin-bottom: 8px;'>" & _Y1MarginText & "</div>
+			            <div style='width: 14px; height: 14px; border-radius: 50%; background: #B8E2E8; box-shadow: 0 0 10px rgba(184, 226, 232, 0.5); margin-bottom: 6px;'></div>
+			            <div style='font-size: 12px; font-weight: 600; opacity: 0.8;'>" & _Y1 & "</div>
 			        </div>
 			        
-			        <!-- 2021 Node -->
-			        <div style='
-			            flex: 1;
-			            display: flex;
-			            flex-direction: column;
-			            align-items: center;
-			            z-index: 1;
-			        '>
-			            <div style='
-			                font-size: 20px;
-			                color: " & _ArrowColor2021 & ";
-			                margin-bottom: 3px;
-			                font-weight: 600;
-			            '>" & _Arrow2021 & " " & _GrowthSales2021Text & "</div>
-			            
-			            <div style='
-			                font-size: 35px;
-			                font-weight: 700;
-			                color: #A0D4DB;
-			                margin-bottom: 4px;
-			            '>" & _2021SalesText & "</div>
-			            
-			            <div style='
-			                font-size: 20px;
-			                color: #4ADE80;
-			                opacity: 0.9;
-			                margin-bottom: 8px;
-			            '>" & _2021MarginText & "</div>
-			            
-			            <div style='
-			                width: 14px;
-			                height: 14px;
-			                border-radius: 50%;
-			                background: #A0D4DB;
-			                box-shadow: 0 0 10px rgba(160, 212, 219, 0.5);
-			                margin-bottom: 6px;
-			                " & IF(_IsPeak2021, "width: 18px; height: 18px; box-shadow: 0 0 20px rgba(255, 215, 0, 0.8);", "") & "
+			        <!-- Y2 Node -->
+			        <div style='flex: 1; display: flex; flex-direction: column; align-items: center; z-index: 1;'>
+			            <div style='font-size: 20px; color: " & _ColorY2 & "; margin-bottom: 3px; font-weight: 600;'>" & _ArrowY2 & " " & _GrowthY2Text & "</div>
+			            <div style='font-size: 35px; font-weight: 700; color: #A0D4DB; margin-bottom: 4px;'>" & _Y2SalesText & "</div>
+			            <div style='font-size: 20px; color: #4ADE80; opacity: 0.9; margin-bottom: 8px;'>" & _Y2MarginText & "</div>
+			            <div style='width: 14px; height: 14px; border-radius: 50%; background: #A0D4DB; box-shadow: 0 0 10px rgba(160, 212, 219, 0.5); margin-bottom: 6px;
+			                " & IF(_IsPeakY2, "width: 18px; height: 18px; box-shadow: 0 0 20px rgba(255, 215, 0, 0.8);", "") & "
 			            '></div>
-			            
-			            <div style='
-			                font-size: 20px;
-			                font-weight: 600;
-			                opacity: 0.8;
-			            '>2021" & IF(_IsPeak2021, " ⭐", "") & "</div>
+			            <div style='font-size: 20px; font-weight: 600; opacity: 0.8;'>" & _Y2 & IF(_IsPeakY2, " ⭐", "") & "</div>
 			        </div>
 			        
-			        <!-- 2022 Node -->
-			        <div style='
-			            flex: 1;
-			            display: flex;
-			            flex-direction: column;
-			            align-items: center;
-			            z-index: 1;
-			        '>
-			            <div style='
-			                font-size: 20px;
-			                color: " & _ArrowColor2022 & ";
-			                margin-bottom: 3px;
-			                font-weight: 600;
-			            '>" & _Arrow2022 & " " & _GrowthSales2022Text & "</div>
-			            
-			            <div style='
-			                font-size: 35px;
-			                font-weight: 700;
-			                color: #8AC6D0;
-			                margin-bottom: 4px;
-			            '>" & _2022SalesText & "</div>
-			            
-			            <div style='
-			                font-size: 20px;
-			                color: #4ADE80;
-			                opacity: 0.9;
-			                margin-bottom: 8px;
-			            '>" & _2022MarginText & "</div>
-			            
-			            <div style='
-			                width: 14px;
-			                height: 14px;
-			                border-radius: 50%;
-			                background: #8AC6D0;
-			                box-shadow: 0 0 10px rgba(138, 198, 208, 0.5);
-			                margin-bottom: 6px;
-			                " & IF(_IsPeak2022, "width: 18px; height: 18px; box-shadow: 0 0 20px rgba(255, 215, 0, 0.8);", "") & "
+			        <!-- Y3 Node -->
+			        <div style='flex: 1; display: flex; flex-direction: column; align-items: center; z-index: 1;'>
+			            <div style='font-size: 20px; color: " & _ColorY3 & "; margin-bottom: 3px; font-weight: 600;'>" & _ArrowY3 & " " & _GrowthY3Text & "</div>
+			            <div style='font-size: 35px; font-weight: 700; color: #8AC6D0; margin-bottom: 4px;'>" & _Y3SalesText & "</div>
+			            <div style='font-size: 20px; color: #4ADE80; opacity: 0.9; margin-bottom: 8px;'>" & _Y3MarginText & "</div>
+			            <div style='width: 14px; height: 14px; border-radius: 50%; background: #8AC6D0; box-shadow: 0 0 10px rgba(138, 198, 208, 0.5); margin-bottom: 6px;
+			                " & IF(_IsPeakY3, "width: 18px; height: 18px; box-shadow: 0 0 20px rgba(255, 215, 0, 0.8);", "") & "
 			            '></div>
-			            
-			            <div style='
-			                font-size: 20px;
-			                font-weight: 600;
-			                opacity: 0.8;
-			            '>2022" & IF(_IsPeak2022, " ⭐", "") & "</div>
+			            <div style='font-size: 20px; font-weight: 600; opacity: 0.8;'>" & _Y3 & IF(_IsPeakY3, " ⭐", "") & "</div>
 			        </div>
 			        
-			        <!-- 2023 Node -->
-			        <div style='
-			            flex: 1;
-			            display: flex;
-			            flex-direction: column;
-			            align-items: center;
-			            z-index: 1;
-			        '>
-			            <div style='
-			                font-size: 20px;
-			                color: " & _ArrowColor2023 & ";
-			                margin-bottom: 3px;
-			                font-weight: 600;
-			            '>" & _Arrow2023 & " " & _GrowthSales2023Text & "</div>
-			            
-			            <div style='
-			                font-size: 35px;
-			                font-weight: 700;
-			                color: #60A5C4;
-			                margin-bottom: 4px;
-			            '>" & _2023SalesText & "</div>
-			            
-			            <div style='
-			                font-size: 20px;
-			                color: #4ADE80;
-			                opacity: 0.9;
-			                margin-bottom: 8px;
-			            '>" & _2023MarginText & "</div>
-			            
-			            <div style='
-			                width: 14px;
-			                height: 14px;
-			                border-radius: 50%;
-			                background: #60A5C4;
-			                box-shadow: 0 0 10px rgba(96, 165, 196, 0.5);
-			                margin-bottom: 6px;
-			                " & IF(_IsPeak2023, "width: 18px; height: 18px; box-shadow: 0 0 20px rgba(255, 215, 0, 0.8);", "") & "
+			        <!-- Y4 Node -->
+			        <div style='flex: 1; display: flex; flex-direction: column; align-items: center; z-index: 1;'>
+			            <div style='font-size: 20px; color: " & _ColorY4 & "; margin-bottom: 3px; font-weight: 600;'>" & _ArrowY4 & " " & _GrowthY4Text & "</div>
+			            <div style='font-size: 35px; font-weight: 700; color: #60A5C4; margin-bottom: 4px;'>" & _Y4SalesText & "</div>
+			            <div style='font-size: 20px; color: #4ADE80; opacity: 0.9; margin-bottom: 8px;'>" & _Y4MarginText & "</div>
+			            <div style='width: 14px; height: 14px; border-radius: 50%; background: #60A5C4; box-shadow: 0 0 10px rgba(96, 165, 196, 0.5); margin-bottom: 6px;
+			                " & IF(_IsPeakY4, "width: 18px; height: 18px; box-shadow: 0 0 20px rgba(255, 215, 0, 0.8);", "") & "
 			            '></div>
-			            
-			            <div style='
-			                font-size: 20px;
-			                font-weight: 600;
-			                opacity: 0.8;
-			            '>2023" & IF(_IsPeak2023, " ⭐", "") & "</div>
+			            <div style='font-size: 20px; font-weight: 600; opacity: 0.8;'>" & _Y4 & IF(_IsPeakY4, " ⭐", "") & "</div>
 			        </div>
 			        
-			        <!-- 2024 Node -->
-			        <div style='
-			            flex: 1;
-			            display: flex;
-			            flex-direction: column;
-			            align-items: center;
-			            z-index: 1;
-			        '>
-			            <div style='
-			                font-size: 20px;
-			                color: " & _ArrowColor2024 & ";
-			                margin-bottom: 3px;
-			                font-weight: 600;
-			            '>" & _Arrow2024 & " " & _GrowthSales2024Text & "</div>
-			            
-			            <div style='
-			                font-size: 35px;
-			                font-weight: 700;
-			                color: #3A7CA5;
-			                margin-bottom: 4px;
-			            '>" & _2024SalesText & "</div>
-			            
-			            <div style='
-			                font-size: 20px;
-			                color: #4ADE80;
-			                opacity: 0.9;
-			                margin-bottom: 8px;
-			            '>" & _2024MarginText & "</div>
-			            
-			            <div style='
-			                width: 14px;
-			                height: 14px;
-			                border-radius: 50%;
-			                background: #3A7CA5;
-			                box-shadow: 0 0 10px rgba(58, 124, 165, 0.5);
-			                margin-bottom: 6px;
-			                " & IF(_IsPeak2024, "width: 18px; height: 18px; box-shadow: 0 0 20px rgba(255, 215, 0, 0.8);", "") & "
+			        <!-- Y5 Node -->
+			        <div style='flex: 1; display: flex; flex-direction: column; align-items: center; z-index: 1;'>
+			            <div style='font-size: 20px; color: " & _ColorY5 & "; margin-bottom: 3px; font-weight: 600;'>" & _ArrowY5 & " " & _GrowthY5Text & "</div>
+			            <div style='font-size: 35px; font-weight: 700; color: #3A7CA5; margin-bottom: 4px;'>" & _Y5SalesText & "</div>
+			            <div style='font-size: 20px; color: #4ADE80; opacity: 0.9; margin-bottom: 8px;'>" & _Y5MarginText & "</div>
+			            <div style='width: 14px; height: 14px; border-radius: 50%; background: #3A7CA5; box-shadow: 0 0 10px rgba(58, 124, 165, 0.5); margin-bottom: 6px;
+			                " & IF(_IsPeakY5, "width: 18px; height: 18px; box-shadow: 0 0 20px rgba(255, 215, 0, 0.8);", "") & "
 			            '></div>
-			            
-			            <div style='
-			                font-size: 20px;
-			                font-weight: 600;
-			                opacity: 0.8;
-			            '>2024" & IF(_IsPeak2024, " ⭐", "") & "</div>
+			            <div style='font-size: 20px; font-weight: 600; opacity: 0.8;'>" & _Y5 & IF(_IsPeakY5, " ⭐", "") & "</div>
 			        </div>
 			        
-			        <!-- 2025 YTD Node -->
-			        <div style='
-			            flex: 1;
-			            display: flex;
-			            flex-direction: column;
-			            align-items: center;
-			            z-index: 1;
-			        '>
-			            <div style='
-			                font-size: 20px;
-			                color: " & _ArrowColor2025 & ";
-			                margin-bottom: 3px;
-			                font-weight: 600;
-			            '>" & _Arrow2025 & " " & _GrowthSales2025Text & "</div>
-			            
-			            <div style='
-			                font-size: 35px;
-			                font-weight: 700;
-			                color: #F97316;
-			                margin-bottom: 4px;
-			            '>" & _2025SalesText & "</div>
-			            
-			            <div style='
-			                font-size: 20px;
-			                color: #4ADE80;
-			                opacity: 0.9;
-			                margin-bottom: 8px;
-			            '>" & _2025MarginText & "</div>
-			            
-			            <div style='
-			                width: 14px;
-			                height: 14px;
-			                border-radius: 50%;
-			                background: #F97316;
-			                box-shadow: 0 0 10px rgba(249, 115, 22, 0.5);
-			                margin-bottom: 6px;
-			            '></div>
-			            
-			            <div style='
-			                font-size: 20px;
-			                font-weight: 600;
-			                opacity: 0.8;
-			            '>2025 YTD</div>
+			        <!-- Current Year YTD Node -->
+			        <div style='flex: 1; display: flex; flex-direction: column; align-items: center; z-index: 1;'>
+			            <div style='font-size: 20px; color: " & _ColorCurrent & "; margin-bottom: 3px; font-weight: 600;'>" & _ArrowCurrent & " " & _GrowthCurrentText & "</div>
+			            <div style='font-size: 35px; font-weight: 700; color: #F97316; margin-bottom: 4px;'>" & _CurrentSalesText & "</div>
+			            <div style='font-size: 20px; color: #4ADE80; opacity: 0.9; margin-bottom: 8px;'>" & _CurrentMarginText & "</div>
+			            <div style='width: 14px; height: 14px; border-radius: 50%; background: #F97316; box-shadow: 0 0 10px rgba(249, 115, 22, 0.5); margin-bottom: 6px;'></div>
+			            <div style='font-size: 20px; font-weight: 600; opacity: 0.8;'>" & _CurrentYear & " YTD</div>
 			        </div>
 			    </div>
 			</div>"
+			
 			```
 		lineageTag: 9ad7be77-9f1a-4497-b681-0ff74a422d97
 

@@ -83,14 +83,15 @@ table _Measures
 		formatString: "$"#,0.00;("$"#,0.00);"$"#,0.00
 		lineageTag: 987cf3e9-ba98-4d29-b0b1-0d29822c9f5e
 
-	/// Total parts cost from orders with promos. Uses LOOKUPVALUE for detail rows, SUM for aggregations. This is the cost of non-promo parts on the order (matches old report Part_Cost).
+	/// Total parts cost from orders with promos. Uses LOOKUPVALUE for detail rows, TREATAS for aggregations to respect promo filter context.
 	measure 'Cost Value' =
 			VAR _SingleREF = SELECTEDVALUE(Fact_PartsPromo[REF_NO])
+			VAR _FilteredREFs = VALUES(Fact_PartsPromo[REF_NO])
 			RETURN
 			IF(
 			    NOT(ISBLANK(_SingleREF)),
 			    LOOKUPVALUE(dim_RepairOrder[TotalPartsCost], dim_RepairOrder[REF_NO], _SingleREF),
-			    SUM(dim_RepairOrder[TotalPartsCost])
+			    CALCULATE(SUM(dim_RepairOrder[TotalPartsCost]), TREATAS(_FilteredREFs, dim_RepairOrder[REF_NO]))
 			)
 		formatString: "$"#,0.00;("$"#,0.00);"$"#,0.00
 		lineageTag: 206a1de6-9a4e-4546-9896-11e6860e8620
@@ -105,34 +106,36 @@ table _Measures
 		formatString: #,0
 		lineageTag: cca8bf50-7d1f-4170-900c-8ba2bb53fb2f
 
-	/// Total parts sales from orders with promos. Uses LOOKUPVALUE for detail rows, SUM for aggregations.
+	/// Total parts sales from orders with promos. Uses LOOKUPVALUE for detail rows, TREATAS for aggregations to respect promo filter context.
 	measure 'Original Sale Value' = ```
 			
 			VAR _SingleREF = SELECTEDVALUE(Fact_PartsPromo[REF_NO])
+			VAR _FilteredREFs = VALUES(Fact_PartsPromo[REF_NO])
 			RETURN
 			IF(
 			    NOT(ISBLANK(_SingleREF)),
 			    -- Detail row context: get value for this specific REF_NO
 			    LOOKUPVALUE(dim_RepairOrder[TotalPartsSales], dim_RepairOrder[REF_NO], _SingleREF),
-			    -- Aggregated context: sum all
-			    SUM(dim_RepairOrder[TotalPartsSales])
+			    -- Aggregated context: sum only orders visible in current filter context
+			    CALCULATE(SUM(dim_RepairOrder[TotalPartsSales]), TREATAS(_FilteredREFs, dim_RepairOrder[REF_NO]))
 			)
 			
 			```
 		formatString: "$"#,0.00;("$"#,0.00);"$"#,0.00
 		lineageTag: d38c0053-a188-46d3-afaf-976f08b7cac3
 
-	/// Original margin before discount. Uses LOOKUPVALUE for detail rows, SUM for aggregations.
+	/// Original margin before discount. Uses LOOKUPVALUE for detail rows, TREATAS for aggregations to respect promo filter context.
 	measure 'Original Margin $' = ```
 			
 			VAR _SingleREF = SELECTEDVALUE(Fact_PartsPromo[REF_NO])
+			VAR _FilteredREFs = VALUES(Fact_PartsPromo[REF_NO])
 			RETURN
 			IF(
 			    NOT(ISBLANK(_SingleREF)),
 			    -- Detail row context: get margin for this specific REF_NO
 			    LOOKUPVALUE(dim_RepairOrder[OriginalMargin], dim_RepairOrder[REF_NO], _SingleREF),
-			    -- Aggregated context: sum all
-			    SUM(dim_RepairOrder[OriginalMargin])
+			    -- Aggregated context: sum only orders visible in current filter context
+			    CALCULATE(SUM(dim_RepairOrder[OriginalMargin]), TREATAS(_FilteredREFs, dim_RepairOrder[REF_NO]))
 			)
 			
 			```
@@ -144,7 +147,7 @@ table _Measures
 		formatString: 0.00%;-0.00%;0.00%
 		lineageTag: 704b5bc1-32e3-4776-8907-2713986d85a4
 
-	/// Net sales after discount. Uses LOOKUPVALUE for detail rows, calculation for aggregations.
+	/// Net sales after discount. Uses LOOKUPVALUE for detail rows, TREATAS for aggregations to respect promo filter context.
 	measure 'Net Sales Value' = ```
 			
 			VAR _SingleREF = SELECTEDVALUE(Fact_PartsPromo[REF_NO])
@@ -153,7 +156,7 @@ table _Measures
 			    NOT(ISBLANK(_SingleREF)),
 			    -- Detail row context: get net order value for this specific REF_NO
 			    LOOKUPVALUE(dim_RepairOrder[NetOrderValue], dim_RepairOrder[REF_NO], _SingleREF),
-			    -- Aggregated context: original sales + discount
+			    -- Aggregated context: original sales (filtered via TREATAS) + discount
 			    [Original Sale Value] + SUM(Fact_PartsPromo[SaleValue])
 			)
 			
@@ -161,17 +164,18 @@ table _Measures
 		formatString: "$"#,0.00;("$"#,0.00);"$"#,0.00
 		lineageTag: 29a95484-7509-472d-b2ad-3ddaeddead11
 
-	/// Net margin after discount. Uses LOOKUPVALUE for detail rows, calculation for aggregations.
+	/// Net margin after discount. Uses LOOKUPVALUE for detail rows, TREATAS for aggregations to respect promo filter context.
 	measure 'Net Margin $' = ```
 			
 			VAR _SingleREF = SELECTEDVALUE(Fact_PartsPromo[REF_NO])
+			VAR _FilteredREFs = VALUES(Fact_PartsPromo[REF_NO])
 			RETURN
 			IF(
 			    NOT(ISBLANK(_SingleREF)),
 			    -- Detail row context: get net margin for this specific REF_NO
 			    LOOKUPVALUE(dim_RepairOrder[NetMargin], dim_RepairOrder[REF_NO], _SingleREF),
-			    -- Aggregated context: net sales - cost
-			    [Net Sales Value] - SUM(dim_RepairOrder[TotalPartsCost])
+			    -- Aggregated context: net sales - cost (both filtered to promo context)
+			    [Net Sales Value] - CALCULATE(SUM(dim_RepairOrder[TotalPartsCost]), TREATAS(_FilteredREFs, dim_RepairOrder[REF_NO]))
 			)
 			
 			```
@@ -190,45 +194,101 @@ table _Measures
 
 	/// Rolling 12 month discount total
 	measure 'Rolling 12M Discount' =
+			VAR _EndDate = TODAY()
+			VAR _StartDate = EDATE(TODAY(), -12)
+			VAR _SelectedParts = VALUES(Fact_PartsPromo[PART_NO])
+			RETURN
 			CALCULATE(
 			    ABS(SUM(Fact_PartsPromo[SaleValue])),
-			    DATESINPERIOD(dim_DateTable[Date], TODAY(), -12, MONTH)
+			    CROSSFILTER(Fact_PartsPromo[TransDatetime], dim_DateTable[Date], None),
+			    _SelectedParts,
+			    Fact_PartsPromo[TransDatetime] >= _StartDate,
+			    Fact_PartsPromo[TransDatetime] <= _EndDate
 			)
 		formatString: "$"#,0.00;("$"#,0.00);"$"#,0.00
 		lineageTag: 27fff6d9-a417-49b2-ad0c-40536e3d281d
 
 	/// Rolling 12 month net sales
 	measure 'Rolling 12M Net Sales' =
-			CALCULATE(
-			    [Net Sales Value],
-			    DATESINPERIOD(dim_DateTable[Date], TODAY(), -12, MONTH)
-			)
+			VAR _EndDate = TODAY()
+			VAR _StartDate = EDATE(TODAY(), -12)
+			VAR _SelectedParts = VALUES(Fact_PartsPromo[PART_NO])
+			VAR _UniqueOrders =
+			    CALCULATETABLE(
+			        VALUES(Fact_PartsPromo[REF_NO]),
+			        CROSSFILTER(Fact_PartsPromo[TransDatetime], dim_DateTable[Date], None),
+			        _SelectedParts,
+			        Fact_PartsPromo[TransDatetime] >= _StartDate,
+			        Fact_PartsPromo[TransDatetime] <= _EndDate
+			    )
+			VAR _TotalPartsSales =
+			    SUMX(
+			        _UniqueOrders,
+			        LOOKUPVALUE(
+			            dim_RepairOrder[TotalPartsSales],
+			            dim_RepairOrder[REF_NO], Fact_PartsPromo[REF_NO]
+			        )
+			    )
+			VAR _TotalDiscount =
+			    CALCULATE(
+			        SUM(Fact_PartsPromo[SaleValue]),
+			        CROSSFILTER(Fact_PartsPromo[TransDatetime], dim_DateTable[Date], None),
+			        _SelectedParts,
+			        Fact_PartsPromo[TransDatetime] >= _StartDate,
+			        Fact_PartsPromo[TransDatetime] <= _EndDate
+			    )
+			RETURN
+			_TotalPartsSales + _TotalDiscount
 		formatString: "$"#,0.00;("$"#,0.00);"$"#,0.00
 		lineageTag: 16bfbafa-d10f-495b-b515-cc671aaf4341
 
 	/// Previous year rolling 12 month discount (12-24 months ago)
 	measure 'PY Rolling 12M Discount' =
+			VAR _EndDate = EDATE(TODAY(), -12)
+			VAR _StartDate = EDATE(TODAY(), -24)
+			VAR _SelectedParts = VALUES(Fact_PartsPromo[PART_NO])
+			RETURN
 			CALCULATE(
 			    ABS(SUM(Fact_PartsPromo[SaleValue])),
-			    DATESBETWEEN(
-			        dim_DateTable[Date],
-			        EDATE(TODAY(), -24),
-			        EDATE(TODAY(), -12)
-			    )
+			    CROSSFILTER(Fact_PartsPromo[TransDatetime], dim_DateTable[Date], None),
+			    _SelectedParts,
+			    Fact_PartsPromo[TransDatetime] >= _StartDate,
+			    Fact_PartsPromo[TransDatetime] < _EndDate
 			)
 		formatString: "$"#,0.00;("$"#,0.00);"$"#,0.00
 		lineageTag: f3300a22-78a6-44f4-8de2-2b91f5550d25
 
 	/// Previous year rolling 12 month net sales
 	measure 'PY Rolling 12M Net Sales' =
-			CALCULATE(
-			    [Net Sales Value],
-			    DATESBETWEEN(
-			        dim_DateTable[Date],
-			        EDATE(TODAY(), -24),
-			        EDATE(TODAY(), -12)
+			VAR _EndDate = EDATE(TODAY(), -12)
+			VAR _StartDate = EDATE(TODAY(), -24)
+			VAR _SelectedParts = VALUES(Fact_PartsPromo[PART_NO])
+			VAR _UniqueOrders =
+			    CALCULATETABLE(
+			        VALUES(Fact_PartsPromo[REF_NO]),
+			        CROSSFILTER(Fact_PartsPromo[TransDatetime], dim_DateTable[Date], None),
+			        _SelectedParts,
+			        Fact_PartsPromo[TransDatetime] >= _StartDate,
+			        Fact_PartsPromo[TransDatetime] < _EndDate
 			    )
-			)
+			VAR _TotalPartsSales =
+			    SUMX(
+			        _UniqueOrders,
+			        LOOKUPVALUE(
+			            dim_RepairOrder[TotalPartsSales],
+			            dim_RepairOrder[REF_NO], Fact_PartsPromo[REF_NO]
+			        )
+			    )
+			VAR _TotalDiscount =
+			    CALCULATE(
+			        SUM(Fact_PartsPromo[SaleValue]),
+			        CROSSFILTER(Fact_PartsPromo[TransDatetime], dim_DateTable[Date], None),
+			        _SelectedParts,
+			        Fact_PartsPromo[TransDatetime] >= _StartDate,
+			        Fact_PartsPromo[TransDatetime] < _EndDate
+			    )
+			RETURN
+			_TotalPartsSales + _TotalDiscount
 		formatString: "$"#,0.00;("$"#,0.00);"$"#,0.00
 		lineageTag: 0155a441-69a7-401a-ae3e-5e2c4702ea37
 
@@ -356,15 +416,17 @@ table _Measures
 			VAR _EndDate = TODAY()
 			VAR _StartDate = EDATE(TODAY(), -12)
 			-- Get unique orders for this part in the date range
-			VAR _UniqueOrders = 
+			-- CROSSFILTER disconnects dim_DateTable so the date slicer on Page 2 does not interfere
+			VAR _UniqueOrders =
 			    CALCULATETABLE(
 			        VALUES(Fact_PartsPromo[REF_NO]),
+			        CROSSFILTER(Fact_PartsPromo[TransDatetime], dim_DateTable[Date], None),
 			        Fact_PartsPromo[TransDatetime] >= _StartDate,
 			        Fact_PartsPromo[TransDatetime] <= _EndDate,
 			        Fact_PartsPromo[PART_NO] = _CurrentPart
 			    )
 			-- Sum TotalPartsSales once per order (use current row's REF_NO from iteration)
-			VAR _TotalPartsSales = 
+			VAR _TotalPartsSales =
 			    SUMX(
 			        _UniqueOrders,
 			        VAR _CurrentREF = Fact_PartsPromo[REF_NO]
@@ -374,6 +436,7 @@ table _Measures
 			VAR _TotalDiscount =
 			    CALCULATE(
 			        SUM(Fact_PartsPromo[SaleValue]),
+			        CROSSFILTER(Fact_PartsPromo[TransDatetime], dim_DateTable[Date], None),
 			        Fact_PartsPromo[TransDatetime] >= _StartDate,
 			        Fact_PartsPromo[TransDatetime] <= _EndDate,
 			        Fact_PartsPromo[PART_NO] = _CurrentPart
@@ -392,15 +455,17 @@ table _Measures
 			VAR _EndDate = EDATE(TODAY(), -12)
 			VAR _StartDate = EDATE(TODAY(), -24)
 			-- Get unique orders for this part in the PY date range
-			VAR _UniqueOrders = 
+			-- CROSSFILTER disconnects dim_DateTable so the date slicer on Page 2 does not interfere
+			VAR _UniqueOrders =
 			    CALCULATETABLE(
 			        VALUES(Fact_PartsPromo[REF_NO]),
+			        CROSSFILTER(Fact_PartsPromo[TransDatetime], dim_DateTable[Date], None),
 			        Fact_PartsPromo[TransDatetime] >= _StartDate,
 			        Fact_PartsPromo[TransDatetime] < _EndDate,
 			        Fact_PartsPromo[PART_NO] = _CurrentPart
 			    )
 			-- Sum TotalPartsSales once per order
-			VAR _TotalPartsSales = 
+			VAR _TotalPartsSales =
 			    SUMX(
 			        _UniqueOrders,
 			        LOOKUPVALUE(dim_RepairOrder[TotalPartsSales], dim_RepairOrder[REF_NO], Fact_PartsPromo[REF_NO])
@@ -409,6 +474,7 @@ table _Measures
 			VAR _TotalDiscount =
 			    CALCULATE(
 			        SUM(Fact_PartsPromo[SaleValue]),
+			        CROSSFILTER(Fact_PartsPromo[TransDatetime], dim_DateTable[Date], None),
 			        Fact_PartsPromo[TransDatetime] >= _StartDate,
 			        Fact_PartsPromo[TransDatetime] < _EndDate,
 			        Fact_PartsPromo[PART_NO] = _CurrentPart
@@ -721,6 +787,18 @@ table _Measures
 			        FORMAT(_MinDate, "M/D/YYYY") & " - " & FORMAT(_MaxDate, "M/D/YYYY")
 			    )
 		lineageTag: 7d2830d7-2903-4a87-b432-7e73f5511124
+
+	measure 'Ghost Column' = ```
+			
+			MAXX(
+			    ALLSELECTED(dim_BranchLocation[BranchName]),
+			    [Original Sale Value]
+			) * 1.15
+			
+			```
+		lineageTag: 40311801-7656-4054-b084-ac5b0be2587a
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
 
 	column Value
 		isHidden

@@ -1,5 +1,5 @@
 {
-  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.6.0/schema.json",
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.7.0/schema.json",
   "name": "952f2d1636a976771703",
   "position": {
     "x": 66.015113350125944,
@@ -95,17 +95,22 @@
             },
             {
               "field": {
-                "Column": {
+                "Aggregation": {
                   "Expression": {
-                    "SourceRef": {
-                      "Entity": "Fact_PartsAdjustments"
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "Fact_PartsAdjustments"
+                        }
+                      },
+                      "Property": "CostValue"
                     }
                   },
-                  "Property": "CostValue"
+                  "Function": 0
                 }
               },
               "queryRef": "Sum(Fact_PartsAdjustments.CostValue)",
-              "nativeQueryRef": "Cost",
+              "nativeQueryRef": "Sum of CostValue",
               "displayName": "Cost"
             },
             {
@@ -533,6 +538,13 @@
                   "Value": "'Center'"
                 }
               }
+            },
+            "styleTotal": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
             }
           },
           "selector": {
@@ -850,20 +862,6 @@
         "type": "Categorical"
       },
       {
-        "name": "7eb4a80efb3200d1e1df",
-        "field": {
-          "Column": {
-            "Expression": {
-              "SourceRef": {
-                "Entity": "Fact_PartsAdjustments"
-              }
-            },
-            "Property": "CostValue"
-          }
-        },
-        "type": "Advanced"
-      },
-      {
         "name": "be11abda83fec2bf419d",
         "field": {
           "Column": {
@@ -904,6 +902,39 @@
           }
         },
         "type": "Categorical"
+      },
+      {
+        "name": "dbfad6c80f392d73fd44",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "dim_Parts"
+              }
+            },
+            "Property": "Description"
+          }
+        },
+        "type": "Categorical"
+      },
+      {
+        "name": "12d1375fe4abfe1453ef",
+        "field": {
+          "Aggregation": {
+            "Expression": {
+              "Column": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "Fact_PartsAdjustments"
+                  }
+                },
+                "Property": "Qty"
+              }
+            },
+            "Function": 0
+          }
+        },
+        "type": "Advanced"
       }
     ]
   }

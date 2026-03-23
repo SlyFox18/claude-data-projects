@@ -9,12 +9,12 @@ table Fact_PartsInvoiced_ByBranch
 
 		annotation SummarizationSetBy = Automatic
 
-	column InvoiceMonth
+	column InvoiceDate
 		dataType: dateTime
-		formatString: Long Date
+		formatString: Short Date
 		lineageTag: b8e3f952-4ca0-5e6f-9021-d7e3f4c5b620
 		summarizeBy: none
-		sourceColumn: InvoiceMonth
+		sourceColumn: InvoiceDate
 
 		annotation SummarizationSetBy = Automatic
 
@@ -34,10 +34,14 @@ table Fact_PartsInvoiced_ByBranch
 				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-gxnyznhdptpenfw724g3o5sjzm.datawarehouse.fabric.microsoft.com", "LH_Master_Data"),
 				    Query = Value.NativeQuery(
 				        Source,
-				        "SELECT Branch, DATEFROMPARTS(YEAR(InvoiceDate), MONTH(InvoiceDate), 1) AS InvoiceMonth, SUM(PartsSaleValue) AS Invoiced_Parts FROM Invoice WHERE ModuleType IN ('I', 'W') AND CustomerNumber NOT IN ('71','72','73','74','76','77','78','81','83','84','85','86','87','9001','9002','9003','9004','9005','9006','9007','41','42','43','44','46','47','48','51','53','54','55','56','57','9051','9052','9053','9054','9055','9056','9057') AND InvoiceDate >= DATEADD(month, -15, GETDATE()) GROUP BY Branch, DATEFROMPARTS(YEAR(InvoiceDate), MONTH(InvoiceDate), 1)",
+				        "SELECT Branch, CAST(InvoiceDate AS DATE) AS InvoiceDate, SUM(PartsSaleValue) AS Invoiced_Parts FROM Invoice WHERE ModuleType IN ('I', 'W') AND CustomerNumber NOT IN ('71','72','73','74','76','77','78','81','83','84','85','86','87','9001','9002','9003','9004','9005','9006','9007','41','42','43','44','46','47','48','51','53','54','55','56','57','9051','9052','9053','9054','9055','9056','9057') AND InvoiceDate >= DATEADD(month, -15, GETDATE()) GROUP BY Branch, CAST(InvoiceDate AS DATE)",
 				        null,
 				        [EnableFolding=false]
 				    )
 				in
 				    Query
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
 

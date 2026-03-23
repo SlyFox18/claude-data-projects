@@ -1,7 +1,7 @@
 <#
 .SYNOPSIS
     Post-pipeline monitoring and documentation update.
-    Scheduled to run at 6:00 AM weekdays, after the 3:30 AM pipeline finishes.
+    Scheduled to run at 8:00 AM weekdays, after the 6:30 AM SM pipeline finishes (~7:20 AM).
 
 .DESCRIPTION
     Runs after the Fabric Pipeline_Master_Orchestrator completes (~5:00 AM) to:
@@ -38,14 +38,10 @@ $DocDir      = Resolve-Path "$RepoRoot\documentation"
 $FailedSteps = @()
 $script:startTime = Get-Date
 
-# Teams notification via Microsoft.Graph module.
-# Run once interactively to cache credentials:
-#   Connect-MgGraph -Scopes "ChannelMessage.Send" -UseDeviceCode -TenantId $TenantId
-# Then set $TeamsEnabled = $true below.
-$TeamsEnabled   = $true
-$TenantId       = "8a02a2b8-0092-4de5-8f76-4700d099feb1"
-$TeamsTeamId    = "75d69eaf-2d57-4c84-a71a-0d3822bb60c4"
-$TeamsChannelId = "19:ldjrYoLypYQcH6H4pg4TGYTzQEfcN1xHXXXd6HDcHkc1@thread.tacv2"
+# Teams notification via Incoming Webhook — no auth required, works unattended.
+# To regenerate: Teams channel > ... > Connectors > Incoming Webhook > Manage > Regenerate.
+$TeamsEnabled = $true
+$WebhookUrl   = "https://spitractor.webhook.office.com/webhookb2/75d69eaf-2d57-4c84-a71a-0d3822bb60c4@8a02a2b8-0092-4de5-8f76-4700d099feb1/IncomingWebhook/b66524e16e83467ab86db70f3bbf2ede/b9c4be2c-3707-4cdd-a7db-59751caa90d2/V2ORIHJNoD2MRxLAOTFgWkxDHey_dkvlSKH5MDa9SneJU1"
 
 # ── Logging helper ──────────────────────────────────────────────────────────
 function Write-Log {
@@ -200,80 +196,143 @@ Scheduled task: Run-PostPipeline-Monitoring
 # ── Step 9: Send Teams notification ─────────────────────────────────────────
 if ($TeamsEnabled) {
     Invoke-Step "Send Teams notification" {
-        $statusText = if ($FailedSteps.Count -eq 0) { "SUCCESS" } else { "FAILED" }
-        $statusIcon = if ($FailedSteps.Count -eq 0) { "&#x2705;" } else { "&#x274C;" }
-        $elapsed    = [math]::Round(((Get-Date) - $script:startTime).TotalSeconds)
-        $date       = Get-Date -Format "yyyy-MM-dd"
+        $isSuccess = $FailedSteps.Count -eq 0
+        $elapsed   = [math]::Round(((Get-Date) - $script:startTime).TotalSeconds)
+        $date      = Get-Date -Format "yyyy-MM-dd"
+        $color     = if ($isSuccess) { "00B050" } else { "FF0000" }
+        $icon      = if ($isSuccess) { "[OK]" } else { "[FAIL]" }
 
-        # Pull freshness stats from the report written by Step 4
-        $freshnessLine = ""
-        $criticalLine  = ""
-        $pipelineLine  = ""
-        $freshnessFile = Join-Path $DocDir "Dataflow-Freshness-Report.csv"
-        if (Test-Path $freshnessFile) {
-            $fr           = Import-Csv $freshnessFile
-            $freshCount   = ($fr | Where-Object { $_.Status -eq "Fresh" }).Count
-            $staleCount   = ($fr | Where-Object { $_.Status -eq "Stale" }).Count
-            $criticalCount= ($fr | Where-Object { $_.Status -eq "Critical" -or $_.Status -eq "Never Refreshed" }).Count
-            $freshnessLine = "<br><b>Freshness:</b> &#x1F7E2; $freshCount Fresh &nbsp; &#x1F7E1; $staleCount Stale &nbsp; &#x1F534; $criticalCount Critical"
-            if ($criticalCount -gt 0) {
-                $names = ($fr | Where-Object { $_.Status -eq "Critical" -or $_.Status -eq "Never Refreshed" } |
-                    Select-Object -ExpandProperty DataflowName | Sort-Object) -join ", "
-                $criticalLine = "<br><b>Critical:</b> $names"
-            }
+        # Build facts list for the Teams card
+        $facts = [System.Collections.Generic.List[hashtable]]::new()
 
-        }
-
-        # Check Pipeline_Master_Orchestrator run status via Fabric Pipeline API
+        # Master pipeline status — look up ID dynamically by name so it survives recreation
         $masterWorkspaceId = "b48cdb35-7ce3-46de-96df-d70db77649cb"
-        $masterPipelineId  = "52f5270a-4ac9-9f33-4a70-56fd291983ff"
-        $pipelineJobsUrl   = "https://api.fabric.microsoft.com/v1/workspaces/$masterWorkspaceId/items/$masterPipelineId/jobs/instances?jobType=Pipeline"
         try {
-            $pipelineRuns = Invoke-RestMethod -Uri $pipelineJobsUrl -Headers $headers -Method Get -ErrorAction Stop
-            $todayStart   = (Get-Date).Date
-            $todayRuns    = $pipelineRuns.value |
-                Where-Object { $_.startTimeUtc -and [datetime]$_.startTimeUtc -gt $todayStart } |
-                Sort-Object { [datetime]$_.startTimeUtc } -Descending
-            if ($todayRuns -and $todayRuns.Count -gt 0) {
-                $latestRun = $todayRuns[0]
-                $runStart  = ([datetime]$latestRun.startTimeUtc).ToLocalTime()
-                $pIcon = switch ($latestRun.status) {
-                    "Succeeded"  { "&#x2705;" }
-                    "Failed"     { "&#x274C;" }
-                    "InProgress" { "&#x23F3;" }
-                    "Cancelled"  { "&#x26A0;" }
-                    default      { "&#x26A0;" }
-                }
-                $pText = switch ($latestRun.status) {
-                    "Succeeded"  { "Succeeded (started $($runStart.ToString('HH:mm')) CST)" }
-                    "Failed"     { "FAILED &#x2014; check Pipeline_Master_Orchestrator run history" }
-                    "InProgress" { "Still running (started $($runStart.ToString('HH:mm')) CST)" }
-                    "Cancelled"  { "Cancelled" }
-                    default      { "Unknown status: $($latestRun.status)" }
+            $allItems     = Invoke-RestMethod -Uri "https://api.fabric.microsoft.com/v1/workspaces/$masterWorkspaceId/items" -Headers $headers -Method Get -ErrorAction Stop
+            $masterItem   = $allItems.value | Where-Object { $_.displayName -eq "Pipeline_Master_Orchestrator" -and $_.type -eq "DataPipeline" }
+            if ($masterItem) {
+                $jobsUrl      = "https://api.fabric.microsoft.com/v1/workspaces/$masterWorkspaceId/items/$($masterItem.id)/jobs/instances?jobType=Pipeline"
+                $pipelineRuns  = Invoke-RestMethod -Uri $jobsUrl -Headers $headers -Method Get -ErrorAction Stop
+                $todayStartUtc = (Get-Date).ToUniversalTime().Date   # midnight UTC — avoids local/UTC Kind mismatch
+                $todayRuns     = $pipelineRuns.value |
+                    Where-Object { $_.startTimeUtc -and [datetime]::Parse($_.startTimeUtc).ToUniversalTime() -gt $todayStartUtc } |
+                    Sort-Object { [datetime]::Parse($_.startTimeUtc) } -Descending
+                if ($todayRuns -and $todayRuns.Count -gt 0) {
+                    $latestRun = $todayRuns[0]
+                    $runStart  = ([datetime]$latestRun.startTimeUtc).ToLocalTime()
+                    $pText = switch ($latestRun.status) {
+                        "Succeeded"  { "Succeeded (started $($runStart.ToString('HH:mm')) CST)" }
+                        "Failed"     { "FAILED - check Pipeline_Master_Orchestrator in Fabric Monitor" }
+                        "InProgress" { "Still running (started $($runStart.ToString('HH:mm')) CST)" }
+                        "Cancelled"  { "Cancelled" }
+                        default      { "Status: $($latestRun.status)" }
+                    }
+                } else {
+                    $pText = "Did NOT run today - no pipeline runs found"
                 }
             } else {
-                $pIcon = "&#x274C;"
-                $pText = "Did NOT run today &#x2014; no pipeline runs found"
+                $pText = "Pipeline_Master_Orchestrator not found in workspace items"
             }
         } catch {
-            $pIcon = "&#x26A0;"
-            $pText = "Could not check pipeline status: $($_.Exception.Message)"
+            $pText = "Could not query pipeline: $($_.Exception.Message)"
         }
-        $pipelineLine = "<br><b>Pipeline:</b> $pIcon $pText"
+        $facts.Add(@{ name = "Master Orchestrator"; value = $pText })
 
-        # Failed steps line
-        $failedLine = if ($FailedSteps.Count -gt 0) {
-            "<br><b>Failed steps:</b> $($FailedSteps -join ', ')"
-        } else { "" }
+        # Freshness summary — only count scheduled categories; AdHoc/Transformation run manually
+        $scheduledCategories = @("RawSource", "Dimension", "FactTable")
+        $freshnessFile = Join-Path $DocDir "Dataflow-Freshness-Report.csv"
+        if (Test-Path $freshnessFile) {
+            $fr            = Import-Csv $freshnessFile | Where-Object { $_.Category -in $scheduledCategories }
+            $freshCount    = ($fr | Where-Object { $_.Status -eq "Fresh" }).Count
+            $staleCount    = ($fr | Where-Object { $_.Status -eq "Stale" }).Count
+            $criticalItems = @($fr | Where-Object { $_.Status -in "Critical","Never Refreshed" })
+            $criticalCount = $criticalItems.Count
+            $facts.Add(@{ name = "Freshness (scheduled DFs)"; value = "$freshCount Fresh  |  $staleCount Stale  |  $criticalCount Critical" })
+            if ($criticalCount -gt 0) {
+                $names = ($criticalItems | Select-Object -ExpandProperty DataflowName | Sort-Object) -join ", "
+                $facts.Add(@{ name = "Critical tables"; value = $names })
+            }
+        }
 
-        $html = "$statusIcon <b>Fabric Monitoring &mdash; $date</b>" +
-                "<br>Monitoring: $statusText &nbsp;&nbsp; Duration: ${elapsed}s" +
-                $pipelineLine + $freshnessLine + $criticalLine + $failedLine
+        # Dataflow failures in last 24 hours
+        $historyFile = Join-Path $DocDir "Dataflow-Refresh-History.csv"
+        if (Test-Path $historyFile) {
+            $hist        = Import-Csv $historyFile
+            $since       = (Get-Date).AddHours(-24)
+            $recentFails = @($hist | Where-Object {
+                $_.Status -in "Failed","Failure","failed" -and
+                $_.StartTime -and
+                [datetime]::TryParse($_.StartTime, [ref]([datetime]::MinValue)) -and
+                ([datetime]$_.StartTime) -gt $since
+            })
+            if ($recentFails.Count -gt 0) {
+                $failNames = ($recentFails | Select-Object -ExpandProperty DataflowName -Unique | Sort-Object) -join ", "
+                $facts.Add(@{ name = "Dataflow failures (24h)"; value = "$($recentFails.Count) failures - $failNames" })
+            } else {
+                $facts.Add(@{ name = "Dataflow failures (24h)"; value = "None" })
+            }
+        }
 
-        Connect-MgGraph -TenantId $TenantId -NoWelcome -ErrorAction Stop
-        $body = @{ body = @{ contentType = "html"; content = $html } }
-        New-MgTeamChannelMessage -TeamId $TeamsTeamId -ChannelId $TeamsChannelId -BodyParameter $body -ErrorAction Stop
+        # Failed monitoring steps
+        if ($FailedSteps.Count -gt 0) {
+            $facts.Add(@{ name = "Monitoring steps failed"; value = $FailedSteps -join ", " })
+        }
+
+        $card = @{
+            "@type"      = "MessageCard"
+            "@context"   = "http://schema.org/extensions"
+            "themeColor" = $color
+            "summary"    = "Fabric Monitoring - $date"
+            "sections"   = @(
+                @{
+                    "activityTitle"    = "$icon Fabric Monitoring - $date"
+                    "activitySubtitle" = "Monitoring script completed in ${elapsed}s"
+                    "facts"            = @($facts)
+                }
+            )
+        }
+
+        $body = $card | ConvertTo-Json -Depth 6 -Compress
+        Invoke-RestMethod -Method Post -Uri $WebhookUrl -ContentType "application/json" -Body $body -ErrorAction Stop | Out-Null
+        Write-Log "   Teams notification sent via webhook"
     }
+}
+
+# ── Step 10: Windows toast notification ─────────────────────────────────────
+Invoke-Step "Send desktop toast notification" {
+    $date = Get-Date -Format "yyyy-MM-dd"
+
+    # Build summary line from CSVs (same sources as Teams card)
+    $scheduledCategories = @("RawSource", "Dimension", "FactTable")
+    $freshnessFile = Join-Path $DocDir "Dataflow-Freshness-Report.csv"
+    $historyFile   = Join-Path $DocDir "Dataflow-Refresh-History.csv"
+
+    $freshLine = ""
+    if (Test-Path $freshnessFile) {
+        $fr            = Import-Csv $freshnessFile | Where-Object { $_.Category -in $scheduledCategories }
+        $freshCount    = ($fr | Where-Object { $_.Status -eq "Fresh" }).Count
+        $criticalCount = ($fr | Where-Object { $_.Status -in "Critical","Never Refreshed" }).Count
+        $freshLine     = "$freshCount Fresh | $criticalCount Critical"
+    }
+
+    $failLine = ""
+    if (Test-Path $historyFile) {
+        $hist        = Import-Csv $historyFile
+        $since       = (Get-Date).AddHours(-24)
+        $failCount   = @($hist | Where-Object {
+            $_.Status -in "Failed","Failure","failed" -and
+            $_.StartTime -and
+            [datetime]::TryParse($_.StartTime, [ref]([datetime]::MinValue)) -and
+            ([datetime]$_.StartTime) -gt $since
+        }).Count
+        $failLine = "$failCount DF failures (24h)"
+    }
+
+    $titleIcon = if ($FailedSteps.Count -eq 0) { "[OK]" } else { "[FAIL]" }
+    $title     = "$titleIcon Fabric Monitoring - $date"
+    $body      = (@($freshLine, $failLine) | Where-Object { $_ }) -join " | "
+
+    New-BurntToastNotification -Text $title, $body -ErrorAction Stop
 }
 
 # ── Summary ──────────────────────────────────────────────────────────────────

@@ -5,9 +5,9 @@
 
 .DESCRIPTION
     Creates two scheduled tasks:
-      1. "Fabric - Post-Pipeline Monitoring"  (6:00 AM, Mon-Fri)
+      1. "Fabric - Post-Pipeline Monitoring"  (8:00 AM, Mon-Fri)
          Logs refresh history, checks freshness, updates CU tracking,
-         commits documentation to dev branch.
+         commits documentation to dev branch, sends Teams notification.
 
       2. "Fabric - Azure Login Refresh"  (7:00 AM, Mon-Fri)
          Refreshes the saved Azure context so token requests keep working.
@@ -97,8 +97,8 @@ function Register-FabricTask {
 Register-FabricTask `
     -TaskName   "Post-Pipeline Monitoring" `
     -ScriptPath $MonitorScript `
-    -Description "Runs after the 3:30 AM Fabric pipeline. Logs refresh history, checks data freshness, updates CU tracking, pushes docs to dev branch." `
-    -Time       "06:00AM" `
+    -Description "Runs at 8 AM after all pipelines complete (Master ~5:27 AM, SM ~7:20 AM). Logs refresh history, checks freshness, sends Teams notification, pushes docs to dev." `
+    -Time       "08:00AM" `
     -Days       @("Monday","Tuesday","Wednesday","Thursday","Friday")
 
 # ── Task 2: Azure login refresh ──────────────────────────────────────────────

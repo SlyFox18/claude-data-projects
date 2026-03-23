@@ -69,13 +69,31 @@ foreach ($df in $inventory) {
                             default { $refresh.status }
                         }
                         
+                        # Extract error message — Fabric API returns errors in failureReason, not error
+                        $errorMsg = ""
+                        if ($refresh.failureReason) {
+                            $errorMsg = if ($refresh.failureReason.message) { $refresh.failureReason.message }
+                                        elseif ($refresh.failureReason.errorCode) { $refresh.failureReason.errorCode }
+                                        else { $refresh.failureReason | ConvertTo-Json -Compress -Depth 2 }
+                        } elseif ($refresh.error) {
+                            $errorMsg = if ($refresh.error.message) { $refresh.error.message }
+                                        elseif ($refresh.error.errorCode) { $refresh.error.errorCode }
+                                        else { "$($refresh.error)" }
+                        }
+
+                        $endTimeStr = if ($refresh.endTimeUtc) { ([datetime]::Parse($refresh.endTimeUtc)).ToString('yyyy-MM-dd HH:mm:ss') } else { "" }
+
                         $allRefreshes += [PSCustomObject]@{
-                            Timestamp = $startTime.ToString('yyyy-MM-dd HH:mm:ss')
-                            DataflowName = $df.DataflowName
-                            Category = $df.Category
-                            Status = $status
+                            Timestamp       = (Get-Date).ToString('yyyy-MM-dd HH:mm:ss')
+                            DataflowName    = $df.DataflowName
+                            DataflowId      = $df.DataflowId
+                            WorkspaceName   = $WorkspaceName
+                            Category        = $df.Category
+                            Status          = $status
+                            StartTime       = $startTime.ToString('yyyy-MM-dd HH:mm:ss')
+                            EndTime         = $endTimeStr
                             DurationMinutes = [math]::Round($duration, 1)
-                            Error = if ($refresh.error) { $refresh.error } else { "" }
+                            ErrorMessage    = $errorMsg
                         }
                     }
                 }
@@ -122,9 +140,13 @@ if ($allRefreshes.Count -gt 0) {
     if (Test-Path $historyFile) {
         $existingHistory = Import-Csv $historyFile
         
-        # Merge and deduplicate
+        # Merge and deduplicate on DataflowName + StartTime (not Timestamp, which is collection time)
         $combined = $existingHistory + $allRefreshes
-        $unique = $combined | Sort-Object Timestamp -Unique
+        $seen = @{}
+        $unique = @($combined | Sort-Object StartTime | Where-Object {
+            $key = "$($_.DataflowName)|$($_.StartTime)"
+            if (-not $seen.ContainsKey($key)) { $seen[$key] = $true; $true } else { $false }
+        })
         
         Write-Host "[INFO] Merging with existing history..." -ForegroundColor Cyan
         Write-Host "  Old records: $($existingHistory.Count)" -ForegroundColor Gray

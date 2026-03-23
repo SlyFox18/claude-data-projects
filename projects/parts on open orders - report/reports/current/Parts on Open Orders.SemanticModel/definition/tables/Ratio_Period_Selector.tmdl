@@ -1,0 +1,36 @@
+table Ratio_Period_Selector
+	lineageTag: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+
+	column Days
+		dataType: int64
+		formatString: 0
+		lineageTag: b2c3d4e5-f6a7-8901-bcde-f12345678901
+		isNameInferred
+		sourceColumn: [Days]
+
+		annotation SummarizationSetBy = Automatic
+
+	column Label
+		dataType: string
+		lineageTag: c3d4e5f6-a7b8-9012-cdef-123456789012
+		isNameInferred
+		sourceColumn: [Label]
+		sortByColumn: SortOrder
+
+		changedProperty = SortByColumn
+
+		annotation SummarizationSetBy = Automatic
+
+	column SortOrder
+		dataType: int64
+		formatString: 0
+		lineageTag: d4e5f6a7-b8c9-0123-defa-234567890123
+		isNameInferred
+		sourceColumn: [SortOrder]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition Ratio_Period_Selector = calculated
+		mode: import
+		source = DATATABLE("Days", INTEGER, "Label", STRING, "SortOrder", INTEGER, {{7, "0-7 days", 1}, {14, "8-14 days", 2}, {30, "15-30 days", 3}, {60, "31-60 days", 4}, {90, "61-90 days", 5}, {180, "6 Months", 6}, {365, "1 Year", 7}})
+

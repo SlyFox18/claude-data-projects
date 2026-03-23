@@ -1,5 +1,5 @@
 {
-  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.4.0/schema.json",
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.7.0/schema.json",
   "name": "03dc303b2bf81fc5e96e",
   "position": {
     "x": 67.193954659949625,
@@ -193,18 +193,13 @@
         "sort": [
           {
             "field": {
-              "Aggregation": {
+              "Column": {
                 "Expression": {
-                  "Column": {
-                    "Expression": {
-                      "SourceRef": {
-                        "Entity": "Fact_PartsNotReordered"
-                      }
-                    },
-                    "Property": "Business Hours Since Sale"
+                  "SourceRef": {
+                    "Entity": "Fact_PartsNotReordered"
                   }
                 },
-                "Function": 0
+                "Property": "TransDatetime"
               }
             },
             "direction": "Descending"
@@ -672,21 +667,45 @@
           "Where": [
             {
               "Condition": {
-                "Comparison": {
-                  "ComparisonKind": 4,
+                "And": {
                   "Left": {
-                    "Column": {
-                      "Expression": {
-                        "SourceRef": {
-                          "Source": "f"
+                    "Comparison": {
+                      "ComparisonKind": 4,
+                      "Left": {
+                        "Column": {
+                          "Expression": {
+                            "SourceRef": {
+                              "Source": "f"
+                            }
+                          },
+                          "Property": "Business Hours Since Sale"
                         }
                       },
-                      "Property": "Business Hours Since Sale"
+                      "Right": {
+                        "Literal": {
+                          "Value": "24L"
+                        }
+                      }
                     }
                   },
                   "Right": {
-                    "Literal": {
-                      "Value": "24L"
+                    "Comparison": {
+                      "ComparisonKind": 2,
+                      "Left": {
+                        "Column": {
+                          "Expression": {
+                            "SourceRef": {
+                              "Source": "f"
+                            }
+                          },
+                          "Property": "Business Hours Since Sale"
+                        }
+                      },
+                      "Right": {
+                        "Literal": {
+                          "Value": "12L"
+                        }
+                      }
                     }
                   }
                 }
@@ -741,8 +760,143 @@
               }
             }
           ]
+        }
+      },
+      {
+        "name": "5609faa9a277b99ae7c0",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "dim_BranchLocation"
+              }
+            },
+            "Property": "Branch"
+          }
         },
-        "howCreated": "User"
+        "type": "Categorical"
+      },
+      {
+        "name": "ce843042b004ca81c894",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Fact_PartsNotReordered"
+              }
+            },
+            "Property": "PartNumber"
+          }
+        },
+        "type": "Categorical"
+      },
+      {
+        "name": "f024273a2159acc07f1a",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Fact_PartsNotReordered"
+              }
+            },
+            "Property": "Description"
+          }
+        },
+        "type": "Categorical"
+      },
+      {
+        "name": "169d77e865fbdac3f142",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Fact_PartsNotReordered"
+              }
+            },
+            "Property": "DealerGroupCode"
+          }
+        },
+        "type": "Categorical"
+      },
+      {
+        "name": "ec88513a8adb32dc3a06",
+        "field": {
+          "Aggregation": {
+            "Expression": {
+              "Column": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "Fact_PartsNotReordered"
+                  }
+                },
+                "Property": "QtySold"
+              }
+            },
+            "Function": 0
+          }
+        },
+        "type": "Advanced"
+      },
+      {
+        "name": "a7a408acad473508f4d7",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Fact_PartsNotReordered"
+              }
+            },
+            "Property": "InvoiceNumber"
+          }
+        },
+        "type": "Categorical"
+      },
+      {
+        "name": "c1c4f0405b515e962f3d",
+        "field": {
+          "Aggregation": {
+            "Expression": {
+              "Column": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "Fact_PartsNotReordered"
+                  }
+                },
+                "Property": "BinQty"
+              }
+            },
+            "Function": 0
+          }
+        },
+        "type": "Advanced"
+      },
+      {
+        "name": "58f7c2bf2bd99fd17b63",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Fact_PartsNotReordered"
+              }
+            },
+            "Property": "TransDatetime"
+          }
+        },
+        "type": "Categorical"
+      },
+      {
+        "name": "8fd219db11ec1cf6b683",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Fact_PartsNotReordered"
+              }
+            },
+            "Property": "SaleDate"
+          }
+        },
+        "type": "Categorical"
       }
     ]
   }

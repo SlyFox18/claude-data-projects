@@ -264,10 +264,16 @@ let
     */
     
     PartsSource = InTrans_Incremental,
-    
+
+    // Rolling 3-year cutoff — Inspections report needs ~3 years max for YoY comparisons.
+    // Filters InTrans_Incremental before the inspection invoice join, reducing data volume
+    // from 10M+ rows to ~3M rows. Folds to SQL on the Lakehouse endpoint.
+    CutoffDate = Date.AddYears(Date.From(DateTime.LocalNow()), -3),
+    PartsFiltered = Table.SelectRows(PartsSource, each Date.From([TransDatetime]) >= CutoffDate),
+
     // Ensure join columns are TEXT type
     PartsWithTextTypes = Table.TransformColumnTypes(
-        PartsSource,
+        PartsFiltered,
         {
             {"Branch", type text},
             {"RONumber", type text}  // RONumber in InTrans = Invoice Number
