@@ -96,7 +96,9 @@ let
     // INCREMENTAL PROCESSING - WATERMARK FILTERING
     // ========================================================================
     
-    // Get the last processed datetime from watermark control
+    // Get the last processed datetime from watermark control.
+    // GetWatermark_FactTrans returns midnight of the day AFTER the last processed date.
+    // No time buffer is applied — see GetWatermark_FactTrans query for details.
     WatermarkValue = GetWatermark_FactTrans,
     
     Source = Lakehouse.Contents([]),
