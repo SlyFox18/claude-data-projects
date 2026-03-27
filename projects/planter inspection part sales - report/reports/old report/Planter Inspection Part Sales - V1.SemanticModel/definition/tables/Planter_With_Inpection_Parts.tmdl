@@ -1,0 +1,113 @@
+table Planter_With_Inpection_Parts
+	lineageTag: 9dcc45b5-3c74-4a6f-9c35-71e3195f7899
+
+	column Location
+		dataType: string
+		lineageTag: 04049aab-44ae-4414-b557-21b633b0c256
+		summarizeBy: none
+		sourceColumn: Location
+
+		annotation SummarizationSetBy = Automatic
+
+	column Customer
+		dataType: string
+		lineageTag: 06b0919a-fd92-4477-b207-4cd2edc7b615
+		summarizeBy: none
+		sourceColumn: Customer
+
+		annotation SummarizationSetBy = Automatic
+
+	column Job_Code
+		dataType: string
+		lineageTag: 372de56f-2f9d-4191-be1f-629cd6e06bf0
+		summarizeBy: none
+		sourceColumn: Job_Code
+
+		annotation SummarizationSetBy = Automatic
+
+	column Inv_Lab_Val
+		dataType: double
+		lineageTag: d9e83e0f-663b-4624-bf2a-0c7562fcdff7
+		summarizeBy: none
+		sourceColumn: Inv_Lab_Val
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column account_no
+		dataType: int64
+		lineageTag: 83f56dfa-8545-4392-aa4d-913eb3db3b46
+		summarizeBy: none
+		sourceColumn: account_no
+
+		changedProperty = DataType
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column Part_Branch
+		dataType: string
+		lineageTag: 258e1ddd-2b96-4db0-b0bc-d884f69b7175
+		summarizeBy: none
+		sourceColumn: Part_Branch
+
+		annotation SummarizationSetBy = Automatic
+
+	column Total_SALE_VAL
+		dataType: double
+		lineageTag: a7d7d122-0ae7-4c65-b5ef-111803500c7e
+		summarizeBy: none
+		sourceColumn: Total_SALE_VAL
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column Total_COST_VAL
+		dataType: double
+		lineageTag: 3e9a0220-7f0a-4b42-b55b-67ac2b66229e
+		summarizeBy: none
+		sourceColumn: Total_COST_VAL
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column 'Customer Name' =
+			
+			VAR CommaPosition = FIND(",", Planter_With_Inpection_Parts[Customer], 1, 0)
+			VAR LastName = IF(CommaPosition > 0, LEFT(Planter_With_Inpection_Parts[Customer], CommaPosition - 1), "")
+			VAR FirstName = IF(CommaPosition > 0, MID(Planter_With_Inpection_Parts[Customer], CommaPosition + 2, LEN(Planter_With_Inpection_Parts[Customer])), Planter_With_Inpection_Parts[Customer])
+			RETURN TRIM(FirstName) & " " & TRIM(LastName)
+		lineageTag: 5e240083-40e9-4611-ab29-a8e02b7872c5
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	column Branch =
+			LOOKUPVALUE(
+			    Dim_Branch[Branch],
+			    Dim_Branch[BranchID],
+			    Planter_With_Inpection_Parts[Location]
+			)
+		lineageTag: 0ecbc078-1d0c-4ca1-b310-04769429429e
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	partition Planter_With_Inpection_Parts = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-wczpfb6a52fude7azc6zsgeuty.datawarehouse.fabric.microsoft.com", "LH_Service_Reports_Data"),
+				    dbo_Planter_With_Inpection_Parts = Source{[Schema="dbo",Item="Planter_With_Inpection_Parts"]}[Data],
+				    #"Capitalized Each Word" = Table.TransformColumns(dbo_Planter_With_Inpection_Parts,{{"Customer", Text.Proper, type text}})
+				in
+				    #"Capitalized Each Word"
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

@@ -1,0 +1,504 @@
+table _Measures
+	lineageTag: 22e4b9e3-99b6-4634-9836-9ade5a5ea5a5
+
+	measure 'Home - Header' =
+			
+			// Get user name
+			VAR _User = USERPRINCIPALNAME()
+			VAR _Position = SEARCH("@", _User, 1)
+			VAR _Name = LEFT(_User, _Position - 1)
+			VAR _FirstLetter = UPPER(LEFT(_Name, 1))
+			VAR _LastName = MID(_Name, 2, LEN(_Name) - 1)
+			VAR _FormattedLastName =
+			    UPPER(LEFT(_LastName, 1)) & LOWER(MID(_LastName, 2, LEN(_LastName)))
+			VAR WelcomeName = _FirstLetter & "." & _FormattedLastName
+			
+			// Get current date/time info
+			VAR CurrentDate = TODAY()
+			VAR DateDisplay = FORMAT(CurrentDate, "MMM D, YYYY")
+			VAR CurrentHour = HOUR(NOW())
+			VAR TimeGreeting =
+			    IF(CurrentHour < 12, "Good Morning",
+			    IF(CurrentHour < 17, "Good Afternoon",
+			    "Good Evening"))
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    height: 85px;
+			    padding: 15px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 10px;
+			    color: white;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-between;
+			    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    box-sizing: border-box;
+			'>
+			    <!-- Left side: Dashboard Title -->
+			    <div style='display: flex; align-items: center; gap: 15px;'>
+			        <!-- Home icon -->
+			        <div style='
+			            width: 40px;
+			            height: 40px;
+			            background: rgba(255,255,255,0.15);
+			            border-radius: 8px;
+			            display: flex;
+			            align-items: center;
+			            justify-content: center;
+			            font-size: 20px;
+			        '>
+			            🏠
+			        </div>
+			
+			        <!-- Title -->
+			        <div>
+			            <div style='font-size: 12px; opacity: 0.85; margin-bottom: 4px; letter-spacing: 0.5px;'>
+			                REPORT
+			            </div>
+			            <div style='font-size: 26px; font-weight: 700; line-height: 1;'>
+			                Planter Inspection Part Sales
+			            </div>
+			        </div>
+			    </div>
+			
+			    <!-- Right side: Welcome & Date -->
+			    <div style='text-align: right;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 6px;'>
+			            " & TimeGreeting & ", " & WelcomeName & "
+			        </div>
+			        <div style='font-size: 16px; font-weight: 600;'>
+			            📅 " & DateDisplay & "
+			        </div>
+			    </div>
+			</div>
+			"
+		lineageTag: 49efea2a-3c06-4cab-8367-26b26caa141e
+
+	measure 'Total Parts Sale $' =
+			// Planter parts sold by inspection customers (customer-level join).
+			// Parts and inspections are on separate invoices/branches by design —
+			// the Lorenzo team (91I) inspects; customers buy parts at their home branch.
+			VAR _InspectionCustomers = VALUES(Fact_PlanterInspections[CustomerNumber])
+			RETURN
+			CALCULATE(
+			    SUM(Fact_PlanterPartSales[SaleValue]),
+			    Fact_PlanterPartSales[Franchise] <> "ZP",
+			    Fact_PlanterPartSales[CustomerNumber] IN _InspectionCustomers
+			)
+		formatString: $#,##0.00
+		lineageTag: a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d
+
+	measure 'Total Parts Cost $' =
+			VAR _InspectionCustomers = VALUES(Fact_PlanterInspections[CustomerNumber])
+			RETURN
+			CALCULATE(
+			    SUM(Fact_PlanterPartSales[CostValue]),
+			    Fact_PlanterPartSales[Franchise] <> "ZP",
+			    Fact_PlanterPartSales[CustomerNumber] IN _InspectionCustomers
+			)
+		formatString: $#,##0.00
+		lineageTag: b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e
+
+	measure 'Total Labor $' = SUM(Fact_PlanterInspections[InvoicedLaborAmount])
+		formatString: $#,##0.00
+		lineageTag: c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f
+
+	measure 'Total Planter Inspections' = DISTINCTCOUNT(Fact_PlanterInspections[InvoiceNumber])
+		lineageTag: d4e5f6a7-b8c9-4d0e-1f2a-3b4c5d6e7f8a
+
+	measure 'Inspections with Part Sales' =
+			// Unique customers who had an inspection AND bought planter parts.
+			// Counts customers (not work orders) so repeat-inspection customers
+			// count once — gives a clean "how many converted" number.
+			VAR _CustomersWithParts =
+			    CALCULATETABLE(
+			        VALUES(Fact_PlanterPartSales[CustomerNumber]),
+			        Fact_PlanterPartSales[Franchise] <> "ZP"
+			    )
+			RETURN
+			CALCULATE(
+			    DISTINCTCOUNT(Fact_PlanterInspections[CustomerNumber]),
+			    FILTER(
+			        Fact_PlanterInspections,
+			        Fact_PlanterInspections[CustomerNumber] IN _CustomersWithParts
+			    )
+			)
+		lineageTag: e5f6a7b8-c9d0-4e1f-2a3b-4c5d6e7f8a9b
+
+	measure 'Inspections with Planter Promo' =
+			// Unique customers who had an inspection AND used the *PLANTER promo.
+			// Customer-grain — consistent with Inspections with Part Sales.
+			VAR _PromoCustomers =
+			    CALCULATETABLE(
+			        VALUES(Fact_PlanterPartSales[CustomerNumber]),
+			        Fact_PlanterPartSales[PartNumber] = "*PLANTER",
+			        Fact_PlanterPartSales[Franchise] = "ZP"
+			    )
+			RETURN
+			CALCULATE(
+			    DISTINCTCOUNT(Fact_PlanterInspections[CustomerNumber]),
+			    FILTER(
+			        Fact_PlanterInspections,
+			        Fact_PlanterInspections[CustomerNumber] IN _PromoCustomers
+			    )
+			)
+		lineageTag: f6a7b8c9-d0e1-4f2a-3b4c-5d6e7f8a9b0c
+
+	measure 'Has Planter Promo' =
+			VAR _PromoCustomers =
+			    CALCULATETABLE(
+			        VALUES(Fact_PlanterPartSales[CustomerNumber]),
+			        Fact_PlanterPartSales[PartNumber] = "*PLANTER",
+			        Fact_PlanterPartSales[Franchise] = "ZP"
+			    )
+			VAR _HasPromo =
+			    COUNTROWS(
+			        FILTER(
+			            Fact_PlanterInspections,
+			            Fact_PlanterInspections[CustomerNumber] IN _PromoCustomers
+			        )
+			    ) > 0
+			RETURN
+			IF(_HasPromo, "Yes", "No")
+		lineageTag: a7b8c9d0-e1f2-4a3b-4c5d-6e7f8a9b0c1d
+
+	measure 'Planter Parts Sale $' = SUM(Fact_PlanterPartSales[SaleValue])
+		formatString: $#,##0.00
+		lineageTag: b8c9d0e1-f2a3-4b4c-5d6e-7f8a9b0c1d2e
+
+	measure 'Planter Parts Cost $' = SUM(Fact_PlanterPartSales[CostValue])
+		formatString: $#,##0.00
+		lineageTag: c9d0e1f2-a3b4-4c5d-6e7f-8a9b0c1d2e3f
+
+	measure 'Hero Card - Inspection Part Sales' = ```
+			
+			VAR _PartsSale    = [Total Parts Sale $]
+			VAR _PartsCost    = [Total Parts Cost $]
+			VAR _Labor        = [Total Labor $]
+			VAR _Margin       = DIVIDE(_PartsSale - _PartsCost, _PartsSale, 0)
+			VAR _TotalInsp    = [Total Planter Inspections]
+			VAR _WithParts    = [Inspections with Part Sales]
+			VAR _WithPromo    = [Inspections with Planter Promo]
+			
+			VAR _SaleF   = IF(_PartsSale >= 1000, FORMAT(_PartsSale / 1000, "$#,##0.0") & "K", FORMAT(_PartsSale, "$#,##0"))
+			VAR _CostF   = IF(_PartsCost >= 1000, FORMAT(_PartsCost / 1000, "$#,##0.0") & "K", FORMAT(_PartsCost, "$#,##0"))
+			VAR _LaborF  = IF(_Labor     >= 1000, FORMAT(_Labor     / 1000, "$#,##0.0") & "K", FORMAT(_Labor,     "$#,##0"))
+			VAR _MarginF = FORMAT(_Margin, "0.0%")
+			VAR _InspF   = FORMAT(_TotalInsp, "#,##0")
+			VAR _PartsF  = FORMAT(_WithParts,  "#,##0")
+			VAR _PromoF  = FORMAT(_WithPromo,  "#,##0")
+			
+			RETURN "
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    padding: 20px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 10px;
+			    color: white;
+			    display: flex;
+			    align-items: center;
+			    height: 155px;
+			    box-sizing: border-box;
+			    gap: 0;
+			'>
+			    <!-- LEFT: Option A style — open columns, thin dividers, large numbers -->
+			    <div style='flex: 1; display: flex; align-items: center; justify-content: space-around;'>
+			        <div style='text-align: center; flex: 1;'>
+			            <div style='font-size: 14px; opacity: 0.8; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;'>Total Parts Sale $</div>
+			            <div style='font-size: 42px; font-weight: 700; line-height: 1;'>" & _SaleF & "</div>
+			        </div>
+			        <div style='width: 1px; height: 70px; background: rgba(255,255,255,0.2); flex-shrink: 0;'></div>
+			        <div style='text-align: center; flex: 1;'>
+			            <div style='font-size: 14px; opacity: 0.8; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;'>Total Parts Cost $</div>
+			            <div style='font-size: 42px; font-weight: 700; line-height: 1;'>" & _CostF & "</div>
+			        </div>
+			        <div style='width: 1px; height: 70px; background: rgba(255,255,255,0.2); flex-shrink: 0;'></div>
+			        <div style='text-align: center; flex: 1;'>
+			            <div style='font-size: 14px; opacity: 0.8; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;'>Total Labor $</div>
+			            <div style='font-size: 42px; font-weight: 700; line-height: 1;'>" & _LaborF & "</div>
+			        </div>
+			        <div style='width: 1px; height: 70px; background: rgba(255,255,255,0.2); flex-shrink: 0;'></div>
+			        <div style='text-align: center; flex: 1;'>
+			            <div style='font-size: 14px; opacity: 0.8; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;'>Margin</div>
+			            <div style='font-size: 42px; font-weight: 700; line-height: 1; color: #fbbf24;'>" & _MarginF & "</div>
+			        </div>
+			    </div>
+			
+			    <!-- SECTION DIVIDER -->
+			    <div style='width: 2px; height: 110px; background: rgba(255,255,255,0.4); margin: 0 16px; flex-shrink: 0;'></div>
+			
+			    <!-- RIGHT: Planter Inspections — featured total + sub-stats -->
+			    <div style='
+			        flex: 0 0 260px;
+			        padding: 10px 16px 10px 16px;
+			        display: flex;
+			        flex-direction: column;
+			        align-items: center;
+			        justify-content: center;
+			        gap: 4px;
+			    '>
+			        <div style='font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px; opacity: 0.7; text-align: center;'>Planter Inspections</div>
+			        <div style='text-align: center;'>
+			            <div style='font-size: 46px; font-weight: 700; line-height: 1;'>" & _InspF & "</div>
+			            <div style='font-size: 10px; opacity: 0.6; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px;'>Total</div>
+			        </div>
+			        <div style='width: 75%; height: 1px; background: rgba(255,255,255,0.25); margin: 2px 0;'></div>
+			        <div style='display: flex; align-items: center; justify-content: center; width: 100%;'>
+			            <div style='text-align: center; flex: 1;'>
+			                <div style='font-size: 26px; font-weight: 700; line-height: 1;'>" & _PartsF & "</div>
+			                <div style='font-size: 10px; opacity: 0.6; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px;'>W/ Parts</div>
+			            </div>
+			            <div style='width: 1px; height: 36px; background: rgba(255,255,255,0.2);'></div>
+			            <div style='text-align: center; flex: 1;'>
+			                <div style='font-size: 26px; font-weight: 700; line-height: 1; color: #4ade80;'>" & _PromoF & "</div>
+			                <div style='font-size: 10px; opacity: 0.6; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px;'>Promo</div>
+			            </div>
+			        </div>
+			    </div>
+			</div>
+			"
+			
+			```
+		lineageTag: 5c8fe9a1-a15b-4c3a-b1e2-264dadd7af4c
+
+	measure 'Inspection Count' = ```
+			DISTINCTCOUNT(Fact_PlanterInspections[InvoiceNumber])
+			
+			```
+		formatString: 0
+		lineageTag: 909f0660-6881-4457-8a83-b7402c92e81e
+
+	measure 'Parts Multiplier' =
+			// Parts revenue generated per $1 of inspection labor.
+			// e.g. 27.0 means the inspection drove 27x its labor cost in parts sales.
+			// Use a color-scale conditional format: high = green, zero = red.
+			DIVIDE([Total Parts Sale $], [Total Labor $], 0)
+		formatString: #,##0.0
+		lineageTag: d1e2f3a4-b5c6-4d7e-8f9a-0b1c2d3e4f5a
+
+	measure Converted =
+			// "Yes" = inspection customer bought planter parts during the season.
+			// "No" = missed opportunity — had inspection, no parts sale.
+			// Apply conditional formatting: green = Yes, red = No.
+			IF([Total Parts Sale $] > 0, "Yes", "No")
+		lineageTag: e2f3a4b5-c6d7-4e8f-9a0b-1c2d3e4f5a6b
+
+	measure 'Page 2 - Header' =
+			
+			// Get user name
+			VAR _User = USERPRINCIPALNAME()
+			VAR _Position = SEARCH("@", _User, 1)
+			VAR _Name = LEFT(_User, _Position - 1)
+			VAR _FirstLetter = UPPER(LEFT(_Name, 1))
+			VAR _LastName = MID(_Name, 2, LEN(_Name) - 1)
+			VAR _FormattedLastName =
+			    UPPER(LEFT(_LastName, 1)) & LOWER(MID(_LastName, 2, LEN(_LastName)))
+			VAR WelcomeName = _FirstLetter & "." & _FormattedLastName
+			
+			// Get current date/time info
+			VAR CurrentDate = TODAY()
+			VAR DateDisplay = FORMAT(CurrentDate, "MMM D, YYYY")
+			VAR CurrentHour = HOUR(NOW())
+			VAR TimeGreeting =
+			    IF(CurrentHour < 12, "Good Morning",
+			    IF(CurrentHour < 17, "Good Afternoon",
+			    "Good Evening"))
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    height: 85px;
+			    padding: 15px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 10px;
+			    color: white;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-between;
+			    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    box-sizing: border-box;
+			'>
+			    <!-- Left side: Dashboard Title -->
+			    <div style='display: flex; align-items: center; gap: 15px;'>
+			        <!-- Home icon -->
+			        <div style='
+			            width: 40px;
+			            height: 40px;
+			            background: rgba(255,255,255,0.15);
+			            border-radius: 8px;
+			            display: flex;
+			            align-items: center;
+			            justify-content: center;
+			            font-size: 20px;
+			        '>
+			            🏠
+			        </div>
+			
+			        <!-- Title -->
+			        <div>
+			            <div style='font-size: 12px; opacity: 0.85; margin-bottom: 4px; letter-spacing: 0.5px;'>
+			                REPORT
+			            </div>
+			            <div style='font-size: 26px; font-weight: 700; line-height: 1;'>
+			                Planter Part Sales
+			            </div>
+			        </div>
+			    </div>
+			
+			    <!-- Right side: Welcome & Date -->
+			    <div style='text-align: right;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 6px;'>
+			            " & TimeGreeting & ", " & WelcomeName & "
+			        </div>
+			        <div style='font-size: 16px; font-weight: 600;'>
+			            📅 " & DateDisplay & "
+			        </div>
+			    </div>
+			</div>
+			"
+		lineageTag: 83d41087-d1fd-4384-800b-8952eff933e3
+
+	measure 'Total Invoice Parts Sale $' =
+			// All parts on planter invoices, scoped to inspection customers only.
+			// Same customer-level join pattern as Page 1 — keeps both pages consistent
+			// and prevents the $17M all-customers figure from appearing in context of
+			// this inspection-focused report.
+			VAR _InspectionCustomers = VALUES(Fact_PlanterInspections[CustomerNumber])
+			RETURN
+			CALCULATE(
+			    SUM(Fact_PlanterInvoiceAllParts[SaleValue]),
+			    Fact_PlanterInvoiceAllParts[CustomerNumber] IN _InspectionCustomers
+			)
+		formatString: $#,##0.00
+		lineageTag: 1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d
+
+	measure 'Total Invoice Parts Cost $' =
+			VAR _InspectionCustomers = VALUES(Fact_PlanterInspections[CustomerNumber])
+			RETURN
+			CALCULATE(
+			    SUM(Fact_PlanterInvoiceAllParts[CostValue]),
+			    Fact_PlanterInvoiceAllParts[CustomerNumber] IN _InspectionCustomers
+			)
+		formatString: $#,##0.00
+		lineageTag: 2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d6e
+
+	measure 'Invoice Parts Margin %' =
+			DIVIDE(
+			    [Total Invoice Parts Sale $] - [Total Invoice Parts Cost $],
+			    [Total Invoice Parts Sale $],
+			    0
+			)
+		formatString: 0.0%
+		lineageTag: 3c4d5e6f-7a8b-4c9d-0e1f-2a3b4c5d6e7f
+
+	measure 'Planter Parts $' =
+			VAR _InspectionCustomers = VALUES(Fact_PlanterInspections[CustomerNumber])
+			RETURN
+			CALCULATE(
+			    SUM(Fact_PlanterInvoiceAllParts[SaleValue]),
+			    Fact_PlanterInvoiceAllParts[IsPlanterPart] = TRUE(),
+			    Fact_PlanterInvoiceAllParts[CustomerNumber] IN _InspectionCustomers
+			)
+		formatString: $#,##0.00
+		lineageTag: 4d5e6f7a-8b9c-4d0e-1f2a-3b4c5d6e7f8a
+
+	measure 'Add-On Parts $' =
+			VAR _InspectionCustomers = VALUES(Fact_PlanterInspections[CustomerNumber])
+			RETURN
+			CALCULATE(
+			    SUM(Fact_PlanterInvoiceAllParts[SaleValue]),
+			    Fact_PlanterInvoiceAllParts[IsPlanterPart] = FALSE(),
+			    Fact_PlanterInvoiceAllParts[CustomerNumber] IN _InspectionCustomers
+			)
+		formatString: $#,##0.00
+		lineageTag: 5e6f7a8b-9c0d-4e1f-2a3b-4c5d6e7f8a9b
+
+	measure 'Hero Card - Planter Part Sales' = ```
+			VAR _TotalSale = [Total Invoice Parts Sale $]
+			VAR _TotalCost = [Total Invoice Parts Cost $]
+			VAR _Margin    = [Invoice Parts Margin %]
+			VAR _PlanterS  = [Planter Parts $]
+			VAR _AddOnS    = [Add-On Parts $]
+			
+			VAR _SaleF    = IF(_TotalSale >= 1000, FORMAT(_TotalSale / 1000, "$#,##0.0") & "K", FORMAT(_TotalSale, "$#,##0"))
+			VAR _CostF    = IF(_TotalCost >= 1000, FORMAT(_TotalCost / 1000, "$#,##0.0") & "K", FORMAT(_TotalCost, "$#,##0"))
+			VAR _MarginF  = FORMAT(_Margin, "0.0%")
+			VAR _PlanterF = IF(_PlanterS >= 1000, FORMAT(_PlanterS / 1000, "$#,##0.0") & "K", FORMAT(_PlanterS, "$#,##0"))
+			VAR _AddOnF   = IF(_AddOnS   >= 1000, FORMAT(_AddOnS   / 1000, "$#,##0.0") & "K", FORMAT(_AddOnS,   "$#,##0"))
+			
+			RETURN "
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    padding: 20px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 10px;
+			    color: white;
+			    display: flex;
+			    align-items: center;
+			    height: 155px;
+			    box-sizing: border-box;
+			    gap: 0;
+			'>
+			    <!-- LEFT: Equation — Planter + Add-On = Total -->
+			    <div style='flex: 1; display: flex; align-items: center; justify-content: space-around;'>
+			
+			        <div style='text-align: center; flex: 1;'>
+			            <div style='font-size: 13px; opacity: 0.75; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;'>Planter Parts</div>
+			            <div style='font-size: 38px; font-weight: 700; line-height: 1; color: #60a5fa;'>" & _PlanterF & "</div>
+			        </div>
+			
+			        <div style='font-size: 22px; font-weight: 300; opacity: 0.45; flex-shrink: 0; padding: 0 2px; margin-top: 8px;'>+</div>
+			
+			        <div style='text-align: center; flex: 1;'>
+			            <div style='font-size: 13px; opacity: 0.75; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;'>Add-On Parts</div>
+			            <div style='font-size: 38px; font-weight: 700; line-height: 1; color: #a78bfa;'>" & _AddOnF & "</div>
+			        </div>
+			
+			        <div style='font-size: 22px; font-weight: 300; opacity: 0.45; flex-shrink: 0; padding: 0 2px; margin-top: 8px;'>=</div>
+			
+			        <div style='text-align: center; flex: 1;'>
+			            <div style='font-size: 13px; opacity: 0.75; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;'>Total Parts Sale</div>
+			            <div style='font-size: 42px; font-weight: 700; line-height: 1;'>" & _SaleF & "</div>
+			        </div>
+			    </div>
+			
+			    <!-- SECTION DIVIDER -->
+			    <div style='width: 2px; height: 110px; background: rgba(255,255,255,0.4); margin: 0 20px; flex-shrink: 0;'></div>
+			
+			    <!-- RIGHT: Cost + Margin context -->
+			    <div style='flex: 0 0 240px; display: flex; align-items: center;'>
+			        <div style='text-align: center; flex: 1;'>
+			            <div style='font-size: 13px; opacity: 0.75; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;'>Total Cost</div>
+			            <div style='font-size: 30px; font-weight: 700; line-height: 1;'>" & _CostF & "</div>
+			        </div>
+			        <div style='width: 1px; height: 70px; background: rgba(255,255,255,0.2); flex-shrink: 0;'></div>
+			        <div style='text-align: center; flex: 1;'>
+			            <div style='font-size: 13px; opacity: 0.75; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;'>Margin</div>
+			            <div style='font-size: 30px; font-weight: 700; line-height: 1; color: #fbbf24;'>" & _MarginF & "</div>
+			        </div>
+			    </div>
+			</div>
+			"
+			
+			```
+		lineageTag: 6f7a8b9c-0d1e-4f2a-3b4c-5d6e7f8a9b0c
+
+	column Value
+		isHidden
+		lineageTag: da2dfa23-0c4c-4e9d-8014-3cc5710e756b
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Value]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition _Measures = calculated
+		mode: import
+		source = { "This table holds all measures for the Parts Reorder Monitoring report" }
+
+	annotation PBI_Id = da82ad85df114f0dbe8c17ce73f079a8
+

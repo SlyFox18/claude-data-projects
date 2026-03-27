@@ -1,0 +1,26 @@
+model Model
+	culture: en-US
+	defaultPowerBIDataSourceVersion: powerBI_V3
+	sourceQueryCulture: en-US
+	dataAccessOptions
+		legacyRedirects
+		returnErrorValuesAsNull
+
+annotation __PBI_TimeIntelligenceEnabled = 0
+
+annotation PBI_QueryOrder = ["Planter_Inspection_Parts","Dim_Branch","Base_Customer_Info","Data Refresh","Planter_Parts","Planter_Part_List","Planter_With_Inpection_Parts"]
+
+annotation PBI_ProTooling = ["DevMode"]
+
+ref table Planter_Inspection_Parts
+ref table Dim_Branch
+ref table Base_Customer_Info
+ref table MeasuresTable
+ref table 'Data Refresh'
+ref table Planter_Parts
+ref table Planter_Part_List
+ref table DimDate
+ref table Planter_With_Inpection_Parts
+
+ref cultureInfo en-US
+

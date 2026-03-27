@@ -1,0 +1,30 @@
+relationship 5b648620-bf75-f400-56c8-2b8e6b2e9626
+	fromColumn: Planter_Inspection_Parts.Location
+	toColumn: Dim_Branch.BranchID
+
+relationship 87bba3ea-f7fe-e347-ea93-a0d689012449
+	fromColumn: Planter_Inspection_Parts.account_no
+	toColumn: Base_Customer_Info.Account
+
+relationship 3deaf6a8-4aee-cefd-8e48-13d1d0aede73
+	crossFilteringBehavior: bothDirections
+	toCardinality: many
+	fromColumn: Planter_Part_List.pi_Part_No
+	toColumn: Planter_Parts.PART_NO
+
+relationship 304e332a-d7fe-8fd3-fffd-fc1241493930
+	fromColumn: Planter_Parts.customer_no
+	toColumn: Base_Customer_Info.Account
+
+relationship 657453cc-d25a-0214-c5ef-61a3d9278ca1
+	fromColumn: Planter_Parts.BRANCH
+	toColumn: Dim_Branch.BranchID
+
+relationship b6650daa-38b7-a31a-fa75-ab71def5be2b
+	fromColumn: Planter_Parts.Trans_Datetime
+	toColumn: DimDate.Date
+
+relationship b4c2bc9d-23bc-bffb-8d7c-da8d2dd021dc
+	fromColumn: Planter_Inspection_Parts.account_no
+	toColumn: Planter_With_Inpection_Parts.account_no
+

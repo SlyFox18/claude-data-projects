@@ -1,0 +1,60 @@
+relationship AutoDetected_1cc5d4d3-4846-4479-9aba-02f143964902
+	fromColumn: Fact_PlanterInspections.BranchCode
+	toColumn: dim_BranchLocation.BranchID
+
+relationship AutoDetected_fce1ad11-9733-4422-8958-5156f6a8422d
+	fromColumn: Fact_PlanterInspectionParts.BranchCode
+	toColumn: dim_BranchLocation.BranchID
+
+relationship AutoDetected_e93e0d0b-a655-4af3-bd51-ffd436659c11
+	fromColumn: Fact_PlanterPartSales.BranchCode
+	toColumn: dim_BranchLocation.BranchID
+
+relationship Inspections_to_CustomerList
+	fromColumn: Fact_PlanterInspections.CustomerNumber
+	toColumn: dim_CustomerList.CustomerNumber
+
+relationship InspectionParts_to_CustomerList
+	fromColumn: Fact_PlanterInspectionParts.CustomerNumber
+	toColumn: dim_CustomerList.CustomerNumber
+
+relationship PartSales_to_CustomerList
+	fromColumn: Fact_PlanterPartSales.CustomerNumber
+	toColumn: dim_CustomerList.CustomerNumber
+
+relationship Inspections_to_DateTable
+	fromColumn: Fact_PlanterInspections.InvoiceDate
+	toColumn: dim_DateTable.Date
+
+relationship InspectionParts_to_DateTable
+	fromColumn: Fact_PlanterInspectionParts.TransactionDate
+	toColumn: dim_DateTable.Date
+
+relationship PartSales_to_DateTable
+	fromColumn: Fact_PlanterPartSales.TransactionDate
+	toColumn: dim_DateTable.Date
+
+relationship AutoDetected_d68e7c48-d0ec-4f61-bc27-8a7d5315b70b
+	fromColumn: Fact_PlanterInspectionParts.PartNumber
+	toColumn: dim_Parts.PartNumber
+
+relationship AutoDetected_4686c38c-763b-4479-be06-ad6e2bac06b5
+	fromColumn: Fact_PlanterPartSales.PartNumber
+	toColumn: dim_Parts.PartNumber
+
+relationship PlanterInvoiceAllParts_to_BranchLocation
+	fromColumn: Fact_PlanterInvoiceAllParts.BranchCode
+	toColumn: dim_BranchLocation.BranchID
+
+relationship PlanterInvoiceAllParts_to_CustomerList
+	fromColumn: Fact_PlanterInvoiceAllParts.CustomerNumber
+	toColumn: dim_CustomerList.CustomerNumber
+
+relationship PlanterInvoiceAllParts_to_DateTable
+	fromColumn: Fact_PlanterInvoiceAllParts.TransactionDate
+	toColumn: dim_DateTable.Date
+
+relationship PlanterInvoiceAllParts_to_Parts
+	fromColumn: Fact_PlanterInvoiceAllParts.PartNumber
+	toColumn: dim_Parts.PartNumber
+

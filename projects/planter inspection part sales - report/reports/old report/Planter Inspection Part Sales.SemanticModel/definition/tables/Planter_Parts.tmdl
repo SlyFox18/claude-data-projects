@@ -1,0 +1,104 @@
+table Planter_Parts
+	lineageTag: 07b6cbba-8cf3-4d68-a89a-e3b71d260054
+
+	column REF_NO
+		dataType: string
+		lineageTag: 32f282bc-b42a-4668-84fd-603cdb0ce7cd
+		summarizeBy: none
+		sourceColumn: REF_NO
+
+		annotation SummarizationSetBy = Automatic
+
+	column PART_NO
+		dataType: string
+		lineageTag: c41e4cbe-a8c2-4d5e-b035-f11820879c92
+		summarizeBy: none
+		sourceColumn: PART_NO
+
+		annotation SummarizationSetBy = Automatic
+
+	column Customer
+		dataType: string
+		lineageTag: 142e68a2-c15a-47f9-a12c-6f3cb04ad40c
+		summarizeBy: none
+		sourceColumn: Customer
+
+		annotation SummarizationSetBy = Automatic
+
+	column SALE_VAL
+		dataType: double
+		formatString: \$#,0.###############;(\$#,0.###############);\$#,0.###############
+		lineageTag: 65f56ced-7b30-48d5-9e96-ba656b6472ed
+		summarizeBy: sum
+		sourceColumn: SALE_VAL
+
+		annotation SummarizationSetBy = Automatic
+
+	column COST_VAL
+		dataType: double
+		lineageTag: f2931f51-ad40-4c4a-b8c6-4977cd65b5a7
+		summarizeBy: sum
+		sourceColumn: COST_VAL
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column BRANCH
+		dataType: string
+		lineageTag: 69c82cf9-081f-47a4-ba8e-9a992495b868
+		summarizeBy: none
+		sourceColumn: BRANCH
+
+		annotation SummarizationSetBy = Automatic
+
+	column customer_no
+		dataType: double
+		lineageTag: a43f7c06-b119-4310-b37a-3a375c00a3e8
+		summarizeBy: none
+		sourceColumn: customer_no
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column Trans_Datetime
+		dataType: dateTime
+		formatString: Short Date
+		lineageTag: 55f899a1-2485-4c28-be6d-a9e4d5686830
+		summarizeBy: none
+		sourceColumn: Trans_Datetime
+
+		changedProperty = DataType
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column 'Customer Name' =
+			
+			VAR CommaPosition = FIND(",", Planter_Parts[Customer], 1, 0)
+			VAR LastName = IF(CommaPosition > 0, LEFT(Planter_Parts[Customer], CommaPosition - 1), "")
+			VAR FirstName = IF(CommaPosition > 0, MID(Planter_Parts[Customer], CommaPosition + 2, LEN(Planter_Parts[Customer])), Planter_Parts[Customer])
+			RETURN TRIM(FirstName) & " " & TRIM(LastName)
+		lineageTag: 67669d80-e45f-4389-8793-bf25c72a5c8f
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	partition Planter_Parts = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-wczpfb6a52fude7azc6zsgeuty.datawarehouse.fabric.microsoft.com", "LH_Service_Reports_Data"),
+				    dbo_Planter_Parts = Source{[Schema="dbo",Item="Planter_Parts"]}[Data],
+				    #"Capitalized Each Word" = Table.TransformColumns(dbo_Planter_Parts,{{"DESCRIPTION", Text.Proper, type text}}),
+				    #"Renamed Columns" = Table.RenameColumns(#"Capitalized Each Word",{{"DESCRIPTION", "Customer"}}),
+				    #"Changed Type" = Table.TransformColumnTypes(#"Renamed Columns",{{"customer_no", type number}})
+				in
+				    #"Changed Type"
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+
