@@ -1,5 +1,5 @@
 {
-  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.5.0/schema.json",
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.7.0/schema.json",
   "name": "8e23f4343dc41dc1a510",
   "position": {
     "x": 219.72876516773732,
@@ -50,6 +50,26 @@
         },
         "Values": {
           "projections": [
+            {
+              "field": {
+                "Aggregation": {
+                  "Expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "TechnicianEfficiency"
+                        }
+                      },
+                      "Property": "Branch"
+                    }
+                  },
+                  "Function": 3
+                }
+              },
+              "queryRef": "Min(TechnicianEfficiency.Branch)",
+              "nativeQueryRef": "Branch",
+              "displayName": "Branch"
+            },
             {
               "field": {
                 "Aggregation": {
@@ -745,6 +765,20 @@
           "selector": {
             "metadata": "_Measures.Total Hours"
           }
+        },
+        {
+          "properties": {
+            "styleSubtotals": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "Min(TechnicianEfficiency.Branch)"
+          }
         }
       ],
       "subTotals": [
@@ -775,6 +809,31 @@
           "selector": {
             "id": "Row"
           }
+        },
+        {
+          "properties": {
+            "perRowLevel": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "rowSubtotals": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "columnSubtotals": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            }
+          }
         }
       ],
       "columnWidth": [
@@ -783,7 +842,7 @@
             "value": {
               "expr": {
                 "Literal": {
-                  "Value": "144.1850667471738D"
+                  "Value": "119.45891917845543D"
                 }
               }
             }
@@ -811,7 +870,7 @@
             "value": {
               "expr": {
                 "Literal": {
-                  "Value": "150.16043241131024D"
+                  "Value": "123.0753141611708D"
                 }
               }
             }
@@ -825,7 +884,7 @@
             "value": {
               "expr": {
                 "Literal": {
-                  "Value": "128.99815060621773D"
+                  "Value": "104.23949036867342D"
                 }
               }
             }
@@ -839,7 +898,7 @@
             "value": {
               "expr": {
                 "Literal": {
-                  "Value": "119.60727904324281D"
+                  "Value": "97.13321064673971D"
                 }
               }
             }
