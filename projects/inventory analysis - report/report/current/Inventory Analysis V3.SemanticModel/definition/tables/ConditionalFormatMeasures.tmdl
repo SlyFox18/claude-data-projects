@@ -4,57 +4,57 @@ table ConditionalFormatMeasures
 	measure 'CF R12 vs P12' =
 			
 			IF (
-			    NOT ( ISBLANK ( [Previous 12 Sales] ) )
-			        && NOT ( ISBLANK ( [Rolling12_Sales] ) )
-			            && [Previous 12 Sales] > [Rolling12_Sales],
+			    NOT ( ISBLANK ( [Rolling12_Sales]  ) )
+			        && NOT ( ISBLANK ( [Previous 12 Sales] ) )
+			            && [Rolling12_Sales] > [Previous 12 Sales],
 			    1,
 			    0
 			)
 		formatString: 0
 		lineageTag: cb415cac-9538-48c2-948f-94bde1ae88ce
 
-	measure 'CF R12 vs P24' =
+	measure 'CF P12 vs P24' =
 			
 			IF (
-			    NOT ( ISBLANK ( [Previous 24 Sales] ) )
-			        && NOT ( ISBLANK ( [Rolling12_Sales] ) )
-			            && [Previous 24 Sales] > [Rolling12_Sales],
+			    NOT ( ISBLANK ( [Previous 12 Sales] ) )
+			        && NOT ( ISBLANK ( [Previous 24 Sales]  ) )
+			            && [Previous 12 Sales] > [Previous 24 Sales],
 			    1,
 			    0
 			)
 		formatString: 0
 		lineageTag: 6a779aea-5f1e-483d-b52f-af700aeaaae2
 
-	measure 'CF R12 vs P36' =
+	measure 'CF P24 vs P36' =
 			
 			IF (
-			    NOT ( ISBLANK ( [Previous 36 Sales] ) )
-			        && NOT ( ISBLANK ( [Rolling12_Sales] ) )
-			            && [Previous 36 Sales] > [Rolling12_Sales],
+			    NOT ( ISBLANK ( [Previous 24 Sales] ) )
+			        && NOT ( ISBLANK ( [Previous 36 Sales] ) )
+			            && [Previous 24 Sales] > [Previous 36 Sales],
 			    1,
 			    0
 			)
 		formatString: 0
 		lineageTag: 9a5636aa-f9cb-4a3c-aaa5-8b2cc8fd9f45
 
-	measure 'CF R12 vs P48' =
+	measure 'CF P36 vs P48' =
 			
 			IF (
-			    NOT ( ISBLANK ( [Previous 48 Sales] ) )
-			        && NOT ( ISBLANK ( [Rolling12_Sales] ) )
-			            && [Previous 48 Sales] > [Rolling12_Sales],
+			    NOT ( ISBLANK ( [Previous 36 Sales] ) )
+			        && NOT ( ISBLANK ( [Previous 36 Sales] ) )
+			            && [Previous 36 Sales] > [Previous 48 Sales],
 			    1,
 			    0
 			)
 		formatString: 0
 		lineageTag: ce4e3965-9b25-423b-b4a9-eb3179bfd37a
 
-	measure 'CF R12 vs P60' =
+	measure 'CF P48 vs P60' =
 			
 			IF (
-			    NOT ( ISBLANK ( [Previous 60 Sales] ) )
-			        && NOT ( ISBLANK ( [Rolling12_Sales] ) )
-			            && [Previous 60 Sales] > [Rolling12_Sales],
+			    NOT ( ISBLANK ( [Previous 48 Sales] ) )
+			        && NOT ( ISBLANK ( [Previous 60 Sales] ) )
+			            && [Previous 48 Sales] > [Previous 60 Sales],
 			    1,
 			    0
 			)
