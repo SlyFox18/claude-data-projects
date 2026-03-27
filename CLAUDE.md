@@ -79,6 +79,7 @@ Source System (ODBC) → Raw Tables (Lakehouse) → Dimensions → Fact Tables �
 - Tables in `tables/` subfolder
 - Measures typically in `_Measures.tmdl`
 - Cultures in `cultures/` subfolder
+- **TMDL does NOT support `//` comments** — never add `//` comment lines anywhere in a `.tmdl` file (they cause parse errors). DAX `//` comments inside backtick measure expressions are fine; TMDL-level comments are not.
 
 ### CSV Imports to Fabric
 1. Upload CSV to Lakehouse Files section
