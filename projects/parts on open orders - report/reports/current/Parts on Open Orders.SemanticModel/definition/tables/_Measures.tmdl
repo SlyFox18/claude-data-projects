@@ -1761,11 +1761,6 @@ table _Measures
 		displayFolder: Core Metrics
 		lineageTag: 6324946c-adb2-45aa-b670-f807213afddd
 
-	measure 'Selected Trailing Months' = SELECTEDVALUE(Trailing_Months_Selector[Months], 12)
-		formatString: 0
-		displayFolder: Open Order Ratio
-		lineageTag: e1a2b3c4-d5e6-f7a8-b9c0-d1e2f3a4b5c6
-
 	measure 'Selected Period Days' = SELECTEDVALUE(Ratio_Period_Selector[Days], 90)
 		formatString: 0
 		displayFolder: Open Order Ratio
@@ -1774,12 +1769,15 @@ table _Measures
 	measure 'Invoiced Parts (Period)' =
 			
 			VAR _days = [Selected Period Days]
+			VAR _minDays = [Selected Period Min Days]
 			VAR _startDate = TODAY() - _days
+			VAR _endDate = TODAY() - _minDays
 			RETURN
 			CALCULATE(
 			    SUM(Fact_PartsInvoiced_ByBranch[Invoiced_Parts]),
 			    REMOVEFILTERS(dim_DateTable),
-			    Fact_PartsInvoiced_ByBranch[InvoiceDate] >= _startDate
+			    Fact_PartsInvoiced_ByBranch[InvoiceDate] >= _startDate,
+			    Fact_PartsInvoiced_ByBranch[InvoiceDate] <= _endDate
 			)
 		formatString: \$#,0.00;(\$#,0.00)
 		displayFolder: Open Order Ratio
@@ -1788,9 +1786,11 @@ table _Measures
 	measure 'Order Total (Period)' =
 			
 			VAR _days = [Selected Period Days]
+			VAR _minDays = [Selected Period Min Days]
 			RETURN
 			CALCULATE(
 			    [Order Total],
+			    Fact_Parts_Open_Tickets[Days_Open] >= _minDays,
 			    Fact_Parts_Open_Tickets[Days_Open] <= _days
 			)
 		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
@@ -1799,18 +1799,18 @@ table _Measures
 
 	measure 'Open Order Ratio (Period)' =
 			
-			VAR _days = [Selected Period Days]
-			RETURN
 			DIVIDE(
-			    CALCULATE(
-			        [Order Total],
-			        Fact_Parts_Open_Tickets[Days_Open] <= _days
-			    ),
+			    [Order Total (Period)],
 			    [Invoiced Parts (Period)]
 			)
 		formatString: 0.0%
 		displayFolder: Open Order Ratio
 		lineageTag: b8c9d0e1-f2a3-4567-bcde-890123456789
+
+	measure 'Selected Period Min Days' = SELECTEDVALUE(Ratio_Period_Selector[MinDays], 61)
+		formatString: 0
+		displayFolder: Open Order Ratio
+		lineageTag: e6f7a8b9-d0e1-2345-fabc-678901234568
 
 	column Value
 		isHidden
