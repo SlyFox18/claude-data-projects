@@ -46,6 +46,7 @@ Configuration tables for visual formatting. Values here drive conditional format
 - `Fact_Part_Transactions_Incremental.pq` — uses RangeStart/RangeEnd, sources from InTrans_Incremental
 
 ## Documentation Status
+- In-repo docs: ✅ CLAUDE.md | ✅ PROJECT-SUMMARY.md
 - Obsidian stakeholder docs: ✅ Complete — `Data Projects/Reports/Inventory Analysis.md`
 
 ## Promotion Checklist (before moving to production)
