@@ -30,7 +30,16 @@ table Ratio_Period_Selector
 
 		annotation SummarizationSetBy = Automatic
 
+	column MinDays
+		dataType: int64
+		formatString: 0
+		lineageTag: e5f6a7b8-c9d0-1234-efab-567890abcdef
+		isNameInferred
+		sourceColumn: [MinDays]
+
+		annotation SummarizationSetBy = Automatic
+
 	partition Ratio_Period_Selector = calculated
 		mode: import
-		source = DATATABLE("Days", INTEGER, "Label", STRING, "SortOrder", INTEGER, {{7, "0-7 days", 1}, {14, "8-14 days", 2}, {30, "15-30 days", 3}, {60, "31-60 days", 4}, {90, "61-90 days", 5}, {180, "6 Months", 6}, {365, "1 Year", 7}})
+		source = DATATABLE("Days", INTEGER, "Label", STRING, "SortOrder", INTEGER, "MinDays", INTEGER, {{7, "0-7 days", 1, 0}, {14, "8-14 days", 2, 8}, {30, "15-30 days", 3, 15}, {60, "31-60 days", 4, 31}, {90, "61-90 days", 5, 61}, {180, "6 Months", 6, 91}, {365, "1 Year", 7, 181}})
 

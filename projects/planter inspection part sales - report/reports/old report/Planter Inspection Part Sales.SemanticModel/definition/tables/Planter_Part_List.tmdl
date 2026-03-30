@@ -1,0 +1,33 @@
+table Planter_Part_List
+	lineageTag: 7ed71e1e-db8f-434b-ac5e-8d34a3b14abb
+
+	column pi_Part_No
+		dataType: string
+		lineageTag: ecdff4de-ed01-44c2-b8d3-70ac5c892f5b
+		summarizeBy: none
+		sourceColumn: pi_Part_No
+
+		annotation SummarizationSetBy = Automatic
+
+	column pi_Commodity_Code
+		dataType: string
+		lineageTag: e8b801d5-4914-41d1-a724-3abf8a9de1de
+		summarizeBy: none
+		sourceColumn: pi_Commodity_Code
+
+		annotation SummarizationSetBy = Automatic
+
+	partition Planter_Part_List = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-wczpfb6a52fude7azc6zsgeuty.datawarehouse.fabric.microsoft.com", "LH_Service_Reports_Data"),
+				    dbo_Planter_Part_List = Source{[Schema="dbo",Item="Planter_Part_List"]}[Data],
+				    #"Removed Duplicates" = Table.Distinct(dbo_Planter_Part_List, {"pi_Part_No"})
+				in
+				    #"Removed Duplicates"
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

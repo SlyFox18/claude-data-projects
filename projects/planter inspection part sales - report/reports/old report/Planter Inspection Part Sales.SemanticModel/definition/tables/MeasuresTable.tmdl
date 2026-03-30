@@ -1,0 +1,365 @@
+table MeasuresTable
+	lineageTag: bcbb18b6-b7f2-46aa-a6fd-72783640bd9c
+
+	measure 'Part Sale $' =
+			
+			MAX ( Planter_Inspection_Parts[Total_SALE_VAL] )
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 6c23cb29-c65c-406d-9c8f-fd3c7be13d3a
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Parts Cost $' =
+			
+			MAX ( Planter_Inspection_Parts[Total_COST_VAL] )
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 5cbbfff9-e74e-4fab-8114-f4ac8aadd617
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Labor $' =
+			
+			SUM ( Planter_Inspection_Parts[Inv_Lab_Val] )
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 0f6cceaf-104d-4e99-b435-59a13cb33b98
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Parts Sales' =
+			
+			SUM ( Planter_Parts[SALE_VAL] )
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: c4d536f5-d64d-4528-88cc-e5454012965f
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Parts Cost' =
+			
+			SUM ( Planter_Parts[COST_VAL] )
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: fc5361f7-a9a1-48bb-a502-7670666682a6
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure Dummy =
+			
+			1
+		formatString: 0
+		lineageTag: ddbbd42a-1306-42e6-903d-72478a95239c
+
+	measure 'Part Sales Total' =
+			
+			SUMX (
+			    SUMMARIZE (
+			        Planter_Inspection_Parts,
+			        Planter_Inspection_Parts[Customer],
+			        "Part Sale $", MAX ( Planter_Inspection_Parts[Total_SALE_VAL] )
+			    ),
+			    [Part Sale $]
+			)
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 6b115583-f661-4526-9648-0875c8577154
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Part Cost Total' =
+			
+			SUMX (
+			    SUMMARIZE (
+			        Planter_Inspection_Parts,
+			        Planter_Inspection_Parts[Customer],
+			        "Part Sale $", MAX ( Planter_Inspection_Parts[Total_COST_VAL] )
+			    ),
+			    [Parts Cost $]
+			)
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 3cac2c4a-52f3-4d95-a5d6-975142f00e0b
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Total Labor' =
+			
+			CALCULATE (
+			    SUM ( Planter_Inspection_Parts[Inv_Lab_Val] ),
+			    Planter_Inspection_Parts[Total_SALE_VAL] <> BLANK ()
+			)
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 42d5fb95-af19-491d-a0e5-fcb475d93317
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Show Filter 1' =
+			
+			VAR MaxFilters = 3
+			RETURN
+			    IF (
+			        ISFILTERED ( Base_Customer_Info[Customer] ),
+			        VAR ___f =
+			            FILTERS ( Base_Customer_Info[Customer] )
+			        VAR ___r =
+			            COUNTROWS ( ___f )
+			        VAR ___t =
+			            TOPN ( MaxFilters, ___f, Base_Customer_Info[Customer] )
+			        VAR ___d =
+			            CONCATENATEX ( ___t, Base_Customer_Info[Customer], ", " )
+			        VAR ___x =
+			            "" & ___d
+			                & IF ( ___r > MaxFilters, ", ... [" & ___r & " items selected]" ) & " "
+			        RETURN
+			            ___x & UNICHAR ( 13 )
+			                & UNICHAR ( 10 )
+			    )
+			        & IF (
+			            ISFILTERED ( Dim_Branch[Branch] ),
+			            VAR ___f =
+			                FILTERS ( Dim_Branch[Branch] )
+			            VAR ___r =
+			                COUNTROWS ( ___f )
+			            VAR ___t =
+			                TOPN ( MaxFilters, ___f, Dim_Branch[Branch] )
+			            VAR ___d =
+			                CONCATENATEX ( ___t, Dim_Branch[Branch], ", " )
+			            VAR ___x =
+			                "" & ___d
+			                    & IF ( ___r > MaxFilters, ", ... [" & ___r & " items selected]" ) & " "
+			            RETURN
+			                ___x & UNICHAR ( 13 )
+			                    & UNICHAR ( 10 )
+			        )
+			        & IF (
+			            ISFILTERED ( Planter_Part_List[pi_Commodity_Code] ),
+			            VAR ___f =
+			                FILTERS ( Planter_Part_List[pi_Commodity_Code] )
+			            VAR ___r =
+			                COUNTROWS ( ___f )
+			            VAR ___t =
+			                TOPN ( MaxFilters, ___f, Planter_Part_List[pi_Commodity_Code] )
+			            VAR ___d =
+			                CONCATENATEX ( ___t, Planter_Part_List[pi_Commodity_Code], ", " )
+			            VAR ___x =
+			                "" & ___d
+			                    & IF ( ___r > MaxFilters, ", ... [" & ___r & " items selected]" ) & " "
+			            RETURN
+			                ___x & UNICHAR ( 13 )
+			                    & UNICHAR ( 10 )
+			        )
+			        & IF (
+			            ISFILTERED ( Planter_Part_List[pi_Part_No] ),
+			            VAR ___f =
+			                FILTERS ( Planter_Part_List[pi_Part_No] )
+			            VAR ___r =
+			                COUNTROWS ( ___f )
+			            VAR ___t =
+			                TOPN ( MaxFilters, ___f, Planter_Part_List[pi_Part_No] )
+			            VAR ___d =
+			                CONCATENATEX ( ___t, Planter_Part_List[pi_Part_No], ", " )
+			            VAR ___x =
+			                "" & ___d
+			                    & IF ( ___r > MaxFilters, ", ... [" & ___r & " items selected]" ) & " "
+			            RETURN
+			                ___x & UNICHAR ( 13 )
+			                    & UNICHAR ( 10 )
+			        )
+			---- MODEL MEASURES END ----
+		lineageTag: 0c3dce0e-a642-4e23-8648-da5f22858dff
+
+	measure 'Show Filter 2' =
+			
+			VAR MaxFilters = 3
+			RETURN
+			    IF (
+			        ISFILTERED ( Planter_Inspection_Parts[Customer Name] ),
+			        VAR ___f =
+			            FILTERS ( Planter_Inspection_Parts[Customer Name] )
+			        VAR ___r =
+			            COUNTROWS ( ___f )
+			        VAR ___t =
+			            TOPN ( MaxFilters, ___f, Planter_Inspection_Parts[Customer Name] )
+			        VAR ___d =
+			            CONCATENATEX ( ___t, Planter_Inspection_Parts[Customer Name], ", " )
+			        VAR ___x =
+			            "" & ___d
+			                & IF ( ___r > MaxFilters, ", ... [" & ___r & " items selected]" ) & " "
+			        RETURN
+			            ___x & UNICHAR ( 13 )
+			                & UNICHAR ( 10 )
+			    )
+			        & IF (
+			            ISFILTERED ( Dim_Branch[Branch] ),
+			            VAR ___f =
+			                FILTERS ( Dim_Branch[Branch] )
+			            VAR ___r =
+			                COUNTROWS ( ___f )
+			            VAR ___t =
+			                TOPN ( MaxFilters, ___f, Dim_Branch[Branch] )
+			            VAR ___d =
+			                CONCATENATEX ( ___t, Dim_Branch[Branch], ", " )
+			            VAR ___x =
+			                "" & ___d
+			                    & IF ( ___r > MaxFilters, ", ... [" & ___r & " items selected]" ) & " "
+			            RETURN
+			                ___x & UNICHAR ( 13 )
+			                    & UNICHAR ( 10 )
+			        )
+			        & IF (
+			            ISFILTERED ( Planter_Part_List[pi_Commodity_Code] ),
+			            VAR ___f =
+			                FILTERS ( Planter_Part_List[pi_Commodity_Code] )
+			            VAR ___r =
+			                COUNTROWS ( ___f )
+			            VAR ___t =
+			                TOPN ( MaxFilters, ___f, Planter_Part_List[pi_Commodity_Code] )
+			            VAR ___d =
+			                CONCATENATEX ( ___t, Planter_Part_List[pi_Commodity_Code], ", " )
+			            VAR ___x =
+			                "" & ___d
+			                    & IF ( ___r > MaxFilters, ", ... [" & ___r & " items selected]" ) & " "
+			            RETURN
+			                ___x & UNICHAR ( 13 )
+			                    & UNICHAR ( 10 )
+			        )
+			        & IF (
+			            ISFILTERED ( Planter_Part_List[pi_Part_No] ),
+			            VAR ___f =
+			                FILTERS ( Planter_Part_List[pi_Part_No] )
+			            VAR ___r =
+			                COUNTROWS ( ___f )
+			            VAR ___t =
+			                TOPN ( MaxFilters, ___f, Planter_Part_List[pi_Part_No] )
+			            VAR ___d =
+			                CONCATENATEX ( ___t, Planter_Part_List[pi_Part_No], ", " )
+			            VAR ___x =
+			                "" & ___d
+			                    & IF ( ___r > MaxFilters, ", ... [" & ___r & " items selected]" ) & " "
+			            RETURN
+			                ___x & UNICHAR ( 13 )
+			                    & UNICHAR ( 10 )
+			        )
+			---- MODEL MEASURES END ----
+		lineageTag: 14aee9d8-54be-428c-8bc8-8fc3e1053b14
+
+	measure 'Sale $' =
+			
+			SUM ( Planter_With_Inpection_Parts[Total_SALE_VAL] )
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 77d35c90-6ef4-4e74-8a64-5f7e3728b1d7
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Cost $' =
+			
+			SUM ( Planter_With_Inpection_Parts[Total_COST_VAL] )
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 672f25ea-4078-4f89-ba2d-817991ad5dea
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure Labor =
+			
+			SUM ( Planter_With_Inpection_Parts[Inv_Lab_Val] )
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: a41a659c-2cce-4ceb-a0af-4f46724d3797
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Show Filter 3' =
+			
+			VAR MaxFilters = 3
+			RETURN
+			    IF (
+			        ISFILTERED ( Planter_With_Inpection_Parts[Customer Name] ),
+			        VAR ___f =
+			            FILTERS ( Planter_With_Inpection_Parts[Customer Name] )
+			        VAR ___r =
+			            COUNTROWS ( ___f )
+			        VAR ___t =
+			            TOPN ( MaxFilters, ___f, Planter_With_Inpection_Parts[Customer Name] )
+			        VAR ___d =
+			            CONCATENATEX ( ___t, Planter_With_Inpection_Parts[Customer Name], ", " )
+			        VAR ___x =
+			            "" & ___d
+			                & IF ( ___r > MaxFilters, ", ... [" & ___r & " items selected]" ) & " "
+			        RETURN
+			            ___x & UNICHAR ( 13 )
+			                & UNICHAR ( 10 )
+			    )
+			        & IF (
+			            ISFILTERED ( Planter_With_Inpection_Parts[Branch] ),
+			            VAR ___f =
+			                FILTERS ( Planter_With_Inpection_Parts[Branch] )
+			            VAR ___r =
+			                COUNTROWS ( ___f )
+			            VAR ___t =
+			                TOPN ( MaxFilters, ___f, Planter_With_Inpection_Parts[Branch] )
+			            VAR ___d =
+			                CONCATENATEX ( ___t, Planter_With_Inpection_Parts[Branch], ", " )
+			            VAR ___x =
+			                "" & ___d
+			                    & IF ( ___r > MaxFilters, ", ... [" & ___r & " items selected]" ) & " "
+			            RETURN
+			                ___x & UNICHAR ( 13 )
+			                    & UNICHAR ( 10 )
+			        )
+			        & IF (
+			            ISFILTERED ( Planter_Part_List[pi_Commodity_Code] ),
+			            VAR ___f =
+			                FILTERS ( Planter_Part_List[pi_Commodity_Code] )
+			            VAR ___r =
+			                COUNTROWS ( ___f )
+			            VAR ___t =
+			                TOPN ( MaxFilters, ___f, Planter_Part_List[pi_Commodity_Code] )
+			            VAR ___d =
+			                CONCATENATEX ( ___t, Planter_Part_List[pi_Commodity_Code], ", " )
+			            VAR ___x =
+			                "" & ___d
+			                    & IF ( ___r > MaxFilters, ", ... [" & ___r & " items selected]" ) & " "
+			            RETURN
+			                ___x & UNICHAR ( 13 )
+			                    & UNICHAR ( 10 )
+			        )
+			        & IF (
+			            ISFILTERED ( Planter_Part_List[pi_Part_No] ),
+			            VAR ___f =
+			                FILTERS ( Planter_Part_List[pi_Part_No] )
+			            VAR ___r =
+			                COUNTROWS ( ___f )
+			            VAR ___t =
+			                TOPN ( MaxFilters, ___f, Planter_Part_List[pi_Part_No] )
+			            VAR ___d =
+			                CONCATENATEX ( ___t, Planter_Part_List[pi_Part_No], ", " )
+			            VAR ___x =
+			                "" & ___d
+			                    & IF ( ___r > MaxFilters, ", ... [" & ___r & " items selected]" ) & " "
+			            RETURN
+			                ___x & UNICHAR ( 13 )
+			                    & UNICHAR ( 10 )
+			        )
+			---- MODEL MEASURES END ----
+		lineageTag: b984ff0e-9ab9-42e1-aafc-cdc8cda9d70b
+
+	column Value
+		isHidden
+		formatString: 0
+		lineageTag: ff271945-d888-49f4-8ad1-7f5f9adf7957
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [Value]
+
+		annotation SummarizationSetBy = Automatic
+
+	column DummyColumn
+		isHidden
+		formatString: 0
+		lineageTag: 5230ba4d-4d6a-44ab-9460-71df374b88a5
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [DummyColumn]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition MeasuresTable = calculated
+		mode: import
+		source = ADDCOLUMNS( GENERATESERIES(1, 1), "DummyColumn", 1 )
+
+	annotation PBI_Id = ce5c7544e84c4073a6efaba291460b89
+

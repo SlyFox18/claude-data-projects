@@ -12466,16 +12466,6 @@ cultureInfo en-US
 			            },
 			            "Weight": 0.727
 			          }
-			        },
-			        {
-			          "Open Order Total": {
-			            "State": "Suggested",
-			            "Source": {
-			              "Type": "External",
-			              "Agent": "PowerBI.VisualColumnRename"
-			            },
-			            "Weight": 0.9
-			          }
 			        }
 			      ]
 			    },
@@ -23632,28 +23622,6 @@ cultureInfo en-US
 			        }
 			      ]
 			    },
-			    "entity__measure.selected_trailing_months": {
-			      "Definition": {
-			        "Binding": {
-			          "ConceptualEntity": "_Measures",
-			          "ConceptualProperty": "Selected Trailing Months"
-			        }
-			      },
-			      "State": "Generated",
-			      "Terms": [
-			        {
-			          "selected trailing months": {
-			            "State": "Generated"
-			          }
-			        },
-			        {
-			          "trailing months": {
-			            "State": "Generated",
-			            "Weight": 0.97
-			          }
-			        }
-			      ]
-			    },
 			    "fact_parts_open_orders_snapshot": {
 			      "Definition": {
 			        "Binding": {
@@ -25421,6 +25389,16 @@ cultureInfo en-US
 			            },
 			            "Weight": 0.605
 			          }
+			        },
+			        {
+			          "Open Order Total": {
+			            "State": "Suggested",
+			            "Source": {
+			              "Type": "External",
+			              "Agent": "PowerBI.VisualColumnRename"
+			            },
+			            "Weight": 0.9
+			          }
 			        }
 			      ]
 			    },
@@ -25783,6 +25761,72 @@ cultureInfo en-US
 			    }
 			  },
 			  "Relationships": {
+			    "ratio_period_selector_has_label": {
+			      "Binding": {
+			        "ConceptualEntity": "Ratio_Period_Selector"
+			      },
+			      "State": "Generated",
+			      "Roles": {
+			        "ratio_period_selector": {
+			          "Target": {
+			            "Entity": "ratio_period_selector"
+			          }
+			        },
+			        "ratio_period_selector.label": {
+			          "Target": {
+			            "Entity": "ratio_period_selector.label"
+			          }
+			        }
+			      },
+			      "Phrasings": [
+			        {
+			          "Attribute": {
+			            "Subject": {
+			              "Role": "ratio_period_selector"
+			            },
+			            "Object": {
+			              "Role": "ratio_period_selector.label"
+			            }
+			          },
+			          "State": "Generated",
+			          "Weight": 0.99,
+			          "ID": "ratio_period_selectors_have_labels"
+			        }
+			      ]
+			    },
+			    "ratio_period_selector_has_day": {
+			      "Binding": {
+			        "ConceptualEntity": "Ratio_Period_Selector"
+			      },
+			      "State": "Generated",
+			      "Roles": {
+			        "ratio_period_selector": {
+			          "Target": {
+			            "Entity": "ratio_period_selector"
+			          }
+			        },
+			        "ratio_period_selector.day": {
+			          "Target": {
+			            "Entity": "ratio_period_selector.day"
+			          }
+			        }
+			      },
+			      "Phrasings": [
+			        {
+			          "Attribute": {
+			            "Subject": {
+			              "Role": "ratio_period_selector"
+			            },
+			            "Object": {
+			              "Role": "ratio_period_selector.day"
+			            }
+			          },
+			          "State": "Generated",
+			          "Weight": 0.99,
+			          "ID": "ratio_period_selectors_have_days"
+			        }
+			      ]
+			    },
 			    "fact_part_invoiced_by_branch_has_invoice_date": {
 			      "Binding": {
 			        "ConceptualEntity": "Fact_PartsInvoiced_ByBranch"
@@ -26566,72 +26610,6 @@ cultureInfo en-US
 			          "State": "Generated",
 			          "Weight": 0.99,
 			          "ID": "fact_parts_open_orders_snapshots_have_location_names"
-			        }
-			      ]
-			    },
-			    "entity__measure_has_open_order_ratio": {
-			      "Binding": {
-			        "ConceptualEntity": "_Measures"
-			      },
-			      "State": "Generated",
-			      "Roles": {
-			        "entity__measure": {
-			          "Target": {
-			            "Entity": "entity__measure"
-			          }
-			        },
-			        "entity__measure.open_order_ratio": {
-			          "Target": {
-			            "Entity": "entity__measure.open_order_ratio"
-			          }
-			        }
-			      },
-			      "Phrasings": [
-			        {
-			          "Attribute": {
-			            "Subject": {
-			              "Role": "entity__measure"
-			            },
-			            "Object": {
-			              "Role": "entity__measure.open_order_ratio"
-			            }
-			          },
-			          "State": "Generated",
-			          "Weight": 0.99,
-			          "ID": "Phrasing_measures_have_open_order_ratio"
-			        }
-			      ]
-			    },
-			    "entity__measure_has_invoiced_parts_trailing": {
-			      "Binding": {
-			        "ConceptualEntity": "_Measures"
-			      },
-			      "State": "Generated",
-			      "Roles": {
-			        "entity__measure": {
-			          "Target": {
-			            "Entity": "entity__measure"
-			          }
-			        },
-			        "entity__measure.invoiced_parts_trailing": {
-			          "Target": {
-			            "Entity": "entity__measure.invoiced_parts_trailing"
-			          }
-			        }
-			      },
-			      "Phrasings": [
-			        {
-			          "Attribute": {
-			            "Subject": {
-			              "Role": "entity__measure"
-			            },
-			            "Object": {
-			              "Role": "entity__measure.invoiced_parts_trailing"
-			            }
-			          },
-			          "State": "Generated",
-			          "Weight": 0.99,
-			          "ID": "Phrasing_measures_have_invoiced_parts_trailing"
 			        }
 			      ]
 			    },
@@ -35239,72 +35217,6 @@ cultureInfo en-US
 			          "State": "Generated",
 			          "Weight": 0.75,
 			          "ID": "ratio_period_selectors_select"
-			        }
-			      ]
-			    },
-			    "ratio_period_selector_has_day": {
-			      "Binding": {
-			        "ConceptualEntity": "Ratio_Period_Selector"
-			      },
-			      "State": "Generated",
-			      "Roles": {
-			        "ratio_period_selector": {
-			          "Target": {
-			            "Entity": "ratio_period_selector"
-			          }
-			        },
-			        "ratio_period_selector.day": {
-			          "Target": {
-			            "Entity": "ratio_period_selector.day"
-			          }
-			        }
-			      },
-			      "Phrasings": [
-			        {
-			          "Attribute": {
-			            "Subject": {
-			              "Role": "ratio_period_selector"
-			            },
-			            "Object": {
-			              "Role": "ratio_period_selector.day"
-			            }
-			          },
-			          "State": "Generated",
-			          "Weight": 0.99,
-			          "ID": "ratio_period_selectors_have_days"
-			        }
-			      ]
-			    },
-			    "ratio_period_selector_has_label": {
-			      "Binding": {
-			        "ConceptualEntity": "Ratio_Period_Selector"
-			      },
-			      "State": "Generated",
-			      "Roles": {
-			        "ratio_period_selector": {
-			          "Target": {
-			            "Entity": "ratio_period_selector"
-			          }
-			        },
-			        "ratio_period_selector.label": {
-			          "Target": {
-			            "Entity": "ratio_period_selector.label"
-			          }
-			        }
-			      },
-			      "Phrasings": [
-			        {
-			          "Attribute": {
-			            "Subject": {
-			              "Role": "ratio_period_selector"
-			            },
-			            "Object": {
-			              "Role": "ratio_period_selector.label"
-			            }
-			          },
-			          "State": "Generated",
-			          "Weight": 0.99,
-			          "ID": "ratio_period_selectors_have_labels"
 			        }
 			      ]
 			    },

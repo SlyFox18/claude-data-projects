@@ -270,12 +270,10 @@ table MeasuresTable
 
 		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
 
-	measure Sales =
-			
-			CALCULATE(
-			    SUM(Fact_Part_Transactions[SaleAmount]),
-			    Fact_Part_Transactions[SaleAmount] > 0
-			)
+	measure Sales = ```
+			SUM(Fact_Part_Transactions[SaleAmount])
+			    
+			```
 		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
 		lineageTag: ac48272f-0ebd-423f-90cb-81b8ed4d7629
 
