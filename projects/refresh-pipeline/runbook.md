@@ -22,7 +22,7 @@ To confirm data is fresh, check the latest dates in key tables:
 1. In Fabric, navigate to **LH_Master_Data** workspace
 2. Find **Pipeline_Master_Orchestrator**
 3. Click **... > Settings > Schedule**
-4. Change time from `07:30` to `03:30`
+4. Change time from `07:30` to `04:15`
 5. Verify weekdays: Monday through Friday
 6. Set timezone: Central Standard Time
 7. Set end date: `2026-12-31`
@@ -39,7 +39,7 @@ To confirm data is fresh, check the latest dates in key tables:
 
 ### Step 3: Enable Pipeline
 1. Toggle the schedule to **Enabled**
-2. Wait for next morning (3:30 AM) to run
+2. Wait for next morning (4:15 AM) to run
 3. Check results at 8 AM
 
 ### Step 4: Validate Week 1 Results

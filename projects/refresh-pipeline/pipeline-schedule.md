@@ -19,7 +19,7 @@
         "startDateTime": "2026-02-17T00:00:00",
         "endDateTime": "2026-12-31T23:59:00",
         "localTimeZoneId": "Central Standard Time",
-        "times": ["03:30"],
+        "times": ["04:15"],
         "weekdays": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
       }
     }
