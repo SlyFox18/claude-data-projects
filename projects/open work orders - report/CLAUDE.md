@@ -4,7 +4,7 @@
 - **Business purpose:** Tracks every open (uninvoiced) service work order across all 15 branches with aging analysis. The core question: how much WIP is sitting out there, how old is it, and where is it stalled?
 - **Primary users:** Service managers, branch managers, operations leadership
 - **Workspace:** RP - Service Reports (Production)
-- **Refresh tier:** Tier 1 — daily 3:30 AM CST, fresh by 8 AM
+- **Refresh tier:** Tier 1 — daily 4:15 AM CST, fresh by 8 AM
 - **Status:** Production ✅
 
 ---

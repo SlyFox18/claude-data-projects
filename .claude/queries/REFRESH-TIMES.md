@@ -4,7 +4,7 @@ Track average refresh times for capacity planning and CU optimization (F4 capaci
 
 ---
 
-## Batched Pipeline Baselines (3:30 AM Target, Feb 2026)
+## Batched Pipeline Baselines (4:15 AM Schedule, Feb 2026)
 
 Pipeline_Raw_Data restructured into 5 sequential batches with concurrent DFs per batch.
 Baselines measured from Run 4 (Feb 12, 2026, 3:05 PM CST) after InTrans_PartsCounter optimization.
