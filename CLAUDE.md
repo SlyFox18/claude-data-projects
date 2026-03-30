@@ -90,11 +90,11 @@ Source System (ODBC) → Raw Tables (Lakehouse) → Dimensions → Fact Tables �
 
 ### Architecture
 ```
-3:30 AM CST Mon-Fri → Pipeline_Master_Orchestrator
+4:15 AM CST Mon-Fri → Pipeline_Master_Orchestrator
   Phase 1: Raw Data (26 DFs, parallel) → Phase 2: InTrans (incremental)
   → Phase 3: Dimensions (14+ DFs) → Phase 4: Facts (24 DFs, 5-wave batches)
   → Phase 5: Semantic Models (17 reports) → Phase 6: Tier 2 reports
-  Total: ~80-95 min, complete by ~5:00 AM
+  Total: ~80-95 min, complete by ~6:00 AM
 ```
 
 ### Key Constraints

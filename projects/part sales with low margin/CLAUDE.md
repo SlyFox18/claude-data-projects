@@ -4,7 +4,7 @@
 - **Business purpose:** Identifies parts being sold below target profit margins (Page 1 — transaction history) and flags current inventory where the sell price doesn't cover cost (Page 2 — inventory snapshot). Supports pricing corrections and margin management.
 - **Primary users:** Pricing managers, branch managers, finance team
 - **Workspace:** RP - Parts Reports (Production)
-- **Refresh tier:** Tier 1 — daily 3:30 AM CST, fresh by 8 AM
+- **Refresh tier:** Tier 1 — daily 4:15 AM CST, fresh by 8 AM
 - **Status:** Production ✅
 
 ---

@@ -70,4 +70,5 @@ Customer health and engagement dashboard. Shows parts/service/equipment revenue 
 - `INVESTIGATION-PLAN-Unknown-Customers.md` — diagnostic SQL queries
 
 ## Documentation Status
+- In-repo docs: ✅ CLAUDE.md | ✅ PROJECT-SUMMARY.md
 - Obsidian stakeholder docs: ✅ Complete — `Data Projects/Reports/Customer Anatomy.md`

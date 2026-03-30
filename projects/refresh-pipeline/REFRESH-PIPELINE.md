@@ -19,7 +19,7 @@
 The master orchestrator handles data (Raw → InTrans → Dims → Facts) and completes before business hours. Semantic model refreshes were separated into their own pipeline (Mar 2026) to reduce refresh errors. The SM pipeline runs independently at 6:30 AM after facts are confirmed fresh.
 
 ```
-3:30 AM  Pipeline_Master_Orchestrator  (data only — no SM refreshes)
+4:15 AM  Pipeline_Master_Orchestrator  (data only — no SM refreshes)
          │
          ├── Phase 1: Pipeline_Raw_Data (~30 min)
          │   ├── Batch 1 (7 concurrent): heaviest DFs (~8 min)
@@ -51,13 +51,13 @@ The master orchestrator handles data (Raw → InTrans → Dims → Facts) and co
          └── Parts Not Re-Ordered semantic model refresh
 ```
 
-### Why 3:30 AM?
+### Why 4:15 AM?
 
 The previous 7:30 AM pipeline caused 200-600% performance degradation due to:
 1. Source system (ODBC/EquipRDB64) under business load
 2. Too many concurrent dataflows (20+) spiking CU to 214%
 
-At 3:30 AM: zero source system contention, no competing workloads, baseline refresh times.
+At 4:15 AM: zero source system contention, no competing workloads, baseline refresh times. IT restricts EquipRDB access until 4 AM — 4:15 ensures the connection is fully active before the first dataflow fires.
 
 ### Why Sequential Phases?
 

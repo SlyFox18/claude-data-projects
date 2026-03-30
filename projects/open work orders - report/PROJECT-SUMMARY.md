@@ -6,7 +6,7 @@ The Open Work Orders report (also called the WIP Report) tracks every service wo
 
 **Status:** Production ✅
 **Workspace:** RP - Service Reports
-**Refreshed:** Daily — 3:30 AM CST, Tier 1 (fresh by 8 AM)
+**Refreshed:** Daily — 4:15 AM CST, Tier 1 (fresh by 8 AM)
 
 ---
 
