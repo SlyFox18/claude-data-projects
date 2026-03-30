@@ -204,8 +204,13 @@ let
     TIMING: After deduplication ensures one unique key per unique AccountNumber
     */
 
-    // Add surrogate key starting from 1 (positive keys for real customers)
-    AddSurrogateKey = Table.AddIndexColumn(DeduplicateAccounts, "CustomerKey", 1, 1, Int64.Type),
+    // Derive stable CustomerKey from AccountNumber (natural business key from AR system).
+    // Using AccountNumber prevents key shifts when customers are added/removed from the source —
+    // a sequential index (AddIndexColumn) would shift ALL keys below any insertion point,
+    // causing cross-customer data corruption in fact tables. AccountNumbers start at 40+
+    // so there is no collision risk with the hardcoded negative special customer keys (-1 to -9).
+    AddSurrogateKey = Table.AddColumn(DeduplicateAccounts, "CustomerKey",
+        each try Int64.From([AccountNumber]) otherwise -1, Int64.Type),
 
     // ========================================================================
     // STEP 4-15: ALL REMAINING TRANSFORMATIONS (UNCHANGED)
@@ -593,6 +598,17 @@ in
 ============================================================================
 CHANGE HISTORY
 ============================================================================
+
+2026-03-27: Replaced AddIndexColumn with stable AccountNumber-derived CustomerKey
+- ROOT CAUSE: Sequential index key shifted by N when N customers were added/removed
+  from source data above a given customer in sort order, causing all subsequent
+  CustomerKeys to shift — corrupting fact table joins until next full refresh cycle.
+  Observed as +7 shift across all warranty and customer accounts in Fact_Service_Invoices.
+- SOLUTION: CustomerKey = Int64.From(AccountNumber) — stable natural key from AR system.
+  AccountNumbers are unique, numeric, and start at 40+, so no collision with special
+  customer keys (-1 to -9). Key never changes regardless of insertions/deletions elsewhere.
+- MIGRATION: After deploying this change, refresh dim_CustomerList → CustomerLookup →
+  all fact tables in order to re-stamp CustomerKeys across the model.
 
 2026-02-09: Added Stock Equipment Special Customer (CustomerKey = -9)
 - ROOT CAUSE: ~$19M in "Unknown Customer" service revenue was actually work
