@@ -1761,7 +1761,7 @@ table _Measures
 		displayFolder: Core Metrics
 		lineageTag: 6324946c-adb2-45aa-b670-f807213afddd
 
-	measure 'Selected Period Days' = SELECTEDVALUE(Ratio_Period_Selector[Days], 90)
+	measure 'Selected Period Days' = MAX(Ratio_Period_Selector[Days])
 		formatString: 0
 		displayFolder: Open Order Ratio
 		lineageTag: e5f6a7b8-c9d0-1234-efab-567890123456
@@ -1807,7 +1807,7 @@ table _Measures
 		displayFolder: Open Order Ratio
 		lineageTag: b8c9d0e1-f2a3-4567-bcde-890123456789
 
-	measure 'Selected Period Min Days' = SELECTEDVALUE(Ratio_Period_Selector[MinDays], 61)
+	measure 'Selected Period Min Days' = MIN(Ratio_Period_Selector[MinDays])
 		formatString: 0
 		displayFolder: Open Order Ratio
 		lineageTag: e6f7a8b9-d0e1-2345-fabc-678901234568
