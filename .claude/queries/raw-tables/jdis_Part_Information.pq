@@ -144,6 +144,7 @@ let
         pi_Bin AS Bin, #(lf)
         pi_Package_Qty AS PackageQty, #(lf)
         pi_Return_Indicator AS Returnable, #(lf)
+        pi_Weight AS Weight, #(lf)
         pi_On_Order AS OnOrder, #(lf)
 
         -- ===== PART SUPERSESSION ===== #(lf)
