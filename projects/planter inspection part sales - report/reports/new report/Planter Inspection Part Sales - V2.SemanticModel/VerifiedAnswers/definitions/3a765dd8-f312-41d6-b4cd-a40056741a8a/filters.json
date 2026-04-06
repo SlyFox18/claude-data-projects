@@ -1,0 +1,245 @@
+{
+  "filters": [
+    {
+      "name": "541dd3ec6ad0e89c9e05",
+      "field": {
+        "Measure": {
+          "Expression": {
+            "SourceRef": {
+              "Entity": "_Measures"
+            }
+          },
+          "Property": "Inspection Count"
+        }
+      },
+      "type": "Advanced",
+      "filter": {
+        "Version": 2,
+        "From": [
+          {
+            "Name": "_",
+            "Entity": "_Measures"
+          }
+        ],
+        "Where": [
+          {
+            "Condition": {
+              "Comparison": {
+                "Left": {
+                  "Measure": {
+                    "Expression": {
+                      "SourceRef": {
+                        "Source": "_"
+                      }
+                    },
+                    "Property": "Inspection Count"
+                  }
+                },
+                "Right": {
+                  "Literal": {
+                    "Value": "0L"
+                  }
+                },
+                "ComparisonKind": 1
+              }
+            }
+          }
+        ]
+      },
+      "howCreated": "User",
+      "isHiddenInViewMode": false,
+      "isLockedInViewMode": true
+    },
+    {
+      "name": "41b08db0577e0d7b29f8",
+      "field": {
+        "Column": {
+          "Expression": {
+            "SourceRef": {
+              "Entity": "dim_CustomerList"
+            }
+          },
+          "Property": "DisplayName"
+        }
+      },
+      "type": "Categorical",
+      "filter": {
+        "Version": 2,
+        "From": [
+          {
+            "Name": "d",
+            "Entity": "dim_CustomerList"
+          }
+        ],
+        "Where": [
+          {
+            "Condition": {
+              "Not": {
+                "Expression": {
+                  "In": {
+                    "Expressions": [
+                      {
+                        "Column": {
+                          "Expression": {
+                            "SourceRef": {
+                              "Source": "d"
+                            }
+                          },
+                          "Property": "DisplayName"
+                        }
+                      }
+                    ],
+                    "Values": [
+                      [
+                        {
+                          "Literal": {
+                            "Value": "null"
+                          }
+                        }
+                      ],
+                      [
+                        {
+                          "Literal": {
+                            "Value": "','"
+                          }
+                        }
+                      ]
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "isHiddenInViewMode": false,
+      "isLockedInViewMode": true,
+      "objects": {
+        "general": [
+          {
+            "properties": {
+              "isInvertedSelectionMode": {
+                "expr": {
+                  "Literal": {
+                    "Value": "true"
+                  }
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "799717007dfc36221f69",
+      "field": {
+        "Aggregation": {
+          "Function": 3,
+          "Expression": {
+            "Column": {
+              "Expression": {
+                "SourceRef": {
+                  "Entity": "Fact_PlanterInvoiceAllParts"
+                }
+              },
+              "Property": "BranchCode"
+            }
+          }
+        }
+      },
+      "type": "Advanced",
+      "isHiddenInViewMode": false,
+      "isLockedInViewMode": true
+    },
+    {
+      "name": "2cf24c9f78a6219e09a0",
+      "field": {
+        "Measure": {
+          "Expression": {
+            "SourceRef": {
+              "Entity": "_Measures"
+            }
+          },
+          "Property": "Total Invoice Parts Sale $"
+        }
+      },
+      "type": "Advanced",
+      "isHiddenInViewMode": false,
+      "isLockedInViewMode": true
+    },
+    {
+      "name": "81b37ace43a2d8eecc0c",
+      "field": {
+        "Measure": {
+          "Expression": {
+            "SourceRef": {
+              "Entity": "_Measures"
+            }
+          },
+          "Property": "Planter Parts $"
+        }
+      },
+      "type": "Advanced",
+      "isHiddenInViewMode": false,
+      "isLockedInViewMode": true
+    },
+    {
+      "name": "46b6a836cfa5184af73b",
+      "field": {
+        "Measure": {
+          "Expression": {
+            "SourceRef": {
+              "Entity": "_Measures"
+            }
+          },
+          "Property": "Add-On Parts $"
+        }
+      },
+      "type": "Advanced",
+      "isHiddenInViewMode": false,
+      "isLockedInViewMode": true
+    },
+    {
+      "name": "5683b26881eb2befd364",
+      "field": {
+        "Measure": {
+          "Expression": {
+            "SourceRef": {
+              "Entity": "_Measures"
+            }
+          },
+          "Property": "Invoice Parts Margin %"
+        }
+      },
+      "type": "Advanced",
+      "isHiddenInViewMode": false,
+      "isLockedInViewMode": true
+    },
+    {
+      "name": "3bab3687d14c0e716a28",
+      "displayName": "IsPlanterPart",
+      "field": {
+        "Column": {
+          "Expression": {
+            "SourceRef": {
+              "Entity": "Fact_PlanterInvoiceAllParts"
+            }
+          },
+          "Property": "IsPlanterPart"
+        }
+      },
+      "type": "Categorical",
+      "howCreated": "User",
+      "isHiddenInViewMode": false,
+      "isLockedInViewMode": true,
+      "objects": {
+        "general": [
+          {
+            "properties": {}
+          }
+        ]
+      }
+    }
+  ],
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/filterConfiguration/1.3.0/schema.json"
+}

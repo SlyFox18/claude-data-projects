@@ -1,0 +1,89 @@
+{
+  "filters": [
+    {
+      "name": "ee4fa3405e6fe66c440c",
+      "field": {
+        "Column": {
+          "Expression": {
+            "SourceRef": {
+              "Entity": "dim_DateTable"
+            }
+          },
+          "Property": "Date"
+        }
+      },
+      "type": "Advanced",
+      "filter": {
+        "Version": 2,
+        "From": [
+          {
+            "Name": "d",
+            "Entity": "dim_DateTable"
+          }
+        ],
+        "Where": [
+          {
+            "Condition": {
+              "And": {
+                "Left": {
+                  "Comparison": {
+                    "Left": {
+                      "Column": {
+                        "Expression": {
+                          "SourceRef": {
+                            "Source": "d"
+                          }
+                        },
+                        "Property": "Date"
+                      }
+                    },
+                    "Right": {
+                      "DateSpan": {
+                        "TimeUnit": 5,
+                        "Expression": {
+                          "Literal": {
+                            "Value": "datetime'2025-11-01T00:00:00'"
+                          }
+                        }
+                      }
+                    },
+                    "ComparisonKind": 2
+                  }
+                },
+                "Right": {
+                  "Comparison": {
+                    "Left": {
+                      "Column": {
+                        "Expression": {
+                          "SourceRef": {
+                            "Source": "d"
+                          }
+                        },
+                        "Property": "Date"
+                      }
+                    },
+                    "Right": {
+                      "DateSpan": {
+                        "TimeUnit": 5,
+                        "Expression": {
+                          "Literal": {
+                            "Value": "datetime'2026-03-31T23:59:59.059'"
+                          }
+                        }
+                      }
+                    },
+                    "ComparisonKind": 4
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "howCreated": "User",
+      "isHiddenInViewMode": false,
+      "isLockedInViewMode": true
+    }
+  ],
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/filterConfiguration/1.3.0/schema.json"
+}

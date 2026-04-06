@@ -1,0 +1,69 @@
+table dim_Salesperson
+	lineageTag: c4b19f6a-7796-42ca-8d44-0e418c873bfc
+
+	column SalespersonCode
+		dataType: string
+		lineageTag: d972c235-c0a0-480c-a89e-024a5ed46486
+		summarizeBy: none
+		sourceColumn: SalespersonCode
+
+		annotation SummarizationSetBy = Automatic
+
+	column FirstName
+		dataType: string
+		lineageTag: 8e8a29ef-d01b-4a8b-a925-8e024000c580
+		summarizeBy: none
+		sourceColumn: FirstName
+
+		annotation SummarizationSetBy = Automatic
+
+	column LastName
+		dataType: string
+		lineageTag: 9498b997-5e89-47e2-979c-811220fb5ecf
+		summarizeBy: none
+		sourceColumn: LastName
+
+		annotation SummarizationSetBy = Automatic
+
+	column FullName
+		dataType: string
+		lineageTag: ecc108ba-b76f-4764-b878-11a765056ed6
+		summarizeBy: none
+		sourceColumn: FullName
+
+		annotation SummarizationSetBy = Automatic
+
+	column DisplayName
+		dataType: string
+		lineageTag: fa56a58a-f316-4051-b7e6-c3018f589665
+		summarizeBy: none
+		sourceColumn: DisplayName
+
+		annotation SummarizationSetBy = Automatic
+
+	column Branch
+		dataType: string
+		lineageTag: d3655b4a-0a29-4dae-b700-187a87444eb6
+		summarizeBy: none
+		sourceColumn: Branch
+
+		annotation SummarizationSetBy = Automatic
+
+	column IsActive
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: d37487e4-99ed-45e3-b1b2-2d51f59e70ff
+		summarizeBy: none
+		sourceColumn: IsActive
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dim_Salesperson = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-gxnyznhdptpenfw724g3o5sjzm.datawarehouse.fabric.microsoft.com", "LH_Master_Data"),
+				    dbo_dim_Salesperson = Source{[Schema="dbo",Item="dim_Salesperson"]}[Data]
+				in
+				    dbo_dim_Salesperson
+

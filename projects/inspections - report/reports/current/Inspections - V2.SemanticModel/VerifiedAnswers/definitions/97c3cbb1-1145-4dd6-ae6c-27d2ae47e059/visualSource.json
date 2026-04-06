@@ -1,0 +1,1122 @@
+{
+  "visualType": "pivotTable",
+  "query": {
+    "queryState": {
+      "Rows": {
+        "projections": [
+          {
+            "field": {
+              "Column": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "Fact_LaborJobSummary"
+                  }
+                },
+                "Property": "BranchName"
+              }
+            },
+            "queryRef": "Fact_LaborJobSummary.BranchName",
+            "nativeQueryRef": "Branch",
+            "active": true,
+            "displayName": "Branch"
+          },
+          {
+            "field": {
+              "Column": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "Fact_LaborJobSummary"
+                  }
+                },
+                "Property": "JobCode"
+              }
+            },
+            "queryRef": "Fact_LaborJobSummary.JobCode",
+            "nativeQueryRef": "Job Code",
+            "active": true,
+            "displayName": "Job Code"
+          }
+        ]
+      },
+      "Values": {
+        "projections": [
+          {
+            "field": {
+              "Measure": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "_Measures"
+                  }
+                },
+                "Property": "Inspection Count by Job Code"
+              }
+            },
+            "queryRef": "_Measures.Inspection Count by Job Code",
+            "nativeQueryRef": "Count",
+            "displayName": "Count"
+          },
+          {
+            "field": {
+              "Measure": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "_Measures"
+                  }
+                },
+                "Property": "WO List - Total Parts"
+              }
+            },
+            "queryRef": "_Measures.WO List - Total Parts",
+            "nativeQueryRef": "Parts $ Total",
+            "displayName": "Parts $ Total"
+          },
+          {
+            "field": {
+              "Measure": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "_Measures"
+                  }
+                },
+                "Property": "Parts Discount by Job Code"
+              }
+            },
+            "queryRef": "_Measures.Parts Discount by Job Code",
+            "nativeQueryRef": "Parts Discount",
+            "displayName": "Parts Discount"
+          },
+          {
+            "field": {
+              "Measure": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "_Measures"
+                  }
+                },
+                "Property": "Avg Parts $ /Inspection"
+              }
+            },
+            "queryRef": "_Measures.Avg Parts $ /Inspection",
+            "nativeQueryRef": "Avg Parts $ /Inspection1"
+          },
+          {
+            "field": {
+              "Measure": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "_Measures"
+                  }
+                },
+                "Property": "Avg Part Discount by Job Code"
+              }
+            },
+            "queryRef": "_Measures.Avg Part Discount by Job Code",
+            "nativeQueryRef": "Avg Part Discount",
+            "displayName": "Avg Part Discount"
+          },
+          {
+            "field": {
+              "Measure": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "_Measures"
+                  }
+                },
+                "Property": "WO List - Total Labor"
+              }
+            },
+            "queryRef": "_Measures.WO List - Total Labor",
+            "nativeQueryRef": "Labor $ w/Inspection1",
+            "displayName": "Labor $ w/Inspection"
+          },
+          {
+            "field": {
+              "Measure": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "_Measures"
+                  }
+                },
+                "Property": "Avg Labor $ by Job Code"
+              }
+            },
+            "queryRef": "_Measures.Avg Labor $ by Job Code",
+            "nativeQueryRef": "Avg Labor $ w/Inspection",
+            "displayName": "Avg Labor $ w/Inspection"
+          },
+          {
+            "field": {
+              "Measure": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "_Measures"
+                  }
+                },
+                "Property": "Labor Discount by Job Code"
+              }
+            },
+            "queryRef": "_Measures.Labor Discount by Job Code",
+            "nativeQueryRef": "Total Labor Discount",
+            "displayName": "Total Labor Discount"
+          },
+          {
+            "field": {
+              "Measure": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "_Measures"
+                  }
+                },
+                "Property": "Avg Labor Discount by Job Code"
+              }
+            },
+            "queryRef": "_Measures.Avg Labor Discount by Job Code",
+            "nativeQueryRef": "Avg Labor Discount",
+            "displayName": "Avg Labor Discount"
+          },
+          {
+            "field": {
+              "Measure": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "_Measures"
+                  }
+                },
+                "Property": "Avg Labor & Parts by Job Code"
+              }
+            },
+            "queryRef": "_Measures.Avg Labor & Parts by Job Code",
+            "nativeQueryRef": "Avg Labor & Parts",
+            "displayName": "Avg Labor & Parts"
+          },
+          {
+            "field": {
+              "Measure": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "_Measures"
+                  }
+                },
+                "Property": "Total $ - Discounts by Job Code"
+              }
+            },
+            "queryRef": "_Measures.Total $ - Discounts by Job Code",
+            "nativeQueryRef": "Total $ - Discounts",
+            "displayName": "Total $ - Discounts"
+          },
+          {
+            "field": {
+              "Measure": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "_Measures"
+                  }
+                },
+                "Property": "Avg % Discounted by Job Code"
+              }
+            },
+            "queryRef": "_Measures.Avg % Discounted by Job Code",
+            "nativeQueryRef": "Avg % Discounted",
+            "displayName": "Avg % Discounted"
+          }
+        ]
+      }
+    },
+    "sortDefinition": {
+      "sort": [
+        {
+          "field": {
+            "Measure": {
+              "Expression": {
+                "SourceRef": {
+                  "Entity": "_Measures"
+                }
+              },
+              "Property": "WO List - Total Parts"
+            }
+          },
+          "direction": "Descending"
+        }
+      ]
+    }
+  },
+  "expansionStates": [
+    {
+      "roles": [
+        "Rows"
+      ],
+      "levels": [
+        {
+          "queryRefs": [
+            "Fact_LaborJobSummary.BranchName"
+          ],
+          "isCollapsed": true,
+          "identityKeys": [
+            {
+              "Column": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "Fact_LaborJobSummary"
+                  }
+                },
+                "Property": "BranchName"
+              }
+            }
+          ],
+          "isPinned": true
+        },
+        {
+          "queryRefs": [
+            "Fact_LaborJobSummary.JobCode"
+          ],
+          "isCollapsed": true,
+          "identityKeys": [
+            {
+              "Column": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "Fact_LaborJobSummary"
+                  }
+                },
+                "Property": "JobCode"
+              }
+            }
+          ],
+          "isPinned": true
+        }
+      ],
+      "root": {
+        "children": [
+          {
+            "identityValues": [
+              {
+                "Literal": {
+                  "Value": "'96 - Snyder'"
+                }
+              }
+            ],
+            "isToggled": true,
+            "children": [
+              {
+                "identityValues": [
+                  {
+                    "Literal": {
+                      "Value": "'IS-CS770 INSPECT'"
+                    }
+                  }
+                ],
+                "isToggled": true
+              }
+            ]
+          },
+          {
+            "identityValues": [
+              {
+                "Literal": {
+                  "Value": "'95 - Abernathy'"
+                }
+              }
+            ],
+            "isToggled": true,
+            "children": [
+              {
+                "identityValues": [
+                  {
+                    "Literal": {
+                      "Value": "'IS-TRACTOR INSPECT'"
+                    }
+                  }
+                ],
+                "isToggled": true
+              }
+            ]
+          },
+          {
+            "identityValues": [
+              {
+                "Literal": {
+                  "Value": "'93 - Lubbock'"
+                }
+              }
+            ],
+            "isToggled": true,
+            "children": [
+              {
+                "identityValues": [
+                  {
+                    "Literal": {
+                      "Value": "'IS-TRACTOR INSPECT'"
+                    }
+                  }
+                ],
+                "isToggled": true
+              }
+            ]
+          },
+          {
+            "identityValues": [
+              {
+                "Literal": {
+                  "Value": "'92 - Slaton'"
+                }
+              }
+            ],
+            "isToggled": true
+          },
+          {
+            "identityValues": [
+              {
+                "Literal": {
+                  "Value": "'91 - Lorenzo'"
+                }
+              }
+            ],
+            "isToggled": true
+          },
+          {
+            "identityValues": [
+              {
+                "Literal": {
+                  "Value": "'6 - San Angelo'"
+                }
+              }
+            ],
+            "isToggled": true
+          },
+          {
+            "identityValues": [
+              {
+                "Literal": {
+                  "Value": "'17 - Tahoka'"
+                }
+              }
+            ],
+            "isToggled": true
+          },
+          {
+            "identityValues": [
+              {
+                "Literal": {
+                  "Value": "'16 - Morton'"
+                }
+              }
+            ],
+            "isToggled": true
+          },
+          {
+            "identityValues": [
+              {
+                "Literal": {
+                  "Value": "'15 - Levelland'"
+                }
+              }
+            ],
+            "isToggled": true
+          },
+          {
+            "identityValues": [
+              {
+                "Literal": {
+                  "Value": "'14 - Littlefield'"
+                }
+              }
+            ],
+            "isToggled": true
+          },
+          {
+            "identityValues": [
+              {
+                "Literal": {
+                  "Value": "'13 - Lamesa'"
+                }
+              }
+            ],
+            "isToggled": true
+          },
+          {
+            "identityValues": [
+              {
+                "Literal": {
+                  "Value": "'11 - Brownfield'"
+                }
+              }
+            ],
+            "isToggled": true
+          },
+          {
+            "identityValues": [
+              {
+                "Literal": {
+                  "Value": "'8 - Big Spring'"
+                }
+              }
+            ],
+            "isToggled": true
+          },
+          {
+            "identityValues": [
+              {
+                "Literal": {
+                  "Value": "'4 - Mesquite'"
+                }
+              }
+            ],
+            "isToggled": true
+          },
+          {
+            "identityValues": [
+              {
+                "Literal": {
+                  "Value": "'2 - Tornillo'"
+                }
+              }
+            ],
+            "isToggled": true
+          },
+          {
+            "identityValues": [
+              {
+                "Literal": {
+                  "Value": "'1 - Seminole'"
+                }
+              }
+            ],
+            "isToggled": true
+          }
+        ]
+      }
+    }
+  ],
+  "objects": {
+    "grid": [
+      {
+        "properties": {
+          "outlineStyle": {
+            "expr": {
+              "Literal": {
+                "Value": "15D"
+              }
+            }
+          },
+          "textSize": {
+            "expr": {
+              "Literal": {
+                "Value": "13D"
+              }
+            }
+          },
+          "outlineColor": {
+            "solid": {
+              "color": {
+                "expr": {
+                  "ThemeDataColor": {
+                    "ColorId": 0,
+                    "Percent": -0.5
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    ],
+    "columnHeaders": [
+      {
+        "properties": {
+          "bold": {
+            "expr": {
+              "Literal": {
+                "Value": "true"
+              }
+            }
+          },
+          "fontSize": {
+            "expr": {
+              "Literal": {
+                "Value": "11D"
+              }
+            }
+          },
+          "titleAlignment": {
+            "expr": {
+              "Literal": {
+                "Value": "'Center'"
+              }
+            }
+          },
+          "alignment": {
+            "expr": {
+              "Literal": {
+                "Value": "'Center'"
+              }
+            }
+          },
+          "backColor": {
+            "solid": {
+              "color": {
+                "expr": {
+                  "Literal": {
+                    "Value": "'#1D3C4E'"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    ],
+    "values": [
+      {
+        "properties": {
+          "fontSize": {
+            "expr": {
+              "Literal": {
+                "Value": "11D"
+              }
+            }
+          },
+          "urlIcon": {
+            "expr": {
+              "Literal": {
+                "Value": "false"
+              }
+            }
+          },
+          "wordWrap": {
+            "expr": {
+              "Literal": {
+                "Value": "false"
+              }
+            }
+          },
+          "bandedRowHeaders": {
+            "expr": {
+              "Literal": {
+                "Value": "false"
+              }
+            }
+          }
+        }
+      }
+    ],
+    "total": [
+      {
+        "properties": {
+          "fontSize": {
+            "expr": {
+              "Literal": {
+                "Value": "10D"
+              }
+            }
+          }
+        }
+      }
+    ],
+    "general": [
+      {
+        "properties": {
+          "layout": {
+            "expr": {
+              "Literal": {
+                "Value": "'Tabular'"
+              }
+            }
+          }
+        }
+      }
+    ],
+    "columnWidth": [
+      {
+        "properties": {
+          "value": {
+            "expr": {
+              "Literal": {
+                "Value": "78.84168070953302D"
+              }
+            }
+          }
+        },
+        "selector": {
+          "metadata": "_Measures.Avg Part Discount by Job Code"
+        }
+      },
+      {
+        "properties": {
+          "value": {
+            "expr": {
+              "Literal": {
+                "Value": "107.24335666691314D"
+              }
+            }
+          }
+        },
+        "selector": {
+          "metadata": "_Measures.Parts Discount by Job Code"
+        }
+      },
+      {
+        "properties": {
+          "value": {
+            "expr": {
+              "Literal": {
+                "Value": "104.51263214807214D"
+              }
+            }
+          }
+        },
+        "selector": {
+          "metadata": "_Measures.Avg Labor $ by Job Code"
+        }
+      },
+      {
+        "properties": {
+          "value": {
+            "expr": {
+              "Literal": {
+                "Value": "107.47189260070206D"
+              }
+            }
+          }
+        },
+        "selector": {
+          "metadata": "_Measures.Labor Discount by Job Code"
+        }
+      },
+      {
+        "properties": {
+          "value": {
+            "expr": {
+              "Literal": {
+                "Value": "107.6123674171283D"
+              }
+            }
+          }
+        },
+        "selector": {
+          "metadata": "_Measures.Avg Labor Discount by Job Code"
+        }
+      },
+      {
+        "properties": {
+          "value": {
+            "expr": {
+              "Literal": {
+                "Value": "96.26229847695804D"
+              }
+            }
+          }
+        },
+        "selector": {
+          "metadata": "_Measures.Avg Labor & Parts by Job Code"
+        }
+      },
+      {
+        "properties": {
+          "value": {
+            "expr": {
+              "Literal": {
+                "Value": "90.57146009062983D"
+              }
+            }
+          }
+        },
+        "selector": {
+          "metadata": "_Measures.Avg % Discounted by Job Code"
+        }
+      },
+      {
+        "properties": {
+          "value": {
+            "expr": {
+              "Literal": {
+                "Value": "136.20650651265336D"
+              }
+            }
+          }
+        },
+        "selector": {
+          "metadata": "_Measures.Total $ - Discounts by Job Code"
+        }
+      },
+      {
+        "properties": {
+          "value": {
+            "expr": {
+              "Literal": {
+                "Value": "127.2084789824602D"
+              }
+            }
+          }
+        },
+        "selector": {
+          "metadata": "_Measures.WO List - Total Labor"
+        }
+      },
+      {
+        "properties": {
+          "value": {
+            "expr": {
+              "Literal": {
+                "Value": "96.3753143167048D"
+              }
+            }
+          }
+        },
+        "selector": {
+          "metadata": "_Measures.Avg Parts $ /Inspection"
+        }
+      }
+    ],
+    "rowHeaders": [
+      {
+        "properties": {
+          "repeatRowHeaders": {
+            "expr": {
+              "Literal": {
+                "Value": "false"
+              }
+            }
+          },
+          "showExpandCollapseButtons": {
+            "expr": {
+              "Literal": {
+                "Value": "true"
+              }
+            }
+          },
+          "fontSize": {
+            "expr": {
+              "Literal": {
+                "Value": "12D"
+              }
+            }
+          },
+          "backColor": {
+            "solid": {
+              "color": {
+                "expr": {
+                  "ThemeDataColor": {
+                    "ColorId": 0,
+                    "Percent": 0
+                  }
+                }
+              }
+            }
+          },
+          "fontColor": {
+            "solid": {
+              "color": {
+                "expr": {
+                  "ThemeDataColor": {
+                    "ColorId": 1,
+                    "Percent": 0
+                  }
+                }
+              }
+            }
+          },
+          "alignment": {
+            "expr": {
+              "Literal": {
+                "Value": "'Auto'"
+              }
+            }
+          }
+        }
+      }
+    ],
+    "blankRows": [
+      {
+        "properties": {
+          "showBlankRows": {
+            "expr": {
+              "Literal": {
+                "Value": "true"
+              }
+            }
+          },
+          "blankRowColor": {
+            "solid": {
+              "color": {
+                "expr": {
+                  "ThemeDataColor": {
+                    "ColorId": 0,
+                    "Percent": -0.2
+                  }
+                }
+              }
+            }
+          },
+          "showBorder": {
+            "expr": {
+              "Literal": {
+                "Value": "false"
+              }
+            }
+          },
+          "blankRowTransparency": {
+            "expr": {
+              "Literal": {
+                "Value": "0D"
+              }
+            }
+          }
+        }
+      }
+    ],
+    "subTotals": [
+      {
+        "properties": {
+          "perRowLevel": {
+            "expr": {
+              "Literal": {
+                "Value": "false"
+              }
+            }
+          },
+          "columnSubtotals": {
+            "expr": {
+              "Literal": {
+                "Value": "true"
+              }
+            }
+          },
+          "rowSubtotals": {
+            "expr": {
+              "Literal": {
+                "Value": "true"
+              }
+            }
+          }
+        }
+      }
+    ],
+    "columnTotal": [
+      {
+        "properties": {
+          "backColor": {
+            "solid": {
+              "color": {
+                "expr": {
+                  "ThemeDataColor": {
+                    "ColorId": 1,
+                    "Percent": 0
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    ],
+    "rowTotal": [
+      {
+        "properties": {
+          "backColor": {
+            "solid": {
+              "color": {
+                "expr": {
+                  "Literal": {
+                    "Value": "'#1D3C4E'"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    ]
+  },
+  "visualContainerObjects": {
+    "visualTooltip": [
+      {
+        "properties": {
+          "show": {
+            "expr": {
+              "Literal": {
+                "Value": "true"
+              }
+            }
+          },
+          "section": {
+            "expr": {
+              "Literal": {
+                "Value": "'2bda6878df01539521d0'"
+              }
+            }
+          },
+          "type": {
+            "expr": {
+              "Literal": {
+                "Value": "'Canvas'"
+              }
+            }
+          }
+        }
+      }
+    ],
+    "dropShadow": [
+      {
+        "properties": {
+          "show": {
+            "expr": {
+              "Literal": {
+                "Value": "false"
+              }
+            }
+          },
+          "color": {
+            "solid": {
+              "color": {
+                "expr": {
+                  "ThemeDataColor": {
+                    "ColorId": 0,
+                    "Percent": -0.3
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    ],
+    "title": [
+      {
+        "properties": {
+          "text": {
+            "expr": {
+              "Literal": {
+                "Value": "''"
+              }
+            }
+          },
+          "show": {
+            "expr": {
+              "Literal": {
+                "Value": "false"
+              }
+            }
+          },
+          "titleWrap": {
+            "expr": {
+              "Literal": {
+                "Value": "true"
+              }
+            }
+          },
+          "fontFamily": {
+            "expr": {
+              "Literal": {
+                "Value": "'Verdana'"
+              }
+            }
+          },
+          "fontColor": {
+            "solid": {
+              "color": {
+                "expr": {
+                  "ThemeDataColor": {
+                    "ColorId": 1,
+                    "Percent": 0.4
+                  }
+                }
+              }
+            }
+          },
+          "alignment": {
+            "expr": {
+              "Literal": {
+                "Value": "'center'"
+              }
+            }
+          }
+        }
+      }
+    ],
+    "background": [
+      {
+        "properties": {
+          "show": {
+            "expr": {
+              "Literal": {
+                "Value": "true"
+              }
+            }
+          },
+          "transparency": {
+            "expr": {
+              "Literal": {
+                "Value": "0D"
+              }
+            }
+          },
+          "color": {
+            "solid": {
+              "color": {
+                "expr": {
+                  "ThemeDataColor": {
+                    "ColorId": 0,
+                    "Percent": 0
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    ],
+    "border": [
+      {
+        "properties": {
+          "show": {
+            "expr": {
+              "Literal": {
+                "Value": "true"
+              }
+            }
+          },
+          "radius": {
+            "expr": {
+              "Literal": {
+                "Value": "8D"
+              }
+            }
+          },
+          "width": {
+            "expr": {
+              "Literal": {
+                "Value": "1D"
+              }
+            }
+          },
+          "color": {
+            "solid": {
+              "color": {
+                "expr": {
+                  "ThemeDataColor": {
+                    "ColorId": 0,
+                    "Percent": -0.3
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    ],
+    "stylePreset": [
+      {
+        "properties": {
+          "name": {
+            "expr": {
+              "Literal": {
+                "Value": "'Condensed'"
+              }
+            }
+          }
+        }
+      }
+    ]
+  },
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualConfiguration/2.3.0/schema.json"
+}

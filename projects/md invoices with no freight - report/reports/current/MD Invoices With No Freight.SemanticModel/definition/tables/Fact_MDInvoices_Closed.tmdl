@@ -1,0 +1,181 @@
+table Fact_MDInvoices_Closed
+	lineageTag: 8e1932ce-ec4e-4d0f-a804-4d73a97290ba
+
+	column FileNumber
+		dataType: int64
+		formatString: 0
+		lineageTag: 9b6a6492-3ff1-47b7-a601-4dca3e5745ae
+		summarizeBy: sum
+		sourceColumn: FileNumber
+
+		annotation SummarizationSetBy = Automatic
+
+	column TransId
+		dataType: int64
+		formatString: 0
+		lineageTag: 74b8726b-57e3-49d5-a860-c6540446a6dc
+		summarizeBy: count
+		sourceColumn: TransId
+
+		annotation SummarizationSetBy = Automatic
+
+	column Branch
+		dataType: string
+		lineageTag: 6f13fe60-b326-49f1-a3d8-5b2629389aa6
+		summarizeBy: none
+		sourceColumn: Branch
+
+		annotation SummarizationSetBy = Automatic
+
+	column Franchise
+		dataType: string
+		lineageTag: 777f9f9a-c25c-411a-8001-7af6b2d5d936
+		summarizeBy: none
+		sourceColumn: Franchise
+
+		annotation SummarizationSetBy = Automatic
+
+	column CustomerNumber
+		dataType: string
+		lineageTag: 3aa6e99a-28fd-4b50-b20f-3f3cc36f81c4
+		summarizeBy: none
+		sourceColumn: CustomerNumber
+
+		annotation SummarizationSetBy = Automatic
+
+	column InvoiceDate
+		dataType: dateTime
+		formatString: Short Date
+		lineageTag: 43c1779e-0b01-4dfd-8a34-72d957f2e0fe
+		summarizeBy: none
+		sourceColumn: InvoiceDate
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column PartNumber
+		dataType: string
+		lineageTag: 8d66fd12-5885-473d-b005-b04d20e89490
+		summarizeBy: none
+		sourceColumn: PartNumber
+
+		annotation SummarizationSetBy = Automatic
+
+	column OrderQty
+		dataType: double
+		lineageTag: fd9c1195-a17e-4b48-8e89-6eedf7972001
+		summarizeBy: sum
+		sourceColumn: OrderQty
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column UnitPrice
+		dataType: double
+		lineageTag: 94f9f101-b043-4f0c-997b-37211a0eb4eb
+		summarizeBy: sum
+		sourceColumn: UnitPrice
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column UnitCost
+		dataType: double
+		lineageTag: eec12111-c3d4-40f9-9650-664dc1573ebd
+		summarizeBy: sum
+		sourceColumn: UnitCost
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column LineTotal
+		dataType: double
+		lineageTag: 7e7af2fd-59d8-4578-9e6b-30eeb544decc
+		summarizeBy: sum
+		sourceColumn: LineTotal
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column Weight
+		dataType: double
+		lineageTag: ff4c229d-3014-4a6a-a3e9-b901e5b1ca92
+		summarizeBy: sum
+		sourceColumn: Weight
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column TotalLineWeight
+		dataType: double
+		lineageTag: 0d1e7625-c188-47e3-9f1c-db295efeb03c
+		summarizeBy: sum
+		sourceColumn: TotalLineWeight
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column TotalFreightCharged
+		dataType: double
+		lineageTag: 0be8bf9a-7d5c-44f5-8fa4-9bd60d70974d
+		summarizeBy: sum
+		sourceColumn: TotalFreightCharged
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column FreightLineCount
+		dataType: int64
+		formatString: 0
+		lineageTag: ed674c04-7119-4161-b68e-7b0186e7d4f2
+		summarizeBy: sum
+		sourceColumn: FreightLineCount
+
+		annotation SummarizationSetBy = Automatic
+
+	column FreightStatus
+		dataType: string
+		lineageTag: bc985cea-7c8c-4eec-9831-d06406648055
+		summarizeBy: none
+		sourceColumn: FreightStatus
+
+		annotation SummarizationSetBy = Automatic
+
+	column Salesperson
+		dataType: string
+		lineageTag: 0771749e-c065-4163-a271-50fa1aeb174f
+		summarizeBy: none
+		sourceColumn: Salesperson
+
+		annotation SummarizationSetBy = Automatic
+
+	column JobCode
+		dataType: string
+		lineageTag: 71da6fec-b51e-46fa-8072-e553445fecc0
+		summarizeBy: none
+		sourceColumn: JobCode
+
+		annotation SummarizationSetBy = Automatic
+
+	partition Fact_MDInvoices_Closed = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-gxnyznhdptpenfw724g3o5sjzm.datawarehouse.fabric.microsoft.com", "LH_Master_Data"),
+				    dbo_Fact_MDInvoices_Closed = Source{[Schema="dbo",Item="Fact_MDInvoices_Closed"]}[Data],
+				    #"Extracted Date" = Table.TransformColumns(dbo_Fact_MDInvoices_Closed,{{"InvoiceDate", DateTime.Date, type date}})
+				in
+				    #"Extracted Date"
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

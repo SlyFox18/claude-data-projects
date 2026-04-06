@@ -14,6 +14,7 @@ let
         UNIT_COST AS UnitCost,
         JOB_CODE AS JobCode,
         SALESMAN AS Salesperson,
+        PURORDER_TYPE AS PurOrderType,
         Creation_Datetime AS CreationDate
     FROM InSalPar",
 

@@ -1,0 +1,50 @@
+table FreightCalculator
+	lineageTag: 5e36ad43-c1e7-4810-98de-071d4ff99a2a
+
+	column PartWeightFrom
+		dataType: int64
+		formatString: 0
+		lineageTag: a1db621f-2f46-469f-963c-c73cf3be433a
+		summarizeBy: sum
+		sourceColumn: PartWeightFrom
+
+		annotation SummarizationSetBy = Automatic
+
+	column PartWeightTo
+		dataType: int64
+		formatString: 0
+		lineageTag: e884be96-26c2-4174-9973-3e59a8dd89f2
+		summarizeBy: sum
+		sourceColumn: PartWeightTo
+
+		annotation SummarizationSetBy = Automatic
+
+	column BaseRate
+		dataType: double
+		lineageTag: d1afe2f3-6280-4891-906e-9b670a81495e
+		summarizeBy: sum
+		sourceColumn: BaseRate
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column AdditiveRatePerPound
+		dataType: double
+		lineageTag: 1f6bab19-16d9-4204-bcba-9f867324cefa
+		summarizeBy: sum
+		sourceColumn: AdditiveRatePerPound
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	partition FreightCalculator = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-gxnyznhdptpenfw724g3o5sjzm.datawarehouse.fabric.microsoft.com", "LH_Master_Data"),
+				    dbo_FreightCalculator = Source{[Schema="dbo",Item="FreightCalculator"]}[Data]
+				in
+				    dbo_FreightCalculator
+

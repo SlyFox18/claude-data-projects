@@ -1,0 +1,690 @@
+{
+  "visualType": "tableEx",
+  "query": {
+    "queryState": {
+      "Values": {
+        "projections": [
+          {
+            "field": {
+              "Column": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "Fact_PendingInspections"
+                  }
+                },
+                "Property": "BranchCode"
+              }
+            },
+            "queryRef": "Fact_PendingInspections.BranchCode",
+            "nativeQueryRef": "Branch",
+            "displayName": "Branch"
+          },
+          {
+            "field": {
+              "Column": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "Fact_PendingInspections"
+                  }
+                },
+                "Property": "JobCode"
+              }
+            },
+            "queryRef": "Fact_PendingInspections.JobCode",
+            "nativeQueryRef": "Job Code",
+            "displayName": "Job Code"
+          },
+          {
+            "field": {
+              "Column": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "Fact_PendingInspections"
+                  }
+                },
+                "Property": "WorkOrderNumber"
+              }
+            },
+            "queryRef": "Fact_PendingInspections.WorkOrderNumber",
+            "nativeQueryRef": "Work Order #",
+            "displayName": "Work Order #"
+          },
+          {
+            "field": {
+              "Column": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "Fact_PendingInspections"
+                  }
+                },
+                "Property": "CreationDate"
+              }
+            },
+            "queryRef": "Fact_PendingInspections.CreationDate",
+            "nativeQueryRef": "Creation Date",
+            "displayName": "Creation Date"
+          },
+          {
+            "field": {
+              "Column": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "Fact_PendingInspections"
+                  }
+                },
+                "Property": "LastLaborPunch"
+              }
+            },
+            "queryRef": "Fact_PendingInspections.LastLaborPunch",
+            "nativeQueryRef": "Last Labor Punch",
+            "displayName": "Last Labor Punch"
+          },
+          {
+            "field": {
+              "Aggregation": {
+                "Expression": {
+                  "Column": {
+                    "Expression": {
+                      "SourceRef": {
+                        "Entity": "Fact_PendingInspections"
+                      }
+                    },
+                    "Property": "HoursWorked_Clean"
+                  }
+                },
+                "Function": 0
+              }
+            },
+            "queryRef": "Sum(Fact_PendingInspections.HoursWorked_Clean)",
+            "nativeQueryRef": "Hours Worked",
+            "displayName": "Hours Worked"
+          }
+        ]
+      }
+    },
+    "sortDefinition": {
+      "sort": [
+        {
+          "field": {
+            "Column": {
+              "Expression": {
+                "SourceRef": {
+                  "Entity": "Fact_PendingInspections"
+                }
+              },
+              "Property": "JobCode"
+            }
+          },
+          "direction": "Ascending"
+        }
+      ]
+    }
+  },
+  "objects": {
+    "grid": [
+      {
+        "properties": {
+          "outlineStyle": {
+            "expr": {
+              "Literal": {
+                "Value": "15D"
+              }
+            }
+          },
+          "outlineColor": {
+            "solid": {
+              "color": {
+                "expr": {
+                  "ThemeDataColor": {
+                    "ColorId": 1,
+                    "Percent": 0.6
+                  }
+                }
+              }
+            }
+          },
+          "gridVertical": {
+            "expr": {
+              "Literal": {
+                "Value": "true"
+              }
+            }
+          },
+          "gridVerticalColor": {
+            "solid": {
+              "color": {
+                "expr": {
+                  "ThemeDataColor": {
+                    "ColorId": 1,
+                    "Percent": 0.6
+                  }
+                }
+              }
+            }
+          },
+          "gridHorizontalColor": {
+            "solid": {
+              "color": {
+                "expr": {
+                  "ThemeDataColor": {
+                    "ColorId": 1,
+                    "Percent": 0.6
+                  }
+                }
+              }
+            }
+          },
+          "rowPadding": {
+            "expr": {
+              "Literal": {
+                "Value": "4D"
+              }
+            }
+          },
+          "textSize": {
+            "expr": {
+              "Literal": {
+                "Value": "13D"
+              }
+            }
+          }
+        }
+      }
+    ],
+    "columnHeaders": [
+      {
+        "properties": {
+          "fontSize": {
+            "expr": {
+              "Literal": {
+                "Value": "12D"
+              }
+            }
+          },
+          "bold": {
+            "expr": {
+              "Literal": {
+                "Value": "true"
+              }
+            }
+          },
+          "fontColor": {
+            "solid": {
+              "color": {
+                "expr": {
+                  "ThemeDataColor": {
+                    "ColorId": 0,
+                    "Percent": 0
+                  }
+                }
+              }
+            }
+          },
+          "backColor": {
+            "solid": {
+              "color": {
+                "expr": {
+                  "Literal": {
+                    "Value": "'#2C4F62'"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    ],
+    "values": [
+      {
+        "properties": {
+          "fontSize": {
+            "expr": {
+              "Literal": {
+                "Value": "13D"
+              }
+            }
+          },
+          "urlIcon": {
+            "expr": {
+              "Literal": {
+                "Value": "false"
+              }
+            }
+          },
+          "wordWrap": {
+            "expr": {
+              "Literal": {
+                "Value": "false"
+              }
+            }
+          }
+        }
+      },
+      {
+        "properties": {},
+        "selector": {
+          "data": [
+            {
+              "dataViewWildcard": {
+                "matchingOption": 1
+              }
+            }
+          ],
+          "metadata": "Fact_PendingInspections.CreationDate"
+        }
+      },
+      {
+        "properties": {},
+        "selector": {
+          "data": [
+            {
+              "dataViewWildcard": {
+                "matchingOption": 1
+              }
+            }
+          ],
+          "metadata": "Fact_PendingInspections.LastLaborPunch"
+        }
+      }
+    ],
+    "total": [
+      {
+        "properties": {
+          "fontSize": {
+            "expr": {
+              "Literal": {
+                "Value": "10D"
+              }
+            }
+          }
+        }
+      }
+    ],
+    "columnFormatting": [
+      {
+        "properties": {
+          "styleTotal": {
+            "expr": {
+              "Literal": {
+                "Value": "true"
+              }
+            }
+          }
+        },
+        "selector": {
+          "metadata": "_Measures.Avg % Discounted by Job Code"
+        }
+      },
+      {
+        "properties": {
+          "styleTotal": {
+            "expr": {
+              "Literal": {
+                "Value": "true"
+              }
+            }
+          }
+        },
+        "selector": {
+          "metadata": "_Measures.Total $ - Discounts by Job Code"
+        }
+      }
+    ],
+    "columnWidth": [
+      {
+        "properties": {
+          "value": {
+            "expr": {
+              "Literal": {
+                "Value": "106.98485872482398D"
+              }
+            }
+          }
+        },
+        "selector": {
+          "metadata": "_Measures.Avg Parts $ by Job Code"
+        }
+      },
+      {
+        "properties": {
+          "value": {
+            "expr": {
+              "Literal": {
+                "Value": "103.91185097983103D"
+              }
+            }
+          }
+        },
+        "selector": {
+          "metadata": "_Measures.Avg Labor $ by Job Code"
+        }
+      },
+      {
+        "properties": {
+          "value": {
+            "expr": {
+              "Literal": {
+                "Value": "82.47209492944359D"
+              }
+            }
+          }
+        },
+        "selector": {
+          "metadata": "_Measures.Avg Part Discount by Job Code"
+        }
+      },
+      {
+        "properties": {
+          "value": {
+            "expr": {
+              "Literal": {
+                "Value": "104.42804255942832D"
+              }
+            }
+          }
+        },
+        "selector": {
+          "metadata": "_Measures.Labor $ by Job Code"
+        }
+      },
+      {
+        "properties": {
+          "value": {
+            "expr": {
+              "Literal": {
+                "Value": "81.47621296645448D"
+              }
+            }
+          }
+        },
+        "selector": {
+          "metadata": "_Measures.Labor Discount by Job Code"
+        }
+      },
+      {
+        "properties": {
+          "value": {
+            "expr": {
+              "Literal": {
+                "Value": "96.99999209132932D"
+              }
+            }
+          }
+        },
+        "selector": {
+          "metadata": "_Measures.Avg Labor Discount by Job Code"
+        }
+      },
+      {
+        "properties": {
+          "value": {
+            "expr": {
+              "Literal": {
+                "Value": "108.23810652083945D"
+              }
+            }
+          }
+        },
+        "selector": {
+          "metadata": "_Measures.Avg Labor & Parts by Job Code"
+        }
+      },
+      {
+        "properties": {
+          "value": {
+            "expr": {
+              "Literal": {
+                "Value": "97.1428482456022D"
+              }
+            }
+          }
+        },
+        "selector": {
+          "metadata": "_Measures.Total $ - Discounts by Job Code"
+        }
+      },
+      {
+        "properties": {
+          "value": {
+            "expr": {
+              "Literal": {
+                "Value": "90.57141084185906D"
+              }
+            }
+          }
+        },
+        "selector": {
+          "metadata": "_Measures.Avg % Discounted by Job Code"
+        }
+      },
+      {
+        "properties": {
+          "value": {
+            "expr": {
+              "Literal": {
+                "Value": "92.9523844124232D"
+              }
+            }
+          }
+        },
+        "selector": {
+          "metadata": "_Measures.Parts Discount by Job Code"
+        }
+      },
+      {
+        "properties": {
+          "value": {
+            "expr": {
+              "Literal": {
+                "Value": "92.23809409663752D"
+              }
+            }
+          }
+        },
+        "selector": {
+          "metadata": "_Measures.Parts $ by Job Code"
+        }
+      }
+    ]
+  },
+  "visualContainerObjects": {
+    "title": [
+      {
+        "properties": {
+          "show": {
+            "expr": {
+              "Literal": {
+                "Value": "false"
+              }
+            }
+          },
+          "titleWrap": {
+            "expr": {
+              "Literal": {
+                "Value": "true"
+              }
+            }
+          },
+          "fontColor": {
+            "solid": {
+              "color": {
+                "expr": {
+                  "ThemeDataColor": {
+                    "ColorId": 1,
+                    "Percent": 0.4
+                  }
+                }
+              }
+            }
+          },
+          "alignment": {
+            "expr": {
+              "Literal": {
+                "Value": "'center'"
+              }
+            }
+          },
+          "fontFamily": {
+            "expr": {
+              "Literal": {
+                "Value": "'Verdana'"
+              }
+            }
+          }
+        }
+      }
+    ],
+    "background": [
+      {
+        "properties": {
+          "show": {
+            "expr": {
+              "Literal": {
+                "Value": "true"
+              }
+            }
+          },
+          "color": {
+            "solid": {
+              "color": {
+                "expr": {
+                  "ThemeDataColor": {
+                    "ColorId": 0,
+                    "Percent": 0
+                  }
+                }
+              }
+            }
+          },
+          "transparency": {
+            "expr": {
+              "Literal": {
+                "Value": "0D"
+              }
+            }
+          }
+        }
+      }
+    ],
+    "border": [
+      {
+        "properties": {
+          "show": {
+            "expr": {
+              "Literal": {
+                "Value": "true"
+              }
+            }
+          },
+          "color": {
+            "solid": {
+              "color": {
+                "expr": {
+                  "ThemeDataColor": {
+                    "ColorId": 0,
+                    "Percent": -0.2
+                  }
+                }
+              }
+            }
+          },
+          "radius": {
+            "expr": {
+              "Literal": {
+                "Value": "8D"
+              }
+            }
+          },
+          "width": {
+            "expr": {
+              "Literal": {
+                "Value": "1D"
+              }
+            }
+          }
+        }
+      }
+    ],
+    "dropShadow": [
+      {
+        "properties": {
+          "show": {
+            "expr": {
+              "Literal": {
+                "Value": "true"
+              }
+            }
+          },
+          "color": {
+            "solid": {
+              "color": {
+                "expr": {
+                  "ThemeDataColor": {
+                    "ColorId": 0,
+                    "Percent": -0.3
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    ],
+    "visualTooltip": [
+      {
+        "properties": {
+          "show": {
+            "expr": {
+              "Literal": {
+                "Value": "false"
+              }
+            }
+          },
+          "type": {
+            "expr": {
+              "Literal": {
+                "Value": "'Canvas'"
+              }
+            }
+          },
+          "section": {
+            "expr": {
+              "Literal": {
+                "Value": "'2bda6878df01539521d0'"
+              }
+            }
+          },
+          "themedBackground": {
+            "solid": {
+              "color": {
+                "expr": {
+                  "Literal": {
+                    "Value": "'#F8FAFA'"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    ],
+    "visualHeaderTooltip": [
+      {
+        "properties": {
+          "themedBackground": {
+            "solid": {
+              "color": {
+                "expr": {
+                  "Literal": {
+                    "Value": "'#F8FAFA'"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    ]
+  },
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualConfiguration/2.3.0/schema.json"
+}

@@ -1,0 +1,29 @@
+table dim_FreightPerformanceGroup
+	lineageTag: d1e2f3a4-b5c6-47d8-9e0f-1a2b3c4d5e6f
+
+	column Group
+		lineageTag: 1e81bf21-1f3b-4fb0-b44b-2396b89cfb23
+		isNameInferred
+		sourceColumn: [Group]
+		sortByColumn: SortOrder
+
+	column SortOrder
+		lineageTag: 9608b8d1-4e3e-4b74-ad81-0086205c715a
+		isNameInferred
+		sourceColumn: [SortOrder]
+
+	partition dim_FreightPerformanceGroup = calculated
+		mode: import
+		source =
+				DATATABLE(
+				    "Group",     STRING,
+				    "SortOrder", INTEGER,
+				    {
+				        { "No Freight",            1 },
+				        { "Needs Review",          2 },
+				        { "Good / Above Baseline", 3 }
+				    }
+				)
+
+	annotation PBI_Id = a4b5c6d7-e8f9-40a1-2b3c-4d5e6f7a8b9c
+

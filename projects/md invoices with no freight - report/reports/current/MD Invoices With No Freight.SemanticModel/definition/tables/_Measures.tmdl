@@ -1,0 +1,1420 @@
+table _Measures
+	lineageTag: 22e4b9e3-99b6-4634-9836-9ade5a5ea5a5
+
+	measure 'Home - Header' = ```
+			
+			// Get user name
+			VAR _User = USERPRINCIPALNAME()
+			VAR _Position = SEARCH("@", _User, 1)
+			VAR _Name = LEFT(_User, _Position - 1)
+			VAR _FirstLetter = UPPER(LEFT(_Name, 1))
+			VAR _LastName = MID(_Name, 2, LEN(_Name) - 1)
+			VAR _FormattedLastName = 
+			    UPPER(LEFT(_LastName, 1)) & LOWER(MID(_LastName, 2, LEN(_LastName)))
+			VAR WelcomeName = _FirstLetter & "." & _FormattedLastName
+			
+			// Get current date/time info
+			VAR CurrentDate = TODAY()
+			VAR DateDisplay = FORMAT(CurrentDate, "MMM D, YYYY")
+			VAR CurrentHour = HOUR(NOW())
+			VAR TimeGreeting = 
+			    IF(CurrentHour < 12, "Good Morning",
+			    IF(CurrentHour < 17, "Good Afternoon",
+			    "Good Evening"))
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    height: 85px;
+			    padding: 15px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 10px;
+			    color: white;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-between;
+			    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    box-sizing: border-box;
+			'>
+			    <!-- Left side: Dashboard Title -->
+			    <div style='display: flex; align-items: center; gap: 15px;'>
+			        <!-- Home icon -->
+			        <div style='
+			            width: 40px;
+			            height: 40px;
+			            background: rgba(255,255,255,0.15);
+			            border-radius: 8px;
+			            display: flex;
+			            align-items: center;
+			            justify-content: center;
+			            font-size: 20px;
+			        '>
+			            🏠
+			        </div>
+			        
+			        <!-- Title -->
+			        <div>
+			            <div style='font-size: 12px; opacity: 0.85; margin-bottom: 4px; letter-spacing: 0.5px;'>
+			                REPORT
+			            </div>
+			            <div style='font-size: 26px; font-weight: 700; line-height: 1;'>
+			                MD Invoices With No Freight
+			            </div>
+			        </div>
+			    </div>
+			    
+			    <!-- Right side: Welcome & Date -->
+			    <div style='text-align: right;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 6px;'>
+			            " & TimeGreeting & ", " & WelcomeName & "
+			        </div>
+			        <div style='font-size: 16px; font-weight: 600;'>
+			            📅 " & DateDisplay & "
+			        </div>
+			    </div>
+			</div>
+			"
+			```
+		lineageTag: 49efea2a-3c06-4cab-8367-26b26caa141e
+
+	measure 'Total MD Invoices' = DISTINCTCOUNT(Fact_MDInvoices_NoFreight[FileNumber])
+		formatString: #,##0
+		lineageTag: b1c2d3e4-f5a6-47b8-9c0d-1e2f3a4b5c6d
+
+	measure 'Total Invoices No Freight' =
+			CALCULATE(
+			    DISTINCTCOUNT(Fact_MDInvoices_NoFreight[FileNumber]),
+			    Fact_MDInvoices_NoFreight[FreightStatus] = "No Freight"
+			)
+		formatString: #,##0
+		lineageTag: c2d3e4f5-a6b7-48c9-0d1e-2f3a4b5c6d7e
+
+	measure 'Total Invoices With Freight' =
+			CALCULATE(
+			    DISTINCTCOUNT(Fact_MDInvoices_NoFreight[FileNumber]),
+			    Fact_MDInvoices_NoFreight[FreightStatus] = "Has Freight"
+			)
+		formatString: #,##0
+		lineageTag: d3e4f5a6-b7c8-49d0-1e2f-3a4b5c6d7e8f
+
+	measure 'No Freight Rate' =
+			DIVIDE(
+			    [Total Invoices No Freight],
+			    [Total MD Invoices],
+			    0
+			)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: e4f5a6b7-c8d9-40e1-2f3a-4b5c6d7e8f9a
+
+	measure 'Total Parts Value' = SUM(Fact_MDInvoices_NoFreight[LineTotal])
+		formatString: $#,##0.00;($#,##0.00);$#,##0.00
+		lineageTag: f5a6b7c8-d9e0-41f2-3a4b-5c6d7e8f9a0b
+
+	measure 'Total Weight' = SUM(Fact_MDInvoices_NoFreight[TotalLineWeight])
+		formatString: #,##0.00
+		lineageTag: a6b7c8d9-e0f1-42a3-4b5c-6d7e8f9a0b1c
+
+	measure 'Actual Freight' =
+			SUMX(
+			    VALUES(Fact_MDInvoices_NoFreight[FileNumber]),
+			    MAX(Fact_MDInvoices_NoFreight[TotalFreightCharged])
+			)
+		formatString: $#,##0.00;($#,##0.00);$#,##0.00
+		lineageTag: b7c8d9e0-f1a2-43b4-5c6d-7e8f9a0b1c2d
+
+	measure 'Calculated Freight' =
+			SUMX(
+			    VALUES(Fact_MDInvoices_NoFreight[FileNumber]),
+			    VAR InvTotalWeight =
+			        CALCULATE(SUM(Fact_MDInvoices_NoFreight[TotalLineWeight]))
+			    VAR BaseRate =
+			        MAXX(
+			            FILTER(
+			                ALL(FreightCalculator),
+			                FreightCalculator[PartWeightFrom] <= InvTotalWeight
+			                    && (FreightCalculator[PartWeightTo] + 1) > InvTotalWeight
+			            ),
+			            FreightCalculator[BaseRate]
+			        )
+			    VAR BaseRateFinal = IF(ISBLANK(BaseRate), 120, BaseRate)
+			    VAR PartAdditives =
+			        SUMX(
+			            CALCULATETABLE(Fact_MDInvoices_NoFreight),
+			            VAR LineWeight = Fact_MDInvoices_NoFreight[TotalLineWeight]
+			            VAR LineRate =
+			                MAXX(
+			                    FILTER(
+			                        ALL(FreightCalculator),
+			                        FreightCalculator[PartWeightFrom] <= LineWeight
+			                            && (FreightCalculator[PartWeightTo] + 1) > LineWeight
+			                    ),
+			                    FreightCalculator[AdditiveRatePerPound]
+			                )
+			            RETURN IF(ISBLANK(LineRate), 1.00, LineRate) * LineWeight
+			        )
+			    RETURN BaseRateFinal + PartAdditives
+			)
+		formatString: $#,##0.00;($#,##0.00);$#,##0.00
+		lineageTag: c8d9e0f1-a2b3-44c5-6d7e-8f9a0b1c2d3e
+
+	measure 'Missed Freight' =
+			VAR CalcFreight = [Calculated Freight]
+			VAR ActualFreight = [Actual Freight]
+			RETURN
+			    IF(ISBLANK(CalcFreight), BLANK(), CalcFreight - ActualFreight)
+		formatString: $#,##0.00;($#,##0.00);$#,##0.00
+		lineageTag: d9e0f1a2-b3c4-45d6-7e8f-9a0b1c2d3e4f
+
+	measure 'Hero Card' =
+			VAR TotalInvoices = [Total MD Invoices]
+			VAR NoFreightCount = [Total Invoices No Freight]
+			VAR NoFreightRate = [No Freight Rate]
+			VAR ActualFreight = [Actual Freight]
+			VAR AboveBaseline = [Freight Above Baseline]
+			VAR Opportunity = [Freight Opportunity]
+			VAR NoFreightRateText = FORMAT(NoFreightRate, "0.0%")
+			VAR ActualFreightText = FORMAT(ActualFreight, "$#,##0")
+			VAR AboveBaselineText = FORMAT(AboveBaseline, "$#,##0")
+			VAR OpportunityText = IF(Opportunity = 0, "$0", FORMAT(Opportunity, "$#,##0"))
+			VAR RateColor = IF(NoFreightRate >= 0.10, "#f87171", IF(NoFreightRate >= 0.05, "#fbbf24", "#4ade80"))
+			VAR OpportunityColor = IF(Opportunity > 5000, "#fbbf24", "#4ade80")
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    padding: 20px 30px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 12px;
+			    box-shadow: 0 8px 24px rgba(0,0,0,0);
+			    color: white;
+			    height: 185px;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-around;
+			'>
+			    <!-- Section 1: Total MD Invoices -->
+			    <div style='text-align: center; flex: 1;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px;'>
+			            Total MD Invoices
+			        </div>
+			        <div style='font-size: 62px; font-weight: 700; line-height: 1;'>
+			            " & FORMAT(TotalInvoices, "#,##0") & "
+			        </div>
+			        <div style='font-size: 15px; margin-top: 8px; opacity: 0.9;'>
+			            Open Orders
+			        </div>
+			    </div>
+			
+			    <!-- Divider -->
+			    <div style='width: 2px; height: 120px; background: rgba(255,255,255,0.3); margin: 0 15px;'></div>
+			
+			    <!-- Section 2: Missing Freight -->
+			    <div style='text-align: center; flex: 1;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px;'>
+			            Missing Freight
+			        </div>
+			        <div style='font-size: 62px; font-weight: 700; line-height: 1; color: #f87171;'>
+			            " & FORMAT(NoFreightCount, "#,##0") & "
+			        </div>
+			        <div style='font-size: 15px; margin-top: 8px; opacity: 0.9;'>
+			            Invoices
+			        </div>
+			    </div>
+			
+			    <!-- Divider -->
+			    <div style='width: 2px; height: 120px; background: rgba(255,255,255,0.3); margin: 0 15px;'></div>
+			
+			    <!-- Section 3: No Freight Rate -->
+			    <div style='text-align: center; flex: 1;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px;'>
+			            No Freight Rate
+			        </div>
+			        <div style='font-size: 58px; font-weight: 700; line-height: 1; color: " & RateColor & ";'>
+			            " & NoFreightRateText & "
+			        </div>
+			        <div style='font-size: 15px; margin-top: 8px; opacity: 0.9;'>
+			            of MD Invoices
+			        </div>
+			    </div>
+			
+			    <!-- Divider -->
+			    <div style='width: 2px; height: 120px; background: rgba(255,255,255,0.3); margin: 0 15px;'></div>
+			
+			    <!-- Section 4: Freight Collected -->
+			    <div style='text-align: center; flex: 1;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px;'>
+			            Freight Assigned
+			        </div>
+			        <div style='font-size: 50px; font-weight: 700; line-height: 1;'>
+			            " & ActualFreightText & "
+			        </div>
+			        <div style='font-size: 16px; margin-top: 8px; color: #4ade80; font-weight: 600;'>
+			            +" & AboveBaselineText & " above baseline
+			        </div>
+			    </div>
+			
+			    <!-- Divider -->
+			    <div style='width: 2px; height: 120px; background: rgba(255,255,255,0.3); margin: 0 15px;'></div>
+			
+			    <!-- Section 5: Freight Opportunity -->
+			    <div style='text-align: center; flex: 1;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px;'>
+			            Opportunity
+			        </div>
+			        <div style='font-size: 50px; font-weight: 700; line-height: 1; color: " & OpportunityColor & ";'>
+			            " & OpportunityText & "
+			        </div>
+			        <div style='font-size: 15px; margin-top: 8px; opacity: 0.9;'>
+			            Potential Upside
+			        </div>
+			    </div>
+			
+			</div>
+			"
+		lineageTag: e0f1a2b3-c4d5-46e7-8f9a-0b1c2d3e4f5a
+
+	measure 'Freight Above Baseline' =
+			SUMX(
+			    VALUES(Fact_MDInvoices_NoFreight[FileNumber]),
+			    VAR Actual = [Actual Freight]
+			    VAR Calc = [Calculated Freight]
+			    RETURN IF(ISBLANK(Calc), 0, MAX(0, Actual - Calc))
+			)
+		formatString: $#,##0.00;($#,##0.00);$#,##0.00
+		lineageTag: f1a2b3c4-d5e6-47f8-9a0b-1c2d3e4f5a6b
+
+	measure 'Freight Opportunity' =
+			SUMX(
+			    VALUES(Fact_MDInvoices_NoFreight[FileNumber]),
+			    VAR Actual = [Actual Freight]
+			    VAR Calc = [Calculated Freight]
+			    RETURN IF(ISBLANK(Calc), 0, MAX(0, Calc - Actual))
+			)
+		formatString: $#,##0.00;($#,##0.00);$#,##0.00
+		lineageTag: a2b3c4d5-e6f7-48a9-0b1c-2d3e4f5a6b7c
+
+	measure 'Freight Status Color' =
+			VAR FreightStatusVal = MAX(Fact_MDInvoices_NoFreight[FreightStatus])
+			VAR MissedAmt = [Missed Freight]
+			RETURN
+			    SWITCH(
+			        TRUE(),
+			        FreightStatusVal = "No Freight",                          "#fca5a5",
+			        FreightStatusVal = "No Freight Charged",                  "#fcd34d",
+			        NOT ISBLANK(MissedAmt) && MissedAmt > 1,                 "#fef08a",
+			        NOT ISBLANK(MissedAmt) && MissedAmt <= 1,                "#bbf7d0",
+			        "#e5e7eb"
+			    )
+		lineageTag: b3c4d5e6-f7a8-49b0-1c2d-3e4f5a6b7c8d
+
+	measure 'Missed Freight Icon' =
+			VAR MissedAmt = [Missed Freight]
+			VAR FreightStatusVal = MAX(Fact_MDInvoices_NoFreight[FreightStatus])
+			RETURN
+			    IF(
+			        ISBLANK(MissedAmt),                           1,
+			        IF(FreightStatusVal = "No Freight",           2,
+			        IF(FreightStatusVal = "No Freight Charged",   2,
+			        IF(MissedAmt > 50,                            2,
+			        IF(MissedAmt > 1,                             3,
+			        IF(MissedAmt >= -1,                           4,
+			                                                      5)))))
+			    )
+		lineageTag: c4d5e6f7-a8b9-40c1-2d3e-4f5a6b7c8d9e
+
+	measure 'Is In Selected Group' =
+			VAR SelectedGroup = SELECTEDVALUE(dim_FreightPerformanceGroup[Group])
+			VAR MissedAmt = [Missed Freight]
+			VAR FreightStatusVal = MAX(Fact_MDInvoices_NoFreight[FreightStatus])
+			RETURN
+			    IF(
+			        ISBLANK(SelectedGroup),
+			        1,
+			        SWITCH(
+			            SelectedGroup,
+			            "No Freight",
+			                IF(FreightStatusVal = "No Freight" || FreightStatusVal = "No Freight Charged", 1, 0),
+			            "Needs Review",
+			                IF(FreightStatusVal = "Has Freight" && NOT ISBLANK(MissedAmt) && MissedAmt > 1, 1, 0),
+			            "Good / Above Baseline",
+			                IF(FreightStatusVal = "Has Freight" && (ISBLANK(MissedAmt) || MissedAmt <= 1), 1, 0),
+			            1
+			        )
+			    )
+		lineageTag: d5e6f7a8-b9c0-41d2-3e4f-5a6b7c8d9e0f
+
+	measure 'Performance - Header' = ```
+			
+			// Get user name
+			VAR _User = USERPRINCIPALNAME()
+			VAR _Position = SEARCH("@", _User, 1)
+			VAR _Name = LEFT(_User, _Position - 1)
+			VAR _FirstLetter = UPPER(LEFT(_Name, 1))
+			VAR _LastName = MID(_Name, 2, LEN(_Name) - 1)
+			VAR _FormattedLastName = 
+			    UPPER(LEFT(_LastName, 1)) & LOWER(MID(_LastName, 2, LEN(_LastName)))
+			VAR WelcomeName = _FirstLetter & "." & _FormattedLastName
+			
+			// Get current date/time info
+			VAR CurrentDate = TODAY()
+			VAR DateDisplay = FORMAT(CurrentDate, "MMM D, YYYY")
+			VAR CurrentHour = HOUR(NOW())
+			VAR TimeGreeting = 
+			    IF(CurrentHour < 12, "Good Morning",
+			    IF(CurrentHour < 17, "Good Afternoon",
+			    "Good Evening"))
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    height: 85px;
+			    padding: 15px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 10px;
+			    color: white;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-between;
+			    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    box-sizing: border-box;
+			'>
+			    <!-- Left side: Dashboard Title -->
+			    <div style='display: flex; align-items: center; gap: 15px;'>
+			        <!-- Home icon -->
+			        <div style='
+			            width: 40px;
+			            height: 40px;
+			            background: rgba(255,255,255,0.15);
+			            border-radius: 8px;
+			            display: flex;
+			            align-items: center;
+			            justify-content: center;
+			            font-size: 20px;
+			        '>
+			            🏠
+			        </div>
+			        
+			        <!-- Title -->
+			        <div>
+			            <div style='font-size: 12px; opacity: 0.85; margin-bottom: 4px; letter-spacing: 0.5px;'>
+			                REPORT
+			            </div>
+			            <div style='font-size: 26px; font-weight: 700; line-height: 1;'>
+			                Branch and Saleman Performance
+			            </div>
+			        </div>
+			    </div>
+			    
+			    <!-- Right side: Welcome & Date -->
+			    <div style='text-align: right;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 6px;'>
+			            " & TimeGreeting & ", " & WelcomeName & "
+			        </div>
+			        <div style='font-size: 16px; font-weight: 600;'>
+			            📅 " & DateDisplay & "
+			        </div>
+			    </div>
+			</div>
+			"
+			```
+		lineageTag: 932815c3-7e38-4cc6-b643-17aa2652d7e6
+
+	measure 'Worst Branch' =
+			VAR MinInvoices = 3
+			VAR BranchRates =
+			    ADDCOLUMNS(
+			        VALUES(dim_BranchLocation[Branch]),
+			        "@Rate",  CALCULATE([No Freight Rate]),
+			        "@Count", CALCULATE([Total MD Invoices])
+			    )
+			VAR QualifiedBranches =
+			    FILTER(BranchRates, [@Count] >= MinInvoices)
+			VAR TopBranch =
+			    TOPN(1, QualifiedBranches, [@Rate], DESC)
+			RETURN
+			    MAXX(TopBranch, dim_BranchLocation[Branch])
+		lineageTag: e6f7a8b9-c0d1-42e3-4f5a-6b7c8d9e0f1a
+
+	measure 'Worst Branch Rate' =
+			VAR MinInvoices = 3
+			VAR BranchRates =
+			    ADDCOLUMNS(
+			        VALUES(dim_BranchLocation[Branch]),
+			        "@Rate",  CALCULATE([No Freight Rate]),
+			        "@Count", CALCULATE([Total MD Invoices])
+			    )
+			VAR QualifiedBranches =
+			    FILTER(BranchRates, [@Count] >= MinInvoices)
+			VAR TopBranch =
+			    TOPN(1, QualifiedBranches, [@Rate], DESC)
+			RETURN
+			    MAXX(TopBranch, [@Rate])
+		formatString: 0.0%
+		lineageTag: f7a8b9c0-d1e2-43f4-5a6b-7c8d9e0f1a2b
+
+	measure 'Top Opportunity Salesperson' =
+			VAR SalesOpps =
+			    ADDCOLUMNS(
+			        VALUES(dim_Salesperson[SalespersonCode]),
+			        "@Opp", CALCULATE([Freight Opportunity])
+			    )
+			VAR TopSales =
+			    TOPN(1, SalesOpps, [@Opp], DESC)
+			VAR TopCode =
+			    MAXX(TopSales, dim_Salesperson[SalespersonCode])
+			RETURN
+			    CALCULATE(
+			        MAX(dim_Salesperson[FullName]),
+			        dim_Salesperson[SalespersonCode] = TopCode
+			    )
+		lineageTag: a8b9c0d1-e2f3-44a5-6b7c-8d9e0f1a2b3c
+
+	measure 'Top Opportunity Salesperson Amount' =
+			VAR SalesOpps =
+			    ADDCOLUMNS(
+			        VALUES(Fact_MDInvoices_NoFreight[Salesperson]),
+			        "@Opp", CALCULATE([Freight Opportunity])
+			    )
+			VAR TopSales =
+			    TOPN(1, SalesOpps, [@Opp], DESC)
+			RETURN
+			    MAXX(TopSales, [@Opp])
+		formatString: $#,##0.00;($#,##0.00);$#,##0.00
+		lineageTag: b9c0d1e2-f3a4-45b6-7c8d-9e0f1a2b3c4d
+
+	measure 'Performance Hero Card' =
+			VAR NoFreightRate    = [No Freight Rate]
+			VAR NoFreightCount   = [Total Invoices No Freight]
+			VAR TotalInvoices    = [Total MD Invoices]
+			VAR Opportunity      = [Freight Opportunity]
+			VAR AboveBaseline    = [Freight Above Baseline]
+			VAR WorstBranch      = [Worst Branch]
+			VAR WorstBranchRate  = [Worst Branch Rate]
+			VAR TopSales         = [Top Opportunity Salesperson]
+			VAR TopSalesAmt      = [Top Opportunity Salesperson Amount]
+			VAR RateColor        = IF(NoFreightRate >= 0.10, "#f87171", IF(NoFreightRate >= 0.05, "#fbbf24", "#4ade80"))
+			VAR WorstBranchColor = IF(WorstBranchRate >= 0.25, "#f87171", IF(WorstBranchRate >= 0.15, "#fbbf24", "#e5e7eb"))
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    padding: 20px 30px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 12px;
+			    color: white;
+			    height: 185px;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-around;
+			'>
+			    <!-- Section 1: Overall No Freight Rate -->
+			    <div style='text-align: center; flex: 1;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px;'>
+			            Overall No Freight Rate
+			        </div>
+			        <div style='font-size: 58px; font-weight: 700; line-height: 1; color: " & RateColor & ";'>
+			            " & FORMAT(NoFreightRate, "0.0%") & "
+			        </div>
+			        <div style='font-size: 15px; margin-top: 8px; opacity: 0.9;'>
+			            " & FORMAT(NoFreightCount, "#,##0") & " of " & FORMAT(TotalInvoices, "#,##0") & " invoices
+			        </div>
+			    </div>
+			
+			    <!-- Divider -->
+			    <div style='width: 2px; height: 120px; background: rgba(255,255,255,0.3); margin: 0 15px;'></div>
+			
+			    <!-- Section 2: Freight Opportunity -->
+			    <div style='text-align: center; flex: 1;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px;'>
+			            Freight Opportunity
+			        </div>
+			        <div style='font-size: 50px; font-weight: 700; line-height: 1; color: #fbbf24;'>
+			            " & FORMAT(Opportunity, "$#,##0") & "
+			        </div>
+			        <div style='font-size: 13px; margin-top: 8px; color: #4ade80; font-weight: 600;'>
+			            +" & FORMAT(AboveBaseline, "$#,##0") & " above baseline
+			        </div>
+			    </div>
+			
+			    <!-- Divider -->
+			    <div style='width: 2px; height: 120px; background: rgba(255,255,255,0.3); margin: 0 15px;'></div>
+			
+			    <!-- Section 3: Worst Branch -->
+			    <div style='text-align: center; flex: 1;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px;'>
+			            Highest No Freight Rate
+			        </div>
+			        <div style='font-size: 36px; font-weight: 700; line-height: 1; color: " & WorstBranchColor & ";'>
+			            " & WorstBranch & "
+			        </div>
+			        <div style='font-size: 20px; margin-top: 8px; font-weight: 600; color: " & WorstBranchColor & ";'>
+			            " & FORMAT(WorstBranchRate, "0.0%") & " no freight rate
+			        </div>
+			    </div>
+			
+			    <!-- Divider -->
+			    <div style='width: 2px; height: 120px; background: rgba(255,255,255,0.3); margin: 0 15px;'></div>
+			
+			    <!-- Section 4: Top Opportunity Salesperson -->
+			    <div style='text-align: center; flex: 1;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px;'>
+			            Top Opportunity
+			        </div>
+			        <div style='font-size: 36px; font-weight: 700; line-height: 1; color: #fbbf24;'>
+			            " & TopSales & "
+			        </div>
+			        <div style='font-size: 20px; margin-top: 8px; font-weight: 600; color: #fbbf24;'>
+			            " & FORMAT(TopSalesAmt, "$#,##0") & " potential
+			        </div>
+			    </div>
+			
+			</div>
+			"
+		lineageTag: c0d1e2f3-a4b5-46c7-8d9e-0f1a2b3c4d5e
+
+	measure 'Closed - Total Invoices' = DISTINCTCOUNT(Fact_MDInvoices_Closed[FileNumber])
+		formatString: #,##0
+		lineageTag: 1a2b3c4d-e5f6-47a8-9b0c-1d2e3f4a5b6c
+
+	measure 'Closed - No Freight Count' =
+			CALCULATE(
+			    DISTINCTCOUNT(Fact_MDInvoices_Closed[FileNumber]),
+			    Fact_MDInvoices_Closed[FreightStatus] = "No Freight"
+			)
+		formatString: #,##0
+		lineageTag: 2b3c4d5e-f6a7-48b9-0c1d-2e3f4a5b6c7d
+
+	measure 'Closed - No Freight Rate' =
+			DIVIDE(
+			    [Closed - No Freight Count],
+			    [Closed - Total Invoices],
+			    0
+			)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 3c4d5e6f-a7b8-49c0-1d2e-3f4a5b6c7d8e
+
+	measure 'Closed - Actual Freight' =
+			SUMX(
+			    VALUES(Fact_MDInvoices_Closed[FileNumber]),
+			    MAX(Fact_MDInvoices_Closed[TotalFreightCharged])
+			)
+		formatString: $#,##0.00;($#,##0.00);$#,##0.00
+		lineageTag: 4d5e6f7a-b8c9-40d1-2e3f-4a5b6c7d8e9f
+
+	measure 'Closed - Freight Opportunity' =
+			SUMX(
+			    VALUES(Fact_MDInvoices_Closed[FileNumber]),
+			    VAR Calc =
+			        CALCULATE(
+			            MAX(Fact_MDInvoices_Closed[TotalFreightCharged]),
+			            Fact_MDInvoices_Closed[FreightStatus] = "No Freight"
+			        )
+			    RETURN IF(ISBLANK(Calc), 0, [Closed - Calculated Freight Single Invoice])
+			)
+		formatString: $#,##0.00;($#,##0.00);$#,##0.00
+		lineageTag: 5e6f7a8b-c9d0-41e2-3f4a-5b6c7d8e9f0a
+
+	measure 'Closed - Calculated Freight Single Invoice' =
+			VAR InvTotalWeight =
+			    CALCULATE(SUM(Fact_MDInvoices_Closed[TotalLineWeight]))
+			VAR BaseRate =
+			    MAXX(
+			        FILTER(
+			            ALL(FreightCalculator),
+			            FreightCalculator[PartWeightFrom] <= InvTotalWeight
+			                && (FreightCalculator[PartWeightTo] + 1) > InvTotalWeight
+			        ),
+			        FreightCalculator[BaseRate]
+			    )
+			VAR BaseRateFinal = IF(ISBLANK(BaseRate), 120, BaseRate)
+			VAR PartAdditives =
+			    SUMX(
+			        CALCULATETABLE(Fact_MDInvoices_Closed),
+			        VAR LineWeight = Fact_MDInvoices_Closed[TotalLineWeight]
+			        VAR LineRate =
+			            MAXX(
+			                FILTER(
+			                    ALL(FreightCalculator),
+			                    FreightCalculator[PartWeightFrom] <= LineWeight
+			                        && (FreightCalculator[PartWeightTo] + 1) > LineWeight
+			                ),
+			                FreightCalculator[AdditiveRatePerPound]
+			            )
+			        RETURN IF(ISBLANK(LineRate), 1.00, LineRate) * LineWeight
+			    )
+			RETURN BaseRateFinal + PartAdditives
+		formatString: $#,##0.00;($#,##0.00);$#,##0.00
+		lineageTag: 6f7a8b9c-d0e1-42f3-4a5b-6c7d8e9f0a1b
+
+	measure 'Closed - Calculated Freight' =
+			SUMX(
+			    VALUES(Fact_MDInvoices_Closed[FileNumber]),
+			    [Closed - Calculated Freight Single Invoice]
+			)
+		formatString: $#,##0.00;($#,##0.00);$#,##0.00
+		lineageTag: 7a8b9c0d-e1f2-43a4-5b6c-7d8e9f0a1b2c
+
+	measure 'Closed - Freight Above Baseline' =
+			SUMX(
+			    VALUES(Fact_MDInvoices_Closed[FileNumber]),
+			    VAR Actual = CALCULATE(MAX(Fact_MDInvoices_Closed[TotalFreightCharged]))
+			    VAR Calc   = [Closed - Calculated Freight Single Invoice]
+			    RETURN IF(ISBLANK(Calc), 0, MAX(0, Actual - Calc))
+			)
+		formatString: $#,##0.00;($#,##0.00);$#,##0.00
+		lineageTag: 8b9c0d1e-f2a3-44b5-6c7d-8e9f0a1b2c3d
+
+	measure 'Closed - Missed Freight' =
+			SUMX(
+			    VALUES(Fact_MDInvoices_Closed[FileNumber]),
+			    VAR Actual = CALCULATE(MAX(Fact_MDInvoices_Closed[TotalFreightCharged]))
+			    VAR Calc   = [Closed - Calculated Freight Single Invoice]
+			    RETURN IF(ISBLANK(Calc), BLANK(), Calc - Actual)
+			)
+		formatString: $#,##0.00;($#,##0.00);$#,##0.00
+		lineageTag: 9c0d1e2f-a3b4-45c6-7d8e-9f0a1b2c3d4e
+
+	measure 'Closed - Header' =
+			
+			// Get user name
+			VAR _User = USERPRINCIPALNAME()
+			VAR _Position = SEARCH("@", _User, 1)
+			VAR _Name = LEFT(_User, _Position - 1)
+			VAR _FirstLetter = UPPER(LEFT(_Name, 1))
+			VAR _LastName = MID(_Name, 2, LEN(_Name) - 1)
+			VAR _FormattedLastName =
+			    UPPER(LEFT(_LastName, 1)) & LOWER(MID(_LastName, 2, LEN(_LastName)))
+			VAR WelcomeName = _FirstLetter & "." & _FormattedLastName
+			
+			// Get current date/time info
+			VAR CurrentDate = TODAY()
+			VAR DateDisplay = FORMAT(CurrentDate, "MMM D, YYYY")
+			VAR CurrentHour = HOUR(NOW())
+			VAR TimeGreeting =
+			    IF(CurrentHour < 12, "Good Morning",
+			    IF(CurrentHour < 17, "Good Afternoon",
+			    "Good Evening"))
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    height: 85px;
+			    padding: 15px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 10px;
+			    color: white;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-between;
+			    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    box-sizing: border-box;
+			'>
+			    <div style='display: flex; align-items: center; gap: 15px;'>
+			        <div style='
+			            width: 40px;
+			            height: 40px;
+			            background: rgba(255,255,255,0.15);
+			            border-radius: 8px;
+			            display: flex;
+			            align-items: center;
+			            justify-content: center;
+			            font-size: 20px;
+			        '>
+			            📋
+			        </div>
+			        <div>
+			            <div style='font-size: 12px; opacity: 0.85; margin-bottom: 4px; letter-spacing: 0.5px;'>
+			                REPORT
+			            </div>
+			            <div style='font-size: 26px; font-weight: 700; line-height: 1;'>
+			                Closed MD Invoices — Historical Freight Analysis
+			            </div>
+			        </div>
+			    </div>
+			    <div style='text-align: right;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 6px;'>
+			            " & TimeGreeting & ", " & WelcomeName & "
+			        </div>
+			        <div style='font-size: 16px; font-weight: 600;'>
+			            📅 " & DateDisplay & "
+			        </div>
+			    </div>
+			</div>
+			"
+		lineageTag: 0d1e2f3a-b4c5-46d7-8e9f-0a1b2c3d4e5f
+
+	measure 'Closed - Hero Card' =
+			VAR TotalInvoices   = [Closed - Total Invoices]
+			VAR NoFreightCount  = [Closed - No Freight Count]
+			VAR NoFreightRate   = [Closed - No Freight Rate]
+			VAR ActualFreight   = [Closed - Actual Freight]
+			VAR AboveBaseline   = [Closed - Freight Above Baseline]
+			VAR Opportunity     = [Closed - Missed Freight]
+			VAR RateColor       = IF(NoFreightRate >= 0.10, "#f87171", IF(NoFreightRate >= 0.05, "#fbbf24", "#4ade80"))
+			VAR OpportunityText =
+			    IF(ISBLANK(Opportunity), "$0",
+			    IF(Opportunity <= 0,
+			        FORMAT(ABS(Opportunity), "$#,##0") & " above baseline",
+			        FORMAT(Opportunity, "$#,##0") & " opportunity"
+			    ))
+			VAR OpportunityColor = IF(ISBLANK(Opportunity) || Opportunity <= 0, "#4ade80", IF(Opportunity > 5000, "#f87171", "#fbbf24"))
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    padding: 20px 30px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 12px;
+			    color: white;
+			    height: 185px;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-around;
+			'>
+			    <!-- Section 1: Total Closed Invoices -->
+			    <div style='text-align: center; flex: 1;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px;'>
+			            Closed MD Invoices
+			        </div>
+			        <div style='font-size: 62px; font-weight: 700; line-height: 1;'>
+			            " & FORMAT(TotalInvoices, "#,##0") & "
+			        </div>
+			        <div style='font-size: 15px; margin-top: 8px; opacity: 0.9;'>
+			            Since Jan 1, 2024
+			        </div>
+			    </div>
+			
+			    <!-- Divider -->
+			    <div style='width: 2px; height: 120px; background: rgba(255,255,255,0.3); margin: 0 15px;'></div>
+			
+			    <!-- Section 2: Missing Freight -->
+			    <div style='text-align: center; flex: 1;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px;'>
+			            Missing Freight
+			        </div>
+			        <div style='font-size: 62px; font-weight: 700; line-height: 1; color: #f87171;'>
+			            " & FORMAT(NoFreightCount, "#,##0") & "
+			        </div>
+			        <div style='font-size: 15px; margin-top: 8px; opacity: 0.9;'>
+			            " & FORMAT(NoFreightRate, "0.0%") & " of closed invoices
+			        </div>
+			    </div>
+			
+			    <!-- Divider -->
+			    <div style='width: 2px; height: 120px; background: rgba(255,255,255,0.3); margin: 0 15px;'></div>
+			
+			    <!-- Section 3: No Freight Rate -->
+			    <div style='text-align: center; flex: 1;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px;'>
+			            No Freight Rate
+			        </div>
+			        <div style='font-size: 58px; font-weight: 700; line-height: 1; color: " & RateColor & ";'>
+			            " & FORMAT(NoFreightRate, "0.0%") & "
+			        </div>
+			        <div style='font-size: 15px; margin-top: 8px; opacity: 0.9;'>
+			            of closed MD invoices
+			        </div>
+			    </div>
+			
+			    <!-- Divider -->
+			    <div style='width: 2px; height: 120px; background: rgba(255,255,255,0.3); margin: 0 15px;'></div>
+			
+			    <!-- Section 4: Freight Collected -->
+			    <div style='text-align: center; flex: 1;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px;'>
+			            Freight Collected
+			        </div>
+			        <div style='font-size: 50px; font-weight: 700; line-height: 1;'>
+			            " & FORMAT(ActualFreight, "$#,##0") & "
+			        </div>
+			        <div style='font-size: 13px; margin-top: 8px; color: #4ade80; font-weight: 600;'>
+			            +" & FORMAT(AboveBaseline, "$#,##0") & " above baseline
+			        </div>
+			    </div>
+			
+			    <!-- Divider -->
+			    <div style='width: 2px; height: 120px; background: rgba(255,255,255,0.3); margin: 0 15px;'></div>
+			
+			    <!-- Section 5: Net vs Baseline -->
+			    <div style='text-align: center; flex: 1;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px;'>
+			            vs. Baseline
+			        </div>
+			        <div style='font-size: 44px; font-weight: 700; line-height: 1; color: " & OpportunityColor & ";'>
+			            " & OpportunityText & "
+			        </div>
+			        <div style='font-size: 15px; margin-top: 8px; opacity: 0.9;'>
+			            net freight performance
+			        </div>
+			    </div>
+			
+			</div>
+			"
+		lineageTag: 1e2f3a4b-c5d6-47e8-9f0a-1b2c3d4e5f6a
+
+	measure 'Closed - Total Weight' = ```
+			SUM(Fact_MDInvoices_Closed[TotalLineWeight])
+			
+			```
+		lineageTag: e31a18e0-2a9f-41e5-9f59-034d32d766f5
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Freight Status Color - Closed' =
+			VAR FreightStatusVal = MAX(Fact_MDInvoices_Closed[FreightStatus])
+			VAR MissedAmt = [Closed - Missed Freight]
+			RETURN
+			    SWITCH(
+			        TRUE(),
+			        FreightStatusVal = "No Freight",                          "#fca5a5",
+			        FreightStatusVal = "No Freight Charged",                  "#fcd34d",
+			        NOT ISBLANK(MissedAmt) && MissedAmt > 1,                 "#fef08a",
+			        NOT ISBLANK(MissedAmt) && MissedAmt <= 1,                "#bbf7d0",
+			        "#e5e7eb"
+			    )
+		lineageTag: 165bf634-2d86-4bbc-85d3-b2c58de85893
+
+	measure 'Closed - Missed Freight Icon' =
+			VAR MissedAmt = [Closed - Missed Freight]
+			VAR FreightStatusVal = MAX(Fact_MDInvoices_Closed[FreightStatus])
+			RETURN
+			    IF(
+			        ISBLANK(MissedAmt),                           1,
+			        IF(FreightStatusVal = "No Freight",           2,
+			        IF(FreightStatusVal = "No Freight Charged",   2,
+			        IF(MissedAmt > 50,                            2,
+			        IF(MissedAmt > 1,                             3,
+			        IF(MissedAmt >= -1,                           4,
+			                                                      5)))))
+			    )
+		lineageTag: 2f3a4b5c-d6e7-48f9-0a1b-2c3d4e5f6a7b
+
+	measure 'Closed - Is In Selected Group' =
+			VAR SelectedGroup = SELECTEDVALUE(dim_FreightPerformanceGroup[Group])
+			VAR MissedAmt = [Closed - Missed Freight]
+			VAR FreightStatusVal = MAX(Fact_MDInvoices_Closed[FreightStatus])
+			RETURN
+			    IF(
+			        ISBLANK(SelectedGroup),
+			        1,
+			        SWITCH(
+			            SelectedGroup,
+			            "No Freight",
+			                IF(FreightStatusVal = "No Freight" || FreightStatusVal = "No Freight Charged", 1, 0),
+			            "Needs Review",
+			                IF(FreightStatusVal = "Has Freight" && NOT ISBLANK(MissedAmt) && MissedAmt > 1, 1, 0),
+			            "Good / Above Baseline",
+			                IF(FreightStatusVal = "Has Freight" && (ISBLANK(MissedAmt) || MissedAmt <= 1), 1, 0),
+			            1
+			        )
+			    )
+		lineageTag: 3a4b5c6d-e7f8-49a0-1b2c-3d4e5f6a7b8c
+
+	measure 'Closed - Worst Branch' =
+			VAR MinInvoices = 3
+			VAR BranchRates =
+			    ADDCOLUMNS(
+			        VALUES(dim_BranchLocation[Branch]),
+			        "@Rate",  CALCULATE([Closed - No Freight Rate]),
+			        "@Count", CALCULATE([Closed - Total Invoices])
+			    )
+			VAR QualifiedBranches =
+			    FILTER(BranchRates, [@Count] >= MinInvoices)
+			VAR TopBranch =
+			    TOPN(1, QualifiedBranches, [@Rate], DESC)
+			RETURN
+			    MAXX(TopBranch, dim_BranchLocation[Branch])
+		lineageTag: 4b5c6d7e-f8a9-40b1-2c3d-4e5f6a7b8c9d
+
+	measure 'Closed - Worst Branch Rate' =
+			VAR MinInvoices = 3
+			VAR BranchRates =
+			    ADDCOLUMNS(
+			        VALUES(dim_BranchLocation[Branch]),
+			        "@Rate",  CALCULATE([Closed - No Freight Rate]),
+			        "@Count", CALCULATE([Closed - Total Invoices])
+			    )
+			VAR QualifiedBranches =
+			    FILTER(BranchRates, [@Count] >= MinInvoices)
+			VAR TopBranch =
+			    TOPN(1, QualifiedBranches, [@Rate], DESC)
+			RETURN
+			    MAXX(TopBranch, [@Rate])
+		formatString: 0.0%
+		lineageTag: 5c6d7e8f-a9b0-41c2-3d4e-5f6a7b8c9d0e
+
+	measure 'Closed - Top Opportunity Salesperson' =
+			VAR SalesOpps =
+			    ADDCOLUMNS(
+			        VALUES(dim_Salesperson[SalespersonCode]),
+			        "@Opp", CALCULATE([Closed - Missed Freight])
+			    )
+			VAR QualifiedSales =
+			    FILTER(SalesOpps, [@Opp] > 0)
+			VAR TopSales =
+			    TOPN(1, QualifiedSales, [@Opp], DESC)
+			VAR TopCode =
+			    MAXX(TopSales, dim_Salesperson[SalespersonCode])
+			RETURN
+			    CALCULATE(
+			        MAX(dim_Salesperson[FullName]),
+			        dim_Salesperson[SalespersonCode] = TopCode
+			    )
+		lineageTag: 6d7e8f9a-b0c1-42d3-4e5f-6a7b8c9d0e1f
+
+	measure 'Closed - Top Opportunity Salesperson Amount' =
+			VAR SalesOpps =
+			    ADDCOLUMNS(
+			        VALUES(dim_Salesperson[SalespersonCode]),
+			        "@Opp", CALCULATE([Closed - Missed Freight])
+			    )
+			VAR QualifiedSales =
+			    FILTER(SalesOpps, [@Opp] > 0)
+			VAR TopSales =
+			    TOPN(1, QualifiedSales, [@Opp], DESC)
+			RETURN
+			    MAXX(TopSales, [@Opp])
+		formatString: $#,##0.00;($#,##0.00);$#,##0.00
+		lineageTag: 7e8f9a0b-c1d2-43e4-5f6a-7b8c9d0e1f2a
+
+	measure 'Closed - Performance Header' =
+			
+			// Get user name
+			VAR _User = USERPRINCIPALNAME()
+			VAR _Position = SEARCH("@", _User, 1)
+			VAR _Name = LEFT(_User, _Position - 1)
+			VAR _FirstLetter = UPPER(LEFT(_Name, 1))
+			VAR _LastName = MID(_Name, 2, LEN(_Name) - 1)
+			VAR _FormattedLastName =
+			    UPPER(LEFT(_LastName, 1)) & LOWER(MID(_LastName, 2, LEN(_LastName)))
+			VAR WelcomeName = _FirstLetter & "." & _FormattedLastName
+			
+			VAR CurrentDate = TODAY()
+			VAR DateDisplay = FORMAT(CurrentDate, "MMM D, YYYY")
+			VAR CurrentHour = HOUR(NOW())
+			VAR TimeGreeting =
+			    IF(CurrentHour < 12, "Good Morning",
+			    IF(CurrentHour < 17, "Good Afternoon",
+			    "Good Evening"))
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    height: 85px;
+			    padding: 15px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 10px;
+			    color: white;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-between;
+			    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    box-sizing: border-box;
+			'>
+			    <div style='display: flex; align-items: center; gap: 15px;'>
+			        <div style='
+			            width: 40px;
+			            height: 40px;
+			            background: rgba(255,255,255,0.15);
+			            border-radius: 8px;
+			            display: flex;
+			            align-items: center;
+			            justify-content: center;
+			            font-size: 20px;
+			        '>
+			            📋
+			        </div>
+			        <div>
+			            <div style='font-size: 12px; opacity: 0.85; margin-bottom: 4px; letter-spacing: 0.5px;'>
+			                REPORT
+			            </div>
+			            <div style='font-size: 26px; font-weight: 700; line-height: 1;'>
+			                Closed Invoices — Branch and Salesperson Performance
+			            </div>
+			        </div>
+			    </div>
+			    <div style='text-align: right;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 6px;'>
+			            " & TimeGreeting & ", " & WelcomeName & "
+			        </div>
+			        <div style='font-size: 16px; font-weight: 600;'>
+			            📅 " & DateDisplay & "
+			        </div>
+			    </div>
+			</div>
+			"
+		lineageTag: 8f9a0b1c-d2e3-44f5-6a7b-8c9d0e1f2a3b
+
+	measure 'Closed - Performance Hero Card' =
+			VAR NoFreightRate   = [Closed - No Freight Rate]
+			VAR NoFreightCount  = [Closed - No Freight Count]
+			VAR TotalInvoices   = [Closed - Total Invoices]
+			VAR Opportunity     = [Closed - Missed Freight]
+			VAR AboveBaseline   = [Closed - Freight Above Baseline]
+			VAR WorstBranch     = [Closed - Worst Branch]
+			VAR WorstBranchRate = [Closed - Worst Branch Rate]
+			VAR TopSales        = [Closed - Top Opportunity Salesperson]
+			VAR TopSalesAmt     = [Closed - Top Opportunity Salesperson Amount]
+			VAR RateColor       = IF(NoFreightRate >= 0.10, "#f87171", IF(NoFreightRate >= 0.05, "#fbbf24", "#4ade80"))
+			VAR WorstBranchColor = IF(WorstBranchRate >= 0.25, "#f87171", IF(WorstBranchRate >= 0.15, "#fbbf24", "#e5e7eb"))
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    padding: 20px 30px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 12px;
+			    color: white;
+			    height: 185px;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-around;
+			'>
+			    <!-- Section 1: Overall No Freight Rate -->
+			    <div style='text-align: center; flex: 1;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px;'>
+			            Overall No Freight Rate
+			        </div>
+			        <div style='font-size: 58px; font-weight: 700; line-height: 1; color: " & RateColor & ";'>
+			            " & FORMAT(NoFreightRate, "0.0%") & "
+			        </div>
+			        <div style='font-size: 15px; margin-top: 8px; opacity: 0.9;'>
+			            " & FORMAT(NoFreightCount, "#,##0") & " of " & FORMAT(TotalInvoices, "#,##0") & " closed invoices
+			        </div>
+			    </div>
+			
+			    <!-- Divider -->
+			    <div style='width: 2px; height: 120px; background: rgba(255,255,255,0.3); margin: 0 15px;'></div>
+			
+			    <!-- Section 2: Freight Opportunity -->
+			    <div style='text-align: center; flex: 1;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px;'>
+			            Freight Opportunity
+			        </div>
+			        <div style='font-size: 50px; font-weight: 700; line-height: 1; color: #fbbf24;'>
+			            " & FORMAT(Opportunity, "$#,##0") & "
+			        </div>
+			        <div style='font-size: 13px; margin-top: 8px; color: #4ade80; font-weight: 600;'>
+			            +" & FORMAT(AboveBaseline, "$#,##0") & " above baseline
+			        </div>
+			    </div>
+			
+			    <!-- Divider -->
+			    <div style='width: 2px; height: 120px; background: rgba(255,255,255,0.3); margin: 0 15px;'></div>
+			
+			    <!-- Section 3: Worst Branch -->
+			    <div style='text-align: center; flex: 1;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px;'>
+			            Highest No Freight Rate
+			        </div>
+			        <div style='font-size: 36px; font-weight: 700; line-height: 1; color: " & WorstBranchColor & ";'>
+			            " & WorstBranch & "
+			        </div>
+			        <div style='font-size: 20px; margin-top: 8px; font-weight: 600; color: " & WorstBranchColor & ";'>
+			            " & FORMAT(WorstBranchRate, "0.0%") & " no freight rate
+			        </div>
+			    </div>
+			
+			    <!-- Divider -->
+			    <div style='width: 2px; height: 120px; background: rgba(255,255,255,0.3); margin: 0 15px;'></div>
+			
+			    <!-- Section 4: Top Opportunity Salesperson -->
+			    <div style='text-align: center; flex: 1;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px;'>
+			            Top Opportunity
+			        </div>
+			        <div style='font-size: 36px; font-weight: 700; line-height: 1; color: #fbbf24;'>
+			            " & TopSales & "
+			        </div>
+			        <div style='font-size: 20px; margin-top: 8px; font-weight: 600; color: #fbbf24;'>
+			            " & FORMAT(TopSalesAmt, "$#,##0") & " potential
+			        </div>
+			    </div>
+			
+			</div>
+			"
+		lineageTag: 9a0b1c2d-e3f4-45a6-7b8c-9d0e1f2a3b4c
+
+	measure 'Closed Invoices - Header' = ```
+			
+			// Get user name
+			VAR _User = USERPRINCIPALNAME()
+			VAR _Position = SEARCH("@", _User, 1)
+			VAR _Name = LEFT(_User, _Position - 1)
+			VAR _FirstLetter = UPPER(LEFT(_Name, 1))
+			VAR _LastName = MID(_Name, 2, LEN(_Name) - 1)
+			VAR _FormattedLastName = 
+			    UPPER(LEFT(_LastName, 1)) & LOWER(MID(_LastName, 2, LEN(_LastName)))
+			VAR WelcomeName = _FirstLetter & "." & _FormattedLastName
+			
+			// Get current date/time info
+			VAR CurrentDate = TODAY()
+			VAR DateDisplay = FORMAT(CurrentDate, "MMM D, YYYY")
+			VAR CurrentHour = HOUR(NOW())
+			VAR TimeGreeting = 
+			    IF(CurrentHour < 12, "Good Morning",
+			    IF(CurrentHour < 17, "Good Afternoon",
+			    "Good Evening"))
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    height: 85px;
+			    padding: 15px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 10px;
+			    color: white;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-between;
+			    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    box-sizing: border-box;
+			'>
+			    <!-- Left side: Dashboard Title -->
+			    <div style='display: flex; align-items: center; gap: 15px;'>
+			        <!-- Home icon -->
+			        <div style='
+			            width: 40px;
+			            height: 40px;
+			            background: rgba(255,255,255,0.15);
+			            border-radius: 8px;
+			            display: flex;
+			            align-items: center;
+			            justify-content: center;
+			            font-size: 20px;
+			        '>
+			            🏠
+			        </div>
+			        
+			        <!-- Title -->
+			        <div>
+			            <div style='font-size: 12px; opacity: 0.85; margin-bottom: 4px; letter-spacing: 0.5px;'>
+			                REPORT
+			            </div>
+			            <div style='font-size: 26px; font-weight: 700; line-height: 1;'>
+			                Closed - MD Invoices With No Freight
+			            </div>
+			        </div>
+			    </div>
+			    
+			    <!-- Right side: Welcome & Date -->
+			    <div style='text-align: right;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 6px;'>
+			            " & TimeGreeting & ", " & WelcomeName & "
+			        </div>
+			        <div style='font-size: 16px; font-weight: 600;'>
+			            📅 " & DateDisplay & "
+			        </div>
+			    </div>
+			</div>
+			"
+			```
+		lineageTag: 2397a9d5-65d5-4f0a-8542-7d5d55a6b407
+
+	measure 'How It Works - Header' =
+			
+			// Get user name
+			VAR _User = USERPRINCIPALNAME()
+			VAR _Position = SEARCH("@", _User, 1)
+			VAR _Name = LEFT(_User, _Position - 1)
+			VAR _FirstLetter = UPPER(LEFT(_Name, 1))
+			VAR _LastName = MID(_Name, 2, LEN(_Name) - 1)
+			VAR _FormattedLastName =
+			    UPPER(LEFT(_LastName, 1)) & LOWER(MID(_LastName, 2, LEN(_LastName)))
+			VAR WelcomeName = _FirstLetter & "." & _FormattedLastName
+			
+			VAR CurrentDate = TODAY()
+			VAR DateDisplay = FORMAT(CurrentDate, "MMM D, YYYY")
+			VAR CurrentHour = HOUR(NOW())
+			VAR TimeGreeting =
+			    IF(CurrentHour < 12, "Good Morning",
+			    IF(CurrentHour < 17, "Good Afternoon",
+			    "Good Evening"))
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    height: 85px;
+			    padding: 15px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 10px;
+			    color: white;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-between;
+			    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    box-sizing: border-box;
+			'>
+			    <div style='display: flex; align-items: center; gap: 15px;'>
+			        <div style='
+			            width: 40px;
+			            height: 40px;
+			            background: rgba(255,255,255,0.15);
+			            border-radius: 8px;
+			            display: flex;
+			            align-items: center;
+			            justify-content: center;
+			            font-size: 20px;
+			        '>
+			            📖
+			        </div>
+			        <div>
+			            <div style='font-size: 12px; opacity: 0.85; margin-bottom: 4px; letter-spacing: 0.5px;'>
+			                REPORT
+			            </div>
+			            <div style='font-size: 26px; font-weight: 700; line-height: 1;'>
+			                How It Works — Calculation Methodology
+			            </div>
+			        </div>
+			    </div>
+			    <div style='text-align: right;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 6px;'>
+			            " & TimeGreeting & ", " & WelcomeName & "
+			        </div>
+			        <div style='font-size: 16px; font-weight: 600;'>
+			            📅 " & DateDisplay & "
+			        </div>
+			    </div>
+			</div>
+			"
+		lineageTag: a1b2c3d4-e5f6-4789-abcd-ef0123456789
+
+	measure 'How It Works' =
+			"
+			<div style='font-family: Segoe UI, Arial, sans-serif; padding: 20px; background: #f1f5f9;'>
+			
+			    <!-- Intro -->
+			    <div style='background: white; border-radius: 10px; padding: 16px 22px; margin-bottom: 14px; border-left: 5px solid #3A7CA5; box-shadow: 0 1px 4px rgba(0,0,0,0.08);'>
+			        <div style='font-size: 14px; color: #374151; line-height: 1.7;'>
+			            This report tracks freight charges on <strong>Machine Down (MD) emergency parts orders</strong>.
+			            When a machine breaks down in the field, parts are ordered as emergency/rush — and freight should be charged.
+			            This report identifies where freight was missed and estimates the revenue opportunity.
+			        </div>
+			    </div>
+			
+			    <!-- Section 1: Identifying MD Orders -->
+			    <div style='background: white; border-radius: 10px; padding: 16px 22px; margin-bottom: 14px; box-shadow: 0 1px 4px rgba(0,0,0,0.08);'>
+			        <div style='font-size: 13px; font-weight: 700; color: #1D3C4E; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #e5e7eb; padding-bottom: 8px;'>
+			            1 — How MD Orders Are Identified
+			        </div>
+			        <div style='font-size: 13px; color: #374151; line-height: 1.7;'>
+			            Machine Down orders are identified by <strong>PurOrderType = E (Emergency)</strong> in the source system parts order table (<em>insalpar</em>).
+			            This flag is set at the order level — every line on that order is treated as an MD order line.
+			        </div>
+			        <div style='margin-top: 10px; display: flex; gap: 10px; flex-wrap: wrap;'>
+			            <div style='background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; padding: 8px 12px; font-size: 12px; color: #1e40af; flex: 1;'>
+			                <strong>Open Orders (Pages 1–2):</strong> Pulled directly from insalpar → stored in Fact_MDInvoices_NoFreight
+			            </div>
+			            <div style='background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; padding: 8px 12px; font-size: 12px; color: #166534; flex: 1;'>
+			                <strong>Closed Invoices (Pages 3–4):</strong> InSalPar_Audit → InTrans_Incremental → Fact_MDInvoices_Closed
+			            </div>
+			        </div>
+			    </div>
+			
+			    <!-- Section 2: Open vs Closed -->
+			    <div style='background: white; border-radius: 10px; padding: 16px 22px; margin-bottom: 14px; box-shadow: 0 1px 4px rgba(0,0,0,0.08);'>
+			        <div style='font-size: 13px; font-weight: 700; color: #1D3C4E; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #e5e7eb; padding-bottom: 8px;'>
+			            2 — Open Orders vs. Closed Invoices
+			        </div>
+			        <div style='font-size: 13px; color: #374151; line-height: 1.7;'>
+			            <strong>Pages 1–2 show current open MD orders.</strong>
+			            The insalpar table only holds orders that are still open — freight can still be corrected before the order is invoiced and closed.<br><br>
+			            <strong>Pages 3–4 show closed invoices from January 2024 forward.</strong>
+			            When an order closes, its row is deleted from insalpar — so we can no longer see it there.
+			            To recover the history, we use <strong>InSalPar_Audit</strong>, which permanently records every change made to insalpar (including deletes).
+			            We pull the distinct list of Emergency FileNos from that audit table, then join to <strong>InTrans_Incremental</strong>
+			            (the closed invoice transaction log) to get the actual invoiced part line detail.
+			        </div>
+			    </div>
+			
+			    <!-- Section 3: Freight Detection -->
+			    <div style='background: white; border-radius: 10px; padding: 16px 22px; margin-bottom: 14px; box-shadow: 0 1px 4px rgba(0,0,0,0.08);'>
+			        <div style='font-size: 13px; font-weight: 700; color: #1D3C4E; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #e5e7eb; padding-bottom: 8px;'>
+			            3 — How Freight Is Detected
+			        </div>
+			        <div style='font-size: 13px; color: #374151; line-height: 1.7; margin-bottom: 10px;'>
+			            Freight appears as a line item with <strong>Part Number 3750</strong> on the invoice.
+			            Every order is checked for the presence of this line. This produces three possible statuses:
+			        </div>
+			        <div style='display: flex; gap: 10px; flex-wrap: wrap;'>
+			            <div style='background: #fef2f2; border-left: 4px solid #f87171; border-radius: 6px; padding: 10px 14px; font-size: 12px; color: #991b1b; flex: 1;'>
+			                <strong>No Freight</strong><br>No part 3750 line on the invoice at all. Freight was never entered. Most urgent to address.
+			            </div>
+			            <div style='background: #fffbeb; border-left: 4px solid #fbbf24; border-radius: 6px; padding: 10px 14px; font-size: 12px; color: #92400e; flex: 1;'>
+			                <strong>No Freight Charged</strong><br>Part 3750 was added to the invoice but the dollar amount is $0. Entered but not charged.
+			            </div>
+			            <div style='background: #f0fdf4; border-left: 4px solid #4ade80; border-radius: 6px; padding: 10px 14px; font-size: 12px; color: #166534; flex: 1;'>
+			                <strong>Has Freight</strong><br>Part 3750 exists with a positive dollar amount. Freight was charged successfully.
+			            </div>
+			        </div>
+			    </div>
+			
+			    <!-- Section 4: Calculated Freight -->
+			    <div style='background: white; border-radius: 10px; padding: 16px 22px; margin-bottom: 14px; box-shadow: 0 1px 4px rgba(0,0,0,0.08);'>
+			        <div style='font-size: 13px; font-weight: 700; color: #1D3C4E; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #e5e7eb; padding-bottom: 8px;'>
+			            4 — How Calculated Freight Works
+			        </div>
+			        <div style='font-size: 13px; color: #374151; line-height: 1.7;'>
+			            The <strong>FreightCalculator</strong> table defines rate brackets by weight range.
+			            For each order, the estimated freight is calculated in two parts:<br><br>
+			            <strong>Base Rate</strong> — A flat charge based on the total invoice weight.
+			            The total weight of all parts on the order is looked up in the bracket table to find the matching base rate.
+			            This is charged once per invoice, regardless of how many part lines are on it.<br><br>
+			            <strong>Additive Rate</strong> — Each individual part line also has its own weight.
+			            The rate per pound is looked up for each line's weight, then multiplied by that line's total weight.
+			            All lines are summed together.<br><br>
+			            <strong>Calculated Freight = Base Rate + (Sum of all Part Line Additives)</strong><br><br>
+			            <em>Fallback: If the total invoice weight exceeds 249 lbs (outside the bracket table), a $120 Base Rate and $1.00/lb additive are used as defaults.</em>
+			        </div>
+			    </div>
+			
+			    <!-- Section 5: Metrics -->
+			    <div style='background: white; border-radius: 10px; padding: 16px 22px; box-shadow: 0 1px 4px rgba(0,0,0,0.08);'>
+			        <div style='font-size: 13px; font-weight: 700; color: #1D3C4E; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #e5e7eb; padding-bottom: 8px;'>
+			            5 — What the Metrics Mean
+			        </div>
+			        <div style='display: flex; gap: 12px; flex-wrap: wrap;'>
+			            <div style='flex: 1; min-width: 150px; background: #fef2f2; border-radius: 8px; padding: 12px 14px;'>
+			                <div style='font-size: 12px; font-weight: 700; color: #991b1b; margin-bottom: 6px;'>No Freight Rate</div>
+			                <div style='font-size: 12px; color: #374151; line-height: 1.5;'>Percentage of MD orders with zero freight charged. The most direct measure of the problem. Target: as low as possible.</div>
+			            </div>
+			            <div style='flex: 1; min-width: 150px; background: #fffbeb; border-radius: 8px; padding: 12px 14px;'>
+			                <div style='font-size: 12px; font-weight: 700; color: #92400e; margin-bottom: 6px;'>Freight Opportunity</div>
+			                <div style='font-size: 12px; color: #374151; line-height: 1.5;'>Estimated revenue gap — orders where the actual freight charged is less than what the FreightCalculator says it should be.</div>
+			            </div>
+			            <div style='flex: 1; min-width: 150px; background: #f0fdf4; border-radius: 8px; padding: 12px 14px;'>
+			                <div style='font-size: 12px; font-weight: 700; color: #166534; margin-bottom: 6px;'>Above Baseline</div>
+			                <div style='font-size: 12px; color: #374151; line-height: 1.5;'>Orders where the actual freight charged exceeds the calculated baseline. These locations are performing at or above expectation.</div>
+			            </div>
+			            <div style='flex: 1; min-width: 150px; background: #eff6ff; border-radius: 8px; padding: 12px 14px;'>
+			                <div style='font-size: 12px; font-weight: 700; color: #1e40af; margin-bottom: 6px;'>Calculated Freight</div>
+			                <div style='font-size: 12px; color: #374151; line-height: 1.5;'>The estimated freight based on part weights and the rate bracket table. Used as the baseline for all comparisons.</div>
+			            </div>
+			        </div>
+			    </div>
+			
+			</div>
+			"
+		lineageTag: b2c3d4e5-f6a7-4890-bcde-f01234567890
+
+	column Value
+		isHidden
+		lineageTag: da2dfa23-0c4c-4e9d-8014-3cc5710e756b
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Value]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition _Measures = calculated
+		mode: import
+		source = { "This table holds all measures for the MD Invoices With No Freight report" }
+
+	annotation PBI_Id = da82ad85df114f0dbe8c17ce73f079a8
+

@@ -1,0 +1,138 @@
+{
+  "filters": [
+    {
+      "name": "65ad09c13c24d9f020ae",
+      "field": {
+        "Measure": {
+          "Expression": {
+            "SourceRef": {
+              "Entity": "_Measures"
+            }
+          },
+          "Property": "Total Parts Sale $"
+        }
+      },
+      "type": "Advanced",
+      "isHiddenInViewMode": false,
+      "isLockedInViewMode": true
+    },
+    {
+      "name": "1e2ad91a7678a5b2ed7c",
+      "field": {
+        "Column": {
+          "Expression": {
+            "SourceRef": {
+              "Entity": "dim_CustomerList"
+            }
+          },
+          "Property": "DisplayName"
+        }
+      },
+      "type": "Categorical",
+      "isHiddenInViewMode": false,
+      "isLockedInViewMode": true
+    },
+    {
+      "name": "a1ec875285cd617b7d41",
+      "field": {
+        "Measure": {
+          "Expression": {
+            "SourceRef": {
+              "Entity": "_Measures"
+            }
+          },
+          "Property": "Total Parts Cost $"
+        }
+      },
+      "type": "Advanced",
+      "isHiddenInViewMode": false,
+      "isLockedInViewMode": true
+    },
+    {
+      "name": "2f5ec0809fba5ffd97fd",
+      "field": {
+        "Measure": {
+          "Expression": {
+            "SourceRef": {
+              "Entity": "_Measures"
+            }
+          },
+          "Property": "Total Labor $"
+        }
+      },
+      "type": "Advanced",
+      "isHiddenInViewMode": false,
+      "isLockedInViewMode": true
+    },
+    {
+      "name": "541dd3ec6ad0e89c9e05",
+      "field": {
+        "Measure": {
+          "Expression": {
+            "SourceRef": {
+              "Entity": "_Measures"
+            }
+          },
+          "Property": "Inspection Count"
+        }
+      },
+      "type": "Advanced",
+      "filter": {
+        "Version": 2,
+        "From": [
+          {
+            "Name": "_",
+            "Entity": "_Measures"
+          }
+        ],
+        "Where": [
+          {
+            "Condition": {
+              "Not": {
+                "Expression": {
+                  "Comparison": {
+                    "Left": {
+                      "Measure": {
+                        "Expression": {
+                          "SourceRef": {
+                            "Source": "_"
+                          }
+                        },
+                        "Property": "Inspection Count"
+                      }
+                    },
+                    "Right": {
+                      "Literal": {
+                        "Value": "null"
+                      }
+                    },
+                    "ComparisonKind": 0
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "isHiddenInViewMode": false,
+      "isLockedInViewMode": true
+    },
+    {
+      "name": "e94afc15ceda203147b0",
+      "field": {
+        "Measure": {
+          "Expression": {
+            "SourceRef": {
+              "Entity": "_Measures"
+            }
+          },
+          "Property": "Parts Multiplier"
+        }
+      },
+      "type": "Advanced",
+      "isHiddenInViewMode": false,
+      "isLockedInViewMode": true
+    }
+  ],
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/filterConfiguration/1.3.0/schema.json"
+}
