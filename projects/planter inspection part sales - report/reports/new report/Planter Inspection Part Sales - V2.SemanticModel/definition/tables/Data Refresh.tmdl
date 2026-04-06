@@ -15,13 +15,10 @@ table 'Data Refresh'
 
 	column Date
 		dataType: dateTime
-		isHidden
 		formatString: Long Date
-		lineageTag: d60f681b-30b9-48b3-9884-99d09569f730
+		lineageTag: ff24430d-3895-4f8d-b799-b5648cf363b4
 		summarizeBy: none
 		sourceColumn: Date
-
-		changedProperty = IsHidden
 
 		annotation SummarizationSetBy = Automatic
 
@@ -29,13 +26,10 @@ table 'Data Refresh'
 
 	column Time
 		dataType: dateTime
-		isHidden
 		formatString: Long Time
-		lineageTag: 7b443550-9649-4bb9-b399-9b1971dd340e
+		lineageTag: 39949fd6-2267-48b7-a9ac-1e267e700dc0
 		summarizeBy: none
 		sourceColumn: Time
-
-		changedProperty = IsHidden
 
 		annotation SummarizationSetBy = Automatic
 
@@ -45,13 +39,25 @@ table 'Data Refresh'
 		mode: import
 		source =
 				let
-				    Source = #table({"CurrentDateTime"}, {{DateTime.LocalNow()}}),
-				    #"Duplicated Column" = Table.DuplicateColumn(Source, "CurrentDateTime", "CurrentDateTime - Copy"),
-				    #"Duplicated Column1" = Table.DuplicateColumn(#"Duplicated Column", "CurrentDateTime - Copy", "CurrentDateTime - Copy - Copy"),
-				    #"Renamed Columns" = Table.RenameColumns(#"Duplicated Column1",{{"CurrentDateTime - Copy", "Date"}, {"CurrentDateTime - Copy - Copy", "Time"}}),
-				    #"Changed Type" = Table.TransformColumnTypes(#"Renamed Columns",{{"Date", type date}, {"Time", type time}})
+				    // Fabric/Power BI Service runs in UTC — DateTime.LocalNow() returns UTC, not local time.
+				    // DateTimeZone.SwitchZone converts UTC to Central Time with automatic DST handling.
+				    UtcNow    = DateTimeZone.UtcNow(),
+				    UtcDT     = DateTimeZone.RemoveZone(UtcNow),
+				    CurYear   = Date.Year(DateTime.Date(UtcDT)),
+				    Mar1      = #date(CurYear, 3, 1),
+				    Sun1Mar   = Date.AddDays(Mar1, Number.Mod(7 - Date.DayOfWeek(Mar1, Day.Sunday), 7)),
+				    DstStart  = #datetime(CurYear, 3, Date.Day(Date.AddDays(Sun1Mar, 7)), 8, 0, 0),
+				    Nov1      = #date(CurYear, 11, 1),
+				    Sun1Nov   = Date.AddDays(Nov1, Number.Mod(7 - Date.DayOfWeek(Nov1, Day.Sunday), 7)),
+				    DstEnd    = #datetime(CurYear, 11, Date.Day(Sun1Nov), 7, 0, 0),
+				    OffsetHrs = if UtcDT >= DstStart and UtcDT < DstEnd then -5 else -6,
+				    LocalDT   = DateTimeZone.RemoveZone(DateTimeZone.SwitchZone(UtcNow, OffsetHrs, 0)),
+				    Source    = #table({"CurrentDateTime"}, {{LocalDT}}),
+				    AddDate   = Table.DuplicateColumn(Source, "CurrentDateTime", "Date"),
+				    AddTime   = Table.DuplicateColumn(AddDate, "Date", "Time"),
+				    ChgTypes  = Table.TransformColumnTypes(AddTime, {{"Date", type date}, {"Time", type time}})
 				in
-				    #"Changed Type"
+				    ChgTypes
 
 	changedProperty = IsHidden
 
