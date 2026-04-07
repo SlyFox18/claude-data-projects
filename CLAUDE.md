@@ -156,11 +156,35 @@ Source System (ODBC) → Raw Tables (Lakehouse) → Dimensions → Fact Tables �
 Located at `.github/PULL_REQUEST_TEMPLATE/dev_to_main.md` in both repos.
 Covers: reports changed, data model changes, refresh pipeline impact, sandbox testing checklist, query library updates, deployment notes.
 
+### Session Start Protocol (Claude must do this automatically)
+
+At the start of every session, before doing any work, run this orientation check and report findings:
+
+```bash
+# 1. Check data-projects status
+cd "C:/Users/bfox/Documents/Git-Projects/data-projects"
+git status
+git log --oneline -3
+
+# 2. Check fabric-workspace-docs status
+cd "C:/Users/bfox/Documents/Git-Projects/fabric-workspace-docs"
+git status
+git log --oneline origin/dev -3
+git log --oneline origin/main -1
+```
+
+Flag any of these conditions and tell the user before starting work:
+- `data-projects` has uncommitted changes
+- `fabric-workspace-docs` local is behind origin/dev (needs `git pull`)
+- `fabric-workspace-docs` dev is ahead of main (open PR may be waiting)
+- Either repo is on the wrong branch (should be `dev`)
+
 ### When Claude Is Helping With Development
 
 - **Always work on `dev` branch**, not `main`
 - After completing work: commit to `dev`, push, then remind to validate in RP - Sandbox before merging to `main`
 - Never commit directly to `main` unless it's a docs-only change with no Fabric impact
+- After a PR merges to `main` on fabric-workspace-docs: remind to sync affected production workspaces in Fabric UI
 
 ---
 
