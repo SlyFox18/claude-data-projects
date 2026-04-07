@@ -212,36 +212,19 @@ let
     ),
     
     // ========================================================================
-    // STEP 2: BRANCH NORMALIZATION LOOKUP
+    // STEP 2: IDENTIFY INVOICE NUMBERS FROM INSPECTION WORK ORDERS
     // ========================================================================
     /*
-    PURPOSE: Map sub-branch codes to main branch LocationID before joining.
+    BRANCH NORMALIZATION (applied in Steps 2 and 3):
+    wkothsub records work orders on sub-branch codes (e.g. "11S" for the Set-Up
+    Shop at Branch 11), while InTrans_Incremental records the parts transaction on
+    the main branch code ("11"). The inner join on Branch + InvoiceNumber silently
+    dropped these rows — causing $29K+ of real parts to show as $0.
 
-    ROOT CAUSE FIXED: wkothsub records work orders on sub-branch codes (e.g. "11S"
-    for the Set-Up Shop at Branch 11), while InTrans_Incremental records the parts
-    transaction on the main branch code ("11"). The inner join on Branch + InvoiceNumber
-    silently drops these rows — causing $29K+ of real parts to show as $0.
-
-    Known sub-branch suffixes:
-      S = Set-Up Shop   (11S, 13S, 15S, 1S, 8S)
-      I = IS Shop       (inspection/service specialization)
-      C = CP Shop       (customer pickup/delivery)
-      B = other sub-branch type
-
-    FIX: Join both sides of the invoice join to dim_BranchLocation and replace
-    Branch with LocationID (the parent/main branch code) before the inner join runs.
+    FIX: Strip trailing sub-branch suffix from Branch on both sides before joining.
+    Known suffixes: S = Set-Up Shop, I = IS Shop, C = CP Shop, B = other sub-branch.
+    Simple text operation — no Lakehouse join needed, query folding preserved.
     */
-    BranchMapping = Table.SelectColumns(
-        Table.TransformColumnTypes(
-            dim_BranchLocation,
-            {{"BranchID", type text}, {"LocationID", type text}}
-        ),
-        {"BranchID", "LocationID"}
-    ),
-
-    // ========================================================================
-    // STEP 3: IDENTIFY INVOICE NUMBERS FROM INSPECTION WORK ORDERS
-    // ========================================================================
 
     InspectionInvoices =
         let
@@ -279,22 +262,16 @@ let
                 }
             ),
 
-            // CHANGED: Normalize sub-branch to main branch via dim_BranchLocation
-            // e.g. "11S" → "11" so it matches how InTrans records the same invoice
-            JoinBranchDim = Table.NestedJoin(
-                ConvertToText, {"Branch"},
-                BranchMapping, {"BranchID"},
-                "_BM", JoinKind.LeftOuter
-            ),
-            ExpandBranchDim = Table.ExpandTableColumn(
-                JoinBranchDim, "_BM", {"LocationID"}, {"_LocationID"}
-            ),
+            // Normalize sub-branch to main branch by stripping trailing suffix letter
+            // e.g. "11S" → "11", "12I" → "12", "15C" → "15"
             AddNormalizedBranch = Table.AddColumn(
-                ExpandBranchDim, "BranchNorm",
-                each if [_LocationID] <> null then [_LocationID] else [Branch],
+                ConvertToText, "BranchNorm",
+                each if List.Contains({"S","I","C","B"}, Text.End([Branch], 1))
+                     then Text.Start([Branch], Text.Length([Branch]) - 1)
+                     else [Branch],
                 type text
             ),
-            DropOldBranch = Table.RemoveColumns(AddNormalizedBranch, {"Branch", "_LocationID"}),
+            DropOldBranch = Table.RemoveColumns(AddNormalizedBranch, {"Branch"}),
             RenameNormBranch = Table.RenameColumns(DropOldBranch, {{"BranchNorm", "Branch"}}),
             // Deduplicate: multiple sub-branches normalizing to the same main branch + invoice
             NormalizedInvoices = Table.Distinct(RenameNormBranch)
@@ -328,22 +305,16 @@ let
         }
     ),
 
-    // CHANGED: Normalize InTrans Branch to main branch code (same logic as InspectionInvoices)
-    // Ensures both sides of the inner join use the same branch key (LocationID)
-    JoinIntransBranchDim = Table.NestedJoin(
-        PartsWithTextTypes, {"Branch"},
-        BranchMapping, {"BranchID"},
-        "_BM", JoinKind.LeftOuter
-    ),
-    ExpandIntransBranchDim = Table.ExpandTableColumn(
-        JoinIntransBranchDim, "_BM", {"LocationID"}, {"_LocationID"}
-    ),
+    // Normalize InTrans Branch to main branch code — same suffix-strip logic as InspectionInvoices
+    // Simple AddColumn avoids a NestedJoin on 3M+ rows that would break query folding
     AddIntransNormalizedBranch = Table.AddColumn(
-        ExpandIntransBranchDim, "BranchNorm",
-        each if [_LocationID] <> null then [_LocationID] else [Branch],
+        PartsWithTextTypes, "BranchNorm",
+        each if List.Contains({"S","I","C","B"}, Text.End([Branch], 1))
+             then Text.Start([Branch], Text.Length([Branch]) - 1)
+             else [Branch],
         type text
     ),
-    DropIntransOldBranch = Table.RemoveColumns(AddIntransNormalizedBranch, {"Branch", "_LocationID"}),
+    DropIntransOldBranch = Table.RemoveColumns(AddIntransNormalizedBranch, {"Branch"}),
     PartsNormalized = Table.RenameColumns(DropIntransOldBranch, {{"BranchNorm", "Branch"}}),
 
     // ========================================================================
