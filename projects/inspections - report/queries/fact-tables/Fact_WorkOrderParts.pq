@@ -212,13 +212,41 @@ let
     ),
     
     // ========================================================================
-    // STEP 2: IDENTIFY INVOICE NUMBERS FROM INSPECTION WORK ORDERS
+    // STEP 2: BRANCH NORMALIZATION LOOKUP
     // ========================================================================
-    
-    InspectionInvoices = 
+    /*
+    PURPOSE: Map sub-branch codes to main branch LocationID before joining.
+
+    ROOT CAUSE FIXED: wkothsub records work orders on sub-branch codes (e.g. "11S"
+    for the Set-Up Shop at Branch 11), while InTrans_Incremental records the parts
+    transaction on the main branch code ("11"). The inner join on Branch + InvoiceNumber
+    silently drops these rows — causing $29K+ of real parts to show as $0.
+
+    Known sub-branch suffixes:
+      S = Set-Up Shop   (11S, 13S, 15S, 1S, 8S)
+      I = IS Shop       (inspection/service specialization)
+      C = CP Shop       (customer pickup/delivery)
+      B = other sub-branch type
+
+    FIX: Join both sides of the invoice join to dim_BranchLocation and replace
+    Branch with LocationID (the parent/main branch code) before the inner join runs.
+    */
+    BranchMapping = Table.SelectColumns(
+        Table.TransformColumnTypes(
+            dim_BranchLocation,
+            {{"BranchID", type text}, {"LocationID", type text}}
+        ),
+        {"BranchID", "LocationID"}
+    ),
+
+    // ========================================================================
+    // STEP 3: IDENTIFY INVOICE NUMBERS FROM INSPECTION WORK ORDERS
+    // ========================================================================
+
+    InspectionInvoices =
         let
             Source = Raw_wkothsub,
-            
+
             // JOIN TO INSPECTION CODES TABLE
             JoinInspectionCodes = Table.NestedJoin(
                 Source,
@@ -228,20 +256,20 @@ let
                 "InspectionMatch",
                 JoinKind.Inner
             ),
-            
+
             RemoveMatchColumn = Table.RemoveColumns(JoinInspectionCodes, {"InspectionMatch"}),
-            
+
             // Get distinct Branch + InvoiceNumber combinations
             DistinctInvoices = Table.Distinct(
                 Table.SelectColumns(RemoveMatchColumn, {"Branch", "InvoiceNumber"})
             ),
-            
+
             // Filter out nulls (jobs not yet invoiced)
             RemoveNulls = Table.SelectRows(
                 DistinctInvoices,
                 each [InvoiceNumber] <> null and [InvoiceNumber] <> ""
             ),
-            
+
             // Convert to TEXT type to prevent join issues
             ConvertToText = Table.TransformColumnTypes(
                 RemoveNulls,
@@ -249,20 +277,40 @@ let
                     {"Branch", type text},
                     {"InvoiceNumber", type text}
                 }
-            )
+            ),
+
+            // CHANGED: Normalize sub-branch to main branch via dim_BranchLocation
+            // e.g. "11S" → "11" so it matches how InTrans records the same invoice
+            JoinBranchDim = Table.NestedJoin(
+                ConvertToText, {"Branch"},
+                BranchMapping, {"BranchID"},
+                "_BM", JoinKind.LeftOuter
+            ),
+            ExpandBranchDim = Table.ExpandTableColumn(
+                JoinBranchDim, "_BM", {"LocationID"}, {"_LocationID"}
+            ),
+            AddNormalizedBranch = Table.AddColumn(
+                ExpandBranchDim, "BranchNorm",
+                each if [_LocationID] <> null then [_LocationID] else [Branch],
+                type text
+            ),
+            DropOldBranch = Table.RemoveColumns(AddNormalizedBranch, {"Branch", "_LocationID"}),
+            RenameNormBranch = Table.RenameColumns(DropOldBranch, {{"BranchNorm", "Branch"}}),
+            // Deduplicate: multiple sub-branches normalizing to the same main branch + invoice
+            NormalizedInvoices = Table.Distinct(RenameNormBranch)
         in
-            ConvertToText,
-    
+            NormalizedInvoices,
+
     // ========================================================================
-    // STEP 3: LOAD PARTS TRANSACTIONS FROM INTRANS_INCREMENTAL
+    // STEP 4: LOAD PARTS TRANSACTIONS FROM INTRANS_INCREMENTAL
     // ========================================================================
     /*
     SOURCE: InTrans_Incremental (Lakehouse)
-    COLUMNS: Branch, RONumber, TransDatetime, PartNumber, Description, 
+    COLUMNS: Branch, RONumber, TransDatetime, PartNumber, Description,
              Franchise, Qty, SaleValue, CostValue, SellPrice1, ListPrice,
              CustomerNo, TradeType, ModifiedDate
     */
-    
+
     PartsSource = InTrans_Incremental,
 
     // Rolling 3-year cutoff — Inspections report needs ~3 years max for YoY comparisons.
@@ -279,19 +327,39 @@ let
             {"RONumber", type text}  // RONumber in InTrans = Invoice Number
         }
     ),
-    
+
+    // CHANGED: Normalize InTrans Branch to main branch code (same logic as InspectionInvoices)
+    // Ensures both sides of the inner join use the same branch key (LocationID)
+    JoinIntransBranchDim = Table.NestedJoin(
+        PartsWithTextTypes, {"Branch"},
+        BranchMapping, {"BranchID"},
+        "_BM", JoinKind.LeftOuter
+    ),
+    ExpandIntransBranchDim = Table.ExpandTableColumn(
+        JoinIntransBranchDim, "_BM", {"LocationID"}, {"_LocationID"}
+    ),
+    AddIntransNormalizedBranch = Table.AddColumn(
+        ExpandIntransBranchDim, "BranchNorm",
+        each if [_LocationID] <> null then [_LocationID] else [Branch],
+        type text
+    ),
+    DropIntransOldBranch = Table.RemoveColumns(AddIntransNormalizedBranch, {"Branch", "_LocationID"}),
+    PartsNormalized = Table.RenameColumns(DropIntransOldBranch, {{"BranchNorm", "Branch"}}),
+
     // ========================================================================
-    // STEP 4: FILTER TO INSPECTION INVOICES
+    // STEP 5: FILTER TO INSPECTION INVOICES
     // ========================================================================
     /*
-    JOIN: InTrans_Incremental.Branch + RONumber = wkothsub.Branch + InvoiceNumber
+    JOIN: InTrans_Incremental.Branch(normalized) + RONumber
+          = wkothsub.Branch(normalized) + InvoiceNumber
+    Both sides now use LocationID (main branch), so sub-branch mismatches are resolved.
     */
-    
+
     FilterToInspectionInvoices = Table.NestedJoin(
-        PartsWithTextTypes,
-        {"Branch", "RONumber"},           // InTrans_Incremental columns
+        PartsNormalized,
+        {"Branch", "RONumber"},           // InTrans_Incremental columns (branch normalized)
         InspectionInvoices,
-        {"Branch", "InvoiceNumber"},      // wkothsub columns
+        {"Branch", "InvoiceNumber"},      // wkothsub columns (branch normalized)
         "InspectionMatch",
         JoinKind.Inner
     ),
@@ -299,13 +367,13 @@ let
     RemoveMatchTable = Table.RemoveColumns(FilterToInspectionInvoices, {"InspectionMatch"}),
     
     // ========================================================================
-    // STEP 5: KEEP ALL FRANCHISE CODES (INCLUDING ZP FOR DISCOUNTS)
+    // STEP 6: KEEP ALL FRANCHISE CODES (INCLUDING ZP FOR DISCOUNTS)
     // ========================================================================
-    
+
     KeepAllFranchises = RemoveMatchTable,
-    
+
     // ========================================================================
-    // STEP 6: RENAME COLUMNS FOR CONSISTENCY WITH SEMANTIC MODEL
+    // STEP 7: RENAME COLUMNS FOR CONSISTENCY WITH SEMANTIC MODEL
     // ========================================================================
     
     RenameColumns = Table.RenameColumns(
@@ -321,7 +389,7 @@ let
     ),
     
     // ========================================================================
-    // STEP 7: SET PROPER DATA TYPES
+    // STEP 8: SET PROPER DATA TYPES
     // ========================================================================
     
     SetDataTypes = Table.TransformColumnTypes(
@@ -346,7 +414,7 @@ let
 
 
 // ========================================================================
-// STEP 8: REMOVE DUPLICATES FROM SOURCE DATA
+// STEP 9: REMOVE DUPLICATES FROM SOURCE DATA
 // ========================================================================
 /*
 ISSUE: InTrans_Incremental contains historical duplicates from Dec 31-Jan 1 
