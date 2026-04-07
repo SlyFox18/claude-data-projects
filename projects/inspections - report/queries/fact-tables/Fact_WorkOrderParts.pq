@@ -262,19 +262,31 @@ let
                 }
             ),
 
-            // Normalize sub-branch to main branch by stripping trailing suffix letter
-            // e.g. "11S" → "11", "12I" → "12", "15C" → "15"
-            AddNormalizedBranch = Table.AddColumn(
-                ConvertToText, "BranchNorm",
+            // wkothsub uses sub-branch codes (e.g. "11S") but InTrans may record the same
+            // invoice under the main branch code ("11") OR the sub-branch code ("11S").
+            // FIX: Build a lookup that covers BOTH variants for each invoice so InTrans rows
+            // match regardless of which branch code they carry. No change to InTrans needed.
+
+            // Normalized version: strip trailing sub-branch suffix → main branch code
+            NormBranch = Table.AddColumn(
+                ConvertToText, "_BranchNorm",
                 each if List.Contains({"S","I","C","B"}, Text.End([Branch], 1))
                      then Text.Start([Branch], Text.Length([Branch]) - 1)
                      else [Branch],
                 type text
             ),
-            DropOldBranch = Table.RemoveColumns(AddNormalizedBranch, {"Branch"}),
-            RenameNormBranch = Table.RenameColumns(DropOldBranch, {{"BranchNorm", "Branch"}}),
-            // Deduplicate: multiple sub-branches normalizing to the same main branch + invoice
-            NormalizedInvoices = Table.Distinct(RenameNormBranch)
+            NormalizedRows = Table.RenameColumns(
+                Table.RemoveColumns(NormBranch, {"Branch"}),
+                {{"_BranchNorm", "Branch"}}
+            ),
+
+            // Union original + normalized rows, then deduplicate.
+            // Invoice at Branch "11S" now has entries for both "11S" and "11":
+            //   InTrans Branch "11"  → matches "11"  ✓ (the original bug case)
+            //   InTrans Branch "11S" → matches "11S" ✓ (sub-branch on both sides)
+            //   InTrans Branch "11"  + wkothsub "11" → matches "11" ✓ (normal case)
+            Combined = Table.Combine({ConvertToText, NormalizedRows}),
+            NormalizedInvoices = Table.Distinct(Combined)
         in
             NormalizedInvoices,
 
@@ -290,13 +302,23 @@ let
 
     PartsSource = InTrans_Incremental,
 
-    // Rolling 3-year cutoff — Inspections report needs ~3 years max for YoY comparisons.
-    // Filters InTrans_Incremental before the inspection invoice join, reducing data volume
-    // from 10M+ rows to ~3M rows. Folds to SQL on the Lakehouse endpoint.
-    CutoffDate = Date.AddYears(Date.From(DateTime.LocalNow()), -3),
-    PartsFiltered = Table.SelectRows(PartsSource, each Date.From([TransDatetime]) >= CutoffDate),
+    // Select only the 14 columns we need — InTrans has 60+ columns but we use 14.
+    // Folds to SQL on the Lakehouse endpoint, cutting data transferred by ~75%.
+    SelectNeededColumns = Table.SelectColumns(
+        PartsSource,
+        {"Branch", "RONumber", "TransDatetime", "PartNumber", "Description",
+         "Franchise", "Qty", "SaleValue", "CostValue", "SellPrice1",
+         "ListPrice", "CustomerNo", "TradeType", "ModifiedDate"}
+    ),
 
-    // Ensure join columns are TEXT type
+    // Rolling 3-year cutoff — folds to SQL on the Lakehouse endpoint.
+    // Reduces data from 10M+ rows to ~3M rows before the in-memory join.
+    CutoffDate = Date.AddYears(Date.From(DateTime.LocalNow()), -3),
+    PartsFiltered = Table.SelectRows(SelectNeededColumns, each Date.From([TransDatetime]) >= CutoffDate),
+
+    // Ensure join keys are TEXT type.
+    // No branch normalization here — InspectionInvoices already covers both
+    // main branch and sub-branch code variants for each invoice.
     PartsWithTextTypes = Table.TransformColumnTypes(
         PartsFiltered,
         {
@@ -305,32 +327,20 @@ let
         }
     ),
 
-    // Normalize InTrans Branch to main branch code — same suffix-strip logic as InspectionInvoices
-    // Simple AddColumn avoids a NestedJoin on 3M+ rows that would break query folding
-    AddIntransNormalizedBranch = Table.AddColumn(
-        PartsWithTextTypes, "BranchNorm",
-        each if List.Contains({"S","I","C","B"}, Text.End([Branch], 1))
-             then Text.Start([Branch], Text.Length([Branch]) - 1)
-             else [Branch],
-        type text
-    ),
-    DropIntransOldBranch = Table.RemoveColumns(AddIntransNormalizedBranch, {"Branch"}),
-    PartsNormalized = Table.RenameColumns(DropIntransOldBranch, {{"BranchNorm", "Branch"}}),
-
     // ========================================================================
     // STEP 5: FILTER TO INSPECTION INVOICES
     // ========================================================================
     /*
-    JOIN: InTrans_Incremental.Branch(normalized) + RONumber
-          = wkothsub.Branch(normalized) + InvoiceNumber
-    Both sides now use LocationID (main branch), so sub-branch mismatches are resolved.
+    JOIN: InTrans.Branch + RONumber = InspectionInvoices.Branch + InvoiceNumber
+    InspectionInvoices contains both original and normalized branch codes, so
+    InTrans rows match whether they carry the main or sub-branch code.
     */
 
     FilterToInspectionInvoices = Table.NestedJoin(
-        PartsNormalized,
-        {"Branch", "RONumber"},           // InTrans_Incremental columns (branch normalized)
+        PartsWithTextTypes,
+        {"Branch", "RONumber"},           // InTrans original branch codes (unmodified)
         InspectionInvoices,
-        {"Branch", "InvoiceNumber"},      // wkothsub columns (branch normalized)
+        {"Branch", "InvoiceNumber"},      // covers both "11S" and "11" for same invoice
         "InspectionMatch",
         JoinKind.Inner
     ),
