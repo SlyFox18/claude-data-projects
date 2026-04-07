@@ -36,7 +36,7 @@
 
 ### **Documentation Status:**
 - ✅ **1 project** has extensive documentation (Inspections)
-- ✅ **2 projects** have some documentation (Parts Low Margin, Parts on Open Orders)
+- ✅ **2 projects** have some documentation (Parts Low Margin, Open Parts Tickets)
 - ⚠️ **12 projects** have NO documentation (high priority)
 
 ---
@@ -280,7 +280,7 @@ Table/column search tool (metadata queries)
 
 ---
 
-### **Project: Parts on Open Orders**
+### **Project: Open Parts Tickets**
 **Location:** `projects/parts-open-orders/queries/fact-tables/`
 **Department:** Parts
 **Created:** 12/30/2025 | **Modified:** 01/07/2026
@@ -454,8 +454,8 @@ Table/column search tool (metadata queries)
 | Fact_Part_Transactions | Inventory Analysis | 2-3 min | 10,131,874 | Daily operations (incremental) |
 | Fact_NegativeOnHand_OnHandNoBin | Negative On Hand | ~1:30 | 1,398 | Data quality monitoring |
 | Fact_PartsAdjustments | Parts Adjustments | 2-3 min | 239,171 | Audit trail |
-| Fact_Parts_Open_Tickets | Parts on Open Orders | 2-3 min | ~1,245 | Operational tracking |
-| Fact_Parts_Open_Tickets_Details | Parts on Open Orders | 2-3 min | ~1,245 | Operational tracking |
+| Fact_Parts_Open_Tickets | Open Parts Tickets | 2-3 min | ~1,245 | Operational tracking |
+| Fact_Parts_Open_Tickets_Details | Open Parts Tickets | 2-3 min | ~1,245 | Operational tracking |
 | Fact_PinTransactions | Pin Capture | 1-2 min | 1,398,091 | Operational tracking |
 | Fact_Invoice_UniqueCustomers | Unique Parts Customers | 2-3 min | 5,826 | Aligns with dim refresh |
 | Fact_InTrans_UniqueCustomers | Unique Parts Customers | 2-3 min | 53,665 | Aligns with dim refresh |
@@ -783,7 +783,7 @@ After fact tables complete:
 - "Which parts have low margin?" → Fact_Intrans, dim_Parts_LowMargin (Parts Low Margin)
 - "What adjustments made?" → Fact_PartsAdjustments (Parts Adjustments)
 - "Parts not reordered?" → Fact_PartsNotReordered (Parts Not Re-Ordered)
-- "Parts on open orders?" → Fact_Parts_Open_Tickets (Parts on Open Orders)
+- "Parts on open orders?" → Fact_Parts_Open_Tickets (Open Parts Tickets)
 - "What's physical inventory?" → Physical Inventory table
 - "Transactions with PINs?" → Fact_PinTransactions (Pin Capture)
 - "Price matrix effectiveness?" → Fact_Inventory, Fact_Part_Transactions (Price Matrix)
@@ -810,7 +810,7 @@ See "Fact Tables by Project" section above
 |---------|--------|----------|
 | Inspections | ✅ Extensive docs | Maintain |
 | Parts Low Margin | ✅ Some docs | Review/enhance |
-| Parts on Open Orders | ✅ Notes exist | Review/enhance |
+| Open Parts Tickets | ✅ Notes exist | Review/enhance |
 | 60 Days Past Due | ⚠️ None | High (financial) |
 | First Pass Fill | ⚠️ None | High (critical KPI) |
 | Inventory Analysis | ⚠️ None | High (10M+ rows) |

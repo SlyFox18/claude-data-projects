@@ -1,4 +1,4 @@
-# Parts on Open Orders - Report Modernization Status
+# Open Parts Tickets - Report Modernization Status
 
 **Project**: Migrating from old Lakehouse structure to new star schema architecture
 **Status**: 90% Complete ⬆️ (Updated from 75%)
@@ -9,7 +9,7 @@
 ## ✅ COMPLETED WORK
 
 ### 1. Semantic Model Structure (100% Complete)
-**Location**: `reports/current/Parts on Open Orders.SemanticModel/`
+**Location**: `reports/current/Open Parts Tickets.SemanticModel/`
 
 #### Fact Tables Created
 - ✅ **Fact_Parts_Open_Tickets** - Order summary level
@@ -178,7 +178,7 @@ These complex SVG chart measures should be added manually in Power BI Desktop:
 ### Option 1: Manual DAX Migration in Power BI Desktop
 
 1. Open Power BI Desktop
-2. Open the semantic model: `Parts on Open Orders.SemanticModel`
+2. Open the semantic model: `Open Parts Tickets.SemanticModel`
 3. Go to **Model view** → **New Measure**
 4. For each SVG measure:
    - Copy the DAX from `info-exports/old report/Model Measures.csv`
@@ -390,8 +390,8 @@ projects/parts on open orders/
 ├── reports/
 │   ├── archive/              (Old .pbix)
 │   └── current/
-│       ├── Parts on Open Orders.SemanticModel/  ✅ 92% Complete
-│       └── Parts on Open Orders.Report/         ⏳ Ready to build
+│       ├── Open Parts Tickets.SemanticModel/  ✅ 92% Complete
+│       └── Open Parts Tickets.Report/         ⏳ Ready to build
 │
 ├── DATA-FIX-DOCUMENTATION.md                     ✅ NEW - Complete data fix guide
 ├── DAX-MEASURES-REFERENCE.md                     ✅ All 39 measures documented

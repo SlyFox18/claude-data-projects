@@ -1,6 +1,6 @@
-# Change Log & Release Notes - Parts on Open Orders Report
+# Change Log & Release Notes - Open Parts Tickets Report
 
-**Report Name**: Parts on Open Orders
+**Report Name**: Open Parts Tickets
 **Migration Project**: Old Lakehouse → New Star Schema Architecture
 **Platform**: Microsoft Fabric (F4 Capacity)
 
@@ -121,7 +121,7 @@ GROUP BY Branch, DATEFROMPARTS(YEAR(InvoiceDate), MONTH(InvoiceDate), 1)
 
 ### Release Summary
 
-Version 2.0 represents a complete modernization of the Parts on Open Orders report, migrating from an outdated Lakehouse structure to a new star schema architecture optimized for Microsoft Fabric F4 capacity. This version includes critical data quality fixes, performance improvements, and new analytical capabilities.
+Version 2.0 represents a complete modernization of the Open Parts Tickets report, migrating from an outdated Lakehouse structure to a new star schema architecture optimized for Microsoft Fabric F4 capacity. This version includes critical data quality fixes, performance improvements, and new analytical capabilities.
 
 **Status**: ✅ Production Ready (90% complete - report pages in progress)
 
@@ -287,10 +287,10 @@ Growth: +11.1%
 - Consistent branding across all pages
 
 **Pages with Custom Headers**:
-- Page 1: "Overview - Parts on Open Orders"
-- Page 2: "Details - Parts on Open Orders"
-- Page 3: "Comparison - Parts on Open Orders"
-- Page 4: "Score Card - Charts - Parts on Open Orders"
+- Page 1: "Overview - Open Parts Tickets"
+- Page 2: "Details - Open Parts Tickets"
+- Page 3: "Comparison - Open Parts Tickets"
+- Page 4: "Score Card - Charts - Open Parts Tickets"
 
 **Business Value**: Professional appearance, personalized user experience, clear page navigation
 

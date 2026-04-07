@@ -345,7 +345,7 @@ Run 1 (Successful): Feb 23, 2026, ~2:01 PM CST. 16/16 active SMs succeeded. Inve
 |----------------|-----------|-------------|-------|
 | 60+ Days Past Due | RP - Financial | 5m 40s | Bottleneck |
 | Open Work Orders | RP - Service | 3m 41s | |
-| Parts on Open Orders | RP - Parts | 1m 52s | Fastest wave member |
+| Open Parts Tickets | RP - Parts | 1m 52s | Fastest wave member |
 
 ### Wave A3 - Tier 1 SMs (3 concurrent, ~7m 13s)
 

@@ -76,7 +76,7 @@ Also in this subfolder but NOT fact DFs:
 | df_Fact_First_Pass_Fill | 6a738c5f-9ffe-ad61-49e2-f021fa540802 | Fact_FirstPassFill | First Pass Fill | ~5 min | ~734K |
 | df_Fact_PartSales_24Hours | 0a2af750-026b-a4e7-4748-a3191c5666ee | Fact_PartsNotReordered | Parts Not Re-Ordered | ~3.5 min | ~8K |
 | df_Fact_Branch12_Transactions | 8bac8d09-8952-a458-45b7-628e00f5fd1b | Fact_Branch12_Transactions | Combine Vault Sales | ~3 min | ~5K |
-| df_Fact_Parts_With_Open_Orders | 87e02f99-3200-a606-422b-c7718acc22e2 | Fact_Parts_Open_Tickets | Parts on Open Orders | ~2.5 min | ~1K |
+| df_Fact_Parts_With_Open_Orders | 87e02f99-3200-a606-422b-c7718acc22e2 | Fact_Parts_Open_Tickets | Open Parts Tickets | ~2.5 min | ~1K |
 | df_Fact_PartsAdjustments | 1cc6c648-f824-896e-4a3f-bef52144ca39 | Fact_PartsAdjustments | Parts Adjustments | ~2.5 min | ~239K |
 | df_Fact_PartsPromo | bd8714d5-be36-af44-4a9b-8f578310b7c3 | Fact_PartsPromo | Parts Promo | ~1.75 min | ~5K |
 | df_Fact_InSalOrd_InSalPar | 8bbbd53b-a2d7-a137-414a-b874b77e8d7e | Fact_InSalOrd_InSalPar | 60+ Days Past Due | ~1.5 min | ~1.4K |
@@ -166,7 +166,7 @@ Sorted by estimated refresh time (longest first). 5 concurrent per wave to stay 
 |----------|-----------|--------|-----------|
 | df_Fact_PartSales_24Hours | 0a2af750-026b-a4e7-4748-a3191c5666ee | Parts Not Re-Ordered | ~3.5 min |
 | df_Fact_Branch12_Transactions | 8bac8d09-8952-a458-45b7-628e00f5fd1b | Combine Vault Sales | ~3 min |
-| df_Fact_Parts_With_Open_Orders | 87e02f99-3200-a606-422b-c7718acc22e2 | Parts on Open Orders | ~2.5 min |
+| df_Fact_Parts_With_Open_Orders | 87e02f99-3200-a606-422b-c7718acc22e2 | Open Parts Tickets | ~2.5 min |
 | df_Fact_Invoice_InventoryAnalysis | 40a35d40-e778-a28b-473d-bd3af3818dfc | Inventory Analysis | ~2.5 min |
 | df_Fact_PartsAdjustments | 1cc6c648-f824-896e-4a3f-bef52144ca39 | Parts Adjustments | ~2.5 min |
 
@@ -232,7 +232,7 @@ Sorted by estimated refresh time (longest first). 5 concurrent per wave to stay 
 | First Pass Fill | 1 | 1 | 0 | 1 |
 | Parts Not Re-Ordered | 1 | 1 | 0 | 1 |
 | Combine Vault Sales | 2 | 1 | 0 | 1 |
-| Parts on Open Orders | 1 | 1 | 0 | 1 |
+| Open Parts Tickets | 1 | 1 | 0 | 1 |
 | Parts Adjustments | 1 | 1 | 0 | 1 |
 | Parts Promo | 1 | 1 | 0 | 1 |
 | 60+ Days Past Due | 1 | 1 | 0 | 1 |

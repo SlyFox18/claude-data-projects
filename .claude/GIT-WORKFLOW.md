@@ -16,6 +16,31 @@
 
 ---
 
+## Session Start Checklist
+
+Run these every time you open a Claude Code session:
+
+| Check | Command | What to look for |
+|-------|---------|-----------------|
+| data-projects status | `git status` | Any uncommitted changes? |
+| fabric-workspace-docs local sync | `cd ../fabric-workspace-docs && git status` | "behind origin/dev"? Run `git pull` |
+| Open PRs waiting | Check GitHub — fabric-workspace-docs PRs | Any `dev → main` PR sitting open? |
+| Fabric pending items | Open Fabric portal → RP - Parts Reports → Git Integration | Any uncommitted workspace changes? |
+
+---
+
+## Session End Checklist
+
+Before closing out a work session:
+
+- [ ] All changes committed to `dev` in data-projects
+- [ ] Pushed to `origin/dev`
+- [ ] If you changed anything in Fabric UI (renamed, published from Desktop): commit those pending items in Fabric's Git Integration panel
+- [ ] If ready for production: open PR `dev → main` on **both** repos with a real description (not just "Dev")
+- [ ] After merging to main: sync affected production workspaces in Fabric UI
+
+---
+
 ## Standard Workflow (Step by Step)
 
 ### 1. Make your changes
@@ -50,7 +75,7 @@ git commit -m "Short description of what changed and why"
 **Good commit messages:**
 - `Transfers: add Page 2 branch comparison chart`
 - `Fix Data Refresh UTC timezone bug across all reports`
-- `Parts on Open Orders: correct branch slicer to include all locations`
+- `Open Parts Tickets: correct branch slicer to include all locations`
 
 **Keep commits focused** — one logical change per commit makes it easier to understand history
 and revert individual things if needed.

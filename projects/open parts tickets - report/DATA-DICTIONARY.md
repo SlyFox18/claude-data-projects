@@ -1,6 +1,6 @@
-# Data Dictionary - Parts on Open Orders Report
+# Data Dictionary - Open Parts Tickets Report
 
-**Report Name**: Parts on Open Orders
+**Report Name**: Open Parts Tickets
 **Version**: 2.0
 **Last Updated**: January 8, 2026
 **Platform**: Microsoft Fabric
@@ -25,7 +25,7 @@
 
 ## Introduction
 
-This data dictionary provides comprehensive documentation of all data elements in the Parts on Open Orders report. It includes field-level definitions, data types, business rules, source mappings, and example values.
+This data dictionary provides comprehensive documentation of all data elements in the Open Parts Tickets report. It includes field-level definitions, data types, business rules, source mappings, and example values.
 
 **Audience**: Report users, developers, analysts, and data stewards
 
@@ -930,7 +930,7 @@ See [DAX-MEASURES-REFERENCE.md](DAX-MEASURES-REFERENCE.md) for formulas.
                    │
                    ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│ Semantic Model: Parts on Open Orders.SemanticModel             │
+│ Semantic Model: Open Parts Tickets.SemanticModel             │
 │                                                                  │
 │  Tables (Import Mode):                                          │
 │  • Fact_Parts_Open_Tickets                                      │
@@ -944,7 +944,7 @@ See [DAX-MEASURES-REFERENCE.md](DAX-MEASURES-REFERENCE.md) for formulas.
                    │
                    ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│ Power BI Report: Parts on Open Orders.Report                   │
+│ Power BI Report: Open Parts Tickets.Report                   │
 │                                                                  │
 │  Pages: 4 pages (Overview, Details, Comparison, Score Card)    │
 └─────────────────────────────────────────────────────────────────┘

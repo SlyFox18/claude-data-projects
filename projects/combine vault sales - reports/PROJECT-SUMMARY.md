@@ -57,6 +57,6 @@ This report focuses exclusively on Branch 12 — the "Combine Vault" — a speci
 | Parts inventory (Branch 12) | On-hand quantities and inventory cost for Branch 12 parts |
 
 ## Notes
-- **Branch 12 only:** This report is scoped exclusively to Branch 12 (the Combine Vault). It is not a report about all branches — use Inventory Analysis or Parts on Open Orders for cross-branch views.
+- **Branch 12 only:** This report is scoped exclusively to Branch 12 (the Combine Vault). It is not a report about all branches — use Inventory Analysis or Open Parts Tickets for cross-branch views.
 - **`IsSale` / `IsTransfer` flags:** Transactions are pre-classified in the dataflow. Sales and transfers are in the same fact table but separated by these boolean flags.
 - **`dim_Branch12_Parts` vs. `dim_Parts`:** Branch 12 has its own parts dimension (with current inventory cost) that bridges to the shared `dim_Parts` catalog. Part filtering normally goes through `dim_Branch12_Parts`.

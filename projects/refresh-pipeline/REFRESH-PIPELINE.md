@@ -200,7 +200,7 @@ See wave composition in plan file. Key points:
 Refreshes all active report semantic models. Parts Not Re-Ordered excluded (see below).
 
 **Wave A (3 concurrent, ~6 min):** Inventory Analysis, Inspections, Customer Anatomy V2
-**Wave B (5 concurrent, ~2 min):** Part Sales Low Margin, First Pass Fill, 60+ Past Due, Parts on Open Orders, Parts Adjustments
+**Wave B (5 concurrent, ~2 min):** Part Sales Low Margin, First Pass Fill, 60+ Past Due, Open Parts Tickets, Parts Adjustments
 **Wave C (5 concurrent, ~1 min):** Negative On Hand, Open Work Orders, Parts Promo, Combine Vault Sales
 **Tier 2 (4 concurrent, ~2 min):** Labor Performance, Unique Parts Customers, Pin Capture, Physical Inventory
 
@@ -233,7 +233,7 @@ This pipeline ensures Parts Not Re-Ordered always has fresh intraday data by mid
 | 3 | Inventory Analysis V3 | RP - Sandbox → Parts | 3 | Wave A ~6 min |
 | 4 | 60+ Days Past Due | RP - Financial Reports | 1 | Wave B ~1 min |
 | 5 | Open Work Orders | RP - Service Reports | 0 | Wave B ~1 min |
-| 6 | Parts on Open Orders | RP - Parts Reports | 2 | Wave B ~1 min |
+| 6 | Open Parts Tickets | RP - Parts Reports | 2 | Wave B ~1 min |
 | 7 | First Pass Fill | RP - Parts Reports | 1 | Wave B ~1 min |
 | 8 | Negative On Hand | RP - Parts Reports | 1 | Wave C ~1 min |
 | 9 | Parts Adjustments | RP - Parts Reports | 1 | Wave B ~1 min |

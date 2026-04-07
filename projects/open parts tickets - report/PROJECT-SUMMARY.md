@@ -1,4 +1,4 @@
-# Parts on Open Orders - Project Summary
+# Open Parts Tickets - Project Summary
 
 **Project Status**: ✅ Production — Active development (March 2026)
 **Last Updated**: March 5, 2026
@@ -39,7 +39,7 @@ The report is fully built, in production, and receiving new feature additions. T
 
 ## ORIGINAL EXECUTIVE SUMMARY (January 2026)
 
-This project modernized the "Parts on Open Orders" report from an outdated Lakehouse structure to a new star schema architecture optimized for F4 capacity performance.
+This project modernized the "Open Parts Tickets" report from an outdated Lakehouse structure to a new star schema architecture optimized for F4 capacity performance.
 
 ---
 
@@ -99,7 +99,7 @@ This project modernized the "Parts on Open Orders" report from an outdated Lakeh
 
 **Steps**:
 1. Open Power BI Desktop
-2. Open: `reports/current/Parts on Open Orders.SemanticModel`
+2. Open: `reports/current/Open Parts Tickets.SemanticModel`
 3. Go to **Model view**
 4. For each measure in [DAX-MEASURES-REFERENCE.md](./DAX-MEASURES-REFERENCE.md):
    - Click **New Measure**
@@ -114,7 +114,7 @@ This project modernized the "Parts on Open Orders" report from an outdated Lakeh
 **Why**: Version control, can be automated, works with Git
 
 **Steps**:
-1. Open: `reports/current/Parts on Open Orders.SemanticModel/definition/tables/_Measures.tmdl`
+1. Open: `reports/current/Open Parts Tickets.SemanticModel/definition/tables/_Measures.tmdl`
 2. Add remaining measures from [DAX-MEASURES-REFERENCE.md](./DAX-MEASURES-REFERENCE.md)
 3. Follow TMDL syntax rules:
    - No empty lines between measures
@@ -457,9 +457,9 @@ projects/parts on open orders/
 │
 └── reports/
     ├── archive/
-    │   └── Parts on Open Orders - Old.pbix      📚 Archived old report
+    │   └── Open Parts Tickets - Old.pbix      📚 Archived old report
     └── current/
-        ├── Parts on Open Orders.SemanticModel/  ✅ 75% Complete
+        ├── Open Parts Tickets.SemanticModel/  ✅ 75% Complete
         │   ├── definition/
         │   │   ├── tables/
         │   │   │   ├── _Measures.tmdl           ✅ 19 measures done, 20 to add
@@ -470,7 +470,7 @@ projects/parts on open orders/
         │   │   ├── relationships.tmdl           ✅ 3 relationships configured
         │   │   └── model.tmdl
         │   └── definition.pbism
-        └── Parts on Open Orders.Report/         ⏳ Not started - build here!
+        └── Open Parts Tickets.Report/         ⏳ Not started - build here!
 ```
 
 ---
@@ -481,7 +481,7 @@ projects/parts on open orders/
 
 **Option A: Power BI Desktop (Recommended)**
 1. Open Power BI Desktop
-2. Open semantic model: `reports/current/Parts on Open Orders.SemanticModel`
+2. Open semantic model: `reports/current/Open Parts Tickets.SemanticModel`
 3. Go to Model view → New Measure
 4. Add Priority 1 measures (4 KPI SVG measures) from [DAX-MEASURES-REFERENCE.md](./DAX-MEASURES-REFERENCE.md)
 5. Add Priority 2 measures (customer/salesman rankings)
