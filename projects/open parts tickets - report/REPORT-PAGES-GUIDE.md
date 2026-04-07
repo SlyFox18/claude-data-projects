@@ -1,4 +1,4 @@
-# Parts on Open Orders - Report Pages Guide
+# Open Parts Tickets - Report Pages Guide
 
 **Purpose**: Detailed specifications for rebuilding all 4 report pages in Power BI Desktop
 **Version**: 2.0 (Modernized with Star Schema)
@@ -63,7 +63,7 @@
 - Font: Segoe UI
 
 **What it shows**:
-- Dashboard title: "Overview - Parts on Open Orders"
+- Dashboard title: "Overview - Open Parts Tickets"
 - Dynamic greeting based on time of day
 - Current user name (formatted)
 - Current date
@@ -711,7 +711,7 @@ Displays currently applied filters for:
 
 ### Phase 1: Setup
 - [ ] Open Power BI Desktop
-- [ ] Open semantic model: `Parts on Open Orders.SemanticModel`
+- [ ] Open semantic model: `Open Parts Tickets.SemanticModel`
 - [ ] Verify all measures are loaded (39 total)
 - [ ] Verify all relationships are active
 

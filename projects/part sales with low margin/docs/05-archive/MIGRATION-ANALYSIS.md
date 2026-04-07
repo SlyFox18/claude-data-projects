@@ -614,7 +614,7 @@ LEFT JOIN InMaster_Subset
 These may already exist in your Lakehouse:
 
 - **dim_Branch** (if not already created)
-- **dim_DateTable** (should already exist from Parts on Open Orders project)
+- **dim_DateTable** (should already exist from Open Parts Tickets project)
 - **dim_Customer** (if available)
 - **dim_Salesman** (if available)
 - **dim_Franchise** (optional - could be attribute in dim_Parts)

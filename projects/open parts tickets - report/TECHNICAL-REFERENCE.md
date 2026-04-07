@@ -1,6 +1,6 @@
-# Technical Reference - Parts on Open Orders Report
+# Technical Reference - Open Parts Tickets Report
 
-**Report Name**: Parts on Open Orders
+**Report Name**: Open Parts Tickets
 **Version**: 2.0 (Modernized Star Schema)
 **Last Updated**: January 8, 2026
 **Platform**: Microsoft Fabric (F4 Capacity)
@@ -46,7 +46,7 @@
 │                              │ SQL Connection (Import Mode)      │
 │                              │                                   │
 │  ┌───────────────────────────┴───────────────────────────────┐  │
-│  │ Parts on Open Orders.SemanticModel                        │  │
+│  │ Open Parts Tickets.SemanticModel                        │  │
 │  │                                                            │  │
 │  │  • Fact_Parts_Open_Tickets (1,121 orders)                 │  │
 │  │  • Fact_Parts_Open_Tickets_Details (line items)           │  │
@@ -59,7 +59,7 @@
 │                              ▲                                   │
 │                              │                                   │
 │  ┌───────────────────────────┴───────────────────────────────┐  │
-│  │ Parts on Open Orders.Report                               │  │
+│  │ Open Parts Tickets.Report                               │  │
 │  │                                                            │  │
 │  │  • Page 1: Overview (Aging Matrix + KPIs)                 │  │
 │  │  • Page 2: Details (Line Item Table)                      │  │

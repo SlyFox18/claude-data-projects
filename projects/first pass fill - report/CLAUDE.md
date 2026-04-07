@@ -108,7 +108,7 @@ The original measure used `MAX(dim_DateTable[Date])` as the anchor, which caused
 Unlike most shared dimensions, `dim_JobCode` is only used by First Pass Fill and Top 50 Jobs. It has service-specific classifications (IsInspection, IsWarranty, IsSeasonalWork, IsUrgentWork, ServiceComplexity).
 
 ## Refresh Pipeline Position
-- **Phase:** 4, Wave B (parallel with Part Sales Low Margin, 60+ Past Due, Parts on Open Orders, Parts Adjustments)
+- **Phase:** 4, Wave B (parallel with Part Sales Low Margin, 60+ Past Due, Open Parts Tickets, Parts Adjustments)
 - **Dataflow:** `df_Fact_First_Pass_Fill` in LH_Master_Data
 - **Dependencies:** dim_DateTable, dim_BranchLocation, dim_Parts, dim_JobCode must complete (Phase 3) before this runs
 - **Approximate refresh time:** ~5 min

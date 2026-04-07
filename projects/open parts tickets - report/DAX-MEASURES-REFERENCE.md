@@ -1,4 +1,4 @@
-# DAX Measures Reference - Parts on Open Orders
+# DAX Measures Reference - Open Parts Tickets
 
 **Purpose**: Complete reference for all 39 DAX measures with updated table names
 **Use**: Copy these measures into Power BI Desktop or TMDL files

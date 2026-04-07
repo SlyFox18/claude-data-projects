@@ -76,7 +76,7 @@ Used to determine which dimensions need daily refresh vs weekly/monthly, and whi
 | **Part Sales with Low Margin** | RP - Parts Reports | dim_BranchLocation, dim_CustomerList, dim_DateTable, dim_Parts, dim_Parts_LowMargin* |
 | **Pin Capture** | RP - Parts Reports | dim_BranchLocation, dim_CustomerList, dim_DateTable, dim_Parts |
 | **Parts Not Re-Ordered** | RP - Parts Reports | dim_BranchLocation, dim_DateTable |
-| **Parts on Open Orders** | RP - Parts Reports | dim_BranchLocation, dim_DateTable |
+| **Open Parts Tickets** | RP - Parts Reports | dim_BranchLocation, dim_DateTable |
 | **Negative On Hand** | RP - Parts Reports | dim_BranchLocation, dim_DateTable |
 | **Physical Inventory** | RP - Parts Reports | dim_BranchLocation, dim_DateTable |
 | **Bin Location Report** | RP - Parts Reports | dim_BranchLocation, dim_DealerGroupCode, dim_Franchise, dim_Parts |

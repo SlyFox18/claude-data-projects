@@ -50,7 +50,7 @@ git commit -m "Short description of what changed and why"
 **Good commit messages:**
 - `Transfers: add Page 2 branch comparison chart`
 - `Fix Data Refresh UTC timezone bug across all reports`
-- `Parts on Open Orders: correct branch slicer to include all locations`
+- `Open Parts Tickets: correct branch slicer to include all locations`
 
 **Keep commits focused** — one logical change per commit makes it easier to understand history
 and revert individual things if needed.

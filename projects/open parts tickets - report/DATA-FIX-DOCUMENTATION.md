@@ -1,6 +1,6 @@
-# Data Fix Documentation - Parts on Open Orders Report
+# Data Fix Documentation - Open Parts Tickets Report
 
-**Project:** Parts on Open Orders Report Migration
+**Project:** Open Parts Tickets Report Migration
 **Date:** January 7, 2026
 **Issue:** Data discrepancies between old and new reports after initial migration
 **Status:** ✅ RESOLVED
@@ -9,7 +9,7 @@
 
 ## Executive Summary
 
-After migrating the "Parts on Open Orders" report from the old Lakehouse structure to the new star schema, I discovered significant data discrepancies between the old and new reports. Through systematic analysis, I identified **three critical SQL query issues** that were causing incorrect aggregation and aging calculations.
+After migrating the "Open Parts Tickets" report from the old Lakehouse structure to the new star schema, I discovered significant data discrepancies between the old and new reports. Through systematic analysis, I identified **three critical SQL query issues** that were causing incorrect aggregation and aging calculations.
 
 **Final Result:** The new report now shows **1,121 orders** vs. the old report's **1,100 orders**. The 21-order difference is due to the new report correctly handling orders with different deposit amounts (the old report incorrectly merged them).
 
