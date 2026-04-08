@@ -3119,36 +3119,16 @@ table _Measures
 			RETURN
 			    IF (
 			        NOT ( ISBLANK ( CurrentJobCode ) ),
-			        // Get all completed work orders with this job code
-			        VAR CompletedWOs =
-			            CALCULATETABLE (
-			                VALUES ( Fact_LaborJobSummary[WorkOrderNumber] ),
-			                Fact_LaborJobSummary[JobCode] = CurrentJobCode,
-			                Fact_LaborJobSummary[IsInspection] = TRUE,
-			                NOT ( ISBLANK ( Fact_LaborJobSummary[InvoiceNumber] ) )
-			            ) // Get invoices for those work orders
-			        VAR InvoicesForWOs =
-			            CALCULATETABLE (
-			                VALUES ( Fact_LaborJobSummary[InvoiceNumber] ),
-			                Fact_LaborJobSummary[WorkOrderNumber] IN CompletedWOs,
-			                NOT ( ISBLANK ( Fact_LaborJobSummary[InvoiceNumber] ) )
-			            ) // Calculate total labor for these work orders
-			        VAR TotalLabor =
-			            CALCULATE (
-			                SUM ( Fact_LaborJobSummary[InvoicedLaborAmount] ),
-			                Fact_LaborJobSummary[WorkOrderNumber] IN CompletedWOs
-			            ) // Calculate total parts for these invoices
-			        VAR TotalParts =
-			            CALCULATE (
-			                SUM ( Fact_WorkOrderParts[SaleValue] ),
-			                Fact_WorkOrderParts[InvoiceNumber] IN InvoicesForWOs,
-			                Fact_WorkOrderParts[Franchise] <> "ZP",
-			                NOT ( Fact_WorkOrderParts[PartNumber] IN { "ADV", "LEGACY", "4900", "*10PROMO" } )
-			            ) // Count of work orders
-			        VAR WOCount =
-			            COUNTROWS ( CompletedWOs )
-			        RETURN
-			            DIVIDE ( TotalLabor + TotalParts, WOCount, 0 ),
+			        CALCULATE (
+			            DIVIDE (
+			                [Total $ - Discounts by Job Code],
+			                DISTINCTCOUNT ( Fact_LaborJobSummary[WorkOrderNumber] ),
+			                0
+			            ),
+			            Fact_LaborJobSummary[JobCode] = CurrentJobCode,
+			            Fact_LaborJobSummary[IsInspection] = TRUE,
+			            Fact_LaborJobSummary[IsPendingInspection] = FALSE
+			        ),
 			        BLANK ()
 			    )
 		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
@@ -3159,7 +3139,16 @@ table _Measures
 	measure 'Estimated Revenue - Pending' =
 			
 			VAR PendingCount = [Total Pending Inspections]
-			VAR AvgRevenue = [Average Inspection Revenue]
+			VAR AvgRevenue =
+			    CALCULATE (
+			        DIVIDE (
+			            [Total $ - Discounts by Job Code],
+			            DISTINCTCOUNT ( Fact_LaborJobSummary[WorkOrderNumber] ),
+			            0
+			        ),
+			        Fact_LaborJobSummary[IsInspection] = TRUE,
+			        Fact_LaborJobSummary[IsPendingInspection] = FALSE
+			    )
 			RETURN
 			    PendingCount * AvgRevenue
 		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
@@ -3509,7 +3498,11 @@ table _Measures
 			VAR AvgRevenue = [Average Inspection Revenue]
 			VAR EstRevenue = [Estimated Revenue - Pending]
 			VAR EstRevenueText =
-			    FORMAT ( EstRevenue / 1000, "$#,##0.0" ) & "K"
+			    IF (
+			        EstRevenue >= 1000000,
+			        FORMAT ( EstRevenue / 1000000, "$#,##0.0" ) & "M",
+			        FORMAT ( EstRevenue / 1000, "$#,##0.0" ) & "K"
+			    )
 			VAR HoursText =
 			    FORMAT ( TotalHours, "#,##0.0" )
 			VAR AgeText =
@@ -3607,8 +3600,17 @@ table _Measures
 			        SUMMARIZE ( Fact_PendingInspections, Fact_PendingInspections[JobCode] ),
 			        "@Count", CALCULATE ( COUNTROWS ( Fact_PendingInspections ) ),
 			        "@EstRev", [Avg Revenue by Job Code] * CALCULATE ( COUNTROWS ( Fact_PendingInspections ) )
-			    ) // Calculate average inspection revenue
-			VAR AvgRevenue = [Average Inspection Revenue]
+			    )
+			VAR AvgRevenue =
+			    CALCULATE (
+			        DIVIDE (
+			            [Total $ - Discounts by Job Code],
+			            DISTINCTCOUNT ( Fact_LaborJobSummary[WorkOrderNumber] ),
+			            0
+			        ),
+			        Fact_LaborJobSummary[IsInspection] = TRUE,
+			        Fact_LaborJobSummary[IsPendingInspection] = FALSE
+			    )
 			VAR AvgRevenueText =
 			    FORMAT ( AvgRevenue, "$#,##0" ) // Build HTML for each inspection type - SORTED BY COUNT DESCENDING
 			VAR InspectionCards =
