@@ -1,0 +1,45 @@
+table MatchViewSelector
+	lineageTag: a3f21b7c-9d4e-4c82-b8f5-6e1c2d0a5e97
+
+	column ViewType
+		lineageTag: b2e4c8d1-5f3a-4b90-a7e6-3d2f1c0b9e84
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [ViewType]
+
+		annotation SummarizationSetBy = Automatic
+
+	column ViewLabel
+		lineageTag: c3f5d9e2-6a4b-4ca1-b8f7-4e3g2d1c0f95
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [ViewLabel]
+
+		annotation SummarizationSetBy = Automatic
+
+	column SortOrder
+		formatString: 0
+		lineageTag: d4g6e0f3-7b5c-4db2-c9g8-5f4h3e2d1g06
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [SortOrder]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition MatchViewSelector = calculated
+		mode: import
+		source =
+				
+				DATATABLE(
+				    "ViewType", STRING,
+				    "ViewLabel", STRING,
+				    "SortOrder", INTEGER,
+				    {
+				        {"Pct", "% of Transactions", 1},
+				        {"Count", "Transaction Count", 2},
+				        {"Cost", "Adjustment Cost $", 3}
+				    }
+				)
+
+	annotation PBI_Id = f5h7f1g4h8i5j6k7l8m9n0o1p2q3r4s5
+

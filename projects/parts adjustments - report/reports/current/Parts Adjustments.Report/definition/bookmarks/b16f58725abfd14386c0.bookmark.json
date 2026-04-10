@@ -1,5 +1,5 @@
 {
-  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/bookmark/1.4.0/schema.json",
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/bookmark/2.1.0/schema.json",
   "displayName": "Hide Nav Panel 2",
   "name": "b16f58725abfd14386c0",
   "options": {
@@ -12,6 +12,148 @@
     "sections": {
       "14a811a46507f020dd43": {
         "visualContainers": {
+          "1f04b652d417b478943f": {
+            "filters": {
+              "byExpr": [
+                {
+                  "name": "a77f6947d928d0ac8077",
+                  "type": "Advanced",
+                  "expression": {
+                    "Aggregation": {
+                      "Expression": {
+                        "Column": {
+                          "Expression": {
+                            "SourceRef": {
+                              "Entity": "Data Refresh"
+                            }
+                          },
+                          "Property": "CurrentDateTime"
+                        }
+                      },
+                      "Function": 3
+                    }
+                  },
+                  "howCreated": 0
+                }
+              ]
+            },
+            "singleVisual": {
+              "visualType": "card",
+              "objects": {}
+            }
+          },
+          "2130b5fff2dda6b24456": {
+            "singleVisual": {
+              "visualType": "shape",
+              "objects": {}
+            }
+          },
+          "328f1e7845b0cd82bde5": {
+            "filters": {
+              "byExpr": [
+                {
+                  "name": "e7b0062e6f5f6153e3b3",
+                  "type": "Advanced",
+                  "expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "Details - Header"
+                    }
+                  },
+                  "howCreated": 0
+                }
+              ]
+            },
+            "singleVisual": {
+              "visualType": "htmlContent443BE3AD55E043BF878BED274D3A6855",
+              "objects": {}
+            }
+          },
+          "619474972d1f0de79491": {
+            "singleVisual": {
+              "visualType": "image",
+              "objects": {}
+            }
+          },
+          "722c1f793321847b8ff2": {
+            "filters": {
+              "byExpr": [
+                {
+                  "name": "a5702c2b4ff7a2f47e33",
+                  "type": "Categorical",
+                  "expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "dim_PAType"
+                        }
+                      },
+                      "Property": "PAType"
+                    }
+                  },
+                  "howCreated": 0
+                }
+              ]
+            },
+            "singleVisual": {
+              "visualType": "advancedSlicerVisual",
+              "objects": {
+                "merge": {
+                  "general": [
+                    {
+                      "properties": {
+                        "filter": {
+                          "filter": {
+                            "Version": 2,
+                            "From": [
+                              {
+                                "Name": "d",
+                                "Entity": "dim_PAType",
+                                "Type": 0
+                              }
+                            ],
+                            "Where": [
+                              {
+                                "Condition": {
+                                  "In": {
+                                    "Expressions": [
+                                      {
+                                        "Column": {
+                                          "Expression": {
+                                            "SourceRef": {
+                                              "Source": "d"
+                                            }
+                                          },
+                                          "Property": "PAType"
+                                        }
+                                      }
+                                    ],
+                                    "Values": [
+                                      [
+                                        {
+                                          "Literal": {
+                                            "Value": "'Stock Check'"
+                                          }
+                                        }
+                                      ]
+                                    ]
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
           "80ffd79138002c7b6a2c": {
             "singleVisual": {
               "visualType": "textbox",
@@ -67,36 +209,6 @@
                   "howCreated": 0
                 },
                 {
-                  "name": "9a1a77c31c5ff0355bf0",
-                  "type": "Advanced",
-                  "expression": {
-                    "Column": {
-                      "Expression": {
-                        "SourceRef": {
-                          "Entity": "Fact_PartsAdjustments"
-                        }
-                      },
-                      "Property": "Qty"
-                    }
-                  },
-                  "howCreated": 0
-                },
-                {
-                  "name": "7eb4a80efb3200d1e1df",
-                  "type": "Advanced",
-                  "expression": {
-                    "Column": {
-                      "Expression": {
-                        "SourceRef": {
-                          "Entity": "Fact_PartsAdjustments"
-                        }
-                      },
-                      "Property": "CostValue"
-                    }
-                  },
-                  "howCreated": 0
-                },
-                {
                   "name": "be11abda83fec2bf419d",
                   "type": "Categorical",
                   "expression": {
@@ -140,6 +252,61 @@
                     }
                   },
                   "howCreated": 0
+                },
+                {
+                  "name": "dbfad6c80f392d73fd44",
+                  "type": "Categorical",
+                  "expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "dim_Parts"
+                        }
+                      },
+                      "Property": "Description"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "12d1375fe4abfe1453ef",
+                  "type": "Advanced",
+                  "expression": {
+                    "Aggregation": {
+                      "Expression": {
+                        "Column": {
+                          "Expression": {
+                            "SourceRef": {
+                              "Entity": "Fact_PartsAdjustments"
+                            }
+                          },
+                          "Property": "Qty"
+                        }
+                      },
+                      "Function": 0
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "b73c650e89c0963f36c7",
+                  "type": "Advanced",
+                  "expression": {
+                    "Aggregation": {
+                      "Expression": {
+                        "Column": {
+                          "Expression": {
+                            "SourceRef": {
+                              "Entity": "Fact_PartsAdjustments"
+                            }
+                          },
+                          "Property": "CostValue"
+                        }
+                      },
+                      "Function": 0
+                    }
+                  },
+                  "howCreated": 0
                 }
               ]
             },
@@ -163,111 +330,74 @@
               ]
             }
           },
-          "7c3d8b016f4515ee0be4": {
+          "9cee869202ff6fe33797": {
+            "singleVisual": {
+              "visualType": "image",
+              "objects": {}
+            }
+          },
+          "333343561697de5d412b": {
+            "singleVisual": {
+              "visualType": "image",
+              "objects": {}
+            }
+          },
+          "a9afbc55add48b2bcda4": {
+            "singleVisual": {
+              "visualType": "image",
+              "objects": {}
+            }
+          },
+          "c0607754137a2fdd9946": {
+            "singleVisual": {
+              "visualType": "image",
+              "objects": {}
+            }
+          },
+          "019ca51f636d6c407ac6": {
+            "singleVisual": {
+              "visualType": "image",
+              "objects": {}
+            }
+          },
+          "e99f56b528e5f2cd1cca": {
             "singleVisual": {
               "visualType": "shape",
               "objects": {}
             }
           },
-          "1f04b652d417b478943f": {
-            "filters": {
-              "byExpr": [
-                {
-                  "name": "a77f6947d928d0ac8077",
-                  "type": "Advanced",
-                  "expression": {
-                    "Aggregation": {
-                      "Expression": {
-                        "Column": {
-                          "Expression": {
-                            "SourceRef": {
-                              "Entity": "Data Refresh"
-                            }
-                          },
-                          "Property": "CurrentDateTime"
-                        }
-                      },
-                      "Function": 3
-                    }
-                  },
-                  "howCreated": 0
-                }
-              ]
-            },
-            "singleVisual": {
-              "visualType": "card",
-              "objects": {}
-            }
-          },
-          "7ece9834ec9117acc945": {
+          "bcd58b943dac9a5c95ce": {
             "singleVisual": {
               "visualType": "image",
               "objects": {}
             }
           },
-          "2130b5fff2dda6b24456": {
+          "16aa03634e45ba77eae7": {
+            "singleVisual": {
+              "visualType": "image",
+              "objects": {}
+            }
+          },
+          "85a42fa6354d7a43226e": {
             "singleVisual": {
               "visualType": "shape",
               "objects": {}
             }
           },
-          "075abaca48cb3d4dfe22": {
-            "singleVisual": {
-              "visualType": "image",
-              "objects": {}
-            }
-          },
-          "23b5d0748caedec6e18c": {
-            "singleVisual": {
-              "visualType": "image",
-              "objects": {}
-            }
-          },
-          "619474972d1f0de79491": {
-            "singleVisual": {
-              "visualType": "image",
-              "objects": {}
-            }
-          },
-          "328f1e7845b0cd82bde5": {
+          "86acfb69626449a43fc2": {
             "filters": {
               "byExpr": [
                 {
-                  "name": "e7b0062e6f5f6153e3b3",
-                  "type": "Advanced",
-                  "expression": {
-                    "Measure": {
-                      "Expression": {
-                        "SourceRef": {
-                          "Entity": "_Measures"
-                        }
-                      },
-                      "Property": "Details - Header"
-                    }
-                  },
-                  "howCreated": 0
-                }
-              ]
-            },
-            "singleVisual": {
-              "visualType": "htmlContent443BE3AD55E043BF878BED274D3A6855",
-              "objects": {}
-            }
-          },
-          "722c1f793321847b8ff2": {
-            "filters": {
-              "byExpr": [
-                {
-                  "name": "27f9df965c424a0ac964",
+                  "name": "23635cfe51d4da17f749",
                   "type": "Categorical",
                   "expression": {
                     "Column": {
                       "Expression": {
                         "SourceRef": {
-                          "Entity": "Fact_PartsAdjustments"
+                          "Entity": "dim_DateTable"
                         }
                       },
-                      "Property": "PAType"
+                      "Property": "Date"
                     }
                   },
                   "howCreated": 0
@@ -275,51 +405,173 @@
               ]
             },
             "singleVisual": {
-              "visualType": "advancedSlicerVisual",
+              "visualType": "InforiverFilterF39DAE8D57A743EF89F5C3809DEE2B69",
               "objects": {
                 "merge": {
-                  "general": [
+                  "migration": [
                     {
                       "properties": {
-                        "filter": {
-                          "filter": {
-                            "Version": 2,
-                            "From": [
-                              {
-                                "Name": "f",
-                                "Entity": "Fact_PartsAdjustments",
-                                "Type": 0
-                              }
-                            ],
-                            "Where": [
-                              {
-                                "Condition": {
-                                  "In": {
-                                    "Expressions": [
-                                      {
-                                        "Column": {
-                                          "Expression": {
-                                            "SourceRef": {
-                                              "Source": "f"
-                                            }
-                                          },
-                                          "Property": "PAType"
-                                        }
-                                      }
-                                    ],
-                                    "Values": [
-                                      [
-                                        {
-                                          "Literal": {
-                                            "Value": "'Stock Check'"
-                                          }
-                                        }
-                                      ]
-                                    ]
-                                  }
-                                }
-                              }
-                            ]
+                        "migrationSettings": {
+                          "expr": {
+                            "Literal": {
+                              "Value": "'{\"v1_0_0_0\":{\"hierarchyStyle\":{\"isResolved\":true}},\"v2_0_0_0\":{\"appearance\":{\"isResolved\":true}},\"v5_7_0_0\":{\"appearance\":{\"isResolved\":true}}}'"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ],
+                  "columnHeaders": [
+                    {
+                      "properties": {
+                        "enableToolbar": {
+                          "expr": {
+                            "Literal": {
+                              "Value": "false"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ],
+                  "presets": [
+                    {
+                      "properties": {
+                        "enablePreset": {
+                          "expr": {
+                            "Literal": {
+                              "Value": "true"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ],
+                  "dateCard": [
+                    {
+                      "properties": {
+                        "defaultDateRangeSelection": {
+                          "expr": {
+                            "Literal": {
+                              "Value": "'user_defined'"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ],
+                  "appearance": [
+                    {
+                      "properties": {
+                        "clearSearchAfterSelect": {
+                          "expr": {
+                            "Literal": {
+                              "Value": "false"
+                            }
+                          }
+                        },
+                        "filterNoData": {
+                          "expr": {
+                            "Literal": {
+                              "Value": "false"
+                            }
+                          }
+                        },
+                        "measureTooltip": {
+                          "expr": {
+                            "Literal": {
+                              "Value": "true"
+                            }
+                          }
+                        },
+                        "varianceTooltip": {
+                          "expr": {
+                            "Literal": {
+                              "Value": "true"
+                            }
+                          }
+                        },
+                        "dateTooltip": {
+                          "expr": {
+                            "Literal": {
+                              "Value": "true"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ],
+                  "filter": [
+                    {
+                      "properties": {
+                        "panelTagsFilter": {
+                          "expr": {
+                            "Literal": {
+                              "Value": "'{}'"
+                            }
+                          }
+                        },
+                        "selectedDatePreset": {
+                          "expr": {
+                            "Literal": {
+                              "Value": "'[]'"
+                            }
+                          }
+                        },
+                        "selectedPreset": {
+                          "expr": {
+                            "Literal": {
+                              "Value": "'[]'"
+                            }
+                          }
+                        },
+                        "customPresets": {
+                          "expr": {
+                            "Literal": {
+                              "Value": "'[{\"type\":\"date\",\"key\":\"date-this-1-month\",\"label\":\"This Month\",\"layout\":\"square.labelOnly\",\"icon\":\"presetCalendar\",\"iconColor\":\"#444444\"},{\"type\":\"date\",\"key\":\"date-last-1-month\",\"label\":\"Last Month\",\"layout\":\"square.labelOnly\",\"icon\":\"presetCalendar\",\"iconColor\":\"#444444\"},{\"type\":\"date\",\"key\":\"date-this-1-year\",\"label\":\"This Year\",\"layout\":\"square.labelOnly\",\"icon\":\"presetCalendar\",\"iconColor\":\"#444444\"},{\"type\":\"date\",\"key\":\"date-last-1-year\",\"label\":\"Last Year\",\"layout\":\"square.labelOnly\",\"icon\":\"presetCalendar\",\"iconColor\":\"#444444\"}]'"
+                            }
+                          }
+                        },
+                        "periodFilter": {
+                          "expr": {
+                            "Literal": {
+                              "Value": "'[]'"
+                            }
+                          }
+                        },
+                        "multiDateRangeFilterData": {
+                          "expr": {
+                            "Literal": {
+                              "Value": "'[{\"id\":\"1\",\"startDate\":null,\"endDate\":null,\"color\":\"#ec4899\"}]'"
+                            }
+                          }
+                        },
+                        "measureFilterValues": {
+                          "expr": {
+                            "Literal": {
+                              "Value": "'{\"minValue\":null,\"maxValue\":null}'"
+                            }
+                          }
+                        },
+                        "alphaNumericFilterValues": {
+                          "expr": {
+                            "Literal": {
+                              "Value": "'{\"minValue\":null,\"maxValue\":null}'"
+                            }
+                          }
+                        },
+                        "customCategoryLabels": {
+                          "expr": {
+                            "Literal": {
+                              "Value": "'{}'"
+                            }
+                          }
+                        },
+                        "customImages": {
+                          "expr": {
+                            "Literal": {
+                              "Value": "'[]'"
+                            }
                           }
                         }
                       }
@@ -329,7 +581,7 @@
               }
             }
           },
-          "1176c35705fda2e14a3a": {
+          "b2b42beb88306184a4eb": {
             "filters": {
               "byExpr": [
                 {
@@ -384,33 +636,15 @@
               }
             }
           },
-          "6666d27f6a85fdba176b": {
-            "singleVisual": {
-              "visualType": "shape",
-              "objects": {}
-            }
-          },
-          "77f2033b994c685f3076": {
+          "c0007085cd070def4f56": {
             "singleVisual": {
               "visualType": "pageNavigator",
-              "objects": {}
-            }
-          },
-          "2ee2bbf1aaf20ef76302": {
-            "singleVisual": {
-              "visualType": "image",
-              "objects": {}
-            }
-          },
-          "b21e37391aa828f8bb26": {
-            "singleVisual": {
-              "visualType": "image",
               "objects": {}
             }
           }
         },
         "visualContainerGroups": {
-          "1e7c1a9a5da628b30275": {
+          "c419901a9f5d668df98b": {
             "isHidden": true
           }
         }
