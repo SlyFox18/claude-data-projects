@@ -82,7 +82,7 @@ table _Measures
 			
 			CALCULATE (
 			    SUM ( 'armaster'[Aging60] ),
-			    FILTER ( 'armaster', 'armaster'[Aging60] > 0 )
+			    FILTER ( 'armaster', 'armaster'[Aging60] <> 0 )
 			)
 		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
 		lineageTag: 3f9f6bd6-ad7f-4abb-aa8a-3b5653be2d26
@@ -93,7 +93,7 @@ table _Measures
 			
 			CALCULATE (
 			    SUM ( 'armaster'[Aging90] ),
-			    FILTER ( 'armaster', 'armaster'[Aging90] > 0 )
+			    FILTER ( 'armaster', 'armaster'[Aging90] <> 0 )
 			)
 		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
 		lineageTag: ca2e75c1-925d-4aef-9e48-6928b663c660
@@ -104,7 +104,7 @@ table _Measures
 			
 			CALCULATE (
 			    SUM ( 'armaster'[Aging120] ),
-			    FILTER ( 'armaster', 'armaster'[Aging120] > 0 )
+			    FILTER ( 'armaster', 'armaster'[Aging120] <> 0 )
 			)
 		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
 		lineageTag: 4ee91d9b-cb97-4e92-ae98-d8191f1108a5
@@ -136,7 +136,7 @@ table _Measures
 			
 			CALCULATE (
 			    SUM ( 'armaster'[Aging30] ),
-			    FILTER ( 'armaster', 'armaster'[Aging30] > 0 )
+			    FILTER ( 'armaster', 'armaster'[Aging30] <> 0 )
 			)
 		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
 		lineageTag: ef8a846f-5dc0-4b31-8329-447ae73f8e20
