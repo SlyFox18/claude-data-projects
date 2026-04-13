@@ -8,10 +8,12 @@
 
 | File | Purpose | Status |
 |------|---------|--------|
-| CEO-Presentation.pptx | Guiding slide deck | ⬜ Not started |
-| data-flow-diagram.pptx | Section 3 data flow visual | ⬜ Not started |
-| DEMO-SCRIPT.md | Full demo script with talking points | ⬜ Not started |
-| PRESENTER-CARD.md | One-page quick reference | ⬜ Not started |
+| CEO-Presentation.pptx | Guiding slide deck | ⬜ Build from SLIDE-DECK-CONTENT.md |
+| SLIDE-DECK-CONTENT.md | Slide-by-slide build guide | ✅ Complete |
+| data-flow-diagram.pptx | Section 3 data flow visual | ⬜ Build from DATA-FLOW-DIAGRAM-GUIDE.md |
+| DATA-FLOW-DIAGRAM-GUIDE.md | Diagram build guide | ✅ Complete |
+| DEMO-SCRIPT.md | Full demo script with talking points | ✅ Complete (Section 2 reports TBD) |
+| PRESENTER-CARD.md | One-page quick reference | ✅ Complete |
 
 ## Open Items
 
