@@ -25,7 +25,8 @@
 - [ ] **HTML design callout** ← don't skip this
 - [ ] **Service Agent** → *"Which branch has the most open work orders right now?"*
 - [ ] **Service Agent** → *"Show me inspections open more than 30 days"*
-- [ ] **Service Agent** → *"Average turnaround time this month vs last month?"*
+- [ ] **Service Agent** → *"How many CS770 inspections are currently open across all branches?"*
+- [ ] **Service Agent** → *"Which branch has the most open CS690 inspections?"*
 - [ ] **Parts Agent** → *"Top 10 parts by invoice volume this quarter"*
 - [ ] **Parts Agent** → *"Invoices over $5,000 last 30 days"*
 - [ ] Close agents: *"This one took less than a day to set up."*

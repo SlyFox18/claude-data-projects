@@ -41,13 +41,14 @@
 **Questions to ask live:**
 1. *"Which branch has the most open work orders right now?"*
 2. *"Show me inspections that have been open more than 30 days"*
-3. *"What's the average turnaround time on work orders this month vs last month?"*
+3. *"How many CS770 inspections are currently open across all branches?"*
+4. *"Which branch has the most open CS690 inspections?"*
 
 **If time allows:**
-4. *"Which technician has the most open tickets?"*
+5. *"Break down open inspections by type across all branches"*
 
 **Talking point between questions:**
-> "Notice it's not just returning a number — it understands the context of the data. It knows what a work order is, what a branch is, how dates work in our system."
+> "Notice it's not just returning a number — it understands the context of the data. It knows what a work order is, what an inspection type is, how to compare across branches."
 
 ---
 
