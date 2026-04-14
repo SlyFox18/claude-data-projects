@@ -284,8 +284,32 @@ table Fact_LaborJobSummary
 
 		annotation SummarizationSetBy = Automatic
 
+	column InspectionCategory =
+			SWITCH(
+			    TRUE(),
+			    Fact_LaborJobSummary[JobCode] IN {
+			        "IS-LA115", "IS-LT180", "IS-D110(-500000)", "IS-D125",
+			        "IS-D130(-400000)", "IS-D130(400001-)", "IS-D140(-400000)",
+			        "IS-D140(400001-)", "IS-D160", "IS-D170", "IS-E120", "IS-E130-QCD",
+			        "IS-S240", "IS-X300(-180000)", "IS-X300(180001-)", "IS-X300R(120001-)",
+			        "IS-X310", "IS-X350", "IS-Z225(-060000)", "IS-Z335E", "IS-Z345R",
+			        "IS-Z355E", "IS-Z355R", "IS-Z425(-040000)", "IS-Z435",
+			        "IS-Z445(-100000)", "IS-Z515E", "IS-Z540M", "IS-Z540R",
+			        "IS-MOWER INSPECTION"
+			    }, "IS-MOWER INSPECTION",
+			    Fact_LaborJobSummary[JobCode] IN {
+			        "IS-TS4X2", "IS-XUV550", "IS-XUV560", "IS-XUV590M",
+			        "IS-XUV835R", "IS-XUV855D", "IS-GATOR INSPECTION"
+			    }, "IS-GATOR INSPECTION",
+			    Fact_LaborJobSummary[JobCode]
+			)
+		lineageTag: 7a3f2b1c-9d4e-4a8f-b5c6-e2d1f0a3b4c5
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
 	column BranchName =
-			
+
 			RELATED(dim_BranchLocation[Branch])
 		lineageTag: 30501713-2db1-4dd8-bb5d-06aa9e9be882
 		summarizeBy: none
