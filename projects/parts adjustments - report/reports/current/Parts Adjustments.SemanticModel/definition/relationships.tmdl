@@ -22,3 +22,27 @@ relationship ebcb71aa-100a-0a58-c6a5-feebeacc1bf2
 	fromColumn: Fact_PartsAdjustments.PAType
 	toColumn: dim_PAType.PAType
 
+relationship AutoDetected_648d7563-f038-4b44-94f8-82028c47d9d5
+	fromColumn: Fact_AdjustmentPairs.PartNumber
+	toColumn: dim_Parts.PartNumber
+
+relationship AutoDetected_cea0ff58-249d-4576-b1d1-2a01ed4cf18c
+	fromColumn: Fact_AdjustmentPairs.Branch
+	toColumn: dim_BranchLocation.BranchID
+
+relationship AutoDetected_0a1ea272-ca64-4f8c-b683-ef4f43123f22
+	fromColumn: Fact_AdjPairs_Summary.PartNumber
+	toColumn: dim_Parts.PartNumber
+
+relationship AutoDetected_342ea33a-c2da-4e23-98b7-552c9ffe6487
+	fromColumn: Fact_AdjPairs_Summary.Branch
+	toColumn: dim_BranchLocation.BranchID
+
+relationship b3a0b75e-5757-7d1a-9569-efc21ef1e97b
+	fromColumn: Fact_AdjustmentPairs.NegDate
+	toColumn: dim_DateTable.Date
+
+relationship 6c7bf7e4-7f81-74f5-5ccb-eaab6839716a
+	fromColumn: Fact_AdjPairs_Summary.NegDate
+	toColumn: dim_DateTable.Date
+

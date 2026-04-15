@@ -8,7 +8,7 @@ model Model
 
 annotation __PBI_TimeIntelligenceEnabled = 0
 
-annotation PBI_QueryOrder = ["Data Refresh","dim_BranchLocation","dim_DateTable","dim_AdjustmentType","dim_Parts","Fact_PartsAdjustments","jdis_Part_Information"]
+annotation PBI_QueryOrder = ["Data Refresh","dim_BranchLocation","dim_DateTable","dim_AdjustmentType","dim_Parts","Fact_PartsAdjustments","jdis_Part_Information","Fact_AdjustmentPairs","Fact_AdjPairs_Summary"]
 
 annotation PBI_ProTooling = ["DevMode"]
 
@@ -27,6 +27,9 @@ ref table _Test-Measures
 ref table MetricSelector
 ref table MeasureSelector
 ref table dim_PAType
+ref table Fact_AdjustmentPairs
+ref table Fact_AdjPairs_Summary
+ref table MatchViewSelector
 
 ref cultureInfo en-US
 

@@ -214,11 +214,22 @@ let
     // ========================================================================
     // STEP 2: IDENTIFY INVOICE NUMBERS FROM INSPECTION WORK ORDERS
     // ========================================================================
-    
-    InspectionInvoices = 
+    /*
+    BRANCH NORMALIZATION (applied in Steps 2 and 3):
+    wkothsub records work orders on sub-branch codes (e.g. "11S" for the Set-Up
+    Shop at Branch 11), while InTrans_Incremental records the parts transaction on
+    the main branch code ("11"). The inner join on Branch + InvoiceNumber silently
+    dropped these rows — causing $29K+ of real parts to show as $0.
+
+    FIX: Strip trailing sub-branch suffix from Branch on both sides before joining.
+    Known suffixes: S = Set-Up Shop, I = IS Shop, C = CP Shop, B = other sub-branch.
+    Simple text operation — no Lakehouse join needed, query folding preserved.
+    */
+
+    InspectionInvoices =
         let
             Source = Raw_wkothsub,
-            
+
             // JOIN TO INSPECTION CODES TABLE
             JoinInspectionCodes = Table.NestedJoin(
                 Source,
@@ -228,20 +239,20 @@ let
                 "InspectionMatch",
                 JoinKind.Inner
             ),
-            
+
             RemoveMatchColumn = Table.RemoveColumns(JoinInspectionCodes, {"InspectionMatch"}),
-            
+
             // Get distinct Branch + InvoiceNumber combinations
             DistinctInvoices = Table.Distinct(
                 Table.SelectColumns(RemoveMatchColumn, {"Branch", "InvoiceNumber"})
             ),
-            
+
             // Filter out nulls (jobs not yet invoiced)
             RemoveNulls = Table.SelectRows(
                 DistinctInvoices,
                 each [InvoiceNumber] <> null and [InvoiceNumber] <> ""
             ),
-            
+
             // Convert to TEXT type to prevent join issues
             ConvertToText = Table.TransformColumnTypes(
                 RemoveNulls,
@@ -249,29 +260,65 @@ let
                     {"Branch", type text},
                     {"InvoiceNumber", type text}
                 }
-            )
+            ),
+
+            // wkothsub uses sub-branch codes (e.g. "11S") but InTrans may record the same
+            // invoice under the main branch code ("11") OR the sub-branch code ("11S").
+            // FIX: Build a lookup that covers BOTH variants for each invoice so InTrans rows
+            // match regardless of which branch code they carry. No change to InTrans needed.
+
+            // Normalized version: strip trailing sub-branch suffix → main branch code
+            NormBranch = Table.AddColumn(
+                ConvertToText, "_BranchNorm",
+                each if List.Contains({"S","I","C","B"}, Text.End([Branch], 1))
+                     then Text.Start([Branch], Text.Length([Branch]) - 1)
+                     else [Branch],
+                type text
+            ),
+            NormalizedRows = Table.RenameColumns(
+                Table.RemoveColumns(NormBranch, {"Branch"}),
+                {{"_BranchNorm", "Branch"}}
+            ),
+
+            // Union original + normalized rows, then deduplicate.
+            // Invoice at Branch "11S" now has entries for both "11S" and "11":
+            //   InTrans Branch "11"  → matches "11"  ✓ (the original bug case)
+            //   InTrans Branch "11S" → matches "11S" ✓ (sub-branch on both sides)
+            //   InTrans Branch "11"  + wkothsub "11" → matches "11" ✓ (normal case)
+            Combined = Table.Combine({ConvertToText, NormalizedRows}),
+            NormalizedInvoices = Table.Distinct(Combined)
         in
-            ConvertToText,
-    
+            NormalizedInvoices,
+
     // ========================================================================
-    // STEP 3: LOAD PARTS TRANSACTIONS FROM INTRANS_INCREMENTAL
+    // STEP 4: LOAD PARTS TRANSACTIONS FROM INTRANS_INCREMENTAL
     // ========================================================================
     /*
     SOURCE: InTrans_Incremental (Lakehouse)
-    COLUMNS: Branch, RONumber, TransDatetime, PartNumber, Description, 
+    COLUMNS: Branch, RONumber, TransDatetime, PartNumber, Description,
              Franchise, Qty, SaleValue, CostValue, SellPrice1, ListPrice,
              CustomerNo, TradeType, ModifiedDate
     */
-    
+
     PartsSource = InTrans_Incremental,
 
-    // Rolling 3-year cutoff — Inspections report needs ~3 years max for YoY comparisons.
-    // Filters InTrans_Incremental before the inspection invoice join, reducing data volume
-    // from 10M+ rows to ~3M rows. Folds to SQL on the Lakehouse endpoint.
-    CutoffDate = Date.AddYears(Date.From(DateTime.LocalNow()), -3),
-    PartsFiltered = Table.SelectRows(PartsSource, each Date.From([TransDatetime]) >= CutoffDate),
+    // Select only the 14 columns we need — InTrans has 60+ columns but we use 14.
+    // Folds to SQL on the Lakehouse endpoint, cutting data transferred by ~75%.
+    SelectNeededColumns = Table.SelectColumns(
+        PartsSource,
+        {"Branch", "RONumber", "TransDatetime", "PartNumber", "Description",
+         "Franchise", "Qty", "SaleValue", "CostValue", "SellPrice1",
+         "ListPrice", "CustomerNo", "TradeType", "ModifiedDate"}
+    ),
 
-    // Ensure join columns are TEXT type
+    // Rolling 3-year cutoff — folds to SQL on the Lakehouse endpoint.
+    // Reduces data from 10M+ rows to ~3M rows before the in-memory join.
+    CutoffDate = Date.AddYears(Date.From(DateTime.LocalNow()), -3),
+    PartsFiltered = Table.SelectRows(SelectNeededColumns, each Date.From([TransDatetime]) >= CutoffDate),
+
+    // Ensure join keys are TEXT type.
+    // No branch normalization here — InspectionInvoices already covers both
+    // main branch and sub-branch code variants for each invoice.
     PartsWithTextTypes = Table.TransformColumnTypes(
         PartsFiltered,
         {
@@ -279,19 +326,21 @@ let
             {"RONumber", type text}  // RONumber in InTrans = Invoice Number
         }
     ),
-    
+
     // ========================================================================
-    // STEP 4: FILTER TO INSPECTION INVOICES
+    // STEP 5: FILTER TO INSPECTION INVOICES
     // ========================================================================
     /*
-    JOIN: InTrans_Incremental.Branch + RONumber = wkothsub.Branch + InvoiceNumber
+    JOIN: InTrans.Branch + RONumber = InspectionInvoices.Branch + InvoiceNumber
+    InspectionInvoices contains both original and normalized branch codes, so
+    InTrans rows match whether they carry the main or sub-branch code.
     */
-    
+
     FilterToInspectionInvoices = Table.NestedJoin(
         PartsWithTextTypes,
-        {"Branch", "RONumber"},           // InTrans_Incremental columns
+        {"Branch", "RONumber"},           // InTrans original branch codes (unmodified)
         InspectionInvoices,
-        {"Branch", "InvoiceNumber"},      // wkothsub columns
+        {"Branch", "InvoiceNumber"},      // covers both "11S" and "11" for same invoice
         "InspectionMatch",
         JoinKind.Inner
     ),
@@ -299,13 +348,13 @@ let
     RemoveMatchTable = Table.RemoveColumns(FilterToInspectionInvoices, {"InspectionMatch"}),
     
     // ========================================================================
-    // STEP 5: KEEP ALL FRANCHISE CODES (INCLUDING ZP FOR DISCOUNTS)
+    // STEP 6: KEEP ALL FRANCHISE CODES (INCLUDING ZP FOR DISCOUNTS)
     // ========================================================================
-    
+
     KeepAllFranchises = RemoveMatchTable,
-    
+
     // ========================================================================
-    // STEP 6: RENAME COLUMNS FOR CONSISTENCY WITH SEMANTIC MODEL
+    // STEP 7: RENAME COLUMNS FOR CONSISTENCY WITH SEMANTIC MODEL
     // ========================================================================
     
     RenameColumns = Table.RenameColumns(
@@ -321,7 +370,7 @@ let
     ),
     
     // ========================================================================
-    // STEP 7: SET PROPER DATA TYPES
+    // STEP 8: SET PROPER DATA TYPES
     // ========================================================================
     
     SetDataTypes = Table.TransformColumnTypes(
@@ -346,7 +395,7 @@ let
 
 
 // ========================================================================
-// STEP 8: REMOVE DUPLICATES FROM SOURCE DATA
+// STEP 9: REMOVE DUPLICATES FROM SOURCE DATA
 // ========================================================================
 /*
 ISSUE: InTrans_Incremental contains historical duplicates from Dec 31-Jan 1 

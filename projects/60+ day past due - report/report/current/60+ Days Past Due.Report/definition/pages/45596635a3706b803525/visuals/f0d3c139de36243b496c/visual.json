@@ -1,11 +1,11 @@
 {
-  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.4.0/schema.json",
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.7.0/schema.json",
   "name": "f0d3c139de36243b496c",
   "position": {
     "x": 0,
     "y": 0,
     "z": 0,
-    "height": 152,
+    "height": 200,
     "width": 250,
     "tabOrder": 0
   },
@@ -205,6 +205,39 @@
             "id": "field-bd18b35d-2f97-057c-dcee-1ecd9f8d9cb0",
             "order": 1
           }
+        },
+        {
+          "properties": {
+            "value": {
+              "expr": {
+                "Aggregation": {
+                  "Expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "armaster"
+                        }
+                      },
+                      "Property": "LastPaymentDate"
+                    }
+                  },
+                  "Function": 3
+                }
+              }
+            }
+          },
+          "selector": {
+            "data": [
+              {
+                "dataViewWildcard": {
+                  "matchingOption": 0
+                }
+              }
+            ],
+            "metadata": "Sum(Fact_InSalOrd_InSalPar.Order_Total_$$)",
+            "id": "field-4d1084ec-a23d-f46b-79ce-bc10037801d0",
+            "order": 2
+          }
         }
       ],
       "referenceLabelTitle": [
@@ -249,6 +282,35 @@
           "selector": {
             "metadata": "Sum(Fact_InSalOrd_InSalPar.Order_Total_$$)",
             "id": "field-bd18b35d-2f97-057c-dcee-1ecd9f8d9cb0"
+          }
+        },
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "titleContentType": {
+              "expr": {
+                "Literal": {
+                  "Value": "'custom'"
+                }
+              }
+            },
+            "titleText": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Last Payment Date:'"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "Sum(Fact_InSalOrd_InSalPar.Order_Total_$$)",
+            "id": "field-4d1084ec-a23d-f46b-79ce-bc10037801d0"
           }
         }
       ],

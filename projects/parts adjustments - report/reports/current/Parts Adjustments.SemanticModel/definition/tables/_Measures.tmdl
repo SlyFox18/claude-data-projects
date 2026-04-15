@@ -82,12 +82,12 @@ table _Measures
 			
 			CALCULATE(
 			    SUM(Fact_PartsAdjustments[PositiveCost]),
-			    DATESINPERIOD(
+			    KEEPFILTERS(DATESINPERIOD(
 			        dim_DateTable[Date],
-			        MAX(Fact_PartsAdjustments[TransDatetime]),  // ← Changed from MAX(dim_DateTable[Date])
+			        MAX(Fact_PartsAdjustments[TransDatetime]),
 			        -12,
 			        MONTH
-			    )
+			    ))
 			)
 		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
 		lineageTag: 2fe5d524-d11f-42f9-99ac-70437a6deabf
@@ -98,12 +98,12 @@ table _Measures
 			
 			CALCULATE(
 			    SUM(Fact_PartsAdjustments[NegativeCost]),
-			    DATESINPERIOD(
+			    KEEPFILTERS(DATESINPERIOD(
 			        dim_DateTable[Date],
-			        MAX(Fact_PartsAdjustments[TransDatetime]),  // ← Changed
+			        MAX(Fact_PartsAdjustments[TransDatetime]),
 			        -12,
 			        MONTH
-			    )
+			    ))
 			)
 		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
 		lineageTag: eea021c7-e785-49c7-91d5-8197c246e5d7
@@ -122,12 +122,12 @@ table _Measures
 			
 			CALCULATE(
 			    SUM(Fact_PartsAdjustments[PositiveQty]),
-			    DATESINPERIOD(
+			    KEEPFILTERS(DATESINPERIOD(
 			        dim_DateTable[Date],
-			        MAX(Fact_PartsAdjustments[TransDatetime]),  // ← Changed
+			        MAX(Fact_PartsAdjustments[TransDatetime]),
 			        -12,
 			        MONTH
-			    )
+			    ))
 			)
 		lineageTag: 7e852c55-4290-40c5-9aa5-ec6a4434dd5b
 
@@ -137,12 +137,12 @@ table _Measures
 			
 			CALCULATE(
 			    SUM(Fact_PartsAdjustments[NegativeQty]),
-			    DATESINPERIOD(
+			    KEEPFILTERS(DATESINPERIOD(
 			        dim_DateTable[Date],
-			        MAX(Fact_PartsAdjustments[TransDatetime]),  // ← Changed
+			        MAX(Fact_PartsAdjustments[TransDatetime]),
 			        -12,
 			        MONTH
-			    )
+			    ))
 			)
 		lineageTag: b7fc19c5-3635-46a2-8ece-ed36a526aef2
 
@@ -159,13 +159,13 @@ table _Measures
 			
 			CALCULATE(
 			    COUNTROWS(Fact_PartsAdjustments),
-			    DATESINPERIOD(
+			    KEEPFILTERS(DATESINPERIOD(
 			        dim_DateTable[Date],
 			        MAX(Fact_PartsAdjustments[TransDatetime]),
 			        -12,
 			        MONTH
-			    ),
-			    Fact_PartsAdjustments[Qty] <> 0  // ← Added the missing filter
+			    )),
+			    Fact_PartsAdjustments[Qty] <> 0
 			)
 		formatString: 0
 		lineageTag: b14f1446-d52e-44b0-8b51-7575b9f71218
@@ -208,7 +208,7 @@ table _Measures
 		formatString: 0.00%;-0.00%;0.00%
 		lineageTag: bbaacc26-6ea6-48d6-8cbb-1f51f2fd4645
 
-	measure 'Page 1 - Hero Card' = ```
+	measure 'Page 1 - Hero Card' =
 			
 			VAR TotalAdjustments = [Total Adjustments $ (R12)]
 			VAR TotalInventory = [Total Inventory $]
@@ -222,24 +222,29 @@ table _Measures
 			VAR TotalParts = [Total Parts]
 			VAR PctLines = [Adjustment Lines to Inventory Lines]
 			
+			VAR PctExact12 = [% Neg Txns Exact (12Mo)]
+			VAR PctExact24 = [% Neg Txns Exact (24Mo)]
+			VAR PctSimilar12 = [% Neg Txns Similar (12Mo)]
+			VAR PctSimilar24 = [% Neg Txns Similar (24Mo)]
+			
 			// Number formatting for display
 			VAR AdjText = "$" & FORMAT(TotalAdjustments, "#,##0")
 			
-			VAR InvText = 
+			VAR InvText =
 			    IF(TotalInventory >= 1000000,
 			        "$" & FORMAT(TotalInventory/1000000, "#,##0.0") & "M",
 			        "$" & FORMAT(TotalInventory/1000, "#,##0") & "K"
 			    )
 			VAR QtyText = FORMAT(TotalQty, "#,##0")
 			
-			VAR OnHandText = 
+			VAR OnHandText =
 			    IF(OnHandQty >= 1000000,
 			        FORMAT(OnHandQty/1000000, "#,##0.0") & "M",
 			        FORMAT(OnHandQty/1000, "#,##0") & "K"
 			    )
 			VAR LinesText = FORMAT(TotalLines, "#,##0")
 			
-			VAR PartsText = 
+			VAR PartsText =
 			    IF(TotalParts >= 1000000,
 			        FORMAT(TotalParts/1000000, "#,##0.0") & "M",
 			        FORMAT(TotalParts/1000, "#,##0") & "K"
@@ -248,7 +253,7 @@ table _Measures
 			RETURN
 			"<div style='
 			    font-family: Segoe UI, Arial, sans-serif;
-			    padding: 25px 30px 25px 30px;
+			    padding: 25px 30px 20px 30px;
 			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
 			    border-radius: 12px;
 			    box-shadow: 0 8px 24px rgba(0,0,0,0);
@@ -257,7 +262,7 @@ table _Measures
 			'>
 			    <!-- Main Metrics Row -->
 			    <div style='display: flex; justify-content: space-around; align-items: center; gap: 20px;'>
-			        
+			
 			        <!-- Section 1: Total Adjustments $ -->
 			        <div style='flex: 1; text-align: center;'>
 			            <div style='font-size: 18px; text-transform: uppercase; letter-spacing: 1.5px; opacity: 0.8; margin-bottom: 8px;'>
@@ -273,7 +278,7 @@ table _Measures
 			                Adjustment $ to Inventory $: " & FORMAT(PctDollars, "0.0%") & "
 			            </div>
 			        </div>
-			        
+			
 			        <!-- Section 2: Total Qty -->
 			        <div style='flex: 1; text-align: center; border-left: 1px solid rgba(255,255,255,0.2); padding-left: 20px;'>
 			            <div style='font-size: 18px; text-transform: uppercase; letter-spacing: 1.5px; opacity: 0.8; margin-bottom: 8px;'>
@@ -289,7 +294,7 @@ table _Measures
 			                Adjustment Qty to Inventory Qty: " & FORMAT(PctQty, "0.0%") & "
 			            </div>
 			        </div>
-			        
+			
 			        <!-- Section 3: Total Lines -->
 			        <div style='flex: 1; text-align: center; border-left: 1px solid rgba(255,255,255,0.2); padding-left: 20px;'>
 			            <div style='font-size: 18px; text-transform: uppercase; letter-spacing: 1.5px; opacity: 0.8; margin-bottom: 8px;'>
@@ -306,8 +311,12 @@ table _Measures
 			            </div>
 			        </div>
 			    </div>
+			    <!-- Pair Match Footer -->
+			    <div style='margin-top: 16px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.2); display: flex; justify-content: center; gap: 40px; font-size: 15px; opacity: 0.85;'>
+			        <span><strong>Exact QTY Match:</strong> " & FORMAT(PctExact12, "0.0%") & " (12Mo) &nbsp;|&nbsp; " & FORMAT(PctExact24, "0.0%") & " (24Mo)</span>
+			        <span style='border-left: 1px solid rgba(255,255,255,0.3); padding-left: 40px;'><strong>Similar QTY Match:</strong> " & FORMAT(PctSimilar12, "0.0%") & " (12Mo) &nbsp;|&nbsp; " & FORMAT(PctSimilar24, "0.0%") & " (24Mo)</span>
+			    </div>
 			</div>"
-			```
 		lineageTag: eccb5f17-1341-463a-8b29-b038fca98060
 
 	measure 'Adjustment $ (Net) (R12)' =
@@ -1248,6 +1257,545 @@ table _Measures
 			"
 			```
 		lineageTag: ef344d62-fafe-4855-9121-65571aec0aeb
+
+	measure 'Pair Count' = COUNTROWS(Fact_AdjustmentPairs)
+		formatString: #,##0
+		lineageTag: a1b2c3d4-e5f6-7890-abcd-ef1234567801
+
+	measure 'Pair Count (Exact)' = CALCULATE(COUNTROWS(Fact_AdjustmentPairs), Fact_AdjustmentPairs[IsExact] = TRUE)
+		formatString: #,##0
+		lineageTag: a1b2c3d4-e5f6-7890-abcd-ef1234567802
+
+	measure 'Pair Count (Similar)' = CALCULATE(COUNTROWS(Fact_AdjustmentPairs), Fact_AdjustmentPairs[IsExact] = FALSE)
+		formatString: #,##0
+		lineageTag: a1b2c3d4-e5f6-7890-abcd-ef1234567803
+
+	measure 'Pair Count (Exact, 12Mo)' =
+			CALCULATE(
+			    COUNTROWS(Fact_AdjustmentPairs),
+			    Fact_AdjustmentPairs[IsExact] = TRUE,
+			    Fact_AdjustmentPairs[IsWithin12Mo] = TRUE
+			)
+		formatString: #,##0
+		lineageTag: a1b2c3d4-e5f6-7890-abcd-ef1234567804
+
+	measure 'Pair Count (Similar, 12Mo)' =
+			CALCULATE(
+			    COUNTROWS(Fact_AdjustmentPairs),
+			    Fact_AdjustmentPairs[IsExact] = FALSE,
+			    Fact_AdjustmentPairs[IsWithin12Mo] = TRUE
+			)
+		formatString: #,##0
+		lineageTag: a1b2c3d4-e5f6-7890-abcd-ef1234567805
+
+	measure 'Avg Days Between Pairs' = AVERAGE(Fact_AdjustmentPairs[DaysBetween])
+		formatString: #,##0.0
+		lineageTag: a1b2c3d4-e5f6-7890-abcd-ef1234567806
+
+	measure 'Exact Pair Adj $ (12Mo)' =
+			
+			VAR _MaxDate = MAX(Fact_PartsAdjustments[TransDatetime])
+			VAR _Ids =
+			    CALCULATETABLE(
+			        DISTINCT(Fact_AdjustmentPairs[NegTransId]),
+			        Fact_AdjustmentPairs[IsExact] = TRUE,
+			        Fact_AdjustmentPairs[IsWithin12Mo] = TRUE
+			    )
+			RETURN
+			CALCULATE(
+			    SUM(Fact_PartsAdjustments[AbsCost]),
+			    DATESINPERIOD(dim_DateTable[Date], _MaxDate, -12, MONTH),
+			    TREATAS(_Ids, Fact_PartsAdjustments[TransId])
+			)
+		formatString: \$#,0;(\$#,0);\$#,0
+		lineageTag: a1b2c3d4-e5f6-7890-abcd-ef1234567807
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Similar Pair Adj $ (12Mo)' =
+			
+			VAR _MaxDate = MAX(Fact_PartsAdjustments[TransDatetime])
+			VAR _Ids =
+			    CALCULATETABLE(
+			        DISTINCT(Fact_AdjustmentPairs[NegTransId]),
+			        Fact_AdjustmentPairs[IsExact] = FALSE,
+			        Fact_AdjustmentPairs[IsWithin12Mo] = TRUE
+			    )
+			RETURN
+			CALCULATE(
+			    SUM(Fact_PartsAdjustments[AbsCost]),
+			    DATESINPERIOD(dim_DateTable[Date], _MaxDate, -12, MONTH),
+			    TREATAS(_Ids, Fact_PartsAdjustments[TransId])
+			)
+		formatString: \$#,0;(\$#,0);\$#,0
+		lineageTag: a1b2c3d4-e5f6-7890-abcd-ef1234567808
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure '% Adj in Exact Pairs (12Mo)' = DIVIDE([Exact Pair Adj $ (12Mo)], [Total Adjustments $ (R12)], 0)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: a1b2c3d4-e5f6-7890-abcd-ef1234567809
+
+	measure '% Adj in Similar Pairs (12Mo)' = DIVIDE([Similar Pair Adj $ (12Mo)], [Total Adjustments $ (R12)], 0)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: a1b2c3d4-e5f6-7890-abcd-ef1234567810
+
+	measure 'Duplicate Adjustments - Header' = ```
+			
+			// Get user name
+			VAR _User = USERPRINCIPALNAME()
+			VAR _Position = SEARCH("@", _User, 1)
+			VAR _Name = LEFT(_User, _Position - 1)
+			VAR _FirstLetter = UPPER(LEFT(_Name, 1))
+			VAR _LastName = MID(_Name, 2, LEN(_Name) - 1)
+			VAR _FormattedLastName = 
+			    UPPER(LEFT(_LastName, 1)) & LOWER(MID(_LastName, 2, LEN(_LastName)))
+			VAR WelcomeName = _FirstLetter & "." & _FormattedLastName
+			
+			// Get current date/time info
+			VAR CurrentDate = TODAY()
+			VAR DateDisplay = FORMAT(CurrentDate, "MMM D, YYYY")
+			VAR CurrentHour = HOUR(NOW())
+			VAR TimeGreeting = 
+			    IF(CurrentHour < 12, "Good Morning",
+			    IF(CurrentHour < 17, "Good Afternoon",
+			    "Good Evening"))
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    height: 85px;
+			    padding: 15px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 10px;
+			    color: white;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-between;
+			    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    box-sizing: border-box;
+			'>
+			    <!-- Left side: Dashboard Title -->
+			    <div style='display: flex; align-items: center; gap: 15px;'>
+			        <!-- Home icon -->
+			        <div style='
+			            width: 40px;
+			            height: 40px;
+			            background: rgba(255,255,255,0.15);
+			            border-radius: 8px;
+			            display: flex;
+			            align-items: center;
+			            justify-content: center;
+			            font-size: 20px;
+			        '>
+			            🏠
+			        </div>
+			        
+			        <!-- Title -->
+			        <div>
+			            <div style='font-size: 12px; opacity: 0.85; margin-bottom: 4px; letter-spacing: 0.5px;'>
+			                REPORT
+			            </div>
+			            <div style='font-size: 26px; font-weight: 700; line-height: 1;'>
+			                Parts Adjustments - Duplicates
+			            </div>
+			        </div>
+			    </div>
+			    
+			    <!-- Right side: Welcome & Date -->
+			    <div style='text-align: right;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 6px;'>
+			            " & TimeGreeting & ", " & WelcomeName & "
+			        </div>
+			        <div style='font-size: 16px; font-weight: 600;'>
+			            📅 " & DateDisplay & "
+			        </div>
+			    </div>
+			</div>
+			"
+			```
+		lineageTag: d11a4c95-6527-4665-b486-2b92e56d5c94
+
+	measure 'Pairs - Neg Txns Total' = COUNTROWS(Fact_AdjPairs_Summary)
+		formatString: #,##0
+		lineageTag: b2c3d4e5-f6a7-8901-bcde-f12345678901
+
+	measure 'Pairs - Paired Count (12Mo)' =
+			CALCULATE(
+			    COUNTROWS(Fact_AdjPairs_Summary),
+			    Fact_AdjPairs_Summary[MatchType_12Mo] <> "No Match"
+			)
+		formatString: #,##0
+		lineageTag: b2c3d4e5-f6a7-8901-bcde-f12345678902
+
+	measure 'Pairs - Exact Count (12Mo)' =
+			CALCULATE(
+			    COUNTROWS(Fact_AdjPairs_Summary),
+			    Fact_AdjPairs_Summary[MatchType_12Mo] = "Exact"
+			)
+		formatString: #,##0
+		lineageTag: b2c3d4e5-f6a7-8901-bcde-f12345678903
+
+	measure 'Pairs - Similar Count (12Mo)' =
+			CALCULATE(
+			    COUNTROWS(Fact_AdjPairs_Summary),
+			    Fact_AdjPairs_Summary[MatchType_12Mo] = "Similar"
+			)
+		formatString: #,##0
+		lineageTag: b2c3d4e5-f6a7-8901-bcde-f12345678904
+
+	measure 'Pairs - No Match Count (12Mo)' =
+			CALCULATE(
+			    COUNTROWS(Fact_AdjPairs_Summary),
+			    Fact_AdjPairs_Summary[MatchType_12Mo] = "No Match"
+			)
+		formatString: #,##0
+		lineageTag: b2c3d4e5-f6a7-8901-bcde-f12345678905
+
+	measure 'Pairs - Paired Count (24Mo)' =
+			CALCULATE(
+			    COUNTROWS(Fact_AdjPairs_Summary),
+			    Fact_AdjPairs_Summary[MatchType_24Mo] <> "No Match"
+			)
+		formatString: #,##0
+		lineageTag: b2c3d4e5-f6a7-8901-bcde-f12345678906
+
+	measure 'Pairs - Exact Count (24Mo)' =
+			CALCULATE(
+			    COUNTROWS(Fact_AdjPairs_Summary),
+			    Fact_AdjPairs_Summary[MatchType_24Mo] = "Exact"
+			)
+		formatString: #,##0
+		lineageTag: b2c3d4e5-f6a7-8901-bcde-f12345678907
+
+	measure 'Pairs - Similar Count (24Mo)' =
+			CALCULATE(
+			    COUNTROWS(Fact_AdjPairs_Summary),
+			    Fact_AdjPairs_Summary[MatchType_24Mo] = "Similar"
+			)
+		formatString: #,##0
+		lineageTag: b2c3d4e5-f6a7-8901-bcde-f12345678908
+
+	measure 'Pairs - Paired Cost (12Mo)' =
+			CALCULATE(
+			    SUM(Fact_AdjPairs_Summary[NegAbsCost]),
+			    Fact_AdjPairs_Summary[MatchType_12Mo] <> "No Match"
+			)
+		formatString: \$#,0;(\$#,0);\$#,0
+		lineageTag: b2c3d4e5-f6a7-8901-bcde-f12345678909
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Pairs - Exact Cost (12Mo)' =
+			CALCULATE(
+			    SUM(Fact_AdjPairs_Summary[NegAbsCost]),
+			    Fact_AdjPairs_Summary[MatchType_12Mo] = "Exact"
+			)
+		formatString: \$#,0;(\$#,0);\$#,0
+		lineageTag: b2c3d4e5-f6a7-8901-bcde-f12345678910
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Pairs - Similar Cost (12Mo)' =
+			CALCULATE(
+			    SUM(Fact_AdjPairs_Summary[NegAbsCost]),
+			    Fact_AdjPairs_Summary[MatchType_12Mo] = "Similar"
+			)
+		formatString: \$#,0;(\$#,0);\$#,0
+		lineageTag: b2c3d4e5-f6a7-8901-bcde-f12345678911
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Pairs - Paired Cost (24Mo)' =
+			CALCULATE(
+			    SUM(Fact_AdjPairs_Summary[NegAbsCost]),
+			    Fact_AdjPairs_Summary[MatchType_24Mo] <> "No Match"
+			)
+		formatString: \$#,0;(\$#,0);\$#,0
+		lineageTag: b2c3d4e5-f6a7-8901-bcde-f12345678912
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Pairs - Exact Cost (24Mo)' =
+			CALCULATE(
+			    SUM(Fact_AdjPairs_Summary[NegAbsCost]),
+			    Fact_AdjPairs_Summary[MatchType_24Mo] = "Exact"
+			)
+		formatString: \$#,0;(\$#,0);\$#,0
+		lineageTag: b2c3d4e5-f6a7-8901-bcde-f12345678913
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Pairs - Similar Cost (24Mo)' =
+			CALCULATE(
+			    SUM(Fact_AdjPairs_Summary[NegAbsCost]),
+			    Fact_AdjPairs_Summary[MatchType_24Mo] = "Similar"
+			)
+		formatString: \$#,0;(\$#,0);\$#,0
+		lineageTag: b2c3d4e5-f6a7-8901-bcde-f12345678914
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure '% Neg Txns Paired (12Mo)' = DIVIDE([Pairs - Paired Count (12Mo)], [Pairs - Neg Txns Total], 0)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: b2c3d4e5-f6a7-8901-bcde-f12345678915
+
+	measure '% Neg Txns Exact (12Mo)' = DIVIDE([Pairs - Exact Count (12Mo)], [Pairs - Neg Txns Total], 0)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: b2c3d4e5-f6a7-8901-bcde-f12345678916
+
+	measure '% Neg Txns Similar (12Mo)' = DIVIDE([Pairs - Similar Count (12Mo)], [Pairs - Neg Txns Total], 0)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: b2c3d4e5-f6a7-8901-bcde-f12345678917
+
+	measure '% Adj Cost Paired (12Mo)' = DIVIDE([Pairs - Paired Cost (12Mo)], [Pairs - Total Neg Cost], 0)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: b2c3d4e5-f6a7-8901-bcde-f12345678918
+
+	measure '% Adj Cost Exact (12Mo)' = DIVIDE([Pairs - Exact Cost (12Mo)], [Pairs - Total Neg Cost], 0)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: b2c3d4e5-f6a7-8901-bcde-f12345678919
+
+	measure '% Adj Cost Similar (12Mo)' = DIVIDE([Pairs - Similar Cost (12Mo)], [Pairs - Total Neg Cost], 0)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: b2c3d4e5-f6a7-8901-bcde-f12345678920
+
+	measure 'Pairs - Total Neg Cost' = SUM(Fact_AdjPairs_Summary[NegAbsCost])
+		formatString: \$#,0;(\$#,0);\$#,0
+		lineageTag: b2c3d4e5-f6a7-8901-bcde-f12345678921
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Duplicates - Hero Card' =
+			
+			VAR TotalAnalyzed = [Pairs - Neg Txns Total]
+			VAR PairedCount12 = [Pairs - Paired Count (12Mo)]
+			VAR PairedCount24 = [Pairs - Paired Count (24Mo)]
+			VAR ExactCount12 = [Pairs - Exact Count (12Mo)]
+			VAR ExactCount24 = [Pairs - Exact Count (24Mo)]
+			VAR SimilarCount12 = [Pairs - Similar Count (12Mo)]
+			VAR SimilarCount24 = [Pairs - Similar Count (24Mo)]
+			VAR ExactCost12 = [Pairs - Exact Cost (12Mo)]
+			VAR ExactCost24 = [Pairs - Exact Cost (24Mo)]
+			VAR SimilarCost12 = [Pairs - Similar Cost (12Mo)]
+			VAR SimilarCost24 = [Pairs - Similar Cost (24Mo)]
+			VAR TotalNegCost = [Pairs - Total Neg Cost]
+			VAR PctExact12 = [% Adj Cost Exact (12Mo)]
+			VAR PctSimilar12 = [% Adj Cost Similar (12Mo)]
+			VAR PctPairedTxns12 = [% Neg Txns Paired (12Mo)]
+			
+			VAR TotalCostText =
+			    IF(TotalNegCost >= 1000000,
+			        "$" & FORMAT(TotalNegCost / 1000000, "#,##0.0") & "M",
+			        "$" & FORMAT(TotalNegCost / 1000, "#,##0") & "K"
+			    )
+			VAR ExactCost12Text =
+			    IF(ExactCost12 >= 1000000,
+			        "$" & FORMAT(ExactCost12 / 1000000, "#,##0.0") & "M",
+			        "$" & FORMAT(ExactCost12 / 1000, "#,##0") & "K"
+			    )
+			VAR ExactCost24Text =
+			    IF(ExactCost24 >= 1000000,
+			        "$" & FORMAT(ExactCost24 / 1000000, "#,##0.0") & "M",
+			        "$" & FORMAT(ExactCost24 / 1000, "#,##0") & "K"
+			    )
+			VAR SimilarCost12Text =
+			    IF(SimilarCost12 >= 1000000,
+			        "$" & FORMAT(SimilarCost12 / 1000000, "#,##0.0") & "M",
+			        "$" & FORMAT(SimilarCost12 / 1000, "#,##0") & "K"
+			    )
+			VAR SimilarCost24Text =
+			    IF(SimilarCost24 >= 1000000,
+			        "$" & FORMAT(SimilarCost24 / 1000000, "#,##0.0") & "M",
+			        "$" & FORMAT(SimilarCost24 / 1000, "#,##0") & "K"
+			    )
+			
+			RETURN
+			"<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    padding: 25px 30px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 12px;
+			    box-shadow: 0 8px 24px rgba(0,0,0,0);
+			    color: white;
+			    min-height: 160px;
+			'>
+			    <div style='display: flex; justify-content: space-around; align-items: flex-start; gap: 20px; padding-top: 10px;'>
+			
+			        <!-- Section 1: Adjustments Analyzed -->
+			        <div style='flex: 1; text-align: center;'>
+			            <div style='font-size: 18px; text-transform: uppercase; letter-spacing: 1.5px; opacity: 0.8; margin-bottom: 8px;'>
+			                Adjustments Analyzed
+			            </div>
+			            <div style='font-size: 42px; font-weight: 700; line-height: 1; margin-bottom: 4px;'>
+			                " & FORMAT(TotalAnalyzed, "#,##0") & "
+			            </div>
+			            <div style='font-size: 15px; opacity: 0.55; letter-spacing: 1px; margin-bottom: 6px;'>
+			                LAST 24 MONTHS
+			            </div>
+			            <div style='font-size: 18px; opacity: 0.75;'>
+			                Total Cost: " & TotalCostText & "
+			            </div>
+			            <div style='margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.15);'>
+			                <div style='font-size: 18px; opacity: 0.75; margin-bottom: 4px;'>
+			                    With a Match (12 Mo): " & FORMAT(PairedCount12, "#,##0") & " (" & FORMAT(PctPairedTxns12, "0.0%") & ")
+			                </div>
+			                <div style='font-size: 18px; opacity: 0.75;'>
+			                    With a Match (24 Mo): " & FORMAT(PairedCount24, "#,##0") & "
+			                </div>
+			            </div>
+			        </div>
+			
+			        <!-- Section 2: Exact Matches -->
+			        <div style='flex: 1; text-align: center; border-left: 1px solid rgba(255,255,255,0.2); padding-left: 20px;'>
+			            <div style='font-size: 18px; text-transform: uppercase; letter-spacing: 1.5px; opacity: 0.8; margin-bottom: 8px;'>
+			                Exact Matches
+			            </div>
+			            <div style='font-size: 42px; font-weight: 700; line-height: 1; margin-bottom: 4px;'>
+			                " & FORMAT(ExactCount12, "#,##0") & "
+			            </div>
+			            <div style='font-size: 15px; opacity: 0.55; letter-spacing: 1px; margin-bottom: 6px;'>
+			                12 MONTHS
+			            </div>
+			            <div style='font-size: 18px; opacity: 0.75;'>
+			                Cost: " & ExactCost12Text & " (" & FORMAT(PctExact12, "0.0%") & " of total)
+			            </div>
+			            <div style='margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.15);'>
+			                <div style='font-size: 28px; font-weight: 600; line-height: 1; margin-bottom: 4px;'>
+			                    " & FORMAT(ExactCount24, "#,##0") & "
+			                </div>
+			                <div style='font-size: 15px; opacity: 0.55; letter-spacing: 1px; margin-bottom: 4px;'>
+			                    24 MONTHS
+			                </div>
+			                <div style='font-size: 18px; opacity: 0.75;'>
+			                    Cost: " & ExactCost24Text & "
+			                </div>
+			            </div>
+			        </div>
+			
+			        <!-- Section 3: Similar Matches -->
+			        <div style='flex: 1; text-align: center; border-left: 1px solid rgba(255,255,255,0.2); padding-left: 20px;'>
+			            <div style='font-size: 18px; text-transform: uppercase; letter-spacing: 1.5px; opacity: 0.8; margin-bottom: 8px;'>
+			                Similar Matches
+			            </div>
+			            <div style='font-size: 42px; font-weight: 700; line-height: 1; margin-bottom: 4px;'>
+			                " & FORMAT(SimilarCount12, "#,##0") & "
+			            </div>
+			            <div style='font-size: 15px; opacity: 0.55; letter-spacing: 1px; margin-bottom: 6px;'>
+			                12 MONTHS
+			            </div>
+			            <div style='font-size: 18px; opacity: 0.75;'>
+			                Cost: " & SimilarCost12Text & " (" & FORMAT(PctSimilar12, "0.0%") & " of total)
+			            </div>
+			            <div style='margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.15);'>
+			                <div style='font-size: 28px; font-weight: 600; line-height: 1; margin-bottom: 4px;'>
+			                    " & FORMAT(SimilarCount24, "#,##0") & "
+			                </div>
+			                <div style='font-size: 15px; opacity: 0.55; letter-spacing: 1px; margin-bottom: 4px;'>
+			                    24 MONTHS
+			                </div>
+			                <div style='font-size: 18px; opacity: 0.75;'>
+			                    Cost: " & SimilarCost24Text & "
+			                </div>
+			            </div>
+			        </div>
+			
+			    </div>
+			</div>"
+		lineageTag: c3d4e5f6-a7b8-9012-cdef-123456789021
+
+	measure '% Neg Txns No Match (12Mo)' = DIVIDE([Pairs - No Match Count (12Mo)], [Pairs - Neg Txns Total], 0)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: b2c3d4e5-f6a7-8901-bcde-f12345678922
+
+	measure _MatchViewSelected = SELECTEDVALUE(MatchViewSelector[ViewType], "Pct")
+		lineageTag: b2c3d4e5-f6a7-8901-bcde-f12345678923
+
+	measure '_MatchView Exact' =
+			SWITCH(
+			    [_MatchViewSelected],
+			    "Pct",   [% Neg Txns Exact (12Mo)],
+			    "Count", [Pairs - Exact Count (12Mo)],
+			    "Cost",  [Pairs - Exact Cost (12Mo)],
+			    BLANK()
+			)
+		lineageTag: b2c3d4e5-f6a7-8901-bcde-f12345678924
+
+		formatStringDefinition =
+				SWITCH(
+				    SELECTEDVALUE(MatchViewSelector[ViewType], "Pct"),
+				    "Pct",   "0.0%",
+				    "Count", "#,0",
+				    "Cost",  "$#,0",
+				    "0.0%"
+				)
+
+	measure '_MatchView Similar' =
+			SWITCH(
+			    [_MatchViewSelected],
+			    "Pct",   [% Neg Txns Similar (12Mo)],
+			    "Count", [Pairs - Similar Count (12Mo)],
+			    "Cost",  [Pairs - Similar Cost (12Mo)],
+			    BLANK()
+			)
+		lineageTag: b2c3d4e5-f6a7-8901-bcde-f12345678925
+
+		formatStringDefinition =
+				SWITCH(
+				    SELECTEDVALUE(MatchViewSelector[ViewType], "Pct"),
+				    "Pct",   "0.0%",
+				    "Count", "#,0",
+				    "Cost",  "$#,0",
+				    "0.0%"
+				)
+
+	measure '_MatchView No Match' =
+			SWITCH(
+			    [_MatchViewSelected],
+			    "Pct",   [% Neg Txns No Match (12Mo)],
+			    "Count", [Pairs - No Match Count (12Mo)],
+			    "Cost",  [Pairs - No Match Cost (12Mo)],
+			    BLANK()
+			)
+		lineageTag: b2c3d4e5-f6a7-8901-bcde-f12345678926
+
+		formatStringDefinition =
+				SWITCH(
+				    SELECTEDVALUE(MatchViewSelector[ViewType], "Pct"),
+				    "Pct",   "0.0%",
+				    "Count", "#,0",
+				    "Cost",  "$#,0",
+				    "0.0%"
+				)
+
+	measure _MatchViewFormat =
+			SWITCH(
+			    [_MatchViewSelected],
+			    "Pct",   "0.0%",
+			    "Count", "#,0",
+			    "Cost",  "$#,0",
+			    "0.0%"
+			)
+		lineageTag: b2c3d4e5-f6a7-8901-bcde-f12345678927
+
+	measure 'Pairs - No Match Cost (12Mo)' =
+			CALCULATE(
+			    SUM(Fact_AdjPairs_Summary[NegAbsCost]),
+			    Fact_AdjPairs_Summary[MatchType_12Mo] = "No Match"
+			)
+		formatString: \$#,0;(\$#,0);\$#,0
+		lineageTag: b2c3d4e5-f6a7-8901-bcde-f12345678928
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure '% Neg Txns Exact (24Mo)' = DIVIDE([Pairs - Exact Count (24Mo)], [Pairs - Neg Txns Total], 0)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: b2c3d4e5-f6a7-8901-bcde-f12345678929
+
+	measure '% Neg Txns Similar (24Mo)' = DIVIDE([Pairs - Similar Count (24Mo)], [Pairs - Neg Txns Total], 0)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: b2c3d4e5-f6a7-8901-bcde-f12345678930
 
 	column Value
 		isHidden

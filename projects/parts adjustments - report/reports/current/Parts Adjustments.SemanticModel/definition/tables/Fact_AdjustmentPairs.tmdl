@@ -1,0 +1,243 @@
+table Fact_AdjustmentPairs
+	lineageTag: e1be1ae4-bdc7-4da1-bb62-17ed94d79012
+
+	column NegTransId
+		dataType: int64
+		formatString: 0
+		lineageTag: 9a1af5a9-ca8b-4bf9-9a52-f40d3e91126a
+		summarizeBy: count
+		sourceColumn: NegTransId
+
+		annotation SummarizationSetBy = Automatic
+
+	column NegRONumber
+		dataType: string
+		lineageTag: 7283d809-8a6c-46b8-b851-8e93f0b9c83a
+		summarizeBy: none
+		sourceColumn: NegRONumber
+
+		annotation SummarizationSetBy = Automatic
+
+	column NegDate
+		dataType: dateTime
+		formatString: Short Date
+		lineageTag: e6efa23b-9e11-4817-b065-7a44b49efef9
+		summarizeBy: none
+		sourceColumn: NegDate
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column Branch
+		dataType: string
+		lineageTag: dac6d2b5-2408-484e-abd0-f5f6a94ef95d
+		summarizeBy: none
+		sourceColumn: Branch
+
+		annotation SummarizationSetBy = Automatic
+
+	column PartNumber
+		dataType: string
+		lineageTag: 46a11b7e-798f-401a-a1dc-8c5ac822269f
+		summarizeBy: none
+		sourceColumn: PartNumber
+
+		annotation SummarizationSetBy = Automatic
+
+	column PartDescription
+		dataType: string
+		lineageTag: f42bd442-609b-46a4-8c82-59ff70ff9e09
+		summarizeBy: none
+		sourceColumn: PartDescription
+
+		annotation SummarizationSetBy = Automatic
+
+	column NegQty
+		dataType: double
+		formatString: 0
+		lineageTag: 02fbb4b2-061b-45c0-bd6c-3598a6ce4370
+		summarizeBy: sum
+		sourceColumn: NegQty
+
+		annotation SummarizationSetBy = Automatic
+
+	column NegAbsQty
+		dataType: double
+		lineageTag: 46950270-0b69-45a1-aa9b-ce97d2d0c6ce
+		summarizeBy: sum
+		sourceColumn: NegAbsQty
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column NegCost
+		dataType: double
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 0fa63ebd-2ef3-4c10-8da5-3f94c72ff3e1
+		summarizeBy: sum
+		sourceColumn: NegCost
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	column NegAbsCost
+		dataType: double
+		lineageTag: c673d6c7-6fff-41fc-855f-ccde56ba7146
+		summarizeBy: sum
+		sourceColumn: NegAbsCost
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column NegPAType
+		dataType: string
+		lineageTag: 476fb536-0c3c-4203-84b5-5318467cffd9
+		summarizeBy: none
+		sourceColumn: NegPAType
+
+		annotation SummarizationSetBy = Automatic
+
+	column PosTransId
+		dataType: int64
+		formatString: 0
+		lineageTag: 8b714e68-1b3d-4333-960c-d0ceaca042c1
+		summarizeBy: count
+		sourceColumn: PosTransId
+
+		annotation SummarizationSetBy = Automatic
+
+	column PosRONumber
+		dataType: string
+		lineageTag: 61f3675c-b6a6-42c4-8e4a-3ea8b1970f8d
+		summarizeBy: none
+		sourceColumn: PosRONumber
+
+		annotation SummarizationSetBy = Automatic
+
+	column PosDate
+		dataType: dateTime
+		formatString: Short Date
+		lineageTag: 30c498c5-3334-4817-ad91-04d9b1393261
+		summarizeBy: none
+		sourceColumn: PosDate
+
+		changedProperty = DataType
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column PosQty
+		dataType: double
+		formatString: 0
+		lineageTag: 9e2cd54a-b842-4498-b416-64c278725221
+		summarizeBy: sum
+		sourceColumn: PosQty
+
+		annotation SummarizationSetBy = Automatic
+
+	column PosAbsQty
+		dataType: double
+		lineageTag: 2edc5523-8f52-4ca8-aed3-95bc8ff7066b
+		summarizeBy: sum
+		sourceColumn: PosAbsQty
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column PosCost
+		dataType: double
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 16135c6a-6802-4a77-9713-172d27067948
+		summarizeBy: sum
+		sourceColumn: PosCost
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	column PosAbsCost
+		dataType: double
+		lineageTag: 33ae8a6e-9df7-461c-815b-3d8add9429e3
+		summarizeBy: sum
+		sourceColumn: PosAbsCost
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column PosPAType
+		dataType: string
+		lineageTag: 61a1ae84-7eb6-4890-a47a-8a7bb63ec0d3
+		summarizeBy: none
+		sourceColumn: PosPAType
+
+		annotation SummarizationSetBy = Automatic
+
+	column DaysBetween
+		dataType: double
+		formatString: 0
+		lineageTag: 1f0cba0f-4389-43c3-9d01-c781d2bc696a
+		summarizeBy: sum
+		sourceColumn: DaysBetween
+
+		annotation SummarizationSetBy = Automatic
+
+	column IsWithin12Mo
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 3dfc741c-48a9-4774-9649-f542a0b8eac7
+		summarizeBy: none
+		sourceColumn: IsWithin12Mo
+
+		annotation SummarizationSetBy = Automatic
+
+	column IsExact
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 7c613dac-2384-49b2-9e84-4df257868333
+		summarizeBy: none
+		sourceColumn: IsExact
+
+		annotation SummarizationSetBy = Automatic
+
+	column MatchType
+		dataType: string
+		lineageTag: 9f07d618-ab50-4511-8c23-eb350aaaaf7a
+		summarizeBy: none
+		sourceColumn: MatchType
+
+		annotation SummarizationSetBy = Automatic
+
+	column PairKey
+		dataType: string
+		lineageTag: ad20d92c-63ad-4fb7-a081-a4945d0e9350
+		summarizeBy: none
+		sourceColumn: PairKey
+
+		annotation SummarizationSetBy = Automatic
+
+	column LoadedDatetime
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: 09cca326-44dd-4f9b-9dff-991ca2d2c22b
+		summarizeBy: none
+		sourceColumn: LoadedDatetime
+
+		annotation SummarizationSetBy = Automatic
+
+	partition Fact_AdjustmentPairs = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-gxnyznhdptpenfw724g3o5sjzm.datawarehouse.fabric.microsoft.com", "LH_Master_Data"),
+				    dbo_Fact_AdjustmentPairs = Source{[Schema="dbo",Item="Fact_AdjustmentPairs"]}[Data],
+				    #"Extracted Date" = Table.TransformColumns(dbo_Fact_AdjustmentPairs,{{"NegDate", DateTime.Date, type date}})
+				in
+				    #"Extracted Date"
+

@@ -1,12 +1,12 @@
 {
-  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.5.0/schema.json",
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.7.0/schema.json",
   "name": "1401aa2e094056908a34",
   "position": {
-    "x": 62.478589420654913,
-    "y": 107.27455919395466,
+    "x": 55.405541561712845,
+    "y": 109.63224181360202,
     "z": 3000,
     "height": 799.25440806045344,
-    "width": 1580.8261964735516,
+    "width": 1594.9722921914358,
     "tabOrder": 5000
   },
   "visual": {
@@ -15,6 +15,22 @@
       "queryState": {
         "Rows": {
           "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Fact_LaborJobSummary"
+                    }
+                  },
+                  "Property": "InspectionCategory"
+                }
+              },
+              "queryRef": "Fact_LaborJobSummary.InspectionCategory",
+              "nativeQueryRef": "Inspection Category",
+              "active": true,
+              "displayName": "Inspection Category"
+            },
             {
               "field": {
                 "Column": {
@@ -44,7 +60,7 @@
               },
               "queryRef": "Fact_LaborJobSummary.BranchName",
               "nativeQueryRef": "Branch",
-              "active": true,
+              "active": false,
               "displayName": "Branch"
             }
           ]
@@ -260,6 +276,25 @@
         "levels": [
           {
             "queryRefs": [
+              "Fact_LaborJobSummary.InspectionCategory"
+            ],
+            "isCollapsed": true,
+            "identityKeys": [
+              {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Fact_LaborJobSummary"
+                    }
+                  },
+                  "Property": "InspectionCategory"
+                }
+              }
+            ],
+            "isPinned": true
+          },
+          {
+            "queryRefs": [
               "Fact_LaborJobSummary.JobCode"
             ],
             "isCollapsed": true,
@@ -303,67 +338,7 @@
               "identityValues": [
                 {
                   "Literal": {
-                    "Value": "'IS-CS690 INSPECT'"
-                  }
-                }
-              ],
-              "isToggled": true
-            },
-            {
-              "identityValues": [
-                {
-                  "Literal": {
-                    "Value": "'IS-CP770 INSPECT'"
-                  }
-                }
-              ],
-              "isToggled": true
-            },
-            {
-              "identityValues": [
-                {
-                  "Literal": {
-                    "Value": "'IS-CP690 INSPECT'"
-                  }
-                }
-              ],
-              "isToggled": true
-            },
-            {
-              "identityValues": [
-                {
-                  "Literal": {
                     "Value": "'IS-CORN/DRAPER'"
-                  }
-                }
-              ],
-              "isToggled": true
-            },
-            {
-              "identityValues": [
-                {
-                  "Literal": {
-                    "Value": "'IS-COMPACT INSPECT'"
-                  }
-                }
-              ],
-              "isToggled": true
-            },
-            {
-              "identityValues": [
-                {
-                  "Literal": {
-                    "Value": "'IS-COMBINE INSPECT'"
-                  }
-                }
-              ],
-              "isToggled": true
-            },
-            {
-              "identityValues": [
-                {
-                  "Literal": {
-                    "Value": "'IS-CS770 INSPECT'"
                   }
                 }
               ],
@@ -483,27 +458,7 @@
               "identityValues": [
                 {
                   "Literal": {
-                    "Value": "'IS-AMS SOFTWARE'"
-                  }
-                }
-              ],
-              "isToggled": true
-            },
-            {
-              "identityValues": [
-                {
-                  "Literal": {
                     "Value": "'IS-AMS OPTIMIZE'"
-                  }
-                }
-              ],
-              "isToggled": true
-            },
-            {
-              "identityValues": [
-                {
-                  "Literal": {
-                    "Value": "'IS-5E INSPECT'"
                   }
                 }
               ],
@@ -524,36 +479,6 @@
                 {
                   "Literal": {
                     "Value": "'IS-125'"
-                  }
-                }
-              ],
-              "isToggled": true
-            },
-            {
-              "identityValues": [
-                {
-                  "Literal": {
-                    "Value": "'/TRACTOR INSPECTION'"
-                  }
-                }
-              ],
-              "isToggled": true
-            },
-            {
-              "identityValues": [
-                {
-                  "Literal": {
-                    "Value": "'/SPRAYER INSPECTION'"
-                  }
-                }
-              ],
-              "isToggled": true
-            },
-            {
-              "identityValues": [
-                {
-                  "Literal": {
-                    "Value": "'/Rental Inspection'"
                   }
                 }
               ],
@@ -783,16 +708,6 @@
               "identityValues": [
                 {
                   "Literal": {
-                    "Value": "'/WINTER INSPECTION'"
-                  }
-                }
-              ],
-              "isToggled": true
-            },
-            {
-              "identityValues": [
-                {
-                  "Literal": {
                     "Value": "'IS-D160'"
                   }
                 }
@@ -844,16 +759,6 @@
                 {
                   "Literal": {
                     "Value": "'IS-E170-QCD'"
-                  }
-                }
-              ],
-              "isToggled": true
-            },
-            {
-              "identityValues": [
-                {
-                  "Literal": {
-                    "Value": "'IS-GATOR INSPECTION'"
                   }
                 }
               ],
@@ -943,57 +848,7 @@
               "identityValues": [
                 {
                   "Literal": {
-                    "Value": "'IS-MOWER INSPECTION'"
-                  }
-                }
-              ],
-              "isToggled": true
-            },
-            {
-              "identityValues": [
-                {
-                  "Literal": {
-                    "Value": "'IS-PICKER INSPECT'"
-                  }
-                }
-              ],
-              "isToggled": true
-            },
-            {
-              "identityValues": [
-                {
-                  "Literal": {
-                    "Value": "'IS-PLANTER INSPECT'"
-                  }
-                }
-              ],
-              "isToggled": true
-            },
-            {
-              "identityValues": [
-                {
-                  "Literal": {
                     "Value": "'IS-S240'"
-                  }
-                }
-              ],
-              "isToggled": true
-            },
-            {
-              "identityValues": [
-                {
-                  "Literal": {
-                    "Value": "'IS-SKID STEER INSPEC'"
-                  }
-                }
-              ],
-              "isToggled": true
-            },
-            {
-              "identityValues": [
-                {
-                  "Literal": {
-                    "Value": "'IS-SPRAYER INSPECT'"
                   }
                 }
               ],
@@ -1093,7 +948,7 @@
               "identityValues": [
                 {
                   "Literal": {
-                    "Value": "'IS-TRACTOR INSPECT'"
+                    "Value": "'IS-E130-QCD'"
                   }
                 }
               ],
@@ -1103,7 +958,7 @@
               "identityValues": [
                 {
                   "Literal": {
-                    "Value": "'IS-SWATHER INSPECT'"
+                    "Value": "'IS-X310'"
                   }
                 }
               ],
@@ -1113,7 +968,67 @@
               "identityValues": [
                 {
                   "Literal": {
-                    "Value": "'IS-STRIPPER INSPECT'"
+                    "Value": "'IS-XUV560'"
+                  }
+                }
+              ],
+              "isToggled": true
+            },
+            {
+              "identityValues": [
+                {
+                  "Literal": {
+                    "Value": "'IS-XUV550'"
+                  }
+                }
+              ],
+              "isToggled": true
+            },
+            {
+              "identityValues": [
+                {
+                  "Literal": {
+                    "Value": "'/COMBINE VIP INSPECT'"
+                  }
+                }
+              ],
+              "isToggled": true
+            },
+            {
+              "identityValues": [
+                {
+                  "Literal": {
+                    "Value": "'/CS690 INSPECTION'"
+                  }
+                }
+              ],
+              "isToggled": true
+            },
+            {
+              "identityValues": [
+                {
+                  "Literal": {
+                    "Value": "'/CS690 VIP INSPECTIO'"
+                  }
+                }
+              ],
+              "isToggled": true
+            },
+            {
+              "identityValues": [
+                {
+                  "Literal": {
+                    "Value": "'/INSPECTION'"
+                  }
+                }
+              ],
+              "isToggled": true
+            },
+            {
+              "identityValues": [
+                {
+                  "Literal": {
+                    "Value": "'/PLANTER INSPECTION'"
                   }
                 }
               ],
@@ -1254,7 +1169,7 @@
             "layout": {
               "expr": {
                 "Literal": {
-                  "Value": "'Tabular'"
+                  "Value": "'Compact'"
                 }
               }
             }
@@ -1896,6 +1811,5 @@
         "howCreated": "User"
       }
     ]
-  },
-  "isHidden": true
+  }
 }

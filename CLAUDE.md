@@ -179,6 +179,19 @@ Flag any of these conditions and tell the user before starting work:
 - `fabric-workspace-docs` dev is ahead of main (open PR may be waiting)
 - Either repo is on the wrong branch (should be `dev`)
 
+### Daily To-Do Check (run at every session start)
+
+After the git orientation check, read `C:/Users/bfox/todo.md` and print open High and Medium items in this format:
+
+```
+📋 Your open tasks:
+  HIGH   Meet with HR re: Technician Pay data access
+  HIGH   Review pipeline run — Friday data looked stale
+  MEDIUM Minor adjustment to Customer Anatomy — slicer width
+```
+
+Only show High and Medium. Skip Low and Completed. If the file doesn't exist yet, skip silently.
+
 ### When Claude Is Helping With Development
 
 - **Always work on `dev` branch**, not `main`
