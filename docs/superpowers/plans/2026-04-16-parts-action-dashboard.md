@@ -16,10 +16,39 @@
 
 | Table | Branch Key | Key Columns Used |
 |---|---|---|
-| `Fact_NegativeOnHand_OnHandNoBin` | `Branch` (e.g. "01") | `HasNegativeBinQty`, `HasBinQtyNoBin`, `PartNumber`, `Description`, `BinQty`, `QuantityOnHand`, `IssueType` |
-| `Fact_Parts_Open_Tickets` | `Location` (e.g. "01") | `Days_Open`, `Aging`, `#_On_Back_Order`, `Order_No`, `Customer`, `Salesman`, `Order_Total_$$` |
+| `Fact_NegativeOnHand_OnHandNoBin` | `Branch` (verify format — may be BranchID e.g. "1", "1I", "1S") | `HasNegativeBinQty`, `HasBinQtyNoBin`, `PartNumber`, `Description`, `BinQty`, `QuantityOnHand`, `IssueType` |
+| `Fact_Parts_Open_Tickets` | `Location` (verify format — likely LocationID e.g. "01") | `Days_Open`, `Aging`, `#_On_Back_Order`, `Order_No`, `Customer`, `Salesman`, `Order_Total_$$` |
 
-> **Branch key note:** Both tables use a 2-char numeric location code as their branch key. `dim_BranchUserAccess.BranchCode` must match this format (e.g. "01", "02"). Verify the exact values in `dim_BranchLocation` before populating the access table.
+> **Branch key note — IMPORTANT:** `dim_BranchUserAccess.BranchCode` stores the **LocationID** (zero-padded 2-char code: "01", "02", etc.). There are **22 locations** confirmed. Sub-branches exist with suffixes I/S/C/B (e.g. "1I" = Inventory, "1S" = Service, "1C" = Combine/Vault) — RLS must filter at the **dim_BranchLocation level** (by LocationID) and let the model relationship propagate to sub-branches. Do NOT filter directly on the fact table Branch column as it would miss sub-branches.
+>
+> ⚠️ **BranchCode 4 anomaly:** Two entries share BranchCode 4 in dim_BranchLocation (Las Cruces and Mesquite). Investigate whether LocationID 04 covers both locations or if Mesquite has its own LocationID. Resolve before populating dim_BranchUserAccess.
+
+## Confirmed Locations (22 total)
+
+| LocationID | BranchCode | Location Name |
+|---|---|---|
+| 01 | 1 | Seminole |
+| 02 | 2 | Tornillo |
+| 03 | 3 | Denver City |
+| 04 | 4 | Las Cruces / Mesquite (⚠️ verify) |
+| 05 | 5 | Deming |
+| 06 | 6 | San Angelo |
+| 07 | 7 | Ballinger |
+| 08 | 8 | Big Spring |
+| 11 | 11 | Brownfield |
+| 12 | 12 | O'Donnell |
+| 13 | 13 | Lamesa |
+| 14 | 14 | Littlefield |
+| 15 | 15 | Levelland |
+| 16 | 16 | Morton |
+| 17 | 17 | Tahoka |
+| 91 | 91 | Lorenzo |
+| 92 | 92 | Slaton |
+| 93 | 93 | Lubbock |
+| 94 | 94 | Crosbyton |
+| 95 | 95 | Abernathy |
+| 96 | 96 | Snyder |
+| 97 | 97 | Colorado City |
 
 > **Aging threshold:** Default threshold for "Open Tickets Aging" is `Days_Open >= 30` OR `#_On_Back_Order > 0`. Confirm with Corp Parts Manager before going live — this is the DAX constant `_AgingThresholdDays = 30` defined in the measure.
 
@@ -156,15 +185,35 @@ Write `projects/parts action dashboard - report/documentation/branch-user-access
 ```csv
 UserEmail,BranchCode,BranchName,FirstName,IsCorpManager
 bfox@spitractor.com,ALL,All Branches,Brian,TRUE
-corppartsmanager@spitractor.com,ALL,All Branches,ManagerFirstName,TRUE
-jdmanager1@spitractor.com,ALL,All Branches,ManagerFirstName,TRUE
-jdmanager2@spitractor.com,ALL,All Branches,ManagerFirstName,TRUE
-nonJDmanager@spitractor.com,ALL,All Branches,ManagerFirstName,TRUE
-branchmanager01@spitractor.com,01,Lubbock,FirstName,FALSE
-branchmanager02@spitractor.com,02,Amarillo,FirstName,FALSE
+[corp-parts-manager-email],ALL,All Branches,[FirstName],TRUE
+[jd-manager-1-email],ALL,All Branches,[FirstName],TRUE
+[jd-manager-2-email],ALL,All Branches,[FirstName],TRUE
+[non-jd-manager-email],ALL,All Branches,[FirstName],TRUE
+[manager-email],01,Seminole,[FirstName],FALSE
+[manager-email],02,Tornillo,[FirstName],FALSE
+[manager-email],03,Denver City,[FirstName],FALSE
+[manager-email],04,Las Cruces,[FirstName],FALSE
+[manager-email],05,Deming,[FirstName],FALSE
+[manager-email],06,San Angelo,[FirstName],FALSE
+[manager-email],07,Ballinger,[FirstName],FALSE
+[manager-email],08,Big Spring,[FirstName],FALSE
+[manager-email],11,Brownfield,[FirstName],FALSE
+[manager-email],12,O'Donnell,[FirstName],FALSE
+[manager-email],13,Lamesa,[FirstName],FALSE
+[manager-email],14,Littlefield,[FirstName],FALSE
+[manager-email],15,Levelland,[FirstName],FALSE
+[manager-email],16,Morton,[FirstName],FALSE
+[manager-email],17,Tahoka,[FirstName],FALSE
+[manager-email],91,Lorenzo,[FirstName],FALSE
+[manager-email],92,Slaton,[FirstName],FALSE
+[manager-email],93,Lubbock,[FirstName],FALSE
+[manager-email],94,Crosbyton,[FirstName],FALSE
+[manager-email],95,Abernathy,[FirstName],FALSE
+[manager-email],96,Snyder,[FirstName],FALSE
+[manager-email],97,Colorado City,[FirstName],FALSE
 ```
 
-> Fill in all actual email addresses, branch codes (from Task 1 Step 1), branch names, and first names before uploading. `FirstName` is used in the email greeting. `IsCorpManager` determines which Power Automate email loop they go in (corp managers do not get the daily branch email).
+> Replace all `[bracketed]` placeholders with real values before uploading. `FirstName` is used in the email greeting. `IsCorpManager = TRUE` users do not receive the daily branch email — they use the report directly. Note: LocationID 04 (Mesquite/Las Cruces anomaly) — confirm whether Mesquite needs its own row before finalizing.
 
 - [ ] **Step 2: Upload CSV to Fabric Lakehouse**
 
@@ -315,10 +364,12 @@ In the Model view, create these relationships (all single direction, many-to-one
 
 - [ ] **Step 6: Set up RLS roles in Power BI Desktop**
 
+RLS filters at the `dim_BranchLocation` level (by LocationID). The model relationships propagate the filter to both fact tables automatically, including sub-branches (I/S/C/B suffixes).
+
 In Desktop: Modeling → Manage Roles → Create two roles:
 
 **Role: BranchManager**
-Table: `Fact_NegativeOnHand_OnHandNoBin`
+Table: `dim_BranchLocation`
 DAX filter:
 ```dax
 [Branch] = LOOKUPVALUE(
@@ -327,14 +378,7 @@ DAX filter:
 )
 ```
 
-Table: `Fact_Parts_Open_Tickets`
-DAX filter:
-```dax
-[Location] = LOOKUPVALUE(
-    dim_BranchUserAccess[BranchCode],
-    dim_BranchUserAccess[UserEmail], USERPRINCIPALNAME()
-)
-```
+> This single filter on `dim_BranchLocation[Branch]` (the LocationID column, e.g. "01") propagates through the relationships to both fact tables, covering all sub-branches (1, 1I, 1S, 1C) automatically. No filters needed on the fact tables themselves.
 
 **Role: CorpManager**
 No filters — leave all table filters empty. Corp managers see all data.
