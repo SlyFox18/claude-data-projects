@@ -34,7 +34,7 @@ table _Measures
 			    display: flex;
 			    align-items: center;
 			    justify-content: space-between;
-			    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    box-shadow: 0 4px 12px rgba(0,0,0,0);
 			    box-sizing: border-box;
 			'>
 			    <!-- Left side: Dashboard Title -->
@@ -59,7 +59,7 @@ table _Measures
 			                REPORT
 			            </div>
 			            <div style='font-size: 26px; font-weight: 700; line-height: 1;'>
-			                Report Name Here
+			                Parts Action Dashboard
 			            </div>
 			        </div>
 			    </div>
@@ -78,8 +78,8 @@ table _Measures
 			```
 		lineageTag: 49efea2a-3c06-4cab-8367-26b26caa141e
 
-	measure 'Negative On Hand Count' = ```
-
+	measure 'Negative On Hand Count' =
+			
 			VAR _Result =
 			CALCULATE(
 			    COUNTROWS(Fact_NegativeOnHand_OnHandNoBin),
@@ -87,12 +87,11 @@ table _Measures
 			)
 			RETURN
 			IF(ISBLANK(_Result), 0, _Result)
-			```
 		formatString: 0
 		lineageTag: a1b2c3d4-e5f6-7890-abcd-ef1234567891
 
-	measure 'On Hand No Bin Count' = ```
-
+	measure 'On Hand No Bin Count' =
+			
 			VAR _Result =
 			CALCULATE(
 			    COUNTROWS(Fact_NegativeOnHand_OnHandNoBin),
@@ -100,12 +99,11 @@ table _Measures
 			)
 			RETURN
 			IF(ISBLANK(_Result), 0, _Result)
-			```
 		formatString: 0
 		lineageTag: b2c3d4e5-f6a7-8901-bcde-f12345678912
 
-	measure 'Open Tickets Aging Count' = ```
-
+	measure 'Open Tickets Aging Count' =
+			
 			VAR _AgingThresholdDays = 30
 			VAR _Result =
 			CALCULATE(
@@ -115,12 +113,11 @@ table _Measures
 			)
 			RETURN
 			IF(ISBLANK(_Result), 0, _Result)
-			```
 		formatString: 0
 		lineageTag: c3d4e5f6-a7b8-9012-cdef-123456789123
 
-	measure 'Is Aging Ticket' = ```
-
+	measure 'Is Aging Ticket' =
+			
 			VAR _AgingThresholdDays = 30
 			RETURN
 			IF(
@@ -128,12 +125,11 @@ table _Measures
 			        || MAX(Fact_Parts_Open_Tickets[#_On_Back_Order]) > 0,
 			    1, 0
 			)
-			```
 		formatString: 0
 		lineageTag: d4e5f6a7-b8c9-0123-def0-234567891234
 
-	measure 'Current Branch Name' = ```
-
+	measure 'Current Branch Name' =
+			
 			VAR _BranchCode =
 			    LOOKUPVALUE(
 			        dim_BranchUserAccess[BranchCode],
@@ -146,8 +142,614 @@ table _Measures
 			    )
 			RETURN
 			IF(ISBLANK(_Name), "All Branches", _Name)
-			```
 		lineageTag: e5f6a7b8-c9d0-1234-ef01-345678912345
+
+	measure 'Parts Line Count' = COUNT(Fact_Parts_Open_Tickets_Details[Part_No])
+		formatString: 0
+		lineageTag: f77b297c-10c7-4ba5-a591-c131c81440d3
+
+	measure 'Backordered Line Count' =
+			
+			CALCULATE(
+			    COUNTROWS(Fact_Parts_Open_Tickets_Details),
+			    Fact_Parts_Open_Tickets_Details[BackOrdered_QTY] > 0
+			)
+		formatString: 0
+		lineageTag: c45526e5-9937-4ddb-9036-fbf1bb83188a
+
+	measure Deposit = SUM(Fact_Parts_Open_Tickets[Deposit])
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 7bd01828-b15c-44af-aa61-45f76fae0c01
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Details DT - Header' =
+			
+			// Get user name
+			VAR _User = USERPRINCIPALNAME()
+			VAR _Position = SEARCH("@", _User, 1)
+			VAR _Name = LEFT(_User, _Position - 1)
+			VAR _FirstLetter = UPPER(LEFT(_Name, 1))
+			VAR _LastName = MID(_Name, 2, LEN(_Name) - 1)
+			VAR _FormattedLastName =
+			    UPPER(LEFT(_LastName, 1)) & LOWER(MID(_LastName, 2, LEN(_LastName)))
+			VAR WelcomeName = _FirstLetter & "." & _FormattedLastName
+			
+			// Get current date/time info
+			VAR CurrentDate = TODAY()
+			VAR DateDisplay = FORMAT(CurrentDate, "MMM D, YYYY")
+			VAR CurrentHour = HOUR(NOW())
+			VAR TimeGreeting =
+			    IF(CurrentHour < 12, "Good Morning",
+			    IF(CurrentHour < 17, "Good Afternoon",
+			    "Good Evening"))
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    height: 85px;
+			    padding: 15px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 10px;
+			    color: white;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-between;
+			    box-shadow: 0 4px 12px rgba(0,0,0,0);
+			    box-sizing: border-box;
+			'>
+			    <!-- Left side: Dashboard Title -->
+			    <div style='display: flex; align-items: center; gap: 15px;'>
+			        <!-- Home icon -->
+			        <div style='
+			            width: 40px;
+			            height: 40px;
+			            background: rgba(255,255,255,0.15);
+			            border-radius: 8px;
+			            display: flex;
+			            align-items: center;
+			            justify-content: center;
+			            font-size: 20px;
+			        '>
+			            🏠
+			        </div>
+			
+			        <!-- Title -->
+			        <div>
+			            <div style='font-size: 12px; opacity: 0.85; margin-bottom: 4px; letter-spacing: 0.5px;'>
+			                REPORT
+			            </div>
+			            <div style='font-size: 26px; font-weight: 700; line-height: 1;'>
+			                Details - Drill Through - Parts on Open Ticket
+			            </div>
+			        </div>
+			    </div>
+			
+			    <!-- Right side: Welcome & Date -->
+			    <div style='text-align: right;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 6px;'>
+			            " & TimeGreeting & ", " & WelcomeName & "
+			        </div>
+			        <div style='font-size: 16px; font-weight: 600;'>
+			            📅 " & DateDisplay & "
+			        </div>
+			    </div>
+			</div>
+			"
+		lineageTag: a43b4390-35e5-4b9c-a451-1b74a88cd65a
+
+	measure 'Action Items - Header' = ```
+			
+			// Get user name
+			VAR _User = USERPRINCIPALNAME()
+			VAR _Position = SEARCH("@", _User, 1)
+			VAR _Name = LEFT(_User, _Position - 1)
+			VAR _FirstLetter = UPPER(LEFT(_Name, 1))
+			VAR _LastName = MID(_Name, 2, LEN(_Name) - 1)
+			VAR _FormattedLastName = 
+			    UPPER(LEFT(_LastName, 1)) & LOWER(MID(_LastName, 2, LEN(_LastName)))
+			VAR WelcomeName = _FirstLetter & "." & _FormattedLastName
+			
+			// Get current date/time info
+			VAR CurrentDate = TODAY()
+			VAR DateDisplay = FORMAT(CurrentDate, "MMM D, YYYY")
+			VAR CurrentHour = HOUR(NOW())
+			VAR TimeGreeting = 
+			    IF(CurrentHour < 12, "Good Morning",
+			    IF(CurrentHour < 17, "Good Afternoon",
+			    "Good Evening"))
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    height: 85px;
+			    padding: 15px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 10px;
+			    color: white;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-between;
+			    box-shadow: 0 4px 12px rgba(0,0,0,0);
+			    box-sizing: border-box;
+			'>
+			    <!-- Left side: Dashboard Title -->
+			    <div style='display: flex; align-items: center; gap: 15px;'>
+			        <!-- Home icon -->
+			        <div style='
+			            width: 40px;
+			            height: 40px;
+			            background: rgba(255,255,255,0.15);
+			            border-radius: 8px;
+			            display: flex;
+			            align-items: center;
+			            justify-content: center;
+			            font-size: 20px;
+			        '>
+			            🏠
+			        </div>
+			        
+			        <!-- Title -->
+			        <div>
+			            <div style='font-size: 12px; opacity: 0.85; margin-bottom: 4px; letter-spacing: 0.5px;'>
+			                REPORT
+			            </div>
+			            <div style='font-size: 26px; font-weight: 700; line-height: 1;'>
+			                Branch Action Items
+			            </div>
+			        </div>
+			    </div>
+			    
+			    <!-- Right side: Welcome & Date -->
+			    <div style='text-align: right;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 6px;'>
+			            " & TimeGreeting & ", " & WelcomeName & "
+			        </div>
+			        <div style='font-size: 16px; font-weight: 600;'>
+			            📅 " & DateDisplay & "
+			        </div>
+			    </div>
+			</div>
+			"
+			```
+		lineageTag: b34abd14-1840-4870-8eca-7f21c5efb8ab
+
+	measure 'Page 1 KPI Cards' =
+			
+			VAR _NegOH = [Negative On Hand Count]
+			VAR _NoBin = [On Hand No Bin Count]
+			VAR _Aging = [Open Tickets Aging Count]
+			RETURN
+			"
+			<div style='display:flex;gap:12px;padding:8px;font-family:Segoe UI,Arial,sans-serif;height:100%;box-sizing:border-box;align-items:stretch;'>
+			
+			    <div style='flex:1;background:linear-gradient(135deg,#1D3C4E 0%,#2E5266 50%,#3A7CA5 100%);border-radius:8px;padding:18px 22px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;'>
+			        <div style='font-size:20px;color:rgba(255,255,255,0.65);letter-spacing:0.6px;'>Negative On Hand</div>
+			        <div style='font-size:48px;font-weight:700;color:white;line-height:1;margin-bottom:10px;'>" & FORMAT(_NegOH, "#,0") & "</div>
+			    </div>
+			
+			    <div style='flex:1;background:linear-gradient(135deg,#1D3C4E 0%,#2E5266 50%,#3A7CA5 100%);border-radius:8px;padding:18px 22px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;'>
+			        <div style='font-size:20px;color:rgba(255,255,255,0.65);letter-spacing:0.6px;'>On Hand No Bin</div>
+			        <div style='font-size:48px;font-weight:700;color:white;line-height:1;margin-bottom:10px;'>" & FORMAT(_NoBin, "#,0") & "</div>
+			    </div>
+			
+			    <div style='flex:1;background:linear-gradient(135deg,#1D3C4E 0%,#2E5266 50%,#3A7CA5 100%);border-radius:8px;padding:18px 22px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;'>
+			        <div style='font-size:20px;color:rgba(255,255,255,0.65);letter-spacing:0.6px;'>Open Tickets</div>
+			        <div style='font-size:48px;font-weight:700;color:white;line-height:1;margin-bottom:10px;'>" & FORMAT(_Aging, "#,0") & "</div>
+			    </div>
+			
+			</div>
+			"
+		lineageTag: 4d5e6f7a-8b9c-0123-def0-234567890123
+
+	measure 'Summary - Header' = ```
+			
+			// Get user name
+			VAR _User = USERPRINCIPALNAME()
+			VAR _Position = SEARCH("@", _User, 1)
+			VAR _Name = LEFT(_User, _Position - 1)
+			VAR _FirstLetter = UPPER(LEFT(_Name, 1))
+			VAR _LastName = MID(_Name, 2, LEN(_Name) - 1)
+			VAR _FormattedLastName = 
+			    UPPER(LEFT(_LastName, 1)) & LOWER(MID(_LastName, 2, LEN(_LastName)))
+			VAR WelcomeName = _FirstLetter & "." & _FormattedLastName
+			
+			// Get current date/time info
+			VAR CurrentDate = TODAY()
+			VAR DateDisplay = FORMAT(CurrentDate, "MMM D, YYYY")
+			VAR CurrentHour = HOUR(NOW())
+			VAR TimeGreeting = 
+			    IF(CurrentHour < 12, "Good Morning",
+			    IF(CurrentHour < 17, "Good Afternoon",
+			    "Good Evening"))
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    height: 85px;
+			    padding: 15px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 10px;
+			    color: white;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-between;
+			    box-shadow: 0 4px 12px rgba(0,0,0,0);
+			    box-sizing: border-box;
+			'>
+			    <!-- Left side: Dashboard Title -->
+			    <div style='display: flex; align-items: center; gap: 15px;'>
+			        <!-- Home icon -->
+			        <div style='
+			            width: 40px;
+			            height: 40px;
+			            background: rgba(255,255,255,0.15);
+			            border-radius: 8px;
+			            display: flex;
+			            align-items: center;
+			            justify-content: center;
+			            font-size: 20px;
+			        '>
+			            🏠
+			        </div>
+			        
+			        <!-- Title -->
+			        <div>
+			            <div style='font-size: 12px; opacity: 0.85; margin-bottom: 4px; letter-spacing: 0.5px;'>
+			                REPORT
+			            </div>
+			            <div style='font-size: 26px; font-weight: 700; line-height: 1;'>
+			                Executive Branch Summary - Parts Action Dashboard
+			            </div>
+			        </div>
+			    </div>
+			    
+			    <!-- Right side: Welcome & Date -->
+			    <div style='text-align: right;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 6px;'>
+			            " & TimeGreeting & ", " & WelcomeName & "
+			        </div>
+			        <div style='font-size: 16px; font-weight: 600;'>
+			            📅 " & DateDisplay & "
+			        </div>
+			    </div>
+			</div>
+			"
+			```
+		lineageTag: c5832377-b84e-420c-b96c-137de58b33cc
+
+	measure 'Exec Panel - Option 2 Benchmark' =
+			
+			VAR _Branches = VALUES(dim_BranchLocation[Branch])
+			
+			VAR _TotalNegOH = [Negative On Hand Count]
+			VAR _TotalNoBin = [On Hand No Bin Count]
+			VAR _TotalAging = [Open Tickets Aging Count]
+			
+			VAR _AvgNegOH = INT(AVERAGEX(_Branches, CALCULATE([Negative On Hand Count])))
+			VAR _AvgNoBin = INT(AVERAGEX(_Branches, CALCULATE([On Hand No Bin Count])))
+			VAR _AvgAging = INT(AVERAGEX(_Branches, CALCULATE([Open Tickets Aging Count])))
+			
+			VAR _NegOHData  = ADDCOLUMNS(_Branches, "_c", CALCULATE([Negative On Hand Count]))
+			VAR _TopNegOH   = TOPN(1, _NegOHData, [_c], DESC)
+			VAR _TopNegName = MAXX(_TopNegOH, dim_BranchLocation[Branch])
+			VAR _TopNegVal  = MAXX(_TopNegOH, [_c])
+			
+			VAR _NoBinData   = ADDCOLUMNS(_Branches, "_c", CALCULATE([On Hand No Bin Count]))
+			VAR _TopNoBin    = TOPN(1, _NoBinData, [_c], DESC)
+			VAR _TopBinName  = MAXX(_TopNoBin, dim_BranchLocation[Branch])
+			VAR _TopBinVal   = MAXX(_TopNoBin, [_c])
+			
+			VAR _AgingData    = ADDCOLUMNS(_Branches, "_c", CALCULATE([Open Tickets Aging Count]))
+			VAR _TopAging     = TOPN(1, _AgingData, [_c], DESC)
+			VAR _TopAgingName = MAXX(_TopAging, dim_BranchLocation[Branch])
+			VAR _TopAgingVal  = MAXX(_TopAging, [_c])
+			
+			RETURN
+			"
+			<div style='font-family:Segoe UI,Arial,sans-serif;height:100%;box-sizing:border-box;background:#1D3C4E;border-radius:8px;padding:16px 14px;display:flex;flex-direction:column;gap:10px;'>
+			
+			    <div style='font-size:13px;font-weight:700;color:white;letter-spacing:0.5px;border-bottom:1px solid rgba(255,255,255,0.15);padding-bottom:10px;'>
+			        Company Benchmark
+			    </div>
+			
+			    <div style='background:rgba(255,255,255,0.05);border-radius:6px;padding:10px 12px;border-left:3px solid #f87171;'>
+			        <div style='font-size:11px;color:#f87171;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;'>Negative On Hand</div>
+			        <div style='display:flex;justify-content:space-between;margin-bottom:4px;'>
+			            <div style='text-align:center;'>
+			                <div style='font-size:20px;font-weight:700;color:white;'>" & FORMAT(_TotalNegOH, "#,0") & "</div>
+			                <div style='font-size:10px;color:rgba(255,255,255,0.5);margin-top:2px;'>Total</div>
+			            </div>
+			            <div style='text-align:center;'>
+			                <div style='font-size:20px;font-weight:700;color:white;'>" & FORMAT(_AvgNegOH, "#,0") & "</div>
+			                <div style='font-size:10px;color:rgba(255,255,255,0.5);margin-top:2px;'>Avg / Branch</div>
+			            </div>
+			        </div>
+			        <div style='font-size:11px;color:rgba(255,255,255,0.6);margin-top:6px;'>Peak: " & _TopNegName & " (" & FORMAT(_TopNegVal, "#,0") & ")</div>
+			    </div>
+			
+			    <div style='background:rgba(255,255,255,0.05);border-radius:6px;padding:10px 12px;border-left:3px solid #fbbf24;'>
+			        <div style='font-size:11px;color:#fbbf24;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;'>On Hand No Bin</div>
+			        <div style='display:flex;justify-content:space-between;margin-bottom:4px;'>
+			            <div style='text-align:center;'>
+			                <div style='font-size:20px;font-weight:700;color:white;'>" & FORMAT(_TotalNoBin, "#,0") & "</div>
+			                <div style='font-size:10px;color:rgba(255,255,255,0.5);margin-top:2px;'>Total</div>
+			            </div>
+			            <div style='text-align:center;'>
+			                <div style='font-size:20px;font-weight:700;color:white;'>" & FORMAT(_AvgNoBin, "#,0") & "</div>
+			                <div style='font-size:10px;color:rgba(255,255,255,0.5);margin-top:2px;'>Avg / Branch</div>
+			            </div>
+			        </div>
+			        <div style='font-size:11px;color:rgba(255,255,255,0.6);margin-top:6px;'>Peak: " & _TopBinName & " (" & FORMAT(_TopBinVal, "#,0") & ")</div>
+			    </div>
+			
+			    <div style='background:rgba(255,255,255,0.05);border-radius:6px;padding:10px 12px;border-left:3px solid #fb923c;'>
+			        <div style='font-size:11px;color:#fb923c;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;'>Open Tickets</div>
+			        <div style='display:flex;justify-content:space-between;margin-bottom:4px;'>
+			            <div style='text-align:center;'>
+			                <div style='font-size:20px;font-weight:700;color:white;'>" & FORMAT(_TotalAging, "#,0") & "</div>
+			                <div style='font-size:10px;color:rgba(255,255,255,0.5);margin-top:2px;'>Total</div>
+			            </div>
+			            <div style='text-align:center;'>
+			                <div style='font-size:20px;font-weight:700;color:white;'>" & FORMAT(_AvgAging, "#,0") & "</div>
+			                <div style='font-size:10px;color:rgba(255,255,255,0.5);margin-top:2px;'>Avg / Branch</div>
+			            </div>
+			        </div>
+			        <div style='font-size:11px;color:rgba(255,255,255,0.6);margin-top:6px;'>Peak: " & _TopAgingName & " (" & FORMAT(_TopAgingVal, "#,0") & ")</div>
+			    </div>
+			
+			</div>
+			"
+		lineageTag: 7a8b9c0d-1e2f-3456-a012-567890123456
+
+	measure 'Exec Panel - Option 3 Priority' =
+			
+			VAR _Branches = VALUES(dim_BranchLocation[Branch])
+			
+			VAR _BranchData =
+			    ADDCOLUMNS(
+			        _Branches,
+			        "_NegOH", CALCULATE([Negative On Hand Count]),
+			        "_NoBin", CALCULATE([On Hand No Bin Count]),
+			        "_Aging", CALCULATE([Open Tickets Aging Count])
+			    )
+			
+			VAR _WithScore =
+			    ADDCOLUMNS(
+			        _BranchData,
+			        "_Score",
+			            IF([_NegOH] > 0, 1, 0) + IF([_NoBin] > 0, 1, 0) + IF([_Aging] > 0, 1, 0),
+			        "_Total", [_NegOH] + [_NoBin] + [_Aging]
+			    )
+			
+			VAR _MultiIssue = TOPN(6, FILTER(_WithScore, [_Score] >= 2), [_Total], DESC)
+			
+			VAR _CountMulti  = COUNTROWS(FILTER(_WithScore, [_Score] >= 2))
+			VAR _CountClean  = COUNTROWS(FILTER(_WithScore, [_Score] = 0))
+			VAR _TotalBranches = COUNTROWS(_Branches)
+			
+			VAR _Rows =
+			    CONCATENATEX(
+			        _MultiIssue,
+			        "
+			        <div style='background:rgba(255,255,255,0.05);border-radius:6px;padding:8px 10px;margin-bottom:6px;'>
+			            <div style='font-size:12px;font-weight:600;color:white;margin-bottom:5px;'>" & dim_BranchLocation[Branch] & "</div>
+			            <div style='display:flex;gap:8px;'>
+			                <span style='font-size:11px;background:rgba(248,113,113,0.2);color:#f87171;padding:2px 7px;border-radius:10px;'>" & FORMAT([_NegOH], "0") & " OH</span>
+			                <span style='font-size:11px;background:rgba(251,191,36,0.2);color:#fbbf24;padding:2px 7px;border-radius:10px;'>" & FORMAT([_NoBin], "0") & " NB</span>
+			                <span style='font-size:11px;background:rgba(251,146,60,0.2);color:#fb923c;padding:2px 7px;border-radius:10px;'>" & FORMAT([_Aging], "0") & " Tix</span>
+			            </div>
+			        </div>
+			        ",
+			        "",
+			        [_Total], DESC
+			    )
+			
+			RETURN
+			"
+			<div style='font-family:Segoe UI,Arial,sans-serif;height:100%;box-sizing:border-box;background:#1D3C4E;border-radius:8px;padding:16px 14px;display:flex;flex-direction:column;'>
+			
+			    <div style='font-size:13px;font-weight:700;color:white;letter-spacing:0.5px;border-bottom:1px solid rgba(255,255,255,0.15);padding-bottom:10px;margin-bottom:10px;'>
+			        Priority Branches
+			    </div>
+			
+			    <div style='display:flex;gap:10px;margin-bottom:12px;'>
+			        <div style='flex:1;text-align:center;background:rgba(248,113,113,0.15);border-radius:6px;padding:7px 4px;'>
+			            <div style='font-size:18px;font-weight:700;color:#f87171;'>" & FORMAT(_CountMulti, "0") & "</div>
+			            <div style='font-size:10px;color:rgba(255,255,255,0.5);margin-top:2px;'>Multi-issue</div>
+			        </div>
+			        <div style='flex:1;text-align:center;background:rgba(74,222,128,0.1);border-radius:6px;padding:7px 4px;'>
+			            <div style='font-size:18px;font-weight:700;color:#4ade80;'>" & FORMAT(_CountClean, "0") & "</div>
+			            <div style='font-size:10px;color:rgba(255,255,255,0.5);margin-top:2px;'>Issue-free</div>
+			        </div>
+			    </div>
+			
+			    <div style='overflow:hidden;flex:1;'>
+			        " & _Rows & "
+			    </div>
+			
+			</div>
+			"
+		lineageTag: 8b9c0d1e-2f3a-4567-b123-678901234567
+
+	measure 'Exec Panel - Combined' =
+			
+			VAR _Branches = VALUES(dim_BranchLocation[Branch])
+			
+			VAR _TotalNegOH = [Negative On Hand Count]
+			VAR _TotalNoBin = [On Hand No Bin Count]
+			VAR _TotalAging = [Open Tickets Aging Count]
+			
+			VAR _AvgNegOH = INT(AVERAGEX(_Branches, CALCULATE([Negative On Hand Count])))
+			VAR _AvgNoBin = INT(AVERAGEX(_Branches, CALCULATE([On Hand No Bin Count])))
+			VAR _AvgAging = INT(AVERAGEX(_Branches, CALCULATE([Open Tickets Aging Count])))
+			
+			VAR _NegOHData  = ADDCOLUMNS(_Branches, "_c", CALCULATE([Negative On Hand Count]))
+			VAR _TopNegOH   = TOPN(1, _NegOHData, [_c], DESC)
+			VAR _TopNegName = MAXX(_TopNegOH, dim_BranchLocation[Branch])
+			VAR _TopNegVal  = MAXX(_TopNegOH, [_c])
+			
+			VAR _NoBinData   = ADDCOLUMNS(_Branches, "_c", CALCULATE([On Hand No Bin Count]))
+			VAR _TopNoBin    = TOPN(1, _NoBinData, [_c], DESC)
+			VAR _TopBinName  = MAXX(_TopNoBin, dim_BranchLocation[Branch])
+			VAR _TopBinVal   = MAXX(_TopNoBin, [_c])
+			
+			VAR _AgingData    = ADDCOLUMNS(_Branches, "_c", CALCULATE([Open Tickets Aging Count]))
+			VAR _TopAging     = TOPN(1, _AgingData, [_c], DESC)
+			VAR _TopAgingName = MAXX(_TopAging, dim_BranchLocation[Branch])
+			VAR _TopAgingVal  = MAXX(_TopAging, [_c])
+			
+			RETURN
+			"<style>html,body{height:100vh;margin:0;padding:0;overflow:hidden;}</style>
+			<div style='font-family:Segoe UI,Arial,sans-serif;height:100vh;box-sizing:border-box;background:linear-gradient(135deg,#1D3C4E 0%,#2E5266 50%,#3A7CA5 100%);border-radius:10px;display:flex;flex-direction:column;overflow:hidden;'>
+			
+			    <div style='flex:1;min-height:0;padding:20px 18px;display:flex;flex-direction:column;'>
+			        <div style='font-size:26px;font-weight:600;color:rgba(255,255,255,0.6);letter-spacing:0.5px;text-align:center;'>
+			            Negative On Hand
+			        </div>
+			        <div style='flex:1;display:flex;align-items:center;justify-content:center;'>
+			            <div style='font-size:56px;font-weight:700;color:white;line-height:1;'>" & FORMAT(_TotalNegOH, "#,0") & "</div>
+			        </div>
+			        <div style='text-align:center;'>
+			            <div style='font-size:20px;color:rgba(255,255,255,0.55);margin-bottom:4px;'>Peak: " & _TopNegName & " (" & FORMAT(_TopNegVal, "#,0") & ")</div>
+			            <div style='font-size:20px;color:rgba(255,255,255,0.55);'>Avg per branch: " & FORMAT(_AvgNegOH, "#,0") & "</div>
+			        </div>
+			    </div>
+			
+			    <div style='height:1px;background:rgba(255,255,255,0.2);margin:0 18px;'></div>
+			
+			    <div style='flex:1;min-height:0;padding:20px 18px;display:flex;flex-direction:column;'>
+			        <div style='font-size:26px;font-weight:600;color:rgba(255,255,255,0.6);letter-spacing:0.5px;text-align:center;'>
+			            On Hand No Bin
+			        </div>
+			        <div style='flex:1;display:flex;align-items:center;justify-content:center;'>
+			            <div style='font-size:56px;font-weight:700;color:white;line-height:1;'>" & FORMAT(_TotalNoBin, "#,0") & "</div>
+			        </div>
+			        <div style='text-align:center;'>
+			            <div style='font-size:20px;color:rgba(255,255,255,0.55);margin-bottom:4px;'>Peak: " & _TopBinName & " (" & FORMAT(_TopBinVal, "#,0") & ")</div>
+			            <div style='font-size:20px;color:rgba(255,255,255,0.55);'>Avg per branch: " & FORMAT(_AvgNoBin, "#,0") & "</div>
+			        </div>
+			    </div>
+			
+			    <div style='height:1px;background:rgba(255,255,255,0.2);margin:0 18px;'></div>
+			
+			    <div style='flex:1;min-height:0;padding:20px 18px;display:flex;flex-direction:column;'>
+			        <div style='font-size:26px;font-weight:600;color:rgba(255,255,255,0.6);letter-spacing:0.5px;text-align:center;'>
+			            Open Tickets
+			        </div>
+			        <div style='flex:1;display:flex;align-items:center;justify-content:center;'>
+			            <div style='font-size:56px;font-weight:700;color:white;line-height:1;'>" & FORMAT(_TotalAging, "#,0") & "</div>
+			        </div>
+			        <div style='text-align:center;'>
+			            <div style='font-size:20px;color:rgba(255,255,255,0.55);margin-bottom:4px;'>Peak: " & _TopAgingName & " (" & FORMAT(_TopAgingVal, "#,0") & ")</div>
+			            <div style='font-size:20px;color:rgba(255,255,255,0.55);'>Avg per branch: " & FORMAT(_AvgAging, "#,0") & "</div>
+			        </div>
+			    </div>
+			
+			</div>
+			"
+		lineageTag: 9c0d1e2f-3a4b-5678-c234-789012345678
+
+	measure 'Drill Through Tip' =
+			"<style>html,body{height:100vh;margin:0;padding:0;overflow:hidden;}</style>
+			<div style='font-family:Segoe UI,Arial,sans-serif;height:100vh;box-sizing:border-box;display:flex;align-items:center;padding:0 16px;background:#1D3C4E;border-radius:8px;border-left:4px solid #3A7CA5;'>
+			    <span style='font-size:16px;margin-right:10px;'>ℹ️</span>
+			    <span style='font-size:14px;color:#ffffff;'><strong style='color:#7dd3fc;'>Tip:</strong> Right-click any row in the Open Parts Tickets table → <strong style='color:#ffffff;'>Drill through</strong> → <strong style='color:#ffffff;'>Parts On Open Tickets</strong> to see individual line items and backorder status.</span>
+			</div>"
+		lineageTag: 1a2b3c4d-5e6f-7890-abcd-ef1234567890
+
+	measure 'Order Detail Panel' =
+			VAR _OrderNo    = SELECTEDVALUE(Fact_Parts_Open_Tickets[Order_No])
+			VAR _Customer   = SELECTEDVALUE(Fact_Parts_Open_Tickets[Customer])
+			VAR _Salesman   = SELECTEDVALUE(Fact_Parts_Open_Tickets[Salesman])
+			VAR _InvType    = SELECTEDVALUE(Fact_Parts_Open_Tickets[Invoice_Type])
+			VAR _OrderDate  = FORMAT(MAX(Fact_Parts_Open_Tickets[Order_Date]), "MMM D, YYYY")
+			VAR _DaysOpen   = MAX(Fact_Parts_Open_Tickets[Days_Open])
+			VAR _Aging      = SELECTEDVALUE(Fact_Parts_Open_Tickets[Aging])
+			VAR _Location   = SELECTEDVALUE(Fact_Parts_Open_Tickets[Location_Name])
+			VAR _OrderTotal = SUM(Fact_Parts_Open_Tickets[Order_Total_$$])
+			VAR _BOCount    = SUM(Fact_Parts_Open_Tickets[#_On_Back_Order])
+			VAR _BODollars  = SUM(Fact_Parts_Open_Tickets[$$_BackOrdered])
+			VAR _Deposit    = SUM(Fact_Parts_Open_Tickets[Deposit])
+			VAR _BOQty      = SUM(Fact_Parts_Open_Tickets_Details[BackOrdered_QTY])
+			VAR _DepositBlock = IF(_Deposit > 0,
+			    "<div style='display:flex;justify-content:space-between;margin-top:10px;'>
+			        <span style='font-size:15px;color:rgba(255,255,255,0.5);'>Deposit</span>
+			        <span style='font-size:15px;color:rgba(255,255,255,0.8);'>" & FORMAT(_Deposit, "$#,0.00") & "</span>
+			    </div>",
+			    ""
+			)
+			VAR _BOBlock = IF(_BOCount > 0,
+			    "<div style='margin-top:16px;background:rgba(251,191,36,0.1);border-radius:8px;padding:16px;border-left:4px solid #fbbf24;'>
+			        <div style='font-size:12px;color:#fbbf24;font-weight:700;letter-spacing:0.5px;margin-bottom:10px;'>BACKORDER SUMMARY</div>
+			        <div style='display:flex;justify-content:space-between;margin-bottom:8px;'>
+			            <span style='font-size:15px;color:rgba(255,255,255,0.6);'>Qty Backordered</span>
+			            <span style='font-size:16px;color:white;font-weight:600;'>" & FORMAT(_BOQty, "#,0") & "</span>
+			        </div>
+			        <div style='display:flex;justify-content:space-between;'>
+			            <span style='font-size:15px;color:rgba(255,255,255,0.6);'>Backorder Value</span>
+			            <span style='font-size:16px;color:#fbbf24;font-weight:600;'>" & FORMAT(_BODollars, "$#,0.00") & "</span>
+			        </div>
+			    </div>",
+			    "<div style='margin-top:16px;background:rgba(74,222,128,0.1);border-radius:8px;padding:14px 16px;border-left:4px solid #4ade80;'>
+			        <div style='font-size:15px;color:#4ade80;'>No backordered parts</div>
+			    </div>"
+			)
+			RETURN
+			"<style>html,body{height:100vh;margin:0;padding:0;overflow:hidden;}</style>
+			<div style='font-family:Segoe UI,Arial,sans-serif;height:100vh;box-sizing:border-box;background:linear-gradient(135deg,#1D3C4E 0%,#2E5266 50%,#3A7CA5 100%);border-radius:10px;display:flex;flex-direction:column;overflow:hidden;padding:26px 22px;'>
+			
+			    <div>
+			        <div style='font-size:12px;color:rgba(255,255,255,0.45);letter-spacing:1px;margin-bottom:6px;'>ORDER SUMMARY</div>
+			        <div style='font-size:42px;font-weight:700;color:white;line-height:1;margin-bottom:8px;'>#" & FORMAT(_OrderNo, "0") & "</div>
+			        <div style='font-size:19px;color:rgba(255,255,255,0.9);font-weight:600;margin-bottom:3px;'>" & _Customer & "</div>
+			        <div style='font-size:14px;color:rgba(255,255,255,0.5);'>" & _Location & "</div>
+			    </div>
+			
+			    <div style='height:1px;background:rgba(255,255,255,0.15);margin:20px 0;'></div>
+			
+			    <div style='flex:1;display:flex;flex-direction:column;justify-content:space-evenly;'>
+			        <div>
+			            <div style='font-size:12px;color:rgba(255,255,255,0.45);letter-spacing:0.5px;margin-bottom:4px;'>SALESMAN</div>
+			            <div style='font-size:17px;color:white;'>" & _Salesman & "</div>
+			        </div>
+			        <div>
+			            <div style='font-size:12px;color:rgba(255,255,255,0.45);letter-spacing:0.5px;margin-bottom:4px;'>INVOICE TYPE</div>
+			            <div style='font-size:17px;color:white;'>" & _InvType & "</div>
+			        </div>
+			        <div>
+			            <div style='font-size:12px;color:rgba(255,255,255,0.45);letter-spacing:0.5px;margin-bottom:4px;'>ORDER DATE</div>
+			            <div style='font-size:17px;color:white;'>" & _OrderDate & "</div>
+			        </div>
+			        <div>
+			            <div style='font-size:12px;color:rgba(255,255,255,0.45);letter-spacing:0.5px;margin-bottom:4px;'>DAYS OPEN</div>
+			            <div style='font-size:17px;color:white;'>" & FORMAT(_DaysOpen, "#,0") & " days</div>
+			            <div style='font-size:13px;color:rgba(255,255,255,0.45);margin-top:3px;'>" & _Aging & "</div>
+			        </div>
+			    </div>
+			
+			    <div style='height:1px;background:rgba(255,255,255,0.15);margin:20px 0;'></div>
+			
+			    <div>
+			        <div style='font-size:12px;color:rgba(255,255,255,0.45);letter-spacing:0.5px;margin-bottom:6px;'>ORDER TOTAL</div>
+			        <div style='font-size:30px;font-weight:700;color:white;'>" & FORMAT(_OrderTotal, "$#,0.00") & "</div>
+			        " & _DepositBlock & "
+			        " & _BOBlock & "
+			    </div>
+			
+			</div>"
+		lineageTag: 2b3c4d5e-6f7a-8901-bcde-f12345678901
+
+	measure 'Selected Branch Label' =
+			IF(
+			    HASONEVALUE(dim_BranchLocation[Branch]),
+			    SELECTEDVALUE(dim_BranchLocation[Branch]),
+			    "All Branches"
+			)
+		lineageTag: 3c4d5e6f-7a8b-9012-cdef-012345678901
 
 	column Value
 		isHidden

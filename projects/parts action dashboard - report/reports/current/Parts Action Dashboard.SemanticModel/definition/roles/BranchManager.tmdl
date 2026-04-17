@@ -1,0 +1,13 @@
+role BranchManager
+	modelPermission: read
+
+	tablePermission dim_BranchLocation =
+			[LocationID] = LOOKUPVALUE(
+			    dim_BranchUserAccess[BranchCode],
+			    dim_BranchUserAccess[UserEmail], USERPRINCIPALNAME()
+			)
+
+	tablePermission dim_BranchUserAccess
+
+	annotation PBI_Id = de3085d892ac4739a077f7a34a582404
+

@@ -1,0 +1,53 @@
+table dim_BranchUserAccess
+	lineageTag: 544f7a20-0cfd-41ef-bcc3-e00385f637b8
+
+	column UserEmail
+		dataType: string
+		lineageTag: 2a5cc5bc-0e17-48e1-a2d3-a6f43b3f7ea1
+		summarizeBy: none
+		sourceColumn: UserEmail
+
+		annotation SummarizationSetBy = Automatic
+
+	column BranchCode
+		dataType: string
+		lineageTag: 04911c24-d4d8-46dc-be1f-01c85b082119
+		summarizeBy: none
+		sourceColumn: BranchCode
+
+		annotation SummarizationSetBy = Automatic
+
+	column BranchName
+		dataType: string
+		lineageTag: 67b2fbb2-0d18-4a67-b668-0e12fbd69b40
+		summarizeBy: none
+		sourceColumn: BranchName
+
+		annotation SummarizationSetBy = Automatic
+
+	column FirstName
+		dataType: string
+		lineageTag: eaf5e349-b1f1-4764-a131-868c38ccbf39
+		summarizeBy: none
+		sourceColumn: FirstName
+
+		annotation SummarizationSetBy = Automatic
+
+	column IsCorpManager
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: c4e92d5b-78eb-442a-8ff4-9acf974b4cd6
+		summarizeBy: none
+		sourceColumn: IsCorpManager
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dim_BranchUserAccess = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-gxnyznhdptpenfw724g3o5sjzm.datawarehouse.fabric.microsoft.com", "LH_Master_Data"),
+				    dbo_dim_BranchUserAccess = Source{[Schema="dbo",Item="dim_BranchUserAccess"]}[Data]
+				in
+				    dbo_dim_BranchUserAccess
+
