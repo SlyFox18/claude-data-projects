@@ -487,6 +487,24 @@ table _Measures
 			```
 		lineageTag: 6f7a8b9c-0d1e-4f2a-3b4c-5d6e7f8a9b0c
 
+	measure 'Planter Promo' =
+			VAR _PromoCustomers =
+			    CALCULATETABLE(
+			        VALUES(Fact_PlanterInvoiceAllParts[CustomerNumber]),
+			        Fact_PlanterInvoiceAllParts[PartNumber] = "*PLANTER",
+			        Fact_PlanterInvoiceAllParts[Franchise] = "ZP"
+			    )
+			VAR _HasPromo =
+			    COUNTROWS(
+			        FILTER(
+			            Fact_PlanterInvoiceAllParts,
+			            Fact_PlanterInvoiceAllParts[CustomerNumber] IN _PromoCustomers
+			        )
+			    ) > 0
+			RETURN
+			IF(_HasPromo, "Yes", "No")
+		lineageTag: 739b55ff-de20-42be-85b7-3a096dafdd91
+
 	column Value
 		isHidden
 		lineageTag: da2dfa23-0c4c-4e9d-8014-3cc5710e756b

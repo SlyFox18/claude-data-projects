@@ -1,0 +1,380 @@
+table Fact_LaborJobSummary
+	lineageTag: a89639df-25ed-4099-a627-f671f74e4779
+
+	column JobCode
+		dataType: string
+		lineageTag: 427ddc1b-84b3-4310-a8b9-937e51f540c4
+		summarizeBy: none
+		sourceColumn: JobCode
+
+		annotation SummarizationSetBy = Automatic
+
+	column JobType
+		dataType: string
+		lineageTag: d383e01c-93dd-43a5-bcd9-21c60815f924
+		summarizeBy: none
+		sourceColumn: JobType
+
+		annotation SummarizationSetBy = Automatic
+
+	column InvoiceNumber
+		dataType: string
+		lineageTag: b74625e1-0adf-443d-9427-3c5ed7a6e9d4
+		summarizeBy: none
+		sourceColumn: InvoiceNumber
+
+		annotation SummarizationSetBy = Automatic
+
+	column IsStandardLabor
+		dataType: string
+		lineageTag: 4db49303-c0da-4d19-9f98-12841f1bd17e
+		summarizeBy: none
+		sourceColumn: IsStandardLabor
+
+		annotation SummarizationSetBy = Automatic
+
+	column InvoiceDate
+		dataType: dateTime
+		formatString: Long Date
+		lineageTag: 8313b1d4-996c-455a-ae78-63024a3eeefb
+		summarizeBy: none
+		sourceColumn: InvoiceDate
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column ModifiedDate
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: 48ccb848-9e53-4f07-b308-9d9e65a04863
+		summarizeBy: none
+		sourceColumn: ModifiedDate
+
+		annotation SummarizationSetBy = Automatic
+
+	column BranchCode
+		dataType: string
+		lineageTag: 72831a55-bb0b-4022-b6a3-c7aa1dab5566
+		summarizeBy: none
+		sourceColumn: BranchCode
+
+		annotation SummarizationSetBy = Automatic
+
+	column WorkOrderNumber
+		dataType: string
+		lineageTag: caf69665-3e75-453a-ae5a-8bdf459c565f
+		summarizeBy: none
+		sourceColumn: WorkOrderNumber
+
+		annotation SummarizationSetBy = Automatic
+
+	column EstimatedLaborAmount
+		dataType: double
+		lineageTag: 97872adc-3c2e-455b-a85d-ba7310577f68
+		summarizeBy: sum
+		sourceColumn: EstimatedLaborAmount
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column ActualLaborAmount
+		dataType: double
+		lineageTag: 49ef364d-56c0-46b4-b743-8c744769b7fe
+		summarizeBy: sum
+		sourceColumn: ActualLaborAmount
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column InvoicedLaborAmount
+		dataType: double
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: c6c0d899-173b-462c-9564-a63d7e75c03a
+		summarizeBy: sum
+		sourceColumn: InvoicedLaborAmount
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	column EstimatedHours
+		dataType: double
+		lineageTag: 1ee7e0ed-0423-4662-ae94-b844b96c1a8a
+		summarizeBy: sum
+		sourceColumn: EstimatedHours
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column EstimatedPartsAmount
+		dataType: double
+		lineageTag: f24b3f04-dc44-4192-9de5-a1125f4e6935
+		summarizeBy: sum
+		sourceColumn: EstimatedPartsAmount
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column ActualPartsAmount
+		dataType: double
+		lineageTag: 272e5d40-b2ca-4bf2-838c-3e0e1645eae9
+		summarizeBy: sum
+		sourceColumn: ActualPartsAmount
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column InvoicedPartsAmount
+		dataType: double
+		lineageTag: 34d586df-0019-46ba-908c-8a6bbb2e05b3
+		summarizeBy: sum
+		sourceColumn: InvoicedPartsAmount
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column IsMachineDown
+		dataType: string
+		lineageTag: 84f7b0fc-78e4-4d4e-9eb7-c4a37bd0041e
+		summarizeBy: none
+		sourceColumn: IsMachineDown
+
+		annotation SummarizationSetBy = Automatic
+
+	column WorkCategory
+		dataType: string
+		lineageTag: 524b205c-d2a3-4f69-9239-697684ae6044
+		summarizeBy: none
+		sourceColumn: WorkCategory
+
+		annotation SummarizationSetBy = Automatic
+
+	column JobStatus
+		dataType: string
+		lineageTag: 5a172ad3-1142-42eb-b7e1-2d4063226ae7
+		summarizeBy: none
+		sourceColumn: JobStatus
+
+		annotation SummarizationSetBy = Automatic
+
+	column IsNonRevenue
+		dataType: string
+		lineageTag: 371155fa-7626-4b4b-81b4-cacdaf62757e
+		summarizeBy: none
+		sourceColumn: IsNonRevenue
+
+		annotation SummarizationSetBy = Automatic
+
+	column IsFieldRepair
+		dataType: string
+		lineageTag: ecc102fe-be7a-499a-a630-969596085ab7
+		summarizeBy: none
+		sourceColumn: IsFieldRepair
+
+		annotation SummarizationSetBy = Automatic
+
+	column ClaimNumber
+		dataType: string
+		lineageTag: 814e708f-2a50-4668-bce0-c955e667ede8
+		summarizeBy: none
+		sourceColumn: ClaimNumber
+
+		annotation SummarizationSetBy = Automatic
+
+	column IsInspection
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 08fea61e-bec6-4e98-8c04-bb56479f6c03
+		summarizeBy: none
+		sourceColumn: IsInspection
+
+		annotation SummarizationSetBy = Automatic
+
+	column ActualHoursWorked
+		dataType: double
+		lineageTag: ba6b402a-96f1-4c89-a2fe-fc6b532d5709
+		summarizeBy: sum
+		sourceColumn: ActualHoursWorked
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column InvoicedHours
+		dataType: double
+		lineageTag: 0ebfcc73-0a96-4abc-941d-1e457b623691
+		summarizeBy: sum
+		sourceColumn: InvoicedHours
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column WorkOrderStatus
+		dataType: string
+		lineageTag: e6805ab2-0852-4c49-87a9-50c0f3ba338b
+		summarizeBy: none
+		sourceColumn: WorkOrderStatus
+
+		annotation SummarizationSetBy = Automatic
+
+	column WorkOrderCreationDate
+		dataType: dateTime
+		formatString: Short Date
+		lineageTag: fe126aa0-f1d2-4c0c-9713-1bb40940a46e
+		summarizeBy: none
+		sourceColumn: WorkOrderCreationDate
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column WorkOrderClosedDate
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: 48c7e4c1-cb4c-4ccd-91be-bfc1e75e4010
+		summarizeBy: none
+		sourceColumn: WorkOrderClosedDate
+
+		annotation SummarizationSetBy = Automatic
+
+	column TotalInvoicedAmount
+		dataType: double
+		lineageTag: 3976993b-4c62-4109-b71d-471f47ee0776
+		summarizeBy: sum
+		sourceColumn: TotalInvoicedAmount
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column TotalEstimatedAmount
+		dataType: double
+		lineageTag: 0ba1c344-1d7f-43c7-b78d-aa1e2fb332c1
+		summarizeBy: sum
+		sourceColumn: TotalEstimatedAmount
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column HoursVariance
+		dataType: double
+		lineageTag: 73acd766-8f73-4a7c-b9d0-ad0d1a79343d
+		summarizeBy: sum
+		sourceColumn: HoursVariance
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column IsPending
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 2ecfdb8d-e484-46f4-8a72-d3fc9fe1e47d
+		summarizeBy: none
+		sourceColumn: IsPending
+
+		annotation SummarizationSetBy = Automatic
+
+	column BranchName =
+			
+			RELATED(dim_BranchLocation[Branch])
+		lineageTag: 30501713-2db1-4dd8-bb5d-06aa9e9be882
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	column CreationMonthYear =
+			
+			FORMAT(Fact_LaborJobSummary[WorkOrderCreationDate], "MMM-YY")
+		lineageTag: c995486d-055d-41dc-8974-7d8115beb865
+		summarizeBy: none
+		sortByColumn: CreationMonthSort
+
+		changedProperty = SortByColumn
+
+		annotation SummarizationSetBy = Automatic
+
+	column CreationMonthSort = ```
+			
+			YEAR(Fact_LaborJobSummary[WorkOrderCreationDate]) * 100 + 
+			MONTH(Fact_LaborJobSummary[WorkOrderCreationDate])
+			```
+		formatString: 0
+		lineageTag: 28344a23-d22d-4517-9b1c-ffddc4c2ef58
+		summarizeBy: sum
+
+		annotation SummarizationSetBy = Automatic
+
+	column WorkOrderCreationDateKey =
+			
+			IF(
+			    ISBLANK(Fact_LaborJobSummary[WorkOrderCreationDate]),
+			    BLANK(),
+			    INT(FORMAT(Fact_LaborJobSummary[WorkOrderCreationDate], "YYYYMMDD"))
+			)
+		formatString: 0
+		lineageTag: b20f1e7a-954c-4c4c-bc85-bddc49c28f42
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	column IsPendingInspection =
+			
+			COUNTROWS(
+			    FILTER(
+			        Fact_PendingInspections,
+			        Fact_PendingInspections[WorkOrderNumber] = Fact_LaborJobSummary[WorkOrderNumber]
+			    )
+			) > 0
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 31c9ac5a-8718-4da5-944b-7f4434a09c0f
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	column InspectionCategory =
+			SWITCH(
+			    TRUE(),
+			    Fact_LaborJobSummary[JobCode] IN {
+			        "IS-LA115", "IS-LT180", "IS-D110(-500000)", "IS-D125",
+			        "IS-D130(-400000)", "IS-D130(400001-)", "IS-D140(-400000)",
+			        "IS-D140(400001-)", "IS-D160", "IS-D170", "IS-E120", "IS-E130-QCD",
+			        "IS-S240", "IS-X300(-180000)", "IS-X300(180001-)", "IS-X300R(120001-)",
+			        "IS-X310", "IS-X350", "IS-Z225(-060000)", "IS-Z335E", "IS-Z345R",
+			        "IS-Z355E", "IS-Z355R", "IS-Z425(-040000)", "IS-Z435", "IS-E100", "IS-Z535M",
+			        "IS-Z445(-100000)", "IS-Z515E", "IS-Z540M", "IS-Z540R", "IS-Z445(100000-14000",
+			        "IS-MOWER INSPECTION"
+			    }, "IS-MOWER INSPECTION",
+			    Fact_LaborJobSummary[JobCode] IN {
+			        "IS-TS4X2", "IS-XUV550", "IS-XUV560", "IS-XUV590M",
+			        "IS-XUV835R", "IS-XUV855D", "IS-GATOR INSPECTION"
+			    }, "IS-GATOR INSPECTION",
+			    Fact_LaborJobSummary[JobCode]
+			)
+		lineageTag: 7a3f2b1c-9d4e-4a8f-b5c6-e2d1f0a3b4c5
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	partition Fact_LaborJobSummary = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-gxnyznhdptpenfw724g3o5sjzm.datawarehouse.fabric.microsoft.com", "LH_Master_Data"),
+				    dbo_Fact_LaborJobSummary = Source{[Schema="dbo",Item="Fact_LaborJobSummary"]}[Data]
+				in
+				    dbo_Fact_LaborJobSummary
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

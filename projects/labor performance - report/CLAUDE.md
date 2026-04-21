@@ -5,7 +5,7 @@
 - **Primary users:** Service managers, branch managers
 - **Workspace:** RP - Service Reports
 - **Refresh tier:** Tier 2 — Daily
-- **Status:** Production (current version is "Labor Performance V2"; archive folder contains V1)
+- **Status:** Production (renamed from "Labor Performance V2"; archive folder contains V1)
 
 ## Semantic Model
 
