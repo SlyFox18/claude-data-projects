@@ -667,7 +667,7 @@ Go to make.powerautomate.com → Create → Scheduled cloud flow
 
 - Name: `Parts Action Dashboard - Daily Branch Email`
 - Repeat every: 1 Day
-- At: 7:00 AM (Central Standard Time / UTC-6)
+- At: 8:00 AM (Central Standard Time / UTC-6)
 - Days: Monday, Tuesday, Wednesday, Thursday, Friday
 
 - [ ] **Step 3: Add action — Run a query against the Lakehouse**
@@ -776,7 +776,7 @@ Flow structure:
 
   <!-- Footer -->
   <tr><td style="background:#f8fafc;padding:12px 24px;text-align:center;border-top:1px solid #e2e8f0">
-    <p style="margin:0;font-size:11px;color:#94a3b8">Sent daily at 7:00 AM · Parts Action Dashboard · South Plains Implement</p>
+    <p style="margin:0;font-size:11px;color:#94a3b8">Sent daily at 8:00 AM · Parts Action Dashboard · South Plains Implement</p>
     <p style="margin:4px 0 0;font-size:11px;color:#94a3b8">Questions? Contact bfox@spitractor.com</p>
   </td></tr>
 
@@ -799,7 +799,7 @@ Disable the schedule trigger temporarily. Run the flow manually for your own tes
 
 - [ ] **Step 6: Enable the scheduled trigger**
 
-Re-enable the 7:00 AM Mon-Fri schedule. The flow is live.
+Re-enable the 8:00 AM Mon-Fri schedule. The flow is live.
 
 - [ ] **Step 7: Write the setup guide**
 
@@ -812,7 +812,7 @@ Write `projects/parts action dashboard - report/documentation/power-automate-set
 Parts Action Dashboard - Daily Branch Email
 
 ## Schedule
-7:00 AM Central Time, Monday–Friday
+8:00 AM Central Time, Monday–Friday
 
 ## Data Source
 LH_Master_Data SQL endpoint (Fabric)
