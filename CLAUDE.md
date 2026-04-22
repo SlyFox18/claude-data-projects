@@ -135,14 +135,36 @@ Source System (ODBC) → Raw Tables (Lakehouse) → Dimensions → Fact Tables �
 
 ### Standard Workflow
 
+**Two-repo architecture (critical distinction):**
+- `data-projects` — local dev workspace (queries, docs, plans). NOT Fabric-integrated. Changes here do NOT affect Fabric.
+- `fabric-workspace-docs` — Fabric Git Integration mirror. This IS what Fabric reads/writes. Changes here DO affect Fabric.
+
+**Fabric Deployment Pipeline: "Dev Pipeline"**
+- Stages: RP-Dev → RP-Sandbox (2 stages only)
+- Reason: linear pipelines cannot branch to multiple production workspaces; each workspace can only belong to one pipeline
+- Production promotion is done via Desktop publish directly to the target workspace
+
+**Development → Production flow:**
 ```
-1. Work on dev branch (or feature/* branch off dev)
-2. Push to origin/dev
-   → Fabric auto-syncs RP - Sandbox from dev branch
-3. Validate in RP - Sandbox (refresh, check visuals, spot-check measures)
-4. Open PR: dev → main  (PR template auto-loads from .github/PULL_REQUEST_TEMPLATE/)
-5. Merge PR
-   → Production workspaces pull from main
+1. Build in Power BI Desktop
+2. Publish to RP-Dev → verify privately (Brian only)
+
+For significant changes (new reports, data model changes):
+3. Deploy RP-Dev → RP-Sandbox via "Dev Pipeline" → stakeholder validates
+
+For minor changes (label fixes, formatting, job code updates):
+3. Skip Sandbox — go directly to step 4
+
+4. Desktop → Publish to the correct production workspace:
+   - Parts reports  → RP - Parts Reports
+   - Service reports → RP - Service Reports
+   - Financial reports → RP - Financial Reports
+
+5. In the Fabric workspace → Git integration → Commit
+   → pushes changes to fabric-workspace-docs/dev branch
+
+6. Open PR: dev → main in fabric-workspace-docs
+7. Merge PR → production workspaces update via Git integration "Update all"
 ```
 
 ### Branch Protection
