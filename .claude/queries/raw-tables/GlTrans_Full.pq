@@ -11,7 +11,7 @@ Purpose: Full GL transaction history across all departments and accounts.
          Companion to the filtered df_GlTrans_Raw (Dept=30, Acct=480 only).
          This table is the foundation for financial-side GL reporting.
 Created: 2026-04-10
-Last Modified: 2026-04-10
+Last Modified: 2026-04-16
 Output: Lakehouse table "GlTrans_Full"
 
 ⏱️ REFRESH CHARACTERISTICS:
@@ -20,7 +20,7 @@ Average Refresh Time: TBD — measure after initial load
 Refresh Strategy: Incremental Refresh (Fabric native — see Incremental Refresh section)
 Row Count (full table): 28,816,547 rows as of 2026-04-10
 Row Count (since 2023-01-01): ~8,894,026 rows as of 2026-04-10
-Query Folding: ✅ YES — SQL WHERE clause filters at source
+Query Folding: ✅ YES — Partition dates (RangeStart/RangeEnd) pushed into SQL WHERE clause
 
 ============================================================================
 📊 INVESTIGATION FINDINGS — 2026-04-10
@@ -189,12 +189,23 @@ let
     // SQL QUERY — FULL GL TRANSACTIONS (ALL DEPARTMENTS, ALL ACCOUNTS)
     // ========================================================================
     /*
-    STRATEGY: Full extract with only a base date safety filter (2023-01-01).
-    Fabric incremental refresh partitions this via RangeStart/RangeEnd below.
+    STRATEGY: Partition dates (RangeStart/RangeEnd) are pushed directly into
+    the SQL WHERE clause so the source system returns only the rows for the
+    current partition. This prevents Fabric from pulling all 8.9M rows on every
+    partition execution (36 partitions × 8.9M rows = ~320M ODBC reads — the
+    root cause of the 13-15 hour timeout failures observed 2026-04-13/14).
+
+    The '2023-01-01' safety filter is retained as a hard floor — it prevents
+    pre-2023 rows from being loaded if RangeStart is ever set to an earlier date.
+
     No department or account filter — this is the complete GL transaction table.
     COY excluded (always = 1, verified 2026-04-10).
     ORDER BY omitted for performance on a 28.8M row table.
     */
+
+    // Build partition date strings from Fabric-managed parameters
+    StartDate = DateTime.ToText(RangeStart, [Format="yyyy-MM-dd"]),
+    EndDate   = DateTime.ToText(RangeEnd,   [Format="yyyy-MM-dd"]),
 
     SQL =
     "SELECT
@@ -236,37 +247,30 @@ let
         ModifiedDate    AS ModifiedDate
 
     FROM GlTrans
-    WHERE GLTRANS_DATE >= '2023-01-01'",
+    WHERE GLTRANS_DATE >= '" & StartDate & "'
+      AND GLTRANS_DATE <  '" & EndDate   & "'
+      AND GLTRANS_DATE >= '2023-01-01'",
 
     // ========================================================================
     // EXECUTE QUERY
     // ========================================================================
-
-    Source = try Odbc.Query("dsn=EquipRDB64", SQL) otherwise
-        error "Failed to connect to GlTrans. Verify database connection and table availability.",
-
-    // ========================================================================
-    // INCREMENTAL REFRESH PARTITION FILTER
-    // ========================================================================
     /*
     RangeStart and RangeEnd are DateTime parameters managed by Fabric.
-    Fabric sets these values automatically based on the refresh policy.
+    Fabric sets these values automatically for each monthly partition.
     DO NOT hardcode or manually update these parameters.
     Partition key: TransDate (GLTRANS_DATE from source).
     Hot window: 6 months — covers max observed modification lag of 182 days.
     */
 
-    FilteredByRange = Table.SelectRows(
-        Source,
-        each [TransDate] >= RangeStart and [TransDate] < RangeEnd
-    ),
+    Source = try Odbc.Query("dsn=EquipRDB64", SQL) otherwise
+        error "Failed to connect to GlTrans. Verify database connection and table availability.",
 
     // ========================================================================
     // TYPE TRANSFORMATIONS
     // ========================================================================
 
     TypedColumns = Table.TransformColumnTypes(
-        FilteredByRange,
+        Source,
         {
             {"TransId",          Int64.Type},
             {"DocRef",           type text},
@@ -408,7 +412,12 @@ Deployment history:
 • 2026-04-10: Dataflow created, parameters set, incremental refresh configured
 • 2026-04-10 2:17 PM → 7:12 PM: Initial load completed (4h 54m)
   ⚠️ Misconfigured with 6 Months — only 1,371,517 rows loaded (Oct 2025 → Apr 2026)
-• 2026-04-13: Corrected to 3 Years — re-run pending off-hours
+• 2026-04-13: Corrected to 3 Years — re-run failed after 13 hours (connection terminated)
+• 2026-04-14: Re-run attempt 2 — failed after 15 hours (connection terminated)
+  ROOT CAUSE: FilteredByRange used Table.SelectRows (in-memory filter), causing Fabric
+  to pull all 8.9M rows from ODBC for EVERY partition (36 partitions × 8.9M = ~320M reads).
+  FIX (2026-04-16): Partition dates pushed into SQL WHERE clause — each partition now
+  fetches only its own ~250K rows from source. Re-run required off-hours.
 
 Post-correction validation query:
   SELECT COUNT(*) AS TotalRows, MIN(TransDate) AS EarliestDate, MAX(TransDate) AS LatestDate

@@ -1,0 +1,223 @@
+table Fact_Parts_Open_Tickets_Details
+	lineageTag: 5d49480a-b82f-454f-add6-247987945937
+
+	column Location
+		dataType: string
+		lineageTag: 613d7ffb-5dcc-45a6-8db1-20edb4c48a37
+		summarizeBy: none
+		sourceColumn: Location
+
+		annotation SummarizationSetBy = Automatic
+
+	column Location_Name
+		dataType: string
+		lineageTag: cce120d6-9115-4e0a-ac02-e91a7a3da481
+		summarizeBy: none
+		sourceColumn: Location_Name
+
+		annotation SummarizationSetBy = Automatic
+
+	column Order_No
+		dataType: int64
+		formatString: 0
+		lineageTag: eab71f19-5b1c-44f0-87ee-c6e5ef75e7c3
+		summarizeBy: none
+		sourceColumn: Order_No
+
+		annotation SummarizationSetBy = Automatic
+
+	column RO_Number
+		dataType: int64
+		formatString: 0
+		lineageTag: 9a83318f-13ed-484d-9122-0461a529c1e1
+		summarizeBy: sum
+		sourceColumn: RO_Number
+
+		annotation SummarizationSetBy = Automatic
+
+	column File_No
+		dataType: int64
+		formatString: 0
+		lineageTag: e8b6b41c-ca6b-475e-a2ce-087bd79b22cf
+		summarizeBy: sum
+		sourceColumn: File_No
+
+		annotation SummarizationSetBy = Automatic
+
+	column Invoice_Type
+		dataType: string
+		lineageTag: f2328597-2dec-475c-bd57-3462b4c5e0d7
+		summarizeBy: none
+		sourceColumn: Invoice_Type
+
+		annotation SummarizationSetBy = Automatic
+
+	column Order_Date
+		dataType: dateTime
+		formatString: Long Date
+		lineageTag: 3188a392-d655-4606-99c4-cc60a6691c59
+		summarizeBy: none
+		sourceColumn: Order_Date
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column Created_On
+		dataType: dateTime
+		formatString: Long Date
+		lineageTag: 86411b0a-fbe6-41c6-8023-a492daed8fb5
+		summarizeBy: none
+		sourceColumn: Created_On
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column WO_Creation_Date
+		dataType: dateTime
+		formatString: Long Date
+		lineageTag: 251b69eb-02de-4db8-a313-41a4b8556d26
+		summarizeBy: none
+		sourceColumn: WO_Creation_Date
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column Days_Open
+		dataType: int64
+		formatString: 0
+		lineageTag: 7512c5c1-b327-4fe2-9201-bb30e7cae6c1
+		summarizeBy: sum
+		sourceColumn: Days_Open
+
+		annotation SummarizationSetBy = Automatic
+
+	column Aging
+		dataType: string
+		lineageTag: 93cc71f3-e32f-48ff-bc96-4800182cbdef
+		summarizeBy: none
+		sourceColumn: Aging
+
+		annotation SummarizationSetBy = Automatic
+
+	column Aging_Sort_Order
+		dataType: int64
+		formatString: 0
+		lineageTag: d97fbc24-0ac8-4b99-bb0c-6385d869bddc
+		summarizeBy: sum
+		sourceColumn: Aging_Sort_Order
+
+		annotation SummarizationSetBy = Automatic
+
+	column Aging_Date_Source
+		dataType: string
+		lineageTag: 1b79ec97-fd63-4cc5-b3dd-0b263a42ac9f
+		summarizeBy: none
+		sourceColumn: Aging_Date_Source
+
+		annotation SummarizationSetBy = Automatic
+
+	column Part_No
+		dataType: string
+		lineageTag: c85f6638-7460-400d-8279-1d28e1cc64b6
+		summarizeBy: none
+		sourceColumn: Part_No
+
+		annotation SummarizationSetBy = Automatic
+
+	column Quantity_Ordered
+		dataType: double
+		lineageTag: 87808e3e-d949-4905-b252-0fad1adbfbe9
+		summarizeBy: sum
+		sourceColumn: Quantity_Ordered
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column Unit_Price
+		dataType: double
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: f4268dd6-9824-4bdb-a882-6d8e3ac0cf71
+		summarizeBy: sum
+		sourceColumn: Unit_Price
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	column Line_Total
+		dataType: double
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: baed0502-499c-4e22-9929-f175740f9777
+		summarizeBy: sum
+		sourceColumn: Line_Total
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	column BackOrdered_QTY
+		dataType: double
+		formatString: 0
+		lineageTag: 151e9b88-5fd0-4ae6-a64e-6cc0c26040f6
+		summarizeBy: sum
+		sourceColumn: BackOrdered_QTY
+
+		annotation SummarizationSetBy = Automatic
+
+	column Available_QTY
+		dataType: double
+		lineageTag: ce138898-b9a9-4da1-98ab-17a16c7c4a4b
+		summarizeBy: sum
+		sourceColumn: Available_QTY
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column Line_Backorder_Pct
+		dataType: double
+		lineageTag: 1837f74c-5a6a-4c67-a373-4a9c9602a53f
+		summarizeBy: sum
+		sourceColumn: Line_Backorder_Pct
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column Contact_Code
+		dataType: string
+		lineageTag: baf86f87-133c-4094-b2f6-44ec8b24c8c4
+		summarizeBy: none
+		sourceColumn: Contact_Code
+
+		annotation SummarizationSetBy = Automatic
+
+	column Customer
+		dataType: string
+		lineageTag: 2526ac9d-cd18-4aa2-aafb-a180b8db8c62
+		summarizeBy: none
+		sourceColumn: Customer
+
+		annotation SummarizationSetBy = Automatic
+
+	column Salesman
+		dataType: string
+		lineageTag: d6ea7889-bc5e-48c8-8809-0d200d8bb88c
+		summarizeBy: none
+		sourceColumn: Salesman
+
+		annotation SummarizationSetBy = Automatic
+
+	partition Fact_Parts_Open_Tickets_Details = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-gxnyznhdptpenfw724g3o5sjzm.datawarehouse.fabric.microsoft.com", "LH_Master_Data"),
+				    dbo_Fact_Parts_Open_Tickets_Details = Source{[Schema="dbo",Item="Fact_Parts_Open_Tickets_Details"]}[Data]
+				in
+				    dbo_Fact_Parts_Open_Tickets_Details
+

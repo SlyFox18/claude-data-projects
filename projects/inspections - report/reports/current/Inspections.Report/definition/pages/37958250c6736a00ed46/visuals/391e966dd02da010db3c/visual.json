@@ -1,0 +1,324 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.7.0/schema.json",
+  "name": "391e966dd02da010db3c",
+  "position": {
+    "x": 10.6095717884131,
+    "y": 410.23677581863979,
+    "z": 4000,
+    "height": 472.71536523929473,
+    "width": 389.0176322418136,
+    "tabOrder": 3000
+  },
+  "visual": {
+    "visualType": "InforiverFilterF39DAE8D57A743EF89F5C3809DEE2B69",
+    "query": {
+      "queryState": {
+        "column": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "dim_DateTable"
+                    }
+                  },
+                  "Property": "Date"
+                }
+              },
+              "queryRef": "dim_DateTable.Date",
+              "nativeQueryRef": "Date"
+            }
+          ]
+        }
+      }
+    },
+    "objects": {
+      "migration": [
+        {
+          "properties": {
+            "hasToMigrate": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            },
+            "migrationSettings": {
+              "expr": {
+                "Literal": {
+                  "Value": "'{\"v1_0_0_0\":{\"hierarchyStyle\":{\"isResolved\":true}},\"v2_0_0_0\":{\"appearance\":{\"isResolved\":true}},\"v5_7_0_0\":{\"appearance\":{\"isResolved\":true}}}'"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "general": [
+        {
+          "properties": {
+            "uniqueId": {
+              "expr": {
+                "Literal": {
+                  "Value": "'UID-1770307149430'"
+                }
+              }
+            },
+            "filter": {
+              "filter": {
+                "Version": 2,
+                "From": [
+                  {
+                    "Name": "d",
+                    "Entity": "dim_DateTable",
+                    "Type": 0
+                  }
+                ],
+                "Where": [
+                  {
+                    "Condition": {
+                      "And": {
+                        "Left": {
+                          "Comparison": {
+                            "ComparisonKind": 2,
+                            "Left": {
+                              "Column": {
+                                "Expression": {
+                                  "SourceRef": {
+                                    "Source": "d"
+                                  }
+                                },
+                                "Property": "Date"
+                              }
+                            },
+                            "Right": {
+                              "DateSpan": {
+                                "Expression": {
+                                  "Literal": {
+                                    "Value": "datetime'2025-12-01T00:00:00'"
+                                  }
+                                },
+                                "TimeUnit": 5
+                              }
+                            }
+                          }
+                        },
+                        "Right": {
+                          "Comparison": {
+                            "ComparisonKind": 4,
+                            "Left": {
+                              "Column": {
+                                "Expression": {
+                                  "SourceRef": {
+                                    "Source": "d"
+                                  }
+                                },
+                                "Property": "Date"
+                              }
+                            },
+                            "Right": {
+                              "DateSpan": {
+                                "Expression": {
+                                  "Literal": {
+                                    "Value": "datetime'2026-04-21T23:59:59.059'"
+                                  }
+                                },
+                                "TimeUnit": 5
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      ],
+      "appearance": [
+        {
+          "properties": {
+            "filterNoData": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            },
+            "dateTooltip": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "measureTooltip": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "varianceTooltip": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "clearSearchAfterSelect": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "dataPoint": [
+        {
+          "properties": {
+            "visualName": {
+              "expr": {
+                "Literal": {
+                  "Value": "'FCV_1770307160727'"
+                }
+              }
+            },
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "dateCard": [
+        {
+          "properties": {
+            "dateRangeSelectorStyle": {
+              "expr": {
+                "Literal": {
+                  "Value": "'dateRangePicker'"
+                }
+              }
+            },
+            "includeWeekends": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "defaultDateRangeSelection": {
+              "expr": {
+                "Literal": {
+                  "Value": "'user_defined'"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "columnHeaders": [
+        {
+          "properties": {
+            "showFooterIcons": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "presets": [
+        {
+          "properties": {
+            "enablePreset": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "filter": [
+        {
+          "properties": {
+            "customPresets": {
+              "expr": {
+                "Literal": {
+                  "Value": "'[{\"type\":\"date\",\"key\":\"date-this-1-month\",\"label\":\"This Month\",\"layout\":\"square.withIcon\",\"icon\":\"presetCalendar\",\"iconColor\":\"#444444\"},{\"type\":\"date\",\"key\":\"date-last-1-month\",\"label\":\"Last Month\",\"layout\":\"square.withIcon\",\"icon\":\"presetCalendar\",\"iconColor\":\"#444444\"},{\"type\":\"date\",\"key\":\"date-this-1-year\",\"label\":\"This Year\",\"layout\":\"square.withIcon\",\"icon\":\"presetCalendar\",\"iconColor\":\"#444444\"},{\"type\":\"date\",\"key\":\"date-last-1-year\",\"label\":\"Last Year\",\"layout\":\"square.withIcon\",\"icon\":\"presetCalendar\",\"iconColor\":\"#444444\"},{\"type\":\"date\",\"key\":\"date-this-1-quarter\",\"label\":\"This Qtr\",\"layout\":\"square.withIcon\",\"icon\":\"presetCalendar\",\"iconColor\":\"#444444\"},{\"type\":\"date\",\"key\":\"date-last-1-quarter\",\"label\":\"Last Qtr\",\"layout\":\"square.withIcon\",\"icon\":\"presetCalendar\",\"iconColor\":\"#444444\"}]'"
+                }
+              }
+            },
+            "selectedDatePreset": {
+              "expr": {
+                "Literal": {
+                  "Value": "'[]'"
+                }
+              }
+            },
+            "customImages": {
+              "expr": {
+                "Literal": {
+                  "Value": "'[]'"
+                }
+              }
+            },
+            "isFilterContextDisabled": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "visualContainerObjects": {
+      "border": [
+        {
+          "properties": {
+            "radius": {
+              "expr": {
+                "Literal": {
+                  "Value": "10D"
+                }
+              }
+            },
+            "color": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "ThemeDataColor": {
+                      "ColorId": 0,
+                      "Percent": -0.2
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "syncGroup": {
+      "groupName": "Date",
+      "fieldChanges": true,
+      "filterChanges": true
+    },
+    "drillFilterOtherVisuals": true
+  },
+  "parentGroupName": "75ace0c02bdc87c7724d"
+}
