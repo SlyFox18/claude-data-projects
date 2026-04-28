@@ -130,8 +130,9 @@ This is the process that the Corp Service Manager and HR Director need to agree 
    with location name, pay period, and submission timestamp
 
 4. HR DIRECTOR / PAYROLL SPECIALIST
-   Reviews the Power BI report to validate hours and draws
-   against source system data before processing payroll
+   Receives Power Automate notification email
+   Validates hours and draws before processing payroll
+   *** SEE CONSTRAINT BELOW — HR does not currently have Power BI licenses ***
    Flags any discrepancies with the relevant service manager
 
 5. PAYROLL PROCESSING
@@ -139,6 +140,23 @@ This is the process that the Corp Service Manager and HR Director need to agree 
 ```
 
 **Open question for stakeholders:** Should individual techs sign off on their own entries before the manager submits? The prototype included a signature field. If yes, this stays as a printed/informal step until Option C (Power Apps) is implemented.
+
+### Power BI Access for HR — Constraint and Options
+
+**Current state:** Only the Corp Service Manager and CFO currently have Power BI licenses. HR Director and Payroll Specialist do not. This affects how the validation step works in practice.
+
+Three options to resolve this:
+
+**Option 1 — License HR for Power BI Pro (~$10/user/month, 2 users)**
+HR gets direct access to the report and runs validation themselves each pay period. Clean, simple, gives HR full visibility. Cost is easily justified given the financial controls gap the CFO identified — this report exists specifically to protect payroll accuracy. Recommended.
+
+**Option 2 — Corp Service Manager owns the validation step**
+Corp Service Manager reviews the Power BI report each period and communicates any discrepancies to HR before payroll runs. HR never needs a license. Adds a manual coordination step and creates a dependency on one person's availability each pay period.
+
+**Option 3 — Power Automate emails a comparison summary to HR**
+After each submission, Power Automate generates a formatted email to HR showing submitted vs. invoiced hours per tech, flagging discrepancies. HR gets validation data without needing a license. More build complexity, less flexible than the full report (no drill-down, no slicing by period or location).
+
+**Decision needed:** Confirm with CFO and HR Director which path to take before finalizing the workflow. If Option 1 is approved, add HR to the Power BI workspace with Viewer role.
 
 ---
 
@@ -350,7 +368,8 @@ When the organization is ready, the Excel template is replaced by a Power Apps c
 
 *(Items marked with an asterisk must be confirmed before building the Excel template)*
 
-1. *__SharePoint site name and provisioning__* — Does IT need to create this, or can Brian provision it directly?
+1. *__Power BI access for HR__* — HR Director and Payroll Specialist do not currently have Power BI licenses. Three options: license them (~$10/user/month), route validation through Corp Service Manager, or have Power Automate email a comparison summary. Recommend licensing HR — decision needed from CFO.
+2. *__SharePoint site name and provisioning__* — Does IT need to create this, or can Brian provision it directly?
 2. **Tech signature requirement** — Is a digital signature on each submission required for payroll, or is manager submission sufficient?
 3. *__Mileage locations__* — Which locations pay mileage and which do not? (Need confirmed list to build the template flag)
 4. *__Mileage rate__* — Is the per-mile reimbursement rate fixed company-wide, different per location, or manually entered each period?
