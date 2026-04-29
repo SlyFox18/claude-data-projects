@@ -13,7 +13,7 @@ Used to determine which facts need daily refresh, which are unused/experimental,
 | Category | Count | Notes |
 |----------|-------|-------|
 | **Total Fact Dataflows** | 38 | In `04 - Facts/` folder |
-| **Active (used by deployed models)** | 24 | Need pipeline scheduling |
+| **Active (used by deployed models)** | 27 | Need pipeline scheduling |
 | **Test/Experimental** | 12 | `Test Queries - Inspection Report` subfolder |
 | **Stub/Not Deployed** | 1 | df_Fact_Machines_Serviced (empty) |
 | **Already in Dims Pipeline** | 1 | df_CustomerLookup (in Pipeline_Dimensions) |
@@ -189,6 +189,14 @@ Sorted by estimated refresh time (longest first). 5 concurrent per wave to stay 
 | df_Fact_NegativeOnHand_OnHandNoBin | bca48ac6-a6df-8abc-4a19-ddcc67f5355a | Negative On Hand | ~1.5 min |
 | df_Fact_Top50_JobCodes | e32c753d-416b-b644-44a6-cf6616324bfe | Top 50 Job Codes | ~2.75 min |
 
+### Wave F - Open Order Parts Advisor (3 concurrent, TBD bottleneck)
+
+| Dataflow | logicalId | Report | Est. Time |
+|----------|-----------|--------|-----------|
+| df_JobCodePartFrequency | TBD | Open Order Parts Advisor | TBD (monitor first run) |
+| df_OpenOrders | TBD | Open Order Parts Advisor | ~1-2 min |
+| df_OpenOrderParts | TBD | Open Order Parts Advisor | ~1-2 min |
+
 ### Wave Duration Estimates
 
 | Wave | DFs | Bottleneck | Est. Duration |
@@ -198,7 +206,8 @@ Sorted by estimated refresh time (longest first). 5 concurrent per wave to stay 
 | Wave C | 5 | PartSales_24Hours (3.5m) | ~3.5 min |
 | Wave D | 5 | Several at ~2.5m | ~2.5 min |
 | Wave E | 4 | PartsPromo (1.75m) | ~2 min |
-| **Total** | **24** | | **~32 min** |
+| Wave F | 3 | JobCodePartFrequency (TBD) | TBD |
+| **Total** | **27** | | **~32 min + Wave F** |
 
 **After WorkOrderParts optimization (target 3-5 min):** Total drops to ~18-20 min.
 
@@ -238,6 +247,7 @@ Sorted by estimated refresh time (longest first). 5 concurrent per wave to stay 
 | 60+ Days Past Due | 1 | 1 | 0 | 1 |
 | Negative On Hand | 1 | 1 | 0 | 1 |
 | Top 50 Job Codes | 2 | 1 | 0 | 1 |
+| Open Order Parts Advisor | 2 | 3 | 0 | 3 |
 | Part Sales Low Margin | 1 | 0 | 2 | 2 |
 | Pin Capture | 2 | 0 | 1 | 1 |
 | Physical Inventory | 2 | 0 | 1 | 1 |
@@ -260,4 +270,4 @@ Sorted by estimated refresh time (longest first). 5 concurrent per wave to stay 
 
 ---
 
-**Last Updated:** February 18, 2026
+**Last Updated:** April 2026
