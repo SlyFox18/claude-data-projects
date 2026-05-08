@@ -79,7 +79,7 @@ Lakehouse raw tables (already refreshed daily)
 
 ### Build Note — vhstock scope
 
-`vhstock` uses `SaleDate` for incremental refresh. Units not yet sold may have a null `SaleDate` and could be excluded from the Lakehouse table. During implementation: run a spot check to confirm unsold stock units appear in the Lakehouse `vhstock` table. If they don't, query against a full-extract alternative or add a separate ODBC pull for in-stock units only.
+`vhstock` is a full-extract table (no incremental refresh applied), so all stock units including unsold/in-stock equipment are present. The join on `StockNumber` is safe to use without additional validation.
 
 ---
 
@@ -177,9 +177,8 @@ All internal WOs from 2026-01-01 forward, regardless of open/closed status.
 
 ## Open Questions (to resolve during build)
 
-1. **vhstock coverage** — confirm unsold units appear in the Lakehouse table before finalizing the equipment lookup join
-2. **Email recipient email address** — confirm with requestor before configuring the flow
-3. **Pipeline placement** — to be determined after report build and testing; likely Phase 4 medium wave
+1. **Email recipient email address** — confirm with requestor before configuring the flow
+2. **Pipeline placement** — to be determined after report build and testing; likely Phase 4 medium wave
 
 ---
 
