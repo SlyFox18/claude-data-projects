@@ -63,7 +63,7 @@ Location: LH_Master_Data → Dataflows → 04 - Fact
 ============================================================================
 
 PURPOSE: Internal work orders (stock checks) with job code detail.
-An "internal" WO is any work order where wkrodesc.JobType = "i" —
+An "internal" WO is any work order where wkrodesc.JobType = "I" —
 these represent service work performed on unsold stock equipment.
 
 GRAIN: One row per WorkOrder × JobCode
@@ -95,7 +95,7 @@ let
     // =========================================================================
     // STEP 1: wkrodesc — Internal job codes only
     // The raw Lakehouse table already has LINE_NO = 1 applied (one row per
-    // job code per WO). Filter to JobType = "i" for Internal WOs only.
+    // job code per WO). Filter to JobType = "I" for Internal WOs only.
     // =========================================================================
     wkrodesc_Raw  = LH_Lakehouse{[Id = "wkrodesc", ItemKind = "Table"]}[Data],
     wkrodesc_Cols = Table.SelectColumns(wkrodesc_Raw,

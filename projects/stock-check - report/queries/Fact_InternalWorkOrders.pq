@@ -43,7 +43,7 @@ let
     wkrodesc_Raw  = LH_Lakehouse{[Id = "wkrodesc", ItemKind = "Table"]}[Data],
     wkrodesc_Cols = Table.SelectColumns(wkrodesc_Raw,
                         {"Branch", "WorkOrder", "JobCode", "JobType", "JobValue"}),
-    InternalJobs  = Table.SelectRows(wkrodesc_Cols, each [JobType] = "i"),
+    InternalJobs  = Table.SelectRows(wkrodesc_Cols, each [JobType] = "I"),
     InternalJobs_Typed = Table.TransformColumnTypes(InternalJobs, {
                         {"Branch",   type text},
                         {"WorkOrder", type text},

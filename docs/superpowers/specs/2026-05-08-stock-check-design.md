@@ -46,7 +46,7 @@ Lakehouse raw tables (already refreshed daily)
 
 | Table | Join Key | Purpose |
 |---|---|---|
-| `wkrodesc` | — base table | Job codes; filter `JobType = 'i'` (Internal) |
+| `wkrodesc` | — base table | Job codes; filter `JobType = 'I'` (Internal) |
 | `WKROFILE` | `Branch + WorkOrder` | WO header: dates, status, equipment identifiers; filter `CreatedOn >= 2026-01-01` |
 | `wkothsub` | `Branch + WorkOrder + JobCode + JobType` | Estimated hours, standard labor flag, invoice reference |
 | `wkmechwk` (aggregated) | `Branch + WorkOrder + JobCode + JobType` | Actual and invoiced hours — SUM per WO × JobCode before joining |
