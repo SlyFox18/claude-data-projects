@@ -149,7 +149,7 @@ let
     Join_Sub      = Table.NestedJoin(
                         Expand_WO,        {"Branch", "WorkOrder", "JobCode", "JobType"},
                         wkothsub_Typed,   {"Branch", "WorkOrder", "JobCode", "JobType"},
-                        "SubInfo", JoinKind.Left),
+                        "SubInfo", JoinKind.LeftOuter),
     Expand_Sub    = Table.ExpandTableColumn(Join_Sub, "SubInfo",
                         {"EstHours", "IsStandardLabor", "IsNonRevenue", "InvoiceNumber"}),
 
@@ -159,7 +159,7 @@ let
     Join_Hours    = Table.NestedJoin(
                         Expand_Sub,       {"Branch", "WorkOrder", "JobCode", "JobType"},
                         wkmechwk_Agg,     {"Branch", "WorkOrder", "JobCode", "JobType"},
-                        "HourInfo", JoinKind.Left),
+                        "HourInfo", JoinKind.LeftOuter),
     Expand_Hours  = Table.ExpandTableColumn(Join_Hours, "HourInfo",
                         {"HoursWorked", "InvoiceHours"}),
 
@@ -169,7 +169,7 @@ let
     Join_Stock    = Table.NestedJoin(
                         Expand_Hours, {"StockNumber"},
                         vhstock_Renamed, {"StockNumber"},
-                        "StockEq", JoinKind.Left),
+                        "StockEq", JoinKind.LeftOuter),
     Expand_Stock  = Table.ExpandTableColumn(Join_Stock, "StockEq",
                         {"StockMake", "StockModel"}),
 
@@ -179,7 +179,7 @@ let
     Join_Veh      = Table.NestedJoin(
                         Expand_Stock, {"Registration"},
                         WKVEHFL_Renamed, {"Registration"},
-                        "RegEq", JoinKind.Left),
+                        "RegEq", JoinKind.LeftOuter),
     Expand_Veh    = Table.ExpandTableColumn(Join_Veh, "RegEq",
                         {"RegMake", "RegModel"}),
 
