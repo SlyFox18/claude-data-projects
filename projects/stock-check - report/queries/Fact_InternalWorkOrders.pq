@@ -61,7 +61,7 @@ let
                         {"Branch", "WorkOrder", "StockNumber", "Registration",
                          "CreatedOn", "ClosedDate", "ProgressStatus", "IsClosed"}),
     WKROFILE_2026 = Table.SelectRows(WKROFILE_Cols,
-                        each [CreatedOn] <> null and [CreatedOn] >= #date(2026, 1, 1)),
+                        each [CreatedOn] <> null and [CreatedOn] >= #datetime(2026, 1, 1, 0, 0, 0)),
     WKROFILE_Typed = Table.TransformColumnTypes(WKROFILE_2026, {
                         {"Branch",         type text},
                         {"WorkOrder",      type text},
