@@ -92,13 +92,13 @@ table _Measures
 
 	measure 'Branches with Open WOs' =
 			CALCULATE(
-			    DISTINCTCOUNT(Fact_InternalWorkOrders[Branch]),
+			    DISTINCTCOUNT(dim_BranchLocation[Branch]),
 			    Fact_InternalWorkOrders[IsClosed] = "N"
 			)
 		formatString: 0
 		lineageTag: c3d4e5f6-a7b8-9012-cdef-123456789012
 
-	measure 'Active Branches' = DISTINCTCOUNT(Fact_InternalWorkOrders[Branch])
+	measure 'Active Branches' = DISTINCTCOUNT(dim_BranchLocation[Branch])
 		formatString: 0
 		lineageTag: d4e5f6a7-b8c9-0123-defa-234567890123
 
@@ -218,7 +218,7 @@ table _Measures
 			    padding: 20px 30px;
 			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
 			    border-radius: 12px;
-			    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+			    box-shadow: 0 8px 24px rgba(0,0,0,0);
 			    color: white;
 			    height: 130px;
 			    display: flex;
