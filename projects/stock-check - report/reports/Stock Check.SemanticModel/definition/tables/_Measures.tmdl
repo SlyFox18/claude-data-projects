@@ -214,6 +214,52 @@ table _Measures
 			)
 		lineageTag: a3b4c5d6-e7f8-9abc-0123-123456789012
 
+	measure 'Status Badge' =
+			VAR _Status = SELECTEDVALUE(Fact_InternalWorkOrders[ProgressStatus])
+			VAR _Label =
+			    SWITCH(
+			        _Status,
+			        "bi",  "Booked-In",
+			        "va",  "Equipment Arrived",
+			        "wip", "Work Commenced",
+			        "wf",  "Work Finished",
+			        "iv",  "Equipment Invoiced",
+			        "ca",  "Customer Advised",
+			        "vp",  "Equipment Picked-up",
+			        "wp",  "Work Pending",
+			        _Status
+			    )
+			VAR _Color =
+			    SWITCH(
+			        _Status,
+			        "bi",  "#3b82f6",
+			        "va",  "#0ea5e9",
+			        "wip", "#f97316",
+			        "wf",  "#10b981",
+			        "iv",  "#8b5cf6",
+			        "ca",  "#6366f1",
+			        "vp",  "#22c55e",
+			        "wp",  "#6b7280",
+			        "#6b7280"
+			    )
+			RETURN
+			IF(
+			    NOT ISBLANK(_Status),
+			    "<div style='
+			        display: inline-block;
+			        background: " & _Color & ";
+			        color: white;
+			        font-size: 11px;
+			        font-weight: 600;
+			        padding: 3px 10px;
+			        border-radius: 12px;
+			        letter-spacing: 0.3px;
+			        white-space: nowrap;
+			    '>" & _Label & "</div>",
+			    BLANK()
+			)
+		lineageTag: e7f8a9b0-c1d2-3456-efab-678901234567
+
 	measure 'Days Open Color' = IF([Days Open] > 14, "#FCA5A5", BLANK())
 		lineageTag: b4c5d6e7-f8a9-abcd-1234-234567890123
 
