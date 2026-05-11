@@ -556,7 +556,13 @@ table _Measures
 			        "iv",  "#8b5cf6", "ca",  "#6366f1",
 			        "vp",  "#22c55e", "#6b7280"
 			    )
-			VAR _JobCode   = IF(ISBLANK(SELECTEDVALUE(Fact_InternalWorkOrders[JobCode])),          "—", SELECTEDVALUE(Fact_InternalWorkOrders[JobCode]))
+			VAR _JobCodeCount = COUNTROWS(VALUES(Fact_InternalWorkOrders[JobCode]))
+			VAR _JobCode =
+			    IF(
+			        _JobCodeCount = 1,
+			        SELECTEDVALUE(Fact_InternalWorkOrders[JobCode], "—"),
+			        FORMAT(_JobCodeCount, "0") & " codes (see table below)"
+			    )
 			VAR _JobType   = IF(ISBLANK(SELECTEDVALUE(Fact_InternalWorkOrders[JobType])),          "—", SELECTEDVALUE(Fact_InternalWorkOrders[JobType]))
 			VAR _StdLabor  = IF(ISBLANK(SELECTEDVALUE(Fact_InternalWorkOrders[IsStandardLabor])),  "—", SELECTEDVALUE(Fact_InternalWorkOrders[IsStandardLabor]))
 			VAR _NonRev    = IF(ISBLANK(SELECTEDVALUE(Fact_InternalWorkOrders[IsNonRevenue])),     "—", SELECTEDVALUE(Fact_InternalWorkOrders[IsNonRevenue]))
@@ -569,45 +575,45 @@ table _Measures
 			"
 			<div style='
 			    font-family: Segoe UI, Arial, sans-serif;
-			    padding: 20px;
+			    padding: 24px;
 			    background: white;
 			    border-radius: 12px;
 			    border: 1px solid #e2e8f0;
 			    box-sizing: border-box;
 			'>
-			    <div style='display: grid; grid-template-columns: 1fr 1fr; gap: 16px;'>
+			    <div style='display: grid; grid-template-columns: 1fr 1fr; gap: 20px;'>
 
-			        <div style='background: #f8fafc; border-radius: 8px; padding: 16px;'>
-			            <div style='font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #64748b; margin-bottom: 12px;'>Equipment</div>
-			            <div style='display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid #e2e8f0;'><span style='font-size:11px;color:#94a3b8;'>Stock #</span><span style='font-size:12px;font-weight:600;color:#1e293b;'>" & _StockNo & "</span></div>
-			            <div style='display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid #e2e8f0;'><span style='font-size:11px;color:#94a3b8;'>Equipment</span><span style='font-size:12px;font-weight:600;color:#1e293b;'>" & _Equipment & "</span></div>
-			            <div style='display:flex; justify-content:space-between; padding:5px 0;'><span style='font-size:11px;color:#94a3b8;'>Registration</span><span style='font-size:12px;font-weight:600;color:#1e293b;'>" & _Reg & "</span></div>
+			        <div style='background: #f8fafc; border-radius: 8px; padding: 20px;'>
+			            <div style='font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #475569; margin-bottom: 14px;'>Equipment</div>
+			            <div style='display:flex; justify-content:space-between; align-items:center; padding:9px 0; border-bottom:1px solid #e2e8f0;'><span style='font-size:14px;color:#64748b;'>Stock #</span><span style='font-size:15px;font-weight:600;color:#1e293b;'>" & _StockNo & "</span></div>
+			            <div style='display:flex; justify-content:space-between; align-items:center; padding:9px 0; border-bottom:1px solid #e2e8f0;'><span style='font-size:14px;color:#64748b;'>Equipment</span><span style='font-size:15px;font-weight:600;color:#1e293b;'>" & _Equipment & "</span></div>
+			            <div style='display:flex; justify-content:space-between; align-items:center; padding:9px 0;'><span style='font-size:14px;color:#64748b;'>Registration</span><span style='font-size:15px;font-weight:600;color:#1e293b;'>" & _Reg & "</span></div>
 			        </div>
 
-			        <div style='background: #f8fafc; border-radius: 8px; padding: 16px;'>
-			            <div style='font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #64748b; margin-bottom: 12px;'>Work Order Details</div>
-			            <div style='display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid #e2e8f0;'><span style='font-size:11px;color:#94a3b8;'>Branch</span><span style='font-size:12px;font-weight:600;color:#1e293b;'>" & _Branch & "</span></div>
-			            <div style='display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid #e2e8f0;'><span style='font-size:11px;color:#94a3b8;'>Created On</span><span style='font-size:12px;font-weight:600;color:#1e293b;'>" & _Created & "</span></div>
-			            <div style='display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid #e2e8f0;'><span style='font-size:11px;color:#94a3b8;'>Closed Date</span><span style='font-size:12px;font-weight:600;color:#1e293b;'>" & _Closed & "</span></div>
-			            <div style='display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid #e2e8f0;'><span style='font-size:11px;color:#94a3b8;'>Days</span><span style='font-size:12px;font-weight:600;color:#1e293b;'>" & _Days & "</span></div>
-			            <div style='display:flex; justify-content:space-between; align-items:center; padding:5px 0;'><span style='font-size:11px;color:#94a3b8;'>Status</span><span style='font-size:11px;font-weight:600;color:white;background:" & _StatusColor & ";padding:2px 10px;border-radius:10px;'>" & _StatusLabel & "</span></div>
+			        <div style='background: #f8fafc; border-radius: 8px; padding: 20px;'>
+			            <div style='font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #475569; margin-bottom: 14px;'>Work Order Details</div>
+			            <div style='display:flex; justify-content:space-between; align-items:center; padding:9px 0; border-bottom:1px solid #e2e8f0;'><span style='font-size:14px;color:#64748b;'>Branch</span><span style='font-size:15px;font-weight:600;color:#1e293b;'>" & _Branch & "</span></div>
+			            <div style='display:flex; justify-content:space-between; align-items:center; padding:9px 0; border-bottom:1px solid #e2e8f0;'><span style='font-size:14px;color:#64748b;'>Created On</span><span style='font-size:15px;font-weight:600;color:#1e293b;'>" & _Created & "</span></div>
+			            <div style='display:flex; justify-content:space-between; align-items:center; padding:9px 0; border-bottom:1px solid #e2e8f0;'><span style='font-size:14px;color:#64748b;'>Closed Date</span><span style='font-size:15px;font-weight:600;color:#1e293b;'>" & _Closed & "</span></div>
+			            <div style='display:flex; justify-content:space-between; align-items:center; padding:9px 0; border-bottom:1px solid #e2e8f0;'><span style='font-size:14px;color:#64748b;'>Days</span><span style='font-size:15px;font-weight:600;color:#1e293b;'>" & _Days & "</span></div>
+			            <div style='display:flex; justify-content:space-between; align-items:center; padding:9px 0;'><span style='font-size:14px;color:#64748b;'>Status</span><span style='font-size:13px;font-weight:600;color:white;background:" & _StatusColor & ";padding:4px 14px;border-radius:12px;'>" & _StatusLabel & "</span></div>
 			        </div>
 
-			        <div style='background: #f8fafc; border-radius: 8px; padding: 16px;'>
-			            <div style='font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #64748b; margin-bottom: 12px;'>Job Details</div>
-			            <div style='display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid #e2e8f0;'><span style='font-size:11px;color:#94a3b8;'>Job Code</span><span style='font-size:12px;font-weight:600;color:#1e293b;'>" & _JobCode & "</span></div>
-			            <div style='display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid #e2e8f0;'><span style='font-size:11px;color:#94a3b8;'>Job Type</span><span style='font-size:12px;font-weight:600;color:#1e293b;'>" & _JobType & "</span></div>
-			            <div style='display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid #e2e8f0;'><span style='font-size:11px;color:#94a3b8;'>Standard Labor</span><span style='font-size:12px;font-weight:600;color:#1e293b;'>" & _StdLabor & "</span></div>
-			            <div style='display:flex; justify-content:space-between; padding:5px 0;'><span style='font-size:11px;color:#94a3b8;'>Non-Revenue</span><span style='font-size:12px;font-weight:600;color:#1e293b;'>" & _NonRev & "</span></div>
+			        <div style='background: #f8fafc; border-radius: 8px; padding: 20px;'>
+			            <div style='font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #475569; margin-bottom: 14px;'>Job Details</div>
+			            <div style='display:flex; justify-content:space-between; align-items:center; padding:9px 0; border-bottom:1px solid #e2e8f0;'><span style='font-size:14px;color:#64748b;'>Job Code</span><span style='font-size:14px;font-weight:600;color:#1e293b;'>" & _JobCode & "</span></div>
+			            <div style='display:flex; justify-content:space-between; align-items:center; padding:9px 0; border-bottom:1px solid #e2e8f0;'><span style='font-size:14px;color:#64748b;'>Job Type</span><span style='font-size:15px;font-weight:600;color:#1e293b;'>" & _JobType & "</span></div>
+			            <div style='display:flex; justify-content:space-between; align-items:center; padding:9px 0; border-bottom:1px solid #e2e8f0;'><span style='font-size:14px;color:#64748b;'>Standard Labor</span><span style='font-size:15px;font-weight:600;color:#1e293b;'>" & _StdLabor & "</span></div>
+			            <div style='display:flex; justify-content:space-between; align-items:center; padding:9px 0;'><span style='font-size:14px;color:#64748b;'>Non-Revenue</span><span style='font-size:15px;font-weight:600;color:#1e293b;'>" & _NonRev & "</span></div>
 			        </div>
 
-			        <div style='background: #f8fafc; border-radius: 8px; padding: 16px;'>
-			            <div style='font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #64748b; margin-bottom: 12px;'>Hours &amp; Financials</div>
-			            <div style='display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid #e2e8f0;'><span style='font-size:11px;color:#94a3b8;'>Est Hours</span><span style='font-size:12px;font-weight:600;color:#1e293b;'>" & _EstHrs & "</span></div>
-			            <div style='display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid #e2e8f0;'><span style='font-size:11px;color:#94a3b8;'>Hours Worked</span><span style='font-size:12px;font-weight:600;color:#1e293b;'>" & _WorkedHrs & "</span></div>
-			            <div style='display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid #e2e8f0;'><span style='font-size:11px;color:#94a3b8;'>Hours Invoiced</span><span style='font-size:12px;font-weight:600;color:#1e293b;'>" & _InvHrs & "</span></div>
-			            <div style='display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid #e2e8f0;'><span style='font-size:11px;color:#94a3b8;'>Job Value</span><span style='font-size:12px;font-weight:600;color:#1e293b;'>" & _JobValue & "</span></div>
-			            <div style='display:flex; justify-content:space-between; padding:5px 0;'><span style='font-size:11px;color:#94a3b8;'>Invoice #</span><span style='font-size:12px;font-weight:600;color:#1e293b;'>" & _InvoiceNo & "</span></div>
+			        <div style='background: #f8fafc; border-radius: 8px; padding: 20px;'>
+			            <div style='font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #475569; margin-bottom: 14px;'>Hours &amp; Financials</div>
+			            <div style='display:flex; justify-content:space-between; align-items:center; padding:9px 0; border-bottom:1px solid #e2e8f0;'><span style='font-size:14px;color:#64748b;'>Est Hours</span><span style='font-size:15px;font-weight:600;color:#1e293b;'>" & _EstHrs & "</span></div>
+			            <div style='display:flex; justify-content:space-between; align-items:center; padding:9px 0; border-bottom:1px solid #e2e8f0;'><span style='font-size:14px;color:#64748b;'>Hours Worked</span><span style='font-size:15px;font-weight:600;color:#1e293b;'>" & _WorkedHrs & "</span></div>
+			            <div style='display:flex; justify-content:space-between; align-items:center; padding:9px 0; border-bottom:1px solid #e2e8f0;'><span style='font-size:14px;color:#64748b;'>Hours Invoiced</span><span style='font-size:15px;font-weight:600;color:#1e293b;'>" & _InvHrs & "</span></div>
+			            <div style='display:flex; justify-content:space-between; align-items:center; padding:9px 0; border-bottom:1px solid #e2e8f0;'><span style='font-size:14px;color:#64748b;'>Job Value</span><span style='font-size:15px;font-weight:600;color:#1e293b;'>" & _JobValue & "</span></div>
+			            <div style='display:flex; justify-content:space-between; align-items:center; padding:9px 0;'><span style='font-size:14px;color:#64748b;'>Invoice #</span><span style='font-size:15px;font-weight:600;color:#1e293b;'>" & _InvoiceNo & "</span></div>
 			        </div>
 
 			    </div>
