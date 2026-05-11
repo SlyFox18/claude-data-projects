@@ -1,0 +1,187 @@
+table Fact_InternalWorkOrders
+	lineageTag: 9fa82bb9-2298-4c55-a0be-187c8211dba4
+
+	column Branch
+		dataType: string
+		lineageTag: 407bbd5b-c044-4298-8454-ef019c29d812
+		summarizeBy: none
+		sourceColumn: Branch
+
+		annotation SummarizationSetBy = Automatic
+
+	column WorkOrder
+		dataType: string
+		lineageTag: 65a3c9fd-8205-4904-b3bb-2d022a25f6c9
+		summarizeBy: none
+		sourceColumn: WorkOrder
+
+		annotation SummarizationSetBy = Automatic
+
+	column JobCode
+		dataType: string
+		lineageTag: 5fbdd2b1-13f5-4381-a4c5-6e253aa0b1bb
+		summarizeBy: none
+		sourceColumn: JobCode
+
+		annotation SummarizationSetBy = Automatic
+
+	column JobType
+		dataType: string
+		lineageTag: d7ebf8e5-5c18-4269-8414-176f0e170079
+		summarizeBy: none
+		sourceColumn: JobType
+
+		annotation SummarizationSetBy = Automatic
+
+	column JobValue
+		dataType: double
+		lineageTag: bb1c08fd-ca14-4588-b034-89dce0770cb2
+		summarizeBy: sum
+		sourceColumn: JobValue
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column CreatedOn
+		dataType: dateTime
+		formatString: Short Date
+		lineageTag: 3106f94e-6483-4519-9622-d88c77fd01d0
+		summarizeBy: none
+		sourceColumn: CreatedOn
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column ClosedDate
+		dataType: dateTime
+		formatString: Long Date
+		lineageTag: 61cd120b-203a-4f3e-867f-eb9f1c89d823
+		summarizeBy: none
+		sourceColumn: ClosedDate
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column ProgressStatus
+		dataType: string
+		lineageTag: 3b21eb4c-e3f2-46ec-95cd-6b7ef0788ea5
+		summarizeBy: none
+		sourceColumn: ProgressStatus
+
+		annotation SummarizationSetBy = Automatic
+
+	column IsClosed
+		dataType: string
+		lineageTag: 57c4e2f9-c194-4243-9792-cf7fe85cc10b
+		summarizeBy: none
+		sourceColumn: IsClosed
+
+		annotation SummarizationSetBy = Automatic
+
+	column StockNumber
+		dataType: string
+		lineageTag: a6848963-a354-4d6f-9055-f5ab88561bbd
+		summarizeBy: none
+		sourceColumn: StockNumber
+
+		annotation SummarizationSetBy = Automatic
+
+	column Registration
+		dataType: string
+		lineageTag: 6c2e5d0d-8213-405a-99d6-b1d39ceb0ef3
+		summarizeBy: none
+		sourceColumn: Registration
+
+		annotation SummarizationSetBy = Automatic
+
+	column Make
+		dataType: string
+		lineageTag: 27bdbd8f-958e-4c86-a252-aaed89396f3e
+		summarizeBy: none
+		sourceColumn: Make
+
+		annotation SummarizationSetBy = Automatic
+
+	column Model
+		dataType: string
+		lineageTag: d0253b15-189b-4c1c-9190-f4a50abb924f
+		summarizeBy: none
+		sourceColumn: Model
+
+		annotation SummarizationSetBy = Automatic
+
+	column EstHours
+		dataType: double
+		lineageTag: 2257ef43-9f6c-4f07-b4a9-82b4f5f63fba
+		summarizeBy: sum
+		sourceColumn: EstHours
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column IsStandardLabor
+		dataType: string
+		lineageTag: 96f248f7-5dd1-4f1e-a3f8-062960797a2c
+		summarizeBy: none
+		sourceColumn: IsStandardLabor
+
+		annotation SummarizationSetBy = Automatic
+
+	column IsNonRevenue
+		dataType: string
+		lineageTag: a492ee02-94e4-41d5-abeb-e9efd21b1b53
+		summarizeBy: none
+		sourceColumn: IsNonRevenue
+
+		annotation SummarizationSetBy = Automatic
+
+	column InvoiceNumber
+		dataType: string
+		lineageTag: 2a093f93-6a2a-4e26-afc5-886bc55ede75
+		summarizeBy: none
+		sourceColumn: InvoiceNumber
+
+		annotation SummarizationSetBy = Automatic
+
+	column HoursWorked
+		dataType: double
+		lineageTag: 13f7a71b-a939-4530-be52-ba4b63e04ddf
+		summarizeBy: sum
+		sourceColumn: HoursWorked
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column InvoiceHours
+		dataType: double
+		lineageTag: 6d872599-80c2-4599-8fe3-c7e4628659ca
+		summarizeBy: sum
+		sourceColumn: InvoiceHours
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column Equipment
+		dataType: string
+		lineageTag: c5d6e7f8-a9b0-cdef-2345-345678901234
+		summarizeBy: none
+
+		expression = [Make] & " " & [Model]
+
+		annotation SummarizationSetBy = User
+
+	partition Fact_InternalWorkOrders = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-gxnyznhdptpenfw724g3o5sjzm.datawarehouse.fabric.microsoft.com", "LH_Master_Data"),
+				    dbo_Fact_InternalWorkOrders = Source{[Schema="dbo",Item="Fact_InternalWorkOrders"]}[Data]
+				in
+				    dbo_Fact_InternalWorkOrders
+

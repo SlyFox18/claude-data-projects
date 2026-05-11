@@ -1,0 +1,230 @@
+table _Measures
+	lineageTag: 22e4b9e3-99b6-4634-9836-9ade5a5ea5a5
+
+	measure 'Home - Header' = ```
+			
+			// Get user name
+			VAR _User = USERPRINCIPALNAME()
+			VAR _Position = SEARCH("@", _User, 1)
+			VAR _Name = LEFT(_User, _Position - 1)
+			VAR _FirstLetter = UPPER(LEFT(_Name, 1))
+			VAR _LastName = MID(_Name, 2, LEN(_Name) - 1)
+			VAR _FormattedLastName = 
+			    UPPER(LEFT(_LastName, 1)) & LOWER(MID(_LastName, 2, LEN(_LastName)))
+			VAR WelcomeName = _FirstLetter & "." & _FormattedLastName
+			
+			// Get current date/time info
+			VAR CurrentDate = TODAY()
+			VAR DateDisplay = FORMAT(CurrentDate, "MMM D, YYYY")
+			VAR CurrentHour = HOUR(NOW())
+			VAR TimeGreeting = 
+			    IF(CurrentHour < 12, "Good Morning",
+			    IF(CurrentHour < 17, "Good Afternoon",
+			    "Good Evening"))
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    height: 85px;
+			    padding: 15px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 10px;
+			    color: white;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-between;
+			    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    box-sizing: border-box;
+			'>
+			    <!-- Left side: Dashboard Title -->
+			    <div style='display: flex; align-items: center; gap: 15px;'>
+			        <!-- Home icon -->
+			        <div style='
+			            width: 40px;
+			            height: 40px;
+			            background: rgba(255,255,255,0.15);
+			            border-radius: 8px;
+			            display: flex;
+			            align-items: center;
+			            justify-content: center;
+			            font-size: 20px;
+			        '>
+			            🏠
+			        </div>
+			        
+			        <!-- Title -->
+			        <div>
+			            <div style='font-size: 12px; opacity: 0.85; margin-bottom: 4px; letter-spacing: 0.5px;'>
+			                REPORT
+			            </div>
+			            <div style='font-size: 26px; font-weight: 700; line-height: 1;'>
+			                Stock Check
+			            </div>
+			        </div>
+			    </div>
+			    
+			    <!-- Right side: Welcome & Date -->
+			    <div style='text-align: right;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 6px;'>
+			            " & TimeGreeting & ", " & WelcomeName & "
+			        </div>
+			        <div style='font-size: 16px; font-weight: 600;'>
+			            📅 " & DateDisplay & "
+			        </div>
+			    </div>
+			</div>
+			"
+			```
+		lineageTag: 49efea2a-3c06-4cab-8367-26b26caa141e
+
+	measure 'Total WOs' = DISTINCTCOUNT(Fact_InternalWorkOrders[WorkOrder])
+		formatString: 0
+		lineageTag: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+
+	measure 'Open WOs' = ```
+			CALCULATE(
+			    DISTINCTCOUNT(Fact_InternalWorkOrders[WorkOrder]),
+			    Fact_InternalWorkOrders[IsClosed] = "N"
+			)
+			```
+		formatString: 0
+		lineageTag: b2c3d4e5-f6a7-8901-bcde-f12345678901
+
+	measure 'Branches with Open WOs' = ```
+			CALCULATE(
+			    DISTINCTCOUNT(Fact_InternalWorkOrders[Branch]),
+			    Fact_InternalWorkOrders[IsClosed] = "N"
+			)
+			```
+		formatString: 0
+		lineageTag: c3d4e5f6-a7b8-9012-cdef-123456789012
+
+	measure 'Active Branches' = DISTINCTCOUNT(Fact_InternalWorkOrders[Branch])
+		formatString: 0
+		lineageTag: d4e5f6a7-b8c9-0123-defa-234567890123
+
+	measure 'Days Open' = ```
+			VAR _Created = MIN(Fact_InternalWorkOrders[CreatedOn])
+			RETURN
+			IF(
+			    HASONEVALUE(Fact_InternalWorkOrders[WorkOrder]),
+			    DATEDIFF(_Created, TODAY(), DAY),
+			    BLANK()
+			)
+			```
+		formatString: 0
+		lineageTag: e5f6a7b8-c9d0-1234-efab-345678901234
+
+	measure 'Days Open or to Close' = ```
+			VAR _IsClosed = MAX(Fact_InternalWorkOrders[IsClosed])
+			VAR _Created  = MIN(Fact_InternalWorkOrders[CreatedOn])
+			VAR _Closed   = MAX(Fact_InternalWorkOrders[ClosedDate])
+			RETURN
+			IF(
+			    _IsClosed = "N",
+			    DATEDIFF(_Created, TODAY(), DAY),
+			    IF(NOT ISBLANK(_Closed), DATEDIFF(_Created, _Closed, DAY), BLANK())
+			)
+			```
+		formatString: 0
+		lineageTag: f6a7b8c9-d0e1-2345-fabc-456789012345
+
+	measure 'Avg Days Open' = ```
+			AVERAGEX(
+			    FILTER(
+			        VALUES(Fact_InternalWorkOrders[WorkOrder]),
+			        CALCULATE(MAX(Fact_InternalWorkOrders[IsClosed])) = "N"
+			    ),
+			    DATEDIFF(
+			        CALCULATE(MIN(Fact_InternalWorkOrders[CreatedOn])),
+			        TODAY(),
+			        DAY
+			    )
+			)
+			```
+		formatString: "#,##0.0"
+		lineageTag: a7b8c9d0-e1f2-3456-abcd-567890123456
+
+	measure 'Over 14 Days' = ```
+			COUNTX(
+			    FILTER(
+			        VALUES(Fact_InternalWorkOrders[WorkOrder]),
+			        CALCULATE(MAX(Fact_InternalWorkOrders[IsClosed])) = "N" &&
+			        DATEDIFF(
+			            CALCULATE(MIN(Fact_InternalWorkOrders[CreatedOn])),
+			            TODAY(),
+			            DAY
+			        ) > 14
+			    ),
+			    Fact_InternalWorkOrders[WorkOrder]
+			)
+			```
+		formatString: 0
+		lineageTag: b8c9d0e1-f2a3-4567-bcde-678901234567
+
+	measure 'Avg Days to Close' = ```
+			AVERAGEX(
+			    FILTER(
+			        SUMMARIZE(
+			            FILTER(
+			                Fact_InternalWorkOrders,
+			                Fact_InternalWorkOrders[IsClosed] = "Y"
+			            ),
+			            Fact_InternalWorkOrders[WorkOrder],
+			            "MinCreated", MIN(Fact_InternalWorkOrders[CreatedOn]),
+			            "MaxClosed",  MAX(Fact_InternalWorkOrders[ClosedDate])
+			        ),
+			        NOT ISBLANK([MaxClosed])
+			    ),
+			    DATEDIFF([MinCreated], [MaxClosed], DAY)
+			)
+			```
+		formatString: "#,##0.0"
+		lineageTag: c9d0e1f2-a3b4-5678-cdef-789012345678
+
+	measure 'Hrs Worked' = SUM(Fact_InternalWorkOrders[HoursWorked])
+		formatString: "#,##0.0"
+		lineageTag: d0e1f2a3-b4c5-6789-defa-890123456789
+
+	measure 'Hrs Invoiced' = SUM(Fact_InternalWorkOrders[InvoiceHours])
+		formatString: "#,##0.0"
+		lineageTag: e1f2a3b4-c5d6-789a-efab-901234567890
+
+	measure 'Hrs Estimated' = SUM(Fact_InternalWorkOrders[EstHours])
+		formatString: "#,##0.0"
+		lineageTag: f2a3b4c5-d6e7-89ab-fabc-012345678901
+
+	measure 'Progress Status Label' = ```
+			SWITCH(
+			    SELECTEDVALUE(Fact_InternalWorkOrders[ProgressStatus]),
+			    "bi",  "Booked-In",
+			    "va",  "Equipment Arrived",
+			    "wip", "Work Commenced",
+			    "wf",  "Work Finished",
+			    "iv",  "Equipment Invoiced",
+			    "ca",  "Customer Advised",
+			    "vp",  "Equipment Picked-up",
+			    SELECTEDVALUE(Fact_InternalWorkOrders[ProgressStatus])
+			)
+			```
+		lineageTag: a3b4c5d6-e7f8-9abc-0123-123456789012
+
+	measure 'Days Open Color' = IF([Days Open] > 14, "#FCA5A5", BLANK())
+		lineageTag: b4c5d6e7-f8a9-abcd-1234-234567890123
+
+	column Value
+		isHidden
+		lineageTag: da2dfa23-0c4c-4e9d-8014-3cc5710e756b
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Value]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition _Measures = calculated
+		mode: import
+		source = { "This table holds all measures for the Stock Check report" }
+
+	annotation PBI_Id = da82ad85df114f0dbe8c17ce73f079a8
+
