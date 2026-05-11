@@ -213,52 +213,7 @@ table _Measures
 			    SELECTEDVALUE(Fact_InternalWorkOrders[ProgressStatus])
 			)
 		lineageTag: a3b4c5d6-e7f8-9abc-0123-123456789012
-
-	measure 'Status Badge' =
-			VAR _Status = SELECTEDVALUE(Fact_InternalWorkOrders[ProgressStatus])
-			VAR _Label =
-			    SWITCH(
-			        _Status,
-			        "bi",  "Booked-In",
-			        "va",  "Equipment Arrived",
-			        "wip", "Work Commenced",
-			        "wf",  "Work Finished",
-			        "iv",  "Equipment Invoiced",
-			        "ca",  "Customer Advised",
-			        "vp",  "Equipment Picked-up",
-			        "wp",  "Work Pending",
-			        _Status
-			    )
-			VAR _Color =
-			    SWITCH(
-			        _Status,
-			        "bi",  "#3b82f6",
-			        "va",  "#0ea5e9",
-			        "wip", "#f97316",
-			        "wf",  "#10b981",
-			        "iv",  "#8b5cf6",
-			        "ca",  "#6366f1",
-			        "vp",  "#22c55e",
-			        "wp",  "#6b7280",
-			        "#6b7280"
-			    )
-			RETURN
-			IF(
-			    NOT ISBLANK(_Status),
-			    "<div style='
-			        display: inline-block;
-			        background: " & _Color & ";
-			        color: white;
-			        font-size: 11px;
-			        font-weight: 600;
-			        padding: 3px 10px;
-			        border-radius: 12px;
-			        letter-spacing: 0.3px;
-			        white-space: nowrap;
-			    '>" & _Label & "</div>",
-			    BLANK()
-			)
-		lineageTag: e7f8a9b0-c1d2-3456-efab-678901234567
+		dataCategory: Uncategorized
 
 	measure 'Days Open Color' = IF([Days Open] > 14, "#FCA5A5", BLANK())
 		lineageTag: b4c5d6e7-f8a9-abcd-1234-234567890123
@@ -466,6 +421,199 @@ table _Measures
 			</div>
 			"
 		lineageTag: d6e7f8a9-b0c1-2345-defa-567890123456
+
+	measure 'Status Badge' =
+			VAR _Status = SELECTEDVALUE(Fact_InternalWorkOrders[ProgressStatus])
+			VAR _Label =
+			    SWITCH(
+			        _Status,
+			        "bi",  "Booked-In",
+			        "va",  "Equipment Arrived",
+			        "wip", "Work Commenced",
+			        "wf",  "Work Finished",
+			        "iv",  "Equipment Invoiced",
+			        "ca",  "Customer Advised",
+			        "vp",  "Equipment Picked-up",
+			        "wp",  "Work Pending",
+			        _Status
+			    )
+			VAR _Color =
+			    SWITCH(
+			        _Status,
+			        "bi",  "#3b82f6",
+			        "va",  "#0ea5e9",
+			        "wip", "#f97316",
+			        "wf",  "#10b981",
+			        "iv",  "#8b5cf6",
+			        "ca",  "#6366f1",
+			        "vp",  "#22c55e",
+			        "wp",  "#6b7280",
+			        "#6b7280"
+			    )
+			RETURN
+			IF(
+			    NOT ISBLANK(_Status),
+			    "<div style='
+			        display: inline-block;
+			        background: " & _Color & ";
+			        color: white;
+			        font-size: 11px;
+			        font-weight: 600;
+			        padding: 3px 10px;
+			        border-radius: 12px;
+			        letter-spacing: 0.3px;
+			        white-space: nowrap;
+			    '>" & _Label & "</div>",
+			    BLANK()
+			)
+		lineageTag: e7f8a9b0-c1d2-3456-efab-678901234567
+
+	measure 'WO Detail - Header' =
+			VAR _WO     = SELECTEDVALUE(Fact_InternalWorkOrders[WorkOrder], "—")
+			VAR _Branch = SELECTEDVALUE(dim_BranchLocation[Branch], "—")
+			VAR CurrentHour = HOUR(NOW())
+			VAR _User = USERPRINCIPALNAME()
+			VAR _Position = SEARCH("@", _User, 1)
+			VAR _Name = LEFT(_User, _Position - 1)
+			VAR _FirstLetter = UPPER(LEFT(_Name, 1))
+			VAR _LastName = MID(_Name, 2, LEN(_Name) - 1)
+			VAR _FormattedLastName =
+			    UPPER(LEFT(_LastName, 1)) & LOWER(MID(_LastName, 2, LEN(_LastName)))
+			VAR WelcomeName = _FirstLetter & "." & _FormattedLastName
+			VAR DateDisplay = FORMAT(TODAY(), "MMM D, YYYY")
+			VAR TimeGreeting =
+			    IF(CurrentHour < 12, "Good Morning",
+			    IF(CurrentHour < 17, "Good Afternoon",
+			    "Good Evening"))
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    height: 95px;
+			    padding: 15px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 10px;
+			    color: white;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-between;
+			    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    box-sizing: border-box;
+			'>
+			    <div style='display: flex; align-items: center; gap: 15px;'>
+			        <div style='
+			            width: 40px; height: 40px;
+			            background: rgba(255,255,255,0.15);
+			            border-radius: 8px;
+			            display: flex; align-items: center; justify-content: center;
+			            font-size: 20px;
+			        '>🔍</div>
+			        <div>
+			            <div style='font-size: 12px; opacity: 0.85; margin-bottom: 4px; letter-spacing: 0.5px;'>
+			                WORK ORDER DETAIL
+			            </div>
+			            <div style='font-size: 26px; font-weight: 700; line-height: 1;'>
+			                WO # " & _WO & "
+			            </div>
+			            <div style='font-size: 11px; opacity: 0.7; margin-top: 5px;'>
+			                " & _Branch & "
+			            </div>
+			        </div>
+			    </div>
+			    <div style='text-align: right;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 6px;'>
+			            " & TimeGreeting & ", " & WelcomeName & "
+			        </div>
+			        <div style='font-size: 16px; font-weight: 600;'>
+			            📅 " & DateDisplay & "
+			        </div>
+			    </div>
+			</div>
+			"
+		lineageTag: f8a9b0c1-d2e3-4567-fabc-789012345678
+
+	measure 'WO Detail - Card' =
+			VAR _StockNo   = IF(ISBLANK(SELECTEDVALUE(Fact_InternalWorkOrders[StockNumber])),      "—", SELECTEDVALUE(Fact_InternalWorkOrders[StockNumber]))
+			VAR _Equipment = IF(ISBLANK(SELECTEDVALUE(Fact_InternalWorkOrders[Equipment])),        "—", SELECTEDVALUE(Fact_InternalWorkOrders[Equipment]))
+			VAR _Reg       = IF(ISBLANK(SELECTEDVALUE(Fact_InternalWorkOrders[Registration])),     "—", SELECTEDVALUE(Fact_InternalWorkOrders[Registration]))
+			VAR _Branch    = IF(ISBLANK(SELECTEDVALUE(dim_BranchLocation[Branch])),                "—", SELECTEDVALUE(dim_BranchLocation[Branch]))
+			VAR _Created   = IF(ISBLANK(SELECTEDVALUE(Fact_InternalWorkOrders[CreatedOn])),        "—", FORMAT(SELECTEDVALUE(Fact_InternalWorkOrders[CreatedOn]),  "MMM D, YYYY"))
+			VAR _Closed    = IF(ISBLANK(SELECTEDVALUE(Fact_InternalWorkOrders[ClosedDate])),       "—", FORMAT(SELECTEDVALUE(Fact_InternalWorkOrders[ClosedDate]), "MMM D, YYYY"))
+			VAR _Days      = IF(ISBLANK([Days Open or to Close]), "—", FORMAT([Days Open or to Close], "0") & " days")
+			VAR _Status    = SELECTEDVALUE(Fact_InternalWorkOrders[ProgressStatus])
+			VAR _StatusLabel =
+			    SWITCH(_Status,
+			        "bi",  "Booked-In",         "va",  "Equipment Arrived",
+			        "wip", "Work Commenced",    "wf",  "Work Finished",
+			        "iv",  "Equipment Invoiced", "ca", "Customer Advised",
+			        "vp",  "Equipment Picked-up", "wp", "Work Pending",
+			        IF(ISBLANK(_Status), "—", _Status)
+			    )
+			VAR _StatusColor =
+			    SWITCH(_Status,
+			        "bi",  "#3b82f6", "va",  "#0ea5e9",
+			        "wip", "#f97316", "wf",  "#10b981",
+			        "iv",  "#8b5cf6", "ca",  "#6366f1",
+			        "vp",  "#22c55e", "#6b7280"
+			    )
+			VAR _JobCode   = IF(ISBLANK(SELECTEDVALUE(Fact_InternalWorkOrders[JobCode])),          "—", SELECTEDVALUE(Fact_InternalWorkOrders[JobCode]))
+			VAR _JobType   = IF(ISBLANK(SELECTEDVALUE(Fact_InternalWorkOrders[JobType])),          "—", SELECTEDVALUE(Fact_InternalWorkOrders[JobType]))
+			VAR _StdLabor  = IF(ISBLANK(SELECTEDVALUE(Fact_InternalWorkOrders[IsStandardLabor])),  "—", SELECTEDVALUE(Fact_InternalWorkOrders[IsStandardLabor]))
+			VAR _NonRev    = IF(ISBLANK(SELECTEDVALUE(Fact_InternalWorkOrders[IsNonRevenue])),     "—", SELECTEDVALUE(Fact_InternalWorkOrders[IsNonRevenue]))
+			VAR _InvoiceNo = IF(ISBLANK(SELECTEDVALUE(Fact_InternalWorkOrders[InvoiceNumber])),    "—", SELECTEDVALUE(Fact_InternalWorkOrders[InvoiceNumber]))
+			VAR _JobValue  = IF(ISBLANK(SUM(Fact_InternalWorkOrders[JobValue])),                   "—", FORMAT(SUM(Fact_InternalWorkOrders[JobValue]),    "$#,##0.00"))
+			VAR _EstHrs    = IF(ISBLANK(SUM(Fact_InternalWorkOrders[EstHours])),                   "—", FORMAT(SUM(Fact_InternalWorkOrders[EstHours]),    "#,##0.0"))
+			VAR _WorkedHrs = IF(ISBLANK(SUM(Fact_InternalWorkOrders[HoursWorked])),                "—", FORMAT(SUM(Fact_InternalWorkOrders[HoursWorked]), "#,##0.0"))
+			VAR _InvHrs    = IF(ISBLANK(SUM(Fact_InternalWorkOrders[InvoiceHours])),               "—", FORMAT(SUM(Fact_InternalWorkOrders[InvoiceHours]),"#,##0.0"))
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    padding: 20px;
+			    background: white;
+			    border-radius: 12px;
+			    border: 1px solid #e2e8f0;
+			    box-sizing: border-box;
+			'>
+			    <div style='display: grid; grid-template-columns: 1fr 1fr; gap: 16px;'>
+
+			        <div style='background: #f8fafc; border-radius: 8px; padding: 16px;'>
+			            <div style='font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #64748b; margin-bottom: 12px;'>Equipment</div>
+			            <div style='display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid #e2e8f0;'><span style='font-size:11px;color:#94a3b8;'>Stock #</span><span style='font-size:12px;font-weight:600;color:#1e293b;'>" & _StockNo & "</span></div>
+			            <div style='display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid #e2e8f0;'><span style='font-size:11px;color:#94a3b8;'>Equipment</span><span style='font-size:12px;font-weight:600;color:#1e293b;'>" & _Equipment & "</span></div>
+			            <div style='display:flex; justify-content:space-between; padding:5px 0;'><span style='font-size:11px;color:#94a3b8;'>Registration</span><span style='font-size:12px;font-weight:600;color:#1e293b;'>" & _Reg & "</span></div>
+			        </div>
+
+			        <div style='background: #f8fafc; border-radius: 8px; padding: 16px;'>
+			            <div style='font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #64748b; margin-bottom: 12px;'>Work Order Details</div>
+			            <div style='display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid #e2e8f0;'><span style='font-size:11px;color:#94a3b8;'>Branch</span><span style='font-size:12px;font-weight:600;color:#1e293b;'>" & _Branch & "</span></div>
+			            <div style='display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid #e2e8f0;'><span style='font-size:11px;color:#94a3b8;'>Created On</span><span style='font-size:12px;font-weight:600;color:#1e293b;'>" & _Created & "</span></div>
+			            <div style='display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid #e2e8f0;'><span style='font-size:11px;color:#94a3b8;'>Closed Date</span><span style='font-size:12px;font-weight:600;color:#1e293b;'>" & _Closed & "</span></div>
+			            <div style='display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid #e2e8f0;'><span style='font-size:11px;color:#94a3b8;'>Days</span><span style='font-size:12px;font-weight:600;color:#1e293b;'>" & _Days & "</span></div>
+			            <div style='display:flex; justify-content:space-between; align-items:center; padding:5px 0;'><span style='font-size:11px;color:#94a3b8;'>Status</span><span style='font-size:11px;font-weight:600;color:white;background:" & _StatusColor & ";padding:2px 10px;border-radius:10px;'>" & _StatusLabel & "</span></div>
+			        </div>
+
+			        <div style='background: #f8fafc; border-radius: 8px; padding: 16px;'>
+			            <div style='font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #64748b; margin-bottom: 12px;'>Job Details</div>
+			            <div style='display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid #e2e8f0;'><span style='font-size:11px;color:#94a3b8;'>Job Code</span><span style='font-size:12px;font-weight:600;color:#1e293b;'>" & _JobCode & "</span></div>
+			            <div style='display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid #e2e8f0;'><span style='font-size:11px;color:#94a3b8;'>Job Type</span><span style='font-size:12px;font-weight:600;color:#1e293b;'>" & _JobType & "</span></div>
+			            <div style='display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid #e2e8f0;'><span style='font-size:11px;color:#94a3b8;'>Standard Labor</span><span style='font-size:12px;font-weight:600;color:#1e293b;'>" & _StdLabor & "</span></div>
+			            <div style='display:flex; justify-content:space-between; padding:5px 0;'><span style='font-size:11px;color:#94a3b8;'>Non-Revenue</span><span style='font-size:12px;font-weight:600;color:#1e293b;'>" & _NonRev & "</span></div>
+			        </div>
+
+			        <div style='background: #f8fafc; border-radius: 8px; padding: 16px;'>
+			            <div style='font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #64748b; margin-bottom: 12px;'>Hours &amp; Financials</div>
+			            <div style='display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid #e2e8f0;'><span style='font-size:11px;color:#94a3b8;'>Est Hours</span><span style='font-size:12px;font-weight:600;color:#1e293b;'>" & _EstHrs & "</span></div>
+			            <div style='display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid #e2e8f0;'><span style='font-size:11px;color:#94a3b8;'>Hours Worked</span><span style='font-size:12px;font-weight:600;color:#1e293b;'>" & _WorkedHrs & "</span></div>
+			            <div style='display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid #e2e8f0;'><span style='font-size:11px;color:#94a3b8;'>Hours Invoiced</span><span style='font-size:12px;font-weight:600;color:#1e293b;'>" & _InvHrs & "</span></div>
+			            <div style='display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid #e2e8f0;'><span style='font-size:11px;color:#94a3b8;'>Job Value</span><span style='font-size:12px;font-weight:600;color:#1e293b;'>" & _JobValue & "</span></div>
+			            <div style='display:flex; justify-content:space-between; padding:5px 0;'><span style='font-size:11px;color:#94a3b8;'>Invoice #</span><span style='font-size:12px;font-weight:600;color:#1e293b;'>" & _InvoiceNo & "</span></div>
+			        </div>
+
+			    </div>
+			</div>
+			"
+		lineageTag: a9b0c1d2-e3f4-5678-abcd-890123456789
 
 	column Value
 		isHidden
