@@ -2,31 +2,36 @@ table _Measures
 	lineageTag: 22e4b9e3-99b6-4634-9836-9ade5a5ea5a5
 
 	measure 'Home - Header' = ```
-			
+
 			// Get user name
 			VAR _User = USERPRINCIPALNAME()
 			VAR _Position = SEARCH("@", _User, 1)
 			VAR _Name = LEFT(_User, _Position - 1)
 			VAR _FirstLetter = UPPER(LEFT(_Name, 1))
 			VAR _LastName = MID(_Name, 2, LEN(_Name) - 1)
-			VAR _FormattedLastName = 
+			VAR _FormattedLastName =
 			    UPPER(LEFT(_LastName, 1)) & LOWER(MID(_LastName, 2, LEN(_LastName)))
 			VAR WelcomeName = _FirstLetter & "." & _FormattedLastName
-			
+
 			// Get current date/time info
 			VAR CurrentDate = TODAY()
 			VAR DateDisplay = FORMAT(CurrentDate, "MMM D, YYYY")
 			VAR CurrentHour = HOUR(NOW())
-			VAR TimeGreeting = 
+			VAR TimeGreeting =
 			    IF(CurrentHour < 12, "Good Morning",
 			    IF(CurrentHour < 17, "Good Afternoon",
 			    "Good Evening"))
-			
+
+			// Get visible date range from fact table (respects slicers)
+			VAR _Min = CALCULATE(MIN(Fact_InternalWorkOrders[CreatedOn]))
+			VAR _Max = CALCULATE(MAX(Fact_InternalWorkOrders[CreatedOn]))
+			VAR _DateRange = IF(ISBLANK(_Min), "No data in range", "Viewing: " & FORMAT(_Min, "MMM D") & " – " & FORMAT(_Max, "MMM D, YYYY"))
+
 			RETURN
 			"
 			<div style='
 			    font-family: Segoe UI, Arial, sans-serif;
-			    height: 85px;
+			    height: 95px;
 			    padding: 15px 25px;
 			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
 			    border-radius: 10px;
@@ -52,7 +57,7 @@ table _Measures
 			        '>
 			            🏠
 			        </div>
-			        
+
 			        <!-- Title -->
 			        <div>
 			            <div style='font-size: 12px; opacity: 0.85; margin-bottom: 4px; letter-spacing: 0.5px;'>
@@ -61,9 +66,12 @@ table _Measures
 			            <div style='font-size: 26px; font-weight: 700; line-height: 1;'>
 			                Open Stock Checks
 			            </div>
+			            <div style='font-size: 11px; opacity: 0.7; margin-top: 5px;'>
+			                " & _DateRange & "
+			            </div>
 			        </div>
 			    </div>
-			    
+
 			    <!-- Right side: Welcome & Date -->
 			    <div style='text-align: right;'>
 			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 6px;'>
