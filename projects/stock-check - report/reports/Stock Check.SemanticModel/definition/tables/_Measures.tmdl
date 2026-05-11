@@ -59,7 +59,7 @@ table _Measures
 			                REPORT
 			            </div>
 			            <div style='font-size: 26px; font-weight: 700; line-height: 1;'>
-			                Stock Check
+			                Open Stock Checks
 			            </div>
 			        </div>
 			    </div>
@@ -82,21 +82,19 @@ table _Measures
 		formatString: 0
 		lineageTag: a1b2c3d4-e5f6-7890-abcd-ef1234567890
 
-	measure 'Open WOs' = ```
+	measure 'Open WOs' =
 			CALCULATE(
 			    DISTINCTCOUNT(Fact_InternalWorkOrders[WorkOrder]),
 			    Fact_InternalWorkOrders[IsClosed] = "N"
 			)
-			```
 		formatString: 0
 		lineageTag: b2c3d4e5-f6a7-8901-bcde-f12345678901
 
-	measure 'Branches with Open WOs' = ```
+	measure 'Branches with Open WOs' =
 			CALCULATE(
 			    DISTINCTCOUNT(Fact_InternalWorkOrders[Branch]),
 			    Fact_InternalWorkOrders[IsClosed] = "N"
 			)
-			```
 		formatString: 0
 		lineageTag: c3d4e5f6-a7b8-9012-cdef-123456789012
 
@@ -104,7 +102,7 @@ table _Measures
 		formatString: 0
 		lineageTag: d4e5f6a7-b8c9-0123-defa-234567890123
 
-	measure 'Days Open' = ```
+	measure 'Days Open' =
 			VAR _Created = MIN(Fact_InternalWorkOrders[CreatedOn])
 			RETURN
 			IF(
@@ -112,11 +110,10 @@ table _Measures
 			    DATEDIFF(_Created, TODAY(), DAY),
 			    BLANK()
 			)
-			```
 		formatString: 0
 		lineageTag: e5f6a7b8-c9d0-1234-efab-345678901234
 
-	measure 'Days Open or to Close' = ```
+	measure 'Days Open or to Close' =
 			VAR _IsClosed = MAX(Fact_InternalWorkOrders[IsClosed])
 			VAR _Created  = MIN(Fact_InternalWorkOrders[CreatedOn])
 			VAR _Closed   = MAX(Fact_InternalWorkOrders[ClosedDate])
@@ -126,11 +123,10 @@ table _Measures
 			    DATEDIFF(_Created, TODAY(), DAY),
 			    IF(NOT ISBLANK(_Closed), DATEDIFF(_Created, _Closed, DAY), BLANK())
 			)
-			```
 		formatString: 0
 		lineageTag: f6a7b8c9-d0e1-2345-fabc-456789012345
 
-	measure 'Avg Days Open' = ```
+	measure 'Avg Days Open' =
 			AVERAGEX(
 			    FILTER(
 			        VALUES(Fact_InternalWorkOrders[WorkOrder]),
@@ -142,11 +138,10 @@ table _Measures
 			        DAY
 			    )
 			)
-			```
-		formatString: "#,##0.0"
+		formatString: #,##0.0
 		lineageTag: a7b8c9d0-e1f2-3456-abcd-567890123456
 
-	measure 'Over 14 Days' = ```
+	measure 'Over 14 Days' =
 			COUNTX(
 			    FILTER(
 			        VALUES(Fact_InternalWorkOrders[WorkOrder]),
@@ -159,11 +154,10 @@ table _Measures
 			    ),
 			    Fact_InternalWorkOrders[WorkOrder]
 			)
-			```
 		formatString: 0
 		lineageTag: b8c9d0e1-f2a3-4567-bcde-678901234567
 
-	measure 'Avg Days to Close' = ```
+	measure 'Avg Days to Close' =
 			AVERAGEX(
 			    FILTER(
 			        SUMMARIZE(
@@ -179,23 +173,22 @@ table _Measures
 			    ),
 			    DATEDIFF([MinCreated], [MaxClosed], DAY)
 			)
-			```
-		formatString: "#,##0.0"
+		formatString: #,##0.0
 		lineageTag: c9d0e1f2-a3b4-5678-cdef-789012345678
 
 	measure 'Hrs Worked' = SUM(Fact_InternalWorkOrders[HoursWorked])
-		formatString: "#,##0.0"
+		formatString: #,##0.0
 		lineageTag: d0e1f2a3-b4c5-6789-defa-890123456789
 
 	measure 'Hrs Invoiced' = SUM(Fact_InternalWorkOrders[InvoiceHours])
-		formatString: "#,##0.0"
+		formatString: #,##0.0
 		lineageTag: e1f2a3b4-c5d6-789a-efab-901234567890
 
 	measure 'Hrs Estimated' = SUM(Fact_InternalWorkOrders[EstHours])
-		formatString: "#,##0.0"
+		formatString: #,##0.0
 		lineageTag: f2a3b4c5-d6e7-89ab-fabc-012345678901
 
-	measure 'Progress Status Label' = ```
+	measure 'Progress Status Label' =
 			SWITCH(
 			    SELECTEDVALUE(Fact_InternalWorkOrders[ProgressStatus]),
 			    "bi",  "Booked-In",
@@ -207,11 +200,70 @@ table _Measures
 			    "vp",  "Equipment Picked-up",
 			    SELECTEDVALUE(Fact_InternalWorkOrders[ProgressStatus])
 			)
-			```
 		lineageTag: a3b4c5d6-e7f8-9abc-0123-123456789012
 
 	measure 'Days Open Color' = IF([Days Open] > 14, "#FCA5A5", BLANK())
 		lineageTag: b4c5d6e7-f8a9-abcd-1234-234567890123
+
+	measure 'KPI Row - Open Stock Checks' =
+			VAR _OpenWOs   = [Open WOs]
+			VAR _Branches  = [Branches with Open WOs]
+			VAR _AvgDays   = [Avg Days Open]
+			VAR _Over14    = [Over 14 Days]
+			VAR _Over14Color = IF(_Over14 > 0, "#f87171", "#4ade80")
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    padding: 20px 30px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 12px;
+			    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+			    color: white;
+			    height: 130px;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-around;
+			    box-sizing: border-box;
+			'>
+			    <div style='text-align: center; flex: 1;'>
+			        <div style='font-size: 11px; opacity: 0.8; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px;'>
+			            Open WOs
+			        </div>
+			        <div style='font-size: 52px; font-weight: 700; line-height: 1;'>
+			            " & FORMAT(_OpenWOs, "#,##0") & "
+			        </div>
+			    </div>
+			    <div style='width: 1px; height: 70px; background: rgba(255,255,255,0.3);'></div>
+			    <div style='text-align: center; flex: 1;'>
+			        <div style='font-size: 11px; opacity: 0.8; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px;'>
+			            Branches
+			        </div>
+			        <div style='font-size: 52px; font-weight: 700; line-height: 1;'>
+			            " & FORMAT(_Branches, "#,##0") & "
+			        </div>
+			    </div>
+			    <div style='width: 1px; height: 70px; background: rgba(255,255,255,0.3);'></div>
+			    <div style='text-align: center; flex: 1;'>
+			        <div style='font-size: 11px; opacity: 0.8; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px;'>
+			            Avg Days Open
+			        </div>
+			        <div style='font-size: 52px; font-weight: 700; line-height: 1;'>
+			            " & FORMAT(_AvgDays, "#,##0.0") & "
+			        </div>
+			    </div>
+			    <div style='width: 1px; height: 70px; background: rgba(255,255,255,0.3);'></div>
+			    <div style='text-align: center; flex: 1;'>
+			        <div style='font-size: 11px; opacity: 0.8; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px;'>
+			            Over 14 Days
+			        </div>
+			        <div style='font-size: 52px; font-weight: 700; line-height: 1; color: " & _Over14Color & ";'>
+			            " & FORMAT(_Over14, "#,##0") & "
+			        </div>
+			    </div>
+			</div>
+			"
+		lineageTag: c5d6e7f8-b0c1-def2-3456-456789012345
 
 	column Value
 		isHidden
