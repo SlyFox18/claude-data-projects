@@ -167,12 +167,11 @@ table Fact_InternalWorkOrders
 
 		annotation PBI_FormatHint = {"isGeneralNumber":true}
 
-	column Equipment
+	column Equipment =
+			[Make] & " " & [Model]
 		dataType: string
 		lineageTag: c5d6e7f8-a9b0-cdef-2345-345678901234
 		summarizeBy: none
-
-		expression = [Make] & " " & [Model]
 
 		annotation SummarizationSetBy = User
 
