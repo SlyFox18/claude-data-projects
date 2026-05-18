@@ -137,7 +137,7 @@ table _Measures
 			            ),
 			            FreightCalculator[BaseRate]
 			        )
-			    VAR BaseRateFinal = IF(ISBLANK(BaseRate), 120, BaseRate)
+			    VAR BaseRateFinal = IF(ISBLANK(BaseRate), 0, BaseRate)
 			    VAR PartAdditives =
 			        SUMX(
 			            CALCULATETABLE(Fact_MDInvoices_NoFreight),
@@ -151,7 +151,7 @@ table _Measures
 			                    ),
 			                    FreightCalculator[AdditiveRatePerPound]
 			                )
-			            RETURN IF(ISBLANK(LineRate), 1.00, LineRate) * LineWeight
+			            RETURN IF(ISBLANK(LineRate), 0.15, LineRate) * LineWeight
 			        )
 			    RETURN BaseRateFinal + PartAdditives
 			)
@@ -628,7 +628,7 @@ table _Measures
 			        ),
 			        FreightCalculator[BaseRate]
 			    )
-			VAR BaseRateFinal = IF(ISBLANK(BaseRate), 120, BaseRate)
+			VAR BaseRateFinal = IF(ISBLANK(BaseRate), 0, BaseRate)
 			VAR PartAdditives =
 			    SUMX(
 			        CALCULATETABLE(Fact_MDInvoices_Closed),
@@ -642,7 +642,7 @@ table _Measures
 			                ),
 			                FreightCalculator[AdditiveRatePerPound]
 			            )
-			        RETURN IF(ISBLANK(LineRate), 1.00, LineRate) * LineWeight
+			        RETURN IF(ISBLANK(LineRate), 0.15, LineRate) * LineWeight
 			    )
 			RETURN BaseRateFinal + PartAdditives
 		formatString: $#,##0.00;($#,##0.00);$#,##0.00
@@ -1365,12 +1365,12 @@ table _Measures
 			            For each order, the estimated freight is calculated in two parts:<br><br>
 			            <strong>Base Rate</strong> — A flat charge based on the total invoice weight.
 			            The total weight of all parts on the order is looked up in the bracket table to find the matching base rate.
-			            This is charged once per invoice, regardless of how many part lines are on it.<br><br>
+			            This is charged once per invoice, only when total order weight is 150 lbs or under. Orders over 150 lbs total carry no base rate.<br><br>
 			            <strong>Additive Rate</strong> — Each individual part line also has its own weight.
 			            The rate per pound is looked up for each line's weight, then multiplied by that line's total weight.
 			            All lines are summed together.<br><br>
 			            <strong>Calculated Freight = Base Rate + (Sum of all Part Line Additives)</strong><br><br>
-			            <em>Fallback: If the total invoice weight exceeds 249 lbs (outside the bracket table), a $120 Base Rate and $1.00/lb additive are used as defaults.</em>
+			            <em>Rate structure: 0–150 lbs uses a Base Rate (once per order) + per-lb additive per line. For orders over 150 lbs total, no base rate applies. 151–499 lbs: $1.10/lb per line. 500–999 lbs: $0.45/lb. 1,000–1,999 lbs: $0.32/lb. 2,000–4,999 lbs: $0.25/lb. 5,000+ lbs: $0.15/lb.</em>
 			        </div>
 			    </div>
 			
