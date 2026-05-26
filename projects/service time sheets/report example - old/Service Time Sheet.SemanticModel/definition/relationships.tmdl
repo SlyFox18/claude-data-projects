@@ -1,0 +1,73 @@
+relationship 156643de-eb12-4241-8b21-d81c08b9b65c
+	fromColumn: Submissions.tfFormId
+	toColumn: Forms.tfFormId
+
+relationship e2e16266-6f33-485f-9348-7b30df8f11d7
+	joinOnDateBehavior: datePartOnly
+	fromColumn: Submissions.Created
+	toColumn: LocalDateTable_bd122402-8cb6-4acf-a190-66e17564fbe8.Date
+
+relationship 93e714ae-3350-43a4-a192-9c3b9b6910fa
+	joinOnDateBehavior: datePartOnly
+	fromColumn: Submissions.Modified
+	toColumn: LocalDateTable_326d7fd4-da41-4f2d-9e8c-7da780bae0e9.Date
+
+relationship 05dfc02f-543b-45ef-abcd-41bc42a3c04d
+	joinOnDateBehavior: datePartOnly
+	fromColumn: Forms.Created
+	toColumn: LocalDateTable_18b6c9b6-6181-4212-9bca-1912721b410d.Date
+
+relationship fe624df3-613a-4c7b-ae1e-ca29f6062e72
+	joinOnDateBehavior: datePartOnly
+	fromColumn: Forms.Modified
+	toColumn: LocalDateTable_3de70cd1-fb4c-4c32-a4d0-e0c2b6d50d92.Date
+
+relationship 5e63b72e-bb8e-4f1c-aafd-5b4f164a4af1
+	joinOnDateBehavior: datePartOnly
+	fromColumn: Submissions.tfSubmissionTimestamp
+	toColumn: LocalDateTable_96817533-d2f1-4057-8b3e-fcbc064ccfcb.Date
+
+relationship 63ffd4f7-05c6-4f9c-9f3c-0fa7df3b0c96
+	joinOnDateBehavior: datePartOnly
+	fromColumn: Forms.tfSubmissionTimestamp
+	toColumn: LocalDateTable_52be72a3-59b9-4702-8b25-540b5c5e5a23.Date
+
+relationship 5d7fa306-fa87-4c0e-a757-2b51e6127cc5
+	joinOnDateBehavior: datePartOnly
+	fromColumn: 'Data - Service Time Sheets'.payrollStartDate
+	toColumn: LocalDateTable_fd0cb43c-f194-4208-9bc2-a60f81cc867e.Date
+
+relationship a0d6d1d0-4188-44f0-946c-866a829a43e4
+	joinOnDateBehavior: datePartOnly
+	fromColumn: 'Data - Service Time Sheets'.payrollEndDate
+	toColumn: LocalDateTable_ab0377b3-dc29-403f-aca9-e4d6e3289f18.Date
+
+relationship 35536702-fd42-4b76-ac9a-0fa421c610a0
+	joinOnDateBehavior: datePartOnly
+	fromColumn: 'Data - Service Time Sheets'.'Last Modified'
+	toColumn: LocalDateTable_bc14314b-b4fe-469c-a048-ff6ee2599c3d.Date
+
+relationship 5e5099a3-5884-4104-b4e4-65e2081a1918
+	joinOnDateBehavior: datePartOnly
+	fromColumn: TechnicianInvoiceDetailServiceForm.InvoiceDate
+	toColumn: LocalDateTable_0b8de06b-4cf0-4b07-9212-7cfb94621612.Date
+
+relationship AutoDetected_5759fa42-45f4-4a1a-9755-ba364d1fd979
+	fromColumn: TechnicianInvoiceDetailServiceForm.TechnicianCode
+	toColumn: Technician_Code_Names.techniciancode
+
+relationship AutoDetected_c057744a-eb17-4b86-83a6-875c3e4a22f0
+	fromColumn: TechnicianInvoiceDetailServiceForm.Branch
+	toColumn: Dim_Branch.BranchID
+
+relationship 34c0927f-3e25-4aa8-a9d4-058b6cc316ea
+	joinOnDateBehavior: datePartOnly
+	fromColumn: 'Data - Service Time Sheets'.'Pay Date'
+	toColumn: LocalDateTable_72cbe8ab-cfd6-4d53-afaf-69866244cfb8.Date
+
+relationship f813f6ae-ae90-0ffc-0282-671f441f56e0
+	crossFilteringBehavior: bothDirections
+	toCardinality: many
+	fromColumn: 'Data - Service Time Sheets'.'RO #'
+	toColumn: TechnicianInvoiceDetailServiceForm.RepairOrderNumber
+

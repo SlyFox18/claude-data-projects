@@ -1,0 +1,307 @@
+table 'Data - Service Time Sheets'
+	lineageTag: d2614ad3-90bc-412d-87e9-9aa7d79ed185
+
+	column payrollStartDate
+		dataType: dateTime
+		formatString: Short Date
+		lineageTag: 4c0acb5f-e80c-4310-9203-67033925f557
+		summarizeBy: none
+		sourceColumn: payrollStartDate
+
+		variation Variation
+			isDefault
+			relationship: 5d7fa306-fa87-4c0e-a757-2b51e6127cc5
+			defaultHierarchy: LocalDateTable_fd0cb43c-f194-4208-9bc2-a60f81cc867e.'Date Hierarchy'
+
+		annotation SummarizationSetBy = Automatic
+
+	column payrollEndDate
+		dataType: dateTime
+		formatString: Short Date
+		lineageTag: 204dd632-27cb-4219-bda8-9385918791e9
+		summarizeBy: none
+		sourceColumn: payrollEndDate
+
+		variation Variation
+			isDefault
+			relationship: a0d6d1d0-4188-44f0-946c-866a829a43e4
+			defaultHierarchy: LocalDateTable_ab0377b3-dc29-403f-aca9-e4d6e3289f18.'Date Hierarchy'
+
+		changedProperty = DataType
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column 'Technician Name'
+		dataType: string
+		lineageTag: edfdfccb-5ad3-4a5a-93d7-966c190e2a3e
+		summarizeBy: none
+		sourceColumn: Technician Name
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Tech Number'
+		dataType: string
+		lineageTag: 08852b3f-d724-4fdd-a59f-ba106b6a83bf
+		summarizeBy: none
+		sourceColumn: Tech Number
+
+		annotation SummarizationSetBy = Automatic
+
+	column Level
+		dataType: int64
+		formatString: 0
+		lineageTag: f192799a-2b91-4e15-b309-5a28d9e34e9a
+		summarizeBy: sum
+		sourceColumn: Level
+
+		annotation SummarizationSetBy = Automatic
+
+	column Branch
+		dataType: string
+		lineageTag: e1f0570c-1d78-465b-8f1f-3e0df3c7ac4b
+		summarizeBy: none
+		sourceColumn: Branch
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Holiday Hours'
+		dataType: double
+		lineageTag: 3b0a55d5-d981-4896-a941-1b0881838e65
+		summarizeBy: sum
+		sourceColumn: Holiday Hours
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column 'PTO Hours'
+		dataType: double
+		lineageTag: 8bcacc06-3210-48c6-baed-7bfbc319b381
+		summarizeBy: sum
+		sourceColumn: PTO Hours
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column 'Pay Rate'
+		dataType: double
+		lineageTag: 61d1a0f3-85dc-4e3d-9567-635d1831ee85
+		summarizeBy: sum
+		sourceColumn: Pay Rate
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column Hours
+		dataType: double
+		lineageTag: a1d05c37-2b03-44b2-9abd-7091258ed153
+		summarizeBy: sum
+		sourceColumn: Hours
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column Comments
+		dataType: string
+		lineageTag: aae1cd8f-9f50-4e39-949b-b6762a443cbe
+		summarizeBy: none
+		sourceColumn: Comments
+
+		annotation SummarizationSetBy = Automatic
+
+	column Mileage
+		dataType: double
+		lineageTag: e50e5010-d306-492e-80fd-7c74afcf4b6f
+		summarizeBy: sum
+		sourceColumn: Mileage
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column 'Mileage $'
+		dataType: double
+		lineageTag: 98211792-759e-440a-8f7e-2fff3f58095e
+		summarizeBy: sum
+		sourceColumn: Mileage $
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column Subtotal
+		dataType: double
+		lineageTag: cacbdb51-7d3e-4be3-adc5-05d70fa37152
+		summarizeBy: sum
+		sourceColumn: Subtotal
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column totalPay
+		dataType: double
+		lineageTag: 0459b601-eb92-4eb3-bc48-2eeb4dd08453
+		summarizeBy: sum
+		sourceColumn: totalPay
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column 'Last Modified'
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: bd539293-62a9-41ad-9b96-874af756bca3
+		summarizeBy: none
+		sourceColumn: Last Modified
+
+		variation Variation
+			isDefault
+			relationship: 35536702-fd42-4b76-ac9a-0fa421c610a0
+			defaultHierarchy: LocalDateTable_bc14314b-b4fe-469c-a048-ff6ee2599c3d.'Date Hierarchy'
+
+		annotation SummarizationSetBy = Automatic
+
+	column Customer
+		dataType: string
+		lineageTag: c91a31dd-6b0b-44c1-83c7-a3c981482175
+		summarizeBy: none
+		sourceColumn: Customer
+
+		annotation SummarizationSetBy = Automatic
+
+	column Draw1
+		dataType: double
+		lineageTag: 95cb05f4-45ef-4cca-9509-aefee66d8374
+		summarizeBy: sum
+		sourceColumn: Draw1
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column Draw2
+		dataType: double
+		lineageTag: bf4eefc7-81e2-439b-a8c5-b52489f434df
+		summarizeBy: sum
+		sourceColumn: Draw2
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column Draw3
+		dataType: double
+		lineageTag: a1d11ead-d3e4-44f2-b628-333ab9d9882d
+		summarizeBy: sum
+		sourceColumn: Draw3
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column totalHours
+		dataType: double
+		formatString: 0.00
+		lineageTag: c519bf19-cbea-41ac-b3ce-dd64d670c2f3
+		summarizeBy: sum
+		sourceColumn: totalHours
+
+		annotation SummarizationSetBy = Automatic
+
+	column mileageentry
+		dataType: double
+		lineageTag: 16f171dd-047a-4cc5-a897-8be91fbe664d
+		summarizeBy: sum
+		sourceColumn: mileageentry
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column 'RO #'
+		dataType: int64
+		formatString: 0
+		lineageTag: efe2eab0-e4f3-4dfd-b650-92cf20066561
+		summarizeBy: none
+		sourceColumn: RO #
+
+		annotation SummarizationSetBy = Automatic
+
+	column submissionNumber
+		dataType: double
+		lineageTag: 5c38909c-6427-448e-8f78-1a4f2cd65db0
+		summarizeBy: sum
+		sourceColumn: submissionNumber
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column 'Pay Date'
+		dataType: dateTime
+		formatString: Short Date
+		lineageTag: a79e7833-792f-45e1-a573-bcbfaa8ee3e3
+		summarizeBy: none
+		sourceColumn: Pay Date
+
+		variation Variation
+			isDefault
+			relationship: 34c0927f-3e25-4aa8-a9d4-058b6cc316ea
+			defaultHierarchy: LocalDateTable_72cbe8ab-cfd6-4d53-afaf-69866244cfb8.'Date Hierarchy'
+
+		changedProperty = DataType
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column Collaborators
+		dataType: string
+		lineageTag: b29b0b69-a01a-4e2e-9ad1-2707052d9b0a
+		summarizeBy: none
+		sourceColumn: Collaborators
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'User Email'
+		dataType: string
+		lineageTag: 3c3a0f80-9821-4fc2-bbe6-34d145c52974
+		summarizeBy: none
+		sourceColumn: User Email
+
+		annotation SummarizationSetBy = Automatic
+
+	column Index
+		dataType: int64
+		formatString: 0
+		lineageTag: 09943ef9-0950-4f1a-b3d8-2094996ef854
+		summarizeBy: sum
+		sourceColumn: Index
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Data - Service Time Sheets' = m
+		mode: import
+		source =
+				let
+				    Source = SharePoint.Tables("https://spitractor.sharepoint.com/sites/SouthPlainsImplement-ReportSite", [Implementation="2.0", ViewMode="All"]),
+				    #"4d8efe5f-0256-4579-9a33-1a1184e4e4ac" = Source{[Id="4d8efe5f-0256-4579-9a33-1a1184e4e4ac"]}[Items],
+				    #"Removed Other Columns" = Table.SelectColumns(#"4d8efe5f-0256-4579-9a33-1a1184e4e4ac",{"payrollStartDate", "payrollEndDate", "Pay Date", "Technician Name", "Tech Number", "Level", "Branch", "Holiday Hours", "PTO Hours", "Pay Rate", "Hours", "Comments", "Mileage", "Mileage $", "Subtotal", "totalPay", "Collaborators", "Last Modified", "Customer", "Draw1", "Draw2", "Draw3", "totalHours", "mileageentry", "RO #", "submissionNumber", "User Email"}),
+				    #"Changed Type" = Table.TransformColumnTypes(#"Removed Other Columns",{{"payrollStartDate", type datetime}, {"payrollEndDate", type datetime}, {"Pay Date", type datetime}}),
+				    #"Removed Top Rows" = Table.Skip(#"Changed Type",1),
+				    #"Changed Type1" = Table.TransformColumnTypes(#"Removed Top Rows",{{"Level", Int64.Type}, {"Hours", type number}, {"Draw1", type number}, {"Draw2", type number}, {"Draw3", type number}, {"totalHours", type number}, {"mileageentry", type number}, {"RO #", Int64.Type}, {"User Email", type text}}),
+				    #"Added Index" = Table.AddIndexColumn(#"Changed Type1", "Index", 1, 1, Int64.Type)
+				in
+				    #"Added Index"
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+
