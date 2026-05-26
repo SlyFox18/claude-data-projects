@@ -10,25 +10,17 @@ Used in the Recommendations DAX calculated table to suppress parts that are
 already on the order from appearing as recommendations.
 
 GRAIN: One row per WorkOrder × PartNumber
-SOURCE: InSalPar (part lines) → InSalOrd (order header) → WkRoFile (status)
-
-JOIN CHAIN:
-  InSalPar.FILE_NO = InSalOrd.FILE_NO
-  InSalOrd.RO_NUMBER + RO_BRANCH = WkRoFile.RO_NUMBER + BRANCH
+SOURCE: insalpar (Lakehouse) → Insalord (Lakehouse)
+        Join key: insalpar.FileNumber = Insalord.FileNumber
 
 FILTERS:
-  InSalOrd.TYPE = 'W'         (work orders only, not other order types)
-  WkRoFile.ro_closed_ind = 'N' (open orders only)
-
-NOTE: In Fabric Dataflow Gen2, insalpar and insalord are already Lakehouse
-tables (raw Phase 1 dataflows). Use Lakehouse connectors for those two
-tables. WkRoFile is also in the Lakehouse. Replace ODBC sources below with
-Lakehouse connectors when building in Fabric.
+  Insalord.OrderType = 'W'  (work orders only — excludes other order types)
+  insalpar records are pre-invoice by definition; no WkRoFile join needed.
 
 OUTPUT COLUMNS:
-  WorkOrderNumber  TEXT  — work order / RO number
-  BranchCode       TEXT  — branch identifier
-  PartNumber       TEXT  — part number already on this open order
+  WorkOrderNumber  TEXT  — work order / RO number  (Insalord.RONumber)
+  BranchCode       TEXT  — branch identifier        (Insalord.ROBranch)
+  PartNumber       TEXT  — part already on order    (insalpar.PartNumber)
 
 REFRESH: Full daily, Phase 4 — small dataset
 ============================================================================
@@ -36,99 +28,65 @@ REFRESH: Full daily, Phase 4 — small dataset
 
 let
     // =====================================================================
-    // STEP 1: PART LINES FROM InSalPar
-    // FILE_NO is the order header key that links to InSalOrd.
-    // In Fabric: use Lakehouse connector → insalpar table.
+    // LAKEHOUSE CONNECTION
+    // Workspace: LH_Master_Data  (b48cdb35-7ce3-46de-96df-d70db77649cb)
+    // Lakehouse: LH_Master_Data  (3e74497b-8c51-4a1a-91a1-888c59118f48)
     // =====================================================================
-    SQL_Parts =
-        "SELECT
-             FILE_NO AS FileNumber,
-             PART_NO AS PartNumber
-         FROM InSalPar
-         WHERE PART_NO IS NOT NULL
-           AND PART_NO <> ''",
-
-    Parts = Odbc.Query("dsn=EquipRDB64", SQL_Parts),
-    Parts_Typed = Table.TransformColumnTypes(Parts, {
-        {"FileNumber", type text},
-        {"PartNumber", type text}
-    }),
+    LH_Source    = Lakehouse.Contents([HierarchicalNavigation = null, EnableVorder = true, OutputMetadataRefresh = true]),
+    LH_Workspace = LH_Source{[workspaceId = "b48cdb35-7ce3-46de-96df-d70db77649cb"]}[Data],
+    LH_Lakehouse = LH_Workspace{[lakehouseId = "3e74497b-8c51-4a1a-91a1-888c59118f48"]}[Data],
 
     // =====================================================================
-    // STEP 2: ORDER HEADERS FROM InSalOrd — WORK ORDERS ONLY
-    // TYPE = 'W' filters to work orders (excludes other order types).
-    // In Fabric: use Lakehouse connector → insalord table.
+    // STEP 1: PART LINES FROM insalpar
+    // Lakehouse columns: FileNumber, PartNumber (among others)
     // =====================================================================
-    SQL_Orders =
-        "SELECT
-             FILE_NO   AS FileNumber,
-             RO_NUMBER AS WorkOrderNumber,
-             RO_BRANCH AS BranchCode
-         FROM InSalOrd
-         WHERE TYPE = 'W'",
-
-    Orders = Odbc.Query("dsn=EquipRDB64", SQL_Orders),
-    Orders_Typed = Table.TransformColumnTypes(Orders, {
-        {"FileNumber",      type text},
-        {"WorkOrderNumber", type text},
-        {"BranchCode",      type text}
-    }),
+    insalpar_Raw  = LH_Lakehouse{[Id = "insalpar", ItemKind = "Table"]}[Data],
+    Parts         = Table.SelectColumns(insalpar_Raw, {"FileNumber", "PartNumber"}),
+    Parts_Filtered = Table.SelectRows(Parts, each
+                        [PartNumber] <> null and [PartNumber] <> ""),
+    Parts_Typed   = Table.TransformColumnTypes(Parts_Filtered, {
+                        {"FileNumber", type text},
+                        {"PartNumber", type text}
+                    }),
 
     // =====================================================================
-    // STEP 3: OPEN ORDER STATUS FROM WkRoFile
-    // Join to confirm the work order is still open (not yet invoiced).
-    // In Fabric: use Lakehouse connector → WKROFILE table.
+    // STEP 2: ORDER HEADERS FROM Insalord — WORK ORDERS ONLY
+    // Lakehouse columns: FileNumber, RONumber, ROBranch, OrderType
+    // OrderType = 'W' targets work orders specifically.
     // =====================================================================
-    SQL_OpenWOs =
-        "SELECT
-             RO_NUMBER AS WorkOrderNumber,
-             BRANCH    AS BranchCode
-         FROM WkRoFile
-         WHERE ro_closed_ind = 'N'",
-
-    OpenWOs = Odbc.Query("dsn=EquipRDB64", SQL_OpenWOs),
-    OpenWOs_Typed = Table.TransformColumnTypes(OpenWOs, {
-        {"WorkOrderNumber", type text},
-        {"BranchCode",      type text}
-    }),
+    Insalord_Raw  = LH_Lakehouse{[Id = "Insalord", ItemKind = "Table"]}[Data],
+    Orders        = Table.SelectColumns(Insalord_Raw, {"FileNumber", "RONumber", "ROBranch", "OrderType"}),
+    Orders_Filtered = Table.SelectRows(Orders, each [OrderType] = "W"),
+    Orders_Typed  = Table.TransformColumnTypes(Orders_Filtered, {
+                        {"FileNumber", type text},
+                        {"RONumber",   type text},
+                        {"ROBranch",   type text}
+                    }),
 
     // =====================================================================
-    // STEP 4: JOIN InSalPar → InSalOrd (via FILE_NO)
+    // STEP 3: JOIN insalpar → Insalord (via FileNumber)
     // =====================================================================
-    PartsWithOrders = Table.NestedJoin(
-        Parts_Typed,  {"FileNumber"},
-        Orders_Typed, {"FileNumber"},
-        "Orders",
-        JoinKind.Inner
-    ),
-    PartsWithOrdersExpanded = Table.ExpandTableColumn(
-        PartsWithOrders, "Orders",
-        {"WorkOrderNumber", "BranchCode"}
-    ),
+    Joined        = Table.NestedJoin(
+                        Parts_Typed,  {"FileNumber"},
+                        Orders_Typed, {"FileNumber"},
+                        "Orders",
+                        JoinKind.Inner
+                    ),
+    Expanded      = Table.ExpandTableColumn(Joined, "Orders", {"RONumber", "ROBranch"}),
 
     // =====================================================================
-    // STEP 5: JOIN TO WkRoFile (OPEN ORDERS ONLY)
-    // INNER JOIN — only include parts for orders that are currently open.
+    // FINAL COLUMNS — rename to standard output names, drop FileNumber
     // =====================================================================
-    OpenOrderParts = Table.NestedJoin(
-        PartsWithOrdersExpanded, {"WorkOrderNumber", "BranchCode"},
-        OpenWOs_Typed,           {"WorkOrderNumber", "BranchCode"},
-        "OpenStatus",
-        JoinKind.Inner
-    ),
+    Renamed       = Table.RenameColumns(Expanded, {
+                        {"RONumber", "WorkOrderNumber"},
+                        {"ROBranch", "BranchCode"}
+                    }),
+    Selected      = Table.SelectColumns(Renamed, {"WorkOrderNumber", "BranchCode", "PartNumber"}),
 
-    // =====================================================================
-    // FINAL COLUMNS — drop join artifacts, keep only what DAX needs
-    // =====================================================================
-    Selected = Table.SelectColumns(
-        OpenOrderParts,
-        {"WorkOrderNumber", "BranchCode", "PartNumber"}
-    ),
-
-    Final = Table.TransformColumnTypes(Selected, {
-        {"WorkOrderNumber", type text},
-        {"BranchCode",      type text},
-        {"PartNumber",      type text}
-    })
+    Final         = Table.TransformColumnTypes(Selected, {
+                        {"WorkOrderNumber", type text},
+                        {"BranchCode",      type text},
+                        {"PartNumber",      type text}
+                    })
 in
     Final
