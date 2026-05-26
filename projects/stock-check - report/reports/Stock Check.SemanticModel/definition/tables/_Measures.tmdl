@@ -570,7 +570,7 @@ table _Measures
 			            _SalespersonCode
 			        )
 			    )
-			VAR _StockStatus     = COALESCE(SELECTEDVALUE(Fact_InternalWorkOrders[StockStatus]), "—")
+			VAR _StockStatus     = COALESCE(SELECTEDVALUE(Fact_InternalWorkOrders[OwnerContactCode]), "—")
 			VAR _SaleDateVal     = SELECTEDVALUE(Fact_InternalWorkOrders[SaleDate])
 			VAR _SaleDate        = IF(ISBLANK(_SaleDateVal), "Not Sold", FORMAT(_SaleDateVal, "MMM D, YYYY"))
 			VAR _SalesValueVal   = SELECTEDVALUE(Fact_InternalWorkOrders[SalesValue])
@@ -579,31 +579,31 @@ table _Measures
 			RETURN
 			"<div style='font-family:Segoe UI,Arial,sans-serif;background:white;border-radius:12px;border:1px solid #e2e8f0;overflow:hidden;box-sizing:border-box;'>" &
 			"<div style='background:linear-gradient(135deg,#1D3C4E 0%,#2E5266 50%,#3A7CA5 100%);padding:22px 24px;min-height:90px;display:flex;flex-direction:column;justify-content:center;'>" &
-			"<div style='font-size:22px;font-weight:700;color:white;margin-bottom:10px;letter-spacing:0.5px;'>" & _EquipDisplay & "</div>" &
+			"<div style='font-size:26px;font-weight:700;color:white;margin-bottom:10px;letter-spacing:0.5px;'>" & _EquipDisplay & "</div>" &
 			"<div style='display:flex;gap:24px;flex-wrap:wrap;align-items:center;'>" &
-			"<span style='font-size:13px;color:rgba(255,255,255,0.75);'>" &
+			"<span style='font-size:20px;color:rgba(255,255,255,0.75);'>" &
 			"Stock # <span style='color:white;font-weight:600;'>" & _StockNo & "</span></span>" &
-			"<span style='font-size:13px;color:rgba(255,255,255,0.4);'> | </span>" &
-			"<span style='font-size:13px;color:rgba(255,255,255,0.75);'>" &
-			"VIN <span style='font-family:monospace;color:white;font-weight:600;font-size:12px;'>" & _VIN & "</span></span>" &
-			"<span style='font-size:13px;color:rgba(255,255,255,0.4);'> | </span>" &
-			"<span style='font-size:13px;color:rgba(255,255,255,0.75);'>" &
-			"Reg <span style='color:white;font-weight:600;'>" & _Reg & "</span></span>" &
+			"<span style='font-size:20px;color:rgba(255,255,255,0.4);'> | </span>" &
+			"<span style='font-size:20px;color:rgba(255,255,255,0.75);'>" &
+			"VIN# <span style='font-family:monospace;color:white;font-weight:600;font-size:20px;'>" & _VIN & "</span></span>" &
+			"<span style='font-size:20px;color:rgba(255,255,255,0.4);'> | </span>" &
+			"<span style='font-size:20px;color:rgba(255,255,255,0.75);'>" &
+			"Reg# <span style='color:white;font-weight:600;'>" & _Reg & "</span></span>" &
 			"</div>" &
 			"</div>" &
 			"<div style='padding:16px;'>" &
 			"<div style='background:#f8fafc;border-radius:8px;padding:18px;'>" &
-			"<div style='font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#475569;margin-bottom:14px;'>Work Order Details</div>" &
-			"<div style='display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #e2e8f0;'><span style='font-size:14px;color:#64748b;'>Branch</span><span style='font-size:16px;font-weight:600;color:#1e293b;'>" & _Branch & "</span></div>" &
-			"<div style='display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #e2e8f0;'><span style='font-size:14px;color:#64748b;'>Created On</span><span style='font-size:16px;font-weight:600;color:#1e293b;'>" & _Created & "</span></div>" &
-			"<div style='display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #e2e8f0;'><span style='font-size:14px;color:#64748b;'>Closed Date</span><span style='font-size:16px;font-weight:600;color:#1e293b;'>" & _Closed & "</span></div>" &
-			"<div style='display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #e2e8f0;'><span style='font-size:14px;color:#64748b;'>Days</span><span style='font-size:16px;font-weight:600;color:#1e293b;'>" & _Days & "</span></div>" &
-			"<div style='display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #e2e8f0;'><span style='font-size:14px;color:#64748b;'>Status</span><span style='font-size:14px;font-weight:600;color:white;background:" & _StatusColor & ";padding:5px 16px;border-radius:12px;'>" & _StatusLabel & "</span></div>" &
-			"<div style='display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #e2e8f0;'><span style='font-size:14px;color:#64748b;'>Salesperson</span><span style='font-size:16px;font-weight:600;color:#1e293b;'>" & _SalespersonName & "</span></div>" &
-			"<div style='display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #e2e8f0;'><span style='font-size:14px;color:#64748b;'>Stock Status</span><span style='font-size:16px;font-weight:600;color:#1e293b;'>" & _StockStatus & "</span></div>" &
-			"<div style='display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #e2e8f0;'><span style='font-size:14px;color:#64748b;'>Sale Date</span><span style='font-size:16px;font-weight:600;color:#1e293b;'>" & _SaleDate & "</span></div>" &
-			"<div style='display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #e2e8f0;'><span style='font-size:14px;color:#64748b;'>Sales Value</span><span style='font-size:16px;font-weight:600;color:#1e293b;'>" & _SalesValue & "</span></div>" &
-			"<div style='display:flex;justify-content:space-between;align-items:center;padding:10px 0;'><span style='font-size:14px;color:#64748b;'>Invoice #</span><span style='font-size:16px;font-weight:600;color:#1e293b;'>" & _InvoiceNo & "</span></div>" &
+			"<div style='font-size:16px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#475569;margin-bottom:14px;'>Work Order Details</div>" &
+			"<div style='display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #e2e8f0;'><span style='font-size:18px;color:#64748b;'>Branch:</span><span style='font-size:22px;font-weight:600;color:#1e293b;'>" & _Branch & "</span></div>" &
+			"<div style='display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #e2e8f0;'><span style='font-size:18px;color:#64748b;'>Created On:</span><span style='font-size:22px;font-weight:600;color:#1e293b;'>" & _Created & "</span></div>" &
+			"<div style='display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #e2e8f0;'><span style='font-size:18px;color:#64748b;'>Closed Date:</span><span style='font-size:22px;font-weight:600;color:#1e293b;'>" & _Closed & "</span></div>" &
+			"<div style='display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #e2e8f0;'><span style='font-size:18px;color:#64748b;'>Days:</span><span style='font-size:22px;font-weight:600;color:#1e293b;'>" & _Days & "</span></div>" &
+			"<div style='display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #e2e8f0;'><span style='font-size:18px;color:#64748b;'>Status:</span><span style='font-size:22px;font-weight:600;color:white;background:" & _StatusColor & ";padding:5px 16px;border-radius:12px;'>" & _StatusLabel & "</span></div>" &
+			"<div style='display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #e2e8f0;'><span style='font-size:18px;color:#64748b;'>Salesperson:</span><span style='font-size:22px;font-weight:600;color:#1e293b;'>" & _SalespersonName & "</span></div>" &
+			"<div style='display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #e2e8f0;'><span style='font-size:18px;color:#64748b;'>Owner:</span><span style='font-size:22px;font-weight:600;color:#1e293b;'>" & _StockStatus & "</span></div>" &
+			"<div style='display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #e2e8f0;'><span style='font-size:18px;color:#64748b;'>Sale Date:</span><span style='font-size:22px;font-weight:600;color:#1e293b;'>" & _SaleDate & "</span></div>" &
+			"<div style='display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #e2e8f0;'><span style='font-size:18px;color:#64748b;'>Sales Value:</span><span style='font-size:22px;font-weight:600;color:#1e293b;'>" & _SalesValue & "</span></div>" &
+			"<div style='display:flex;justify-content:space-between;align-items:center;padding:10px 0;'><span style='font-size:18px;color:#64748b;'>Invoice #</span><span style='font-size:22px;font-weight:600;color:#1e293b;'>" & _InvoiceNo & "</span></div>" &
 			"</div>" &
 			"</div>" &
 			"</div>"

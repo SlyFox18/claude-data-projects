@@ -115,13 +115,27 @@ let
                         }),
 
     // =========================================================================
-    // STEP 5: vhstock — Make/Model for stock (unsold) equipment
-    // Full-extract table — all stock units including unsold are present.
+    // STEP 5: vhstock — Equipment details for stock units
+    // Includes unsold (NULL SaleDate) and sold units from 2022+.
+    // Status renamed to StockStatus to avoid confusion with WO ProgressStatus.
+    // Salesperson/SalesInvoice/SalesType require df_VHSTOCK_Raw to be refreshed
+    // first after the 2026-05-12 query update that added those columns.
+    // OwnerContactCode may link to dim_CustomerList[CustomerNumber] — investigate.
     // =========================================================================
     vhstock_Raw     = LH_Lakehouse{[Id = "vhstock", ItemKind = "Table"]}[Data],
-    vhstock_Cols    = Table.SelectColumns(vhstock_Raw, {"StockNumber", "Make", "Model"}),
-    vhstock_Renamed = Table.RenameColumns(vhstock_Cols,
-                        {{"Make", "StockMake"}, {"Model", "StockModel"}}),
+    vhstock_Cols    = Table.SelectColumns(vhstock_Raw, {
+                          "StockNumber", "Make", "Model", "Year", "VIN",
+                          "OwnerContactCode", "SalesValue", "Status", "SaleDate",
+                          "RetailCost", "WholesaleCost", "RepairCost",
+                          "Salesperson", "SalesInvoice", "SalesType"
+                      }),
+    vhstock_Renamed  = Table.RenameColumns(vhstock_Cols, {
+                          {"Make",   "StockMake"},
+                          {"Model",  "StockModel"},
+                          {"Status", "StockStatus"}
+                      }),
+    vhstock_StockNum = Table.TransformColumnTypes(vhstock_Renamed,
+                          {{"StockNumber", type text}}),
 
     // =========================================================================
     // STEP 6: WKVEHFL — Make/Model for registered/fleet vehicles (fallback)
@@ -168,10 +182,14 @@ let
     // =========================================================================
     Join_Stock    = Table.NestedJoin(
                         Expand_Hours, {"StockNumber"},
-                        vhstock_Renamed, {"StockNumber"},
+                        vhstock_StockNum, {"StockNumber"},
                         "StockEq", JoinKind.LeftOuter),
-    Expand_Stock  = Table.ExpandTableColumn(Join_Stock, "StockEq",
-                        {"StockMake", "StockModel"}),
+    Expand_Stock  = Table.ExpandTableColumn(Join_Stock, "StockEq", {
+                        "StockMake", "StockModel", "Year", "VIN",
+                        "OwnerContactCode", "SalesValue", "StockStatus", "SaleDate",
+                        "RetailCost", "WholesaleCost", "RepairCost",
+                        "Salesperson", "SalesInvoice", "SalesType"
+                    }),
 
     // =========================================================================
     // STEP 11: Join → WKVEHFL for registered vehicle Make/Model (LEFT fallback)
@@ -203,28 +221,44 @@ let
                         "CreatedOn", "ClosedDate", "ProgressStatus", "IsClosed",
                         "StockNumber", "Registration", "Make", "Model",
                         "EstHours", "IsStandardLabor", "IsNonRevenue", "InvoiceNumber",
-                        "HoursWorked", "InvoiceHours"
+                        "HoursWorked", "InvoiceHours",
+                        "Year", "VIN", "OwnerContactCode",
+                        "SalesValue", "StockStatus", "SaleDate",
+                        "RetailCost", "WholesaleCost", "RepairCost",
+                        "Salesperson", "SalesInvoice", "SalesType"
                     }),
     Final         = Table.TransformColumnTypes(Selected, {
-                        {"Branch",          type text},
-                        {"WorkOrder",       type text},
-                        {"JobCode",         type text},
-                        {"JobType",         type text},
-                        {"JobValue",        type number},
-                        {"CreatedOn",       type date},
-                        {"ClosedDate",      type date},
-                        {"ProgressStatus",  type text},
-                        {"IsClosed",        type text},
-                        {"StockNumber",     type text},
-                        {"Registration",    type text},
-                        {"Make",            type text},
-                        {"Model",           type text},
-                        {"EstHours",        type number},
-                        {"IsStandardLabor", type text},
-                        {"IsNonRevenue",    type text},
-                        {"InvoiceNumber",   type text},
-                        {"HoursWorked",     type number},
-                        {"InvoiceHours",    type number}
+                        {"Branch",           type text},
+                        {"WorkOrder",        type text},
+                        {"JobCode",          type text},
+                        {"JobType",          type text},
+                        {"JobValue",         type number},
+                        {"CreatedOn",        type date},
+                        {"ClosedDate",       type date},
+                        {"ProgressStatus",   type text},
+                        {"IsClosed",         type text},
+                        {"StockNumber",      type text},
+                        {"Registration",     type text},
+                        {"Make",             type text},
+                        {"Model",            type text},
+                        {"EstHours",         type number},
+                        {"IsStandardLabor",  type text},
+                        {"IsNonRevenue",     type text},
+                        {"InvoiceNumber",    type text},
+                        {"HoursWorked",      type number},
+                        {"InvoiceHours",     type number},
+                        {"Year",             Int64.Type},
+                        {"VIN",              type text},
+                        {"OwnerContactCode", type text},
+                        {"SalesValue",       type number},
+                        {"StockStatus",      type text},
+                        {"SaleDate",         type date},
+                        {"RetailCost",       type number},
+                        {"WholesaleCost",    type number},
+                        {"RepairCost",       type number},
+                        {"Salesperson",      type text},
+                        {"SalesInvoice",     type text},
+                        {"SalesType",        type text}
                     })
 in
     Final

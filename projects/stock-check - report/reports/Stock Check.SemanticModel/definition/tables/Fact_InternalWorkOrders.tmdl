@@ -35,13 +35,12 @@ table Fact_InternalWorkOrders
 
 	column JobValue
 		dataType: double
+		formatString: \$#,0.###############;(\$#,0.###############);\$#,0.###############
 		lineageTag: bb1c08fd-ca14-4588-b034-89dce0770cb2
 		summarizeBy: sum
 		sourceColumn: JobValue
 
 		annotation SummarizationSetBy = Automatic
-
-		annotation PBI_FormatHint = {"isGeneralNumber":true}
 
 	column CreatedOn
 		dataType: dateTime
@@ -56,7 +55,7 @@ table Fact_InternalWorkOrders
 
 	column ClosedDate
 		dataType: dateTime
-		formatString: Long Date
+		formatString: Short Date
 		lineageTag: 61cd120b-203a-4f3e-867f-eb9f1c89d823
 		summarizeBy: none
 		sourceColumn: ClosedDate
@@ -167,13 +166,120 @@ table Fact_InternalWorkOrders
 
 		annotation PBI_FormatHint = {"isGeneralNumber":true}
 
-	column Equipment =
-			[Make] & " " & [Model]
+	column Equipment = [Make] & " " & [Model]
 		dataType: string
 		lineageTag: c5d6e7f8-a9b0-cdef-2345-345678901234
 		summarizeBy: none
 
 		annotation SummarizationSetBy = User
+
+	column Year
+		dataType: int64
+		formatString: 0
+		lineageTag: 5da2c785-48c0-410a-b148-966648d3020e
+		summarizeBy: sum
+		sourceColumn: Year
+
+		annotation SummarizationSetBy = Automatic
+
+	column VIN
+		dataType: string
+		lineageTag: 7f885e77-cba0-4871-9ccc-e2241c71a0d2
+		summarizeBy: none
+		sourceColumn: VIN
+
+		annotation SummarizationSetBy = Automatic
+
+	column OwnerContactCode
+		dataType: string
+		lineageTag: f5ecf84d-9354-44ba-a359-589df0202b73
+		summarizeBy: none
+		sourceColumn: OwnerContactCode
+
+		annotation SummarizationSetBy = Automatic
+
+	column SalesValue
+		dataType: double
+		lineageTag: 8996d317-0fab-47ef-9ea2-c50d10cf09a7
+		summarizeBy: sum
+		sourceColumn: SalesValue
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column StockStatus
+		dataType: string
+		lineageTag: 375b56f3-7696-46bb-a990-0f1e7801673e
+		summarizeBy: none
+		sourceColumn: StockStatus
+
+		annotation SummarizationSetBy = Automatic
+
+	column SaleDate
+		dataType: dateTime
+		formatString: Long Date
+		lineageTag: e59042d3-5aa8-4ee7-aece-cd88e4ba9d71
+		summarizeBy: none
+		sourceColumn: SaleDate
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column RetailCost
+		dataType: double
+		lineageTag: ea7a94fa-1efb-4d24-86ad-2e8fdbf3c2ef
+		summarizeBy: sum
+		sourceColumn: RetailCost
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column WholesaleCost
+		dataType: double
+		lineageTag: 7e3754a4-31b4-4c74-9aa4-68f3dbbeb2f3
+		summarizeBy: sum
+		sourceColumn: WholesaleCost
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column RepairCost
+		dataType: double
+		lineageTag: 3f477cb6-33a1-4b65-862d-4de27c709331
+		summarizeBy: sum
+		sourceColumn: RepairCost
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column Salesperson
+		dataType: string
+		lineageTag: 9eca3699-a0ae-4afa-8b70-2d237749dde0
+		summarizeBy: none
+		sourceColumn: Salesperson
+
+		annotation SummarizationSetBy = Automatic
+
+	column SalesInvoice
+		dataType: string
+		lineageTag: a7a04b30-2a4b-426a-9d21-734cbddb9982
+		summarizeBy: none
+		sourceColumn: SalesInvoice
+
+		annotation SummarizationSetBy = Automatic
+
+	column SalesType
+		dataType: string
+		lineageTag: b76b8692-8245-4ab1-bb9e-c98ce1b1be51
+		summarizeBy: none
+		sourceColumn: SalesType
+
+		annotation SummarizationSetBy = Automatic
 
 	partition Fact_InternalWorkOrders = m
 		mode: import
