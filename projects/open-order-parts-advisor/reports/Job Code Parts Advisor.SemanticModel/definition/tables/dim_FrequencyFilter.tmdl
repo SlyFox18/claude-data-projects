@@ -1,0 +1,35 @@
+table dim_FrequencyFilter
+	lineageTag: a1f2e3d4-c5b6-7890-a1f2-e3d4c5b67890
+
+	column FilterLabel
+		lineageTag: 5386dbaa-b8b6-42ab-a8eb-82bbaffc0fb2
+		isNameInferred
+		sourceColumn: [FilterLabel]
+
+	column FilterThreshold
+		lineageTag: 4e5a8ca6-30dc-4306-9c74-ad8ccbbb99ac
+		isNameInferred
+		sourceColumn: [FilterThreshold]
+
+	column SortOrder
+		lineageTag: 5cb84d06-0c22-489b-bd41-27cf066d94a9
+		isNameInferred
+		sourceColumn: [SortOrder]
+
+	partition dim_FrequencyFilter = calculated
+		mode: import
+		source =
+				SELECTCOLUMNS(
+				    {
+				        ("Show All", 0.00, 0),
+				        ("≥ 10%",    0.10, 1),
+				        ("≥ 25%",    0.25, 2),
+				        ("≥ 50%",    0.50, 3)
+				    },
+				    "FilterLabel",     [Value1],
+				    "FilterThreshold", [Value2],
+				    "SortOrder",       [Value3]
+				)
+
+	annotation PBI_Id = e5d6c7b8a9f0e1d2c3b4a5f6e7d8c9b0
+

@@ -1,0 +1,111 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.8.0/schema.json",
+  "name": "cb7bf47ac320634912d0",
+  "position": {
+    "x": 29.716251074806536,
+    "y": 506.27687016337063,
+    "z": 1000,
+    "height": 205.81255374032673,
+    "width": 573.41358555460022,
+    "tabOrder": 1000
+  },
+  "visual": {
+    "visualType": "tableEx",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Data - Service Time Sheets"
+                    }
+                  },
+                  "Property": "Branch"
+                }
+              },
+              "queryRef": "Data - Service Time Sheets.Branch",
+              "nativeQueryRef": "Branch"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Technician_Code_Names"
+                    }
+                  },
+                  "Property": "Name"
+                }
+              },
+              "queryRef": "Technician_Code_Names.Name",
+              "nativeQueryRef": "Name"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "TechnicianInvoiceDetailServiceForm"
+                    }
+                  },
+                  "Property": "RepairOrderNumber"
+                }
+              },
+              "queryRef": "TechnicianInvoiceDetailServiceForm.RepairOrderNumber",
+              "nativeQueryRef": "RepairOrderNumber"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "MeasuresTable"
+                    }
+                  },
+                  "Property": "Invoice Hours"
+                }
+              },
+              "queryRef": "MeasuresTable.Invoice Hours",
+              "nativeQueryRef": "Invoice Hours"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "TechnicianInvoiceDetailServiceForm"
+                    }
+                  },
+                  "Property": "TechnicianCode"
+                }
+              },
+              "queryRef": "TechnicianInvoiceDetailServiceForm.TechnicianCode",
+              "nativeQueryRef": "TechnicianCode"
+            }
+          ]
+        }
+      },
+      "sortDefinition": {
+        "sort": [
+          {
+            "field": {
+              "Column": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "Technician_Code_Names"
+                  }
+                },
+                "Property": "Name"
+              }
+            },
+            "direction": "Ascending"
+          }
+        ]
+      }
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

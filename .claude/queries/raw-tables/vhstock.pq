@@ -7,17 +7,24 @@ Location: LH_Master_Data → Dataflows → 01 - Raw Sources
 
 📋 METADATA:
 Source: SQL Anywhere Database (ODBC connection: EquipRDB64)
-Purpose: Vehicle/equipment stock sales data - complete financial breakdown for sold units
+Purpose: Vehicle/equipment master — all stock units including unsold/in-stock.
+         Sold units: financial breakdown, salesperson, sale details.
+         Unsold units: identification, valuation, and status for operational use.
 Created: [Unknown - pre-dates current documentation]
-Last Modified: 08/14/2025
+Last Modified: 2026-05-12
 Output: Lakehouse table "vhstock"
 
 ⏱️ REFRESH CHARACTERISTICS:
 Refresh Schedule: Weekdays only at 7:30 AM (via Master Orchestrator Pipeline)
-Average Refresh Time: ~6-7 minutes (TODAY: 3:06 min - RECENTLY INCREASED from 1-1:30 min)
-Refresh Strategy: Incremental refresh using SaleDate (3-year scope: 2022+)
-Row Count: 24,469 rows (as of 1/14/2026)
-Query Folding: ✅ YES (SQL query with WHERE clause filtering on SALESDATE)
+Average Refresh Time: ~6-7 minutes
+Refresh Strategy: Full extract — includes unsold (NULL SaleDate) + sold units 2022+
+Row Count: 24,469 rows sold + unsold in-stock units (as of 2026-05-12)
+Query Folding: ✅ YES (SQL query with WHERE clause)
+
+SCOPE CHANGE (2026-05-12): WHERE clause updated from SALESDATE >= 2022 only to
+also include NULL SALESDATE rows. This is required for the Stock Check report —
+unsold stock units (no sale date) were previously excluded, causing blank
+equipment data on internal work orders.
 
 🚨 CRITICAL PERFORMANCE ISSUE - FOURTEENTH TABLE IN 7:30 AM SYSTEMIC PATTERN:
 
@@ -38,13 +45,14 @@ Query Folding: ✅ YES (SQL query with WHERE clause filtering on SALESDATE)
 • Registration/Fees Analysis: Complete fee breakdown
 • Equipment Sales Fact Tables: Foundation for sales performance analytics
 
-📊 DATA STRUCTURE (27 COLUMNS):
+📊 DATA STRUCTURE (30 COLUMNS):
 
 **Equipment Identification:**
 • StockNumber, Make, Model, Year, VIN, EngineNumber
 
 **Transaction Details:**
-• OwnerContactCode, SaleDate (incremental key), SalesValue, Status
+• OwnerContactCode, SaleDate, SalesValue, Status
+• Salesperson, SalesInvoice, SalesType
 
 **Cost Components (13 fields):**
 • RetailCost, WholesaleCost, PredeliveryCost, RepairCost, AccessoryCost, OtherCost
@@ -103,6 +111,9 @@ let
         SALESDATE AS SaleDate,
         SALES_VALUE AS SalesValue,
         STATUS AS Status,
+        SALESPERSON AS Salesperson,
+        SALES_INV AS SalesInvoice,
+        SALES_TYPE AS SalesType,
 
         -- ===== COST COMPONENTS (13 FIELDS) =====
         RETAIL AS RetailCost,
@@ -126,8 +137,8 @@ let
         PRE_TRADE_OVRALLOW AS PreTradeAllowance
 
     FROM VhStock
-    WHERE SALESDATE >= " & StartStr & "
-      AND SALESDATE < " & EndStr,
+    WHERE SALESDATE IS NULL
+       OR (SALESDATE >= " & StartStr & " AND SALESDATE < " & EndStr & ")",
 
     // ========================================================================
     // EXECUTE QUERY

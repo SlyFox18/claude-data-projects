@@ -1,0 +1,100 @@
+table TechnicianInvoiceDetailServiceForm
+	lineageTag: 53439783-685e-4526-9f2d-887a08e17f86
+
+	column Branch
+		dataType: string
+		lineageTag: fde9195a-213b-4153-ac3f-e07f83f92238
+		summarizeBy: none
+		sourceColumn: Branch
+
+		annotation SummarizationSetBy = Automatic
+
+	column RepairOrderNumber
+		dataType: int64
+		formatString: 0
+		lineageTag: 562153f7-6b33-4d3f-bb45-266d1a27e253
+		summarizeBy: none
+		sourceColumn: RepairOrderNumber
+
+		annotation SummarizationSetBy = Automatic
+
+	column InvoiceNumber
+		dataType: string
+		lineageTag: 713f0cce-05e8-4373-b950-edbf4ae0f76c
+		summarizeBy: none
+		sourceColumn: InvoiceNumber
+
+		annotation SummarizationSetBy = Automatic
+
+	column TechnicianCode
+		dataType: string
+		lineageTag: a40e68a6-b433-479b-8415-21f5c76b02a8
+		summarizeBy: none
+		sourceColumn: TechnicianCode
+
+		annotation SummarizationSetBy = Automatic
+
+	column InvoiceDate
+		dataType: dateTime
+		formatString: Long Date
+		lineageTag: 1c92c236-ff01-47a1-9f61-484a9887eb35
+		summarizeBy: none
+		sourceColumn: InvoiceDate
+
+		variation Variation
+			isDefault
+			relationship: 5e5099a3-5884-4104-b4e4-65e2081a1918
+			defaultHierarchy: LocalDateTable_0b8de06b-4cf0-4b07-9212-7cfb94621612.'Date Hierarchy'
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column HoursPunched
+		dataType: double
+		lineageTag: 41e9ba54-7e71-423a-8082-51463e6fd29d
+		summarizeBy: sum
+		sourceColumn: HoursPunched
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column InvoiceHours
+		dataType: double
+		formatString: 0.00
+		lineageTag: 0408622f-0dc7-40df-a522-ac098c9e0bae
+		summarizeBy: sum
+		sourceColumn: InvoiceHours
+
+		annotation SummarizationSetBy = Automatic
+
+	column LaborCost
+		dataType: double
+		lineageTag: 6f134f11-baab-40f0-88f6-93879a4c5c94
+		summarizeBy: sum
+		sourceColumn: LaborCost
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column LaborSale
+		dataType: double
+		lineageTag: d2212f10-e73b-48d1-ab8f-aae4f7a42ef8
+		summarizeBy: sum
+		sourceColumn: LaborSale
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	partition TechnicianInvoiceDetailServiceForm = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-h4diddse4pienf2bknp7qv3ade.datawarehouse.fabric.microsoft.com", "LH_Financial_Report_Data"),
+				    dbo_TechnicianInvoiceDetailServiceForm = Source{[Schema="dbo",Item="TechnicianInvoiceDetailServiceForm"]}[Data]
+				in
+				    dbo_TechnicianInvoiceDetailServiceForm
+

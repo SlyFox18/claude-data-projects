@@ -67,6 +67,7 @@ Always show these fields:
 - Is Key Customer (IsKeyCustomer)
 - Payment Method (PaymentMethod)
 - Account Balance (AccountBalance)
+- YTD Debits (YTDDebits)
 
 ## What to Avoid
 
@@ -96,6 +97,7 @@ You only have access to customer profile and contact information. You cannot ans
 | `IsKeyCustomer` | True if ContactClass = 'KEY' |
 | `PaymentMethod` | Payment method on file |
 | `AccountBalance` | Current AR balance |
+| `YTDDebits` | Year-to-date debits (total charges against the account this year) |
 | `CustomerTier` | Key Account, Premium, Standard, Basic (based on credit limit + key flag) |
 
 ### Excluded from Default Responses

@@ -1,0 +1,36 @@
+table Fact_OpenOrderParts
+	lineageTag: 188fc878-e5ba-4083-b06f-41c6de263f92
+
+	column WorkOrderNumber
+		dataType: string
+		lineageTag: 9a081479-08cd-4ff5-85e8-cb1d36758ab1
+		summarizeBy: none
+		sourceColumn: WorkOrderNumber
+
+		annotation SummarizationSetBy = Automatic
+
+	column BranchCode
+		dataType: string
+		lineageTag: 94bf27a5-2fba-46c6-971d-005cf40183a2
+		summarizeBy: none
+		sourceColumn: BranchCode
+
+		annotation SummarizationSetBy = Automatic
+
+	column PartNumber
+		dataType: string
+		lineageTag: 953f660a-160b-40b2-b181-446fd34fd776
+		summarizeBy: none
+		sourceColumn: PartNumber
+
+		annotation SummarizationSetBy = Automatic
+
+	partition Fact_OpenOrderParts = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-gxnyznhdptpenfw724g3o5sjzm.datawarehouse.fabric.microsoft.com", "LH_Master_Data"),
+				    dbo_Fact_OpenOrderParts = Source{[Schema="dbo",Item="Fact_OpenOrderParts"]}[Data]
+				in
+				    dbo_Fact_OpenOrderParts
+

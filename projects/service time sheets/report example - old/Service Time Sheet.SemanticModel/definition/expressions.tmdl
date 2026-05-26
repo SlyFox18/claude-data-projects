@@ -1,0 +1,161 @@
+/// This function will get all submissions for a given Teams SharePoint site.
+expression GetSubmissions = (sharePointUrl) =>  GetTeamFormsData(sharePointUrl, "tfItemType eq 'submission'")
+	lineageTag: 2eb171f5-5f1a-4772-8a67-f23d128bb89c
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Function
+
+/// This function will get all forms for a given Teams SharePoint site.
+expression GetForms = (sharePointUrl) =>  GetTeamFormsData(sharePointUrl, "tfItemType eq 'form-config'")
+	lineageTag: 09502053-6742-4487-bbbe-23b7294f53be
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Function
+
+/// The SharePoint site url for your team
+/// e.g. https://myorg.sharepoint.com/sites/myTeam
+expression SharePointUrl = "https://spitractor.sharepoint.com/sites/SouthPlainsImplement-ReportSite" meta [IsParameterQuery=true, Type="Text", IsParameterQueryRequired=true]
+	lineageTag: 26dd10b8-37f6-4333-b40c-7ef1ed8258da
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Text
+
+/// Users may enter site URL in any format, including query string parameters. This Function will sanatise the URL and output it in the format below which can be used with the Microsoft SharePoint REST API.
+/// https://myorganisation.sharepoint.com/sites/MyTeamName
+expression GetSiteUrl =
+		(sharePointUrl) =>
+		
+		let
+		    UrlComponents = Text.Split(sharePointUrl, "/sites/"),
+		    siteBaseUrl = UrlComponents{0},
+		    sitePath = Text.Split(UrlComponents{1}, "/"){0},
+		    siteUrl = siteBaseUrl & "/sites/" & sitePath
+		in
+		    siteUrl
+	lineageTag: 931750f4-c9f5-44bc-be20-eff5cda43602
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Function
+
+/// This function will get all submissions for a given Teams SharePoint site.
+expression GetTeamFormsData = ```
+		(sharePointUrl, filter) =>
+		
+		let
+		    /* 
+		     * Step 1. Standardise the format of SharePoint URL to the format
+		     * https://myorganisation.sharepoint.com/sites/MyTeamName
+		     * 
+		     * When Publishing please replace GetSiteUrl(sharePointUrl) with your SharePoint site url.
+		     * This will resolve the "This dataset includes a dynamic source" issue. You can read more about this in the link below:
+		     * https://help.teamforms.app/en/articles/9446249-publishing-the-powerbi-template
+		     *
+		     */
+		    siteUrl = "https://spitractor.sharepoint.com/sites/SouthPlainsImplement-ReportSite",
+		    //siteUrl = "https://myorganisation.sharepoint.com/sites/MyTeamName",
+		
+		    /*
+		     * Step 2. Get the latest partition from SharePoint. Partitions are groups of 4000 iteams which we will loop through.
+		     */
+		    latestRecord = Json.Document(
+		            Web.Contents(
+		                siteUrl,
+		                [
+		                    Headers=[Accept="application/json"], 
+		                    RelativePath= "/_api/web/lists/GetByTitle('Team Forms')/items?$select=tfPartition,id&$orderby=tfPartition desc&$top=1"
+		                ]
+		            )
+		        ),
+		    partition = try latestRecord[value]{0}[tfPartition] otherwise 1,
+		
+		    /*
+		     * Step 2. Construct the SharePoint API Query to return the Team Forms list data.
+		     * A default select, expand and fiter query is provided but you may add more fields based on your reporting requirments.
+		     * You can read more about the Microsoft SharePoint API in the link below:
+		     * https://learn.microsoft.com/en-us/sharepoint/dev/sp-add-ins/working-with-lists-and-list-items-with-rest
+		     */
+		    select = "Id,tfSubmissionNumber,tfPartition,tfTitle,tfItemType,tfFormId,tfResponseId,tfSubmissionData,tfSubmissionMetadata,tfSubmissionTimestamp,Created,Modified,Editor/Title,Author/Title",
+		    expand = "Editor,Author",
+		    
+		    /*
+		     * Step 3. Loop though and call request the list data until there is no more data to retreive.
+		     * The SharePoint REST API will only return a limited numnber of rows per request and return a odata.nextLink value
+		     * to get the next page of data.
+		     */
+		    partitioinResults = (partitionKey) => List.Generate(
+		        () => Json.Document(
+		            Web.Contents(
+		                siteUrl,
+		                [
+		                    Headers=[Accept="application/json"], 
+		                    RelativePath="/_api/web/lists/GetByTitle('Team Forms')/items?$select=" & select & "&$expand=" & expand & "&$filter=tfPartition eq " & Text.From(partitionKey) & " and " & filter
+		                ]
+		            )
+		        ),
+		        (res) =>
+		            let 
+		                value = try res[value] otherwise null,
+		                continue = if value = null 
+		                    then false 
+		                    else true
+		            in
+		             continue
+		        ,
+		        (res) => 
+		            let
+		                nextLink = try res[odata.nextLink]  otherwise null,
+		                nextLinkPath = if nextLink <> null 
+		                    then Text.Replace(nextLink, siteUrl, "") 
+		                    else null,
+		                return = if nextLink <> null 
+		                    then Json.Document(
+		                        Web.Contents(
+		                            siteUrl, 
+		                            [
+		                                Headers=[Accept="application/json"], 
+		                                RelativePath=nextLinkPath
+		                            ])
+		                        )
+		                    else {}   
+		            in
+		                return,
+		        (res) => if List.Count(res[value]) > 0 then res[value] else null
+		    ),
+		    partitions = List.Numbers(1, partition),
+		    partitionsPatched = List.InsertRange(partitions, 0, {"null"}), //Handle records without a partition e.g. form templates
+		    results = List.Accumulate(partitionsPatched, {}, (state, current) => 
+		        List.Combine({
+		            state, 
+		            List.RemoveNulls(partitioinResults(current))
+		        })
+		    ),
+		
+		    /*
+		     * Step 4. Format the output in a table for ease of consumption
+		     * The output of the API calls will be a list of lists, this needs to be broken out.
+		     */
+		
+		    allColumns = List.Union({Text.Split(select, ","),Text.Split(expand, ",")}), // Get columns from the query constructed earlier
+		    columns = List.RemoveItems(allColumns,{"Editor/Title", "Author/Title"}), // Exculude the expanded fields
+		    #"Converted to Table" = Table.FromList(results, Splitter.SplitByNothing(), null, null, ExtraValues.Error),
+		    #"Expanded Column1" = Table.ExpandListColumn(#"Converted to Table", "Column1"),
+		    #"Expanded Column2" = Table.ExpandRecordColumn(#"Expanded Column1", "Column1", columns , columns),
+		    #"Expanded Column1.Author" = Table.ExpandRecordColumn(#"Expanded Column2", "Author", {"Title"}, {"Author"}),
+		    #"Expanded Column1.Editor" = Table.ExpandRecordColumn(#"Expanded Column1.Author", "Editor", {"Title"}, {"Editor"}),
+		    #"Changed Type" = Table.TransformColumnTypes(#"Expanded Column1.Editor",{{"tfSubmissionTimestamp", type datetime},{"Created", type datetime}, {"Modified", type datetime}}),
+		    resultsTable =  #"Changed Type"
+		
+		
+		in
+		    resultsTable
+		```
+	lineageTag: a4f03735-164f-47de-8aeb-66512b523b1b
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Function
+

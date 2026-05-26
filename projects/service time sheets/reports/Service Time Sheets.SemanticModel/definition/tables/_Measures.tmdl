@@ -1,0 +1,1104 @@
+table _Measures
+	lineageTag: 22e4b9e3-99b6-4634-9836-9ade5a5ea5a5
+
+	measure 'Home - Header' =
+			
+			// Get user name
+			VAR _User = USERPRINCIPALNAME()
+			VAR _Position = SEARCH("@", _User, 1)
+			VAR _Name = LEFT(_User, _Position - 1)
+			VAR _FirstLetter = UPPER(LEFT(_Name, 1))
+			VAR _LastName = MID(_Name, 2, LEN(_Name) - 1)
+			VAR _FormattedLastName =
+			    UPPER(LEFT(_LastName, 1)) & LOWER(MID(_LastName, 2, LEN(_LastName)))
+			VAR WelcomeName = _FirstLetter & "." & _FormattedLastName
+			
+			// Get current date/time info
+			VAR CurrentDate = TODAY()
+			VAR DateDisplay = FORMAT(CurrentDate, "MMM D, YYYY")
+			VAR CurrentHour = HOUR(NOW())
+			VAR TimeGreeting =
+			    IF(CurrentHour < 12, "Good Morning",
+			    IF(CurrentHour < 17, "Good Afternoon",
+			    "Good Evening"))
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    height: 85px;
+			    padding: 15px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 10px;
+			    color: white;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-between;
+			    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    box-sizing: border-box;
+			'>
+			    <!-- Left side: Dashboard Title -->
+			    <div style='display: flex; align-items: center; gap: 15px;'>
+			        <!-- Home icon -->
+			        <div style='
+			            width: 40px;
+			            height: 40px;
+			            background: rgba(255,255,255,0.15);
+			            border-radius: 8px;
+			            display: flex;
+			            align-items: center;
+			            justify-content: center;
+			            font-size: 20px;
+			        '>
+			            🏠
+			        </div>
+			
+			        <!-- Title -->
+			        <div>
+			            <div style='font-size: 12px; opacity: 0.85; margin-bottom: 4px; letter-spacing: 0.5px;'>
+			                REPORT
+			            </div>
+			            <div style='font-size: 26px; font-weight: 700; line-height: 1;'>
+			                Service Time Sheets
+			            </div>
+			        </div>
+			    </div>
+			
+			    <!-- Right side: Welcome & Date -->
+			    <div style='text-align: right;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 6px;'>
+			            " & TimeGreeting & ", " & WelcomeName & "
+			        </div>
+			        <div style='font-size: 16px; font-weight: 600;'>
+			            📅 " & DateDisplay & "
+			        </div>
+			    </div>
+			</div>
+			"
+		lineageTag: 49efea2a-3c06-4cab-8367-26b26caa141e
+
+	measure 'Total Claimed Hours' = SUM(Fact_ServiceTimeSheet_Audit[TotalClaimedHrs])
+		formatString: 0.00
+		lineageTag: b3c4d5e6-f7a8-4901-bcde-f12345678001
+
+	measure 'Total Invoiced Hours' = SUM(Fact_ServiceTimeSheet_Audit[InvoicedHrs])
+		formatString: 0.00
+		lineageTag: c4d5e6f7-a8b9-4012-cdef-123456780002
+
+	measure 'Hours Difference' = [Total Claimed Hours] - [Total Invoiced Hours]
+		formatString: 0.00
+		lineageTag: d5e6f7a8-b9c0-4123-def0-234567890003
+
+	measure 'Draw 1 Total' = SUM(Fact_ServiceTimeSheet_Audit[Draw1Hrs])
+		formatString: 0.00
+		lineageTag: e6f7a8b9-c0d1-4234-ef01-345678900004
+
+	measure 'Draw 2 Total' = SUM(Fact_ServiceTimeSheet_Audit[Draw2Hrs])
+		formatString: 0.00
+		lineageTag: f7a8b9c0-d1e2-4345-f012-456789000005
+
+	measure 'Draw 3 Total' = SUM(Fact_ServiceTimeSheet_Audit[Draw3Hrs])
+		formatString: 0.00
+		lineageTag: a8b9c0d1-e2f3-4456-0123-567890100006
+
+	measure 'After Hours Total' = SUM(Fact_ServiceTimeSheet_Audit[AfterHours])
+		formatString: 0.00
+		lineageTag: b9c0d1e2-f3a4-4567-1234-678901200007
+
+	measure 'Total Mileage' = SUM(Fact_ServiceTimeSheet_Audit[Mileage])
+		formatString: #,##0
+		lineageTag: c0d1e2f3-a4b5-4678-2345-789012300008
+
+	measure 'Mileage Pay' = SUM(Fact_ServiceTimeSheet_Audit[Mileage]) * 1.85
+		formatString: \$#,##0.00
+		lineageTag: d1e2f3a4-b5c6-4789-3456-890123400009
+
+	measure 'Total Tech Pay' = SUM(Fact_ServiceTimeSheet_Audit[TechPay])
+		formatString: \$#,##0.00
+		lineageTag: e2f3a4b5-c6d7-4890-4567-901234500010
+
+	measure 'Labor Billed' = SUMX(Fact_ServiceTimeSheet_Audit, Fact_ServiceTimeSheet_Audit[InvoicedHrs] * Fact_ServiceTimeSheet_Audit[PayRate])
+		formatString: \$#,##0.00
+		lineageTag: f3a4b5c6-d7e8-4901-5678-012345600011
+
+	measure 'Paid Difference' = [Total Tech Pay] - [Labor Billed]
+		formatString: \$#,##0.00
+		lineageTag: a4b5c6d7-e8f9-4012-6789-123456700012
+
+	measure '# ROs Total' = COUNTROWS(Fact_ServiceTimeSheet_Audit)
+		formatString: #,##0
+		lineageTag: b5c6d7e8-f9a0-4123-7890-234567800013
+
+	measure '# Match' = CALCULATE(COUNTROWS(Fact_ServiceTimeSheet_Audit), Fact_ServiceTimeSheet_Audit[AuditStatus] = "Match")
+		formatString: #,##0
+		lineageTag: c6d7e8f9-a0b1-4234-8901-345678900014
+
+	measure '# Discrepancies' =
+			CALCULATE(
+			    COUNTROWS(Fact_ServiceTimeSheet_Audit),
+			    Fact_ServiceTimeSheet_Audit[AuditStatus] IN {"Claimed More Than Invoiced", "Invoiced More Than Claimed"}
+			)
+		formatString: #,##0
+		lineageTag: d7e8f9a0-b1c2-4345-9012-456789000015
+
+	measure '# Pending' = CALCULATE(COUNTROWS(Fact_ServiceTimeSheet_Audit), Fact_ServiceTimeSheet_Audit[AuditStatus] = "Pending - Not Yet Invoiced")
+		formatString: #,##0
+		lineageTag: e8f9a0b1-c2d3-4456-0123-567890100016
+
+	measure 'Hours Diff Color' =
+			SWITCH(
+			    SELECTEDVALUE(Fact_ServiceTimeSheet_Audit[AuditStatus]),
+			    "Claimed More Than Invoiced", "#DC2626",
+			    "Invoiced More Than Claimed", "#B45309",
+			    "Match",                       "#16A34A",
+			    BLANK()
+			)
+		lineageTag: f9a0b1c2-d3e4-4567-1234-678901200017
+
+	measure 'Paid Diff Color' =
+			IF(
+			    [Paid Difference] > 0.01,  "#DC2626",
+			    IF([Paid Difference] < -0.01, "#B45309",
+			    IF([Paid Difference] = 0,     "#16A34A",
+			    BLANK()))
+			)
+		lineageTag: a0b1c2d3-e4f5-4678-2345-789012300018
+
+	measure 'Draw 1 Color' = IF([Draw 1 Total] >= 1, "#AFCBAA", BLANK())
+		lineageTag: b1c2d3e4-f5a6-4789-3456-890123400019
+
+	measure 'Draw 2 Color' = IF([Draw 2 Total] >= 1, "#AFCBAA", BLANK())
+		lineageTag: c2d3e4f5-a6b7-4890-4567-901234500020
+
+	measure 'Draw 3 Color' = IF([Draw 3 Total] >= 1, "#AFCBAA", BLANK())
+		lineageTag: d3e4f5a6-b7c8-4901-5678-012345600021
+
+	measure 'Hero Card - Audit Summary' =
+			
+			VAR ROsTotal      = [# Match] + [# Claimed More] + [# Invoiced More] + [# Pending]
+			VAR Pending       = [# Pending]
+			VAR ClaimedMore   = [# Claimed More]
+			VAR InvoicedMore  = [# Invoiced More]
+			VAR OverclaimRate = [Overclaim Rate %]
+			VAR TechPay       = [Auditable Tech Pay]
+			VAR PendingPay    = [Pending Tech Pay]
+			VAR NetOverclaim  = [Net Overclaim $]
+			
+			VAR ClaimedColor  = IF(ClaimedMore > 0, "#f87171", "#4ade80")
+			VAR InvoicedColor = IF(InvoicedMore > 0, "#facc15", "#4ade80")
+			VAR NetColor      = IF(NetOverclaim > 0.01, "#f87171", "#4ade80")
+			
+			VAR MatchCount        = [# Match]
+			
+			VAR ROsText           = FORMAT(ROsTotal, "#,##0")
+			VAR MatchText         = FORMAT(MatchCount, "#,##0")
+			VAR PendingText       = FORMAT(Pending, "#,##0")
+			VAR ClaimedText       = FORMAT(ClaimedMore, "#,##0")
+			VAR InvoicedText      = FORMAT(InvoicedMore, "#,##0")
+			VAR OverclaimText     = FORMAT(OverclaimRate, "0.0%")
+			VAR PayText           = FORMAT(TechPay, "$#,##0")
+			VAR PendPayText       = FORMAT(PendingPay, "$#,##0")
+			VAR NetText           = FORMAT(NetOverclaim, "$#,##0")
+			
+			RETURN
+			"<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    padding: 20px 30px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 12px;
+			    box-shadow: 0 8px 8px rgba(0,0,0,0);
+			    color: white;
+			    height: 130px;
+			    display: flex;
+			    justify-content: space-between;
+			    align-items: center;
+			    gap: 15px;
+			'>
+			
+			    <!-- Section: Total ROs -->
+			    <div style='flex: 1; text-align: center; border-right: 1px solid rgba(255,255,255,0.2); padding-right: 15px;'>
+			        <div style='font-size: 14px; opacity: 0.85; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;'>Total RO's</div>
+			        <div style='font-size: 40px; font-weight: 700; margin-bottom: 4px;'>" & ROsText & "</div>
+			        <div style='font-size: 14px; opacity: 0.75;'>&#10003; Match: " & MatchText & " &nbsp;|&nbsp; &#8987; Pending: " & PendingText & "</div>
+			    </div>
+			
+			    <!-- Section: Claimed More -->
+			    <div style='flex: 1; text-align: center; border-right: 1px solid rgba(255,255,255,0.2); padding-right: 15px;'>
+			        <div style='font-size: 14px; opacity: 0.85; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;'>Claimed More</div>
+			        <div style='font-size: 40px; font-weight: 700; margin-bottom: 4px; color: " & ClaimedColor & ";'>" & ClaimedText & "</div>
+			        <div style='font-size: 14px; opacity: 0.75;'>Tech claimed &gt; invoiced</div>
+			    </div>
+			
+			    <!-- Section: Invoiced More -->
+			    <div style='flex: 1; text-align: center; border-right: 1px solid rgba(255,255,255,0.2); padding-right: 15px;'>
+			        <div style='font-size: 14px; opacity: 0.85; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;'>Invoiced More</div>
+			        <div style='font-size: 40px; font-weight: 700; margin-bottom: 4px; color: " & InvoicedColor & ";'>" & InvoicedText & "</div>
+			        <div style='font-size: 14px; opacity: 0.75;'>May owe tech more pay</div>
+			    </div>
+			
+			    <!-- Section: Tech Pay -->
+			    <div style='flex: 1.1; text-align: center; border-right: 1px solid rgba(255,255,255,0.2); padding-right: 15px;'>
+			        <div style='font-size: 14px; opacity: 0.85; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;'>Tech Pay</div>
+			        <div style='font-size: 40px; font-weight: 700; margin-bottom: 4px;'>" & PayText & "</div>
+			        <div style='font-size: 14px; opacity: 0.75;'>Audited draw • Pending: " & PendPayText & "</div>
+			    </div>
+			
+			    <!-- Section: Net Overclaim -->
+			    <div style='flex: 1.1; text-align: center;'>
+			        <div style='font-size: 14px; opacity: 0.85; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;'>Net Overclaim</div>
+			        <div style='font-size: 40px; font-weight: 700; margin-bottom: 4px; color: " & NetColor & ";'>" & NetText & "</div>
+			        <div style='font-size: 14px; opacity: 0.75;'>Flag rate: " & OverclaimText & " &nbsp;|&nbsp; Audited ROs only</div>
+			    </div>
+			
+			</div>"
+		lineageTag: e4f5a6b7-c8d9-4012-6789-012345678022
+
+	measure 'Row Status Color' =
+			SWITCH(
+			    SELECTEDVALUE(Fact_ServiceTimeSheet_Audit[AuditStatus]),
+			    "Claimed More Than Invoiced", "#FEE2E2",
+			    "Invoiced More Than Claimed", "#FEF3C7",
+			    "Match",                       "#F0FDF4",
+			    "Pending - Not Yet Invoiced",  "#F8FAFC",
+			    "#FFFFFF"
+			)
+		lineageTag: b0c1d2e3-f4a5-4678-2345-789012300030
+
+	measure 'Audit Status Color' =
+			SWITCH(
+			    SELECTEDVALUE(Fact_ServiceTimeSheet_Audit[AuditStatus]),
+			    "Claimed More Than Invoiced", "#DC2626",
+			    "Invoiced More Than Claimed", "#B45309",
+			    "Match",                       "#16A34A",
+			    "Pending - Not Yet Invoiced",  "#64748B",
+			    "#1D3C4E"
+			)
+		lineageTag: c1d2e3f4-a5b6-4789-3456-890123400031
+
+	measure 'Auditable Tech Pay' =
+			CALCULATE(
+			    SUM(Fact_ServiceTimeSheet_Audit[TechPay]),
+			    Fact_ServiceTimeSheet_Audit[AuditStatus] IN {
+			        "Match", "Claimed More Than Invoiced", "Invoiced More Than Claimed"
+			    }
+			)
+		formatString: \$#,##0.00
+		lineageTag: d2e3f4a5-b6c7-4890-4567-901234500032
+
+	measure 'Pending Tech Pay' =
+			CALCULATE(
+			    SUM(Fact_ServiceTimeSheet_Audit[TechPay]),
+			    Fact_ServiceTimeSheet_Audit[AuditStatus] = "Pending - Not Yet Invoiced"
+			)
+		formatString: \$#,##0.00
+		lineageTag: e3f4a5b6-c7d8-4901-5678-012345600033
+
+	measure 'Paid Difference (Audited)' =
+			CALCULATE(
+			    [Total Tech Pay] - [Labor Billed],
+			    Fact_ServiceTimeSheet_Audit[AuditStatus] <> "Pending - Not Yet Invoiced"
+			)
+		formatString: \$#,##0.00
+		lineageTag: f4a5b6c7-d8e9-4012-6789-123456700034
+
+	measure '# Claimed More' = CALCULATE(COUNTROWS(Fact_ServiceTimeSheet_Audit), Fact_ServiceTimeSheet_Audit[AuditStatus] = "Claimed More Than Invoiced") + 0
+		formatString: #,##0
+		lineageTag: a1b2c3d4-e5f6-4789-0123-456789000035
+
+	measure '# Invoiced More' = CALCULATE(COUNTROWS(Fact_ServiceTimeSheet_Audit), Fact_ServiceTimeSheet_Audit[AuditStatus] = "Invoiced More Than Claimed") + 0
+		formatString: #,##0
+		lineageTag: b2c3d4e5-f6a7-4890-1234-567890100036
+
+	measure 'Net Overclaim $' =
+			COALESCE(
+			    CALCULATE(
+			        [Total Tech Pay] - [Labor Billed],
+			        Fact_ServiceTimeSheet_Audit[AuditStatus] = "Claimed More Than Invoiced"
+			    ),
+			    0
+			)
+		formatString: \$#,##0.00
+		lineageTag: c3d4e5f6-a7b8-4901-2345-678901200037
+
+	measure 'Overclaim Rate %' =
+			DIVIDE(
+			    [# Claimed More] + 0,
+			    [# Match] + [# Claimed More] + [# Invoiced More]
+			)
+		formatString: 0.0%
+		lineageTag: d4e5f6a7-b8c9-4012-3456-789012300038
+
+	measure 'Overclaim Hrs' =
+			ABS(
+			    CALCULATE(
+			        SUM(Fact_ServiceTimeSheet_Audit[HoursDifference]),
+			        Fact_ServiceTimeSheet_Audit[AuditStatus] = "Claimed More Than Invoiced"
+			    )
+			)
+		formatString: 0.00
+		lineageTag: f5a6b7c8-d9e0-4234-5678-901234500040
+
+	measure 'Audited Rows' =
+			CALCULATE(
+			    COUNTROWS(Fact_ServiceTimeSheet_Audit),
+			    Fact_ServiceTimeSheet_Audit[AuditStatus] <> "Pending - Not Yet Invoiced"
+			)
+		formatString: #,##0
+		lineageTag: a6b7c8d9-e0f1-4345-6789-012345600041
+
+	measure 'Home - Header Executive' =
+			
+			// Get user name
+			VAR _User = USERPRINCIPALNAME()
+			VAR _Position = SEARCH("@", _User, 1)
+			VAR _Name = LEFT(_User, _Position - 1)
+			VAR _FirstLetter = UPPER(LEFT(_Name, 1))
+			VAR _LastName = MID(_Name, 2, LEN(_Name) - 1)
+			VAR _FormattedLastName =
+			    UPPER(LEFT(_LastName, 1)) & LOWER(MID(_LastName, 2, LEN(_LastName)))
+			VAR WelcomeName = _FirstLetter & "." & _FormattedLastName
+			
+			// Get current date/time info
+			VAR CurrentDate = TODAY()
+			VAR DateDisplay = FORMAT(CurrentDate, "MMM D, YYYY")
+			VAR CurrentHour = HOUR(NOW())
+			VAR TimeGreeting =
+			    IF(CurrentHour < 12, "Good Morning",
+			    IF(CurrentHour < 17, "Good Afternoon",
+			    "Good Evening"))
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    height: 85px;
+			    padding: 15px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 10px;
+			    color: white;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-between;
+			    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    box-sizing: border-box;
+			'>
+			    <!-- Left side: Dashboard Title -->
+			    <div style='display: flex; align-items: center; gap: 15px;'>
+			        <!-- Home icon -->
+			        <div style='
+			            width: 40px;
+			            height: 40px;
+			            background: rgba(255,255,255,0.15);
+			            border-radius: 8px;
+			            display: flex;
+			            align-items: center;
+			            justify-content: center;
+			            font-size: 20px;
+			        '>
+			            🏠
+			        </div>
+			
+			        <!-- Title -->
+			        <div>
+			            <div style='font-size: 12px; opacity: 0.85; margin-bottom: 4px; letter-spacing: 0.5px;'>
+			                REPORT
+			            </div>
+			            <div style='font-size: 26px; font-weight: 700; line-height: 1;'>
+			                Service Time Sheets - Executive Summary
+			            </div>
+			        </div>
+			    </div>
+			
+			    <!-- Right side: Welcome & Date -->
+			    <div style='text-align: right;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 6px;'>
+			            " & TimeGreeting & ", " & WelcomeName & "
+			        </div>
+			        <div style='font-size: 16px; font-weight: 600;'>
+			            📅 " & DateDisplay & "
+			        </div>
+			    </div>
+			</div>
+			"
+		lineageTag: ca53ea4f-0e97-4a82-872b-3c0cb96acf8d
+
+	measure 'Hero Card - Tech Detail' =
+			VAR TechName      = SELECTEDVALUE(Fact_ServiceTimeSheet_Audit[TechName], "All Technicians")
+			VAR TechLevel     = SELECTEDVALUE(Fact_ServiceTimeSheet_Audit[TechLevel], "")
+			VAR Location      = SELECTEDVALUE(Fact_ServiceTimeSheet_Audit[Location], "")
+			
+			VAR ROsTotal      = [# Match] + [# Claimed More] + [# Invoiced More] + [# Pending]
+			VAR MatchCount    = [# Match]
+			VAR Pending       = [# Pending]
+			VAR ClaimedMore   = [# Claimed More]
+			VAR AuditedCount  = [Audited Rows]
+			VAR OverclaimRate = [Overclaim Rate %]
+			VAR NetOverclaim  = [Net Overclaim $]
+			VAR OverclaimHrs  = [Overclaim Hrs]
+			
+			VAR LevelLabel    = IF(TechLevel <> "", " · Level " & TechLevel, "")
+			VAR LocLabel      = IF(Location <> "", Location & LevelLabel, LevelLabel)
+			
+			VAR ClaimedColor  = IF(ClaimedMore > 0, "#f87171", "#4ade80")
+			VAR NetColor      = IF(NetOverclaim > 0.01, "#f87171", "#4ade80")
+			
+			VAR ROsText       = FORMAT(ROsTotal, "#,##0")
+			VAR MatchText     = FORMAT(MatchCount, "#,##0")
+			VAR PendingText   = FORMAT(Pending, "#,##0")
+			VAR ClaimedText   = FORMAT(ClaimedMore, "#,##0")
+			VAR AuditedText   = FORMAT(AuditedCount, "#,##0")
+			VAR RateText      = FORMAT(OverclaimRate, "0.0%")
+			VAR NetText       = FORMAT(NetOverclaim, "$#,##0")
+			VAR HrsText       = FORMAT(OverclaimHrs, "0.00")
+			
+			RETURN
+			"<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    padding: 20px 30px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 12px;
+			    color: white;
+			    height: 130px;
+			    display: flex;
+			    justify-content: space-between;
+			    align-items: center;
+			    gap: 15px;
+			'>
+			    <div style='flex: 1.4; text-align: left; border-right: 1px solid rgba(255,255,255,0.2); padding-right: 20px;'>
+			        <div style='font-size: 11px; opacity: 0.75; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 1px;'>Drill-Through: Technician</div>
+			        <div style='font-size: 28px; font-weight: 700; line-height: 1.1; margin-bottom: 4px;'>" & TechName & "</div>
+			        <div style='font-size: 13px; opacity: 0.85;'>" & LocLabel & "</div>
+			    </div>
+			    <div style='flex: 1; text-align: center; border-right: 1px solid rgba(255,255,255,0.2); padding-right: 15px;'>
+			        <div style='font-size: 13px; opacity: 0.85; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;'>Total RO's</div>
+			        <div style='font-size: 38px; font-weight: 700; margin-bottom: 4px;'>" & ROsText & "</div>
+			        <div style='font-size: 12px; opacity: 0.75;'>&#10003; " & MatchText & " &nbsp;|&nbsp; &#8987; " & PendingText & "</div>
+			    </div>
+			    <div style='flex: 1; text-align: center; border-right: 1px solid rgba(255,255,255,0.2); padding-right: 15px;'>
+			        <div style='font-size: 13px; opacity: 0.85; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;'>Claimed More</div>
+			        <div style='font-size: 38px; font-weight: 700; margin-bottom: 4px; color: " & ClaimedColor & ";'>" & ClaimedText & "</div>
+			        <div style='font-size: 12px; opacity: 0.75;'>of " & AuditedText & " audited &nbsp;|&nbsp; " & RateText & "</div>
+			    </div>
+			    <div style='flex: 1; text-align: center; border-right: 1px solid rgba(255,255,255,0.2); padding-right: 15px;'>
+			        <div style='font-size: 13px; opacity: 0.85; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;'>Overclaim Hrs</div>
+			        <div style='font-size: 38px; font-weight: 700; margin-bottom: 4px; color: " & ClaimedColor & ";'>" & HrsText & "</div>
+			        <div style='font-size: 12px; opacity: 0.75;'>hrs claimed not invoiced</div>
+			    </div>
+			    <div style='flex: 1.1; text-align: center;'>
+			        <div style='font-size: 13px; opacity: 0.85; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;'>Net Overclaim $</div>
+			        <div style='font-size: 38px; font-weight: 700; margin-bottom: 4px; color: " & NetColor & ";'>" & NetText & "</div>
+			        <div style='font-size: 12px; opacity: 0.75;'>Tech pay vs labor billed</div>
+			    </div>
+			</div>"
+		lineageTag: b7c8d9e0-f1a2-4456-7890-123456700042
+
+	measure 'Home - Header Drill' =
+			
+			// Get user name
+			VAR _User = USERPRINCIPALNAME()
+			VAR _Position = SEARCH("@", _User, 1)
+			VAR _Name = LEFT(_User, _Position - 1)
+			VAR _FirstLetter = UPPER(LEFT(_Name, 1))
+			VAR _LastName = MID(_Name, 2, LEN(_Name) - 1)
+			VAR _FormattedLastName =
+			    UPPER(LEFT(_LastName, 1)) & LOWER(MID(_LastName, 2, LEN(_LastName)))
+			VAR WelcomeName = _FirstLetter & "." & _FormattedLastName
+			
+			// Get current date/time info
+			VAR CurrentDate = TODAY()
+			VAR DateDisplay = FORMAT(CurrentDate, "MMM D, YYYY")
+			VAR CurrentHour = HOUR(NOW())
+			VAR TimeGreeting =
+			    IF(CurrentHour < 12, "Good Morning",
+			    IF(CurrentHour < 17, "Good Afternoon",
+			    "Good Evening"))
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    height: 85px;
+			    padding: 15px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 10px;
+			    color: white;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-between;
+			    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    box-sizing: border-box;
+			'>
+			    <!-- Left side: Dashboard Title -->
+			    <div style='display: flex; align-items: center; gap: 15px;'>
+			        <!-- Home icon -->
+			        <div style='
+			            width: 40px;
+			            height: 40px;
+			            background: rgba(255,255,255,0.15);
+			            border-radius: 8px;
+			            display: flex;
+			            align-items: center;
+			            justify-content: center;
+			            font-size: 20px;
+			        '>
+			            🏠
+			        </div>
+			
+			        <!-- Title -->
+			        <div>
+			            <div style='font-size: 12px; opacity: 0.85; margin-bottom: 4px; letter-spacing: 0.5px;'>
+			                REPORT
+			            </div>
+			            <div style='font-size: 26px; font-weight: 700; line-height: 1;'>
+			                Service Time Sheets - Tech Audit Detail
+			            </div>
+			        </div>
+			    </div>
+			
+			    <!-- Right side: Welcome & Date -->
+			    <div style='text-align: right;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 6px;'>
+			            " & TimeGreeting & ", " & WelcomeName & "
+			        </div>
+			        <div style='font-size: 16px; font-weight: 600;'>
+			            📅 " & DateDisplay & "
+			        </div>
+			    </div>
+			</div>
+			"
+		lineageTag: 10ed1f66-d024-4687-94fe-1e87b596ee67
+
+	measure 'Hours Diff Color Bar' =
+			SWITCH(
+			    SELECTEDVALUE(Fact_ServiceTimeSheet_Audit[AuditStatus]),
+			    "Claimed More Than Invoiced", "#F87171",
+			    "Invoiced More Than Claimed", "#facc15",
+			    "Match",                       "#16A34A",
+			    BLANK()
+			)
+		lineageTag: caf41df0-0c34-4e72-a1b9-5b34f236aea0
+
+	measure 'Final Draw Total' = SUM(Fact_ServiceTimeSheet_Audit[FinalDrawHrs])
+		formatString: 0.00
+		lineageTag: c8d9e0f1-a2b3-4567-8901-234567800043
+
+	measure 'Current Draw Total' = SUM(Fact_ServiceTimeSheet_Audit[CurrentDrawHrs])
+		formatString: 0.00
+		lineageTag: d9e0f1a2-b3c4-4678-9012-345678900044
+
+	measure 'Draw Strip' =
+			VAR D1 = [Draw 1 Total]
+			VAR D2 = [Draw 2 Total]
+			VAR D3 = [Draw 3 Total]
+			VAR DF = [Final Draw Total]
+			VAR DC = [Current Draw Total]
+			
+			VAR D1Text = FORMAT(D1, "0.00")
+			VAR D2Text = FORMAT(D2, "0.00")
+			VAR D3Text = FORMAT(D3, "0.00")
+			VAR DFText = FORMAT(DF, "0.00")
+			VAR DCText = FORMAT(DC, "0.00")
+			
+			VAR D1Color = IF(D1 > 0, "#1D3C4E", "#cbd5e1")
+			VAR D2Color = IF(D2 > 0, "#1D3C4E", "#cbd5e1")
+			VAR D3Color = IF(D3 > 0, "#1D3C4E", "#cbd5e1")
+			VAR DFColor = IF(DF > 0, "#1D3C4E", "#cbd5e1")
+			VAR DCColor = IF(DC > 0, "#3A7CA5", "#cbd5e1")
+			
+			RETURN
+			"<div style='font-family: Segoe UI, Arial, sans-serif; padding: 8px 20px; background: #f8fafc; border-radius: 8px; border-left: 4px solid #2E5266; color: #1e293b; height: 70px; display: flex; align-items: center; gap: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); box-sizing: border-box;'>" &
+			"<div style='font-size: 10px; color: #64748b; text-transform: uppercase; letter-spacing: 1px; white-space: nowrap; padding-right: 12px; border-right: 1px solid #e2e8f0; margin-right: 8px; line-height: 1.4;'>Draw<br>Stages</div>" &
+			"<div style='flex: 1; text-align: center;'><div style='font-size: 10px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px;'>Draw 1</div><div style='font-size: 22px; font-weight: 700; color: " & D1Color & ";'>" & D1Text & "</div></div>" &
+			"<div style='font-size: 14px; color: #94a3b8; padding: 0 4px;'>&#8594;</div>" &
+			"<div style='flex: 1; text-align: center;'><div style='font-size: 10px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px;'>Draw 2</div><div style='font-size: 22px; font-weight: 700; color: " & D2Color & ";'>" & D2Text & "</div></div>" &
+			"<div style='font-size: 14px; color: #94a3b8; padding: 0 4px;'>&#8594;</div>" &
+			"<div style='flex: 1; text-align: center;'><div style='font-size: 10px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px;'>Draw 3</div><div style='font-size: 22px; font-weight: 700; color: " & D3Color & ";'>" & D3Text & "</div></div>" &
+			"<div style='font-size: 14px; color: #94a3b8; padding: 0 4px;'>&#8594;</div>" &
+			"<div style='flex: 1; text-align: center;'><div style='font-size: 10px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px;'>Final Draw</div><div style='font-size: 22px; font-weight: 700; color: " & DFColor & ";'>" & DFText & "</div></div>" &
+			"<div style='font-size: 14px; color: #94a3b8; padding: 0 4px;'>&#8594;</div>" &
+			"<div style='flex: 1; text-align: center; background: rgba(58,124,165,0.06); border-radius: 6px; padding: 4px 8px;'><div style='font-size: 10px; color: #3A7CA5; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; margin-bottom: 2px;'>Current Draw</div><div style='font-size: 22px; font-weight: 700; color: " & DCColor & ";'>" & DCText & "</div></div>" &
+			"</div>"
+		lineageTag: e0f1a2b3-c4d5-4789-0123-456789000045
+
+	measure 'Home - Header Detail' =
+			
+			// Get user name
+			VAR _User = USERPRINCIPALNAME()
+			VAR _Position = SEARCH("@", _User, 1)
+			VAR _Name = LEFT(_User, _Position - 1)
+			VAR _FirstLetter = UPPER(LEFT(_Name, 1))
+			VAR _LastName = MID(_Name, 2, LEN(_Name) - 1)
+			VAR _FormattedLastName =
+			    UPPER(LEFT(_LastName, 1)) & LOWER(MID(_LastName, 2, LEN(_LastName)))
+			VAR WelcomeName = _FirstLetter & "." & _FormattedLastName
+			
+			// Get current date/time info
+			VAR CurrentDate = TODAY()
+			VAR DateDisplay = FORMAT(CurrentDate, "MMM D, YYYY")
+			VAR CurrentHour = HOUR(NOW())
+			VAR TimeGreeting =
+			    IF(CurrentHour < 12, "Good Morning",
+			    IF(CurrentHour < 17, "Good Afternoon",
+			    "Good Evening"))
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    height: 85px;
+			    padding: 15px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 10px;
+			    color: white;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-between;
+			    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    box-sizing: border-box;
+			'>
+			    <!-- Left side: Dashboard Title -->
+			    <div style='display: flex; align-items: center; gap: 15px;'>
+			        <!-- Home icon -->
+			        <div style='
+			            width: 40px;
+			            height: 40px;
+			            background: rgba(255,255,255,0.15);
+			            border-radius: 8px;
+			            display: flex;
+			            align-items: center;
+			            justify-content: center;
+			            font-size: 20px;
+			        '>
+			            🏠
+			        </div>
+			
+			        <!-- Title -->
+			        <div>
+			            <div style='font-size: 12px; opacity: 0.85; margin-bottom: 4px; letter-spacing: 0.5px;'>
+			                REPORT
+			            </div>
+			            <div style='font-size: 26px; font-weight: 700; line-height: 1;'>
+			                Service Time Sheets - Multi-Tech RO Detail
+			            </div>
+			        </div>
+			    </div>
+			
+			    <!-- Right side: Welcome & Date -->
+			    <div style='text-align: right;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 6px;'>
+			            " & TimeGreeting & ", " & WelcomeName & "
+			        </div>
+			        <div style='font-size: 16px; font-weight: 600;'>
+			            📅 " & DateDisplay & "
+			        </div>
+			    </div>
+			</div>
+			"
+		lineageTag: 40215a22-514f-4843-88dc-c5a03c8b1dbf
+
+	measure '# Techs on RO' = DISTINCTCOUNT(Fact_ServiceTimeSheet_Audit[TechNum])
+		formatString: #,##0
+		lineageTag: f1a2b3c4-d5e6-4890-1234-567890100046
+
+	measure 'Hero Card - RO Detail' =
+			VAR SelectedRO   = SELECTEDVALUE(Fact_ServiceTimeSheet_Audit[RONumberText], "All ROs")
+			VAR Customer     = SELECTEDVALUE(Fact_ServiceTimeSheet_Audit[CustomerName], "")
+			VAR Mdl          = SELECTEDVALUE(Fact_ServiceTimeSheet_Audit[Model], "")
+			VAR TechsCount   = [# Techs on RO]
+			VAR ClaimedHrs   = [Total Claimed Hours]
+			VAR InvHrs       = [Total Invoiced Hours]
+			VAR GapHrs       = [Hours Difference]
+			VAR OvAmt        = [Paid Difference]
+			
+			VAR SubTitle     = Customer & IF(Mdl <> "", " · " & Mdl, "")
+			
+			VAR GapColor     = IF(GapHrs > 0.01, "#f87171", IF(GapHrs < -0.01, "#facc15", "#4ade80"))
+			VAR OvColor      = IF(OvAmt > 0.01, "#f87171", IF(OvAmt < -0.01, "#facc15", "#4ade80"))
+			
+			VAR TechsText    = FORMAT(TechsCount, "#,##0")
+			VAR ClaimedText  = FORMAT(ClaimedHrs, "0.00")
+			VAR InvText      = FORMAT(InvHrs, "0.00")
+			VAR GapSign      = IF(GapHrs > 0.01, "+", "")
+			VAR GapText      = GapSign & FORMAT(GapHrs, "0.00")
+			VAR OvSign       = IF(OvAmt > 0.01, "+", "")
+			VAR OvText       = OvSign & FORMAT(OvAmt, "$#,##0")
+			
+			RETURN
+			"<div style='font-family: Segoe UI, Arial, sans-serif; padding: 20px 25px; background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%); border-radius: 12px; color: white; height: 130px; display: flex; justify-content: space-between; align-items: center; gap: 10px;'>" &
+			"<div style='flex: 1.5; text-align: left; border-right: 1px solid rgba(255,255,255,0.2); padding-right: 15px;'>" &
+			"<div style='font-size: 11px; opacity: 0.75; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 1px;'>RO Detail — Multi-Tech</div>" &
+			"<div style='font-size: 32px; font-weight: 700; line-height: 1.1; margin-bottom: 3px;'>RO " & SelectedRO & "</div>" &
+			"<div style='font-size: 12px; opacity: 0.85;'>" & SubTitle & "</div>" &
+			"</div>" &
+			"<div style='flex: 0.8; text-align: center; border-right: 1px solid rgba(255,255,255,0.2); padding-right: 10px;'>" &
+			"<div style='font-size: 12px; opacity: 0.85; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;'>Techs on RO</div>" &
+			"<div style='font-size: 38px; font-weight: 700; margin-bottom: 4px;'>" & TechsText & "</div>" &
+			"<div style='font-size: 11px; opacity: 0.7;'>technicians</div>" &
+			"</div>" &
+			"<div style='flex: 1; text-align: center; border-right: 1px solid rgba(255,255,255,0.2); padding-right: 10px;'>" &
+			"<div style='font-size: 12px; opacity: 0.85; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;'>Total Claimed</div>" &
+			"<div style='font-size: 38px; font-weight: 700; margin-bottom: 4px;'>" & ClaimedText & "</div>" &
+			"<div style='font-size: 11px; opacity: 0.7;'>hrs submitted</div>" &
+			"</div>" &
+			"<div style='flex: 1; text-align: center; border-right: 1px solid rgba(255,255,255,0.2); padding-right: 10px;'>" &
+			"<div style='font-size: 12px; opacity: 0.85; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;'>Total Invoiced</div>" &
+			"<div style='font-size: 38px; font-weight: 700; margin-bottom: 4px;'>" & InvText & "</div>" &
+			"<div style='font-size: 11px; opacity: 0.7;'>hrs in system</div>" &
+			"</div>" &
+			"<div style='flex: 0.9; text-align: center; border-right: 1px solid rgba(255,255,255,0.2); padding-right: 10px;'>" &
+			"<div style='font-size: 12px; opacity: 0.85; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;'>Aggregate Gap</div>" &
+			"<div style='font-size: 38px; font-weight: 700; margin-bottom: 4px; color: " & GapColor & ";'>" & GapText & "</div>" &
+			"<div style='font-size: 11px; opacity: 0.7;'>hrs (claimed − invoiced)</div>" &
+			"</div>" &
+			"<div style='flex: 1; text-align: center;'>" &
+			"<div style='font-size: 12px; opacity: 0.85; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;'>Aggregate Overclaim</div>" &
+			"<div style='font-size: 38px; font-weight: 700; margin-bottom: 4px; color: " & OvColor & ";'>" & OvText & "</div>" &
+			"<div style='font-size: 11px; opacity: 0.7;'>tech pay vs labor billed</div>" &
+			"</div>" &
+			"</div>"
+		lineageTag: a2b3c4d5-e6f7-4901-2345-678901200047
+
+	measure 'RO Attribution Summary' =
+			VAR TechsCount   = [# Techs on RO]
+			VAR ClaimedHrs   = [Total Claimed Hours]
+			VAR InvHrs       = [Total Invoiced Hours]
+			VAR GapHrs       = [Hours Difference]
+			VAR OvAmt        = [Paid Difference]
+			VAR TechPayAmt   = [Total Tech Pay]
+			VAR LaborBill    = [Labor Billed]
+			VAR ClaimedMore  = [# Claimed More]
+			VAR InvoicedMore = [# Invoiced More]
+			VAR MatchCount   = [# Match]
+			
+			VAR GapColor  = IF(GapHrs > 0.01, "#DC2626", IF(GapHrs < -0.01, "#B45309", "#16A34A"))
+			VAR OvColor   = IF(OvAmt > 0.01, "#DC2626", IF(OvAmt < -0.01, "#B45309", "#16A34A"))
+			
+			VAR TechsText = FORMAT(TechsCount, "#,##0")
+			VAR ClmdText  = FORMAT(ClaimedHrs, "0.00")
+			VAR InvText   = FORMAT(InvHrs, "0.00")
+			VAR GapAbs    = FORMAT(ABS(GapHrs), "0.00")
+			VAR OvAbs     = FORMAT(ABS(OvAmt), "$#,##0.00")
+			VAR TPayText  = FORMAT(TechPayAmt, "$#,##0.00")
+			VAR LBillText = FORMAT(LaborBill, "$#,##0.00")
+			VAR CMText    = FORMAT(ClaimedMore, "#,##0")
+			VAR IMText    = FORMAT(InvoicedMore, "#,##0")
+			VAR MText     = FORMAT(MatchCount, "#,##0")
+			VAR GapSign   = IF(GapHrs > 0.01, "+", "")
+			VAR OvSign    = IF(OvAmt > 0.01, "+", "")
+			
+			RETURN
+			"<div style='font-family: Segoe UI, Arial, sans-serif; padding: 14px 20px; background: #f8fafc; border-radius: 8px; border-left: 4px solid #2E5266; box-shadow: 0 1px 4px rgba(0,0,0,0.06); box-sizing: border-box;'>" &
+			"<div style='font-size: 11px; font-weight: 700; color: #2E5266; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;'>Attribution Summary</div>" &
+			"<div style='font-size: 13px; color: #334155; margin-bottom: 10px; line-height: 1.5;'>" &
+			TechsText & " techs claimed <span style='font-weight: 700;'>" & ClmdText & " hrs</span> on this RO. System invoiced <span style='font-weight: 700;'>" & InvText & " hrs</span> — a <span style='font-weight: 700; color: " & GapColor & ";'>" & GapSign & GapAbs & " hr gap</span> at the RO level." &
+			"</div>" &
+			"<div style='display: flex; gap: 24px;'>" &
+			"<div style='flex: 1;'>" &
+			"<div style='font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px;'>Status Breakdown</div>" &
+			"<div style='font-size: 12px; color: #475569; line-height: 1.9;'>" &
+			"Claimed More: <span style='color: #DC2626; font-weight: 700;'>" & CMText & "</span> of " & TechsText & " techs" &
+			"<br>Invoiced More: <span style='color: #B45309; font-weight: 700;'>" & IMText & "</span> of " & TechsText & " techs" &
+			"<br>Match: <span style='color: #16A34A; font-weight: 700;'>" & MText & "</span> of " & TechsText & " techs" &
+			"</div>" &
+			"</div>" &
+			"<div style='flex: 1;'>" &
+			"<div style='font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px;'>Financial Summary</div>" &
+			"<div style='font-size: 12px; color: #475569; line-height: 1.9;'>" &
+			"Total Tech Pay: <span style='font-weight: 700;'>" & TPayText & "</span>" &
+			"<br>Labor Billed: <span style='font-weight: 700;'>" & LBillText & "</span>" &
+			"<br>Net Payroll Gap: <span style='font-weight: 700; color: " & OvColor & ";'>" & OvSign & OvAbs & "</span>" &
+			"</div>" &
+			"</div>" &
+			"</div>" &
+			"<div style='font-size: 11px; color: #94a3b8; margin-top: 10px; font-style: italic; border-top: 1px solid #e2e8f0; padding-top: 8px;'>" &
+			"Multi-tech ROs may reflect billing allocation differences rather than individual tech overclaims — investigate the invoicing, not just the tech." &
+			"</div>" &
+			"</div>"
+		lineageTag: b3c4d5e6-f7a8-4012-3456-789012300048
+
+	measure 'Techs on RO List' =
+			CONCATENATEX(
+			    VALUES(Fact_ServiceTimeSheet_Audit[TechName]),
+			    Fact_ServiceTimeSheet_Audit[TechName],
+			    ", ",
+			    Fact_ServiceTimeSheet_Audit[TechName],
+			    ASC
+			)
+		lineageTag: c4d5e6f7-a8b9-4123-4567-890123400049
+
+	measure 'Is Shared RO' = IF([# Techs on RO] > 1, "Yes", "")
+		lineageTag: d5e6f7a8-b9c0-4234-5678-901234500050
+
+	measure 'RO Audit Status' =
+			VAR cm   = [# Claimed More]
+			VAR im   = [# Invoiced More]
+			VAR pend = [# Pending]
+			RETURN
+			    IF(cm > 0 && im > 0,  "Mixed",
+			    IF(cm > 0,             "Claimed More Than Invoiced",
+			    IF(im > 0,             "Invoiced More Than Claimed",
+			    IF(pend > 0,           "Pending",
+			                           "Match"))))
+		lineageTag: e6f7a8b9-c0d1-4345-6789-012345600051
+
+	measure 'Tooltip - Draw Detail' =
+			VAR TechName = SELECTEDVALUE(Fact_ServiceTimeSheet_Audit[TechName], "")
+			VAR RONum    = SELECTEDVALUE(Fact_ServiceTimeSheet_Audit[RONumberText], "")
+			VAR D1 = [Draw 1 Total]
+			VAR D2 = [Draw 2 Total]
+			VAR D3 = [Draw 3 Total]
+			VAR DF = [Final Draw Total]
+			VAR DC = [Current Draw Total]
+			VAR AH = [After Hours Total]
+			
+			VAR D1Text = FORMAT(D1, "0.00")
+			VAR D2Text = FORMAT(D2, "0.00")
+			VAR D3Text = FORMAT(D3, "0.00")
+			VAR DFText = FORMAT(DF, "0.00")
+			VAR DCText = FORMAT(DC, "0.00")
+			
+			VAR D1Color = IF(D1 > 0, "#1D3C4E", "#cbd5e1")
+			VAR D2Color = IF(D2 > 0, "#1D3C4E", "#cbd5e1")
+			VAR D3Color = IF(D3 > 0, "#1D3C4E", "#cbd5e1")
+			VAR DFColor = IF(DF > 0, "#1D3C4E", "#cbd5e1")
+			VAR DCColor = IF(DC > 0, "#3A7CA5", "#cbd5e1")
+			
+			VAR CtxLine = IF(TechName <> "" && RONum <> "", TechName & " — RO " & RONum, "")
+			
+			RETURN
+			"<div style='font-family: Segoe UI, Arial, sans-serif; padding: 12px 16px; background: white; border-radius: 8px; border: 1px solid #e2e8f0; box-sizing: border-box;'>" &
+			IF(CtxLine <> "",
+			    "<div style='font-size: 11px; color: #64748b; margin-bottom: 8px; border-bottom: 1px solid #f1f5f9; padding-bottom: 6px;'>" & CtxLine & "</div>",
+			    ""
+			) &
+			"<div style='font-size: 10px; font-weight: 700; color: #2E5266; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;'>Draw Progression</div>" &
+			"<div style='display: flex; align-items: center; gap: 4px;'>" &
+			"<div style='flex: 1; text-align: center;'><div style='font-size: 9px; color: #94a3b8; text-transform: uppercase; margin-bottom: 2px;'>D1</div><div style='font-size: 20px; font-weight: 700; color: " & D1Color & ";'>" & D1Text & "</div></div>" &
+			"<div style='font-size: 14px; color: #cbd5e1; padding-bottom: 4px;'>&#8250;</div>" &
+			"<div style='flex: 1; text-align: center;'><div style='font-size: 9px; color: #94a3b8; text-transform: uppercase; margin-bottom: 2px;'>D2</div><div style='font-size: 20px; font-weight: 700; color: " & D2Color & ";'>" & D2Text & "</div></div>" &
+			"<div style='font-size: 14px; color: #cbd5e1; padding-bottom: 4px;'>&#8250;</div>" &
+			"<div style='flex: 1; text-align: center;'><div style='font-size: 9px; color: #94a3b8; text-transform: uppercase; margin-bottom: 2px;'>D3</div><div style='font-size: 20px; font-weight: 700; color: " & D3Color & ";'>" & D3Text & "</div></div>" &
+			"<div style='font-size: 14px; color: #cbd5e1; padding-bottom: 4px;'>&#8250;</div>" &
+			"<div style='flex: 1; text-align: center;'><div style='font-size: 9px; color: #94a3b8; text-transform: uppercase; margin-bottom: 2px;'>Final</div><div style='font-size: 20px; font-weight: 700; color: " & DFColor & ";'>" & DFText & "</div></div>" &
+			"<div style='font-size: 14px; color: #cbd5e1; padding-bottom: 4px;'>&#8250;</div>" &
+			"<div style='flex: 1; text-align: center; background: #f0f9ff; border-radius: 4px; padding: 3px 2px;'><div style='font-size: 9px; color: #3A7CA5; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;'>Current</div><div style='font-size: 20px; font-weight: 700; color: " & DCColor & ";'>" & DCText & "</div></div>" &
+			"</div>" &
+			IF(AH > 0,
+			    "<div style='font-size: 11px; color: #64748b; margin-top: 8px; padding-top: 6px; border-top: 1px solid #f1f5f9;'>After Hours: <span style='font-weight: 700; color: #1D3C4E;'>" & FORMAT(AH, "0.00") & "</span></div>",
+			    ""
+			) &
+			"</div>"
+		lineageTag: f7a8b9c0-d1e2-4456-7890-123456700052
+
+	measure 'Home - Header Rollup' =
+			
+			// Get user name
+			VAR _User = USERPRINCIPALNAME()
+			VAR _Position = SEARCH("@", _User, 1)
+			VAR _Name = LEFT(_User, _Position - 1)
+			VAR _FirstLetter = UPPER(LEFT(_Name, 1))
+			VAR _LastName = MID(_Name, 2, LEN(_Name) - 1)
+			VAR _FormattedLastName =
+			    UPPER(LEFT(_LastName, 1)) & LOWER(MID(_LastName, 2, LEN(_LastName)))
+			VAR WelcomeName = _FirstLetter & "." & _FormattedLastName
+			
+			// Get current date/time info
+			VAR CurrentDate = TODAY()
+			VAR DateDisplay = FORMAT(CurrentDate, "MMM D, YYYY")
+			VAR CurrentHour = HOUR(NOW())
+			VAR TimeGreeting =
+			    IF(CurrentHour < 12, "Good Morning",
+			    IF(CurrentHour < 17, "Good Afternoon",
+			    "Good Evening"))
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    height: 85px;
+			    padding: 15px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 10px;
+			    color: white;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-between;
+			    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    box-sizing: border-box;
+			'>
+			    <!-- Left side: Dashboard Title -->
+			    <div style='display: flex; align-items: center; gap: 15px;'>
+			        <!-- Home icon -->
+			        <div style='
+			            width: 40px;
+			            height: 40px;
+			            background: rgba(255,255,255,0.15);
+			            border-radius: 8px;
+			            display: flex;
+			            align-items: center;
+			            justify-content: center;
+			            font-size: 20px;
+			        '>
+			            🏠
+			        </div>
+			
+			        <!-- Title -->
+			        <div>
+			            <div style='font-size: 12px; opacity: 0.85; margin-bottom: 4px; letter-spacing: 0.5px;'>
+			                REPORT
+			            </div>
+			            <div style='font-size: 26px; font-weight: 700; line-height: 1;'>
+			                Service Time Sheets - Multi-Tech RO Review
+			            </div>
+			        </div>
+			    </div>
+			
+			    <!-- Right side: Welcome & Date -->
+			    <div style='text-align: right;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 6px;'>
+			            " & TimeGreeting & ", " & WelcomeName & "
+			        </div>
+			        <div style='font-size: 16px; font-weight: 600;'>
+			            📅 " & DateDisplay & "
+			        </div>
+			    </div>
+			</div>
+			"
+		lineageTag: 55bbc831-4553-481a-805a-bddc8579d243
+
+	measure 'RO Row Status Color' =
+			SWITCH([RO Audit Status],
+			    "Claimed More Than Invoiced", "#FEE2E2",
+			    "Invoiced More Than Claimed", "#FEF3C7",
+			    "Mixed",                       "#EDE9FE",
+			    "Match",                       "#F0FDF4",
+			    "#F8FAFC"
+			)
+		lineageTag: a8b9c0d1-e2f3-4567-8901-234567800053
+
+	measure 'RO Audit Status Color' =
+			SWITCH([RO Audit Status],
+			    "Claimed More Than Invoiced", "#DC2626",
+			    "Invoiced More Than Claimed", "#B45309",
+			    "Mixed",                       "#6D28D9",
+			    "Match",                       "#16A34A",
+			    "#64748B"
+			)
+		lineageTag: b9c0d1e2-f3a4-4678-9012-345678900054
+
+	measure 'RO Hours Diff Color' =
+			IF([Hours Difference] > 0.01,  "#DC2626",
+			IF([Hours Difference] < -0.01, "#B45309",
+			IF([Hours Difference] = 0,     "#16A34A",
+			BLANK())))
+		lineageTag: c0d1e2f3-a4b5-4789-0123-456789000055
+
+	measure 'Home Page Content' =
+			VAR header =
+			    "<div style='background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 100%); border-radius: 10px; padding: 24px 32px; margin-bottom: 16px;'>" &
+			    "<div style='font-size: 26px; font-weight: 700; color: #FFFFFF; margin-bottom: 8px;'>📋 Service Time Sheets — Audit Report</div>" &
+			    "<div style='font-size: 15px; color: #93C5D6; max-width: 800px; margin-bottom: 16px;'>This report cross-references technician time sheets against what was invoiced in EquipRDB. Use it to verify hours before payroll is finalized and flag any discrepancies for review.</div>" &
+			    "<div style='display: inline-block; background: #FFFFFF; color: #1D3C4E; font-size: 15px; font-weight: 700; padding: 10px 28px; border-radius: 6px; letter-spacing: 0.02em;'>▶  Go to Executive Summary</div>" &
+			    "</div>"
+			VAR step1 =
+			    "<div style='flex: 1; background: #F0F9FF; border: 2px solid #1D3C4E; border-radius: 8px; padding: 12px 10px; text-align: center;'>" &
+			    "<div style='font-size: 12px; font-weight: 600; color: #64748B; text-transform: uppercase; margin-bottom: 5px;'>Page 1</div>" &
+			    "<div style='font-size: 15px; font-weight: 700; color: #1D3C4E; margin-bottom: 6px;'>Executive Summary</div>" &
+			    "<div style='font-size: 13px; color: #475569;'>High-level pay period overview by location and tech.</div>" &
+			    "</div>"
+			VAR arrowSimple =
+			    "<div style='display: flex; align-items: center; justify-content: center; min-width: 22px;'>" &
+			    "<div style='font-size: 18px; color: #CBD5E1;'>→</div>" &
+			    "</div>"
+			VAR step2 =
+			    "<div style='flex: 1; background: #F0F9FF; border: 2px solid #1D3C4E; border-radius: 8px; padding: 12px 10px; text-align: center;'>" &
+			    "<div style='font-size: 12px; font-weight: 600; color: #64748B; text-transform: uppercase; margin-bottom: 5px;'>Page 2</div>" &
+			    "<div style='font-size: 15px; font-weight: 700; color: #1D3C4E; margin-bottom: 6px;'>Time Sheet Audit</div>" &
+			    "<div style='font-size: 13px; color: #475569;'>Full detail — every tech, every RO. Right-click a tech name to drill through.</div>" &
+			    "</div>"
+			VAR arrow1 =
+			    "<div style='display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; min-width: 70px;'>" &
+			    "<div style='font-size: 18px; color: #94A3B8;'>➜</div>" &
+			    "<div style='font-size: 11px; color: #94A3B8; font-style: italic; text-align: center;'>Right-click<br>a Tech Name</div>" &
+			    "</div>"
+			VAR step3 =
+			    "<div style='flex: 1; background: #F0F9FF; border: 2px solid #1D3C4E; border-radius: 8px; padding: 12px 10px; text-align: center;'>" &
+			    "<div style='font-size: 12px; font-weight: 600; color: #64748B; text-transform: uppercase; margin-bottom: 5px;'>Page 3</div>" &
+			    "<div style='font-size: 15px; font-weight: 700; color: #1D3C4E; margin-bottom: 6px;'>Tech Audit Detail</div>" &
+			    "<div style='font-size: 13px; color: #475569;'>All ROs for that tech — draw breakdown and hours vs. invoiced.</div>" &
+			    "</div>"
+			VAR arrow2 =
+			    "<div style='display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; min-width: 70px;'>" &
+			    "<div style='font-size: 18px; color: #94A3B8;'>➜</div>" &
+			    "<div style='font-size: 11px; color: #94A3B8; font-style: italic; text-align: center;'>Right-click<br>an RO Number</div>" &
+			    "</div>"
+			VAR step4 =
+			    "<div style='flex: 1; background: #F0F9FF; border: 2px solid #1D3C4E; border-radius: 8px; padding: 12px 10px; text-align: center;'>" &
+			    "<div style='font-size: 12px; font-weight: 600; color: #64748B; text-transform: uppercase; margin-bottom: 5px;'>Page 4</div>" &
+			    "<div style='font-size: 15px; font-weight: 700; color: #1D3C4E; margin-bottom: 6px;'>Multi-Tech RO Detail</div>" &
+			    "<div style='font-size: 13px; color: #475569;'>All techs on one RO side by side.</div>" &
+			    "</div>"
+			VAR sep =
+			    "<div style='display: flex; align-items: center; min-width: 16px;'>" &
+			    "<div style='font-size: 20px; color: #CBD5E1;'>│</div>" &
+			    "</div>"
+			VAR step5 =
+			    "<div style='flex: 1; background: #F8F4FF; border: 2px solid #6D28D9; border-radius: 8px; padding: 12px 10px; text-align: center;'>" &
+			    "<div style='font-size: 12px; font-weight: 600; color: #6D28D9; text-transform: uppercase; margin-bottom: 5px;'>Page 5</div>" &
+			    "<div style='font-size: 15px; font-weight: 700; color: #4C1D95; margin-bottom: 6px;'>Multi-Tech RO Review</div>" &
+			    "<div style='font-size: 13px; color: #475569;'>Standalone — all shared-work ROs in one table.</div>" &
+			    "</div>"
+			VAR navFlow =
+			    "<div style='background: #FFFFFF; border-radius: 10px; padding: 20px 24px; margin-bottom: 16px; border: 1px solid #E2E8F0;'>" &
+			    "<div style='font-size: 14px; font-weight: 700; color: #64748B; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 16px;'>📍 How to Navigate — Drill-Through Flow</div>" &
+			    "<div style='display: flex; align-items: stretch; gap: 6px;'>" &
+			    step1 & arrowSimple & step2 & arrow1 & step3 & arrow2 & step4 & sep & step5 &
+			    "</div>" &
+			    "<div style='margin-top: 14px; padding: 10px 14px; background: #F8FAFC; border-radius: 6px; border-left: 3px solid #2E5266; font-size: 13px; color: #475569;'>" &
+			    "↩ <span style='font-weight: 600;'>To return to a previous page:</span> Use the back arrow in the top-left corner of the page header after drilling through." &
+			    "</div>" &
+			    "</div>"
+			VAR statusGuide =
+			    "<div style='flex: 1.1; background: #FFFFFF; border-radius: 10px; padding: 20px 24px; border: 1px solid #E2E8F0; display: flex; flex-direction: column;'>" &
+			    "<div style='font-size: 14px; font-weight: 700; color: #64748B; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 14px;'>🔎 Audit Status Guide</div>" &
+			    "<div style='display: flex; flex-direction: column; gap: 8px; flex: 1;'>" &
+			    "<div style='flex: 1; padding: 11px 14px; background: #F0FDF4; border-radius: 6px; border-left: 4px solid #16A34A; display: flex; align-items: center; gap: 14px;'><div style='font-size: 14px; font-weight: 700; color: #16A34A; width: 135px; flex-shrink: 0;'>✓ Match</div><div style='font-size: 13px; color: #475569;'>Hours submitted equal hours invoiced. No action needed.</div></div>" &
+			    "<div style='flex: 1; padding: 11px 14px; background: #FEE2E2; border-radius: 6px; border-left: 4px solid #DC2626; display: flex; align-items: center; gap: 14px;'><div style='font-size: 14px; font-weight: 700; color: #DC2626; width: 135px; flex-shrink: 0;'>⚠ Claimed More</div><div style='font-size: 13px; color: #475569;'>Tech submitted more hours than invoiced. Review before approving pay.</div></div>" &
+			    "<div style='flex: 1; padding: 11px 14px; background: #FEF3C7; border-radius: 6px; border-left: 4px solid #B45309; display: flex; align-items: center; gap: 14px;'><div style='font-size: 14px; font-weight: 700; color: #B45309; width: 135px; flex-shrink: 0;'>⚠ Invoiced More</div><div style='font-size: 13px; color: #475569;'>Source system shows more hours invoiced than submitted. May indicate a missing time sheet entry.</div></div>" &
+			    "<div style='flex: 1; padding: 11px 14px; background: #EDE9FE; border-radius: 6px; border-left: 4px solid #6D28D9; display: flex; align-items: center; gap: 14px;'><div style='font-size: 14px; font-weight: 700; color: #6D28D9; width: 135px; flex-shrink: 0;'>⚡ Mixed</div><div style='font-size: 13px; color: #475569;'>Multiple techs on this RO have different statuses. Drill through to see each tech individually.</div></div>" &
+			    "<div style='flex: 1; padding: 11px 14px; background: #F8FAFC; border-radius: 6px; border-left: 4px solid #94A3B8; display: flex; align-items: center; gap: 14px;'><div style='font-size: 14px; font-weight: 700; color: #64748B; width: 135px; flex-shrink: 0;'>⏳ Pending</div><div style='font-size: 13px; color: #475569;'>This RO has not yet been invoiced in EquipRDB. Not a discrepancy — check back once invoicing is complete.</div></div>" &
+			    "</div>" &
+			    "</div>"
+			VAR keyTerms =
+			    "<div style='flex: 1; background: #FFFFFF; border-radius: 10px; padding: 20px 24px; border: 1px solid #E2E8F0; display: flex; flex-direction: column;'>" &
+			    "<div style='font-size: 14px; font-weight: 700; color: #64748B; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 14px;'>📖 Key Terms</div>" &
+			    "<div style='display: flex; flex-direction: column; flex: 1; justify-content: space-between;'>" &
+			    "<div style='padding-bottom: 12px; border-bottom: 1px solid #F1F5F9;'><div style='font-size: 15px; font-weight: 600; color: #1E293B; margin-bottom: 4px;'>Claimed Hours</div><div style='font-size: 13px; color: #64748B;'>Hours the technician reported on their submitted time sheet for a given repair order.</div></div>" &
+			    "<div style='padding: 12px 0; border-bottom: 1px solid #F1F5F9;'><div style='font-size: 15px; font-weight: 600; color: #1E293B; margin-bottom: 4px;'>Invoiced Hours</div><div style='font-size: 13px; color: #64748B;'>Hours recorded against that RO in EquipRDB — what was billed to the customer.</div></div>" &
+			    "<div style='padding: 12px 0; border-bottom: 1px solid #F1F5F9;'><div style='font-size: 15px; font-weight: 600; color: #1E293B; margin-bottom: 4px;'>Hours Difference</div><div style='font-size: 13px; color: #64748B;'>Invoiced minus Claimed. Negative means the tech submitted more hours than were invoiced.</div></div>" &
+			    "<div style='padding: 12px 0; border-bottom: 1px solid #F1F5F9;'><div style='font-size: 15px; font-weight: 600; color: #1E293B; margin-bottom: 4px;'>Billing Gap</div><div style='font-size: 13px; color: #64748B;'>Labor billed to the customer minus draw pay owed to the tech. Shows the margin on each RO.</div></div>" &
+			    "<div style='padding-top: 12px;'><div style='font-size: 15px; font-weight: 600; color: #1E293B; margin-bottom: 4px;'>Draw Pay</div><div style='font-size: 13px; color: #64748B;'>Claimed Hours × pay rate. Level 3 = $40/hr · Level 4 = $43/hr · Level 5 = $46/hr. Service managers receive no draw.</div></div>" &
+			    "</div>" &
+			    "</div>"
+			RETURN
+			    "<div style='font-family: Segoe UI, sans-serif; background: transparent; padding: 16px; width: 100%; box-sizing: border-box;'>" &
+			    header & navFlow &
+			    "<div style='display: flex; gap: 16px; align-items: stretch;'>" & statusGuide & keyTerms & "</div>" &
+			    "</div>"
+		lineageTag: d1e2f3a4-b5c6-4890-1234-567890100056
+
+	column Value
+		isHidden
+		lineageTag: da2dfa23-0c4c-4e9d-8014-3cc5710e756b
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Value]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition _Measures = calculated
+		mode: import
+		source = { "This table holds all measures for the Service Time Sheets report" }
+
+	annotation PBI_Id = da82ad85df114f0dbe8c17ce73f079a8
+

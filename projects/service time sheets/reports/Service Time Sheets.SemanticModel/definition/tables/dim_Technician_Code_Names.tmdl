@@ -1,0 +1,147 @@
+table dim_Technician_Code_Names
+	lineageTag: a6e9abbc-a730-455a-b999-e70fca18fe03
+
+	column TechnicianKey
+		dataType: int64
+		formatString: 0
+		lineageTag: 2bb48da9-8b7d-4401-98c3-9d3111d7efc9
+		summarizeBy: none
+		sourceColumn: TechnicianKey
+
+		annotation SummarizationSetBy = Automatic
+
+	column TechnicianCode
+		dataType: string
+		lineageTag: 37e03c8a-0313-48ee-b442-816e06d5e1d2
+		summarizeBy: none
+		sourceColumn: TechnicianCode
+
+		annotation SummarizationSetBy = Automatic
+
+	column TechnicianFirstName
+		dataType: string
+		lineageTag: 3683a0ea-93ff-48c9-a4c5-74d63296684a
+		summarizeBy: none
+		sourceColumn: TechnicianFirstName
+
+		annotation SummarizationSetBy = Automatic
+
+	column TechnicianLastName
+		dataType: string
+		lineageTag: 788261ee-b9bd-4791-af1a-2bf363046a3c
+		summarizeBy: none
+		sourceColumn: TechnicianLastName
+
+		annotation SummarizationSetBy = Automatic
+
+	column TechnicianFullName
+		dataType: string
+		lineageTag: 0b7c6e6d-695b-4d84-86af-cb8b96033ee3
+		summarizeBy: none
+		sourceColumn: TechnicianFullName
+
+		annotation SummarizationSetBy = Automatic
+
+	column TechnicianDisplayName
+		dataType: string
+		lineageTag: d108163b-878e-4057-82f3-79a2fdf30188
+		summarizeBy: none
+		sourceColumn: TechnicianDisplayName
+
+		annotation SummarizationSetBy = Automatic
+
+	column TechnicianShortName
+		dataType: string
+		lineageTag: cb931b37-56ef-4781-add6-9636566647da
+		summarizeBy: none
+		sourceColumn: TechnicianShortName
+
+		annotation SummarizationSetBy = Automatic
+
+	column PreferredDisplayName
+		dataType: string
+		lineageTag: 70569c80-dd36-4487-834a-6a50d31f4254
+		summarizeBy: none
+		sourceColumn: PreferredDisplayName
+
+		annotation SummarizationSetBy = Automatic
+
+	column SearchableName
+		dataType: string
+		lineageTag: d9e82515-2290-45d8-999e-50b0bb9a846f
+		summarizeBy: none
+		sourceColumn: SearchableName
+
+		annotation SummarizationSetBy = Automatic
+
+	column TechnicianStatus
+		dataType: string
+		lineageTag: 1de9e2cb-66ca-4e47-ae00-55e6172f3740
+		summarizeBy: none
+		sourceColumn: TechnicianStatus
+
+		annotation SummarizationSetBy = Automatic
+
+	column TechnicianType
+		dataType: string
+		lineageTag: 7c5d71e6-3d54-44d8-8375-e974494095c5
+		summarizeBy: none
+		sourceColumn: TechnicianType
+
+		annotation SummarizationSetBy = Automatic
+
+	column IsActive
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 55bdb6e7-95cc-4917-8e3c-03a7946d4d3e
+		summarizeBy: none
+		sourceColumn: IsActive
+
+		annotation SummarizationSetBy = Automatic
+
+	column HasFullName
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 94781938-be91-4d30-b0e1-c7807cc10bab
+		summarizeBy: none
+		sourceColumn: HasFullName
+
+		annotation SummarizationSetBy = Automatic
+
+	column HasValidCode
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: a7bb41dc-834f-4070-a16a-834c27dc3ab1
+		summarizeBy: none
+		sourceColumn: HasValidCode
+
+		annotation SummarizationSetBy = Automatic
+
+	column HasLongName
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 5038b7f2-1cb5-41fa-8fe6-b4581fb1c1ec
+		summarizeBy: none
+		sourceColumn: HasLongName
+
+		annotation SummarizationSetBy = Automatic
+
+	column DataQualityScore
+		dataType: double
+		lineageTag: 343d33b7-0cc2-4bd6-b624-79a21baaff2f
+		summarizeBy: none
+		sourceColumn: DataQualityScore
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	partition dim_Technician_Code_Names = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-gxnyznhdptpenfw724g3o5sjzm.datawarehouse.fabric.microsoft.com", "LH_Master_Data"),
+				    dbo_dim_Technician_Code_Names = Source{[Schema="dbo",Item="dim_Technician_Code_Names"]}[Data]
+				in
+				    dbo_dim_Technician_Code_Names
+

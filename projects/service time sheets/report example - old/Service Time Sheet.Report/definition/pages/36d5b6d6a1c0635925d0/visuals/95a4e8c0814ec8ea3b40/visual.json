@@ -1,0 +1,282 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.8.0/schema.json",
+  "name": "95a4e8c0814ec8ea3b40",
+  "position": {
+    "x": 0,
+    "y": 146.21722846441949,
+    "z": 0,
+    "height": 328.38951310861427,
+    "width": 1241.6479400749065,
+    "tabOrder": 0
+  },
+  "visual": {
+    "visualType": "tableEx",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Data - Service Time Sheets"
+                    }
+                  },
+                  "Property": "payrollStartDate"
+                }
+              },
+              "queryRef": "Data - Service Time Sheets.payrollStartDate",
+              "nativeQueryRef": "payrollStartDate"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Data - Service Time Sheets"
+                    }
+                  },
+                  "Property": "Branch"
+                }
+              },
+              "queryRef": "Data - Service Time Sheets.Branch",
+              "nativeQueryRef": "Branch"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Data - Service Time Sheets"
+                    }
+                  },
+                  "Property": "Technician Name"
+                }
+              },
+              "queryRef": "Data - Service Time Sheets.Technician Name",
+              "nativeQueryRef": "Technician Name"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Data - Service Time Sheets"
+                    }
+                  },
+                  "Property": "RO #"
+                }
+              },
+              "queryRef": "Sum(Data - Service Time Sheets.RO #)",
+              "nativeQueryRef": "RO #"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "MeasuresTable"
+                    }
+                  },
+                  "Property": "HoursPerRO"
+                }
+              },
+              "queryRef": "MeasuresTable.HoursPerRO",
+              "nativeQueryRef": "HoursPerRO"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Data - Service Time Sheets"
+                    }
+                  },
+                  "Property": "totalPay"
+                }
+              },
+              "queryRef": "Sum(Data - Service Time Sheets.totalPay)",
+              "nativeQueryRef": "totalPay"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Data - Service Time Sheets"
+                    }
+                  },
+                  "Property": "Tech Number"
+                }
+              },
+              "queryRef": "Data - Service Time Sheets.Tech Number",
+              "nativeQueryRef": "Tech Number"
+            },
+            {
+              "field": {
+                "Aggregation": {
+                  "Expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "Data - Service Time Sheets"
+                        }
+                      },
+                      "Property": "Draw1"
+                    }
+                  },
+                  "Function": 0
+                }
+              },
+              "queryRef": "Sum(Data - Service Time Sheets.Draw1)",
+              "nativeQueryRef": "Sum of Draw1"
+            },
+            {
+              "field": {
+                "Aggregation": {
+                  "Expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "Data - Service Time Sheets"
+                        }
+                      },
+                      "Property": "Draw2"
+                    }
+                  },
+                  "Function": 0
+                }
+              },
+              "queryRef": "Sum(Data - Service Time Sheets.Draw2)",
+              "nativeQueryRef": "Sum of Draw2"
+            },
+            {
+              "field": {
+                "Aggregation": {
+                  "Expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "Data - Service Time Sheets"
+                        }
+                      },
+                      "Property": "Draw3"
+                    }
+                  },
+                  "Function": 0
+                }
+              },
+              "queryRef": "Sum(Data - Service Time Sheets.Draw3)",
+              "nativeQueryRef": "Sum of Draw3"
+            },
+            {
+              "field": {
+                "Aggregation": {
+                  "Expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "Data - Service Time Sheets"
+                        }
+                      },
+                      "Property": "totalHours"
+                    }
+                  },
+                  "Function": 0
+                }
+              },
+              "queryRef": "Sum(Data - Service Time Sheets.totalHours)",
+              "nativeQueryRef": "Final",
+              "displayName": "Final"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Data - Service Time Sheets"
+                    }
+                  },
+                  "Property": "Hours"
+                }
+              },
+              "queryRef": "Sum(Data - Service Time Sheets.Hours)",
+              "nativeQueryRef": "Total Hours Paid",
+              "displayName": "Total Hours Paid"
+            },
+            {
+              "field": {
+                "Aggregation": {
+                  "Expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "TechnicianInvoiceDetailServiceForm"
+                        }
+                      },
+                      "Property": "InvoiceHours"
+                    }
+                  },
+                  "Function": 0
+                }
+              },
+              "queryRef": "Sum(TechnicianInvoiceDetailServiceForm.InvoiceHours)",
+              "nativeQueryRef": "Sum of InvoiceHours"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "MeasuresTable"
+                    }
+                  },
+                  "Property": "Hours Difference"
+                }
+              },
+              "queryRef": "MeasuresTable.Hours Difference",
+              "nativeQueryRef": "Hours Difference"
+            }
+          ]
+        }
+      },
+      "sortDefinition": {
+        "sort": [
+          {
+            "field": {
+              "Column": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "Data - Service Time Sheets"
+                  }
+                },
+                "Property": "Technician Name"
+              }
+            },
+            "direction": "Ascending"
+          }
+        ]
+      }
+    },
+    "objects": {
+      "columnWidth": [
+        {
+          "properties": {
+            "value": {
+              "expr": {
+                "Literal": {
+                  "Value": "68.6198694578885D"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "Sum(Data - Service Time Sheets.RO #)"
+          }
+        }
+      ]
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

@@ -1,0 +1,129 @@
+table Fact_GapAnalysis
+	lineageTag: e53ba438-456c-4d55-b987-d6a9e9fbee18
+
+	column JobCode
+		lineageTag: 4656c2b6-49aa-4099-bd9b-5355cf3792ea
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: Fact_JobCodePartFrequency[JobCode]
+
+		annotation SummarizationSetBy = Automatic
+
+	column PartNumber
+		lineageTag: 258d75e9-7ecb-4cf1-ba4f-3a7ce317010d
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: Fact_JobCodePartFrequency[PartNumber]
+
+		annotation SummarizationSetBy = Automatic
+
+	column TimesWithPart
+		formatString: 0
+		lineageTag: dc3679af-ac14-422d-bb84-46207b2468eb
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: Fact_JobCodePartFrequency[TimesWithPart]
+
+		annotation SummarizationSetBy = Automatic
+
+	column TotalOrdersWithJobCode
+		formatString: 0
+		lineageTag: f443ed6d-3d03-4eea-8f13-af18e06734af
+		summarizeBy: count
+		isNameInferred
+		sourceColumn: Fact_JobCodePartFrequency[TotalOrdersWithJobCode]
+
+		annotation SummarizationSetBy = Automatic
+
+	column FrequencyPct
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 5febea51-5fd0-4755-a17c-6e84d30eb8ca
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: Fact_JobCodePartFrequency[FrequencyPct]
+
+		annotation SummarizationSetBy = Automatic
+
+	column FactoryCode
+		lineageTag: 68668d86-74a0-4c12-9dc3-373c08f7979e
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [FactoryCode]
+
+		annotation SummarizationSetBy = Automatic
+
+	column JobDescription
+		lineageTag: 10af4fba-7021-442d-a913-38c3bc3a87d9
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [JobDescription]
+
+		annotation SummarizationSetBy = Automatic
+
+	column PartDescription
+		lineageTag: 375813dd-b4ab-408f-af5d-04b51f100801
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [PartDescription]
+
+		annotation SummarizationSetBy = Automatic
+
+	column SellPrice
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: c4b833a2-f125-4eca-8d0e-86124f157d00
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [SellPrice]
+
+		annotation SummarizationSetBy = Automatic
+
+	column RecommendationTier
+		lineageTag: f1a2b3c4-d5e6-7890-abcd-ef1234567890
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [RecommendationTier]
+		sortByColumn: TierSortOrder
+
+		annotation SummarizationSetBy = Automatic
+
+	column TierSortOrder
+		formatString: 0
+		lineageTag: a1b2c3d4-e5f6-7890-1234-567890abcdef
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [TierSortOrder]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition Fact_GapAnalysis = calculated
+		mode: import
+		source = ```
+				
+				ADDCOLUMNS(
+				    FILTER(
+				        Fact_JobCodePartFrequency,
+				        Fact_JobCodePartFrequency[TotalOrdersWithJobCode] >= 10
+				            && Fact_JobCodePartFrequency[FrequencyPct] >= 0.05
+				            && LEFT(Fact_JobCodePartFrequency[PartNumber], 1) <> "*"
+				            && LOOKUPVALUE(dim_Parts[Franchise], dim_Parts[PartNumber], Fact_JobCodePartFrequency[PartNumber]) <> "ZP"
+				    ),
+				    "FactoryCode",        LOOKUPVALUE(dim_JobCodes[FactoryCode],  dim_JobCodes[JobCode],  [JobCode]),
+				    "JobDescription",     LOOKUPVALUE(dim_JobCodes[Description],  dim_JobCodes[JobCode],  [JobCode]),
+				    "PartDescription",    LOOKUPVALUE(dim_Parts[Description],     dim_Parts[PartNumber],  [PartNumber]),
+				    "SellPrice",          LOOKUPVALUE(dim_Parts[SellPrice1],      dim_Parts[PartNumber],  [PartNumber]),
+				    "RecommendationTier",
+				        IF([FrequencyPct] >= 0.50, "Always",
+				        IF([FrequencyPct] >= 0.25, "Usually",
+				        IF([FrequencyPct] >= 0.10, "Sometimes",
+				        "Rarely"))),
+				    "TierSortOrder",
+				        IF([FrequencyPct] >= 0.50, 1,
+				        IF([FrequencyPct] >= 0.25, 2,
+				        IF([FrequencyPct] >= 0.10, 3,
+				        4)))
+				)
+				
+				```
+
+	annotation PBI_Id = 72f65b9253124334af53900712b30062
+

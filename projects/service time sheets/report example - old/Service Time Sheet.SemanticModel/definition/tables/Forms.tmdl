@@ -1,0 +1,145 @@
+table Forms
+	lineageTag: fcab8961-8eed-41d6-9fec-9e9552eb7670
+
+	column Id
+		dataType: string
+		lineageTag: 7bbad431-4c87-4a9c-9892-a7bb1650a1da
+		summarizeBy: none
+		sourceColumn: Id
+
+		annotation SummarizationSetBy = Automatic
+
+	column tfTitle
+		dataType: string
+		lineageTag: b5fe2b50-5e9e-4fcc-8c7f-e40a865bd450
+		summarizeBy: none
+		sourceColumn: tfTitle
+
+		annotation SummarizationSetBy = Automatic
+
+	column tfItemType
+		dataType: string
+		lineageTag: 2c501ffd-7747-47f5-b10b-afd5260453f3
+		summarizeBy: none
+		sourceColumn: tfItemType
+
+		annotation SummarizationSetBy = Automatic
+
+	column tfFormId
+		dataType: string
+		lineageTag: b5191ab7-1238-4517-bf83-eb855d35e335
+		summarizeBy: none
+		sourceColumn: tfFormId
+
+		annotation SummarizationSetBy = Automatic
+
+	column tfResponseId
+		dataType: string
+		lineageTag: da6d8597-7d12-4a9d-8b59-1ba9c1575de0
+		summarizeBy: none
+		sourceColumn: tfResponseId
+
+		annotation SummarizationSetBy = Automatic
+
+	column tfSubmissionData
+		dataType: string
+		lineageTag: 992d9294-b4ff-4fb7-8c83-eb2481830ce2
+		summarizeBy: none
+		sourceColumn: tfSubmissionData
+
+		annotation SummarizationSetBy = Automatic
+
+	column tfSubmissionMetadata
+		dataType: string
+		lineageTag: a70fae35-6f6e-4acb-8840-e105a87144a9
+		summarizeBy: none
+		sourceColumn: tfSubmissionMetadata
+
+		annotation SummarizationSetBy = Automatic
+
+	column tfSubmissionTimestamp
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: 4808800b-4db4-4d6f-82dd-298af89f9fb4
+		summarizeBy: none
+		sourceColumn: tfSubmissionTimestamp
+
+		variation Variation
+			isDefault
+			relationship: 63ffd4f7-05c6-4f9c-9f3c-0fa7df3b0c96
+			defaultHierarchy: LocalDateTable_52be72a3-59b9-4702-8b25-540b5c5e5a23.'Date Hierarchy'
+
+		annotation SummarizationSetBy = Automatic
+
+	column Created
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: 42e40e2d-9410-431d-ae42-7bd976599602
+		summarizeBy: none
+		sourceColumn: Created
+
+		variation Variation
+			isDefault
+			relationship: 05dfc02f-543b-45ef-abcd-41bc42a3c04d
+			defaultHierarchy: LocalDateTable_18b6c9b6-6181-4212-9bca-1912721b410d.'Date Hierarchy'
+
+		annotation SummarizationSetBy = Automatic
+
+	column Modified
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: d32a14a3-1d0f-48c9-abad-ee87df52bf84
+		summarizeBy: none
+		sourceColumn: Modified
+
+		variation Variation
+			isDefault
+			relationship: fe624df3-613a-4c7b-ae1e-ca29f6062e72
+			defaultHierarchy: LocalDateTable_3de70cd1-fb4c-4c32-a4d0-e0c2b6d50d92.'Date Hierarchy'
+
+		annotation SummarizationSetBy = Automatic
+
+	column Editor
+		dataType: string
+		lineageTag: 058737a9-3828-4a43-a444-b916abce7762
+		summarizeBy: none
+		sourceColumn: Editor
+
+		annotation SummarizationSetBy = Automatic
+
+	column Author
+		dataType: string
+		lineageTag: 8facbf9e-cc07-4f64-bf60-178e89ccfa87
+		summarizeBy: none
+		sourceColumn: Author
+
+		annotation SummarizationSetBy = Automatic
+
+	column tfPartition
+		dataType: string
+		lineageTag: 320d337c-f3b3-40e2-8d5b-382bb5522bff
+		summarizeBy: none
+		sourceColumn: tfPartition
+
+		annotation SummarizationSetBy = Automatic
+
+	column tfSubmissionNumber
+		dataType: string
+		lineageTag: ee070d44-c13f-4715-abf6-3617f0e1614c
+		summarizeBy: none
+		sourceColumn: tfSubmissionNumber
+
+		annotation SummarizationSetBy = Automatic
+
+	partition Forms-39152fa7-497d-4234-b64a-cc6fe9ae8527 = m
+		mode: import
+		source =
+				let
+				    Source = GetForms(SharePointUrl)
+				in
+				    Source
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

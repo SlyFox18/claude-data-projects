@@ -1,0 +1,30 @@
+model Model
+	culture: en-US
+	defaultPowerBIDataSourceVersion: powerBI_V3
+	sourceQueryCulture: en-US
+	dataAccessOptions
+		legacyRedirects
+		returnErrorValuesAsNull
+
+annotation __PBI_TimeIntelligenceEnabled = 0
+
+annotation PBI_QueryOrder = ["Data Refresh","dim_BranchLocation","dim_DateTable","Fact_OpenOrderParts","Fact_JobCodePartFrequency","dim_CustomerList","dim_Parts","Fact_OpenOrders"]
+
+annotation PBI_ProTooling = ["DevMode","DaxQueryView_Desktop"]
+
+ref table 'Data Refresh'
+ref table dim_BranchLocation
+ref table dim_DateTable
+ref table 'New Report Tables'
+ref table 'New Report Relationships'
+ref table 'New Report Columns'
+ref table _Measures
+ref table Fact_OpenOrderParts
+ref table Fact_JobCodePartFrequency
+ref table dim_CustomerList
+ref table dim_Parts
+ref table Recommendations
+ref table Fact_OpenOrders
+
+ref cultureInfo en-US
+

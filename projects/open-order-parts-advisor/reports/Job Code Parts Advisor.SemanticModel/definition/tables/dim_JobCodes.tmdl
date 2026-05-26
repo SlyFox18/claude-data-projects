@@ -1,0 +1,124 @@
+table dim_JobCodes
+	lineageTag: ec4382f4-51ef-47fd-a5a0-b04cf88a5d73
+
+	column JobCode
+		dataType: string
+		lineageTag: c96592c6-3d5a-4cbd-ad47-d992c86622f7
+		summarizeBy: none
+		sourceColumn: JobCode
+
+		annotation SummarizationSetBy = Automatic
+
+	column FactoryCode
+		dataType: string
+		lineageTag: 7432f85d-f2b6-4e4c-a598-c10a0560073c
+		summarizeBy: none
+		sourceColumn: FactoryCode
+
+		annotation SummarizationSetBy = Automatic
+
+	column Description
+		dataType: string
+		lineageTag: 46d37493-e06f-47bf-a9c5-ee241a3e06de
+		summarizeBy: none
+		sourceColumn: Description
+
+		annotation SummarizationSetBy = Automatic
+
+	column Branch
+		dataType: string
+		lineageTag: 124f78e1-60f9-4c49-a1b8-d7499dbe675a
+		summarizeBy: none
+		sourceColumn: Branch
+
+		annotation SummarizationSetBy = Automatic
+
+	column EstHours
+		dataType: double
+		lineageTag: 4f71a554-4cde-4a7f-b52b-b0e4b028c12c
+		summarizeBy: sum
+		sourceColumn: EstHours
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column SaleMTDQty
+		dataType: double
+		lineageTag: 518de75a-7afc-4507-8ba9-42ec816d985b
+		summarizeBy: sum
+		sourceColumn: SaleMTDQty
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column SaleYTDQty
+		dataType: double
+		lineageTag: 17c8478b-48f7-40ed-af24-879cad33e629
+		summarizeBy: sum
+		sourceColumn: SaleYTDQty
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column Make
+		dataType: string
+		lineageTag: 817c0eb5-de75-4b1d-a1f1-1e9767b5bee1
+		summarizeBy: none
+		sourceColumn: Make
+
+		annotation SummarizationSetBy = Automatic
+
+	column Model
+		dataType: string
+		lineageTag: 0ba57305-060d-4c50-a4a3-a12d6a3e4c7f
+		summarizeBy: none
+		sourceColumn: Model
+
+		annotation SummarizationSetBy = Automatic
+
+	column WorkCategory
+		dataType: string
+		lineageTag: 211dd5b2-538e-4c2b-a5d6-8518c4c3fa3e
+		summarizeBy: none
+		sourceColumn: WorkCategory
+
+		annotation SummarizationSetBy = Automatic
+
+	column ServiceType
+		dataType: string
+		lineageTag: cbc5ebac-e908-41de-b08f-7478733dfc2c
+		summarizeBy: none
+		sourceColumn: ServiceType
+
+		annotation SummarizationSetBy = Automatic
+
+	column CreationDate
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: 407041ed-8a73-4815-a203-f2fd1e0b94bd
+		summarizeBy: none
+		sourceColumn: CreationDate
+
+		annotation SummarizationSetBy = Automatic
+
+	column ModifiedDate
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: 0b1427f0-fd31-47d2-887e-5109e62b2af0
+		summarizeBy: none
+		sourceColumn: ModifiedDate
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dim_JobCodes = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-gxnyznhdptpenfw724g3o5sjzm.datawarehouse.fabric.microsoft.com", "LH_Master_Data"),
+				    dbo_dim_JobCodes = Source{[Schema="dbo",Item="dim_JobCodes"]}[Data]
+				in
+				    dbo_dim_JobCodes
+
