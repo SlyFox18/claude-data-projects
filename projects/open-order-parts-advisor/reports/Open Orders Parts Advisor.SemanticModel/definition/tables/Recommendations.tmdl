@@ -1,0 +1,164 @@
+table Recommendations
+	lineageTag: 898fb0e3-dd0e-48de-b084-34dc6da5dab8
+
+	column BranchCode
+		lineageTag: aa24a8dd-0895-4641-9af3-518549489404
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: Fact_OpenOrders[BranchCode]
+
+		annotation SummarizationSetBy = Automatic
+
+	column WorkOrderNumber
+		lineageTag: f234eb5a-d8d9-4cd1-a256-30e2069b8e88
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: Fact_OpenOrders[WorkOrderNumber]
+
+		annotation SummarizationSetBy = Automatic
+
+	column CustomerNumber
+		lineageTag: 167b7ad3-e645-41ee-9f71-9aa7104452a2
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: Fact_OpenOrders[CustomerNumber]
+
+		annotation SummarizationSetBy = Automatic
+
+	column OpenDate
+		formatString: Short Date
+		lineageTag: 472f0a7e-cdd1-4ec3-b94e-8bead4c9d60e
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: Fact_OpenOrders[OpenDate]
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column JobCode
+		lineageTag: c4e2b229-48e5-47c3-a626-9eb8bbe2e888
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: Fact_OpenOrders[JobCode]
+
+		annotation SummarizationSetBy = Automatic
+
+	column PartNumber
+		lineageTag: f0d5ba36-9b59-4513-b3ab-8fa5a1bb2282
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [PartNumber]
+
+		annotation SummarizationSetBy = Automatic
+
+	column TimesWithPart
+		formatString: 0
+		lineageTag: c7c197b5-ec9b-4956-915d-35bd51cf9062
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [TimesWithPart]
+
+		annotation SummarizationSetBy = Automatic
+
+	column TotalOrdersWithJobCode
+		formatString: 0
+		lineageTag: f78ac21f-234e-4589-81fd-4f43a91a3468
+		summarizeBy: count
+		isNameInferred
+		sourceColumn: [TotalOrdersWithJobCode]
+
+		annotation SummarizationSetBy = Automatic
+
+	column FrequencyPct
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 0d8835ed-4778-4fe9-a832-4f3d390d0404
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [FrequencyPct]
+
+		annotation SummarizationSetBy = Automatic
+
+	column SellPrice
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 5f87add7-07f7-4383-8c11-be886fff6db3
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [SellPrice]
+
+		annotation SummarizationSetBy = Automatic
+
+	column PartDescription
+		lineageTag: f67da6e8-f911-43d5-917a-a4952db68f1f
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [PartDescription]
+
+		annotation SummarizationSetBy = Automatic
+
+	column CustomerName
+		lineageTag: a1b2c3d4-e5f6-4a78-9bcd-ef0123456789
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [CustomerName]
+
+		annotation SummarizationSetBy = Automatic
+
+	column DaysOpen
+		formatString: 0
+		lineageTag: b2c3d4e5-f6a7-4b89-0cde-f12345678901
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [DaysOpen]
+
+		annotation SummarizationSetBy = Automatic
+
+	column ConfidenceLevel
+		lineageTag: c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [ConfidenceLevel]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition Recommendations = calculated
+		mode: import
+		source = ```
+
+				ADDCOLUMNS(
+				    GENERATE(
+				        Fact_OpenOrders,
+				        VAR vJobCode  = Fact_OpenOrders[JobCode]
+				        VAR vWONumber = Fact_OpenOrders[WorkOrderNumber]
+				        VAR vExistingParts =
+				            CALCULATETABLE(
+				                VALUES(Fact_OpenOrderParts[PartNumber]),
+				                Fact_OpenOrderParts[WorkOrderNumber] = vWONumber
+				            )
+				        RETURN
+				            SELECTCOLUMNS(
+				                FILTER(
+				                    Fact_JobCodePartFrequency,
+				                    Fact_JobCodePartFrequency[JobCode] = vJobCode
+				                        && Fact_JobCodePartFrequency[FrequencyPct] >= 0.10
+				                        && NOT(Fact_JobCodePartFrequency[PartNumber] IN vExistingParts)
+				                        && LEFT(Fact_JobCodePartFrequency[PartNumber], 1) <> "*"
+				                        && LOOKUPVALUE(dim_Parts[Franchise], dim_Parts[PartNumber], Fact_JobCodePartFrequency[PartNumber]) <> "ZP"
+				                ),
+				                "PartNumber",             Fact_JobCodePartFrequency[PartNumber],
+				                "TimesWithPart",          Fact_JobCodePartFrequency[TimesWithPart],
+				                "TotalOrdersWithJobCode", Fact_JobCodePartFrequency[TotalOrdersWithJobCode],
+				                "FrequencyPct",           Fact_JobCodePartFrequency[FrequencyPct]
+				            )
+				    ),
+				    "SellPrice",         LOOKUPVALUE(dim_Parts[SellPrice1],   dim_Parts[PartNumber], [PartNumber]),
+				    "PartDescription",   LOOKUPVALUE(dim_Parts[Description],  dim_Parts[PartNumber], [PartNumber]),
+				    "CustomerName",      LOOKUPVALUE(dim_CustomerList[DisplayName], dim_CustomerList[CustomerNumber], [CustomerNumber]),
+				    "DaysOpen",          DATEDIFF([OpenDate], TODAY(), DAY),
+				    "ConfidenceLevel",   IF([FrequencyPct] >= 0.50, "High", IF([FrequencyPct] >= 0.25, "Medium", "Low"))
+				)
+
+				```
+
+	annotation PBI_Id = 9c38121dde524c4f88247060e822a817
+

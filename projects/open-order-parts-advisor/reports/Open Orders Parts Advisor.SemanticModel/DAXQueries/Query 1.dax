@@ -1,0 +1,13 @@
+EVALUATE
+ROW(
+    "dim_TotalRows",              COUNTROWS(dim_CustomerList),
+    "dim_UniqueCustomerNumbers",  DISTINCTCOUNT(dim_CustomerList[CustomerNumber]),
+    "fact_BlankCustomers",        COUNTROWS(
+                                      FILTER(Fact_OpenOrders,
+                                          ISBLANK(Fact_OpenOrders[CustomerNumber])
+                                          || Fact_OpenOrders[CustomerNumber] = ""
+                                      )
+                                  )
+)
+
+

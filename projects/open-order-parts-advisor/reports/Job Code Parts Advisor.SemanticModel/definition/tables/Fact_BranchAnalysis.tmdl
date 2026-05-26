@@ -1,0 +1,156 @@
+table Fact_BranchAnalysis
+	lineageTag: 11223344-5566-7788-99aa-bbccddeeff00
+
+	column JobCode
+		lineageTag: 33445566-7788-99aa-bbcc-ddeeff001122
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: Fact_JobCodePartFrequency_Branch[JobCode]
+
+		annotation SummarizationSetBy = Automatic
+
+	column PartNumber
+		lineageTag: 44556677-8899-aabb-ccdd-eeff00112233
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: Fact_JobCodePartFrequency_Branch[PartNumber]
+
+		annotation SummarizationSetBy = Automatic
+
+	column TimesWithPart
+		formatString: 0
+		lineageTag: 55667788-99aa-bbcc-ddee-ff0011223344
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: Fact_JobCodePartFrequency_Branch[TimesWithPart]
+
+		annotation SummarizationSetBy = Automatic
+
+	column TotalOrdersWithJobCode
+		formatString: 0
+		lineageTag: 66778899-aabb-ccdd-eeff-001122334455
+		summarizeBy: count
+		isNameInferred
+		sourceColumn: Fact_JobCodePartFrequency_Branch[TotalOrdersWithJobCode]
+
+		annotation SummarizationSetBy = Automatic
+
+	column FrequencyPct
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 7788-99aa-bbcc-ddee-ff001122334466
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: Fact_JobCodePartFrequency_Branch[FrequencyPct]
+
+		annotation SummarizationSetBy = Automatic
+
+	column PartDescription
+		lineageTag: 8899aabb-ccdd-eeff-0011-223344556677
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [PartDescription]
+
+		annotation SummarizationSetBy = Automatic
+
+	column SellPrice
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 99aabbcc-ddee-ff00-1122-334455667788
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [SellPrice]
+
+		annotation SummarizationSetBy = Automatic
+
+	column JobDescription
+		lineageTag: aabbccdd-eeff-0011-2233-445566778899
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [JobDescription]
+
+		annotation SummarizationSetBy = Automatic
+
+	column FactoryCode
+		lineageTag: bbccddee-ff00-1122-3344-5566778899aa
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [FactoryCode]
+
+		annotation SummarizationSetBy = Automatic
+
+	column CompanyFrequencyPct
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: ccddeeff-0011-2233-4455-66778899aabb
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [CompanyFrequencyPct]
+
+		annotation SummarizationSetBy = Automatic
+
+	column RecommendationTier
+		lineageTag: ddeeff00-1122-3344-5566-778899aabbcc
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [RecommendationTier]
+
+		annotation SummarizationSetBy = Automatic
+
+	column TierSortOrder
+		formatString: 0
+		lineageTag: eeff0011-2233-4455-6677-8899aabbccdd
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [TierSortOrder]
+
+		annotation SummarizationSetBy = Automatic
+
+	column Branch
+		lineageTag: e78b64a4-6a1d-41b7-ba51-91811caa89e9
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: Fact_JobCodePartFrequency_Branch[Branch]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition Fact_BranchAnalysis = calculated
+		mode: import
+		source = ```
+				
+				ADDCOLUMNS(
+				    FILTER(
+				        Fact_JobCodePartFrequency_Branch,
+				        Fact_JobCodePartFrequency_Branch[TotalOrdersWithJobCode] >= 3
+				            && Fact_JobCodePartFrequency_Branch[FrequencyPct] >= 0.05
+				            && LEFT(Fact_JobCodePartFrequency_Branch[PartNumber], 1) <> "*"
+				            && LOOKUPVALUE(dim_Parts[Franchise], dim_Parts[PartNumber], Fact_JobCodePartFrequency_Branch[PartNumber]) <> "ZP"
+				    ),
+				    "PartDescription",     LOOKUPVALUE(dim_Parts[Description],    dim_Parts[PartNumber], [PartNumber]),
+				    "SellPrice",           LOOKUPVALUE(dim_Parts[SellPrice1],      dim_Parts[PartNumber], [PartNumber]),
+				    "JobDescription",      LOOKUPVALUE(dim_JobCodes[Description],  dim_JobCodes[JobCode], [JobCode]),
+				    "FactoryCode",         LOOKUPVALUE(dim_JobCodes[FactoryCode],  dim_JobCodes[JobCode], [JobCode]),
+				    "CompanyFrequencyPct",
+				        VAR _Job  = [JobCode]
+				        VAR _Part = [PartNumber]
+				        RETURN MAXX(
+				            FILTER(
+				                Fact_JobCodePartFrequency,
+				                Fact_JobCodePartFrequency[JobCode]    = _Job
+				                    && Fact_JobCodePartFrequency[PartNumber] = _Part
+				            ),
+				            Fact_JobCodePartFrequency[FrequencyPct]
+				        ),
+				    "RecommendationTier",
+				        IF([FrequencyPct] >= 0.50, "Always",
+				        IF([FrequencyPct] >= 0.25, "Usually",
+				        IF([FrequencyPct] >= 0.10, "Sometimes",
+				        "Rarely"))),
+				    "TierSortOrder",
+				        IF([FrequencyPct] >= 0.50, 1,
+				        IF([FrequencyPct] >= 0.25, 2,
+				        IF([FrequencyPct] >= 0.10, 3,
+				        4)))
+				)
+				
+				```
+
+	annotation PBI_Id = 33445566778899aabbccddeeff001122
+

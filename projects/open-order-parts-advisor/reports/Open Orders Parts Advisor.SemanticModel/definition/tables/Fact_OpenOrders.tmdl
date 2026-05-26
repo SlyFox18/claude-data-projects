@@ -1,0 +1,55 @@
+table Fact_OpenOrders
+	lineageTag: 0c8a163e-46b8-46bc-8970-007abf577424
+
+	column BranchCode
+		dataType: string
+		lineageTag: d538f886-18b6-4964-ad22-f596abe3cbeb
+		summarizeBy: none
+		sourceColumn: BranchCode
+
+		annotation SummarizationSetBy = Automatic
+
+	column WorkOrderNumber
+		dataType: string
+		lineageTag: 96234ac4-1dfd-46a2-92af-bb66698e899f
+		summarizeBy: none
+		sourceColumn: WorkOrderNumber
+
+		annotation SummarizationSetBy = Automatic
+
+	column CustomerNumber
+		dataType: string
+		lineageTag: 4cad92b4-4a97-415a-963b-d061c62019fe
+		summarizeBy: none
+		sourceColumn: CustomerNumber
+
+		annotation SummarizationSetBy = Automatic
+
+	column OpenDate
+		dataType: dateTime
+		formatString: Long Date
+		lineageTag: 37b485ce-368b-4d51-804f-867a6e20aacd
+		summarizeBy: none
+		sourceColumn: OpenDate
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column JobCode
+		dataType: string
+		lineageTag: db3cfea5-b25a-43b6-a9bc-2fbc5a0135fe
+		summarizeBy: none
+		sourceColumn: JobCode
+
+		annotation SummarizationSetBy = Automatic
+
+	partition Fact_OpenOrders = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-gxnyznhdptpenfw724g3o5sjzm.datawarehouse.fabric.microsoft.com", "LH_Master_Data"),
+				    dbo_Fact_OpenOrders = Source{[Schema="dbo",Item="Fact_OpenOrders"]}[Data]
+				in
+				    dbo_Fact_OpenOrders
+

@@ -1,0 +1,445 @@
+table _Measures
+	lineageTag: 22e4b9e3-99b6-4634-9836-9ade5a5ea5a5
+
+	measure 'Home - Header' = ```
+			
+			// Get user name
+			VAR _User = USERPRINCIPALNAME()
+			VAR _Position = SEARCH("@", _User, 1)
+			VAR _Name = LEFT(_User, _Position - 1)
+			VAR _FirstLetter = UPPER(LEFT(_Name, 1))
+			VAR _LastName = MID(_Name, 2, LEN(_Name) - 1)
+			VAR _FormattedLastName = 
+			    UPPER(LEFT(_LastName, 1)) & LOWER(MID(_LastName, 2, LEN(_LastName)))
+			VAR WelcomeName = _FirstLetter & "." & _FormattedLastName
+			
+			// Get current date/time info
+			VAR CurrentDate = TODAY()
+			VAR DateDisplay = FORMAT(CurrentDate, "MMM D, YYYY")
+			VAR CurrentHour = HOUR(NOW())
+			VAR TimeGreeting = 
+			    IF(CurrentHour < 12, "Good Morning",
+			    IF(CurrentHour < 17, "Good Afternoon",
+			    "Good Evening"))
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    height: 85px;
+			    padding: 15px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 10px;
+			    color: white;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-between;
+			    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    box-sizing: border-box;
+			'>
+			    <!-- Left side: Dashboard Title -->
+			    <div style='display: flex; align-items: center; gap: 15px;'>
+			        <!-- Home icon -->
+			        <div style='
+			            width: 40px;
+			            height: 40px;
+			            background: rgba(255,255,255,0.15);
+			            border-radius: 8px;
+			            display: flex;
+			            align-items: center;
+			            justify-content: center;
+			            font-size: 20px;
+			        '>
+			            🏠
+			        </div>
+			        
+			        <!-- Title -->
+			        <div>
+			            <div style='font-size: 12px; opacity: 0.85; margin-bottom: 4px; letter-spacing: 0.5px;'>
+			                REPORT
+			            </div>
+			            <div style='font-size: 26px; font-weight: 700; line-height: 1;'>
+			                Job Code Parts Advisor
+			            </div>
+			        </div>
+			    </div>
+			    
+			    <!-- Right side: Welcome & Date -->
+			    <div style='text-align: right;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 6px;'>
+			            " & TimeGreeting & ", " & WelcomeName & "
+			        </div>
+			        <div style='font-size: 16px; font-weight: 600;'>
+			            📅 " & DateDisplay & "
+			        </div>
+			    </div>
+			</div>
+			"
+			```
+		lineageTag: 49efea2a-3c06-4cab-8367-26b26caa141e
+
+	measure 'Total Job Codes Analyzed' = DISTINCTCOUNT(Fact_GapAnalysis[FactoryCode])
+		formatString: 0
+		lineageTag: 13c2b381-9b27-4519-a21a-7def72ef44a6
+
+	measure 'Always Recommend' = COUNTROWS(FILTER(Fact_GapAnalysis, Fact_GapAnalysis[RecommendationTier] = "Always"))
+		formatString: 0
+		lineageTag: b1c2d3e4-f5a6-7890-bcde-f12345678901
+
+	measure 'Usually Recommend' = COUNTROWS(FILTER(Fact_GapAnalysis, Fact_GapAnalysis[RecommendationTier] = "Usually"))
+		formatString: 0
+		lineageTag: c2d3e4f5-a6b7-8901-cdef-012345678912
+
+	measure 'Top Recommendations' = [Always Recommend] + [Usually Recommend]
+		formatString: 0
+		lineageTag: d3e4f5a6-b7c8-9012-def0-123456789023
+
+	measure 'KPI Cards - Summary' =
+			
+			VAR _JobCodes = FORMAT([Total Job Codes Analyzed], "#,##0")
+			VAR _Always   = FORMAT([Always Recommend], "#,##0")
+			VAR _Usually  = FORMAT([Usually Recommend], "#,##0")
+			VAR _Top      = FORMAT([Top Recommendations], "#,##0")
+			RETURN
+			"<div style='display: flex; gap: 10px; font-family: Segoe UI, Arial, sans-serif; box-sizing: border-box; padding: 2px;'>" &
+			    "<div style='flex: 1; background: linear-gradient(135deg, #1D3C4E, #3A7CA5); border-radius: 10px; padding: 18px 10px; color: white; text-align: center; box-shadow: 0 3px 10px rgba(0,0,0,0);'>" &
+			        "<div style='font-size: 22px; margin-bottom: 8px;'>🔧</div>" &
+			        "<div style='font-size: 38px; font-weight: 700; line-height: 1; margin-bottom: 8px;'>" & _JobCodes & "</div>" &
+			        "<div style='font-size: 14px; opacity: 0.85; letter-spacing: 0.8px;'>JOB CODES ANALYZED</div>" &
+			    "</div>" &
+			    "<div style='flex: 1; background: linear-gradient(135deg, #7C1D1D, #DC2626); border-radius: 10px; padding: 18px 10px; color: white; text-align: center; box-shadow: 0 3px 10px rgba(0,0,0,0);'>" &
+			        "<div style='font-size: 22px; margin-bottom: 8px;'>⭐</div>" &
+			        "<div style='font-size: 38px; font-weight: 700; line-height: 1; margin-bottom: 8px;'>" & _Always & "</div>" &
+			        "<div style='font-size: 14px; opacity: 0.85; letter-spacing: 0.8px;'>ALWAYS STAGE</div>" &
+			    "</div>" &
+			    "<div style='flex: 1; background: linear-gradient(135deg, #14532D, #16A34A); border-radius: 10px; padding: 18px 10px; color: white; text-align: center; box-shadow: 0 3px 10px rgba(0,0,0,0);'>" &
+			        "<div style='font-size: 22px; margin-bottom: 8px;'>📦</div>" &
+			        "<div style='font-size: 38px; font-weight: 700; line-height: 1; margin-bottom: 8px;'>" & _Usually & "</div>" &
+			        "<div style='font-size: 14px; opacity: 0.85; letter-spacing: 0.8px;'>USUALLY NEEDED</div>" &
+			    "</div>" &
+			    "<div style='flex: 1; background: linear-gradient(135deg, #78350F, #D97706); border-radius: 10px; padding: 18px 10px; color: white; text-align: center; box-shadow: 0 3px 10px rgba(0,0,0,0);'>" &
+			        "<div style='font-size: 22px; margin-bottom: 8px;'>🎯</div>" &
+			        "<div style='font-size: 38px; font-weight: 700; line-height: 1; margin-bottom: 8px;'>" & _Top & "</div>" &
+			        "<div style='font-size: 14px; opacity: 0.85; letter-spacing: 0.8px;'>TOP RECOMMENDATIONS</div>" &
+			    "</div>" &
+			"</div>"
+		lineageTag: e5f6a7b8-c9d0-1234-ef01-3456789abcde
+
+	measure 'Job Code Banner' =
+			
+			VAR _JobCode    = SELECTEDVALUE(Fact_GapAnalysis[JobCode])
+			VAR _Orders     = FORMAT(MAX(Fact_GapAnalysis[TotalOrdersWithJobCode]), "#,##0")
+			VAR _TotalParts = FORMAT(COUNTROWS(Fact_GapAnalysis), "0")
+			VAR _Always     = FORMAT(COUNTROWS(FILTER(Fact_GapAnalysis, Fact_GapAnalysis[RecommendationTier] = "Always")),    "0")
+			VAR _Usually    = FORMAT(COUNTROWS(FILTER(Fact_GapAnalysis, Fact_GapAnalysis[RecommendationTier] = "Usually")),   "0")
+			VAR _Sometimes  = FORMAT(COUNTROWS(FILTER(Fact_GapAnalysis, Fact_GapAnalysis[RecommendationTier] = "Sometimes")), "0")
+			VAR _StagingValue = FORMAT(
+			    SUMX(
+			        FILTER(Fact_GapAnalysis,
+			            Fact_GapAnalysis[RecommendationTier] = "Always"
+			                || Fact_GapAnalysis[RecommendationTier] = "Usually"
+			        ),
+			        Fact_GapAnalysis[SellPrice]
+			    ),
+			    "$#,##0"
+			)
+			RETURN
+			IF(
+			    ISBLANK(_JobCode),
+			    "<div style='font-family: Segoe UI, Arial, sans-serif; height: 65px; padding: 10px 20px; background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%); border-radius: 8px; border: 2px dashed rgba(255,255,255,0.3); color: rgba(255,255,255,0.6); display: flex; align-items: center; justify-content: center; box-sizing: border-box; font-size: 18px; letter-spacing: 0.8px;'>" &
+			        "← SELECT A JOB CODE FROM THE LIST TO VIEW PART RECOMMENDATIONS" &
+			    "</div>",
+			    "<div style='font-family: Segoe UI, Arial, sans-serif; height: 65px; padding: 10px 20px; background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%); border-radius: 8px; color: white; display: flex; align-items: center; justify-content: space-between; box-sizing: border-box; box-shadow: 0 2px 8px rgba(0,0,0,0);'>" &
+			        "<div>" &
+			            "<div style='font-size: 22px; font-weight: 700; line-height: 1.1; letter-spacing: 0.5px;'>" & _JobCode & "</div>" &
+			        "</div>" &
+			        "<div style='display: flex; gap: 20px; align-items: center;'>" &
+			            "<div style='text-align: center;'>" &
+			                "<div style='font-size: 22px; font-weight: 700;'>" & _Orders & "</div>" &
+			                "<div style='font-size: 10px; opacity: 0.7; letter-spacing: 0.5px;'>ORDERS</div>" &
+			            "</div>" &
+			            "<div style='width: 1px; height: 35px; background: rgba(255,255,255,0.25);'></div>" &
+			            "<div style='text-align: center;'>" &
+			                "<div style='font-size: 22px; font-weight: 700; color: #FCD34D;'>" & _Always & "</div>" &
+			                "<div style='font-size: 10px; opacity: 0.7; letter-spacing: 0.5px;'>⭐ ALWAYS</div>" &
+			            "</div>" &
+			            "<div style='text-align: center;'>" &
+			                "<div style='font-size: 22px; font-weight: 700; color: #4ADE80;'>" & _Usually & "</div>" &
+			                "<div style='font-size: 10px; opacity: 0.7; letter-spacing: 0.5px;'>📦 USUALLY</div>" &
+			            "</div>" &
+			            "<div style='text-align: center;'>" &
+			                "<div style='font-size: 22px; font-weight: 700; color: #93C5FD;'>" & _Sometimes & "</div>" &
+			                "<div style='font-size: 10px; opacity: 0.7; letter-spacing: 0.5px;'>SOMETIMES</div>" &
+			            "</div>" &
+			            "<div style='width: 1px; height: 35px; background: rgba(255,255,255,0.25);'></div>" &
+			            "<div style='text-align: center;'>" &
+			                "<div style='font-size: 22px; font-weight: 700;'>" & _TotalParts & "</div>" &
+			                "<div style='font-size: 10px; opacity: 0.7; letter-spacing: 0.5px;'>TOTAL PARTS</div>" &
+			            "</div>" &
+			            "<div style='width: 1px; height: 35px; background: rgba(255,255,255,0.25);'></div>" &
+			            "<div style='text-align: center;'>" &
+			                "<div style='font-size: 22px; font-weight: 700; color: #6EE7B7;'>" & _StagingValue & "</div>" &
+			                "<div style='font-size: 10px; opacity: 0.7; letter-spacing: 0.5px;'>💰 STAGING VALUE</div>" &
+			            "</div>" &
+			        "</div>" &
+			    "</div>"
+			)
+		lineageTag: f6a7b8c9-d0e1-2345-f012-456789abcdef
+
+	measure 'Branch Frequency %' = MAX(Fact_BranchAnalysis[FrequencyPct])
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: f1e2d3c4-b5a6-9870-fedc-ba9876543210
+
+	measure 'Branch Order Count' = MAX(Fact_BranchAnalysis[TotalOrdersWithJobCode])
+		formatString: 0
+		lineageTag: e2d3c4b5-a697-8701-edcb-a98765432101
+
+	measure 'Company Frequency %' = MAX(Fact_BranchAnalysis[CompanyFrequencyPct])
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: d3c4b5a6-9780-7012-dcba-987654321012
+
+	measure 'Branch Analysis Banner' =
+			
+			VAR _JobCode      = SELECTEDVALUE(Fact_BranchAnalysis[JobCode])
+			VAR _Branches     = FORMAT(DISTINCTCOUNT(Fact_BranchAnalysis[Branch]), "0")
+			VAR _UniqueParts  = FORMAT(DISTINCTCOUNT(Fact_BranchAnalysis[PartNumber]), "0")
+			VAR _CompanyOrders = FORMAT(
+			    CALCULATE(MAX(Fact_GapAnalysis[TotalOrdersWithJobCode])),
+			    "#,##0"
+			)
+			RETURN
+			IF(
+			    ISBLANK(_JobCode),
+			    "<div style='font-family: Segoe UI, Arial, sans-serif; height: 85px; padding: 10px 20px; background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%); border-radius: 8px; border: 2px dashed rgba(255,255,255,0.3); color: rgba(255,255,255,0.6); display: flex; align-items: center; justify-content: center; box-sizing: border-box; font-size: 13px; letter-spacing: 0.8px;'>" &
+			        "← SELECT A JOB CODE FROM THE LIST TO VIEW BRANCH COMPARISON" &
+			    "</div>",
+			    "<div style='font-family: Segoe UI, Arial, sans-serif; height: 85px; padding: 10px 20px; background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%); border-radius: 8px; color: white; display: flex; align-items: center; justify-content: space-between; box-sizing: border-box; box-shadow: 0 2px 8px rgba(0,0,0,0.2);'>" &
+			        "<div style='display: flex; align-items: center; gap: 12px;'>" &
+			            "<div style='background: rgba(255,255,255,0.15); border-radius: 6px; padding: 6px 10px; font-size: 11px; letter-spacing: 0.5px; opacity: 0.8;'>BRANCH COMPARISON</div>" &
+			            "<div style='font-size: 22px; font-weight: 700; letter-spacing: 0.5px;'>" & _JobCode & "</div>" &
+			        "</div>" &
+			        "<div style='display: flex; gap: 20px; align-items: center;'>" &
+			            "<div style='text-align: center;'>" &
+			                "<div style='font-size: 22px; font-weight: 700;'>" & _CompanyOrders & "</div>" &
+			                "<div style='font-size: 10px; opacity: 0.7; letter-spacing: 0.5px;'>COMPANY ORDERS</div>" &
+			            "</div>" &
+			            "<div style='width: 1px; height: 35px; background: rgba(255,255,255,0.25);'></div>" &
+			            "<div style='text-align: center;'>" &
+			                "<div style='font-size: 22px; font-weight: 700; color: #93C5FD;'>" & _Branches & "</div>" &
+			                "<div style='font-size: 10px; opacity: 0.7; letter-spacing: 0.5px;'>BRANCHES ACTIVE</div>" &
+			            "</div>" &
+			            "<div style='text-align: center;'>" &
+			                "<div style='font-size: 22px; font-weight: 700; color: #6EE7B7;'>" & _UniqueParts & "</div>" &
+			                "<div style='font-size: 10px; opacity: 0.7; letter-spacing: 0.5px;'>UNIQUE PARTS</div>" &
+			            "</div>" &
+			        "</div>" &
+			    "</div>"
+			)
+		lineageTag: c4b5a697-8601-2345-cbad-876543210123
+
+	measure 'Branch Analysis - Header' = ```
+			
+			// Get user name
+			VAR _User = USERPRINCIPALNAME()
+			VAR _Position = SEARCH("@", _User, 1)
+			VAR _Name = LEFT(_User, _Position - 1)
+			VAR _FirstLetter = UPPER(LEFT(_Name, 1))
+			VAR _LastName = MID(_Name, 2, LEN(_Name) - 1)
+			VAR _FormattedLastName = 
+			    UPPER(LEFT(_LastName, 1)) & LOWER(MID(_LastName, 2, LEN(_LastName)))
+			VAR WelcomeName = _FirstLetter & "." & _FormattedLastName
+			
+			// Get current date/time info
+			VAR CurrentDate = TODAY()
+			VAR DateDisplay = FORMAT(CurrentDate, "MMM D, YYYY")
+			VAR CurrentHour = HOUR(NOW())
+			VAR TimeGreeting = 
+			    IF(CurrentHour < 12, "Good Morning",
+			    IF(CurrentHour < 17, "Good Afternoon",
+			    "Good Evening"))
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    height: 85px;
+			    padding: 15px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 10px;
+			    color: white;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-between;
+			    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    box-sizing: border-box;
+			'>
+			    <!-- Left side: Dashboard Title -->
+			    <div style='display: flex; align-items: center; gap: 15px;'>
+			        <!-- Home icon -->
+			        <div style='
+			            width: 40px;
+			            height: 40px;
+			            background: rgba(255,255,255,0.15);
+			            border-radius: 8px;
+			            display: flex;
+			            align-items: center;
+			            justify-content: center;
+			            font-size: 20px;
+			        '>
+			            🏠
+			        </div>
+			        
+			        <!-- Title -->
+			        <div>
+			            <div style='font-size: 12px; opacity: 0.85; margin-bottom: 4px; letter-spacing: 0.5px;'>
+			                REPORT
+			            </div>
+			            <div style='font-size: 26px; font-weight: 700; line-height: 1;'>
+			                Branch Analysis
+			            </div>
+			        </div>
+			    </div>
+			    
+			    <!-- Right side: Welcome & Date -->
+			    <div style='text-align: right;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 6px;'>
+			            " & TimeGreeting & ", " & WelcomeName & "
+			        </div>
+			        <div style='font-size: 16px; font-weight: 600;'>
+			            📅 " & DateDisplay & "
+			        </div>
+			    </div>
+			</div>
+			"
+			```
+		lineageTag: 39476916-1891-48c8-87a9-04b96aea6a9d
+
+	measure 'Branch vs Company Difference' = [Branch Frequency %] - [Company Frequency %]
+		formatString: +0.0%;-0.0%;0.0%
+		lineageTag: a1b2c3d4-e5f6-4321-abcd-ef9876543210
+
+	measure 'Is Significant Divergence' = IF(ABS([Branch Frequency %] - [Company Frequency %]) >= 0.10, 1, 0)
+		formatString: 0
+		lineageTag: b2c3d4e5-f6a7-5432-bcde-f09876543210
+
+	measure 'Branch Freq Background Color' =
+			VAR _Freq = [Branch Frequency %]
+			RETURN
+			IF(
+			    ISBLANK(_Freq), BLANK(),
+			    IF(_Freq >= 0.50, "#A3D8A9",
+			    IF(_Freq >= 0.25, "#EFF189",
+			    IF(_Freq >= 0.10, "#B9CEF0",
+			    "#B3B3B3")))
+			)
+		lineageTag: c3d4e5f6-a7b8-6543-cdef-019876543210
+
+	measure 'Divergence Font Color' =
+			VAR _Diff = [Branch vs Company Difference]
+			RETURN
+			IF(
+			    ISBLANK(_Diff), BLANK(),
+			    IF(_Diff >= 0.10, "#94CE9D",
+			    IF(_Diff <= -0.10, "#F99C9C",
+			    "#6B7280"))
+			)
+		lineageTag: d4e5f6a7-b8c9-7654-def0-129876543210
+
+	measure 'Branch vs Company Difference (Abs)' = ABS([Branch Frequency %] - [Company Frequency %])
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: a2b3c4d5-e6f7-4321-abcd-ef9876543211
+
+	measure 'Divergence Direction' =
+			VAR _Diff = [Branch vs Company Difference]
+			RETURN
+			IF(
+			    ISBLANK(_Diff), BLANK(),
+			    IF(_Diff >= 0.10,  "▲ Above Average",
+			    IF(_Diff <= -0.10, "▼ Below Average",
+			    "≈ Near Average"))
+			)
+		lineageTag: a3b4c5d6-e7f8-4321-abcd-ef9876543212
+
+	measure 'Branch Analysis Key Finding' =
+			VAR _JobCode = SELECTEDVALUE(Fact_BranchAnalysis[JobCode])
+			VAR _Parts = VALUES(Fact_BranchAnalysis[PartNumber])
+			VAR _PartScores = ADDCOLUMNS(
+			    _Parts,
+			    "_MaxFreq",     CALCULATE(MAX(Fact_BranchAnalysis[FrequencyPct])),
+			    "_MinFreq",     CALCULATE(MIN(Fact_BranchAnalysis[FrequencyPct])),
+			    "_Spread",      CALCULATE(MAX(Fact_BranchAnalysis[FrequencyPct])) - CALCULATE(MIN(Fact_BranchAnalysis[FrequencyPct])),
+			    "_BranchCount", CALCULATE(DISTINCTCOUNT(Fact_BranchAnalysis[Branch])),
+			    "_CompanyFreq", CALCULATE(MAX(Fact_BranchAnalysis[CompanyFrequencyPct]))
+			)
+			VAR _TopPart = TOPN(1, FILTER(_PartScores, [_BranchCount] >= 2), [_Spread], DESC)
+			VAR _TopPartNum = MAXX(_TopPart, Fact_BranchAnalysis[PartNumber])
+			VAR _TopSpread = MAXX(_TopPart, [_Spread])
+			VAR _TopMaxFreq = MAXX(_TopPart, [_MaxFreq])
+			VAR _TopMinFreq = MAXX(_TopPart, [_MinFreq])
+			VAR _TopCompanyFreq = MAXX(_TopPart, [_CompanyFreq])
+			VAR _TopDesc = MAXX(
+			    FILTER(Fact_BranchAnalysis, Fact_BranchAnalysis[PartNumber] = _TopPartNum),
+			    Fact_BranchAnalysis[PartDescription]
+			)
+			RETURN
+			IF(
+			    ISBLANK(_JobCode) || ISBLANK(_TopPartNum),
+			    "<div style='font-family: Segoe UI, Arial, sans-serif; padding: 16px 25px; background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%); border-radius: 8px; color: rgba(255,255,255,0.5); font-size: 13px; letter-spacing: 0.8px; display: flex; align-items: center; box-sizing: border-box;'>&#128269; SELECT A JOB CODE TO SEE KEY FINDINGS</div>",
+			    "<div style='font-family: Segoe UI, Arial, sans-serif; padding: 12px 20px; background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%); border-radius: 8px; color: white; display: flex; align-items: center; justify-content: space-between; box-sizing: border-box; box-shadow: 0 2px 8px rgba(0,0,0,0.2);'>" &
+			        "<div style='flex: 1; min-width: 0; margin-right: 24px;'>" &
+			            "<div style='font-size: 10px; letter-spacing: 1px; opacity: 0.7; margin-bottom: 5px;'>&#128269; MOST VARIABLE PART &#8212; " & _JobCode & "</div>" &
+			            "<div style='font-size: 16px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;'>" & _TopPartNum & " &#8211; " & _TopDesc & "</div>" &
+			        "</div>" &
+			        "<div style='display: flex; gap: 10px; flex-shrink: 0;'>" &
+			            "<div style='background: rgba(255,255,255,0.12); border-radius: 8px; padding: 10px 18px; text-align: center; min-width: 80px;'>" &
+			                "<div style='font-size: 26px; font-weight: 700; color: #FCD34D; line-height: 1;'>" & FORMAT(_TopSpread, "0%") & "</div>" &
+			                "<div style='font-size: 10px; opacity: 0.7; letter-spacing: 0.5px; margin-top: 5px;'>BRANCH SPREAD</div>" &
+			            "</div>" &
+			            "<div style='background: rgba(255,255,255,0.12); border-radius: 8px; padding: 10px 18px; text-align: center; min-width: 80px;'>" &
+			                "<div style='font-size: 26px; font-weight: 700; color: #86EFAC; line-height: 1;'>" & FORMAT(_TopMaxFreq, "0%") & "</div>" &
+			                "<div style='font-size: 10px; opacity: 0.7; letter-spacing: 0.5px; margin-top: 5px;'>HIGHEST BRANCH</div>" &
+			            "</div>" &
+			            "<div style='background: rgba(255,255,255,0.12); border-radius: 8px; padding: 10px 18px; text-align: center; min-width: 80px;'>" &
+			                "<div style='font-size: 26px; font-weight: 700; color: #FCA5A5; line-height: 1;'>" & FORMAT(_TopMinFreq, "0%") & "</div>" &
+			                "<div style='font-size: 10px; opacity: 0.7; letter-spacing: 0.5px; margin-top: 5px;'>LOWEST BRANCH</div>" &
+			            "</div>" &
+			            "<div style='background: rgba(255,255,255,0.12); border-radius: 8px; padding: 10px 18px; text-align: center; min-width: 80px;'>" &
+			                "<div style='font-size: 26px; font-weight: 700; color: #93C5FD; line-height: 1;'>" & FORMAT(_TopCompanyFreq, "0%") & "</div>" &
+			                "<div style='font-size: 10px; opacity: 0.7; letter-spacing: 0.5px; margin-top: 5px;'>COMPANY AVG</div>" &
+			            "</div>" &
+			        "</div>" &
+			    "</div>"
+			)
+		lineageTag: e5f6a7b8-c9d0-4321-ef01-234567890abc
+
+	measure 'Show Part (Freq Filter)' =
+			VAR _Threshold = SELECTEDVALUE(dim_FrequencyFilter[FilterThreshold], 0)
+			RETURN IF([Company Frequency %] >= _Threshold, 1, 0)
+		formatString: 0
+		lineageTag: f4e5d6c7-b8a9-5432-f012-345678901234
+
+	measure 'Branch Freq Display' =
+			VAR _Freq  = [Branch Frequency %]
+			VAR _Count = MAX(Fact_BranchAnalysis[TimesWithPart])
+			RETURN
+			IF(
+			    ISBLANK(_Freq), BLANK(),
+			    FORMAT(_Freq, "0%") & " (" & FORMAT(_Count, "0") & ")"
+			)
+		lineageTag: a9b8c7d6-e5f4-3210-a9b8-c7d6e5f43210
+
+	column Value
+		isHidden
+		lineageTag: da2dfa23-0c4c-4e9d-8014-3cc5710e756b
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Value]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition _Measures = calculated
+		mode: import
+		source = { "This table holds all measures for the Parts Reorder Monitoring report" }
+
+	annotation PBI_Id = da82ad85df114f0dbe8c17ce73f079a8
+

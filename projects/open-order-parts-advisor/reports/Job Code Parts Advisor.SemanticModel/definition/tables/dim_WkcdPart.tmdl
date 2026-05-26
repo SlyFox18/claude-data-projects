@@ -1,0 +1,84 @@
+table dim_WkcdPart
+	lineageTag: c11b0a1d-c912-4377-95d1-4e6dbaca45dc
+
+	column JobCode
+		dataType: string
+		lineageTag: a4cdc27c-f27d-4f10-b42c-524cceb8eb1b
+		summarizeBy: none
+		sourceColumn: JobCode
+
+		annotation SummarizationSetBy = Automatic
+
+	column Franchise
+		dataType: string
+		lineageTag: 62f9fa08-13ed-42b6-9c51-a0291ad5ec71
+		summarizeBy: none
+		sourceColumn: Franchise
+
+		annotation SummarizationSetBy = Automatic
+
+	column PartNumber
+		dataType: string
+		lineageTag: 434b7118-e40b-4826-828f-a1b9a2b976e5
+		summarizeBy: none
+		sourceColumn: PartNumber
+
+		annotation SummarizationSetBy = Automatic
+
+	column Qty
+		dataType: double
+		lineageTag: 4dede731-0a99-4372-9cee-9e7ff3dfae38
+		summarizeBy: sum
+		sourceColumn: Qty
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column Value
+		dataType: double
+		lineageTag: e66bc94d-0a91-4302-b84b-143ff6be91d6
+		summarizeBy: sum
+		sourceColumn: Value
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column PartFreq
+		dataType: double
+		lineageTag: 3bd56cee-cfb8-4592-8617-0affe1ed66d8
+		summarizeBy: sum
+		sourceColumn: PartFreq
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column CreationDate
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: 5c30b448-e131-4ea4-9cde-75a9aa7f9363
+		summarizeBy: none
+		sourceColumn: CreationDate
+
+		annotation SummarizationSetBy = Automatic
+
+	column ModifiedDate
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: 3f356a19-03df-474e-a145-eb324cd56e03
+		summarizeBy: none
+		sourceColumn: ModifiedDate
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dim_WkcdPart = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-gxnyznhdptpenfw724g3o5sjzm.datawarehouse.fabric.microsoft.com", "LH_Master_Data"),
+				    dbo_dim_WkcdPart = Source{[Schema="dbo",Item="dim_WkcdPart"]}[Data]
+				in
+				    dbo_dim_WkcdPart
+

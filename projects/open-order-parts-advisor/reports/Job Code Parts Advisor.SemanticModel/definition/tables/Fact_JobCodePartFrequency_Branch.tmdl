@@ -1,0 +1,64 @@
+table Fact_JobCodePartFrequency_Branch
+	lineageTag: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+
+	column Branch
+		dataType: string
+		lineageTag: b2c3d4e5-f6a7-8901-bcde-f12345678901
+		summarizeBy: none
+		sourceColumn: Branch
+
+		annotation SummarizationSetBy = Automatic
+
+	column JobCode
+		dataType: string
+		lineageTag: c3d4e5f6-a7b8-9012-cdef-012345678912
+		summarizeBy: none
+		sourceColumn: JobCode
+
+		annotation SummarizationSetBy = Automatic
+
+	column PartNumber
+		dataType: string
+		lineageTag: d4e5f6a7-b8c9-0123-def0-123456789023
+		summarizeBy: none
+		sourceColumn: PartNumber
+
+		annotation SummarizationSetBy = Automatic
+
+	column TimesWithPart
+		dataType: int64
+		formatString: 0
+		lineageTag: e5f6a7b8-c9d0-1234-ef01-234567890134
+		summarizeBy: sum
+		sourceColumn: TimesWithPart
+
+		annotation SummarizationSetBy = Automatic
+
+	column TotalOrdersWithJobCode
+		dataType: int64
+		formatString: 0
+		lineageTag: f6a7b8c9-d0e1-2345-f012-345678901245
+		summarizeBy: count
+		sourceColumn: TotalOrdersWithJobCode
+
+		annotation SummarizationSetBy = Automatic
+
+	column FrequencyPct
+		dataType: double
+		lineageTag: a7b8c9d0-e1f2-3456-0123-456789012356
+		summarizeBy: sum
+		sourceColumn: FrequencyPct
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	partition Fact_JobCodePartFrequency_Branch = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-gxnyznhdptpenfw724g3o5sjzm.datawarehouse.fabric.microsoft.com", "LH_Master_Data"),
+				    dbo_Fact_JobCodePartFrequency_Branch = Source{[Schema="dbo",Item="Fact_JobCodePartFrequency_Branch"]}[Data]
+				in
+				    dbo_Fact_JobCodePartFrequency_Branch
+
