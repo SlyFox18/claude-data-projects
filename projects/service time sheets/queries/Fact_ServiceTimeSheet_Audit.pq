@@ -11,17 +11,31 @@
 // Pipeline: Phase 4 – Facts (depends on both raw sources above)
 //
 // Key columns in the output:
-//   TotalClaimedHrs  – hours the tech reported on the time sheet (CurrentDrawHrs
-//                      for standard layout; ShopHrs + FieldHrs for shop/field)
+//   TotalClaimedHrs  – hours the tech is claiming THIS pay period: CurrentDrawHrs
+//                      for standard layout (draw history columns are cross-period and
+//                      must NOT be summed); ShopHrs + FieldHrs for shop/field layout
 //   InvoicedHrs      – SUM(InvoiceHours) from TechnicianInvoiceDetail for that RO+Tech
-//   HoursDifference  – InvoicedHrs − TotalClaimedHrs
-//                      positive = invoiced more than claimed
-//                      negative = tech claimed more than invoiced
+//                      null until job codes are invoiced/closed; primary audit comparison
+//   PunchedHrs       – SUM(HoursWorked) from TechnicianPunchedDetail for that RO+Tech
+//                      ALL clocked hours regardless of invoice status — used to detect
+//                      partial invoicing (more punch data exists than billed hours)
+//   HoursDifference  – TotalClaimedHrs − InvoicedHrs  (null when InvoicedHrs = null)
+//                      positive = tech claimed more than invoiced
+//                      negative = invoiced more than claimed (tech may be owed more)
 //   TechPay          – TotalClaimedHrs × PayRate  (what payroll owes the tech)
 //   LaborBilled      – SUM(LaborSale) from TID    (what was billed to the customer)
 //   PaidDifference   – LaborBilled − TechPay
-//   AuditStatus      – "Match" / "Claimed More Than Invoiced" /
-//                      "Invoiced More Than Claimed" / "Pending — Not Yet Invoiced"
+//   AuditStatus      – Five-bucket classification:
+//                      "Draw - Open RO"              – InvoicedHrs = null; draw on in-progress RO,
+//                                                      no billing exists yet; not a discrepancy
+//                      "Match"                        – abs(Claimed − Invoiced) < 0.25 hrs
+//                      "Invoiced More Than Claimed"   – system billed more than tech claimed;
+//                                                      tech may be owed additional pay
+//                      "Partial Invoice - In Progress"– Claimed > Invoiced but PunchedHrs shows
+//                                                      more work exists than billed (likely partial
+//                                                      invoicing, not an overclaim)
+//                      "Claimed More Than Invoiced"   – Claimed > Invoiced on a fully-billed RO;
+//                                                      genuine discrepancy requiring review
 //
 // Pay Rate by Tech Level (validate with HR before first production run):
 //   Level 3 = $40/hr
@@ -44,18 +58,19 @@ let
     Sheets = service_time_sheets,
 
     // ── 3. Compute total claimed hours for this pay period ───────────────────
-    //   CurrentDrawHrs and ShopHrs/FieldHrs are mutually exclusive — the raw
-    //   query sets the missing layout's columns to null via MissingField.UseNull.
-    //   We use whichever is present.
+    //   CurrentDrawHrs (column 13) is the ONLY amount being claimed this period.
+    //   Draw1–FinalDraw are a historical log across all pay periods — some draws
+    //   may already have been paid in previous periods, so they must NOT be summed.
+    //   Shop/field layout stores ShopHrs+FieldHrs in columns 13-14 instead.
     WithClaimedHrs = Table.AddColumn(Sheets, "TotalClaimedHrs", each
         let
             cur   = [CurrentDrawHrs],
-            shop  = [ShopHrs],
-            field = [FieldHrs],
+            shop  = [ShopHrs]  ?? 0,
+            field = [FieldHrs] ?? 0,
             after = [AfterHours] ?? 0,
             drawHrs =
                 if cur <> null then cur
-                else (shop ?? 0) + (field ?? 0)
+                else shop + field
         in
             (drawHrs ?? 0) + after,
         type number
@@ -85,8 +100,9 @@ let
         each Text.From([RONumber]), type text),
 
     // ── 7. Load TechnicianInvoiceDetail and aggregate to RO + TechCode grain ─
-    //   This collapses the per-punch detail rows into a single row per
-    //   (work order, technician) to match the service sheet grain.
+    //   Provides financial columns (InvoicedHrs, LaborBilled, LaborCost).
+    //   TID only contains invoiced job codes — open RO operations are absent
+    //   until the RO is closed. Use for financial reference, not hours audit.
     TID = TechnicianInvoiceDetail,
 
     // WorkOrder is a whole number in the source — convert to text to match RONumberText
@@ -94,35 +110,68 @@ let
 
     TID_Agg = Table.Group(
         TID_Text,
-        {"WorkOrder", "TechCode", "Branch"},
+        {"WorkOrder", "TechCode"},
         {
-            {"InvoicedHrs",    each List.Sum([InvoiceHours]),  type number},
-            {"PunchedHrs",     each List.Sum([HoursPunched]),  type number},
-            {"TotalLaborCost", each List.Sum([LaborCost]),     type number},
-            {"LaborBilled",    each List.Sum([LaborSale]),     type number},
-            {"LastInvoiceDate",each List.Max([InvoiceDate]),   type date}
+            {"InvoicedHrs",    each List.Sum([InvoiceHours]),              type number},
+            {"TotalLaborCost", each List.Sum([LaborCost]),                 type number},
+            {"LaborBilled",    each List.Sum([LaborSale]),                 type number},
+            {"LastInvoiceDate",each List.Max([InvoiceDate]),               type date},
+            {"Branch",         each List.First(List.Sort([Branch])),       type text}
         }
     ),
 
-    // ── 8. Left-join sheets to aggregated TID ────────────────────────────────
-    //   Left join keeps all sheet rows.
-    //   - If InvoicedHrs is null → work not yet invoiced in the source system.
-    //   - Branch comes from TID (the source system's numeric branch code).
-    Joined = Table.NestedJoin(
+    // ── 7b. Load TechnicianPunchedDetail and aggregate to RO + TechCode grain ─
+    //   HoursWorked captures ALL punch records regardless of invoice status.
+    //   Draws are requested against work done, not work invoiced, so this is
+    //   the correct comparison point for the pay advance audit.
+    TPD = TechnicianPunchedDetail,
+
+    TPD_Agg = Table.Group(
+        TPD,
+        {"WorkOrder", "TechCode"},
+        {
+            {"PunchedHrs",  each List.Sum([HoursWorked]),   type number},
+            {"Branch_TPD",  each List.First(List.Sort([Branch])), type text}
+        }
+    ),
+
+    // ── 8. Left-join sheets to TID (financial data) then TPD (hours) ─────────
+    //   TID join: InvoicedHrs, LaborBilled, LaborCost, LastInvoiceDate, Branch.
+    //   TPD join: PunchedHrs — the primary audit comparison column.
+    JoinedTID = Table.NestedJoin(
         WithROText,  {"RONumberText", "TechNum"},
         TID_Agg,     {"WorkOrder",    "TechCode"},
         "TIDMatch",  JoinKind.LeftOuter
     ),
 
-    Expanded = Table.ExpandTableColumn(Joined, "TIDMatch", {
-        "InvoicedHrs", "PunchedHrs", "TotalLaborCost",
-        "LaborBilled", "LastInvoiceDate", "Branch"
+    ExpandedTID = Table.ExpandTableColumn(JoinedTID, "TIDMatch", {
+        "InvoicedHrs", "TotalLaborCost", "LaborBilled", "LastInvoiceDate", "Branch"
     }),
 
+    JoinedTPD = Table.NestedJoin(
+        ExpandedTID, {"RONumberText", "TechNum"},
+        TPD_Agg,     {"WorkOrder",    "TechCode"},
+        "TPDMatch",  JoinKind.LeftOuter
+    ),
+
+    Expanded = Table.ExpandTableColumn(JoinedTPD, "TPDMatch", {"PunchedHrs", "Branch_TPD"}),
+
+    // Resolve Branch: TID value when available (invoiced RO), TPD fallback for open ROs
+    WithBranch = Table.RenameColumns(
+        Table.RemoveColumns(
+            Table.AddColumn(Expanded, "Branch_Final", each [Branch] ?? [Branch_TPD], type text),
+            {"Branch", "Branch_TPD"}
+        ),
+        {{"Branch_Final", "Branch"}}
+    ),
+
     // ── 9. Audit variance columns ─────────────────────────────────────────────
-    WithHoursDiff = Table.AddColumn(Expanded, "HoursDifference", each
+    //   HoursDifference = Claimed − Invoiced.  Positive means tech claimed more
+    //   than was invoiced; negative means more was invoiced than claimed.
+    //   Null when InvoicedHrs is null (open RO — no billing exists yet).
+    WithHoursDiff = Table.AddColumn(WithBranch, "HoursDifference", each
         if [InvoicedHrs] <> null
-        then [InvoicedHrs] - [TotalClaimedHrs]
+        then [TotalClaimedHrs] - [InvoicedHrs]
         else null,
         type number
     ),
@@ -135,11 +184,26 @@ let
     ),
 
     // ── 10. Audit status classification ──────────────────────────────────────
+    //   Five-bucket logic (evaluated in order):
+    //   1. No invoice at all → Draw - Open RO (draw advance, expected)
+    //   2. Within 0.25 hr tolerance → Match
+    //   3. Invoiced > Claimed → Invoiced More Than Claimed (tech may be owed more pay)
+    //   4. Claimed > Invoiced AND punch data shows more work than billed
+    //      (PunchedHrs > InvoicedHrs × 1.1) → Partial Invoice - In Progress
+    //      (billing likely not complete; not a real overclaim)
+    //   5. Claimed > Invoiced AND RO appears fully billed → Claimed More Than Invoiced
+    //      (genuine flag — tech claimed more than the system shows for a complete RO)
     WithStatus = Table.AddColumn(WithPaidDiff, "AuditStatus", each
-        if   [InvoicedHrs] = null                          then "Pending - Not Yet Invoiced"
-        else if Number.Abs([HoursDifference] ?? 0) < 0.01 then "Match"
-        else if ([HoursDifference] ?? 0) > 0               then "Invoiced More Than Claimed"
-        else                                                     "Claimed More Than Invoiced",
+        if   [InvoicedHrs] = null
+            then "Draw - Open RO"
+        else if Number.Abs([HoursDifference] ?? 0) < 0.25
+            then "Match"
+        else if ([HoursDifference] ?? 0) < 0
+            then "Invoiced More Than Claimed"
+        else if [PunchedHrs] <> null and [PunchedHrs] > ([InvoicedHrs] * 1.1)
+            then "Partial Invoice - In Progress"
+        else
+            "Claimed More Than Invoiced",
         type text
     ),
 

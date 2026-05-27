@@ -136,21 +136,23 @@ table _Measures
 	measure '# Discrepancies' =
 			CALCULATE(
 			    COUNTROWS(Fact_ServiceTimeSheet_Audit),
-			    Fact_ServiceTimeSheet_Audit[AuditStatus] IN {"Claimed More Than Invoiced", "Invoiced More Than Claimed"}
+			    Fact_ServiceTimeSheet_Audit[AuditStatus] IN {"Claimed More Than Invoiced", "Invoiced More Than Claimed", "Partial Invoice - In Progress"}
 			)
 		formatString: #,##0
 		lineageTag: d7e8f9a0-b1c2-4345-9012-456789000015
 
-	measure '# Pending' = CALCULATE(COUNTROWS(Fact_ServiceTimeSheet_Audit), Fact_ServiceTimeSheet_Audit[AuditStatus] = "Pending - Not Yet Invoiced")
+	measure '# Pending' = CALCULATE(COUNTROWS(Fact_ServiceTimeSheet_Audit), Fact_ServiceTimeSheet_Audit[AuditStatus] = "Partial Invoice - In Progress")
 		formatString: #,##0
 		lineageTag: e8f9a0b1-c2d3-4456-0123-567890100016
 
 	measure 'Hours Diff Color' =
 			SWITCH(
 			    SELECTEDVALUE(Fact_ServiceTimeSheet_Audit[AuditStatus]),
-			    "Claimed More Than Invoiced", "#DC2626",
-			    "Invoiced More Than Claimed", "#B45309",
-			    "Match",                       "#16A34A",
+			    "Claimed More Than Invoiced",     "#DC2626",
+			    "Invoiced More Than Claimed",     "#B45309",
+			    "Partial Invoice - In Progress",  "#8B5CF6",
+			    "Match",                          "#16A34A",
+			    "Draw - Open RO",                 "#2563EB",
 			    BLANK()
 			)
 		lineageTag: f9a0b1c2-d3e4-4567-1234-678901200017
@@ -175,7 +177,7 @@ table _Measures
 
 	measure 'Hero Card - Audit Summary' =
 			
-			VAR ROsTotal      = [# Match] + [# Claimed More] + [# Invoiced More] + [# Pending]
+			VAR ROsTotal      = [# Match] + [# Claimed More] + [# Invoiced More] + [# Pending] + [# Draw Open RO]
 			VAR Pending       = [# Pending]
 			VAR ClaimedMore   = [# Claimed More]
 			VAR InvoicedMore  = [# Invoiced More]
@@ -219,7 +221,7 @@ table _Measures
 			    <div style='flex: 1; text-align: center; border-right: 1px solid rgba(255,255,255,0.2); padding-right: 15px;'>
 			        <div style='font-size: 14px; opacity: 0.85; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;'>Total RO's</div>
 			        <div style='font-size: 40px; font-weight: 700; margin-bottom: 4px;'>" & ROsText & "</div>
-			        <div style='font-size: 14px; opacity: 0.75;'>&#10003; Match: " & MatchText & " &nbsp;|&nbsp; &#8987; Pending: " & PendingText & "</div>
+			        <div style='font-size: 14px; opacity: 0.75;'>&#10003; Match: " & MatchText & " &nbsp;|&nbsp; &#9670; Partial: " & PendingText & "</div>
 			    </div>
 			
 			    <!-- Section: Claimed More -->
@@ -256,10 +258,11 @@ table _Measures
 	measure 'Row Status Color' =
 			SWITCH(
 			    SELECTEDVALUE(Fact_ServiceTimeSheet_Audit[AuditStatus]),
-			    "Claimed More Than Invoiced", "#FEE2E2",
-			    "Invoiced More Than Claimed", "#FEF3C7",
-			    "Match",                       "#F0FDF4",
-			    "Pending - Not Yet Invoiced",  "#F8FAFC",
+			    "Claimed More Than Invoiced",     "#FEE2E2",
+			    "Invoiced More Than Claimed",     "#FEF3C7",
+			    "Partial Invoice - In Progress",  "#F5F3FF",
+			    "Match",                          "#F0FDF4",
+			    "Draw - Open RO",                 "#EFF6FF",
 			    "#FFFFFF"
 			)
 		lineageTag: b0c1d2e3-f4a5-4678-2345-789012300030
@@ -267,10 +270,11 @@ table _Measures
 	measure 'Audit Status Color' =
 			SWITCH(
 			    SELECTEDVALUE(Fact_ServiceTimeSheet_Audit[AuditStatus]),
-			    "Claimed More Than Invoiced", "#DC2626",
-			    "Invoiced More Than Claimed", "#B45309",
-			    "Match",                       "#16A34A",
-			    "Pending - Not Yet Invoiced",  "#64748B",
+			    "Claimed More Than Invoiced",     "#DC2626",
+			    "Invoiced More Than Claimed",     "#B45309",
+			    "Partial Invoice - In Progress",  "#8B5CF6",
+			    "Match",                          "#16A34A",
+			    "Draw - Open RO",                 "#2563EB",
 			    "#1D3C4E"
 			)
 		lineageTag: c1d2e3f4-a5b6-4789-3456-890123400031
@@ -279,7 +283,8 @@ table _Measures
 			CALCULATE(
 			    SUM(Fact_ServiceTimeSheet_Audit[TechPay]),
 			    Fact_ServiceTimeSheet_Audit[AuditStatus] IN {
-			        "Match", "Claimed More Than Invoiced", "Invoiced More Than Claimed"
+			        "Match", "Claimed More Than Invoiced", "Invoiced More Than Claimed",
+			        "Partial Invoice - In Progress", "Draw - Open RO"
 			    }
 			)
 		formatString: \$#,##0.00
@@ -288,7 +293,7 @@ table _Measures
 	measure 'Pending Tech Pay' =
 			CALCULATE(
 			    SUM(Fact_ServiceTimeSheet_Audit[TechPay]),
-			    Fact_ServiceTimeSheet_Audit[AuditStatus] = "Pending - Not Yet Invoiced"
+			    Fact_ServiceTimeSheet_Audit[AuditStatus] = "Pending - No Punch Record"
 			)
 		formatString: \$#,##0.00
 		lineageTag: e3f4a5b6-c7d8-4901-5678-012345600033
@@ -296,7 +301,7 @@ table _Measures
 	measure 'Paid Difference (Audited)' =
 			CALCULATE(
 			    [Total Tech Pay] - [Labor Billed],
-			    Fact_ServiceTimeSheet_Audit[AuditStatus] <> "Pending - Not Yet Invoiced"
+			    Fact_ServiceTimeSheet_Audit[AuditStatus] <> "Draw - Open RO"
 			)
 		formatString: \$#,##0.00
 		lineageTag: f4a5b6c7-d8e9-4012-6789-123456700034
@@ -341,7 +346,7 @@ table _Measures
 	measure 'Audited Rows' =
 			CALCULATE(
 			    COUNTROWS(Fact_ServiceTimeSheet_Audit),
-			    Fact_ServiceTimeSheet_Audit[AuditStatus] <> "Pending - Not Yet Invoiced"
+			    Fact_ServiceTimeSheet_Audit[AuditStatus] <> "Draw - Open RO"
 			)
 		formatString: #,##0
 		lineageTag: a6b7c8d9-e0f1-4345-6789-012345600041
@@ -427,7 +432,7 @@ table _Measures
 			VAR TechLevel     = SELECTEDVALUE(Fact_ServiceTimeSheet_Audit[TechLevel], "")
 			VAR Location      = SELECTEDVALUE(Fact_ServiceTimeSheet_Audit[Location], "")
 			
-			VAR ROsTotal      = [# Match] + [# Claimed More] + [# Invoiced More] + [# Pending]
+			VAR ROsTotal      = [# Match] + [# Claimed More] + [# Invoiced More] + [# Pending] + [# Draw Open RO]
 			VAR MatchCount    = [# Match]
 			VAR Pending       = [# Pending]
 			VAR ClaimedMore   = [# Claimed More]
@@ -571,9 +576,11 @@ table _Measures
 	measure 'Hours Diff Color Bar' =
 			SWITCH(
 			    SELECTEDVALUE(Fact_ServiceTimeSheet_Audit[AuditStatus]),
-			    "Claimed More Than Invoiced", "#F87171",
-			    "Invoiced More Than Claimed", "#facc15",
-			    "Match",                       "#16A34A",
+			    "Claimed More Than Invoiced",     "#F87171",
+			    "Invoiced More Than Claimed",     "#facc15",
+			    "Partial Invoice - In Progress",  "#C4B5FD",
+			    "Match",                          "#16A34A",
+			    "Draw - Open RO",                 "#60A5FA",
 			    BLANK()
 			)
 		lineageTag: caf41df0-0c34-4e72-a1b9-5b34f236aea0
@@ -830,15 +837,17 @@ table _Measures
 		lineageTag: d5e6f7a8-b9c0-4234-5678-901234500050
 
 	measure 'RO Audit Status' =
-			VAR cm   = [# Claimed More]
-			VAR im   = [# Invoiced More]
-			VAR pend = [# Pending]
+			VAR cm      = [# Claimed More]
+			VAR im      = [# Invoiced More]
+			VAR partial = [# Pending]
+			VAR draw    = [# Draw Open RO]
 			RETURN
-			    IF(cm > 0 && im > 0,  "Mixed",
-			    IF(cm > 0,             "Claimed More Than Invoiced",
-			    IF(im > 0,             "Invoiced More Than Claimed",
-			    IF(pend > 0,           "Pending",
-			                           "Match"))))
+			    IF(cm > 0 && im > 0,      "Mixed",
+			    IF(cm > 0,                 "Claimed More Than Invoiced",
+			    IF(im > 0,                 "Invoiced More Than Claimed",
+			    IF(partial > 0,            "Partial Invoice - In Progress",
+			    IF(draw > 0,               "Draw - Open RO",
+			                               "Match")))))
 		lineageTag: e6f7a8b9-c0d1-4345-6789-012345600051
 
 	measure 'Tooltip - Draw Detail' =
@@ -968,20 +977,24 @@ table _Measures
 
 	measure 'RO Row Status Color' =
 			SWITCH([RO Audit Status],
-			    "Claimed More Than Invoiced", "#FEE2E2",
-			    "Invoiced More Than Claimed", "#FEF3C7",
-			    "Mixed",                       "#EDE9FE",
-			    "Match",                       "#F0FDF4",
+			    "Claimed More Than Invoiced",     "#FEE2E2",
+			    "Invoiced More Than Claimed",     "#FEF3C7",
+			    "Mixed",                          "#EDE9FE",
+			    "Partial Invoice - In Progress",  "#F5F3FF",
+			    "Match",                          "#F0FDF4",
+			    "Draw - Open RO",                 "#EFF6FF",
 			    "#F8FAFC"
 			)
 		lineageTag: a8b9c0d1-e2f3-4567-8901-234567800053
 
 	measure 'RO Audit Status Color' =
 			SWITCH([RO Audit Status],
-			    "Claimed More Than Invoiced", "#DC2626",
-			    "Invoiced More Than Claimed", "#B45309",
-			    "Mixed",                       "#6D28D9",
-			    "Match",                       "#16A34A",
+			    "Claimed More Than Invoiced",     "#DC2626",
+			    "Invoiced More Than Claimed",     "#B45309",
+			    "Mixed",                          "#6D28D9",
+			    "Partial Invoice - In Progress",  "#8B5CF6",
+			    "Match",                          "#16A34A",
+			    "Draw - Open RO",                 "#2563EB",
 			    "#64748B"
 			)
 		lineageTag: b9c0d1e2-f3a4-4678-9012-345678900054
@@ -1066,7 +1079,8 @@ table _Measures
 			    "<div style='flex: 1; padding: 11px 14px; background: #FEE2E2; border-radius: 6px; border-left: 4px solid #DC2626; display: flex; align-items: center; gap: 14px;'><div style='font-size: 14px; font-weight: 700; color: #DC2626; width: 135px; flex-shrink: 0;'>⚠ Claimed More</div><div style='font-size: 13px; color: #475569;'>Tech submitted more hours than invoiced. Review before approving pay.</div></div>" &
 			    "<div style='flex: 1; padding: 11px 14px; background: #FEF3C7; border-radius: 6px; border-left: 4px solid #B45309; display: flex; align-items: center; gap: 14px;'><div style='font-size: 14px; font-weight: 700; color: #B45309; width: 135px; flex-shrink: 0;'>⚠ Invoiced More</div><div style='font-size: 13px; color: #475569;'>Source system shows more hours invoiced than submitted. May indicate a missing time sheet entry.</div></div>" &
 			    "<div style='flex: 1; padding: 11px 14px; background: #EDE9FE; border-radius: 6px; border-left: 4px solid #6D28D9; display: flex; align-items: center; gap: 14px;'><div style='font-size: 14px; font-weight: 700; color: #6D28D9; width: 135px; flex-shrink: 0;'>⚡ Mixed</div><div style='font-size: 13px; color: #475569;'>Multiple techs on this RO have different statuses. Drill through to see each tech individually.</div></div>" &
-			    "<div style='flex: 1; padding: 11px 14px; background: #F8FAFC; border-radius: 6px; border-left: 4px solid #94A3B8; display: flex; align-items: center; gap: 14px;'><div style='font-size: 14px; font-weight: 700; color: #64748B; width: 135px; flex-shrink: 0;'>⏳ Pending</div><div style='font-size: 13px; color: #475569;'>This RO has not yet been invoiced in EquipRDB. Not a discrepancy — check back once invoicing is complete.</div></div>" &
+			    "<div style='flex: 1; padding: 11px 14px; background: #F5F3FF; border-radius: 6px; border-left: 4px solid #8B5CF6; display: flex; align-items: center; gap: 14px;'><div style='font-size: 14px; font-weight: 700; color: #8B5CF6; width: 135px; flex-shrink: 0;'>&#9670; Partial Invoice</div><div style='font-size: 13px; color: #475569;'>Claimed more than invoiced, but punch data shows more work exists. Billing is likely not complete — not a real overclaim.</div></div>" &
+			    "<div style='flex: 1; padding: 11px 14px; background: #EFF6FF; border-radius: 6px; border-left: 4px solid #2563EB; display: flex; align-items: center; gap: 14px;'><div style='font-size: 14px; font-weight: 700; color: #2563EB; width: 135px; flex-shrink: 0;'>&#8635; Draw - Open RO</div><div style='font-size: 13px; color: #475569;'>No invoicing exists yet for this RO. This is an in-progress draw advance — not a discrepancy.</div></div>" &
 			    "</div>" &
 			    "</div>"
 			VAR keyTerms =
@@ -1075,7 +1089,7 @@ table _Measures
 			    "<div style='display: flex; flex-direction: column; flex: 1; justify-content: space-between;'>" &
 			    "<div style='padding-bottom: 12px; border-bottom: 1px solid #F1F5F9;'><div style='font-size: 15px; font-weight: 600; color: #1E293B; margin-bottom: 4px;'>Claimed Hours</div><div style='font-size: 13px; color: #64748B;'>Hours the technician reported on their submitted time sheet for a given repair order.</div></div>" &
 			    "<div style='padding: 12px 0; border-bottom: 1px solid #F1F5F9;'><div style='font-size: 15px; font-weight: 600; color: #1E293B; margin-bottom: 4px;'>Invoiced Hours</div><div style='font-size: 13px; color: #64748B;'>Hours recorded against that RO in EquipRDB — what was billed to the customer.</div></div>" &
-			    "<div style='padding: 12px 0; border-bottom: 1px solid #F1F5F9;'><div style='font-size: 15px; font-weight: 600; color: #1E293B; margin-bottom: 4px;'>Hours Difference</div><div style='font-size: 13px; color: #64748B;'>Invoiced minus Claimed. Negative means the tech submitted more hours than were invoiced.</div></div>" &
+			    "<div style='padding: 12px 0; border-bottom: 1px solid #F1F5F9;'><div style='font-size: 15px; font-weight: 600; color: #1E293B; margin-bottom: 4px;'>Hours Difference</div><div style='font-size: 13px; color: #64748B;'>Claimed minus Invoiced. Positive means the tech submitted more hours than were invoiced (potential overclaim). Negative means the system shows more invoiced hours than claimed.</div></div>" &
 			    "<div style='padding: 12px 0; border-bottom: 1px solid #F1F5F9;'><div style='font-size: 15px; font-weight: 600; color: #1E293B; margin-bottom: 4px;'>Billing Gap</div><div style='font-size: 13px; color: #64748B;'>Labor billed to the customer minus draw pay owed to the tech. Shows the margin on each RO.</div></div>" &
 			    "<div style='padding-top: 12px;'><div style='font-size: 15px; font-weight: 600; color: #1E293B; margin-bottom: 4px;'>Draw Pay</div><div style='font-size: 13px; color: #64748B;'>Claimed Hours × pay rate. Level 3 = $40/hr · Level 4 = $43/hr · Level 5 = $46/hr. Service managers receive no draw.</div></div>" &
 			    "</div>" &
@@ -1086,6 +1100,10 @@ table _Measures
 			    "<div style='display: flex; gap: 16px; align-items: stretch;'>" & statusGuide & keyTerms & "</div>" &
 			    "</div>"
 		lineageTag: d1e2f3a4-b5c6-4890-1234-567890100056
+
+	measure '# Draw Open RO' = CALCULATE(COUNTROWS(Fact_ServiceTimeSheet_Audit), Fact_ServiceTimeSheet_Audit[AuditStatus] = "Draw - Open RO") + 0
+		formatString: #,##0
+		lineageTag: c3d4e5f6-a7b8-4901-2345-678901200057
 
 	column Value
 		isHidden
