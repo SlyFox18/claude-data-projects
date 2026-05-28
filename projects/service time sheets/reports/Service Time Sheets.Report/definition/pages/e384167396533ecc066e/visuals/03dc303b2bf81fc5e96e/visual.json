@@ -131,7 +131,8 @@
                 }
               },
               "queryRef": "_Measures.Total Claimed Hours",
-              "nativeQueryRef": "Total Claimed Hours"
+              "nativeQueryRef": "Claimed Hours",
+              "displayName": "Claimed Hours"
             },
             {
               "field": {
@@ -145,7 +146,23 @@
                 }
               },
               "queryRef": "_Measures.Total Invoiced Hours",
-              "nativeQueryRef": "Total Invoiced Hours"
+              "nativeQueryRef": "Invoiced Hours",
+              "displayName": "Invoiced Hours"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Fact_ServiceTimeSheet_Audit"
+                    }
+                  },
+                  "Property": "PunchedHrs"
+                }
+              },
+              "queryRef": "Sum(Fact_ServiceTimeSheet_Audit.PunchedHrs)",
+              "nativeQueryRef": "Punched Hrs",
+              "displayName": "Punched Hrs"
             },
             {
               "field": {
@@ -233,19 +250,6 @@
                   }
                 },
                 "Property": "Hours Difference"
-              }
-            },
-            "direction": "Descending"
-          },
-          {
-            "field": {
-              "Measure": {
-                "Expression": {
-                  "SourceRef": {
-                    "Entity": "_Measures"
-                  }
-                },
-                "Property": "Paid Difference"
               }
             },
             "direction": "Descending"
@@ -867,6 +871,36 @@
             ],
             "metadata": "_Measures.Labor Billed"
           }
+        },
+        {
+          "properties": {
+            "backColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "Row Status Color"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "selector": {
+            "data": [
+              {
+                "dataViewWildcard": {
+                  "matchingOption": 1
+                }
+              }
+            ],
+            "metadata": "Sum(Fact_ServiceTimeSheet_Audit.PunchedHrs)"
+          }
         }
       ],
       "total": [
@@ -956,7 +990,7 @@
             "value": {
               "expr": {
                 "Literal": {
-                  "Value": "237.46347633223098D"
+                  "Value": "189.22323038484205D"
                 }
               }
             }
@@ -984,13 +1018,41 @@
             "value": {
               "expr": {
                 "Literal": {
-                  "Value": "114.84368700379133D"
+                  "Value": "94.77338299220182D"
                 }
               }
             }
           },
           "selector": {
             "metadata": "_Measures.Hours Difference"
+          }
+        },
+        {
+          "properties": {
+            "value": {
+              "expr": {
+                "Literal": {
+                  "Value": "71.90309967789399D"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "Sum(Fact_ServiceTimeSheet_Audit.PunchedHrs)"
+          }
+        },
+        {
+          "properties": {
+            "value": {
+              "expr": {
+                "Literal": {
+                  "Value": "105.28463708052726D"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "_Measures.Total Tech Pay"
           }
         }
       ],

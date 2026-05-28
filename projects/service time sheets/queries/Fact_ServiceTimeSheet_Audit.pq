@@ -211,7 +211,7 @@ let
                 then "Draw - Open RO"
             else if [InvoicedHrs] = null
                 then "Pending Invoice"
-            else if Number.Abs([HoursDifference] ?? 0) < 0.25
+            else if Number.Abs([HoursDifference] ?? 0) < 0.001
                 then "Match"
             else if ([HoursDifference] ?? 0) < 0
                 then "Invoiced More Than Claimed"

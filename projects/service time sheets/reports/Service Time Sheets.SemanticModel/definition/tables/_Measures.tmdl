@@ -188,12 +188,12 @@ table _Measures
 			VAR TechPay       = [Auditable Tech Pay]
 			VAR NetOverclaim  = [Net Overclaim $]
 			VAR OverclaimRate = [Overclaim Rate %]
-
+			
 			VAR ClaimedColor  = IF(ClaimedMore > 0, "#f87171", "#4ade80")
 			VAR InvoicedColor = IF(InvoicedMore > 0, "#facc15", "#4ade80")
 			VAR DrawColor     = IF(DrawCount > 0, "#60A5FA", "#4ade80")
 			VAR NetColor      = IF(NetOverclaim > 0.01, "#f87171", "#4ade80")
-
+			
 			VAR ROsText       = FORMAT(ROsTotal, "#,##0")
 			VAR MatchText     = FORMAT(MatchCount, "#,##0")
 			VAR DrawText      = FORMAT(DrawCount, "#,##0")
@@ -205,44 +205,44 @@ table _Measures
 			VAR PayText       = FORMAT(TechPay, "$#,##0")
 			VAR OverclaimText = FORMAT(OverclaimRate, "0.0%")
 			VAR NetText       = FORMAT(NetOverclaim, "$#,##0")
-
+			
 			RETURN
 			"<div style='font-family: Segoe UI, Arial, sans-serif; padding: 14px 16px; background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%); border-radius: 12px; color: white; height: 130px; display: flex; justify-content: space-between; align-items: center; gap: 6px;'>" &
 
 			"<div style='flex: 0.85; text-align: center; border-right: 1px solid rgba(255,255,255,0.2); padding-right: 6px;'>" &
-			"<div style='font-size: 11px; opacity: 0.85; margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.5px;'>Total RO&apos;s</div>" &
-			"<div style='font-size: 34px; font-weight: 700; margin-bottom: 3px;'>" & ROsText & "</div>" &
-			"<div style='font-size: 11px; opacity: 0.75; line-height: 1.5;'>&#10003; " & MatchText & " &nbsp;&#9670; " & PartialText & " &nbsp;&#9203; " & PendInvText & "</div>" &
+			"<div style='font-size: 12px; opacity: 0.85; margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.5px;'>Total RO&apos;s</div>" &
+			"<div style='font-size: 38px; font-weight: 700; margin-bottom: 3px;'>" & ROsText & "</div>" &
+			"<div style='font-size: 12px; opacity: 0.75; line-height: 1.5;'>&#10003; " & MatchText & " &nbsp;&#9670; " & PartialText & " &nbsp;&#9203; " & PendInvText & "</div>" &
+			"</div>" &
+
+			"<div style='flex: 1; text-align: center; border-right: 1px solid rgba(255,255,255,0.2); padding-right: 6px;'>" &
+			"<div style='font-size: 12px; opacity: 0.85; margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.5px;'>Claimed More</div>" &
+			"<div style='font-size: 38px; font-weight: 700; margin-bottom: 3px; color: " & ClaimedColor & ";'>" & ClaimedText & "</div>" &
+			"<div style='font-size: 12px; opacity: 0.75;'>Tech claimed &gt; invoiced</div>" &
+			"</div>" &
+
+			"<div style='flex: 1; text-align: center; border-right: 1px solid rgba(255,255,255,0.2); padding-right: 6px;'>" &
+			"<div style='font-size: 12px; opacity: 0.85; margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.5px;'>Invoiced More</div>" &
+			"<div style='font-size: 38px; font-weight: 700; margin-bottom: 3px; color: " & InvoicedColor & ";'>" & InvoicedText & "</div>" &
+			"<div style='font-size: 12px; opacity: 0.75;'>May owe tech more pay</div>" &
 			"</div>" &
 
 			"<div style='flex: 1.15; text-align: center; border-right: 1px solid rgba(255,255,255,0.2); padding-right: 6px;'>" &
-			"<div style='font-size: 11px; opacity: 0.85; margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.5px;'>Draw Advances</div>" &
-			"<div style='font-size: 34px; font-weight: 700; margin-bottom: 3px; color: " & DrawColor & ";'>" & DrawText & "</div>" &
-			"<div style='font-size: 11px; opacity: 0.75;'>Draw pay: " & DrawPayText & "</div>" &
-			"</div>" &
-
-			"<div style='flex: 1; text-align: center; border-right: 1px solid rgba(255,255,255,0.2); padding-right: 6px;'>" &
-			"<div style='font-size: 11px; opacity: 0.85; margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.5px;'>Claimed More</div>" &
-			"<div style='font-size: 34px; font-weight: 700; margin-bottom: 3px; color: " & ClaimedColor & ";'>" & ClaimedText & "</div>" &
-			"<div style='font-size: 11px; opacity: 0.75;'>Tech claimed &gt; invoiced</div>" &
-			"</div>" &
-
-			"<div style='flex: 1; text-align: center; border-right: 1px solid rgba(255,255,255,0.2); padding-right: 6px;'>" &
-			"<div style='font-size: 11px; opacity: 0.85; margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.5px;'>Invoiced More</div>" &
-			"<div style='font-size: 34px; font-weight: 700; margin-bottom: 3px; color: " & InvoicedColor & ";'>" & InvoicedText & "</div>" &
-			"<div style='font-size: 11px; opacity: 0.75;'>May owe tech more pay</div>" &
+			"<div style='font-size: 12px; opacity: 0.85; margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.5px;'>Draw Advances</div>" &
+			"<div style='font-size: 38px; font-weight: 700; margin-bottom: 3px; color: " & DrawColor & ";'>" & DrawText & "</div>" &
+			"<div style='font-size: 12px; opacity: 0.75;'>Draw pay: " & DrawPayText & "</div>" &
 			"</div>" &
 
 			"<div style='flex: 1.1; text-align: center; border-right: 1px solid rgba(255,255,255,0.2); padding-right: 6px;'>" &
-			"<div style='font-size: 11px; opacity: 0.85; margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.5px;'>Audited Pay</div>" &
-			"<div style='font-size: 34px; font-weight: 700; margin-bottom: 3px;'>" & PayText & "</div>" &
-			"<div style='font-size: 11px; opacity: 0.75;'>Invoiced ROs only</div>" &
+			"<div style='font-size: 12px; opacity: 0.85; margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.5px;'>Audited Pay</div>" &
+			"<div style='font-size: 38px; font-weight: 700; margin-bottom: 3px;'>" & PayText & "</div>" &
+			"<div style='font-size: 12px; opacity: 0.75;'>Invoiced ROs only</div>" &
 			"</div>" &
 
 			"<div style='flex: 1.1; text-align: center;'>" &
-			"<div style='font-size: 11px; opacity: 0.85; margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.5px;'>Net Overclaim</div>" &
-			"<div style='font-size: 34px; font-weight: 700; margin-bottom: 3px; color: " & NetColor & ";'>" & NetText & "</div>" &
-			"<div style='font-size: 11px; opacity: 0.75;'>Flag rate: " & OverclaimText & " | Audited ROs</div>" &
+			"<div style='font-size: 12px; opacity: 0.85; margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.5px;'>Net Overclaim</div>" &
+			"<div style='font-size: 38px; font-weight: 700; margin-bottom: 3px; color: " & NetColor & ";'>" & NetText & "</div>" &
+			"<div style='font-size: 12px; opacity: 0.75;'>Flag rate: " & OverclaimText & " | Audited ROs</div>" &
 			"</div>" &
 
 			"</div>"
