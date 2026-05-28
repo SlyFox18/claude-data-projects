@@ -204,45 +204,47 @@ table _Measures
 			VAR DrawPayText   = FORMAT(DrawPayAmt, "$#,##0")
 			VAR PayText       = FORMAT(TechPay, "$#,##0")
 			VAR OverclaimText = FORMAT(OverclaimRate, "0.0%")
-			VAR NetText       = FORMAT(NetOverclaim, "$#,##0")
+			VAR NetText          = FORMAT(NetOverclaim, "$#,##0")
+			VAR InvoicedRisk     = [Underpay Risk $]
+			VAR InvoicedRiskText = FORMAT(InvoicedRisk, "$#,##0")
 			
 			RETURN
 			"<div style='font-family: Segoe UI, Arial, sans-serif; padding: 14px 16px; background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%); border-radius: 12px; color: white; height: 130px; display: flex; justify-content: space-between; align-items: center; gap: 6px;'>" &
 			
 			"<div style='flex: 0.85; text-align: center; border-right: 1px solid rgba(255,255,255,0.2); padding-right: 6px;'>" &
-			"<div style='font-size: 12px; opacity: 0.85; margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.5px;'>Total RO&apos;s</div>" &
+			"<div style='font-size: 14px; opacity: 0.85; margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.5px;'>Total RO&apos;s</div>" &
 			"<div style='font-size: 38px; font-weight: 700; margin-bottom: 3px;'>" & ROsText & "</div>" &
-			"<div style='font-size: 12px; opacity: 0.75; line-height: 1.5;'>&#10003; " & MatchText & " &nbsp;&#9670; " & PartialText & " &nbsp;&#9203; " & PendInvText & "</div>" &
+			"<div style='font-size: 14px; opacity: 0.75; line-height: 1.5;'>&#10003; " & MatchText & " &nbsp;&#9670; " & PartialText & " &nbsp;&#9203; " & PendInvText & "</div>" &
 			"</div>" &
 			
 			"<div style='flex: 1; text-align: center; border-right: 1px solid rgba(255,255,255,0.2); padding-right: 6px;'>" &
-			"<div style='font-size: 12px; opacity: 0.85; margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.5px;'>Claimed More</div>" &
+			"<div style='font-size: 14px; opacity: 0.85; margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.5px;'>Claimed More</div>" &
 			"<div style='font-size: 38px; font-weight: 700; margin-bottom: 3px; color: " & ClaimedColor & ";'>" & ClaimedText & "</div>" &
-			"<div style='font-size: 12px; opacity: 0.75;'>Tech claimed &gt; invoiced</div>" &
+			"<div style='font-size: 14px; opacity: 0.75;'>Overclaim: " & NetText & "</div>" &
 			"</div>" &
 			
 			"<div style='flex: 1; text-align: center; border-right: 1px solid rgba(255,255,255,0.2); padding-right: 6px;'>" &
-			"<div style='font-size: 12px; opacity: 0.85; margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.5px;'>Invoiced More</div>" &
+			"<div style='font-size: 14px; opacity: 0.85; margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.5px;'>Invoiced More</div>" &
 			"<div style='font-size: 38px; font-weight: 700; margin-bottom: 3px; color: " & InvoicedColor & ";'>" & InvoicedText & "</div>" &
-			"<div style='font-size: 12px; opacity: 0.75;'>May owe tech more pay</div>" &
+			"<div style='font-size: 14px; opacity: 0.75;'>Risk: " & InvoicedRiskText & "</div>" &
 			"</div>" &
 			
 			"<div style='flex: 1.15; text-align: center; border-right: 1px solid rgba(255,255,255,0.2); padding-right: 6px;'>" &
-			"<div style='font-size: 12px; opacity: 0.85; margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.5px;'>Draw Advances</div>" &
+			"<div style='font-size: 14px; opacity: 0.85; margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.5px;'>Draw Advances</div>" &
 			"<div style='font-size: 38px; font-weight: 700; margin-bottom: 3px; color: " & DrawColor & ";'>" & DrawText & "</div>" &
-			"<div style='font-size: 12px; opacity: 0.75;'>Draw pay: " & DrawPayText & "</div>" &
+			"<div style='font-size: 14px; opacity: 0.75;'>Draw pay: " & DrawPayText & "</div>" &
 			"</div>" &
 			
 			"<div style='flex: 1.1; text-align: center; border-right: 1px solid rgba(255,255,255,0.2); padding-right: 6px;'>" &
-			"<div style='font-size: 12px; opacity: 0.85; margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.5px;'>Audited Pay</div>" &
+			"<div style='font-size: 14px; opacity: 0.85; margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.5px;'>Audited Pay</div>" &
 			"<div style='font-size: 38px; font-weight: 700; margin-bottom: 3px;'>" & PayText & "</div>" &
-			"<div style='font-size: 12px; opacity: 0.75;'>Invoiced ROs only</div>" &
+			"<div style='font-size: 14px; opacity: 0.75;'>Invoiced ROs only</div>" &
 			"</div>" &
 			
 			"<div style='flex: 1.1; text-align: center;'>" &
-			"<div style='font-size: 12px; opacity: 0.85; margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.5px;'>Net Overclaim</div>" &
+			"<div style='font-size: 14px; opacity: 0.85; margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.5px;'>Net Overclaim</div>" &
 			"<div style='font-size: 38px; font-weight: 700; margin-bottom: 3px; color: " & NetColor & ";'>" & NetText & "</div>" &
-			"<div style='font-size: 12px; opacity: 0.75;'>Flag rate: " & OverclaimText & " | Audited ROs</div>" &
+			"<div style='font-size: 14px; opacity: 0.75;'>Flag rate: " & OverclaimText & " | Audited ROs</div>" &
 			"</div>" &
 			
 			"</div>"
@@ -367,6 +369,14 @@ table _Measures
 			    IF(CurrentHour < 17, "Good Afternoon",
 			    "Good Evening"))
 			
+			VAR _PayStart   = CALCULATE(MIN(Fact_ServiceTimeSheet_Audit[PayStart]))
+			VAR _PayEnd     = CALCULATE(MAX(Fact_ServiceTimeSheet_Audit[PayEnd]))
+			VAR PeriodLabel =
+			    IF(
+			        ISBLANK(_PayStart), "All Pay Periods",
+			        FORMAT(_PayStart, "MMM D") & " – " & FORMAT(_PayEnd, "MMM D, YYYY")
+			    )
+			
 			RETURN
 			"
 			<div style='
@@ -382,7 +392,7 @@ table _Measures
 			    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 			    box-sizing: border-box;
 			'>
-			    <!-- Left side: Dashboard Title -->
+			    <!-- Left side: Dashboard Title + Pay Period -->
 			    <div style='display: flex; align-items: center; gap: 15px;'>
 			        <!-- Home icon -->
 			        <div style='
@@ -400,11 +410,14 @@ table _Measures
 			
 			        <!-- Title -->
 			        <div>
-			            <div style='font-size: 12px; opacity: 0.85; margin-bottom: 4px; letter-spacing: 0.5px;'>
+			            <div style='font-size: 11px; opacity: 0.75; margin-bottom: 2px; letter-spacing: 0.5px;'>
 			                REPORT
 			            </div>
-			            <div style='font-size: 26px; font-weight: 700; line-height: 1;'>
+			            <div style='font-size: 22px; font-weight: 700; line-height: 1.1; margin-bottom: 3px;'>
 			                Service Time Sheets - Executive Summary
+			            </div>
+			            <div style='font-size: 12px; opacity: 0.9;'>
+			                📋 " & PeriodLabel & "
 			            </div>
 			        </div>
 			    </div>
@@ -1117,6 +1130,21 @@ table _Measures
 			)
 		formatString: \$#,##0.00
 		lineageTag: e5f6a7b8-c9d0-4123-4567-890123400059
+
+	measure 'Underpay Risk $' =
+			COALESCE(
+			    CALCULATE(
+			        SUMX(
+			            Fact_ServiceTimeSheet_Audit,
+			            (Fact_ServiceTimeSheet_Audit[InvoicedHrs] - Fact_ServiceTimeSheet_Audit[TotalClaimedHrs])
+			                * Fact_ServiceTimeSheet_Audit[PayRate]
+			        ),
+			        Fact_ServiceTimeSheet_Audit[AuditStatus] = "Invoiced More Than Claimed"
+			    ),
+			    0
+			)
+		formatString: \$#,##0.00
+		lineageTag: f6a7b8c9-d0e1-4234-5678-901234500060
 
 	column Value
 		isHidden
