@@ -297,16 +297,50 @@ Using findings from Task 1.4, create the franchise scope table.
 
 - [ ] **Step 3.1 — Create the CSV and upload to Lakehouse Files**
 
-Create a file `param_FranchiseScope.csv` with content based on Task 1.4 results:
+Create a file `param_FranchiseScope.csv` with content based on Task 1.4 results and investigation findings:
 
 ```
 Franchise,IsIncluded,ExclusionReason
 D,FALSE,John Deere — handled by JD PRISM system
 ZP,FALSE,Warehouse code — not an orderable part
-[others from Task 1.4],FALSE,[reason]
+S,FALSE,Inactive franchise (per Physical Inventory report convention)
+TD,FALSE,Test/inactive franchise (T* pattern)
+TM,FALSE,Test/inactive franchise (T* pattern)
+UD,FALSE,Test/inactive franchise (U* pattern)
+UM,FALSE,Test/inactive franchise (U* pattern)
+95,FALSE,Data entry error — single part with invalid franchise code
 AM,TRUE,
 BB,TRUE,
-[all other franchises],TRUE,
+BS,TRUE,
+BW,TRUE,
+C,TRUE,
+DA,TRUE,
+GR,TRUE,
+HT,TRUE,
+HW,TRUE,
+KB,TRUE,
+KM,TRUE,
+KR,TRUE,
+L,TRUE,
+M,TRUE,
+MC,TRUE,
+ME,TRUE,
+MG,TRUE,
+MH,TRUE,
+ML,TRUE,
+MM,TRUE,
+MN,TRUE,
+MO,TRUE,
+MR,TRUE,
+MS,TRUE,
+MW,TRUE,
+P,TRUE,
+RC,TRUE,
+RM,TRUE,
+SB,TRUE,
+SC,TRUE,
+SS,TRUE,
+W,TRUE,
 ```
 
 Upload to `LH_Master_Data → Files` in the Fabric workspace.
@@ -516,6 +550,7 @@ let
             pi_Source                       AS Source,
             pi_SLC                          AS SLC,
             pi_Commodity_Code               AS CommodityCode,
+            pi_Dealer_Group_Code            AS DealerGroupCode,
             pi_Vendor_Code                  AS VendorCode,
             pi_On_Hand_Qty                  AS QuantityOnHand,
             pi_On_Order                     AS OnOrder,
@@ -1072,40 +1107,22 @@ let
     WithAvgSales    = Table.AddColumn(WithAvgDemand,  "AvgMonthlySales",  each [DemandCalc][AvgMonthlySales]),
 
     // Look up matching row in param_ROP_Matrix
-    // Priority: exact Group match > "Default"; exact SLC > "Default"; etc.
-    // The lookup finds the row where the part's attributes fall within the defined ranges.
+    // The entire matrix uses "Default" for Group, CommodityCode, SRC, SLC, and Attachment.
+    // Lookup is purely: MonthCount match + demand falls in [DemandL, DemandH) + sales falls in [SalesL, SalesH)
+    // Cap MonthCount at 19 (matrix max); treat 0 as 1.
     ROPMatrixList = Table.ToRecords(ROPMatrix),
 
     WithROPLookup = Table.AddColumn(WithAvgSales, "ROPRow", each
         let
-            grp    = [EffectiveGroup],
-            slc    = [SLC],
-            src    = [Source],
-            price  = [Cost],
-            mcount = [MonthCount],
+            mcount = if [MonthCount] = 0 then 1 else if [MonthCount] > 19 then 19 else [MonthCount],
             demand = [AvgMonthlyDemand],
-            sales  = [AvgMonthlySales],
-
-            // Try most specific match first, then fall back to Default at each level
-            TryMatch = (g, s, r) =>
-                List.First(List.Select(ROPMatrixList, each
-                    (each [Group_] = g or [Group_] = "Default") and
-                    ([SLC] = s or [SLC] = "Default") and
-                    ([SRC] = r or [SRC] = "Default") and
-                    (price >= [PriceL] and price <= [PriceH]) and
-                    ([MonthCount] = mcount) and
-                    (demand >= [DemandL] and demand < [DemandH]) and
-                    (sales >= [SalesL]   and sales  < [SalesH])
-                ), null),
-
-            Match = 
-                TryMatch(grp, slc, src)   ?? // exact group, exact SLC, exact SRC
-                TryMatch(grp, slc, "Default") ??
-                TryMatch(grp, "Default", "Default") ??
-                TryMatch("Default", "Default", "Default") ??
-                null
+            sales  = [AvgMonthlySales]
         in
-            Match
+            List.First(List.Select(ROPMatrixList, each
+                ([MonthCount] = mcount) and
+                (demand >= [DemandL] and demand < [DemandH]) and
+                (sales  >= [SalesL]  and sales  < [SalesH])
+            ), null)
     ),
 
     // Extract Modifier and other values from matched row (null-safe)
