@@ -25,17 +25,20 @@
 //   TechPay          – TotalClaimedHrs × PayRate  (what payroll owes the tech)
 //   LaborBilled      – SUM(LaborSale) from TID    (what was billed to the customer)
 //   PaidDifference   – LaborBilled − TechPay
-//   AuditStatus      – Five-bucket classification:
-//                      "Draw - Open RO"              – InvoicedHrs = null; draw on in-progress RO,
-//                                                      no billing exists yet; not a discrepancy
-//                      "Match"                        – abs(Claimed − Invoiced) < 0.25 hrs
-//                      "Invoiced More Than Claimed"   – system billed more than tech claimed;
-//                                                      tech may be owed additional pay
-//                      "Partial Invoice - In Progress"– Claimed > Invoiced but PunchedHrs shows
-//                                                      more work exists than billed (likely partial
-//                                                      invoicing, not an overclaim)
-//                      "Claimed More Than Invoiced"   – Claimed > Invoiced on a fully-billed RO;
-//                                                      genuine discrepancy requiring review
+//   AuditStatus      – Six-bucket classification:
+//                      "Draw - Open RO"               – InvoicedHrs = null AND tech has formal
+//                                                       draw history (Draw1–FinalDraw columns > 0);
+//                                                       pay advance on in-progress work — CFO focus
+//                      "Pending Invoice"               – InvoicedHrs = null AND no draw history;
+//                                                       work submitted (likely complete or first-time
+//                                                       claim) but not yet billed — not a draw
+//                      "Match"                         – abs(Claimed − Invoiced) < 0.25 hrs
+//                      "Invoiced More Than Claimed"    – system billed more than tech claimed;
+//                                                       tech may be owed additional pay
+//                      "Partial Invoice - In Progress" – Claimed > Invoiced but PunchedHrs shows
+//                                                       more work exists than billed (partial billing)
+//                      "Claimed More Than Invoiced"    – Claimed > Invoiced on a fully-billed RO;
+//                                                       genuine discrepancy requiring review
 //
 // Pay Rate by Tech Level (validate with HR before first production run):
 //   Level 3 = $40/hr
@@ -184,26 +187,38 @@ let
     ),
 
     // ── 10. Audit status classification ──────────────────────────────────────
-    //   Five-bucket logic (evaluated in order):
-    //   1. No invoice at all → Draw - Open RO (draw advance, expected)
-    //   2. Within 0.25 hr tolerance → Match
-    //   3. Invoiced > Claimed → Invoiced More Than Claimed (tech may be owed more pay)
-    //   4. Claimed > Invoiced AND punch data shows more work than billed
-    //      (PunchedHrs > InvoicedHrs × 1.1) → Partial Invoice - In Progress
-    //      (billing likely not complete; not a real overclaim)
-    //   5. Claimed > Invoiced AND RO appears fully billed → Claimed More Than Invoiced
-    //      (genuine flag — tech claimed more than the system shows for a complete RO)
+    //   Six-bucket logic (evaluated in order):
+    //   1. InvoicedHrs = null AND formal draw history exists → Draw - Open RO
+    //      "Draw history" = any of Draw1–FinalDraw columns has a value > 0.
+    //      A tech taking a draw advance fills in the Draw date + hours columns;
+    //      a tech submitting completed work only fills in CurrentDrawHrs.
+    //   2. InvoicedHrs = null AND no draw history → Pending Invoice
+    //      Work was submitted (likely complete or first-time claim) but not yet
+    //      billed and not a formal multi-period draw advance.
+    //   3. Within 0.25 hr tolerance → Match
+    //   4. Invoiced > Claimed → Invoiced More Than Claimed (tech may be owed more)
+    //   5. Claimed > Invoiced AND PunchedHrs > InvoicedHrs × 1.1 → Partial Invoice
+    //      Punch data shows more work than billed — likely partial invoicing only.
+    //   6. Claimed > Invoiced otherwise → Claimed More Than Invoiced (genuine flag)
     WithStatus = Table.AddColumn(WithPaidDiff, "AuditStatus", each
-        if   [InvoicedHrs] = null
-            then "Draw - Open RO"
-        else if Number.Abs([HoursDifference] ?? 0) < 0.25
-            then "Match"
-        else if ([HoursDifference] ?? 0) < 0
-            then "Invoiced More Than Claimed"
-        else if [PunchedHrs] <> null and [PunchedHrs] > ([InvoicedHrs] * 1.1)
-            then "Partial Invoice - In Progress"
-        else
-            "Claimed More Than Invoiced",
+        let
+            hasDraw = ([Draw1Hrs] <> null and [Draw1Hrs] > 0)
+                   or ([Draw2Hrs] <> null and [Draw2Hrs] > 0)
+                   or ([Draw3Hrs] <> null and [Draw3Hrs] > 0)
+                   or ([FinalDrawHrs] <> null and [FinalDrawHrs] > 0)
+        in
+            if   [InvoicedHrs] = null and hasDraw
+                then "Draw - Open RO"
+            else if [InvoicedHrs] = null
+                then "Pending Invoice"
+            else if Number.Abs([HoursDifference] ?? 0) < 0.25
+                then "Match"
+            else if ([HoursDifference] ?? 0) < 0
+                then "Invoiced More Than Claimed"
+            else if [PunchedHrs] <> null and [PunchedHrs] > ([InvoicedHrs] * 1.1)
+                then "Partial Invoice - In Progress"
+            else
+                "Claimed More Than Invoiced",
         type text
     ),
 

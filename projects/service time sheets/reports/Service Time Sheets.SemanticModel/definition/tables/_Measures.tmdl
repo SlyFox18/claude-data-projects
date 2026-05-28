@@ -153,6 +153,7 @@ table _Measures
 			    "Partial Invoice - In Progress",  "#8B5CF6",
 			    "Match",                          "#16A34A",
 			    "Draw - Open RO",                 "#2563EB",
+			    "Pending Invoice",                "#64748B",
 			    BLANK()
 			)
 		lineageTag: f9a0b1c2-d3e4-4567-1234-678901200017
@@ -176,83 +177,75 @@ table _Measures
 		lineageTag: d3e4f5a6-b7c8-4901-5678-012345600021
 
 	measure 'Hero Card - Audit Summary' =
-			
-			VAR ROsTotal      = [# Match] + [# Claimed More] + [# Invoiced More] + [# Pending] + [# Draw Open RO]
-			VAR Pending       = [# Pending]
+			VAR ROsTotal      = [# Match] + [# Claimed More] + [# Invoiced More] + [# Pending] + [# Draw Open RO] + [# Pending Invoice]
+			VAR MatchCount    = [# Match]
+			VAR DrawCount     = [# Draw Open RO]
+			VAR PendInvCount  = [# Pending Invoice]
+			VAR PartialCount  = [# Pending]
 			VAR ClaimedMore   = [# Claimed More]
 			VAR InvoicedMore  = [# Invoiced More]
-			VAR OverclaimRate = [Overclaim Rate %]
+			VAR DrawPayAmt    = [Draw Tech Pay]
 			VAR TechPay       = [Auditable Tech Pay]
-			VAR PendingPay    = [Pending Tech Pay]
 			VAR NetOverclaim  = [Net Overclaim $]
-			
+			VAR OverclaimRate = [Overclaim Rate %]
+
 			VAR ClaimedColor  = IF(ClaimedMore > 0, "#f87171", "#4ade80")
 			VAR InvoicedColor = IF(InvoicedMore > 0, "#facc15", "#4ade80")
+			VAR DrawColor     = IF(DrawCount > 0, "#60A5FA", "#4ade80")
 			VAR NetColor      = IF(NetOverclaim > 0.01, "#f87171", "#4ade80")
-			
-			VAR MatchCount        = [# Match]
-			
-			VAR ROsText           = FORMAT(ROsTotal, "#,##0")
-			VAR MatchText         = FORMAT(MatchCount, "#,##0")
-			VAR PendingText       = FORMAT(Pending, "#,##0")
-			VAR ClaimedText       = FORMAT(ClaimedMore, "#,##0")
-			VAR InvoicedText      = FORMAT(InvoicedMore, "#,##0")
-			VAR OverclaimText     = FORMAT(OverclaimRate, "0.0%")
-			VAR PayText           = FORMAT(TechPay, "$#,##0")
-			VAR PendPayText       = FORMAT(PendingPay, "$#,##0")
-			VAR NetText           = FORMAT(NetOverclaim, "$#,##0")
-			
+
+			VAR ROsText       = FORMAT(ROsTotal, "#,##0")
+			VAR MatchText     = FORMAT(MatchCount, "#,##0")
+			VAR DrawText      = FORMAT(DrawCount, "#,##0")
+			VAR PendInvText   = FORMAT(PendInvCount, "#,##0")
+			VAR PartialText   = FORMAT(PartialCount, "#,##0")
+			VAR ClaimedText   = FORMAT(ClaimedMore, "#,##0")
+			VAR InvoicedText  = FORMAT(InvoicedMore, "#,##0")
+			VAR DrawPayText   = FORMAT(DrawPayAmt, "$#,##0")
+			VAR PayText       = FORMAT(TechPay, "$#,##0")
+			VAR OverclaimText = FORMAT(OverclaimRate, "0.0%")
+			VAR NetText       = FORMAT(NetOverclaim, "$#,##0")
+
 			RETURN
-			"<div style='
-			    font-family: Segoe UI, Arial, sans-serif;
-			    padding: 20px 30px;
-			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
-			    border-radius: 12px;
-			    box-shadow: 0 8px 8px rgba(0,0,0,0);
-			    color: white;
-			    height: 130px;
-			    display: flex;
-			    justify-content: space-between;
-			    align-items: center;
-			    gap: 15px;
-			'>
-			
-			    <!-- Section: Total ROs -->
-			    <div style='flex: 1; text-align: center; border-right: 1px solid rgba(255,255,255,0.2); padding-right: 15px;'>
-			        <div style='font-size: 14px; opacity: 0.85; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;'>Total RO's</div>
-			        <div style='font-size: 40px; font-weight: 700; margin-bottom: 4px;'>" & ROsText & "</div>
-			        <div style='font-size: 14px; opacity: 0.75;'>&#10003; Match: " & MatchText & " &nbsp;|&nbsp; &#9670; Partial: " & PendingText & "</div>
-			    </div>
-			
-			    <!-- Section: Claimed More -->
-			    <div style='flex: 1; text-align: center; border-right: 1px solid rgba(255,255,255,0.2); padding-right: 15px;'>
-			        <div style='font-size: 14px; opacity: 0.85; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;'>Claimed More</div>
-			        <div style='font-size: 40px; font-weight: 700; margin-bottom: 4px; color: " & ClaimedColor & ";'>" & ClaimedText & "</div>
-			        <div style='font-size: 14px; opacity: 0.75;'>Tech claimed &gt; invoiced</div>
-			    </div>
-			
-			    <!-- Section: Invoiced More -->
-			    <div style='flex: 1; text-align: center; border-right: 1px solid rgba(255,255,255,0.2); padding-right: 15px;'>
-			        <div style='font-size: 14px; opacity: 0.85; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;'>Invoiced More</div>
-			        <div style='font-size: 40px; font-weight: 700; margin-bottom: 4px; color: " & InvoicedColor & ";'>" & InvoicedText & "</div>
-			        <div style='font-size: 14px; opacity: 0.75;'>May owe tech more pay</div>
-			    </div>
-			
-			    <!-- Section: Tech Pay -->
-			    <div style='flex: 1.1; text-align: center; border-right: 1px solid rgba(255,255,255,0.2); padding-right: 15px;'>
-			        <div style='font-size: 14px; opacity: 0.85; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;'>Tech Pay</div>
-			        <div style='font-size: 40px; font-weight: 700; margin-bottom: 4px;'>" & PayText & "</div>
-			        <div style='font-size: 14px; opacity: 0.75;'>Audited draw • Pending: " & PendPayText & "</div>
-			    </div>
-			
-			    <!-- Section: Net Overclaim -->
-			    <div style='flex: 1.1; text-align: center;'>
-			        <div style='font-size: 14px; opacity: 0.85; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;'>Net Overclaim</div>
-			        <div style='font-size: 40px; font-weight: 700; margin-bottom: 4px; color: " & NetColor & ";'>" & NetText & "</div>
-			        <div style='font-size: 14px; opacity: 0.75;'>Flag rate: " & OverclaimText & " &nbsp;|&nbsp; Audited ROs only</div>
-			    </div>
-			
-			</div>"
+			"<div style='font-family: Segoe UI, Arial, sans-serif; padding: 14px 16px; background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%); border-radius: 12px; color: white; height: 130px; display: flex; justify-content: space-between; align-items: center; gap: 6px;'>" &
+
+			"<div style='flex: 0.85; text-align: center; border-right: 1px solid rgba(255,255,255,0.2); padding-right: 6px;'>" &
+			"<div style='font-size: 11px; opacity: 0.85; margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.5px;'>Total RO&apos;s</div>" &
+			"<div style='font-size: 34px; font-weight: 700; margin-bottom: 3px;'>" & ROsText & "</div>" &
+			"<div style='font-size: 11px; opacity: 0.75; line-height: 1.5;'>&#10003; " & MatchText & " &nbsp;&#9670; " & PartialText & " &nbsp;&#9203; " & PendInvText & "</div>" &
+			"</div>" &
+
+			"<div style='flex: 1.15; text-align: center; border-right: 1px solid rgba(255,255,255,0.2); padding-right: 6px;'>" &
+			"<div style='font-size: 11px; opacity: 0.85; margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.5px;'>Draw Advances</div>" &
+			"<div style='font-size: 34px; font-weight: 700; margin-bottom: 3px; color: " & DrawColor & ";'>" & DrawText & "</div>" &
+			"<div style='font-size: 11px; opacity: 0.75;'>Draw pay: " & DrawPayText & "</div>" &
+			"</div>" &
+
+			"<div style='flex: 1; text-align: center; border-right: 1px solid rgba(255,255,255,0.2); padding-right: 6px;'>" &
+			"<div style='font-size: 11px; opacity: 0.85; margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.5px;'>Claimed More</div>" &
+			"<div style='font-size: 34px; font-weight: 700; margin-bottom: 3px; color: " & ClaimedColor & ";'>" & ClaimedText & "</div>" &
+			"<div style='font-size: 11px; opacity: 0.75;'>Tech claimed &gt; invoiced</div>" &
+			"</div>" &
+
+			"<div style='flex: 1; text-align: center; border-right: 1px solid rgba(255,255,255,0.2); padding-right: 6px;'>" &
+			"<div style='font-size: 11px; opacity: 0.85; margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.5px;'>Invoiced More</div>" &
+			"<div style='font-size: 34px; font-weight: 700; margin-bottom: 3px; color: " & InvoicedColor & ";'>" & InvoicedText & "</div>" &
+			"<div style='font-size: 11px; opacity: 0.75;'>May owe tech more pay</div>" &
+			"</div>" &
+
+			"<div style='flex: 1.1; text-align: center; border-right: 1px solid rgba(255,255,255,0.2); padding-right: 6px;'>" &
+			"<div style='font-size: 11px; opacity: 0.85; margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.5px;'>Audited Pay</div>" &
+			"<div style='font-size: 34px; font-weight: 700; margin-bottom: 3px;'>" & PayText & "</div>" &
+			"<div style='font-size: 11px; opacity: 0.75;'>Invoiced ROs only</div>" &
+			"</div>" &
+
+			"<div style='flex: 1.1; text-align: center;'>" &
+			"<div style='font-size: 11px; opacity: 0.85; margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.5px;'>Net Overclaim</div>" &
+			"<div style='font-size: 34px; font-weight: 700; margin-bottom: 3px; color: " & NetColor & ";'>" & NetText & "</div>" &
+			"<div style='font-size: 11px; opacity: 0.75;'>Flag rate: " & OverclaimText & " | Audited ROs</div>" &
+			"</div>" &
+
+			"</div>"
 		lineageTag: e4f5a6b7-c8d9-4012-6789-012345678022
 
 	measure 'Row Status Color' =
@@ -263,6 +256,7 @@ table _Measures
 			    "Partial Invoice - In Progress",  "#F5F3FF",
 			    "Match",                          "#F0FDF4",
 			    "Draw - Open RO",                 "#EFF6FF",
+			    "Pending Invoice",                "#F8FAFC",
 			    "#FFFFFF"
 			)
 		lineageTag: b0c1d2e3-f4a5-4678-2345-789012300030
@@ -275,6 +269,7 @@ table _Measures
 			    "Partial Invoice - In Progress",  "#8B5CF6",
 			    "Match",                          "#16A34A",
 			    "Draw - Open RO",                 "#2563EB",
+			    "Pending Invoice",                "#64748B",
 			    "#1D3C4E"
 			)
 		lineageTag: c1d2e3f4-a5b6-4789-3456-890123400031
@@ -284,7 +279,7 @@ table _Measures
 			    SUM(Fact_ServiceTimeSheet_Audit[TechPay]),
 			    Fact_ServiceTimeSheet_Audit[AuditStatus] IN {
 			        "Match", "Claimed More Than Invoiced", "Invoiced More Than Claimed",
-			        "Partial Invoice - In Progress", "Draw - Open RO"
+			        "Partial Invoice - In Progress"
 			    }
 			)
 		formatString: \$#,##0.00
@@ -301,7 +296,7 @@ table _Measures
 	measure 'Paid Difference (Audited)' =
 			CALCULATE(
 			    [Total Tech Pay] - [Labor Billed],
-			    Fact_ServiceTimeSheet_Audit[AuditStatus] <> "Draw - Open RO"
+			    NOT Fact_ServiceTimeSheet_Audit[AuditStatus] IN {"Draw - Open RO", "Pending Invoice"}
 			)
 		formatString: \$#,##0.00
 		lineageTag: f4a5b6c7-d8e9-4012-6789-123456700034
@@ -346,7 +341,7 @@ table _Measures
 	measure 'Audited Rows' =
 			CALCULATE(
 			    COUNTROWS(Fact_ServiceTimeSheet_Audit),
-			    Fact_ServiceTimeSheet_Audit[AuditStatus] <> "Draw - Open RO"
+			    NOT Fact_ServiceTimeSheet_Audit[AuditStatus] IN {"Draw - Open RO", "Pending Invoice"}
 			)
 		formatString: #,##0
 		lineageTag: a6b7c8d9-e0f1-4345-6789-012345600041
@@ -432,7 +427,7 @@ table _Measures
 			VAR TechLevel     = SELECTEDVALUE(Fact_ServiceTimeSheet_Audit[TechLevel], "")
 			VAR Location      = SELECTEDVALUE(Fact_ServiceTimeSheet_Audit[Location], "")
 			
-			VAR ROsTotal      = [# Match] + [# Claimed More] + [# Invoiced More] + [# Pending] + [# Draw Open RO]
+			VAR ROsTotal      = [# Match] + [# Claimed More] + [# Invoiced More] + [# Pending] + [# Draw Open RO] + [# Pending Invoice]
 			VAR MatchCount    = [# Match]
 			VAR Pending       = [# Pending]
 			VAR ClaimedMore   = [# Claimed More]
@@ -581,6 +576,7 @@ table _Measures
 			    "Partial Invoice - In Progress",  "#C4B5FD",
 			    "Match",                          "#16A34A",
 			    "Draw - Open RO",                 "#60A5FA",
+			    "Pending Invoice",                "#CBD5E1",
 			    BLANK()
 			)
 		lineageTag: caf41df0-0c34-4e72-a1b9-5b34f236aea0
@@ -841,13 +837,15 @@ table _Measures
 			VAR im      = [# Invoiced More]
 			VAR partial = [# Pending]
 			VAR draw    = [# Draw Open RO]
+			VAR pend    = [# Pending Invoice]
 			RETURN
 			    IF(cm > 0 && im > 0,      "Mixed",
 			    IF(cm > 0,                 "Claimed More Than Invoiced",
 			    IF(im > 0,                 "Invoiced More Than Claimed",
 			    IF(partial > 0,            "Partial Invoice - In Progress",
 			    IF(draw > 0,               "Draw - Open RO",
-			                               "Match")))))
+			    IF(pend > 0,               "Pending Invoice",
+			                               "Match"))))))
 		lineageTag: e6f7a8b9-c0d1-4345-6789-012345600051
 
 	measure 'Tooltip - Draw Detail' =
@@ -983,7 +981,8 @@ table _Measures
 			    "Partial Invoice - In Progress",  "#F5F3FF",
 			    "Match",                          "#F0FDF4",
 			    "Draw - Open RO",                 "#EFF6FF",
-			    "#F8FAFC"
+			    "Pending Invoice",                "#F8FAFC",
+			    "#FFFFFF"
 			)
 		lineageTag: a8b9c0d1-e2f3-4567-8901-234567800053
 
@@ -995,7 +994,8 @@ table _Measures
 			    "Partial Invoice - In Progress",  "#8B5CF6",
 			    "Match",                          "#16A34A",
 			    "Draw - Open RO",                 "#2563EB",
-			    "#64748B"
+			    "Pending Invoice",                "#64748B",
+			    "#94A3B8"
 			)
 		lineageTag: b9c0d1e2-f3a4-4678-9012-345678900054
 
@@ -1080,7 +1080,8 @@ table _Measures
 			    "<div style='flex: 1; padding: 11px 14px; background: #FEF3C7; border-radius: 6px; border-left: 4px solid #B45309; display: flex; align-items: center; gap: 14px;'><div style='font-size: 14px; font-weight: 700; color: #B45309; width: 135px; flex-shrink: 0;'>⚠ Invoiced More</div><div style='font-size: 13px; color: #475569;'>Source system shows more hours invoiced than submitted. May indicate a missing time sheet entry.</div></div>" &
 			    "<div style='flex: 1; padding: 11px 14px; background: #EDE9FE; border-radius: 6px; border-left: 4px solid #6D28D9; display: flex; align-items: center; gap: 14px;'><div style='font-size: 14px; font-weight: 700; color: #6D28D9; width: 135px; flex-shrink: 0;'>⚡ Mixed</div><div style='font-size: 13px; color: #475569;'>Multiple techs on this RO have different statuses. Drill through to see each tech individually.</div></div>" &
 			    "<div style='flex: 1; padding: 11px 14px; background: #F5F3FF; border-radius: 6px; border-left: 4px solid #8B5CF6; display: flex; align-items: center; gap: 14px;'><div style='font-size: 14px; font-weight: 700; color: #8B5CF6; width: 135px; flex-shrink: 0;'>&#9670; Partial Invoice</div><div style='font-size: 13px; color: #475569;'>Claimed more than invoiced, but punch data shows more work exists. Billing is likely not complete — not a real overclaim.</div></div>" &
-			    "<div style='flex: 1; padding: 11px 14px; background: #EFF6FF; border-radius: 6px; border-left: 4px solid #2563EB; display: flex; align-items: center; gap: 14px;'><div style='font-size: 14px; font-weight: 700; color: #2563EB; width: 135px; flex-shrink: 0;'>&#8635; Draw - Open RO</div><div style='font-size: 13px; color: #475569;'>No invoicing exists yet for this RO. This is an in-progress draw advance — not a discrepancy.</div></div>" &
+			    "<div style='flex: 1; padding: 11px 14px; background: #EFF6FF; border-radius: 6px; border-left: 4px solid #2563EB; display: flex; align-items: center; gap: 14px;'><div style='font-size: 14px; font-weight: 700; color: #2563EB; width: 135px; flex-shrink: 0;'>&#8635; Draw - Open RO</div><div style='font-size: 13px; color: #475569;'>Tech has formal draw advances recorded (Draw1–FinalDraw columns). Pay advance on in-progress work — expected, tracked by CFO.</div></div>" &
+			    "<div style='flex: 1; padding: 11px 14px; background: #F8FAFC; border-radius: 6px; border-left: 4px solid #64748B; display: flex; align-items: center; gap: 14px;'><div style='font-size: 14px; font-weight: 700; color: #64748B; width: 135px; flex-shrink: 0;'>&#9203; Pending Invoice</div><div style='font-size: 13px; color: #475569;'>Hours submitted with no draw history and no invoice yet. Job may be complete or a first-time claim — not a formal draw advance.</div></div>" &
 			    "</div>" &
 			    "</div>"
 			VAR keyTerms =
@@ -1104,6 +1105,18 @@ table _Measures
 	measure '# Draw Open RO' = CALCULATE(COUNTROWS(Fact_ServiceTimeSheet_Audit), Fact_ServiceTimeSheet_Audit[AuditStatus] = "Draw - Open RO") + 0
 		formatString: #,##0
 		lineageTag: c3d4e5f6-a7b8-4901-2345-678901200057
+
+	measure '# Pending Invoice' = CALCULATE(COUNTROWS(Fact_ServiceTimeSheet_Audit), Fact_ServiceTimeSheet_Audit[AuditStatus] = "Pending Invoice") + 0
+		formatString: #,##0
+		lineageTag: d4e5f6a7-b8c9-4012-3456-789012300058
+
+	measure 'Draw Tech Pay' =
+			CALCULATE(
+			    SUM(Fact_ServiceTimeSheet_Audit[TechPay]),
+			    Fact_ServiceTimeSheet_Audit[AuditStatus] = "Draw - Open RO"
+			)
+		formatString: \$#,##0.00
+		lineageTag: e5f6a7b8-c9d0-4123-4567-890123400059
 
 	column Value
 		isHidden
