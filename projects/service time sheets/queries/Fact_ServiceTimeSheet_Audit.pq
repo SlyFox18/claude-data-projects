@@ -32,11 +32,12 @@
 //                      "Pending Invoice"               – InvoicedHrs = null AND no draw history;
 //                                                       work submitted (likely complete or first-time
 //                                                       claim) but not yet billed — not a draw
-//                      "Match"                         – abs(Claimed − Invoiced) < 0.25 hrs
+//                      "Match"                         – abs(Claimed − Invoiced) < 0.001 hrs (exact)
 //                      "Invoiced More Than Claimed"    – system billed more than tech claimed;
 //                                                       tech may be owed additional pay
-//                      "Partial Invoice - In Progress" – Claimed > Invoiced but PunchedHrs shows
-//                                                       more work exists than billed (partial billing)
+//                      "Partial Invoice - In Progress" – Claimed > Invoiced AND WKROFILE.IsClosed ≠ "Y"
+//                                                       AND PunchedHrs shows more work exists;
+//                                                       RO still open — more billing expected
 //                      "Claimed More Than Invoiced"    – Claimed > Invoiced on a fully-billed RO;
 //                                                       genuine discrepancy requiring review
 //
@@ -138,6 +139,13 @@ let
         }
     ),
 
+    // ── 7c. Load WKROFILE for RO closure status ──────────────────────────────
+    //   IsClosed = "Y" is the definitive signal that an RO's billing is final.
+    //   When Claimed > Invoiced on a closed RO, the gap is real ("Claimed More").
+    //   On open ROs the gap may close as more job codes are invoiced ("Partial").
+    WKR = WKROFILE,
+    WKR_Status = Table.SelectColumns(WKR, {"WorkOrder", "IsClosed"}),
+
     // ── 8. Left-join sheets to TID (financial data) then TPD (hours) ─────────
     //   TID join: InvoicedHrs, LaborBilled, LaborCost, LastInvoiceDate, Branch.
     //   TPD join: PunchedHrs — the primary audit comparison column.
@@ -168,11 +176,19 @@ let
         {{"Branch_Final", "Branch"}}
     ),
 
+    // ── 8b. Join WKROFILE to bring in IsClosed ────────────────────────────────
+    JoinedWKR = Table.NestedJoin(
+        WithBranch, {"RONumberText"},
+        WKR_Status, {"WorkOrder"},
+        "WKRMatch",  JoinKind.LeftOuter
+    ),
+    WithROStatus = Table.ExpandTableColumn(JoinedWKR, "WKRMatch", {"IsClosed"}),
+
     // ── 9. Audit variance columns ─────────────────────────────────────────────
     //   HoursDifference = Claimed − Invoiced.  Positive means tech claimed more
     //   than was invoiced; negative means more was invoiced than claimed.
     //   Null when InvoicedHrs is null (open RO — no billing exists yet).
-    WithHoursDiff = Table.AddColumn(WithBranch, "HoursDifference", each
+    WithHoursDiff = Table.AddColumn(WithROStatus, "HoursDifference", each
         if [InvoicedHrs] <> null
         then [TotalClaimedHrs] - [InvoicedHrs]
         else null,
@@ -195,10 +211,10 @@ let
     //   2. InvoicedHrs = null AND no draw history → Pending Invoice
     //      Work was submitted (likely complete or first-time claim) but not yet
     //      billed and not a formal multi-period draw advance.
-    //   3. Within 0.25 hr tolerance → Match
+    //   3. Within 0.001 hr tolerance → Match (exact)
     //   4. Invoiced > Claimed → Invoiced More Than Claimed (tech may be owed more)
-    //   5. Claimed > Invoiced AND PunchedHrs > InvoicedHrs × 1.1 → Partial Invoice
-    //      Punch data shows more work than billed — likely partial invoicing only.
+    //   5. Claimed > Invoiced AND IsClosed ≠ "Y" AND PunchedHrs > InvoicedHrs × 1.1
+    //      → Partial Invoice: RO still open, more billing expected
     //   6. Claimed > Invoiced otherwise → Claimed More Than Invoiced (genuine flag)
     WithStatus = Table.AddColumn(WithPaidDiff, "AuditStatus", each
         let
@@ -215,7 +231,9 @@ let
                 then "Match"
             else if ([HoursDifference] ?? 0) < 0
                 then "Invoiced More Than Claimed"
-            else if [PunchedHrs] <> null and [PunchedHrs] > ([InvoicedHrs] * 1.1)
+            else if [IsClosed] <> "Y"
+                and [PunchedHrs] <> null
+                and [PunchedHrs] > ([InvoicedHrs] * 1.1)
                 then "Partial Invoice - In Progress"
             else
                 "Claimed More Than Invoiced",
@@ -242,6 +260,8 @@ let
         // — Source system hours and dollars —
         "InvoicedHrs", "PunchedHrs", "TotalLaborCost", "LaborBilled",
         "LastInvoiceDate",
+        // — RO closure status —
+        "IsClosed",
         // — Audit variance —
         "HoursDifference", "PaidDifference", "AuditStatus",
         // — Lineage —
@@ -281,6 +301,7 @@ let
         {"TotalLaborCost",  type number},
         {"LaborBilled",     type number},
         {"LastInvoiceDate", type date},
+        {"IsClosed",        type text},
         {"HoursDifference", type number},
         {"PaidDifference",  type number},
         {"AuditStatus",     type text},
