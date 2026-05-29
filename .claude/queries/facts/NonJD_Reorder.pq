@@ -49,7 +49,7 @@ rop_matrix = spark.read.table("param_ROP_Matrix")
 fr_scope   = spark.read.table("param_FranchiseScope")
 
 in_scope       = fr_scope.filter(F.col("IsIncluded") == True).select("Franchise")
-parts_filtered = parts.join(in_scope, "Franchise", "inner")
+parts_filtered = parts.join(in_scope, "Franchise", "inner").filter(F.col("Cost") > 0)
 
 inmaster_cols = inmaster.select(
     "Branch", "PartNumber",
