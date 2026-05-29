@@ -21,7 +21,7 @@ NonJD_Parts_Ordering_Raw + InMaster_Raw + param_ROP_Matrix + param_FranchiseScop
 | df_InMaster_Parts_Ordering_Raw | Dataflow Gen2 | LH_Master_Data → 01 - Raw Sources | Stocking months, margin flag — named differently because df_InMaster_Raw already existed |
 | df_Param_FranchiseScope | Dataflow Gen2 | LH_Master_Data → 03 - Dimensions | Franchise include/exclude list |
 | df_Param_ROP_Matrix | Dataflow Gen2 | LH_Master_Data → 03 - Dimensions | 1,993-row ROP calculation parameter table |
-| df_Fact_NonJD_SalesHistory | Dataflow Gen2 | LH_Master_Data → 04 - Fact | Unpivoted 60-month sales history |
+| nb_Fact_NonJD_SalesHistory | Notebook (PySpark) | LH_Master_Data → Notebooks | Unpivoted 60-month sales history — Notebook because Power Query M cannot efficiently unpivot 120 cols × 200K rows |
 | df_Fact_NonJD_Reorder | Dataflow Gen2 | LH_Master_Data → 04 - Fact | Pre-calculated daily reorder recommendations |
 | config_PartSettings | SharePoint list | SharePoint site (Phase 1) | User-managed per-part overrides |
 
@@ -33,7 +33,7 @@ NonJD_Parts_Ordering_Raw + InMaster_Raw + param_ROP_Matrix + param_FranchiseScop
 | df_InMaster_Parts_Ordering_Raw | Phase 1 (Raw) | Daily 4 AM | Full refresh | Non-JD only (franchise filter applied at source) |
 | df_Param_FranchiseScope | Phase 3 (Dims) | On demand | Full refresh | Only when exclusion list changes |
 | df_Param_ROP_Matrix | Phase 3 (Dims) | On demand | Full refresh | Only when stocking rules change |
-| df_Fact_NonJD_SalesHistory | Phase 4 (Facts) | Daily | Full refresh | Runs after Phase 1 complete |
+| nb_Fact_NonJD_SalesHistory | Phase 4 (Facts) | Daily | Full overwrite | Notebook activity in pipeline (not Dataflow); runs after Phase 1 complete |
 | df_Fact_NonJD_Reorder | Phase 4 (Facts) | Daily | Full refresh | Runs after Phase 1 complete |
 
 ## Key Design Constraints
