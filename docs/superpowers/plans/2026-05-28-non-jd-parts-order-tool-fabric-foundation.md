@@ -422,7 +422,7 @@ let
     }),
     // Rename to PascalCase for Lakehouse convention
     Renamed = Table.RenameColumns(TypedTable, {
-        {"Group", "Group_"},  // "Group" is reserved in some contexts — use Group_ or StockingGroup
+        {"Group", "StockingGroup"},
         {"Commodity Code", "CommodityCode"},
         {"Price L", "PriceL"},
         {"Price H", "PriceH"},

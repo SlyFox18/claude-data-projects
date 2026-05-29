@@ -4,7 +4,7 @@
 
 ```
 [ODBC: jdis_Part_Information] ──► df_NonJD_Parts_Ordering_Raw ──► NonJD_Parts_Ordering_Raw
-[ODBC: InMaster]              ──► df_InMaster_Raw (incremental)  ──► InMaster_Raw
+[ODBC: InMaster]              ──► df_InMaster_Parts_Ordering_Raw  ──► InMaster_Raw
 [CSV upload]                  ──► df_Param_ROP_Matrix             ──► param_ROP_Matrix
 [CSV upload]                  ──► df_Param_FranchiseScope         ──► param_FranchiseScope
 [SharePoint list]             ──────────────────────────────────► config_PartSettings (read directly by fact DFs)
@@ -18,7 +18,7 @@ NonJD_Parts_Ordering_Raw + InMaster_Raw + param_ROP_Matrix + param_FranchiseScop
 | Artifact | Type | Location in Fabric | Purpose |
 |---|---|---|---|
 | df_NonJD_Parts_Ordering_Raw | Dataflow Gen2 | LH_Master_Data → 01 - Raw Sources | Non-JD part master + 60-month history |
-| df_InMaster_Raw | Dataflow Gen2 | LH_Master_Data → 01 - Raw Sources | Stocking months, margin flag (incremental) |
+| df_InMaster_Parts_Ordering_Raw | Dataflow Gen2 | LH_Master_Data → 01 - Raw Sources | Stocking months, margin flag — named differently because df_InMaster_Raw already existed |
 | df_Param_FranchiseScope | Dataflow Gen2 | LH_Master_Data → 03 - Dimensions | Franchise include/exclude list |
 | df_Param_ROP_Matrix | Dataflow Gen2 | LH_Master_Data → 03 - Dimensions | 1,993-row ROP calculation parameter table |
 | df_Fact_NonJD_SalesHistory | Dataflow Gen2 | LH_Master_Data → 04 - Fact | Unpivoted 60-month sales history |
@@ -30,7 +30,7 @@ NonJD_Parts_Ordering_Raw + InMaster_Raw + param_ROP_Matrix + param_FranchiseScop
 | Dataflow | Pipeline Phase | Frequency | Strategy | Notes |
 |---|---|---|---|---|
 | df_NonJD_Parts_Ordering_Raw | Phase 1 (Raw) | Daily 4 AM | Full refresh | Non-JD parts only — low CU vs existing jdis table |
-| df_InMaster_Raw | Phase 1 (Raw) | Daily 4 AM | Incremental (ModifiedDate) | Very low CU |
+| df_InMaster_Parts_Ordering_Raw | Phase 1 (Raw) | Daily 4 AM | Full refresh | Non-JD only (franchise filter applied at source) |
 | df_Param_FranchiseScope | Phase 3 (Dims) | On demand | Full refresh | Only when exclusion list changes |
 | df_Param_ROP_Matrix | Phase 3 (Dims) | On demand | Full refresh | Only when stocking rules change |
 | df_Fact_NonJD_SalesHistory | Phase 4 (Facts) | Daily | Full refresh | Runs after Phase 1 complete |
