@@ -50,7 +50,7 @@ NonJD_Parts_Ordering_Raw + InMaster_Raw + param_ROP_Matrix + param_FranchiseScop
 
 | Resource | Details |
 |---|---|
-| config_PartSettings list | URL: TBD — document here after SharePoint list is created (Task 5) |
+| config_PartSettings list | https://spitractor.sharepoint.com/sites/SouthPlainsImplement-ReportSite — list: config_PartSettings |
 
 ## ROP Calculation Architecture
 
