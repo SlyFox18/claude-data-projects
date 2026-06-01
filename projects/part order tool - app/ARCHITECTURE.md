@@ -27,14 +27,14 @@ NonJD_Parts_Ordering_Raw + InMaster_Raw + param_ROP_Matrix + param_FranchiseScop
 
 ## Refresh Schedule
 
-| Dataflow | Pipeline Phase | Frequency | Strategy | Notes |
+| Artifact | Pipeline | Frequency | Strategy | Actual Runtime |
 |---|---|---|---|---|
-| df_NonJD_Parts_Ordering_Raw | Phase 1 (Raw) | Daily 4 AM | Full refresh | Non-JD parts only — low CU vs existing jdis table |
-| df_InMaster_Parts_Ordering_Raw | Phase 1 (Raw) | Daily 4 AM | Full refresh | Non-JD only (franchise filter applied at source) |
-| df_Param_FranchiseScope | Phase 3 (Dims) | On demand | Full refresh | Only when exclusion list changes |
-| df_Param_ROP_Matrix | Phase 3 (Dims) | On demand | Full refresh | Only when stocking rules change |
-| nb_Fact_NonJD_SalesHistory | Phase 4 (Facts) | Daily | Full overwrite | Notebook activity in pipeline (not Dataflow); runs after Phase 1 complete |
-| nb_Fact_NonJD_Reorder | Phase 4 (Facts) | Daily | Full overwrite | Notebook activity in pipeline; runs after Phase 1 complete. ~209K rows, ~1m13s |
+| df_NonJD_Parts_Ordering_Raw | Pipeline_NonJD_Order_Tool — Phase 1 | Daily 7 AM | Full refresh | ~4m 41s |
+| df_InMaster_Parts_Ordering_Raw | Pipeline_NonJD_Order_Tool — Phase 1 | Daily 7 AM | Full refresh | ~2m 21s (parallel) |
+| df_Param_FranchiseScope | Manual | On demand | Full refresh | Only when exclusion list changes |
+| df_Param_ROP_Matrix | Manual | On demand | Full refresh | Only when stocking rules change |
+| nb_Fact_NonJD_Parts_Order | Pipeline_NonJD_Order_Tool — Phase 2 | Daily 7 AM | Full overwrite | ~10m 50s (includes Spark cold start); writes both Fact_NonJD_SalesHistory and Fact_NonJD_Reorder |
+| **Total pipeline** | Pipeline_NonJD_Order_Tool | Daily 7 AM | — | **~15m 50s** (first confirmed run 2026-06-01) |
 
 ## Key Design Constraints
 
