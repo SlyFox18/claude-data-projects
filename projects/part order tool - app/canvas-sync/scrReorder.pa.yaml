@@ -1,0 +1,837 @@
+Screens:
+  scrReorder:
+    Properties:
+      Fill: =RGBA(255, 255, 255, 1)
+      LoadingSpinnerColor: =RGBA(0, 120, 212, 1)
+      OnVisible: |
+        =ClearCollect(colReorderCache, fact_nonjd_reorder);
+        ClearCollect(colBranches, Distinct(colReorderCache, Branch));
+        ClearCollect(
+            colBranches,
+            Sort(
+                ForAll(colBranches, {Value: ThisRecord.Value, SortKey: Value(ThisRecord.Value)}),
+                SortKey,
+                SortOrder.Ascending
+            )
+        );
+        If(IsBlank(varSelectedBranch), Set(varSelectedBranch, First(colBranches).Value));
+        Set(varActiveOnly, true);
+        ClearCollect(colFranchiseList, {Value: "All"});
+        Collect(colFranchiseList, SortByColumns(Distinct(Filter(colReorderCache, Branch = varSelectedBranch), Franchise), "Value", SortOrder.Ascending))
+    Children:
+      - Rectangle_Header_Reorder:
+          Control: Rectangle
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            DisabledFill: =RGBA(161, 159, 157, 1)
+            Fill: =RGBA(30, 41, 59, 1)
+            FocusedBorderThickness: =4
+            Height: =80
+            HoverFill: =RGBA(30, 41, 59, 1)
+            PressedFill: =RGBA(30, 41, 59, 1)
+            Width: =1366
+            X: =0.00
+      - Label_Reorder_Title:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(255, 255, 255, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            FontWeight: =FontWeight.Bold
+            PaddingRight: =3.22
+            PaddingTop: =3.22
+            Size: =18
+            Text: ="Recommended Reorder"
+            Width: =314
+            X: =28
+            Y: =20
+      - Button_Back_scrHome:
+          Control: Classic/Button
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            Color: =RGBA(255, 255, 255, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            DisabledFill: =RGBA(242, 242, 241, 0)
+            Fill: =RGBA(0, 120, 212, 1)
+            Font: =Font.'Segoe UI'
+            HoverBorderColor: =RGBA(0, 0, 0, 0)
+            HoverColor: =RGBA(255, 255, 255, 1)
+            HoverFill: =RGBA(16, 110, 190, 1)
+            OnSelect: |
+              =Navigate(scrHome, ScreenTransition.Fade)
+            PaddingRight: =3.22
+            PaddingTop: =3.22
+            PressedBorderColor: =RGBA(0, 69, 120, 1)
+            PressedColor: =RGBA(255, 255, 255, 1)
+            PressedFill: =RGBA(16, 110, 190, 1)
+            RadiusBottomLeft: =0
+            RadiusBottomRight: =0
+            RadiusTopLeft: =0
+            RadiusTopRight: =0
+            Size: =9.65
+            Text: ="← Back"
+            Width: =102.90
+            X: =1233
+            Y: =20
+      - ddBranch:
+          Control: Classic/DropDown
+          Properties:
+            BorderColor: =RGBA(245, 245, 245, 1)
+            ChevronBackground: =RGBA(245, 245, 245, 1)
+            ChevronDisabledBackground: =RGBA(242, 242, 241, 0)
+            ChevronDisabledFill: =RGBA(161, 159, 157, 1)
+            ChevronFill: =RGBA(50, 49, 48, 1)
+            ChevronHoverBackground: =RGBA(245, 245, 245, 1)
+            ChevronHoverFill: =RGBA(50, 49, 48, 1)
+            Color: =RGBA(50, 49, 48, 1)
+            Default: |
+              =varSelectedBranch
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            DisabledFill: =RGBA(242, 242, 241, 0)
+            Fill: =RGBA(245, 245, 245, 1)
+            Font: =Font.'Segoe UI'
+            Height: =28
+            HoverBorderColor: =RGBA(16, 110, 190, 1)
+            HoverColor: =RGBA(50, 49, 48, 1)
+            HoverFill: =RGBA(245, 245, 245, 1)
+            Items: |+
+              =colBranches
+
+            Items.Value: =Value
+            OnChange: |+
+              =Set(varSelectedBranch, ddBranch.Selected.Value);
+              ClearCollect(colFranchiseList, {Value: "All"});
+              Collect(colFranchiseList, SortByColumns(Distinct(Filter(colReorderCache, Branch = varSelectedBranch), Franchise), "Value", SortOrder.Ascending))
+
+
+            PaddingBottom: =5
+            PaddingLeft: =12
+            PaddingRight: =3.22
+            PaddingTop: =3.22
+            PressedBorderColor: =RGBA(16, 110, 190, 1)
+            PressedColor: =RGBA(255, 255, 255, 1)
+            PressedFill: =RGBA(0, 120, 212, 1)
+            SelectionColor: =RGBA(50, 49, 48, 1)
+            SelectionFill: =RGBA(0, 120, 212, 1)
+            Size: =12
+            Width: =147.92
+            X: =28
+            Y: =120
+      - Label_Branch:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            PaddingRight: =3.22
+            PaddingTop: =3.22
+            Size: =12
+            Text: ="Branch"
+            Width: =96.47
+            X: =28
+            Y: =80
+      - Label_OrderOnly:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Height: =41
+            PaddingRight: =3.22
+            PaddingTop: =3.22
+            Size: =10
+            Text: ="Show reorder-needed only"
+            Width: =207
+            X: =455
+            Y: =79
+      - ddFranchise:
+          Control: Classic/DropDown
+          Properties:
+            BorderColor: =RGBA(245, 245, 245, 1)
+            ChevronBackground: =RGBA(245, 245, 245, 1)
+            ChevronDisabledBackground: =RGBA(242, 242, 241, 0)
+            ChevronDisabledFill: =RGBA(161, 159, 157, 1)
+            ChevronFill: =RGBA(50, 49, 48, 1)
+            ChevronHoverBackground: =RGBA(245, 245, 245, 1)
+            ChevronHoverFill: =RGBA(50, 49, 48, 1)
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            DisabledFill: =RGBA(242, 242, 241, 0)
+            Fill: =RGBA(245, 245, 245, 1)
+            Font: =Font.'Segoe UI'
+            Height: =28
+            HoverBorderColor: =RGBA(16, 110, 190, 1)
+            HoverColor: =RGBA(50, 49, 48, 1)
+            HoverFill: =RGBA(245, 245, 245, 1)
+            Items: |+
+              =colFranchiseList
+
+
+            Items.Value: =Value
+            OnChange: |
+              =false
+            PaddingBottom: =5
+            PaddingLeft: =12
+            PaddingRight: =3.22
+            PaddingTop: =3.22
+            PressedBorderColor: =RGBA(16, 110, 190, 1)
+            PressedColor: =RGBA(255, 255, 255, 1)
+            PressedFill: =RGBA(0, 120, 212, 1)
+            SelectionColor: =RGBA(50, 49, 48, 1)
+            SelectionFill: =RGBA(0, 120, 212, 1)
+            Size: =12
+            Width: =147.92
+            X: =246
+            Y: =120
+      - Toggle_togOrdersOnly:
+          Control: Classic/Toggle
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            Color: =RGBA(50, 49, 48, 1)
+            Default: =true
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            FalseFill: =RGBA(96, 94, 92, 1)
+            FalseHoverFill: =RGBA(50, 49, 48, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            HoverBorderColor: =RGBA(0, 0, 0, 0)
+            OnChange: |
+              =Set(varShowOrdersOnly, Self.Value)
+            PressedBorderColor: =RGBA(0, 0, 0, 0)
+            Size: =8.36
+            TrueFill: =RGBA(0, 120, 212, 1)
+            TrueHoverFill: =RGBA(16, 110, 190, 1)
+            Width: =59.16
+            X: =515
+            Y: =120
+      - Label_Franchise:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            PaddingRight: =3.22
+            PaddingTop: =3.22
+            Size: =12
+            Text: ="Franchise"
+            Width: =96.47
+            X: =246
+            Y: =80
+      - Label_Showing_PartsQty:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Height: =33
+            Text: |
+              =Text(CountRows(galReorder.AllItems), "[$-en-US]#,##0") & " parts"
+            Width: =101
+            X: =1234
+            Y: =115
+      - Label_OrderQty:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: |+
+              =If(varReorderSortCol = "RecommendedOrderQty", RGBA(37, 99, 235, 1), RGBA(0, 0, 0, 1))
+
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Height: =25
+            OnSelect: |
+              =If(
+                  varReorderSortCol = "RecommendedOrderQty",
+                  Set(varReorderSortAsc, !varReorderSortAsc),
+                  Set(varReorderSortCol, "RecommendedOrderQty");
+                  Set(varReorderSortAsc, false)
+              )
+            Size: =10
+            Text: |
+              ="Target" & If(varReorderSortCol = "RecommendedOrderQty", If(varReorderSortAsc, " ▲", " ▼"), "")
+            Width: =74
+            X: =894
+            Y: =190
+      - Label_PartNumber:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: |
+              =If(varReorderSortCol = "PartNumber", RGBA(37, 99, 235, 1), RGBA(0, 0, 0, 1))
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Height: =25
+            OnSelect: |
+              =If(
+                  varReorderSortCol = "PartNumber",
+                  Set(varReorderSortAsc, !varReorderSortAsc),
+                  Set(varReorderSortCol, "PartNumber");
+                  Set(varReorderSortAsc, false)
+              )
+            Size: =10
+            Text: |
+              ="Part #" & If(varReorderSortCol = "PartNumber", If(varReorderSortAsc, " ▲", " ▼"), "")
+            X: =26
+            Y: =190
+      - Label_BIN:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =If(varReorderSortCol = "Bin", RGBA(37, 99, 235, 1), RGBA(0, 0, 0, 1))
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Height: =25
+            OnSelect: |
+              =If(
+                  varReorderSortCol = "Bin",
+                  Set(varReorderSortAsc, !varReorderSortAsc),
+                  Set(varReorderSortCol, "Bin");
+                  Set(varReorderSortAsc, false)
+              )
+            Size: =10
+            Text: ="Bin" & If(varReorderSortCol = "Bin", If(varReorderSortAsc, " ▲", " ▼"), "")
+            Width: =78
+            X: =306
+            Y: =190
+      - Button_Export:
+          Control: Classic/Button
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            Color: =RGBA(255, 255, 255, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            DisabledFill: =RGBA(242, 242, 241, 0)
+            Fill: =RGBA(0, 120, 212, 1)
+            Font: =Font.'Segoe UI'
+            HoverBorderColor: =RGBA(0, 0, 0, 0)
+            HoverColor: =RGBA(255, 255, 255, 1)
+            HoverFill: =RGBA(16, 110, 190, 1)
+            OnSelect: |
+              =ClearCollect(
+                  colExportData,
+                  Filter(
+                      fact_nonjd_reorder,
+                      Branch = varSelectedBranch &&
+                      Franchise = ddFranchise.Selected.Value &&
+                      (!varShowOrdersOnly || RecommendedOrderQty > 0) &&
+                      (!varLowMarginOnly || MarginFlag = "LOW") &&
+                      (!varActiveOnly || Current12MoSales > 0 || Current12MoRequests > 0)
+                  )
+              );
+              RemoveIf(
+                  colExportData,
+                  With(
+                      {thisPN: PartNumber, thisBranch: Branch},
+                      !IsBlank(LookUp(colExcluded, PartNumber = thisPN && Branch = thisBranch))
+                  )
+              );
+              Notify(
+                  Text(CountRows(colExportData), "#,##0") & " parts ready for export.",
+                  NotificationType.Information
+              )
+            PressedBorderColor: =RGBA(0, 69, 120, 1)
+            PressedColor: =RGBA(255, 255, 255, 1)
+            PressedFill: =RGBA(16, 110, 190, 1)
+            RadiusBottomLeft: =0
+            RadiusBottomRight: =0
+            RadiusTopLeft: =0
+            RadiusTopRight: =0
+            Size: =9.65
+            Text: ="Export"
+            Width: =105
+            X: =1077
+            Y: =20
+      - Label2:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: |
+              =If(varReorderSortCol = "Cost", RGBA(37, 99, 235, 1), RGBA(0, 0, 0, 1))
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Height: =25
+            OnSelect: |
+              =If(
+                  varReorderSortCol = "Cost",
+                  Set(varReorderSortAsc, !varReorderSortAsc),
+                  Set(varReorderSortCol, "Cost");
+                  Set(varReorderSortAsc, false)
+              )
+            Size: =10
+            Text: |+
+              ="Cost" & If(varReorderSortCol = "Cost", If(varReorderSortAsc, " ▲", " ▼"), "")
+
+            Width: =88
+            X: =420
+            Y: =190
+      - Label4:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: |
+              =If(varReorderSortCol = "Current12MoSales", RGBA(37, 99, 235, 1), RGBA(0, 0, 0, 1))
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Height: =25
+            OnSelect: |
+              =If(
+                  varReorderSortCol = "Current12MoSales",
+                  Set(varReorderSortAsc, !varReorderSortAsc),
+                  Set(varReorderSortCol, "Current12MoSales");
+                  Set(varReorderSortAsc, false)
+              )
+            Size: =10
+            Text: ="Sales" & If(varReorderSortCol = "Current12MoSales", If(varReorderSortAsc, " ▲", " ▼"), "")
+            Width: =65
+            X: =517
+            Y: =190
+      - Label6:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: |
+              =If(varReorderSortCol = "Current12MoRequests", RGBA(37, 99, 235, 1), RGBA(0, 0, 0, 1))
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Height: =25
+            OnSelect: |
+              =If(
+                  varReorderSortCol = "Current12MoRequests",
+                  Set(varReorderSortAsc, !varReorderSortAsc),
+                  Set(varReorderSortCol, "Current12MoRequests");
+                  Set(varReorderSortAsc, false)
+              )
+            Size: =10
+            Text: |
+              ="Demands" & If(varReorderSortCol = "Current12MoRequests", If(varReorderSortAsc, " ▲", " ▼"), "")
+            Width: =86
+            X: =599
+            Y: =190
+      - Label10:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: |
+              =If(varReorderSortCol = "QuantityOnHand", RGBA(37, 99, 235, 1), RGBA(0, 0, 0, 1))
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Height: =25
+            OnSelect: |
+              =If(
+                  varReorderSortCol = "QuantityOnHand",
+                  Set(varReorderSortAsc, !varReorderSortAsc),
+                  Set(varReorderSortCol, "QuantityOnHand");
+                  Set(varReorderSortAsc, false)
+              )
+            Size: =10
+            Text: |
+              ="O.H." & If(varReorderSortCol = "QuantityOnHand", If(varReorderSortAsc, " ▲", " ▼"), "")
+            Width: =55
+            X: =717
+            Y: =190
+      - Label14:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: |
+              =If(varReorderSortCol = "OnOrder", RGBA(37, 99, 235, 1), RGBA(0, 0, 0, 1))
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Height: =25
+            OnSelect: |
+              =If(
+                  varReorderSortCol = "OnOrder",
+                  Set(varReorderSortAsc, !varReorderSortAsc),
+                  Set(varReorderSortCol, "OnOrder");
+                  Set(varReorderSortAsc, false)
+              )
+            Size: =10
+            Text: |
+              ="O.O." & If(varReorderSortCol = "OnOrder", If(varReorderSortAsc, " ▲", " ▼"), "")
+            Width: =62
+            X: =808
+            Y: =190
+      - LabelEstQty:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: |
+              =If(varReorderSortCol = "EstOrderValue", RGBA(37, 99, 235, 1), RGBA(0, 0, 0, 1))
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Height: =25
+            OnSelect: |
+              =If(
+                  varReorderSortCol = "EstOrderValue",
+                  Set(varReorderSortAsc, !varReorderSortAsc),
+                  Set(varReorderSortCol, "EstOrderValue");
+                  Set(varReorderSortAsc, false)
+              )
+            Size: =10
+            Text: |
+              ="Est. Value" & If(varReorderSortCol = "EstOrderValue", If(varReorderSortAsc, " ▲", " ▼"), "")
+            X: =1004
+            Y: =190
+      - galReorder:
+          Control: Gallery
+          Variant: BrowseLayout_Vertical_TwoTextVariant_ver5.0
+          Properties:
+            BorderColor: =RGBA(245, 245, 245, 1)
+            BorderThickness: =1
+            Height: =550
+            Items: |
+              =SortByColumns(
+                  Filter(
+                      fact_nonjd_reorder,
+                      Branch = varSelectedBranch &&
+                      (ddFranchise.Selected.Value = "All" || Franchise = ddFranchise.Selected.Value) &&
+                      (!varShowOrdersOnly || RecommendedOrderQty > 0)
+                  ),
+                  varReorderSortCol,
+                  If(varReorderSortAsc, SortOrder.Ascending, SortOrder.Descending)
+              )
+            OnSelect: |+
+              =false
+
+            Width: =1366
+            Y: =215
+          Children:
+            - Rectangle2:
+                Control: Rectangle
+                Properties:
+                  BorderColor: =RGBA(0, 0, 0, 0)
+                  Fill: =RGBA(0, 120, 212, 1)
+                  Height: =Parent.TemplateHeight - Separator2.Height
+                  OnSelect: =Select(Parent)
+                  Visible: =ThisItem.IsSelected
+                  Width: =4
+            - Data_Cost:
+                Control: Label
+                Properties:
+                  BorderColor: =RGBA(0, 0, 0, 0)
+                  BorderStyle: =BorderStyle.None
+                  BorderThickness: =2
+                  Color: =RGBA(50, 49, 48, 1)
+                  DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                  DisabledColor: =RGBA(161, 159, 157, 1)
+                  FocusedBorderThickness: =4
+                  Font: =Font.'Segoe UI'
+                  OnSelect: =Select(Parent)
+                  Size: =12
+                  Text: =Text(ThisItem.Cost, "[$-en-US]$#,##0.00")
+                  X: =410
+                  Y: =16
+            - Data_ReOrder:
+                Control: Label
+                Properties:
+                  BorderColor: =RGBA(0, 0, 0, 0)
+                  BorderStyle: =BorderStyle.None
+                  BorderThickness: =2
+                  Color: =RGBA(50, 49, 48, 1)
+                  DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                  DisabledColor: =RGBA(161, 159, 157, 1)
+                  FocusedBorderThickness: =4
+                  Font: =Font.'Segoe UI'
+                  OnSelect: =Select(Parent)
+                  Size: =12
+                  Text: =Text(ThisItem.RecommendedOrderQty, "[$-en-US]#,##0")
+                  Width: =72
+                  X: =912
+                  Y: =16
+            - Data_Bin:
+                Control: Label
+                Properties:
+                  BorderColor: =RGBA(0, 0, 0, 0)
+                  BorderStyle: =BorderStyle.None
+                  BorderThickness: =2
+                  Color: =RGBA(50, 49, 48, 1)
+                  DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                  DisabledColor: =RGBA(161, 159, 157, 1)
+                  FocusedBorderThickness: =4
+                  Font: =Font.'Segoe UI'
+                  OnSelect: =Select(Parent)
+                  Size: =12
+                  Text: =ThisItem.Bin
+                  Width: =102
+                  X: =308
+                  Y: =16
+            - Data_C12MSales:
+                Control: Label
+                Properties:
+                  BorderColor: =RGBA(0, 0, 0, 0)
+                  BorderStyle: =BorderStyle.None
+                  BorderThickness: =2
+                  Color: =RGBA(50, 49, 48, 1)
+                  DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                  DisabledColor: =RGBA(161, 159, 157, 1)
+                  FocusedBorderThickness: =4
+                  Font: =Font.'Segoe UI'
+                  OnSelect: =Select(Parent)
+                  Size: =12
+                  Text: =ThisItem.Current12MoSales
+                  Width: =74
+                  X: =530
+                  Y: =16
+            - Data_C12MRequest:
+                Control: Label
+                Properties:
+                  BorderColor: =RGBA(0, 0, 0, 0)
+                  BorderStyle: =BorderStyle.None
+                  BorderThickness: =2
+                  Color: =RGBA(50, 49, 48, 1)
+                  DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                  DisabledColor: =RGBA(161, 159, 157, 1)
+                  FocusedBorderThickness: =4
+                  Font: =Font.'Segoe UI'
+                  OnSelect: =Select(Parent)
+                  Size: =12
+                  Text: =ThisItem.Current12MoRequests
+                  Width: =57
+                  X: =625
+                  Y: =16
+            - Data_OnHand:
+                Control: Label
+                Properties:
+                  BorderColor: =RGBA(0, 0, 0, 0)
+                  BorderStyle: =BorderStyle.None
+                  BorderThickness: =2
+                  Color: =RGBA(50, 49, 48, 1)
+                  DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                  DisabledColor: =RGBA(161, 159, 157, 1)
+                  FocusedBorderThickness: =4
+                  Font: =Font.'Segoe UI'
+                  OnSelect: =Select(Parent)
+                  Size: =12
+                  Text: =ThisItem.QuantityOnHand
+                  Width: =57
+                  X: =724
+                  Y: =16
+            - Data_OnOrder:
+                Control: Label
+                Properties:
+                  BorderColor: =RGBA(0, 0, 0, 0)
+                  BorderStyle: =BorderStyle.None
+                  BorderThickness: =2
+                  Color: =RGBA(50, 49, 48, 1)
+                  DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                  DisabledColor: =RGBA(161, 159, 157, 1)
+                  FocusedBorderThickness: =4
+                  Font: =Font.'Segoe UI'
+                  OnSelect: =Select(Parent)
+                  Size: =12
+                  Text: =ThisItem.OnOrder
+                  Width: =58
+                  X: =820
+                  Y: =15
+            - Data_OrderValue:
+                Control: Label
+                Properties:
+                  BorderColor: =RGBA(0, 0, 0, 0)
+                  BorderStyle: =BorderStyle.None
+                  BorderThickness: =2
+                  Color: =RGBA(50, 49, 48, 1)
+                  DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                  DisabledColor: =RGBA(161, 159, 157, 1)
+                  FocusedBorderThickness: =4
+                  Font: =Font.'Segoe UI'
+                  OnSelect: =Select(Parent)
+                  Size: =12
+                  Text: =Text(ThisItem.EstOrderValue, "[$-en-US]$#,##0.00")
+                  X: =1010
+                  Y: =16
+            - Title_Data_PartNumber:
+                Control: Label
+                Properties:
+                  BorderColor: =RGBA(0, 0, 0, 1)
+                  Color: =RGBA(50, 49, 48, 1)
+                  DisabledColor: =RGBA(161, 159, 157, 1)
+                  Font: =Font.'Segoe UI'
+                  FontWeight: =If(ThisItem.IsSelected, FontWeight.Semibold, FontWeight.Normal)
+                  Height: =Self.Size * 1.8
+                  OnSelect: =Select(Parent)
+                  PaddingBottom: =0
+                  PaddingLeft: =12
+                  PaddingRight: =0
+                  PaddingTop: =0
+                  Size: =12
+                  Text: =ThisItem.PartNumber
+                  VerticalAlign: =VerticalAlign.Top
+                  Width: =Parent.TemplateWidth - 86
+                  X: =16
+                  Y: =25
+            - SubTitle_Data_Description:
+                Control: Label
+                Properties:
+                  BorderColor: =RGBA(0, 0, 0, 1)
+                  Color: =RGBA(96, 94, 92, 1)
+                  DisabledColor: =RGBA(161, 159, 157, 1)
+                  Font: =Font.'Segoe UI'
+                  FontWeight: =If(ThisItem.IsSelected, FontWeight.Semibold, FontWeight.Normal)
+                  Height: =Self.Size * 1.8
+                  OnSelect: =Select(Parent)
+                  PaddingBottom: =0
+                  PaddingLeft: =12
+                  PaddingRight: =0
+                  PaddingTop: =0
+                  Size: =9
+                  Text: =ThisItem.Description
+                  VerticalAlign: =VerticalAlign.Top
+                  Width: =Title_Data_PartNumber.Width
+                  X: =Title_Data_PartNumber.X
+                  Y: =Title_Data_PartNumber.Y + Title_Data_PartNumber.Height
+            - NextArrow2:
+                Control: Classic/Icon
+                Properties:
+                  AccessibleLabel: =Self.Tooltip
+                  BorderColor: =RGBA(0, 0, 0, 0)
+                  Color: =RGBA(166, 166, 166, 1)
+                  DisabledBorderColor: =RGBA(245, 245, 245, 1)
+                  DisabledColor: =RGBA(225, 223, 221, 1)
+                  DisabledFill: =RGBA(0, 0, 0, 0)
+                  FocusedBorderThickness: =4
+                  Height: =50
+                  HoverBorderColor: =RGBA(0, 0, 0, 0)
+                  HoverColor: =RGBA(16, 110, 190, 1)
+                  HoverFill: =RGBA(0, 0, 0, 0)
+                  Icon: =Icon.ChevronRight
+                  OnSelect: |
+                    =Set(varSelectedPart, ThisItem);
+                    Navigate(scrPartInfo, ScreenTransition.Fade)
+                  PaddingBottom: =16
+                  PaddingLeft: =16
+                  PaddingRight: =16
+                  PaddingTop: =16
+                  PressedBorderColor: =RGBA(0, 0, 0, 0)
+                  PressedColor: =RGBA(16, 110, 190, 1)
+                  PressedFill: =RGBA(0, 0, 0, 0)
+                  Tooltip: ="View item details"
+                  Width: =50
+                  X: =Parent.TemplateWidth - Self.Width - 12
+                  Y: =(Parent.TemplateHeight / 2) - (Self.Height / 2)
+            - Separator2:
+                Control: Rectangle
+                Properties:
+                  BorderColor: =RGBA(230, 230, 230, 1)
+                  Fill: =RGBA(230, 230, 230, 1)
+                  Height: =1
+                  OnSelect: =Select(Parent)
+                  Width: =Parent.TemplateWidth
+                  Y: =Parent.TemplateHeight - Self.Height
+            - Checkbox3:
+                Control: Classic/CheckBox
+                Properties:
+                  BorderColor: =RGBA(0, 0, 0, 0)
+                  BorderStyle: =BorderStyle.None
+                  BorderThickness: =2
+                  CheckboxBorderColor: =RGBA(96, 94, 92, 1)
+                  CheckmarkFill: =RGBA(0, 120, 212, 1)
+                  Color: =RGBA(50, 49, 48, 1)
+                  Default: |
+                    =IsBlank(LookUp(colExcluded, PartNumber = ThisItem.PartNumber && Branch = ThisItem.Branch))
+                  DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                  DisabledColor: =RGBA(161, 159, 157, 1)
+                  FocusedBorderThickness: =4
+                  Font: =Font.'Segoe UI'
+                  Height: =30
+                  HoverBorderColor: =RGBA(0, 0, 0, 0)
+                  HoverColor: =RGBA(50, 49, 48, 1)
+                  HoverFill: =RGBA(0, 0, 0, 0)
+                  OnCheck: |
+                    =Remove(colExcluded, LookUp(colExcluded, PartNumber = ThisItem.PartNumber && Branch = ThisItem.Branch))
+                  OnSelect: =Select(Parent)
+                  OnUncheck: |
+                    =Collect(colExcluded, {PartNumber: ThisItem.PartNumber, Branch: ThisItem.Branch})
+                  PressedBorderColor: =RGBA(0, 0, 0, 0)
+                  PressedColor: =RGBA(50, 49, 48, 1)
+                  PressedFill: =RGBA(0, 0, 0, 0)
+                  Size: =10
+                  Text: ="Order"
+                  Width: =106
+                  X: =1131
+                  Y: =20
+      - Label_Showing:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Height: =35
+            Size: =10
+            Text: ="Showing"
+            Width: =85
+            X: =1241
+            Y: =86
