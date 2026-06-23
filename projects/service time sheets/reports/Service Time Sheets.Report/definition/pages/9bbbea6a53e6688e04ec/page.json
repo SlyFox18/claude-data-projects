@@ -5,6 +5,47 @@
   "displayOption": "FitToPage",
   "height": 936,
   "width": 1664,
+  "filterConfig": {
+    "filters": [
+      {
+        "name": "86fcd6a38d3006d6d305",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Fact_ServiceTimeSheet_Audit"
+              }
+            },
+            "Property": "InvoiceNumber"
+          }
+        },
+        "type": "Categorical",
+        "howCreated": "Drillthrough"
+      }
+    ]
+  },
+  "pageBinding": {
+    "name": "f5bc6deaba196293a7ea",
+    "type": "Drillthrough",
+    "parameters": [
+      {
+        "name": "a857b05e0c8324d47001",
+        "boundFilter": "86fcd6a38d3006d6d305",
+        "asAggregation": false,
+        "qnaSingleSelectRequired": false,
+        "fieldExpr": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Fact_ServiceTimeSheet_Audit"
+              }
+            },
+            "Property": "InvoiceNumber"
+          }
+        }
+      }
+    ]
+  },
   "objects": {
     "background": [
       {
@@ -23,5 +64,6 @@
         }
       }
     ]
-  }
+  },
+  "type": "Drillthrough"
 }

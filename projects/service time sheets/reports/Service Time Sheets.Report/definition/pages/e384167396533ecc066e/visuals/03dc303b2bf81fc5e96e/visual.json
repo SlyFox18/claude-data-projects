@@ -3,7 +3,7 @@
   "name": "03dc303b2bf81fc5e96e",
   "position": {
     "x": 55.405541561712845,
-    "y": 274.6700251889169,
+    "y": 278.2065491183879,
     "z": 1000,
     "height": 630.68010075566747,
     "width": 1596.1511335012594,
@@ -314,6 +314,21 @@
               "queryRef": "_Measures.Paid Difference",
               "nativeQueryRef": "Billing Gap",
               "displayName": "Billing Gap"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Fact_ServiceTimeSheet_Audit"
+                    }
+                  },
+                  "Property": "ROStatusDisplay"
+                }
+              },
+              "queryRef": "Fact_ServiceTimeSheet_Audit.ROStatusDisplay",
+              "nativeQueryRef": "RO Status",
+              "displayName": "RO Status"
             }
           ]
         }
@@ -331,7 +346,7 @@
                 "Property": "Hours Difference"
               }
             },
-            "direction": "Ascending"
+            "direction": "Descending"
           }
         ]
       }
@@ -1162,6 +1177,52 @@
             ],
             "metadata": "Sum(Fact_ServiceTimeSheet_Audit.CrossPeriodClaimedHrs)"
           }
+        },
+        {
+          "properties": {
+            "backColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "Row Status Color"
+                    }
+                  }
+                }
+              }
+            },
+            "fontColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "RO Status Display Color"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "selector": {
+            "data": [
+              {
+                "dataViewWildcard": {
+                  "matchingOption": 1
+                }
+              }
+            ],
+            "metadata": "Fact_ServiceTimeSheet_Audit.ROStatusDisplay"
+          }
         }
       ],
       "total": [
@@ -1356,6 +1417,20 @@
           },
           "selector": {
             "metadata": "Fact_ServiceTimeSheet_Audit.LastInvoiceDate"
+          }
+        },
+        {
+          "properties": {
+            "value": {
+              "expr": {
+                "Literal": {
+                  "Value": "51.38289299487711D"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "Fact_ServiceTimeSheet_Audit.ROStatusDisplay"
           }
         }
       ],
@@ -1614,7 +1689,7 @@
             "show": {
               "expr": {
                 "Literal": {
-                  "Value": "true"
+                  "Value": "false"
                 }
               }
             },
