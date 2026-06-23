@@ -30,13 +30,18 @@ NOTE: config_PartSettings (per-part user overrides) intentionally omitted
   SharePoint list is wired up in Phase 2.
 
 ROP FORMULA:
-  MonthCount        = months (of 60) where sales OR requests > 0; capped 0→1, >19→19
-  AvgMonthlyDemand  = TotalRequests / MonthCount
-  AvgMonthlySales   = TotalSales / MonthCount
+  MonthCount        = months (of 12) where sales OR requests > 0; capped 0→1, >19→19
+                      Changed from 60→12 months per Corp Parts Manager (Ben), 2026-06-03
+  AvgMonthlyDemand  = TotalRequests / MonthCount  (12-month window)
+  AvgMonthlySales   = TotalSales / MonthCount     (12-month window)
   CalcROP           = AvgMonthlyDemand × Modifier (from matrix)
   StockingTarget    = MAX(WarehouseMin, MinimumQty, CEILING(CalcROP))
   RecommendedOrderQty = MAX(0, StockingTarget - QuantityOnHand - OnOrder)
   EstOrderValue     = RecommendedOrderQty × Cost
+
+ACTIVE PARTS FILTER:
+  Parts with MonthCount = 0 (no activity in last 12 months) are excluded.
+  Implemented as: with_calcs.filter(MonthCount > 0) before ROP matrix join.
 ============================================================================
 
 PySpark code (paste into a single notebook cell):
@@ -57,8 +62,8 @@ inmaster_cols = inmaster.select(
 )
 with_inmaster = parts_filtered.join(inmaster_cols, ["Branch", "PartNumber"], "left")
 
-sales_cols = [f"SalesMonth{i:02d}" for i in range(1, 61)]
-req_cols   = [f"RequestsMonth{i:02d}" for i in range(1, 61)]
+sales_cols = [f"SalesMonth{i:02d}" for i in range(1, 13)]  # 12-month window (changed from 60 per Ben 2026-06-03)
+req_cols   = [f"RequestsMonth{i:02d}" for i in range(1, 13)]  # 12-month window
 
 active_expr = " + ".join([f"CASE WHEN `{s}` > 0 OR `{r}` > 0 THEN 1 ELSE 0 END" for s, r in zip(sales_cols, req_cols)])
 sales_expr  = " + ".join([f"COALESCE(`{c}`, 0)" for c in sales_cols])
@@ -66,7 +71,7 @@ req_expr    = " + ".join([f"COALESCE(`{c}`, 0)" for c in req_cols])
 
 with_calcs = (
     with_inmaster
-    .withColumn("MonthCount",       F.expr(active_expr))
+    .withColumn("MonthCount",       F.expr(active_expr))  # count of months with any activity in last 12
     .withColumn("TotalSales",       F.expr(sales_expr))
     .withColumn("TotalRequests",    F.expr(req_expr))
     .withColumn("AvgMonthlyDemand", F.when(F.col("MonthCount") > 0, F.col("TotalRequests") / F.col("MonthCount")).otherwise(0.0))
@@ -76,6 +81,9 @@ with_calcs = (
          .when(F.col("MonthCount") > 19, 19)
          .otherwise(F.col("MonthCount")))
 )
+
+# Exclude parts with no activity in last 12 months
+with_calcs = with_calcs.filter(F.col("MonthCount") > 0)
 
 rop_sel = rop_matrix.select(
     F.col("MonthCount").alias("ROP_MonthCount"),
