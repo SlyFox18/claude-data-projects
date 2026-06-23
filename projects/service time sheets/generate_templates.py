@@ -62,12 +62,21 @@ Sub SaveTimeSheet()
 
     If savePath = False Then Exit Sub
 
+    ' Unprotect before saving so the submitted file arrives unprotected
+    ' (recipients need full sort/filter access; the ribbon Sort & Filter button
+    '  is greyed out on protected sheets regardless of AllowSorting/AllowFiltering)
+    ws.Unprotect Password:=""
+
     ' Suppress the "save as xlsx loses macros" prompt
     Dim prevAlerts As Boolean
     prevAlerts = Application.DisplayAlerts
     Application.DisplayAlerts = False
     ActiveWorkbook.SaveAs Filename:=CStr(savePath), FileFormat:=51
     Application.DisplayAlerts = prevAlerts
+
+    ' Re-protect the template so the tech's copy stays locked for data entry
+    ws.Protect Password:="", DrawingObjects:=True, Contents:=True, Scenarios:=True, _
+               AllowSorting:=True, AllowFiltering:=True, AllowInsertingRows:=True
 
     MsgBox "Time sheet saved!" & Chr(13) & CStr(savePath), _
            vbInformation, "Saved"
@@ -147,6 +156,26 @@ Sub InsertDataRow()
             .Item(xlEdgeBottom).Color     = RGB(170, 170, 170)
         End With
     Next c
+
+    ' ── Refresh TOTAL HOURS formulas to cover the newly inserted row ──────────
+    ' totalsRow was found before the insert; the insert shifted it down by 1.
+    ' newLastData is the row just above the spacer (two rows above totals).
+    Dim newTotalsRow As Long
+    Dim newLastData   As Long
+    Dim sumCol        As Long
+    Dim sumCell       As Range
+    Dim colLetter     As String
+
+    newTotalsRow = totalsRow + 1
+    newLastData  = newTotalsRow - 2
+
+    For sumCol = 1 To ws.UsedRange.Columns.Count
+        Set sumCell = ws.Cells(newTotalsRow, sumCol)
+        If sumCell.HasFormula Then
+            colLetter = Mid(Split(ws.Columns(sumCol).Address(False, True), ":")(0), 2)
+            sumCell.Formula = "=SUM(" & colLetter & "8:" & colLetter & newLastData & ")"
+        End If
+    Next sumCol
 
     ws.Protect Password:="", DrawingObjects:=True, Contents:=True, Scenarios:=True, _
                AllowSorting:=True, AllowFiltering:=True, AllowInsertingRows:=True

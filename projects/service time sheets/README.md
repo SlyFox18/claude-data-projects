@@ -1,7 +1,7 @@
 # Service Time Sheets — Audit Report
 
 > **Status:** Production ✅ — Live in RP - Service Reports  
-> **Last Updated:** 2026-05-28  
+> **Last Updated:** 2026-06-22  
 > **Workspace:** RP - Service Reports  
 > **Audience:** CFO, Service Manager, Payroll
 
@@ -32,13 +32,17 @@ service time sheets/
 ├── CLAUDE.md                          # Claude context for future sessions
 ├── queries/
 │   ├── df_ServiceTimeSheets_Raw.pq    # Phase 1: SharePoint → Lakehouse raw table
-│   └── Fact_ServiceTimeSheet_Audit.pq # Phase 4: Audit fact table (main ETL)
+│   ├── Fact_ServiceTimeSheet_Audit.pq # Phase 4: Audit fact table (main ETL)
+│   └── Fact_InvoiceLabor.pq          # Phase 4: Invoice Labor fact table ETL
 ├── reports/
 │   └── Service Time Sheets.SemanticModel/
 │       └── definition/
 │           └── tables/
-│               ├── _Measures.tmdl              # All DAX measures
-│               └── Fact_ServiceTimeSheet_Audit.tmdl  # Fact table definition
+│               ├── _Measures.tmdl                  # All DAX measures (Audit + IL)
+│               ├── Fact_ServiceTimeSheet_Audit.tmdl # Audit fact table schema
+│               └── Fact_InvoiceLabor.tmdl           # Invoice Labor fact table schema
+├── documentation/
+│   └── SERVICE-MANAGER-GUIDE.md      # Corp Service Manager quick reference
 ├── sample time sheets/                # Reference Excel workbooks
 ├── team form/                         # PDF and JSON for the submission form
 ├── screen shots/                      # Prototype screenshots
@@ -67,7 +71,7 @@ Service Time Sheets.SemanticModel (Fabric Semantic Model)
 Service Time Sheets Report (Power BI)
 ```
 
-### Fact Table
+### Fact Tables
 
 **`Fact_ServiceTimeSheet_Audit`**
 - **Grain:** One row per technician per RO per pay period
@@ -88,9 +92,41 @@ Service Time Sheets Report (Power BI)
 | Audit | HoursDifference, PaidDifference, AuditStatus | Calculated in fact table |
 | Lineage | SourceFile, LoadTimestamp | |
 
+**`Fact_InvoiceLabor`**
+- **Grain:** One row per TechCode per closed WorkOrder
+- **Source:** TechnicianInvoiceDetail + WKROFILE + service_time_sheets + dim_CustomerList
+- **Refresh:** Phase 4 of Pipeline_Master_Orchestrator (depends on dim_CustomerList)
+- **Filter:** `InvoiceDate >= 2026-01-01` and `IsClosed = "Y"` only
+
+| Column Group | Columns | Notes |
+|---|---|---|
+| Invoice reference | InvoiceDate, InvoiceNumber, WorkOrder | Aggregated from TID |
+| Branch context | Branch | From TID |
+| Customer identity | CustomerName, CustomerTypeDescription, IsKeyCustomer | From dim_CustomerList via AccountNumber |
+| Tech identity | TechCode, TechName, TechLevel, Location | From service_time_sheets when sheet exists |
+| Work order context | IsFieldService, ClosedDate | From WKROFILE |
+| Invoice financials | InvoicedHrs, LaborCost, LaborBilled | SUM from TID |
+| Sheet financials | TotalClaimedHrs, TechPay, LatestPayEnd | SUM from service_time_sheets (null if no sheet) |
+| Reconciliation | HasTimeSheet, LaborGap, ReconciliationStatus | Calculated |
+| Job type | JobTypeList, HasMultipleJobTypes | From TID |
+
+**ReconciliationStatus — five buckets (evaluated in order):**
+
+| # | Status | Condition |
+|---|---|---|
+| 1 | No Draw Expected | TechLevel not in {3, 4, 5} — SM/hourly, no commission |
+| 2 | Missing Sheet | Commission tech, no sheet submitted |
+| 3 | Match | \|ClaimedHrs − InvoicedHrs\| ≤ 0.001 |
+| 4 | Overclaimed | ClaimedHrs > InvoicedHrs + 0.001 |
+| 5 | Underclaimed | ClaimedHrs < InvoicedHrs − 0.001 |
+
+**Key gotcha — AccountNumber type:** WKROFILE `AccountNumber` is stored as Decimal in the Lakehouse. `Text.From(51200.0)` produces `"51200.0"`, not `"51200"`, which breaks the join to `dim_CustomerList`. The fix is to route through `Int64.From` first. See `Fact_InvoiceLabor.pq` step `WithAccountText` for the pattern.
+
+---
+
 ### No Model Relationships
 
-The semantic model uses a **single fact table with no dimension relationships**. All filtering is done via the columns on the fact table itself (Location, TechName, PayPeriod, AuditStatus). This is intentional — the data is already denormalized at the fact table level, and adding shared dimensions would add complexity without benefit for this use case.
+The semantic model uses **two fully denormalized fact tables with no dimension relationships**. All filtering is done via the columns on the fact table itself (Location, TechName, PayPeriod, AuditStatus). This is intentional — the data is already denormalized at the fact table level, and adding shared dimensions would add complexity without benefit for this use case.
 
 ---
 
@@ -188,6 +224,15 @@ Time sheet Excel files come in four layouts depending on the tech. The raw dataf
 - **Key Visuals:** Rollup table with RO Audit Status, Techs count, hours comparison, financial summary
 - **Audience:** Service Manager reviewing shared-work ROs as a batch
 
+### Page 6: Invoice Labor Reconciliation
+- **Purpose:** Invoice-centric view — starts from every closed, invoiced work order and checks whether hours billed match hours claimed. Surfaces commission techs with no submission (Missing Sheet) and hours discrepancies (Overclaimed/Underclaimed).
+- **Fact Table:** `Fact_InvoiceLabor`
+- **Key Visuals:**
+  - **Hero Card** — 6-section KPI bar: Work Orders / Labor Billed / Tech Labor Paid / Labor Margin / Margin % / Match-Overclaimed-Underclaimed counts
+  - **Detail Table** — row-level with conditional formatting (row background via `IL Row Color`, Reconciliation column text via `IL Status Color`)
+- **Slicers:** Month buttons (Jan–Dec), collapsible panel with Branch + Tech slicers
+- **Audience:** CFO, Service Manager, Payroll
+
 ---
 
 ## 🔧 Data Source Details
@@ -258,10 +303,30 @@ Time sheet Excel files come in four layouts depending on the tech. The raw dataf
 | `Hero Card - Tech Detail` | HTML KPI bar for Tech Audit Detail page |
 | `Hero Card - RO Detail` | HTML KPI bar for Multi-Tech RO Detail page |
 | `Draw Strip` | HTML draw progression visual (D1 → D2 → D3 → Final → Current) |
+| `IL Total Labor Billed` | SUM(LaborBilled) from Fact_InvoiceLabor |
+| `IL Total Tech Draw Paid` | SUM(TechPay) from Fact_InvoiceLabor |
+| `IL Labor Gap` / `IL Labor Gap %` | Margin dollars and % (LaborBilled − TechPay) |
+| `IL Total WOs` / `IL Total Invoiced Hrs` / `IL Total Claimed Hrs` | Fact_InvoiceLabor aggregates |
+| `# IL Match` / `# IL Overclaimed` / `# IL Underclaimed` / `# IL Missing Sheet` / `# IL No Draw Expected` | Status counts by ReconciliationStatus |
+| `IL Row Color` | Background CF measure for table rows (by ReconciliationStatus) |
+| `IL Status Color` | Font color CF for Reconciliation column |
+| `Hero Card - Invoice Labor` | HTML 6-section KPI bar for Invoice Labor Reconciliation page |
 
 ---
 
 ## 📅 Change Log
+
+### 2026-06-22 — Invoice Labor Reconciliation Page Added
+- Built `Fact_InvoiceLabor` — invoice-centric counterpart to `Fact_ServiceTimeSheet_Audit`; grain: TechCode × closed WorkOrder; sources: TechnicianInvoiceDetail + WKROFILE + service_time_sheets + dim_CustomerList
+- Implemented five-bucket `ReconciliationStatus`: No Draw Expected / Missing Sheet / Match / Overclaimed / Underclaimed
+- Added customer context (CustomerName, CustomerTypeDescription, IsKeyCustomer) via dim_CustomerList joined through WKROFILE AccountNumber
+- Fixed AccountNumber decimal type bug: WKROFILE AccountNumber is Decimal in Lakehouse; route through `Int64.From` before `Text.From` to strip the ".0" suffix
+- Added 20 IL DAX measures to `_Measures.tmdl` (financials, status counts, CF measures, hero card)
+- Fixed duplicate lineageTag collision on `# IL Match` (was sharing `...0121` with `Home - Header Invoice Labor`; corrected to `...0131`)
+- Built Invoice Labor Reconciliation page (page 6): hero card + month slicer + collapsible branch/tech slicers + conditional-formatted detail table
+- Hero card redesigned through 3 iterations: final layout is 6-section bar with last section showing Match/Overclaimed/Underclaimed as label-left, number-right rows
+- Renamed "Labor Gap" → "Labor Margin", "Tech Draw Paid" → "Tech Labor Paid", "Gap %" → "Margin %" throughout
+- Created `documentation/SERVICE-MANAGER-GUIDE.md` — actionable Corp Service Manager reference with real examples
 
 ### 2026-05-28 — Initial Production Build
 - Built `df_ServiceTimeSheets_Raw` (SharePoint → Lakehouse, multi-layout Excel normalization)
@@ -282,7 +347,10 @@ Time sheet Excel files come in four layouts depending on the tech. The raw dataf
 | File | Location | Purpose |
 |---|---|---|
 | `df_ServiceTimeSheets_Raw.pq` | `queries/` | SharePoint Excel ingestion query |
-| `Fact_ServiceTimeSheet_Audit.pq` | `queries/` | Fact table ETL query |
-| `_Measures.tmdl` | `reports/.../tables/` | All DAX measures |
-| `Fact_ServiceTimeSheet_Audit.tmdl` | `reports/.../tables/` | Fact table TMDL definition |
+| `Fact_ServiceTimeSheet_Audit.pq` | `queries/` | Audit fact table ETL (4-source join) |
+| `Fact_InvoiceLabor.pq` | `queries/` | Invoice Labor fact table ETL (TID + WKROFILE + sheets + dim_CustomerList) |
+| `_Measures.tmdl` | `reports/.../tables/` | All DAX measures (Audit + IL) |
+| `Fact_ServiceTimeSheet_Audit.tmdl` | `reports/.../tables/` | Audit fact table TMDL schema |
+| `Fact_InvoiceLabor.tmdl` | `reports/.../tables/` | Invoice Labor fact table TMDL schema |
+| `SERVICE-MANAGER-GUIDE.md` | `documentation/` | Corp Service Manager quick reference |
 | Sample time sheets | `sample time sheets/` | Reference Excel workbooks showing both layout types |

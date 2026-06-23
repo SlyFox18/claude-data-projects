@@ -1,0 +1,237 @@
+table Fact_InvoiceLabor
+	lineageTag: e9127daa-cbef-459d-a66c-276216bd2014
+
+	column InvoiceDate
+		dataType: dateTime
+		formatString: Short Date
+		lineageTag: 542715da-4cb7-4961-a483-fd39ebc70e22
+		summarizeBy: none
+		sourceColumn: InvoiceDate
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column InvoiceNumber
+		dataType: string
+		lineageTag: 196586e6-251f-4283-8be7-4d35233952b2
+		summarizeBy: none
+		sourceColumn: InvoiceNumber
+
+		annotation SummarizationSetBy = Automatic
+
+	column WorkOrder
+		dataType: string
+		lineageTag: a9aaa92c-8375-42b4-a5fd-28dfa21e9e75
+		summarizeBy: none
+		sourceColumn: WorkOrder
+
+		annotation SummarizationSetBy = Automatic
+
+	column Branch
+		dataType: string
+		lineageTag: c47a0b86-ccd9-4d52-b7dd-f20ee6978d88
+		summarizeBy: none
+		sourceColumn: Branch
+
+		annotation SummarizationSetBy = Automatic
+
+	column TechCode
+		dataType: string
+		lineageTag: cd11a250-2440-49c0-9145-f0da540130af
+		summarizeBy: none
+		sourceColumn: TechCode
+
+		annotation SummarizationSetBy = Automatic
+
+	column TechName
+		dataType: string
+		lineageTag: 4b0a125b-be7c-421c-9e55-572bce99ec27
+		summarizeBy: none
+		sourceColumn: TechName
+
+		annotation SummarizationSetBy = Automatic
+
+	column TechLevel
+		dataType: string
+		lineageTag: 35734872-30f5-4c8f-9b2a-0bb80aa8a963
+		summarizeBy: none
+		sourceColumn: TechLevel
+
+		annotation SummarizationSetBy = Automatic
+
+	column Location
+		dataType: string
+		lineageTag: 9dc200b1-3c98-4fe0-8eb5-1d6800e84e23
+		summarizeBy: none
+		sourceColumn: Location
+
+		annotation SummarizationSetBy = Automatic
+
+	column InvoicedHrs
+		dataType: double
+		lineageTag: 39fe62f7-e447-48b6-bf95-5abc3d8b6b3a
+		summarizeBy: sum
+		sourceColumn: InvoicedHrs
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column LaborCost
+		dataType: double
+		lineageTag: 3e974650-a227-4387-bfd0-e3e4a5c3bfdf
+		summarizeBy: sum
+		sourceColumn: LaborCost
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column LaborBilled
+		dataType: double
+		lineageTag: 421e3328-d90a-4c4b-abce-a7dc3eed6a9d
+		summarizeBy: sum
+		sourceColumn: LaborBilled
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column TotalClaimedHrs
+		dataType: double
+		lineageTag: 552a4241-0547-4e23-beca-ba440f2f9e6f
+		summarizeBy: sum
+		sourceColumn: TotalClaimedHrs
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column TechPay
+		dataType: double
+		lineageTag: 7c256e59-923f-45d6-b3c1-db8bedf24a59
+		summarizeBy: sum
+		sourceColumn: TechPay
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column LatestPayEnd
+		dataType: dateTime
+		formatString: Long Date
+		lineageTag: 1bb2ffd4-f288-4c23-965a-f91764dcddee
+		summarizeBy: none
+		sourceColumn: LatestPayEnd
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column HasTimeSheet
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 3aa3c1e8-a13a-474a-9427-cc556d487716
+		summarizeBy: none
+		sourceColumn: HasTimeSheet
+
+		annotation SummarizationSetBy = Automatic
+
+	column LaborGap
+		dataType: double
+		lineageTag: 89b8251f-f113-4832-b39b-4d9a68d780cb
+		summarizeBy: sum
+		sourceColumn: LaborGap
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column LoadTimestamp
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: 6bd5da0a-c612-43b4-b30a-e1cfd05f03a6
+		summarizeBy: none
+		sourceColumn: LoadTimestamp
+
+		annotation SummarizationSetBy = Automatic
+
+	column JobTypeList
+		dataType: string
+		lineageTag: 64fbc819-2b98-4833-8a3a-9aec339c810e
+		summarizeBy: none
+		sourceColumn: JobTypeList
+
+		annotation SummarizationSetBy = Automatic
+
+	column HasMultipleJobTypes
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: d3f65ffd-ac02-4c17-9915-32dd1b375ae8
+		summarizeBy: none
+		sourceColumn: HasMultipleJobTypes
+
+		annotation SummarizationSetBy = Automatic
+
+	column CustomerName
+		dataType: string
+		lineageTag: a1b2c3d4-e5f6-4789-abcd-ef0123456701
+		summarizeBy: none
+		sourceColumn: CustomerName
+
+		annotation SummarizationSetBy = Automatic
+
+	column CustomerTypeDescription
+		dataType: string
+		lineageTag: a1b2c3d4-e5f6-4789-abcd-ef0123456702
+		summarizeBy: none
+		sourceColumn: CustomerTypeDescription
+
+		annotation SummarizationSetBy = Automatic
+
+	column IsKeyCustomer
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: a1b2c3d4-e5f6-4789-abcd-ef0123456703
+		summarizeBy: none
+		sourceColumn: IsKeyCustomer
+
+		annotation SummarizationSetBy = Automatic
+
+	column IsFieldService
+		dataType: string
+		lineageTag: a1b2c3d4-e5f6-4789-abcd-ef0123456704
+		summarizeBy: none
+		sourceColumn: IsFieldService
+
+		annotation SummarizationSetBy = Automatic
+
+	column ClosedDate
+		dataType: dateTime
+		formatString: Short Date
+		lineageTag: a1b2c3d4-e5f6-4789-abcd-ef0123456705
+		summarizeBy: none
+		sourceColumn: ClosedDate
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column ReconciliationStatus
+		dataType: string
+		lineageTag: a1b2c3d4-e5f6-4789-abcd-ef0123456706
+		summarizeBy: none
+		sourceColumn: ReconciliationStatus
+
+		annotation SummarizationSetBy = Automatic
+
+	partition Fact_InvoiceLabor = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-gxnyznhdptpenfw724g3o5sjzm.datawarehouse.fabric.microsoft.com", "LH_Master_Data"),
+				    dbo_Fact_InvoiceLabor = Source{[Schema="dbo",Item="Fact_InvoiceLabor"]}[Data]
+				in
+				    dbo_Fact_InvoiceLabor
+

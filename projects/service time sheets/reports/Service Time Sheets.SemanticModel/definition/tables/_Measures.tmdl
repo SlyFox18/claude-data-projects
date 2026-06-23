@@ -154,6 +154,7 @@ table _Measures
 			    "Match",                          "#16A34A",
 			    "Draw - Open RO",                 "#2563EB",
 			    "Pending Invoice",                "#64748B",
+			    "Draw - In Progress",             "#D97706",
 			    BLANK()
 			)
 		lineageTag: f9a0b1c2-d3e4-4567-1234-678901200017
@@ -177,7 +178,8 @@ table _Measures
 		lineageTag: d3e4f5a6-b7c8-4901-5678-012345600021
 
 	measure 'Hero Card - Audit Summary' =
-			VAR ROsTotal      = [# Match] + [# Claimed More] + [# Invoiced More] + [# Pending] + [# Draw Open RO] + [# Pending Invoice]
+			VAR ROsTotal      = [# ROs Total]
+			VAR DrawInProg    = [# Draw In Progress]
 			VAR MatchCount    = [# Match]
 			VAR DrawCount     = [# Draw Open RO]
 			VAR PendInvCount  = [# Pending Invoice]
@@ -194,16 +196,17 @@ table _Measures
 			VAR DrawColor     = IF(DrawCount > 0, "#60A5FA", "#4ade80")
 			VAR NetColor      = IF(NetOverclaim > 0.01, "#f87171", "#4ade80")
 			
-			VAR ROsText       = FORMAT(ROsTotal, "#,##0")
-			VAR MatchText     = FORMAT(MatchCount, "#,##0")
-			VAR DrawText      = FORMAT(DrawCount, "#,##0")
-			VAR PendInvText   = FORMAT(PendInvCount, "#,##0")
-			VAR PartialText   = FORMAT(PartialCount, "#,##0")
-			VAR ClaimedText   = FORMAT(ClaimedMore, "#,##0")
-			VAR InvoicedText  = FORMAT(InvoicedMore, "#,##0")
-			VAR DrawPayText   = FORMAT(DrawPayAmt, "$#,##0")
-			VAR PayText       = FORMAT(TechPay, "$#,##0")
-			VAR OverclaimText = FORMAT(OverclaimRate, "0.0%")
+			VAR ROsText          = FORMAT(ROsTotal, "#,##0")
+			VAR MatchText        = FORMAT(MatchCount, "#,##0")
+			VAR DrawText         = FORMAT(DrawCount, "#,##0")
+			VAR PendInvText      = FORMAT(PendInvCount, "#,##0")
+			VAR PartialText      = FORMAT(PartialCount, "#,##0")
+			VAR DrawInProgText   = FORMAT(DrawInProg, "#,##0")
+			VAR ClaimedText      = FORMAT(ClaimedMore, "#,##0")
+			VAR InvoicedText     = FORMAT(InvoicedMore, "#,##0")
+			VAR DrawPayText      = FORMAT(DrawPayAmt, "$#,##0")
+			VAR PayText          = FORMAT(TechPay, "$#,##0")
+			VAR OverclaimText    = FORMAT(OverclaimRate, "0.0%")
 			VAR NetText          = FORMAT(NetOverclaim, "$#,##0")
 			VAR InvoicedRisk     = [Underpay Risk $]
 			VAR InvoicedRiskText = FORMAT(InvoicedRisk, "$#,##0")
@@ -214,7 +217,7 @@ table _Measures
 			"<div style='flex: 0.85; text-align: center; border-right: 1px solid rgba(255,255,255,0.2); padding-right: 6px;'>" &
 			"<div style='font-size: 14px; opacity: 0.85; margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.5px;'>Total RO&apos;s</div>" &
 			"<div style='font-size: 38px; font-weight: 700; margin-bottom: 3px;'>" & ROsText & "</div>" &
-			"<div style='font-size: 14px; opacity: 0.75; line-height: 1.5;'>&#10003; " & MatchText & " &nbsp;&#9670; " & PartialText & " &nbsp;&#9203; " & PendInvText & "</div>" &
+			"<div style='font-size: 14px; opacity: 0.75; line-height: 1.5;'>&#10003; " & MatchText & " &nbsp;&#9670; " & PartialText & " &nbsp;&#9203; " & PendInvText & " &nbsp;&#8635; " & DrawInProgText & "</div>" &
 			"</div>" &
 			
 			"<div style='flex: 1; text-align: center; border-right: 1px solid rgba(255,255,255,0.2); padding-right: 6px;'>" &
@@ -259,6 +262,8 @@ table _Measures
 			    "Match",                          "#F0FDF4",
 			    "Draw - Open RO",                 "#EFF6FF",
 			    "Pending Invoice",                "#F8FAFC",
+			    "Draw - In Progress",             "#FFF7ED",
+			    "⚠",                              "#E57F7F",
 			    "#FFFFFF"
 			)
 		lineageTag: b0c1d2e3-f4a5-4678-2345-789012300030
@@ -272,6 +277,7 @@ table _Measures
 			    "Match",                          "#16A34A",
 			    "Draw - Open RO",                 "#2563EB",
 			    "Pending Invoice",                "#64748B",
+			    "Draw - In Progress",             "#D97706",
 			    "#1D3C4E"
 			)
 		lineageTag: c1d2e3f4-a5b6-4789-3456-890123400031
@@ -313,9 +319,24 @@ table _Measures
 
 	measure 'Net Overclaim $' =
 			COALESCE(
-			    CALCULATE(
-			        [Total Tech Pay] - [Labor Billed],
-			        Fact_ServiceTimeSheet_Audit[AuditStatus] = "Claimed More Than Invoiced"
+			    SUMX(
+			        SELECTCOLUMNS(
+			            SUMMARIZE(
+			                CALCULATETABLE(
+			                    Fact_ServiceTimeSheet_Audit,
+			                    Fact_ServiceTimeSheet_Audit[AuditStatus] = "Claimed More Than Invoiced"
+			                ),
+			                Fact_ServiceTimeSheet_Audit[RONumberText],
+			                Fact_ServiceTimeSheet_Audit[TechNum],
+			                Fact_ServiceTimeSheet_Audit[CrossPeriodClaimedHrs],
+			                Fact_ServiceTimeSheet_Audit[InvoicedHrs],
+			                Fact_ServiceTimeSheet_Audit[PayRate]
+			            ),
+			            "CrossClaim", Fact_ServiceTimeSheet_Audit[CrossPeriodClaimedHrs],
+			            "InvHrs",     Fact_ServiceTimeSheet_Audit[InvoicedHrs],
+			            "Rate",       Fact_ServiceTimeSheet_Audit[PayRate]
+			        ),
+			        ([CrossClaim] - [InvHrs]) * [Rate]
 			    ),
 			    0
 			)
@@ -590,6 +611,7 @@ table _Measures
 			    "Match",                          "#16A34A",
 			    "Draw - Open RO",                 "#60A5FA",
 			    "Pending Invoice",                "#CBD5E1",
+			    "Draw - In Progress",             "#FB923C",
 			    BLANK()
 			)
 		lineageTag: caf41df0-0c34-4e72-a1b9-5b34f236aea0
@@ -1094,6 +1116,7 @@ table _Measures
 			    "<div style='flex: 1; padding: 11px 14px; background: #EDE9FE; border-radius: 6px; border-left: 4px solid #6D28D9; display: flex; align-items: center; gap: 14px;'><div style='font-size: 14px; font-weight: 700; color: #6D28D9; width: 135px; flex-shrink: 0;'>⚡ Mixed</div><div style='font-size: 13px; color: #475569;'>Multiple techs on this RO have different statuses. Drill through to see each tech individually.</div></div>" &
 			    "<div style='flex: 1; padding: 11px 14px; background: #F5F3FF; border-radius: 6px; border-left: 4px solid #8B5CF6; display: flex; align-items: center; gap: 14px;'><div style='font-size: 14px; font-weight: 700; color: #8B5CF6; width: 135px; flex-shrink: 0;'>&#9670; Partial Invoice</div><div style='font-size: 13px; color: #475569;'>Claimed more than invoiced, but punch data shows more work exists. Billing is likely not complete — not a real overclaim.</div></div>" &
 			    "<div style='flex: 1; padding: 11px 14px; background: #EFF6FF; border-radius: 6px; border-left: 4px solid #2563EB; display: flex; align-items: center; gap: 14px;'><div style='font-size: 14px; font-weight: 700; color: #2563EB; width: 135px; flex-shrink: 0;'>&#8635; Draw - Open RO</div><div style='font-size: 13px; color: #475569;'>Tech has formal draw advances recorded (Draw1–FinalDraw columns). Pay advance on in-progress work — expected, tracked by CFO.</div></div>" &
+			    "<div style='flex: 1; padding: 11px 14px; background: #FFF7ED; border-radius: 6px; border-left: 4px solid #D97706; display: flex; align-items: center; gap: 14px;'><div style='font-size: 14px; font-weight: 700; color: #D97706; width: 135px; flex-shrink: 0;'>&#8987; Draw - In Progress</div><div style='font-size: 13px; color: #475569;'>% Work Complete is less than 100%. Tech's time sheet indicates the job is still in progress &#8212; audit deferred until the final draw is submitted.</div></div>" &
 			    "<div style='flex: 1; padding: 11px 14px; background: #F8FAFC; border-radius: 6px; border-left: 4px solid #64748B; display: flex; align-items: center; gap: 14px;'><div style='font-size: 14px; font-weight: 700; color: #64748B; width: 135px; flex-shrink: 0;'>&#9203; Pending Invoice</div><div style='font-size: 13px; color: #475569;'>Hours submitted with no draw history and no invoice yet. Job may be complete or a first-time claim — not a formal draw advance.</div></div>" &
 			    "</div>" &
 			    "</div>"
@@ -1133,18 +1156,263 @@ table _Measures
 
 	measure 'Underpay Risk $' =
 			COALESCE(
-			    CALCULATE(
-			        SUMX(
-			            Fact_ServiceTimeSheet_Audit,
-			            (Fact_ServiceTimeSheet_Audit[InvoicedHrs] - Fact_ServiceTimeSheet_Audit[TotalClaimedHrs])
-			                * Fact_ServiceTimeSheet_Audit[PayRate]
+			    SUMX(
+			        SELECTCOLUMNS(
+			            SUMMARIZE(
+			                CALCULATETABLE(
+			                    Fact_ServiceTimeSheet_Audit,
+			                    Fact_ServiceTimeSheet_Audit[AuditStatus] = "Invoiced More Than Claimed"
+			                ),
+			                Fact_ServiceTimeSheet_Audit[RONumberText],
+			                Fact_ServiceTimeSheet_Audit[TechNum],
+			                Fact_ServiceTimeSheet_Audit[CrossPeriodClaimedHrs],
+			                Fact_ServiceTimeSheet_Audit[InvoicedHrs],
+			                Fact_ServiceTimeSheet_Audit[PayRate]
+			            ),
+			            "CrossClaim", Fact_ServiceTimeSheet_Audit[CrossPeriodClaimedHrs],
+			            "InvHrs",     Fact_ServiceTimeSheet_Audit[InvoicedHrs],
+			            "Rate",       Fact_ServiceTimeSheet_Audit[PayRate]
 			        ),
-			        Fact_ServiceTimeSheet_Audit[AuditStatus] = "Invoiced More Than Claimed"
+			        ([InvHrs] - [CrossClaim]) * [Rate]
 			    ),
 			    0
 			)
 		formatString: \$#,##0.00
 		lineageTag: f6a7b8c9-d0e1-4234-5678-901234500060
+
+	measure 'WO Branch Mismatches' = ```
+			
+			CALCULATE(
+			    COUNTROWS(Fact_ServiceTimeSheet_Audit),
+			    Fact_ServiceTimeSheet_Audit[WOBranchMismatch] = TRUE()
+			)
+			
+			```
+		formatString: 0
+		lineageTag: 5ec206f1-3653-414d-aba9-d25eb52af1f3
+
+	measure 'IL Total Labor Billed' = SUM(Fact_InvoiceLabor[LaborBilled])
+		formatString: \$#,##0.00
+		lineageTag: f0f1f2f3-f4f5-4f67-a001-000000000101
+
+	measure 'IL Total Tech Draw Paid' = SUM(Fact_InvoiceLabor[TechPay])
+		formatString: \$#,##0.00
+		lineageTag: f0f1f2f3-f4f5-4f67-a001-000000000102
+
+	measure 'IL Labor Gap' = SUM(Fact_InvoiceLabor[LaborGap])
+		formatString: \$#,##0.00
+		lineageTag: f0f1f2f3-f4f5-4f67-a001-000000000103
+
+	measure 'IL Labor Gap %' = DIVIDE(SUM(Fact_InvoiceLabor[LaborGap]), SUM(Fact_InvoiceLabor[LaborBilled]))
+		formatString: 0.0%
+		lineageTag: f0f1f2f3-f4f5-4f67-a001-000000000104
+
+	measure 'IL Missing Sheets' =
+			CALCULATE(
+			    COUNTROWS(Fact_InvoiceLabor),
+			    Fact_InvoiceLabor[HasTimeSheet] = FALSE()
+			)
+		formatString: #,##0
+		lineageTag: f0f1f2f3-f4f5-4f67-a001-000000000105
+
+	measure 'IL Total Invoiced Hrs' = SUM(Fact_InvoiceLabor[InvoicedHrs])
+		formatString: 0.00
+		lineageTag: f0f1f2f3-f4f5-4f67-a001-000000000106
+
+	measure 'IL Total Claimed Hrs' = SUM(Fact_InvoiceLabor[TotalClaimedHrs])
+		formatString: 0.00
+		lineageTag: f0f1f2f3-f4f5-4f67-a001-000000000107
+
+	measure 'IL Total WOs' = DISTINCTCOUNT(Fact_InvoiceLabor[WorkOrder])
+		formatString: #,##0
+		lineageTag: f0f1f2f3-f4f5-4f67-a001-000000000108
+
+	measure 'IL Gap Color' =
+			IF(
+			    SUM(Fact_InvoiceLabor[LaborGap]) < -0.01, "#DC2626",
+			    IF(SUM(Fact_InvoiceLabor[LaborGap]) > 0.01, "#16A34A", "#64748B")
+			)
+		lineageTag: f0f1f2f3-f4f5-4f67-a001-000000000109
+
+	measure 'IL Row Color' =
+			SWITCH(
+			    SELECTEDVALUE(Fact_InvoiceLabor[ReconciliationStatus]),
+			    "Overclaimed",      "#FEE2E2",
+			    "Missing Sheet",    "#FEF3C7",
+			    "Underclaimed",     "#FFF7ED",
+			    "No Draw Expected", "#F8FAFC",
+			    "#FFFFFF"
+			)
+		lineageTag: f0f1f2f3-f4f5-4f67-a001-000000000110
+
+	measure 'Hero Card - Invoice Labor' =
+			VAR WOCount       = [IL Total WOs]
+			VAR Billed        = [IL Total Labor Billed]
+			VAR DrawPaid      = [IL Total Tech Draw Paid]
+			VAR Gap           = [IL Labor Gap]
+			VAR GapPct        = [IL Labor Gap %]
+			VAR MatchCount    = [# IL Match]
+			VAR OverCount     = [# IL Overclaimed]
+			VAR UnderCount    = [# IL Underclaimed]
+			VAR GapColor      = IF(Gap < -0.01, "#f87171", IF(Gap > 0.01, "#4ade80", "#94a3b8"))
+			VAR GapPctColor   = IF(GapPct < -0.001, "#f87171", IF(GapPct > 0.001, "#4ade80", "#94a3b8"))
+			VAR WOText        = FORMAT(WOCount, "#,##0")
+			VAR BilledText    = FORMAT(Billed, "$#,##0")
+			VAR DrawText      = FORMAT(DrawPaid, "$#,##0")
+			VAR GapText       = FORMAT(ABS(Gap), "$#,##0")
+			VAR GapSign       = IF(Gap < -0.01, "▼ ", IF(Gap > 0.01, "▲ ", ""))
+			VAR GapPctText    = FORMAT(ABS(GapPct), "0.0%")
+			VAR GapPctSign    = IF(GapPct < -0.001, "▼ ", IF(GapPct > 0.001, "▲ ", ""))
+			VAR MatchText     = FORMAT(MatchCount, "#,##0")
+			VAR OverText      = FORMAT(OverCount, "#,##0")
+			VAR UnderText     = FORMAT(UnderCount, "#,##0")
+			RETURN
+			"<div style='font-family: Segoe UI, Arial, sans-serif; padding: 14px 16px; background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%); border-radius: 12px; color: white; height: 130px; display: flex; justify-content: space-between; align-items: center; gap: 6px;'>" &
+			"<div style='flex: 0.85; text-align: center; border-right: 1px solid rgba(255,255,255,0.2); padding-right: 6px;'>" &
+			"<div style='font-size: 14px; opacity: 0.85; margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.5px;'>Work Orders</div>" &
+			"<div style='font-size: 38px; font-weight: 700; margin-bottom: 3px;'>" & WOText & "</div>" &
+			"<div style='font-size: 14px; opacity: 0.75;'>Closed &amp; invoiced</div>" &
+			"</div>" &
+			"<div style='flex: 1; text-align: center; border-right: 1px solid rgba(255,255,255,0.2); padding-right: 6px;'>" &
+			"<div style='font-size: 14px; opacity: 0.85; margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.5px;'>Labor Billed</div>" &
+			"<div style='font-size: 38px; font-weight: 700; margin-bottom: 3px;'>" & BilledText & "</div>" &
+			"<div style='font-size: 14px; opacity: 0.75;'>Customer labor charges</div>" &
+			"</div>" &
+			"<div style='flex: 1; text-align: center; border-right: 1px solid rgba(255,255,255,0.2); padding-right: 6px;'>" &
+			"<div style='font-size: 14px; opacity: 0.85; margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.5px;'>Tech Labor Paid</div>" &
+			"<div style='font-size: 38px; font-weight: 700; margin-bottom: 3px;'>" & DrawText & "</div>" &
+			"<div style='font-size: 14px; opacity: 0.75;'>Tech compensation paid</div>" &
+			"</div>" &
+			"<div style='flex: 1; text-align: center; border-right: 1px solid rgba(255,255,255,0.2); padding-right: 6px;'>" &
+			"<div style='font-size: 14px; opacity: 0.85; margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.5px;'>Labor Margin</div>" &
+			"<div style='font-size: 38px; font-weight: 700; margin-bottom: 3px; color: " & GapColor & ";'>" & GapSign & GapText & "</div>" &
+			"<div style='font-size: 14px; opacity: 0.75;'>Billed minus tech paid</div>" &
+			"</div>" &
+			"<div style='flex: 0.85; text-align: center; border-right: 1px solid rgba(255,255,255,0.2); padding-right: 6px;'>" &
+			"<div style='font-size: 14px; opacity: 0.85; margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.5px;'>Margin %</div>" &
+			"<div style='font-size: 38px; font-weight: 700; margin-bottom: 3px; color: " & GapPctColor & ";'>" & GapPctSign & GapPctText & "</div>" &
+			"<div style='font-size: 14px; opacity: 0.75;'>of labor billed</div>" &
+			"</div>" &
+			"<div style='flex: 1.1; display: flex; flex-direction: column; justify-content: space-evenly; padding: 8px 10px;'>" &
+			"<div style='display: flex; justify-content: space-between; align-items: baseline;'>" &
+			"<div style='font-size: 14px; opacity: 0.85;'>Match</div>" &
+			"<div style='font-size: 22px; font-weight: 700; color: #4ade80;'>" & MatchText & "</div>" &
+			"</div>" &
+			"<div style='display: flex; justify-content: space-between; align-items: baseline;'>" &
+			"<div style='font-size: 14px; opacity: 0.85;'>Overclaimed</div>" &
+			"<div style='font-size: 22px; font-weight: 700; color: #f87171;'>" & OverText & "</div>" &
+			"</div>" &
+			"<div style='display: flex; justify-content: space-between; align-items: baseline;'>" &
+			"<div style='font-size: 14px; opacity: 0.85;'>Underclaimed</div>" &
+			"<div style='font-size: 22px; font-weight: 700; color: #fbbf24;'>" & UnderText & "</div>" &
+			"</div>" &
+			"</div>" &
+			"</div>"
+		lineageTag: f0f1f2f3-f4f5-4f67-a001-000000000120
+
+	measure 'Home - Header Invoice Labor' =
+			VAR _User = USERPRINCIPALNAME()
+			VAR _Position = SEARCH("@", _User, 1)
+			VAR _Name = LEFT(_User, _Position - 1)
+			VAR _FirstLetter = UPPER(LEFT(_Name, 1))
+			VAR _LastName = MID(_Name, 2, LEN(_Name) - 1)
+			VAR _FormattedLastName = UPPER(LEFT(_LastName, 1)) & LOWER(MID(_LastName, 2, LEN(_LastName)))
+			VAR WelcomeName = _FirstLetter & "." & _FormattedLastName
+			VAR CurrentDate = TODAY()
+			VAR DateDisplay = FORMAT(CurrentDate, "MMM D, YYYY")
+			VAR CurrentHour = HOUR(NOW())
+			VAR TimeGreeting =
+				IF(CurrentHour < 12, "Good Morning",
+				IF(CurrentHour < 17, "Good Afternoon",
+				"Good Evening"))
+			VAR _MinDate = CALCULATE(MIN(Fact_InvoiceLabor[InvoiceDate]))
+			VAR _MaxDate = CALCULATE(MAX(Fact_InvoiceLabor[InvoiceDate]))
+			VAR PeriodLabel =
+				IF(
+				    ISBLANK(_MinDate), "All Dates",
+				    FORMAT(_MinDate, "MMM D") & " – " & FORMAT(_MaxDate, "MMM D, YYYY")
+				)
+			RETURN
+			"<div style='font-family: Segoe UI, Arial, sans-serif; height: 85px; padding: 15px 25px; background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%); border-radius: 10px; color: white; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 4px 12px rgba(0,0,0,0.15); box-sizing: border-box;'>" &
+			"<div style='display: flex; align-items: center; gap: 15px;'>" &
+			"<div style='width: 40px; height: 40px; background: rgba(255,255,255,0.15); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 20px;'>📊</div>" &
+			"<div>" &
+			"<div style='font-size: 11px; opacity: 0.75; margin-bottom: 2px; letter-spacing: 0.5px;'>REPORT</div>" &
+			"<div style='font-size: 22px; font-weight: 700; line-height: 1.1; margin-bottom: 3px;'>Invoice Labor Reconciliation</div>" &
+			"<div style='font-size: 12px; opacity: 0.9;'>📋 " & PeriodLabel & "</div>" &
+			"</div>" &
+			"</div>" &
+			"<div style='text-align: right;'>" &
+			"<div style='font-size: 13px; opacity: 0.9; margin-bottom: 6px;'>" & TimeGreeting & ", " & WelcomeName & "</div>" &
+			"<div style='font-size: 16px; font-weight: 600;'>📅 " & DateDisplay & "</div>" &
+			"</div>" &
+			"</div>"
+		lineageTag: f0f1f2f3-f4f5-4f67-a001-000000000121
+
+	measure '# Draw In Progress' = CALCULATE(COUNTROWS(Fact_ServiceTimeSheet_Audit), Fact_ServiceTimeSheet_Audit[AuditStatus] = "Draw - In Progress") + 0
+		formatString: #,##0
+		lineageTag: a1b2c3d4-e5f6-4789-0123-000000000901
+
+	measure 'Draw Label' =
+			VAR _Num   = SELECTEDVALUE(Fact_ServiceTimeSheet_Audit[DrawNumber])
+			VAR _Total = SELECTEDVALUE(Fact_ServiceTimeSheet_Audit[TotalDraws])
+			RETURN
+			IF(_Total > 1, FORMAT(_Num, "0") & " / " & FORMAT(_Total, "0"), BLANK())
+		lineageTag: b2c3d4e5-f6a7-4890-1234-000000000902
+
+	measure '# IL Match' = CALCULATE(COUNTROWS(Fact_InvoiceLabor), Fact_InvoiceLabor[ReconciliationStatus] = "Match") + 0
+		formatString: #,##0
+		lineageTag: f0f1f2f3-f4f5-4f67-a001-000000000131
+
+	measure '# IL Overclaimed' = CALCULATE(COUNTROWS(Fact_InvoiceLabor), Fact_InvoiceLabor[ReconciliationStatus] = "Overclaimed") + 0
+		formatString: #,##0
+		lineageTag: f0f1f2f3-f4f5-4f67-a001-000000000122
+
+	measure '# IL Underclaimed' = CALCULATE(COUNTROWS(Fact_InvoiceLabor), Fact_InvoiceLabor[ReconciliationStatus] = "Underclaimed") + 0
+		formatString: #,##0
+		lineageTag: f0f1f2f3-f4f5-4f67-a001-000000000123
+
+	measure '# IL Missing Sheet' = CALCULATE(COUNTROWS(Fact_InvoiceLabor), Fact_InvoiceLabor[ReconciliationStatus] = "Missing Sheet") + 0
+		formatString: #,##0
+		lineageTag: f0f1f2f3-f4f5-4f67-a001-000000000124
+
+	measure '# IL No Draw Expected' = CALCULATE(COUNTROWS(Fact_InvoiceLabor), Fact_InvoiceLabor[ReconciliationStatus] = "No Draw Expected") + 0
+		formatString: #,##0
+		lineageTag: f0f1f2f3-f4f5-4f67-a001-000000000125
+
+	measure 'IL Overclaim Hrs' =
+			CALCULATE(
+			    SUMX(
+			        Fact_InvoiceLabor,
+			        Fact_InvoiceLabor[TotalClaimedHrs] - Fact_InvoiceLabor[InvoicedHrs]
+			    ),
+			    Fact_InvoiceLabor[ReconciliationStatus] = "Overclaimed"
+			)
+		formatString: 0.00
+		lineageTag: f0f1f2f3-f4f5-4f67-a001-000000000126
+
+	measure 'IL Overclaim $' =
+			CALCULATE(
+			    SUMX(
+			        Fact_InvoiceLabor,
+			        (Fact_InvoiceLabor[TotalClaimedHrs] - Fact_InvoiceLabor[InvoicedHrs]) *
+			        SWITCH(Fact_InvoiceLabor[TechLevel], "3", 40, "4", 43, "5", 46, 0)
+			    ),
+			    Fact_InvoiceLabor[ReconciliationStatus] = "Overclaimed"
+			)
+		formatString: \$#,##0.00
+		lineageTag: f0f1f2f3-f4f5-4f67-a001-000000000127
+
+	measure 'IL Status Color' =
+			SWITCH(
+			    SELECTEDVALUE(Fact_InvoiceLabor[ReconciliationStatus]),
+			    "Overclaimed",      "#DC2626",
+			    "Missing Sheet",    "#B45309",
+			    "Underclaimed",     "#D97706",
+			    "Match",            "#16A34A",
+			    "#64748B"
+			)
+		lineageTag: f0f1f2f3-f4f5-4f67-a001-000000000128
 
 	column Value
 		isHidden

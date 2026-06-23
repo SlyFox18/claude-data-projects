@@ -1,0 +1,187 @@
+table TechnicianInvoiceDetail
+	lineageTag: 51cbb81d-0189-471b-be2c-0fe96299bde4
+
+	column Branch
+		dataType: string
+		lineageTag: 97a1d735-15f5-4f3d-acd4-4fe2d3ce2396
+		summarizeBy: none
+		sourceColumn: Branch
+
+		annotation SummarizationSetBy = Automatic
+
+	column WorkOrder
+		dataType: int64
+		formatString: 0
+		lineageTag: a7c15504-a92c-4265-a308-eec63c52b1e5
+		summarizeBy: sum
+		sourceColumn: WorkOrder
+
+		annotation SummarizationSetBy = Automatic
+
+	column InvoiceNumber
+		dataType: string
+		lineageTag: c0addd7a-f65e-403e-9fff-9a65c8654b7f
+		summarizeBy: none
+		sourceColumn: InvoiceNumber
+
+		annotation SummarizationSetBy = Automatic
+
+	column TechCode
+		dataType: string
+		lineageTag: aec00329-64c7-4a6f-9cef-bae1442d8631
+		summarizeBy: none
+		sourceColumn: TechCode
+
+		annotation SummarizationSetBy = Automatic
+
+	column SequenceID
+		dataType: int64
+		formatString: 0
+		lineageTag: fba7e230-33aa-4727-8396-a5af065e5ccc
+		summarizeBy: count
+		sourceColumn: SequenceID
+
+		annotation SummarizationSetBy = Automatic
+
+	column JobCode
+		dataType: string
+		lineageTag: 841ef7c7-de06-4c1d-bb73-4b525be8d4ed
+		summarizeBy: none
+		sourceColumn: JobCode
+
+		annotation SummarizationSetBy = Automatic
+
+	column JobType
+		dataType: string
+		lineageTag: b847bb0b-af62-4e76-ba8b-f0b80422e66f
+		summarizeBy: none
+		sourceColumn: JobType
+
+		annotation SummarizationSetBy = Automatic
+
+	column InvoiceDate
+		dataType: dateTime
+		formatString: Long Date
+		lineageTag: ef92428f-bcee-460b-b789-016198992e1d
+		summarizeBy: none
+		sourceColumn: InvoiceDate
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column WorkDate
+		dataType: dateTime
+		formatString: Long Date
+		lineageTag: 00b5d8df-94ed-40b5-a6c5-22c5205d81e4
+		summarizeBy: none
+		sourceColumn: WorkDate
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column StartTime
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: fc650454-c6fc-49ff-b170-e1483d096bc9
+		summarizeBy: none
+		sourceColumn: StartTime
+
+		annotation SummarizationSetBy = Automatic
+
+	column EndTime
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: f6aee52a-b990-41cb-b492-61744654307c
+		summarizeBy: none
+		sourceColumn: EndTime
+
+		annotation SummarizationSetBy = Automatic
+
+	column HoursPunched
+		dataType: double
+		lineageTag: 30b37adf-b370-478c-a0eb-baf916c383da
+		summarizeBy: sum
+		sourceColumn: HoursPunched
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column InvoiceHours
+		dataType: double
+		lineageTag: 3cd3c95e-9c4a-47a4-8668-d22a722f627f
+		summarizeBy: sum
+		sourceColumn: InvoiceHours
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column ReworkHours
+		dataType: double
+		lineageTag: 8e68b167-63a9-44d7-8e5e-4f78f0bc6787
+		summarizeBy: sum
+		sourceColumn: ReworkHours
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column DelayHours
+		dataType: double
+		lineageTag: 2f15758a-bb8e-4946-b14a-90de0fc3ba54
+		summarizeBy: sum
+		sourceColumn: DelayHours
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column LaborCost
+		dataType: double
+		lineageTag: 5aa7ffd1-7b00-4a08-8662-7bfbb4b23b5d
+		summarizeBy: sum
+		sourceColumn: LaborCost
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column LaborSale
+		dataType: double
+		lineageTag: e28bf98c-0029-42be-b7d4-073c8ac4a47a
+		summarizeBy: sum
+		sourceColumn: LaborSale
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column NonRevenueIndicator
+		dataType: string
+		lineageTag: b9b39b36-beaa-44ab-bf06-304cf6462eee
+		summarizeBy: none
+		sourceColumn: NonRevenueIndicator
+
+		annotation SummarizationSetBy = Automatic
+
+	column ModifiedDate
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: edeb345c-2aa7-4e0d-b174-4f5cbfd3450d
+		summarizeBy: none
+		sourceColumn: ModifiedDate
+
+		annotation SummarizationSetBy = Automatic
+
+	partition TechnicianInvoiceDetail = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-gxnyznhdptpenfw724g3o5sjzm.datawarehouse.fabric.microsoft.com", "LH_Master_Data"),
+				    dbo_TechnicianInvoiceDetail = Source{[Schema="dbo",Item="TechnicianInvoiceDetail"]}[Data]
+				in
+				    dbo_TechnicianInvoiceDetail
+
