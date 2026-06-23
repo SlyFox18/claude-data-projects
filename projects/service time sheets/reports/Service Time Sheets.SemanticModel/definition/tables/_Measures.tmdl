@@ -146,16 +146,21 @@ table _Measures
 		lineageTag: e8f9a0b1-c2d3-4456-0123-567890100016
 
 	measure 'Hours Diff Color' =
-			SWITCH(
-			    SELECTEDVALUE(Fact_ServiceTimeSheet_Audit[AuditStatus]),
-			    "Claimed More Than Invoiced",     "#DC2626",
-			    "Invoiced More Than Claimed",     "#B45309",
-			    "Partial Invoice - In Progress",  "#8B5CF6",
-			    "Match",                          "#16A34A",
-			    "Draw - Open RO",                 "#2563EB",
-			    "Pending Invoice",                "#64748B",
-			    "Draw - In Progress",             "#D97706",
-			    BLANK()
+			IF(
+			    SELECTEDVALUE(Fact_ServiceTimeSheet_Audit[AuditStatus]) = "Invoiced More Than Claimed"
+			        && CONTAINSSTRING(SELECTEDVALUE(Fact_ServiceTimeSheet_Audit[SharedRO]), "Commission Techs"),
+			    "#64748B",
+			    SWITCH(
+			        SELECTEDVALUE(Fact_ServiceTimeSheet_Audit[AuditStatus]),
+			        "Claimed More Than Invoiced",     "#DC2626",
+			        "Invoiced More Than Claimed",     "#B45309",
+			        "Partial Invoice - In Progress",  "#8B5CF6",
+			        "Match",                          "#16A34A",
+			        "Draw - Open RO",                 "#2563EB",
+			        "Pending Invoice",                "#64748B",
+			        "Draw - In Progress",             "#D97706",
+			        BLANK()
+			    )
 			)
 		lineageTag: f9a0b1c2-d3e4-4567-1234-678901200017
 
@@ -254,17 +259,22 @@ table _Measures
 		lineageTag: e4f5a6b7-c8d9-4012-6789-012345678022
 
 	measure 'Row Status Color' =
-			SWITCH(
-			    SELECTEDVALUE(Fact_ServiceTimeSheet_Audit[AuditStatus]),
-			    "Claimed More Than Invoiced",     "#FEE2E2",
-			    "Invoiced More Than Claimed",     "#FEF3C7",
-			    "Partial Invoice - In Progress",  "#F5F3FF",
-			    "Match",                          "#F0FDF4",
-			    "Draw - Open RO",                 "#EFF6FF",
-			    "Pending Invoice",                "#F8FAFC",
-			    "Draw - In Progress",             "#FFF7ED",
-			    "⚠",                              "#E57F7F",
-			    "#FFFFFF"
+			IF(
+			    SELECTEDVALUE(Fact_ServiceTimeSheet_Audit[AuditStatus]) = "Invoiced More Than Claimed"
+			        && CONTAINSSTRING(SELECTEDVALUE(Fact_ServiceTimeSheet_Audit[SharedRO]), "Commission Techs"),
+			    "#EFF6FF",
+			    SWITCH(
+			        SELECTEDVALUE(Fact_ServiceTimeSheet_Audit[AuditStatus]),
+			        "Claimed More Than Invoiced",     "#FEE2E2",
+			        "Invoiced More Than Claimed",     "#FEF3C7",
+			        "Partial Invoice - In Progress",  "#F5F3FF",
+			        "Match",                          "#F0FDF4",
+			        "Draw - Open RO",                 "#EFF6FF",
+			        "Pending Invoice",                "#F8FAFC",
+			        "Draw - In Progress",             "#FFF7ED",
+			        "⚠",                              "#E57F7F",
+			        "#FFFFFF"
+			    )
 			)
 		lineageTag: b0c1d2e3-f4a5-4678-2345-789012300030
 
@@ -603,16 +613,21 @@ table _Measures
 		lineageTag: 10ed1f66-d024-4687-94fe-1e87b596ee67
 
 	measure 'Hours Diff Color Bar' =
-			SWITCH(
-			    SELECTEDVALUE(Fact_ServiceTimeSheet_Audit[AuditStatus]),
-			    "Claimed More Than Invoiced",     "#F87171",
-			    "Invoiced More Than Claimed",     "#facc15",
-			    "Partial Invoice - In Progress",  "#C4B5FD",
-			    "Match",                          "#16A34A",
-			    "Draw - Open RO",                 "#60A5FA",
-			    "Pending Invoice",                "#CBD5E1",
-			    "Draw - In Progress",             "#FB923C",
-			    BLANK()
+			IF(
+			    SELECTEDVALUE(Fact_ServiceTimeSheet_Audit[AuditStatus]) = "Invoiced More Than Claimed"
+			        && CONTAINSSTRING(SELECTEDVALUE(Fact_ServiceTimeSheet_Audit[SharedRO]), "Commission Techs"),
+			    "#CBD5E1",
+			    SWITCH(
+			        SELECTEDVALUE(Fact_ServiceTimeSheet_Audit[AuditStatus]),
+			        "Claimed More Than Invoiced",     "#F87171",
+			        "Invoiced More Than Claimed",     "#facc15",
+			        "Partial Invoice - In Progress",  "#C4B5FD",
+			        "Match",                          "#16A34A",
+			        "Draw - Open RO",                 "#60A5FA",
+			        "Pending Invoice",                "#CBD5E1",
+			        "Draw - In Progress",             "#FB923C",
+			        BLANK()
+			    )
 			)
 		lineageTag: caf41df0-0c34-4e72-a1b9-5b34f236aea0
 
