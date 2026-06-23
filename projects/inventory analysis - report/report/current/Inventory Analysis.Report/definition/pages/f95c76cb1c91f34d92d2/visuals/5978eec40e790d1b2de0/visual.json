@@ -1,5 +1,5 @@
 {
-  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.7.0/schema.json",
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.10.0/schema.json",
   "name": "5978eec40e790d1b2de0",
   "position": {
     "x": 667.26518942101507,
@@ -91,6 +91,26 @@
               "queryRef": "Sum(Fact_Inventory.Current12MoSales)",
               "nativeQueryRef": "Current 12 Mo Sales",
               "displayName": "Current 12 Mo Sales"
+            },
+            {
+              "field": {
+                "Aggregation": {
+                  "Expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "Fact_Inventory"
+                        }
+                      },
+                      "Property": "Previous12MoSales"
+                    }
+                  },
+                  "Function": 0
+                }
+              },
+              "queryRef": "Sum(Fact_Inventory.Previous12MoSales)",
+              "nativeQueryRef": "Previous 12 Mo Sales",
+              "displayName": "Previous 12 Mo Sales"
             },
             {
               "field": {
@@ -474,7 +494,7 @@
             "value": {
               "expr": {
                 "Literal": {
-                  "Value": "262.38287863671667D"
+                  "Value": "208.23369825130476D"
                 }
               }
             }
@@ -551,6 +571,20 @@
           },
           "selector": {
             "metadata": "Sum(Fact_Inventory.QuantityOnHand)"
+          }
+        },
+        {
+          "properties": {
+            "value": {
+              "expr": {
+                "Literal": {
+                  "Value": "75.48102866011155D"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "Sum(Fact_Inventory.Previous12MoSales)"
           }
         }
       ]
