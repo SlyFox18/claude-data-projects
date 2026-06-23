@@ -357,6 +357,66 @@ table Fact_ServiceTimeSheet_Audit
 
 		annotation SummarizationSetBy = Automatic
 
+	column ROStatusDisplay =
+			VAR _RO = Fact_ServiceTimeSheet_Audit[RONumber]
+			VAR _CommTechs =
+			    CALCULATE(
+			        DISTINCTCOUNT(Fact_ServiceTimeSheet_Audit[TechNum]),
+			        ALL(Fact_ServiceTimeSheet_Audit),
+			        Fact_ServiceTimeSheet_Audit[RONumber] = _RO
+			    )
+			VAR _ClaimedMore =
+			    CALCULATE(
+			        COUNTROWS(Fact_ServiceTimeSheet_Audit),
+			        ALL(Fact_ServiceTimeSheet_Audit),
+			        Fact_ServiceTimeSheet_Audit[RONumber] = _RO,
+			        Fact_ServiceTimeSheet_Audit[AuditStatus] = "Claimed More Than Invoiced"
+			    )
+			VAR _InvoicedMore =
+			    CALCULATE(
+			        COUNTROWS(Fact_ServiceTimeSheet_Audit),
+			        ALL(Fact_ServiceTimeSheet_Audit),
+			        Fact_ServiceTimeSheet_Audit[RONumber] = _RO,
+			        Fact_ServiceTimeSheet_Audit[AuditStatus] = "Invoiced More Than Claimed"
+			    )
+			VAR _Partial =
+			    CALCULATE(
+			        COUNTROWS(Fact_ServiceTimeSheet_Audit),
+			        ALL(Fact_ServiceTimeSheet_Audit),
+			        Fact_ServiceTimeSheet_Audit[RONumber] = _RO,
+			        Fact_ServiceTimeSheet_Audit[AuditStatus] = "Partial Invoice - In Progress"
+			    )
+			VAR _Draw =
+			    CALCULATE(
+			        COUNTROWS(Fact_ServiceTimeSheet_Audit),
+			        ALL(Fact_ServiceTimeSheet_Audit),
+			        Fact_ServiceTimeSheet_Audit[RONumber] = _RO,
+			        Fact_ServiceTimeSheet_Audit[AuditStatus] IN {"Draw - Open RO", "Draw - In Progress"}
+			    )
+			VAR _Pending =
+			    CALCULATE(
+			        COUNTROWS(Fact_ServiceTimeSheet_Audit),
+			        ALL(Fact_ServiceTimeSheet_Audit),
+			        Fact_ServiceTimeSheet_Audit[RONumber] = _RO,
+			        Fact_ServiceTimeSheet_Audit[AuditStatus] = "Pending Invoice"
+			    )
+			RETURN
+			    IF(
+			        _CommTechs <= 1, BLANK(),
+			        IF(_ClaimedMore > 0 && _InvoicedMore > 0, "Mixed",
+			        IF(_ClaimedMore > 0,                      "Claimed More",
+			        IF(_InvoicedMore > 0,                     "Invoiced More",
+			        IF(_Partial > 0,                          "Partial",
+			        IF(_Draw > 0,                             "Draw",
+			        IF(_Pending > 0,                          "Pending",
+			                                                  "Match"))))))
+			    )
+		dataType: string
+		lineageTag: d4e5f6a7-b8c9-4123-6cde-f01234567901
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
 	column IsClosed
 		dataType: string
 		lineageTag: 62032574-c5ce-4718-a2d2-3feb53ed8b95
