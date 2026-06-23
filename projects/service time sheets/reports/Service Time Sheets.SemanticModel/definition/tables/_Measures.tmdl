@@ -1285,7 +1285,7 @@ table _Measures
 			"</div>" &
 			"<div style='flex: 1; text-align: center; border-right: 1px solid rgba(255,255,255,0.2); padding-right: 6px;'>" &
 			"<div style='font-size: 14px; opacity: 0.85; margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.5px;'>Labor Margin</div>" &
-			"<div style='font-size: 38px; font-weight: 700; margin-bottom: 3px; color: " & GapColor & ";'>" & GapSign & GapText & "</div>" &
+			"<div style='font-size: 34px; font-weight: 700; margin-bottom: 3px; color: " & GapColor & ";'>" & GapSign & GapText & "</div>" &
 			"<div style='font-size: 14px; opacity: 0.75;'>Billed minus tech paid</div>" &
 			"</div>" &
 			"<div style='flex: 0.85; text-align: center; border-right: 1px solid rgba(255,255,255,0.2); padding-right: 6px;'>" &
@@ -1413,6 +1413,20 @@ table _Measures
 			    "#64748B"
 			)
 		lineageTag: f0f1f2f3-f4f5-4f67-a001-000000000128
+
+	measure 'RO Status Display Color' =
+			SWITCH(
+			    SELECTEDVALUE(Fact_ServiceTimeSheet_Audit[ROStatusDisplay]),
+			    "Match",        "#16A34A",
+			    "Claimed More", "#DC2626",
+			    "Invoiced More","#B45309",
+			    "Mixed",        "#6D28D9",
+			    "Partial",      "#8B5CF6",
+			    "Draw",         "#2563EB",
+			    "Pending",      "#64748B",
+			    BLANK()
+			)
+		lineageTag: f0f1f2f3-f4f5-4f67-a001-000000000200
 
 	column Value
 		isHidden
