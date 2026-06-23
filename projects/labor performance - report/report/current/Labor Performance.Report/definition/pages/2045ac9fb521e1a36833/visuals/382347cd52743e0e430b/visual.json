@@ -1,18 +1,37 @@
 {
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.10.0/schema.json",
-  "name": "8e23f4343dc41dc1a510",
+  "name": "382347cd52743e0e430b",
   "position": {
-    "x": 219.72876516773732,
-    "y": 110.45824411134903,
-    "z": 8000,
-    "height": 798.14989293361884,
-    "width": 1432.3940042826553,
-    "tabOrder": 12000
+    "x": 693.13207547169816,
+    "y": 109.88679245283019,
+    "z": 6000,
+    "height": 798.188679245283,
+    "width": 947.92452830188677,
+    "tabOrder": 9000
   },
   "visual": {
     "visualType": "pivotTable",
     "query": {
       "queryState": {
+        "Columns": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "dim_BranchLocation"
+                    }
+                  },
+                  "Property": "Branch"
+                }
+              },
+              "queryRef": "dim_BranchLocation.Branch",
+              "nativeQueryRef": "Branch1",
+              "active": true
+            }
+          ]
+        },
         "Rows": {
           "projections": [
             {
@@ -60,26 +79,6 @@
                           "Entity": "TechnicianEfficiency"
                         }
                       },
-                      "Property": "Branch"
-                    }
-                  },
-                  "Function": 3
-                }
-              },
-              "queryRef": "Min(TechnicianEfficiency.Branch)",
-              "nativeQueryRef": "Branch",
-              "displayName": "Branch"
-            },
-            {
-              "field": {
-                "Aggregation": {
-                  "Expression": {
-                    "Column": {
-                      "Expression": {
-                        "SourceRef": {
-                          "Entity": "TechnicianEfficiency"
-                        }
-                      },
                       "Property": "AvailableHours"
                     }
                   },
@@ -104,104 +103,6 @@
               "queryRef": "_Measures.Total Hours",
               "nativeQueryRef": "Billed Hours",
               "displayName": "Billed Hours"
-            },
-            {
-              "field": {
-                "Measure": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "_Measures"
-                    }
-                  },
-                  "Property": "LY Hours"
-                }
-              },
-              "queryRef": "_Measures.LY Hours",
-              "nativeQueryRef": "LY Hours"
-            },
-            {
-              "field": {
-                "Measure": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "_Measures"
-                    }
-                  },
-                  "Property": "LY Hours Variance"
-                }
-              },
-              "queryRef": "_Measures.LY Hours Variance",
-              "nativeQueryRef": "LY Hours Variance"
-            },
-            {
-              "field": {
-                "Measure": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "_Measures"
-                    }
-                  },
-                  "Property": "Productivity"
-                }
-              },
-              "queryRef": "_Measures.Productivity",
-              "nativeQueryRef": "Productivity"
-            },
-            {
-              "field": {
-                "Measure": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "_Measures"
-                    }
-                  },
-                  "Property": "Efficiency"
-                }
-              },
-              "queryRef": "_Measures.Efficiency",
-              "nativeQueryRef": "Efficiency"
-            },
-            {
-              "field": {
-                "Measure": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "_Measures"
-                    }
-                  },
-                  "Property": "Labor Performance"
-                }
-              },
-              "queryRef": "_Measures.Labor Performance",
-              "nativeQueryRef": "Labor Performance"
-            },
-            {
-              "field": {
-                "Measure": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "_Measures"
-                    }
-                  },
-                  "Property": "LY Labor Performance"
-                }
-              },
-              "queryRef": "_Measures.LY Labor Performance",
-              "nativeQueryRef": "LY Labor Performance"
-            },
-            {
-              "field": {
-                "Measure": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "_Measures"
-                    }
-                  },
-                  "Property": "LY Labor Performance Variance"
-                }
-              },
-              "queryRef": "_Measures.LY Labor Performance Variance",
-              "nativeQueryRef": "LY Labor Performance Variance"
             }
           ]
         }
@@ -210,21 +111,29 @@
         "sort": [
           {
             "field": {
-              "Aggregation": {
+              "Column": {
                 "Expression": {
-                  "Column": {
-                    "Expression": {
-                      "SourceRef": {
-                        "Entity": "TechnicianEfficiency"
-                      }
-                    },
-                    "Property": "AvailableHours"
+                  "SourceRef": {
+                    "Entity": "dim_Technician_Code_Names"
                   }
                 },
-                "Function": 0
+                "Property": "TechnicianDisplayName"
               }
             },
-            "direction": "Descending"
+            "direction": "Ascending"
+          },
+          {
+            "field": {
+              "Column": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "dim_DateTable"
+                  }
+                },
+                "Property": "MonthYear"
+              }
+            },
+            "direction": "Ascending"
           }
         ]
       }
@@ -318,103 +227,7 @@
           }
         },
         {
-          "properties": {
-            "backColor": {
-              "solid": {
-                "color": {
-                  "expr": {
-                    "Measure": {
-                      "Expression": {
-                        "SourceRef": {
-                          "Entity": "_Measures"
-                        }
-                      },
-                      "Property": "Total Hours Color"
-                    }
-                  }
-                }
-              }
-            },
-            "icon": {
-              "kind": "Icon",
-              "layout": {
-                "expr": {
-                  "Literal": {
-                    "Value": "'After'"
-                  }
-                }
-              },
-              "verticalAlignment": {
-                "expr": {
-                  "Literal": {
-                    "Value": "'Top'"
-                  }
-                }
-              },
-              "value": {
-                "expr": {
-                  "Conditional": {
-                    "Cases": [
-                      {
-                        "Condition": {
-                          "Comparison": {
-                            "ComparisonKind": 0,
-                            "Left": {
-                              "Measure": {
-                                "Expression": {
-                                  "SourceRef": {
-                                    "Entity": "_Measures"
-                                  }
-                                },
-                                "Property": "Total Hours Icon"
-                              }
-                            },
-                            "Right": {
-                              "Literal": {
-                                "Value": "2D"
-                              }
-                            }
-                          }
-                        },
-                        "Value": {
-                          "Literal": {
-                            "Value": "'ColoredArrowDownRight'"
-                          }
-                        }
-                      },
-                      {
-                        "Condition": {
-                          "Comparison": {
-                            "ComparisonKind": 0,
-                            "Left": {
-                              "Measure": {
-                                "Expression": {
-                                  "SourceRef": {
-                                    "Entity": "_Measures"
-                                  }
-                                },
-                                "Property": "Total Hours Icon"
-                              }
-                            },
-                            "Right": {
-                              "Literal": {
-                                "Value": "1D"
-                              }
-                            }
-                          }
-                        },
-                        "Value": {
-                          "Literal": {
-                            "Value": "'ColoredArrowUp'"
-                          }
-                        }
-                      }
-                    ]
-                  }
-                }
-              }
-            }
-          },
+          "properties": {},
           "selector": {
             "data": [
               {
@@ -424,129 +237,6 @@
               }
             ],
             "metadata": "_Measures.Total Hours"
-          }
-        },
-        {
-          "properties": {
-            "backColor": {
-              "solid": {
-                "color": {
-                  "expr": {
-                    "Measure": {
-                      "Expression": {
-                        "SourceRef": {
-                          "Entity": "_Measures"
-                        }
-                      },
-                      "Property": "Total LY Hours Color"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "selector": {
-            "data": [
-              {
-                "dataViewWildcard": {
-                  "matchingOption": 1
-                }
-              }
-            ],
-            "metadata": "_Measures.LY Hours"
-          }
-        },
-        {
-          "properties": {
-            "icon": {
-              "kind": "Icon",
-              "layout": {
-                "expr": {
-                  "Literal": {
-                    "Value": "'After'"
-                  }
-                }
-              },
-              "verticalAlignment": {
-                "expr": {
-                  "Literal": {
-                    "Value": "'Top'"
-                  }
-                }
-              },
-              "value": {
-                "expr": {
-                  "Conditional": {
-                    "Cases": [
-                      {
-                        "Condition": {
-                          "Comparison": {
-                            "ComparisonKind": 0,
-                            "Left": {
-                              "Measure": {
-                                "Expression": {
-                                  "SourceRef": {
-                                    "Entity": "_Measures"
-                                  }
-                                },
-                                "Property": "LY Labor Icon"
-                              }
-                            },
-                            "Right": {
-                              "Literal": {
-                                "Value": "2D"
-                              }
-                            }
-                          }
-                        },
-                        "Value": {
-                          "Literal": {
-                            "Value": "'ColoredArrowDownRight'"
-                          }
-                        }
-                      },
-                      {
-                        "Condition": {
-                          "Comparison": {
-                            "ComparisonKind": 0,
-                            "Left": {
-                              "Measure": {
-                                "Expression": {
-                                  "SourceRef": {
-                                    "Entity": "_Measures"
-                                  }
-                                },
-                                "Property": "LY Labor Icon"
-                              }
-                            },
-                            "Right": {
-                              "Literal": {
-                                "Value": "1D"
-                              }
-                            }
-                          }
-                        },
-                        "Value": {
-                          "Literal": {
-                            "Value": "'ColoredArrowUp'"
-                          }
-                        }
-                      }
-                    ]
-                  }
-                }
-              }
-            }
-          },
-          "selector": {
-            "data": [
-              {
-                "dataViewWildcard": {
-                  "matchingOption": 1
-                }
-              }
-            ],
-            "metadata": "_Measures.LY Labor Performance Variance"
           }
         }
       ],
@@ -582,6 +272,13 @@
                   }
                 }
               }
+            },
+            "alignment": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Center'"
+                }
+              }
             }
           }
         }
@@ -593,6 +290,13 @@
               "expr": {
                 "Literal": {
                   "Value": "12D"
+                }
+              }
+            },
+            "alignment": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Left'"
                 }
               }
             }
@@ -617,6 +321,17 @@
               "expr": {
                 "Literal": {
                   "Value": "true"
+                }
+              }
+            },
+            "fontColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#1D3C4E'"
+                    }
+                  }
                 }
               }
             }
@@ -648,6 +363,18 @@
               "expr": {
                 "Literal": {
                   "Value": "false"
+                }
+              }
+            },
+            "fontColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "ThemeDataColor": {
+                      "ColorId": 0,
+                      "Percent": 0
+                    }
+                  }
                 }
               }
             }
@@ -705,69 +432,6 @@
             }
           },
           "selector": {
-            "metadata": "_Measures.LY Hours"
-          }
-        },
-        {
-          "properties": {
-            "alignment": {
-              "expr": {
-                "Literal": {
-                  "Value": "'Center'"
-                }
-              }
-            },
-            "styleTotal": {
-              "expr": {
-                "Literal": {
-                  "Value": "true"
-                }
-              }
-            }
-          },
-          "selector": {
-            "metadata": "_Measures.Productivity"
-          }
-        },
-        {
-          "properties": {
-            "alignment": {
-              "expr": {
-                "Literal": {
-                  "Value": "'Center'"
-                }
-              }
-            },
-            "styleTotal": {
-              "expr": {
-                "Literal": {
-                  "Value": "true"
-                }
-              }
-            }
-          },
-          "selector": {
-            "metadata": "_Measures.Labor Performance"
-          }
-        },
-        {
-          "properties": {
-            "alignment": {
-              "expr": {
-                "Literal": {
-                  "Value": "'Center'"
-                }
-              }
-            },
-            "styleTotal": {
-              "expr": {
-                "Literal": {
-                  "Value": "true"
-                }
-              }
-            }
-          },
-          "selector": {
             "metadata": "_Measures.Total Hours"
           }
         },
@@ -783,6 +447,27 @@
           },
           "selector": {
             "metadata": "Min(TechnicianEfficiency.Branch)"
+          }
+        },
+        {
+          "properties": {
+            "alignment": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Center'"
+                }
+              }
+            },
+            "styleTotal": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "Sum(TechnicianEfficiency.AvailableHours)"
           }
         }
       ],
@@ -837,7 +522,56 @@
                   "Value": "true"
                 }
               }
+            },
+            "perColumnLevel": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
             }
+          }
+        },
+        {
+          "properties": {
+            "levelSubtotalEnabled": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "dim_BranchLocation.Branch"
+          }
+        },
+        {
+          "properties": {
+            "levelSubtotalEnabled": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "dim_Technician_Code_Names.TechnicianDisplayName"
+          }
+        },
+        {
+          "properties": {
+            "levelSubtotalEnabled": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "dim_DateTable.MonthYear"
           }
         }
       ],
@@ -847,69 +581,149 @@
             "value": {
               "expr": {
                 "Literal": {
-                  "Value": "119.45891917845543D"
+                  "Value": "187.0943396226415D"
                 }
               }
             }
           },
           "selector": {
-            "metadata": "_Measures.Labor Performance"
-          }
-        },
-        {
-          "properties": {
-            "value": {
-              "expr": {
-                "Literal": {
-                  "Value": "191.71144735448001D"
+            "data": [
+              {
+                "scopeId": {
+                  "Comparison": {
+                    "ComparisonKind": 0,
+                    "Left": {
+                      "Column": {
+                        "Expression": {
+                          "SourceRef": {
+                            "Entity": "dim_BranchLocation"
+                          }
+                        },
+                        "Property": "Branch"
+                      }
+                    },
+                    "Right": {
+                      "Literal": {
+                        "Value": "'1 - Seminole'"
+                      }
+                    }
+                  }
                 }
               }
-            }
-          },
-          "selector": {
-            "metadata": "_Measures.LY Labor Performance Variance"
-          }
-        },
-        {
-          "properties": {
-            "value": {
-              "expr": {
-                "Literal": {
-                  "Value": "123.0753141611708D"
-                }
-              }
-            }
-          },
-          "selector": {
-            "metadata": "_Measures.LY Labor Performance"
-          }
-        },
-        {
-          "properties": {
-            "value": {
-              "expr": {
-                "Literal": {
-                  "Value": "104.23949036867342D"
-                }
-              }
-            }
-          },
-          "selector": {
-            "metadata": "_Measures.LY Hours Variance"
-          }
-        },
-        {
-          "properties": {
-            "value": {
-              "expr": {
-                "Literal": {
-                  "Value": "97.13321064673971D"
-                }
-              }
-            }
-          },
-          "selector": {
+            ],
             "metadata": "Sum(TechnicianEfficiency.AvailableHours)"
+          }
+        },
+        {
+          "properties": {
+            "value": {
+              "expr": {
+                "Literal": {
+                  "Value": "150.8490566037736D"
+                }
+              }
+            }
+          },
+          "selector": {
+            "data": [
+              {
+                "scopeId": {
+                  "Comparison": {
+                    "ComparisonKind": 0,
+                    "Left": {
+                      "Column": {
+                        "Expression": {
+                          "SourceRef": {
+                            "Entity": "dim_BranchLocation"
+                          }
+                        },
+                        "Property": "Branch"
+                      }
+                    },
+                    "Right": {
+                      "Literal": {
+                        "Value": "'1 - Seminole'"
+                      }
+                    }
+                  }
+                }
+              }
+            ],
+            "metadata": "_Measures.Total Hours"
+          }
+        },
+        {
+          "properties": {
+            "value": {
+              "expr": {
+                "Literal": {
+                  "Value": "169.32075471698113D"
+                }
+              }
+            }
+          },
+          "selector": {
+            "data": [
+              {
+                "total": [
+                  {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "dim_BranchLocation"
+                        }
+                      },
+                      "Property": "Branch"
+                    }
+                  }
+                ]
+              }
+            ],
+            "metadata": "Sum(TechnicianEfficiency.AvailableHours)"
+          }
+        },
+        {
+          "properties": {
+            "value": {
+              "expr": {
+                "Literal": {
+                  "Value": "155.43396226415095D"
+                }
+              }
+            }
+          },
+          "selector": {
+            "data": [
+              {
+                "total": [
+                  {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "dim_BranchLocation"
+                        }
+                      },
+                      "Property": "Branch"
+                    }
+                  }
+                ]
+              }
+            ],
+            "metadata": "_Measures.Total Hours"
+          }
+        },
+        {
+          "properties": {
+            "value": {
+              "expr": {
+                "Literal": {
+                  "Value": "249.52830188679246D"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "dim_Technician_Code_Names.TechnicianDisplayName"
           }
         }
       ]
