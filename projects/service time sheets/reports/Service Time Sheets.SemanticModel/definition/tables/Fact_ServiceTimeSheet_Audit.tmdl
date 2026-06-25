@@ -540,6 +540,72 @@ table Fact_ServiceTimeSheet_Audit
 
 		annotation SummarizationSetBy = Automatic
 
+	column AuditNote =
+			IFERROR(
+			    LOOKUPVALUE(
+			        AuditLog[AuditNote],
+			        AuditLog[TechNum], Fact_ServiceTimeSheet_Audit[TechNum],
+			        AuditLog[RONumberText], Fact_ServiceTimeSheet_Audit[RONumberText],
+			        AuditLog[PayEnd], Fact_ServiceTimeSheet_Audit[PayEnd]
+			    ),
+			    BLANK()
+			)
+		dataType: string
+		lineageTag: a1d4e5f6-1111-4222-8333-000000000301
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	column AuditedBy =
+			IFERROR(
+			    LOOKUPVALUE(
+			        AuditLog[AuditedBy],
+			        AuditLog[TechNum], Fact_ServiceTimeSheet_Audit[TechNum],
+			        AuditLog[RONumberText], Fact_ServiceTimeSheet_Audit[RONumberText],
+			        AuditLog[PayEnd], Fact_ServiceTimeSheet_Audit[PayEnd]
+			    ),
+			    BLANK()
+			)
+		dataType: string
+		lineageTag: a1d4e5f6-1111-4222-8333-000000000302
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	column AuditedDate =
+			IFERROR(
+			    LOOKUPVALUE(
+			        AuditLog[AuditedDate],
+			        AuditLog[TechNum], Fact_ServiceTimeSheet_Audit[TechNum],
+			        AuditLog[RONumberText], Fact_ServiceTimeSheet_Audit[RONumberText],
+			        AuditLog[PayEnd], Fact_ServiceTimeSheet_Audit[PayEnd]
+			    ),
+			    BLANK()
+			)
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: a1d4e5f6-1111-4222-8333-000000000303
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	column IsAudited =
+			NOT ISBLANK(Fact_ServiceTimeSheet_Audit[AuditedDate])
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: a1d4e5f6-1111-4222-8333-000000000304
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	column AuditedIcon =
+			IF(Fact_ServiceTimeSheet_Audit[IsAudited], "✓", "")
+		dataType: string
+		lineageTag: a1d4e5f6-1111-4222-8333-000000000305
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
 	partition Fact_ServiceTimeSheet_Audit = m
 		mode: import
 		source =
