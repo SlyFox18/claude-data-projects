@@ -1411,6 +1411,64 @@ table _Measures
 		displayFolder: Core Metrics
 		lineageTag: 694c9a63-5c85-44b7-9153-df1d784df5c9
 
+	measure 'HTML - Parts Overview Hero' = ```
+
+			VAR SelectedTier = SELECTEDVALUE(Fact_Parts_Open_Tickets[Aging], "All Tiers")
+			VAR OrderTotal = [Order Total]
+			VAR PartsOnOrder = [# Parts On Order]
+			VAR LinesCount = [Line Count]
+
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    padding: 16px 30px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 12px;
+			    color: white;
+			    height: 100%;
+			    box-sizing: border-box;
+			    display: flex;
+			    flex-direction: column;
+			    justify-content: center;
+			'>
+			    <div style='font-size: 12px; opacity: 0.75; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;'>
+			        TOTALS &mdash; " & SelectedTier & "
+			    </div>
+			    <div style='display: flex; align-items: center; justify-content: space-around;'>
+			        <div style='text-align: center; flex: 1;'>
+			            <div style='font-size: 13px; opacity: 0.9; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 1px;'>
+			                Order Total
+			            </div>
+			            <div style='font-size: 40px; font-weight: 700; line-height: 1;'>
+			                " & FORMAT(OrderTotal, "$#,##0") & "
+			            </div>
+			        </div>
+			        <div style='width: 2px; height: 60px; background: rgba(255,255,255,0.3); margin: 0 30px;'></div>
+			        <div style='text-align: center; flex: 1;'>
+			            <div style='font-size: 13px; opacity: 0.9; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 1px;'>
+			                # Parts On Order
+			            </div>
+			            <div style='font-size: 40px; font-weight: 700; line-height: 1;'>
+			                " & FORMAT(PartsOnOrder, "#,##0") & "
+			            </div>
+			        </div>
+			        <div style='width: 2px; height: 60px; background: rgba(255,255,255,0.3); margin: 0 30px;'></div>
+			        <div style='text-align: center; flex: 1;'>
+			            <div style='font-size: 13px; opacity: 0.9; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 1px;'>
+			                Parts Line Count
+			            </div>
+			            <div style='font-size: 40px; font-weight: 700; line-height: 1;'>
+			                " & FORMAT(LinesCount, "#,##0") & "
+			            </div>
+			        </div>
+			    </div>
+			</div>
+			"
+			```
+		displayFolder: Core Metrics
+		lineageTag: e1a2b3c4-1111-4aaa-9001-aaaaaaaaaa01
+
 	measure 'Page 5 - Details DT - Header' =
 			
 			// Get user name
