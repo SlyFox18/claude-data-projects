@@ -1469,6 +1469,40 @@ table _Measures
 		displayFolder: Core Metrics
 		lineageTag: e1a2b3c4-1111-4aaa-9001-aaaaaaaaaa01
 
+	measure 'HTML - Aging Card Row' = ```
+
+			VAR Lbl1 = "90+ days"
+			VAR Clr1 = "#cf1322"
+			VAR Lbl2 = "61-90 days"
+			VAR Clr2 = "#f5222d"
+			VAR Lbl3 = "31-60 days"
+			VAR Clr3 = "#fa8c16"
+			VAR Lbl4 = "15-30 days"
+			VAR Clr4 = "#faad14"
+			VAR Lbl5 = "8-14 days"
+			VAR Clr5 = "#52c41a"
+			VAR Lbl6 = "0-7 days"
+			VAR Clr6 = "#27ae60"
+			VAR Cnt1 = CALCULATE([Total # of Orders], Fact_Parts_Open_Tickets[Aging] = Lbl1)
+			VAR Cnt2 = CALCULATE([Total # of Orders], Fact_Parts_Open_Tickets[Aging] = Lbl2)
+			VAR Cnt3 = CALCULATE([Total # of Orders], Fact_Parts_Open_Tickets[Aging] = Lbl3)
+			VAR Cnt4 = CALCULATE([Total # of Orders], Fact_Parts_Open_Tickets[Aging] = Lbl4)
+			VAR Cnt5 = CALCULATE([Total # of Orders], Fact_Parts_Open_Tickets[Aging] = Lbl5)
+			VAR Cnt6 = CALCULATE([Total # of Orders], Fact_Parts_Open_Tickets[Aging] = Lbl6)
+			VAR CardCSS = "background: white; border-radius: 6px; padding: 10px 6px; text-align: center; flex: 1; box-shadow: 0 1px 3px rgba(0,0,0,0.08); box-sizing: border-box;"
+			VAR Card1 = "<div style='" & CardCSS & " border-top: 3px solid " & Clr1 & ";'><div style='font-size: 11px; color: #666;'>" & Lbl1 & "</div><div style='font-size: 18px; font-weight: 700; color: #1D3C4E; margin-top: 4px;'>" & FORMAT(Cnt1, "#,##0") & " orders</div></div>"
+			VAR Card2 = "<div style='" & CardCSS & " border-top: 3px solid " & Clr2 & ";'><div style='font-size: 11px; color: #666;'>" & Lbl2 & "</div><div style='font-size: 18px; font-weight: 700; color: #1D3C4E; margin-top: 4px;'>" & FORMAT(Cnt2, "#,##0") & " orders</div></div>"
+			VAR Card3 = "<div style='" & CardCSS & " border-top: 3px solid " & Clr3 & ";'><div style='font-size: 11px; color: #666;'>" & Lbl3 & "</div><div style='font-size: 18px; font-weight: 700; color: #1D3C4E; margin-top: 4px;'>" & FORMAT(Cnt3, "#,##0") & " orders</div></div>"
+			VAR Card4 = "<div style='" & CardCSS & " border-top: 3px solid " & Clr4 & ";'><div style='font-size: 11px; color: #666;'>" & Lbl4 & "</div><div style='font-size: 18px; font-weight: 700; color: #1D3C4E; margin-top: 4px;'>" & FORMAT(Cnt4, "#,##0") & " orders</div></div>"
+			VAR Card5 = "<div style='" & CardCSS & " border-top: 3px solid " & Clr5 & ";'><div style='font-size: 11px; color: #666;'>" & Lbl5 & "</div><div style='font-size: 18px; font-weight: 700; color: #1D3C4E; margin-top: 4px;'>" & FORMAT(Cnt5, "#,##0") & " orders</div></div>"
+			VAR Card6 = "<div style='" & CardCSS & " border-top: 3px solid " & Clr6 & ";'><div style='font-size: 11px; color: #666;'>" & Lbl6 & "</div><div style='font-size: 18px; font-weight: 700; color: #1D3C4E; margin-top: 4px;'>" & FORMAT(Cnt6, "#,##0") & " orders</div></div>"
+
+			RETURN
+			"<div style='font-family: Segoe UI, Arial, sans-serif; display: flex; gap: 6px; height: 100%; box-sizing: border-box;'>" & Card1 & Card2 & Card3 & Card4 & Card5 & Card6 & "</div>"
+			```
+		displayFolder: Core Metrics
+		lineageTag: e1a2b3c4-1111-4aaa-9001-aaaaaaaaaa02
+
 	measure 'Page 5 - Details DT - Header' =
 			
 			// Get user name
