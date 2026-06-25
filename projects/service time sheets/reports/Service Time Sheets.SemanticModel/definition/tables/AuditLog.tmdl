@@ -1,0 +1,64 @@
+table AuditLog
+	lineageTag: b2e5f6a7-2222-4333-9444-000000000401
+
+	column TechNum
+		dataType: string
+		lineageTag: b2e5f6a7-2222-4333-9444-000000000402
+		summarizeBy: none
+		sourceColumn: TechNum
+
+		annotation SummarizationSetBy = Automatic
+
+	column RONumberText
+		dataType: string
+		lineageTag: b2e5f6a7-2222-4333-9444-000000000403
+		summarizeBy: none
+		sourceColumn: RONumberText
+
+		annotation SummarizationSetBy = Automatic
+
+	column PayEnd
+		dataType: dateTime
+		formatString: Long Date
+		lineageTag: b2e5f6a7-2222-4333-9444-000000000404
+		summarizeBy: none
+		sourceColumn: PayEnd
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column AuditNote
+		dataType: string
+		lineageTag: b2e5f6a7-2222-4333-9444-000000000405
+		summarizeBy: none
+		sourceColumn: AuditNote
+
+		annotation SummarizationSetBy = Automatic
+
+	column AuditedBy
+		dataType: string
+		lineageTag: b2e5f6a7-2222-4333-9444-000000000406
+		summarizeBy: none
+		sourceColumn: AuditedBy
+
+		annotation SummarizationSetBy = Automatic
+
+	column AuditedDate
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: b2e5f6a7-2222-4333-9444-000000000407
+		summarizeBy: none
+		sourceColumn: AuditedDate
+
+		annotation SummarizationSetBy = Automatic
+
+	partition AuditLog = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-gxnyznhdptpenfw724g3o5sjzm.datawarehouse.fabric.microsoft.com", "LH_Master_Data"),
+				    dbo_AuditLog = Source{[Schema="dbo",Item="AuditLog"]}[Data]
+				in
+				    dbo_AuditLog
+
