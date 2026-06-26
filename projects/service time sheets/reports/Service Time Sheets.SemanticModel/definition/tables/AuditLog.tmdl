@@ -26,7 +26,14 @@ table AuditLog
 
 		annotation SummarizationSetBy = Automatic
 
-		annotation UnderlyingDateTimeDataType = Date
+	column PayEndDateOnly =
+			DATE(YEAR(AuditLog[PayEnd]), MONTH(AuditLog[PayEnd]), DAY(AuditLog[PayEnd]))
+		dataType: dateTime
+		formatString: Short Date
+		lineageTag: b2e5f6a7-2222-4333-9444-000000000408
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
 
 	column AuditNote
 		dataType: string

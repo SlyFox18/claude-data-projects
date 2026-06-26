@@ -540,13 +540,22 @@ table Fact_ServiceTimeSheet_Audit
 
 		annotation SummarizationSetBy = Automatic
 
+	column PayEndDateOnly =
+			DATE(YEAR(Fact_ServiceTimeSheet_Audit[PayEnd]), MONTH(Fact_ServiceTimeSheet_Audit[PayEnd]), DAY(Fact_ServiceTimeSheet_Audit[PayEnd]))
+		dataType: dateTime
+		formatString: Short Date
+		lineageTag: a1d4e5f6-1111-4222-8333-000000000306
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
 	column AuditNote =
 			IFERROR(
 			    LOOKUPVALUE(
 			        AuditLog[AuditNote],
 			        AuditLog[TechNum], Fact_ServiceTimeSheet_Audit[TechNum],
 			        AuditLog[RONumberText], Fact_ServiceTimeSheet_Audit[RONumberText],
-			        AuditLog[PayEnd], Fact_ServiceTimeSheet_Audit[PayEnd]
+			        AuditLog[PayEndDateOnly], Fact_ServiceTimeSheet_Audit[PayEndDateOnly]
 			    ),
 			    BLANK()
 			)
@@ -562,7 +571,7 @@ table Fact_ServiceTimeSheet_Audit
 			        AuditLog[AuditedBy],
 			        AuditLog[TechNum], Fact_ServiceTimeSheet_Audit[TechNum],
 			        AuditLog[RONumberText], Fact_ServiceTimeSheet_Audit[RONumberText],
-			        AuditLog[PayEnd], Fact_ServiceTimeSheet_Audit[PayEnd]
+			        AuditLog[PayEndDateOnly], Fact_ServiceTimeSheet_Audit[PayEndDateOnly]
 			    ),
 			    BLANK()
 			)
@@ -578,7 +587,7 @@ table Fact_ServiceTimeSheet_Audit
 			        AuditLog[AuditedDate],
 			        AuditLog[TechNum], Fact_ServiceTimeSheet_Audit[TechNum],
 			        AuditLog[RONumberText], Fact_ServiceTimeSheet_Audit[RONumberText],
-			        AuditLog[PayEnd], Fact_ServiceTimeSheet_Audit[PayEnd]
+			        AuditLog[PayEndDateOnly], Fact_ServiceTimeSheet_Audit[PayEndDateOnly]
 			    ),
 			    BLANK()
 			)
@@ -589,8 +598,7 @@ table Fact_ServiceTimeSheet_Audit
 
 		annotation SummarizationSetBy = Automatic
 
-	column IsAudited =
-			NOT ISBLANK(Fact_ServiceTimeSheet_Audit[AuditedDate])
+	column IsAudited = NOT ISBLANK(Fact_ServiceTimeSheet_Audit[AuditedDate])
 		dataType: boolean
 		formatString: """TRUE"";""TRUE"";""FALSE"""
 		lineageTag: a1d4e5f6-1111-4222-8333-000000000304
@@ -598,8 +606,7 @@ table Fact_ServiceTimeSheet_Audit
 
 		annotation SummarizationSetBy = Automatic
 
-	column AuditedIcon =
-			IF(Fact_ServiceTimeSheet_Audit[IsAudited], "✓", "")
+	column AuditedIcon = IF(Fact_ServiceTimeSheet_Audit[IsAudited], "✓", "")
 		dataType: string
 		lineageTag: a1d4e5f6-1111-4222-8333-000000000305
 		summarizeBy: none
