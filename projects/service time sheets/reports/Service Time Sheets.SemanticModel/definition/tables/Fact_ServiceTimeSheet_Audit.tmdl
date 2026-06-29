@@ -612,6 +612,14 @@ table Fact_ServiceTimeSheet_Audit
 
 		annotation SummarizationSetBy = Automatic
 
+	column HoursDifferenceForApp = COALESCE(Fact_ServiceTimeSheet_Audit[HoursDifference], 0)
+		dataType: double
+		formatString: 0.00
+		lineageTag: a1d4e5f6-1111-4222-8333-000000000307
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
 	partition Fact_ServiceTimeSheet_Audit = m
 		mode: import
 		source =
