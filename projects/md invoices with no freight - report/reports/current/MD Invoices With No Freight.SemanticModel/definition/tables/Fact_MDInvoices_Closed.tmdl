@@ -64,33 +64,34 @@ table Fact_MDInvoices_Closed
 
 	column OrderQty
 		dataType: double
+		formatString: 0
 		lineageTag: fd9c1195-a17e-4b48-8e89-6eedf7972001
 		summarizeBy: sum
 		sourceColumn: OrderQty
 
 		annotation SummarizationSetBy = Automatic
 
-		annotation PBI_FormatHint = {"isGeneralNumber":true}
-
 	column UnitPrice
 		dataType: double
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
 		lineageTag: 94f9f101-b043-4f0c-997b-37211a0eb4eb
 		summarizeBy: sum
 		sourceColumn: UnitPrice
 
 		annotation SummarizationSetBy = Automatic
 
-		annotation PBI_FormatHint = {"isGeneralNumber":true}
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
 
 	column UnitCost
 		dataType: double
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
 		lineageTag: eec12111-c3d4-40f9-9650-664dc1573ebd
 		summarizeBy: sum
 		sourceColumn: UnitCost
 
 		annotation SummarizationSetBy = Automatic
 
-		annotation PBI_FormatHint = {"isGeneralNumber":true}
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
 
 	column LineTotal
 		dataType: double

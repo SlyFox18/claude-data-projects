@@ -1,12 +1,12 @@
 {
-  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.9.0/schema.json",
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.10.0/schema.json",
   "name": "353d5fa5353d38ae9f4b",
   "position": {
-    "x": 884.13098236775818,
+    "x": 818.11586901763224,
     "y": 246.37783375314862,
     "z": 500,
     "height": 658.97229219143583,
-    "width": 759.17380352644841,
+    "width": 825.18891687657435,
     "tabOrder": 7001
   },
   "visual": {
@@ -97,12 +97,57 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "# Pending"
+                  "Property": "# Draw In Progress"
                 }
               },
-              "queryRef": "_Measures.# Pending",
+              "queryRef": "_Measures.# Draw In Progress",
+              "nativeQueryRef": "Draw In Progress",
+              "displayName": "Draw In Progress"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "# Draw Open RO"
+                }
+              },
+              "queryRef": "_Measures.# Draw Open RO",
+              "nativeQueryRef": "Draw Open",
+              "displayName": "Draw Open"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "# Pending Invoice"
+                }
+              },
+              "queryRef": "_Measures.# Pending Invoice",
               "nativeQueryRef": "Pending",
               "displayName": "Pending"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Draw Tech Pay"
+                }
+              },
+              "queryRef": "_Measures.Draw Tech Pay",
+              "nativeQueryRef": "Draw $",
+              "displayName": "Draw $"
             },
             {
               "field": {
@@ -262,7 +307,7 @@
             "fontSize": {
               "expr": {
                 "Literal": {
-                  "Value": "11D"
+                  "Value": "10D"
                 }
               }
             },
@@ -282,7 +327,7 @@
             "fontSize": {
               "expr": {
                 "Literal": {
-                  "Value": "15D"
+                  "Value": "12D"
                 }
               }
             },
@@ -568,6 +613,13 @@
         },
         {
           "properties": {
+            "styleHeader": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            },
             "alignment": {
               "expr": {
                 "Literal": {
@@ -584,7 +636,56 @@
             }
           },
           "selector": {
-            "metadata": "_Measures.# Pending"
+            "metadata": "_Measures.# Draw Open RO"
+          }
+        },
+        {
+          "properties": {
+            "alignment": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Center'"
+                }
+              }
+            },
+            "styleTotal": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "_Measures.# Pending Invoice"
+          }
+        },
+        {
+          "properties": {
+            "styleHeader": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "alignment": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Center'"
+                }
+              }
+            },
+            "styleTotal": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "_Measures.# Draw In Progress"
           }
         }
       ],
@@ -594,7 +695,7 @@
             "value": {
               "expr": {
                 "Literal": {
-                  "Value": "97.50377608214822D"
+                  "Value": "54.89049700567484D"
                 }
               }
             }
@@ -608,7 +709,7 @@
             "value": {
               "expr": {
                 "Literal": {
-                  "Value": "71.50377021815461D"
+                  "Value": "60.82001517657415D"
                 }
               }
             }
@@ -622,7 +723,7 @@
             "value": {
               "expr": {
                 "Literal": {
-                  "Value": "94.96725713102413D"
+                  "Value": "74.91921244696478D"
                 }
               }
             }
@@ -636,7 +737,7 @@
             "value": {
               "expr": {
                 "Literal": {
-                  "Value": "96.78840729868186D"
+                  "Value": "79.09336539730023D"
                 }
               }
             }
@@ -650,7 +751,7 @@
             "value": {
               "expr": {
                 "Literal": {
-                  "Value": "104.25189995233256D"
+                  "Value": "97.19580659637987D"
                 }
               }
             }
@@ -664,13 +765,55 @@
             "value": {
               "expr": {
                 "Literal": {
-                  "Value": "86.60959067516444D"
+                  "Value": "60.55808743108146D"
                 }
               }
             }
           },
           "selector": {
             "metadata": "_Measures.Overclaim Rate %"
+          }
+        },
+        {
+          "properties": {
+            "value": {
+              "expr": {
+                "Literal": {
+                  "Value": "95.14658810692764D"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "Fact_ServiceTimeSheet_Audit.Location"
+          }
+        },
+        {
+          "properties": {
+            "value": {
+              "expr": {
+                "Literal": {
+                  "Value": "63.13853508214673D"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "_Measures.# Draw Open RO"
+          }
+        },
+        {
+          "properties": {
+            "value": {
+              "expr": {
+                "Literal": {
+                  "Value": "69.48864144801283D"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "_Measures.# Draw In Progress"
           }
         }
       ]

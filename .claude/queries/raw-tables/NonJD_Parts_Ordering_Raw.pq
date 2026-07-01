@@ -1,0 +1,193 @@
+/*
+============================================================================
+Query: NonJD_Parts_Ordering_Raw
+Dataflow: df_NonJD_Parts_Ordering_Raw
+Location: LH_Master_Data → Dataflows → 01 - Raw Sources
+============================================================================
+
+PURPOSE: Non-JD parts master + 60-month sales/request history from
+jdis_Part_Information. Source data for sales history fact and reorder
+recommendation fact. Filtered to non-JD franchises only at source.
+
+GRAIN: One row per Branch + PartNumber (non-JD franchises only)
+
+SOURCE: SQL Anywhere (ODBC: EquipRDB64) — jdis_Part_Information table
+
+REFRESH: Full refresh, once daily (Phase 1 of pipeline)
+
+NOTE: Do NOT modify df_jdis_Part_Information_Raw — it runs 3× daily,
+feeds many downstream reports, and consumes significant CUs. This is a
+separate purpose-built dataflow for the Non-JD Parts Order Tool only.
+
+KEY COLUMNS:
+  SalesMonth01–60   — unit quantities (not dollars), Month01 = most recent
+  RequestsMonth01–60 — demand/request counts, Month01 = most recent
+  SystemSuggestedOrderQty (pi_suggested_order_qty) — NOT used; stale/
+    inconsistent for non-JD parts. ROP calculated fresh in Fact_NonJD_Reorder.
+============================================================================
+*/
+
+let
+    SQL = "
+        SELECT
+            pi_Branch                       AS Branch,
+            pi_Part_No                      AS PartNumber,
+            pi_Franchise                    AS Franchise,
+            pi_Description                  AS Description,
+            pi_Source                       AS Source,
+            pi_SLC                          AS SLC,
+            pi_Commodity_Code               AS CommodityCode,
+            pi_Dealer_Group_Code            AS DealerGroupCode,
+            pi_Vendor_Code                  AS VendorCode,
+            pi_On_Hand_Qty                  AS QuantityOnHand,
+            pi_On_Order                     AS OnOrder,
+            pi_Back_Ord_Qty                 AS BackOrderQty,
+            pi_Pending_Qty                  AS PendingQty,
+            pi_Bin                          AS Bin,
+            pi_Bulk_Bin                     AS BulkBin,
+            pi_Package_Qty                  AS PackageQty,
+            pi_Return_Indicator             AS Returnable,
+            pi_Super_To                     AS SuperTo,
+            pi_Super_From                   AS SuperFrom,
+            pi_Cost                         AS Cost,
+            pi_Sell_Price_1_Master_File     AS SellPrice1,
+            pi_List_Price_Master_File       AS ListPrice,
+            pi_Date_Created                 AS DateCreated,
+            pi_Date_Last_Request            AS DateLastRequested,
+            pi_Minimum_Qty                  AS MinimumQty,
+            pi_Maximum_Qty                  AS MaximumQty,
+            pi_Reorder_Code                 AS ReorderCode,
+            pi_Activity_Code                AS ActivityCode,
+            pi_suggested_order_qty          AS SystemSuggestedOrderQty,
+            pi_current_12_mo_sales          AS Current12MoSales,
+            pi_previous_12_mo_sales         AS Previous12MoSales,
+            pi_current_12_mo_requests       AS Current12MoRequests,
+            pi_previous_12_mo_requests      AS Previous12MoRequests,
+            pi_current_12_Lost_Sales_Qty    AS Current12LostSalesQty,
+            pi_current_12_Lost_Sales_Value  AS Current12LostSalesValue,
+            pi_current_mo_sales             AS SalesMonth01,
+            pi_sales_history_02             AS SalesMonth02,
+            pi_sales_history_03             AS SalesMonth03,
+            pi_sales_history_04             AS SalesMonth04,
+            pi_sales_history_05             AS SalesMonth05,
+            pi_sales_history_06             AS SalesMonth06,
+            pi_sales_history_07             AS SalesMonth07,
+            pi_sales_history_08             AS SalesMonth08,
+            pi_sales_history_09             AS SalesMonth09,
+            pi_sales_history_10             AS SalesMonth10,
+            pi_sales_history_11             AS SalesMonth11,
+            pi_sales_history_12             AS SalesMonth12,
+            pi_sales_history_13             AS SalesMonth13,
+            pi_sales_history_14             AS SalesMonth14,
+            pi_sales_history_15             AS SalesMonth15,
+            pi_sales_history_16             AS SalesMonth16,
+            pi_sales_history_17             AS SalesMonth17,
+            pi_sales_history_18             AS SalesMonth18,
+            pi_sales_history_19             AS SalesMonth19,
+            pi_sales_history_20             AS SalesMonth20,
+            pi_sales_history_21             AS SalesMonth21,
+            pi_sales_history_22             AS SalesMonth22,
+            pi_sales_history_23             AS SalesMonth23,
+            pi_sales_history_24             AS SalesMonth24,
+            pi_sales_history_25             AS SalesMonth25,
+            pi_sales_history_26             AS SalesMonth26,
+            pi_sales_history_27             AS SalesMonth27,
+            pi_sales_history_28             AS SalesMonth28,
+            pi_sales_history_29             AS SalesMonth29,
+            pi_sales_history_30             AS SalesMonth30,
+            pi_sales_history_31             AS SalesMonth31,
+            pi_sales_history_32             AS SalesMonth32,
+            pi_sales_history_33             AS SalesMonth33,
+            pi_sales_history_34             AS SalesMonth34,
+            pi_sales_history_35             AS SalesMonth35,
+            pi_sales_history_36             AS SalesMonth36,
+            pi_sales_history_37             AS SalesMonth37,
+            pi_sales_history_38             AS SalesMonth38,
+            pi_sales_history_39             AS SalesMonth39,
+            pi_sales_history_40             AS SalesMonth40,
+            pi_sales_history_41             AS SalesMonth41,
+            pi_sales_history_42             AS SalesMonth42,
+            pi_sales_history_43             AS SalesMonth43,
+            pi_sales_history_44             AS SalesMonth44,
+            pi_sales_history_45             AS SalesMonth45,
+            pi_sales_history_46             AS SalesMonth46,
+            pi_sales_history_47             AS SalesMonth47,
+            pi_sales_history_48             AS SalesMonth48,
+            pi_sales_history_49             AS SalesMonth49,
+            pi_sales_history_50             AS SalesMonth50,
+            pi_sales_history_51             AS SalesMonth51,
+            pi_sales_history_52             AS SalesMonth52,
+            pi_sales_history_53             AS SalesMonth53,
+            pi_sales_history_54             AS SalesMonth54,
+            pi_sales_history_55             AS SalesMonth55,
+            pi_sales_history_56             AS SalesMonth56,
+            pi_sales_history_57             AS SalesMonth57,
+            pi_sales_history_58             AS SalesMonth58,
+            pi_sales_history_59             AS SalesMonth59,
+            pi_sales_history_60             AS SalesMonth60,
+            pi_current_mo_requests          AS RequestsMonth01,
+            pi_sales_request_02             AS RequestsMonth02,
+            pi_sales_request_03             AS RequestsMonth03,
+            pi_sales_request_04             AS RequestsMonth04,
+            pi_sales_request_05             AS RequestsMonth05,
+            pi_sales_request_06             AS RequestsMonth06,
+            pi_sales_request_07             AS RequestsMonth07,
+            pi_sales_request_08             AS RequestsMonth08,
+            pi_sales_request_09             AS RequestsMonth09,
+            pi_sales_request_10             AS RequestsMonth10,
+            pi_sales_request_11             AS RequestsMonth11,
+            pi_sales_request_12             AS RequestsMonth12,
+            pi_sales_request_13             AS RequestsMonth13,
+            pi_sales_request_14             AS RequestsMonth14,
+            pi_sales_request_15             AS RequestsMonth15,
+            pi_sales_request_16             AS RequestsMonth16,
+            pi_sales_request_17             AS RequestsMonth17,
+            pi_sales_request_18             AS RequestsMonth18,
+            pi_sales_request_19             AS RequestsMonth19,
+            pi_sales_request_20             AS RequestsMonth20,
+            pi_sales_request_21             AS RequestsMonth21,
+            pi_sales_request_22             AS RequestsMonth22,
+            pi_sales_request_23             AS RequestsMonth23,
+            pi_sales_request_24             AS RequestsMonth24,
+            pi_sales_request_25             AS RequestsMonth25,
+            pi_sales_request_26             AS RequestsMonth26,
+            pi_sales_request_27             AS RequestsMonth27,
+            pi_sales_request_28             AS RequestsMonth28,
+            pi_sales_request_29             AS RequestsMonth29,
+            pi_sales_request_30             AS RequestsMonth30,
+            pi_sales_request_31             AS RequestsMonth31,
+            pi_sales_request_32             AS RequestsMonth32,
+            pi_sales_request_33             AS RequestsMonth33,
+            pi_sales_request_34             AS RequestsMonth34,
+            pi_sales_request_35             AS RequestsMonth35,
+            pi_sales_request_36             AS RequestsMonth36,
+            pi_sales_request_37             AS RequestsMonth37,
+            pi_sales_request_38             AS RequestsMonth38,
+            pi_sales_request_39             AS RequestsMonth39,
+            pi_sales_request_40             AS RequestsMonth40,
+            pi_sales_request_41             AS RequestsMonth41,
+            pi_sales_request_42             AS RequestsMonth42,
+            pi_sales_request_43             AS RequestsMonth43,
+            pi_sales_request_44             AS RequestsMonth44,
+            pi_sales_request_45             AS RequestsMonth45,
+            pi_sales_request_46             AS RequestsMonth46,
+            pi_sales_request_47             AS RequestsMonth47,
+            pi_sales_request_48             AS RequestsMonth48,
+            pi_sales_request_49             AS RequestsMonth49,
+            pi_sales_request_50             AS RequestsMonth50,
+            pi_sales_request_51             AS RequestsMonth51,
+            pi_sales_request_52             AS RequestsMonth52,
+            pi_sales_request_53             AS RequestsMonth53,
+            pi_sales_request_54             AS RequestsMonth54,
+            pi_sales_request_55             AS RequestsMonth55,
+            pi_sales_request_56             AS RequestsMonth56,
+            pi_sales_request_57             AS RequestsMonth57,
+            pi_sales_request_58             AS RequestsMonth58,
+            pi_sales_request_59             AS RequestsMonth59,
+            pi_sales_request_60             AS RequestsMonth60
+        FROM jdis_Part_Information
+        WHERE pi_Franchise NOT IN ('D', 'ZP', 'S', 'TD', 'TM', 'UD', 'UM', '95')
+    ",
+    Source = Odbc.Query("dsn=EquipRDB64", SQL)
+in
+    Source

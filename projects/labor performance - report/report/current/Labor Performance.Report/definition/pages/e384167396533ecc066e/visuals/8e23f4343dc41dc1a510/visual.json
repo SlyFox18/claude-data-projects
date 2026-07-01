@@ -1,5 +1,5 @@
 {
-  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.7.0/schema.json",
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.10.0/schema.json",
   "name": "8e23f4343dc41dc1a510",
   "position": {
     "x": 219.72876516773732,
@@ -210,13 +210,18 @@
         "sort": [
           {
             "field": {
-              "Measure": {
+              "Aggregation": {
                 "Expression": {
-                  "SourceRef": {
-                    "Entity": "_Measures"
+                  "Column": {
+                    "Expression": {
+                      "SourceRef": {
+                        "Entity": "TechnicianEfficiency"
+                      }
+                    },
+                    "Property": "AvailableHours"
                   }
                 },
-                "Property": "Total Hours"
+                "Function": 0
               }
             },
             "direction": "Descending"
@@ -956,20 +961,6 @@
   "filterConfig": {
     "filters": [
       {
-        "name": "cef1b2ae02630d403de5",
-        "field": {
-          "Column": {
-            "Expression": {
-              "SourceRef": {
-                "Entity": "dim_Technician_Code_Names"
-              }
-            },
-            "Property": "TechnicianDisplayName"
-          }
-        },
-        "type": "Categorical"
-      },
-      {
         "name": "6b2529ebde9c98bf6fb7",
         "field": {
           "Column": {
@@ -1446,34 +1437,6 @@
             }
           ]
         }
-      },
-      {
-        "name": "e7aa251489e70eb885b9",
-        "field": {
-          "Measure": {
-            "Expression": {
-              "SourceRef": {
-                "Entity": "_Measures"
-              }
-            },
-            "Property": "Total Hours"
-          }
-        },
-        "type": "Advanced"
-      },
-      {
-        "name": "b08dfed758afd62a719c",
-        "field": {
-          "Measure": {
-            "Expression": {
-              "SourceRef": {
-                "Entity": "_Measures"
-              }
-            },
-            "Property": "Productivity"
-          }
-        },
-        "type": "Advanced"
       }
     ]
   }

@@ -1,0 +1,47 @@
+App:
+  Properties:
+    OnStart: |+
+      =Set(varReorderSortCol, "RecommendedOrderQty");
+      Set(varReorderSortAsc, false);
+      Set(varShowOrdersOnly, true);
+      Set(varLowMarginOnly, false);
+      ClearCollect(
+          colAllMonths,
+          ForAll(
+              Sequence(60),
+              {
+                  MonthOffset: Value,
+                  MonthDate: DateAdd(Date(Year(Today()), Month(Today()), 1), -(Value - 1), TimeUnit.Months),
+                  MonthLabel: Text(DateAdd(Date(Year(Today()), Month(Today()), 1), -(Value - 1), TimeUnit.Months), "mmm yyyy"),
+                  IsSelected: false
+              }
+          )
+      );
+      ClearCollect(colExcluded, {PartNumber: "", Branch: ""});
+      Clear(colExcluded);
+      ClearCollect(colSelectedMonths, {MonthOffset: 0});
+      Clear(colSelectedMonths);
+      ClearCollect(colSalesFiltered, {Branch: "", PartNumber: "", Franchise: "", MonthOffset: 0, SalesQty: 0, DemandCount: 0});
+      Clear(colSalesFiltered);
+      ClearCollect(colReorderBranch, {Branch: "", PartNumber: "", Franchise: "", QuantityOnHand: 0, OnOrder: 0});
+      Clear(colReorderBranch);
+      ClearCollect(colUniqueParts, {PN: ""});
+      Clear(colUniqueParts);
+      ClearCollect(colOneTimeResults, {PN: "", Franchise: "", AnticipatedSales: 0.0, AvgMonthlySales: 0.0, OnHandQty: 0, RecommendedQty: 0.0, AnticipatedDemands: 0.0, IsIncluded: true});
+      Clear(colOneTimeResults);
+      Set(varShowTotal, true);
+      ClearCollect(colReorderBranchKeyed, {Branch: "", PartNumber: "", Description: "", Franchise: "", QuantityOnHand: 0, PN: "", AvgSales: 0.0, AvgDemand: 0.0});
+      Clear(colReorderBranchKeyed);
+      ClearCollect(colSelectedFranchises, {Value: ""});
+      Clear(colSelectedFranchises);
+      ClearCollect(colSelectedDealerGroups, {Value: ""});
+      Clear(colSelectedDealerGroups);
+      ClearCollect(colSelectedVendors, {Value: 0});
+      Clear(colSelectedVendors);
+
+
+
+
+
+
+    Theme: =PowerAppsTheme

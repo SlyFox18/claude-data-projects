@@ -1,11 +1,9 @@
 {
-  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/bookmark/1.4.0/schema.json",
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/bookmark/2.1.0/schema.json",
   "displayName": "Customer",
   "name": "bf536e49babb817c4e47",
   "options": {
     "targetVisualNames": [
-      "7458628b5d0710e7cc73",
-      "c0b0bc4069ab5a585800",
       "0dbc3f6588ea6a10006c"
     ],
     "suppressData": true
@@ -16,261 +14,9 @@
     "sections": {
       "bec5401db2ab95edd084": {
         "visualContainers": {
-          "82fa6bcd1849a640483b": {
-            "singleVisual": {
-              "visualType": "textbox",
-              "objects": {}
-            }
-          },
-          "38ef8e6be2b210d72861": {
-            "singleVisual": {
-              "visualType": "image",
-              "objects": {}
-            }
-          },
-          "5f59458357919c6e08ae": {
-            "singleVisual": {
-              "visualType": "image",
-              "objects": {}
-            }
-          },
-          "8e0fd3a6d8760e57706b": {
-            "filters": {
-              "byExpr": [
-                {
-                  "name": "aa853b700251795aed29",
-                  "type": "Advanced",
-                  "expression": {
-                    "Aggregation": {
-                      "Expression": {
-                        "Column": {
-                          "Expression": {
-                            "SourceRef": {
-                              "Entity": "Data Refresh"
-                            }
-                          },
-                          "Property": "CurrentDateTime"
-                        }
-                      },
-                      "Function": 3
-                    }
-                  },
-                  "howCreated": 0
-                }
-              ]
-            },
-            "singleVisual": {
-              "visualType": "card",
-              "objects": {}
-            }
-          },
-          "cedd0bc7cb15e0924607": {
-            "singleVisual": {
-              "visualType": "shape",
-              "objects": {}
-            }
-          },
-          "7016e66498a00a7d300b": {
-            "singleVisual": {
-              "visualType": "image",
-              "objects": {}
-            }
-          },
-          "f95de5aaac0084e47db6": {
-            "filters": {
-              "byExpr": [
-                {
-                  "name": "548cefc0cda084700e9e",
-                  "type": "Advanced",
-                  "expression": {
-                    "Measure": {
-                      "Expression": {
-                        "SourceRef": {
-                          "Entity": "_Measures"
-                        }
-                      },
-                      "Property": "Page 3 - Comparison - Header"
-                    }
-                  },
-                  "howCreated": 0
-                }
-              ]
-            },
-            "singleVisual": {
-              "visualType": "htmlContent443BE3AD55E043BF878BED274D3A6855",
-              "objects": {}
-            }
-          },
-          "c0b0bc4069ab5a585800": {
-            "filters": {
-              "byExpr": [
-                {
-                  "name": "725ec5dd2eb90a5ea80a",
-                  "type": "Categorical",
-                  "expression": {
-                    "Column": {
-                      "Expression": {
-                        "SourceRef": {
-                          "Entity": "dim_BranchLocation"
-                        }
-                      },
-                      "Property": "Branch"
-                    }
-                  },
-                  "howCreated": 0
-                },
-                {
-                  "name": "b93e9ad6c03a0659aa92",
-                  "type": "Advanced",
-                  "expression": {
-                    "Aggregation": {
-                      "Expression": {
-                        "Column": {
-                          "Expression": {
-                            "SourceRef": {
-                              "Entity": "Fact_Parts_Open_Tickets"
-                            }
-                          },
-                          "Property": "Order_No"
-                        }
-                      },
-                      "Function": 5
-                    }
-                  },
-                  "howCreated": 0
-                },
-                {
-                  "name": "0cd8c8be3664506a92d2",
-                  "type": "Categorical",
-                  "filter": {
-                    "Version": 2,
-                    "From": [
-                      {
-                        "Name": "f",
-                        "Entity": "Fact_Parts_Open_Tickets",
-                        "Type": 0
-                      }
-                    ],
-                    "Where": [
-                      {
-                        "Condition": {
-                          "Not": {
-                            "Expression": {
-                              "In": {
-                                "Expressions": [
-                                  {
-                                    "Column": {
-                                      "Expression": {
-                                        "SourceRef": {
-                                          "Source": "f"
-                                        }
-                                      },
-                                      "Property": "Invoice_Type"
-                                    }
-                                  }
-                                ],
-                                "Values": [
-                                  [
-                                    {
-                                      "Literal": {
-                                        "Value": "'I'"
-                                      }
-                                    }
-                                  ]
-                                ]
-                              }
-                            }
-                          }
-                        }
-                      }
-                    ]
-                  },
-                  "expression": {
-                    "Column": {
-                      "Expression": {
-                        "SourceRef": {
-                          "Entity": "Fact_Parts_Open_Tickets"
-                        }
-                      },
-                      "Property": "Invoice_Type"
-                    }
-                  },
-                  "howCreated": 1
-                }
-              ]
-            },
-            "singleVisual": {
-              "visualType": "clusteredBarChart",
-              "objects": {},
-              "orderBy": [
-                {
-                  "Direction": 2,
-                  "Expression": {
-                    "Aggregation": {
-                      "Expression": {
-                        "Column": {
-                          "Expression": {
-                            "SourceRef": {
-                              "Entity": "Fact_Parts_Open_Tickets"
-                            }
-                          },
-                          "Property": "Order_No"
-                        }
-                      },
-                      "Function": 5
-                    }
-                  }
-                }
-              ],
-              "activeProjections": {
-                "Category": [
-                  {
-                    "Column": {
-                      "Expression": {
-                        "SourceRef": {
-                          "Entity": "dim_BranchLocation"
-                        }
-                      },
-                      "Property": "Branch"
-                    }
-                  }
-                ]
-              }
-            }
-          },
           "0dbc3f6588ea6a10006c": {
             "filters": {
               "byExpr": [
-                {
-                  "name": "fdca2225b0424b618174",
-                  "type": "Categorical",
-                  "expression": {
-                    "Column": {
-                      "Expression": {
-                        "SourceRef": {
-                          "Entity": "dim_BranchLocation"
-                        }
-                      },
-                      "Property": "Branch"
-                    }
-                  },
-                  "howCreated": 0
-                },
-                {
-                  "name": "7a2f3756850583d9067c",
-                  "type": "Advanced",
-                  "expression": {
-                    "Measure": {
-                      "Expression": {
-                        "SourceRef": {
-                          "Entity": "_Measures"
-                        }
-                      },
-                      "Property": "Order Total"
-                    }
-                  },
-                  "howCreated": 0
-                },
                 {
                   "name": "cd487acba00b3c350795",
                   "type": "Categorical",
@@ -328,6 +74,36 @@
                     }
                   },
                   "howCreated": 1
+                },
+                {
+                  "name": "6e131b24df5f93f4ee2e",
+                  "type": "Categorical",
+                  "expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "dim_BranchLocation"
+                        }
+                      },
+                      "Property": "Branch"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "100abcead45f89605c7b",
+                  "type": "Advanced",
+                  "expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "Order Total"
+                    }
+                  },
+                  "howCreated": 0
                 }
               ]
             },
@@ -365,81 +141,78 @@
               }
             }
           },
-          "54a806710c035a1895b0": {
-            "filters": {
-              "byExpr": [
-                {
-                  "name": "0115fdcea04098a19b8a",
-                  "type": "Categorical",
-                  "expression": {
-                    "Column": {
-                      "Expression": {
-                        "SourceRef": {
-                          "Entity": "dim_BranchLocation"
-                        }
-                      },
-                      "Property": "Branch"
-                    }
-                  },
-                  "howCreated": 0
-                },
-                {
-                  "name": "eec1dda026e5567419a2",
-                  "type": "Advanced",
-                  "expression": {
-                    "Measure": {
-                      "Expression": {
-                        "SourceRef": {
-                          "Entity": "_Measures"
-                        }
-                      },
-                      "Property": "# on Back Order"
-                    }
-                  },
-                  "howCreated": 0
-                }
-              ]
-            },
+          "102b9e9064e0e6a07b3e": {
             "singleVisual": {
-              "visualType": "clusteredBarChart",
-              "objects": {},
-              "orderBy": [
-                {
-                  "Direction": 2,
-                  "Expression": {
-                    "Measure": {
-                      "Expression": {
-                        "SourceRef": {
-                          "Entity": "_Measures"
-                        }
-                      },
-                      "Property": "# on Back Order"
-                    }
-                  }
-                }
-              ],
-              "activeProjections": {
-                "Category": [
-                  {
-                    "Column": {
-                      "Expression": {
-                        "SourceRef": {
-                          "Entity": "dim_BranchLocation"
-                        }
-                      },
-                      "Property": "Branch"
-                    }
-                  }
-                ]
-              }
+              "visualType": "shape",
+              "objects": {}
             }
           },
-          "2ba7497f8beb484763bb": {
+          "276fb8de7205e580da40": {
             "filters": {
               "byExpr": [
                 {
-                  "name": "f5fa8fd84d7264e000d8",
+                  "name": "ce3b8237a3030ebe48b9",
                   "type": "Categorical",
+                  "filter": {
+                    "Version": 2,
+                    "From": [
+                      {
+                        "Name": "d",
+                        "Entity": "dim_BranchLocation",
+                        "Type": 0
+                      }
+                    ],
+                    "Where": [
+                      {
+                        "Condition": {
+                          "In": {
+                            "Expressions": [
+                              {
+                                "Column": {
+                                  "Expression": {
+                                    "SourceRef": {
+                                      "Source": "d"
+                                    }
+                                  },
+                                  "Property": "Branch"
+                                }
+                              }
+                            ],
+                            "Values": [
+                              [
+                                {
+                                  "Literal": {
+                                    "Value": "'4 - Las Cruces'"
+                                  }
+                                }
+                              ],
+                              [
+                                {
+                                  "Literal": {
+                                    "Value": "'4 - Mesquite'"
+                                  }
+                                }
+                              ],
+                              [
+                                {
+                                  "Literal": {
+                                    "Value": "'97 - Colorado City'"
+                                  }
+                                }
+                              ],
+                              [
+                                {
+                                  "Literal": {
+                                    "Value": "'12 - O''Donnell'"
+                                  }
+                                }
+                              ]
+                            ]
+                          }
+                        }
+                      }
+                    ]
+                  },
                   "expression": {
                     "Column": {
                       "Expression": {
@@ -450,64 +223,10 @@
                       "Property": "Branch"
                     }
                   },
-                  "howCreated": 0
+                  "howCreated": 1
                 },
                 {
-                  "name": "edc5cc07710267d1cd83",
-                  "type": "Advanced",
-                  "expression": {
-                    "Measure": {
-                      "Expression": {
-                        "SourceRef": {
-                          "Entity": "_Measures"
-                        }
-                      },
-                      "Property": "$$ not BO"
-                    }
-                  },
-                  "howCreated": 0
-                }
-              ]
-            },
-            "singleVisual": {
-              "visualType": "clusteredBarChart",
-              "objects": {},
-              "orderBy": [
-                {
-                  "Direction": 2,
-                  "Expression": {
-                    "Measure": {
-                      "Expression": {
-                        "SourceRef": {
-                          "Entity": "_Measures"
-                        }
-                      },
-                      "Property": "$$ not BO"
-                    }
-                  }
-                }
-              ],
-              "activeProjections": {
-                "Category": [
-                  {
-                    "Column": {
-                      "Expression": {
-                        "SourceRef": {
-                          "Entity": "dim_BranchLocation"
-                        }
-                      },
-                      "Property": "Branch"
-                    }
-                  }
-                ]
-              }
-            }
-          },
-          "9bc8a8f36ac4ebe2c3d1": {
-            "filters": {
-              "byExpr": [
-                {
-                  "name": "cefdcdd2881063c62321",
+                  "name": "fddb52395d83c774e67f",
                   "type": "Categorical",
                   "expression": {
                     "Column": {
@@ -520,9 +239,70 @@
                     }
                   },
                   "howCreated": 0
+                }
+              ]
+            },
+            "singleVisual": {
+              "visualType": "slicer",
+              "objects": {
+                "merge": {
+                  "data": [
+                    {
+                      "properties": {
+                        "mode": {
+                          "expr": {
+                            "Literal": {
+                              "Value": "'Dropdown'"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "activeProjections": {
+                "Values": [
+                  {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "Fact_Parts_Open_Tickets"
+                        }
+                      },
+                      "Property": "Customer"
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "27d66e130bc80b9d07b5": {
+            "singleVisual": {
+              "visualType": "image",
+              "objects": {}
+            }
+          },
+          "2ba7497f8beb484763bb": {
+            "filters": {
+              "byExpr": [
+                {
+                  "name": "15cbe609607584e14595",
+                  "type": "Categorical",
+                  "expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "dim_BranchLocation"
+                        }
+                      },
+                      "Property": "Branch"
+                    }
+                  },
+                  "howCreated": 0
                 },
                 {
-                  "name": "ded43b2b30e115e0a14e",
+                  "name": "fa86b55f9a16926b139e",
                   "type": "Advanced",
                   "expression": {
                     "Measure": {
@@ -531,11 +311,920 @@
                           "Entity": "_Measures"
                         }
                       },
-                      "Property": "Filtered Order Total"
+                      "Property": "$$ not BO"
+                    }
+                  },
+                  "howCreated": 0
+                }
+              ]
+            },
+            "singleVisual": {
+              "visualType": "clusteredBarChart",
+              "objects": {},
+              "orderBy": [
+                {
+                  "Direction": 2,
+                  "Expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "$$ not BO"
+                    }
+                  }
+                }
+              ],
+              "activeProjections": {
+                "Category": [
+                  {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "dim_BranchLocation"
+                        }
+                      },
+                      "Property": "Branch"
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "38ef8e6be2b210d72861": {
+            "singleVisual": {
+              "visualType": "image",
+              "objects": {}
+            }
+          },
+          "4b938defe050cc99c08e": {
+            "filters": {
+              "byExpr": [
+                {
+                  "name": "ce3b8237a3030ebe48b9",
+                  "type": "Categorical",
+                  "filter": {
+                    "Version": 2,
+                    "From": [
+                      {
+                        "Name": "d",
+                        "Entity": "dim_BranchLocation",
+                        "Type": 0
+                      }
+                    ],
+                    "Where": [
+                      {
+                        "Condition": {
+                          "Not": {
+                            "Expression": {
+                              "In": {
+                                "Expressions": [
+                                  {
+                                    "Column": {
+                                      "Expression": {
+                                        "SourceRef": {
+                                          "Source": "d"
+                                        }
+                                      },
+                                      "Property": "Branch"
+                                    }
+                                  }
+                                ],
+                                "Values": [
+                                  [
+                                    {
+                                      "Literal": {
+                                        "Value": "'4 - Las Cruces'"
+                                      }
+                                    }
+                                  ],
+                                  [
+                                    {
+                                      "Literal": {
+                                        "Value": "'5 - Deming'"
+                                      }
+                                    }
+                                  ],
+                                  [
+                                    {
+                                      "Literal": {
+                                        "Value": "'12 - O''Donnell'"
+                                      }
+                                    }
+                                  ],
+                                  [
+                                    {
+                                      "Literal": {
+                                        "Value": "'97 - Colorado City'"
+                                      }
+                                    }
+                                  ],
+                                  [
+                                    {
+                                      "Literal": {
+                                        "Value": "null"
+                                      }
+                                    }
+                                  ]
+                                ]
+                              }
+                            }
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  "expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "dim_BranchLocation"
+                        }
+                      },
+                      "Property": "Branch"
+                    }
+                  },
+                  "howCreated": 0
+                }
+              ]
+            },
+            "singleVisual": {
+              "visualType": "slicer",
+              "objects": {
+                "merge": {
+                  "data": [
+                    {
+                      "properties": {
+                        "mode": {
+                          "expr": {
+                            "Literal": {
+                              "Value": "'Dropdown'"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "activeProjections": {
+                "Values": [
+                  {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "dim_BranchLocation"
+                        }
+                      },
+                      "Property": "Branch"
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "54a806710c035a1895b0": {
+            "filters": {
+              "byExpr": [
+                {
+                  "name": "49d170a7b36aa951967c",
+                  "type": "Categorical",
+                  "expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "dim_BranchLocation"
+                        }
+                      },
+                      "Property": "Branch"
                     }
                   },
                   "howCreated": 0
                 },
+                {
+                  "name": "db980d3036384bfb672b",
+                  "type": "Advanced",
+                  "expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "# on Back Order"
+                    }
+                  },
+                  "howCreated": 0
+                }
+              ]
+            },
+            "singleVisual": {
+              "visualType": "clusteredBarChart",
+              "objects": {},
+              "orderBy": [
+                {
+                  "Direction": 2,
+                  "Expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "# on Back Order"
+                    }
+                  }
+                }
+              ],
+              "activeProjections": {
+                "Category": [
+                  {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "dim_BranchLocation"
+                        }
+                      },
+                      "Property": "Branch"
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "5a68122c07c61209ba03": {
+            "filters": {
+              "byExpr": [
+                {
+                  "name": "021d358f3c265ed1ab0b",
+                  "type": "Categorical",
+                  "expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "dim_BranchLocation"
+                        }
+                      },
+                      "Property": "Branch"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "8f3ebbec01d1358de309",
+                  "type": "Advanced",
+                  "expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "Open Order Ratio (Period)"
+                    }
+                  },
+                  "howCreated": 0
+                }
+              ]
+            },
+            "singleVisual": {
+              "visualType": "barChart",
+              "objects": {},
+              "orderBy": [
+                {
+                  "Direction": 2,
+                  "Expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "Open Order Ratio (Period)"
+                    }
+                  }
+                }
+              ],
+              "activeProjections": {
+                "Category": [
+                  {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "dim_BranchLocation"
+                        }
+                      },
+                      "Property": "Branch"
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "5f59458357919c6e08ae": {
+            "singleVisual": {
+              "visualType": "image",
+              "objects": {}
+            }
+          },
+          "7016e66498a00a7d300b": {
+            "singleVisual": {
+              "visualType": "image",
+              "objects": {}
+            }
+          },
+          "74c4531b71e738ebac24": {
+            "singleVisual": {
+              "visualType": "shape",
+              "objects": {}
+            }
+          },
+          "77d28c770bcc080690eb": {
+            "filters": {
+              "byExpr": [
+                {
+                  "name": "ce3b8237a3030ebe48b9",
+                  "type": "Categorical",
+                  "filter": {
+                    "Version": 2,
+                    "From": [
+                      {
+                        "Name": "d",
+                        "Entity": "dim_BranchLocation",
+                        "Type": 0
+                      }
+                    ],
+                    "Where": [
+                      {
+                        "Condition": {
+                          "In": {
+                            "Expressions": [
+                              {
+                                "Column": {
+                                  "Expression": {
+                                    "SourceRef": {
+                                      "Source": "d"
+                                    }
+                                  },
+                                  "Property": "Branch"
+                                }
+                              }
+                            ],
+                            "Values": [
+                              [
+                                {
+                                  "Literal": {
+                                    "Value": "'4 - Las Cruces'"
+                                  }
+                                }
+                              ],
+                              [
+                                {
+                                  "Literal": {
+                                    "Value": "'4 - Mesquite'"
+                                  }
+                                }
+                              ],
+                              [
+                                {
+                                  "Literal": {
+                                    "Value": "'97 - Colorado City'"
+                                  }
+                                }
+                              ],
+                              [
+                                {
+                                  "Literal": {
+                                    "Value": "'12 - O''Donnell'"
+                                  }
+                                }
+                              ]
+                            ]
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  "expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "dim_BranchLocation"
+                        }
+                      },
+                      "Property": "Branch"
+                    }
+                  },
+                  "howCreated": 1
+                },
+                {
+                  "name": "08604cc10f3b3c329f89",
+                  "type": "Categorical",
+                  "expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "Fact_Parts_Open_Tickets"
+                        }
+                      },
+                      "Property": "Aging"
+                    }
+                  },
+                  "howCreated": 0
+                }
+              ]
+            },
+            "singleVisual": {
+              "visualType": "slicer",
+              "objects": {
+                "merge": {
+                  "data": [
+                    {
+                      "properties": {
+                        "mode": {
+                          "expr": {
+                            "Literal": {
+                              "Value": "'Dropdown'"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "activeProjections": {
+                "Values": [
+                  {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "Fact_Parts_Open_Tickets"
+                        }
+                      },
+                      "Property": "Aging"
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "8045e2c1b10c262a9690": {
+            "filters": {
+              "byExpr": [
+                {
+                  "name": "ce3b8237a3030ebe48b9",
+                  "type": "Categorical",
+                  "filter": {
+                    "Version": 2,
+                    "From": [
+                      {
+                        "Name": "d",
+                        "Entity": "dim_BranchLocation",
+                        "Type": 0
+                      }
+                    ],
+                    "Where": [
+                      {
+                        "Condition": {
+                          "In": {
+                            "Expressions": [
+                              {
+                                "Column": {
+                                  "Expression": {
+                                    "SourceRef": {
+                                      "Source": "d"
+                                    }
+                                  },
+                                  "Property": "Branch"
+                                }
+                              }
+                            ],
+                            "Values": [
+                              [
+                                {
+                                  "Literal": {
+                                    "Value": "'4 - Las Cruces'"
+                                  }
+                                }
+                              ],
+                              [
+                                {
+                                  "Literal": {
+                                    "Value": "'4 - Mesquite'"
+                                  }
+                                }
+                              ],
+                              [
+                                {
+                                  "Literal": {
+                                    "Value": "'97 - Colorado City'"
+                                  }
+                                }
+                              ],
+                              [
+                                {
+                                  "Literal": {
+                                    "Value": "'12 - O''Donnell'"
+                                  }
+                                }
+                              ]
+                            ]
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  "expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "dim_BranchLocation"
+                        }
+                      },
+                      "Property": "Branch"
+                    }
+                  },
+                  "howCreated": 1
+                },
+                {
+                  "name": "9fe4bf4d1e1feae0067b",
+                  "type": "Categorical",
+                  "expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "Fact_Parts_Open_Tickets"
+                        }
+                      },
+                      "Property": "Invoice_Type"
+                    }
+                  },
+                  "howCreated": 0
+                }
+              ]
+            },
+            "singleVisual": {
+              "visualType": "slicer",
+              "objects": {
+                "merge": {
+                  "data": [
+                    {
+                      "properties": {
+                        "mode": {
+                          "expr": {
+                            "Literal": {
+                              "Value": "'Dropdown'"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "activeProjections": {
+                "Values": [
+                  {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "Fact_Parts_Open_Tickets"
+                        }
+                      },
+                      "Property": "Invoice_Type"
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "82fa6bcd1849a640483b": {
+            "singleVisual": {
+              "visualType": "textbox",
+              "objects": {}
+            }
+          },
+          "8619cf70e024050e55c2": {
+            "filters": {
+              "byExpr": [
+                {
+                  "name": "cdd44fdb1ae777553d99",
+                  "type": "Categorical",
+                  "expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "Ratio_Period_Selector"
+                        }
+                      },
+                      "Property": "Label"
+                    }
+                  },
+                  "howCreated": 0
+                }
+              ]
+            },
+            "singleVisual": {
+              "visualType": "advancedSlicerVisual",
+              "objects": {
+                "merge": {
+                  "general": [
+                    {
+                      "properties": {
+                        "filter": {
+                          "filter": {
+                            "Version": 2,
+                            "From": [
+                              {
+                                "Name": "r",
+                                "Entity": "Ratio_Period_Selector",
+                                "Type": 0
+                              }
+                            ],
+                            "Where": [
+                              {
+                                "Condition": {
+                                  "In": {
+                                    "Expressions": [
+                                      {
+                                        "Column": {
+                                          "Expression": {
+                                            "SourceRef": {
+                                              "Source": "r"
+                                            }
+                                          },
+                                          "Property": "Label"
+                                        }
+                                      }
+                                    ],
+                                    "Values": [
+                                      [
+                                        {
+                                          "Literal": {
+                                            "Value": "'0-7 days'"
+                                          }
+                                        }
+                                      ]
+                                    ]
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "897898bd170b034c75b2": {
+            "filters": {
+              "byExpr": [
+                {
+                  "name": "ce3b8237a3030ebe48b9",
+                  "type": "Categorical",
+                  "filter": {
+                    "Version": 2,
+                    "From": [
+                      {
+                        "Name": "d",
+                        "Entity": "dim_BranchLocation",
+                        "Type": 0
+                      }
+                    ],
+                    "Where": [
+                      {
+                        "Condition": {
+                          "In": {
+                            "Expressions": [
+                              {
+                                "Column": {
+                                  "Expression": {
+                                    "SourceRef": {
+                                      "Source": "d"
+                                    }
+                                  },
+                                  "Property": "Branch"
+                                }
+                              }
+                            ],
+                            "Values": [
+                              [
+                                {
+                                  "Literal": {
+                                    "Value": "'4 - Las Cruces'"
+                                  }
+                                }
+                              ],
+                              [
+                                {
+                                  "Literal": {
+                                    "Value": "'4 - Mesquite'"
+                                  }
+                                }
+                              ],
+                              [
+                                {
+                                  "Literal": {
+                                    "Value": "'97 - Colorado City'"
+                                  }
+                                }
+                              ],
+                              [
+                                {
+                                  "Literal": {
+                                    "Value": "'12 - O''Donnell'"
+                                  }
+                                }
+                              ]
+                            ]
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  "expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "dim_BranchLocation"
+                        }
+                      },
+                      "Property": "Branch"
+                    }
+                  },
+                  "howCreated": 1
+                },
+                {
+                  "name": "05694cbf632e050736bd",
+                  "type": "Categorical",
+                  "expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "Fact_Parts_Open_Tickets"
+                        }
+                      },
+                      "Property": "Contact_Code"
+                    }
+                  },
+                  "howCreated": 0
+                }
+              ]
+            },
+            "singleVisual": {
+              "visualType": "slicer",
+              "objects": {
+                "merge": {
+                  "data": [
+                    {
+                      "properties": {
+                        "mode": {
+                          "expr": {
+                            "Literal": {
+                              "Value": "'Dropdown'"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "activeProjections": {
+                "Values": [
+                  {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "Fact_Parts_Open_Tickets"
+                        }
+                      },
+                      "Property": "Contact_Code"
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "8aec78ab332c1a4eb645": {
+            "filters": {
+              "byExpr": [
+                {
+                  "name": "5cb4797259cd2bc18d07",
+                  "type": "Categorical",
+                  "expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "Fact_Parts_Open_Tickets"
+                        }
+                      },
+                      "Property": "Aging"
+                    }
+                  },
+                  "howCreated": 0
+                }
+              ]
+            },
+            "singleVisual": {
+              "visualType": "advancedSlicerVisual",
+              "objects": {
+                "merge": {
+                  "general": [
+                    {
+                      "properties": {
+                        "filter": {
+                          "filter": {
+                            "Version": 2,
+                            "From": [
+                              {
+                                "Name": "f",
+                                "Entity": "Fact_Parts_Open_Tickets",
+                                "Type": 0
+                              }
+                            ],
+                            "Where": [
+                              {
+                                "Condition": {
+                                  "In": {
+                                    "Expressions": [
+                                      {
+                                        "Column": {
+                                          "Expression": {
+                                            "SourceRef": {
+                                              "Source": "f"
+                                            }
+                                          },
+                                          "Property": "Aging"
+                                        }
+                                      }
+                                    ],
+                                    "Values": [
+                                      [
+                                        {
+                                          "Literal": {
+                                            "Value": "'8-14 days'"
+                                          }
+                                        }
+                                      ]
+                                    ]
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "8c2d0ee5373d047524a0": {
+            "singleVisual": {
+              "visualType": "image",
+              "objects": {}
+            }
+          },
+          "8e0fd3a6d8760e57706b": {
+            "filters": {
+              "byExpr": [
+                {
+                  "name": "5bc7a5af147e4594a476",
+                  "type": "Advanced",
+                  "expression": {
+                    "Aggregation": {
+                      "Expression": {
+                        "Column": {
+                          "Expression": {
+                            "SourceRef": {
+                              "Entity": "Data Refresh"
+                            }
+                          },
+                          "Property": "CurrentDateTime"
+                        }
+                      },
+                      "Function": 3
+                    }
+                  },
+                  "howCreated": 0
+                }
+              ]
+            },
+            "singleVisual": {
+              "visualType": "card",
+              "objects": {}
+            }
+          },
+          "9bc8a8f36ac4ebe2c3d1": {
+            "filters": {
+              "byExpr": [
                 {
                   "name": "67902ee247196cbab9d1",
                   "type": "Categorical",
@@ -593,6 +1282,36 @@
                     }
                   },
                   "howCreated": 1
+                },
+                {
+                  "name": "56a176534766c0455801",
+                  "type": "Categorical",
+                  "expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "Fact_Parts_Open_Tickets"
+                        }
+                      },
+                      "Property": "Customer"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "4670b488ad89ab344048",
+                  "type": "Advanced",
+                  "expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "Filtered Order Total"
+                    }
+                  },
+                  "howCreated": 0
                 }
               ]
             },
@@ -630,11 +1349,17 @@
               }
             }
           },
-          "b6ccc6562042181de609": {
+          "9f7c8940b60e37b57da0": {
+            "singleVisual": {
+              "visualType": "image",
+              "objects": {}
+            }
+          },
+          "a21dc26400bbc7060378": {
             "filters": {
               "byExpr": [
                 {
-                  "name": "4db58014ebd0e920d30e",
+                  "name": "848e85e7cd9888b09830",
                   "type": "Categorical",
                   "expression": {
                     "Column": {
@@ -643,13 +1368,13 @@
                           "Entity": "Fact_Parts_Open_Tickets"
                         }
                       },
-                      "Property": "Customer"
+                      "Property": "Salesman"
                     }
                   },
                   "howCreated": 0
                 },
                 {
-                  "name": "7a6d2716c45a59d73b62",
+                  "name": "56e221443dfce62d93e2",
                   "type": "Advanced",
                   "expression": {
                     "Measure": {
@@ -658,11 +1383,198 @@
                           "Entity": "_Measures"
                         }
                       },
-                      "Property": "Filtered Order Count"
+                      "Property": "Filtered Order Total - Salesman"
+                    }
+                  },
+                  "howCreated": 0
+                }
+              ]
+            },
+            "singleVisual": {
+              "visualType": "clusteredBarChart",
+              "objects": {},
+              "orderBy": [
+                {
+                  "Direction": 2,
+                  "Expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "Filtered Order Total - Salesman"
+                    }
+                  }
+                }
+              ],
+              "activeProjections": {
+                "Category": [
+                  {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "Fact_Parts_Open_Tickets"
+                        }
+                      },
+                      "Property": "Salesman"
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "b133fa13639939a1d270": {
+            "singleVisual": {
+              "visualType": "actionButton",
+              "objects": {}
+            }
+          },
+          "b41eb1b9d1677051e07d": {
+            "filters": {
+              "byExpr": [
+                {
+                  "name": "9872431d4c0a8071806b",
+                  "type": "Categorical",
+                  "filter": {
+                    "Version": 2,
+                    "From": [
+                      {
+                        "Name": "d",
+                        "Entity": "dim_BranchLocation",
+                        "Type": 0
+                      }
+                    ],
+                    "Where": [
+                      {
+                        "Condition": {
+                          "Not": {
+                            "Expression": {
+                              "In": {
+                                "Expressions": [
+                                  {
+                                    "Column": {
+                                      "Expression": {
+                                        "SourceRef": {
+                                          "Source": "d"
+                                        }
+                                      },
+                                      "Property": "Branch"
+                                    }
+                                  }
+                                ],
+                                "Values": [
+                                  [
+                                    {
+                                      "Literal": {
+                                        "Value": "null"
+                                      }
+                                    }
+                                  ]
+                                ]
+                              }
+                            }
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  "expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "dim_BranchLocation"
+                        }
+                      },
+                      "Property": "Branch"
                     }
                   },
                   "howCreated": 0
                 },
+                {
+                  "name": "609530ac550181007214",
+                  "type": "Advanced",
+                  "expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "Open Order Ratio (Period)"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "7a320365d056475c9467",
+                  "type": "Advanced",
+                  "expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "Order Total (Period)"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "7f5f5cc2dd81bdb6d9d4",
+                  "type": "Advanced",
+                  "expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "Invoiced Parts (Period)"
+                    }
+                  },
+                  "howCreated": 0
+                }
+              ]
+            },
+            "singleVisual": {
+              "visualType": "clusteredBarChart",
+              "objects": {},
+              "orderBy": [
+                {
+                  "Direction": 2,
+                  "Expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "Order Total (Period)"
+                    }
+                  }
+                }
+              ],
+              "activeProjections": {
+                "Category": [
+                  {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "dim_BranchLocation"
+                        }
+                      },
+                      "Property": "Branch"
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "b6ccc6562042181de609": {
+            "filters": {
+              "byExpr": [
                 {
                   "name": "03c28d1d7a3ab6ba2701",
                   "type": "Categorical",
@@ -720,6 +1632,36 @@
                     }
                   },
                   "howCreated": 1
+                },
+                {
+                  "name": "686a2cce8629d8092a6f",
+                  "type": "Categorical",
+                  "expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "Fact_Parts_Open_Tickets"
+                        }
+                      },
+                      "Property": "Customer"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "0dd2d7734062dce93597",
+                  "type": "Advanced",
+                  "expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "Filtered Order Count"
+                    }
+                  },
+                  "howCreated": 0
                 }
               ]
             },
@@ -757,12 +1699,61 @@
               }
             }
           },
-          "a21dc26400bbc7060378": {
+          "bebc3bec2b8c0a7cdc17": {
+            "singleVisual": {
+              "visualType": "pageNavigator",
+              "objects": {}
+            }
+          },
+          "c0b0bc4069ab5a585800": {
             "filters": {
               "byExpr": [
                 {
-                  "name": "9a525219762e3d4c8a7e",
+                  "name": "0cd8c8be3664506a92d2",
                   "type": "Categorical",
+                  "filter": {
+                    "Version": 2,
+                    "From": [
+                      {
+                        "Name": "f",
+                        "Entity": "Fact_Parts_Open_Tickets",
+                        "Type": 0
+                      }
+                    ],
+                    "Where": [
+                      {
+                        "Condition": {
+                          "Not": {
+                            "Expression": {
+                              "In": {
+                                "Expressions": [
+                                  {
+                                    "Column": {
+                                      "Expression": {
+                                        "SourceRef": {
+                                          "Source": "f"
+                                        }
+                                      },
+                                      "Property": "Invoice_Type"
+                                    }
+                                  }
+                                ],
+                                "Values": [
+                                  [
+                                    {
+                                      "Literal": {
+                                        "Value": "'I'"
+                                      }
+                                    }
+                                  ]
+                                ]
+                              }
+                            }
+                          }
+                        }
+                      }
+                    ]
+                  },
                   "expression": {
                     "Column": {
                       "Expression": {
@@ -770,22 +1761,42 @@
                           "Entity": "Fact_Parts_Open_Tickets"
                         }
                       },
-                      "Property": "Salesman"
+                      "Property": "Invoice_Type"
+                    }
+                  },
+                  "howCreated": 1
+                },
+                {
+                  "name": "5f6a66e54c0571763866",
+                  "type": "Categorical",
+                  "expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "dim_BranchLocation"
+                        }
+                      },
+                      "Property": "Branch"
                     }
                   },
                   "howCreated": 0
                 },
                 {
-                  "name": "f3ee3591168b00b88824",
+                  "name": "2eb0913b5b56c9345210",
                   "type": "Advanced",
                   "expression": {
-                    "Measure": {
+                    "Aggregation": {
                       "Expression": {
-                        "SourceRef": {
-                          "Entity": "_Measures"
+                        "Column": {
+                          "Expression": {
+                            "SourceRef": {
+                              "Entity": "Fact_Parts_Open_Tickets"
+                            }
+                          },
+                          "Property": "Order_No"
                         }
                       },
-                      "Property": "Filtered Order Total - Salesman"
+                      "Function": 5
                     }
                   },
                   "howCreated": 0
@@ -799,13 +1810,18 @@
                 {
                   "Direction": 2,
                   "Expression": {
-                    "Measure": {
+                    "Aggregation": {
                       "Expression": {
-                        "SourceRef": {
-                          "Entity": "_Measures"
+                        "Column": {
+                          "Expression": {
+                            "SourceRef": {
+                              "Entity": "Fact_Parts_Open_Tickets"
+                            }
+                          },
+                          "Property": "Order_No"
                         }
                       },
-                      "Property": "Filtered Order Total - Salesman"
+                      "Function": 5
                     }
                   }
                 }
@@ -816,21 +1832,45 @@
                     "Column": {
                       "Expression": {
                         "SourceRef": {
-                          "Entity": "Fact_Parts_Open_Tickets"
+                          "Entity": "dim_BranchLocation"
                         }
                       },
-                      "Property": "Salesman"
+                      "Property": "Branch"
                     }
                   }
                 ]
               }
+            }
+          },
+          "cedd0bc7cb15e0924607": {
+            "singleVisual": {
+              "visualType": "shape",
+              "objects": {}
+            }
+          },
+          "d8ecd018de932da35b96": {
+            "singleVisual": {
+              "visualType": "bookmarkNavigator",
+              "objects": {}
+            }
+          },
+          "d9cd77c64a8566e3b70e": {
+            "singleVisual": {
+              "visualType": "image",
+              "objects": {}
+            }
+          },
+          "db8e3ee0117b577d5c05": {
+            "singleVisual": {
+              "visualType": "image",
+              "objects": {}
             }
           },
           "eff67d5ee8010172cca4": {
             "filters": {
               "byExpr": [
                 {
-                  "name": "b07783b14e6d65840a9e",
+                  "name": "3c562ac9d53a309db961",
                   "type": "Categorical",
                   "expression": {
                     "Column": {
@@ -845,7 +1885,7 @@
                   "howCreated": 0
                 },
                 {
-                  "name": "de4d14680d5628e066eb",
+                  "name": "fb46f3e3077b581c9623",
                   "type": "Advanced",
                   "expression": {
                     "Measure": {
@@ -894,22 +1934,81 @@
                 ]
               }
             }
+          },
+          "f32b76d2ead863e97048": {
+            "singleVisual": {
+              "visualType": "image",
+              "objects": {}
+            }
+          },
+          "f95de5aaac0084e47db6": {
+            "filters": {
+              "byExpr": [
+                {
+                  "name": "6d03c46bc38d3cbfa7ff",
+                  "type": "Advanced",
+                  "expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "Page 3 - Comparison - Header"
+                    }
+                  },
+                  "howCreated": 0
+                }
+              ]
+            },
+            "singleVisual": {
+              "visualType": "htmlContent443BE3AD55E043BF878BED274D3A6855",
+              "objects": {}
+            }
+          },
+          "fecfebb0d06dc604c611": {
+            "filters": {
+              "byExpr": [
+                {
+                  "name": "71d387bb564b1a3014ee",
+                  "type": "Categorical",
+                  "expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "TopN Selector"
+                        }
+                      },
+                      "Property": "Label"
+                    }
+                  },
+                  "howCreated": 0
+                }
+              ]
+            },
+            "singleVisual": {
+              "visualType": "advancedSlicerVisual",
+              "objects": {}
+            }
           }
         },
         "visualContainerGroups": {
-          "d5ccf22574dde8370708": {
-            "isHidden": true
-          },
-          "7458628b5d0710e7cc73": {
-            "isHidden": true
-          },
           "3142c31e2c9868061415": {
             "isHidden": true
           },
           "49d4baa3219a0941dc06": {
             "isHidden": false
           },
+          "71b6461eb20733100783": {
+            "isHidden": true
+          },
+          "7458628b5d0710e7cc73": {
+            "isHidden": true
+          },
           "baf411a46432d68e0d6a": {
+            "isHidden": true
+          },
+          "d0b4db0447ee617576b9": {
             "isHidden": true
           }
         }

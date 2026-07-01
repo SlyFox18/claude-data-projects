@@ -41,6 +41,7 @@ CustomerNumber      varchar   — Customer code (FK to dim_CustomerList)
 OrderDate           datetime  — Order creation date (FK to dim_DateTable)
 CustomerOrderNumber varchar   — Customer PO / reference
 RONumber            int       — Repair order number (nullable)
+OrderType           varchar   — Order type code from Insalord (e.g. 'E' = Emergency/MD)
 PartNumber          varchar   — Part number (FK to dim_Parts)
 OrderQty            decimal   — Quantity ordered
 UnitPrice           decimal   — Unit selling price
@@ -116,8 +117,8 @@ let
     ExpandInsalord = Table.ExpandTableColumn(
         JoinInsalord,
         "InsalordRow",
-        {"CustomerNumber", "OrderDate", "CustomerOrderNumber", "RONumber"},
-        {"CustomerNumber", "OrderDate", "CustomerOrderNumber", "RONumber"}
+        {"CustomerNumber", "OrderDate", "CustomerOrderNumber", "RONumber", "OrderType"},
+        {"CustomerNumber", "OrderDate", "CustomerOrderNumber", "RONumber", "OrderType"}
     ),
 
 
@@ -221,6 +222,7 @@ let
         "OrderDate",
         "CustomerOrderNumber",
         "RONumber",
+        "OrderType",
         "PartNumber",
         "OrderQty",
         "UnitPrice",
@@ -251,6 +253,7 @@ let
         {"OrderDate",            type datetime},
         {"CustomerOrderNumber",  type text},
         {"RONumber",             Int64.Type},
+        {"OrderType",            type text},
         {"PartNumber",           type text},
         {"OrderQty",             type number},
         {"UnitPrice",            type number},

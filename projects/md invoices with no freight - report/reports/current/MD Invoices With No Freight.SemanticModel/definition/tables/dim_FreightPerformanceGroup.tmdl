@@ -3,14 +3,21 @@ table dim_FreightPerformanceGroup
 
 	column Group
 		lineageTag: 1e81bf21-1f3b-4fb0-b44b-2396b89cfb23
+		summarizeBy: none
 		isNameInferred
 		sourceColumn: [Group]
 		sortByColumn: SortOrder
 
+		annotation SummarizationSetBy = Automatic
+
 	column SortOrder
+		formatString: 0
 		lineageTag: 9608b8d1-4e3e-4b74-ad81-0086205c715a
+		summarizeBy: sum
 		isNameInferred
 		sourceColumn: [SortOrder]
+
+		annotation SummarizationSetBy = Automatic
 
 	partition dim_FreightPerformanceGroup = calculated
 		mode: import
@@ -19,9 +26,9 @@ table dim_FreightPerformanceGroup
 				    "Group",     STRING,
 				    "SortOrder", INTEGER,
 				    {
-				        { "No Freight",            1 },
-				        { "Needs Review",          2 },
-				        { "Good / Above Baseline", 3 }
+				        { "No Freight",      1 },
+				        { "Partial Freight",  2 },
+				        { "Adequate Freight", 3 }
 				    }
 				)
 

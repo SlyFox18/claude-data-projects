@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Parts Order Tool — Redesign</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;500;700;900&family=Open+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  /* default tokens (Slate / regular) so first paint is correct before JS */
+  :root {
+    --bg:#ECEFF3; --surface:#FFFFFF; --surface-2:#F4F6F9; --border:#E0E5EC; --border-strong:#CBD3DD;
+    --ink:#16202B; --ink-2:#566373; --ink-3:#8794A4;
+    --nav-bg:#14233A; --nav-grad:linear-gradient(180deg,#1A2C46 0%,#11203455 100%);
+    --nav-ink:#DDE5EF; --nav-ink-muted:#8295AD; --nav-active-bg:#223A5F; --nav-active-bar:#5B9BFF;
+    --accent:#2563EB; --accent-ink:#FFFFFF; --accent-soft:#E7F0FE; --accent-2:#1D4ED8;
+    --ok:#1A7D43; --ok-soft:#E5F3EA; --low:#B5630C; --low-soft:#FBEEDA;
+    --crit:#C13328; --crit-soft:#FBE8E6; --info:#2563EB; --info-soft:#E7F0FE;
+    --row-h:56px; --content-pad:30px; --card-pad:22px; --table-fs:14px;
+    --font:'Lato','Segoe UI',sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body, #root { height: 100%; margin: 0; }
+  body { font-family: var(--font); background: var(--bg); color: var(--ink);
+    -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+  h1,h2,h3,h4,p { margin: 0; }
+
+  /* tables */
+  .tbl { width: 100%; border-collapse: collapse; font-size: var(--table-fs); }
+  .tbl thead th { position: sticky; top: 0; z-index: 2; background: var(--surface);
+    text-align: right; font-size: 11.5px; font-weight: 700; letter-spacing: .04em;
+    text-transform: uppercase; color: var(--ink-3); padding: 12px 11px;
+    border-bottom: 1px solid var(--border); white-space: nowrap; }
+  .tbl tbody td { padding: 0 11px; height: var(--row-h); border-bottom: 1px solid var(--border);
+    color: var(--ink); vertical-align: middle; }
+  .tbl tbody tr.row { transition: background .1s; }
+  .tbl tbody tr.row:hover { background: var(--surface-2); }
+  .tbl tbody tr:last-child td { border-bottom: none; }
+  .tbl .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .cbx { width: 17px; height: 17px; accent-color: var(--accent); cursor: pointer; flex: none; }
+
+  /* scrollbars */
+  ::-webkit-scrollbar { width: 11px; height: 11px; }
+  ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 99px;
+    border: 3px solid var(--surface); }
+  ::-webkit-scrollbar-track { background: transparent; }
+  main::-webkit-scrollbar-track { background: var(--bg); }
+
+  button:focus-visible, input:focus-visible, select:focus-visible {
+    outline: 2px solid var(--accent); outline-offset: 1px; }
+</style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <template id="__bundler_thumbnail">
+    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <rect width="100" height="100" rx="20" fill="#14233A"/>
+      <rect x="30" y="30" width="40" height="9" rx="3" fill="#5B9BFF"/>
+      <rect x="30" y="46" width="40" height="6" rx="3" fill="#8295AD"/>
+      <rect x="30" y="58" width="28" height="6" rx="3" fill="#8295AD"/>
+    </svg>
+  </template>
+
+  <!-- libs -->
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+  <!-- plain-JS deps -->
+  <script src="image-slot.js"></script>
+  <script src="data.js"></script>
+
+  <!-- app (babel) -->
+  <script type="text/babel" src="tweaks-panel.jsx"></script>
+  <script type="text/babel" src="theme.jsx"></script>
+  <script type="text/babel" src="ui.jsx"></script>
+  <script type="text/babel" src="layout.jsx"></script>
+  <script type="text/babel" src="screens-a.jsx"></script>
+  <script type="text/babel" src="screens-b.jsx"></script>
+  <script type="text/babel" src="screens-c.jsx"></script>
+  <script type="text/babel" src="app.jsx"></script>
+</body>
+</html>

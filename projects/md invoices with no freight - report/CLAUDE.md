@@ -25,7 +25,7 @@
 | dim_Franchise | Shared Lakehouse | Franchise → Fact tables |
 | dim_Salesperson | Shared Lakehouse | Salesperson → Fact tables |
 | FreightCalculator | LH_Master_Data Delta table (no dataflow — manually maintained) | No model relationship — used only in DAX via FILTER/MAXX lookup |
-| dim_FreightPerformanceGroup | DAX DATATABLE (calculated) | Slicer: No Freight / Needs Review / Good / Above Baseline |
+| dim_FreightPerformanceGroup | DAX DATATABLE (calculated) | Slicer: No Freight / Partial Freight / Adequate Freight (renamed 2026-06-29, was Needs Review / Good / Above Baseline) |
 
 ### Key Measures — Open Orders
 | Measure | What It Calculates |
@@ -68,18 +68,29 @@ FreightCalculator       → (manual Delta table)           → DAX measure looku
 **FreightCalculator table:** Weight brackets with `BaseRate` and `AdditiveRatePerPound` columns.
 Last updated: 2026-05-18 (extended beyond old 249 lb ceiling to 999,999 lbs).
 
-**Rate structure (two tiers by total order weight):**
-- **≤ 150 lbs total order weight:** One `BaseRate` per order (looked up by total weight bracket) + `AdditiveRatePerPound × TotalLineWeight` per line
-- **> 150 lbs total order weight:** No base rate ($0). Each line calculated independently:
-  - 151–499 lbs: $1.10/lb
-  - 500–999 lbs: $0.45/lb
-  - 1,000–1,999 lbs: $0.32/lb
-  - 2,000–4,999 lbs: $0.25/lb
-  - 5,000+ lbs: $0.15/lb
+**Rate structure (simplified 2026-06-24 — single bracket lookup on order TOTAL weight):**
+- One bracket lookup per order, keyed on the SUM of `TotalLineWeight` across all lines on that order — NOT each line's individual weight
+- `Calculated Freight = BaseRate + (AdditiveRatePerPound × TotalOrderWeight)`
+- Brackets above 150 lbs have `BaseRate = $0` baked into the FreightCalculator table itself, so this single formula naturally produces "no base rate over 150 lbs" without a separate branch
+- Individual line weights no longer affect the rate — only the order's total weight decides which bracket (and therefore which rate) applies
+- Applies identically to `Calculated Freight` (open, `Fact_MDInvoices_NoFreight`) and `Closed - Calculated Freight Single Invoice` (closed, `Fact_MDInvoices_Closed`) — keep both in sync if this changes again
 
-**DAX filter boundary handling:** Uses `(PartWeightTo + 1) > LineWeight` (not `>=`) to correctly match decimal weights at bracket edges (e.g., 30.7 lbs correctly resolves to the 26–30 bracket).
+**DAX filter boundary handling:** Uses `(PartWeightTo + 1) > InvTotalWeight` (not `>=`) to correctly match decimal weights at bracket edges (e.g., 30.7 lbs correctly resolves to the 26–30 bracket).
 
 **Fallbacks:** `BaseRate` defaults to $0 if no bracket found; `AdditiveRatePerPound` defaults to $0.15.
+
+**Performance — `MissedFreightAmount` calculated column (added 2026-06-24):** `Fact_MDInvoices_NoFreight[MissedFreightAmount]` pre-computes the per-invoice Calculated Freight minus Actual Freight gap **once at refresh time**, using `CALCULATE(..., ALLEXCEPT(Fact_MDInvoices_NoFreight, Fact_MDInvoices_NoFreight[FileNumber]))` to aggregate to the invoice grain from the line-grain fact table. `Is In Selected Group`, `Freight Status Color`, and `Missed Freight Icon` read `MAX(Fact_MDInvoices_NoFreight[MissedFreightAmount])` instead of calling `[Missed Freight]` live.
+- **Why:** the Open Orders page tabs (No Freight / Needs Review / Good-Above Baseline) filter the matrix visual using `Is In Selected Group`, a measure-based Advanced filter. Measure-based visual filters can't be pushed to the VertiPaq engine — Power BI falls back to formula-engine row-by-row evaluation across the *entire* table, re-run on every interaction (including each matrix row expand/collapse). With `[Missed Freight]` → `[Calculated Freight]` doing nested `SUMX`/`CALCULATE`/bracket-lookup work, this made every click take 10+ seconds.
+- **If adding new freight-status-dependent measures or filters:** read from `MissedFreightAmount` (the column), not `[Missed Freight]` (the measure), to stay fast. Only recompute live if the value must react to interactive slicers beyond the row's own data (it currently does not need to).
+
+**`PctFreightDifference` calculated column (added 2026-06-24):** same caching pattern as `MissedFreightAmount`, but stores the `% Freight Difference` ratio per invoice. Backs the Alert Threshold feature below — added as its own column rather than derived from `MissedFreightAmount` so the threshold comparison never has to call a live measure.
+
+## Alert Threshold (Open Orders page) — future Power Automate hook
+
+A What-If parameter table, `% Freight Difference Threshold` (`GENERATESERIES(0, 200, 1)`, same convention as `New Markup %` in the Price Matrix report), drives a slider on the Open Orders page next to the freight-status tabs.
+- `'% Freight Difference Threshold Value'` (lives in the parameter table) = `SELECTEDVALUE(..., 15)` — default 15%, adjustable live.
+- `Exceeds Freight Difference Threshold` (`_Measures`) — compares `Fact_MDInvoices_NoFreight[PctFreightDifference]` (cached column) against the selected threshold ÷ 100. Drives `Pct Freight Difference Color` (cell background on % Freight Difference) and `Invoices Exceeding Freight Difference Threshold` (count, not currently on a visual — available for a future card).
+- **Why this exists:** the stakeholder wants a Power Automate flow that emails the branch manager when an invoice's % Freight Difference crosses a threshold, but hasn't picked a number yet. This slider lets him test candidate thresholds against live data before that percentage gets hardcoded into the flow. When the number is finalized, hardcode it into the Power Automate trigger (or keep reading this parameter via the dataset if the flow can query it) and consider whether the slider stays in the report or gets removed.
 
 ## How Freight Is Detected
 
@@ -98,6 +109,11 @@ Multiple 3750 lines per order are valid (one per shipment). `TotalFreightCharged
 - **Weight is stored as varchar in jdis_Part_Information** — converted via `TRY_CAST` (SQL) or `Number.From` with try/otherwise (Power Query). Falls back to 0 for parts not found in jdis.
 - **Negative 3750 values are valid** — freight credits/adjustments. Included in TotalFreightCharged (correct behavior per investigation).
 - **Some older orders (2018–2019) have NULL UnitCost** — expected, not a bug.
+- **Matrix numeric value-well aggregation defaults to the wrong thing.** Adding `RONumber` to a matrix's Values well auto-selected `CountNonNull` (counts lines with a non-blank RO#) instead of showing the actual number. Since RO# is constant per invoice, the fix is `Max` aggregation, not `Sum`/`Count`. Check the aggregation function on any column dropped directly into a matrix/table Values well — Power BI's default choice for numeric columns is not always "show the value."
+- **Order Type slicer added 2026-06-24** on the Open Orders page, using `Fact_MDInvoices_NoFreight[OrderType]` (sourced from `Insalord.TYPE`).
+- **Freight performance bucket names renamed 2026-06-29** (Ben's feedback): "Needs Review" → "Partial Freight", "Good / Above Baseline" → "Adequate Freight". "No Freight" unchanged. This was a DAX-only change — `dim_FreightPerformanceGroup` (the DATATABLE) and `Is In Selected Group` / `Closed - Is In Selected Group` (both reference the same shared table, so both had to change together). **No fact table or `FreightStatus` column changes** — `FreightStatus` ("No Freight" / "No Freight Charged" / "Has Freight") is a distinct, lower-level concept from these report-level performance buckets. Tab button labels update automatically since they're bound to `dim_FreightPerformanceGroup[Group]`, not hardcoded text. Don't confuse these bucket names with the unrelated `Freight Above Baseline` measure (a dollar-amount KPI) — that measure name was intentionally left alone.
+- **Closed Invoices matrix has no RO # column, and can't.** `Fact_MDInvoices_Closed` is built from `Insalpar_Audit` + `InTrans_Incremental` — neither carries RO Number. `Insalord` has it, but there's no `Insalord_Audit` recovery table (unlike `insalpar`), so once an order invoices and drops out of `Insalord`, its RO# isn't recoverable. Don't try to add this column without new source/ETL work.
+- **`Closed - % Freight Difference` added 2026-06-29** to mirror page 1's matrix on the Closed Invoices page (Ben's request). Same formula as `% Freight Difference`, built on `[Closed - Calculated Freight]` / `[Closed - Actual Freight]`. Deliberately **no** Alert Threshold slider/conditional coloring on this one — that feature is open-orders-specific for now (see "Alert Threshold" section above); Closed just shows the plain value.
 
 ## Refresh Pipeline Position
 - **Fact_MDInvoices_NoFreight:** Phase 4 — `df_Fact_MDInvoices_NoFreight`. Depends on insalpar, Insalord, jdis_Part_Information (all Phase 1).

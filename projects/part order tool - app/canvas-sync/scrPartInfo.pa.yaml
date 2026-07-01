@@ -1,0 +1,2055 @@
+Screens:
+  scrPartInfo:
+    Properties:
+      Fill: =RGBA(255, 255, 255, 1)
+      LoadingSpinnerColor: =RGBA(0, 120, 212, 1)
+      OnVisible: |
+        =If(IsBlank(varSelectedPart), Set(varShowSearch, true), Set(varShowSearch, false));
+        Set(varPartTab, "Detail")
+    Children:
+      - Rectangle_Header_PartInfo:
+          Control: Rectangle
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            DisabledFill: =RGBA(161, 159, 157, 1)
+            Fill: =RGBA(30, 41, 59, 1)
+            FocusedBorderThickness: =4
+            Height: =80
+            HoverFill: =RGBA(30, 41, 59, 1)
+            PressedFill: =RGBA(30, 41, 59, 1)
+            Width: =1366
+            X: =0.00
+      - galHistory:
+          Control: Gallery
+          Variant: BrowseLayout_Vertical_OneTextVariant_ver5.0
+          Properties:
+            BorderColor: =RGBA(245, 245, 245, 1)
+            Height: =380
+            Items: |
+              =Sort(
+                  Filter(fact_nonjd_saleshistory, PartNumber = varSelectedPart.PartNumber && Branch = varSelectedPart.Branch),
+                  MonthOffset,
+                  SortOrder.Ascending
+              )
+            Visible: =varPartTab = "History"
+            Width: =1366
+            Y: =387
+          Children:
+            - Separator9:
+                Control: Rectangle
+                Properties:
+                  BorderColor: =RGBA(0, 0, 0, 0)
+                  Fill: =RGBA(217, 217, 216, 1)
+                  Height: =2
+                  OnSelect: =Select(Parent)
+                  Width: =Parent.TemplateWidth
+                  Y: =Parent.TemplateHeight - Self.Height
+            - Rectangle9:
+                Control: Rectangle
+                Properties:
+                  BorderColor: =RGBA(0, 0, 0, 0)
+                  Fill: =RGBA(0, 120, 212, 1)
+                  Height: =Parent.TemplateHeight - Separator9.Height
+                  OnSelect: =Select(Parent)
+                  Visible: =ThisItem.IsSelected
+                  Width: =4
+            - Label_Date:
+                Control: Label
+                Properties:
+                  BorderColor: =RGBA(0, 0, 0, 0)
+                  BorderStyle: =BorderStyle.None
+                  BorderThickness: =2
+                  Color: =RGBA(50, 49, 48, 1)
+                  DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                  DisabledColor: =RGBA(161, 159, 157, 1)
+                  FocusedBorderThickness: =4
+                  Font: =Font.'Segoe UI'
+                  OnSelect: =Select(Parent)
+                  Size: =18
+                  Text: =Text(DateAdd(Date(Year(Today()), Month(Today()), 1), -(ThisItem.MonthOffset - 1), TimeUnit.Months), "mmm yyyy")
+                  X: =44
+                  Y: =19
+            - Label_SalesQty:
+                Control: Label
+                Properties:
+                  BorderColor: =RGBA(0, 0, 0, 0)
+                  BorderStyle: =BorderStyle.None
+                  BorderThickness: =2
+                  Color: =RGBA(50, 49, 48, 1)
+                  DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                  DisabledColor: =RGBA(161, 159, 157, 1)
+                  FocusedBorderThickness: =4
+                  Font: =Font.'Segoe UI'
+                  Height: =39
+                  OnSelect: =Select(Parent)
+                  Size: =18
+                  Text: =Text(ThisItem.SalesQty, "#,##0")
+                  X: =660
+                  Y: =21
+            - Label_Demand:
+                Control: Label
+                Properties:
+                  BorderColor: =RGBA(0, 0, 0, 0)
+                  BorderStyle: =BorderStyle.None
+                  BorderThickness: =2
+                  Color: =RGBA(50, 49, 48, 1)
+                  DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                  DisabledColor: =RGBA(161, 159, 157, 1)
+                  FocusedBorderThickness: =4
+                  Font: =Font.'Segoe UI'
+                  OnSelect: =Select(Parent)
+                  Size: =18
+                  Text: =Text(ThisItem.DemandCount, "#,##0")
+                  X: =1095
+                  Y: =20
+      - Separator9_4:
+          Control: Rectangle
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            Fill: =RGBA(217, 217, 216, 1)
+            Height: =2
+            OnSelect: =
+            Visible: =varPartTab = "History"
+            Width: =1366
+            Y: =385
+      - Label_Reorder_Title_2:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(255, 255, 255, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            FontWeight: =FontWeight.Bold
+            PaddingRight: =3.22
+            PaddingTop: =3.22
+            Size: =12.86
+            Text: ="Parts Infomation Tool"
+            Width: =206.44
+            X: =11
+            Y: =20
+      - txtPartSearch:
+          Control: Classic/TextInput
+          Properties:
+            BorderColor: =RGBA(245, 245, 245, 1)
+            Color: =RGBA(50, 49, 48, 1)
+            Default: ="Enter part number..."
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            DisabledFill: =RGBA(242, 242, 241, 0)
+            Font: =Font.'Segoe UI'
+            HoverBorderColor: =RGBA(16, 110, 190, 1)
+            HoverColor: =RGBA(50, 49, 48, 1)
+            HoverFill: =RGBA(255, 255, 255, 1)
+            PressedBorderColor: =RGBA(0, 120, 212, 1)
+            PressedColor: =RGBA(50, 49, 48, 1)
+            PressedFill: =RGBA(255, 255, 255, 1)
+            RadiusBottomLeft: =0
+            RadiusBottomRight: =0
+            RadiusTopLeft: =0
+            RadiusTopRight: =0
+            Visible: =varPartTab = "Search"
+            X: =1046
+            Y: =728
+      - btnSearch:
+          Control: Classic/Button
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            Color: =RGBA(255, 255, 255, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            DisabledFill: =RGBA(242, 242, 241, 0)
+            Fill: =RGBA(0, 120, 212, 1)
+            Font: =Font.'Segoe UI'
+            HoverBorderColor: =RGBA(0, 0, 0, 0)
+            HoverColor: =RGBA(255, 255, 255, 1)
+            HoverFill: =RGBA(16, 110, 190, 1)
+            OnSelect: |
+              =Set(varPartTab, "Search");
+              Set(
+                  varSelectedPart,
+                  LookUp(fact_nonjd_reorder, PartNumber = txtPartSearch.Text && Branch = varSelectedBranch)
+              );
+              If(
+                  IsBlank(varSelectedPart),
+                  Notify("Part not found in branch " & varSelectedBranch, NotificationType.Warning),
+                  Set(varShowSearch, false)
+              )
+            PressedBorderColor: =RGBA(0, 69, 120, 1)
+            PressedColor: =RGBA(255, 255, 255, 1)
+            PressedFill: =RGBA(16, 110, 190, 1)
+            RadiusBottomLeft: =0
+            RadiusBottomRight: =0
+            RadiusTopLeft: =0
+            RadiusTopRight: =0
+            Text: ="Search"
+            Visible: =varPartTab = "Search"
+            X: =886
+            Y: =728
+      - Label_PartNo:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            FontWeight: =FontWeight.Bold
+            Height: =51
+            Size: =30
+            Text: =varSelectedPart.PartNumber
+            Visible: =!IsBlank(varSelectedPart)
+            Width: =366
+            X: =15
+            Y: =81
+      - Label19:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Height: =41
+            Size: =18
+            Text: =varSelectedPart.Description
+            Visible: =!IsBlank(varSelectedPart)
+            Width: =578
+            X: =15
+            Y: =132
+      - Button_Back_scrHome_5:
+          Control: Classic/Button
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            Color: =RGBA(255, 255, 255, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            DisabledFill: =RGBA(242, 242, 241, 0)
+            Fill: =RGBA(0, 120, 212, 1)
+            Font: =Font.'Segoe UI'
+            HoverBorderColor: =RGBA(0, 0, 0, 0)
+            HoverColor: =RGBA(255, 255, 255, 1)
+            HoverFill: =RGBA(16, 110, 190, 1)
+            OnSelect: |
+              =Navigate(scrReorder, ScreenTransition.Fade)
+            PaddingRight: =3.22
+            PaddingTop: =3.22
+            PressedBorderColor: =RGBA(0, 69, 120, 1)
+            PressedColor: =RGBA(255, 255, 255, 1)
+            PressedFill: =RGBA(16, 110, 190, 1)
+            RadiusBottomLeft: =0
+            RadiusBottomRight: =0
+            RadiusTopLeft: =0
+            RadiusTopRight: =0
+            Size: =9.65
+            Text: ="← Back"
+            Width: =102.90
+            X: =1238
+            Y: =20
+      - btnTabDetail:
+          Control: Classic/Button
+          Properties:
+            BorderColor: =If(varPartTab = "Detail", RGBA(37,99,235,1))
+            BorderStyle: =BorderStyle.None
+            Color: =RGBA(255, 255, 255, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            DisabledFill: =RGBA(242, 242, 241, 0)
+            Fill: =RGBA(0, 120, 212, 1)
+            Font: =Font.'Segoe UI'
+            HoverBorderColor: =RGBA(0, 0, 0, 0)
+            HoverColor: =RGBA(255, 255, 255, 1)
+            HoverFill: =RGBA(16, 110, 190, 1)
+            OnSelect: =Set(varPartTab, "Detail")
+            PressedBorderColor: =RGBA(0, 69, 120, 1)
+            PressedColor: =RGBA(255, 255, 255, 1)
+            PressedFill: =RGBA(16, 110, 190, 1)
+            RadiusBottomLeft: =0
+            RadiusBottomRight: =0
+            RadiusTopLeft: =0
+            RadiusTopRight: =0
+            Text: ="Detail"
+            X: =454
+            Y: =20
+      - btnTabHistory:
+          Control: Classic/Button
+          Properties:
+            BorderColor: =If(varPartTab = "History", RGBA(37,99,235,1))
+            BorderStyle: =BorderStyle.None
+            Color: =RGBA(255, 255, 255, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            DisabledFill: =RGBA(242, 242, 241, 0)
+            Fill: =RGBA(0, 120, 212, 1)
+            Font: =Font.'Segoe UI'
+            HoverBorderColor: =RGBA(0, 0, 0, 0)
+            HoverColor: =RGBA(255, 255, 255, 1)
+            HoverFill: =RGBA(16, 110, 190, 1)
+            OnSelect: =Set(varPartTab, "History")
+            PressedBorderColor: =RGBA(0, 69, 120, 1)
+            PressedColor: =RGBA(255, 255, 255, 1)
+            PressedFill: =RGBA(16, 110, 190, 1)
+            RadiusBottomLeft: =0
+            RadiusBottomRight: =0
+            RadiusTopLeft: =0
+            RadiusTopRight: =0
+            Text: ="History"
+            X: =642
+            Y: =20
+      - btnTabSettings:
+          Control: Classic/Button
+          Properties:
+            BorderColor: =If(varPartTab = "Settings", RGBA(37,99,235,1))
+            BorderStyle: =BorderStyle.None
+            Color: =RGBA(255, 255, 255, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            DisabledFill: =RGBA(242, 242, 241, 0)
+            Fill: =RGBA(0, 120, 212, 1)
+            Font: =Font.'Segoe UI'
+            HoverBorderColor: =RGBA(0, 0, 0, 0)
+            HoverColor: =RGBA(255, 255, 255, 1)
+            HoverFill: =RGBA(16, 110, 190, 1)
+            OnSelect: |+
+              =Set(varPartTab, "Settings");
+              Set(varExistingConfig, LookUp(config_PartSettings, Title = varSelectedPart.PartNumber && Branch = varSelectedPart.Branch))
+
+            PressedBorderColor: =RGBA(0, 69, 120, 1)
+            PressedColor: =RGBA(255, 255, 255, 1)
+            PressedFill: =RGBA(16, 110, 190, 1)
+            RadiusBottomLeft: =0
+            RadiusBottomRight: =0
+            RadiusTopLeft: =0
+            RadiusTopRight: =0
+            Text: ="Settings"
+            X: =1019
+            Y: =20
+      - Label_Franc:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Size: =15
+            Text: =varSelectedPart.Franchise
+            X: =545
+            Y: =90
+      - Franchise_Label:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Size: =15
+            Text: ="Franchise:"
+            X: =429
+            Y: =90
+      - Label_Cost:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Size: =20
+            Text: =Text(varSelectedPart.Cost, "[$-en-US]$#,##0.00")
+            Visible: =varPartTab = "Detail"
+            X: =246
+            Y: =215
+      - Cost_Label:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Size: =20
+            Text: ="Cost:"
+            Visible: =varPartTab = "Detail"
+            X: =20
+            Y: =215
+      - Label_Sell Price:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Size: =20
+            Text: =Text(varSelectedPart.SellPrice1, "[$-en-US]$#,##0.00")
+            Visible: =varPartTab = "Detail"
+            X: =246
+            Y: =275
+      - SellPrice_Label:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Size: =20
+            Text: ="Sell Price:"
+            Visible: =varPartTab = "Detail"
+            X: =20
+            Y: =275
+      - Label_On Hand:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Size: =20
+            Text: =	Text(varSelectedPart.QuantityOnHand, "#,##0")
+            Visible: =varPartTab = "Detail"
+            X: =752
+            Y: =275
+      - OnHand_Label:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Size: =20
+            Text: ="On Hand:"
+            Visible: =varPartTab = "Detail"
+            X: =494
+            Y: =275
+      - Label_On Order:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Size: =20
+            Text: =Text(varSelectedPart.OnOrder, "#,##0")
+            Visible: =varPartTab = "Detail"
+            X: =752
+            Y: =333
+      - OnOrder_Label:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Size: =20
+            Text: ="On Order:"
+            Visible: =varPartTab = "Detail"
+            X: =494
+            Y: =333
+      - Label_Rec. Order Qty:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Size: =20
+            Text: =Text(varSelectedPart.RecommendedOrderQty, "#,##0")
+            Visible: =varPartTab = "Detail"
+            X: =246
+            Y: =430
+      - Rec. Order Qty_Label:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Height: =41
+            Size: =20
+            Text: ="Rec. Order Qty:"
+            Visible: =varPartTab = "Detail"
+            Width: =193
+            X: =20
+            Y: =430
+      - Label_Est. Order Value:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Size: =20
+            Text: =Text(varSelectedPart.EstOrderValue, "[$-en-US]$#,##0.00")
+            Visible: =varPartTab = "Detail"
+            X: =246
+            Y: =495
+      - Est. Order Value_Label:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Height: =36
+            Size: =20
+            Text: ="Est. Order Value:"
+            Visible: =varPartTab = "Detail"
+            Width: =206
+            X: =20
+            Y: =495
+      - Label_Date Created:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Size: =20
+            Text: =Text(varSelectedPart.DateCreated, "mmm d, yyyy")
+            Visible: =varPartTab = "Detail"
+            Width: =182
+            X: =246
+            Y: =616
+      - Date Created_Label:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Size: =20
+            Text: ="Date Created:"
+            Visible: =varPartTab = "Detail"
+            Width: =193
+            X: =20
+            Y: =616
+      - Label_Min Qty:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Size: =20
+            Text: =Text(varSelectedPart.MinimumQty, "#,##0")
+            Visible: =varPartTab = "Detail"
+            Width: =89
+            X: =1264
+            Y: =215
+      - Min Qty_Label:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Size: =20
+            Text: ="Min Qty:"
+            Visible: =varPartTab = "Detail"
+            X: =966
+            Y: =275
+      - Date_Label:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Height: =27
+            OnSelect: =
+            Size: =10
+            Text: |
+              ="Date"
+            Visible: =varPartTab = "History"
+            Width: =66
+            X: =70
+            Y: =390
+      - SalesQty_Label:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Height: =27
+            OnSelect: =
+            Size: =10
+            Text: |
+              ="Sales Qty"
+            Visible: =varPartTab = "History"
+            Width: =66
+            X: =638
+            Y: =390
+      - Demand_Label:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Height: =27
+            OnSelect: =
+            Size: =10
+            Text: |
+              ="Demand"
+            Visible: =varPartTab = "History"
+            Width: =66
+            X: =1079
+            Y: =390
+      - togForceNonSpiking:
+          Control: Classic/Toggle
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            FalseFill: =RGBA(96, 94, 92, 1)
+            FalseHoverFill: =RGBA(50, 49, 48, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            HoverBorderColor: =RGBA(0, 0, 0, 0)
+            OnChange: =varExistingConfig.ForceNonSpiking
+            PressedBorderColor: =RGBA(0, 0, 0, 0)
+            TrueFill: =RGBA(0, 120, 212, 1)
+            TrueHoverFill: =RGBA(16, 110, 190, 1)
+            Visible: =varPartTab = "Settings"
+            X: =134
+            Y: =460
+      - togMasking:
+          Control: Classic/Toggle
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            FalseFill: =RGBA(96, 94, 92, 1)
+            FalseHoverFill: =RGBA(50, 49, 48, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            HoverBorderColor: =RGBA(0, 0, 0, 0)
+            OnChange: =varExistingConfig.Masking
+            PressedBorderColor: =RGBA(0, 0, 0, 0)
+            TrueFill: =RGBA(0, 120, 212, 1)
+            TrueHoverFill: =RGBA(16, 110, 190, 1)
+            Visible: =varPartTab = "Settings"
+            X: =606
+            Y: =460
+      - dpMaskingExpiration:
+          Control: Classic/DatePicker
+          Properties:
+            BorderColor: =RGBA(245, 245, 245, 1)
+            Color: =RGBA(50, 49, 48, 1)
+            DefaultDate: =varExistingConfig.MaskingExpiration
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            DisabledFill: =RGBA(242, 242, 241, 0)
+            Fill: =RGBA(245, 245, 245, 1)
+            Font: =Font.'Segoe UI'
+            Height: =46
+            IconBackground: =RGBA(0, 120, 212, 1)
+            IconFill: =RGBA(255, 255, 255, 1)
+            PaddingTop: =5
+            Size: =13
+            Visible: |
+              =togMasking.Value
+            Width: =210
+            X: =747
+            Y: =460
+      - ddPreApprovedRule:
+          Control: Classic/DropDown
+          Properties:
+            BorderColor: =RGBA(245, 245, 245, 1)
+            ChevronBackground: =RGBA(245, 245, 245, 1)
+            ChevronDisabledBackground: =RGBA(242, 242, 241, 0)
+            ChevronDisabledFill: =RGBA(161, 159, 157, 1)
+            ChevronFill: =RGBA(50, 49, 48, 1)
+            ChevronHoverBackground: =RGBA(245, 245, 245, 1)
+            ChevronHoverFill: =RGBA(50, 49, 48, 1)
+            Color: =RGBA(50, 49, 48, 1)
+            Default: |
+              =varExistingConfig.PreApprovedOrderRule.Value
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            DisabledFill: =RGBA(242, 242, 241, 0)
+            Fill: =RGBA(245, 245, 245, 1)
+            Font: =Font.'Segoe UI'
+            Height: =45
+            HoverBorderColor: =RGBA(16, 110, 190, 1)
+            HoverColor: =RGBA(50, 49, 48, 1)
+            HoverFill: =RGBA(245, 245, 245, 1)
+            Items: =["None","Auto","Approve"]
+            Items.Value: =Value
+            PaddingBottom: =5
+            PaddingLeft: =12
+            PaddingRight: =5
+            PaddingTop: =5
+            PressedBorderColor: =RGBA(16, 110, 190, 1)
+            PressedColor: =RGBA(255, 255, 255, 1)
+            PressedFill: =RGBA(0, 120, 212, 1)
+            SelectionColor: =RGBA(50, 49, 48, 1)
+            SelectionFill: =RGBA(0, 120, 212, 1)
+            Visible: =varPartTab = "Settings"
+            Width: =231
+            X: =1046
+            Y: =460
+      - Button_Save:
+          Control: Classic/Button
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            Color: =RGBA(255, 255, 255, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            DisabledFill: =RGBA(242, 242, 241, 0)
+            Fill: =RGBA(0, 120, 212, 1)
+            Font: =Font.'Segoe UI'
+            HoverBorderColor: =RGBA(0, 0, 0, 0)
+            HoverColor: =RGBA(255, 255, 255, 1)
+            HoverFill: =RGBA(16, 110, 190, 1)
+            OnSelect: |
+              =If(
+                  IsBlank(varExistingConfig),
+                  Patch(
+                      config_PartSettings,
+                      Defaults(config_PartSettings),
+                      {
+                          Title: varSelectedPart.PartNumber,
+                          Branch: varSelectedPart.Branch,
+                          GroupOverride: txtGroupOverride.Text,
+                          MinOverride: If(IsBlank(txtMinOverride.Text), Blank(), Value(txtMinOverride.Text)),
+                          EOQ: If(IsBlank(txtEOQ.Text), Blank(), Value(txtEOQ.Text)),
+                          ForceNonSpiking: togForceNonSpiking.Value,
+                          PreApprovedOrderRule: {Value: ddPreApprovedRule.Selected.Value},
+                          Masking: togMasking.Value,
+                          MaskingExpiration: If(togMasking.Value, dpMaskingExpiration.SelectedDate, Blank())
+                      }
+                  ),
+                  Patch(
+                      config_PartSettings,
+                      varExistingConfig,
+                      {
+                          GroupOverride: txtGroupOverride.Text,
+                          MinOverride: If(IsBlank(txtMinOverride.Text), Blank(), Value(txtMinOverride.Text)),
+                          EOQ: If(IsBlank(txtEOQ.Text), Blank(), Value(txtEOQ.Text)),
+                          ForceNonSpiking: togForceNonSpiking.Value,
+                          PreApprovedOrderRule: {Value: ddPreApprovedRule.Selected.Value},
+                          Masking: togMasking.Value,
+                          MaskingExpiration: If(togMasking.Value, dpMaskingExpiration.SelectedDate, Blank())
+                      }
+                  )
+              );
+              Set(varExistingConfig, LookUp(config_PartSettings, Title = varSelectedPart.PartNumber && Branch = varSelectedPart.Branch));
+              Notify("Settings saved", NotificationType.Success)
+            PressedBorderColor: =RGBA(0, 69, 120, 1)
+            PressedColor: =RGBA(255, 255, 255, 1)
+            PressedFill: =RGBA(16, 110, 190, 1)
+            RadiusBottomLeft: =0
+            RadiusBottomRight: =0
+            RadiusTopLeft: =0
+            RadiusTopRight: =0
+            Text: ="Save"
+            Visible: =varPartTab = "Settings"
+            X: =571
+            Y: =596
+      - Button_Clear:
+          Control: Classic/Button
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            Color: =RGBA(255, 255, 255, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            DisabledFill: =RGBA(242, 242, 241, 0)
+            Fill: =RGBA(0, 120, 212, 1)
+            Font: =Font.'Segoe UI'
+            HoverBorderColor: =RGBA(0, 0, 0, 0)
+            HoverColor: =RGBA(255, 255, 255, 1)
+            HoverFill: =RGBA(16, 110, 190, 1)
+            OnSelect: |
+              =Remove(config_PartSettings, varExistingConfig);
+              Set(varExistingConfig, Blank());
+              Notify("Overrides cleared", NotificationType.Success)
+            PressedBorderColor: =RGBA(0, 69, 120, 1)
+            PressedColor: =RGBA(255, 255, 255, 1)
+            PressedFill: =RGBA(16, 110, 190, 1)
+            RadiusBottomLeft: =0
+            RadiusBottomRight: =0
+            RadiusTopLeft: =0
+            RadiusTopRight: =0
+            Text: ="Clear"
+            Visible: |
+              =!IsBlank(varExistingConfig)
+            X: =571
+            Y: =672
+      - GroupOverride_Label:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Height: =39
+            Size: =18
+            Text: ="Group Override"
+            Visible: =varPartTab = "Settings"
+            Width: =192
+            X: =85
+            Y: =250
+      - MinOverride_Label:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Size: =18
+            Text: ="Min Override"
+            Visible: =varPartTab = "Settings"
+            X: =571
+            Y: =250
+      - EOQ_Label:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Size: =18
+            Text: ="EOQ"
+            Visible: =varPartTab = "Settings"
+            Width: =81
+            X: =1105
+            Y: =250
+      - ForceNonSpiking_Label:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Height: =41
+            Size: =18
+            Text: ="Force Non-Spiking"
+            Visible: =varPartTab = "Settings"
+            Width: =231
+            X: =85
+            Y: =405
+      - Masking_Label:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Size: =18
+            Text: ="Masking"
+            Visible: =varPartTab = "Settings"
+            X: =586
+            Y: =405
+      - MaskingExp_Label:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Size: =18
+            Text: ="Masking Expiration"
+            Visible: |
+              =togMasking.Value
+            Width: =226
+            X: =742
+            Y: =406
+      - PreAproveRule_Label:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Height: =44
+            Size: =18
+            Text: ="Pre Approved Rule"
+            Visible: =varPartTab = "Settings"
+            Width: =222
+            X: =1045
+            Y: =405
+      - txtGroupOverride:
+          Control: Classic/TextInput
+          Properties:
+            BorderColor: =RGBA(0, 120, 212, 1)
+            Color: =RGBA(50, 49, 48, 1)
+            Default: =varExistingConfig.GroupOverride
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            DisabledFill: =RGBA(242, 242, 241, 0)
+            Font: =Font.'Segoe UI'
+            HoverBorderColor: =RGBA(16, 110, 190, 1)
+            HoverColor: =RGBA(50, 49, 48, 1)
+            HoverFill: =RGBA(255, 255, 255, 1)
+            PressedBorderColor: =RGBA(0, 120, 212, 1)
+            PressedColor: =RGBA(50, 49, 48, 1)
+            PressedFill: =RGBA(255, 255, 255, 1)
+            RadiusBottomLeft: =0
+            RadiusBottomRight: =0
+            RadiusTopLeft: =0
+            RadiusTopRight: =0
+            Visible: =varPartTab = "Settings"
+            Width: =170
+            X: =85
+            Y: =300
+      - txtMinOverride:
+          Control: Classic/TextInput
+          Properties:
+            BorderColor: =RGBA(0, 120, 212, 1)
+            Color: =RGBA(50, 49, 48, 1)
+            Default: =Text(varExistingConfig.MinOverride)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            DisabledFill: =RGBA(242, 242, 241, 0)
+            Font: =Font.'Segoe UI'
+            Height: =39
+            HoverBorderColor: =RGBA(16, 110, 190, 1)
+            HoverColor: =RGBA(50, 49, 48, 1)
+            HoverFill: =RGBA(255, 255, 255, 1)
+            PressedBorderColor: =RGBA(0, 120, 212, 1)
+            PressedColor: =RGBA(50, 49, 48, 1)
+            PressedFill: =RGBA(255, 255, 255, 1)
+            RadiusBottomLeft: =0
+            RadiusBottomRight: =0
+            RadiusTopLeft: =0
+            RadiusTopRight: =0
+            Visible: =varPartTab = "Settings"
+            Width: =150
+            X: =571
+            Y: =300
+      - txtEOQ:
+          Control: Classic/TextInput
+          Properties:
+            BorderColor: =RGBA(0, 120, 212, 1)
+            Color: =RGBA(50, 49, 48, 1)
+            Default: =Text(varExistingConfig.EOQ)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            DisabledFill: =RGBA(242, 242, 241, 0)
+            Font: =Font.'Segoe UI'
+            HoverBorderColor: =RGBA(16, 110, 190, 1)
+            HoverColor: =RGBA(50, 49, 48, 1)
+            HoverFill: =RGBA(255, 255, 255, 1)
+            PressedBorderColor: =RGBA(0, 120, 212, 1)
+            PressedColor: =RGBA(50, 49, 48, 1)
+            PressedFill: =RGBA(255, 255, 255, 1)
+            RadiusBottomLeft: =0
+            RadiusBottomRight: =0
+            RadiusTopLeft: =0
+            RadiusTopRight: =0
+            Visible: =varPartTab = "Settings"
+            Width: =156
+            X: =1067
+            Y: =300
+      - Button_PartSearch:
+          Control: Classic/Button
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            Color: =RGBA(255, 255, 255, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            DisabledFill: =RGBA(242, 242, 241, 0)
+            Fill: =RGBA(0, 120, 212, 1)
+            Font: =Font.'Segoe UI'
+            HoverBorderColor: =RGBA(0, 0, 0, 0)
+            HoverColor: =RGBA(255, 255, 255, 1)
+            HoverFill: =RGBA(16, 110, 190, 1)
+            OnSelect: =Set(varPartTab, "Search")
+            PressedBorderColor: =RGBA(0, 69, 120, 1)
+            PressedColor: =RGBA(255, 255, 255, 1)
+            PressedFill: =RGBA(16, 110, 190, 1)
+            RadiusBottomLeft: =0
+            RadiusBottomRight: =0
+            RadiusTopLeft: =0
+            RadiusTopRight: =0
+            Text: ="Part Search"
+            X: =831
+            Y: =20
+      - Label_CommCode:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Size: =15
+            Text: =varSelectedPart.CommodityCode
+            X: =895
+            Y: =140
+      - CommCode_Label:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Size: =15
+            Text: ="Commodity Code:"
+            Width: =198
+            X: =697
+            Y: =140
+      - Label_SLC:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Size: =15
+            Text: =varSelectedPart.SLC
+            X: =545
+            Y: =140
+      - SLC_Label:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Size: =15
+            Text: ="SLC:"
+            X: =429
+            Y: =140
+      - Label_DGropeCode:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Size: =15
+            Text: =varSelectedPart.DealerGroupCode
+            X: =895
+            Y: =90
+      - DGroupCode_Label:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Size: =15
+            Text: ="Dealer Group Code:"
+            Width: =198
+            X: =697
+            Y: =90
+      - Separator9_1:
+          Control: Rectangle
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            Fill: =RGBA(161, 159, 157, 1)
+            Height: =2
+            OnSelect: =
+            Width: =1366
+            Y: =196
+      - Label_VenCode:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Size: =15
+            Text: =varSelectedPart.VendorCode
+            X: =1214
+            Y: =90
+      - VenCode_Label:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Size: =15
+            Text: ="Vendor Code:"
+            X: =1067
+            Y: =90
+      - Label_Bin:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Size: =15
+            Text: =varSelectedPart.Bin
+            X: =1214
+            Y: =140
+      - Label7:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Size: =15
+            Text: ="Bin:"
+            X: =1067
+            Y: =140
+      - Separator9_2:
+          Control: Rectangle
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            Fill: =RGBA(161, 159, 157, 1)
+            Height: =2
+            OnSelect: =
+            Visible: =varPartTab = "Detail"
+            Width: =1366
+            Y: =400
+      - Separator9_3:
+          Control: Rectangle
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            Fill: =RGBA(161, 159, 157, 1)
+            Height: =2
+            OnSelect: =
+            Visible: =varPartTab = "Detail"
+            Width: =1366
+            Y: =565
+      - Label_ListPrice:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Size: =20
+            Text: =Text(varSelectedPart.ListPrice, "[$-en-US]$#,##0.00")
+            Visible: =varPartTab = "Detail"
+            X: =246
+            Y: =333
+      - ListPrice_Label:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Size: =20
+            Text: ="List Price:"
+            Visible: =varPartTab = "Detail"
+            X: =20
+            Y: =333
+      - Label_STKValue:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Size: =20
+            Text: =Text(varSelectedPart.QuantityOnHand * varSelectedPart.Cost, "[$-en-US]$#,##0.00")
+            Visible: =varPartTab = "Detail"
+            X: =752
+            Y: =215
+      - STKValue_Label:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Size: =20
+            Text: ="Stock Value:"
+            Visible: =varPartTab = "Detail"
+            Width: =181
+            X: =494
+            Y: =215
+      - Label_BackOrd_QTY:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Size: =20
+            Text: =Text(varSelectedPart.BackOrderQty, "#,##0")
+            Visible: =varPartTab = "Detail"
+            Width: =89
+            X: =1264
+            Y: =275
+      - BackOrd_QTY_Label:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Height: =36
+            Size: =20
+            Text: ="Back Order QTY:"
+            Visible: =varPartTab = "Detail"
+            Width: =237
+            X: =966
+            Y: =215
+      - Label_STKTarget:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Size: =20
+            Text: =Text(varSelectedPart.StockingTarget, "#,##0")
+            Visible: =varPartTab = "Detail"
+            X: =752
+            Y: =430
+      - STKTarget_Label:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Height: =35
+            Size: =20
+            Text: ="Stocking Target:"
+            Visible: =varPartTab = "Detail"
+            Width: =222
+            X: =494
+            Y: =430
+      - Label_ROP:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Size: =20
+            Text: =Text(varSelectedPart.CalcROP, "#,##0.00")
+            Visible: =varPartTab = "Detail"
+            X: =752
+            Y: =495
+      - ROP_Label:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Size: =20
+            Text: ="ROP:"
+            Visible: =varPartTab = "Detail"
+            X: =494
+            Y: =495
+      - Label_REOrderCode:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Size: =20
+            Text: =varSelectedPart.ReorderCode
+            Visible: =varPartTab = "Detail"
+            Width: =89
+            X: =1264
+            Y: =430
+      - REOrderCode_Label:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Size: =20
+            Text: ="Reorder Code:"
+            Visible: =varPartTab = "Detail"
+            Width: =200
+            X: =966
+            Y: =430
+      - Label_SugOrdQty:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Size: =20
+            Text: =Text(varSelectedPart.SystemSuggestedOrderQty, "#,##0")
+            Visible: =varPartTab = "Detail"
+            Width: =89
+            X: =1264
+            Y: =495
+      - SugOrdQTY_Label:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Size: =20
+            Text: ="Suggested Order QTY:"
+            Visible: =varPartTab = "Detail"
+            Width: =298
+            X: =966
+            Y: =495
+      - Label_DateLastReq:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Size: =20
+            Text: =Text(varSelectedPart.DateLastRequested, "mmm d, yyyy")
+            Visible: =varPartTab = "Detail"
+            Width: =198
+            X: =246
+            Y: =688
+      - DateLastReq_Label:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Size: =20
+            Text: ="Date Last Req:"
+            Visible: =varPartTab = "Detail"
+            Width: =226
+            X: =20
+            Y: =688
+      - Label_Cur12Sales:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Size: =20
+            Text: =Text(varSelectedPart.Current12MoSales, "#,##0")
+            Visible: =varPartTab = "Detail"
+            X: =752
+            Y: =616
+      - Cur12Sales_Label:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Size: =20
+            Text: ="Current 12M Sales:"
+            Visible: =varPartTab = "Detail"
+            Width: =242
+            X: =494
+            Y: =616
+      - Label_Pre12Sales:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Size: =20
+            Text: =Text(varSelectedPart.Previous12MoSales, "#,##0")
+            Visible: =varPartTab = "Detail"
+            X: =752
+            Y: =688
+      - Pre12Sales_Label:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Size: =20
+            Text: ="Previous 12M Sales:"
+            Visible: =varPartTab = "Detail"
+            Width: =253
+            X: =494
+            Y: =688
+      - Label_Cur12Req:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Size: =20
+            Text: =Text(varSelectedPart.Current12MoRequests, "#,##0")
+            Visible: =varPartTab = "Detail"
+            Width: =89
+            X: =1264
+            Y: =616
+      - Cur12Req_Label:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Size: =20
+            Text: ="Current 12M Req:"
+            Visible: =varPartTab = "Detail"
+            Width: =248
+            X: =966
+            Y: =616
+      - Label_Pre12Req:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Size: =20
+            Text: =Text(varSelectedPart.Previous12MoRequests, "#,##0")
+            Visible: =varPartTab = "Detail"
+            Width: =89
+            X: =1264
+            Y: =688
+      - Pre12Req_Label:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Size: =20
+            Text: ="Previous 12M Req:"
+            Visible: =varPartTab = "Detail"
+            Width: =253
+            X: =966
+            Y: =688
+      - Label_Brach:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Height: =38
+            Size: =12
+            Text: |-
+              ="Branch: " & varSelectedPart.Branch
+            Width: =155
+            X: =15
+            Y: =161
+      - Label42:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Size: =20
+            Text: ="Avg Monthly Sales:"
+            Visible: =varPartTab = "History"
+            Width: =240
+            X: =20
+            Y: =215
+      - Label43:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            FontWeight: =FontWeight.Bold
+            Size: =22
+            Text: =Text(varSelectedPart.AvgMonthlySales, "#,##0.0")
+            Visible: =varPartTab = "History"
+            X: =300
+            Y: =216
+      - Label44:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Size: =20
+            Text: ="Avg Monthly Demand:"
+            Visible: =varPartTab = "History"
+            Width: =286
+            X: =515
+            Y: =215
+      - Label45:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            FontWeight: =FontWeight.Bold
+            Size: =22
+            Text: =Text(varSelectedPart.AvgMonthlyDemand, "#,##0.0")
+            Visible: =varPartTab = "History"
+            X: =826
+            Y: =215
+      - Label53:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Size: =20
+            Text: ="Active Months:"
+            Visible: =varPartTab = "History"
+            Width: =202
+            X: =980
+            Y: =215
+      - Label54:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            FontWeight: =FontWeight.Bold
+            Size: =22
+            Text: =Text(varSelectedPart.MonthCount, "#,##0")
+            Visible: =varPartTab = "History"
+            X: =1203
+            Y: =215
+      - Label55:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Height: =43
+            Size: =20
+            Text: ="Last 12M Sales:"
+            Visible: =varPartTab = "History"
+            Width: =226
+            X: =20
+            Y: =270
+      - Label56:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Size: =20
+            Text: =Text(varSelectedPart.Current12MoSales, "#,##0")
+            Visible: =varPartTab = "History"
+            X: =300
+            Y: =270
+      - Label57:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Height: =43
+            Size: =20
+            Text: ="Prior 12M Sales:"
+            Visible: =varPartTab = "History"
+            Width: =226
+            X: =20
+            Y: =325
+      - Label58:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Size: =20
+            Text: =Text(varSelectedPart.Previous12MoSales, "#,##0")
+            Visible: =varPartTab = "History"
+            X: =300
+            Y: =325
+      - Label59:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Size: =20
+            Text: ="Last 12M Requests:"
+            Visible: =varPartTab = "History"
+            Width: =253
+            X: =515
+            Y: =270
+      - Label60:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Size: =20
+            Text: =Text(varSelectedPart.Current12MoRequests, "#,##0")
+            Visible: =varPartTab = "History"
+            X: =830
+            Y: =270
+      - Label61:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Size: =20
+            Text: ="Prior 12M Requests:"
+            Visible: =varPartTab = "History"
+            Width: =253
+            X: =515
+            Y: =325
+      - Label62:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Size: =20
+            Text: =Text(varSelectedPart.Previous12MoRequests, "#,##0")
+            Visible: =varPartTab = "History"
+            X: =830
+            Y: =325
+      - Label63:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Size: =20
+            Text: ="SuperTo:"
+            Visible: =varPartTab = "History"
+            X: =980
+            Y: =270
+      - Label64:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Size: =20
+            Text: |
+              =If(IsBlank(varSelectedPart.SuperTo), "None", varSelectedPart.SuperTo)
+            Visible: =varPartTab = "History"
+            X: =1203
+            Y: =270
+      - Label65:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Size: =20
+            Text: ="SuperFrom:"
+            Visible: =varPartTab = "History"
+            X: =980
+            Y: =325
+      - Label66:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Size: =20
+            Text: =If(IsBlank(varSelectedPart.SuperFrom), "None", varSelectedPart.SuperFrom)
+            Visible: =varPartTab = "History"
+            X: =1203
+            Y: =325
+      - Label67:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: |
+              =If(varSelectedPart.Current12MoSales > varSelectedPart.Previous12MoSales, RGBA(22, 163, 74, 1),
+              If(varSelectedPart.Current12MoSales < varSelectedPart.Previous12MoSales, RGBA(220, 38, 38, 1),
+              RGBA(107, 114, 128, 1)))
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Text: |
+              =If(varSelectedPart.Current12MoSales > varSelectedPart.Previous12MoSales, "▲", 
+              If(varSelectedPart.Current12MoSales < varSelectedPart.Previous12MoSales, "▼", "→"))
+            Visible: =varPartTab = "History"
+            X: =341
+            Y: =275
+      - Label69:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: |
+              =If(varSelectedPart.Current12MoRequests > varSelectedPart.Previous12MoRequests, RGBA(22, 163, 74, 1),
+              If(varSelectedPart.Current12MoRequests < varSelectedPart.Previous12MoRequests, RGBA(220, 38, 38, 1),
+              RGBA(107, 114, 128, 1)))
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Text: |
+              =If(varSelectedPart.Current12MoRequests > varSelectedPart.Previous12MoRequests, "▲", 
+              If(varSelectedPart.Current12MoRequests < varSelectedPart.Previous12MoRequests, "▼", "→"))
+            Visible: =varPartTab = "History"
+            X: =878
+            Y: =275
+      - Label70:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Height: =33
+            Text: ="Per-part overrides for branch " & varSelectedPart.Branch & ". Changes apply to tomorrow's pipeline run."
+            Visible: =varPartTab = "Settings"
+            Width: =594
+            X: =20
+            Y: =198

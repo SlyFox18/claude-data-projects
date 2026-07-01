@@ -283,7 +283,7 @@ table Fact_ServiceTimeSheet_Audit
 
 	column LastInvoiceDate
 		dataType: dateTime
-		formatString: Long Date
+		formatString: Short Date
 		lineageTag: 87df1e3a-b926-43cb-a7b2-110773cb970e
 		summarizeBy: none
 		sourceColumn: LastInvoiceDate
@@ -338,17 +338,284 @@ table Fact_ServiceTimeSheet_Audit
 		annotation SummarizationSetBy = Automatic
 
 	column SharedRO =
-			VAR TechCount =
-			    COUNTROWS(
-			        FILTER(
-			            Fact_ServiceTimeSheet_Audit,
-			            Fact_ServiceTimeSheet_Audit[RONumber] = EARLIER(Fact_ServiceTimeSheet_Audit[RONumber])
-			        )
+			VAR _RO = Fact_ServiceTimeSheet_Audit[RONumber]
+			VAR _HasTrainee = Fact_ServiceTimeSheet_Audit[HasHourlyTrainee]
+			VAR _CommTechs =
+			    CALCULATE(
+			        DISTINCTCOUNT(Fact_ServiceTimeSheet_Audit[TechNum]),
+			        ALL(Fact_ServiceTimeSheet_Audit),
+			        Fact_ServiceTimeSheet_Audit[RONumber] = _RO
 			    )
 			RETURN
-			    IF(TechCount > 1, FORMAT(TechCount, "0") & " Techs", "")
+			    IF(_CommTechs > 1,
+			        FORMAT(_CommTechs, "0") & " Commission Techs",
+			        IF(_HasTrainee = TRUE(), "Has Trainee", "")
+			    )
 		dataType: string
 		lineageTag: e5f6a7b8-c9d0-4123-4567-890123400039
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	column IsClosed
+		dataType: string
+		lineageTag: 62032574-c5ce-4718-a2d2-3feb53ed8b95
+		summarizeBy: none
+		sourceColumn: IsClosed
+
+		annotation SummarizationSetBy = Automatic
+
+	column HourlyInvoicedHrs
+		dataType: double
+		lineageTag: 063d1801-9c0f-48e2-826f-1f6f56906b6c
+		summarizeBy: sum
+		sourceColumn: HourlyInvoicedHrs
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column HasHourlyTrainee
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: cde95023-136d-4f40-904a-6f70b666500a
+		summarizeBy: none
+		sourceColumn: HasHourlyTrainee
+
+		annotation SummarizationSetBy = Automatic
+
+	column WOBranchMismatch =
+			VAR _ExpectedBranch =
+			    IFERROR(
+			        LOOKUPVALUE(
+			            dim_BranchLocation[BranchID],
+			            dim_BranchLocation[City], Fact_ServiceTimeSheet_Audit[Location],
+			            dim_BranchLocation[BranchType], "Main Branch"
+			        ),
+			        BLANK()
+			    )
+			VAR _WOBranch = Fact_ServiceTimeSheet_Audit[WOBranch]
+			RETURN
+			    NOT(ISBLANK(_ExpectedBranch))
+			        && NOT(ISBLANK(_WOBranch))
+			        && _ExpectedBranch <> _WOBranch
+		dataType: boolean
+		lineageTag: c3d4e5f6-a7b8-4901-2abc-def012345701
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	column WOBranch
+		dataType: string
+		lineageTag: 0a3d57e4-d3be-4c50-be1f-8651ccace333
+		summarizeBy: none
+		sourceColumn: WOBranch
+
+		annotation SummarizationSetBy = Automatic
+
+	column BranchWarning = ```
+			
+			IF(
+			    Fact_ServiceTimeSheet_Audit[WOBranchMismatch],
+			    "⚠",
+			    ""
+			)
+			
+			```
+		lineageTag: 40441b2a-5e18-476b-9853-e915e052a54c
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	column InvoiceNumber
+		dataType: string
+		lineageTag: 606fb686-7bf3-46b6-bd16-bf9ace18bd00
+		summarizeBy: none
+		sourceColumn: InvoiceNumber
+
+		annotation SummarizationSetBy = Automatic
+
+	column CrossPeriodClaimedHrs
+		dataType: double
+		lineageTag: 36dd6d5e-1624-4f4e-98df-a9fc41eff5cb
+		summarizeBy: sum
+		sourceColumn: CrossPeriodClaimedHrs
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column DrawNumber
+		dataType: int64
+		formatString: 0
+		lineageTag: a9532c63-cfde-4fb1-ae74-cdddf8d62348
+		summarizeBy: sum
+		sourceColumn: DrawNumber
+
+		annotation SummarizationSetBy = Automatic
+
+	column TotalDraws
+		dataType: int64
+		formatString: 0
+		lineageTag: 6a3b497d-1f5a-48d1-80fa-812b06cacdae
+		summarizeBy: sum
+		sourceColumn: TotalDraws
+
+		annotation SummarizationSetBy = Automatic
+
+	column JobTypeList
+		dataType: string
+		lineageTag: 0e130022-ab62-4fc8-bfc1-cd14f6be40ac
+		summarizeBy: none
+		sourceColumn: JobTypeList
+
+		annotation SummarizationSetBy = Automatic
+
+	column HasMultipleJobTypes
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 5195e5f8-945e-4cff-b711-ee44be981ce9
+		summarizeBy: none
+		sourceColumn: HasMultipleJobTypes
+
+		annotation SummarizationSetBy = Automatic
+
+	column ROStatusDisplay =
+			VAR _RO = Fact_ServiceTimeSheet_Audit[RONumber]
+			VAR _CommTechs =
+			    CALCULATE(
+			        DISTINCTCOUNT(Fact_ServiceTimeSheet_Audit[TechNum]),
+			        ALL(Fact_ServiceTimeSheet_Audit),
+			        Fact_ServiceTimeSheet_Audit[RONumber] = _RO
+			    )
+			VAR _ClaimedMore =
+			    CALCULATE(
+			        COUNTROWS(Fact_ServiceTimeSheet_Audit),
+			        ALL(Fact_ServiceTimeSheet_Audit),
+			        Fact_ServiceTimeSheet_Audit[RONumber] = _RO,
+			        Fact_ServiceTimeSheet_Audit[AuditStatus] = "Claimed More Than Invoiced"
+			    )
+			VAR _InvoicedMore =
+			    CALCULATE(
+			        COUNTROWS(Fact_ServiceTimeSheet_Audit),
+			        ALL(Fact_ServiceTimeSheet_Audit),
+			        Fact_ServiceTimeSheet_Audit[RONumber] = _RO,
+			        Fact_ServiceTimeSheet_Audit[AuditStatus] = "Invoiced More Than Claimed"
+			    )
+			VAR _Partial =
+			    CALCULATE(
+			        COUNTROWS(Fact_ServiceTimeSheet_Audit),
+			        ALL(Fact_ServiceTimeSheet_Audit),
+			        Fact_ServiceTimeSheet_Audit[RONumber] = _RO,
+			        Fact_ServiceTimeSheet_Audit[AuditStatus] = "Partial Invoice - In Progress"
+			    )
+			VAR _Draw =
+			    CALCULATE(
+			        COUNTROWS(Fact_ServiceTimeSheet_Audit),
+			        ALL(Fact_ServiceTimeSheet_Audit),
+			        Fact_ServiceTimeSheet_Audit[RONumber] = _RO,
+			        Fact_ServiceTimeSheet_Audit[AuditStatus] IN {"Draw - Open RO", "Draw - In Progress"}
+			    )
+			VAR _Pending =
+			    CALCULATE(
+			        COUNTROWS(Fact_ServiceTimeSheet_Audit),
+			        ALL(Fact_ServiceTimeSheet_Audit),
+			        Fact_ServiceTimeSheet_Audit[RONumber] = _RO,
+			        Fact_ServiceTimeSheet_Audit[AuditStatus] = "Pending Invoice"
+			    )
+			RETURN
+			    IF(
+			        _CommTechs <= 1, BLANK(),
+			        IF(_ClaimedMore > 0 && _InvoicedMore > 0, "Mixed",
+			        IF(_ClaimedMore > 0,                      "Claimed More",
+			        IF(_InvoicedMore > 0,                     "Invoiced More",
+			        IF(_Partial > 0,                          "Partial",
+			        IF(_Draw > 0,                             "Draw",
+			        IF(_Pending > 0,                          "Pending",
+			                                                  "Match"))))))
+			    )
+		dataType: string
+		lineageTag: d4e5f6a7-b8c9-4123-6cde-f01234567901
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	column AuditNote =
+			IFERROR(
+			    LOOKUPVALUE(
+			        AuditLog[AuditNote],
+			        AuditLog[TechNum], Fact_ServiceTimeSheet_Audit[TechNum],
+			        AuditLog[RONumberText], Fact_ServiceTimeSheet_Audit[RONumberText],
+			        AuditLog[PayEndDateOnly], Fact_ServiceTimeSheet_Audit[PayEndDateOnly]
+			    ),
+			    BLANK()
+			)
+		dataType: string
+		lineageTag: a1d4e5f6-1111-4222-8333-000000000301
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	column AuditedBy =
+			IFERROR(
+			    LOOKUPVALUE(
+			        AuditLog[AuditedBy],
+			        AuditLog[TechNum], Fact_ServiceTimeSheet_Audit[TechNum],
+			        AuditLog[RONumberText], Fact_ServiceTimeSheet_Audit[RONumberText],
+			        AuditLog[PayEndDateOnly], Fact_ServiceTimeSheet_Audit[PayEndDateOnly]
+			    ),
+			    BLANK()
+			)
+		dataType: string
+		lineageTag: a1d4e5f6-1111-4222-8333-000000000302
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	column AuditedDate =
+			IFERROR(
+			    LOOKUPVALUE(
+			        AuditLog[AuditedDate],
+			        AuditLog[TechNum], Fact_ServiceTimeSheet_Audit[TechNum],
+			        AuditLog[RONumberText], Fact_ServiceTimeSheet_Audit[RONumberText],
+			        AuditLog[PayEndDateOnly], Fact_ServiceTimeSheet_Audit[PayEndDateOnly]
+			    ),
+			    BLANK()
+			)
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: a1d4e5f6-1111-4222-8333-000000000303
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	column IsAudited = NOT ISBLANK(Fact_ServiceTimeSheet_Audit[AuditedDate])
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: a1d4e5f6-1111-4222-8333-000000000304
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	column AuditedIcon = IF(Fact_ServiceTimeSheet_Audit[IsAudited], "✓", "")
+		dataType: string
+		lineageTag: a1d4e5f6-1111-4222-8333-000000000305
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	column PayEndDateOnly = DATE(YEAR(Fact_ServiceTimeSheet_Audit[PayEnd]), MONTH(Fact_ServiceTimeSheet_Audit[PayEnd]), DAY(Fact_ServiceTimeSheet_Audit[PayEnd]))
+		dataType: dateTime
+		formatString: Short Date
+		lineageTag: a1d4e5f6-1111-4222-8333-000000000306
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	column HoursDifferenceForApp = COALESCE(Fact_ServiceTimeSheet_Audit[HoursDifference], 0)
+		dataType: double
+		formatString: 0.00
+		lineageTag: a1d4e5f6-1111-4222-8333-000000000307
 		summarizeBy: none
 
 		annotation SummarizationSetBy = Automatic

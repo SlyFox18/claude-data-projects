@@ -1,10 +1,10 @@
 {
-  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.9.0/schema.json",
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.10.0/schema.json",
   "name": "4eacb34307352c38970b",
   "position": {
     "x": 55.405541561712845,
     "y": 110.81108312342569,
-    "z": 1000,
+    "z": 0,
     "height": 794.53904282115866,
     "width": 1596.1511335012594,
     "tabOrder": 0
@@ -37,12 +37,99 @@
                       "Entity": "Fact_ServiceTimeSheet_Audit"
                     }
                   },
+                  "Property": "PayPeriod"
+                }
+              },
+              "queryRef": "Fact_ServiceTimeSheet_Audit.PayPeriod",
+              "nativeQueryRef": "PayPeriod"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Fact_ServiceTimeSheet_Audit"
+                    }
+                  },
+                  "Property": "LastInvoiceDate"
+                }
+              },
+              "queryRef": "Fact_ServiceTimeSheet_Audit.LastInvoiceDate",
+              "nativeQueryRef": "Invoice Date",
+              "displayName": "Invoice Date"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Fact_ServiceTimeSheet_Audit"
+                    }
+                  },
+                  "Property": "InvoiceNumber"
+                }
+              },
+              "queryRef": "Fact_ServiceTimeSheet_Audit.InvoiceNumber",
+              "nativeQueryRef": "Invoice #",
+              "displayName": "Invoice #"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Fact_ServiceTimeSheet_Audit"
+                    }
+                  },
                   "Property": "RONumberText"
                 }
               },
               "queryRef": "Fact_ServiceTimeSheet_Audit.RONumberText",
               "nativeQueryRef": "RO#",
               "displayName": "RO#"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Fact_ServiceTimeSheet_Audit"
+                    }
+                  },
+                  "Property": "IsClosed"
+                }
+              },
+              "queryRef": "Fact_ServiceTimeSheet_Audit.IsClosed",
+              "nativeQueryRef": "IsClosed"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Fact_ServiceTimeSheet_Audit"
+                    }
+                  },
+                  "Property": "JobTypeList"
+                }
+              },
+              "queryRef": "Fact_ServiceTimeSheet_Audit.JobTypeList",
+              "nativeQueryRef": "Job Type",
+              "displayName": "Job Type"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "# Techs on RO"
+                }
+              },
+              "queryRef": "_Measures.# Techs on RO",
+              "nativeQueryRef": "# Techs on RO"
             },
             {
               "field": {
@@ -353,7 +440,7 @@
             "fontSize": {
               "expr": {
                 "Literal": {
-                  "Value": "13D"
+                  "Value": "10D"
                 }
               }
             },
@@ -810,6 +897,186 @@
             ],
             "metadata": "_Measures.RO Audit Status"
           }
+        },
+        {
+          "properties": {
+            "backColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "RO Row Status Color"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "selector": {
+            "data": [
+              {
+                "dataViewWildcard": {
+                  "matchingOption": 1
+                }
+              }
+            ],
+            "metadata": "Fact_ServiceTimeSheet_Audit.PayPeriod"
+          }
+        },
+        {
+          "properties": {
+            "backColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "RO Row Status Color"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "selector": {
+            "data": [
+              {
+                "dataViewWildcard": {
+                  "matchingOption": 1
+                }
+              }
+            ],
+            "metadata": "Fact_ServiceTimeSheet_Audit.LastInvoiceDate"
+          }
+        },
+        {
+          "properties": {
+            "backColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "RO Row Status Color"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "selector": {
+            "data": [
+              {
+                "dataViewWildcard": {
+                  "matchingOption": 1
+                }
+              }
+            ],
+            "metadata": "Fact_ServiceTimeSheet_Audit.InvoiceNumber"
+          }
+        },
+        {
+          "properties": {
+            "backColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "RO Row Status Color"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "selector": {
+            "data": [
+              {
+                "dataViewWildcard": {
+                  "matchingOption": 1
+                }
+              }
+            ],
+            "metadata": "Fact_ServiceTimeSheet_Audit.IsClosed"
+          }
+        },
+        {
+          "properties": {
+            "backColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "RO Row Status Color"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "selector": {
+            "data": [
+              {
+                "dataViewWildcard": {
+                  "matchingOption": 1
+                }
+              }
+            ],
+            "metadata": "Fact_ServiceTimeSheet_Audit.JobTypeList"
+          }
+        },
+        {
+          "properties": {
+            "backColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "RO Row Status Color"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "selector": {
+            "data": [
+              {
+                "dataViewWildcard": {
+                  "matchingOption": 1
+                }
+              }
+            ],
+            "metadata": "_Measures.# Techs on RO"
+          }
         }
       ],
       "total": [
@@ -949,6 +1216,62 @@
           "selector": {
             "metadata": "_Measures.RO Audit Status"
           }
+        },
+        {
+          "properties": {
+            "alignment": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Center'"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "Fact_ServiceTimeSheet_Audit.IsClosed"
+          }
+        },
+        {
+          "properties": {
+            "styleHeader": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "alignment": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Center'"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "Fact_ServiceTimeSheet_Audit.JobTypeList"
+          }
+        },
+        {
+          "properties": {
+            "styleHeader": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "alignment": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Center'"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "_Measures.# Techs on RO"
+          }
         }
       ],
       "columnWidth": [
@@ -957,7 +1280,7 @@
             "value": {
               "expr": {
                 "Literal": {
-                  "Value": "320.7481484588089D"
+                  "Value": "222.85297876910096D"
                 }
               }
             }
@@ -971,7 +1294,7 @@
             "value": {
               "expr": {
                 "Literal": {
-                  "Value": "217.08374598279426D"
+                  "Value": "194.69382103324938D"
                 }
               }
             }
@@ -999,7 +1322,7 @@
             "value": {
               "expr": {
                 "Literal": {
-                  "Value": "84.20401228852603D"
+                  "Value": "83.02801458539655D"
                 }
               }
             }
@@ -1013,7 +1336,7 @@
             "value": {
               "expr": {
                 "Literal": {
-                  "Value": "80.63481320120877D"
+                  "Value": "71.16021929353063D"
                 }
               }
             }
@@ -1027,13 +1350,55 @@
             "value": {
               "expr": {
                 "Literal": {
-                  "Value": "92.95967951954674D"
+                  "Value": "67.01211082227915D"
                 }
               }
             }
           },
           "selector": {
             "metadata": "_Measures.Total Claimed Hours"
+          }
+        },
+        {
+          "properties": {
+            "value": {
+              "expr": {
+                "Literal": {
+                  "Value": "61.84635212964338D"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "_Measures.# Techs on RO"
+          }
+        },
+        {
+          "properties": {
+            "value": {
+              "expr": {
+                "Literal": {
+                  "Value": "114.35011060574634D"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "Fact_ServiceTimeSheet_Audit.Model"
+          }
+        },
+        {
+          "properties": {
+            "value": {
+              "expr": {
+                "Literal": {
+                  "Value": "80.3173864554937D"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "Fact_ServiceTimeSheet_Audit.LastInvoiceDate"
           }
         }
       ]

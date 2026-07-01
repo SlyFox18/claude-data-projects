@@ -1,0 +1,1385 @@
+Screens:
+  scrOneTimeOrder:
+    Properties:
+      Fill: =RGBA(255, 255, 255, 1)
+      LoadingSpinnerColor: =RGBA(0, 120, 212, 1)
+      OnVisible: |+
+        =Set(varWizardStep, 1);
+        Reset(txtOrderName);
+        Clear(colSelectedMonths);
+        If(
+            IsEmpty(colBranches),
+            ClearCollect(colReorderCache, fact_nonjd_reorder);
+            ClearCollect(colBranches, Distinct(colReorderCache, Branch));
+            ClearCollect(colBranches, Sort(
+                ForAll(colBranches, {Value: ThisRecord.Value, SortKey: Value(ThisRecord.Value)}),
+                SortKey, SortOrder.Ascending
+            ))
+        );
+        If(
+            !IsBlank(varSelectedBranch),
+            ClearCollect(colReorderCache, Filter(fact_nonjd_reorder, Branch = varSelectedBranch))
+        );
+
+
+
+    Children:
+      - Rectangle_Header_Reorder_1:
+          Control: Rectangle
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            DisabledFill: =RGBA(161, 159, 157, 1)
+            Fill: =RGBA(30, 41, 59, 1)
+            FocusedBorderThickness: =4
+            Height: =80
+            HoverFill: =RGBA(30, 41, 59, 1)
+            PressedFill: =RGBA(30, 41, 59, 1)
+            Width: =1366
+            X: =0.00
+      - galOneTimeResults:
+          Control: Gallery
+          Variant: BrowseLayout_Vertical_TwoTextVariant_ver5.0
+          Properties:
+            BorderColor: =RGBA(230, 230, 230, 1)
+            BorderThickness: =1
+            Height: =538
+            Items: |
+              =Filter(colOneTimeResults,
+                  (IsBlank(txtMinSales.Text) || Value(txtMinSales.Text) = 0 || AnticipatedSales >= Value(txtMinSales.Text)) &&
+                  (IsBlank(txtMinDemands.Text) || Value(txtMinDemands.Text) = 0 || AnticipatedDemands >= Value(txtMinDemands.Text))
+              )
+            Visible: =varWizardStep = 2
+            Width: =1366
+            Y: =229
+          Children:
+            - Checkbox_Include:
+                Control: Classic/CheckBox
+                Properties:
+                  BorderColor: =RGBA(0, 0, 0, 0)
+                  BorderStyle: =BorderStyle.None
+                  BorderThickness: =2
+                  CheckboxBorderColor: =RGBA(96, 94, 92, 1)
+                  CheckboxSize: =28
+                  CheckmarkFill: =RGBA(0, 120, 212, 1)
+                  Color: =RGBA(50, 49, 48, 1)
+                  Default: =ThisItem.IsIncluded
+                  DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                  DisabledColor: =RGBA(161, 159, 157, 1)
+                  FocusedBorderThickness: =4
+                  Font: =Font.'Segoe UI'
+                  Height: =38
+                  HoverBorderColor: =RGBA(0, 0, 0, 0)
+                  HoverColor: =RGBA(50, 49, 48, 1)
+                  HoverFill: =RGBA(0, 0, 0, 0)
+                  OnCheck: |
+                    =UpdateIf(colOneTimeResults, PartNumber = ThisItem.PartNumber, {IsIncluded: true})
+                  OnUncheck: |
+                    =UpdateIf(colOneTimeResults, PartNumber = ThisItem.PartNumber, {IsIncluded: false})
+                  PressedBorderColor: =RGBA(0, 0, 0, 0)
+                  PressedColor: =RGBA(50, 49, 48, 1)
+                  PressedFill: =RGBA(0, 0, 0, 0)
+                  Size: =12
+                  Text: ="Order"
+                  Width: =88
+                  X: =1216
+                  Y: =25
+            - Rectangle1:
+                Control: Rectangle
+                Properties:
+                  BorderColor: =RGBA(0, 0, 0, 0)
+                  Fill: =RGBA(0, 120, 212, 1)
+                  Height: =Parent.TemplateHeight - Separator1.Height
+                  OnSelect: =Select(Parent)
+                  Visible: =ThisItem.IsSelected
+                  Width: =4
+            - Title1:
+                Control: Label
+                Properties:
+                  BorderColor: =RGBA(0, 0, 0, 1)
+                  Color: =If(ThisItem.IsIncluded, RGBA(50, 49, 48, 1), RGBA(180, 180, 180, 1))
+                  DisabledColor: =RGBA(161, 159, 157, 1)
+                  Font: =Font.'Segoe UI'
+                  FontWeight: =If(ThisItem.IsSelected, FontWeight.Semibold, FontWeight.Normal)
+                  Height: =25
+                  PaddingBottom: =0
+                  PaddingLeft: =12
+                  PaddingRight: =0
+                  PaddingTop: =0
+                  Size: =14
+                  Text: =ThisItem.PartNumber
+                  VerticalAlign: =VerticalAlign.Top
+                  Width: =288
+                  X: =16
+                  Y: =31
+            - Subtitle1:
+                Control: Label
+                Properties:
+                  BorderColor: =RGBA(0, 0, 0, 1)
+                  Color: =If(ThisItem.IsIncluded, RGBA(96, 94, 92, 1), RGBA(180, 180, 180, 1))
+                  DisabledColor: =RGBA(161, 159, 157, 1)
+                  Font: =Font.'Segoe UI'
+                  FontWeight: =If(ThisItem.IsSelected, FontWeight.Semibold, FontWeight.Normal)
+                  Height: =Self.Size * 1.8
+                  PaddingBottom: =0
+                  PaddingLeft: =12
+                  PaddingRight: =0
+                  PaddingTop: =0
+                  Size: =9
+                  Text: =ThisItem.Description
+                  VerticalAlign: =VerticalAlign.Top
+                  Width: =Title1.Width
+                  X: =Title1.X
+                  Y: =Title1.Y + Title1.Height
+            - Separator1:
+                Control: Rectangle
+                Properties:
+                  BorderColor: =RGBA(0, 0, 0, 0)
+                  Fill: =RGBA(230, 230, 230, 1)
+                  Height: =1
+                  OnSelect: =Select(Parent)
+                  Width: =Parent.TemplateWidth
+                  Y: =Parent.TemplateHeight - Self.Height
+            - Label3:
+                Control: Label
+                Properties:
+                  BorderColor: =RGBA(0, 0, 0, 0)
+                  BorderStyle: =BorderStyle.None
+                  BorderThickness: =2
+                  Color: =RGBA(50, 49, 48, 1)
+                  DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                  DisabledColor: =RGBA(161, 159, 157, 1)
+                  FocusedBorderThickness: =4
+                  Font: =Font.'Segoe UI'
+                  OnSelect: =Select(Parent)
+                  Text: =ThisItem.Franchise
+                  X: =326
+                  Y: =23
+            - Label5:
+                Control: Label
+                Properties:
+                  BorderColor: =RGBA(0, 0, 0, 0)
+                  BorderStyle: =BorderStyle.None
+                  BorderThickness: =2
+                  Color: =RGBA(50, 49, 48, 1)
+                  DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                  DisabledColor: =RGBA(161, 159, 157, 1)
+                  FocusedBorderThickness: =4
+                  Font: =Font.'Segoe UI'
+                  OnSelect: =Select(Parent)
+                  Text: =If(varShowTotal, Text(ThisItem.AnticipatedSales, "#,##0.0"), Text(ThisItem.AvgMonthlySales, "#,##0.0"))
+                  X: =579
+                  Y: =23
+            - Label8:
+                Control: Label
+                Properties:
+                  BorderColor: =RGBA(0, 0, 0, 0)
+                  BorderStyle: =BorderStyle.None
+                  BorderThickness: =2
+                  Color: =RGBA(50, 49, 48, 1)
+                  DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                  DisabledColor: =RGBA(161, 159, 157, 1)
+                  FocusedBorderThickness: =4
+                  Font: =Font.'Segoe UI'
+                  OnSelect: =Select(Parent)
+                  Text: =Text(ThisItem.OnHandQty, "#,##0")
+                  X: =823
+                  Y: =23
+            - Label9:
+                Control: Label
+                Properties:
+                  BorderColor: =RGBA(0, 0, 0, 0)
+                  BorderStyle: =BorderStyle.None
+                  BorderThickness: =2
+                  Color: =RGBA(37, 99, 235, 1)
+                  DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                  DisabledColor: =RGBA(161, 159, 157, 1)
+                  FocusedBorderThickness: =4
+                  Font: =Font.'Segoe UI'
+                  FontWeight: =FontWeight.Semibold
+                  OnSelect: =Select(Parent)
+                  Size: =16
+                  Text: =Text(ThisItem.RecommendedQty, "#,##0")
+                  X: =1066
+                  Y: =23
+      - galMonths:
+          Control: Gallery
+          Variant: BrowseLayout_Vertical_OneTextVariant_ver5.0
+          Properties:
+            BorderColor: =RGBA(230, 230, 230, 1)
+            BorderThickness: =1
+            Height: =346
+            Items: =colAllMonths
+            Visible: =varWizardStep = 1
+            Width: =199
+            X: =20
+            Y: =400
+          Children:
+            - Title4:
+                Control: Label
+                Properties:
+                  BorderColor: =RGBA(0, 0, 0, 1)
+                  Color: =RGBA(50, 49, 48, 1)
+                  DisabledColor: =RGBA(161, 159, 157, 1)
+                  Font: =Font.'Segoe UI'
+                  FontWeight: =If(ThisItem.IsSelected, FontWeight.Semibold, FontWeight.Normal)
+                  Height: =Self.Size * 1.8
+                  OnSelect: =Select(Parent)
+                  PaddingBottom: =0
+                  PaddingLeft: =12
+                  PaddingRight: =0
+                  PaddingTop: =0
+                  Size: =12
+                  Text: =ThisItem.MonthLabel
+                  VerticalAlign: =VerticalAlign.Top
+                  Width: =Parent.TemplateWidth - 86
+                  X: =16
+                  Y: =(Parent.TemplateHeight / 2) - (Self.Height / 2)
+            - Separator5:
+                Control: Rectangle
+                Properties:
+                  BorderColor: =RGBA(230, 230, 230, 1)
+                  Fill: =RGBA(230, 230, 230, 1)
+                  Height: =1
+                  OnSelect: =Select(Parent)
+                  Width: =Parent.TemplateWidth
+                  Y: =Parent.TemplateHeight - Self.Height
+            - Rectangle5:
+                Control: Rectangle
+                Properties:
+                  BorderColor: =RGBA(0, 0, 0, 0)
+                  Fill: =RGBA(0, 120, 212, 1)
+                  Height: =Parent.TemplateHeight - Separator5.Height
+                  OnSelect: =Select(Parent)
+                  Visible: =ThisItem.IsSelected
+                  Width: =4
+            - Checkbox2:
+                Control: Classic/CheckBox
+                Properties:
+                  BorderColor: =RGBA(0, 0, 0, 0)
+                  BorderStyle: =BorderStyle.None
+                  BorderThickness: =2
+                  CheckboxBorderColor: =RGBA(96, 94, 92, 1)
+                  CheckboxSize: =35
+                  CheckmarkFill: =RGBA(0, 120, 212, 1)
+                  Color: =RGBA(50, 49, 48, 1)
+                  Default: |
+                    =!IsBlank(LookUp(colSelectedMonths, MonthOffset = ThisItem.MonthOffset))
+                  DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                  DisabledColor: =RGBA(161, 159, 157, 1)
+                  FocusedBorderThickness: =4
+                  Font: =Font.'Segoe UI'
+                  HoverBorderColor: =RGBA(0, 0, 0, 0)
+                  HoverColor: =RGBA(50, 49, 48, 1)
+                  HoverFill: =RGBA(0, 0, 0, 0)
+                  OnCheck: |
+                    =Collect(colSelectedMonths, {MonthOffset: ThisItem.MonthOffset})
+                  OnSelect: =
+                  OnUncheck: |
+                    =Remove(colSelectedMonths, LookUp(colSelectedMonths, MonthOffset = ThisItem.MonthOffset))
+                  PressedBorderColor: =RGBA(0, 0, 0, 0)
+                  PressedColor: =RGBA(50, 49, 48, 1)
+                  PressedFill: =RGBA(0, 0, 0, 0)
+                  Size: =12
+                  Text: =
+                  Width: =66
+                  X: =133
+                  Y: =11
+      - Label12:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            FontWeight: =FontWeight.Semibold
+            OnSelect: =
+            Size: =15
+            Text: |+
+              =Text(CountRows(colSelectedMonths), "#,##0") & " Months Selected"
+
+            Visible: =varWizardStep = 1
+            Width: =223
+            X: =1015
+            Y: =266
+      - Label_Reorder_Title_1:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(255, 255, 255, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            FontWeight: =FontWeight.Bold
+            PaddingRight: =3.22
+            PaddingTop: =3.22
+            Size: =18
+            Text: ="One Time Order"
+            Width: =206.44
+            X: =11
+            Y: =20
+      - txtOrderName:
+          Control: Classic/TextInput
+          Properties:
+            BorderColor: =RGBA(245, 245, 245, 1)
+            Color: =RGBA(50, 49, 48, 1)
+            Default: =
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            DisabledFill: =RGBA(242, 242, 241, 0)
+            Font: =Font.'Segoe UI'
+            Height: =38
+            HintText: ="Order name..."
+            HoverBorderColor: =RGBA(16, 110, 190, 1)
+            HoverColor: =RGBA(50, 49, 48, 1)
+            HoverFill: =RGBA(255, 255, 255, 1)
+            PressedBorderColor: =RGBA(0, 120, 212, 1)
+            PressedColor: =RGBA(50, 49, 48, 1)
+            PressedFill: =RGBA(255, 255, 255, 1)
+            RadiusBottomLeft: =0
+            RadiusBottomRight: =0
+            RadiusTopLeft: =0
+            RadiusTopRight: =0
+            Visible: |
+              =varWizardStep = 1
+            Width: =187
+            X: =145
+            Y: =174
+      - Button_Next:
+          Control: Classic/Button
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            Color: =RGBA(255, 255, 255, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            DisabledFill: =RGBA(242, 242, 241, 0)
+            Fill: =RGBA(0, 120, 212, 1)
+            Font: =Font.'Segoe UI'
+            HoverBorderColor: =RGBA(0, 0, 0, 0)
+            HoverColor: =RGBA(255, 255, 255, 1)
+            HoverFill: =RGBA(16, 110, 190, 1)
+            OnSelect: |
+              =If(
+                  IsBlank(txtOrderName.Text),
+                  Notify("Order Name is required", NotificationType.Error),
+                  If(
+                      IsEmpty(comboFranchises.SelectedItems) && IsEmpty(comboDealerGroups.SelectedItems) && IsEmpty(comboVendors.SelectedItems),
+                      Notify("Select at least one Franchise, Dealer Group, or Vendor Code", NotificationType.Error),
+                      If(
+                          CountRows(colSelectedMonths) = 0,
+                          Notify("Select at least one month", NotificationType.Error),
+                          ClearCollect(colSelectedFranchises, comboFranchises.SelectedItems);
+                          ClearCollect(colSelectedDealerGroups, comboDealerGroups.SelectedItems);
+                          ClearCollect(colSelectedVendors, comboVendors.SelectedItems);
+                          Set(varWizardStep, 2);
+                          ClearCollect(colSelectedOffsets, colSelectedMonths)
+                      )
+                  )
+              )
+            PressedBorderColor: =RGBA(0, 69, 120, 1)
+            PressedColor: =RGBA(255, 255, 255, 1)
+            PressedFill: =RGBA(16, 110, 190, 1)
+            RadiusBottomLeft: =0
+            RadiusBottomRight: =0
+            RadiusTopLeft: =0
+            RadiusTopRight: =0
+            Text: ="Next"
+            Visible: |
+              =varWizardStep = 1
+            X: =1183
+            Y: =706
+      - Button_Back_scrHome_1:
+          Control: Classic/Button
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            Color: =RGBA(255, 255, 255, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            DisabledFill: =RGBA(242, 242, 241, 0)
+            Fill: =RGBA(0, 120, 212, 1)
+            Font: =Font.'Segoe UI'
+            HoverBorderColor: =RGBA(0, 0, 0, 0)
+            HoverColor: =RGBA(255, 255, 255, 1)
+            HoverFill: =RGBA(16, 110, 190, 1)
+            OnSelect: |
+              =Navigate(scrHome, ScreenTransition.Fade)
+            PaddingRight: =3.22
+            PaddingTop: =3.22
+            PressedBorderColor: =RGBA(0, 69, 120, 1)
+            PressedColor: =RGBA(255, 255, 255, 1)
+            PressedFill: =RGBA(16, 110, 190, 1)
+            RadiusBottomLeft: =0
+            RadiusBottomRight: =0
+            RadiusTopLeft: =0
+            RadiusTopRight: =0
+            Size: =9.65
+            Text: ="← Back"
+            Width: =102.90
+            X: =1241
+            Y: =20
+      - txtLoadingFactor:
+          Control: Classic/TextInput
+          Properties:
+            BorderColor: =RGBA(245, 245, 245, 1)
+            Color: =RGBA(50, 49, 48, 1)
+            Default: ="1"
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            DisabledFill: =RGBA(242, 242, 241, 0)
+            Font: =Font.'Segoe UI'
+            HoverBorderColor: =RGBA(16, 110, 190, 1)
+            HoverColor: =RGBA(50, 49, 48, 1)
+            HoverFill: =RGBA(255, 255, 255, 1)
+            PressedBorderColor: =RGBA(0, 120, 212, 1)
+            PressedColor: =RGBA(50, 49, 48, 1)
+            PressedFill: =RGBA(255, 255, 255, 1)
+            RadiusBottomLeft: =0
+            RadiusBottomRight: =0
+            RadiusTopLeft: =0
+            RadiusTopRight: =0
+            Visible: =varWizardStep = 2
+            Width: =95
+            X: =28
+            Y: =120
+      - Button_Calculate:
+          Control: Classic/Button
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            Color: =RGBA(255, 255, 255, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            DisabledFill: =RGBA(242, 242, 241, 0)
+            Fill: =RGBA(0, 120, 212, 1)
+            Font: =Font.'Segoe UI'
+            Height: =56
+            HoverBorderColor: =RGBA(0, 0, 0, 0)
+            HoverColor: =RGBA(255, 255, 255, 1)
+            HoverFill: =RGBA(16, 110, 190, 1)
+            OnSelect: |+
+              =If(
+                  IsEmpty(colSelectedFranchises) && IsEmpty(colSelectedDealerGroups) && IsEmpty(colSelectedVendors),
+                  Notify("Select at least one Franchise, Dealer Group Code, or Vendor Code before calculating.", NotificationType.Warning),
+                  ClearCollect(colReorderBranch,
+                      Filter(colReorderCache,
+                          Branch = varSelectedBranch &&
+                          (IsEmpty(colSelectedFranchises) || Franchise in colSelectedFranchises.Value) &&
+                          (IsEmpty(colSelectedDealerGroups) || DealerGroupCode in colSelectedDealerGroups.Value) &&
+                          (IsEmpty(colSelectedVendors) || VendorCode in colSelectedVendors.Value)
+                      )
+                  );
+                  Clear(colReorderBranchKeyed);
+                  ForAll(colReorderBranch,
+                      Collect(colReorderBranchKeyed, {Branch: Branch, PartNumber: PartNumber, Description: Description, Franchise: Franchise, QuantityOnHand: QuantityOnHand, PN: PartNumber, AvgSales: AvgMonthlySales, AvgDemand: AvgMonthlyDemand})
+                  );
+                  Clear(colOneTimeResults);
+                  ForAll(colReorderBranchKeyed,
+                      If(AvgSales * CountRows(colSelectedMonths) * Value(txtLoadingFactor.Text) - QuantityOnHand > 0,
+                          Collect(colOneTimeResults, {PartNumber: PN, Description: Description, Franchise: Franchise, AnticipatedSales: AvgSales * CountRows(colSelectedMonths) * Value(txtLoadingFactor.Text), AvgMonthlySales: AvgSales * Value(txtLoadingFactor.Text), OnHandQty: QuantityOnHand, RecommendedQty: AvgSales * CountRows(colSelectedMonths) * Value(txtLoadingFactor.Text) - QuantityOnHand, AnticipatedDemands: AvgDemand * CountRows(colSelectedMonths), IsIncluded: true})
+                      )
+                  );
+                  Notify(CountRows(colOneTimeResults) & " parts calculated", NotificationType.Success)
+              )
+
+            PressedBorderColor: =RGBA(0, 69, 120, 1)
+            PressedColor: =RGBA(255, 255, 255, 1)
+            PressedFill: =RGBA(16, 110, 190, 1)
+            RadiusBottomLeft: =0
+            RadiusBottomRight: =0
+            RadiusTopLeft: =0
+            RadiusTopRight: =0
+            Text: ="Calculate"
+            Visible: =varWizardStep = 2
+            Width: =170
+            X: =972
+            Y: =106
+      - Button_StartOver:
+          Control: Classic/Button
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            Color: =RGBA(255, 255, 255, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            DisabledFill: =RGBA(242, 242, 241, 0)
+            Fill: =RGBA(0, 120, 212, 1)
+            Font: =Font.'Segoe UI'
+            HoverBorderColor: =RGBA(0, 0, 0, 0)
+            HoverColor: =RGBA(255, 255, 255, 1)
+            HoverFill: =RGBA(16, 110, 190, 1)
+            OnSelect: |+
+              =Set(varWizardStep, 1);
+              Reset(txtOrderName);
+              Clear(colSelectedMonths);
+              Clear(colOneTimeResults)
+
+            PressedBorderColor: =RGBA(0, 69, 120, 1)
+            PressedColor: =RGBA(255, 255, 255, 1)
+            PressedFill: =RGBA(16, 110, 190, 1)
+            RadiusBottomLeft: =0
+            RadiusBottomRight: =0
+            RadiusTopLeft: =0
+            RadiusTopRight: =0
+            Size: =12
+            Text: ="Start Over"
+            Visible: |
+              =varWizardStep = 2
+            Width: =125
+            X: =1101
+            Y: =20
+      - Label1:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            FontWeight: =FontWeight.Semibold
+            Size: =11
+            Text: ="Select Branch:"
+            Visible: =varWizardStep = 1
+            Width: =145
+            X: =19
+            Y: =108
+      - Label_LoadFactor:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Size: =9
+            Text: ="Loading factor:"
+            Visible: =varWizardStep = 2
+            Width: =115
+            X: =28
+            Y: =155
+      - Button_Back_scrHome_4:
+          Control: Classic/Button
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            Color: =RGBA(255, 255, 255, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            DisabledFill: =RGBA(242, 242, 241, 0)
+            Fill: =RGBA(0, 120, 212, 1)
+            Font: =Font.'Segoe UI'
+            HoverBorderColor: =RGBA(0, 0, 0, 0)
+            HoverColor: =RGBA(255, 255, 255, 1)
+            HoverFill: =RGBA(16, 110, 190, 1)
+            OnSelect: |
+              =Set(varWizardStep, 1)
+            PaddingRight: =3.22
+            PaddingTop: =3.22
+            PressedBorderColor: =RGBA(0, 69, 120, 1)
+            PressedColor: =RGBA(255, 255, 255, 1)
+            PressedFill: =RGBA(16, 110, 190, 1)
+            RadiusBottomLeft: =0
+            RadiusBottomRight: =0
+            RadiusTopLeft: =0
+            RadiusTopRight: =0
+            Size: =12
+            Text: ="← Back"
+            Visible: =varWizardStep = 2
+            Width: =102.90
+            X: =1241
+            Y: =20
+      - Label11:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Text: |-
+              ="Part #"
+            Visible: =varWizardStep = 2
+            Width: =83
+            X: =53
+            Y: =189
+      - Label13:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Text: ="Franchise"
+            Visible: =varWizardStep = 2
+            X: =301
+            Y: =189
+      - Label16:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Text: =If(varShowTotal, "Anticipated Total", "Avg/Month")
+            Visible: =varWizardStep = 2
+            X: =535
+            Y: =189
+      - Label17:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Text: ="On Hand"
+            Visible: =varWizardStep = 2
+            X: =791
+            Y: =187
+      - Label18:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(37, 99, 235, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            FontWeight: =FontWeight.Semibold
+            Text: ="Rec. Qty"
+            Visible: =varWizardStep = 2
+            X: =1038
+            Y: =189
+      - Label20:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(255, 255, 255, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Size: =11
+            Text: |
+              ="Order: " & txtOrderName.Text
+            Visible: =varWizardStep = 2
+            Width: =230
+            X: =450
+            Y: =6
+      - Label21:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(255, 255, 255, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Size: =10
+            Text: |
+              =If(!IsEmpty(colSelectedFranchises), Concat(colSelectedFranchises, Value, ", "), "") &
+              If(!IsEmpty(colSelectedDealerGroups), If(!IsEmpty(colSelectedFranchises), "  ·  DG: ", "DG: ") & Concat(colSelectedDealerGroups, Value, ", "), "") &
+              If(!IsEmpty(colSelectedVendors), If(!IsEmpty(colSelectedFranchises) || !IsEmpty(colSelectedDealerGroups), "  ·  VC: ", "VC: ") & Concat(colSelectedVendors, Text(Value), ", "), "")
+            Visible: =varWizardStep = 2
+            Width: =620
+            X: =450
+            Y: =30
+      - Label22:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(255, 255, 255, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Height: =39
+            Size: =11
+            Text: |
+              =Text(CountRows(colSelectedMonths), "#,##0") & " months selected"
+            Visible: =varWizardStep = 2
+            Width: =220
+            X: =707
+            Y: =7
+      - Dropdown1:
+          Control: Classic/DropDown
+          Properties:
+            BorderColor: =RGBA(245, 245, 245, 1)
+            ChevronBackground: =RGBA(245, 245, 245, 1)
+            ChevronDisabledBackground: =RGBA(242, 242, 241, 0)
+            ChevronDisabledFill: =RGBA(161, 159, 157, 1)
+            ChevronFill: =RGBA(50, 49, 48, 1)
+            ChevronHoverBackground: =RGBA(245, 245, 245, 1)
+            ChevronHoverFill: =RGBA(50, 49, 48, 1)
+            Color: =RGBA(50, 49, 48, 1)
+            Default: =varSelectedBranch
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            DisabledFill: =RGBA(242, 242, 241, 0)
+            Fill: =RGBA(245, 245, 245, 1)
+            Font: =Font.'Segoe UI'
+            Height: =43
+            HoverBorderColor: =RGBA(16, 110, 190, 1)
+            HoverColor: =RGBA(50, 49, 48, 1)
+            HoverFill: =RGBA(245, 245, 245, 1)
+            Items: =colBranches
+            Items.Value: =Value
+            OnChange: |+
+              =Set(varSelectedBranch, Self.Selected.Value);
+              Set(varWizardStep, 1);
+              Clear(colSelectedMonths);
+              ClearCollect(colReorderCache, Filter(fact_nonjd_reorder, Branch = Self.Selected.Value))
+
+            PaddingBottom: =5
+            PaddingLeft: =12
+            PaddingRight: =5
+            PaddingTop: =5
+            PressedBorderColor: =RGBA(16, 110, 190, 1)
+            PressedColor: =RGBA(255, 255, 255, 1)
+            PressedFill: =RGBA(0, 120, 212, 1)
+            SelectionColor: =RGBA(50, 49, 48, 1)
+            SelectionFill: =RGBA(0, 120, 212, 1)
+            Visible: =varWizardStep = 1
+            Width: =187
+            X: =145
+            Y: =105
+      - Button1:
+          Control: Classic/Button
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            Color: =RGBA(255, 255, 255, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            DisabledFill: =RGBA(242, 242, 241, 0)
+            Fill: =RGBA(0, 120, 212, 1)
+            Font: =Font.'Segoe UI'
+            HoverBorderColor: =RGBA(0, 0, 0, 0)
+            HoverColor: =RGBA(255, 255, 255, 1)
+            HoverFill: =RGBA(16, 110, 190, 1)
+            OnSelect: |
+              =Clear(colSelectedMonths);
+              ForAll(Filter(colAllMonths, MonthOffset <= 12), Collect(colSelectedMonths, {MonthOffset: MonthOffset}))
+            PressedBorderColor: =RGBA(0, 69, 120, 1)
+            PressedColor: =RGBA(255, 255, 255, 1)
+            PressedFill: =RGBA(16, 110, 190, 1)
+            RadiusBottomLeft: =0
+            RadiusBottomRight: =0
+            RadiusTopLeft: =0
+            RadiusTopRight: =0
+            Text: ="Rolling 12"
+            Visible: =varWizardStep = 1
+            Width: =105
+            X: =313
+            Y: =430
+      - Button2:
+          Control: Classic/Button
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            Color: =RGBA(255, 255, 255, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            DisabledFill: =RGBA(242, 242, 241, 0)
+            Fill: =RGBA(0, 120, 212, 1)
+            Font: =Font.'Segoe UI'
+            HoverBorderColor: =RGBA(0, 0, 0, 0)
+            HoverColor: =RGBA(255, 255, 255, 1)
+            HoverFill: =RGBA(16, 110, 190, 1)
+            OnSelect: |
+              =Clear(colSelectedMonths);
+              ForAll(Filter(colAllMonths, MonthOffset <= 24), Collect(colSelectedMonths, {MonthOffset: MonthOffset}))
+            PressedBorderColor: =RGBA(0, 69, 120, 1)
+            PressedColor: =RGBA(255, 255, 255, 1)
+            PressedFill: =RGBA(16, 110, 190, 1)
+            RadiusBottomLeft: =0
+            RadiusBottomRight: =0
+            RadiusTopLeft: =0
+            RadiusTopRight: =0
+            Text: ="Rolling 24"
+            Visible: =varWizardStep = 1
+            Width: =105
+            X: =313
+            Y: =510
+      - Button3:
+          Control: Classic/Button
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            Color: =RGBA(255, 255, 255, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            DisabledFill: =RGBA(242, 242, 241, 0)
+            Fill: =RGBA(0, 120, 212, 1)
+            Font: =Font.'Segoe UI'
+            HoverBorderColor: =RGBA(0, 0, 0, 0)
+            HoverColor: =RGBA(255, 255, 255, 1)
+            HoverFill: =RGBA(16, 110, 190, 1)
+            OnSelect: |
+              =Clear(colSelectedMonths);
+              ForAll(Filter(colAllMonths, MonthOffset <= 36), Collect(colSelectedMonths, {MonthOffset: MonthOffset}))
+            PressedBorderColor: =RGBA(0, 69, 120, 1)
+            PressedColor: =RGBA(255, 255, 255, 1)
+            PressedFill: =RGBA(16, 110, 190, 1)
+            RadiusBottomLeft: =0
+            RadiusBottomRight: =0
+            RadiusTopLeft: =0
+            RadiusTopRight: =0
+            Text: ="Rolling 36"
+            Visible: =varWizardStep = 1
+            Width: =105
+            X: =313
+            Y: =588
+      - Button4:
+          Control: Classic/Button
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            Color: =RGBA(255, 255, 255, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            DisabledFill: =RGBA(242, 242, 241, 0)
+            Fill: =RGBA(0, 120, 212, 1)
+            Font: =Font.'Segoe UI'
+            HoverBorderColor: =RGBA(0, 0, 0, 0)
+            HoverColor: =RGBA(255, 255, 255, 1)
+            HoverFill: =RGBA(16, 110, 190, 1)
+            OnSelect: |
+              =Clear(colSelectedMonths);
+              ForAll(Filter(colAllMonths, Year(MonthDate) = 2025), Collect(colSelectedMonths, {MonthOffset: MonthOffset}))
+            PressedBorderColor: =RGBA(0, 69, 120, 1)
+            PressedColor: =RGBA(255, 255, 255, 1)
+            PressedFill: =RGBA(16, 110, 190, 1)
+            RadiusBottomLeft: =0
+            RadiusBottomRight: =0
+            RadiusTopLeft: =0
+            RadiusTopRight: =0
+            Text: ="2025"
+            Visible: =varWizardStep = 1
+            Width: =72
+            X: =522
+            Y: =430
+      - Button5:
+          Control: Classic/Button
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            Color: =RGBA(255, 255, 255, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            DisabledFill: =RGBA(242, 242, 241, 0)
+            Fill: =RGBA(0, 120, 212, 1)
+            Font: =Font.'Segoe UI'
+            HoverBorderColor: =RGBA(0, 0, 0, 0)
+            HoverColor: =RGBA(255, 255, 255, 1)
+            HoverFill: =RGBA(16, 110, 190, 1)
+            OnSelect: |
+              =Clear(colSelectedMonths);
+              ForAll(Filter(colAllMonths, Year(MonthDate) = 2024), Collect(colSelectedMonths, {MonthOffset: MonthOffset}))
+            PressedBorderColor: =RGBA(0, 69, 120, 1)
+            PressedColor: =RGBA(255, 255, 255, 1)
+            PressedFill: =RGBA(16, 110, 190, 1)
+            RadiusBottomLeft: =0
+            RadiusBottomRight: =0
+            RadiusTopLeft: =0
+            RadiusTopRight: =0
+            Text: ="2024"
+            Visible: =varWizardStep = 1
+            Width: =72
+            X: =522
+            Y: =510
+      - Button6:
+          Control: Classic/Button
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            Color: =RGBA(255, 255, 255, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            DisabledFill: =RGBA(242, 242, 241, 0)
+            Fill: =RGBA(0, 120, 212, 1)
+            Font: =Font.'Segoe UI'
+            HoverBorderColor: =RGBA(0, 0, 0, 0)
+            HoverColor: =RGBA(255, 255, 255, 1)
+            HoverFill: =RGBA(16, 110, 190, 1)
+            OnSelect: =Clear(colSelectedMonths)
+            PressedBorderColor: =RGBA(0, 69, 120, 1)
+            PressedColor: =RGBA(255, 255, 255, 1)
+            PressedFill: =RGBA(16, 110, 190, 1)
+            RadiusBottomLeft: =0
+            RadiusBottomRight: =0
+            RadiusTopLeft: =0
+            RadiusTopRight: =0
+            Text: ="Clear Selected Months"
+            Visible: =varWizardStep = 1
+            Width: =222
+            X: =351
+            Y: =706
+      - txtMinDemands:
+          Control: Classic/TextInput
+          Properties:
+            BorderColor: =RGBA(245, 245, 245, 1)
+            Color: =RGBA(50, 49, 48, 1)
+            Default: =
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            DisabledFill: =RGBA(242, 242, 241, 0)
+            Font: =Font.'Segoe UI'
+            HintText: ="0"
+            HoverBorderColor: =RGBA(16, 110, 190, 1)
+            HoverColor: =RGBA(50, 49, 48, 1)
+            HoverFill: =RGBA(255, 255, 255, 1)
+            PressedBorderColor: =RGBA(0, 120, 212, 1)
+            PressedColor: =RGBA(50, 49, 48, 1)
+            PressedFill: =RGBA(255, 255, 255, 1)
+            RadiusBottomLeft: =0
+            RadiusBottomRight: =0
+            RadiusTopLeft: =0
+            RadiusTopRight: =0
+            Visible: =varWizardStep = 2
+            Width: =95
+            X: =145
+            Y: =120
+      - Label_MinDemands:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Size: =9
+            Text: ="Min. demands:"
+            Visible: =varWizardStep = 2
+            Width: =115
+            X: =145
+            Y: =155
+      - txtMinSales:
+          Control: Classic/TextInput
+          Properties:
+            BorderColor: =RGBA(245, 245, 245, 1)
+            Color: =RGBA(50, 49, 48, 1)
+            Default: =
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            DisabledFill: =RGBA(242, 242, 241, 0)
+            Font: =Font.'Segoe UI'
+            HintText: ="0"
+            HoverBorderColor: =RGBA(16, 110, 190, 1)
+            HoverColor: =RGBA(50, 49, 48, 1)
+            HoverFill: =RGBA(255, 255, 255, 1)
+            PressedBorderColor: =RGBA(0, 120, 212, 1)
+            PressedColor: =RGBA(50, 49, 48, 1)
+            PressedFill: =RGBA(255, 255, 255, 1)
+            RadiusBottomLeft: =0
+            RadiusBottomRight: =0
+            RadiusTopLeft: =0
+            RadiusTopRight: =0
+            Visible: =varWizardStep = 2
+            Width: =95
+            X: =262
+            Y: =120
+      - Label_MinSales:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Size: =9
+            Text: ="Min. sales:"
+            Visible: =varWizardStep = 2
+            Width: =115
+            X: =262
+            Y: =155
+      - Label_ViewToggle:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Height: =28
+            Size: =9
+            Text: ="View:"
+            Visible: =varWizardStep = 2
+            Width: =47
+            X: =387
+            Y: =127
+      - Button_ToggleTotal:
+          Control: Classic/Button
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            Color: =If(varShowTotal, RGBA(255, 255, 255, 1), RGBA(50, 49, 48, 1))
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            DisabledFill: =RGBA(242, 242, 241, 0)
+            Fill: =If(varShowTotal, RGBA(0, 120, 212, 1), RGBA(210, 210, 210, 1))
+            Font: =Font.'Segoe UI'
+            Height: =36
+            HoverBorderColor: =RGBA(0, 0, 0, 0)
+            HoverColor: =RGBA(255, 255, 255, 1)
+            HoverFill: =RGBA(16, 110, 190, 1)
+            OnSelect: =Set(varShowTotal, true)
+            PressedBorderColor: =RGBA(0, 69, 120, 1)
+            PressedColor: =RGBA(255, 255, 255, 1)
+            PressedFill: =RGBA(16, 110, 190, 1)
+            RadiusBottomLeft: =0
+            RadiusBottomRight: =0
+            RadiusTopLeft: =0
+            RadiusTopRight: =0
+            Size: =10
+            Text: ="Total"
+            Visible: =varWizardStep = 2
+            Width: =72
+            X: =440
+            Y: =120
+      - Button_ToggleAvg:
+          Control: Classic/Button
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            Color: =If(!varShowTotal, RGBA(255, 255, 255, 1), RGBA(50, 49, 48, 1))
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            DisabledFill: =RGBA(242, 242, 241, 0)
+            Fill: =If(!varShowTotal, RGBA(0, 120, 212, 1), RGBA(210, 210, 210, 1))
+            Font: =Font.'Segoe UI'
+            Height: =36
+            HoverBorderColor: =RGBA(0, 0, 0, 0)
+            HoverColor: =RGBA(255, 255, 255, 1)
+            HoverFill: =RGBA(16, 110, 190, 1)
+            OnSelect: =Set(varShowTotal, false)
+            PressedBorderColor: =RGBA(0, 69, 120, 1)
+            PressedColor: =RGBA(255, 255, 255, 1)
+            PressedFill: =RGBA(16, 110, 190, 1)
+            RadiusBottomLeft: =0
+            RadiusBottomRight: =0
+            RadiusTopLeft: =0
+            RadiusTopRight: =0
+            Size: =10
+            Text: ="Avg/Mo"
+            Visible: =varWizardStep = 2
+            Width: =72
+            X: =518
+            Y: =120
+      - Button_ExportCSV:
+          Control: Classic/Button
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            Color: =RGBA(255, 255, 255, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            DisabledFill: =RGBA(242, 242, 241, 0)
+            Fill: =RGBA(5, 150, 105, 1)
+            Font: =Font.'Segoe UI'
+            Height: =56
+            HoverBorderColor: =RGBA(0, 0, 0, 0)
+            HoverColor: =RGBA(255, 255, 255, 1)
+            HoverFill: =RGBA(4, 120, 87, 1)
+            OnSelect: |
+              =If(
+                  CountRows(colOneTimeResults) = 0,
+                  Notify("Run Calculate first before exporting.", NotificationType.Warning),
+                  Copy(
+                      "Part Number,Description,Franchise,Anticipated Sales,Avg/Month,On Hand,Rec Qty" & Char(10) &
+                      Concat(
+                          Filter(colOneTimeResults,
+                              IsIncluded &&
+                              (IsBlank(txtMinSales.Text) || Value(txtMinSales.Text) = 0 || AnticipatedSales >= Value(txtMinSales.Text)) &&
+                              (IsBlank(txtMinDemands.Text) || Value(txtMinDemands.Text) = 0 || AnticipatedDemands >= Value(txtMinDemands.Text))
+                          ),
+                          PartNumber & "," & Description & "," & Franchise & "," & Text(AnticipatedSales, "0.0") & "," & Text(AvgMonthlySales, "0.0") & "," & Text(OnHandQty, "0") & "," & Text(RecommendedQty, "0") & Char(10)
+                      )
+                  );
+                  Notify("CSV data copied to clipboard — paste into Excel or Notepad and save as .csv", NotificationType.Success)
+              )
+            PressedBorderColor: =RGBA(0, 69, 120, 1)
+            PressedColor: =RGBA(255, 255, 255, 1)
+            PressedFill: =RGBA(4, 120, 87, 1)
+            RadiusBottomLeft: =0
+            RadiusBottomRight: =0
+            RadiusTopLeft: =0
+            RadiusTopRight: =0
+            Text: ="Export CSV"
+            Visible: =varWizardStep = 2
+            Width: =175
+            X: =1168
+            Y: =106
+      - comboFranchises:
+          Control: ComboBox
+          Properties:
+            Height: =38
+            Items: |
+              =SortByColumns(Distinct(Filter(colReorderCache, Branch = varSelectedBranch), Franchise), "Value", SortOrder.Ascending)
+            SelectMultiple: =true
+            Visible: =varWizardStep = 1
+            Width: =200
+            X: =20
+            Y: =270
+      - Label_ComboVendor:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            Color: =RGBA(50, 49, 48, 1)
+            Font: =Font.'Segoe UI'
+            FontWeight: =FontWeight.Semibold
+            Size: =11
+            Text: ="Vendor Code"
+            Visible: =varWizardStep = 1
+            Width: =201
+            X: =602
+            Y: =235
+      - comboDealerGroups:
+          Control: ComboBox
+          Properties:
+            Height: =38
+            Items: |
+              =SortByColumns(Distinct(Filter(colReorderCache, Branch = varSelectedBranch), DealerGroupCode), "Value", SortOrder.Ascending)
+            SelectMultiple: =true
+            Visible: =varWizardStep = 1
+            Width: =200
+            X: =312
+            Y: =270
+      - Label_OrderNameInput:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            Color: =RGBA(50, 49, 48, 1)
+            Font: =Font.'Segoe UI'
+            FontWeight: =FontWeight.Semibold
+            Size: =11
+            Text: ="Order Name:"
+            Visible: =varWizardStep = 1
+            Width: =105
+            X: =20
+            Y: =172
+      - Label_DateRange:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            Color: =RGBA(50, 49, 48, 1)
+            Font: =Font.'Segoe UI'
+            FontWeight: =FontWeight.Semibold
+            Size: =11
+            Text: ="Select Date Range:"
+            Visible: =varWizardStep = 1
+            Width: =144
+            X: =20
+            Y: =334
+      - Label_ComboDealerGroup:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            Color: =RGBA(50, 49, 48, 1)
+            Font: =Font.'Segoe UI'
+            FontWeight: =FontWeight.Semibold
+            Size: =11
+            Text: ="Dealer Group Code"
+            Visible: =varWizardStep = 1
+            Width: =155
+            X: =313
+            Y: =235
+      - comboVendors:
+          Control: ComboBox
+          Properties:
+            Height: =38
+            Items: |
+              =SortByColumns(Distinct(Filter(colReorderCache, Branch = varSelectedBranch), VendorCode), "Value", SortOrder.Ascending)
+            SelectMultiple: =true
+            Visible: =varWizardStep = 1
+            Width: =220
+            X: =601
+            Y: =270
+      - Label_ComboFranchise:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            Color: =RGBA(50, 49, 48, 1)
+            Font: =Font.'Segoe UI'
+            FontWeight: =FontWeight.Semibold
+            Size: =11
+            Text: ="Franchise"
+            Visible: =varWizardStep = 1
+            Width: =104
+            X: =20
+            Y: =235
+      - Label15:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(255, 255, 255, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            FontWeight: =FontWeight.Bold
+            Size: =18
+            Text: ="- Setup"
+            Visible: =varWizardStep = 1
+            X: =207
+            Y: =20
+      - Label23:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Height: =26
+            Size: =10
+            Text: ="Months:"
+            Visible: =varWizardStep = 1
+            X: =20
+            Y: =374
+      - Label24:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Height: =26
+            Size: =10
+            Text: ="Rolling Periods:"
+            Visible: =varWizardStep = 1
+            X: =314
+            Y: =374
+      - Label25:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            Height: =26
+            Size: =10
+            Text: ="Year:"
+            Visible: =varWizardStep = 1
+            X: =536
+            Y: =374
+      - Label26:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            FontWeight: =FontWeight.Semibold
+            Size: =15
+            Text: |-
+              ="Order Name: " & txtOrderName.Text
+            Visible: =varWizardStep = 1
+            Width: =300
+            X: =1015
+            Y: =220
+      - Label27:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            FontWeight: =FontWeight.Semibold
+            Size: =15
+            Text: |-
+              =If(!IsEmpty(comboFranchises.SelectedItems), Concat(comboFranchises.SelectedItems, Value & " "), "") & If(!IsEmpty(comboDealerGroups.SelectedItems), "| DG: " & Concat(comboDealerGroups.SelectedItems, Value & " "), "") & If(!IsEmpty(comboVendors.SelectedItems), "| VC: " & Concat(comboVendors.SelectedItems, Text(Value) & " "), "")
+            Visible: =varWizardStep = 1
+            Width: =200
+            X: =1015
+            Y: =174
+      - Label28:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(50, 49, 48, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            FontWeight: =FontWeight.Bold
+            Size: =18
+            Text: ="Items Selected:"
+            Underline: =true
+            Visible: =varWizardStep = 1
+            Width: =200
+            X: =1015
+            Y: =127

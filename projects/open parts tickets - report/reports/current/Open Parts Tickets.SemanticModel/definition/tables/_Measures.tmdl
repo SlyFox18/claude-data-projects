@@ -1812,6 +1812,129 @@ table _Measures
 		displayFolder: Open Order Ratio
 		lineageTag: e6f7a8b9-d0e1-2345-fabc-678901234568
 
+	measure 'HTML - Parts Overview Hero' = ```
+			
+			VAR TierCount = DISTINCTCOUNT(Fact_Parts_Open_Tickets[Aging])
+			VAR TierList = CONCATENATEX(VALUES(Fact_Parts_Open_Tickets[Aging]), Fact_Parts_Open_Tickets[Aging], ", ", SWITCH(Fact_Parts_Open_Tickets[Aging], "0-7 days", 1, "8-14 days", 2, "15-30 days", 3, "31-60 days", 4, "61-90 days", 5, "90+ days", 6, 7), ASC)
+			VAR SelectedTier = IF(TierCount = 0, "No Data", IF(TierCount >= 6, "All Tiers", TierList))
+			
+			VAR TierColor = SWITCH(
+			    SelectedTier,
+			    "90+ days", "#cf1322",
+			    "61-90 days", "#f5222d",
+			    "31-60 days", "#fa8c16",
+			    "15-30 days", "#faad14",
+			    "8-14 days", "#52c41a",
+			    "0-7 days", "#27ae60",
+			    "#B0BEC5"
+			)
+			VAR OrderTotal = [Order Total]
+			VAR PartsOnOrder = [# Parts On Order]
+			VAR LinesCount = [Line Count]
+			RETURN
+			"<div style='font-family: Segoe UI, Arial, sans-serif; padding: 14px 24px; background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%); border-radius: 10px; border-top: 5px solid " & TierColor & "; color: white; height: 100%; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center;'>" &
+			"<div style='font-size: 16px; opacity: 0.75; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; text-align: center;'>TOTALS &mdash; " & SelectedTier & "</div>" &
+			"<div style='display: flex; align-items: center; justify-content: space-around;'>" &
+			"<div style='text-align: center; flex: 1;'><div style='font-size: 16px; opacity: 0.9; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 1px;'>Order Total</div><div style='font-size: 30px; font-weight: 700; line-height: 1;'>" & FORMAT(OrderTotal, "$#,##0") & "</div></div>" &
+			"<div style='width: 2px; height: 44px; background: rgba(255,255,255,0.3); margin: 0 24px;'></div>" &
+			"<div style='text-align: center; flex: 1;'><div style='font-size: 16px; opacity: 0.9; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 1px;'># Parts On Order</div><div style='font-size: 30px; font-weight: 700; line-height: 1;'>" & FORMAT(PartsOnOrder, "#,##0") & "</div></div>" &
+			"<div style='width: 2px; height: 44px; background: rgba(255,255,255,0.3); margin: 0 24px;'></div>" &
+			"<div style='text-align: center; flex: 1;'><div style='font-size: 16px; opacity: 0.9; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 1px;'>Parts Line Count</div><div style='font-size: 30px; font-weight: 700; line-height: 1;'>" & FORMAT(LinesCount, "#,##0") & "</div></div>" &
+			"</div>" &
+			"</div>"
+			
+			```
+		displayFolder: Core Metrics
+		lineageTag: e1a2b3c4-1111-4aaa-9001-aaaaaaaaaa01
+
+	measure 'HTML - Aging Card Row' = ```
+			
+			VAR Lbl1 = "0-7 days"
+			VAR Clr1 = "#27ae60"
+			VAR Lbl2 = "8-14 days"
+			VAR Clr2 = "#52c41a"
+			VAR Lbl3 = "15-30 days"
+			VAR Clr3 = "#faad14"
+			VAR Lbl4 = "31-60 days"
+			VAR Clr4 = "#fa8c16"
+			VAR Lbl5 = "61-90 days"
+			VAR Clr5 = "#f5222d"
+			VAR Lbl6 = "90+ days"
+			VAR Clr6 = "#cf1322"
+			VAR Cnt1 = CALCULATE([Total # of Orders], Fact_Parts_Open_Tickets[Aging] = Lbl1)
+			VAR Cnt2 = CALCULATE([Total # of Orders], Fact_Parts_Open_Tickets[Aging] = Lbl2)
+			VAR Cnt3 = CALCULATE([Total # of Orders], Fact_Parts_Open_Tickets[Aging] = Lbl3)
+			VAR Cnt4 = CALCULATE([Total # of Orders], Fact_Parts_Open_Tickets[Aging] = Lbl4)
+			VAR Cnt5 = CALCULATE([Total # of Orders], Fact_Parts_Open_Tickets[Aging] = Lbl5)
+			VAR Cnt6 = CALCULATE([Total # of Orders], Fact_Parts_Open_Tickets[Aging] = Lbl6)
+			VAR OT1 = CALCULATE([Order Total], Fact_Parts_Open_Tickets[Aging] = Lbl1)
+			VAR OT2 = CALCULATE([Order Total], Fact_Parts_Open_Tickets[Aging] = Lbl2)
+			VAR OT3 = CALCULATE([Order Total], Fact_Parts_Open_Tickets[Aging] = Lbl3)
+			VAR OT4 = CALCULATE([Order Total], Fact_Parts_Open_Tickets[Aging] = Lbl4)
+			VAR OT5 = CALCULATE([Order Total], Fact_Parts_Open_Tickets[Aging] = Lbl5)
+			VAR OT6 = CALCULATE([Order Total], Fact_Parts_Open_Tickets[Aging] = Lbl6)
+			VAR PT1 = CALCULATE([# Parts On Order], Fact_Parts_Open_Tickets[Aging] = Lbl1)
+			VAR PT2 = CALCULATE([# Parts On Order], Fact_Parts_Open_Tickets[Aging] = Lbl2)
+			VAR PT3 = CALCULATE([# Parts On Order], Fact_Parts_Open_Tickets[Aging] = Lbl3)
+			VAR PT4 = CALCULATE([# Parts On Order], Fact_Parts_Open_Tickets[Aging] = Lbl4)
+			VAR PT5 = CALCULATE([# Parts On Order], Fact_Parts_Open_Tickets[Aging] = Lbl5)
+			VAR PT6 = CALCULATE([# Parts On Order], Fact_Parts_Open_Tickets[Aging] = Lbl6)
+			VAR LT1 = CALCULATE([Parts Line Count], Fact_Parts_Open_Tickets[Aging] = Lbl1)
+			VAR LT2 = CALCULATE([Parts Line Count], Fact_Parts_Open_Tickets[Aging] = Lbl2)
+			VAR LT3 = CALCULATE([Parts Line Count], Fact_Parts_Open_Tickets[Aging] = Lbl3)
+			VAR LT4 = CALCULATE([Parts Line Count], Fact_Parts_Open_Tickets[Aging] = Lbl4)
+			VAR LT5 = CALCULATE([Parts Line Count], Fact_Parts_Open_Tickets[Aging] = Lbl5)
+			VAR LT6 = CALCULATE([Parts Line Count], Fact_Parts_Open_Tickets[Aging] = Lbl6)
+			VAR CardCSS = "background: white; border-radius: 8px; padding: 16px 12px; text-align: center; flex: 1; box-shadow: 0 1px 3px rgba(0,0,0,0.08); box-sizing: border-box; display: flex; flex-direction: column; justify-content: center;"
+			VAR Card1 = "<div style='" & CardCSS & " border-top: 5px solid " & Clr1 & ";'><div style='font-size: 26px; color: #666;'>" & Lbl1 & "</div><div style='font-size: 22px; font-weight: 700; color: #1D3C4E; margin-top: 8px;'>" & FORMAT(Cnt1, "#,##0") & " Orders</div><div style='font-size: 20px; font-weight: 700; color: #1D3C4E;'>" & FORMAT(OT1, "$#,##0") & " Order Total</div><div style='font-size: 18px; color: #444; margin-top: 8px;'># Parts On Order " & FORMAT(PT1, "#,##0") & "</div><div style='font-size: 18px; color: #444;'>Part Line Count " & FORMAT(LT1, "#,##0") & "</div></div>"
+			VAR Card2 = "<div style='" & CardCSS & " border-top: 5px solid " & Clr2 & ";'><div style='font-size: 26px; color: #666;'>" & Lbl2 & "</div><div style='font-size: 22px; font-weight: 700; color: #1D3C4E; margin-top: 8px;'>" & FORMAT(Cnt2, "#,##0") & " Orders</div><div style='font-size: 20px; font-weight: 700; color: #1D3C4E;'>" & FORMAT(OT2, "$#,##0") & " Order Total</div><div style='font-size: 18px; color: #444; margin-top: 8px;'># Parts On Order " & FORMAT(PT2, "#,##0") & "</div><div style='font-size: 18px; color: #444;'>Part Line Count " & FORMAT(LT2, "#,##0") & "</div></div>"
+			VAR Card3 = "<div style='" & CardCSS & " border-top: 5px solid " & Clr3 & ";'><div style='font-size: 26px; color: #666;'>" & Lbl3 & "</div><div style='font-size: 22px; font-weight: 700; color: #1D3C4E; margin-top: 8px;'>" & FORMAT(Cnt3, "#,##0") & " Orders</div><div style='font-size: 20px; font-weight: 700; color: #1D3C4E;'>" & FORMAT(OT3, "$#,##0") & " Order Total</div><div style='font-size: 18px; color: #444; margin-top: 8px;'># Parts On Order " & FORMAT(PT3, "#,##0") & "</div><div style='font-size: 18px; color: #444;'>Part Line Count " & FORMAT(LT3, "#,##0") & "</div></div>"
+			VAR Card4 = "<div style='" & CardCSS & " border-top: 5px solid " & Clr4 & ";'><div style='font-size: 26px; color: #666;'>" & Lbl4 & "</div><div style='font-size: 22px; font-weight: 700; color: #1D3C4E; margin-top: 8px;'>" & FORMAT(Cnt4, "#,##0") & " Orders</div><div style='font-size: 20px; font-weight: 700; color: #1D3C4E;'>" & FORMAT(OT4, "$#,##0") & " Order Total</div><div style='font-size: 18px; color: #444; margin-top: 8px;'># Parts On Order " & FORMAT(PT4, "#,##0") & "</div><div style='font-size: 18px; color: #444;'>Part Line Count " & FORMAT(LT4, "#,##0") & "</div></div>"
+			VAR Card5 = "<div style='" & CardCSS & " border-top: 5px solid " & Clr5 & ";'><div style='font-size: 26px; color: #666;'>" & Lbl5 & "</div><div style='font-size: 22px; font-weight: 700; color: #1D3C4E; margin-top: 8px;'>" & FORMAT(Cnt5, "#,##0") & " Orders</div><div style='font-size: 20px; font-weight: 700; color: #1D3C4E;'>" & FORMAT(OT5, "$#,##0") & " Order Total</div><div style='font-size: 18px; color: #444; margin-top: 8px;'># Parts On Order " & FORMAT(PT5, "#,##0") & "</div><div style='font-size: 18px; color: #444;'>Part Line Count " & FORMAT(LT5, "#,##0") & "</div></div>"
+			VAR Card6 = "<div style='" & CardCSS & " border-top: 5px solid " & Clr6 & ";'><div style='font-size: 26px; color: #666;'>" & Lbl6 & "</div><div style='font-size: 22px; font-weight: 700; color: #1D3C4E; margin-top: 8px;'>" & FORMAT(Cnt6, "#,##0") & " Orders</div><div style='font-size: 20px; font-weight: 700; color: #1D3C4E;'>" & FORMAT(OT6, "$#,##0") & " Order Total</div><div style='font-size: 18px; color: #444; margin-top: 8px;'># Parts On Order " & FORMAT(PT6, "#,##0") & "</div><div style='font-size: 18px; color: #444;'>Part Line Count " & FORMAT(LT6, "#,##0") & "</div></div>"
+			RETURN
+			"<div style='font-family: Segoe UI, Arial, sans-serif; display: flex; gap: 12px; height: 100%; box-sizing: border-box;'>" & Card1 & Card2 & Card3 & Card4 & Card5 & Card6 & "</div>"
+			
+			```
+		displayFolder: Core Metrics
+		lineageTag: e1a2b3c4-1111-4aaa-9001-aaaaaaaaaa02
+
+	measure 'HTML - Backorder Pulse' = ```
+			
+			VAR TierCount = DISTINCTCOUNT(Fact_Parts_Open_Tickets[Aging])
+			VAR TierList = CONCATENATEX(VALUES(Fact_Parts_Open_Tickets[Aging]), Fact_Parts_Open_Tickets[Aging], ", ", SWITCH(Fact_Parts_Open_Tickets[Aging], "0-7 days", 1, "8-14 days", 2, "15-30 days", 3, "31-60 days", 4, "61-90 days", 5, "90+ days", 6, 7), ASC)
+			VAR SelectedTier = IF(TierCount = 0, "No Data", IF(TierCount >= 6, "All Tiers", TierList))
+			
+			VAR TierColor = SWITCH(
+			    SelectedTier,
+			    "90+ days", "#cf1322",
+			    "61-90 days", "#f5222d",
+			    "31-60 days", "#fa8c16",
+			    "15-30 days", "#faad14",
+			    "8-14 days", "#52c41a",
+			    "0-7 days", "#27ae60",
+			    "#B0BEC5"
+			)
+			VAR Svg1 = SUBSTITUTE([KPI SVG - Order Total vs Backordered (Modern)], "data:image/svg+xml;utf8,", "")
+			VAR Svg2 = SUBSTITUTE([KPI SVG - Parts On Order vs Back Order (Modern)], "data:image/svg+xml;utf8,", "")
+			VAR Svg3 = SUBSTITUTE([KPI SVG - Line Count vs Backordered Line (Modern)], "data:image/svg+xml;utf8,", "")
+			VAR Svg4 = SUBSTITUTE([KPI SVG - Orders vs Orders with BO Parts (Modern)], "data:image/svg+xml;utf8,", "")
+			VAR CellCSS = "display:flex; align-items:center; justify-content:center; zoom: 2.3;"
+			RETURN
+			"<div style='font-family: Segoe UI, Arial, sans-serif; background: white; border-radius: 6px; border-top: 5px solid " & TierColor & "; padding: 18px; height: 100%; box-sizing: border-box;'>" &
+			"<div style='font-size: 25px; color: #666; margin-bottom: 14px; font-weight: 600; text-align: center;'>BACKORDER &mdash; " & SelectedTier & "</div>" &
+			"<div style='display:grid; grid-template-columns: 1fr 1fr; gap: 20px;'>" &
+			"<div style='" & CellCSS & "'>" & Svg1 & "</div>" &
+			"<div style='" & CellCSS & "'>" & Svg2 & "</div>" &
+			"<div style='" & CellCSS & "'>" & Svg3 & "</div>" &
+			"<div style='" & CellCSS & "'>" & Svg4 & "</div>" &
+			"</div>" &
+			"</div>"
+			
+			```
+		displayFolder: Core Metrics
+		lineageTag: 8b10d283-299d-4fe3-be2e-d4c4d324bec5
+
 	column Value
 		isHidden
 		lineageTag: da2dfa23-0c4c-4e9d-8014-3cc5710e756b

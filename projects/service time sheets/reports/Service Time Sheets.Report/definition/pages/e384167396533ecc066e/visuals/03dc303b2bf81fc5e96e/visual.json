@@ -1,12 +1,12 @@
 {
-  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.9.0/schema.json",
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.10.0/schema.json",
   "name": "03dc303b2bf81fc5e96e",
   "position": {
-    "x": 55.405541561712845,
-    "y": 274.6700251889169,
+    "x": 55.879945429740793,
+    "y": 366.57244201909958,
     "z": 1000,
-    "height": 630.68010075566747,
-    "width": 1596.1511335012594,
+    "height": 538.68267394270117,
+    "width": 1595.931241473397,
     "tabOrder": 3000
   },
   "visual": {
@@ -15,6 +15,36 @@
       "queryState": {
         "Values": {
           "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Fact_ServiceTimeSheet_Audit"
+                    }
+                  },
+                  "Property": "BranchWarning"
+                }
+              },
+              "queryRef": "Fact_ServiceTimeSheet_Audit.BranchWarning",
+              "nativeQueryRef": "⚠",
+              "displayName": "⚠"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Fact_ServiceTimeSheet_Audit"
+                    }
+                  },
+                  "Property": "AuditedIcon"
+                }
+              },
+              "queryRef": "Fact_ServiceTimeSheet_Audit.AuditedIcon",
+              "nativeQueryRef": "Audit",
+              "displayName": "Audit"
+            },
             {
               "field": {
                 "Column": {
@@ -41,8 +71,37 @@
                 }
               },
               "queryRef": "Fact_ServiceTimeSheet_Audit.PayPeriod",
-              "nativeQueryRef": "Pay Period",
-              "displayName": "Pay Period"
+              "nativeQueryRef": "PayPeriod"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Fact_ServiceTimeSheet_Audit"
+                    }
+                  },
+                  "Property": "LastInvoiceDate"
+                }
+              },
+              "queryRef": "Fact_ServiceTimeSheet_Audit.LastInvoiceDate",
+              "nativeQueryRef": "Invoice Date",
+              "displayName": "Invoice Date"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Fact_ServiceTimeSheet_Audit"
+                    }
+                  },
+                  "Property": "InvoiceNumber"
+                }
+              },
+              "queryRef": "Fact_ServiceTimeSheet_Audit.InvoiceNumber",
+              "nativeQueryRef": "Invoice #",
+              "displayName": "Invoice #"
             },
             {
               "field": {
@@ -127,11 +186,62 @@
                       "Entity": "_Measures"
                     }
                   },
+                  "Property": "Draw Label"
+                }
+              },
+              "queryRef": "_Measures.Draw Label",
+              "nativeQueryRef": "Draw",
+              "displayName": "Draw"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Fact_ServiceTimeSheet_Audit"
+                    }
+                  },
+                  "Property": "JobTypeList"
+                }
+              },
+              "queryRef": "Fact_ServiceTimeSheet_Audit.JobTypeList",
+              "nativeQueryRef": "Job Type",
+              "displayName": "Job Type"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
                   "Property": "Total Claimed Hours"
                 }
               },
               "queryRef": "_Measures.Total Claimed Hours",
-              "nativeQueryRef": "Total Claimed Hours"
+              "nativeQueryRef": "Period Hours",
+              "displayName": "Period Hours"
+            },
+            {
+              "field": {
+                "Aggregation": {
+                  "Expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "Fact_ServiceTimeSheet_Audit"
+                        }
+                      },
+                      "Property": "CrossPeriodClaimedHrs"
+                    }
+                  },
+                  "Function": 0
+                }
+              },
+              "queryRef": "Sum(Fact_ServiceTimeSheet_Audit.CrossPeriodClaimedHrs)",
+              "nativeQueryRef": "Total Claimed",
+              "displayName": "Total Claimed"
             },
             {
               "field": {
@@ -145,7 +255,23 @@
                 }
               },
               "queryRef": "_Measures.Total Invoiced Hours",
-              "nativeQueryRef": "Total Invoiced Hours"
+              "nativeQueryRef": "Invoiced Hours",
+              "displayName": "Invoiced Hours"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Fact_ServiceTimeSheet_Audit"
+                    }
+                  },
+                  "Property": "PunchedHrs"
+                }
+              },
+              "queryRef": "Sum(Fact_ServiceTimeSheet_Audit.PunchedHrs)",
+              "nativeQueryRef": "Punched Hrs",
+              "displayName": "Punched Hrs"
             },
             {
               "field": {
@@ -160,21 +286,6 @@
               },
               "queryRef": "_Measures.Hours Difference",
               "nativeQueryRef": "Hours Difference"
-            },
-            {
-              "field": {
-                "Column": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "Fact_ServiceTimeSheet_Audit"
-                    }
-                  },
-                  "Property": "AuditStatus"
-                }
-              },
-              "queryRef": "Fact_ServiceTimeSheet_Audit.AuditStatus",
-              "nativeQueryRef": "Audit Status",
-              "displayName": "Audit Status"
             },
             {
               "field": {
@@ -218,6 +329,21 @@
               "queryRef": "_Measures.Paid Difference",
               "nativeQueryRef": "Billing Gap",
               "displayName": "Billing Gap"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Fact_ServiceTimeSheet_Audit"
+                    }
+                  },
+                  "Property": "ROStatusDisplay"
+                }
+              },
+              "queryRef": "Fact_ServiceTimeSheet_Audit.ROStatusDisplay",
+              "nativeQueryRef": "RO Status",
+              "displayName": "RO Status"
             }
           ]
         }
@@ -226,26 +352,13 @@
         "sort": [
           {
             "field": {
-              "Measure": {
+              "Column": {
                 "Expression": {
                   "SourceRef": {
-                    "Entity": "_Measures"
+                    "Entity": "Fact_ServiceTimeSheet_Audit"
                   }
                 },
-                "Property": "Hours Difference"
-              }
-            },
-            "direction": "Descending"
-          },
-          {
-            "field": {
-              "Measure": {
-                "Expression": {
-                  "SourceRef": {
-                    "Entity": "_Measures"
-                  }
-                },
-                "Property": "Paid Difference"
+                "Property": "AuditedIcon"
               }
             },
             "direction": "Descending"
@@ -360,7 +473,7 @@
             "fontSize": {
               "expr": {
                 "Literal": {
-                  "Value": "11D"
+                  "Value": "10D"
                 }
               }
             },
@@ -380,7 +493,7 @@
             "fontSize": {
               "expr": {
                 "Literal": {
-                  "Value": "11D"
+                  "Value": "10D"
                 }
               }
             },
@@ -509,52 +622,6 @@
                   }
                 }
               }
-            },
-            "fontColor": {
-              "solid": {
-                "color": {
-                  "expr": {
-                    "Measure": {
-                      "Expression": {
-                        "SourceRef": {
-                          "Entity": "_Measures"
-                        }
-                      },
-                      "Property": "Audit Status Color"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "selector": {
-            "data": [
-              {
-                "dataViewWildcard": {
-                  "matchingOption": 1
-                }
-              }
-            ],
-            "metadata": "Fact_ServiceTimeSheet_Audit.AuditStatus"
-          }
-        },
-        {
-          "properties": {
-            "backColor": {
-              "solid": {
-                "color": {
-                  "expr": {
-                    "Measure": {
-                      "Expression": {
-                        "SourceRef": {
-                          "Entity": "_Measures"
-                        }
-                      },
-                      "Property": "Row Status Color"
-                    }
-                  }
-                }
-              }
             }
           },
           "selector": {
@@ -566,36 +633,6 @@
               }
             ],
             "metadata": "Fact_ServiceTimeSheet_Audit.Location"
-          }
-        },
-        {
-          "properties": {
-            "backColor": {
-              "solid": {
-                "color": {
-                  "expr": {
-                    "Measure": {
-                      "Expression": {
-                        "SourceRef": {
-                          "Entity": "_Measures"
-                        }
-                      },
-                      "Property": "Row Status Color"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "selector": {
-            "data": [
-              {
-                "dataViewWildcard": {
-                  "matchingOption": 1
-                }
-              }
-            ],
-            "metadata": "Fact_ServiceTimeSheet_Audit.PayPeriod"
           }
         },
         {
@@ -867,6 +904,418 @@
             ],
             "metadata": "_Measures.Labor Billed"
           }
+        },
+        {
+          "properties": {
+            "backColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "Row Status Color"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "selector": {
+            "data": [
+              {
+                "dataViewWildcard": {
+                  "matchingOption": 1
+                }
+              }
+            ],
+            "metadata": "Sum(Fact_ServiceTimeSheet_Audit.PunchedHrs)"
+          }
+        },
+        {
+          "properties": {
+            "backColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "Row Status Color"
+                    }
+                  }
+                }
+              }
+            },
+            "fontColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Conditional": {
+                      "Cases": [
+                        {
+                          "Condition": {
+                            "Comparison": {
+                              "ComparisonKind": 0,
+                              "Left": {
+                                "Aggregation": {
+                                  "Expression": {
+                                    "Column": {
+                                      "Expression": {
+                                        "SourceRef": {
+                                          "Entity": "Fact_ServiceTimeSheet_Audit"
+                                        }
+                                      },
+                                      "Property": "BranchWarning"
+                                    }
+                                  },
+                                  "Function": 3
+                                }
+                              },
+                              "Right": {
+                                "Literal": {
+                                  "Value": "'⚠'"
+                                }
+                              }
+                            },
+                            "Annotations": {
+                              "PowerBI.SQExprEvaluationKind": 1,
+                              "PowerBI.SQExprTextOperatorOption": 2
+                            }
+                          },
+                          "Value": {
+                            "Literal": {
+                              "Value": "'#F70202'"
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "selector": {
+            "data": [
+              {
+                "dataViewWildcard": {
+                  "matchingOption": 1
+                }
+              }
+            ],
+            "metadata": "Fact_ServiceTimeSheet_Audit.BranchWarning"
+          }
+        },
+        {
+          "properties": {
+            "backColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "Row Status Color"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "selector": {
+            "data": [
+              {
+                "dataViewWildcard": {
+                  "matchingOption": 1
+                }
+              }
+            ],
+            "metadata": "Fact_ServiceTimeSheet_Audit.LastInvoiceDate"
+          }
+        },
+        {
+          "properties": {
+            "backColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "Row Status Color"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "selector": {
+            "data": [
+              {
+                "dataViewWildcard": {
+                  "matchingOption": 1
+                }
+              }
+            ],
+            "metadata": "Fact_ServiceTimeSheet_Audit.InvoiceNumber"
+          }
+        },
+        {
+          "properties": {
+            "backColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "Row Status Color"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "selector": {
+            "data": [
+              {
+                "dataViewWildcard": {
+                  "matchingOption": 1
+                }
+              }
+            ],
+            "metadata": "Fact_ServiceTimeSheet_Audit.PayPeriod"
+          }
+        },
+        {
+          "properties": {
+            "backColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "Row Status Color"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "selector": {
+            "data": [
+              {
+                "dataViewWildcard": {
+                  "matchingOption": 1
+                }
+              }
+            ],
+            "metadata": "_Measures.Draw Label"
+          }
+        },
+        {
+          "properties": {
+            "backColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "Row Status Color"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "selector": {
+            "data": [
+              {
+                "dataViewWildcard": {
+                  "matchingOption": 1
+                }
+              }
+            ],
+            "metadata": "Fact_ServiceTimeSheet_Audit.JobTypeList"
+          }
+        },
+        {
+          "properties": {
+            "backColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "Row Status Color"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "selector": {
+            "data": [
+              {
+                "dataViewWildcard": {
+                  "matchingOption": 1
+                }
+              }
+            ],
+            "metadata": "Sum(Fact_ServiceTimeSheet_Audit.CrossPeriodClaimedHrs)"
+          }
+        },
+        {
+          "properties": {
+            "backColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "Row Status Color"
+                    }
+                  }
+                }
+              }
+            },
+            "fontColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "RO Status Display Color"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "selector": {
+            "data": [
+              {
+                "dataViewWildcard": {
+                  "matchingOption": 1
+                }
+              }
+            ],
+            "metadata": "Fact_ServiceTimeSheet_Audit.ROStatusDisplay"
+          }
+        },
+        {
+          "properties": {
+            "fontColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Conditional": {
+                      "Cases": [
+                        {
+                          "Condition": {
+                            "Comparison": {
+                              "ComparisonKind": 0,
+                              "Left": {
+                                "Aggregation": {
+                                  "Expression": {
+                                    "Column": {
+                                      "Expression": {
+                                        "SourceRef": {
+                                          "Entity": "Fact_ServiceTimeSheet_Audit"
+                                        }
+                                      },
+                                      "Property": "AuditedIcon"
+                                    }
+                                  },
+                                  "Function": 3
+                                }
+                              },
+                              "Right": {
+                                "Literal": {
+                                  "Value": "'✓'"
+                                }
+                              }
+                            },
+                            "Annotations": {
+                              "PowerBI.SQExprEvaluationKind": 1,
+                              "PowerBI.SQExprTextOperatorOption": 2
+                            }
+                          },
+                          "Value": {
+                            "Literal": {
+                              "Value": "'#3DAB46'"
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            },
+            "backColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "Row Status Color"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "selector": {
+            "data": [
+              {
+                "dataViewWildcard": {
+                  "matchingOption": 1
+                }
+              }
+            ],
+            "metadata": "Fact_ServiceTimeSheet_Audit.AuditedIcon"
+          }
         }
       ],
       "total": [
@@ -900,7 +1349,7 @@
             "value": {
               "expr": {
                 "Literal": {
-                  "Value": "84.2930492623548D"
+                  "Value": "64.42890405898972D"
                 }
               }
             }
@@ -914,7 +1363,7 @@
             "value": {
               "expr": {
                 "Literal": {
-                  "Value": "76.12433796501955D"
+                  "Value": "71.36428569505337D"
                 }
               }
             }
@@ -928,7 +1377,7 @@
             "value": {
               "expr": {
                 "Literal": {
-                  "Value": "89.70027036325118D"
+                  "Value": "62.27207386663386D"
                 }
               }
             }
@@ -942,7 +1391,7 @@
             "value": {
               "expr": {
                 "Literal": {
-                  "Value": "94.42319690343729D"
+                  "Value": "59.612517249918945D"
                 }
               }
             }
@@ -956,7 +1405,7 @@
             "value": {
               "expr": {
                 "Literal": {
-                  "Value": "237.46347633223098D"
+                  "Value": "159.67348537615285D"
                 }
               }
             }
@@ -970,13 +1419,13 @@
             "value": {
               "expr": {
                 "Literal": {
-                  "Value": "199.55849693839318D"
+                  "Value": "79.41054522105482D"
                 }
               }
             }
           },
           "selector": {
-            "metadata": "Fact_ServiceTimeSheet_Audit.AuditStatus"
+            "metadata": "_Measures.Hours Difference"
           }
         },
         {
@@ -984,13 +1433,111 @@
             "value": {
               "expr": {
                 "Literal": {
-                  "Value": "114.84368700379133D"
+                  "Value": "65.91575932185816D"
                 }
               }
             }
           },
           "selector": {
-            "metadata": "_Measures.Hours Difference"
+            "metadata": "Sum(Fact_ServiceTimeSheet_Audit.PunchedHrs)"
+          }
+        },
+        {
+          "properties": {
+            "value": {
+              "expr": {
+                "Literal": {
+                  "Value": "74.22042133822781D"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "_Measures.Total Tech Pay"
+          }
+        },
+        {
+          "properties": {
+            "value": {
+              "expr": {
+                "Literal": {
+                  "Value": "54.886644180585925D"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "Fact_ServiceTimeSheet_Audit.TechLevel"
+          }
+        },
+        {
+          "properties": {
+            "value": {
+              "expr": {
+                "Literal": {
+                  "Value": "61.753107886179095D"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "Sum(Fact_ServiceTimeSheet_Audit.CrossPeriodClaimedHrs)"
+          }
+        },
+        {
+          "properties": {
+            "value": {
+              "expr": {
+                "Literal": {
+                  "Value": "46.619221269251625D"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "Fact_ServiceTimeSheet_Audit.JobTypeList"
+          }
+        },
+        {
+          "properties": {
+            "value": {
+              "expr": {
+                "Literal": {
+                  "Value": "82.92695562079088D"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "Fact_ServiceTimeSheet_Audit.LastInvoiceDate"
+          }
+        },
+        {
+          "properties": {
+            "value": {
+              "expr": {
+                "Literal": {
+                  "Value": "64.46349432068904D"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "Fact_ServiceTimeSheet_Audit.ROStatusDisplay"
+          }
+        },
+        {
+          "properties": {
+            "value": {
+              "expr": {
+                "Literal": {
+                  "Value": "127.71536622946331D"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "Fact_ServiceTimeSheet_Audit.TechName"
           }
         }
       ],
@@ -1102,6 +1649,20 @@
         },
         {
           "properties": {
+            "alignment": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Center'"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "Fact_ServiceTimeSheet_Audit.BranchWarning"
+          }
+        },
+        {
+          "properties": {
             "styleHeader": {
               "expr": {
                 "Literal": {
@@ -1118,7 +1679,126 @@
             }
           },
           "selector": {
-            "metadata": "Fact_ServiceTimeSheet_Audit.AuditStatus"
+            "metadata": "Fact_ServiceTimeSheet_Audit.LastInvoiceDate"
+          }
+        },
+        {
+          "properties": {
+            "styleHeader": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "alignment": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Center'"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "Fact_ServiceTimeSheet_Audit.InvoiceNumber"
+          }
+        },
+        {
+          "properties": {
+            "styleHeader": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "alignment": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Center'"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "_Measures.Draw Label"
+          }
+        },
+        {
+          "properties": {
+            "styleHeader": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "alignment": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Center'"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "Fact_ServiceTimeSheet_Audit.JobTypeList"
+          }
+        },
+        {
+          "properties": {
+            "styleHeader": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "alignment": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Center'"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "Sum(Fact_ServiceTimeSheet_Audit.CrossPeriodClaimedHrs)"
+          }
+        },
+        {
+          "properties": {
+            "styleHeader": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "alignment": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Center'"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "Sum(Fact_ServiceTimeSheet_Audit.PunchedHrs)"
+          }
+        },
+        {
+          "properties": {
+            "alignment": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Center'"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "Fact_ServiceTimeSheet_Audit.AuditedIcon"
           }
         }
       ]
@@ -1130,7 +1810,7 @@
             "show": {
               "expr": {
                 "Literal": {
-                  "Value": "true"
+                  "Value": "false"
                 }
               }
             },
@@ -1302,5 +1982,322 @@
       ]
     },
     "drillFilterOtherVisuals": true
+  },
+  "filterConfig": {
+    "filters": [
+      {
+        "name": "ac67bff19b7f6a055934",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Fact_ServiceTimeSheet_Audit"
+              }
+            },
+            "Property": "BranchWarning"
+          }
+        },
+        "type": "Categorical"
+      },
+      {
+        "name": "136d7c71d8cfa7b7a704",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Fact_ServiceTimeSheet_Audit"
+              }
+            },
+            "Property": "AuditedIcon"
+          }
+        },
+        "type": "Categorical"
+      },
+      {
+        "name": "03f920191c8473da4a66",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Fact_ServiceTimeSheet_Audit"
+              }
+            },
+            "Property": "Location"
+          }
+        },
+        "type": "Categorical"
+      },
+      {
+        "name": "748783f470881e0d1461",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Fact_ServiceTimeSheet_Audit"
+              }
+            },
+            "Property": "PayPeriod"
+          }
+        },
+        "type": "Categorical"
+      },
+      {
+        "name": "7723a485abba7bbbd539",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Fact_ServiceTimeSheet_Audit"
+              }
+            },
+            "Property": "LastInvoiceDate"
+          }
+        },
+        "type": "Categorical"
+      },
+      {
+        "name": "2382af695aedf5d9ff2e",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Fact_ServiceTimeSheet_Audit"
+              }
+            },
+            "Property": "InvoiceNumber"
+          }
+        },
+        "type": "Categorical"
+      },
+      {
+        "name": "59dfd5a58d27ceb1cd52",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Fact_ServiceTimeSheet_Audit"
+              }
+            },
+            "Property": "TechName"
+          }
+        },
+        "type": "Categorical"
+      },
+      {
+        "name": "2e16f6f1d438830238a6",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Fact_ServiceTimeSheet_Audit"
+              }
+            },
+            "Property": "TechLevel"
+          }
+        },
+        "type": "Categorical"
+      },
+      {
+        "name": "281f9f49993e15acc825",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Fact_ServiceTimeSheet_Audit"
+              }
+            },
+            "Property": "RONumberText"
+          }
+        },
+        "type": "Categorical"
+      },
+      {
+        "name": "b6979d90dd7544d4744f",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Fact_ServiceTimeSheet_Audit"
+              }
+            },
+            "Property": "CustomerName"
+          }
+        },
+        "type": "Categorical"
+      },
+      {
+        "name": "3995c0b9a3f595243d7f",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Fact_ServiceTimeSheet_Audit"
+              }
+            },
+            "Property": "PctComplete"
+          }
+        },
+        "type": "Advanced"
+      },
+      {
+        "name": "986d6ad927e00f7743e9",
+        "field": {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "_Measures"
+              }
+            },
+            "Property": "Draw Label"
+          }
+        },
+        "type": "Advanced"
+      },
+      {
+        "name": "bd39572d43bb1cdd9649",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Fact_ServiceTimeSheet_Audit"
+              }
+            },
+            "Property": "JobTypeList"
+          }
+        },
+        "type": "Categorical"
+      },
+      {
+        "name": "f1aa70aee8bfd3c7b4d8",
+        "field": {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "_Measures"
+              }
+            },
+            "Property": "Total Claimed Hours"
+          }
+        },
+        "type": "Advanced"
+      },
+      {
+        "name": "005aff4006a42d889261",
+        "field": {
+          "Aggregation": {
+            "Expression": {
+              "Column": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "Fact_ServiceTimeSheet_Audit"
+                  }
+                },
+                "Property": "CrossPeriodClaimedHrs"
+              }
+            },
+            "Function": 0
+          }
+        },
+        "type": "Advanced"
+      },
+      {
+        "name": "76fc50cd66c7030954cb",
+        "field": {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "_Measures"
+              }
+            },
+            "Property": "Total Invoiced Hours"
+          }
+        },
+        "type": "Advanced"
+      },
+      {
+        "name": "0897e34ee87ef63891ca",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Fact_ServiceTimeSheet_Audit"
+              }
+            },
+            "Property": "PunchedHrs"
+          }
+        },
+        "type": "Advanced"
+      },
+      {
+        "name": "8cf08e90114ad38db90f",
+        "field": {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "_Measures"
+              }
+            },
+            "Property": "Hours Difference"
+          }
+        },
+        "type": "Advanced"
+      },
+      {
+        "name": "dd469fe1b66efa820438",
+        "field": {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "_Measures"
+              }
+            },
+            "Property": "Total Tech Pay"
+          }
+        },
+        "type": "Advanced"
+      },
+      {
+        "name": "c2841a70ce27ec00cc52",
+        "field": {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "_Measures"
+              }
+            },
+            "Property": "Labor Billed"
+          }
+        },
+        "type": "Advanced"
+      },
+      {
+        "name": "9b3470a74d33befd7d10",
+        "field": {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "_Measures"
+              }
+            },
+            "Property": "Paid Difference"
+          }
+        },
+        "type": "Advanced"
+      },
+      {
+        "name": "059f3f2cac065e6b24d4",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Fact_ServiceTimeSheet_Audit"
+              }
+            },
+            "Property": "ROStatusDisplay"
+          }
+        },
+        "type": "Categorical"
+      }
+    ]
   }
 }

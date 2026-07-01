@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Parts Order Tool — Design Spec for Power Apps</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --ink:#16202B; --ink2:#566373; --ink3:#8794A4; --line:#E0E5EC; --bg:#ECEFF3;
+    --surface:#fff; --accent:#2563EB; --accent2:#1D4ED8; --accentsoft:#E7F0FE;
+    --mono:'JetBrains Mono',ui-monospace,monospace;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:'Lato','Segoe UI',sans-serif;color:var(--ink);background:var(--bg);
+    -webkit-font-smoothing:antialiased;line-height:1.55;}
+  .page{max-width:980px;margin:0 auto;padding:64px 56px;background:var(--surface);}
+  h1{font-size:38px;font-weight:900;letter-spacing:-.02em;margin:0 0 6px;}
+  .sub{font-size:17px;color:var(--ink2);margin:0 0 8px;}
+  h2{font-size:13px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;color:var(--accent2);
+    margin:54px 0 18px;padding-bottom:10px;border-bottom:2px solid var(--accentsoft);}
+  h3{font-size:18px;font-weight:700;margin:26px 0 12px;}
+  p{margin:0 0 14px;font-size:15px;color:var(--ink2);}
+  p strong, li strong{color:var(--ink);}
+  code{font-family:var(--mono);font-size:.86em;background:#F1F4F8;color:var(--accent2);
+    padding:2px 6px;border-radius:5px;}
+  .lead{font-size:16px;color:var(--ink);background:var(--accentsoft);border-left:4px solid var(--accent);
+    padding:16px 20px;border-radius:0 10px 10px 0;margin:22px 0;}
+  table{width:100%;border-collapse:collapse;margin:14px 0 8px;font-size:14px;}
+  th{text-align:left;font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;
+    color:var(--ink3);padding:8px 12px;border-bottom:2px solid var(--line);}
+  td{padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:middle;color:var(--ink);}
+  td.mono,th.mono{font-family:var(--mono);font-size:13px;}
+  .sw{display:inline-block;width:22px;height:22px;border-radius:6px;border:1px solid rgba(0,0,0,.12);
+    vertical-align:middle;margin-right:10px;}
+  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;margin:18px 0;}
+  .palcard{border:1px solid var(--line);border-radius:14px;overflow:hidden;}
+  .palhead{padding:14px 16px;color:#fff;}
+  .palhead h4{margin:0;font-size:16px;font-weight:800;}
+  .palhead span{font-size:12.5px;opacity:.85;}
+  .palbody{padding:6px 0;}
+  .palrow{display:flex;align-items:center;gap:10px;padding:6px 16px;font-size:12.5px;}
+  .palrow .nm{flex:1;color:var(--ink2);font-weight:600;}
+  .palrow .hx{font-family:var(--mono);font-size:11.5px;color:var(--ink3);}
+  ul{margin:6px 0 16px;padding-left:22px;}
+  li{font-size:15px;color:var(--ink2);margin-bottom:8px;}
+  .pa{background:#F7F9FC;border:1px solid var(--line);border-radius:12px;padding:6px 20px 14px;margin:14px 0;}
+  .pa h4{font-size:13px;font-weight:800;letter-spacing:.04em;color:var(--accent2);margin:16px 0 8px;text-transform:uppercase;}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0;}
+  .chip{display:inline-flex;align-items:center;height:26px;padding:0 12px;border-radius:999px;
+    font-size:12px;font-weight:800;letter-spacing:.02em;}
+  .foot{margin-top:50px;padding-top:18px;border-top:1px solid var(--line);font-size:13px;color:var(--ink3);}
+  @media print{ body{background:#fff;} .page{padding:0;max-width:none;} h2{break-after:avoid;} table,.palcard,.pa{break-inside:avoid;} }
+</style>
+</head>
+<body>
+<div class="page">
+  <h1>Parts Order Tool</h1>
+  <p class="sub">Design specification &amp; Power Apps build guide</p>
+  <p style="font-size:13px;color:var(--ink3);margin:0;">Companion to the redesign prototype · v1 · Jun 2026</p>
+
+  <div class="lead">
+    This sheet gives you the exact values behind the prototype so you can rebuild the look directly
+    in Power Apps. Everything maps to standard canvas-app properties — <code>Fill</code>, <code>Color</code>,
+    <code>BorderRadius</code>, <code>Size</code>, <code>Font</code>, <code>Padding</code>. Three palettes are
+    documented; <strong>Slate Pro</strong> is the recommended default.
+  </div>
+
+  <h2>1 · Color palettes</h2>
+  <p>Pick one palette and use it everywhere. The <strong>semantic status colors</strong> (below) stay the same
+  across all three — they're what makes "needs attention" read instantly, so don't recolor them per theme.</p>
+
+  <div class="grid3">
+    <div class="palcard">
+      <div class="palhead" style="background:#14233A;"><h4>Slate Pro</h4><span>Recommended · calm, modern</span></div>
+      <div class="palbody">
+        <div class="palrow"><span class="sw" style="background:#14233A"></span><span class="nm">Nav / header</span><span class="hx">#14233A</span></div>
+        <div class="palrow"><span class="sw" style="background:#2563EB"></span><span class="nm">Accent (actions)</span><span class="hx">#2563EB</span></div>
+        <div class="palrow"><span class="sw" style="background:#E7F0FE"></span><span class="nm">Accent soft</span><span class="hx">#E7F0FE</span></div>
+        <div class="palrow"><span class="sw" style="background:#ECEFF3"></span><span class="nm">App background</span><span class="hx">#ECEFF3</span></div>
+        <div class="palrow"><span class="sw" style="background:#fff"></span><span class="nm">Card / surface</span><span class="hx">#FFFFFF</span></div>
+        <div class="palrow"><span class="sw" style="background:#E0E5EC"></span><span class="nm">Border</span><span class="hx">#E0E5EC</span></div>
+        <div class="palrow"><span class="sw" style="background:#16202B"></span><span class="nm">Text primary</span><span class="hx">#16202B</span></div>
+        <div class="palrow"><span class="sw" style="background:#566373"></span><span class="nm">Text secondary</span><span class="hx">#566373</span></div>
+      </div>
+    </div>
+    <div class="palcard">
+      <div class="palhead" style="background:#2A2520;"><h4>Workshop</h4><span>Warm, industrial</span></div>
+      <div class="palbody">
+        <div class="palrow"><span class="sw" style="background:#2A2520"></span><span class="nm">Nav / header</span><span class="hx">#2A2520</span></div>
+        <div class="palrow"><span class="sw" style="background:#DE7A1C"></span><span class="nm">Accent (actions)</span><span class="hx">#DE7A1C</span></div>
+        <div class="palrow"><span class="sw" style="background:#FBEEDC"></span><span class="nm">Accent soft</span><span class="hx">#FBEEDC</span></div>
+        <div class="palrow"><span class="sw" style="background:#F3F0EA"></span><span class="nm">App background</span><span class="hx">#F3F0EA</span></div>
+        <div class="palrow"><span class="sw" style="background:#fff"></span><span class="nm">Card / surface</span><span class="hx">#FFFFFF</span></div>
+        <div class="palrow"><span class="sw" style="background:#E7E0D5"></span><span class="nm">Border</span><span class="hx">#E7E0D5</span></div>
+        <div class="palrow"><span class="sw" style="background:#241F19"></span><span class="nm">Text primary</span><span class="hx">#241F19</span></div>
+        <div class="palrow"><span class="sw" style="background:#6B6157"></span><span class="nm">Text secondary</span><span class="hx">#6B6157</span></div>
+      </div>
+    </div>
+    <div class="palcard">
+      <div class="palhead" style="background:#163A2B;"><h4>Field Green</h4><span>Fresh, grounded</span></div>
+      <div class="palbody">
+        <div class="palrow"><span class="sw" style="background:#163A2B"></span><span class="nm">Nav / header</span><span class="hx">#163A2B</span></div>
+        <div class="palrow"><span class="sw" style="background:#1E8C5B"></span><span class="nm">Accent (actions)</span><span class="hx">#1E8C5B</span></div>
+        <div class="palrow"><span class="sw" style="background:#E1F1E8"></span><span class="nm">Accent soft</span><span class="hx">#E1F1E8</span></div>
+        <div class="palrow"><span class="sw" style="background:#EBF0EB"></span><span class="nm">App background</span><span class="hx">#EBF0EB</span></div>
+        <div class="palrow"><span class="sw" style="background:#fff"></span><span class="nm">Card / surface</span><span class="hx">#FFFFFF</span></div>
+        <div class="palrow"><span class="sw" style="background:#DAE4DA"></span><span class="nm">Border</span><span class="hx">#DAE4DA</span></div>
+        <div class="palrow"><span class="sw" style="background:#172420"></span><span class="nm">Text primary</span><span class="hx">#172420</span></div>
+        <div class="palrow"><span class="sw" style="background:#516359"></span><span class="nm">Text secondary</span><span class="hx">#516359</span></div>
+      </div>
+    </div>
+  </div>
+
+  <h3>Semantic status colors — shared across all palettes</h3>
+  <p>Use the <strong>soft</strong> shade as the pill/cell <code>Fill</code> and the <strong>solid</strong> shade as its <code>Color</code>.</p>
+  <div class="chips">
+    <span class="chip" style="background:#E5F3EA;color:#1A7D43;">● Stocked / OK</span>
+    <span class="chip" style="background:#FBEEDA;color:#B5630C;">▲ Reorder / Below target</span>
+    <span class="chip" style="background:#FBE8E6;color:#C13328;">■ Out of stock / Critical</span>
+    <span class="chip" style="background:#E7F0FE;color:#2563EB;">◆ Info / Accent</span>
+  </div>
+  <table>
+    <tr><th>Meaning</th><th class="mono">Solid (Color)</th><th class="mono">Soft (Fill)</th><th>Where</th></tr>
+    <tr><td>OK / Stocked</td><td class="mono">#1A7D43</td><td class="mono">#E5F3EA</td><td>On-hand ≥ target</td></tr>
+    <tr><td>Reorder / Low</td><td class="mono">#B5630C</td><td class="mono">#FBEEDA</td><td>Below target, in stock</td></tr>
+    <tr><td>Out of stock</td><td class="mono">#C13328</td><td class="mono">#FBE8E6</td><td>On-hand = 0</td></tr>
+    <tr><td>Info / Accent</td><td class="mono">#2563EB</td><td class="mono">#E7F0FE</td><td>Selected, links, focus</td></tr>
+  </table>
+
+  <h2>2 · Typography</h2>
+  <p>Set the app font to <strong>Lato</strong> — it's in the Power Apps font picker, so no custom font upload is
+  needed. Fallbacks: Open Sans, then Segoe UI. Use <strong>tabular figures</strong> mentally for all number
+  columns (right-align them so digits line up).</p>
+  <table>
+    <tr><th>Role</th><th class="mono">Size</th><th class="mono">Weight</th><th>Use</th></tr>
+    <tr><td>Page title</td><td class="mono">30</td><td class="mono">800 / Bold</td><td>Screen heading (e.g. part number)</td></tr>
+    <tr><td>Section title</td><td class="mono">20</td><td class="mono">700</td><td>Wizard step labels</td></tr>
+    <tr><td>Card title</td><td class="mono">15</td><td class="mono">700</td><td>Card headers</td></tr>
+    <tr><td>Body / control</td><td class="mono">14</td><td class="mono">400–600</td><td>Inputs, table cells, buttons</td></tr>
+    <tr><td>Stat value</td><td class="mono">18–26</td><td class="mono">700</td><td>Big numbers in detail grids</td></tr>
+    <tr><td>Label / header</td><td class="mono">11–12.5</td><td class="mono">700</td><td>Field labels, table headers (UPPERCASE, +letterspacing)</td></tr>
+    <tr><td>Caption</td><td class="mono">12</td><td class="mono">400–600</td><td>Sub-text, hints</td></tr>
+  </table>
+
+  <h2>3 · Spacing, radius &amp; elevation</h2>
+  <table>
+    <tr><th>Token</th><th class="mono">Value</th><th>Use</th></tr>
+    <tr><td>Spacing scale</td><td class="mono">4 · 8 · 12 · 16 · 20 · 24 · 32</td><td>Gaps &amp; padding — stick to these steps</td></tr>
+    <tr><td>Screen padding</td><td class="mono">30</td><td>Outer margin of the content area</td></tr>
+    <tr><td>Card padding</td><td class="mono">20–22</td><td>Inside cards</td></tr>
+    <tr><td>Card radius</td><td class="mono">14</td><td><code>BorderRadius</code> of card containers</td></tr>
+    <tr><td>Button / input radius</td><td class="mono">9</td><td><code>BorderRadius</code> of buttons &amp; text inputs</td></tr>
+    <tr><td>Pill radius</td><td class="mono">999</td><td>Status pills (fully rounded)</td></tr>
+    <tr><td>Table row height</td><td class="mono">56</td><td>Gallery <code>TemplateSize</code> (46 compact / 66 comfy)</td></tr>
+    <tr><td>Nav rail width</td><td class="mono">248</td><td>Left navigation container</td></tr>
+    <tr><td>Top bar height</td><td class="mono">66</td><td>Breadcrumb / context bar</td></tr>
+    <tr><td>Card shadow</td><td class="mono">0 1px 2px rgba(20,30,45,.05)</td><td>Subtle — Power Apps: thin border + faint drop</td></tr>
+  </table>
+
+  <h2>4 · The big fix — navigation</h2>
+  <p>The current app relies on Back buttons, which is the main thing making it feel hard to move through.
+  Replace that with a <strong>persistent left navigation rail</strong> plus a <strong>breadcrumb</strong> at the top.</p>
+  <ul>
+    <li><strong>Left rail</strong> (dark, 248&nbsp;wide): Home · Recommended Reorder · One-Time Order · Part Lookup · Transfers, with App Settings + user pinned to the bottom. Build it as a vertical container of buttons (or a Gallery) placed on every screen — or once in a component.</li>
+    <li><strong>Active state:</strong> highlighted row using the nav-active fill, plus a 3.5px accent bar on the left edge. Track the current screen in a variable (e.g. <code>Set(gblNav,"reorder")</code>) and color each item with <code>If(gblNav="reorder", …)</code>.</li>
+    <li><strong>Breadcrumb</strong> top-left replaces "Back": e.g. <em>Part Lookup › 859090</em>. Each crumb is a button that <code>Navigate()</code>s back up the chain — no more dead-end Back buttons.</li>
+    <li><strong>Part Information</strong> becomes one screen with inline tabs (Detail · History · Settings) instead of separate top buttons.</li>
+    <li><strong>One-Time Order</strong> becomes a 2-step wizard with a step indicator (Set up → Review), so users always know where they are.</li>
+    <li><strong>Transfers</strong> gets a permanent home in the rail now (shown as "Soon") so it's ready when you wire it up as the first step of the flow.</li>
+  </ul>
+
+  <h2>5 · Component recipes</h2>
+
+  <div class="pa">
+    <h4>Primary button</h4>
+    <p style="margin:0;font-size:14px;"><code>Fill</code> = accent · <code>Color</code> = White · <code>BorderRadius</code> = 9 · <code>Height</code> = 38 · <code>Font</code> = Lato Semibold 14 · horizontal padding 16. <strong>Secondary:</strong> Fill White, Color = text primary, 1px border in border color. <strong>Success (Export):</strong> Fill <code>#1A7D43</code>.</p>
+  </div>
+  <div class="pa">
+    <h4>Status pill</h4>
+    <p style="margin:0;font-size:14px;">Label inside a container · <code>BorderRadius</code> 999 · Height 24 · padding 0&nbsp;10 · <code>Fill</code> = soft status color · <code>Color</code> = solid status color · Font Lato Bold 12.</p>
+  </div>
+  <div class="pa">
+    <h4>Data table (Gallery)</h4>
+    <p style="margin:0;font-size:14px;"><code>TemplateSize</code> 56 · 1px bottom separator in border color · hover fill = app background. Right-align all numbers. Color the <strong>On Hand</strong> value by status (red at 0, amber below target). Add a <strong>Status</strong> pill column and a <strong>Need</strong> column (= Target − OnHand − OnOrder) so the action is obvious at a glance.</p>
+  </div>
+  <div class="pa">
+    <h4>Selection action bar</h4>
+    <p style="margin:0;font-size:14px;">A card pinned under the gallery showing "<em>N parts selected · Est. $X</em>" with the primary "Create Order" button. Keep the running total live so users feel in control.</p>
+  </div>
+
+  <h2>6 · Notes that matter for your data</h2>
+  <ul>
+    <li><strong>Result limits / delegation:</strong> the redesign keeps Branch + Franchise as the primary filters at the top of every list — push those filters to the Lakehouse/SharePoint query so you stay under the row cap and never load more than one branch's parts at once.</li>
+    <li><strong>"Reorder needed only"</strong> toggle should filter server-side where possible, not just hide rows client-side.</li>
+    <li><strong>SharePoint settings</strong> map cleanly to the new <em>App Settings</em> screen (pipeline run time, defaults, pre-approved rules) — one place instead of buried per-part.</li>
+    <li><strong>Per-part overrides</strong> stay on the part's Settings tab, with the "applies to tomorrow's run" note kept visible.</li>
+  </ul>
+
+  <p class="foot">Open the prototype (<strong>Parts Order Tool.html</strong>) and use the Tweaks panel to switch palette,
+  density, and font live. This sheet documents whatever you land on. Logo drops into the slot in the top-left of the nav rail.</p>
+</div>
+</body>
+</html>

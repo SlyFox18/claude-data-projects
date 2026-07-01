@@ -1,0 +1,164 @@
+Screens:
+  scrHome:
+    Properties:
+      Fill: =RGBA(255, 255, 255, 1)
+      LoadingSpinnerColor: =RGBA(0, 120, 212, 1)
+    Children:
+      - Rectangle_Header:
+          Control: Rectangle
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            DisabledFill: =RGBA(161, 159, 157, 1)
+            Fill: =RGBA(30, 41, 59, 1)
+            FocusedBorderThickness: =4
+            Height: =80
+            HoverFill: =RGBA(30, 41, 59, 1)
+            PressedFill: =RGBA(30, 41, 59, 1)
+            Width: =1366
+            X: =0.00
+      - Label_Refresh_TimeStamp:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(107, 114, 128, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            PaddingRight: =3.22
+            PaddingTop: =3.22
+            Size: =12
+            Text: |+
+              ="Pipeline runs daily at 7 AM · " & Text(Today(), "mmm d, yyyy")
+
+            Width: =314.49
+            X: =9.65
+            Y: =40
+      - Label_App_Title:
+          Control: Label
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            Color: =RGBA(255, 255, 255, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            FocusedBorderThickness: =4
+            Font: =Font.'Segoe UI'
+            FontWeight: =FontWeight.Bold
+            Height: =45
+            PaddingRight: =3.22
+            PaddingTop: =3.22
+            Size: =18
+            Text: ="Non-JD Parts Order Tool"
+            Width: =324
+            X: =9.65
+            Y: =10
+      - Button_Reserved:
+          Control: Classic/Button
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            Color: =RGBA(255, 255, 255, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            DisabledFill: =RGBA(242, 242, 241, 0)
+            Fill: =RGBA(156, 163, 175, 1)
+            Font: =Font.'Segoe UI'
+            Height: =200
+            HoverBorderColor: =RGBA(0, 0, 0, 0)
+            HoverColor: =RGBA(255, 255, 255, 1)
+            HoverFill: =RGBA(16, 110, 190, 1)
+            PaddingRight: =3.22
+            PaddingTop: =3.22
+            PressedBorderColor: =RGBA(0, 69, 120, 1)
+            PressedColor: =RGBA(255, 255, 255, 1)
+            PressedFill: =RGBA(16, 110, 190, 1)
+            Size: =28
+            Text: ="(Reserved)"
+            Width: =500
+            X: =761
+            Y: =462
+      - Button_Part_Information:
+          Control: Classic/Button
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            Color: =RGBA(255, 255, 255, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            DisabledFill: =RGBA(242, 242, 241, 0)
+            Fill: |
+              =RGBA(124, 58, 237, 1)
+            Font: =Font.'Segoe UI'
+            Height: =200
+            HoverBorderColor: =RGBA(0, 0, 0, 0)
+            HoverColor: =RGBA(255, 255, 255, 1)
+            HoverFill: =RGBA(16, 110, 190, 1)
+            OnSelect: =Set(varSelectedPart, Blank()); Navigate(scrPartInfo, ScreenTransition.Fade)
+            PaddingRight: =3.22
+            PaddingTop: =3.22
+            PressedBorderColor: =RGBA(0, 69, 120, 1)
+            PressedColor: =RGBA(255, 255, 255, 1)
+            PressedFill: =RGBA(16, 110, 190, 1)
+            Size: =28
+            Text: ="Part Information"
+            Width: =500
+            X: =89
+            Y: =462
+      - Button_One_Time_Order:
+          Control: Classic/Button
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            Color: =RGBA(255, 255, 255, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            DisabledFill: =RGBA(242, 242, 241, 0)
+            Fill: =RGBA(5, 150, 105, 1)
+            Font: =Font.'Segoe UI'
+            Height: =200
+            HoverBorderColor: =RGBA(0, 0, 0, 0)
+            HoverColor: =RGBA(255, 255, 255, 1)
+            HoverFill: =RGBA(16, 110, 190, 1)
+            OnSelect: =Set(varWizardStep, 1); Navigate(scrOneTimeOrder, ScreenTransition.Fade)
+            PaddingRight: =3.22
+            PaddingTop: =3.22
+            PressedBorderColor: =RGBA(0, 69, 120, 1)
+            PressedColor: =RGBA(255, 255, 255, 1)
+            PressedFill: =RGBA(16, 110, 190, 1)
+            Size: =28
+            Text: ="One Time Order"
+            Width: =500
+            X: =761
+            Y: =156
+      - Button_Recommended_Reorder:
+          Control: Classic/Button
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            Color: =RGBA(255, 255, 255, 1)
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledColor: =RGBA(161, 159, 157, 1)
+            DisabledFill: =RGBA(242, 242, 241, 0)
+            Fill: =RGBA(37, 99, 235, 1)
+            Font: =Font.'Segoe UI'
+            Height: =200
+            HoverBorderColor: =RGBA(0, 0, 0, 0)
+            HoverColor: =RGBA(255, 255, 255, 1)
+            HoverFill: =RGBA(16, 110, 190, 1)
+            OnSelect: =Navigate(scrReorder, ScreenTransition.Fade)
+            PaddingRight: =3.22
+            PaddingTop: =3.22
+            PressedBorderColor: =RGBA(0, 69, 120, 1)
+            PressedColor: =RGBA(255, 255, 255, 1)
+            PressedFill: =RGBA(16, 110, 190, 1)
+            Size: =28
+            Text: ="Recommended Reorder"
+            Width: =502
+            X: =89
+            Y: =156

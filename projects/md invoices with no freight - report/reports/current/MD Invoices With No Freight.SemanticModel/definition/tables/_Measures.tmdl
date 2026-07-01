@@ -59,7 +59,7 @@ table _Measures
 			                REPORT
 			            </div>
 			            <div style='font-size: 26px; font-weight: 700; line-height: 1;'>
-			                MD Invoices With No Freight
+			                Open - MD Invoices With No Freight
 			            </div>
 			        </div>
 			    </div>
@@ -128,32 +128,17 @@ table _Measures
 			    VALUES(Fact_MDInvoices_NoFreight[FileNumber]),
 			    VAR InvTotalWeight =
 			        CALCULATE(SUM(Fact_MDInvoices_NoFreight[TotalLineWeight]))
-			    VAR BaseRate =
-			        MAXX(
-			            FILTER(
-			                ALL(FreightCalculator),
-			                FreightCalculator[PartWeightFrom] <= InvTotalWeight
-			                    && (FreightCalculator[PartWeightTo] + 1) > InvTotalWeight
-			            ),
-			            FreightCalculator[BaseRate]
+			    VAR Bracket =
+			        FILTER(
+			            ALL(FreightCalculator),
+			            FreightCalculator[PartWeightFrom] <= InvTotalWeight
+			                && (FreightCalculator[PartWeightTo] + 1) > InvTotalWeight
 			        )
+			    VAR BaseRate = MAXX(Bracket, FreightCalculator[BaseRate])
+			    VAR AdditiveRate = MAXX(Bracket, FreightCalculator[AdditiveRatePerPound])
 			    VAR BaseRateFinal = IF(ISBLANK(BaseRate), 0, BaseRate)
-			    VAR PartAdditives =
-			        SUMX(
-			            CALCULATETABLE(Fact_MDInvoices_NoFreight),
-			            VAR LineWeight = Fact_MDInvoices_NoFreight[TotalLineWeight]
-			            VAR LineRate =
-			                MAXX(
-			                    FILTER(
-			                        ALL(FreightCalculator),
-			                        FreightCalculator[PartWeightFrom] <= LineWeight
-			                            && (FreightCalculator[PartWeightTo] + 1) > LineWeight
-			                    ),
-			                    FreightCalculator[AdditiveRatePerPound]
-			                )
-			            RETURN IF(ISBLANK(LineRate), 0.15, LineRate) * LineWeight
-			        )
-			    RETURN BaseRateFinal + PartAdditives
+			    VAR AdditiveRateFinal = IF(ISBLANK(AdditiveRate), 0.15, AdditiveRate)
+			    RETURN BaseRateFinal + (AdditiveRateFinal * InvTotalWeight)
 			)
 		formatString: $#,##0.00;($#,##0.00);$#,##0.00
 		lineageTag: c8d9e0f1-a2b3-44c5-6d7e-8f9a0b1c2d3e
@@ -296,7 +281,7 @@ table _Measures
 
 	measure 'Freight Status Color' =
 			VAR FreightStatusVal = MAX(Fact_MDInvoices_NoFreight[FreightStatus])
-			VAR MissedAmt = [Missed Freight]
+			VAR MissedAmt = MAX(Fact_MDInvoices_NoFreight[MissedFreightAmount])
 			RETURN
 			    SWITCH(
 			        TRUE(),
@@ -309,7 +294,7 @@ table _Measures
 		lineageTag: b3c4d5e6-f7a8-49b0-1c2d-3e4f5a6b7c8d
 
 	measure 'Missed Freight Icon' =
-			VAR MissedAmt = [Missed Freight]
+			VAR MissedAmt = MAX(Fact_MDInvoices_NoFreight[MissedFreightAmount])
 			VAR FreightStatusVal = MAX(Fact_MDInvoices_NoFreight[FreightStatus])
 			RETURN
 			    IF(
@@ -325,7 +310,7 @@ table _Measures
 
 	measure 'Is In Selected Group' =
 			VAR SelectedGroup = SELECTEDVALUE(dim_FreightPerformanceGroup[Group])
-			VAR MissedAmt = [Missed Freight]
+			VAR MissedAmt = MAX(Fact_MDInvoices_NoFreight[MissedFreightAmount])
 			VAR FreightStatusVal = MAX(Fact_MDInvoices_NoFreight[FreightStatus])
 			RETURN
 			    IF(
@@ -335,9 +320,9 @@ table _Measures
 			            SelectedGroup,
 			            "No Freight",
 			                IF(FreightStatusVal = "No Freight" || FreightStatusVal = "No Freight Charged", 1, 0),
-			            "Needs Review",
+			            "Partial Freight",
 			                IF(FreightStatusVal = "Has Freight" && NOT ISBLANK(MissedAmt) && MissedAmt > 1, 1, 0),
-			            "Good / Above Baseline",
+			            "Adequate Freight",
 			                IF(FreightStatusVal = "Has Freight" && (ISBLANK(MissedAmt) || MissedAmt <= 1), 1, 0),
 			            1
 			        )
@@ -402,7 +387,7 @@ table _Measures
 			                REPORT
 			            </div>
 			            <div style='font-size: 26px; font-weight: 700; line-height: 1;'>
-			                Branch and Saleman Performance
+			                Open Invoices - Branch and Saleman Performance
 			            </div>
 			        </div>
 			    </div>
@@ -619,32 +604,17 @@ table _Measures
 	measure 'Closed - Calculated Freight Single Invoice' =
 			VAR InvTotalWeight =
 			    CALCULATE(SUM(Fact_MDInvoices_Closed[TotalLineWeight]))
-			VAR BaseRate =
-			    MAXX(
-			        FILTER(
-			            ALL(FreightCalculator),
-			            FreightCalculator[PartWeightFrom] <= InvTotalWeight
-			                && (FreightCalculator[PartWeightTo] + 1) > InvTotalWeight
-			        ),
-			        FreightCalculator[BaseRate]
+			VAR Bracket =
+			    FILTER(
+			        ALL(FreightCalculator),
+			        FreightCalculator[PartWeightFrom] <= InvTotalWeight
+			            && (FreightCalculator[PartWeightTo] + 1) > InvTotalWeight
 			    )
+			VAR BaseRate = MAXX(Bracket, FreightCalculator[BaseRate])
+			VAR AdditiveRate = MAXX(Bracket, FreightCalculator[AdditiveRatePerPound])
 			VAR BaseRateFinal = IF(ISBLANK(BaseRate), 0, BaseRate)
-			VAR PartAdditives =
-			    SUMX(
-			        CALCULATETABLE(Fact_MDInvoices_Closed),
-			        VAR LineWeight = Fact_MDInvoices_Closed[TotalLineWeight]
-			        VAR LineRate =
-			            MAXX(
-			                FILTER(
-			                    ALL(FreightCalculator),
-			                    FreightCalculator[PartWeightFrom] <= LineWeight
-			                        && (FreightCalculator[PartWeightTo] + 1) > LineWeight
-			                ),
-			                FreightCalculator[AdditiveRatePerPound]
-			            )
-			        RETURN IF(ISBLANK(LineRate), 0.15, LineRate) * LineWeight
-			    )
-			RETURN BaseRateFinal + PartAdditives
+			VAR AdditiveRateFinal = IF(ISBLANK(AdditiveRate), 0.15, AdditiveRate)
+			RETURN BaseRateFinal + (AdditiveRateFinal * InvTotalWeight)
 		formatString: $#,##0.00;($#,##0.00);$#,##0.00
 		lineageTag: 6f7a8b9c-d0e1-42f3-4a5b-6c7d8e9f0a1b
 
@@ -904,9 +874,9 @@ table _Measures
 			            SelectedGroup,
 			            "No Freight",
 			                IF(FreightStatusVal = "No Freight" || FreightStatusVal = "No Freight Charged", 1, 0),
-			            "Needs Review",
+			            "Partial Freight",
 			                IF(FreightStatusVal = "Has Freight" && NOT ISBLANK(MissedAmt) && MissedAmt > 1, 1, 0),
-			            "Good / Above Baseline",
+			            "Adequate Freight",
 			                IF(FreightStatusVal = "Has Freight" && (ISBLANK(MissedAmt) || MissedAmt <= 1), 1, 0),
 			            1
 			        )
@@ -1361,16 +1331,14 @@ table _Measures
 			            4 — How Calculated Freight Works
 			        </div>
 			        <div style='font-size: 13px; color: #374151; line-height: 1.7;'>
-			            The <strong>FreightCalculator</strong> table defines rate brackets by weight range.
-			            For each order, the estimated freight is calculated in two parts:<br><br>
-			            <strong>Base Rate</strong> — A flat charge based on the total invoice weight.
-			            The total weight of all parts on the order is looked up in the bracket table to find the matching base rate.
-			            This is charged once per invoice, only when total order weight is 150 lbs or under. Orders over 150 lbs total carry no base rate.<br><br>
-			            <strong>Additive Rate</strong> — Each individual part line also has its own weight.
-			            The rate per pound is looked up for each line's weight, then multiplied by that line's total weight.
-			            All lines are summed together.<br><br>
-			            <strong>Calculated Freight = Base Rate + (Sum of all Part Line Additives)</strong><br><br>
-			            <em>Rate structure: 0–150 lbs uses a Base Rate (once per order) + per-lb additive per line. For orders over 150 lbs total, no base rate applies. 151–499 lbs: $1.10/lb per line. 500–999 lbs: $0.45/lb. 1,000–1,999 lbs: $0.32/lb. 2,000–4,999 lbs: $0.25/lb. 5,000+ lbs: $0.15/lb.</em>
+			            The <strong>FreightCalculator</strong> table defines rate brackets by total order weight.
+			            For each order, the <strong>total weight of all part lines combined</strong> is looked up once in the bracket table —
+			            individual line weights no longer matter on their own, only the order's total.<br><br>
+			            That one bracket provides two values: a <strong>Base Rate</strong> (a flat charge — $0 for orders over 150 lbs total)
+			            and an <strong>Additive Rate</strong> per pound, which is multiplied by the order's total weight.<br><br>
+			            <strong>Calculated Freight = Base Rate + (Additive Rate × Total Order Weight)</strong><br><br>
+			            <em>Example: a 100 lb order falls in the 96–100 lb bracket ($120 base rate, $1.31/lb) → $120 + (100 × $1.31) = $251.00.
+			            A 300 lb order falls in the 151–499 lb bracket ($0 base rate, $1.10/lb) → $0 + (300 × $1.10) = $330.00.</em>
 			        </div>
 			    </div>
 			
@@ -1402,6 +1370,60 @@ table _Measures
 			</div>
 			"
 		lineageTag: b2c3d4e5-f6a7-4890-bcde-f01234567890
+
+	measure '% Freight Difference' =
+			VAR Calc = [Calculated Freight]
+			VAR Actual = [Actual Freight]
+			VAR Diff = Calc - Actual
+			VAR AvgFreight = DIVIDE(Calc + Actual, 2)
+			RETURN
+			    DIVIDE(Diff, AvgFreight, BLANK())
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: fa3b2c1d-e0f9-4a8b-7c6d-5e4f3a2b1c0d
+
+	measure 'Sell Price 1' = SUM(Fact_MDInvoices_NoFreight[UnitCost])
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 27a947da-eb87-4959-a8c7-6ab3dfeace63
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Unit Price' = SUM(Fact_MDInvoices_NoFreight[UnitPrice])
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: c1fe3d88-b86d-4ebf-a9c9-7e12802a4e0e
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Order Qty' = SUM(Fact_MDInvoices_NoFreight[OrderQty])
+		formatString: 0
+		lineageTag: 2209a11d-61d2-4364-9d00-4133cd681276
+
+	measure 'Exceeds Freight Difference Threshold' =
+			VAR PctDiff = MAX(Fact_MDInvoices_NoFreight[PctFreightDifference])
+			VAR ThresholdPct = [% Freight Difference Threshold Value]
+			RETURN
+			    IF(NOT ISBLANK(PctDiff) && PctDiff >= DIVIDE(ThresholdPct, 100), 1, 0)
+		lineageTag: a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d
+
+	measure 'Pct Freight Difference Color' = IF([Exceeds Freight Difference Threshold] = 1, "#fca5a5", "#e5e7eb")
+		lineageTag: b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e
+
+	measure 'Invoices Exceeding Freight Difference Threshold' =
+			SUMX(
+			    VALUES(Fact_MDInvoices_NoFreight[FileNumber]),
+			    [Exceeds Freight Difference Threshold]
+			)
+		formatString: #,##0
+		lineageTag: c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f
+
+	measure 'Closed - % Freight Difference' =
+			VAR Calc = [Closed - Calculated Freight]
+			VAR Actual = [Closed - Actual Freight]
+			VAR Diff = Calc - Actual
+			VAR AvgFreight = DIVIDE(Calc + Actual, 2)
+			RETURN
+			    DIVIDE(Diff, AvgFreight, BLANK())
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 6b7c8d9e-0f1a-42b3-5c6d-7e8f9a0b1c2d
 
 	column Value
 		isHidden

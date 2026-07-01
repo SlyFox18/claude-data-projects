@@ -1,5 +1,5 @@
 {
-  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.4.0/schema.json",
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.10.0/schema.json",
   "name": "2ab13db04d259dd59be3",
   "position": {
     "x": 61.849892780557539,
@@ -578,7 +578,8 @@
             "Property": "InvoiceDate"
           }
         },
-        "type": "Advanced",
+        "type": "RelativeDate",
+        "howCreated": "User",
         "filter": {
           "Version": 2,
           "From": [
@@ -591,9 +592,8 @@
           "Where": [
             {
               "Condition": {
-                "Comparison": {
-                  "ComparisonKind": 2,
-                  "Left": {
+                "Between": {
+                  "Expression": {
                     "Column": {
                       "Expression": {
                         "SourceRef": {
@@ -603,24 +603,24 @@
                       "Property": "InvoiceDate"
                     }
                   },
-                  "Right": {
-                    "DateSpan": {
+                  "LowerBound": {
+                    "DateAdd": {
+                      "Amount": -12,
+                      "TimeUnit": 2,
                       "Expression": {
-                        "Literal": {
-                          "Value": "datetime'2025-01-01T00:00:00'"
-                        }
-                      },
-                      "TimeUnit": 5
+                        "Now": {}
+                      }
                     }
+                  },
+                  "UpperBound": {
+                    "Now": {}
                   }
                 }
               }
             }
           ]
-        },
-        "howCreated": "User"
+        }
       }
     ]
-  },
-  "isHidden": true
+  }
 }

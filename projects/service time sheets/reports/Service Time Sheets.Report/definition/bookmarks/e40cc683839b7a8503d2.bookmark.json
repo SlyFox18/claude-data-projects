@@ -1,0 +1,720 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/bookmark/2.1.0/schema.json",
+  "displayName": "Show Nav Panel 6",
+  "name": "e40cc683839b7a8503d2",
+  "options": {
+    "targetVisualNames": [
+      "2c9c2131d201c94db59b",
+      "c93aa510d32921dde196",
+      "896732f17026ed54aa5b",
+      "222dc768b0046593e07d",
+      "9defdfe7c8a8536db5e7",
+      "c8f18190c332503d6702"
+    ],
+    "suppressData": true
+  },
+  "explorationState": {
+    "version": "1.3",
+    "activeSection": "5be32f79632c7578c440",
+    "sections": {
+      "5be32f79632c7578c440": {
+        "filters": {
+          "byExpr": [
+            {
+              "name": "bac559e8272f19c60e39",
+              "type": "Categorical",
+              "filter": {
+                "Version": 2,
+                "From": [
+                  {
+                    "Name": "f",
+                    "Entity": "Fact_ServiceTimeSheet_Audit",
+                    "Type": 0
+                  }
+                ],
+                "Where": [
+                  {
+                    "Condition": {
+                      "In": {
+                        "Expressions": [
+                          {
+                            "Column": {
+                              "Expression": {
+                                "SourceRef": {
+                                  "Source": "f"
+                                }
+                              },
+                              "Property": "RONumberText"
+                            }
+                          }
+                        ],
+                        "Values": [
+                          [
+                            {
+                              "Literal": {
+                                "Value": "'690977'"
+                              }
+                            }
+                          ]
+                        ]
+                      }
+                    }
+                  }
+                ]
+              },
+              "expression": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Fact_ServiceTimeSheet_Audit"
+                    }
+                  },
+                  "Property": "RONumberText"
+                }
+              },
+              "howCreated": 5
+            }
+          ]
+        },
+        "visualContainers": {
+          "0155d3070e5864b6344b": {
+            "filters": {
+              "byExpr": [
+                {
+                  "name": "799a9cb6270143ff7884",
+                  "type": "Advanced",
+                  "expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "Total Claimed Hours"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "6c9abf9559fe85d1e703",
+                  "type": "Advanced",
+                  "expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "Total Invoiced Hours"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "746f4d668423c31b3a23",
+                  "type": "Advanced",
+                  "expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "Hours Difference"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "fe54534d27545e57f43e",
+                  "type": "Advanced",
+                  "expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "Total Tech Pay"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "8bf4f298fd38ee4df62d",
+                  "type": "Advanced",
+                  "expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "Labor Billed"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "ab07ad7e3331b4ccf438",
+                  "type": "Advanced",
+                  "expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "Paid Difference (Audited)"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "81eda1ab900c41a2e390",
+                  "type": "Categorical",
+                  "expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "Fact_ServiceTimeSheet_Audit"
+                        }
+                      },
+                      "Property": "TechName"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "c1868933464cbf7b0a53",
+                  "type": "Categorical",
+                  "expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "Fact_ServiceTimeSheet_Audit"
+                        }
+                      },
+                      "Property": "TechLevel"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "3bdfdef157ac94bd0094",
+                  "type": "Categorical",
+                  "expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "Fact_ServiceTimeSheet_Audit"
+                        }
+                      },
+                      "Property": "AuditStatus"
+                    }
+                  },
+                  "howCreated": 0
+                }
+              ]
+            },
+            "singleVisual": {
+              "visualType": "tableEx",
+              "objects": {},
+              "orderBy": [
+                {
+                  "Direction": 2,
+                  "Expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "Paid Difference (Audited)"
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "0d2d8cec7aba9993f139": {
+            "singleVisual": {
+              "visualType": "textbox",
+              "objects": {}
+            }
+          },
+          "281e98dd7ad178a8b811": {
+            "filters": {
+              "byExpr": [
+                {
+                  "name": "ebbcd7008c65929209e0",
+                  "type": "Advanced",
+                  "expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "RO Attribution Summary"
+                    }
+                  },
+                  "howCreated": 0
+                }
+              ]
+            },
+            "singleVisual": {
+              "visualType": "htmlContent443BE3AD55E043BF878BED274D3A6855",
+              "objects": {}
+            }
+          },
+          "378d69e2e38aee86405e": {
+            "singleVisual": {
+              "visualType": "actionButton",
+              "objects": {}
+            }
+          },
+          "4ec917c2a8deac6459a2": {
+            "filters": {
+              "byExpr": [
+                {
+                  "name": "f0c30bf9f863bb02e0e6",
+                  "type": "Categorical",
+                  "expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "Fact_ServiceTimeSheet_Audit"
+                        }
+                      },
+                      "Property": "TechName"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "e4dbe30d900bc749e501",
+                  "type": "Advanced",
+                  "expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "Total Claimed Hours"
+                    }
+                  },
+                  "howCreated": 0
+                },
+                {
+                  "name": "12227294db21de65342d",
+                  "type": "Advanced",
+                  "expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "Total Invoiced Hours"
+                    }
+                  },
+                  "howCreated": 0
+                }
+              ]
+            },
+            "singleVisual": {
+              "visualType": "clusteredBarChart",
+              "objects": {},
+              "orderBy": [
+                {
+                  "Direction": 2,
+                  "Expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "Total Claimed Hours"
+                    }
+                  }
+                }
+              ],
+              "activeProjections": {
+                "Category": [
+                  {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "Fact_ServiceTimeSheet_Audit"
+                        }
+                      },
+                      "Property": "TechName"
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "c706122ca73c528e3257": {
+            "singleVisual": {
+              "visualType": "shape",
+              "objects": {}
+            }
+          },
+          "e39161c01a2466120d1d": {
+            "filters": {
+              "byExpr": [
+                {
+                  "name": "d067d17e4029ee582d99",
+                  "type": "Advanced",
+                  "expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "Hero Card - RO Detail"
+                    }
+                  },
+                  "howCreated": 0
+                }
+              ]
+            },
+            "singleVisual": {
+              "visualType": "htmlContent443BE3AD55E043BF878BED274D3A6855",
+              "objects": {}
+            }
+          },
+          "eade072f4e212fa27d5d": {
+            "filters": {
+              "byExpr": [
+                {
+                  "name": "772c6e8a155da47c7a5c",
+                  "type": "Advanced",
+                  "expression": {
+                    "Aggregation": {
+                      "Expression": {
+                        "Column": {
+                          "Expression": {
+                            "SourceRef": {
+                              "Entity": "Data Refresh"
+                            }
+                          },
+                          "Property": "CurrentDateTime"
+                        }
+                      },
+                      "Function": 3
+                    }
+                  },
+                  "howCreated": 0
+                }
+              ]
+            },
+            "singleVisual": {
+              "visualType": "card",
+              "objects": {}
+            }
+          },
+          "ed710a9ef0ca0b80c50f": {
+            "singleVisual": {
+              "visualType": "image",
+              "objects": {},
+              "display": {
+                "mode": "hidden"
+              }
+            }
+          },
+          "fc45325b58a9186ed880": {
+            "filters": {
+              "byExpr": [
+                {
+                  "name": "e64016a5ffb1a2e9f0a1",
+                  "type": "Advanced",
+                  "expression": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "Home - Header Detail"
+                    }
+                  },
+                  "howCreated": 0
+                }
+              ]
+            },
+            "singleVisual": {
+              "visualType": "htmlContent443BE3AD55E043BF878BED274D3A6855",
+              "objects": {}
+            }
+          },
+          "2cdbbb47a2450046071b": {
+            "singleVisual": {
+              "visualType": "image",
+              "objects": {}
+            }
+          },
+          "259ba1c83bbbdbe7da51": {
+            "singleVisual": {
+              "visualType": "image",
+              "objects": {}
+            }
+          },
+          "4e83987cc865750c75a5": {
+            "singleVisual": {
+              "visualType": "image",
+              "objects": {}
+            }
+          },
+          "6a104a82a87a419d8a40": {
+            "singleVisual": {
+              "visualType": "image",
+              "objects": {}
+            }
+          },
+          "82bc03700e0cb6eb4603": {
+            "singleVisual": {
+              "visualType": "image",
+              "objects": {}
+            }
+          },
+          "21322b30d035ec0dd9d2": {
+            "singleVisual": {
+              "visualType": "image",
+              "objects": {}
+            }
+          },
+          "7692fb6ed231d013c6dd": {
+            "singleVisual": {
+              "visualType": "image",
+              "objects": {}
+            }
+          },
+          "98c1eef961290406a385": {
+            "singleVisual": {
+              "visualType": "shape",
+              "objects": {}
+            }
+          },
+          "c93aa510d32921dde196": {
+            "singleVisual": {
+              "visualType": "shape",
+              "objects": {}
+            }
+          },
+          "896732f17026ed54aa5b": {
+            "filters": {
+              "byExpr": [
+                {
+                  "name": "ce3b8237a3030ebe48b9",
+                  "type": "Categorical",
+                  "expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "dim_BranchLocation"
+                        }
+                      },
+                      "Property": "Branch"
+                    }
+                  },
+                  "howCreated": 1
+                },
+                {
+                  "name": "f82af3402c53031646e5",
+                  "type": "Categorical",
+                  "expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "Fact_ServiceTimeSheet_Audit"
+                        }
+                      },
+                      "Property": "PayPeriod"
+                    }
+                  },
+                  "howCreated": 0
+                }
+              ]
+            },
+            "singleVisual": {
+              "visualType": "slicer",
+              "objects": {
+                "merge": {
+                  "general": [
+                    {
+                      "properties": {
+                        "filter": {
+                          "filter": {
+                            "Version": 2,
+                            "From": [
+                              {
+                                "Name": "f",
+                                "Entity": "Fact_ServiceTimeSheet_Audit",
+                                "Type": 0
+                              }
+                            ],
+                            "Where": [
+                              {
+                                "Condition": {
+                                  "In": {
+                                    "Expressions": [
+                                      {
+                                        "Column": {
+                                          "Expression": {
+                                            "SourceRef": {
+                                              "Source": "f"
+                                            }
+                                          },
+                                          "Property": "PayPeriod"
+                                        }
+                                      }
+                                    ],
+                                    "Values": [
+                                      [
+                                        {
+                                          "Literal": {
+                                            "Value": "'5/4/2026 - 5/17/2026'"
+                                          }
+                                        }
+                                      ]
+                                    ]
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    }
+                  ],
+                  "data": [
+                    {
+                      "properties": {
+                        "mode": {
+                          "expr": {
+                            "Literal": {
+                              "Value": "'Dropdown'"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "activeProjections": {
+                "Values": [
+                  {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "Fact_ServiceTimeSheet_Audit"
+                        }
+                      },
+                      "Property": "PayPeriod"
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "222dc768b0046593e07d": {
+            "filters": {
+              "byExpr": [
+                {
+                  "name": "ce3b8237a3030ebe48b9",
+                  "type": "Categorical",
+                  "expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "dim_BranchLocation"
+                        }
+                      },
+                      "Property": "Branch"
+                    }
+                  },
+                  "howCreated": 0
+                }
+              ]
+            },
+            "singleVisual": {
+              "visualType": "slicer",
+              "objects": {
+                "merge": {
+                  "data": [
+                    {
+                      "properties": {
+                        "mode": {
+                          "expr": {
+                            "Literal": {
+                              "Value": "'Dropdown'"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "activeProjections": {
+                "Values": [
+                  {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "dim_BranchLocation"
+                        }
+                      },
+                      "Property": "Branch"
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "9defdfe7c8a8536db5e7": {
+            "singleVisual": {
+              "visualType": "pageNavigator",
+              "objects": {}
+            }
+          },
+          "c8f18190c332503d6702": {
+            "singleVisual": {
+              "visualType": "image",
+              "objects": {}
+            }
+          }
+        },
+        "visualContainerGroups": {
+          "2c9c2131d201c94db59b": {
+            "isHidden": false
+          }
+        }
+      }
+    },
+    "objects": {
+      "merge": {
+        "outspacePane": [
+          {
+            "properties": {
+              "expanded": {
+                "expr": {
+                  "Literal": {
+                    "Value": "false"
+                  }
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+}
