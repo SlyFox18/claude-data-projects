@@ -1,7 +1,7 @@
 EVALUATE
-SUMMARIZE(
-    FILTER(TechnicianInvoiceDetail, TechnicianInvoiceDetail[WorkOrder] = 689041),
-    TechnicianInvoiceDetail[TechCode],
-    "InvHrs", SUM(TechnicianInvoiceDetail[InvoiceHours])
+FILTER(
+    Fact_ServiceTimeSheet_Audit,
+    ISBLANK(Fact_ServiceTimeSheet_Audit[RONumber])
 )
+
 

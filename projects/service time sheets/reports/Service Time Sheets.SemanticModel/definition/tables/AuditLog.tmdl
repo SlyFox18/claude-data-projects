@@ -26,15 +26,6 @@ table AuditLog
 
 		annotation SummarizationSetBy = Automatic
 
-	column PayEndDateOnly =
-			DATE(YEAR(AuditLog[PayEnd]), MONTH(AuditLog[PayEnd]), DAY(AuditLog[PayEnd]))
-		dataType: dateTime
-		formatString: Short Date
-		lineageTag: b2e5f6a7-2222-4333-9444-000000000408
-		summarizeBy: none
-
-		annotation SummarizationSetBy = Automatic
-
 	column AuditNote
 		dataType: string
 		lineageTag: b2e5f6a7-2222-4333-9444-000000000405
@@ -57,6 +48,14 @@ table AuditLog
 		lineageTag: b2e5f6a7-2222-4333-9444-000000000407
 		summarizeBy: none
 		sourceColumn: AuditedDate
+
+		annotation SummarizationSetBy = Automatic
+
+	column PayEndDateOnly = DATE(YEAR(AuditLog[PayEnd]), MONTH(AuditLog[PayEnd]), DAY(AuditLog[PayEnd]))
+		dataType: dateTime
+		formatString: Short Date
+		lineageTag: b2e5f6a7-2222-4333-9444-000000000408
+		summarizeBy: none
 
 		annotation SummarizationSetBy = Automatic
 

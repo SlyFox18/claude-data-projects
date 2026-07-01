@@ -2,11 +2,11 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.10.0/schema.json",
   "name": "03dc303b2bf81fc5e96e",
   "position": {
-    "x": 55.405541561712845,
-    "y": 278.2065491183879,
+    "x": 55.879945429740793,
+    "y": 366.57244201909958,
     "z": 1000,
-    "height": 630.68010075566747,
-    "width": 1596.1511335012594,
+    "height": 538.68267394270117,
+    "width": 1595.931241473397,
     "tabOrder": 3000
   },
   "visual": {
@@ -29,6 +29,21 @@
               "queryRef": "Fact_ServiceTimeSheet_Audit.BranchWarning",
               "nativeQueryRef": "⚠",
               "displayName": "⚠"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Fact_ServiceTimeSheet_Audit"
+                    }
+                  },
+                  "Property": "AuditedIcon"
+                }
+              },
+              "queryRef": "Fact_ServiceTimeSheet_Audit.AuditedIcon",
+              "nativeQueryRef": "Audit",
+              "displayName": "Audit"
             },
             {
               "field": {
@@ -337,13 +352,13 @@
         "sort": [
           {
             "field": {
-              "Measure": {
+              "Column": {
                 "Expression": {
                   "SourceRef": {
-                    "Entity": "_Measures"
+                    "Entity": "Fact_ServiceTimeSheet_Audit"
                   }
                 },
-                "Property": "Hours Difference"
+                "Property": "AuditedIcon"
               }
             },
             "direction": "Descending"
@@ -1223,6 +1238,84 @@
             ],
             "metadata": "Fact_ServiceTimeSheet_Audit.ROStatusDisplay"
           }
+        },
+        {
+          "properties": {
+            "fontColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Conditional": {
+                      "Cases": [
+                        {
+                          "Condition": {
+                            "Comparison": {
+                              "ComparisonKind": 0,
+                              "Left": {
+                                "Aggregation": {
+                                  "Expression": {
+                                    "Column": {
+                                      "Expression": {
+                                        "SourceRef": {
+                                          "Entity": "Fact_ServiceTimeSheet_Audit"
+                                        }
+                                      },
+                                      "Property": "AuditedIcon"
+                                    }
+                                  },
+                                  "Function": 3
+                                }
+                              },
+                              "Right": {
+                                "Literal": {
+                                  "Value": "'✓'"
+                                }
+                              }
+                            },
+                            "Annotations": {
+                              "PowerBI.SQExprEvaluationKind": 1,
+                              "PowerBI.SQExprTextOperatorOption": 2
+                            }
+                          },
+                          "Value": {
+                            "Literal": {
+                              "Value": "'#3DAB46'"
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            },
+            "backColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "Row Status Color"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "selector": {
+            "data": [
+              {
+                "dataViewWildcard": {
+                  "matchingOption": 1
+                }
+              }
+            ],
+            "metadata": "Fact_ServiceTimeSheet_Audit.AuditedIcon"
+          }
         }
       ],
       "total": [
@@ -1256,7 +1349,7 @@
             "value": {
               "expr": {
                 "Literal": {
-                  "Value": "71.36906768174946D"
+                  "Value": "64.42890405898972D"
                 }
               }
             }
@@ -1270,7 +1363,7 @@
             "value": {
               "expr": {
                 "Literal": {
-                  "Value": "77.31877102887233D"
+                  "Value": "71.36428569505337D"
                 }
               }
             }
@@ -1284,7 +1377,7 @@
             "value": {
               "expr": {
                 "Literal": {
-                  "Value": "71.95602261894727D"
+                  "Value": "62.27207386663386D"
                 }
               }
             }
@@ -1298,7 +1391,7 @@
             "value": {
               "expr": {
                 "Literal": {
-                  "Value": "73.29888671547923D"
+                  "Value": "59.612517249918945D"
                 }
               }
             }
@@ -1312,7 +1405,7 @@
             "value": {
               "expr": {
                 "Literal": {
-                  "Value": "172.66655934879213D"
+                  "Value": "159.67348537615285D"
                 }
               }
             }
@@ -1326,7 +1419,7 @@
             "value": {
               "expr": {
                 "Literal": {
-                  "Value": "94.77338299220182D"
+                  "Value": "79.41054522105482D"
                 }
               }
             }
@@ -1340,7 +1433,7 @@
             "value": {
               "expr": {
                 "Literal": {
-                  "Value": "71.90309967789399D"
+                  "Value": "65.91575932185816D"
                 }
               }
             }
@@ -1354,7 +1447,7 @@
             "value": {
               "expr": {
                 "Literal": {
-                  "Value": "86.40919491120955D"
+                  "Value": "74.22042133822781D"
                 }
               }
             }
@@ -1382,7 +1475,7 @@
             "value": {
               "expr": {
                 "Literal": {
-                  "Value": "68.27708640198748D"
+                  "Value": "61.753107886179095D"
                 }
               }
             }
@@ -1396,7 +1489,7 @@
             "value": {
               "expr": {
                 "Literal": {
-                  "Value": "56.4962427950766D"
+                  "Value": "46.619221269251625D"
                 }
               }
             }
@@ -1424,13 +1517,27 @@
             "value": {
               "expr": {
                 "Literal": {
-                  "Value": "51.38289299487711D"
+                  "Value": "64.46349432068904D"
                 }
               }
             }
           },
           "selector": {
             "metadata": "Fact_ServiceTimeSheet_Audit.ROStatusDisplay"
+          }
+        },
+        {
+          "properties": {
+            "value": {
+              "expr": {
+                "Literal": {
+                  "Value": "127.71536622946331D"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "Fact_ServiceTimeSheet_Audit.TechName"
           }
         }
       ],
@@ -1679,6 +1786,20 @@
           "selector": {
             "metadata": "Sum(Fact_ServiceTimeSheet_Audit.PunchedHrs)"
           }
+        },
+        {
+          "properties": {
+            "alignment": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Center'"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "Fact_ServiceTimeSheet_Audit.AuditedIcon"
+          }
         }
       ]
     },
@@ -1861,5 +1982,322 @@
       ]
     },
     "drillFilterOtherVisuals": true
+  },
+  "filterConfig": {
+    "filters": [
+      {
+        "name": "ac67bff19b7f6a055934",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Fact_ServiceTimeSheet_Audit"
+              }
+            },
+            "Property": "BranchWarning"
+          }
+        },
+        "type": "Categorical"
+      },
+      {
+        "name": "136d7c71d8cfa7b7a704",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Fact_ServiceTimeSheet_Audit"
+              }
+            },
+            "Property": "AuditedIcon"
+          }
+        },
+        "type": "Categorical"
+      },
+      {
+        "name": "03f920191c8473da4a66",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Fact_ServiceTimeSheet_Audit"
+              }
+            },
+            "Property": "Location"
+          }
+        },
+        "type": "Categorical"
+      },
+      {
+        "name": "748783f470881e0d1461",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Fact_ServiceTimeSheet_Audit"
+              }
+            },
+            "Property": "PayPeriod"
+          }
+        },
+        "type": "Categorical"
+      },
+      {
+        "name": "7723a485abba7bbbd539",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Fact_ServiceTimeSheet_Audit"
+              }
+            },
+            "Property": "LastInvoiceDate"
+          }
+        },
+        "type": "Categorical"
+      },
+      {
+        "name": "2382af695aedf5d9ff2e",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Fact_ServiceTimeSheet_Audit"
+              }
+            },
+            "Property": "InvoiceNumber"
+          }
+        },
+        "type": "Categorical"
+      },
+      {
+        "name": "59dfd5a58d27ceb1cd52",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Fact_ServiceTimeSheet_Audit"
+              }
+            },
+            "Property": "TechName"
+          }
+        },
+        "type": "Categorical"
+      },
+      {
+        "name": "2e16f6f1d438830238a6",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Fact_ServiceTimeSheet_Audit"
+              }
+            },
+            "Property": "TechLevel"
+          }
+        },
+        "type": "Categorical"
+      },
+      {
+        "name": "281f9f49993e15acc825",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Fact_ServiceTimeSheet_Audit"
+              }
+            },
+            "Property": "RONumberText"
+          }
+        },
+        "type": "Categorical"
+      },
+      {
+        "name": "b6979d90dd7544d4744f",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Fact_ServiceTimeSheet_Audit"
+              }
+            },
+            "Property": "CustomerName"
+          }
+        },
+        "type": "Categorical"
+      },
+      {
+        "name": "3995c0b9a3f595243d7f",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Fact_ServiceTimeSheet_Audit"
+              }
+            },
+            "Property": "PctComplete"
+          }
+        },
+        "type": "Advanced"
+      },
+      {
+        "name": "986d6ad927e00f7743e9",
+        "field": {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "_Measures"
+              }
+            },
+            "Property": "Draw Label"
+          }
+        },
+        "type": "Advanced"
+      },
+      {
+        "name": "bd39572d43bb1cdd9649",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Fact_ServiceTimeSheet_Audit"
+              }
+            },
+            "Property": "JobTypeList"
+          }
+        },
+        "type": "Categorical"
+      },
+      {
+        "name": "f1aa70aee8bfd3c7b4d8",
+        "field": {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "_Measures"
+              }
+            },
+            "Property": "Total Claimed Hours"
+          }
+        },
+        "type": "Advanced"
+      },
+      {
+        "name": "005aff4006a42d889261",
+        "field": {
+          "Aggregation": {
+            "Expression": {
+              "Column": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "Fact_ServiceTimeSheet_Audit"
+                  }
+                },
+                "Property": "CrossPeriodClaimedHrs"
+              }
+            },
+            "Function": 0
+          }
+        },
+        "type": "Advanced"
+      },
+      {
+        "name": "76fc50cd66c7030954cb",
+        "field": {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "_Measures"
+              }
+            },
+            "Property": "Total Invoiced Hours"
+          }
+        },
+        "type": "Advanced"
+      },
+      {
+        "name": "0897e34ee87ef63891ca",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Fact_ServiceTimeSheet_Audit"
+              }
+            },
+            "Property": "PunchedHrs"
+          }
+        },
+        "type": "Advanced"
+      },
+      {
+        "name": "8cf08e90114ad38db90f",
+        "field": {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "_Measures"
+              }
+            },
+            "Property": "Hours Difference"
+          }
+        },
+        "type": "Advanced"
+      },
+      {
+        "name": "dd469fe1b66efa820438",
+        "field": {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "_Measures"
+              }
+            },
+            "Property": "Total Tech Pay"
+          }
+        },
+        "type": "Advanced"
+      },
+      {
+        "name": "c2841a70ce27ec00cc52",
+        "field": {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "_Measures"
+              }
+            },
+            "Property": "Labor Billed"
+          }
+        },
+        "type": "Advanced"
+      },
+      {
+        "name": "9b3470a74d33befd7d10",
+        "field": {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "_Measures"
+              }
+            },
+            "Property": "Paid Difference"
+          }
+        },
+        "type": "Advanced"
+      },
+      {
+        "name": "059f3f2cac065e6b24d4",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Fact_ServiceTimeSheet_Audit"
+              }
+            },
+            "Property": "ROStatusDisplay"
+          }
+        },
+        "type": "Categorical"
+      }
+    ]
   }
 }
