@@ -59,7 +59,7 @@ table _Measures
 			                REPORT
 			            </div>
 			            <div style='font-size: 26px; font-weight: 700; line-height: 1;'>
-			                MD Invoices With No Freight
+			                Open - MD Invoices With No Freight
 			            </div>
 			        </div>
 			    </div>
@@ -320,9 +320,9 @@ table _Measures
 			            SelectedGroup,
 			            "No Freight",
 			                IF(FreightStatusVal = "No Freight" || FreightStatusVal = "No Freight Charged", 1, 0),
-			            "Needs Review",
+			            "Partial Freight",
 			                IF(FreightStatusVal = "Has Freight" && NOT ISBLANK(MissedAmt) && MissedAmt > 1, 1, 0),
-			            "Good / Above Baseline",
+			            "Adequate Freight",
 			                IF(FreightStatusVal = "Has Freight" && (ISBLANK(MissedAmt) || MissedAmt <= 1), 1, 0),
 			            1
 			        )
@@ -387,7 +387,7 @@ table _Measures
 			                REPORT
 			            </div>
 			            <div style='font-size: 26px; font-weight: 700; line-height: 1;'>
-			                Branch and Saleman Performance
+			                Open Invoices - Branch and Saleman Performance
 			            </div>
 			        </div>
 			    </div>
@@ -874,9 +874,9 @@ table _Measures
 			            SelectedGroup,
 			            "No Freight",
 			                IF(FreightStatusVal = "No Freight" || FreightStatusVal = "No Freight Charged", 1, 0),
-			            "Needs Review",
+			            "Partial Freight",
 			                IF(FreightStatusVal = "Has Freight" && NOT ISBLANK(MissedAmt) && MissedAmt > 1, 1, 0),
-			            "Good / Above Baseline",
+			            "Adequate Freight",
 			                IF(FreightStatusVal = "Has Freight" && (ISBLANK(MissedAmt) || MissedAmt <= 1), 1, 0),
 			            1
 			        )
@@ -1414,6 +1414,16 @@ table _Measures
 			)
 		formatString: #,##0
 		lineageTag: c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f
+
+	measure 'Closed - % Freight Difference' =
+			VAR Calc = [Closed - Calculated Freight]
+			VAR Actual = [Closed - Actual Freight]
+			VAR Diff = Calc - Actual
+			VAR AvgFreight = DIVIDE(Calc + Actual, 2)
+			RETURN
+			    DIVIDE(Diff, AvgFreight, BLANK())
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 6b7c8d9e-0f1a-42b3-5c6d-7e8f9a0b1c2d
 
 	column Value
 		isHidden

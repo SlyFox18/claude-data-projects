@@ -60,6 +60,26 @@
                           "Entity": "Fact_MDInvoices_NoFreight"
                         }
                       },
+                      "Property": "RONumber"
+                    }
+                  },
+                  "Function": 4
+                }
+              },
+              "queryRef": "Max(Fact_MDInvoices_NoFreight.RONumber)",
+              "nativeQueryRef": "RO #",
+              "displayName": "RO #"
+            },
+            {
+              "field": {
+                "Aggregation": {
+                  "Expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "Fact_MDInvoices_NoFreight"
+                        }
+                      },
                       "Property": "OrderDate"
                     }
                   },
@@ -92,23 +112,45 @@
             },
             {
               "field": {
-                "Aggregation": {
+                "Measure": {
                   "Expression": {
-                    "Column": {
-                      "Expression": {
-                        "SourceRef": {
-                          "Entity": "Fact_MDInvoices_NoFreight"
-                        }
-                      },
-                      "Property": "RONumber"
+                    "SourceRef": {
+                      "Entity": "_Measures"
                     }
                   },
-                  "Function": 4
+                  "Property": "Order Qty"
                 }
               },
-              "queryRef": "Max(Fact_MDInvoices_NoFreight.RONumber)",
-              "nativeQueryRef": "RO #",
-              "displayName": "RO #"
+              "queryRef": "_Measures.Order Qty",
+              "nativeQueryRef": "Order Qty"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Sell Price 1"
+                }
+              },
+              "queryRef": "_Measures.Sell Price 1",
+              "nativeQueryRef": "Sell Price 1"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Unit Price"
+                }
+              },
+              "queryRef": "_Measures.Unit Price",
+              "nativeQueryRef": "Unit Price"
             },
             {
               "field": {
@@ -175,98 +217,14 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "Sell Price 1"
-                }
-              },
-              "queryRef": "_Measures.Sell Price 1",
-              "nativeQueryRef": "Sell Price 1"
-            },
-            {
-              "field": {
-                "Measure": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "_Measures"
-                    }
-                  },
-                  "Property": "Unit Price"
-                }
-              },
-              "queryRef": "_Measures.Unit Price",
-              "nativeQueryRef": "Unit Price"
-            },
-            {
-              "field": {
-                "Measure": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "_Measures"
-                    }
-                  },
-                  "Property": "Order Qty"
-                }
-              },
-              "queryRef": "_Measures.Order Qty",
-              "nativeQueryRef": "Order Qty"
-            },
-            {
-              "field": {
-                "Measure": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "_Measures"
-                    }
-                  },
                   "Property": "Missed Freight"
                 }
               },
               "queryRef": "_Measures.Missed Freight",
               "nativeQueryRef": "Missed Freight"
-            },
-            {
-              "field": {
-                "Aggregation": {
-                  "Expression": {
-                    "Column": {
-                      "Expression": {
-                        "SourceRef": {
-                          "Entity": "Fact_MDInvoices_NoFreight"
-                        }
-                      },
-                      "Property": "FreightStatus"
-                    }
-                  },
-                  "Function": 3
-                }
-              },
-              "queryRef": "Min(Fact_MDInvoices_NoFreight.FreightStatus)",
-              "nativeQueryRef": "Freight Status",
-              "displayName": "Freight Status"
             }
           ]
         }
-      },
-      "sortDefinition": {
-        "sort": [
-          {
-            "field": {
-              "Aggregation": {
-                "Expression": {
-                  "Column": {
-                    "Expression": {
-                      "SourceRef": {
-                        "Entity": "Fact_MDInvoices_NoFreight"
-                      }
-                    },
-                    "Property": "FreightStatus"
-                  }
-                },
-                "Function": 3
-              }
-            },
-            "direction": "Descending"
-          }
-        ]
       }
     },
     "expansionStates": [
@@ -314,31 +272,7 @@
             "isPinned": true
           }
         ],
-        "root": {
-          "children": [
-            {
-              "identityValues": [
-                {
-                  "Literal": {
-                    "Value": "1480352L"
-                  }
-                }
-              ],
-              "children": [
-                {
-                  "identityValues": [
-                    {
-                      "Literal": {
-                        "Value": "'RE541933'"
-                      }
-                    }
-                  ],
-                  "isToggled": true
-                }
-              ]
-            }
-          ]
-        }
+        "root": {}
       }
     ],
     "objects": {
@@ -348,7 +282,7 @@
             "gridVertical": {
               "expr": {
                 "Literal": {
-                  "Value": "false"
+                  "Value": "true"
                 }
               }
             },
@@ -398,7 +332,7 @@
             "rowPadding": {
               "expr": {
                 "Literal": {
-                  "Value": "6D"
+                  "Value": "7D"
                 }
               }
             },
@@ -412,7 +346,7 @@
             "gridHorizontal": {
               "expr": {
                 "Literal": {
-                  "Value": "false"
+                  "Value": "true"
                 }
               }
             }
@@ -455,7 +389,7 @@
             "fontSize": {
               "expr": {
                 "Literal": {
-                  "Value": "12D"
+                  "Value": "13D"
                 }
               }
             }
@@ -468,7 +402,7 @@
             "fontSize": {
               "expr": {
                 "Literal": {
-                  "Value": "12D"
+                  "Value": "14D"
                 }
               }
             },
@@ -704,36 +638,6 @@
                           "Entity": "_Measures"
                         }
                       },
-                      "Property": "Freight Status Color"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "selector": {
-            "data": [
-              {
-                "dataViewWildcard": {
-                  "matchingOption": 1
-                }
-              }
-            ],
-            "metadata": "Min(Fact_MDInvoices_NoFreight.FreightStatus)"
-          }
-        },
-        {
-          "properties": {
-            "backColor": {
-              "solid": {
-                "color": {
-                  "expr": {
-                    "Measure": {
-                      "Expression": {
-                        "SourceRef": {
-                          "Entity": "_Measures"
-                        }
-                      },
                       "Property": "Pct Freight Difference Color"
                     }
                   }
@@ -847,7 +751,7 @@
             "value": {
               "expr": {
                 "Literal": {
-                  "Value": "156.32536613071804D"
+                  "Value": "203.38476151629368D"
                 }
               }
             }
@@ -896,6 +800,20 @@
           },
           "selector": {
             "metadata": "_Measures.Unit Price"
+          }
+        },
+        {
+          "properties": {
+            "value": {
+              "expr": {
+                "Literal": {
+                  "Value": "86.60957058653119D"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "Max(Fact_MDInvoices_NoFreight.RONumber)"
           }
         }
       ],
@@ -1150,34 +1068,6 @@
           },
           "selector": {
             "metadata": "Min(Fact_MDInvoices_NoFreight.Branch)"
-          }
-        },
-        {
-          "properties": {
-            "styleTotal": {
-              "expr": {
-                "Literal": {
-                  "Value": "true"
-                }
-              }
-            },
-            "styleHeader": {
-              "expr": {
-                "Literal": {
-                  "Value": "true"
-                }
-              }
-            },
-            "alignment": {
-              "expr": {
-                "Literal": {
-                  "Value": "'Center'"
-                }
-              }
-            }
-          },
-          "selector": {
-            "metadata": "Min(Fact_MDInvoices_NoFreight.FreightStatus)"
           }
         },
         {
@@ -1496,6 +1386,203 @@
           ]
         },
         "howCreated": "User"
+      },
+      {
+        "name": "ce68412145b67dfd3bb0",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Fact_MDInvoices_NoFreight"
+              }
+            },
+            "Property": "FileNumber"
+          }
+        },
+        "type": "Advanced"
+      },
+      {
+        "name": "04e606b093fac48228c6",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Fact_MDInvoices_NoFreight"
+              }
+            },
+            "Property": "PartNumber"
+          }
+        },
+        "type": "Categorical"
+      },
+      {
+        "name": "556a26a2adea0e3d0cef",
+        "field": {
+          "Aggregation": {
+            "Expression": {
+              "Column": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "Fact_MDInvoices_NoFreight"
+                  }
+                },
+                "Property": "OrderDate"
+              }
+            },
+            "Function": 3
+          }
+        },
+        "type": "Advanced"
+      },
+      {
+        "name": "dcf5ec16c1a48e8e2184",
+        "field": {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "_Measures"
+              }
+            },
+            "Property": "Total Weight"
+          }
+        },
+        "type": "Advanced"
+      },
+      {
+        "name": "4b2f77ad190c30fe0540",
+        "field": {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "_Measures"
+              }
+            },
+            "Property": "Actual Freight"
+          }
+        },
+        "type": "Advanced"
+      },
+      {
+        "name": "f52bd31c3a65a91b8c9b",
+        "field": {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "_Measures"
+              }
+            },
+            "Property": "Calculated Freight"
+          }
+        },
+        "type": "Advanced"
+      },
+      {
+        "name": "177c8faedabd79aeb328",
+        "field": {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "_Measures"
+              }
+            },
+            "Property": "% Freight Difference"
+          }
+        },
+        "type": "Advanced"
+      },
+      {
+        "name": "3c50f4fdcf0d90c5fcf9",
+        "field": {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "_Measures"
+              }
+            },
+            "Property": "Missed Freight"
+          }
+        },
+        "type": "Advanced"
+      },
+      {
+        "name": "c6c33e0c0e1418fb722e",
+        "field": {
+          "Aggregation": {
+            "Expression": {
+              "Column": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "Fact_MDInvoices_NoFreight"
+                  }
+                },
+                "Property": "Branch"
+              }
+            },
+            "Function": 3
+          }
+        },
+        "type": "Advanced"
+      },
+      {
+        "name": "19d56e782111c5de85b8",
+        "field": {
+          "Aggregation": {
+            "Expression": {
+              "Column": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "Fact_MDInvoices_NoFreight"
+                  }
+                },
+                "Property": "RONumber"
+              }
+            },
+            "Function": 4
+          }
+        },
+        "type": "Advanced"
+      },
+      {
+        "name": "3089f9712a705d5da01e",
+        "field": {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "_Measures"
+              }
+            },
+            "Property": "Order Qty"
+          }
+        },
+        "type": "Advanced"
+      },
+      {
+        "name": "0cd1d26676eb5ad325ab",
+        "field": {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "_Measures"
+              }
+            },
+            "Property": "Sell Price 1"
+          }
+        },
+        "type": "Advanced"
+      },
+      {
+        "name": "b6fae4e879503d31ffde",
+        "field": {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "_Measures"
+              }
+            },
+            "Property": "Unit Price"
+          }
+        },
+        "type": "Advanced"
       }
     ]
   }

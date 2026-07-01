@@ -1,5 +1,5 @@
 {
-  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.7.0/schema.json",
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.10.0/schema.json",
   "name": "158a86e1b08d5e513a94",
   "position": {
     "x": 57.7632241813602,
@@ -10,10 +10,10 @@
     "tabOrder": 0
   },
   "visual": {
-    "visualType": "tableEx",
+    "visualType": "pivotTable",
     "query": {
       "queryState": {
-        "Values": {
+        "Rows": {
           "projections": [
             {
               "field": {
@@ -26,8 +26,10 @@
                   "Property": "FileNumber"
                 }
               },
-              "queryRef": "Sum(Fact_MDInvoices_Closed.FileNumber)",
-              "nativeQueryRef": "FileNumber"
+              "queryRef": "Fact_MDInvoices_Closed.FileNumber",
+              "nativeQueryRef": "Invoice # ",
+              "active": true,
+              "displayName": "Invoice # "
             },
             {
               "field": {
@@ -37,39 +39,116 @@
                       "Entity": "Fact_MDInvoices_Closed"
                     }
                   },
-                  "Property": "InvoiceDate"
+                  "Property": "PartNumber"
                 }
               },
-              "queryRef": "Fact_MDInvoices_Closed.InvoiceDate",
-              "nativeQueryRef": "InvoiceDate"
+              "queryRef": "Fact_MDInvoices_Closed.PartNumber",
+              "nativeQueryRef": "PartNumber",
+              "active": false
+            }
+          ]
+        },
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Aggregation": {
+                  "Expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "Fact_MDInvoices_Closed"
+                        }
+                      },
+                      "Property": "InvoiceDate"
+                    }
+                  },
+                  "Function": 3
+                }
+              },
+              "queryRef": "Min(Fact_MDInvoices_Closed.InvoiceDate)",
+              "nativeQueryRef": "Invoice Date",
+              "displayName": "Invoice Date"
             },
             {
               "field": {
-                "Column": {
+                "Aggregation": {
                   "Expression": {
-                    "SourceRef": {
-                      "Entity": "dim_BranchLocation"
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "Fact_MDInvoices_Closed"
+                        }
+                      },
+                      "Property": "Branch"
                     }
                   },
-                  "Property": "Branch"
+                  "Function": 3
                 }
               },
-              "queryRef": "dim_BranchLocation.Branch",
-              "nativeQueryRef": "Branch"
+              "queryRef": "Min(Fact_MDInvoices_Closed.Branch)",
+              "nativeQueryRef": "Branch",
+              "displayName": "Branch"
             },
             {
               "field": {
-                "Column": {
+                "Aggregation": {
                   "Expression": {
-                    "SourceRef": {
-                      "Entity": "Fact_MDInvoices_Closed"
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "Fact_MDInvoices_Closed"
+                        }
+                      },
+                      "Property": "OrderQty"
                     }
                   },
-                  "Property": "FreightStatus"
+                  "Function": 0
                 }
               },
-              "queryRef": "Fact_MDInvoices_Closed.FreightStatus",
-              "nativeQueryRef": "FreightStatus"
+              "queryRef": "Sum(Fact_MDInvoices_Closed.OrderQty)",
+              "nativeQueryRef": "Order Qty",
+              "displayName": "Order Qty"
+            },
+            {
+              "field": {
+                "Aggregation": {
+                  "Expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "Fact_MDInvoices_Closed"
+                        }
+                      },
+                      "Property": "UnitCost"
+                    }
+                  },
+                  "Function": 0
+                }
+              },
+              "queryRef": "Sum(Fact_MDInvoices_Closed.UnitCost)",
+              "nativeQueryRef": "Sell Price 1",
+              "displayName": "Sell Price 1"
+            },
+            {
+              "field": {
+                "Aggregation": {
+                  "Expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "Fact_MDInvoices_Closed"
+                        }
+                      },
+                      "Property": "UnitPrice"
+                    }
+                  },
+                  "Function": 0
+                }
+              },
+              "queryRef": "Sum(Fact_MDInvoices_Closed.UnitPrice)",
+              "nativeQueryRef": "Unit Price",
+              "displayName": "Unit Price"
             },
             {
               "field": {
@@ -83,8 +162,8 @@
                 }
               },
               "queryRef": "_Measures.Closed - Total Weight",
-              "nativeQueryRef": "Total Weight",
-              "displayName": "Total Weight"
+              "nativeQueryRef": "Weight",
+              "displayName": "Weight"
             },
             {
               "field": {
@@ -124,6 +203,21 @@
                       "Entity": "_Measures"
                     }
                   },
+                  "Property": "Closed - % Freight Difference"
+                }
+              },
+              "queryRef": "_Measures.Closed - % Freight Difference",
+              "nativeQueryRef": "% Freight Difference",
+              "displayName": "% Freight Difference"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
                   "Property": "Closed - Missed Freight"
                 }
               },
@@ -133,25 +227,44 @@
             }
           ]
         }
-      },
-      "sortDefinition": {
-        "sort": [
-          {
-            "field": {
-              "Column": {
-                "Expression": {
-                  "SourceRef": {
-                    "Entity": "Fact_MDInvoices_Closed"
-                  }
-                },
-                "Property": "FreightStatus"
-              }
-            },
-            "direction": "Descending"
-          }
-        ]
       }
     },
+    "expansionStates": [
+      {
+        "roles": [
+          "Rows"
+        ],
+        "levels": [
+          {
+            "queryRefs": [
+              "Fact_MDInvoices_Closed.FileNumber"
+            ],
+            "isCollapsed": true,
+            "identityKeys": [
+              {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Fact_MDInvoices_Closed"
+                    }
+                  },
+                  "Property": "FileNumber"
+                }
+              }
+            ],
+            "isPinned": true
+          },
+          {
+            "queryRefs": [
+              "Fact_MDInvoices_Closed.PartNumber"
+            ],
+            "isCollapsed": true,
+            "isPinned": true
+          }
+        ],
+        "root": {}
+      }
+    ],
     "objects": {
       "grid": [
         {
@@ -209,7 +322,7 @@
             "rowPadding": {
               "expr": {
                 "Literal": {
-                  "Value": "4D"
+                  "Value": "7D"
                 }
               }
             },
@@ -259,7 +372,7 @@
             "fontSize": {
               "expr": {
                 "Literal": {
-                  "Value": "15D"
+                  "Value": "13D"
                 }
               }
             }
@@ -272,7 +385,7 @@
             "fontSize": {
               "expr": {
                 "Literal": {
-                  "Value": "15D"
+                  "Value": "14D"
                 }
               }
             },
@@ -506,13 +619,6 @@
                   "Value": "10D"
                 }
               }
-            },
-            "totals": {
-              "expr": {
-                "Literal": {
-                  "Value": "false"
-                }
-              }
             }
           }
         }
@@ -556,21 +662,7 @@
             "value": {
               "expr": {
                 "Literal": {
-                  "Value": "184.1152379692639D"
-                }
-              }
-            }
-          },
-          "selector": {
-            "metadata": "dim_BranchLocation.Branch"
-          }
-        },
-        {
-          "properties": {
-            "value": {
-              "expr": {
-                "Literal": {
-                  "Value": "177.7754687126377D"
+                  "Value": "132.92046409443475D"
                 }
               }
             }
@@ -584,7 +676,7 @@
             "value": {
               "expr": {
                 "Literal": {
-                  "Value": "196.96134245299822D"
+                  "Value": "141.54261502059325D"
                 }
               }
             }
@@ -697,27 +789,6 @@
             }
           },
           "selector": {
-            "metadata": "dim_BranchLocation.Branch"
-          }
-        },
-        {
-          "properties": {
-            "styleHeader": {
-              "expr": {
-                "Literal": {
-                  "Value": "true"
-                }
-              }
-            },
-            "alignment": {
-              "expr": {
-                "Literal": {
-                  "Value": "'Center'"
-                }
-              }
-            }
-          },
-          "selector": {
             "metadata": "Fact_MDInvoices_Closed.FreightStatus"
           }
         },
@@ -734,6 +805,13 @@
               "expr": {
                 "Literal": {
                   "Value": "'Center'"
+                }
+              }
+            },
+            "styleTotal": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
                 }
               }
             }
@@ -757,6 +835,13 @@
                   "Value": "'Center'"
                 }
               }
+            },
+            "styleTotal": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
             }
           },
           "selector": {
@@ -776,6 +861,13 @@
               "expr": {
                 "Literal": {
                   "Value": "'Center'"
+                }
+              }
+            },
+            "styleTotal": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
                 }
               }
             }
@@ -799,10 +891,178 @@
                   "Value": "'Center'"
                 }
               }
+            },
+            "styleTotal": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
             }
           },
           "selector": {
             "metadata": "_Measures.Closed - Missed Freight"
+          }
+        },
+        {
+          "properties": {
+            "alignment": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Center'"
+                }
+              }
+            },
+            "styleTotal": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "_Measures.Closed - % Freight Difference"
+          }
+        },
+        {
+          "properties": {
+            "alignment": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Center'"
+                }
+              }
+            },
+            "styleHeader": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "styleTotal": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "Sum(Fact_MDInvoices_Closed.UnitCost)"
+          }
+        },
+        {
+          "properties": {
+            "alignment": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Center'"
+                }
+              }
+            },
+            "styleHeader": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "styleTotal": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "Sum(Fact_MDInvoices_Closed.OrderQty)"
+          }
+        },
+        {
+          "properties": {
+            "alignment": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Center'"
+                }
+              }
+            },
+            "styleHeader": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "styleTotal": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "Min(Fact_MDInvoices_Closed.Branch)"
+          }
+        },
+        {
+          "properties": {
+            "alignment": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Center'"
+                }
+              }
+            },
+            "styleTotal": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "styleHeader": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "Sum(Fact_MDInvoices_Closed.UnitPrice)"
+          }
+        },
+        {
+          "properties": {
+            "alignment": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Center'"
+                }
+              }
+            },
+            "styleTotal": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "styleHeader": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "Min(Fact_MDInvoices_Closed.InvoiceDate)"
           }
         }
       ]
@@ -989,118 +1249,6 @@
   },
   "filterConfig": {
     "filters": [
-      {
-        "name": "f63dd91b6d3bc2605c0d",
-        "field": {
-          "Column": {
-            "Expression": {
-              "SourceRef": {
-                "Entity": "Fact_MDInvoices_Closed"
-              }
-            },
-            "Property": "FileNumber"
-          }
-        },
-        "type": "Advanced"
-      },
-      {
-        "name": "5b8c8eddef7d7f481719",
-        "field": {
-          "Column": {
-            "Expression": {
-              "SourceRef": {
-                "Entity": "Fact_MDInvoices_Closed"
-              }
-            },
-            "Property": "InvoiceDate"
-          }
-        },
-        "type": "Categorical"
-      },
-      {
-        "name": "4c26bdcd2f967eccb348",
-        "field": {
-          "Column": {
-            "Expression": {
-              "SourceRef": {
-                "Entity": "dim_BranchLocation"
-              }
-            },
-            "Property": "Branch"
-          }
-        },
-        "type": "Categorical"
-      },
-      {
-        "name": "c4945281bc1743d79222",
-        "field": {
-          "Column": {
-            "Expression": {
-              "SourceRef": {
-                "Entity": "Fact_MDInvoices_Closed"
-              }
-            },
-            "Property": "FreightStatus"
-          }
-        },
-        "type": "Categorical"
-      },
-      {
-        "name": "6059d78bfcefaf4220bc",
-        "field": {
-          "Measure": {
-            "Expression": {
-              "SourceRef": {
-                "Entity": "_Measures"
-              }
-            },
-            "Property": "Closed - Total Weight"
-          }
-        },
-        "type": "Advanced"
-      },
-      {
-        "name": "9efeabc00bed5efe4105",
-        "field": {
-          "Measure": {
-            "Expression": {
-              "SourceRef": {
-                "Entity": "_Measures"
-              }
-            },
-            "Property": "Closed - Actual Freight"
-          }
-        },
-        "type": "Advanced"
-      },
-      {
-        "name": "ae535fa418fcf97b258a",
-        "field": {
-          "Measure": {
-            "Expression": {
-              "SourceRef": {
-                "Entity": "_Measures"
-              }
-            },
-            "Property": "Closed - Calculated Freight"
-          }
-        },
-        "type": "Advanced"
-      },
-      {
-        "name": "de40a629afa4f8e5d89e",
-        "field": {
-          "Measure": {
-            "Expression": {
-              "SourceRef": {
-                "Entity": "_Measures"
-              }
-            },
-            "Property": "Closed - Missed Freight"
-          }
-        },
-        "type": "Advanced"
-      },
       {
         "name": "84df4266c8797d8265ab",
         "field": {

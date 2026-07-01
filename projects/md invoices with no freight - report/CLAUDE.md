@@ -25,7 +25,7 @@
 | dim_Franchise | Shared Lakehouse | Franchise → Fact tables |
 | dim_Salesperson | Shared Lakehouse | Salesperson → Fact tables |
 | FreightCalculator | LH_Master_Data Delta table (no dataflow — manually maintained) | No model relationship — used only in DAX via FILTER/MAXX lookup |
-| dim_FreightPerformanceGroup | DAX DATATABLE (calculated) | Slicer: No Freight / Needs Review / Good / Above Baseline |
+| dim_FreightPerformanceGroup | DAX DATATABLE (calculated) | Slicer: No Freight / Partial Freight / Adequate Freight (renamed 2026-06-29, was Needs Review / Good / Above Baseline) |
 
 ### Key Measures — Open Orders
 | Measure | What It Calculates |
@@ -111,6 +111,9 @@ Multiple 3750 lines per order are valid (one per shipment). `TotalFreightCharged
 - **Some older orders (2018–2019) have NULL UnitCost** — expected, not a bug.
 - **Matrix numeric value-well aggregation defaults to the wrong thing.** Adding `RONumber` to a matrix's Values well auto-selected `CountNonNull` (counts lines with a non-blank RO#) instead of showing the actual number. Since RO# is constant per invoice, the fix is `Max` aggregation, not `Sum`/`Count`. Check the aggregation function on any column dropped directly into a matrix/table Values well — Power BI's default choice for numeric columns is not always "show the value."
 - **Order Type slicer added 2026-06-24** on the Open Orders page, using `Fact_MDInvoices_NoFreight[OrderType]` (sourced from `Insalord.TYPE`).
+- **Freight performance bucket names renamed 2026-06-29** (Ben's feedback): "Needs Review" → "Partial Freight", "Good / Above Baseline" → "Adequate Freight". "No Freight" unchanged. This was a DAX-only change — `dim_FreightPerformanceGroup` (the DATATABLE) and `Is In Selected Group` / `Closed - Is In Selected Group` (both reference the same shared table, so both had to change together). **No fact table or `FreightStatus` column changes** — `FreightStatus` ("No Freight" / "No Freight Charged" / "Has Freight") is a distinct, lower-level concept from these report-level performance buckets. Tab button labels update automatically since they're bound to `dim_FreightPerformanceGroup[Group]`, not hardcoded text. Don't confuse these bucket names with the unrelated `Freight Above Baseline` measure (a dollar-amount KPI) — that measure name was intentionally left alone.
+- **Closed Invoices matrix has no RO # column, and can't.** `Fact_MDInvoices_Closed` is built from `Insalpar_Audit` + `InTrans_Incremental` — neither carries RO Number. `Insalord` has it, but there's no `Insalord_Audit` recovery table (unlike `insalpar`), so once an order invoices and drops out of `Insalord`, its RO# isn't recoverable. Don't try to add this column without new source/ETL work.
+- **`Closed - % Freight Difference` added 2026-06-29** to mirror page 1's matrix on the Closed Invoices page (Ben's request). Same formula as `% Freight Difference`, built on `[Closed - Calculated Freight]` / `[Closed - Actual Freight]`. Deliberately **no** Alert Threshold slider/conditional coloring on this one — that feature is open-orders-specific for now (see "Alert Threshold" section above); Closed just shows the plain value.
 
 ## Refresh Pipeline Position
 - **Fact_MDInvoices_NoFreight:** Phase 4 — `df_Fact_MDInvoices_NoFreight`. Depends on insalpar, Insalord, jdis_Part_Information (all Phase 1).
