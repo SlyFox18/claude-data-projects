@@ -139,9 +139,9 @@ SQLite table `items`:
 
 ---
 
-## File locations (proposed — needs confirmation)
+## File locations
 
-Unlike v1 (two files at `C:/Users/bfox/`), this is real application code that should be version-controlled. Proposed: a new sibling repo, `C:/Users/bfox/Documents/Git-Projects/personal-dashboard/`, separate from `data-projects` since this isn't Power BI/Fabric work. To be confirmed before the implementation plan is written.
+Unlike v1 (two files at `C:/Users/bfox/`), this is real application code that should be version-controlled. Lives in a new sibling repo, `C:/Users/bfox/Documents/Git-Projects/personal-dashboard/`, separate from `data-projects` since this isn't Power BI/Fabric work.
 
 ---
 
