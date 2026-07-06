@@ -53,9 +53,9 @@ Both fact tables join to all shared dimensions on Branch, CustomerNumber, PartNu
 | No Freight Rate        | Percentage of MD invoices with zero freight charged                      |
 | Actual Freight         | Total freight dollar amount actually charged (from part 3750 line items) |
 | Calculated Freight     | Estimated freight based on part weights and the carrier rate table       |
-| Missed Freight         | Gap between calculated and actual freight — the revenue opportunity     |
+| Missed Freight         | Gap between calculated and actual freight for a single invoice (detail rows only) |
 | Freight Above Baseline | Amount where actual freight exceeded the calculated baseline             |
-| Freight Opportunity    | Potential revenue on orders where freight was missed or under-charged    |
+| Freight Opportunity    | Total potential revenue across all under-billed orders (No Freight + Partial Freight invoices combined; fully-billed/over-billed orders never reduce this number) |
 
 All measures have `Closed -` prefix equivalents that apply to the historical closed invoice data.
 
@@ -130,3 +130,4 @@ An "Alert Threshold %" slider on the Open Orders page (next to the freight-statu
 - Open orders disappear from the source parts table when they are invoiced and closed. Closed history is recovered via the Insalpar_Audit table, which permanently records all changes.
 - The FreightCalculator rate table was extended on 2026-05-18 from a 249 lb ceiling to 999,999 lbs, using confirmed carrier rates. The source CSV is kept in `Freight Calculator/` within this project folder.
 - The closed fact table uses the Lakehouse SQL Analytics Endpoint (T-SQL) rather than Power Query for performance — avoids loading 10M+ InTrans rows into memory.
+- **2026-07-06 fix:** "Freight Opportunity" now means the same thing on the Open and Closed pages (sum of missed freight from No Freight + Partial Freight orders), the freight-status tab totals now compute correctly, and a data bug that was overstating "Actual Freight" totals was found and corrected. Numbers shown before this date may have been overstated.

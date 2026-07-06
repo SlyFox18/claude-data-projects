@@ -25,7 +25,7 @@
 | dim_Franchise | Shared Lakehouse | Franchise → Fact tables |
 | dim_Salesperson | Shared Lakehouse | Salesperson → Fact tables |
 | FreightCalculator | LH_Master_Data Delta table (no dataflow — manually maintained) | No model relationship — used only in DAX via FILTER/MAXX lookup |
-| dim_FreightPerformanceGroup | DAX DATATABLE (calculated) | Slicer: No Freight / Partial Freight / Adequate Freight (renamed 2026-06-29, was Needs Review / Good / Above Baseline) |
+| dim_FreightPerformanceGroup | DAX DATATABLE (calculated) | Slicer: No Freight / Partial Freight / Adequate Freight (renamed 2026-06-29, was Needs Review / Good / Above Baseline). **Now has a real relationship** (added 2026-07-06) to `Fact_MDInvoices_NoFreight[FreightBucket]` and `Fact_MDInvoices_Closed[FreightBucket]` — see "Freight Opportunity Fix" below. |
 
 ### Key Measures — Open Orders
 | Measure | What It Calculates |
@@ -38,11 +38,11 @@
 | Total Weight | SUM of TotalLineWeight across all open MD lines |
 | Actual Freight | SUM of TotalFreightCharged per order (from part 3750 lines) |
 | Calculated Freight | Estimated freight using FreightCalculator rate table |
-| Missed Freight | Calculated minus Actual (the opportunity gap) |
+| Missed Freight | Calculated minus Actual, net (can go negative) — used only for the per-invoice detail column, not for aggregate KPIs |
 | Freight Above Baseline | Orders where actual exceeded calculated |
-| Freight Opportunity | Orders where actual was below calculated |
+| Freight Opportunity | **The canonical Opportunity KPI.** = `No Freight Bucket - Missed Freight` + `Partial Freight Bucket - Missed Freight` (see "Freight Opportunity Fix" below). Always ≥ 0 — Adequate Freight invoices never add to or subtract from it. |
 
-Closed invoice equivalents exist for all measures above with a `Closed -` prefix.
+Closed invoice equivalents exist for all measures above with a `Closed -` prefix. `Closed - Freight Opportunity` is defined the identical way (sum of the two Closed bucket measures) — do not confuse with `Closed - Missed Freight`, which is the net per-invoice detail column only.
 
 ## Report Pages
 | Page | Purpose | Key Visuals |
@@ -100,6 +100,19 @@ Freight is stored as a **line item with PartNumber = 3750** on the invoice — i
 - **Has Freight** — 3750 line exists with a positive amount
 
 Multiple 3750 lines per order are valid (one per shipment). `TotalFreightCharged` = SUM of all.
+
+## Freight Opportunity Fix (2026-07-06)
+
+Ben (stakeholder) flagged that "Opportunity" didn't mean the same thing on the Open vs. Closed pages, and separately that the Partial Freight tab's Total row showed an impossible negative number. Both were real bugs, now fixed:
+
+**1. Inconsistent Opportunity definition.** Open's `Freight Opportunity` summed only positive per-invoice gaps (gross); Closed's Hero Card used `Closed - Missed Freight`, a net figure where over-charged invoices silently offset under-charged ones. Fixed by defining Opportunity identically on both sides: sum of the No Freight bucket's missed freight + the Partial Freight bucket's missed freight (Adequate Freight invoices never contribute). New measures: `No/Partial Freight Bucket - Missed Freight` (both sides), with `Freight Opportunity` / `Closed - Freight Opportunity` as their sum.
+
+**2. Tab Total row showed impossible numbers.** The No Freight / Partial Freight / Adequate Freight tabs filtered the invoice table via `Is In Selected Group`, a measure-based Advanced filter — a known Power BI weak spot where the visual's Total row doesn't reliably respect the same filter as the detail rows. Fixed by adding a real `FreightBucket` calculated column to both fact tables and a genuine relationship to `dim_FreightPerformanceGroup[Group]`, so the tab slicer now filters via a normal relationship instead of a measure comparison. `Is In Selected Group` / `Closed - Is In Selected Group` are no longer used for filtering (left in the model, unused, in case anything else still references them) — the row-level color/icon measures (`Freight Status Color`, `Missed Freight Icon`, etc.) are unaffected.
+- **Side effect to know about:** adding that relationship meant the tab slicer started cross-filtering *every* visual on the page connected to the fact table by default (including the Hero Card). Fixed via Edit Interactions (`visualInteractions` in `page.json`) — only the invoice table responds to the tab slicer now. If you add new card/chart visuals to the Open Orders or Closed Invoices pages, you'll likely need to add a `NoFilter` interaction entry for them too, or they'll start changing value when someone clicks a tab.
+- **Edit Interactions gotcha:** only add `visualInteractions` entries for genuinely data-bound visual types (card, htmlContent, slicer, chart, table). Including textboxes, images, shapes, page navigators, or visual-group containers crashes Desktop's renderer (`VisualRelationshipService.getRelationship` → undefined). Desktop's own Edit Interactions UI never generates entries for those types — don't hand-add them either.
+
+**3. The real underlying bug: `Actual Freight` overcounted.** `Actual Freight` and `Closed - Actual Freight` used `SUMX(VALUES(FileNumber), MAX(TotalFreightCharged))` — a **bare** aggregation function with no explicit `CALCULATE()` wrapper. This produced wildly inflated totals whenever summed across multiple invoices at once (confirmed via live DAX query: bare `MAX()` gave $11,020.80 for a 32-invoice bucket that should have totaled $1,898.50). This was a pre-existing bug, not something introduced by the tab-filter fix — it just never surfaced until per-bucket totals were scrutinized. Fixed by wrapping in `CALCULATE(MAX(...))`, matching the pattern `Calculated Freight` already used correctly. **This means historical screenshots/exports of "Freight Assigned"/"Freight Collected" Hero Card figures from before 2026-07-06 were likely overstated** — not just the bucket breakdowns.
+- **General DAX lesson:** any bare aggregation function (`MAX`, `SUM`, `MIN`, etc., not wrapped in `CALCULATE`) used inside `SUMX(VALUES(Table[Key]), ...)` to de-duplicate a line-grain table to header grain is unreliable under compounded filter contexts. Always wrap it explicitly: `CALCULATE(MAX(Table[Col]))`. Measure references (`[Measure Name]`) inside the same pattern are safe and don't need this — only bare column aggregation functions do. Worth checking other reports in this repo that use the same `SUMX(VALUES(...), MAX(...))` de-dup pattern.
 
 ## Known Issues & Gotchas
 

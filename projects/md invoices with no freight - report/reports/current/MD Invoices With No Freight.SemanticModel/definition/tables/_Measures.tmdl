@@ -118,7 +118,7 @@ table _Measures
 	measure 'Actual Freight' =
 			SUMX(
 			    VALUES(Fact_MDInvoices_NoFreight[FileNumber]),
-			    MAX(Fact_MDInvoices_NoFreight[TotalFreightCharged])
+			    CALCULATE(MAX(Fact_MDInvoices_NoFreight[TotalFreightCharged]))
 			)
 		formatString: $#,##0.00;($#,##0.00);$#,##0.00
 		lineageTag: b7c8d9e0-f1a2-43b4-5c6d-7e8f9a0b1c2d
@@ -269,13 +269,7 @@ table _Measures
 		formatString: $#,##0.00;($#,##0.00);$#,##0.00
 		lineageTag: f1a2b3c4-d5e6-47f8-9a0b-1c2d3e4f5a6b
 
-	measure 'Freight Opportunity' =
-			SUMX(
-			    VALUES(Fact_MDInvoices_NoFreight[FileNumber]),
-			    VAR Actual = [Actual Freight]
-			    VAR Calc = [Calculated Freight]
-			    RETURN IF(ISBLANK(Calc), 0, MAX(0, Calc - Actual))
-			)
+	measure 'Freight Opportunity' = [No Freight Bucket - Missed Freight] + [Partial Freight Bucket - Missed Freight]
 		formatString: $#,##0.00;($#,##0.00);$#,##0.00
 		lineageTag: a2b3c4d5-e6f7-48a9-0b1c-2d3e4f5a6b7c
 
@@ -583,21 +577,12 @@ table _Measures
 	measure 'Closed - Actual Freight' =
 			SUMX(
 			    VALUES(Fact_MDInvoices_Closed[FileNumber]),
-			    MAX(Fact_MDInvoices_Closed[TotalFreightCharged])
+			    CALCULATE(MAX(Fact_MDInvoices_Closed[TotalFreightCharged]))
 			)
 		formatString: $#,##0.00;($#,##0.00);$#,##0.00
 		lineageTag: 4d5e6f7a-b8c9-40d1-2e3f-4a5b6c7d8e9f
 
-	measure 'Closed - Freight Opportunity' =
-			SUMX(
-			    VALUES(Fact_MDInvoices_Closed[FileNumber]),
-			    VAR Calc =
-			        CALCULATE(
-			            MAX(Fact_MDInvoices_Closed[TotalFreightCharged]),
-			            Fact_MDInvoices_Closed[FreightStatus] = "No Freight"
-			        )
-			    RETURN IF(ISBLANK(Calc), 0, [Closed - Calculated Freight Single Invoice])
-			)
+	measure 'Closed - Freight Opportunity' = [Closed - No Freight Bucket - Missed Freight] + [Closed - Partial Freight Bucket - Missed Freight]
 		formatString: $#,##0.00;($#,##0.00);$#,##0.00
 		lineageTag: 5e6f7a8b-c9d0-41e2-3f4a-5b6c7d8e9f0a
 
@@ -722,15 +707,10 @@ table _Measures
 			VAR NoFreightRate   = [Closed - No Freight Rate]
 			VAR ActualFreight   = [Closed - Actual Freight]
 			VAR AboveBaseline   = [Closed - Freight Above Baseline]
-			VAR Opportunity     = [Closed - Missed Freight]
+			VAR Opportunity     = [Closed - Freight Opportunity]
 			VAR RateColor       = IF(NoFreightRate >= 0.10, "#f87171", IF(NoFreightRate >= 0.05, "#fbbf24", "#4ade80"))
-			VAR OpportunityText =
-			    IF(ISBLANK(Opportunity), "$0",
-			    IF(Opportunity <= 0,
-			        FORMAT(ABS(Opportunity), "$#,##0") & " above baseline",
-			        FORMAT(Opportunity, "$#,##0") & " opportunity"
-			    ))
-			VAR OpportunityColor = IF(ISBLANK(Opportunity) || Opportunity <= 0, "#4ade80", IF(Opportunity > 5000, "#f87171", "#fbbf24"))
+			VAR OpportunityText = IF(Opportunity = 0, "$0", FORMAT(Opportunity, "$#,##0"))
+			VAR OpportunityColor = IF(Opportunity > 5000, "#fbbf24", "#4ade80")
 			RETURN
 			"
 			<div style='
@@ -808,16 +788,16 @@ table _Measures
 			    <!-- Divider -->
 			    <div style='width: 2px; height: 120px; background: rgba(255,255,255,0.3); margin: 0 15px;'></div>
 			
-			    <!-- Section 5: Net vs Baseline -->
+			    <!-- Section 5: Freight Opportunity -->
 			    <div style='text-align: center; flex: 1;'>
 			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px;'>
-			            vs. Baseline
+			            Opportunity
 			        </div>
 			        <div style='font-size: 44px; font-weight: 700; line-height: 1; color: " & OpportunityColor & ";'>
 			            " & OpportunityText & "
 			        </div>
 			        <div style='font-size: 15px; margin-top: 8px; opacity: 0.9;'>
-			            net freight performance
+			            Potential Upside
 			        </div>
 			    </div>
 			
@@ -920,7 +900,7 @@ table _Measures
 			VAR SalesOpps =
 			    ADDCOLUMNS(
 			        VALUES(dim_Salesperson[SalespersonCode]),
-			        "@Opp", CALCULATE([Closed - Missed Freight])
+			        "@Opp", CALCULATE([Closed - Freight Opportunity])
 			    )
 			VAR QualifiedSales =
 			    FILTER(SalesOpps, [@Opp] > 0)
@@ -939,7 +919,7 @@ table _Measures
 			VAR SalesOpps =
 			    ADDCOLUMNS(
 			        VALUES(dim_Salesperson[SalespersonCode]),
-			        "@Opp", CALCULATE([Closed - Missed Freight])
+			        "@Opp", CALCULATE([Closed - Freight Opportunity])
 			    )
 			VAR QualifiedSales =
 			    FILTER(SalesOpps, [@Opp] > 0)
@@ -1424,6 +1404,52 @@ table _Measures
 			    DIVIDE(Diff, AvgFreight, BLANK())
 		formatString: 0.0%;-0.0%;0.0%
 		lineageTag: 6b7c8d9e-0f1a-42b3-5c6d-7e8f9a0b1c2d
+
+	measure 'No Freight Bucket - Missed Freight' =
+			CALCULATE(
+			    SUMX(
+			        VALUES(Fact_MDInvoices_NoFreight[FileNumber]),
+			        CALCULATE(MAX(Fact_MDInvoices_NoFreight[MissedFreightAmount]))
+			    ),
+			    Fact_MDInvoices_NoFreight[FreightStatus] IN { "No Freight", "No Freight Charged" }
+			)
+		formatString: $#,##0.00;($#,##0.00);$#,##0.00
+		lineageTag: 65a7b984-672d-427e-a78a-473c6276b0b1
+
+	measure 'Partial Freight Bucket - Missed Freight' =
+			CALCULATE(
+			    SUMX(
+			        VALUES(Fact_MDInvoices_NoFreight[FileNumber]),
+			        CALCULATE(MAX(Fact_MDInvoices_NoFreight[MissedFreightAmount]))
+			    ),
+			    Fact_MDInvoices_NoFreight[FreightStatus] = "Has Freight",
+			    Fact_MDInvoices_NoFreight[MissedFreightAmount] > 1
+			)
+		formatString: $#,##0.00;($#,##0.00);$#,##0.00
+		lineageTag: f9538329-69cf-4bb3-b2c8-4ae6cb5b0df1
+
+	measure 'Closed - No Freight Bucket - Missed Freight' =
+			CALCULATE(
+			    SUMX(
+			        VALUES(Fact_MDInvoices_Closed[FileNumber]),
+			        CALCULATE(MAX(Fact_MDInvoices_Closed[MissedFreightAmount]))
+			    ),
+			    Fact_MDInvoices_Closed[FreightStatus] IN { "No Freight", "No Freight Charged" }
+			)
+		formatString: $#,##0.00;($#,##0.00);$#,##0.00
+		lineageTag: b77aa63b-e0c6-4e26-be28-2649f3034dfe
+
+	measure 'Closed - Partial Freight Bucket - Missed Freight' =
+			CALCULATE(
+			    SUMX(
+			        VALUES(Fact_MDInvoices_Closed[FileNumber]),
+			        CALCULATE(MAX(Fact_MDInvoices_Closed[MissedFreightAmount]))
+			    ),
+			    Fact_MDInvoices_Closed[FreightStatus] = "Has Freight",
+			    Fact_MDInvoices_Closed[MissedFreightAmount] > 1
+			)
+		formatString: $#,##0.00;($#,##0.00);$#,##0.00
+		lineageTag: e040505f-9149-47ed-87d7-6b0f05a2ce35
 
 	column Value
 		isHidden
