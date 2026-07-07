@@ -5,7 +5,7 @@
 - **Primary users:** Parts managers, sales leadership, pricing team
 - **Workspace:** RP - Parts Reports (Sandbox pending promotion)
 - **Refresh tier:** Tier 1 — Daily by 8 AM
-- **Status:** Sandbox (pending promotion to production)
+- **Status:** Sandbox — visually verified 2026-07-07 (Net Sales % page bar chart labels); pending promotion to RP - Parts Reports (production) once Brian completes the move
 
 ## Semantic Model
 
@@ -42,6 +42,10 @@
 | `Orders with Promos` | DISTINCTCOUNT(Fact_PartsPromo[REF_NO]) |
 | `Rolling 12M Discount` | Last 12 months discount — uses CROSSFILTER to bypass date relationship |
 | `Rolling 12M Net Sales` | Last 12 months net sales — uses CROSSFILTER pattern |
+| `Total Sales` | SUM(Fact_InTrans_AllPromo[SaleValue]) — total sales for ALL orders (not just promo), used as the denominator for promo penetration % |
+| `Net Sales Value (Filtered)` | Original Sale Value (Filtered) + promo discount — net promo sales in current filter context |
+| `Net Sales %` | Net Sales Value (Filtered) / Total Sales — promo penetration ratio, computed per-row so it stays correct regardless of what else is cross-filtered on the page (see Known Issues) |
+| `Net Sales Value (Filtered) - Branch Label` | Same value as `Net Sales Value (Filtered)`; carries a dynamic format string that renders `$XXX.XXK (YY.YY%)` as one literal label — feeds only the "Net Sales by Branch" bar chart on the Net Sales % page |
 
 ## Report Pages
 | Page | Display Name | Purpose | Visibility |
@@ -63,6 +67,7 @@ dbo.dim_RepairOrder → dim_RepairOrder (order-level aggregates for LOOKUPVALUE)
 - **Rolling 12M measures use CROSSFILTER:** `Rolling 12M Discount` and `Rolling 12M Net Sales` use `CROSSFILTER(..., None)` to temporarily disable the date relationship, then filter by TransDatetime directly. This handles the case where the date slicer would otherwise restrict the rolling window.
 - **Sandbox status:** This report is in RP - Sandbox pending promotion to production. See `PROJECT-STATUS.md` and `MIGRATION-NOTES.md` for migration context.
 - **Archive V2:** There is an archived V2 version at `report/archive/Parts Promo V2.SemanticModel/` with different table names (Parts_Promo, InTrans_All_Promo, Date, Dim_Branch, Base_Customer_Info). Use `report/current/` only.
+- **Combined $ + % bar chart labels via dynamic format strings (2026-07-07):** Power BI's native bar/column chart can't plot two independent measures as one label string. The fix used here: duplicate the plotted measure (`Net Sales Value (Filtered) - Branch Label`), then in Desktop set its Format to **Dynamic** (Measure tools ribbon) with a DAX expression that returns the whole label wrapped in `'...'` (forces literal-text rendering) — see the measure's TMDL comment in `_Measures.tmdl` for the exact expression. Requires model compatibility level 1601+ (`FormatStringDefinition` property). Also set the visual's Data Labels > Values > Display Units to **None**, since the dynamic format string does its own /1000 "K" scaling — leaving Auto on double-scales the value. Reusable pattern for any bar/column chart that needs a value + a stable, row-context-scoped percentage in one label (the percentage measure itself must use the row's own filter context, not `ALLSELECTED`/`ALL`, so it isn't corrupted by cross-filter highlighting from clicking within the same or another visual — see `Net Sales %` measure above).
 
 ## Refresh Pipeline Position
 - Tier 1 target: Daily by 8 AM
