@@ -1,0 +1,49 @@
+table dim_BranchPartInventory
+	lineageTag: 531b4133-e7bc-4248-b965-cf8aa66db6ab
+
+	column Branch
+		dataType: string
+		lineageTag: 45ec98f6-ed59-4e20-8cc8-165e8ddcd18d
+		summarizeBy: none
+		sourceColumn: Branch
+
+		annotation SummarizationSetBy = Automatic
+
+	column PartNumber
+		dataType: string
+		lineageTag: 78a6f40f-2225-49f5-bafd-d45bc86818ce
+		summarizeBy: none
+		sourceColumn: PartNumber
+
+		annotation SummarizationSetBy = Automatic
+
+	column QuantityOnHand
+		dataType: double
+		lineageTag: 8c19351a-7d7e-49ff-8504-ca2845adfafb
+		summarizeBy: none
+		sourceColumn: QuantityOnHand
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column BinQty
+		dataType: double
+		formatString: 0
+		lineageTag: f0447b47-00d9-44e7-99e2-81b45c43e3ea
+		summarizeBy: none
+		sourceColumn: BinQty
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dim_BranchPartInventory = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-gxnyznhdptpenfw724g3o5sjzm.datawarehouse.fabric.microsoft.com", "LH_Master_Data"),
+				    dbo_dim_BranchPartInventory = Source{[Schema="dbo",Item="dim_BranchPartInventory"]}[Data]
+				in
+				    dbo_dim_BranchPartInventory
+
+	annotation PBI_ResultType = Table
+

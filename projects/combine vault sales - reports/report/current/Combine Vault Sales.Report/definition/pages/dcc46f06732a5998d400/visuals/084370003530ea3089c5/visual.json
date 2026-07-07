@@ -27,8 +27,9 @@
                 }
               },
               "queryRef": "dim_Branch12_Parts.PartNumber",
-              "nativeQueryRef": "PartNumber",
-              "active": true
+              "nativeQueryRef": "Part #",
+              "active": true,
+              "displayName": "Part #"
             },
             {
               "field": {
@@ -163,7 +164,7 @@
               },
               "queryRef": "MeasuresTable.Qty on Hand (Vault Total)",
               "nativeQueryRef": "Qty on Hand (Vault Total)",
-              "displayName": "Qty on Hand"
+              "displayName": "Qty on Hand (Vault)"
             },
             {
               "field": {
@@ -178,7 +179,37 @@
               },
               "queryRef": "MeasuresTable.Bin Qty (Vault Total)",
               "nativeQueryRef": "Bin Qty (Vault Total)",
-              "displayName": "Bin Qty"
+              "displayName": "Bin Qty (Vault)"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "MeasuresTable"
+                    }
+                  },
+                  "Property": "Qty on Hand (By Location)"
+                }
+              },
+              "queryRef": "MeasuresTable.Qty on Hand (By Location)",
+              "nativeQueryRef": "Qty on Hand (By Location)",
+              "displayName": "Qty on Hand (Location)"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "MeasuresTable"
+                    }
+                  },
+                  "Property": "Bin Qty (By Location)"
+                }
+              },
+              "queryRef": "MeasuresTable.Bin Qty (By Location)",
+              "nativeQueryRef": "Bin Qty (By Location)",
+              "displayName": "Bin Qty (Location)"
             }
           ]
         }
@@ -446,7 +477,7 @@
             "value": {
               "expr": {
                 "Literal": {
-                  "Value": "177.0327470609063D"
+                  "Value": "154.63871670060635D"
                 }
               }
             }
@@ -488,7 +519,7 @@
             "value": {
               "expr": {
                 "Literal": {
-                  "Value": "208.72624229526895D"
+                  "Value": "153.24601750629301D"
                 }
               }
             }
@@ -502,7 +533,7 @@
             "value": {
               "expr": {
                 "Literal": {
-                  "Value": "217.49414194416664D"
+                  "Value": "142.17858775359258D"
                 }
               }
             }
@@ -516,7 +547,7 @@
             "value": {
               "expr": {
                 "Literal": {
-                  "Value": "192.49058364309556D"
+                  "Value": "139.57622581735836D"
                 }
               }
             }
@@ -530,7 +561,7 @@
             "value": {
               "expr": {
                 "Literal": {
-                  "Value": "117.57684347176466D"
+                  "Value": "96.27872341881255D"
                 }
               }
             }
@@ -544,13 +575,69 @@
             "value": {
               "expr": {
                 "Literal": {
-                  "Value": "111.18634283268764D"
+                  "Value": "93.84636118048206D"
                 }
               }
             }
           },
           "selector": {
             "metadata": "MeasuresTable.Bin Qty (Vault Total)"
+          }
+        },
+        {
+          "properties": {
+            "value": {
+              "expr": {
+                "Literal": {
+                  "Value": "129.86245454226963D"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "MeasuresTable.Qty on Hand (By Location)"
+          }
+        },
+        {
+          "properties": {
+            "value": {
+              "expr": {
+                "Literal": {
+                  "Value": "111.18634283268764D"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "MeasuresTable.Bin Qty (By Location)"
+          }
+        },
+        {
+          "properties": {
+            "value": {
+              "expr": {
+                "Literal": {
+                  "Value": "176.40110594983472D"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "dim_Branch12_Parts.PartNumber"
+          }
+        },
+        {
+          "properties": {
+            "value": {
+              "expr": {
+                "Literal": {
+                  "Value": "140.92695149448556D"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "MeasuresTable.Days - Last Sale"
           }
         }
       ],
@@ -561,6 +648,13 @@
               "expr": {
                 "Literal": {
                   "Value": "'Center'"
+                }
+              }
+            },
+            "styleTotal": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
                 }
               }
             }
@@ -575,6 +669,13 @@
               "expr": {
                 "Literal": {
                   "Value": "'Center'"
+                }
+              }
+            },
+            "styleTotal": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
                 }
               }
             }
@@ -589,6 +690,13 @@
               "expr": {
                 "Literal": {
                   "Value": "'Center'"
+                }
+              }
+            },
+            "styleTotal": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
                 }
               }
             }
@@ -605,6 +713,13 @@
                   "Value": "'Center'"
                 }
               }
+            },
+            "styleTotal": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
             }
           },
           "selector": {
@@ -617,6 +732,13 @@
               "expr": {
                 "Literal": {
                   "Value": "'Center'"
+                }
+              }
+            },
+            "styleTotal": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
                 }
               }
             }
@@ -633,6 +755,13 @@
                   "Value": "'Center'"
                 }
               }
+            },
+            "styleTotal": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
             }
           },
           "selector": {
@@ -647,10 +776,45 @@
                   "Value": "'Center'"
                 }
               }
+            },
+            "styleTotal": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
             }
           },
           "selector": {
             "metadata": "MeasuresTable.Bin Qty (Vault Total)"
+          }
+        },
+        {
+          "properties": {
+            "alignment": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Center'"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "MeasuresTable.Qty on Hand (By Location)"
+          }
+        },
+        {
+          "properties": {
+            "alignment": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Center'"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "MeasuresTable.Bin Qty (By Location)"
           }
         }
       ],
@@ -1030,7 +1194,8 @@
               }
             }
           ]
-        }
+        },
+        "howCreated": "User"
       },
       {
         "name": "a46552734e0969070778",
@@ -1103,6 +1268,160 @@
             }
           ]
         }
+      },
+      {
+        "name": "8700eee15782ae30f042",
+        "field": {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "MeasuresTable"
+              }
+            },
+            "Property": "Part Description"
+          }
+        },
+        "type": "Advanced"
+      },
+      {
+        "name": "8739bd49f7123a7d805c",
+        "field": {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "MeasuresTable"
+              }
+            },
+            "Property": "Demands"
+          }
+        },
+        "type": "Advanced"
+      },
+      {
+        "name": "11eb49c9f4cc9bf180d8",
+        "field": {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "MeasuresTable"
+              }
+            },
+            "Property": "Demands Previous R12"
+          }
+        },
+        "type": "Advanced"
+      },
+      {
+        "name": "036438e4b85cfd059220",
+        "field": {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "MeasuresTable"
+              }
+            },
+            "Property": "Qty"
+          }
+        },
+        "type": "Advanced"
+      },
+      {
+        "name": "7f47646aa8164598a0f5",
+        "field": {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "MeasuresTable"
+              }
+            },
+            "Property": "Qty Previous R12"
+          }
+        },
+        "type": "Advanced"
+      },
+      {
+        "name": "62777ef5bcbfa32bd81f",
+        "field": {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "MeasuresTable"
+              }
+            },
+            "Property": "Days - Last Sale"
+          }
+        },
+        "type": "Advanced"
+      },
+      {
+        "name": "8fc2fdeb167317549c9d",
+        "field": {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "MeasuresTable"
+              }
+            },
+            "Property": "Inventory Value (Vault Total)"
+          }
+        },
+        "type": "Advanced"
+      },
+      {
+        "name": "b4eda12ddc29612ef46d",
+        "field": {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "MeasuresTable"
+              }
+            },
+            "Property": "Qty on Hand (Vault Total)"
+          }
+        },
+        "type": "Advanced"
+      },
+      {
+        "name": "b37908f448fe5dc3a5d4",
+        "field": {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "MeasuresTable"
+              }
+            },
+            "Property": "Bin Qty (Vault Total)"
+          }
+        },
+        "type": "Advanced"
+      },
+      {
+        "name": "e922a062a6d317bb55f0",
+        "field": {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "MeasuresTable"
+              }
+            },
+            "Property": "Qty on Hand (By Location)"
+          }
+        },
+        "type": "Advanced"
+      },
+      {
+        "name": "b828968743e598a02044",
+        "field": {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "MeasuresTable"
+              }
+            },
+            "Property": "Bin Qty (By Location)"
+          }
+        },
+        "type": "Advanced"
       }
     ]
   }

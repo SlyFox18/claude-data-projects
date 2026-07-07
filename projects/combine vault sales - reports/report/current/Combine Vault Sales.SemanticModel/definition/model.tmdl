@@ -8,9 +8,9 @@ model Model
 
 annotation __PBI_TimeIntelligenceEnabled = 0
 
-annotation PBI_QueryOrder = ["Data Refresh","dim_BranchLocation","dim_DateTable","dim_Branch12_Parts","Fact_Branch12_Transactions","dim_Parts"]
+annotation PBI_QueryOrder = ["Data Refresh","dim_BranchLocation","dim_DateTable","dim_Branch12_Parts","Fact_Branch12_Transactions","dim_Parts","dim_BranchPartInventory"]
 
-annotation PBI_ProTooling = ["DevMode","MCP-PBIModeling"]
+annotation PBI_ProTooling = ["DevMode","MCP-PBIModeling","DaxQueryView_Desktop"]
 
 ref table MeasuresTable
 ref table 'Data Refresh'
@@ -24,6 +24,7 @@ ref table Fact_Branch12_Transactions
 ref table 'YTD Metrics'
 ref table 'Stock Status Categories'
 ref table dim_Parts
+ref table dim_BranchPartInventory
 
 ref cultureInfo en-US
 
