@@ -2012,6 +2012,26 @@ table _Measures
 		displayFolder: UI & Navigation
 		lineageTag: 5c6a098c-cc3a-4827-9e66-295a603bee9e
 
+	measure 'Snapshot Order Count' = DISTINCTCOUNT(fact_parts_open_orders_snapshot[Order_No])
+		formatString: 0
+		displayFolder: Snapshot Trend
+		lineageTag: f2b3c4d5-3333-4ccc-9003-cccccccccc01
+
+	measure 'Snapshot Order Total $' = SUM(fact_parts_open_orders_snapshot[Order_Total_$$])
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		displayFolder: Snapshot Trend
+		lineageTag: f2b3c4d5-3333-4ccc-9003-cccccccccc02
+
+	measure 'Snapshot Backorder $' = SUM(fact_parts_open_orders_snapshot[$$_BackOrdered])
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		displayFolder: Snapshot Trend
+		lineageTag: f2b3c4d5-3333-4ccc-9003-cccccccccc03
+
+	measure 'Snapshot Backorder Count' = SUM(fact_parts_open_orders_snapshot[#_On_Back_Order])
+		formatString: 0
+		displayFolder: Snapshot Trend
+		lineageTag: f2b3c4d5-3333-4ccc-9003-cccccccccc04
+
 	column Value
 		isHidden
 		lineageTag: da2dfa23-0c4c-4e9d-8014-3cc5710e756b
