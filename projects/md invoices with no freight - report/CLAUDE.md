@@ -114,6 +114,18 @@ Ben (stakeholder) flagged that "Opportunity" didn't mean the same thing on the O
 **3. The real underlying bug: `Actual Freight` overcounted.** `Actual Freight` and `Closed - Actual Freight` used `SUMX(VALUES(FileNumber), MAX(TotalFreightCharged))` — a **bare** aggregation function with no explicit `CALCULATE()` wrapper. This produced wildly inflated totals whenever summed across multiple invoices at once (confirmed via live DAX query: bare `MAX()` gave $11,020.80 for a 32-invoice bucket that should have totaled $1,898.50). This was a pre-existing bug, not something introduced by the tab-filter fix — it just never surfaced until per-bucket totals were scrutinized. Fixed by wrapping in `CALCULATE(MAX(...))`, matching the pattern `Calculated Freight` already used correctly. **This means historical screenshots/exports of "Freight Assigned"/"Freight Collected" Hero Card figures from before 2026-07-06 were likely overstated** — not just the bucket breakdowns.
 - **General DAX lesson:** any bare aggregation function (`MAX`, `SUM`, `MIN`, etc., not wrapped in `CALCULATE`) used inside `SUMX(VALUES(Table[Key]), ...)` to de-duplicate a line-grain table to header grain is unreliable under compounded filter contexts. Always wrap it explicitly: `CALCULATE(MAX(Table[Col]))`. Measure references (`[Measure Name]`) inside the same pattern are safe and don't need this — only bare column aggregation functions do. Worth checking other reports in this repo that use the same `SUMX(VALUES(...), MAX(...))` de-dup pattern.
 
+## Monthly Snapshot (added 2026-07-08)
+
+Point-in-time history for the open MD freight backlog — mirrors the Open Parts Tickets snapshot pattern (`nb_Snapshot_Parts_Open_Orders` / `Fact_Parts_Open_Orders_Snapshot`).
+
+- **Notebook:** `nb_Snapshot_MDInvoices_NoFreight` in `LH_Master_Data` — reference script at `queries/notebooks/nb_Snapshot_MDInvoices_NoFreight.py` in this project folder
+- **Target table:** `Fact_MDInvoices_NoFreight_Snapshot` (Delta, append mode)
+- **Pipeline:** `Pipeline_Monthly_MDInvoices_Snapshot` — 5:30 AM CST on the 1st of each month, after the 4:15 AM master orchestrator refreshes `Fact_MDInvoices_NoFreight`
+- **First snapshot:** whenever the notebook is first run manually in Fabric. History builds from there — no backfill possible, since the source only reflects currently-open orders.
+- **Semantic model table:** `Fact_MDInvoices_NoFreight_Snapshot`, wired to `dim_BranchLocation` (via `Branch`) and `dim_DateTable` (via `SnapshotDate`). `OrderDate` is present but not related, to avoid a second active relationship to `dim_DateTable`.
+- **Calculated columns are a third copy.** `MissedFreightAmount`, `PctFreightDifference`, and `FreightBucket` are recreated on this table identically to `Fact_MDInvoices_NoFreight` and `Fact_MDInvoices_Closed` — except `ALLEXCEPT` here also preserves `SnapshotDate` (not just `FileNumber`), since this table holds multiple snapshot dates for the same order number over time. **If the freight-bracket formula changes again, update all three tables.**
+- **No trend page yet.** Infrastructure only — revisit once 3+ months of snapshot history exist.
+
 ## Known Issues & Gotchas
 
 - **FreightCalculator has no dataflow.** It is a manually maintained Delta table. To update rates: upload new CSV to Lakehouse Files, then use a PySpark notebook with `.save("Tables/FreightCalculator")` — do NOT use `saveAsTable()` (Hive metastore casing causes `freightcalculator` vs `FreightCalculator` conflicts). See `Freight Calculator/` folder for the current CSV source files.
