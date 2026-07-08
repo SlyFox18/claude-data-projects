@@ -307,9 +307,10 @@ table Fact_MDInvoices_NoFreight_Snapshot
 		source =
 				let
 				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-gxnyznhdptpenfw724g3o5sjzm.datawarehouse.fabric.microsoft.com", "LH_Master_Data"),
-				    dbo_Fact_MDInvoices_NoFreight_Snapshot = Source{[Schema="dbo",Item="Fact_MDInvoices_NoFreight_Snapshot"]}[Data]
+				    dbo_Fact_MDInvoices_NoFreight_Snapshot = Source{[Schema="dbo",Item="Fact_MDInvoices_NoFreight_Snapshot"]}[Data],
+				    #"Extracted Date" = Table.TransformColumns(dbo_Fact_MDInvoices_NoFreight_Snapshot,{{"OrderDate", DateTime.Date, type date}})
 				in
-				    dbo_Fact_MDInvoices_NoFreight_Snapshot
+				    #"Extracted Date"
 
 	annotation PBI_NavigationStepName = Navigation
 
