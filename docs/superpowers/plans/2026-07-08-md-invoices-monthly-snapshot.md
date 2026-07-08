@@ -25,6 +25,7 @@
 ### Task 1: Create the snapshot notebook reference script
 
 **Files:**
+
 - Create: `projects/md invoices with no freight - report/queries/notebooks/nb_Snapshot_MDInvoices_NoFreight.py`
 
 - [ ] **Step 1: Write the notebook reference file**
@@ -204,6 +205,7 @@ git commit -m "Add reference notebook script for MD Invoices monthly snapshot"
 ### Task 2: Add the new semantic model table (TMDL)
 
 **Files:**
+
 - Create: `projects/md invoices with no freight - report/reports/current/MD Invoices With No Freight.SemanticModel/definition/tables/Fact_MDInvoices_NoFreight_Snapshot.tmdl`
 
 - [ ] **Step 1: Write the new table file**
@@ -551,6 +553,7 @@ git commit -m "Add Fact_MDInvoices_NoFreight_Snapshot semantic model table"
 ### Task 3: Register the new table in model.tmdl
 
 **Files:**
+
 - Modify: `projects/md invoices with no freight - report/reports/current/MD Invoices With No Freight.SemanticModel/definition/model.tmdl:29`
 
 - [ ] **Step 1: Add the ref table line**
@@ -586,6 +589,7 @@ git commit -m "Register Fact_MDInvoices_NoFreight_Snapshot table in model.tmdl"
 ### Task 4: Add relationships
 
 **Files:**
+
 - Modify: `projects/md invoices with no freight - report/reports/current/MD Invoices With No Freight.SemanticModel/definition/relationships.tmdl`
 
 - [ ] **Step 1: Append two new relationships to the end of the file**
@@ -628,6 +632,7 @@ git commit -m "Relate Fact_MDInvoices_NoFreight_Snapshot to dim_BranchLocation a
 ### Task 5: Update project documentation
 
 **Files:**
+
 - Modify: `projects/md invoices with no freight - report/CLAUDE.md`
 - Modify: `projects/md invoices with no freight - report/PROJECT-SUMMARY.md`
 
@@ -689,22 +694,24 @@ git push
 
 ## Phase 2 — Manual Fabric & Desktop Steps (Brian)
 
+**Progress as of 2026-07-08:** Task 7 complete (notebook + pipeline confirmed working in Fabric). Task 8 Steps 1-3 complete — Desktop refreshes the new table cleanly after the casing fix. Remaining: Step 4 (calculated-column spot-check), Step 4a (SnapshotDate relationship match verification), Step 5-6 (publish to RP-Dev, then Sandbox/production). Trend page/visuals deliberately deferred until 3+ months of snapshot history accumulate (per spec).
+
 **These cannot be executed by a coding agent.** They require the Fabric portal (browser) and Power BI Desktop (GUI), neither of which this repo's tooling can drive. Complete Phase 1 first — you'll paste content from the files it created.
 
 ### Task 7: Create and run the Fabric notebook, then create the pipeline
 
-- [ ] **Step 1:** In the Fabric portal, open `LH_Master_Data`. Create a new Notebook named `nb_Snapshot_MDInvoices_NoFreight`.
-- [ ] **Step 2:** Paste each of the four cells from `projects/md invoices with no freight - report/queries/notebooks/nb_Snapshot_MDInvoices_NoFreight.py` (Task 1's output) into four separate code cells, in order. Leave Cell 4 commented out for now.
-- [ ] **Step 3:** Run the notebook manually (Run All). Confirm Cell 3 prints `SUCCESS: <N> rows written to Fact_MDInvoices_NoFreight_Snapshot for <date>`. This creates the Delta table and writes the first snapshot.
+- [X] **Step 1:** In the Fabric portal, open `LH_Master_Data`. Create a new Notebook named `nb_Snapshot_MDInvoices_NoFreight`.
+- [X] **Step 2:** Paste each of the four cells from `projects/md invoices with no freight - report/queries/notebooks/nb_Snapshot_MDInvoices_NoFreight.py` (Task 1's output) into four separate code cells, in order. Leave Cell 4 commented out for now.
+- [X] **Step 3:** Run the notebook manually (Run All). Confirm Cell 3 prints `SUCCESS: <N> rows written to Fact_MDInvoices_NoFreight_Snapshot for <date>`. This creates the Delta table and writes the first snapshot.
 - [ ] **Step 4:** Uncomment Cell 4 and run it standalone to confirm the summary query returns one row for this month with sensible totals.
-- [ ] **Step 5:** Create a new Pipeline named `Pipeline_Monthly_MDInvoices_Snapshot`. Add a single Notebook activity pointing at `nb_Snapshot_MDInvoices_NoFreight`. Set the schedule: monthly, 1st of the month, 5:30 AM CST (same pattern as `Pipeline_Monthly_Open_Orders_Snapshot` — copy its schedule config if easiest).
-- [ ] **Step 6:** Save and confirm the pipeline shows the correct next-run date in the Fabric portal.
+- [X] **Step 5:** Create a new Pipeline named `Pipeline_Monthly_MDInvoices_Snapshot`. Add a single Notebook activity pointing at `nb_Snapshot_MDInvoices_NoFreight`. Set the schedule: monthly, 1st of the month, 5:30 AM CST (same pattern as `Pipeline_Monthly_Open_Orders_Snapshot` — copy its schedule config if easiest).
+- [X] **Step 6:** Save and confirm the pipeline shows the correct next-run date in the Fabric portal.
 
 ### Task 8: Wire up the semantic model in Desktop
 
-- [ ] **Step 1:** Open `MD Invoices With No Freight.pbip` in Power BI Desktop. **Fully close and reopen Desktop first** if it was already open with this file — brand-new TMDL table files don't hot-reload.
-- [ ] **Step 2:** In Model view, confirm `Fact_MDInvoices_NoFreight_Snapshot` appears with all 26 columns (23 base + `SnapshotDate` + 3 calculated) and the two new relationships to `dim_BranchLocation` and `dim_DateTable`.
-- [ ] **Step 3:** Refresh just this table (right-click → Refresh, or refresh the whole model). Confirm it loads without error and row count matches what the notebook reported.
+- [X] **Step 1:** Open `MD Invoices With No Freight.pbip` in Power BI Desktop. **Fully close and reopen Desktop first** if it was already open with this file — brand-new TMDL table files don't hot-reload.
+- [X] **Step 2:** In Model view, confirm `Fact_MDInvoices_NoFreight_Snapshot` appears with all 26 columns (23 base + `SnapshotDate` + 3 calculated) and the two new relationships to `dim_BranchLocation` and `dim_DateTable`.
+- [X] **Step 3:** Refresh just this table (right-click → Refresh, or refresh the whole model). Confirm it loads without error and row count matches what the notebook reported. **Hit a casing mismatch on first attempt** ("the key didn't match any rows in the table") — `saveAsTable()` lowercased the Delta table name in the Hive metastore; fixed by updating the partition's `Item="..."` to `fact_mdinvoices_nofreight_snapshot` (commit `e8fa269f`). Refresh succeeded after that fix.
 - [ ] **Step 4:** Spot-check the calculated columns: add `Fact_MDInvoices_NoFreight_Snapshot` to a temporary table visual with `FileNumber`, `SnapshotDate`, `TotalLineWeight`, `TotalFreightCharged`, `MissedFreightAmount`, `PctFreightDifference`, `FreightBucket`. Confirm `FreightBucket` values look sane (No Freight / Partial Freight / Adequate Freight) and `MissedFreightAmount` isn't blending across snapshot dates for repeat order numbers. Delete the temporary visual when done.
 - [ ] **Step 4a:** Verify the `SnapshotDate` → `dim_DateTable.Date` relationship actually matches rows (not just that the calculated columns look right). Add a visual grouping `Fact_MDInvoices_NoFreight_Snapshot[SnapshotDate]` by `dim_DateTable[Date]` — or check Model view's relationship diagnostics — and confirm no blank/unmatched rows on either side. Unlike `OrderDate` (which gets an explicit `DateTime.Date` truncation step in the partition), `SnapshotDate` relies on the notebook's `.cast("date")` already producing a clean date with no time component; this step confirms that assumption held once real data exists, since it was never verified against a live table during Phase 1's repo-only work.
 - [ ] **Step 5:** Publish to `RP - Dev` to verify privately, per this repo's standard deployment workflow (Desktop → RP-Dev → Sandbox/production).
