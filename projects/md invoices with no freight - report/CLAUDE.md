@@ -118,6 +118,7 @@ Ben (stakeholder) flagged that "Opportunity" didn't mean the same thing on the O
 
 Point-in-time history for the open MD freight backlog — mirrors the Open Parts Tickets snapshot pattern (`nb_Snapshot_Parts_Open_Orders` / `Fact_Parts_Open_Orders_Snapshot`).
 
+- **Status:** repo-side scaffolding only as of 2026-07-08 — the notebook, pipeline, and Desktop model wiring below are not yet created in Fabric. See `docs/superpowers/plans/2026-07-08-md-invoices-monthly-snapshot.md`, Tasks 7-8, for the remaining manual steps.
 - **Notebook:** `nb_Snapshot_MDInvoices_NoFreight` in `LH_Master_Data` — reference script at `queries/notebooks/nb_Snapshot_MDInvoices_NoFreight.py` in this project folder
 - **Target table:** `Fact_MDInvoices_NoFreight_Snapshot` (Delta, append mode)
 - **Pipeline:** `Pipeline_Monthly_MDInvoices_Snapshot` — 5:30 AM CST on the 1st of each month, after the 4:15 AM master orchestrator refreshes `Fact_MDInvoices_NoFreight`
