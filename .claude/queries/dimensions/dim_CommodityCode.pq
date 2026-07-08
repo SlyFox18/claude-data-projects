@@ -31,13 +31,21 @@ Query Folding: No (Lakehouse source with in-memory transformations)
 • Supplier Management: Analyze commodity distribution across vendors
 • Financial Analysis: Commodity-level cost and margin analysis
 
-📊 DATA STRUCTURE (2 COLUMNS):
+📊 DATA STRUCTURE (3 COLUMNS — PLANNED, see Step 14 below):
 
 **Surrogate Key:**
-• CommodityCodeKey (Int64) - Surrogate key for relationships (-1 = Unknown)
+• CommodityCodeKey (Int64) - Surrogate key for relationships (0 = Unknown; corrected 2026-07-08, was previously documented as -1 in error)
 
 **Natural Key/Attributes:**
 • CommodityCode (text) - Commodity classification code from source system
+• CommodityGroup (text) - PLANNED 2026-07-08: business-defined group name
+  (Plow & Planter, Sprayer, Toys, Cotton Strippers, Cotton Pickers, Tillage,
+  etc.) sourced via SharePoint lookup CSV, requested by Ben (Corp Parts
+  Manager). Codes not yet assigned to a group (including the UNKNOWN sentinel
+  row) fall back to "Other" rather than blank/null — see Step 15. Not yet
+  applied to the production dataflow — see Steps 14-15 in the query body for
+  the exact M code and reasoning, and CommodityCodeGroups.csv in this folder
+  for the current 244-code/17-group mapping.
 
 **Distinct Values:**
 • 780 unique commodity codes (extracted from jdis_Part_Information)
@@ -61,7 +69,7 @@ Query Folding: No (Lakehouse source with in-memory transformations)
 5. **Sort**: Alphabetical order for consistency
 6. **Remove Blanks (Second Pass)**: Final cleanup after transformations
 7. **Index**: Generate surrogate keys starting at 1
-8. **Unknown Record**: Add -1 key for unmapped values
+8. **Unknown Record**: Add 0 key for unmapped values
 
 **Text Cleaning Strategy:**
 • Text.Trim() - removes leading/trailing spaces
@@ -70,11 +78,11 @@ Query Folding: No (Lakehouse source with in-memory transformations)
 
 **Surrogate Key Generation:**
 • Sequential numbering starting at 1
-• Unknown record (-1) added for fact table orphan handling
+• Unknown record (0) added for fact table orphan handling
 • Allows for stable relationships even as new codes added
 
 **Unknown Record Handling:**
-• CommodityCodeKey = -1 for unknown/unmapped commodity codes
+• CommodityCodeKey = 0 for unknown/unmapped commodity codes
 • Referenced from "UnknownCommodityCode" query (separate query)
 • Standard dimension pattern for handling fact table orphans
 
@@ -121,7 +129,7 @@ Query Folding: No (Lakehouse source with in-memory transformations)
 • Monthly refresh adequate (codes rarely change)
 
 **UnknownCommodityCode Query:**
-• Separate query defining the -1 unknown record
+• Separate query defining the 0 unknown record
 • Appended at end via Table.Combine
 • Standard pattern for dimension unknown records
 
@@ -277,7 +285,7 @@ let
     // STEP 12: APPEND UNKNOWN RECORD
     // ========================================================================
     /*
-    PURPOSE: Add unknown record (-1 key) for fact table orphan handling
+    PURPOSE: Add unknown record (0 key) for fact table orphan handling
     SOURCE: UnknownCommodityCode query (separate query)
     PATTERN: Standard dimension unknown record
     */
@@ -287,13 +295,64 @@ let
     // STEP 13: FINAL SORT
     // ========================================================================
     /*
-    PURPOSE: Ensure unknown record (-1) sorts first, then 1, 2, 3...
+    PURPOSE: Ensure unknown record (0) sorts first, then 1, 2, 3...
     RESULT: Clean, predictable dimension table
     */
-    #"Sorted rows 1" = Table.Sort(#"Appended query", {{"CommodityCodeKey", Order.Ascending}})
+    #"Sorted rows 1" = Table.Sort(#"Appended query", {{"CommodityCodeKey", Order.Ascending}}),
+
+    // ========================================================================
+    // STEP 14 (PLANNED — 2026-07-08, not yet applied to production dataflow):
+    // ADD COMMODITYGROUP VIA SHAREPOINT LOOKUP
+    // ========================================================================
+    /*
+    PURPOSE: Attach Ben's business-defined group name (Plow & Planter, Sprayer,
+      Toys, Cotton Strippers/Pickers, Tillage, etc.) to each commodity code.
+    WHY THIS STEP IS LAST: Inserted AFTER surrogate key generation (Steps 9-10)
+      and the Unknown-record append (Step 12) on purpose. CommodityCodeKey
+      generation depends on row order/count at the time of Table.AddIndexColumn —
+      joining the group lookup any earlier risks changing that and silently
+      renumbering keys for every downstream report. Adding it here is purely
+      additive: existing key, existing rows, existing consumers unaffected.
+    SOURCE: CommodityCodeGroups.csv on SharePoint — reference copy of the same
+      file lives at .claude/queries/dimensions/CommodityCodeGroups.csv in the
+      data-projects repo. Ben's list changes/grows over time; edit the
+      SharePoint file directly, no dataflow changes needed for new codes.
+    NULL HANDLING: LeftOuter join means any commodity code not yet in the group
+      list (including the Unknown/0 record) gets a blank CommodityGroup rather
+      than failing the query — codes are added to groups over time, this is
+      expected, not an error state.
+    SHAREPOINT LOCATION: SouthPlainsImplement-ReportSite site, file uploaded
+      2026-07-08 (link shared by Brian references sourcedoc
+      {6056CE52-4FD2-460D-9ECA-A677E51E52A6}, filename CommodityCodeGroups.csv).
+    */
+    GroupSource  = SharePoint.Files("https://spitractor.sharepoint.com/sites/SouthPlainsImplement-ReportSite", [ApiVersion = 15]),
+    GroupFile    = GroupSource{[Name = "CommodityCodeGroups.csv"]}[Content],
+    GroupCsv     = Csv.Document(GroupFile, [Delimiter = ",", Columns = 2, Encoding = 65001, QuoteStyle = QuoteStyle.None]),
+    GroupPromoted = Table.PromoteHeaders(GroupCsv, [PromoteAllScalars = true]),
+    GroupTyped   = Table.TransformColumnTypes(GroupPromoted, {{"CommodityCode", type text}, {"Group", type text}}),
+
+    JoinedGroup   = Table.NestedJoin(#"Sorted rows 1", {"CommodityCode"}, GroupTyped, {"CommodityCode"}, "GroupTable", JoinKind.LeftOuter),
+    #"Added CommodityGroup" = Table.ExpandTableColumn(JoinedGroup, "GroupTable", {"Group"}, {"CommodityGroup"}),
+
+    // ========================================================================
+    // STEP 15 (PLANNED — 2026-07-08): REPLACE BLANK GROUPS WITH "OTHER"
+    // ========================================================================
+    /*
+    PURPOSE: Any commodity code not (yet) in Ben's group list — including the
+      UNKNOWN sentinel row — would otherwise show as a blank CommodityGroup,
+      which reads as "(Blank)" in slicers/matrices with no context. Bucketing
+      to "Other" makes it a real, filterable/groupable value instead.
+    NOTE: This intentionally also applies to the UNKNOWN row. That's a
+      deliberate choice, not an oversight — unmapped codes and the orphan
+      sentinel both read fine as "Other" for reporting purposes.
+    */
+    #"Replaced Blank Groups" = Table.TransformColumns(
+        #"Added CommodityGroup",
+        {{"CommodityGroup", each if _ = null then "Other" else _, type text}}
+    )
 
 in
-    #"Sorted rows 1"
+    #"Replaced Blank Groups"
 
 /*
 ============================================================================
@@ -311,7 +370,7 @@ in
 • **Keys**: CommodityCodeKey (surrogate), CommodityCode (natural)
 • **Attributes**: 2 columns (key + code)
 • **SCD Type**: Type 1 (no historical tracking)
-• **Unknown Record**: -1 key for orphan handling
+• **Unknown Record**: 0 key for orphan handling
 
 🔗 RELATIONSHIP READY:
 • **Primary Consumer**: dim_Parts
@@ -342,7 +401,7 @@ in
 1. ✅ Verify 780 distinct codes extracted
 2. ✅ Confirm no blank/null records
 3. ✅ Check text trimmed and cleaned
-4. ✅ Verify unknown record (-1) present
+4. ✅ Verify unknown record (0) present
 5. ✅ Confirm alphabetical sorting
 
 **When Adding to Monthly Pipeline:**
