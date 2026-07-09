@@ -1,13 +1,13 @@
 {
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.10.0/schema.json",
-  "name": "a4cdee90e75c2e97582e",
+  "name": "39482e7c60c8d46e4034",
   "position": {
-    "x": 7.63302752293578,
-    "y": 659.2929768532789,
-    "z": 2000,
-    "height": 77.602446483180429,
-    "width": 176.83180428134557,
-    "tabOrder": 6000
+    "x": 8.251889168765743,
+    "y": 572.02368730453384,
+    "z": 1500,
+    "height": 78.9823677581864,
+    "width": 176.82619647355165,
+    "tabOrder": 8007
   },
   "visual": {
     "visualType": "slicer",
@@ -20,18 +20,36 @@
                 "Column": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "Fact_Parts_Open_Tickets"
+                      "Entity": "fact_parts_open_orders_snapshot"
                     }
                   },
-                  "Property": "Customer"
+                  "Property": "SnapshotDate"
                 }
               },
-              "queryRef": "Fact_Parts_Open_Tickets.Customer",
-              "nativeQueryRef": "Customer",
+              "queryRef": "fact_parts_open_orders_snapshot.SnapshotDate",
+              "nativeQueryRef": "SnapshotDate",
               "active": true
             }
           ]
         }
+      },
+      "sortDefinition": {
+        "sort": [
+          {
+            "field": {
+              "Column": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "fact_parts_open_orders_snapshot"
+                  }
+                },
+                "Property": "SnapshotDate"
+              }
+            },
+            "direction": "Ascending"
+          }
+        ],
+        "isDefaultSort": true
       }
     },
     "objects": {
@@ -166,7 +184,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Customer Slicer'"
+                  "Value": "'Aging Slicer'"
                 }
               }
             }

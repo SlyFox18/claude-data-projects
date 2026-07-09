@@ -2032,8 +2032,8 @@ table _Measures
 		displayFolder: Snapshot Trend
 		lineageTag: f2b3c4d5-3333-4ccc-9003-cccccccccc04
 
-	measure 'HTML - Trend KPI Row' = ```
-
+	measure 'HTML - Trend KPI Row' =
+			
 			VAR LatestSnapshot =
 			    CALCULATE(
 			        MAX(fact_parts_open_orders_snapshot[SnapshotDate]),
@@ -2047,52 +2047,51 @@ table _Measures
 			    )
 			VAR HasPrior = NOT ISBLANK(PriorSnapshot)
 			VAR PriorLabel = IF(HasPrior, "vs " & FORMAT(PriorSnapshot, "MMMM YYYY"), "no prior month")
-
+			
 			VAR InvoicesNow = CALCULATE([Snapshot Order Count], fact_parts_open_orders_snapshot[SnapshotDate] = LatestSnapshot)
 			VAR InvoicesPrior = CALCULATE([Snapshot Order Count], fact_parts_open_orders_snapshot[SnapshotDate] = PriorSnapshot)
 			VAR InvoicesChange = DIVIDE(InvoicesNow - InvoicesPrior, InvoicesPrior)
-
+			
 			VAR DollarsNow = CALCULATE([Snapshot Order Total $], fact_parts_open_orders_snapshot[SnapshotDate] = LatestSnapshot)
 			VAR DollarsPrior = CALCULATE([Snapshot Order Total $], fact_parts_open_orders_snapshot[SnapshotDate] = PriorSnapshot)
 			VAR DollarsChange = DIVIDE(DollarsNow - DollarsPrior, DollarsPrior)
-
+			
 			VAR BODollarsNow = CALCULATE([Snapshot Backorder $], fact_parts_open_orders_snapshot[SnapshotDate] = LatestSnapshot)
 			VAR BODollarsPrior = CALCULATE([Snapshot Backorder $], fact_parts_open_orders_snapshot[SnapshotDate] = PriorSnapshot)
 			VAR BODollarsChange = DIVIDE(BODollarsNow - BODollarsPrior, BODollarsPrior)
-
+			
 			VAR BOCountNow = CALCULATE([Snapshot Backorder Count], fact_parts_open_orders_snapshot[SnapshotDate] = LatestSnapshot)
 			VAR BOCountPrior = CALCULATE([Snapshot Backorder Count], fact_parts_open_orders_snapshot[SnapshotDate] = PriorSnapshot)
 			VAR BOCountChange = DIVIDE(BOCountNow - BOCountPrior, BOCountPrior)
-
+			
 			VAR NeutralClr = "#1D3C4E"
 			VAR GoodClr = "#5CB85C"
 			VAR BadClr = "#FF6B6B"
-
+			
 			VAR Arrow1 = IF(InvoicesChange > 0, "▲", IF(InvoicesChange < 0, "▼", "→"))
 			VAR Arrow2 = IF(DollarsChange > 0, "▲", IF(DollarsChange < 0, "▼", "→"))
 			VAR Arrow3 = IF(BODollarsChange > 0, "▲", IF(BODollarsChange < 0, "▼", "→"))
 			VAR Arrow4 = IF(BOCountChange > 0, "▲", IF(BOCountChange < 0, "▼", "→"))
-
+			
 			VAR Clr3 = IF(BODollarsChange > 0, BadClr, IF(BODollarsChange < 0, GoodClr, NeutralClr))
 			VAR Clr4 = IF(BOCountChange > 0, BadClr, IF(BOCountChange < 0, GoodClr, NeutralClr))
-
+			
 			VAR CardCSS = "background: white; border-radius: 8px; padding: 16px; text-align: center; flex: 1; box-shadow: 0 2px 4px rgba(0,0,0,0.1); box-sizing: border-box;"
 			VAR LabelCSS = "font-size: 12px; color: #666; text-transform: uppercase; letter-spacing: 0.5px;"
 			VAR ValueCSS = "font-size: 28px; font-weight: 700; color: #1D3C4E; margin: 6px 0;"
-
+			
 			VAR Delta1 = IF(HasPrior, Arrow1 & " " & FORMAT(ABS(InvoicesChange), "0.0%") & " " & PriorLabel, PriorLabel)
 			VAR Delta2 = IF(HasPrior, Arrow2 & " " & FORMAT(ABS(DollarsChange), "0.0%") & " " & PriorLabel, PriorLabel)
 			VAR Delta3 = IF(HasPrior, Arrow3 & " " & FORMAT(ABS(BODollarsChange), "0.0%") & " " & PriorLabel, PriorLabel)
 			VAR Delta4 = IF(HasPrior, Arrow4 & " " & FORMAT(ABS(BOCountChange), "0.0%") & " " & PriorLabel, PriorLabel)
-
+			
 			VAR Card1 = "<div style='" & CardCSS & "'><div style='" & LabelCSS & "'># Invoices</div><div style='" & ValueCSS & "'>" & FORMAT(InvoicesNow, "#,##0") & "</div><div style='font-size: 13px; color: " & NeutralClr & ";'>" & Delta1 & "</div></div>"
 			VAR Card2 = "<div style='" & CardCSS & "'><div style='" & LabelCSS & "'>Order Total $</div><div style='" & ValueCSS & "'>" & FORMAT(DollarsNow, "$#,##0") & "</div><div style='font-size: 13px; color: " & NeutralClr & ";'>" & Delta2 & "</div></div>"
 			VAR Card3 = "<div style='" & CardCSS & "'><div style='" & LabelCSS & "'>Backorder $</div><div style='" & ValueCSS & "'>" & FORMAT(BODollarsNow, "$#,##0") & "</div><div style='font-size: 13px; color: " & Clr3 & ";'>" & Delta3 & "</div></div>"
 			VAR Card4 = "<div style='" & CardCSS & "'><div style='" & LabelCSS & "'># Back Orders</div><div style='" & ValueCSS & "'>" & FORMAT(BOCountNow, "#,##0") & "</div><div style='font-size: 13px; color: " & Clr4 & ";'>" & Delta4 & "</div></div>"
-
+			
 			RETURN
 			"<div style='font-family: Segoe UI, Arial, sans-serif; display: flex; gap: 10px; height: 100%; box-sizing: border-box;'>" & Card1 & Card2 & Card3 & Card4 & "</div>"
-			```
 		displayFolder: Snapshot Trend
 		lineageTag: f2b3c4d5-3333-4ccc-9003-cccccccccc05
 
