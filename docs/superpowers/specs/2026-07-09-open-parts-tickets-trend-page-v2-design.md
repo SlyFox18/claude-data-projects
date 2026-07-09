@@ -51,7 +51,7 @@ Relative Date slicers don't support picking arbitrary individual non-contiguous 
 
 ## Hidden panel
 
-Per Brian's earlier explicit decision, the page's `HiddenInViewMode` visibility and its leftover `Order_No` drillthrough filter binding are **still** out of scope for this work — untouched again in v2. The hidden panel's Branch slicer stays as-is (already correctly bound, not part of this redesign). The hidden panel's old Aging/Invoice_Type/Customer/Contact Code slicers — since the Aging chip control now supersedes the hidden panel's Aging slicer for this page, and Invoice_Type/Customer/Contact Code were already flagged as out-of-scope/inert in v1 — get deleted from the hidden panel entirely rather than fixed, to avoid two different, easily-confused ways to filter by Aging on the same page.
+**The entire hidden panel is off-limits for this work — do not add, remove, or modify anything in it.** Per Brian's explicit instruction, this includes the page's `HiddenInViewMode` visibility, its leftover `Order_No` drillthrough filter binding, the Branch slicer, and the old Aging/Invoice_Type/Customer/Contact Code slicers (even though the new Aging chip control makes the panel's Aging slicer redundant, and Invoice_Type/Customer/Contact Code are already known to be inert). The panel also handles page-to-page navigation, so it carries more risk to touch than a simple slicer cleanup — Brian will handle any changes to it himself, on his own schedule. The new Aging chip control and the old panel's Aging slicer will coexist as two independent, unconnected controls for now; that's accepted as a known, temporary redundancy rather than something this build should resolve.
 
 ---
 
@@ -97,8 +97,8 @@ Per Brian's earlier explicit decision, the page's `HiddenInViewMode` visibility 
 | File | Change |
 |---|---|
 | `_Measures.tmdl` | Modify `HTML - Trend KPI Row` (coloring fix); add `Snapshot Orders with Backorder`, `HTML - Dollars Trend Timeline`, `HTML - Orders Trend Timeline`; modify `Page 6 - Trends - Header` (context line) |
-| Trends page (`ac8bedf2271b0d172508`) | Remove the 3 line-chart visuals; add 2 new htmlContent timeline visuals, 1 Aging Slicer, 1 "All" action button, 1 Relative Date Slicer; set Edit Interactions per the scoping table above; add 1 new bookmark (clear-Aging) |
-| Hidden panel slicers (Invoice_Type, Customer, Contact Code) | Remove |
+| Trends page (`ac8bedf2271b0d172508`) | Remove the 3 line-chart visuals; add 2 new htmlContent timeline visuals, 1 Aging Slicer, 1 "All" action button, 1 Relative Date Slicer; set Edit Interactions per the scoping table above; add 1 new bookmark (clear-Aging). New controls go in the page's main canvas area, not the hidden panel. |
+| Hidden panel (any file under `bookmarks/`, or the panel's visual containers) | **Do not touch** — off-limits per Brian, see "Hidden panel" above |
 
 ---
 
@@ -110,5 +110,5 @@ Per Brian's earlier explicit decision, the page's `HiddenInViewMode` visibility 
 - [ ] Clicking "All" clears the Aging selection via the bookmark
 - [ ] Adjusting the Relative Date slicer filters all 4 visuals including Aging Mix Over Time
 - [ ] Header context line updates correctly for both controls, including the "All" / default states
-- [ ] Hidden panel now shows only the Branch slicer; Show/Hide Nav Panel 6 bookmarks still work
+- [ ] Hidden panel is completely untouched — same 5 slicers, same bookmarks, same nav behavior as before this build started
 - [ ] Other pages unaffected
