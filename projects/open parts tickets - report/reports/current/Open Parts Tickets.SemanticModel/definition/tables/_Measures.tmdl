@@ -2056,8 +2056,8 @@ table _Measures
 			    ADDCOLUMNS(
 			        MonthsWithAmounts,
 			        "AvailAmt", [TotalAmt] - [BOAmt],
-			        "AvailPct", DIVIDE([TotalAmt] - [BOAmt], [TotalAmt]),
-			        "BOPct", DIVIDE([BOAmt], [TotalAmt]),
+			        "AvailPct", DIVIDE([TotalAmt] - [BOAmt], [TotalAmt], 0),
+			        "BOPct", DIVIDE([BOAmt], [TotalAmt], 0),
 			        "MonthLabel", FORMAT(fact_parts_open_orders_snapshot[SnapshotDate], "MMM YYYY")
 			    )
 
