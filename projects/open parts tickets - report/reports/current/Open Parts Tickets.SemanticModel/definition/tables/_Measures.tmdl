@@ -1960,7 +1960,7 @@ table _Measures
 			VAR ViewMax = MAX(fact_parts_open_orders_snapshot[SnapshotDate])
 			VAR ViewLabel =
 			    IF(
-			        ISBLANK(ViewMin), "All Months",
+			        ISBLANK(ViewMin), "No Data",
 			        IF(ViewMin = ViewMax, FORMAT(ViewMax, "MMM YYYY"), FORMAT(ViewMin, "MMM YYYY") & " - " & FORMAT(ViewMax, "MMM YYYY"))
 			    )
 			VAR AgingLabel = SELECTEDVALUE(fact_parts_open_orders_snapshot[Aging], "All")
