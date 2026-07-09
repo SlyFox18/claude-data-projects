@@ -2073,6 +2073,8 @@ table _Measures
 			VAR Arrow3 = IF(BODollarsChange > 0, "▲", IF(BODollarsChange < 0, "▼", "→"))
 			VAR Arrow4 = IF(BOCountChange > 0, "▲", IF(BOCountChange < 0, "▼", "→"))
 			
+			VAR Clr1 = IF(InvoicesChange > 0, BadClr, IF(InvoicesChange < 0, GoodClr, NeutralClr))
+			VAR Clr2 = IF(DollarsChange > 0, BadClr, IF(DollarsChange < 0, GoodClr, NeutralClr))
 			VAR Clr3 = IF(BODollarsChange > 0, BadClr, IF(BODollarsChange < 0, GoodClr, NeutralClr))
 			VAR Clr4 = IF(BOCountChange > 0, BadClr, IF(BOCountChange < 0, GoodClr, NeutralClr))
 			
@@ -2085,8 +2087,8 @@ table _Measures
 			VAR Delta3 = IF(HasPrior, Arrow3 & " " & FORMAT(ABS(BODollarsChange), "0.0%") & " " & PriorLabel, PriorLabel)
 			VAR Delta4 = IF(HasPrior, Arrow4 & " " & FORMAT(ABS(BOCountChange), "0.0%") & " " & PriorLabel, PriorLabel)
 			
-			VAR Card1 = "<div style='" & CardCSS & "'><div style='" & LabelCSS & "'># Invoices</div><div style='" & ValueCSS & "'>" & FORMAT(InvoicesNow, "#,##0") & "</div><div style='font-size: 13px; color: " & NeutralClr & ";'>" & Delta1 & "</div></div>"
-			VAR Card2 = "<div style='" & CardCSS & "'><div style='" & LabelCSS & "'>Order Total $</div><div style='" & ValueCSS & "'>" & FORMAT(DollarsNow, "$#,##0") & "</div><div style='font-size: 13px; color: " & NeutralClr & ";'>" & Delta2 & "</div></div>"
+			VAR Card1 = "<div style='" & CardCSS & "'><div style='" & LabelCSS & "'># Invoices</div><div style='" & ValueCSS & "'>" & FORMAT(InvoicesNow, "#,##0") & "</div><div style='font-size: 13px; color: " & Clr1 & ";'>" & Delta1 & "</div></div>"
+			VAR Card2 = "<div style='" & CardCSS & "'><div style='" & LabelCSS & "'>Order Total $</div><div style='" & ValueCSS & "'>" & FORMAT(DollarsNow, "$#,##0") & "</div><div style='font-size: 13px; color: " & Clr2 & ";'>" & Delta2 & "</div></div>"
 			VAR Card3 = "<div style='" & CardCSS & "'><div style='" & LabelCSS & "'>Backorder $</div><div style='" & ValueCSS & "'>" & FORMAT(BODollarsNow, "$#,##0") & "</div><div style='font-size: 13px; color: " & Clr3 & ";'>" & Delta3 & "</div></div>"
 			VAR Card4 = "<div style='" & CardCSS & "'><div style='" & LabelCSS & "'># Back Orders</div><div style='" & ValueCSS & "'>" & FORMAT(BOCountNow, "#,##0") & "</div><div style='font-size: 13px; color: " & Clr4 & ";'>" & Delta4 & "</div></div>"
 			
