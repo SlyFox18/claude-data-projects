@@ -2032,6 +2032,11 @@ table _Measures
 		displayFolder: Snapshot Trend
 		lineageTag: f2b3c4d5-3333-4ccc-9003-cccccccccc04
 
+	measure 'Snapshot Orders with Backorder' = CALCULATE(DISTINCTCOUNT(fact_parts_open_orders_snapshot[Order_No]), fact_parts_open_orders_snapshot[#_On_Back_Order] > 0)
+		formatString: 0
+		displayFolder: Snapshot Trend
+		lineageTag: f2b3c4d5-4444-4ddd-9004-dddddddddd01
+
 	measure 'HTML - Trend KPI Row' =
 			
 			VAR LatestSnapshot =
