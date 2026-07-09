@@ -1956,6 +1956,15 @@ table _Measures
 			    IF(CurrentHour < 17, "Good Afternoon",
 			    "Good Evening"))
 			
+			VAR ViewMin = MIN(fact_parts_open_orders_snapshot[SnapshotDate])
+			VAR ViewMax = MAX(fact_parts_open_orders_snapshot[SnapshotDate])
+			VAR ViewLabel =
+			    IF(
+			        ISBLANK(ViewMin), "All Months",
+			        IF(ViewMin = ViewMax, FORMAT(ViewMax, "MMM YYYY"), FORMAT(ViewMin, "MMM YYYY") & " - " & FORMAT(ViewMax, "MMM YYYY"))
+			    )
+			VAR AgingLabel = SELECTEDVALUE(fact_parts_open_orders_snapshot[Aging], "All")
+			
 			RETURN
 			"
 			<div style='
@@ -1994,6 +2003,9 @@ table _Measures
 			            </div>
 			            <div style='font-size: 26px; font-weight: 700; line-height: 1;'>
 			                Trends - Open Parts Tickets
+			            </div>
+			            <div style='font-size: 12px; opacity: 0.75; margin-top: 4px;'>
+			                Viewing " & ViewLabel & " &middot; Aging " & AgingLabel & "
 			            </div>
 			        </div>
 			    </div>
