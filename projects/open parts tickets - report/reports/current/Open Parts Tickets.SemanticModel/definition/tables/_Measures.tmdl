@@ -2049,12 +2049,12 @@ table _Measures
 			VAR LatestSnapshot =
 			    CALCULATE(
 			        MAX(fact_parts_open_orders_snapshot[SnapshotDate]),
-			        ALLEXCEPT(fact_parts_open_orders_snapshot, fact_parts_open_orders_snapshot[SnapshotDate])
+			        REMOVEFILTERS(fact_parts_open_orders_snapshot[Aging])
 			    )
 			VAR PriorSnapshot =
 			    CALCULATE(
 			        MAX(fact_parts_open_orders_snapshot[SnapshotDate]),
-			        ALLEXCEPT(fact_parts_open_orders_snapshot, fact_parts_open_orders_snapshot[SnapshotDate]),
+			        REMOVEFILTERS(fact_parts_open_orders_snapshot[Aging]),
 			        fact_parts_open_orders_snapshot[SnapshotDate] < LatestSnapshot
 			    )
 			VAR HasPrior = NOT ISBLANK(PriorSnapshot)
