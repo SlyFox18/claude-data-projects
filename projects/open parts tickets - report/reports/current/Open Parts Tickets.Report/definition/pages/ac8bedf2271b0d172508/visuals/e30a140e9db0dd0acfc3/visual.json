@@ -2,12 +2,12 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.10.0/schema.json",
   "name": "e30a140e9db0dd0acfc3",
   "position": {
-    "x": 858.19647355163727,
-    "y": 248.73551637279598,
-    "z": 5500,
-    "height": 656.61460957178838,
-    "width": 786.28715365239293,
-    "tabOrder": 8006
+    "x": 0,
+    "y": 161.50125944584386,
+    "z": 0,
+    "height": 493.93450881612091,
+    "width": 1590.2569269521412,
+    "tabOrder": 8000
   },
   "visual": {
     "visualType": "columnChart",
@@ -47,6 +47,52 @@
               },
               "queryRef": "fact_parts_open_orders_snapshot.Aging",
               "nativeQueryRef": "Aging"
+            }
+          ]
+        },
+        "Tooltips": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Snapshot Backorder Count"
+                }
+              },
+              "queryRef": "_Measures.Snapshot Backorder Count",
+              "nativeQueryRef": "Snapshot Backorder Count"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Snapshot Order Total $"
+                }
+              },
+              "queryRef": "_Measures.Snapshot Order Total $",
+              "nativeQueryRef": "Snapshot Order Total $"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Snapshot Backorder $"
+                }
+              },
+              "queryRef": "_Measures.Snapshot Backorder $",
+              "nativeQueryRef": "Snapshot Backorder $"
             }
           ]
         },
@@ -443,7 +489,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Aging Mix Over Time'"
+                  "Value": "'Aging Mix  - Order Count'"
                 }
               }
             }
@@ -452,5 +498,6 @@
       ]
     },
     "drillFilterOtherVisuals": true
-  }
+  },
+  "parentGroupName": "5e45b0a88d02f5a2fe59"
 }

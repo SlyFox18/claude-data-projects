@@ -29,9 +29,14 @@ The report is fully built, in production, and receiving new feature additions. T
   - `Open Order Ratio` — DIVIDE([Order Total], [Invoiced Parts (Trailing)])
 - Visual: Ratio tab on Comparison page — bar chart sorted by ratio descending
 
-### What's Pending (Future Work)
+✅ **Snapshot Trend Page** (July 2026)
+- New report page: Page 6, "Trends" (`ac8bedf2271b0d172508`), hidden in view mode pending stakeholder sign-off
+- Hero KPI card (gradient style matching Overview/Details pages), Count/$ toggle (bookmark-driven), Aging Mix Over Time as the focal chart with a small complementary trend line above it
+- New measures (display folder: "Snapshot Trend"): `Snapshot Order Count`, `Snapshot Order Total $`, `Snapshot Backorder $`, `Snapshot Backorder Count`, `Snapshot Orders with Backorder`, `HTML - Trend KPI Row`
+- An earlier design round (proportion-bar timelines + explicit Aging/date slicers) is documented and its measures (`HTML - Dollars Trend Timeline`, `HTML - Orders Trend Timeline`) kept in the model unused, in case that direction is revisited later
+- Full details: `CHANGE-LOG.md` Version 2.2
 
-⏳ **Snapshot trend page** — needs a few months of data before building. Come back May/June 2026.
+### What's Pending (Future Work)
 
 ⏳ **Ratio validation** — ratios are live and calculating (0.4%–8.5% range as of March 2026). Monitor for a few months to confirm stability.
 

@@ -1,16 +1,16 @@
 {
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.10.0/schema.json",
-  "name": "761c2eaecd4392148d88",
+  "name": "057b538aa04b577e1f09",
   "position": {
-    "x": 58.942065491183882,
-    "y": 248.73551637279598,
-    "z": 5062,
-    "height": 313.57178841309826,
-    "width": 791.00251889168771,
-    "tabOrder": 8003
+    "x": 0,
+    "y": 0,
+    "z": 1000,
+    "height": 149.71284634760707,
+    "width": 1590.2569269521412,
+    "tabOrder": 13001
   },
   "visual": {
-    "visualType": "lineClusteredColumnComboChart",
+    "visualType": "lineChart",
     "query": {
       "queryState": {
         "Category": {
@@ -42,46 +42,17 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "Snapshot Order Count"
+                  "Property": "Snapshot Orders with Backorder"
                 }
               },
-              "queryRef": "_Measures.Snapshot Order Count",
-              "nativeQueryRef": "Order Count",
-              "displayName": "Order Count"
-            },
-            {
-              "field": {
-                "Measure": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "_Measures"
-                    }
-                  },
-                  "Property": "Snapshot Backorder Count"
-                }
-              },
-              "queryRef": "_Measures.Snapshot Backorder Count",
-              "nativeQueryRef": "Backorder Count",
-              "displayName": "Backorder Count"
+              "queryRef": "_Measures.Snapshot Orders with Backorder",
+              "nativeQueryRef": "Snapshot Orders with Backorder"
             }
           ]
         }
       }
     },
     "objects": {
-      "categoryAxis": [
-        {
-          "properties": {
-            "showAxisTitle": {
-              "expr": {
-                "Literal": {
-                  "Value": "false"
-                }
-              }
-            }
-          }
-        }
-      ],
       "valueAxis": [
         {
           "properties": {
@@ -111,123 +82,52 @@
                   "Value": "true"
                 }
               }
-            }
-          }
-        },
-        {
-          "properties": {
+            },
             "labelDisplayUnits": {
               "expr": {
                 "Literal": {
                   "Value": "1D"
+                }
+              }
+            },
+            "fontSize": {
+              "expr": {
+                "Literal": {
+                  "Value": "11D"
                 }
               }
             },
             "labelPosition": {
               "expr": {
                 "Literal": {
-                  "Value": "'Auto'"
-                }
-              }
-            },
-            "optimizeLabelDisplay": {
-              "expr": {
-                "Literal": {
-                  "Value": "true"
+                  "Value": "'Above'"
                 }
               }
             }
-          },
-          "selector": {
-            "metadata": "_Measures.Snapshot Backorder Count"
-          }
-        },
-        {
-          "properties": {
-            "labelDisplayUnits": {
-              "expr": {
-                "Literal": {
-                  "Value": "1D"
-                }
-              }
-            }
-          },
-          "selector": {
-            "metadata": "_Measures.Snapshot Order Count"
           }
         }
       ],
       "lineStyles": [
         {
           "properties": {
-            "lineChartType": {
+            "strokeWidth": {
               "expr": {
                 "Literal": {
-                  "Value": "'linear'"
+                  "Value": "2D"
                 }
               }
-            }
-          }
-        }
-      ],
-      "dataPoint": [
-        {
-          "properties": {
-            "fill": {
-              "solid": {
-                "color": {
-                  "expr": {
-                    "Literal": {
-                      "Value": "'#3A7CA5'"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "selector": {
-            "metadata": "_Measures.Snapshot Order Count"
-          }
-        },
-        {
-          "properties": {
-            "fill": {
-              "solid": {
-                "color": {
-                  "expr": {
-                    "Literal": {
-                      "Value": "'#FF6B6B'"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "selector": {
-            "metadata": "_Measures.Snapshot Backorder Count"
-          }
-        }
-      ],
-      "legend": [
-        {
-          "properties": {
-            "showTitle": {
+            },
+            "showMarker": {
               "expr": {
                 "Literal": {
-                  "Value": "false"
+                  "Value": "true"
                 }
               }
-            }
-          }
-        }
-      ],
-      "layout": [
-        {
-          "properties": {
-            "clusteredGapSize": {
+            },
+            "markerSize": {
               "expr": {
                 "Literal": {
-                  "Value": "10D"
+                  "Value": "3D"
                 }
               }
             }
@@ -285,7 +185,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Order Count Trend'"
+                  "Value": "'Orders with Backordered Parts'"
                 }
               }
             }
@@ -294,5 +194,6 @@
       ]
     },
     "drillFilterOtherVisuals": true
-  }
+  },
+  "parentGroupName": "5e45b0a88d02f5a2fe59"
 }

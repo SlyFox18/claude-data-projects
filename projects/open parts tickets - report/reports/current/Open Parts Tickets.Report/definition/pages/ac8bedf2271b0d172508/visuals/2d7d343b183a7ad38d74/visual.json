@@ -1,16 +1,16 @@
 {
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.10.0/schema.json",
-  "name": "6d4ba374659736084bf1",
+  "name": "2d7d343b183a7ad38d74",
   "position": {
-    "x": 58.942065491183882,
-    "y": 577.632241813602,
-    "z": 5125,
-    "height": 327.71788413098238,
-    "width": 791.00251889168771,
-    "tabOrder": 8004
+    "x": 0,
+    "y": 0,
+    "z": 2000,
+    "height": 149.71284634760707,
+    "width": 1590.2569269521412,
+    "tabOrder": 13003
   },
   "visual": {
-    "visualType": "lineClusteredColumnComboChart",
+    "visualType": "lineChart",
     "query": {
       "queryState": {
         "Category": {
@@ -42,53 +42,17 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "Snapshot Order Total $"
-                }
-              },
-              "queryRef": "_Measures.Snapshot Order Total $",
-              "nativeQueryRef": "Order Total $",
-              "displayName": "Order Total $"
-            },
-            {
-              "field": {
-                "Measure": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "_Measures"
-                    }
-                  },
                   "Property": "Snapshot Backorder $"
                 }
               },
               "queryRef": "_Measures.Snapshot Backorder $",
-              "nativeQueryRef": "Backorder $",
-              "displayName": "Backorder $"
+              "nativeQueryRef": "Snapshot Backorder $"
             }
           ]
         }
       }
     },
     "objects": {
-      "categoryAxis": [
-        {
-          "properties": {
-            "showAxisTitle": {
-              "expr": {
-                "Literal": {
-                  "Value": "false"
-                }
-              }
-            },
-            "innerPadding": {
-              "expr": {
-                "Literal": {
-                  "Value": "20L"
-                }
-              }
-            }
-          }
-        }
-      ],
       "valueAxis": [
         {
           "properties": {
@@ -118,151 +82,99 @@
                   "Value": "true"
                 }
               }
-            }
-          }
-        },
-        {
-          "properties": {
+            },
             "labelDisplayUnits": {
               "expr": {
                 "Literal": {
-                  "Value": "1000D"
+                  "Value": "1D"
                 }
               }
             },
-            "enableBackground": {
+            "fontSize": {
+              "expr": {
+                "Literal": {
+                  "Value": "11D"
+                }
+              }
+            },
+            "color": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "ThemeDataColor": {
+                      "ColorId": 1,
+                      "Percent": 0
+                    }
+                  }
+                }
+              }
+            },
+            "labelPosition": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Above'"
+                }
+              }
+            },
+            "optimizeLabelDisplay": {
               "expr": {
                 "Literal": {
                   "Value": "false"
                 }
               }
-            }
-          },
-          "selector": {
-            "metadata": "_Measures.Snapshot Backorder $"
-          }
-        },
-        {
-          "properties": {
-            "showSeries": {
+            },
+            "maximumOffset": {
               "expr": {
                 "Literal": {
-                  "Value": "true"
+                  "Value": "100D"
                 }
               }
             },
-            "enableBackground": {
+            "leaderLines": {
               "expr": {
                 "Literal": {
                   "Value": "false"
                 }
               }
+            },
+            "leaderLineWidth": {
+              "expr": {
+                "Literal": {
+                  "Value": "1D"
+                }
+              }
             }
-          },
-          "selector": {
-            "metadata": "_Measures.Snapshot Order Total $"
           }
         }
       ],
       "lineStyles": [
         {
           "properties": {
-            "lineChartType": {
+            "strokeWidth": {
               "expr": {
                 "Literal": {
-                  "Value": "'linear'"
+                  "Value": "2D"
                 }
               }
-            }
-          }
-        }
-      ],
-      "legend": [
-        {
-          "properties": {
-            "show": {
+            },
+            "strokeLineJoin": {
+              "expr": {
+                "Literal": {
+                  "Value": "'round'"
+                }
+              }
+            },
+            "showMarker": {
               "expr": {
                 "Literal": {
                   "Value": "true"
                 }
               }
             },
-            "showTitle": {
+            "markerSize": {
               "expr": {
                 "Literal": {
-                  "Value": "false"
-                }
-              }
-            }
-          }
-        }
-      ],
-      "dataPoint": [
-        {
-          "properties": {
-            "fill": {
-              "solid": {
-                "color": {
-                  "expr": {
-                    "Literal": {
-                      "Value": "'#FF6B6B'"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "selector": {
-            "metadata": "_Measures.Snapshot Backorder $"
-          }
-        },
-        {
-          "properties": {
-            "fill": {
-              "solid": {
-                "color": {
-                  "expr": {
-                    "Literal": {
-                      "Value": "'#3A7CA5'"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "selector": {
-            "metadata": "_Measures.Snapshot Order Total $"
-          }
-        }
-      ],
-      "layout": [
-        {
-          "properties": {
-            "clusteredGapSize": {
-              "expr": {
-                "Literal": {
-                  "Value": "10D"
-                }
-              }
-            },
-            "seriesOrderReversed": {
-              "expr": {
-                "Literal": {
-                  "Value": "false"
-                }
-              }
-            },
-            "seriesOrderSorted": {
-              "expr": {
-                "Literal": {
-                  "Value": "false"
-                }
-              }
-            },
-            "clusteredGapOverlaps": {
-              "expr": {
-                "Literal": {
-                  "Value": "false"
+                  "Value": "3D"
                 }
               }
             }
@@ -320,7 +232,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Order Total $ Trend'"
+                  "Value": "'Backorder $ Trend'"
                 }
               }
             }
@@ -329,5 +241,6 @@
       ]
     },
     "drillFilterOtherVisuals": true
-  }
+  },
+  "parentGroupName": "2c0651e1e9942cbef371"
 }
