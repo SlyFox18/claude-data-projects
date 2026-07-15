@@ -27,6 +27,14 @@ another existing report.
 COMMENTS: Sourced from InMaster.NOTE (confirmed 2026-07-15 — not in
 jdis_Part_Information, and not the undocumented user_field_1/user_field_2).
 
+BRANCH EXCLUSION: Branches 5 and 97 excluded per Ben (stakeholder),
+2026-07-15 — not relevant results for this tool's purpose. Filtered
+at the source query, matching this repo's established convention for
+branch/franchise exclusions (e.g. Transfers report's Branch 12
+exclusion, Non-JD Order Tool's franchise exclusion) rather than
+filtering client-side in the app, so any future consumer of this
+table gets the same exclusion automatically.
+
 DO NOT MODIFY the existing InMaster.pq / InMaster_Raw.pq raw pulls — this
 is a separate, purpose-built table for this tool only.
 ============================================================================
@@ -49,6 +57,7 @@ let
             Pending_Qty     AS PendingQty
         FROM InMaster
         WHERE VENDOR_CODE IS NOT NULL
+          AND BRANCH NOT IN ('5', '97')
     ",
 
     Source = try Odbc.Query("dsn=EquipRDB64", SQL) otherwise
