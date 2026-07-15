@@ -6699,6 +6699,26 @@ table _Measures
 		formatString: 0
 		lineageTag: a1660ac9-8877-4c9d-ab62-013a0ddeb833
 
+	measure 'Parts $ Total (Filtered)' =
+			
+			VAR ValidInv =
+			    CALCULATETABLE(
+			        VALUES(Fact_LaborJobSummary[InvoiceNumber]),
+			        Fact_LaborJobSummary[IsInspection] = TRUE,
+			        NOT(ISBLANK(Fact_LaborJobSummary[InvoiceNumber]))
+			    )
+			RETURN
+			    CALCULATE(
+			        SUM(Fact_WorkOrderParts[SaleValue]),
+			        Fact_WorkOrderParts[InvoiceNumber] IN ValidInv,
+			        Fact_WorkOrderParts[Franchise] <> "ZP",
+			        NOT(Fact_WorkOrderParts[PartNumber] IN {"ADV", "LEGACY", "4900", "*10PROMO"})
+			    )
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 79497b74-305f-4e1f-8e1f-2fe57d8ca52e
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
 	column Value
 		isHidden
 		lineageTag: 9bebaa8d-37e0-4801-a109-64f1ce8274e2
