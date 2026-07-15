@@ -401,18 +401,18 @@ VALUES (NEWID(), 'TEST-001', '1', 'AM', 'TEST', 'A1', 5, 12.99, 'Direct SQL writ
 
 - [ ] **Step 4.3 — Confirm visibility through the GraphQL API**
 
-From the `parts-lookup-app` project, run a quick query using the generated client:
+Since there's no interactive GraphQL explorer in the Fabric portal for this item type, the practical way to test this is running the app's own frontend locally against the live backend (`npm run dev` from the `parts-lookup-app` project) and querying through the real generated client — confirmed pattern is `client.data.PartLocation.select([...]).execute()` (PascalCase, matching the entity class name exactly — not the lowercase-plural pattern Microsoft's example docs show):
 
 ```typescript
-import { RayfinClient } from '@microsoft/rayfin-client';
-
-const client = new RayfinClient();
-const result = await client.data.partLocations.query()
-  .select(['id', 'partNumber', 'comments'])
-  .execute();
+const client = getRayfinClient();
+const result = await client.data.PartLocation.select([
+  'id', 'partNumber', 'comments',
+]).execute();
 
 console.log(result);
 ```
+
+Sign in via the browser when `npm run dev` opens (real Entra SSO, not headless) and check whether `TEST-001` appears in the result.
 
 **Decision gate:**
 
@@ -516,8 +516,10 @@ SELECT MIN(lastRefreshed) AS Oldest, MAX(lastRefreshed) AS Newest FROM PartLocat
 Pick a part number known to carry a vendor code at 2+ branches. Query it through the GraphQL client:
 
 ```typescript
-const result = await client.data.partLocations.query()
-  .select(['branch', 'franchise', 'bin', 'binQty', 'sellPrice1', 'superTo', 'superFrom', 'comments'])
+const client = getRayfinClient();
+const result = await client.data.PartLocation.select([
+  'branch', 'franchise', 'bin', 'binQty', 'sellPrice1', 'superTo', 'superFrom', 'comments',
+])
   .filter({ partNumber: { eq: 'YOUR-TEST-PART-NUMBER' } })
   .execute();
 
