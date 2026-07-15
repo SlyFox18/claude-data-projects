@@ -432,13 +432,13 @@ git commit -m "Parts Lookup Tool: document confirmed sync mechanism"
 
 ## Task 5: Build the Sync Step
 
-> **Confirmed by Task 4:** direct SQL path, no GraphQL mutations, no notebook. `id` is database-generated — never mapped or supplied by this dataflow.
+> **Confirmed by Task 4:** direct SQL path, no GraphQL mutations, no notebook. `id` generation needed a second look — see Step 5.1's note.
 
 **Files:**
 
 - Create: `.claude/queries/facts/PartsLookup_Sync.pq`
 
-- [ ] **Step 5.1 — Write the query**
+- [x] **Step 5.1 — Write the query**
 
 Save to `.claude/queries/facts/PartsLookup_Sync.pq`:
 
@@ -459,22 +459,33 @@ SOURCE: References the `InMaster_PartsLookup_Raw` query directly — this
 dataflow adds that Lakehouse table as its own individual data source
 (not the whole LH_Master_Data lakehouse as a shared connection), so the
 query is referenced by name, not via LH_Master_Data{...}[Data] bracket
-navigation (that syntax errors with "matches no exports" unless the
-whole lakehouse was added as one shared connection instead).
+navigation.
 
-DESTINATION: SQL Server connector, pointed at the SQL Database in Fabric
-connection string (from parts-lookup-app's SQL Database child item).
-Update method: Replace (full delete + reinsert every run) — matches
-InMaster_PartsLookup_Raw being itself a full refresh, and avoids stale
-rows lingering for parts that lose their vendor code.
+DESTINATION: Dataflow Gen2's native "SQL database" destination, pointed
+directly at the parts-lookup-app database (Fabric surfaces it in the
+destination picker's workspace tree — no manual connection string
+needed). Existing table PartLocations, Update method: Replace.
 
-DO NOT map or generate `id` — confirmed 2026-07-15 that the database
-auto-generates it on insert; this dataflow's output has no id column
-at all, by design.
+ID GENERATION: confirmed 2026-07-15 that `id` has a database-level
+default when writing via a hand-written SQL INSERT that omits the
+column — but Dataflow Gen2's mapped destination write does NOT tolerate
+leaving a required column unmapped ("(none)") even when a DB default
+exists; it errored with "some column mappings have errors." So this
+query generates its own id: a row index (guaranteed unique within this
+run) converted to hex and embedded in valid GUID format. Doesn't need
+to be globally unique or a "real" v4 UUID — SQL Server's uniqueidentifier
+only requires syntactically valid GUID text, and Replace mode means
+uniqueness only has to hold within a single run's ~1.1M rows (12 hex
+digits supports up to ~2.8 x 10^14 distinct values). Power Query M has
+no built-in GUID generator, and a random-value-per-row approach was
+avoided deliberately — M's random functions have a known caching bug
+where they can return the same value across every row in a
+Table.AddColumn context; a deterministic row-index-based value has no
+such risk.
 
 COLUMN NAMES: renamed here to match PartLocations' camelCase columns
-exactly (confirmed via the deployed schema), since Dataflow Gen2's SQL
-Server destination maps by name.
+exactly (confirmed via the deployed schema), since Dataflow Gen2's
+destination maps by name.
 ============================================================================
 */
 
@@ -488,7 +499,18 @@ let
         type datetime
     ),
 
-    RenameForApp = Table.RenameColumns(AddLastRefreshed, {
+    AddRowIndex = Table.AddIndexColumn(AddLastRefreshed, "RowIndex", 1, 1, Int64.Type),
+
+    AddId = Table.AddColumn(
+        AddRowIndex,
+        "id",
+        each "00000000-0000-0000-0000-" & Text.PadStart(Number.ToText([RowIndex], "X"), 12, "0"),
+        type text
+    ),
+
+    RemoveRowIndex = Table.RemoveColumns(AddId, {"RowIndex"}),
+
+    RenameForApp = Table.RenameColumns(RemoveRowIndex, {
         {"Branch", "branch"},
         {"Franchise", "franchise"},
         {"PartNumber", "partNumber"},
@@ -502,7 +524,7 @@ let
     }),
 
     SelectFinalColumns = Table.SelectColumns(RenameForApp, {
-        "partNumber", "branch", "franchise", "vendorCode", "bin",
+        "id", "partNumber", "branch", "franchise", "vendorCode", "bin",
         "binQty", "sellPrice1", "superTo", "superFrom", "comments", "lastRefreshed"
     })
 in
@@ -511,13 +533,13 @@ in
 
 Note `Description`, `OnHandQty`, and `PendingQty` from `InMaster_PartsLookup_Raw` are deliberately dropped here — they're not part of the `PartLocation` entity (`OnHandQty`/`PendingQty` were only needed upstream to compute `BinQty`).
 
-- [ ] **Step 5.2 — Create the Dataflow Gen2 in Fabric**
+- [x] **Step 5.2 — Create the Dataflow Gen2 in Fabric**
 
-New Dataflow Gen2 → `df_PartsLookup_Sync`. Add a Lakehouse data source (connect to `LH_Master_Data`, select `InMaster_PartsLookup_Raw`). Paste the query above (Advanced Editor).
+New Dataflow Gen2 → `df_PartsLookup_Sync`. Add `InMaster_PartsLookup_Raw` as its own data source (not the whole `LH_Master_Data` lakehouse as a shared connection). Paste the query above (Advanced Editor).
 
-- [ ] **Step 5.3 — Add the SQL Database in Fabric as a destination**
+- [ ] **Step 5.3 — Add the SQL database as a destination**
 
-Add a new Data destination → SQL Server. Paste the connection string from Task 4.1 (same one you used for the manual INSERT/DELETE tests). Select the `parts-lookup-app` database, target table `PartLocations`. Set **Update method: Replace**. Confirm the column mapping — it should auto-map by name since the query's output columns already match `PartLocations`' real column names exactly. `id` should not appear in the mapping at all (there's no `id` column in this query's output).
+Add a new Data destination → **SQL database** (Fabric surfaces `parts-lookup-app` directly in the destination picker's workspace tree under `RP - Fabric Apps Sandbox`, no manual connection string needed). Choose **Existing table**, select `dbo.PartLocations`. Set **Update method: Replace**. Confirm the column mapping — every column including `id` should now auto-map by name (since the query generates `id` itself), with no "(none)" entries anywhere.
 
 - [ ] **Step 5.4 — Run it once manually and verify**
 
@@ -527,7 +549,7 @@ Publish and run. Then check the results:
 SELECT COUNT(*) AS TotalRows FROM PartLocations
 ```
 
-Expected: matches `InMaster_PartsLookup_Raw`'s row count from Step 2.4 (1,099,563, or whatever it is by the time you run this). Spot-check the same known multi-branch part from Step 2.4 to confirm the data landed correctly, and confirm every row has a real `id` (the database-generated default) and a `lastRefreshed` timestamp close to when you ran it.
+Expected: matches `InMaster_PartsLookup_Raw`'s row count from Step 2.4 (1,099,563, or whatever it is by the time you run this). Spot-check the same known multi-branch part from Step 2.4 to confirm the data landed correctly, and confirm every row has a valid `id` and a `lastRefreshed` timestamp close to when you ran it.
 
 - [ ] **Step 5.5 — Commit**
 

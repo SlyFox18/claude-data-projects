@@ -16,19 +16,34 @@ dataflow adds that Lakehouse table as its own individual data source
 query is referenced by name, not via LH_Master_Data{...}[Data] bracket
 navigation.
 
-DESTINATION: SQL Server connector, pointed at the SQL Database in Fabric
-connection string (from parts-lookup-app's SQL Database child item).
-Update method: Replace (full delete + reinsert every run) — matches
-InMaster_PartsLookup_Raw being itself a full refresh, and avoids stale
-rows lingering for parts that lose their vendor code.
+DESTINATION: Dataflow Gen2's native "SQL database" destination, pointed
+directly at the parts-lookup-app database (Fabric surfaces it in the
+destination picker's workspace tree — no manual connection string
+needed). Existing table PartLocations, Update method: Replace (full
+delete + reinsert every run) — matches InMaster_PartsLookup_Raw being
+itself a full refresh, and avoids stale rows lingering for parts that
+lose their vendor code.
 
-DO NOT map or generate `id` — confirmed 2026-07-15 that the database
-auto-generates it on insert; this dataflow's output has no id column
-at all, by design.
+ID GENERATION: confirmed 2026-07-15 that `id` has a database-level
+default when writing via a hand-written SQL INSERT that omits the
+column — but Dataflow Gen2's mapped destination write does NOT tolerate
+leaving a required column unmapped ("(none)") even when a DB default
+exists; it errored with "some column mappings have errors." So this
+query generates its own id: a row index (guaranteed unique within this
+run) converted to hex and embedded in valid GUID format. Doesn't need
+to be globally unique or a "real" v4 UUID — SQL Server's uniqueidentifier
+only requires syntactically valid GUID text, and Replace mode means
+uniqueness only has to hold within a single run's ~1.1M rows (12 hex
+digits supports up to ~2.8 x 10^14 distinct values, far more than
+enough). Power Query M has no built-in GUID generator, and a random-
+value-per-row approach was avoided deliberately — M's random functions
+have a known caching bug where they can return the same value across
+every row in a Table.AddColumn context; a deterministic row-index-based
+value has no such risk.
 
 COLUMN NAMES: renamed here to match PartLocations' camelCase columns
-exactly (confirmed via the deployed schema), since Dataflow Gen2's SQL
-Server destination maps by name.
+exactly (confirmed via the deployed schema), since Dataflow Gen2's
+destination maps by name.
 ============================================================================
 */
 
@@ -42,7 +57,18 @@ let
         type datetime
     ),
 
-    RenameForApp = Table.RenameColumns(AddLastRefreshed, {
+    AddRowIndex = Table.AddIndexColumn(AddLastRefreshed, "RowIndex", 1, 1, Int64.Type),
+
+    AddId = Table.AddColumn(
+        AddRowIndex,
+        "id",
+        each "00000000-0000-0000-0000-" & Text.PadStart(Number.ToText([RowIndex], "X"), 12, "0"),
+        type text
+    ),
+
+    RemoveRowIndex = Table.RemoveColumns(AddId, {"RowIndex"}),
+
+    RenameForApp = Table.RenameColumns(RemoveRowIndex, {
         {"Branch", "branch"},
         {"Franchise", "franchise"},
         {"PartNumber", "partNumber"},
@@ -56,7 +82,7 @@ let
     }),
 
     SelectFinalColumns = Table.SelectColumns(RenameForApp, {
-        "partNumber", "branch", "franchise", "vendorCode", "bin",
+        "id", "partNumber", "branch", "franchise", "vendorCode", "bin",
         "binQty", "sellPrice1", "superTo", "superFrom", "comments", "lastRefreshed"
     })
 in

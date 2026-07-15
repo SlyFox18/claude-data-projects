@@ -31,7 +31,10 @@ This means Task 5's sync step is a normal **Dataflow Gen2** writing straight to 
 - Table: `PartLocations` (PascalCase, pluralized — not the snake_case Fabric App docs/examples implied)
 - Columns: `id, bin, binQty, branch, comments, franchise, lastRefreshed, partNumber, sellPrice1, superFrom, superTo, vendorCode` (camelCase, matching the TypeScript entity fields exactly, no transformation)
 
-**Confirmed 2026-07-15:** `id` has a database-level default (an `INSERT` omitting the column entirely succeeded). Task 5's dataflow does not map or generate `id` at all — the database populates it automatically on every insert.
+**`id` generation — two different findings, and the second one is the operative one:**
+- A hand-written SQL `INSERT` omitting `id` entirely succeeds (there's a database-level default).
+- But Dataflow Gen2's mapped destination write does **not** tolerate leaving a required column unmapped ("(none)") even with that default in place — it errors with "some column mappings have errors."
+- **Resolution:** the sync query generates its own `id` — a per-row index (guaranteed unique within a run) converted to hex and embedded in valid GUID text format (`00000000-0000-0000-0000-<12 hex digits>`). This doesn't need to be a "real" random v4 UUID; SQL Server's `uniqueidentifier` only requires syntactically valid GUID text, and Replace mode means uniqueness only needs to hold within one run's ~1.1M rows. Power Query M has no built-in GUID generator, and a random-per-row value was deliberately avoided — M's random functions have a known bug where they can return the same value across every row in a `Table.AddColumn` context; the row-index approach has no such risk.
 
 ## Refresh Cadence
 
