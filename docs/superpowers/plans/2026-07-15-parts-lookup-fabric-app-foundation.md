@@ -386,11 +386,11 @@ git commit -m "Initial Fabric App scaffold with PartLocation entity"
 
 > **⚠️ Complete this before building Task 5.** Microsoft's documentation confirms the SQL Database in Fabric is reachable via connection string ("copy connection string" is listed as a portal capability) but doesn't say whether writes made that way outside the GraphQL API are supported or visible back through it. This determines whether Task 5 is a normal Dataflow Gen2/notebook SQL write, or has to go through GraphQL mutations instead.
 
-- [ ] **Step 4.1 — Get the connection string**
+- [x] **Step 4.1 — Get the connection string**
 
 In the Fabric portal: `parts-lookup-app` item → SQL Database in Fabric child item → copy connection string.
 
-- [ ] **Step 4.2 — Test a direct SQL write**
+- [x] **Step 4.2 — Test a direct SQL write**
 
 Using the exact table/column names confirmed in Step 3.5, connect with SSMS (or Fabric notebook + `pyodbc`) using that connection string and Entra auth, then run a test insert — substitute your real column names for the placeholders below:
 
@@ -399,7 +399,7 @@ INSERT INTO PartLocations (id, partNumber, branch, franchise, vendorCode, bin, b
 VALUES (NEWID(), 'TEST-001', '1', 'AM', 'TEST', 'A1', 5, 12.99, 'Direct SQL write test', GETUTCDATE())
 ```
 
-- [ ] **Step 4.3 — Confirm visibility through the GraphQL API**
+- [x] **Step 4.3 — Confirm visibility through the GraphQL API**
 
 Since there's no interactive GraphQL explorer in the Fabric portal for this item type, the practical way to test this is running the app's own frontend locally against the live backend (`npm run dev` from the `parts-lookup-app` project) and querying through the real generated client — confirmed pattern is `client.data.PartLocation.select([...]).execute()` (PascalCase, matching the entity class name exactly — not the lowercase-plural pattern Microsoft's example docs show):
 
@@ -419,7 +419,7 @@ Sign in via the browser when `npm run dev` opens (real Entra SSO, not headless) 
 - **If the `TEST-001` row you inserted directly shows up here** → direct SQL writes are consistent with the GraphQL layer. Build Task 5 as a normal Dataflow Gen2 (or notebook) writing straight to the SQL Database in Fabric connection string.
 - **If it doesn't show up, or the insert itself fails/errors** → the app enforces writes through its own API only. Build Task 5 as a notebook that calls GraphQL create mutations via `RayfinClient` in batches instead.
 
-- [ ] **Step 4.4 — Clean up the test row and document the finding**
+- [x] **Step 4.4 — Clean up the test row and document the finding**
 
 Delete `TEST-001` (via whichever path you just validated). Update `projects/parts lookup tool - app/ARCHITECTURE.md`'s "Sync Mechanism" section with the confirmed path.
 
