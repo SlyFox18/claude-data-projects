@@ -34,15 +34,15 @@ Uses `dim_DateTable[IsRolling24Months]` (already exists — no new date logic ne
 
 The one real architectural gap this surfaces: every existing "$ by Job Code" parts measure (`Parts $ Total`, the CS690/770 variants) is built on a **hardcoded job-code list** bridged through invoice numbers, because `Fact_WorkOrderParts` has no `JobCode` column of its own — parts are only linked to a job code indirectly, via the invoice number shared with `Fact_LaborJobSummary`. A trend driven by a live Inspection Category slicer needs a **generalized version of that bridge** that inherits whatever filter is active instead of a fixed list.
 
-Add to `_Measures.tmdl` under a new display folder `Trend`:
+Add to `_Measures.tmdl` (this table has no display folders in use anywhere today — new measures are appended flat, consistent with the rest of the file):
 
 | Measure | DAX approach | Notes |
 |---|---|---|
 | `Parts $ Total (Filtered)` | `VAR ValidInv = CALCULATETABLE(VALUES(Fact_LaborJobSummary[InvoiceNumber]), Fact_LaborJobSummary[IsInspection] = TRUE, NOT(ISBLANK(Fact_LaborJobSummary[InvoiceNumber]))) RETURN CALCULATE(SUM(Fact_WorkOrderParts[SaleValue]), Fact_WorkOrderParts[InvoiceNumber] IN ValidInv, Fact_WorkOrderParts[Franchise] <> "ZP", NOT(Fact_WorkOrderParts[PartNumber] IN {"ADV","LEGACY","4900","*10PROMO"}))` | Same exclusions as today's `Parts $ Total`; the `CALCULATETABLE` inherits whatever `InspectionCategory`/`BranchName` filter is active from the slicers, generalizing the CS690/770 pattern instead of hardcoding job codes |
 | _(reuse, no new measure)_ | `[Labor $$]` | No new bridge needed and no new measure created — it already filters `Fact_LaborJobSummary` directly, so it inherits `InspectionCategory`/Branch filter context automatically. Use the existing measure as-is in the Trend chart and in the avg-ticket DIVIDE below |
-| `Inspection Count (Filtered)` | `CALCULATE(COUNTROWS(Fact_LaborJobSummary), Fact_LaborJobSummary[IsInspection] = TRUE)` | Denominator for the avg-ticket measures below; already effectively `Total Inspections`, reused under filter context |
-| `Avg Parts $ / Inspection (Rolling 24)` | `DIVIDE([Parts $ Total (Filtered)], [Inspection Count (Filtered)], 0)` | For KPI card callout |
-| `Avg Labor $ / Inspection (Rolling 24)` | `DIVIDE([Labor $$], [Inspection Count (Filtered)], 0)` | For KPI card callout |
+| _(reuse, no new measure)_ | `[Total Inspections]` | Denominator for the avg-ticket measures below. Already `CALCULATE(COUNTROWS(Fact_LaborJobSummary), IsInspection = TRUE)` with no hardcoded job codes — identical to what a new "Inspection Count (Filtered)" measure would be, so reuse it directly rather than duplicate it |
+| `Avg Parts $ / Inspection (Rolling 24)` | `DIVIDE([Parts $ Total (Filtered)], [Total Inspections], 0)` | For KPI card callout |
+| `Avg Labor $ / Inspection (Rolling 24)` | `DIVIDE([Labor $$], [Total Inspections], 0)` | For KPI card callout |
 
 **Caveat to flag for Casey:** parts are attributed to an Inspection Category via invoice number, not a direct part-to-job link. If a single invoice mixes job codes from more than one category, its parts $ counts toward all of them. This is the same limitation the existing CS690/770 Parts measure already carries — not a new problem introduced by this feature, just worth knowing before trusting the parts trend at a granular category level.
 
@@ -78,7 +78,7 @@ Follow the existing `Matrix - Jobcode` / `Matrix - Branch` bookmark pattern exac
 
 | File | Change |
 |---|---|
-| `reports/current/Inspections.SemanticModel/definition/tables/_Measures.tmdl` | Add measures under new `Trend` display folder (table above) |
+| `reports/current/Inspections.SemanticModel/definition/tables/_Measures.tmdl` | Add the 3 new measures, appended flat (table above) |
 | `reports/current/Inspections.Report/definition/pages/30a66c2b13c2a8e9f495/visuals/` (Details page) | Add: Trend chart visual(s) (Option D first), 2 KPI cards, `InspectionCategory` slicer, `Button - Trend` action button |
 | `reports/current/Inspections.Report/definition/bookmarks/bookmarks.json` | Add new bookmark entry |
 | `reports/current/Inspections.Report/definition/bookmarks/<new>.bookmark.json` | New `Matrix - Trend` bookmark |
