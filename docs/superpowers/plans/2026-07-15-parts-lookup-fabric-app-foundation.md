@@ -551,6 +551,8 @@ SELECT COUNT(*) AS TotalRows FROM PartLocations
 
 Expected: matches `InMaster_PartsLookup_Raw`'s row count from Step 2.4 (1,099,563, or whatever it is by the time you run this). Spot-check the same known multi-branch part from Step 2.4 to confirm the data landed correctly, and confirm every row has a valid `id` and a `lastRefreshed` timestamp close to when you ran it.
 
+**Note found 2026-07-15:** the first real run failed on a `NOT NULL` constraint violation on `binQty` — ~8.8% of source rows (96,534 / 1,099,563) have a genuinely null `binQty` (source `OnHandQty`/`PendingQty` untracked for those parts). Fixed by making `binQty` optional on the `PartLocation` entity (`@int({ optional: true })`) and pushing the schema change with `npx rayfin up db apply` before re-running the sync. If `sellPrice1` or other required fields hit the same error, apply the same fix — don't default an untracked quantity/price to `0`.
+
 - [ ] **Step 5.5 — Commit**
 
 ```bash
