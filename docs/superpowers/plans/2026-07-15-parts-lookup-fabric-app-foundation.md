@@ -350,7 +350,7 @@ export const schema = [PartLocation];
 
 Delete `rayfin/data/Todo.ts` — it's no longer registered and isn't needed.
 
-- [ ] **Step 3.4 — Deploy**
+- [x] **Step 3.4 — Deploy**
 
 The `todoapp` template's frontend (`src/`) still references the demo `Todo` entity we removed in Step 3.3 — that's expected and fine, since rebuilding the frontend is Plan 2's job, not this one. Skip the (currently broken) frontend build and deploy just the backend/schema:
 
@@ -358,17 +358,17 @@ The `todoapp` template's frontend (`src/`) still references the demo `Todo` enti
 npx rayfin up --exclude-services staticHosting
 ```
 
-Expected output: a hosting URL for the backend, a Fabric portal link, and a deployment ID. This creates the Fabric App item, the SQL Database in Fabric (with a `part_locations` table generated from the entity above), and the GraphQL API — all in `RP - Fabric Apps Sandbox`. Static hosting (the frontend) is deployed properly once Plan 2 replaces the Todo template UI.
+Expected output: a hosting URL for the backend, a Fabric portal link, and a deployment ID. This creates the Fabric App item, the SQL Database in Fabric (with a `PartLocations` table generated from the entity above), and the GraphQL API — all in `RP - Fabric Apps Sandbox`. Static hosting (the frontend) is deployed properly once Plan 2 replaces the Todo template UI.
 
-- [ ] **Step 3.5 — Verify the deployed schema**
+- [x] **Step 3.5 — Verify the deployed schema**
 
 In the Fabric portal, open the `parts-lookup-app` item → the SQL Database in Fabric child item → query editor. Run:
 
 ```sql
-SELECT TOP 5 * FROM part_locations
+SELECT TOP 5 * FROM PartLocations
 ```
 
-Expected: an empty result set with the columns from the `PartLocation` entity (confirm the exact generated column names here — Fabric Apps' snake_case/naming convention for columns isn't fully documented, so read them off this result rather than assuming `part_number` vs `partNumber` etc. You'll need these exact names in Task 4/5).
+**Confirmed 2026-07-15:** table name is `PartLocations` (PascalCase, pluralized — not the snake_case `part_locations` originally guessed). Columns are camelCase, matching the TypeScript entity field names exactly, with no case transformation: `id, bin, binQty, branch, comments, franchise, lastRefreshed, partNumber, sellPrice1, superFrom, superTo, vendorCode`. All SQL in Tasks 4/5/7 below has been updated to match.
 
 - [ ] **Step 3.6 — Initialize git and commit the new repo**
 
@@ -395,7 +395,7 @@ In the Fabric portal: `parts-lookup-app` item → SQL Database in Fabric child i
 Using the exact table/column names confirmed in Step 3.5, connect with SSMS (or Fabric notebook + `pyodbc`) using that connection string and Entra auth, then run a test insert — substitute your real column names for the placeholders below:
 
 ```sql
-INSERT INTO part_locations (id, part_number, branch, franchise, vendor_code, bin, bin_qty, sell_price1, comments, last_refreshed)
+INSERT INTO PartLocations (id, partNumber, branch, franchise, vendorCode, bin, binQty, sellPrice1, comments, lastRefreshed)
 VALUES (NEWID(), 'TEST-001', '1', 'AM', 'TEST', 'A1', 5, 12.99, 'Direct SQL write test', GETUTCDATE())
 ```
 
@@ -440,7 +440,7 @@ Create a Dataflow Gen2 (`df_PartsLookup_Sync`) that:
 
 1. Reads `InMaster_PartsLookup_Raw` from the Lakehouse
 2. Connects to the SQL Database in Fabric using the connection string from Step 4.1 as a SQL Server destination
-3. On each run: deletes all rows in `part_locations`, then inserts the fresh set (full replace, not incremental upsert — simplest correct approach given `InMaster_PartsLookup_Raw` is itself a full refresh, and avoids stale rows lingering for parts that lose their vendor code)
+3. On each run: deletes all rows in `PartLocations`, then inserts the fresh set (full replace, not incremental upsert — simplest correct approach given `InMaster_PartsLookup_Raw` is itself a full refresh, and avoids stale rows lingering for parts that lose their vendor code)
 
 Add a `lastRefreshed` value (current UTC timestamp) to every row on insert, following the same DST-aware UTC pattern used elsewhere in this repo — see `.claude/queries/DATA-REFRESH-TEMPLATE.pq`.
 
@@ -449,7 +449,7 @@ Add a `lastRefreshed` value (current UTC timestamp) to every row on insert, foll
 Create a Fabric Notebook (Python) that:
 
 1. Reads `InMaster_PartsLookup_Raw` from the Lakehouse via the SQL Analytics Endpoint
-2. Calls a bulk-delete against `part_locations` (or deletes and recreates), then issues create mutations in batches via `RayfinClient` (or direct HTTP POSTs to the app's `/api/graphql` endpoint if the Python notebook can't use the TypeScript client directly)
+2. Calls a bulk-delete against `PartLocations` (or deletes and recreates), then issues create mutations in batches via `RayfinClient` (or direct HTTP POSTs to the app's `/api/graphql` endpoint if the Python notebook can't use the TypeScript client directly)
 3. Sets `lastRefreshed` to the current UTC timestamp on every row, same as 5.1A
 
 **Note:** if this path is required, authenticating a headless/scheduled notebook against the deployed app's Fabric-SSO-only auth is a separate open question — Microsoft's docs describe interactive Entra sign-in for the CLI and browser clients, not a documented service-principal/headless flow for the GraphQL API. If you land here, this needs its own quick investigation before Step 5.1B is buildable — don't assume it works without confirming.
@@ -502,13 +502,13 @@ Using whichever path Task 4 confirmed, check:
 
 ```sql
 -- Row count sanity check (SQL path) — should match InMaster_PartsLookup_Raw
-SELECT COUNT(*) AS TotalRows FROM part_locations
+SELECT COUNT(*) AS TotalRows FROM PartLocations
 
 -- No rows with a null vendor code should have made it through
-SELECT COUNT(*) AS ShouldBeZero FROM part_locations WHERE vendor_code IS NULL
+SELECT COUNT(*) AS ShouldBeZero FROM PartLocations WHERE vendorCode IS NULL
 
 -- Freshness check — every row should carry today's sync timestamp
-SELECT MIN(last_refreshed) AS Oldest, MAX(last_refreshed) AS Newest FROM part_locations
+SELECT MIN(lastRefreshed) AS Oldest, MAX(lastRefreshed) AS Newest FROM PartLocations
 ```
 
 - [ ] **Step 7.3 — Validate a real multi-branch part end to end**
