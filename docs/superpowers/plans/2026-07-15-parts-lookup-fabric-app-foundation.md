@@ -564,17 +564,21 @@ git commit -m "Parts Lookup Tool: add sync step from InMaster_PartsLookup_Raw to
 
 ## Task 6: Pipeline Integration and Cadence
 
-- [ ] **Step 6.1 — Add the raw dataflow to the existing pipeline**
+> **Decision (2026-07-15):** this runs as its own **dedicated pipeline**, not bolted onto the nightly `Pipeline_Master_Orchestrator` — matching the `PartsNotReordered_QuickRefresh` precedent of a separate business-hours pipeline distinct from the once-nightly batch. The whole point of moving off `jdis_Part_Information` was to stop being capped at a fixed daily refresh count, but Brian wants to start conservative (3-4 times a day, matching the stakeholder's original "2x/day is fine" expectation) and scale up only if actually needed — not build for a frequency nobody's asked for yet.
 
-Open `Pipeline_Master_Orchestrator` in Fabric. Add `df_InMaster_PartsLookup_Raw` to an existing Phase 1 (Raw Data) wave — check current wave sizes, target ≤5 concurrent per the F4 capacity constraint.
+- [ ] **Step 6.1 — Create the dedicated pipeline**
 
-- [ ] **Step 6.2 — Note the actual refresh time**
+New Fabric Pipeline → `Pipeline_PartsLookup_Sync`, in `LH_Master_Data` alongside the other pipelines. Add two **Refresh Dataflow** activities in sequence:
+1. `df_InMaster_PartsLookup_Raw`
+2. `df_PartsLookup_Sync`, with a **Success** dependency on the first (matching the `RefreshDataflow` activity pattern used elsewhere in this repo's pipelines)
 
-After a few real pipeline runs, record how long `df_InMaster_PartsLookup_Raw` actually takes (filtered by `VendorCode IS NOT NULL`, likely faster than the unfiltered ~3-minute InMaster average).
+- [ ] **Step 6.2 — Set the schedule**
 
-- [ ] **Step 6.3 — Set the sync cadence**
+3-4 runs a day, spread across business hours (e.g. something like 8:00 AM, 11:00 AM, 1:30 PM, 4:00 PM — adjust to whatever spacing makes sense once you're looking at the actual scheduler). Comfortable buffer above the observed ~8-10 min total runtime (raw pull + sync), no overlap risk at this cadence.
 
-Add the sync step (Task 5) to run after `df_InMaster_PartsLookup_Raw` completes. Pick a cadence based on the real timing from Step 6.2 — starting hourly is a reasonable default; increase frequency once you've confirmed the sync step itself is fast and doesn't strain F4 capacity headroom during business hours.
+- [ ] **Step 6.3 — Run it once on the new schedule and confirm**
+
+Let it fire on schedule at least once, then confirm both activities completed successfully and the row count in `PartLocations` is current.
 
 - [ ] **Step 6.4 — Update pipeline schedule doc**
 
