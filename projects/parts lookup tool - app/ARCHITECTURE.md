@@ -31,7 +31,7 @@ This means Task 5's sync step is a normal **Dataflow Gen2** writing straight to 
 - Table: `PartLocations` (PascalCase, pluralized — not the snake_case Fabric App docs/examples implied)
 - Columns: `id, bin, binQty, branch, comments, franchise, lastRefreshed, partNumber, sellPrice1, superFrom, superTo, vendorCode` (camelCase, matching the TypeScript entity fields exactly, no transformation)
 
-**Open item for Task 5:** `id` is a UUID primary key. The GraphQL API auto-generates it when omitted on create, per Microsoft's docs — but that's describing API-layer behavior, not confirmed to be a database-level `DEFAULT` constraint. When writing directly via SQL, this needs to be checked: either the destination can omit `id` and let the database default apply, or the Dataflow needs to generate a GUID per row itself (Power Query M has no built-in GUID generator, so this may need a workaround if the database doesn't auto-generate it).
+**Confirmed 2026-07-15:** `id` has a database-level default (an `INSERT` omitting the column entirely succeeded). Task 5's dataflow does not map or generate `id` at all — the database populates it automatically on every insert.
 
 ## Refresh Cadence
 

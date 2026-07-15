@@ -432,36 +432,99 @@ git commit -m "Parts Lookup Tool: document confirmed sync mechanism"
 
 ## Task 5: Build the Sync Step
 
-> Use the path confirmed in Task 4.
+> **Confirmed by Task 4:** direct SQL path, no GraphQL mutations, no notebook. `id` is database-generated — never mapped or supplied by this dataflow.
 
-- [ ] **Step 5.1A — Direct SQL path (if Task 4 confirmed it)**
+**Files:**
+- Create: `.claude/queries/facts/PartsLookup_Sync.pq`
 
-Create a Dataflow Gen2 (`df_PartsLookup_Sync`) that:
+- [ ] **Step 5.1 — Write the query**
 
-1. Reads `InMaster_PartsLookup_Raw` from the Lakehouse
-2. Connects to the SQL Database in Fabric using the connection string from Step 4.1 as a SQL Server destination
-3. On each run: deletes all rows in `PartLocations`, then inserts the fresh set (full replace, not incremental upsert — simplest correct approach given `InMaster_PartsLookup_Raw` is itself a full refresh, and avoids stale rows lingering for parts that lose their vendor code)
+Save to `.claude/queries/facts/PartsLookup_Sync.pq`:
 
-Add a `lastRefreshed` value (current UTC timestamp) to every row on insert, following the same DST-aware UTC pattern used elsewhere in this repo — see `.claude/queries/DATA-REFRESH-TEMPLATE.pq`.
+```
+/*
+============================================================================
+Query: PartsLookup_Sync
+Dataflow: df_PartsLookup_Sync
+Location: LH_Master_Data → Dataflows → 04 - Fact (or wherever this pipeline stage lives)
+============================================================================
 
-- [ ] **Step 5.1B — GraphQL mutation path (if Task 4 required it)**
+PURPOSE: Pushes InMaster_PartsLookup_Raw into the parts-lookup-app Fabric
+App's own database (PartLocations table). This is the sync step bridging
+the Lakehouse and the Fabric App — the app can't read the Lakehouse
+directly, so this dataflow is the only thing that populates it.
 
-Create a Fabric Notebook (Python) that:
+DESTINATION: SQL Server connector, pointed at the SQL Database in Fabric
+connection string (from parts-lookup-app's SQL Database child item).
+Update method: Replace (full delete + reinsert every run) — matches
+InMaster_PartsLookup_Raw being itself a full refresh, and avoids stale
+rows lingering for parts that lose their vendor code.
 
-1. Reads `InMaster_PartsLookup_Raw` from the Lakehouse via the SQL Analytics Endpoint
-2. Calls a bulk-delete against `PartLocations` (or deletes and recreates), then issues create mutations in batches via `RayfinClient` (or direct HTTP POSTs to the app's `/api/graphql` endpoint if the Python notebook can't use the TypeScript client directly)
-3. Sets `lastRefreshed` to the current UTC timestamp on every row, same as 5.1A
+DO NOT map or generate `id` — confirmed 2026-07-15 that the database
+auto-generates it on insert; this dataflow's output has no id column
+at all, by design.
 
-**Note:** if this path is required, authenticating a headless/scheduled notebook against the deployed app's Fabric-SSO-only auth is a separate open question — Microsoft's docs describe interactive Entra sign-in for the CLI and browser clients, not a documented service-principal/headless flow for the GraphQL API. If you land here, this needs its own quick investigation before Step 5.1B is buildable — don't assume it works without confirming.
+COLUMN NAMES: renamed here to match PartLocations' camelCase columns
+exactly (confirmed via the deployed schema), since Dataflow Gen2's SQL
+Server destination maps by name.
+============================================================================
+*/
 
-- [ ] **Step 5.2 — Run it once manually and verify**
+let
+    Source = LH_Master_Data{[Schema="dbo", Item="InMaster_PartsLookup_Raw"]}[Data],
 
-Trigger the sync step manually. Query the SQL Database in Fabric (or use the GraphQL client, whichever is consistent per Task 4) to confirm row count matches `InMaster_PartsLookup_Raw`'s row count, and spot-check the same known multi-branch part from Step 2.4.
+    AddLastRefreshed = Table.AddColumn(
+        Source,
+        "lastRefreshed",
+        each DateTimeZone.RemoveZone(DateTimeZone.UtcNow()),
+        type datetime
+    ),
 
-- [ ] **Step 5.3 — Commit**
+    RenameForApp = Table.RenameColumns(AddLastRefreshed, {
+        {"Branch", "branch"},
+        {"Franchise", "franchise"},
+        {"PartNumber", "partNumber"},
+        {"Bin", "bin"},
+        {"SuperFrom", "superFrom"},
+        {"SuperTo", "superTo"},
+        {"VendorCode", "vendorCode"},
+        {"SellPrice1", "sellPrice1"},
+        {"Comments", "comments"},
+        {"BinQty", "binQty"}
+    }),
+
+    SelectFinalColumns = Table.SelectColumns(RenameForApp, {
+        "partNumber", "branch", "franchise", "vendorCode", "bin",
+        "binQty", "sellPrice1", "superTo", "superFrom", "comments", "lastRefreshed"
+    })
+in
+    SelectFinalColumns
+```
+
+Note `Description`, `OnHandQty`, and `PendingQty` from `InMaster_PartsLookup_Raw` are deliberately dropped here — they're not part of the `PartLocation` entity (`OnHandQty`/`PendingQty` were only needed upstream to compute `BinQty`).
+
+- [ ] **Step 5.2 — Create the Dataflow Gen2 in Fabric**
+
+New Dataflow Gen2 → `df_PartsLookup_Sync`. Add a Lakehouse data source (connect to `LH_Master_Data`, select `InMaster_PartsLookup_Raw`). Paste the query above (Advanced Editor).
+
+- [ ] **Step 5.3 — Add the SQL Database in Fabric as a destination**
+
+Add a new Data destination → SQL Server. Paste the connection string from Task 4.1 (same one you used for the manual INSERT/DELETE tests). Select the `parts-lookup-app` database, target table `PartLocations`. Set **Update method: Replace**. Confirm the column mapping — it should auto-map by name since the query's output columns already match `PartLocations`' real column names exactly. `id` should not appear in the mapping at all (there's no `id` column in this query's output).
+
+- [ ] **Step 5.4 — Run it once manually and verify**
+
+Publish and run. Then check the results:
+
+```sql
+SELECT COUNT(*) AS TotalRows FROM PartLocations
+```
+
+Expected: matches `InMaster_PartsLookup_Raw`'s row count from Step 2.4 (1,099,563, or whatever it is by the time you run this). Spot-check the same known multi-branch part from Step 2.4 to confirm the data landed correctly, and confirm every row has a real `id` (the database-generated default) and a `lastRefreshed` timestamp close to when you ran it.
+
+- [ ] **Step 5.5 — Commit**
 
 ```bash
-git add -A
+git add ".claude/queries/facts/PartsLookup_Sync.pq"
 git commit -m "Parts Lookup Tool: add sync step from InMaster_PartsLookup_Raw to Fabric App database"
 ```
 
