@@ -619,7 +619,7 @@ const client = getRayfinClient();
 const result = await client.data.PartLocation.select([
   'branch', 'franchise', 'bin', 'binQty', 'sellPrice1', 'superTo', 'superFrom', 'comments',
 ])
-  .filter({ partNumber: { eq: 'YOUR-TEST-PART-NUMBER' } })
+  .where({ partNumber: { eq: 'YOUR-TEST-PART-NUMBER' } })
   .execute();
 
 console.log(result);
