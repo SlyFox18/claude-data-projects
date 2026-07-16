@@ -27,7 +27,7 @@ This is the core new measure — a generalized version of the existing CS690/770
 **Files:**
 - Modify: `projects/inspections - report/reports/current/Inspections.SemanticModel/definition/tables/_Measures.tmdl` (insert after line 6700, before `column Value` at line 6702)
 
-- [ ] **Step 1: Confirm the measure doesn't exist yet (RED)**
+- [x] **Step 1: Confirm the measure doesn't exist yet (RED)**
 
 With Desktop open and connected, run:
 
@@ -38,7 +38,7 @@ pbi dax execute "EVALUATE ROW(\"x\", [Parts \$ Total (Filtered)])"
 
 Expected: an error naming `Parts $ Total (Filtered)` as an unknown measure/column. If it succeeds, stop — someone already added this measure; check git history before continuing.
 
-- [ ] **Step 2: Add the measure to `_Measures.tmdl`**
+- [x] **Step 2: Add the measure to `_Measures.tmdl`**
 
 Insert immediately after the `'Total Inspections LY'` measure block (after line 6700), before the blank line and `column Value` (line 6702):
 
@@ -67,11 +67,11 @@ Insert immediately after the `'Total Inspections LY'` measure block (after line 
 
 (Tabs, not spaces, matching the rest of the file. Leave the existing `column Value` block and everything after it untouched.)
 
-- [ ] **Step 3: Reload the model in Desktop**
+- [x] **Step 3: Reload the model in Desktop**
 
 Desktop should detect the external file change and prompt "This file has changed outside of Power BI Desktop — reload?" Click **Reload**. If no prompt appears within ~10 seconds, close and reopen `Inspections.pbip`.
 
-- [ ] **Step 4: Verify the new measure matches the existing unfiltered measure with no slicers applied (GREEN)**
+- [x] **Step 4: Verify the new measure matches the existing unfiltered measure with no slicers applied (GREEN)**
 
 ```bash
 pbi dax execute "EVALUATE ROW(\"Unfiltered\", [Parts \$ Total], \"Filtered\", [Parts \$ Total (Filtered)])"
@@ -79,7 +79,7 @@ pbi dax execute "EVALUATE ROW(\"Unfiltered\", [Parts \$ Total], \"Filtered\", [P
 
 Expected: both columns return the same dollar value (no category/branch filter is active in this query context, so the two measures should agree exactly).
 
-- [ ] **Step 5: Verify it changes correctly under a category filter, matching the existing CS690/770 measure as a spot-check**
+- [x] **Step 5: Verify it changes correctly under a category filter, matching the existing CS690/770 measure as a spot-check**
 
 ```bash
 pbi dax execute "EVALUATE CALCULATETABLE(ROW(\"Filtered\", [Parts \$ Total (Filtered)], \"CS690Existing\", [CS690-CS770 Parts Total]), Fact_LaborJobSummary[JobCode] IN {\"IS-CS690 INSPECT\", \"IS-CS770 INSPECT\", \"IS-STRIPPER INSPECT\", \"IS-CP690 INSPECT\", \"IS-CP770 INSPECT\"})"
@@ -87,7 +87,7 @@ pbi dax execute "EVALUATE CALCULATETABLE(ROW(\"Filtered\", [Parts \$ Total (Filt
 
 Expected: `Filtered` and `CS690Existing` return the same value — confirms the generalized bridge produces identical results to the hardcoded one when given the same job-code set.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add "projects/inspections - report/reports/current/Inspections.SemanticModel/definition/tables/_Measures.tmdl"
@@ -107,7 +107,7 @@ Reuses the existing `Total Inspections` measure (`_Measures.tmdl:45-52`) as the 
 **Files:**
 - Modify: `projects/inspections - report/reports/current/Inspections.SemanticModel/definition/tables/_Measures.tmdl` (insert after the measure added in Task 1)
 
-- [ ] **Step 1: Confirm the measure doesn't exist yet (RED)**
+- [x] **Step 1: Confirm the measure doesn't exist yet (RED)**
 
 ```bash
 pbi dax execute "EVALUATE ROW(\"x\", [Avg Parts \$ / Inspection (Rolling 24)])"
@@ -115,7 +115,7 @@ pbi dax execute "EVALUATE ROW(\"x\", [Avg Parts \$ / Inspection (Rolling 24)])"
 
 Expected: error, unknown measure.
 
-- [ ] **Step 2: Add the measure**
+- [x] **Step 2: Add the measure**
 
 Insert directly after the `'Parts $ Total (Filtered)'` block added in Task 1:
 
@@ -130,11 +130,11 @@ Insert directly after the `'Parts $ Total (Filtered)'` block added in Task 1:
 
 ```
 
-- [ ] **Step 3: Reload the model in Desktop**
+- [x] **Step 3: Reload the model in Desktop**
 
 Desktop should detect the external file change and prompt "This file has changed outside of Power BI Desktop — reload?" Click **Reload**. If no prompt appears within ~10 seconds, close and reopen `Inspections.pbip`.
 
-- [ ] **Step 4: Verify (GREEN)**
+- [x] **Step 4: Verify (GREEN)**
 
 ```bash
 pbi dax execute "EVALUATE ROW(\"AvgParts\", [Avg Parts \$ / Inspection (Rolling 24)], \"PartsTotal\", [Parts \$ Total (Filtered)], \"Inspections\", [Total Inspections])"
@@ -142,7 +142,7 @@ pbi dax execute "EVALUATE ROW(\"AvgParts\", [Avg Parts \$ / Inspection (Rolling 
 
 Expected: `AvgParts` = `PartsTotal` / `Inspections` (manually verify the division holds with a calculator).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add "projects/inspections - report/reports/current/Inspections.SemanticModel/definition/tables/_Measures.tmdl"
@@ -158,7 +158,7 @@ Reuses the existing `Labor $$` measure (`_Measures.tmdl:80-86`) directly — it 
 **Files:**
 - Modify: `projects/inspections - report/reports/current/Inspections.SemanticModel/definition/tables/_Measures.tmdl` (insert after the measure added in Task 2)
 
-- [ ] **Step 1: Confirm the measure doesn't exist yet (RED)**
+- [x] **Step 1: Confirm the measure doesn't exist yet (RED)**
 
 ```bash
 pbi dax execute "EVALUATE ROW(\"x\", [Avg Labor \$ / Inspection (Rolling 24)])"
@@ -166,7 +166,7 @@ pbi dax execute "EVALUATE ROW(\"x\", [Avg Labor \$ / Inspection (Rolling 24)])"
 
 Expected: error, unknown measure.
 
-- [ ] **Step 2: Add the measure**
+- [x] **Step 2: Add the measure**
 
 Insert directly after the `'Avg Parts $ / Inspection (Rolling 24)'` block added in Task 2:
 
@@ -181,11 +181,11 @@ Insert directly after the `'Avg Parts $ / Inspection (Rolling 24)'` block added 
 
 ```
 
-- [ ] **Step 3: Reload the model in Desktop**
+- [x] **Step 3: Reload the model in Desktop**
 
 Desktop should detect the external file change and prompt "This file has changed outside of Power BI Desktop — reload?" Click **Reload**. If no prompt appears within ~10 seconds, close and reopen `Inspections.pbip`.
 
-- [ ] **Step 4: Verify (GREEN)**
+- [x] **Step 4: Verify (GREEN)**
 
 ```bash
 pbi dax execute "EVALUATE ROW(\"AvgLabor\", [Avg Labor \$ / Inspection (Rolling 24)], \"LaborTotal\", [Labor \$\$], \"Inspections\", [Total Inspections])"
@@ -193,7 +193,7 @@ pbi dax execute "EVALUATE ROW(\"AvgLabor\", [Avg Labor \$ / Inspection (Rolling 
 
 Expected: `AvgLabor` = `LaborTotal` / `Inspections`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add "projects/inspections - report/reports/current/Inspections.SemanticModel/definition/tables/_Measures.tmdl"
