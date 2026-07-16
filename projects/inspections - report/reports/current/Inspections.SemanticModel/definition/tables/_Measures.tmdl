@@ -6719,6 +6719,14 @@ table _Measures
 
 		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
 
+	measure 'Avg Parts $ / Inspection (Rolling 24)' =
+
+			DIVIDE([Parts $ Total (Filtered)], [Total Inspections], 0)
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 94434eca-2607-4b3b-adde-f0e70d148cfc
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
 	column Value
 		isHidden
 		lineageTag: 9bebaa8d-37e0-4801-a109-64f1ce8274e2
