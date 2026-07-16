@@ -208,7 +208,7 @@ Before building visuals, confirm the `dim_DateTable[IsRolling24Months]` filter a
 
 **Files:** none (validation only)
 
-- [ ] **Step 1: Run a combined query**
+- [x] **Step 1: Run a combined query**
 
 ```bash
 pbi dax execute "EVALUATE SUMMARIZECOLUMNS(dim_DateTable[MonthYear], dim_DateTable[SortableMonthYear], TREATAS({\"TRUE\"}, dim_DateTable[IsRolling24Months]), TREATAS({\"IS-COMBINE INSPECT\"}, Fact_LaborJobSummary[InspectionCategory]), \"Parts\", [Parts \$ Total (Filtered)], \"Labor\", [Labor \$\$]) ORDER BY dim_DateTable[SortableMonthYear]"
@@ -216,7 +216,7 @@ pbi dax execute "EVALUATE SUMMARIZECOLUMNS(dim_DateTable[MonthYear], dim_DateTab
 
 Expected: up to 24 rows, one per month, sorted chronologically, each with non-negative `Parts`/`Labor` values (some months may be blank/0 if that category had no activity that month — acceptable). If this returns zero rows entirely, stop and check whether `IS-COMBINE INSPECT` exists in the current data (`Fact_LaborJobSummary[JobCode]` — try a different real `InspectionCategory` value if so).
 
-- [ ] **Step 2: No commit** — this task is exploratory validation only, confirming the DAX composition works before wiring it into visuals.
+- [x] **Step 2: No commit** — this task is exploratory validation only, confirming the DAX composition works before wiring it into visuals.
 
 ---
 
@@ -227,11 +227,11 @@ Build Option D from the spec: one combined dual-axis line chart (Parts $ left ax
 **Files:**
 - Modify (via Desktop save): `projects/inspections - report/reports/current/Inspections.Report/definition/pages/30a66c2b13c2a8e9f495/` (Details page — new `visuals/*/visual.json` files will appear)
 
-- [ ] **Step 1: Add the Inspection Category slicer**
+- [x] **Step 1: Add the Inspection Category slicer**
 
 On the Details page canvas, in an empty area near the existing Job Code/Branch slicers: Insert a **Slicer** visual, field = `Fact_LaborJobSummary[InspectionCategory]`. Match the visual style (colors, font) of the existing `dim_BranchLocation[Branch]` slicer on this page for consistency.
 
-- [ ] **Step 2: Add the combined trend line chart**
+- [x] **Step 2: Add the combined trend line chart**
 
 Insert a **Line Chart** (or **Line and Clustered Column Chart** if you want dual-axis lines — Power BI's basic Line Chart supports two Y-axes when there are two value fields with different measures, but confirm dual-axis rendering once fields are added):
 - X-axis: `dim_DateTable[MonthYear]`, sort by `dim_DateTable[SortableMonthYear]` (Visualizations pane → ⋯ on the field → Sort by column)
@@ -240,22 +240,22 @@ Insert a **Line Chart** (or **Line and Clustered Column Chart** if you want dual
 - If both lines render on one axis and Labor is dwarfed by Parts (or vice versa), move `Labor $$` to a secondary axis: Format pane → Y-axis → check for a "secondary axis" toggle, or switch the visual type to "Line and Clustered Column Chart" and assign Labor to the column/secondary-axis role.
 - Colors: Parts line `#818cf8` (purple, matches the "Unique" badge convention in `CLAUDE.md`), Labor line `#fbbf24` (gold, matches "Key Customer" badge convention).
 
-- [ ] **Step 3: Add the two average-ticket KPI cards**
+- [x] **Step 3: Add the two average-ticket KPI cards**
 
 Insert two **Card** visuals below the chart:
 - Card 1: `[Avg Parts $ / Inspection (Rolling 24)]`, with a Visual-level filter `dim_DateTable[IsRolling24Months]` = `True`. Label it "Avg Parts $ / Inspection".
 - Card 2: `[Avg Labor $ / Inspection (Rolling 24)]`, same filter. Label it "Avg Labor $ / Inspection".
 - Match the card styling already used elsewhere on the Details page (e.g. the existing "Total" card `597fbf99e82effc9a1f2`) for visual consistency.
 
-- [ ] **Step 4: Add the "Button - Trend" action button**
+- [x] **Step 4: Add the "Button - Trend" action button**
 
 Insert an **Action Button** (blank type, no action needed yet — bookmarks will drive it), positioned next to the existing "Button - Jobcode" (`229ae583b0d3c00de190`) and "Button - Branch" (`86c962ed5b7147d37b57`) buttons. Label it "Trend", matching their font/size/color.
 
-- [ ] **Step 5: Save in Desktop**
+- [x] **Step 5: Save in Desktop**
 
 File → Save (or Ctrl+S). This writes new `visuals/<id>/visual.json` files under the Details page folder.
 
-- [ ] **Step 6: Confirm the new visuals via `pbir tree`**
+- [x] **Step 6: Confirm the new visuals via `pbir tree`**
 
 ```bash
 pbir tree "projects/inspections - report/reports/current/Inspections.Report"
@@ -263,7 +263,7 @@ pbir tree "projects/inspections - report/reports/current/Inspections.Report"
 
 Expected: the Details page's visual count increases by 5 (slicer, chart, 2 cards, button), and you can identify their new visual IDs in the output (needed for Task 6).
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add "projects/inspections - report/reports/current/Inspections.Report/definition/pages/30a66c2b13c2a8e9f495/"
@@ -282,31 +282,31 @@ Extend the existing `Matrix - Jobcode` / `Matrix - Branch` bookmark toggle with 
 - Modify (via Desktop save): `projects/inspections - report/reports/current/Inspections.Report/definition/bookmarks/9dba35dba10d0450704e.bookmark.json` (`Matrix - Branch`)
 - Create (via Desktop save): new `<id>.bookmark.json` for `Matrix - Trend`
 
-- [ ] **Step 1: Set the canvas to the "Trend" state manually**
+- [x] **Step 1: Set the canvas to the "Trend" state manually**
 
 In Desktop, on the Details page: hide the two pivot tables (right-click each → Hide/Format pane → toggle visibility off, or use the Selection pane) and hide "Button - Jobcode"/"Button - Branch". Show the 5 new visuals from Task 5 and the "Button - Trend" button.
 
-- [ ] **Step 2: Create the new bookmark**
+- [x] **Step 2: Create the new bookmark**
 
 Open the **Bookmarks** pane (View → Bookmarks). Click **Add**. Rename the new bookmark to `Matrix - Trend` (double-click its name in the pane, matching the naming convention of `Matrix - Jobcode` / `Matrix - Branch`).
 
-- [ ] **Step 3: Restore the Jobcode state and update that bookmark**
+- [x] **Step 3: Restore the Jobcode state and update that bookmark**
 
 Switch visibility back: show the Jobcode pivot table + "Button - Jobcode", hide the Branch pivot table + "Button - Branch", and now also hide all 5 new Trend visuals + "Button - Trend". Right-click the existing `Matrix - Jobcode` bookmark in the pane → **Update** (this captures the new hide-state for the Trend visuals without disturbing what it already does for the Jobcode/Branch visuals).
 
-- [ ] **Step 4: Restore the Branch state and update that bookmark**
+- [x] **Step 4: Restore the Branch state and update that bookmark**
 
 Switch visibility: show the Branch pivot table + "Button - Branch", hide the Jobcode pivot table + "Button - Jobcode", and hide all 5 new Trend visuals + "Button - Trend". Right-click `Matrix - Branch` → **Update**.
 
-- [ ] **Step 5: Save in Desktop**
+- [x] **Step 5: Save in Desktop**
 
 File → Save.
 
-- [ ] **Step 6: Round-trip test — click through all three bookmarks in Desktop**
+- [x] **Step 6: Round-trip test — click through all three bookmarks in Desktop**
 
 In the Bookmarks pane, click `Matrix - Jobcode`, then `Matrix - Branch`, then `Matrix - Trend`, then back to `Matrix - Jobcode`. Confirm at each click that exactly one of {Jobcode pivot, Branch pivot, Trend visuals} is visible, and exactly one button is visible, matching that state. This is the critical manual check — a bookmark that doesn't hide something from an earlier state leaves stale visuals stuck on screen.
 
-- [ ] **Step 7: Verify with `pbir` and `git status` (per project convention — bookmark edits have previously caused unrelated-visual side effects)**
+- [x] **Step 7: Verify with `pbir` and `git status` (per project convention — bookmark edits have previously caused unrelated-visual side effects)**
 
 ```bash
 pbir validate "projects/inspections - report/reports/current/Inspections.Report" --all
@@ -315,7 +315,7 @@ git status --short "projects/inspections - report/reports/current/Inspections.Re
 
 Expected: `pbir validate` reports no broken references. `git status` shows exactly: the new bookmark file, `bookmarks.json` (new entry appended), and the two modified `Matrix - Jobcode`/`Matrix - Branch` bookmark files — no other bookmark files should appear as modified. If other bookmarks (`Show Nav - *`, `Hide Nav - *`, etc.) show as changed, investigate before committing — that would indicate an unintended side effect.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add "projects/inspections - report/reports/current/Inspections.Report/definition/bookmarks/"
@@ -330,7 +330,7 @@ git commit -m "Add Matrix - Trend bookmark; extend Jobcode/Branch bookmarks to h
 - Modify: `projects/inspections - report/documentation/dax/dax-measures-library.md`
 - Modify: `projects/inspections - report/documentation/report-pages.md`
 
-- [ ] **Step 1: Add the 3 new measures to the DAX library doc**
+- [x] **Step 1: Add the 3 new measures to the DAX library doc**
 
 In `dax-measures-library.md`, add a new section (following the existing per-category format used throughout the file, e.g. matching the "Core Metrics" section style) documenting:
 - `Parts $ Total (Filtered)` — DAX from Task 1, with a one-line note: "Generalized invoice-number bridge; respects InspectionCategory/Branch filter context instead of a hardcoded job-code list."
@@ -339,7 +339,7 @@ In `dax-measures-library.md`, add a new section (following the existing per-cate
 
 Update the measure count at the top of the file (currently "Total Measures: 172") to 175, and add a row to the category summary table for these 3 (e.g. under a new "Trend" category row).
 
-- [ ] **Step 2: Update the Details page section of `report-pages.md`**
+- [x] **Step 2: Update the Details page section of `report-pages.md`**
 
 In the "📄 Page 2: Details Page" section, add a subsection describing the third toggle state:
 
@@ -351,7 +351,7 @@ In the "📄 Page 2: Details Page" section, add a subsection describing the thir
 - Bookmark: `Matrix - Trend`
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add "projects/inspections - report/documentation/dax/dax-measures-library.md" "projects/inspections - report/documentation/report-pages.md"
@@ -366,7 +366,7 @@ Run through the spec's validation checklist end-to-end before calling this done.
 
 **Files:** none (validation only)
 
-- [ ] **Step 1: Re-run the measure sanity checks from Tasks 1-3** with an actual `InspectionCategory` value from live data (pick one you confirmed exists in Task 4) and a Branch filter, confirming both filters compose correctly:
+- [x] **Step 1: Re-run the measure sanity checks from Tasks 1-3** with an actual `InspectionCategory` value from live data (pick one you confirmed exists in Task 4) and a Branch filter, confirming both filters compose correctly:
 
 ```bash
 pbi dax execute "EVALUATE CALCULATETABLE(ROW(\"Parts\", [Parts \$ Total (Filtered)], \"Labor\", [Labor \$\$], \"AvgParts\", [Avg Parts \$ / Inspection (Rolling 24)], \"AvgLabor\", [Avg Labor \$ / Inspection (Rolling 24)]), Fact_LaborJobSummary[InspectionCategory] = \"IS-COMBINE INSPECT\", dim_BranchLocation[Branch] = \"1 - Seminole\")"
@@ -374,7 +374,7 @@ pbi dax execute "EVALUATE CALCULATETABLE(ROW(\"Parts\", [Parts \$ Total (Filtere
 
 Expected: all 4 values return without error (0 is fine if that branch/category combination has no rolling-24-month activity — just confirm no error).
 
-- [ ] **Step 2: In Desktop, walk the manual checklist:**
+- [x] **Step 2: In Desktop, walk the manual checklist:**
   - [ ] Trend chart shows all available rolling-24 months, sorted chronologically (not alphabetically)
   - [ ] Changing the Inspection Category slicer updates the chart and both KPI cards
   - [ ] Changing the Branch slicer updates the chart and both KPI cards
@@ -382,7 +382,7 @@ Expected: all 4 values return without error (0 is fine if that branch/category c
   - [ ] Other Details page elements (header, discount panel, drill-through buttons to Work Order List/Details) still work unaffected
   - [ ] Compare the combined dual-axis chart (Option D, just built) against how it would look as two separate stacked charts (Option C) — decide with Brian/Casey whether to keep D or rebuild as C now that real data is on screen
 
-- [ ] **Step 3: No commit for this task** (validation only — if Step 2's last bullet leads to a layout change, that becomes a follow-up task, not a retroactive edit to already-committed work)
+- [x] **Step 3: No commit for this task** (validation only — if Step 2's last bullet leads to a layout change, that becomes a follow-up task, not a retroactive edit to already-committed work)
 
 ---
 
