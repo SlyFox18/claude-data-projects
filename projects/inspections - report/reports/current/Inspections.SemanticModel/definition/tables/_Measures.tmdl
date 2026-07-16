@@ -6720,10 +6720,18 @@ table _Measures
 		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
 
 	measure 'Avg Parts $ / Inspection (Rolling 24)' =
-
+			
 			DIVIDE([Parts $ Total (Filtered)], [Total Inspections], 0)
 		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
 		lineageTag: 94434eca-2607-4b3b-adde-f0e70d148cfc
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Avg Labor $ / Inspection (Rolling 24)' =
+			
+			DIVIDE([Labor $$], [Total Inspections], 0)
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: d733f574-d8c0-448a-ad63-37c8aebc3897
 
 		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
 
