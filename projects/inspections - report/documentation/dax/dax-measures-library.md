@@ -1,12 +1,12 @@
 # DAX Measures Library - Inspections Report
 
-**Complete documentation of all 175 DAX measures in the Inspections Report.**
+**Complete documentation of all 176 DAX measures in the Inspections Report.**
 
 ---
 
 ## 📊 Measure Summary
 
-**Total Measures:** 175
+**Total Measures:** 176
 
 | Category | Count |
 |----------|-------|
@@ -20,7 +20,7 @@
 | **CS690/CS770 Specific** | 3 |
 | **Discount Analysis** | 14 |
 | **Helper/Utility** | 43 |
-| **Trend** | 3 |
+| **Trend** | 4 |
 
 ---
 
@@ -36,7 +36,7 @@
 - [CS690/CS770 Specific](#cs690cs770-specific) (3 measures)
 - [Discount Analysis](#discount-analysis) (14 measures)
 - [Helper/Utility](#helperutility) (43 measures)
-- [Trend](#trend) (3 measures)
+- [Trend](#trend) (4 measures)
 
 ---
 
@@ -53,6 +53,8 @@
 
 [Labor With Inspection] - [Inspection $$]
 ```
+
+> ⚠️ **Filter-context warning:** `Labor $$` / `Labor With Inspection` do NOT clear an external `JobCode`/`InspectionCategory` filter (e.g. from a slicer) before summing — using them under such a filter will silently narrow the result to near-zero/incorrect values, since the inspection line itself is typically a $0/nominal charge while real labor is booked under other job codes on the same work order. Use `Labor $$ (Filtered)` instead (see [Trend](#trend)) in any context where a JobCode/InspectionCategory filter may be active (e.g. any visual with the page-wide Inspection Category slicer in scope). `WO List - Total Labor` had to independently work around this same hazard with its own `ISFILTERED()` branching logic — this is a proven, real trap, not a hypothetical one.
 
 ---
 
@@ -6961,6 +6963,8 @@ RETURN
     )
 ```
 
+> ⚠️ See the filter-context warning under [Labor $$](#labor-) above — this measure never clears an external JobCode/InspectionCategory filter, so use `Labor $$ (Filtered)` instead wherever such a filter may be active.
+
 ---
 
 ### LastPunchDateAge
@@ -7334,9 +7338,9 @@ RETURN
 
 ## Trend
 
-**3 measures in this category**
+**4 measures in this category**
 
-Added for the Details page trend view (rolling 24-month Parts $ / Labor $ chart and two-stat card). `Parts $ Total (Filtered)` is a generalized invoice-number bridge — functionally the same pattern as `Parts $ Total` but built from a local `ValidInv` variable instead of the `ValidInvoiceNumbers` table, so it can be reused safely inside the trend visuals' month/rolling-24 filter context. The other two measures are pure `DIVIDE()` wrappers that reuse existing measures — no new business logic.
+Added for the Details page trend view (rolling 24-month Parts $ / Labor $ chart and two-stat card). `Parts $ Total (Filtered)` is a generalized invoice-number bridge — functionally the same pattern as `Parts $ Total` but built from a local `ValidInv` variable instead of the `ValidInvoiceNumbers` table, so it can be reused safely inside the trend visuals' month/rolling-24 filter context. `Labor $$ (Filtered)` exists to work around the `Labor $$` / `Labor With Inspection` filter-context trap (see [Labor $$](#labor-)) under the same trend-view InspectionCategory filter. The remaining two measures are pure `DIVIDE()` wrappers that reuse existing measures — no new business logic.
 
 ### Parts $ Total (Filtered)
 
@@ -7374,6 +7378,24 @@ DIVIDE([Parts $ Total (Filtered)], [Total Inspections], 0)
 
 ---
 
+### Labor $$ (Filtered)
+
+**Format:** `\$#,0.00;(\$#,0.00);\$#,0.00`
+
+**DAX:**
+```dax
+
+CALCULATE(
+    [Labor With Inspection],
+    REMOVEFILTERS(Fact_LaborJobSummary[JobCode]),
+    REMOVEFILTERS(Fact_LaborJobSummary[InspectionCategory])
+) - [Inspection $$]
+```
+
+Exists specifically because of the `Labor $$` / `Labor With Inspection` filter-context trap documented under [Labor $$](#labor-) — `REMOVEFILTERS` restores the JobCode/InspectionCategory rows that the ambient filter would otherwise exclude before summing, so this is the safe variant to use anywhere a JobCode/InspectionCategory filter (e.g. the trend view's InspectionCategory slicer) may be in scope. Composes off `Labor With Inspection` rather than duplicating its body, so the two can't silently drift apart if the base measure's logic changes.
+
+---
+
 ### Avg Labor $ / Inspection (Rolling 24)
 
 **Format:** `\$#,0.00;(\$#,0.00);\$#,0.00`
@@ -7381,7 +7403,7 @@ DIVIDE([Parts $ Total (Filtered)], [Total Inspections], 0)
 **DAX:**
 ```dax
 
-DIVIDE([Labor $$], [Total Inspections], 0)
+DIVIDE([Labor $$ (Filtered)], [Total Inspections], 0)
 ```
 
 ---
