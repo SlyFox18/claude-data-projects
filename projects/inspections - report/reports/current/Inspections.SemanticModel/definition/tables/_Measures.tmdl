@@ -6729,9 +6729,32 @@ table _Measures
 
 	measure 'Avg Labor $ / Inspection (Rolling 24)' =
 			
-			DIVIDE([Labor $$], [Total Inspections], 0)
+			DIVIDE([Labor $$ (Filtered)], [Total Inspections], 0)
 		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
 		lineageTag: d733f574-d8c0-448a-ad63-37c8aebc3897
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Labor $$ (Filtered)' =
+			
+			VAR InspectionWOs =
+			    CALCULATETABLE (
+			        VALUES ( Fact_LaborJobSummary[WorkOrderNumber] ),
+			        Fact_LaborJobSummary[IsInspection] = TRUE,
+			        Fact_LaborJobSummary[IsPendingInspection] = FALSE
+			    )
+			VAR TotalLaborWithInspection =
+			    CALCULATE (
+			        SUM ( Fact_LaborJobSummary[InvoicedLaborAmount] ),
+			        Fact_LaborJobSummary[WorkOrderNumber] IN InspectionWOs,
+			        NOT ( ISBLANK ( Fact_LaborJobSummary[InvoiceNumber] ) ),
+			        REMOVEFILTERS ( Fact_LaborJobSummary[JobCode] ),
+			        REMOVEFILTERS ( Fact_LaborJobSummary[InspectionCategory] )
+			    )
+			RETURN
+			    TotalLaborWithInspection - [Inspection $$]
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 9f0c4e8b-e6aa-4f04-913c-1857edcb51ab
 
 		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
 
