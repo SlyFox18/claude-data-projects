@@ -12594,6 +12594,16 @@ cultureInfo en-US
 			            },
 			            "Weight": 0.609
 			          }
+			        },
+			        {
+			          "Labor $": {
+			            "State": "Suggested",
+			            "Source": {
+			              "Type": "External",
+			              "Agent": "PowerBI.VisualColumnRename"
+			            },
+			            "Weight": 0.9
+			          }
 			        }
 			      ]
 			    },
@@ -47811,658 +47821,145 @@ cultureInfo en-US
 			          }
 			        }
 			      ]
+			    },
+			    "entity__measure.parts__total_filtered": {
+			      "Definition": {
+			        "Binding": {
+			          "ConceptualEntity": "_Measures",
+			          "ConceptualProperty": "Parts $ Total (Filtered)"
+			        }
+			      },
+			      "State": "Generated",
+			      "Terms": [
+			        {
+			          "parts $ total (filtered)": {
+			            "State": "Generated"
+			          }
+			        },
+			        {
+			          "parts $ total": {
+			            "State": "Generated",
+			            "Weight": 0.75
+			          }
+			        },
+			        {
+			          "Parts $": {
+			            "State": "Suggested",
+			            "Source": {
+			              "Type": "External",
+			              "Agent": "PowerBI.VisualColumnRename"
+			            },
+			            "Weight": 0.9
+			          }
+			        }
+			      ]
+			    },
+			    "entity__measure.avg_parts____inspection_rolling_24": {
+			      "Definition": {
+			        "Binding": {
+			          "ConceptualEntity": "_Measures",
+			          "ConceptualProperty": "Avg Parts $ / Inspection (Rolling 24)"
+			        }
+			      },
+			      "State": "Generated",
+			      "Terms": [
+			        {
+			          "avg parts $ / inspection (rolling 24)": {
+			            "State": "Generated"
+			          }
+			        },
+			        {
+			          "avg parts $ / inspection": {
+			            "State": "Generated",
+			            "Weight": 0.75
+			          }
+			        },
+			        {
+			          "avg parts $": {
+			            "State": "Generated",
+			            "Weight": 0.97
+			          }
+			        },
+			        {
+			          "avg parts $ inspection ( rolling 24 )": {
+			            "State": "Generated",
+			            "Weight": 0.97
+			          }
+			        },
+			        {
+			          "inspection (rolling 24)": {
+			            "State": "Generated",
+			            "Weight": 0.97
+			          }
+			        },
+			        {
+			          "avg part dollar": {
+			            "Type": "Noun",
+			            "State": "Suggested",
+			            "Source": {
+			              "Agent": "Thesaurus"
+			            },
+			            "Weight": 0.762
+			          }
+			        },
+			        {
+			          "average part $": {
+			            "Type": "Noun",
+			            "State": "Suggested",
+			            "Source": {
+			              "Agent": "Thesaurus"
+			            },
+			            "Weight": 0.591
+			          }
+			        }
+			      ]
+			    },
+			    "entity__measure.avg_labor____inspection_rolling_24": {
+			      "Definition": {
+			        "Binding": {
+			          "ConceptualEntity": "_Measures",
+			          "ConceptualProperty": "Avg Labor $ / Inspection (Rolling 24)"
+			        }
+			      },
+			      "State": "Generated",
+			      "Terms": [
+			        {
+			          "avg labor $ / inspection (rolling 24)": {
+			            "State": "Generated"
+			          }
+			        },
+			        {
+			          "avg labor $ / inspection": {
+			            "State": "Generated",
+			            "Weight": 0.75
+			          }
+			        },
+			        {
+			          "avg labor $ inspection ( rolling 24 )": {
+			            "State": "Generated",
+			            "Weight": 0.97
+			          }
+			        },
+			        {
+			          "inspection (rolling 24)": {
+			            "State": "Generated",
+			            "Weight": 0.97
+			          }
+			        },
+			        {
+			          "Avg Labor $": {
+			            "State": "Suggested",
+			            "Source": {
+			              "Type": "External",
+			              "Agent": "PowerBI.VisualColumnRename"
+			            },
+			            "Weight": 0.9
+			          }
+			        }
+			      ]
 			    }
 			  },
 			  "Relationships": {
-			    "inspection_goal_has_dim_branch_location1": {
-			      "Binding": {
-			        "ConceptualEntity": "Inspection Goals"
-			      },
-			      "State": "Generated",
-			      "Roles": {
-			        "inspection_goal": {
-			          "Target": {
-			            "Entity": "inspection_goal"
-			          }
-			        },
-			        "dim_branch_location": {
-			          "Target": {
-			            "Entity": "dim_branch_location"
-			          },
-			          "Nouns": [
-			            {
-			              "location": {
-			                "State": "Generated"
-			              }
-			            }
-			          ]
-			        }
-			      },
-			      "Phrasings": [
-			        {
-			          "Attribute": {
-			            "Subject": {
-			              "Role": "inspection_goal"
-			            },
-			            "Object": {
-			              "Role": "dim_branch_location"
-			            }
-			          },
-			          "State": "Generated",
-			          "Weight": 0.99,
-			          "ID": "inspection_goals_have_dim_branch_locations"
-			        },
-			        {
-			          "Attribute": {
-			            "Subject": {
-			              "Role": "dim_branch_location"
-			            },
-			            "Object": {
-			              "Role": "inspection_goal"
-			            }
-			          },
-			          "State": "Generated",
-			          "Weight": 0.99,
-			          "ID": "dim_branch_locations_have_inspection_goals"
-			        }
-			      ]
-			    },
-			    "entity__measure_pending_pending__header": {
-			      "Binding": {
-			        "ConceptualEntity": "_Measures"
-			      },
-			      "State": "Generated",
-			      "Roles": {
-			        "entity__measure": {
-			          "Target": {
-			            "Entity": "entity__measure"
-			          }
-			        },
-			        "entity__measure.pending__header": {
-			          "Target": {
-			            "Entity": "entity__measure.pending__header"
-			          }
-			        }
-			      },
-			      "Phrasings": [
-			        {
-			          "Preposition": {
-			            "Subject": {
-			              "Role": "entity__measure"
-			            },
-			            "Prepositions": [
-			              {
-			                "pending": {
-			                  "State": "Generated"
-			                }
-			              }
-			            ],
-			            "Object": {
-			              "Role": "entity__measure.pending__header"
-			            }
-			          },
-			          "State": "Generated",
-			          "Weight": 0.99,
-			          "ID": "Phrasing_measures_are_pending_pending__header"
-			        },
-			        {
-			          "Attribute": {
-			            "Subject": {
-			              "Role": "entity__measure"
-			            },
-			            "Object": {
-			              "Role": "entity__measure.pending__header"
-			            }
-			          },
-			          "State": "Generated",
-			          "Weight": 0.99,
-			          "ID": "Phrasing_measures_have_pending__header"
-			        },
-			        {
-			          "Verb": {
-			            "Subject": {
-			              "Role": "entity__measure.pending__header"
-			            },
-			            "Verbs": [
-			              {
-			                "head": {
-			                  "State": "Generated"
-			                }
-			              }
-			            ],
-			            "Object": {
-			              "Role": "entity__measure"
-			            }
-			          },
-			          "State": "Generated",
-			          "Weight": 0.75,
-			          "ID": "pending__header_head__measures"
-			        },
-			        {
-			          "Attribute": {
-			            "Subject": {
-			              "Role": "entity__measure.pending__header"
-			            },
-			            "Object": {
-			              "Role": "entity__measure"
-			            }
-			          },
-			          "State": "Generated",
-			          "Weight": 0.99,
-			          "ID": "pending__header_have__measures"
-			        }
-			      ]
-			    },
-			    "fact_labor_job_summary_down_is_machine_down": {
-			      "Binding": {
-			        "ConceptualEntity": "Fact_LaborJobSummary"
-			      },
-			      "State": "Generated",
-			      "Roles": {
-			        "fact_labor_job_summary": {
-			          "Target": {
-			            "Entity": "fact_labor_job_summary"
-			          }
-			        },
-			        "fact_labor_job_summary.is_machine_down": {
-			          "Target": {
-			            "Entity": "fact_labor_job_summary.is_machine_down"
-			          }
-			        }
-			      },
-			      "Phrasings": [
-			        {
-			          "Preposition": {
-			            "Subject": {
-			              "Role": "fact_labor_job_summary"
-			            },
-			            "Prepositions": [
-			              {
-			                "down": {
-			                  "State": "Generated"
-			                }
-			              }
-			            ],
-			            "Object": {
-			              "Role": "fact_labor_job_summary.is_machine_down"
-			            }
-			          },
-			          "State": "Generated",
-			          "Weight": 0.99,
-			          "ID": "fact_labor_job_summaries_are_down_is_machine_down"
-			        },
-			        {
-			          "Attribute": {
-			            "Subject": {
-			              "Role": "fact_labor_job_summary"
-			            },
-			            "Object": {
-			              "Role": "fact_labor_job_summary.is_machine_down"
-			            }
-			          },
-			          "State": "Generated",
-			          "Weight": 0.99,
-			          "ID": "fact_labor_job_summaries_have_is_machine_down"
-			        },
-			        {
-			          "Verb": {
-			            "Subject": {
-			              "Role": "fact_labor_job_summary"
-			            },
-			            "Verbs": [
-			              {
-			                "machine": {
-			                  "State": "Generated"
-			                }
-			              }
-			            ],
-			            "PrepositionalPhrases": [
-			              {
-			                "Prepositions": [
-			                  {
-			                    "down": {
-			                      "State": "Generated"
-			                    }
-			                  }
-			                ],
-			                "Object": {
-			                  "Role": "fact_labor_job_summary.is_machine_down"
-			                }
-			              }
-			            ]
-			          },
-			          "State": "Generated",
-			          "Weight": 0.95,
-			          "ID": "fact_labor_job_summaries_machine_down_is_machine_down"
-			        }
-			      ]
-			    },
-			    "fact_pending_inspections_has_service_recommendation": {
-			      "Binding": {
-			        "ConceptualEntity": "Fact_PendingInspections"
-			      },
-			      "State": "Generated",
-			      "Roles": {
-			        "fact_pending_inspections": {
-			          "Target": {
-			            "Entity": "fact_pending_inspections"
-			          }
-			        },
-			        "service_recommendation": {
-			          "Target": {
-			            "Entity": "service_recommendation"
-			          }
-			        }
-			      }
-			    },
-			    "fact_pending_inspections_has_dim_branch_location": {
-			      "Binding": {
-			        "ConceptualEntity": "Fact_PendingInspections"
-			      },
-			      "State": "Generated",
-			      "Roles": {
-			        "fact_pending_inspections": {
-			          "Target": {
-			            "Entity": "fact_pending_inspections"
-			          }
-			        },
-			        "dim_branch_location": {
-			          "Target": {
-			            "Entity": "dim_branch_location"
-			          }
-			        }
-			      },
-			      "Phrasings": [
-			        {
-			          "Attribute": {
-			            "Subject": {
-			              "Role": "fact_pending_inspections"
-			            },
-			            "Object": {
-			              "Role": "dim_branch_location"
-			            }
-			          },
-			          "State": "Generated",
-			          "Weight": 0.99,
-			          "ID": "fact_pending_inspections_have_dim_branch_locations"
-			        },
-			        {
-			          "Attribute": {
-			            "Subject": {
-			              "Role": "dim_branch_location"
-			            },
-			            "Object": {
-			              "Role": "fact_pending_inspections"
-			            }
-			          },
-			          "State": "Generated",
-			          "Weight": 0.99,
-			          "ID": "dim_branch_locations_have_fact_pending_inspections"
-			        }
-			      ]
-			    },
-			    "fact_work_order_part_has_dim_date_table": {
-			      "Binding": {
-			        "ConceptualEntity": "Fact_WorkOrderParts"
-			      },
-			      "State": "Generated",
-			      "Roles": {
-			        "fact_work_order_part": {
-			          "Target": {
-			            "Entity": "fact_work_order_part"
-			          }
-			        },
-			        "dim_date_table": {
-			          "Target": {
-			            "Entity": "dim_date_table"
-			          }
-			        }
-			      },
-			      "Phrasings": [
-			        {
-			          "Attribute": {
-			            "Subject": {
-			              "Role": "fact_work_order_part"
-			            },
-			            "Object": {
-			              "Role": "dim_date_table"
-			            }
-			          },
-			          "State": "Generated",
-			          "Weight": 0.99,
-			          "ID": "fact_work_order_parts_have_dim_date_tables"
-			        },
-			        {
-			          "Attribute": {
-			            "Subject": {
-			              "Role": "dim_date_table"
-			            },
-			            "Object": {
-			              "Role": "fact_work_order_part"
-			            }
-			          },
-			          "State": "Generated",
-			          "Weight": 0.99,
-			          "ID": "dim_date_tables_have_fact_work_order_parts"
-			        }
-			      ]
-			    },
-			    "fact_work_order_part_has_dim_part": {
-			      "Binding": {
-			        "ConceptualEntity": "Fact_WorkOrderParts"
-			      },
-			      "State": "Generated",
-			      "Roles": {
-			        "fact_work_order_part": {
-			          "Target": {
-			            "Entity": "fact_work_order_part"
-			          }
-			        },
-			        "dim_part": {
-			          "Target": {
-			            "Entity": "dim_part"
-			          }
-			        }
-			      },
-			      "Phrasings": [
-			        {
-			          "Attribute": {
-			            "Subject": {
-			              "Role": "fact_work_order_part"
-			            },
-			            "Object": {
-			              "Role": "dim_part"
-			            }
-			          },
-			          "State": "Generated",
-			          "Weight": 0.99,
-			          "ID": "fact_work_order_parts_have_dim_parts"
-			        },
-			        {
-			          "Attribute": {
-			            "Subject": {
-			              "Role": "dim_part"
-			            },
-			            "Object": {
-			              "Role": "fact_work_order_part"
-			            }
-			          },
-			          "State": "Generated",
-			          "Weight": 0.99,
-			          "ID": "dim_parts_have_fact_work_order_parts"
-			        }
-			      ]
-			    },
-			    "fact_work_order_part_has_dim_branch_location": {
-			      "Binding": {
-			        "ConceptualEntity": "Fact_WorkOrderParts"
-			      },
-			      "State": "Generated",
-			      "Roles": {
-			        "fact_work_order_part": {
-			          "Target": {
-			            "Entity": "fact_work_order_part"
-			          }
-			        },
-			        "dim_branch_location": {
-			          "Target": {
-			            "Entity": "dim_branch_location"
-			          }
-			        }
-			      },
-			      "Phrasings": [
-			        {
-			          "Attribute": {
-			            "Subject": {
-			              "Role": "fact_work_order_part"
-			            },
-			            "Object": {
-			              "Role": "dim_branch_location"
-			            }
-			          },
-			          "State": "Generated",
-			          "Weight": 0.99,
-			          "ID": "fact_work_order_parts_have_dim_branch_locations"
-			        },
-			        {
-			          "Attribute": {
-			            "Subject": {
-			              "Role": "dim_branch_location"
-			            },
-			            "Object": {
-			              "Role": "fact_work_order_part"
-			            }
-			          },
-			          "State": "Generated",
-			          "Weight": 0.99,
-			          "ID": "dim_branch_locations_have_fact_work_order_parts"
-			        }
-			      ]
-			    },
-			    "fact_labor_job_summary_has_dim_date_table": {
-			      "Binding": {
-			        "ConceptualEntity": "Fact_LaborJobSummary"
-			      },
-			      "State": "Generated",
-			      "Roles": {
-			        "fact_labor_job_summary": {
-			          "Target": {
-			            "Entity": "fact_labor_job_summary"
-			          }
-			        },
-			        "dim_date_table": {
-			          "Target": {
-			            "Entity": "dim_date_table"
-			          }
-			        }
-			      },
-			      "Phrasings": [
-			        {
-			          "Attribute": {
-			            "Subject": {
-			              "Role": "fact_labor_job_summary"
-			            },
-			            "Object": {
-			              "Role": "dim_date_table"
-			            }
-			          },
-			          "State": "Generated",
-			          "Weight": 0.99,
-			          "ID": "fact_labor_job_summaries_have_dim_date_tables"
-			        },
-			        {
-			          "Attribute": {
-			            "Subject": {
-			              "Role": "dim_date_table"
-			            },
-			            "Object": {
-			              "Role": "fact_labor_job_summary"
-			            }
-			          },
-			          "State": "Generated",
-			          "Weight": 0.99,
-			          "ID": "dim_date_tables_have_fact_labor_job_summaries"
-			        }
-			      ]
-			    },
-			    "fact_labor_job_summary_has_dim_branch_location": {
-			      "Binding": {
-			        "ConceptualEntity": "Fact_LaborJobSummary"
-			      },
-			      "State": "Generated",
-			      "Roles": {
-			        "fact_labor_job_summary": {
-			          "Target": {
-			            "Entity": "fact_labor_job_summary"
-			          }
-			        },
-			        "dim_branch_location": {
-			          "Target": {
-			            "Entity": "dim_branch_location"
-			          }
-			        }
-			      },
-			      "Phrasings": [
-			        {
-			          "Attribute": {
-			            "Subject": {
-			              "Role": "fact_labor_job_summary"
-			            },
-			            "Object": {
-			              "Role": "dim_branch_location"
-			            }
-			          },
-			          "State": "Generated",
-			          "Weight": 0.99,
-			          "ID": "fact_labor_job_summaries_have_dim_branch_locations"
-			        },
-			        {
-			          "Attribute": {
-			            "Subject": {
-			              "Role": "dim_branch_location"
-			            },
-			            "Object": {
-			              "Role": "fact_labor_job_summary"
-			            }
-			          },
-			          "State": "Generated",
-			          "Weight": 0.99,
-			          "ID": "dim_branch_locations_have_fact_labor_job_summaries"
-			        }
-			      ]
-			    },
-			    "dim_customer_list_has_YTD_debit": {
-			      "Binding": {
-			        "ConceptualEntity": "dim_CustomerList"
-			      },
-			      "State": "Generated",
-			      "Roles": {
-			        "dim_customer_list": {
-			          "Target": {
-			            "Entity": "dim_customer_list"
-			          }
-			        },
-			        "dim_customer_list.YTD_debit": {
-			          "Target": {
-			            "Entity": "dim_customer_list.YTD_debit"
-			          }
-			        }
-			      },
-			      "Phrasings": [
-			        {
-			          "Attribute": {
-			            "Subject": {
-			              "Role": "dim_customer_list"
-			            },
-			            "Object": {
-			              "Role": "dim_customer_list.YTD_debit"
-			            }
-			          },
-			          "State": "Generated",
-			          "Weight": 0.99,
-			          "ID": "dim_customer_lists_have_YTD_debits"
-			        }
-			      ]
-			    },
-			    "fact_labor_job_summary_has_inspection_category": {
-			      "Binding": {
-			        "ConceptualEntity": "Fact_LaborJobSummary"
-			      },
-			      "State": "Generated",
-			      "Roles": {
-			        "fact_labor_job_summary": {
-			          "Target": {
-			            "Entity": "fact_labor_job_summary"
-			          }
-			        },
-			        "fact_labor_job_summary.inspection_category": {
-			          "Target": {
-			            "Entity": "fact_labor_job_summary.inspection_category"
-			          }
-			        }
-			      },
-			      "Phrasings": [
-			        {
-			          "Attribute": {
-			            "Subject": {
-			              "Role": "fact_labor_job_summary"
-			            },
-			            "Object": {
-			              "Role": "fact_labor_job_summary.inspection_category"
-			            }
-			          },
-			          "State": "Generated",
-			          "Weight": 0.99,
-			          "ID": "fact_labor_job_summaries_have_inspection_categories"
-			        }
-			      ]
-			    },
-			    "fact_labor_job_summary_has_entity__measure_total_inspections_LY": {
-			      "Binding": {
-			        "ConceptualEntity": "Fact_LaborJobSummary"
-			      },
-			      "State": "Generated",
-			      "Roles": {
-			        "fact_labor_job_summary": {
-			          "Target": {
-			            "Entity": "fact_labor_job_summary"
-			          }
-			        },
-			        "entity__measure.total_inspections_LY": {
-			          "Target": {
-			            "Entity": "entity__measure.total_inspections_LY"
-			          }
-			        }
-			      },
-			      "Phrasings": [
-			        {
-			          "Attribute": {
-			            "Subject": {
-			              "Role": "fact_labor_job_summary"
-			            },
-			            "Object": {
-			              "Role": "entity__measure.total_inspections_LY"
-			            }
-			          },
-			          "State": "Generated",
-			          "Weight": 0.99,
-			          "ID": "fact_labor_job_summaries_have_total_inspections_LY"
-			        }
-			      ]
-			    },
-			    "fact_work_order_part_has_entity__measure_avg_parts___inspection": {
-			      "Binding": {
-			        "ConceptualEntity": "Fact_WorkOrderParts"
-			      },
-			      "State": "Generated",
-			      "Roles": {
-			        "fact_work_order_part": {
-			          "Target": {
-			            "Entity": "fact_work_order_part"
-			          }
-			        },
-			        "entity__measure.avg_parts___inspection": {
-			          "Target": {
-			            "Entity": "entity__measure.avg_parts___inspection"
-			          }
-			        }
-			      },
-			      "Phrasings": [
-			        {
-			          "Attribute": {
-			            "Subject": {
-			              "Role": "fact_work_order_part"
-			            },
-			            "Object": {
-			              "Role": "entity__measure.avg_parts___inspection"
-			            }
-			          },
-			          "State": "Generated",
-			          "Weight": 0.99,
-			          "ID": "fact_work_order_parts_have_avg_parts___inspection"
-			        }
-			      ]
-			    },
 			    "fact_labor_job_summary_has_entity__measure_avg_parts___inspection": {
 			      "Binding": {
 			        "ConceptualEntity": "Fact_LaborJobSummary"
@@ -49417,6 +48914,92 @@ cultureInfo en-US
 			          "State": "Generated",
 			          "Weight": 0.99,
 			          "ID": "Phrasing_measures_have_recommend__header"
+			        }
+			      ]
+			    },
+			    "entity__measure_has_pending__header": {
+			      "Binding": {
+			        "ConceptualEntity": "_Measures"
+			      },
+			      "State": "Generated",
+			      "Roles": {
+			        "entity__measure": {
+			          "Target": {
+			            "Entity": "entity__measure"
+			          }
+			        },
+			        "entity__measure.pending__header": {
+			          "Target": {
+			            "Entity": "entity__measure.pending__header"
+			          }
+			        }
+			      },
+			      "Phrasings": [
+			        {
+			          "Attribute": {
+			            "Subject": {
+			              "Role": "entity__measure"
+			            },
+			            "Object": {
+			              "Role": "entity__measure.pending__header"
+			            }
+			          },
+			          "State": "Generated",
+			          "Weight": 0.99,
+			          "ID": "Phrasing_measures_have_pending__header"
+			        },
+			        {
+			          "Verb": {
+			            "Subject": {
+			              "Role": "entity__measure.pending__header"
+			            },
+			            "Verbs": [
+			              {
+			                "head": {
+			                  "State": "Generated"
+			                }
+			              }
+			            ],
+			            "Object": {
+			              "Role": "entity__measure"
+			            }
+			          },
+			          "State": "Generated",
+			          "Weight": 0.75,
+			          "ID": "pending__header_head__measures"
+			        },
+			        {
+			          "Attribute": {
+			            "Subject": {
+			              "Role": "entity__measure.pending__header"
+			            },
+			            "Object": {
+			              "Role": "entity__measure"
+			            }
+			          },
+			          "State": "Generated",
+			          "Weight": 0.99,
+			          "ID": "pending__header_have__measures"
+			        },
+			        {
+			          "Preposition": {
+			            "Subject": {
+			              "Role": "entity__measure"
+			            },
+			            "Prepositions": [
+			              {
+			                "pending": {
+			                  "State": "Generated"
+			                }
+			              }
+			            ],
+			            "Object": {
+			              "Role": "entity__measure.pending__header"
+			            }
+			          },
+			          "State": "Generated",
+			          "Weight": 0.99,
+			          "ID": "Phrasing_measures_are_pending_pending__header"
 			        }
 			      ]
 			    },
@@ -56319,6 +55902,90 @@ cultureInfo en-US
 			        }
 			      ]
 			    },
+			    "fact_labor_job_summary_has_is_machine_down": {
+			      "Binding": {
+			        "ConceptualEntity": "Fact_LaborJobSummary"
+			      },
+			      "State": "Generated",
+			      "Roles": {
+			        "fact_labor_job_summary": {
+			          "Target": {
+			            "Entity": "fact_labor_job_summary"
+			          }
+			        },
+			        "fact_labor_job_summary.is_machine_down": {
+			          "Target": {
+			            "Entity": "fact_labor_job_summary.is_machine_down"
+			          }
+			        }
+			      },
+			      "Phrasings": [
+			        {
+			          "Attribute": {
+			            "Subject": {
+			              "Role": "fact_labor_job_summary"
+			            },
+			            "Object": {
+			              "Role": "fact_labor_job_summary.is_machine_down"
+			            }
+			          },
+			          "State": "Generated",
+			          "Weight": 0.99,
+			          "ID": "fact_labor_job_summaries_have_is_machine_down"
+			        },
+			        {
+			          "Verb": {
+			            "Subject": {
+			              "Role": "fact_labor_job_summary"
+			            },
+			            "Verbs": [
+			              {
+			                "machine": {
+			                  "State": "Generated"
+			                }
+			              }
+			            ],
+			            "PrepositionalPhrases": [
+			              {
+			                "Prepositions": [
+			                  {
+			                    "down": {
+			                      "State": "Generated"
+			                    }
+			                  }
+			                ],
+			                "Object": {
+			                  "Role": "fact_labor_job_summary.is_machine_down"
+			                }
+			              }
+			            ]
+			          },
+			          "State": "Generated",
+			          "Weight": 0.95,
+			          "ID": "fact_labor_job_summaries_machine_down_is_machine_down"
+			        },
+			        {
+			          "Preposition": {
+			            "Subject": {
+			              "Role": "fact_labor_job_summary"
+			            },
+			            "Prepositions": [
+			              {
+			                "down": {
+			                  "State": "Generated"
+			                }
+			              }
+			            ],
+			            "Object": {
+			              "Role": "fact_labor_job_summary.is_machine_down"
+			            }
+			          },
+			          "State": "Generated",
+			          "Weight": 0.99,
+			          "ID": "fact_labor_job_summaries_are_down_is_machine_down"
+			        }
+			      ]
+			    },
 			    "fact_labor_job_summary_has_invoiced_parts_amount": {
 			      "Binding": {
 			        "ConceptualEntity": "Fact_LaborJobSummary"
@@ -62740,6 +62407,617 @@ cultureInfo en-US
 			          "ID": "some_dim_date_tables_are_weekend_dim_date_tables"
 			        }
 			      ]
+			    },
+			    "fact_work_order_part_has_entity__measure_avg_parts___inspection": {
+			      "Binding": {
+			        "ConceptualEntity": "Fact_WorkOrderParts"
+			      },
+			      "State": "Generated",
+			      "Roles": {
+			        "fact_work_order_part": {
+			          "Target": {
+			            "Entity": "fact_work_order_part"
+			          }
+			        },
+			        "entity__measure.avg_parts___inspection": {
+			          "Target": {
+			            "Entity": "entity__measure.avg_parts___inspection"
+			          }
+			        }
+			      },
+			      "Phrasings": [
+			        {
+			          "Attribute": {
+			            "Subject": {
+			              "Role": "fact_work_order_part"
+			            },
+			            "Object": {
+			              "Role": "entity__measure.avg_parts___inspection"
+			            }
+			          },
+			          "State": "Generated",
+			          "Weight": 0.99,
+			          "ID": "fact_work_order_parts_have_avg_parts___inspection"
+			        }
+			      ]
+			    },
+			    "fact_labor_job_summary_has_entity__measure_total_inspections_LY": {
+			      "Binding": {
+			        "ConceptualEntity": "Fact_LaborJobSummary"
+			      },
+			      "State": "Generated",
+			      "Roles": {
+			        "fact_labor_job_summary": {
+			          "Target": {
+			            "Entity": "fact_labor_job_summary"
+			          }
+			        },
+			        "entity__measure.total_inspections_LY": {
+			          "Target": {
+			            "Entity": "entity__measure.total_inspections_LY"
+			          }
+			        }
+			      },
+			      "Phrasings": [
+			        {
+			          "Attribute": {
+			            "Subject": {
+			              "Role": "fact_labor_job_summary"
+			            },
+			            "Object": {
+			              "Role": "entity__measure.total_inspections_LY"
+			            }
+			          },
+			          "State": "Generated",
+			          "Weight": 0.99,
+			          "ID": "fact_labor_job_summaries_have_total_inspections_LY"
+			        }
+			      ]
+			    },
+			    "fact_labor_job_summary_has_inspection_category": {
+			      "Binding": {
+			        "ConceptualEntity": "Fact_LaborJobSummary"
+			      },
+			      "State": "Generated",
+			      "Roles": {
+			        "fact_labor_job_summary": {
+			          "Target": {
+			            "Entity": "fact_labor_job_summary"
+			          }
+			        },
+			        "fact_labor_job_summary.inspection_category": {
+			          "Target": {
+			            "Entity": "fact_labor_job_summary.inspection_category"
+			          }
+			        }
+			      },
+			      "Phrasings": [
+			        {
+			          "Attribute": {
+			            "Subject": {
+			              "Role": "fact_labor_job_summary"
+			            },
+			            "Object": {
+			              "Role": "fact_labor_job_summary.inspection_category"
+			            }
+			          },
+			          "State": "Generated",
+			          "Weight": 0.99,
+			          "ID": "fact_labor_job_summaries_have_inspection_categories"
+			        }
+			      ]
+			    },
+			    "dim_customer_list_has_YTD_debit": {
+			      "Binding": {
+			        "ConceptualEntity": "dim_CustomerList"
+			      },
+			      "State": "Generated",
+			      "Roles": {
+			        "dim_customer_list": {
+			          "Target": {
+			            "Entity": "dim_customer_list"
+			          }
+			        },
+			        "dim_customer_list.YTD_debit": {
+			          "Target": {
+			            "Entity": "dim_customer_list.YTD_debit"
+			          }
+			        }
+			      },
+			      "Phrasings": [
+			        {
+			          "Attribute": {
+			            "Subject": {
+			              "Role": "dim_customer_list"
+			            },
+			            "Object": {
+			              "Role": "dim_customer_list.YTD_debit"
+			            }
+			          },
+			          "State": "Generated",
+			          "Weight": 0.99,
+			          "ID": "dim_customer_lists_have_YTD_debits"
+			        }
+			      ]
+			    },
+			    "fact_work_order_part_has_entity__measure_parts__total_filtered": {
+			      "Binding": {
+			        "ConceptualEntity": "Fact_WorkOrderParts"
+			      },
+			      "State": "Generated",
+			      "Roles": {
+			        "fact_work_order_part": {
+			          "Target": {
+			            "Entity": "fact_work_order_part"
+			          }
+			        },
+			        "entity__measure.parts__total_filtered": {
+			          "Target": {
+			            "Entity": "entity__measure.parts__total_filtered"
+			          }
+			        }
+			      },
+			      "Phrasings": [
+			        {
+			          "Attribute": {
+			            "Subject": {
+			              "Role": "fact_work_order_part"
+			            },
+			            "Object": {
+			              "Role": "entity__measure.parts__total_filtered"
+			            }
+			          },
+			          "State": "Generated",
+			          "Weight": 0.99,
+			          "ID": "fact_work_order_parts_have_parts__total_filtered"
+			        }
+			      ]
+			    },
+			    "fact_labor_job_summary_has_entity__measure_avg_parts____inspection_rolling_24": {
+			      "Binding": {
+			        "ConceptualEntity": "Fact_LaborJobSummary"
+			      },
+			      "State": "Generated",
+			      "Roles": {
+			        "fact_labor_job_summary": {
+			          "Target": {
+			            "Entity": "fact_labor_job_summary"
+			          }
+			        },
+			        "entity__measure.avg_parts____inspection_rolling_24": {
+			          "Target": {
+			            "Entity": "entity__measure.avg_parts____inspection_rolling_24"
+			          }
+			        }
+			      },
+			      "Phrasings": [
+			        {
+			          "Attribute": {
+			            "Subject": {
+			              "Role": "fact_labor_job_summary"
+			            },
+			            "Object": {
+			              "Role": "entity__measure.avg_parts____inspection_rolling_24"
+			            }
+			          },
+			          "State": "Generated",
+			          "Weight": 0.99,
+			          "ID": "fact_labor_job_summaries_have_avg_parts____inspection_rolling_24"
+			        }
+			      ]
+			    },
+			    "fact_work_order_part_has_entity__measure_avg_parts____inspection_rolling_24": {
+			      "Binding": {
+			        "ConceptualEntity": "Fact_WorkOrderParts"
+			      },
+			      "State": "Generated",
+			      "Roles": {
+			        "fact_work_order_part": {
+			          "Target": {
+			            "Entity": "fact_work_order_part"
+			          }
+			        },
+			        "entity__measure.avg_parts____inspection_rolling_24": {
+			          "Target": {
+			            "Entity": "entity__measure.avg_parts____inspection_rolling_24"
+			          }
+			        }
+			      },
+			      "Phrasings": [
+			        {
+			          "Attribute": {
+			            "Subject": {
+			              "Role": "fact_work_order_part"
+			            },
+			            "Object": {
+			              "Role": "entity__measure.avg_parts____inspection_rolling_24"
+			            }
+			          },
+			          "State": "Generated",
+			          "Weight": 0.99,
+			          "ID": "fact_work_order_parts_have_avg_parts____inspection_rolling_24"
+			        }
+			      ]
+			    },
+			    "fact_labor_job_summary_has_entity__measure_avg_labor____inspection_rolling_24": {
+			      "Binding": {
+			        "ConceptualEntity": "Fact_LaborJobSummary"
+			      },
+			      "State": "Generated",
+			      "Roles": {
+			        "fact_labor_job_summary": {
+			          "Target": {
+			            "Entity": "fact_labor_job_summary"
+			          }
+			        },
+			        "entity__measure.avg_labor____inspection_rolling_24": {
+			          "Target": {
+			            "Entity": "entity__measure.avg_labor____inspection_rolling_24"
+			          }
+			        }
+			      },
+			      "Phrasings": [
+			        {
+			          "Attribute": {
+			            "Subject": {
+			              "Role": "fact_labor_job_summary"
+			            },
+			            "Object": {
+			              "Role": "entity__measure.avg_labor____inspection_rolling_24"
+			            }
+			          },
+			          "State": "Generated",
+			          "Weight": 0.99,
+			          "ID": "fact_labor_job_summaries_have_avg_labor____inspection_rolling_24"
+			        }
+			      ]
+			    },
+			    "fact_labor_job_summary_has_dim_branch_location": {
+			      "Binding": {
+			        "ConceptualEntity": "Fact_LaborJobSummary"
+			      },
+			      "State": "Generated",
+			      "Roles": {
+			        "fact_labor_job_summary": {
+			          "Target": {
+			            "Entity": "fact_labor_job_summary"
+			          }
+			        },
+			        "dim_branch_location": {
+			          "Target": {
+			            "Entity": "dim_branch_location"
+			          }
+			        }
+			      },
+			      "Phrasings": [
+			        {
+			          "Attribute": {
+			            "Subject": {
+			              "Role": "fact_labor_job_summary"
+			            },
+			            "Object": {
+			              "Role": "dim_branch_location"
+			            }
+			          },
+			          "State": "Generated",
+			          "Weight": 0.99,
+			          "ID": "fact_labor_job_summaries_have_dim_branch_locations"
+			        },
+			        {
+			          "Attribute": {
+			            "Subject": {
+			              "Role": "dim_branch_location"
+			            },
+			            "Object": {
+			              "Role": "fact_labor_job_summary"
+			            }
+			          },
+			          "State": "Generated",
+			          "Weight": 0.99,
+			          "ID": "dim_branch_locations_have_fact_labor_job_summaries"
+			        }
+			      ]
+			    },
+			    "fact_labor_job_summary_has_dim_date_table": {
+			      "Binding": {
+			        "ConceptualEntity": "Fact_LaborJobSummary"
+			      },
+			      "State": "Generated",
+			      "Roles": {
+			        "fact_labor_job_summary": {
+			          "Target": {
+			            "Entity": "fact_labor_job_summary"
+			          }
+			        },
+			        "dim_date_table": {
+			          "Target": {
+			            "Entity": "dim_date_table"
+			          }
+			        }
+			      },
+			      "Phrasings": [
+			        {
+			          "Attribute": {
+			            "Subject": {
+			              "Role": "fact_labor_job_summary"
+			            },
+			            "Object": {
+			              "Role": "dim_date_table"
+			            }
+			          },
+			          "State": "Generated",
+			          "Weight": 0.99,
+			          "ID": "fact_labor_job_summaries_have_dim_date_tables"
+			        },
+			        {
+			          "Attribute": {
+			            "Subject": {
+			              "Role": "dim_date_table"
+			            },
+			            "Object": {
+			              "Role": "fact_labor_job_summary"
+			            }
+			          },
+			          "State": "Generated",
+			          "Weight": 0.99,
+			          "ID": "dim_date_tables_have_fact_labor_job_summaries"
+			        }
+			      ]
+			    },
+			    "inspection_goal_has_dim_branch_location": {
+			      "Binding": {
+			        "ConceptualEntity": "Inspection Goals"
+			      },
+			      "State": "Generated",
+			      "Roles": {
+			        "inspection_goal": {
+			          "Target": {
+			            "Entity": "inspection_goal"
+			          }
+			        },
+			        "dim_branch_location": {
+			          "Target": {
+			            "Entity": "dim_branch_location"
+			          },
+			          "Nouns": [
+			            {
+			              "location": {
+			                "State": "Generated"
+			              }
+			            }
+			          ]
+			        }
+			      },
+			      "Phrasings": [
+			        {
+			          "Attribute": {
+			            "Subject": {
+			              "Role": "inspection_goal"
+			            },
+			            "Object": {
+			              "Role": "dim_branch_location"
+			            }
+			          },
+			          "State": "Generated",
+			          "Weight": 0.99,
+			          "ID": "inspection_goals_have_dim_branch_locations"
+			        },
+			        {
+			          "Attribute": {
+			            "Subject": {
+			              "Role": "dim_branch_location"
+			            },
+			            "Object": {
+			              "Role": "inspection_goal"
+			            }
+			          },
+			          "State": "Generated",
+			          "Weight": 0.99,
+			          "ID": "dim_branch_locations_have_inspection_goals"
+			        }
+			      ]
+			    },
+			    "fact_work_order_part_has_dim_branch_location": {
+			      "Binding": {
+			        "ConceptualEntity": "Fact_WorkOrderParts"
+			      },
+			      "State": "Generated",
+			      "Roles": {
+			        "fact_work_order_part": {
+			          "Target": {
+			            "Entity": "fact_work_order_part"
+			          }
+			        },
+			        "dim_branch_location": {
+			          "Target": {
+			            "Entity": "dim_branch_location"
+			          }
+			        }
+			      },
+			      "Phrasings": [
+			        {
+			          "Attribute": {
+			            "Subject": {
+			              "Role": "fact_work_order_part"
+			            },
+			            "Object": {
+			              "Role": "dim_branch_location"
+			            }
+			          },
+			          "State": "Generated",
+			          "Weight": 0.99,
+			          "ID": "fact_work_order_parts_have_dim_branch_locations"
+			        },
+			        {
+			          "Attribute": {
+			            "Subject": {
+			              "Role": "dim_branch_location"
+			            },
+			            "Object": {
+			              "Role": "fact_work_order_part"
+			            }
+			          },
+			          "State": "Generated",
+			          "Weight": 0.99,
+			          "ID": "dim_branch_locations_have_fact_work_order_parts"
+			        }
+			      ]
+			    },
+			    "fact_work_order_part_has_dim_part": {
+			      "Binding": {
+			        "ConceptualEntity": "Fact_WorkOrderParts"
+			      },
+			      "State": "Generated",
+			      "Roles": {
+			        "fact_work_order_part": {
+			          "Target": {
+			            "Entity": "fact_work_order_part"
+			          }
+			        },
+			        "dim_part": {
+			          "Target": {
+			            "Entity": "dim_part"
+			          }
+			        }
+			      },
+			      "Phrasings": [
+			        {
+			          "Attribute": {
+			            "Subject": {
+			              "Role": "fact_work_order_part"
+			            },
+			            "Object": {
+			              "Role": "dim_part"
+			            }
+			          },
+			          "State": "Generated",
+			          "Weight": 0.99,
+			          "ID": "fact_work_order_parts_have_dim_parts"
+			        },
+			        {
+			          "Attribute": {
+			            "Subject": {
+			              "Role": "dim_part"
+			            },
+			            "Object": {
+			              "Role": "fact_work_order_part"
+			            }
+			          },
+			          "State": "Generated",
+			          "Weight": 0.99,
+			          "ID": "dim_parts_have_fact_work_order_parts"
+			        }
+			      ]
+			    },
+			    "fact_work_order_part_has_dim_date_table": {
+			      "Binding": {
+			        "ConceptualEntity": "Fact_WorkOrderParts"
+			      },
+			      "State": "Generated",
+			      "Roles": {
+			        "fact_work_order_part": {
+			          "Target": {
+			            "Entity": "fact_work_order_part"
+			          }
+			        },
+			        "dim_date_table": {
+			          "Target": {
+			            "Entity": "dim_date_table"
+			          }
+			        }
+			      },
+			      "Phrasings": [
+			        {
+			          "Attribute": {
+			            "Subject": {
+			              "Role": "fact_work_order_part"
+			            },
+			            "Object": {
+			              "Role": "dim_date_table"
+			            }
+			          },
+			          "State": "Generated",
+			          "Weight": 0.99,
+			          "ID": "fact_work_order_parts_have_dim_date_tables"
+			        },
+			        {
+			          "Attribute": {
+			            "Subject": {
+			              "Role": "dim_date_table"
+			            },
+			            "Object": {
+			              "Role": "fact_work_order_part"
+			            }
+			          },
+			          "State": "Generated",
+			          "Weight": 0.99,
+			          "ID": "dim_date_tables_have_fact_work_order_parts"
+			        }
+			      ]
+			    },
+			    "fact_pending_inspections_has_dim_branch_location": {
+			      "Binding": {
+			        "ConceptualEntity": "Fact_PendingInspections"
+			      },
+			      "State": "Generated",
+			      "Roles": {
+			        "fact_pending_inspections": {
+			          "Target": {
+			            "Entity": "fact_pending_inspections"
+			          }
+			        },
+			        "dim_branch_location": {
+			          "Target": {
+			            "Entity": "dim_branch_location"
+			          }
+			        }
+			      },
+			      "Phrasings": [
+			        {
+			          "Attribute": {
+			            "Subject": {
+			              "Role": "fact_pending_inspections"
+			            },
+			            "Object": {
+			              "Role": "dim_branch_location"
+			            }
+			          },
+			          "State": "Generated",
+			          "Weight": 0.99,
+			          "ID": "fact_pending_inspections_have_dim_branch_locations"
+			        },
+			        {
+			          "Attribute": {
+			            "Subject": {
+			              "Role": "dim_branch_location"
+			            },
+			            "Object": {
+			              "Role": "fact_pending_inspections"
+			            }
+			          },
+			          "State": "Generated",
+			          "Weight": 0.99,
+			          "ID": "dim_branch_locations_have_fact_pending_inspections"
+			        }
+			      ]
+			    },
+			    "fact_pending_inspections_has_service_recommendation": {
+			      "Binding": {
+			        "ConceptualEntity": "Fact_PendingInspections"
+			      },
+			      "State": "Generated",
+			      "Roles": {
+			        "fact_pending_inspections": {
+			          "Target": {
+			            "Entity": "fact_pending_inspections"
+			          }
+			        },
+			        "service_recommendation": {
+			          "Target": {
+			            "Entity": "service_recommendation"
+			          }
+			        }
+			      }
 			    }
 			  },
 			  "Agents": {
