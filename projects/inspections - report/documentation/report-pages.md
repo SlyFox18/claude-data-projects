@@ -119,6 +119,26 @@ Detailed analysis of inspection performance with branch and job code breakdowns,
 ### Navigation
 - Drill-through capability to Work Order List and Details pages
 
+### Trend View (added 2026-07)
+
+The Details page now defaults to a **rolling 24-month trend view** on open, layered on top of the existing Jobcode/Branch matrix toggle. It was requested by Casey to give a quick "where are we headed" read before drilling into the pivot tables.
+
+**Visuals:**
+- **Combined trend chart** (line chart, visual `935cc195e3ccbf08509c`) — plots `Parts $ Total (Filtered)` and `Labor $$` by `dim_DateTable[MonthYear]`, filtered to `dim_DateTable[IsRolling24Months] = True`. `MonthYear` now has `sortByColumn: SortableMonthYear` set at the model/column level (not just a visual-level sort), so it sorts chronologically everywhere it's used in the model, not only on this chart.
+- **Two-stat card** (modern Card visual, `cardVisual` type, visual `976f6918c97268c9b9a1`) — a single visual container showing `Avg Parts $ / Inspection (Rolling 24)` and `Avg Labor $ / Inspection (Rolling 24)` side by side as two stat callouts (not two separate card visuals).
+
+**Page-wide Job Code filter:** The `InspectionCategory` slicer (visual `c7a00a20c7eeb649d99b`) was built earlier and independently, at Casey's direct request, as a page-wide filter driven by the existing `InspectionCategory` calculated column. It is **not** trend-specific — it's intentionally visible and active across all three states of the page (Jobcode matrix, Branch matrix, and Trend).
+
+**Date-filter exclusion:** The page already had an Inforiver Filter custom visual (a date-range panel, visual `be0d6015c5b591d81118`) that was found to interfere with the new trend visuals when both were active. Fix: two `NoFilter` entries were added to `page.json`'s `visualInteractions` (via Power BI Desktop's Edit Interactions feature) — from `be0d6015c5b591d81118` to the line chart and to the card — so the trend visuals ignore that date panel while the pivot tables continue to respond to it normally.
+
+**Show/Hide Trend toggle (layers with the Jobcode/Branch toggle):** Two independent bookmark pairs now control this page:
+- `Matrix - Jobcode` / `Matrix - Branch` (pre-existing, extended) — toggles which pivot table is shown, driven by "Button - Jobcode" / "Button - Branch"
+- `Show Trend Chart` / `Hide Trend Chart` (new) — toggles the trend chart/card overlay, driven by two new action buttons: `e15e719cd9f592bf1e0f` (shown when Trend is not active — click to show it) and `b53865ec704bf4af41ae` (shown when Trend is active — click to hide it)
+
+When Trend is showing, both pivot tables (`1401aa2e094056908a34` Jobcode, `bd2912d19640de5c6eca` Branch) and both matrix-switch buttons ("Button - Jobcode", "Button - Branch") are hidden, so the two toggle systems don't visually collide. **Known minor quirk:** "Hide Trend Chart" always returns to the Branch matrix specifically, not whichever of Jobcode/Branch was showing before Trend was opened — this is a known limitation, not a bug, and may be revisited.
+
+**Default landing state:** Opening the Details page (before any bookmark is applied) now shows the **Trend view first**, not a pivot table — both pivot tables and "Button - Jobcode" default to `isHidden: true` at the base visual level. This is a deliberate, if not-yet-final, choice so Casey sees the trend chart immediately on page load.
+
 ---
 
 ## 📄 Page 3: Goals Page

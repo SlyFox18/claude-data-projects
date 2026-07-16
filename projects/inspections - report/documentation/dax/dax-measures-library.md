@@ -1,12 +1,12 @@
 # DAX Measures Library - Inspections Report
 
-**Complete documentation of all 172 DAX measures in the Inspections Report.**
+**Complete documentation of all 175 DAX measures in the Inspections Report.**
 
 ---
 
 ## 📊 Measure Summary
 
-**Total Measures:** 172
+**Total Measures:** 175
 
 | Category | Count |
 |----------|-------|
@@ -20,6 +20,7 @@
 | **CS690/CS770 Specific** | 3 |
 | **Discount Analysis** | 14 |
 | **Helper/Utility** | 43 |
+| **Trend** | 3 |
 
 ---
 
@@ -35,6 +36,7 @@
 - [CS690/CS770 Specific](#cs690cs770-specific) (3 measures)
 - [Discount Analysis](#discount-analysis) (14 measures)
 - [Helper/Utility](#helperutility) (43 measures)
+- [Trend](#trend) (3 measures)
 
 ---
 
@@ -7326,6 +7328,60 @@ VAR _FormattedLastName =
         & LOWER ( MID ( _LastName, 2, LEN ( _LastName ) ) )
 RETURN
     "Welcome Back, " & _FirstLetter & "." & _FormattedLastName
+```
+
+---
+
+## Trend
+
+**3 measures in this category**
+
+Added for the Details page trend view (rolling 24-month Parts $ / Labor $ chart and two-stat card). `Parts $ Total (Filtered)` is a generalized invoice-number bridge — functionally the same pattern as `Parts $ Total` but built from a local `ValidInv` variable instead of the `ValidInvoiceNumbers` table, so it can be reused safely inside the trend visuals' month/rolling-24 filter context. The other two measures are pure `DIVIDE()` wrappers that reuse existing measures — no new business logic.
+
+### Parts $ Total (Filtered)
+
+**Format:** `\$#,0.00;(\$#,0.00);\$#,0.00`
+
+**DAX:**
+```dax
+
+VAR ValidInv =
+    CALCULATETABLE(
+        VALUES(Fact_LaborJobSummary[InvoiceNumber]),
+        Fact_LaborJobSummary[IsInspection] = TRUE,
+        NOT(ISBLANK(Fact_LaborJobSummary[InvoiceNumber]))
+    )
+RETURN
+    CALCULATE(
+        SUM(Fact_WorkOrderParts[SaleValue]),
+        Fact_WorkOrderParts[InvoiceNumber] IN ValidInv,
+        Fact_WorkOrderParts[Franchise] <> "ZP",
+        NOT(Fact_WorkOrderParts[PartNumber] IN {"ADV", "LEGACY", "4900", "*10PROMO"})
+    )
+```
+
+---
+
+### Avg Parts $ / Inspection (Rolling 24)
+
+**Format:** `\$#,0.00;(\$#,0.00);\$#,0.00`
+
+**DAX:**
+```dax
+
+DIVIDE([Parts $ Total (Filtered)], [Total Inspections], 0)
+```
+
+---
+
+### Avg Labor $ / Inspection (Rolling 24)
+
+**Format:** `\$#,0.00;(\$#,0.00);\$#,0.00`
+
+**DAX:**
+```dax
+
+DIVIDE([Labor $$], [Total Inspections], 0)
 ```
 
 ---
