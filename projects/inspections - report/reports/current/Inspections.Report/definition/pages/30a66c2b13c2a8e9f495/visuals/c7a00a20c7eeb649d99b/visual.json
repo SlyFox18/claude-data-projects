@@ -1,13 +1,13 @@
 {
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.10.0/schema.json",
-  "name": "2a680c5b601e6b1f933c",
+  "name": "c7a00a20c7eeb649d99b",
   "position": {
     "x": 183.89924433249371,
-    "y": 84.033272211612285,
-    "z": 3000,
+    "y": 170.08868782874077,
+    "z": 2000,
     "height": 80.161209068010081,
     "width": 198.04534005037783,
-    "tabOrder": 2000
+    "tabOrder": 12002
   },
   "visual": {
     "visualType": "slicer",
@@ -20,15 +20,16 @@
                 "Column": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "dim_BranchLocation"
+                      "Entity": "Fact_LaborJobSummary"
                     }
                   },
-                  "Property": "Branch"
+                  "Property": "InspectionCategory"
                 }
               },
-              "queryRef": "dim_BranchLocation.Branch",
-              "nativeQueryRef": "Branch",
-              "active": true
+              "queryRef": "Fact_LaborJobSummary.InspectionCategory",
+              "nativeQueryRef": "Job Code",
+              "active": true,
+              "displayName": "Job Code"
             }
           ]
         }
@@ -90,6 +91,13 @@
                       "Percent": 0
                     }
                   }
+                }
+              }
+            },
+            "textSize": {
+              "expr": {
+                "Literal": {
+                  "Value": "10D"
                 }
               }
             }
@@ -161,11 +169,6 @@
         }
       ]
     },
-    "syncGroup": {
-      "groupName": "Branch",
-      "fieldChanges": true,
-      "filterChanges": true
-    },
     "drillFilterOtherVisuals": true
   },
   "parentGroupName": "d1208e92b2de2582c8aa",
@@ -227,6 +230,7 @@
             }
           ]
         },
+        "howCreated": "User",
         "objects": {
           "general": [
             {
@@ -242,6 +246,60 @@
             }
           ]
         }
+      },
+      {
+        "name": "2727882315d342cd468d",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Fact_LaborJobSummary"
+              }
+            },
+            "Property": "IsInspection"
+          }
+        },
+        "type": "Categorical",
+        "filter": {
+          "Version": 2,
+          "From": [
+            {
+              "Name": "f",
+              "Entity": "Fact_LaborJobSummary",
+              "Type": 0
+            }
+          ],
+          "Where": [
+            {
+              "Condition": {
+                "In": {
+                  "Expressions": [
+                    {
+                      "Column": {
+                        "Expression": {
+                          "SourceRef": {
+                            "Source": "f"
+                          }
+                        },
+                        "Property": "IsInspection"
+                      }
+                    }
+                  ],
+                  "Values": [
+                    [
+                      {
+                        "Literal": {
+                          "Value": "true"
+                        }
+                      }
+                    ]
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        "howCreated": "User"
       }
     ]
   }
