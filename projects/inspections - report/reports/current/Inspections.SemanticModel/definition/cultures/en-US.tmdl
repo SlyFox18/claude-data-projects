@@ -12594,16 +12594,6 @@ cultureInfo en-US
 			            },
 			            "Weight": 0.609
 			          }
-			        },
-			        {
-			          "Labor $": {
-			            "State": "Suggested",
-			            "Source": {
-			              "Type": "External",
-			              "Agent": "PowerBI.VisualColumnRename"
-			            },
-			            "Weight": 0.9
-			          }
 			        }
 			      ]
 			    },
@@ -47957,6 +47947,38 @@ cultureInfo en-US
 			          }
 			        }
 			      ]
+			    },
+			    "entity__measure.labor__filtered": {
+			      "Definition": {
+			        "Binding": {
+			          "ConceptualEntity": "_Measures",
+			          "ConceptualProperty": "Labor $$ (Filtered)"
+			        }
+			      },
+			      "State": "Generated",
+			      "Terms": [
+			        {
+			          "labor $$ (filtered)": {
+			            "State": "Generated"
+			          }
+			        },
+			        {
+			          "labor $$": {
+			            "State": "Generated",
+			            "Weight": 0.75
+			          }
+			        },
+			        {
+			          "Labor $": {
+			            "State": "Suggested",
+			            "Source": {
+			              "Type": "External",
+			              "Agent": "PowerBI.VisualColumnRename"
+			            },
+			            "Weight": 0.9
+			          }
+			        }
+			      ]
 			    }
 			  },
 			  "Relationships": {
@@ -62669,6 +62691,39 @@ cultureInfo en-US
 			          "State": "Generated",
 			          "Weight": 0.99,
 			          "ID": "fact_labor_job_summaries_have_avg_labor____inspection_rolling_24"
+			        }
+			      ]
+			    },
+			    "fact_labor_job_summary_has_entity__measure_labor__filtered": {
+			      "Binding": {
+			        "ConceptualEntity": "Fact_LaborJobSummary"
+			      },
+			      "State": "Generated",
+			      "Roles": {
+			        "fact_labor_job_summary": {
+			          "Target": {
+			            "Entity": "fact_labor_job_summary"
+			          }
+			        },
+			        "entity__measure.labor__filtered": {
+			          "Target": {
+			            "Entity": "entity__measure.labor__filtered"
+			          }
+			        }
+			      },
+			      "Phrasings": [
+			        {
+			          "Attribute": {
+			            "Subject": {
+			              "Role": "fact_labor_job_summary"
+			            },
+			            "Object": {
+			              "Role": "entity__measure.labor__filtered"
+			            }
+			          },
+			          "State": "Generated",
+			          "Weight": 0.99,
+			          "ID": "fact_labor_job_summaries_have_labor__filtered"
 			        }
 			      ]
 			    },
