@@ -72,6 +72,7 @@ let
         {"Branch", "branch"},
         {"Franchise", "franchise"},
         {"PartNumber", "partNumber"},
+        {"Description", "description"},
         {"Bin", "bin"},
         {"SuperFrom", "superFrom"},
         {"SuperTo", "superTo"},
@@ -82,7 +83,7 @@ let
     }),
 
     SelectFinalColumns = Table.SelectColumns(RenameForApp, {
-        "id", "partNumber", "branch", "franchise", "vendorCode", "bin",
+        "id", "partNumber", "branch", "franchise", "description", "vendorCode", "bin",
         "binQty", "sellPrice1", "superTo", "superFrom", "comments", "lastRefreshed"
     })
 in

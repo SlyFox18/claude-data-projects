@@ -29,7 +29,7 @@ This means Task 5's sync step is a normal **Dataflow Gen2** writing straight to 
 
 **Real schema (confirmed via the deployed database):**
 - Table: `PartLocations` (PascalCase, pluralized — not the snake_case Fabric App docs/examples implied)
-- Columns: `id, bin, binQty, branch, comments, franchise, lastRefreshed, partNumber, sellPrice1, superFrom, superTo, vendorCode` (camelCase, matching the TypeScript entity fields exactly, no transformation)
+- Columns: `id, bin, binQty, branch, comments, description, franchise, lastRefreshed, partNumber, sellPrice1, superFrom, superTo, vendorCode` (camelCase, matching the TypeScript entity fields exactly, no transformation). `description` added 2026-07-17 per Ben's feedback — sourced from `InMaster.PART_DESC`, already present in `InMaster_PartsLookup_Raw` but not originally carried through to this entity.
 
 **`id` generation — two different findings, and the second one is the operative one:**
 - A hand-written SQL `INSERT` omitting `id` entirely succeeds (there's a database-level default).
@@ -40,4 +40,8 @@ This means Task 5's sync step is a normal **Dataflow Gen2** writing straight to 
 
 ## Refresh Cadence
 
-Not yet fixed — see Task 6. Not capped by `jdis_Part_Information`'s 3x/day schedule since this table no longer depends on it; bounded only by how often you want to re-sync.
+**Confirmed 2026-07-16:** dedicated pipeline (`InMaster_PartsLookUp` → Wait → `PartLookUp_Sync`, with success/failure email notifications), running 4x/day at 7:45 AM, 10:00 AM, 2:00 PM, and 4:00 PM. Running cleanly with no failures since it went live. Matches the "start conservative" decision — can tighten the cadence later if actually needed.
+
+## App Branding
+
+**Ben's feedback, 2026-07-17:** the app's user-facing name is "Parts Availability" (title bar, in-app header, sign-in page) — the underlying Fabric item, repo, and internal project naming (`parts-lookup-app`, "Parts Lookup Tool") stay as-is for continuity with existing history; only user-visible text changed. Column labels abbreviated: BR (Branch), FR (Franchise), Sell Price (was "Sell Price 1"), Sup To / Sup From (was "Super To" / "Super From"). Description column added (see schema note above).
