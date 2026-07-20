@@ -19,7 +19,7 @@ window, no browser tabs or address bar to deal with.
 Look at the right side of the address bar at the top of the window for the
 **install icon**, circled below:
 
-![Install icon in the address bar](<Install Button For App.jpg>)
+![Install icon in the address bar](install-guide-1.jpg)
 
 Click it, then click **Install** on the popup that appears.
 
@@ -30,7 +30,7 @@ the browser instead → **Apps** → **Install this site as an app**
 
 After installing, you'll see a confirmation like this:
 
-![App installed confirmation with pin options](<Install Button For App2.jpg>)
+![App installed confirmation with pin options](install-guide-2.jpg)
 
 **"Pin to taskbar"** and **"Pin to Start"** are already checked for you —
 just click **Allow**. The app is now pinned and ready to use any time,
