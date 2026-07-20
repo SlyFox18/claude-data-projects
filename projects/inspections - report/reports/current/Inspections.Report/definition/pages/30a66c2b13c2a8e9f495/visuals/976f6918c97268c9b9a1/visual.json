@@ -2,10 +2,10 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.10.0/schema.json",
   "name": "976f6918c97268c9b9a1",
   "position": {
-    "x": 574.095717884131,
+    "x": 1155.2644836272041,
     "y": 113.16876574307305,
     "z": 10000,
-    "height": 101.38035264483628,
+    "height": 110.81108312342569,
     "width": 470.35768261964739,
     "tabOrder": 12004
   },
@@ -23,7 +23,7 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "Avg Parts $ / Inspection (Rolling 24)"
+                  "Property": "Avg Parts $ / Inspection (Rolling 12)"
                 }
               },
               "queryRef": "_Measures.Avg Parts $ / Inspection (Rolling 24)",
@@ -38,7 +38,7 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "Avg Labor $ / Inspection (Rolling 24)"
+                  "Property": "Avg Labor $ / Inspection (Rolling 12)"
                 }
               },
               "queryRef": "_Measures.Avg Labor $ / Inspection (Rolling 24)",
@@ -58,7 +58,7 @@
                     "Entity": "_Measures"
                   }
                 },
-                "Property": "Avg Parts $ / Inspection (Rolling 24)"
+                "Property": "Avg Parts $ / Inspection (Rolling 12)"
               }
             },
             "direction": "Descending"
@@ -74,7 +74,7 @@
             "fontSize": {
               "expr": {
                 "Literal": {
-                  "Value": "30D"
+                  "Value": "20D"
                 }
               }
             },
@@ -235,6 +235,222 @@
             "metadata": "_Measures.Avg Labor $ / Inspection (Rolling 24)"
           }
         }
+      ],
+      "referenceLabel": [
+        {
+          "properties": {},
+          "selector": {
+            "data": [
+              {
+                "dataViewWildcard": {
+                  "matchingOption": 0
+                }
+              }
+            ],
+            "metadata": "_Measures.Avg Parts $ / Inspection (Rolling 24)",
+            "id": "field-95d820a9-b7fa-fc7c-3a66-70906610c551",
+            "order": 0
+          }
+        },
+        {
+          "properties": {
+            "value": {
+              "expr": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Avg Labor $ / Inspection (Rolling 12) LY"
+                }
+              }
+            }
+          },
+          "selector": {
+            "data": [
+              {
+                "dataViewWildcard": {
+                  "matchingOption": 0
+                }
+              }
+            ],
+            "metadata": "_Measures.Avg Labor $ / Inspection (Rolling 24)",
+            "id": "field-b098f18e-f318-53cb-643d-0f2482832acc",
+            "order": 0
+          }
+        },
+        {
+          "properties": {
+            "value": {
+              "expr": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Avg Parts $ / Inspection (Rolling 12) LY"
+                }
+              }
+            }
+          },
+          "selector": {
+            "data": [
+              {
+                "dataViewWildcard": {
+                  "matchingOption": 0
+                }
+              }
+            ],
+            "metadata": "_Measures.Avg Parts $ / Inspection (Rolling 24)",
+            "id": "field-f81ab49f-de6f-3290-cb76-f8e5a406d9a5",
+            "order": 0
+          }
+        },
+        {
+          "properties": {
+            "paddingIndividual": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          },
+          "selector": {
+            "id": "default"
+          }
+        }
+      ],
+      "referenceLabelTitle": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "_Measures.Avg Parts $ / Inspection (Rolling 24)"
+          }
+        },
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "_Measures.Avg Labor $ / Inspection (Rolling 24)",
+            "id": "field-b098f18e-f318-53cb-643d-0f2482832acc"
+          }
+        }
+      ],
+      "referenceLabelValue": [
+        {
+          "properties": {
+            "valueDisplayUnits": {
+              "expr": {
+                "Literal": {
+                  "Value": "1D"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "_Measures.Avg Parts $ / Inspection (Rolling 24)",
+            "id": "field-f81ab49f-de6f-3290-cb76-f8e5a406d9a5"
+          }
+        },
+        {
+          "properties": {
+            "valueDisplayUnits": {
+              "expr": {
+                "Literal": {
+                  "Value": "1D"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "_Measures.Avg Labor $ / Inspection (Rolling 24)",
+            "id": "field-b098f18e-f318-53cb-643d-0f2482832acc"
+          }
+        }
+      ],
+      "referenceLabelLayout": [
+        {
+          "properties": {
+            "horizontalAlignment": {
+              "expr": {
+                "Literal": {
+                  "Value": "'center'"
+                }
+              }
+            },
+            "labelSpace": {
+              "expr": {
+                "Literal": {
+                  "Value": "0D"
+                }
+              }
+            },
+            "style": {
+              "expr": {
+                "Literal": {
+                  "Value": "'sentence'"
+                }
+              }
+            },
+            "arrangement": {
+              "expr": {
+                "Literal": {
+                  "Value": "'rows'"
+                }
+              }
+            }
+          },
+          "selector": {
+            "id": "default"
+          }
+        }
+      ],
+      "layout": [
+        {
+          "properties": {
+            "calloutSize": {
+              "expr": {
+                "Literal": {
+                  "Value": "60D"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "spacing": [
+        {
+          "properties": {
+            "verticalSpacing": {
+              "expr": {
+                "Literal": {
+                  "Value": "2L"
+                }
+              }
+            }
+          },
+          "selector": {
+            "id": "default"
+          }
+        }
       ]
     },
     "visualContainerObjects": {
@@ -278,7 +494,7 @@
                 "Entity": "_Measures"
               }
             },
-            "Property": "Avg Parts $ / Inspection (Rolling 24)"
+            "Property": "Avg Parts $ / Inspection (Rolling 12)"
           }
         },
         "type": "Advanced"
@@ -292,13 +508,13 @@
                 "Entity": "_Measures"
               }
             },
-            "Property": "Avg Labor $ / Inspection (Rolling 24)"
+            "Property": "Avg Labor $ / Inspection (Rolling 12)"
           }
         },
         "type": "Advanced"
       },
       {
-        "name": "24d371d42df24a13e53e",
+        "name": "41ae03be7b02e7d44677",
         "field": {
           "Column": {
             "Expression": {
@@ -306,7 +522,7 @@
                 "Entity": "dim_DateTable"
               }
             },
-            "Property": "IsRolling24Months"
+            "Property": "IsRolling12Months"
           }
         },
         "type": "Categorical",
@@ -331,7 +547,7 @@
                             "Source": "d"
                           }
                         },
-                        "Property": "IsRolling24Months"
+                        "Property": "IsRolling12Months"
                       }
                     }
                   ],

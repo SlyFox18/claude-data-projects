@@ -3,7 +3,7 @@
   "name": "935cc195e3ccbf08509c",
   "position": {
     "x": 58.942065491183882,
-    "y": 107.27455919395466,
+    "y": 106.09571788413099,
     "z": 9000,
     "height": 798.07556675062972,
     "width": 1580.8261964735516,
@@ -57,12 +57,42 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "Labor $$ (Filtered)"
+                  "Property": "Parts $ Total Fixed LY"
                 }
               },
-              "queryRef": "_Measures.Labor $$ (Filtered)",
+              "queryRef": "_Measures.Parts $ Total Fixed LY",
+              "nativeQueryRef": "Parts $ LY",
+              "displayName": "Parts $ LY"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "WO List - Total Labor"
+                }
+              },
+              "queryRef": "_Measures.WO List - Total Labor",
               "nativeQueryRef": "Labor $",
               "displayName": "Labor $"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "WO List - Total Labor LY"
+                }
+              },
+              "queryRef": "_Measures.WO List - Total Labor LY",
+              "nativeQueryRef": "Labor $ LY",
+              "displayName": "Labor $ LY"
             }
           ]
         }
@@ -120,7 +150,43 @@
             }
           },
           "selector": {
-            "metadata": "_Measures.Labor $$ (Filtered)"
+            "metadata": "_Measures.WO List - Total Labor"
+          }
+        },
+        {
+          "properties": {
+            "fill": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#FBBF24'"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "_Measures.WO List - Total Labor LY"
+          }
+        },
+        {
+          "properties": {
+            "fill": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#818CF8'"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "_Measures.Parts $ Total Fixed LY"
           }
         }
       ],
@@ -173,6 +239,25 @@
                   "Value": "false"
                 }
               }
+            },
+            "fontSize": {
+              "expr": {
+                "Literal": {
+                  "Value": "12D"
+                }
+              }
+            },
+            "labelColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "ThemeDataColor": {
+                      "ColorId": 1,
+                      "Percent": 0
+                    }
+                  }
+                }
+              }
             }
           }
         }
@@ -186,7 +271,126 @@
                   "Value": "true"
                 }
               }
+            },
+            "fontSize": {
+              "expr": {
+                "Literal": {
+                  "Value": "11D"
+                }
+              }
+            },
+            "color": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "ThemeDataColor": {
+                      "ColorId": 1,
+                      "Percent": 0
+                    }
+                  }
+                }
+              }
+            },
+            "labelPosition": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Above'"
+                }
+              }
+            },
+            "optimizeLabelDisplay": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "maximumOffset": {
+              "expr": {
+                "Literal": {
+                  "Value": "0D"
+                }
+              }
+            },
+            "enableTitleDataLabel": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
             }
+          }
+        },
+        {
+          "properties": {
+            "showSeries": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "_Measures.Parts $ Total Fixed LY"
+          }
+        },
+        {
+          "properties": {
+            "showSeries": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "_Measures.WO List - Total Labor LY"
+          }
+        }
+      ],
+      "lineStyles": [
+        {
+          "properties": {
+            "lineStyle": {
+              "expr": {
+                "Literal": {
+                  "Value": "'dashed'"
+                }
+              }
+            },
+            "strokeWidth": {
+              "expr": {
+                "Literal": {
+                  "Value": "2D"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "_Measures.WO List - Total Labor LY"
+          }
+        },
+        {
+          "properties": {
+            "lineStyle": {
+              "expr": {
+                "Literal": {
+                  "Value": "'dashed'"
+                }
+              }
+            },
+            "strokeWidth": {
+              "expr": {
+                "Literal": {
+                  "Value": "2D"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "_Measures.Parts $ Total Fixed LY"
           }
         }
       ]
@@ -198,7 +402,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Parts and Labor Trend - Rolling 24 Months'"
+                  "Value": "'Parts and Labor Trend - Rolling 12 Months'"
                 }
               }
             }
@@ -270,7 +474,21 @@
         "type": "Advanced"
       },
       {
-        "name": "851f78405375edb97077",
+        "name": "77a62152dbbdae59ba26",
+        "field": {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "_Measures"
+              }
+            },
+            "Property": "WO List - Total Labor"
+          }
+        },
+        "type": "Advanced"
+      },
+      {
+        "name": "636b84e6650ce81ca130",
         "field": {
           "Column": {
             "Expression": {
@@ -278,7 +496,7 @@
                 "Entity": "dim_DateTable"
               }
             },
-            "Property": "IsRolling24Months"
+            "Property": "IsRolling12Months"
           }
         },
         "type": "Categorical",
@@ -303,7 +521,7 @@
                             "Source": "d"
                           }
                         },
-                        "Property": "IsRolling24Months"
+                        "Property": "IsRolling12Months"
                       }
                     }
                   ],
