@@ -6674,17 +6674,7 @@ table _Measures
 
 	measure 'Avg Parts $ /Inspection' =
 			
-			VAR InMatrixContext = ISFILTERED(Fact_LaborJobSummary[JobCode])
-			    || ISFILTERED(Fact_LaborJobSummary[InspectionCategory])
-			
-			RETURN
-			    IF(
-			        InMatrixContext,
-			        // Row level: Use existing logic
-			        DIVIDE([Parts $ by Job Code], [Inspection Count by Job Code], 0),
-			        // Total level: Simple division
-			        DIVIDE([WO List - Total Parts], [Inspection Count by Job Code], 0)
-			    )
+			DIVIDE([WO List - Total Parts], [Inspection Count by Job Code], 0)
 		formatString: \$#,0;(\$#,0);\$#,0
 		lineageTag: babcc8fa-fdcc-43c4-8226-7b4be3b07a61
 
@@ -6705,7 +6695,8 @@ table _Measures
 			    CALCULATETABLE(
 			        VALUES(Fact_LaborJobSummary[InvoiceNumber]),
 			        Fact_LaborJobSummary[IsInspection] = TRUE,
-			        NOT(ISBLANK(Fact_LaborJobSummary[InvoiceNumber]))
+			        NOT(ISBLANK(Fact_LaborJobSummary[InvoiceNumber])),
+			        ALL(dim_DateTable)
 			    )
 			RETURN
 			    CALCULATE(
@@ -6729,21 +6720,31 @@ table _Measures
 
 	measure 'Avg Labor $ / Inspection (Rolling 24)' =
 			
-			DIVIDE([Labor $$ (Filtered)], [Total Inspections], 0)
+			DIVIDE([WO List - Total Labor], [Total Inspections], 0)
 		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
 		lineageTag: d733f574-d8c0-448a-ad63-37c8aebc3897
 
 		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
 
-	measure 'Labor $$ (Filtered)' =
+	measure 'Parts $ Total Fixed LY' =
 			
-			CALCULATE (
-			    [Labor With Inspection],
-			    REMOVEFILTERS ( Fact_LaborJobSummary[JobCode] ),
-			    REMOVEFILTERS ( Fact_LaborJobSummary[InspectionCategory] )
-			) - [Inspection $$]
+			CALCULATE(
+			    [Parts $ Total (Filtered)],
+			    DATEADD( dim_DateTable[Date], -1, YEAR )
+			)
 		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
-		lineageTag: 9f0c4e8b-e6aa-4f04-913c-1857edcb51ab
+		lineageTag: 8f85adef-1227-4053-95f8-768eca827f3b
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'WO List - Total Labor LY' =
+			
+			CALCULATE(
+			    [WO List - Total Labor],
+			    DATEADD( dim_DateTable[Date], -1, YEAR )
+			)
+		formatString: \$#,0;(\$#,0);\$#,0
+		lineageTag: b2baa986-32a7-4240-8b5f-7b44a843fbec
 
 		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
 
