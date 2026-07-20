@@ -16,24 +16,26 @@ window, no browser tabs or address bar to deal with.
 
 ## Step 2 — Install it
 
-1. Look at the right side of the address bar at the top of the window
-2. Click the **install icon** — a small icon that looks like a monitor with a
-   down arrow or a "+" (it only shows up on pages that can be installed)
-3. Click **Install** on the popup that appears
+Look at the right side of the address bar at the top of the window for the
+**install icon**, circled below:
+
+![Install icon in the address bar](<Install Button For App.jpg>)
+
+Click it, then click **Install** on the popup that appears.
 
 Don't see the icon? Click the **"⋯" (three dots)** menu in the top-right of
 the browser instead → **Apps** → **Install this site as an app**
 
-## Step 3 — Pin it for next time (optional but recommended)
+## Step 3 — Confirm and pin
 
-Once installed, the app opens in its own window automatically. To make it
-easy to find again:
+After installing, you'll see a confirmation like this:
 
-1. Right-click the app's icon in the Windows taskbar (while it's open)
-2. Choose **Pin to taskbar**
+![App installed confirmation with pin options](<Install Button For App2.jpg>)
 
-From now on, just click that icon any time — no need to go back through
-SharePoint.
+**"Pin to taskbar"** and **"Pin to Start"** are already checked for you —
+just click **Allow**. The app is now pinned and ready to use any time,
+straight from your taskbar or Start menu, no need to go back through
+SharePoint again.
 
 ---
 
