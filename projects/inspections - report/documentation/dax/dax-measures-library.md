@@ -1,12 +1,12 @@
 # DAX Measures Library - Inspections Report
 
-**Complete documentation of all 176 DAX measures in the Inspections Report.**
+**Complete documentation of all 179 DAX measures in the Inspections Report.**
 
 ---
 
 ## 📊 Measure Summary
 
-**Total Measures:** 176
+**Total Measures:** 179
 
 | Category | Count |
 |----------|-------|
@@ -20,7 +20,7 @@
 | **CS690/CS770 Specific** | 3 |
 | **Discount Analysis** | 14 |
 | **Helper/Utility** | 43 |
-| **Trend** | 4 |
+| **Trend** | 7 |
 
 ---
 
@@ -36,7 +36,7 @@
 - [CS690/CS770 Specific](#cs690cs770-specific) (3 measures)
 - [Discount Analysis](#discount-analysis) (14 measures)
 - [Helper/Utility](#helperutility) (43 measures)
-- [Trend](#trend) (4 measures)
+- [Trend](#trend) (7 measures)
 
 ---
 
@@ -54,7 +54,7 @@
 [Labor With Inspection] - [Inspection $$]
 ```
 
-> ⚠️ **Filter-context warning:** `Labor $$` / `Labor With Inspection` do NOT clear an external `JobCode`/`InspectionCategory` filter (e.g. from a slicer) before summing — using them under such a filter will silently narrow the result to near-zero/incorrect values, since the inspection line itself is typically a $0/nominal charge while real labor is booked under other job codes on the same work order. Use `Labor $$ (Filtered)` instead (see [Trend](#trend)) in any context where a JobCode/InspectionCategory filter may be active (e.g. any visual with the page-wide Inspection Category slicer in scope). `WO List - Total Labor` had to independently work around this same hazard with its own `ISFILTERED()` branching logic — this is a proven, real trap, not a hypothetical one.
+> ⚠️ **Filter-context warning:** `Labor $$` / `Labor With Inspection` do NOT clear an external `JobCode`/`InspectionCategory` filter (e.g. from a slicer) before summing — using them under such a filter will silently narrow the result to near-zero/incorrect values, since the inspection line itself is typically a $0/nominal charge while real labor is booked under other job codes on the same work order. **`Labor $$ (Filtered)`, the previous workaround, was deleted 2026-07-20** (it existed only for the trend view, which now uses `WO List - Total Labor` instead — see [Trend](#trend)). Prefer `WO List - Total Labor` in any context where a JobCode/InspectionCategory filter may be active (e.g. any visual with the page-wide Inspection Category slicer in scope) — it already handles this via its own `ISFILTERED()` branching logic. This is a proven, real trap, not a hypothetical one — see also the related but distinct `SELECTEDVALUE`-based blank-at-total trap under [Parts $ by Job Code](#parts--by-job-code) / [Labor $ by Job Code](#labor--by-job-code), which has independently bitten twice.
 
 ---
 
@@ -6929,6 +6929,8 @@ RETURN
     )
 ```
 
+> ⚠️ **`SELECTEDVALUE`-based blank-at-total trap:** this measure (and [Parts $ by Job Code](#parts--by-job-code) below) computes `CurrentJobCode` via `SELECTEDVALUE`, which returns `BLANK()` whenever more than one JobCode is in context — not just at the true grand total, but under *any* partial multi-value slicer/filter selection. Anything that wraps these directly (rather than an already context-safe measure like `WO List - Total Labor` / `WO List - Total Parts`) will silently blank out at totals or partial selections. This hazard is not hypothetical — it caused two real bugs fixed 2026-07-20: `Avg Parts $ /Inspection` and `Avg Parts $ by Job Code` (a separate, similarly-named measure actually bound to the Details page matrix column) both went blank at totals until repointed to `DIVIDE([WO List - Total Parts], [Inspection Count by Job Code], 0)`. `Labor $ by Job Code` / `Parts $ by Job Code` themselves are believed to be legacy/unused directly on any current visual, but treat any measure still wrapping them as suspect if it's expected to show a correct total row.
+
 ---
 
 ### Labor Subtitle
@@ -6963,7 +6965,7 @@ RETURN
     )
 ```
 
-> ⚠️ See the filter-context warning under [Labor $$](#labor-) above — this measure never clears an external JobCode/InspectionCategory filter, so use `Labor $$ (Filtered)` instead wherever such a filter may be active.
+> ⚠️ See the filter-context warning under [Labor $$](#labor-) above — this measure never clears an external JobCode/InspectionCategory filter. `Labor $$ (Filtered)` was the previous workaround but was deleted 2026-07-20; use `WO List - Total Labor` instead wherever such a filter may be active.
 
 ---
 
@@ -7338,9 +7340,11 @@ RETURN
 
 ## Trend
 
-**4 measures in this category**
+**7 measures in this category**
 
-Added for the Details page trend view (rolling 24-month Parts $ / Labor $ chart and two-stat card). `Parts $ Total (Filtered)` is a generalized invoice-number bridge — functionally the same pattern as `Parts $ Total` but built from a local `ValidInv` variable instead of the `ValidInvoiceNumbers` table, so it can be reused safely inside the trend visuals' month/rolling-24 filter context. `Labor $$ (Filtered)` exists to work around the `Labor $$` / `Labor With Inspection` filter-context trap (see [Labor $$](#labor-)) under the same trend-view InspectionCategory filter. The remaining two measures are pure `DIVIDE()` wrappers that reuse existing measures — no new business logic.
+Powers the Details page trend view: a rolling 12-month Parts $ / Labor $ chart (4 lines: Parts current, Labor current, Parts LY, Labor LY) and a two-stat KPI card whose fields carry prior-year reference labels. Updated 2026-07-20 after this session's bug fixes and a design change from Rolling 24 to Rolling 12 months (per Brian/Casey) — see the notes under each measure below for what changed and why.
+
+`Parts $ Total (Filtered)` is a generalized invoice-number bridge — functionally the same pattern as `Parts $ Total` but built from a local `ValidInv` variable instead of the `ValidInvoiceNumbers` table, so it can be reused safely inside the trend visuals' month/rolling filter context. `Labor $$ (Filtered)` (the previous filter-safe labor variant) was **deleted this session** — the chart and card now use `WO List - Total Labor` instead (see below). The four `LY` measures are pure `CALCULATE(..., DATEADD(dim_DateTable[Date], -1, YEAR))` wrappers around existing measures, following the same established pattern as `Total Inspections LY` — no new business logic.
 
 ### Parts $ Total (Filtered)
 
@@ -7353,7 +7357,8 @@ VAR ValidInv =
     CALCULATETABLE(
         VALUES(Fact_LaborJobSummary[InvoiceNumber]),
         Fact_LaborJobSummary[IsInspection] = TRUE,
-        NOT(ISBLANK(Fact_LaborJobSummary[InvoiceNumber]))
+        NOT(ISBLANK(Fact_LaborJobSummary[InvoiceNumber])),
+        ALL(dim_DateTable)
     )
 RETURN
     CALCULATE(
@@ -7364,9 +7369,45 @@ RETURN
     )
 ```
 
+> ⚠️ **Bug fixed 2026-07-20 (double-date-filter):** `Fact_LaborJobSummary` relates to `dim_DateTable` via `WorkOrderCreationDateKey`; `Fact_WorkOrderParts` relates via a separate `TransactionDateKey` relationship. Before the fix, the `ValidInv` VAR inherited the ambient month filter through the labor table's relationship, and the final `SUM` inherited it *again* through the parts table's relationship — double-restricting results to "invoice created AND transacted in the same month," which silently dropped most parts (a work order is often created weeks before its parts post). The `ALL(dim_DateTable)` added to the VAR removes the first restriction, so only the parts' own transaction date determines month membership. Confirmed fix: Feb 2025 went from $209,102 (buggy) to $745,951 (correct, matching the Details page matrix).
+
 ---
 
-### Avg Parts $ / Inspection (Rolling 24)
+### Parts $ Total Fixed LY
+
+**Format:** `\$#,0.00;(\$#,0.00);\$#,0.00`
+
+**DAX:**
+```dax
+
+CALCULATE(
+    [Parts $ Total (Filtered)],
+    DATEADD( dim_DateTable[Date], -1, YEAR )
+)
+```
+
+New this session — prior-year comparison line for the trend chart's Parts series.
+
+---
+
+### WO List - Total Labor LY
+
+**Format:** `\$#,0;(\$#,0);\$#,0`
+
+**DAX:**
+```dax
+
+CALCULATE(
+    [WO List - Total Labor],
+    DATEADD( dim_DateTable[Date], -1, YEAR )
+)
+```
+
+New this session — prior-year comparison line for the trend chart's Labor series. Wraps `WO List - Total Labor` (see [Work Order Details](#work-order-details)) rather than the now-deleted `Labor $$ (Filtered)` — see the note under `Avg Labor $ / Inspection (Rolling 12)` below for why.
+
+---
+
+### Avg Parts $ / Inspection (Rolling 12)
 
 **Format:** `\$#,0.00;(\$#,0.00);\$#,0.00`
 
@@ -7376,9 +7417,25 @@ RETURN
 DIVIDE([Parts $ Total (Filtered)], [Total Inspections], 0)
 ```
 
+Renamed from `Avg Parts $ / Inspection (Rolling 24)` this session (Desktop Model-view rename, auto-propagated to all references) to match the chart/card's window change from rolling 24 months to rolling 12 months.
+
 ---
 
-### Labor $$ (Filtered)
+### Avg Labor $ / Inspection (Rolling 12)
+
+**Format:** `\$#,0.00;(\$#,0.00);\$#,0.00`
+
+**DAX:**
+```dax
+
+DIVIDE([WO List - Total Labor], [Total Inspections], 0)
+```
+
+Renamed from `Avg Labor $ / Inspection (Rolling 24)` this session, same as above. Also **repointed from `Labor $$ (Filtered)` to `WO List - Total Labor`** — a design decision (not a bug fix): `Labor $$ (Filtered)` excluded the inspection line's own labor charge, a definition built for a different, Home-page revenue-breakdown context. Per Brian/Casey's explicit choice, the trend view now matches the Details page matrix's own Labor definition instead (`WO List - Total Labor` — includes everything, already filter-context-safe via its own `ISFILTERED()` branching, and touches only one fact table so there's no bridging risk). `Labor $$ (Filtered)` was deleted as no longer used anywhere.
+
+---
+
+### Avg Parts $ / Inspection (Rolling 12) LY
 
 **Format:** `\$#,0.00;(\$#,0.00);\$#,0.00`
 
@@ -7386,24 +7443,28 @@ DIVIDE([Parts $ Total (Filtered)], [Total Inspections], 0)
 ```dax
 
 CALCULATE(
-    [Labor With Inspection],
-    REMOVEFILTERS(Fact_LaborJobSummary[JobCode]),
-    REMOVEFILTERS(Fact_LaborJobSummary[InspectionCategory])
-) - [Inspection $$]
+    [Avg Parts $ / Inspection (Rolling 12)],
+    DATEADD( dim_DateTable[Date], -1, YEAR )
+)
 ```
 
-Exists specifically because of the `Labor $$` / `Labor With Inspection` filter-context trap documented under [Labor $$](#labor-) — `REMOVEFILTERS` restores the JobCode/InspectionCategory rows that the ambient filter would otherwise exclude before summing, so this is the safe variant to use anywhere a JobCode/InspectionCategory filter (e.g. the trend view's InspectionCategory slicer) may be in scope. Composes off `Labor With Inspection` rather than duplicating its body, so the two can't silently drift apart if the base measure's logic changes.
+New this session — feeds the KPI card's Parts stat as a secondary "reference" label (the modern Card visual supports a reference value per field) showing last year's same-period average.
 
 ---
 
-### Avg Labor $ / Inspection (Rolling 24)
+### Avg Labor $ / Inspection (Rolling 12) LY
 
 **Format:** `\$#,0.00;(\$#,0.00);\$#,0.00`
 
 **DAX:**
 ```dax
 
-DIVIDE([Labor $$ (Filtered)], [Total Inspections], 0)
+CALCULATE(
+    [Avg Labor $ / Inspection (Rolling 12)],
+    DATEADD( dim_DateTable[Date], -1, YEAR )
+)
 ```
+
+New this session — same purpose as above, for the KPI card's Labor stat.
 
 ---
