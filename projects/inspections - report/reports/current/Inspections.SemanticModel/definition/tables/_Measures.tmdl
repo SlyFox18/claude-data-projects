@@ -2599,7 +2599,7 @@ table _Measures
 
 	measure 'Avg Parts $ by Job Code' =
 			
-			DIVIDE ( [Parts $ by Job Code], [Inspection Count by Job Code], 0 )
+			DIVIDE ( [WO List - Total Parts], [Inspection Count by Job Code], 0 )
 		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
 		lineageTag: 76c28d8c-1e5e-4930-8bcd-28f286b9d4a6
 
@@ -6710,7 +6710,7 @@ table _Measures
 
 		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
 
-	measure 'Avg Parts $ / Inspection (Rolling 24)' =
+	measure 'Avg Parts $ / Inspection (Rolling 12)' =
 			
 			DIVIDE([Parts $ Total (Filtered)], [Total Inspections], 0)
 		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
@@ -6718,7 +6718,7 @@ table _Measures
 
 		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
 
-	measure 'Avg Labor $ / Inspection (Rolling 24)' =
+	measure 'Avg Labor $ / Inspection (Rolling 12)' =
 			
 			DIVIDE([WO List - Total Labor], [Total Inspections], 0)
 		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
@@ -6745,6 +6745,28 @@ table _Measures
 			)
 		formatString: \$#,0;(\$#,0);\$#,0
 		lineageTag: b2baa986-32a7-4240-8b5f-7b44a843fbec
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Avg Parts $ / Inspection (Rolling 12) LY' =
+			
+			CALCULATE(
+			    [Avg Parts $ / Inspection (Rolling 12)],
+			    DATEADD( dim_DateTable[Date], -1, YEAR )
+			)
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 305ad147-b886-4780-b0f3-57b15ec79d95
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Avg Labor $ / Inspection (Rolling 12) LY' =
+			
+			CALCULATE(
+			    [Avg Labor $ / Inspection (Rolling 12)],
+			    DATEADD( dim_DateTable[Date], -1, YEAR )
+			)
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: edccb391-3997-4169-92d8-8723727b6d30
 
 		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
 
