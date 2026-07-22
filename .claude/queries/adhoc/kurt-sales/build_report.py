@@ -33,8 +33,9 @@ had an encoding issue that silently drops ~26 rows if parsed without care.
 
 Output: "Kurt Sales - Parts and Service Activity (2025-01-01 to Present).xlsx"
 - Summary tab: one row per account with activity (333 of 1,080), with
-  Parts Sales $, Service Sales $, Total $. Accounts with zero activity in
-  the window are excluded per Brian's call - Kurt only wants buyers.
+  Parts Sales $, Service Sales $, Total $, Last Parts Purchase Date, Last
+  Service Date. Accounts with zero activity in the window are excluded per
+  Brian's call - Kurt only wants buyers.
 - Parts Detail tab: one row per account x part number sold in the window,
   with description, qty, and $ (18,146 rows).
 
@@ -68,13 +69,15 @@ con.register("kurt_list", kurt)
 # ------------------------------------------------------------------
 summary = con.execute(f"""
     WITH parts AS (
-        SELECT TRIM(BillToAccount) AS AccountNumber, SUM(TotalPartsSales) AS PartsSales
+        SELECT TRIM(BillToAccount) AS AccountNumber, SUM(TotalPartsSales) AS PartsSales,
+               MAX(InvoiceDate) AS LastPartsPurchaseDate
         FROM delta_scan('{base}/Fact_Parts_Invoices')
         WHERE InvoiceDate >= TIMESTAMP '{START_DATE}'
         GROUP BY TRIM(BillToAccount)
     ),
     service AS (
-        SELECT TRIM(BillToAccount) AS AccountNumber, SUM(TotalLabourSales) AS ServiceSales
+        SELECT TRIM(BillToAccount) AS AccountNumber, SUM(TotalLabourSales) AS ServiceSales,
+               MAX(InvoiceDate) AS LastServiceDate
         FROM delta_scan('{base}/Fact_Service_Invoices')
         WHERE InvoiceDate >= TIMESTAMP '{START_DATE}'
         GROUP BY TRIM(BillToAccount)
@@ -82,12 +85,15 @@ summary = con.execute(f"""
     combined AS (
         SELECT COALESCE(p.AccountNumber, s.AccountNumber) AS AccountNumber,
                COALESCE(p.PartsSales, 0) AS PartsSales,
-               COALESCE(s.ServiceSales, 0) AS ServiceSales
+               COALESCE(s.ServiceSales, 0) AS ServiceSales,
+               p.LastPartsPurchaseDate, s.LastServiceDate
         FROM parts p
         FULL OUTER JOIN service s ON p.AccountNumber = s.AccountNumber
     )
     SELECT k.AccountNumber, k.AccountName, k.City, k.State,
-           c.PartsSales, c.ServiceSales, (c.PartsSales + c.ServiceSales) AS TotalSales
+           c.PartsSales, c.ServiceSales, (c.PartsSales + c.ServiceSales) AS TotalSales,
+           CAST(c.LastPartsPurchaseDate AS DATE) AS LastPartsPurchaseDate,
+           CAST(c.LastServiceDate AS DATE) AS LastServiceDate
     FROM kurt_list k
     INNER JOIN combined c ON TRIM(k.AccountNumber) = c.AccountNumber
     WHERE (c.PartsSales + c.ServiceSales) > 0

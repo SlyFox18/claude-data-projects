@@ -45,7 +45,10 @@ notebook needed for a one-off pull like this.
 `Kurt Sales - Parts and Service Activity (2025-01-01 to Present).xlsx`
 
 - **Summary** tab: Account #, Name, City, State, Parts Sales $, Service Sales
-  $, Total $ - one row per account with activity.
+  $, Total $, Last Parts Purchase Date, Last Service Date - one row per
+  account with activity. Date columns are blank when that account has no
+  activity of that type in the window (e.g. parts-only accounts have no
+  Last Service Date).
 - **Parts Detail** tab: Account #, Name, City, State, Part #, Description,
   Qty Sold, Parts Sales $ - one row per account x part number.
 
