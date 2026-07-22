@@ -1,6 +1,6 @@
 ﻿# CU Usage Report
 
-**Generated:** 2026-07-21 08:01:36
+**Generated:** 2026-07-22 08:01:38
 **Time Period:** Last 24 hours
 
 ---
@@ -9,31 +9,31 @@
 
 | Metric | Value |
 |--------|-------|
-| Total CU Consumed | 1978.3 CU |
-| Operations | 184 |
-| Avg per Operation | 10.8 CU |
-| Peak Operation | 37.2 CU |
-| F4 Capacity Used | 85.9% |
+| Total CU Consumed | 1448.4 CU |
+| Operations | 138 |
+| Avg per Operation | 10.5 CU |
+| Peak Operation | 39 CU |
+| F4 Capacity Used | 62.9% |
 
 ## Top CU Consumers
 
 | Dataflow | Total CU | Avg CU | Runs |
 |----------|----------|--------|------|
-| df_PartsLookup_Sync | 169.2 | 28.2 | 6 |
-| df_JDIS_PART_INFORMATION_Raw | 108 | 36 | 3 |
-| df_Fact_Service_Invoices | 61.2 | 30.6 | 2 |
-| df_Fact_Parts_Details | 57.2 | 28.6 | 2 |
-| df_Fact_WorkOrderParts | 57.2 | 28.6 | 2 |
-| df_Fact_Inventory | 49.2 | 24.6 | 2 |
-| df_Invoice_Raw | 48 | 16 | 3 |
+| df_JDIS_PART_INFORMATION_Raw | 106.8 | 35.6 | 3 |
+| df_Fact_Parts_Details | 55.2 | 27.6 | 2 |
+| df_TechnicianPunchedTime_Raw | 47.5 | 15.8 | 3 |
 | df_Fact_Transfers | 45.2 | 22.6 | 2 |
-| df_Fact_Service_Detail | 43.2 | 21.6 | 2 |
-| df_InMaster_PartsLookup_Raw | 41.2 | 8.2 | 5 |
+| df_InTrans_PartsCounter_Raw | 43.2 | 21.6 | 2 |
+| df_GlTrans_Raw | 37 | 18.5 | 2 |
+| df_Fact_Parts_Invoices | 35.2 | 17.6 | 2 |
+| df_InHist_PmManage_Raw | 34.5 | 17.2 | 2 |
+| df_Fact_InTrans_UniqueCustomers | 32.8 | 10.9 | 3 |
+| df_Dim_Part | 30.9 | 15.4 | 2 |
 
 ## Recommendations
 
-- CRITICAL: Using 85.9% of F4 capacity - consider upgrading to F8 or F16
-- Consider spreading refreshes: 184 operations at hour 8
+- WARNING: Using 62.9% of F4 capacity - monitor closely
+- Consider spreading refreshes: 138 operations at hour 8
 
 ---
 
