@@ -106,6 +106,12 @@ Both hero card measures (`Branch Performance - Hero Card`, `Page 1 - Overview He
 
 Fixed 2026-07-07: previously the Branch Summary hero card only special-cased full-month selections and defaulted everything else (quarters, YTD, custom ranges) to the literal string "Prior Period" — never actually telling the user what it was comparing to. The Overview hero card had category labels ("vs Prior YTD", "vs Prior Quarter") that were more informative but still didn't show actual dates. Both now show literal comparison date ranges. See [[project_pin_capture_prior_period_wording]].
 
+### PIN Accuracy — Presence-Only, Not Validated (investigated 2026-07-22)
+
+The report only measures whether a PIN was *captured* (`Has Pin` = PinNo or Notation non-blank) — it has never validated whether the captured value is actually correct. A Parts team member raised this directly: does the report tell us capture *accuracy*, not just capture *rate*?
+
+Investigated feasibility ad hoc — see `.claude/queries/adhoc/pin-accuracy-check/README.md` for full methodology, branch-level results, and a concrete path to production if this gets built into the report. Headline finding: matching captured `PinNo` (normalized) against the combined pool of known equipment PINs (`WKVEHFL.VIN` + `vhstock.VIN`, both already in the Lakehouse — the "VIN" columns are legacy naming for genuine John Deere Product ID Numbers) is feasible with no new dataflow, using the existing `LOOKUPVALUE`-on-lookup-table pattern already used for `lookup_UniqueCustomers_Invoice`. End-to-end match rate across the network: ~52% (or ~83% if scored only against PINs that resolve to a known machine — the two framings tell different stories and need a deliberate choice, not a default). Branch-level accuracy varies widely (Big Spring 24%, Tahoka 73%). Status: findings delivered to Brian, pending Ben's decision on whether to build this into the report.
+
 ## Refresh Pipeline Position
 - **Phase:** Phase 5/6 — Tier 2, depends on `InTrans_Incremental` being fresh (Phase 2)
 - **Dependencies:** `InTrans_Incremental`, `dim_BranchLocation`, `dim_DateTable`, `dim_Parts`
