@@ -137,8 +137,22 @@ New report has ~150,889 rows in dim_Parts_LowMargin; old report had ~155,014 row
 
 ## Documentation Status
 - In-repo docs: ✅ CLAUDE.md | ✅ PROJECT-SUMMARY.md (at `docs/01-getting-started/PROJECT-SUMMARY.md`)
-- Full docs in: `docs/01-getting-started/`, `docs/02-implementation/`, `docs/03-fixes-applied/`, `docs/04-discoveries/`
+- Full docs in: `docs/01-getting-started/`, `docs/02-implementation/`, `docs/03-fixes-applied/`, `docs/04-discoveries/`, `docs/06-power-automate/`
 - Obsidian stakeholder docs: ✅ Complete — `Data Projects/Reports/Part Sales with Low Margin.md`
+
+## Power Automate Alerts
+Two flows alert on `Actual Margin % (INV) < 20%` from `dim_Parts_LowMargin`:
+- **Low Margin Weekly Digest** — full current list, weekly (Monday 8:30 AM CST)
+- **Low Margin New Item Alert** — only newly-crossed parts, daily (weekdays 8:30 AM CST)
+
+Both reuse the Parts Action Summary distribution pipeline (SPI-PARTS group +
+PartsBranchMapping) but with distinct purple/red styling so they're never
+confused with the Parts Action email. Both Orchestrators are currently
+**Stopped**, built and fully tested but awaiting go-live approval. See
+`docs/06-power-automate/POWER-AUTOMATE-SETUP.md` for full detail, flow IDs,
+and several Power Automate gotchas discovered while building these
+(broken `copy_flow`/`edit_flow`, no native `select()`/`difference()`
+functions, `update_flow`'s stricter connection-reference validation).
 
 ## Key Reference Files
 | File | Contents |
@@ -149,4 +163,5 @@ New report has ~150,889 rows in dim_Parts_LowMargin; old report had ~155,014 row
 | `docs/03-fixes-applied/KPI-Measures-Fix.md` | The ADDCOLUMNS row context fix |
 | `docs/04-discoveries/Old-Report-Bug-Found.md` | Full story on the $5.31M → $2.09M correction |
 | `docs/04-discoveries/Cost-vs-StockOrderPrice.md` | Cost field explanation |
+| `docs/06-power-automate/POWER-AUTOMATE-SETUP.md` | Low margin alert flows — IDs, DAX, gotchas |
 | `queries/dimensions/FIX-APPLIED-dim_Parts-Duplicates.md` | dim_Parts duplicate fix |
