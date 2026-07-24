@@ -54,6 +54,8 @@ Confirmed via `fab get` against the live workspace and the Low Margin flows' own
 
 **Confirmed live (2026-07-24, via independent double DAX validation against Branch `11 - Brownfield`):** invoice `1508170` (3 part lines) — with the `ALLEXCEPT` wrap, all three lines correctly return the identical invoice-level `Weight=85.7693`, `Actual Freight=154.86`, `Calculated Freight=234.930862`, `% Freight Difference=0.41084`, `Missed Freight=80.07086`. Without the wrap, the same three lines return wrong, inconsistent per-line values for `Missed Freight` (`-116.04`, `-52.15`, `+6.25` instead of `+80.07` on all three) — proving the fix is necessary, not cosmetic. Also found and worked around during validation: `pbi-cli`'s `pbi dax execute` command silently drops DAX row results (`EmbeddedResource` content blocks aren't read by its `_parse_content()`, only `TextContent` blocks are) — it always reports `{"success": true}` with no data, for every query. Use a direct `mcp` client script against the `pbi-cli-tool`-bundled `powerbi-modeling-mcp.exe` server instead when running DAX validation until this is fixed upstream.
 
+**Second bug found live (2026-07-24, during Task 4's flow test run) — `FileNumber`/`RONumber` JSON type mismatch:** `FileNumber` and `RONumber` are `int64` columns in the model (confirmed via `Fact_MDInvoices_NoFreight.tmdl`), so Power BI's `executeQueries` REST API serializes `"Invoice #"`/`"RO #"` as JSON **integers**. The flow's `Parse JSON` action schema declares both as `"type": "string"` (correct — they're used downstream as SharePoint tracking-list keys, "Single line text" columns, and as diff/lookup keys, so they must be text end-to-end), which caused a hard schema-validation failure on the first live test run (`Invalid type. Expected String but got Integer.`). **Fix: wrap both in `FORMAT(..., "0")` in the DAX itself**, forcing them to serialize as JSON strings unconditionally — this is now baked into the query text below (do not remove it). No other columns needed this (`OrderDate` and `Branch` are already string/dateTime-as-string at the source; the numeric measures like `Order Qty`/`Weight`/`Actual Freight`/etc. are intentionally left as JSON numbers).
+
 **Qualification filter (Ben's rule, hardcoded, independent of the report's own adjustable slider):**
 ```
 Fact_MDInvoices_NoFreight[FreightBucket] = "No Freight"
@@ -91,8 +93,8 @@ CALCULATETABLE(
                 || (Fact_MDInvoices_NoFreight[FreightBucket] = \"Partial Freight\"
                     && Fact_MDInvoices_NoFreight[PctFreightDifference] >= 0.10)
         ),
-        \"Invoice #\", Fact_MDInvoices_NoFreight[FileNumber],
-        \"RO #\", Fact_MDInvoices_NoFreight[RONumber],
+        \"Invoice #\", FORMAT(Fact_MDInvoices_NoFreight[FileNumber], \"0\"),
+        \"RO #\", FORMAT(Fact_MDInvoices_NoFreight[RONumber], \"0\"),
         \"Order Date\", Fact_MDInvoices_NoFreight[OrderDate],
         \"Branch\", Fact_MDInvoices_NoFreight[Branch],
         \"Part Number\", Fact_MDInvoices_NoFreight[PartNumber],
@@ -169,13 +171,13 @@ CALCULATETABLE(
             ),
             Fact_MDInvoices_NoFreight[FileNumber]
         ),
-        \"Invoice #\", Fact_MDInvoices_NoFreight[FileNumber]
+        \"Invoice #\", FORMAT(Fact_MDInvoices_NoFreight[FileNumber], \"0\")
     ),
     dim_BranchLocation[Branch] = \"11 - Brownfield\"
 )"
 ```
 
-Expected: one row per distinct qualifying `Invoice #`, row count equals `InvoicesFlagged` from Step 5.
+Expected: one row per distinct qualifying `Invoice #`, row count equals `InvoicesFlagged` from Step 5. `Invoice #` must come back as a JSON string here too (same `FORMAT()` reasoning as Step 3) — this query's output feeds Flow B's `CurrentKeys` array, which gets diffed against the SharePoint tracking list's text-typed `FileNumber` column.
 
 - [ ] **Step 7: Confirm all three counts agree**
 
