@@ -151,6 +151,28 @@ Point-in-time history for the open MD freight backlog — mirrors the Open Parts
 - **Updated CSV (use this):** `Freight Calculator/FREIGHT CALCULATOR 2026 - UPDATED.csv`
 - **Original reference:** `Freight Calculator/FREIGHT CALCULATOR 2026.csv`
 
+## Power Automate Alerts (added 2026-07-27)
+
+Two flows alert on open MD invoices in `Fact_MDInvoices_NoFreight` where
+`FreightBucket = "No Freight"` or (`FreightBucket = "Partial Freight"` and
+`PctFreightDifference >= 10%`) — hardcoded 10%, independent of this
+report's own adjustable "Alert Threshold %" slider:
+- **MD Freight Weekly Digest** — full current list, weekly (placeholder
+  Monday 9:00 AM CST)
+- **MD Freight New Item Alert** — only newly-crossed invoices, daily
+  (placeholder weekdays 9:00 AM CST)
+
+Both reuse the Parts Action Summary / Low Margin distribution pipeline
+(SPI-PARTS group + PartsBranchMapping) but with distinct turquoise/amber
+styling so they're never confused with the Parts Action or Low Margin
+emails. Both Orchestrators are built and fully tested but left **Stopped**
+— no schedule has gone live yet. See
+`docs/power-automate/POWER-AUTOMATE-SETUP.md` for full detail, flow IDs,
+the confirmed live DAX, and several gotchas found while building these
+(the line-grain `ALLEXCEPT` row-context bug on freight measures, a
+`FileNumber`/`RONumber` JSON-type mismatch, and a `pbi-cli` tool bug that
+silently drops DAX query results).
+
 ## Documentation Status
-- In-repo docs: ✅ CLAUDE.md | ✅ PROJECT-SUMMARY.md
+- In-repo docs: ✅ CLAUDE.md | ✅ PROJECT-SUMMARY.md | ✅ Power Automate setup doc
 - Obsidian stakeholder docs: ✅ Complete — `Data Projects/Reports/MD Invoices With No Freight.md`
