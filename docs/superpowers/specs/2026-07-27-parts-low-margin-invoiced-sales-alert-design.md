@@ -55,14 +55,17 @@ inventory pricing gaps did. Instead, each run filters directly by date:
   history exists in the underlying table. No special first-run handling
   needed.
 
-## Columns (CSV + alert table)
+## Columns
 
-Matches the live Page 1 report's own column order for familiarity:
-Branch, Franchise, Part Number, Description (dim_Parts lookup), Qty, Date,
-Ref No (RONumber), Salesman, Cost $, Sale $, Margin $ (ActualMarginDollars),
-Margin Value % (computed), Customer No.
+**CSV attachment:** matches the live Page 1 report's own column order for
+familiarity: Branch, Franchise, Part Number, Description (dim_Parts
+lookup), Qty, Date, Ref No (RONumber), Salesman, Cost $, Sale $, Margin $
+(ActualMarginDollars), Margin Value % (computed), Customer No.
 
-## Architecture (unchanged from the prior design)
+**Inline HTML alert table:** narrower, scan-at-a-glance set — Part Number,
+Description, Cost $, Actual Margin %.
+
+## Architecture
 
 - Single flow, daily (weekdays), 8:30 AM CST — same timing as the prior
   daily alert, after the ~8 AM Tier 1 refresh.
@@ -70,11 +73,39 @@ Margin Value % (computed), Customer No.
   SharePoint list, same per-branch distribution as Parts Action Summary and
   the prior design. Ben confirmed store-level parts staff not handling
   pricing doesn't change who should see the alert.
-- Email styling: same red "alert" visual treatment already built and
-  approved (dark red banner, distinct from Parts Action's navy and the
-  (now-unused) weekly digest's purple).
-- Sender/app registration/HTML skeleton/CSV mechanics: all reused as-is
-  from the existing build.
+- Sender/app registration/CSV mechanics: reused as-is from the existing
+  build.
+
+### Email styling (revised after first review)
+
+Brian reviewed the first build against a related flow, "MD Freight New Item
+Alert," and asked to match its more polished pattern rather than the
+plainer generic table originally used:
+
+- **Explicit trigger description**: a subtitle line directly under the
+  banner headline stating what caused the alert in plain language, e.g.
+  *"Trigger: Invoiced parts sales with Qty > 0, Sale $ > 0, and Actual
+  Margin % below 20% — newly invoiced since the last check."* Mirrors MD
+  Freight's `"Trigger: No Freight, or Partial Freight with a 10%+
+  difference..."` line.
+- **Styled HTML table instead of the generic "Create HTML table" action**:
+  a hand-built `<table>` with a tinted header row (light background, bold
+  uppercase label text, colored bottom border) and body rows built via a
+  `Select` action that produces one `<tr>...</tr>` HTML string per row
+  (numeric columns right-aligned, last column bold), joined with `join()`
+  and inserted after the header row. This is the same construction pattern
+  MD Freight uses, just re-themed to this alert's red color story instead
+  of MD Freight's orange:
+  - Banner: `#8a1c1c` (unchanged, already approved)
+  - Table header background: light red tint (e.g. `#fdecea`)
+  - Table header text: dark red (e.g. `#7f1d1d`)
+  - Table header bottom border: medium red (e.g. `#f3b3b3`)
+  - Row text/dividers: neutral, matching MD Freight (`#333333` text,
+    `#f1f5f9` row divider) — no reason to diverge here, it's not part of
+    either alert's color identity.
+- Still distinct from Parts Action's navy and the (now-unused) weekly
+  digest's purple — only the *internal* table styling is being upgraded to
+  match MD Freight's more polished construction, not the banner color.
 
 ## Disposition of Existing Flows
 
