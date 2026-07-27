@@ -13,7 +13,23 @@
 | Recipient source | SPI-PARTS Azure AD group — filtered by officeLocation |
 | Branch mapping | PartsBranchMapping SharePoint list (OfficeLocation → BranchFilter) |
 | Data source | Power BI REST API (DAX queries against multiple datasets) |
-| Email service | Microsoft Graph API via plain HTTP connector |
+| Email service | Microsoft Graph API via plain HTTP connector (Office 365 Outlook connector for the separate Branch 12 mailing — see below) |
+
+**2026-07-27 update:** two changes landed together —
+1. A new **"MD Freight" KPI section + CSV attachment** was merged into this
+   flow (both the Orchestrator and its test child), sourced from the
+   "MD Invoices With No Freight" report. This absorbs what was originally
+   built as a separate standalone "MD Freight Weekly Digest" flow — Ben
+   asked for it to ride this existing weekly email instead of adding another
+   one. See the "MD Freight" subsections below.
+2. The **NegOH/NoBin attachment thresholds changed from `>= 10` to `> 0`**
+   (any count above zero now attaches the CSV, not just 10+) — this was a
+   deliberate change made directly in the live Orchestrator while fixing the
+   Branch 12 bug below, then propagated into the test flow to keep them in
+   sync. The Aging threshold was already `> 0` and is unchanged. **This doc's
+   DAX/table snippets below have been updated to reflect `> 0` — if you're
+   comparing against an old export or a stale local copy, expect to see
+   `>= 10` there instead.**
 
 ---
 
@@ -130,6 +146,7 @@ Set their officeLocation to blank in Azure AD or remove them from SPI-PARTS. No 
 | Bin Location | RP - Parts Reports | 4f2d10c6-11e1-4d3a-959d-a461ef9a4cd7 | 28cced68-a852-412b-befd-d41d8118a2ea |
 | Pin Capture | RP - Parts Reports | 4f2d10c6-11e1-4d3a-959d-a461ef9a4cd7 | f7ab2948-e3ae-42c9-833e-61f5f955c790 |
 | Physical Inventory | RP - Parts Reports | 4f2d10c6-11e1-4d3a-959d-a461ef9a4cd7 | 80c1dc15-60b3-4c6a-9398-3c79b77a4667 |
+| MD Invoices With No Freight (added 2026-07-27) | RP - Parts Reports | 4f2d10c6-11e1-4d3a-959d-a461ef9a4cd7 | 88bcada9-ceeb-42e5-99f9-9b6cd06a9f0d |
 
 ---
 
@@ -171,10 +188,10 @@ Trigger: Recurrence — weekly Wednesday 8:00 AM Central Standard Time
     │               ├── Reset variables (Attachments=[], AttachmentsJSON='',
     │               │   NegOHCSV='', NoBinCSV='', AgingCSV='')
     │               │
-    │               ├── Condition - NegOH: int(NegOH) >= 10
+    │               ├── Condition - NegOH: int(NegOH) > 0  (changed 2026-07-27, was >= 10)
     │               │   TRUE → NegOH detail query → CSV → append to AttachmentsJSON
     │               │
-    │               ├── Condition - NoBin: int(NoBin) >= 10
+    │               ├── Condition - NoBin: int(NoBin) > 0  (changed 2026-07-27, was >= 10)
     │               │   TRUE → NoBin detail query → CSV → append to AttachmentsJSON
     │               │
     │               ├── Condition - Aging: int(Aging) > 0
@@ -193,12 +210,23 @@ Trigger: Recurrence — weekly Wednesday 8:00 AM Central Standard Time
     │               │
     │               ├── Physical Inventory Detail query → CSV → append (always included)
     │               │
+    │               ├── MD Freight detail query → Parse JSON (added 2026-07-27)
+    │               ├── MD Freight aggregate query → Compose 2 metrics
+    │               ├── MD Freight CSV → append to AttachmentsJSON (always included)
+    │               │
     │               └── Condition - Should We Send (always true)
     │                   TRUE →
     │                       ├── Compose: build final attachments JSON array
-    │                       ├── Compose: HTML Body
+    │                       ├── Compose: HTML Body (now includes an "MD Freight" KPI section)
     │                       └── HTTP: Graph API sendMail
     │           FALSE → skip (no branch mapping found)
+│
+└── (outside the Apply to each, runs once after it finishes)
+    Branch 12 (O'Donnell) Bin Location Report — see its own section below
+    ├── Branch 12 Bin Location query → CSV
+    ├── Filter SPI-PARTS members → Ballinger, Abernathy (two separate filters)
+    ├── Select mail addresses for each
+    └── Send email (Office 365 Outlook connector) to each branch's members
 ```
 
 ---
@@ -231,7 +259,7 @@ ROW(
 )
 ```
 
-### NegOH Detail (conditional — only if count >= 10)
+### NegOH Detail (conditional — only if count > 0, changed 2026-07-27, was >= 10)
 
 ```dax
 EVALUATE
@@ -250,7 +278,7 @@ CALCULATETABLE(
 )
 ```
 
-### NoBin Detail (conditional — only if count >= 10)
+### NoBin Detail (conditional — only if count > 0, changed 2026-07-27, was >= 10)
 
 ```dax
 EVALUATE
@@ -437,21 +465,166 @@ CALCULATETABLE(
 )
 ```
 
+### MD Freight Detail (always included — added 2026-07-27)
+
+Merged in from the standalone MD Freight flows' already-validated DAX
+(see `projects/md invoices with no freight - report/docs/power-automate/POWER-AUTOMATE-SETUP.md`
+for the full derivation, including the `ALLEXCEPT` row-context fix and the
+`FORMAT()` int-to-string cast — both required and already baked into this
+query). Threshold: `FreightBucket = "No Freight"` OR (`FreightBucket =
+"Partial Freight"` AND `PctFreightDifference >= 0.10`), hardcoded 10%.
+
+```dax
+EVALUATE
+CALCULATETABLE(
+    SELECTCOLUMNS(
+        FILTER(
+            Fact_MDInvoices_NoFreight,
+            Fact_MDInvoices_NoFreight[FreightBucket] = "No Freight"
+                || (Fact_MDInvoices_NoFreight[FreightBucket] = "Partial Freight"
+                    && Fact_MDInvoices_NoFreight[PctFreightDifference] >= 0.10)
+        ),
+        "Invoice #", FORMAT(Fact_MDInvoices_NoFreight[FileNumber], "0"),
+        "RO #", FORMAT(Fact_MDInvoices_NoFreight[RONumber], "0"),
+        "Order Date", Fact_MDInvoices_NoFreight[OrderDate],
+        "Branch", Fact_MDInvoices_NoFreight[Branch],
+        "Part Number", Fact_MDInvoices_NoFreight[PartNumber],
+        "Order Qty", [Order Qty],
+        "Sell Price 1", [Sell Price 1],
+        "Unit Price", [Unit Price],
+        "Weight", CALCULATE([Total Weight], ALLEXCEPT(Fact_MDInvoices_NoFreight, Fact_MDInvoices_NoFreight[FileNumber])),
+        "Actual Freight", CALCULATE([Actual Freight], ALLEXCEPT(Fact_MDInvoices_NoFreight, Fact_MDInvoices_NoFreight[FileNumber])),
+        "Calculated Freight", CALCULATE([Calculated Freight], ALLEXCEPT(Fact_MDInvoices_NoFreight, Fact_MDInvoices_NoFreight[FileNumber])),
+        "% Freight Difference", CALCULATE([% Freight Difference], ALLEXCEPT(Fact_MDInvoices_NoFreight, Fact_MDInvoices_NoFreight[FileNumber])),
+        "Missed Freight", CALCULATE([Missed Freight], ALLEXCEPT(Fact_MDInvoices_NoFreight, Fact_MDInvoices_NoFreight[FileNumber]))
+    ),
+    dim_BranchLocation[Branch] = "@{variables('RecipientBranchFilter')}"
+)
+```
+
+### MD Freight Aggregate (always included — HTML KPI cards only, no CSV)
+
+```dax
+EVALUATE
+ROW(
+    "InvoicesFlagged", COALESCE(CALCULATE(
+        DISTINCTCOUNT(Fact_MDInvoices_NoFreight[FileNumber]),
+        FILTER(
+            Fact_MDInvoices_NoFreight,
+            Fact_MDInvoices_NoFreight[FreightBucket] = "No Freight"
+                || (Fact_MDInvoices_NoFreight[FreightBucket] = "Partial Freight"
+                    && Fact_MDInvoices_NoFreight[PctFreightDifference] >= 0.10)
+        ),
+        dim_BranchLocation[Branch] = "@{variables('RecipientBranchFilter')}"), 0),
+    "OpportunityDollars", COALESCE(CALCULATE(
+        SUMX(
+            VALUES(Fact_MDInvoices_NoFreight[FileNumber]),
+            CALCULATE([Missed Freight])
+        ),
+        FILTER(
+            Fact_MDInvoices_NoFreight,
+            Fact_MDInvoices_NoFreight[FreightBucket] = "No Freight"
+                || (Fact_MDInvoices_NoFreight[FreightBucket] = "Partial Freight"
+                    && Fact_MDInvoices_NoFreight[PctFreightDifference] >= 0.10)
+        ),
+        dim_BranchLocation[Branch] = "@{variables('RecipientBranchFilter')}"), 0)
+)
+```
+
+The HTML body's "MD Freight — Missing or Under-Charged" section (turquoise,
+`#0e8a9c`/`#e9f7f9`/`#a9dee4`) shows these two KPIs as a 45%/10%/45% card
+pair, matching the existing Physical Inventory section's layout — added
+right before the footer row.
+
+---
+
+## Branch 12 (O'Donnell) Bin Location Report
+
+A separate, always-on mailing that runs **once, after the main `Apply to
+each` loop finishes** — not per-recipient like everything else in this
+flow. Sends a Bin Location CSV for Branch 12 (O'Donnell, the Combine Vault)
+to two specific branches' staff: Ballinger and Abernathy. Previously
+undocumented; added here 2026-07-27 after a bug in it (see below) was found
+and fixed.
+
+**Query** (uses the same `jdis_Part_Information` dataset as the main Bin
+Location query, hardcoded to Branch 12 rather than the looping recipient's
+branch):
+
+```dax
+EVALUATE
+CALCULATETABLE(
+    SELECTCOLUMNS(
+        jdis_Part_Information,
+        "Part Number", jdis_Part_Information[PartNumber],
+        "Description", jdis_Part_Information[Description],
+        "Franchise", jdis_Part_Information[Franchise],
+        "Bin", jdis_Part_Information[Bin],
+        "Bin Qty", jdis_Part_Information[BinQty],
+        "Sell Price", jdis_Part_Information[SellPrice1],
+        "Cost", jdis_Part_Information[Cost],
+        "On Hand Qty", jdis_Part_Information[QuantityOnhand]
+    ),
+    dim_BranchLocation[Branch] = "12 - O'Donnell"
+)
+```
+
+Note the column reference is `QuantityOnhand` (lowercase "h"), inconsistent
+with the main Bin Location query's `QuantityOnHand` — DAX column references
+are case-insensitive so this works, but worth normalizing if this section is
+ever rebuilt.
+
+**Distribution:** filters the same SPI-PARTS member list already fetched by
+`HTTP - Get Users` down to `officeLocation = 'Ballinger'` and
+`officeLocation = 'Abernathy'` (two separate `Filter`/`Select` action pairs),
+then sends one email per branch via the **Office 365 Outlook connector**
+(`shared_office365`, `SendEmailV2`) — not the Graph API HTTP pattern the
+rest of this flow uses. Subject: `Branch 12 (O'Donnell) Bin Location
+Report`. Attachment: `Branch 12 Bin Location.csv`.
+
+**Bug found and fixed (2026-07-27):** the live Orchestrator's last 3 weekly
+runs (July 8, 15, 22) all showed status `Failed`, with the actual error
+isolated to this section: `Send_Branch_12_Bin_Location_-_Ballinger` /
+`InvalidTemplate` / `"The template function 'select' is not defined or not
+valid."` — someone had used `select()` as an inline expression function,
+which doesn't exist in Power Automate's workflow expression language (the
+correct construct is a `Select` **action**, type `"Select"`). The main
+per-recipient `Apply to each` loop reported `Succeeded` independently of
+this failure, so the regular weekly emails were unaffected and continued
+going out correctly — confirmed directly with Brian, not just inferred from
+the run history. Brian fixed this himself before this documentation pass by
+converting the broken inline expression into proper `Query` (Filter Array)
+and `Select` actions, matching the working pattern already used elsewhere in
+this repo's flows (e.g. `Compose_CurrentKeys` in the MD Freight daily
+alert). Not yet confirmed by an actual live Wednesday run as of this
+writing — first live run since the fix will be the real confirmation.
+
+**Testing:** the "Parts Action Summary - Weekly Branch Email" test flow
+also includes a safety-redirected copy of this section (added 2026-07-27) —
+the real query/filter/select logic runs against live data, but both
+`To` fields are hardcoded to `bfox@spitractor.com` instead of the real
+Ballinger/Abernathy member lists, with the email body text stating who it
+would have gone to in production. Use this to verify the fix without any
+risk of it reaching real branch staff. Running it may prompt for Office 365
+connection authorization the first time (new connector for this flow).
+
 ---
 
 ## Attachment Summary
 
 | Attachment | Included When | Filename |
 |---|---|---|
-| Negative On Hand | NegOH count >= 10 | Negative_On_Hand.csv |
-| No Bin Assigned | NoBin count >= 10 | On_Hand_No_Bin.csv |
+| Negative On Hand | NegOH count > 0 (changed 2026-07-27, was >= 10) | Negative_On_Hand.csv |
+| No Bin Assigned | NoBin count > 0 (changed 2026-07-27, was >= 10) | On_Hand_No_Bin.csv |
 | Open Tickets Aging | Aging count > 0 | Open_Tickets_Aging.csv |
 | Outstanding Transfers | Always | Outstanding_Transfers.csv |
 | Parts Adjustments | Any rows in last 7 days | Parts_Adjustments.csv |
 | Bin Location | Always | Bin_Location.csv |
 | Parts Not Counted | Always | Physical_Inventory_Not_Counted.csv |
+| MD Freight (added 2026-07-27) | Always | MD_Freight_Missed.csv |
 
 Pin Capture and Physical Inventory percentages appear in the HTML body only — no CSV attachment.
+Branch 12 Bin Location is a separate, non-per-recipient mailing — see its own section above, not part of the per-branch AttachmentsJSON mechanism.
 
 ---
 
@@ -527,6 +700,16 @@ Use the child flow (Parts Action Summary - Weekly Branch Email) for single-branc
 It accepts 4 manual inputs: RecipientName, RecipientBranchName, RecipientBranchFilter, RecipientEmail.
 Enter values directly and run — no loop, no SharePoint lookup needed.
 
+As of 2026-07-27, this test flow also includes the full MD Freight
+KPI/CSV/HTML content (same as the live Orchestrator, safe to test with any
+real branch's data) and a safety-redirected copy of the Branch 12 Bin
+Location section (see that section above) that sends only to
+`bfox@spitractor.com`, never real branch staff, regardless of which
+Ballinger/Abernathy members actually exist. Fixed the same hardcoded
+`213`/`56`/`55` KPI-card leftover this test flow previously had — it now
+correctly reads live `outputs('NegOH')`/`outputs('NoBin')`/`outputs('Aging')`
+like the Orchestrator always did.
+
 ---
 
 ## Troubleshooting
@@ -540,5 +723,8 @@ Enter values directly and run — no loop, no SharePoint lookup needed.
 | Member gets no email | No PartsBranchMapping row for their officeLocation | Add a row to the SharePoint list matching their exact Azure AD officeLocation value |
 | Wrong branch data in email | BranchFilter value mismatch | Verify PartsBranchMapping BranchFilter matches dim_BranchLocation[Branch] exactly — format is "## - BranchName" e.g. "2 - Tornillo" |
 | Bin Location CSV truncated | Response size limit hit | 8 columns is the confirmed limit for Mesquite (90,804 rows). Do not add columns |
-| AttachmentsJSON empty | All conditional thresholds missed | Transfers and Bin Location are always included — if still empty, check those two queries |
+| AttachmentsJSON empty | All conditional thresholds missed | Transfers, Bin Location, and MD Freight are always included — if still empty, check those three queries |
 | Corp manager receives wrong branch data | officeLocation maps to single branch row | Corp managers not yet wired — see Corp Managers section above |
+| Whole run shows `Failed` but branch managers still got their email | A failure in the once-only Branch 12 section (after `Apply to each`) doesn't affect the per-recipient loop, which completes and reports `Succeeded` independently | Check `Send_Branch_12_Bin_Location_-_Ballinger`/`-_Abernathy` specifically in run history; don't assume the whole send failed |
+| `'select' is not defined or not valid` error | Someone used `select()` as an inline expression function — it doesn't exist in Power Automate's expression language | Replace with a proper `Select` action (type `"Select"`) plus a `Query`/Filter Array action, matching `Filter_-_Ballinger_Users`/`Select_-_Ballinger_Emails` |
+| MD Freight section shows wrong/varying numbers across an invoice's rows | Missing `ALLEXCEPT` wrap on the freight measure calls in the MD Freight detail query | See `projects/md invoices with no freight - report/docs/power-automate/POWER-AUTOMATE-SETUP.md` gotcha #2 |

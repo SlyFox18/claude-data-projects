@@ -151,22 +151,31 @@ Point-in-time history for the open MD freight backlog — mirrors the Open Parts
 - **Updated CSV (use this):** `Freight Calculator/FREIGHT CALCULATOR 2026 - UPDATED.csv`
 - **Original reference:** `Freight Calculator/FREIGHT CALCULATOR 2026.csv`
 
-## Power Automate Alerts (added 2026-07-27)
+## Power Automate Alerts (added 2026-07-27, weekly cadence merged 2026-07-27)
 
-Two flows alert on open MD invoices in `Fact_MDInvoices_NoFreight` where
+Alerts trigger on open MD invoices in `Fact_MDInvoices_NoFreight` where
 `FreightBucket = "No Freight"` or (`FreightBucket = "Partial Freight"` and
 `PctFreightDifference >= 10%`) — hardcoded 10%, independent of this
-report's own adjustable "Alert Threshold %" slider:
-- **MD Freight Weekly Digest** — full current list, weekly (placeholder
-  Monday 9:00 AM CST)
-- **MD Freight New Item Alert** — only newly-crossed invoices, daily
-  (placeholder weekdays 9:00 AM CST)
+report's own adjustable "Alert Threshold %" slider.
+
+- **Weekly view:** delivered as a new "MD Freight" section (Invoices
+  Flagged + Freight Opportunity $ KPI cards + `MD_Freight_Missed.csv`) inside
+  the existing **Parts Action Summary - Orchestrator** flow's Wednesday
+  8:00 AM email — Ben asked for this to avoid a separate weekly email on top
+  of the one branch managers already get. See
+  `projects/parts action dashboard - report/documentation/power-automate-setup.md`
+  for the live details. A standalone "MD Freight Weekly Digest" flow was
+  built and fully tested first, then superseded by this merge — it's kept
+  around Stopped as a fallback, not deleted.
+- **Daily alert:** still its own standalone flow, **MD Freight New Item
+  Alert** — only newly-crossed invoices, daily (placeholder weekdays
+  9:00 AM CST). Built and fully tested, left **Stopped** pending Ben's
+  go-ahead.
 
 Both reuse the Parts Action Summary / Low Margin distribution pipeline
-(SPI-PARTS group + PartsBranchMapping) but with distinct turquoise/amber
-styling so they're never confused with the Parts Action or Low Margin
-emails. Both Orchestrators are built and fully tested but left **Stopped**
-— no schedule has gone live yet. See
+(SPI-PARTS group + PartsBranchMapping) but with distinct turquoise (weekly,
+now retired)/amber (daily) styling so they're never confused with the
+Parts Action or Low Margin emails. See
 `docs/power-automate/POWER-AUTOMATE-SETUP.md` for full detail, flow IDs,
 the confirmed live DAX, and several gotchas found while building these
 (the line-grain `ALLEXCEPT` row-context bug on freight measures, a

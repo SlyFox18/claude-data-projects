@@ -1,35 +1,66 @@
 # Power Automate Setup — MD Freight Alerts
 
+## ⚠️ Architecture change (2026-07-27) — read this first
+
+The **weekly digest is no longer a standalone flow.** Ben (stakeholder)
+asked, after seeing the standalone weekly digest working, to fold it into
+the existing **"Parts Action Summary - Orchestrator"** flow instead — one
+consolidated weekly action-items email per branch manager rather than yet
+another separate email, to avoid email fatigue. The weekly MD Freight KPI
+section (Invoices Flagged + Freight Opportunity $) and `MD_Freight_Missed.csv`
+attachment now ship as part of that flow's Wednesday 8:00 AM run.
+
+**Full detail on the merged weekly flow lives in
+`projects/parts action dashboard - report/documentation/power-automate-setup.md`**
+(its "MD Freight" DAX/attachment/HTML sections) — that is now the
+authoritative doc for the weekly send. This doc's DAX/gotchas below are
+still accurate and were reused as-is in that merge; only the *delivery
+mechanism* for the weekly cadence changed.
+
+The **standalone "MD Freight Weekly Digest" Orchestrator and test flow
+(`9de57c5b-547d-4a89-a368-c46ac141b215` / `35f9ea68-361f-478b-9371-2ef35298212d`)
+still exist**, fully built and tested, but are now redundant — left
+**Stopped** intentionally as a fallback/reference rather than deleted.
+Candidates for cleanup later; not urgent since Stopped flows have zero
+effect.
+
+The **daily "MD Freight New Item Alert" is unaffected** — it remains its
+own standalone flow (see below), since Ben only asked to consolidate the
+weekly cadence, not the daily one.
+
 ## Overview
 
-Two independent flows alert parts/branch staff when an open MD (Machine
-Down) invoice is missing freight or significantly under-charging it. Built
-by hand-authoring flow JSON via the Power Automate flowagent MCP tools
-(`get_flow` on an existing sibling flow as a structural template, then
-`create_flow`/`update_flow` — `copy_flow`/`edit_flow` are broken in this
-environment), reusing the same distribution mechanism as the Parts Action
-Summary and Low Margin flows (SPI-PARTS Azure AD group + PartsBranchMapping
-SharePoint list + "Parts Action Dashboard Email" app registration) but with
-distinct turquoise/amber visual styling so recipients never confuse the
-three email families.
+One flow (the daily alert) alerts parts/branch staff when an open MD
+(Machine Down) invoice newly becomes missing freight or significantly
+under-charged; the weekly view is now delivered via Parts Action Summary
+(see above). Built by hand-authoring flow JSON via the Power Automate
+flowagent MCP tools (`get_flow` on an existing sibling flow as a structural
+template, then `create_flow`/`update_flow` — `copy_flow`/`edit_flow` are
+broken in this environment), reusing the same distribution mechanism as the
+Parts Action Summary and Low Margin flows (SPI-PARTS Azure AD group +
+PartsBranchMapping SharePoint list + "Parts Action Dashboard Email" app
+registration) but with distinct amber visual styling so recipients never
+confuse the email families.
 
 Design rationale: `docs/superpowers/specs/2026-07-24-md-freight-alerts-design.md`
 Implementation plan: `docs/superpowers/plans/2026-07-24-md-freight-alerts.md`
+(both predate the 2026-07-27 architecture change above — describe the
+original two-flow design, which was superseded for the weekly cadence only)
 
 ## Flow Overview
 
-| Setting | Weekly Digest | Daily New-Item Alert |
+| Setting | Weekly Digest (superseded — see above) | Daily New-Item Alert (active design) |
 |---|---|---|
-| Orchestrator flow ID | `9de57c5b-547d-4a89-a368-c46ac141b215` | `8f49bdfb-c777-4bcf-a83f-b4422f8d0f1d` |
-| Test/manual flow ID | `35f9ea68-361f-478b-9371-2ef35298212d` | `54e48914-c8f5-4127-9dd1-4f1048dadf1d` |
-| Trigger | Recurrence — placeholder Monday 9:00 AM CST | Recurrence — placeholder weekdays 9:00 AM CST |
-| Content | Every open MD invoice currently qualifying | Only invoices newly qualifying since the last run |
-| Orchestrator state as of 2026-07-27 | **Stopped** — awaiting go-live approval | **Stopped** — awaiting go-live approval |
+| Orchestrator flow ID | `9de57c5b-547d-4a89-a368-c46ac141b215` (Stopped, unused) | `8f49bdfb-c777-4bcf-a83f-b4422f8d0f1d` |
+| Test/manual flow ID | `35f9ea68-361f-478b-9371-2ef35298212d` (Stopped, unused) | `54e48914-c8f5-4127-9dd1-4f1048dadf1d` |
+| Trigger | n/a — weekly content now rides Parts Action Summary's Wed 8:00 AM run | Recurrence — placeholder weekdays 9:00 AM CST |
+| Content | n/a | Only invoices newly qualifying since the last run |
+| Orchestrator state as of 2026-07-27 | **Stopped** — kept as fallback, not deleted | **Stopped** — awaiting Ben's go-ahead to enable |
 | Environment | Brian Fox's Environment, `2cf47cce-a195-ed3a-94e1-287c38adb011` (the one **without** Dataverse — see Known Issues) | same |
 
 9:00 AM is later than the Low Margin flows' 8:30 AM because this report is
-**Tier 2** (can finish refreshing after 8 AM), not Tier 1. Neither time is
-finalized — no schedule has gone live yet.
+**Tier 2** (can finish refreshing after 8 AM), not Tier 1. Not yet
+finalized — no schedule has gone live yet; waiting on Ben's approval.
 
 ## Data & Threshold
 
@@ -288,6 +319,13 @@ live DAX validation numbers; daily alert baseline run (empty tracking list
 data change → zero items, no email sent), and resolution-simulation run
 (one tracking row manually deleted → only that invoice re-flagged) all
 confirmed correct.
+
+**Since the 2026-07-27 architecture change:** to test the weekly MD Freight
+content, use **"Parts Action Summary - Weekly Branch Email"** (see the
+Parts Action Dashboard project's setup doc), not the standalone weekly test
+flow above — the standalone flow still runs fine but its output no longer
+reflects what real branch managers actually receive. The daily alert's test
+flow here is still the correct one to use for daily-alert testing.
 
 ## Troubleshooting
 
