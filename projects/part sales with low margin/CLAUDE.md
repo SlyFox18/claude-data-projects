@@ -141,18 +141,33 @@ New report has ~150,889 rows in dim_Parts_LowMargin; old report had ~155,014 row
 - Obsidian stakeholder docs: ✅ Complete — `Data Projects/Reports/Part Sales with Low Margin.md`
 
 ## Power Automate Alerts
-Two flows alert on `Actual Margin % (INV) < 20%` from `dim_Parts_LowMargin`:
-- **Low Margin Weekly Digest** — full current list, weekly (Monday 8:30 AM CST)
-- **Low Margin New Item Alert** — only newly-crossed parts, daily (weekdays 8:30 AM CST)
+**Low Margin Invoice Alert** (reworked 2026-07-27 per Ben's feedback) fires
+on **invoiced parts sales** (`Fact_InTrans`, Page 1) below 20% margin — not
+the inventory pricing snapshot (Page 2) it originally targeted. Store-level
+parts staff don't own pricing, so the alert now targets what's actually
+sold below margin, for corp-office parts managers. It's a single recurring
+alert (weekdays 8:30 AM CST, weekday-aware date window) — no weekly digest,
+since invoiced data doesn't fall off a list the way a snapshot does. No
+dollar floor: every qualifying invoice line alerts.
 
-Both reuse the Parts Action Summary distribution pipeline (SPI-PARTS group +
-PartsBranchMapping) but with distinct purple/red styling so they're never
-confused with the Parts Action email. Both Orchestrators are currently
-**Stopped**, built and fully tested but awaiting go-live approval. See
-`docs/06-power-automate/POWER-AUTOMATE-SETUP.md` for full detail, flow IDs,
-and several Power Automate gotchas discovered while building these
-(broken `copy_flow`/`edit_flow`, no native `select()`/`difference()`
-functions, `update_flow`'s stricter connection-reference validation).
+Reuses the Parts Action Summary distribution pipeline (SPI-PARTS group +
+PartsBranchMapping) with red styling copied from the MD Freight alert.
+Email includes an inline HTML table (Part Number, Description, Ref No,
+Cost $, Actual Margin %) plus a full CSV attachment, and states the
+trigger criteria explicitly per Ben's request. The Orchestrator
+(`6427c9b7-b74c-455a-afbe-b0ce417a18b0`) is currently **Stopped** — built
+and tested, awaiting Ben's decision on go-live timing / further changes.
+
+The original Page-2/inventory-snapshot design (weekly digest + daily
+tracking-list-diff alert) is superseded but not deleted — both old
+Orchestrators remain Stopped and unused. See
+`docs/06-power-automate/POWER-AUTOMATE-SETUP.md` for full detail: flow IDs,
+DAX, HTML/CSV column specs, the superseded design's detail, and several
+Power Automate gotchas discovered while building these (broken
+`copy_flow`/`edit_flow`, no native `select()`/`difference()` functions,
+inconsistent `update_flow` connection-reference validation, and a
+mysterious JSON-parsing failure on flow save worked around by patching a
+known-good exported flow definition instead of hand-authoring JSON).
 
 ## Key Reference Files
 | File | Contents |
