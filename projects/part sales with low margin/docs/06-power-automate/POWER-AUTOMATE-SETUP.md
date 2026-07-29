@@ -40,7 +40,7 @@ Implementation plan: `docs/superpowers/plans/2026-07-27-parts-low-margin-invoice
 | Test/manual flow ID | `f6c9fd72-9279-424b-898a-8bc7a8eaf802` (reused from the original build, rebuilt with new logic) |
 | Trigger | Recurrence — every weekday 8:30 AM CST |
 | Content | Every invoiced parts sale line below 20% margin, no dollar floor |
-| Orchestrator state as of 2026-07-27 | **Stopped** — Brian testing changes live in-session; awaiting Ben's decision on go-live timing / further changes |
+| Orchestrator state as of 2026-07-28 | **Stopped** — test flow output sent to Ben for review; awaiting his decision on go-live timing / further changes |
 | Environment | Brian Fox's Environment, `2cf47cce-a195-ed3a-94e1-287c38adb011` (the one **without** Dataverse — see Known Issues) |
 
 ## Data & Threshold
@@ -79,23 +79,71 @@ Implementation plan: `docs/superpowers/plans/2026-07-27-parts-low-margin-invoice
 - Full validated DAX is embedded verbatim in the `Run_Detail_Query` action
   on both the Orchestrator and the test flow — see the design spec for the
   exact text if rebuilding from scratch.
+- **Customer Name** (added 2026-07-28): `LOOKUPVALUE(dim_CustomerList[DisplayName], dim_CustomerList[AccountNumber], [CustomerNo])`.
+  Added after Ben spotted a Seminole test case where 3 different low-margin
+  parts all belonged to the same internal purchase (an employee-discount
+  sale for shop/truck use) — seeing the customer name made that
+  immediately obvious instead of reading as 3 unrelated flagged parts.
+- **Row ordering:** the query result is explicitly sorted with
+  `ORDER BY [Ref No], [Customer Name], [Part Number]` so same-invoice rows
+  land contiguously — required for the grouping logic below to work
+  (it relies on matching keys being adjacent, not on a separate sort step
+  in Power Automate).
 
 ## Email Content
 
 **CSV attachment columns** (`Low_Margin_Invoices.csv`): Branch, Franchise,
 Part Number, Description, Qty, Date, Ref No, Salesman, Cost $, Sale $,
-Margin $, Margin Value %, Customer No.
+Margin $, Margin Value %, Customer No, **Customer Name** (added 2026-07-28).
 
-**Inline HTML table columns** (subset, for at-a-glance scanning): Part
-Number, Description, Ref No, Cost $, Actual Margin %. Ref No was added
-after initial testing per Brian's follow-up request. Styling copied from
-the MD Freight alert: red banner (`#8a1c1c`), header background
-(`#fdecea`), header text (`#7f1d1d`), border (`#f3b3b3`).
+**Inline HTML table — grouped by Ref No + Customer Name (added 2026-07-28):**
+Per Ben's request, rows are no longer a single flat table. Each invoice
+(Ref No + Customer Name combo) gets its own bold banner row
+(`"1970880 - SOUTH PLAINS IMP-SEMINOLE"`, spanning all columns), followed by
+its own repeated column-header row (Part Number, Description, Cost $,
+Actual Margin %), followed by that invoice's data rows. Ref No was dropped
+from the per-row columns since it now lives in the group banner instead.
+Styling copied from the MD Freight alert: red banner (`#8a1c1c`), header
+background (`#fdecea`), header text (`#7f1d1d`), border (`#f3b3b3`).
+
+**Grouping implementation:** Power Automate's expression language has no
+native `groupBy`, so this uses a manual "group-break" pattern instead:
+  - Two flow variables, `HtmlRows` (string, accumulates the whole table body)
+    and `LastGroupKey` (string, tracks the most recently seen
+    `Ref No|Customer Name` key), both declared once at the top level
+    (`Init_HtmlRows`, `Init_LastGroupKey`) and reset to empty at the start
+    of each recipient's processing (`Reset_HtmlRows`, `Reset_LastGroupKey`
+    inside `Condition_Should_Send_Alert`, since InitializeVariable can't be
+    re-run inside a loop).
+  - A `Foreach` over the query's rows (`Apply_to_each_Rows`) with an `If`
+    (`If_New_Group`) comparing `concat([Ref No],'|',[Customer Name])`
+    against `LastGroupKey`: if different, append the banner + header-row
+    HTML and update `LastGroupKey`; either way, always append that row's
+    data `<tr>` afterward (`Append_Data_Row`).
+  - `Compose_HTML_Body` no longer has a single static header row — it
+    just references `@{variables('HtmlRows')}` directly inside the
+    `<table>` tag.
 
 **Trigger explanation line:** per Ben's request that the email be explicit
 about what's causing it to fire, the HTML body includes a line stating the
 filter criteria in plain language: *"Trigger: Invoiced parts sales with Qty
 > 0, Sale $ > 0, and Actual Margin % below 20%."*
+
+## sendMail Body — Native JSON Object, Not String Concatenation
+
+The original design (inherited from the Parts Action Summary pattern)
+built the entire Graph API `sendMail` JSON body as one big concatenated
+string, manually escaping embedded quotes with
+`replace(outputs('Compose_HTML_Body'),'"','\"')`. This broke during the
+2026-07-28 grouping rework (`HTTP_sendMail failed: Unable to read JSON
+request payload`) — the manual escaping only handled `"` and was fragile
+to anything else in the assembled content. Fixed by rewriting the action's
+`body` as a genuine nested JSON object (`message.subject`, `message.body`,
+`message.toRecipients`, `message.attachments`) instead of one big string —
+Power Automate's own serializer now handles all escaping automatically.
+This is a strictly more robust pattern than the original and should be
+used for any future Graph/HTTP action bodies in this family of flows,
+rather than copying the old string-concat approach.
 
 ## Shared Infrastructure (reused as-is)
 
@@ -181,6 +229,21 @@ filter criteria in plain language: *"Trigger: Invoiced parts sales with Qty
     `ServerTimeout` for roughly the length of one work session. Resolved on
     its own; no data was lost. If flows seem to vanish, check Admin Center →
     Support → Known Issues before assuming anything was deleted.
+11. **`Set variable` rejects a literal empty-string `value` in the
+    designer** (`Invalid parameter for 'Reset_HtmlRows'. Error: 'Value' is
+    required.`), even though `""` is perfectly valid JSON and
+    `Initialize variable` accepts it fine with the same value. This is a
+    designer-side (not runtime) validation quirk specific to `SetVariable`.
+    **Fix:** use an expression that evaluates to empty string instead of a
+    bare literal, e.g. `"value": "@concat('')"`.
+12. **A JSON object key starting with a literal `@` breaks the template
+    parser**, even though this is fine inside a string *value* — e.g. using
+    `"@odata.type"` as a key in a native JSON object body throws
+    `TemplateValidationError: Unable to parse template language expression
+    'odata.type': expected token 'LeftParenthesis' and actual 'Dot'`
+    because the parser tries to evaluate the key as an expression. **Fix:**
+    escape the leading `@` by doubling it — `"@@odata.type"` — the same
+    escape Azure Logic Apps uses for a literal `@` anywhere in text.
 
 ## Testing
 
@@ -199,8 +262,20 @@ to 15% range, silently hiding rows between 15–20% margin; the alert's DAX
 was correct all along). Orchestrator rebuilt with the same validated logic
 and re-verified via `get_flow` after the JSON-parsing issue (#7 above) was
 resolved — full action tree (Run_Detail_Query → Parse_JSON_Detail →
-Condition_Should_Send_Alert → Create_CSV_table/Compose_Rows/Compose_HTML_Body/HTTP_sendMail)
+Condition_Should_Send_Alert → Create_CSV_table/Apply_to_each_Rows/Compose_HTML_Body/HTTP_sendMail)
 confirmed present and correctly wired.
+
+**2026-07-28 — grouping + Customer Name test:** Ben tested against
+Branch 1 (Seminole) and spotted 3 low-margin parts all on the same Ref No
+(1970880) — a known internal/employee-discount purchase, not a pricing
+problem. That prompted the Customer Name + grouping rework documented
+above. After fixing the `Reset_HtmlRows`/`Reset_LastGroupKey` designer
+error (gotcha #11), the sendMail JSON-body break (gotcha #12, and the
+body-object rewrite above), and moving the column headers to repeat under
+each group per Ben's follow-up ask, a clean test email was produced
+(Seminole, 3 rows grouped correctly under `1970880 - SOUTH PLAINS
+IMP-SEMINOLE`) and sent to Ben for review. Orchestrator remains **Stopped**
+pending his feedback.
 
 ## Troubleshooting
 
@@ -213,6 +288,9 @@ confirmed present and correctly wired.
 | sendMail 401/403 | Same app registration as Parts Action — see that flow's troubleshooting entry (secret expiry April 2028) |
 | Flow save fails with a connection-reference error after edits | Missing `connectionRefs` entry for a newly-added connector action | Add the connection reference explicitly in the `update_flow` call, not just in the action's `host` |
 | `create_flow`/`update_flow` fails with `InvalidRequestContent`/"Invalid JSON" despite valid JSON | Likely the inline-large-payload fragility described in Known Issues #7 | Export a known-good flow, patch it programmatically (Python), submit the patched file's content instead of hand-typed JSON |
+| Designer shows "Invalid parameter... 'Value' is required" on a `Set variable` action | Literal empty-string `value` (`""`) — designer-side quirk, not a real schema violation | Use `"@concat('')"` instead of `""` |
+| `HTTP_sendMail` fails with "Unable to read JSON request payload" | Manual JSON string-concat body broke on some content it wasn't handling | Rebuilt as a native JSON object body (see "sendMail Body" section above) — don't hand-concat JSON strings for HTTP bodies going forward |
+| `create_flow`/`update_flow` fails with `TemplateValidationError: ...expected token 'LeftParenthesis'...` on a key like `odata.type` | A JSON object key starting with literal `@` gets misparsed as an expression | Escape as `@@odata.type` |
 
 ---
 

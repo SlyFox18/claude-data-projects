@@ -152,11 +152,24 @@ dollar floor: every qualifying invoice line alerts.
 
 Reuses the Parts Action Summary distribution pipeline (SPI-PARTS group +
 PartsBranchMapping) with red styling copied from the MD Freight alert.
-Email includes an inline HTML table (Part Number, Description, Ref No,
-Cost $, Actual Margin %) plus a full CSV attachment, and states the
-trigger criteria explicitly per Ben's request. The Orchestrator
+Email includes an inline HTML table plus a full CSV attachment, and states
+the trigger criteria explicitly per Ben's request. The Orchestrator
 (`6427c9b7-b74c-455a-afbe-b0ce417a18b0`) is currently **Stopped** — built
-and tested, awaiting Ben's decision on go-live timing / further changes.
+and tested; a test run was sent to Ben on 2026-07-28 for review, awaiting
+his decision on go-live timing / further changes.
+
+**2026-07-28 update:** Ben's Seminole test run surfaced 3 low-margin parts
+all on the same invoice (an internal/employee-discount purchase, not a
+pricing problem) — easy to miss when parts are listed flat. Added a
+**Customer Name** column (via `dim_CustomerList[DisplayName]`) and
+restructured the HTML table to **group rows by Ref No + Customer Name**,
+with a bold invoice banner and its own repeated column-header row
+(Part Number, Description, Cost $, Actual Margin %) per group — no
+native `groupBy` in Power Automate, so this uses a manual group-break
+loop (track the last-seen group key, insert a new header whenever it
+changes). Also replaced the sendMail action's fragile hand-concatenated
+JSON string body with a native JSON object body after it broke on the
+restructured HTML — a strictly more robust pattern going forward.
 
 The original Page-2/inventory-snapshot design (weekly digest + daily
 tracking-list-diff alert) is superseded but not deleted — both old
@@ -165,9 +178,11 @@ Orchestrators remain Stopped and unused. See
 DAX, HTML/CSV column specs, the superseded design's detail, and several
 Power Automate gotchas discovered while building these (broken
 `copy_flow`/`edit_flow`, no native `select()`/`difference()` functions,
-inconsistent `update_flow` connection-reference validation, and a
-mysterious JSON-parsing failure on flow save worked around by patching a
-known-good exported flow definition instead of hand-authoring JSON).
+inconsistent `update_flow` connection-reference validation, a mysterious
+JSON-parsing failure on flow save worked around by patching a known-good
+exported flow definition instead of hand-authoring JSON, `Set variable`
+rejecting a literal empty-string value, and a JSON key starting with `@`
+needing `@@` escaping).
 
 ## Key Reference Files
 | File | Contents |
