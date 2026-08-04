@@ -47,94 +47,126 @@ Workspace → Manage access → search `SPN-Fabric-Refresh-Automation`. Add as *
 
 ---
 
-## Task 2 [MANUAL]: Build the new pipeline shell
+## Task 2 [MANUAL]: Build the pipeline shell and validate the `ForEach` + dynamic-content pattern before committing to it
 
 **Where:** Fabric, `LH_Master_Data` workspace.
 
+**Design change from the original plan (2026-08-04, after discussion with Brian):** rather than replicating the original's 6 hand-wired waves (`Wait_WaveA1_Gate` → ... → `Wait_WaveB2_Gate`, 3-4 activities each), use a **`ForEach` activity with `batchCount`** per tier instead. Reasoning: the original wave design's real goal (confirmed by Brian) was grouping longer-running reports together to reduce total pipeline wall-clock time — but a hard wave gate waits for *every* activity in the wave to finish before the next wave starts, even if a slot sat idle because a short report in that wave finished early. A `ForEach` with `batchCount` is a continuous worker pool — Microsoft's own docs describe `batchCount` as "the upper concurrency limit, but the for-each activity will not always execute at this number," meaning the moment one item finishes, the next queued item starts immediately in the freed slot. Ordering items longest-duration-first (the "Longest Processing Time first" scheduling heuristic) and letting the pool refill continuously achieves the original goal *better* than hard-gated waves: using real durations pulled from `Pipeline_SemanticModels`'s run history on 2026-08-04, the current wave design totals ~18.7 minutes wall-clock; the same 20 reports through two `batchCount=4` `ForEach` loops (Tier 1, Tier 2 — preserving the original's real business-priority split, not the internal wave subdivision) is estimated at ~10-11 minutes.
+
+**This is only worth doing if the Semantic model refresh activity's Workspace/Dataset fields actually accept `@item()` dynamic content inside a `ForEach`** — unconfirmed from docs alone (they explicitly confirm dynamic content works for table/partition-level settings, which is a strong signal, but doesn't say so for Workspace/Dataset specifically). Step 3 below validates this directly, cheaply, before committing to building all 20 around it — same "test small before building the full thing" discipline used throughout the Parts Lookup build.
+
 - [ ] **Step 1: Create a new Data Pipeline named `Pipeline_SemanticModels_V2`**
 
-New item, not a modification of `Pipeline_SemanticModels` — keep the notebook-based pipeline completely untouched and running normally through Task 5's validation period. Only cut over (disable the old one, promote the new one) in Task 6.
+New item, not a modification of `Pipeline_SemanticModels` — keep the notebook-based pipeline completely untouched and running normally through Task 4's validation period. Only cut over (disable the old one, promote the new one) in Task 6. If you already have the 2-activity "Sequence multiple semantic models" template scaffolded under this name, that's fine as a starting canvas — Step 3 below will replace those two activities.
 
 - [ ] **Step 2: Add the SPN connection once, reuse it for every activity**
 
 In the pipeline canvas, create one new connection: **Authentication kind = Service principal**, Tenant ID, **Application (client) ID** (not the Object ID — three different GUIDs exist per app registration, this is the one from the Azure Portal App registration's Overview page, "Application (client) ID"), and the client secret **Value** (not the Secret ID). This is the exact recipe from the validated Bin Location / Inspections tests — see memory `project_sm_refresh_spn_migration.md` if either GUID needs re-finding. Every Semantic model refresh activity in this pipeline will point at this same saved connection.
 
+- [ ] **Step 3: Validate `ForEach` + dynamic content with a 2-item test before building the full design**
+
+Add a `ForEach` activity (Activities pane → search "ForEach"). Settings tab: `Sequential` unchecked, `Batch count` = `2`. Items field — use the expression builder (pencil/lightning icon) and enter:
+```
+@json('[{"name":"Customer Anatomy V2","workspaceId":"ba9d8de4-ef13-44e6-9156-e23a2511f3ad","datasetId":"fd9cf725-0db8-429f-a9ab-efd2fe916c2b"},{"name":"Inspections - V2","workspaceId":"fa9b2eef-d507-48ad-bbeb-242037941987","datasetId":"39074778-3a2e-40b7-a30a-afd21f12268c"}]')
+```
+Inside the `ForEach`'s own Activities pane, add one **Semantic model refresh** activity, connection = the SPN connection from Step 2. On the Workspace and Dataset/Semantic model fields, look for the dynamic-content option (usually a small icon next to the field, same UI pattern as every other Fabric pipeline activity) and set them to `@item().workspaceId` and `@item().datasetId` respectively (exact property-path syntax will be confirmed by the UI's own expression picker — trust what it shows over this guess if they differ).
+
+Run just this `ForEach` activity. **Confirm both Customer Anatomy V2 and Inspections - V2 actually refresh** (check "Last Refreshed" timestamps on both models in the Power BI service afterward) — not just that the activity reports success, since a misconfigured dynamic-content reference could easily refresh the same model twice instead of two different ones without erroring.
+
+- [ ] **If Step 3 succeeds:** continue to Task 3 below (the full `ForEach`-based design).
+- [ ] **If Step 3 fails** (Workspace/Dataset don't accept dynamic content, or both items visibly hit the same model): skip to Task 3-Alt below (hand-wired activities, grouped into duration-balanced lanes instead of the original's arbitrary waves — still an improvement over the original, just built without `ForEach`).
+
 ---
 
-## Task 3 [MANUAL]: Add all 20 Semantic model refresh activities, replicating the original wave structure exactly
+## Task 3 [MANUAL]: Build the two-tier `ForEach` design (if Task 2 Step 3 succeeded)
 
 **Where:** `Pipeline_SemanticModels_V2` canvas.
 
-The original pipeline runs in 6 waves, each gated by a `Wait` activity that requires every activity in the previous wave to succeed before the next wave starts (`Wait_WaveA1_Gate` → `Wait_WaveA2_Gate` → `Wait_WaveA3_Gate` → `Wait_WaveA4_Gate` → `Wait_WaveB1_Gate` → `Wait_WaveB2_Gate`). Replicate this exactly — same wave grouping, same gate names, same dependency conditions (`Succeeded`) — just with a **Semantic model refresh** activity type instead of `TridentNotebook` inside each wave.
+- [ ] **Step 1: Build the Tier 1 `ForEach`**
 
-- [ ] **Step 1: Build the first activity in full, as the template for the rest**
+Name it `ForEach_Tier1_SM_Refresh`. Settings: `Sequential` unchecked, `Batch count` = `4` (matches this org's established "4-5 concurrent" ceiling for this same F4 capacity, used elsewhere for concurrent dataflow waves — start here rather than assuming native activities allow more just because they're cheaper to trigger; the underlying refresh work itself still consumes real capacity). Items, ordered longest-duration-first (real durations pulled from `Pipeline_SemanticModels`'s run history, 2026-08-04):
 
-Search the Activities pane for **Semantic model refresh** (not Script, not Notebook). Configure:
-- **Name:** `Refresh_CustomerAnatomy_SM` (same naming convention as the original — keeps the eventual cutover comparison and CU tracking consistent)
-- **Connection:** the SPN connection from Task 2
-- **Workspace:** the workspace containing `ba9d8de4-ef13-44e6-9156-e23a2511f3ad` (resolved in Task 1)
-- **Semantic model:** Customer Anatomy V2
-- **Refresh type:** Full (matches what the notebook triggered — it called the refreshes API with no partition-level scoping)
-- **Policy:** Timeout `0:40:00`, Retry `1`, Retry interval `120` seconds — copy these exactly from the original's `Refresh_CustomerAnatomy_SM` activity (Customer Anatomy gets a longer timeout than the rest; everything else uses `0:20:00`/`0:30:00` per the table below)
-- No `dependsOn` — this is a Wave A1 activity, runs immediately when the pipeline triggers, same as the original.
+```json
+[
+  {"name":"Inspections - V2","workspaceId":"fa9b2eef-d507-48ad-bbeb-242037941987","datasetId":"39074778-3a2e-40b7-a30a-afd21f12268c"},
+  {"name":"Parts Promo","workspaceId":"ba9d8de4-ef13-44e6-9156-e23a2511f3ad","datasetId":"80eab99c-646a-4571-8bc5-fba49e764e2c"},
+  {"name":"Customer Anatomy V2","workspaceId":"ba9d8de4-ef13-44e6-9156-e23a2511f3ad","datasetId":"fd9cf725-0db8-429f-a9ab-efd2fe916c2b"},
+  {"name":"Inventory Analysis","workspaceId":"4f2d10c6-11e1-4d3a-959d-a461ef9a4cd7","datasetId":"bd49c7c7-4f9d-4475-ac2e-c5d19da56297"},
+  {"name":"Part Sales with Low Margin","workspaceId":"4f2d10c6-11e1-4d3a-959d-a461ef9a4cd7","datasetId":"412c8395-7a2f-480c-996b-53af35a3ec02"},
+  {"name":"Parts Adjustments","workspaceId":"4f2d10c6-11e1-4d3a-959d-a461ef9a4cd7","datasetId":"97fc2743-290c-46fb-a033-d12a20f8759b"},
+  {"name":"First Pass Fill","workspaceId":"4f2d10c6-11e1-4d3a-959d-a461ef9a4cd7","datasetId":"af0e6d01-3bb2-4ac8-a41a-87a10885ba9c"},
+  {"name":"Open Work Orders","workspaceId":"fa9b2eef-d507-48ad-bbeb-242037941987","datasetId":"cdb3ffdb-a3d4-4d98-aeba-2e711c360fed"},
+  {"name":"Parts on Open Orders","workspaceId":"4f2d10c6-11e1-4d3a-959d-a461ef9a4cd7","datasetId":"beb18435-991c-40a1-82a9-0e4500c0d106"},
+  {"name":"60+ Days Past Due","workspaceId":"67fefa98-9e80-4a79-afdd-c8988b6e64fc","datasetId":"2516982b-f52f-4676-b879-525e089e9b9e"},
+  {"name":"Negative On Hand-On Hand No Bin","workspaceId":"4f2d10c6-11e1-4d3a-959d-a461ef9a4cd7","datasetId":"e0f4c5ff-8195-463f-9d10-eb1936479684"},
+  {"name":"Planter Inspection Part Sales - V2","workspaceId":"fa9b2eef-d507-48ad-bbeb-242037941987","datasetId":"cb25d470-96b5-4ae0-83e9-4cef6c930fe2"}
+]
+```
 
-- [ ] **Step 2: Run just this one activity manually and confirm it succeeds**
+Inside, one Semantic model refresh activity (same as Task 2 Step 3's validated pattern): Connection = SPN connection, Workspace = `@item().workspaceId`, Dataset = `@item().datasetId`, Refresh type = Full, Timeout `0:20:00` (use `0:40:00` if Inspections alone ever needs more headroom — it was the slowest at 5m55s, well under 20 min, but native-activity timing may differ slightly from the notebook's), Retry `1`, Retry interval `60` seconds.
 
-This validates the connection, workspace access, and model reference all work correctly for a real report from *this* pipeline before building out the other 19. Expect roughly the same duration as the original notebook took for Customer Anatomy (check `Pipeline_SemanticModels`'s run history for a baseline), but without the Spark session startup overhead — should be faster, not slower.
+**Note on `Parts Not Re-Ordered 24 Hours`:** intentionally excluded from this list — it's inactive in the original pipeline too (has its own separate `Pipeline_PartsNotReordered_QuickRefresh`, see Task 7).
 
-- [ ] **Step 3: Build the remaining 19 activities using the exact same pattern**
+**Discrepancy worth flagging, not silently resolving:** `Price Matrix` is in this daily list per the real JSON, but `CLAUDE.md` describes it as **Tier 3 weekly-only** alongside Bin Location. Task 7 covers checking this directly rather than guessing which is stale.
 
-Full table, sourced directly from the real `Pipeline_SemanticModels.DataPipeline/pipeline-content.json` — every workspace GUID, semantic model name, wave, timeout, and dependency below is a real value from that file, not inferred:
+- [ ] **Step 2: Add a gate after Tier 1** — a `Wait` activity (`waitTimeInSeconds: 1`, matching the original's gate pattern), named `Wait_Tier1_Gate`, depending on `ForEach_Tier1_SM_Refresh` with condition `Succeeded`.
 
-| Wave | Activity name | Semantic model | Workspace GUID | Timeout | Depends on (gate) |
-|---|---|---|---|---|---|
-| A1 | `Refresh_CustomerAnatomy_SM` | Customer Anatomy V2 | `ba9d8de4-...` | 0:40:00 | *(none — wave start)* |
-| A1 | `Refresh_Inspections_SM` | Inspections - V2 | `fa9b2eef-...` | 0:30:00 | *(none — wave start)* |
-| A1 | `Refresh_InventoryAnalysis_SM` | Inventory Analysis | `4f2d10c6-...` | 0:30:00 | *(none — wave start)* |
-| — | `Wait_WaveA1_Gate` | — | — | — | all 3 above, `Succeeded` |
-| A2 | `Refresh_60PastDue_SM` | 60+ Days Past Due | `67fefa98-...` | 0:20:00 | `Wait_WaveA1_Gate` |
-| A2 | `Refresh_OpenWorkOrders_SM` | Open Work Orders | `fa9b2eef-...` | 0:20:00 | `Wait_WaveA1_Gate` |
-| A2 | `Refresh_PartsOnOpenOrders_SM` | Parts on Open Orders | `4f2d10c6-...` | 0:20:00 | `Wait_WaveA1_Gate` |
-| — | `Wait_WaveA2_Gate` | — | — | — | all 3 above, `Succeeded` |
-| A3 | `Refresh_FirstPassFill_SM` | First Pass Fill | `4f2d10c6-...` | 0:20:00 | `Wait_WaveA2_Gate` |
-| A3 | `Refresh_NegativeOnHand_SM` | Negative On Hand-On Hand No Bin | `4f2d10c6-...` | 0:20:00 | `Wait_WaveA2_Gate` |
-| A3 | `Refresh_PartsAdjustments_SM` | Parts Adjustments | `4f2d10c6-...` | 0:20:00 | `Wait_WaveA2_Gate` |
-| — | `Wait_WaveA3_Gate` | — | — | — | all 3 above, `Succeeded` |
-| A4 | `Refresh_PartSalesLowMargin_SM` | Part Sales with Low Margin | `4f2d10c6-...` | 0:20:00 | `Wait_WaveA3_Gate` |
-| A4 | `Refresh_PartsPromo_SM` | Parts Promo | `ba9d8de4-...` | 0:20:00 | `Wait_WaveA3_Gate` |
-| A4 | `Refresh_Planter_Inspection_Part_Sales_SM` | Planter Inspection Part Sales - V2 | `fa9b2eef-...` | 0:20:00 | `Wait_WaveA3_Gate` |
-| — | *(`Refresh_PartsNotReordered_SM` skipped — inactive in the original too, see note below)* | | | | |
-| — | `Wait_WaveA4_Gate` | — | — | — | the 3 above, `Succeeded` |
-| B1 | `Refresh_LaborPerformance_SM` | Labor Performance V2 | `fa9b2eef-...` | 0:20:00 | `Wait_WaveA4_Gate` |
-| B1 | `Refresh_UniquePartsCustomers_SM` | Unique Parts Customers | `4f2d10c6-...` | 0:20:00 | `Wait_WaveA4_Gate` |
-| B1 | `Refresh_CombineVault_SM` | Combine Vault Sales | `4f2d10c6-...` | 0:20:00 | `Wait_WaveA4_Gate` |
-| B1 | `Refresh_Transfers_SM` | Transfers | `4f2d10c6-...` | 0:20:00 | `Wait_WaveA4_Gate` |
-| — | `Wait_WaveB1_Gate` | — | — | — | all 4 above, `Succeeded` |
-| B2 | `Refresh_PinCapture_SM` | Pin Capture | `4f2d10c6-...` | 0:20:00 | `Wait_WaveB1_Gate` |
-| B2 | `Refresh_PhysicalInventory_SM` | Physical Inventory | `4f2d10c6-...` | 0:20:00 | `Wait_WaveB1_Gate` |
-| B2 | `Refresh_MD_Invoices_With_No_Freight_SM` | MD Invoices With No Freight | `ba9d8de4-...` | 0:20:00 | `Wait_WaveB1_Gate` |
-| B2 | `Refresh_PriceMatrix_SM` | Price Matrix | `4f2d10c6-...` | 0:20:00 | `Wait_WaveB1_Gate` |
-| — | `Wait_WaveB2_Gate` | — | — | — | all 4 above, `Succeeded` |
+- [ ] **Step 3: Build the Tier 2 `ForEach`**, named `ForEach_Tier2_SM_Refresh`, depending on `Wait_Tier1_Gate` (`Succeeded`). Same settings (`Sequential` unchecked, `Batch count` = `4`, Timeout `0:20:00`, Retry `1`/`60`s). Items, longest-duration-first:
 
-Use retry `1`, retry interval `60` seconds for every activity in this table (Customer Anatomy in Wave A1 is the one exception, at `120` seconds retry interval, per Step 1).
+```json
+[
+  {"name":"Transfers","workspaceId":"4f2d10c6-11e1-4d3a-959d-a461ef9a4cd7","datasetId":"47405102-4966-4658-9a49-6457d0a617ff"},
+  {"name":"Pin Capture","workspaceId":"4f2d10c6-11e1-4d3a-959d-a461ef9a4cd7","datasetId":"f7ab2948-e3ae-42c9-833e-61f5f955c790"},
+  {"name":"Price Matrix","workspaceId":"4f2d10c6-11e1-4d3a-959d-a461ef9a4cd7","datasetId":"4ef73ecc-d314-435c-8ad8-20473eb929fb"},
+  {"name":"Physical Inventory","workspaceId":"4f2d10c6-11e1-4d3a-959d-a461ef9a4cd7","datasetId":"80c1dc15-60b3-4c6a-9398-3c79b77a4667"},
+  {"name":"Combine Vault Sales","workspaceId":"4f2d10c6-11e1-4d3a-959d-a461ef9a4cd7","datasetId":"6b854ef2-4115-496a-bf71-2509fce18406"},
+  {"name":"MD Invoices With No Freight","workspaceId":"ba9d8de4-ef13-44e6-9156-e23a2511f3ad","datasetId":"fd436ed4-5bf0-4042-9664-b6e2bc105234"},
+  {"name":"Labor Performance V2","workspaceId":"fa9b2eef-d507-48ad-bbeb-242037941987","datasetId":"66a341a6-48f6-41dd-8c35-b1c6e6b0baed"},
+  {"name":"Unique Parts Customers","workspaceId":"4f2d10c6-11e1-4d3a-959d-a461ef9a4cd7","datasetId":"ed4f7c28-5555-4129-aa84-28d6d1e31e1b"}
+]
+```
 
-**Note on `Refresh_PartsNotReordered_SM`:** the original has this activity present but set to `"state": "Inactive"` with `"onInactiveMarkAs": "Succeeded"` — it's wired into the dependency graph but doesn't actually run, and its skip is treated as a pass so downstream waves aren't blocked. Don't build this one in the new pipeline; just don't make anything downstream depend on it (the table above already reflects this — `Wait_WaveA4_Gate` only waits on the 3 *active* Wave A4 activities).
+- [ ] **Step 4: Add a final gate + notification activities**
 
-**Discrepancy worth flagging, not silently resolving:** `Price Matrix` is in this daily pipeline (Wave B2) per the real JSON, but `CLAUDE.md` describes Price Matrix as a **Tier 3 weekly-only** report alongside Bin Location. Either `CLAUDE.md` is stale, or Price Matrix was moved to daily refresh at some point without updating it, or there's a second weekly refresh mechanism for it too. Don't try to resolve this by guessing — Task 7 below covers checking it directly.
-
-- [ ] **Step 4: Add the notification activities**, same structure as the original — one success email after `Wait_WaveB2_Gate` succeeds, two failure alerts:
+`Wait_Tier2_Gate` depending on `ForEach_Tier2_SM_Refresh` (`Succeeded`). Then, same structure as the original:
 
 ```
-Success email — depends on Wait_WaveB2_Gate, Succeeded
+Success email — depends on Wait_Tier2_Gate, Succeeded
 Subject: "✅ Pipeline_SemanticModels_V2 - All Reports Refreshed"
 
-Tier A failure alert — depends on Wait_WaveA4_Gate, [Failed, Skipped]
+Tier 1 failure alert — depends on Wait_Tier1_Gate, [Failed, Skipped]
 Subject: "❌ Pipeline_SemanticModels_V2 - Tier 1 SM Refresh Failed"
 
-Tier B failure alert — depends on Wait_WaveB2_Gate, [Failed, Skipped]
+Tier 2 failure alert — depends on Wait_Tier2_Gate, [Failed, Skipped]
 Subject: "❌ Pipeline_SemanticModels_V2 - Tier 2 SM Refresh Failed"
 ```
-Reuse the same Office 365 connection the original uses (`externalReferences.connection: "97d3696e-b886-4770-9fd0-f4aae4c6a7ed"` in the original's JSON — same connection should already be available in the connection picker), same recipient (`bfox@spitractor.com`).
+Reuse the same Office 365 connection the original uses (`externalReferences.connection: "97d3696e-b886-4770-9fd0-f4aae4c6a7ed"` in the original's JSON), same recipient (`bfox@spitractor.com`).
+
+**Expected total wall-clock time:** ~10-11 minutes (Tier 1 ~7 min + gate + Tier 2 ~3.3 min + email), versus the original's ~18.7 minutes — confirm this in Task 4's validation runs rather than taking the estimate on faith.
+
+---
+
+## Task 3-Alt [MANUAL, fallback only — skip if Task 3 was used]: Hand-wired duration-balanced lanes
+
+Only build this if Task 2 Step 3's validation showed the Semantic model refresh activity's Workspace/Dataset fields don't support `@item()` dynamic content. This keeps the "group by duration to minimize wall-clock time" goal without `ForEach` — 4 explicit lanes per tier, each a simple chain where **each activity depends only on the previous activity in its own lane**, not on every other lane (this is the key difference from the original design — no monolithic wave gate forcing every lane to wait for the slowest one).
+
+**Tier 1 lanes** (each activity uses its own real Workspace GUID/Timeout from Task 3's Step 1 list above; only the `dependsOn` chain changes):
+| Lane | Sequence |
+|---|---|
+| 1 | Inspections - V2 → Negative On Hand-On Hand No Bin |
+| 2 | Parts Promo → Open Work Orders → Planter Inspection Part Sales - V2 |
+| 3 | Customer Anatomy V2 → Parts Adjustments → First Pass Fill |
+| 4 | Inventory Analysis → Part Sales with Low Margin → Parts on Open Orders → 60+ Days Past Due |
+
+**Tier 2 lanes:**
+| Lane | Sequence |
+|---|---|
+| 1 | Transfers → Unique Parts Customers |
+| 2 | Pin Capture → Labor Performance V2 |
+| 3 | Price Matrix → MD Invoices With No Freight |
+| 4 | Physical Inventory → Combine Vault Sales |
+
+A `Wait_Tier1_Gate` still depends on the *last* activity in all 4 Tier 1 lanes (`Succeeded`) before Tier 2 starts, and the notification activities work the same as Task 3 Step 4 — the only structural change from the original is replacing "3-4 activities all gated together per wave" with "4 independent lane-chains gated together only at the tier boundary."
 
 ---
 
@@ -142,7 +174,7 @@ Reuse the same Office 365 connection the original uses (`externalReferences.conn
 
 **Where:** Fabric pipeline canvas + Capacity Metrics / CU tracking.
 
-- [ ] **Step 1: Run `Pipeline_SemanticModels_V2` manually end-to-end**, off-hours if possible (avoid stacking with the live 6:30 AM notebook-based run). Confirm all 6 waves complete and the success email arrives.
+- [ ] **Step 1: Run `Pipeline_SemanticModels_V2` manually end-to-end**, off-hours if possible (avoid stacking with the live 6:30 AM notebook-based run). Confirm both `ForEach` tiers (or all 8 lanes, if using Task 3-Alt) complete and the success email arrives. Record the actual total wall-clock time and compare against the ~10-11 minute estimate.
 
 - [ ] **Step 2: Spot-check 2-3 refreshed reports in the Power BI service** — open Customer Anatomy V2, Inspections - V2, and one Tier 2 report, confirm "Last Refreshed" timestamp matches this test run, not stale data.
 
@@ -237,3 +269,5 @@ git commit -m "Update pipeline-schedule.md for SM refresh notebook-to-native-act
 - **Spec coverage:** every "still pending" item from memory `project_sm_refresh_spn_migration.md` has a task here — build the full pipeline (Task 2-3), validate before cutover (Task 4), CU tracking (Task 5), cutover (Task 6), the Tier 3 weekly pipeline (Task 7).
 - **Honesty check on things I couldn't confirm:** workspace *names* for the 4 GUIDs in Task 1 (only GUIDs are confirmed from the real JSON — resolving to names is Task 1's own first step, not assumed here), and `Pipeline_Weekly_Tier3`'s real name/existence/contents (Task 7 verifies rather than assumes). Both are flagged as verification steps rather than guessed at, on purpose — getting either wrong would send Brian chasing a workspace or pipeline that doesn't match reality.
 - **Deviation from the existing recipe worth flagging:** the validated test pipeline (`Pipeline_SM_Refresh_TEST`) has two individual test activities, not the full wave structure. This plan builds a *new, complete* pipeline replicating the full production dependency graph rather than incrementally growing the test pipeline into production — cleaner to reason about and matches the "parallel, not in-place" pattern already validated on the Parts Lookup project, but means `Pipeline_SM_Refresh_TEST` itself becomes throwaway once this is built (worth deleting in Task 6 or leaving as a low-cost historical reference — Brian's call).
+- **Design revision (2026-08-04, same day, before any building started):** replaced the originally-planned direct replication of the 6 hand-wired waves with a `batchCount`-driven `ForEach` per tier, after discussing with Brian that the original wave grouping's real intent was minimizing total wall-clock time by grouping longer reports together — a goal a continuous worker-pool (`ForEach`) achieves better than hard wave gates, per Microsoft's own description of `batchCount` as an upper concurrency limit rather than lockstep batching. Real run-history durations (pulled 2026-08-04) back this with concrete numbers: ~18.7 min estimated for the original design vs. ~10-11 min for the `ForEach` redesign. A hand-wired fallback (Task 3-Alt) exists in case the Semantic model refresh activity's Workspace/Dataset fields turn out not to support `@item()` dynamic content — validated as its own explicit step (Task 2 Step 3) before committing to building all 20 reports around the assumption.
+- **Also confirmed with Brian directly (2026-08-04):** the reports refreshing independently outside this pipeline (Parts Not Re-Ordered on its own pipeline; Service Time Sheets, Parts Action Dashboard, Stock Check, and Job Code Parts Advisor all on Power BI's native scheduled refresh, no pipeline at all) were deliberately spread across different morning time slots (7am/8am/9:30am/10am/11am) specifically to avoid concentrating load — intentionally left out of `Pipeline_SemanticModels_V2` rather than folded in, so as not to undo that spreading.
