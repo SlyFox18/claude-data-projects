@@ -10,7 +10,10 @@ Tool (Fabric App). Replaces the retired in-store Equip part-lookup utility.
 Pulls only parts with a supplier/vendor code present — the exact business
 rule for "which branches carry this part through a vendor."
 
-GRAIN: One row per Branch + PartNumber (all franchises, VendorCode not null only)
+GRAIN: One row per Branch + Franchise + PartNumber (VendorCode not null only).
+Note: this is the weekly full-reconciliation path only as of 2026-08 — see
+InMaster_PartsLookup_Incremental.pq for the 4x/day incremental path that
+actually keeps PartLocations current.
 
 SOURCE: SQL Anywhere (ODBC: EquipRDB64) — InMaster table
 
@@ -37,6 +40,11 @@ table gets the same exclusion automatically.
 
 DO NOT MODIFY the existing InMaster.pq / InMaster_Raw.pq raw pulls — this
 is a separate, purpose-built table for this tool only.
+
+ON ORDER: OS_ORDER_QTY AS OnOrder added 2026-08-04 (stakeholder testing
+feedback). Must stay in sync with InMaster_PartsLookup_Incremental.pq's
+column choice — this weekly full-Replace run would otherwise null out
+onOrder for all ~1.05M live rows every time it runs.
 ============================================================================
 */
 
@@ -54,7 +62,8 @@ let
             SELL_PRICE1     AS SellPrice1,
             NOTE            AS Comments,
             ON_HAND_QTY     AS OnHandQty,
-            Pending_Qty     AS PendingQty
+            Pending_Qty     AS PendingQty,
+            OS_ORDER_QTY    AS OnOrder
         FROM InMaster
         WHERE VENDOR_CODE IS NOT NULL
           AND BRANCH NOT IN ('5', '97')
@@ -78,6 +87,7 @@ let
         {"Comments", type text},
         {"OnHandQty", Int64.Type},
         {"PendingQty", Int64.Type},
+        {"OnOrder", Int64.Type},
         {"BinQty", Int64.Type}
     })
 in

@@ -44,6 +44,11 @@ value has no such risk.
 COLUMN NAMES: renamed here to match PartLocations' camelCase columns
 exactly (confirmed via the deployed schema), since Dataflow Gen2's
 destination maps by name.
+
+ON ORDER: onOrder added 2026-08-04 (stakeholder testing feedback), sourced
+from InMaster_PartsLookup_Raw.OnOrder. Must stay in sync with
+PartsLookup_Sync_Incremental.pq — this dataflow still runs weekly as the
+full-reconciliation path and would null out onOrder for every row otherwise.
 ============================================================================
 */
 
@@ -79,12 +84,13 @@ let
         {"VendorCode", "vendorCode"},
         {"SellPrice1", "sellPrice1"},
         {"Comments", "comments"},
-        {"BinQty", "binQty"}
+        {"BinQty", "binQty"},
+        {"OnOrder", "onOrder"}
     }),
 
     SelectFinalColumns = Table.SelectColumns(RenameForApp, {
         "id", "partNumber", "branch", "franchise", "description", "vendorCode", "bin",
-        "binQty", "sellPrice1", "superTo", "superFrom", "comments", "lastRefreshed"
+        "binQty", "onOrder", "sellPrice1", "superTo", "superFrom", "comments", "lastRefreshed"
     })
 in
     SelectFinalColumns

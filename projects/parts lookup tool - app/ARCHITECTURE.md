@@ -45,3 +45,28 @@ This means Task 5's sync step is a normal **Dataflow Gen2** writing straight to 
 ## App Branding
 
 **Ben's feedback, 2026-07-17:** the app's user-facing name is "Parts Availability" (title bar, in-app header, sign-in page) — the underlying Fabric item, repo, and internal project naming (`parts-lookup-app`, "Parts Lookup Tool") stay as-is for continuity with existing history; only user-visible text changed. Column labels abbreviated: BR (Branch), FR (Franchise), Sell Price (was "Sell Price 1"), Sup To / Sup From (was "Super To" / "Super From"). Description column added (see schema note above).
+
+## Incremental Refresh (added 2026-08-04)
+
+Full design and build plan: `docs/superpowers/plans/2026-08-04-parts-lookup-incremental-refresh.md` (in `data-projects`).
+
+**Why:** the original 4x/day full-replace sync (~1.1M rows moved every run) was the root cause of a real Fabric capacity incident (see `INCIDENT-2026-07-28-capacity-and-refresh-fix.md`) — even after fixing the swap mechanism's `TRUNCATE`-triggered OneLake mirror reseed, the underlying full extract-and-reload cost remained and blocked safely increasing refresh frequency ahead of the app's rollout to 19 stores.
+
+**Resolved design question:** Dataflow Gen2's SQL database destination supports only Append/Replace, no native upsert/merge (confirmed against Microsoft Learn docs, including MS's own "Slowly changing dimension type 2" tutorial hitting the identical problem). Upsert+delete logic therefore lives in a pipeline Script activity running T-SQL `MERGE`, not in the Dataflow Gen2 destination config.
+
+**Parallel objects (new, alongside the existing full-refresh objects, not replacing them):**
+- `df_InMaster_PartsLookup_Incremental` — watermark-filtered raw pull (query: `.claude/queries/raw-tables/InMaster_PartsLookup_Incremental.pq` in `data-projects`)
+- `df_PartsLookup_Sync_Incremental` — writes delta rows with a deterministic hash `id` to `PartLocations_Staging_Incremental` (query: `.claude/queries/facts/PartsLookup_Sync_Incremental.pq`)
+- `Merge_Staging_Incremental_To_Live` — pipeline Script activity, T-SQL `MERGE` (update/insert) + explicit `DELETE` for vendor-code-nulled rows, cleans up staging with `DELETE` not `TRUNCATE` (directly applying the July 28/Aug 3-4 incident lesson)
+- `Update_Watermark_PartsLookup` — notebook, updates `watermark_control` (Lakehouse table, `TableName = 'InMaster_PartsLookup'`), guarded against null on empty-delta runs
+- `Pipeline_PartsLookup_Incremental` — orchestrates the above, scheduled 4x/day to start (same times as the old pipeline), tightened later once proven
+
+**Stable id scheme:** replaced the old per-run row-index `id` (only valid under full Replace) with a deterministic 64-bit hash of `Branch|Franchise|PartNumber` — the confirmed true unique key — so the same real-world row always maps to the same `id` across runs, which upserts require.
+
+**The old full-refresh objects** (`df_InMaster_PartsLookup_Raw`, `df_PartsLookup_Sync`, the July 28 staging-swap mechanism) are unchanged in mechanism, just repurposed to run weekly instead of 4x/day, as a reconciliation safety net.
+
+## On Order column (added 2026-08-04)
+
+Requested during stakeholder testing. Source: `InMaster.OS_ORDER_QTY` ("Outstanding Order Quantity" — on order with the vendor, not yet received), confirmed against the full `InMaster` column list. Distinct from `BACK_ORD_QTY`/`BO_Qty` (customer backorders) and `IN_TRANSIT_QTY` (already shipped, different signal) — if the value doesn't match what parts staff expect once live, it's a one-column swap in the raw/sync queries and merge script, not a redesign.
+
+Threaded through every layer: both raw-pull queries (incremental and weekly-reconciliation), both sync queries, `PartLocations_Staging_Incremental`'s DDL, the `MERGE` script, an `ALTER TABLE PartLocations ADD onOrder INT NULL` on the live table, the Rayfin entity (`rayfin/data/PartLocation.ts`, nullable — same "never default an untracked quantity to 0" principle as `binQty`), and the UI (`src/pages/HomePage.tsx`, new sortable "On Order" column). App-side code changes are already committed; the Fabric-side raw/sync/merge objects and `npm run rayfin:db` / `npm run rayfin:up` still need to run (see the plan doc's Task 6.5 and Task 11).
