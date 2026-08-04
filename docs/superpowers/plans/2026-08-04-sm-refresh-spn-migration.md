@@ -14,7 +14,7 @@
 
 ---
 
-## Task 1 [MANUAL]: Confirm SPN workspace access covers every target workspace
+## Task 1 [DONE, via `fab` CLI API passthrough]: Confirm SPN workspace access covers every target workspace
 
 **Where:** Fabric portal (workspace access) + `fab` CLI (to resolve workspace GUIDs to names).
 
@@ -41,9 +41,7 @@ fab api -A powerbi "groups/67fefa98-9e80-4a79-afdd-c8988b6e64fc" | grep -i name
 ```
 (If `fab api -A powerbi` isn't the right syntax for a raw Power BI REST passthrough in your installed CLI version, the workspace name is also visible by opening `https://app.powerbi.com/groups/<guid>/list` directly in a browser — faster if the CLI call doesn't cooperate.)
 
-- [ ] **Step 3: For each of the 4 workspaces, confirm the SPN is a Contributor**
-
-Workspace → Manage access → search `SPN-Fabric-Refresh-Automation`. Add as **Contributor** (matching the existing recipe's least-privilege level) if not already present. The recipe notes this needs no elevated role beyond normal workspace ownership — whoever already owns/admins each of these 4 workspaces can do this step directly.
+- [x] **Step 3: For each of the 4 workspaces, confirm the SPN is a Contributor** — done 2026-08-04 via `fab api workspaces/{id}/roleAssignments -A fabric`. Real results: workspace names resolved to `RP - Parts Reports`, `RP - Service Reports`, `RP - Sandbox`, `RP - Financial Reports` (via `fab api groups/{id} -A powerbi -q text.name`). `SPN-Fabric-Refresh-Automation` (principal id `8f71b80d-2698-42db-82cf-10ef0ffb8f12`) already had Contributor on Parts/Service/Financial Reports from earlier setup work — only `RP - Sandbox` was missing it (confirmed by listing all principals: only human users present), added via `POST roleAssignments` with `{"principal":{"id":"8f71b80d-...","type":"ServicePrincipal"},"role":"Contributor"}` → `201 Created`. All 4 workspaces now covered.
 
 ---
 
