@@ -1,0 +1,137 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Fabric CU Tracking</title>
+<style>
+  :root { color-scheme: light dark; }
+  body {
+    font-family: -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+    margin: 0; padding: 24px;
+    background: #f5f6f8; color: #1a1a1a;
+  }
+  @media (prefers-color-scheme: dark) {
+    body { background: #14161a; color: #e6e6e6; }
+    .card { background: #1e2126 !important; border-color: #2c3038 !important; }
+    table { background: #1e2126 !important; }
+    th { background: #23262c !important; }
+    td, th { border-color: #2c3038 !important; }
+    .meta, .asof { color: #9aa0a8 !important; }
+  }
+  h1 { font-size: 20px; margin-bottom: 4px; }
+  .subtitle { color: #666; font-size: 13px; margin-bottom: 24px; }
+  table { border-collapse: collapse; width: 100%; margin-bottom: 32px; background: #fff; }
+  th, td { text-align: left; padding: 8px 12px; border: 1px solid #ddd; font-size: 13px; }
+  th { background: #eee; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; }
+  .card { background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 16px; }
+  .card h2 { font-size: 15px; margin: 0 0 4px 0; }
+  .meta { font-size: 12px; color: #777; margin-bottom: 8px; }
+  .latest { font-size: 22px; font-weight: 600; }
+  .asof { font-size: 12px; font-weight: 400; color: #777; }
+  .trend-note { font-size: 12px; margin: 4px 0 8px 0; }
+  .trend-down { color: #1a8a3f; }
+  .trend-up { color: #c0392b; }
+  .trend-flat { color: #888; }
+  .pct-badge { display: inline-block; font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 12px; margin: 6px 0; }
+  .band-low { background: #e4f3ea; color: #1a8a3f; }
+  .band-moderate { background: #fdf1d6; color: #9a6a00; }
+  .band-high { background: #fbe1de; color: #c0392b; }
+  @media (prefers-color-scheme: dark) {
+    .band-low { background: #123320; color: #4fd489; }
+    .band-moderate { background: #3a2c05; color: #f0b429; }
+    .band-high { background: #3a1512; color: #ff8a80; }
+  }
+  .chart { width: 100%; height: auto; }
+  .trendline { fill: none; stroke: #4a7dd8; stroke-width: 2; }
+  .dot { fill: #4a7dd8; }
+  .capacity-banner { display: flex; flex-wrap: wrap; align-items: center; gap: 24px; border-radius: 8px; padding: 16px 20px; margin-bottom: 20px; }
+  .capacity-banner.band-low { background: #e4f3ea; }
+  .capacity-banner.band-moderate { background: #fdf1d6; }
+  .capacity-banner.band-high { background: #fbe1de; }
+  @media (prefers-color-scheme: dark) {
+    .capacity-banner.band-low { background: #123320; }
+    .capacity-banner.band-moderate { background: #3a2c05; }
+    .capacity-banner.band-high { background: #3a1512; }
+  }
+  .cap-stat { display: flex; flex-direction: column; }
+  .cap-num { font-size: 28px; font-weight: 700; }
+  .cap-label { font-size: 12px; opacity: 0.8; }
+  .cap-note { font-size: 12px; opacity: 0.85; flex-basis: 100%; }
+  .util-chart { flex-basis: 100%; max-width: 480px; margin-top: 8px; }
+</style>
+</head>
+<body>
+  <h1>Fabric CU Tracking</h1>
+  <div class="capacity-banner band-low">
+    <div class="cap-stat"><span class="cap-num">39.47%</span><span class="cap-label">Avg capacity utilization (last 14 days)</span></div>
+    <div class="cap-stat"><span class="cap-num">200%</span><span class="cap-label">Peak (single 30s window) &mdash; approximate, see note below</span></div>
+    <div class="cap-stat"><span class="cap-num">10.46%</span><span class="cap-label">Tracked items below as a share of total capacity</span></div>
+    <div class="cap-note">This is the number that actually matters for throttling risk: Microsoft's hard threshold is <strong>overall</strong> utilization approaching/exceeding 100%, not any individual item's cost. As of 2026-08-04 &middot; 2 days of data.</div>
+    <svg viewBox="0 0 640 160" class="chart util-chart"><polyline points='40,10.6 630,10' class='trendline' /><circle cx='40' cy='10.6' r='3' class='dot'><title>2026-08-03: 39.29 CU(s)</title></circle><circle cx='630' cy='10' r='3' class='dot'><title>2026-08-04: 39.47 CU(s)</title></circle></svg>
+  </div>
+  <div class="subtitle">
+    Generated 2026-08-04 08:01:57 &middot; source: Fabric Capacity Metrics semantic model (Metrics By Item)<br>
+    "% of budget" = this item's 14-day CU(s) &divide; total 14-day capacity budget (F4 &times; 14 days &times; 86,400s = 4,838,400 CU-seconds).
+    Bands (&lt;1% negligible, 1-5% moderate, &gt;5% high) are a relative-cost reference this dashboard defines, not an official Microsoft threshold &mdash;
+    the number Microsoft actually treats as a hard problem is <em>overall</em> capacity utilization approaching/exceeding 100% (throttling risk), which is a separate, capacity-wide figure.
+  </div>
+
+  <table>
+    <tr><th>Item</th><th>Kind</th><th>Latest CU (s)</th><th>Latest Duration (s)</th><th>% of 14-day budget</th><th>As of</th></tr>
+    <tr><td>Bin Location Report</td><td>Dataset</td><td>1007.13</td><td>119.98</td><td class='band-low'>0.02%</td><td>2026-08-04</td></tr>
+<tr><td>Inspections</td><td>Dataset</td><td>103871.89</td><td>5175.34</td><td class='band-moderate'>2.15%</td><td>2026-08-04</td></tr>
+<tr><td>parts-lookup-app</td><td>AppBackend</td><td>21.71</td><td>0.36</td><td class='band-low'>0%</td><td>2026-08-04</td></tr>
+<tr><td>parts-lookup-app</td><td>SQLDbNative</td><td>184973.77</td><td>86640.54</td><td class='band-moderate'>3.82%</td><td>2026-08-04</td></tr>
+<tr><td>Pipeline_SM_Refresh_TEST</td><td>Pipeline</td><td>161.28</td><td>641.9</td><td class='band-low'>0%</td><td>2026-08-04</td></tr>
+<tr><td>Universal_SemanticModel_Refresh_WithPolling</td><td>SynapseNotebook</td><td>216090.93</td><td>24064.87</td><td class='band-moderate'>4.47%</td><td>2026-08-04</td></tr>
+
+  </table>
+
+  <div class="grid">
+        <div class="card">
+      <h2>Bin Location Report</h2>
+      <div class="meta">Dataset &middot; RP - Parts Reports</div>
+      <div class="latest">1007.13 CU(s) <span class="asof">as of 2026-08-04</span></div>
+      <div class="pct-badge band-low">0.02% of 14-day F4 budget &middot; Negligible</div>
+      <div class="trend-note"><span class='trend-flat'>No change since 2026-08-03</span></div>
+      <svg viewBox="0 0 640 160" class="chart"><polyline points='40,10 630,10' class='trendline' /><circle cx='40' cy='10' r='3' class='dot'><title>2026-08-03: 1007.13 CU(s)</title></circle><circle cx='630' cy='10' r='3' class='dot'><title>2026-08-04: 1007.13 CU(s)</title></circle></svg>
+    </div>    <div class="card">
+      <h2>Inspections</h2>
+      <div class="meta">Dataset &middot; RP - Service Reports</div>
+      <div class="latest">103871.89 CU(s) <span class="asof">as of 2026-08-04</span></div>
+      <div class="pct-badge band-moderate">2.15% of 14-day F4 budget &middot; Moderate</div>
+      <div class="trend-note"><span class='trend-down'>&#8595; 4.7% since 2026-08-03</span></div>
+      <svg viewBox="0 0 640 160" class="chart"><polyline points='40,10 630,15.9' class='trendline' /><circle cx='40' cy='10' r='3' class='dot'><title>2026-08-03: 108990.72 CU(s)</title></circle><circle cx='630' cy='15.9' r='3' class='dot'><title>2026-08-04: 103871.89 CU(s)</title></circle></svg>
+    </div>    <div class="card">
+      <h2>parts-lookup-app</h2>
+      <div class="meta">AppBackend &middot; RP - Fabric Apps</div>
+      <div class="latest">21.71 CU(s) <span class="asof">as of 2026-08-04</span></div>
+      <div class="pct-badge band-low">0% of 14-day F4 budget &middot; Negligible</div>
+      <div class="trend-note"><span class='trend-down'>&#8595; 10% since 2026-08-03</span></div>
+      <svg viewBox="0 0 640 160" class="chart"><polyline points='40,10 630,22.6' class='trendline' /><circle cx='40' cy='10' r='3' class='dot'><title>2026-08-03: 24.13 CU(s)</title></circle><circle cx='630' cy='22.6' r='3' class='dot'><title>2026-08-04: 21.71 CU(s)</title></circle></svg>
+    </div>    <div class="card">
+      <h2>parts-lookup-app</h2>
+      <div class="meta">SQLDbNative &middot; RP - Fabric Apps</div>
+      <div class="latest">184973.77 CU(s) <span class="asof">as of 2026-08-04</span></div>
+      <div class="pct-badge band-moderate">3.82% of 14-day F4 budget &middot; Moderate</div>
+      <div class="trend-note"><span class='trend-up'>&#8593; 1.4% since 2026-08-03</span></div>
+      <svg viewBox="0 0 640 160" class="chart"><polyline points='40,11.7 630,10' class='trendline' /><circle cx='40' cy='11.7' r='3' class='dot'><title>2026-08-03: 182421.05 CU(s)</title></circle><circle cx='630' cy='10' r='3' class='dot'><title>2026-08-04: 184973.77 CU(s)</title></circle></svg>
+    </div>    <div class="card">
+      <h2>Pipeline_SM_Refresh_TEST</h2>
+      <div class="meta">Pipeline &middot; LH_Master_Data</div>
+      <div class="latest">161.28 CU(s) <span class="asof">as of 2026-08-04</span></div>
+      <div class="pct-badge band-low">0% of 14-day F4 budget &middot; Negligible</div>
+      <div class="trend-note"></div>
+      <svg viewBox="0 0 640 160" class="chart"><polyline points='' class='trendline' /></svg>
+    </div>    <div class="card">
+      <h2>Universal_SemanticModel_Refresh_WithPolling</h2>
+      <div class="meta">SynapseNotebook &middot; LH_Master_Data</div>
+      <div class="latest">216090.93 CU(s) <span class="asof">as of 2026-08-04</span></div>
+      <div class="pct-badge band-moderate">4.47% of 14-day F4 budget &middot; Moderate</div>
+      <div class="trend-note"><span class='trend-down'>&#8595; 5.1% since 2026-08-03</span></div>
+      <svg viewBox="0 0 640 160" class="chart"><polyline points='40,10 630,16.5' class='trendline' /><circle cx='40' cy='10' r='3' class='dot'><title>2026-08-03: 227753.65 CU(s)</title></circle><circle cx='630' cy='16.5' r='3' class='dot'><title>2026-08-04: 216090.93 CU(s)</title></circle></svg>
+    </div>
+  </div>
+</body>
+</html>
