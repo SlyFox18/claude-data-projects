@@ -73,8 +73,7 @@ Inside the `ForEach`'s own Activities pane, add one **Semantic model refresh** a
 
 Run just this `ForEach` activity. **Confirm both Customer Anatomy V2 and Inspections - V2 actually refresh** (check "Last Refreshed" timestamps on both models in the Power BI service afterward) — not just that the activity reports success, since a misconfigured dynamic-content reference could easily refresh the same model twice instead of two different ones without erroring.
 
-- [ ] **If Step 3 succeeds:** continue to Task 3 below (the full `ForEach`-based design).
-- [ ] **If Step 3 fails** (Workspace/Dataset don't accept dynamic content, or both items visibly hit the same model): skip to Task 3-Alt below (hand-wired activities, grouped into duration-balanced lanes instead of the original's arbitrary waves — still an improvement over the original, just built without `ForEach`).
+- [x] **Step 3 succeeded** (confirmed 2026-08-04, after also surviving a genuine retry test): `@item().workspaceId`/`@item().datasetId` dynamic content works correctly on the Semantic model refresh activity's Workspace/Dataset fields. Proven with two different real reports (Customer Anatomy V2, Inspections) both refreshing correctly and independently — no cross-contamination between loop iterations. One transient failure occurred on the first parallel run (Inspections, `DataflowPipelineSendOrReceiveError`/canceled) but succeeded cleanly on immediate retry with zero changes — consistent with a one-off blip, not a design flaw. **Proceed to Task 3.**
 
 ---
 
