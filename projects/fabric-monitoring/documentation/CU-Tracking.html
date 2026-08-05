@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -64,59 +64,244 @@
 <body>
   <h1>Fabric CU Tracking</h1>
   <div class="capacity-banner band-low">
-    <div class="cap-stat"><span class="cap-num">40.32%</span><span class="cap-label">Avg capacity utilization (last 14 days)</span></div>
+    <div class="cap-stat"><span class="cap-num">40.47%</span><span class="cap-label">Avg capacity utilization (last 14 days)</span></div>
     <div class="cap-stat"><span class="cap-num">200%</span><span class="cap-label">Peak (single 30s window) &mdash; approximate, see note below</span></div>
-    <div class="cap-stat"><span class="cap-num">11.36%</span><span class="cap-label">Tracked items below as a share of total capacity</span></div>
+    <div class="cap-stat"><span class="cap-num">16.76%</span><span class="cap-label">Tracked items below as a share of total capacity</span></div>
     <div class="cap-note">This is the number that actually matters for throttling risk: Microsoft's hard threshold is <strong>overall</strong> utilization approaching/exceeding 100%, not any individual item's cost. As of 2026-08-05 &middot; 3 days of data.</div>
-    <svg viewBox="0 0 640 160" class="chart util-chart"><polyline points='40,13.2 335,12.7 630,10' class='trendline' /><circle cx='40' cy='13.2' r='3' class='dot'><title>2026-08-03: 39.29 CU(s)</title></circle><circle cx='335' cy='12.7' r='3' class='dot'><title>2026-08-04: 39.47 CU(s)</title></circle><circle cx='630' cy='10' r='3' class='dot'><title>2026-08-05: 40.32 CU(s)</title></circle></svg>
+    <svg viewBox="0 0 640 160" class="chart util-chart"><polyline points='40,13.7 335,13.1 630,10' class='trendline' /><circle cx='40' cy='13.7' r='3' class='dot'><title>2026-08-03: 39.29 CU(s)</title></circle><circle cx='335' cy='13.1' r='3' class='dot'><title>2026-08-04: 39.47 CU(s)</title></circle><circle cx='630' cy='10' r='3' class='dot'><title>2026-08-05: 40.47 CU(s)</title></circle></svg>
   </div>
   <div class="subtitle">
-    Generated 2026-08-05 08:01:47 &middot; source: Fabric Capacity Metrics semantic model (Metrics By Item)<br>
+    Generated 2026-08-05 13:30:57 &middot; source: Fabric Capacity Metrics semantic model (Metrics By Item)<br>
     "% of budget" = this item's 14-day CU(s) &divide; total 14-day capacity budget (F4 &times; 14 days &times; 86,400s = 4,838,400 CU-seconds).
     Bands (&lt;1% negligible, 1-5% moderate, &gt;5% high) are a relative-cost reference this dashboard defines, not an official Microsoft threshold &mdash;
     the number Microsoft actually treats as a hard problem is <em>overall</em> capacity utilization approaching/exceeding 100% (throttling risk), which is a separate, capacity-wide figure.
   </div>
 
   <table>
-    <tr><th>Item</th><th>Kind</th><th>Latest CU (s)</th><th>Latest Duration (s)</th><th>% of 14-day budget</th><th>As of</th></tr>
-    <tr><td>Bin Location Report</td><td>Dataset</td><td>814.58</td><td>110.61</td><td class='band-low'>0.02%</td><td>2026-08-05</td></tr>
-<tr><td>Inspections</td><td>Dataset</td><td>109837.19</td><td>5769.7</td><td class='band-moderate'>2.27%</td><td>2026-08-05</td></tr>
-<tr><td>parts-lookup-app</td><td>AppBackend</td><td>30.62</td><td>0.46</td><td class='band-low'>0%</td><td>2026-08-05</td></tr>
-<tr><td>parts-lookup-app</td><td>SQLDbNative</td><td>230893.23</td><td>106620.76</td><td class='band-moderate'>4.77%</td><td>2026-08-05</td></tr>
-<tr><td>Pipeline_SM_Refresh_TEST</td><td>Pipeline</td><td>161.61</td><td>641.9</td><td class='band-low'>0%</td><td>2026-08-05</td></tr>
-<tr><td>Universal_SemanticModel_Refresh_WithPolling</td><td>SynapseNotebook</td><td>207842.18</td><td>23261.94</td><td class='band-moderate'>4.3%</td><td>2026-08-05</td></tr>
+    <tr><th>Item</th><th>Kind</th><th>Latest CU (s)</th><th>Latest Duration</th><th>% of 14-day budget</th><th>As of</th></tr>
+    <tr><td>parts-lookup-app</td><td>SQLDbNative</td><td>234995.78</td><td>30h 19m</td><td class='band-moderate'>4.86%</td><td>2026-08-05</td></tr>
+<tr><td>Universal_SemanticModel_Refresh_WithPolling</td><td>SynapseNotebook</td><td>207842.18</td><td>6h 27m</td><td class='band-moderate'>4.3%</td><td>2026-08-05</td></tr>
+<tr><td>Inspections</td><td>Dataset</td><td>148237.22</td><td>2h 17m</td><td class='band-moderate'>3.06%</td><td>2026-08-05</td></tr>
+<tr><td>LH_Master_Data</td><td>Lakehouse</td><td>38923.06</td><td>1m 41s</td><td class='band-low'>0.8%</td><td>2026-08-05</td></tr>
+<tr><td>Customer Anatomy V2</td><td>Dataset</td><td>36328.25</td><td>30m 20s</td><td class='band-low'>0.75%</td><td>2026-08-05</td></tr>
+<tr><td>LH_Master_Data</td><td>Warehouse</td><td>23107.74</td><td>9h 20m</td><td class='band-low'>0.48%</td><td>2026-08-05</td></tr>
+<tr><td>Parts Promo</td><td>Dataset</td><td>22131.36</td><td>2h 2m</td><td class='band-low'>0.46%</td><td>2026-08-05</td></tr>
+<tr><td>Transfers</td><td>Dataset</td><td>19036.37</td><td>27m 19s</td><td class='band-low'>0.39%</td><td>2026-08-05</td></tr>
+<tr><td>Part Sales with Low Margin</td><td>Dataset</td><td>15074.64</td><td>32m 7s</td><td class='band-low'>0.31%</td><td>2026-08-05</td></tr>
+<tr><td>Pin Capture</td><td>Dataset</td><td>11478.14</td><td>29m 51s</td><td class='band-low'>0.24%</td><td>2026-08-05</td></tr>
+<tr><td>Parts Adjustments</td><td>Dataset</td><td>11469.16</td><td>15m 38s</td><td class='band-low'>0.24%</td><td>2026-08-05</td></tr>
+<tr><td>Price Matrix</td><td>Dataset</td><td>11335.27</td><td>17m 42s</td><td class='band-low'>0.23%</td><td>2026-08-05</td></tr>
+<tr><td>First Pass Fill</td><td>Dataset</td><td>5944.87</td><td>8m 54s</td><td class='band-low'>0.12%</td><td>2026-08-05</td></tr>
+<tr><td>Planter Inspection Part Sales</td><td>Dataset</td><td>4853.25</td><td>5m 5s</td><td class='band-low'>0.1%</td><td>2026-08-05</td></tr>
+<tr><td>MD Invoices With No Freight</td><td>Dataset</td><td>4583.71</td><td>5m 29s</td><td class='band-low'>0.09%</td><td>2026-08-05</td></tr>
+<tr><td>Unique Parts Customers</td><td>Dataset</td><td>2602.57</td><td>2m 55s</td><td class='band-low'>0.05%</td><td>2026-08-05</td></tr>
+<tr><td>Combine Vault Sales</td><td>Dataset</td><td>2502.39</td><td>4m 20s</td><td class='band-low'>0.05%</td><td>2026-08-05</td></tr>
+<tr><td>60+ Days Past Due</td><td>Dataset</td><td>2424.69</td><td>2m 57s</td><td class='band-low'>0.05%</td><td>2026-08-05</td></tr>
+<tr><td>Open Work Orders</td><td>Dataset</td><td>1991.99</td><td>3m 4s</td><td class='band-low'>0.04%</td><td>2026-08-05</td></tr>
+<tr><td>Labor Performance</td><td>Dataset</td><td>1109.11</td><td>3m 40s</td><td class='band-low'>0.02%</td><td>2026-08-05</td></tr>
+<tr><td>Bin Location Report</td><td>Dataset</td><td>1062.5</td><td>2m 2s</td><td class='band-low'>0.02%</td><td>2026-08-05</td></tr>
+<tr><td>Open Parts Tickets</td><td>Dataset</td><td>1025.58</td><td>2m 35s</td><td class='band-low'>0.02%</td><td>2026-08-05</td></tr>
+<tr><td>Negative On Hand-On Hand No Bin</td><td>Dataset</td><td>575.46</td><td>2m 17s</td><td class='band-low'>0.01%</td><td>2026-08-05</td></tr>
+<tr><td>df_JDIS_PART_INFORMATION_Raw</td><td>DataflowFabric</td><td>455.56</td><td>1s</td><td class='band-low'>0.01%</td><td>2026-08-05</td></tr>
+<tr><td>df_InTrans_Incremental</td><td>DataflowFabric</td><td>374.04</td><td>1s</td><td class='band-low'>0.01%</td><td>2026-08-05</td></tr>
+<tr><td>df_Invoice_Raw</td><td>DataflowFabric</td><td>162.22</td><td>0s</td><td class='band-low'>0%</td><td>2026-08-05</td></tr>
+<tr><td>Pipeline_SM_Refresh_TEST</td><td>Pipeline</td><td>161.61</td><td>10m 41s</td><td class='band-low'>0%</td><td>2026-08-05</td></tr>
+<tr><td>df_InTrans_PartsCounter_Raw</td><td>DataflowFabric</td><td>158.97</td><td>0s</td><td class='band-low'>0%</td><td>2026-08-05</td></tr>
+<tr><td>df_GlTrans_Raw</td><td>DataflowFabric</td><td>144.01</td><td>0s</td><td class='band-low'>0%</td><td>2026-08-05</td></tr>
+<tr><td>df_InHist_PmManage_Raw</td><td>DataflowFabric</td><td>137.51</td><td>0s</td><td class='band-low'>0%</td><td>2026-08-05</td></tr>
+<tr><td>df_PartsLookup_Sync</td><td>DataflowFabric</td><td>132.61</td><td>0s</td><td class='band-low'>0%</td><td>2026-08-05</td></tr>
+<tr><td>df_WKROFILE_Raw</td><td>DataflowFabric</td><td>124.21</td><td>0s</td><td class='band-low'>0%</td><td>2026-08-05</td></tr>
+<tr><td>df_Fact_ServiceTimeSheet_Audit</td><td>DataflowFabric</td><td>119.44</td><td>0s</td><td class='band-low'>0%</td><td>2026-08-05</td></tr>
+<tr><td>df_Fact_Transfers</td><td>DataflowFabric</td><td>109.03</td><td>0s</td><td class='band-low'>0%</td><td>2026-08-05</td></tr>
+<tr><td>df_Fact_Parts_Details</td><td>DataflowFabric</td><td>107.72</td><td>0s</td><td class='band-low'>0%</td><td>2026-08-05</td></tr>
+<tr><td>df_NonJD_Parts_Ordering_Raw</td><td>DataflowFabric</td><td>105.98</td><td>0s</td><td class='band-low'>0%</td><td>2026-08-05</td></tr>
+<tr><td>parts-lookup-app</td><td>AppBackend</td><td>32.09</td><td>0s</td><td class='band-low'>0%</td><td>2026-08-05</td></tr>
 
   </table>
 
   <div class="grid">
         <div class="card">
-      <h2>Bin Location Report</h2>
-      <div class="meta">Dataset &middot; RP - Parts Reports</div>
-      <div class="latest">814.58 CU(s) <span class="asof">as of 2026-08-05</span></div>
-      <div class="pct-badge band-low">0.02% of 14-day F4 budget &middot; Negligible</div>
-      <div class="trend-note"><span class='trend-down'>&#8595; 19.1% since 2026-08-03</span></div>
-      <svg viewBox="0 0 640 160" class="chart"><polyline points='40,10 335,10 630,34.1' class='trendline' /><circle cx='40' cy='10' r='3' class='dot'><title>2026-08-03: 1007.13 CU(s)</title></circle><circle cx='335' cy='10' r='3' class='dot'><title>2026-08-04: 1007.13 CU(s)</title></circle><circle cx='630' cy='34.1' r='3' class='dot'><title>2026-08-05: 814.58 CU(s)</title></circle></svg>
+      <h2>parts-lookup-app</h2>
+      <div class="meta">SQLDbNative &middot; RP - Fabric Apps</div>
+      <div class="latest">234995.78 CU(s) <span class="asof">as of 2026-08-05</span></div>
+      <div class="pct-badge band-moderate">4.86% of 14-day F4 budget &middot; Moderate</div>
+      <div class="trend-note"><span class='trend-up'>&#8593; 28.8% since 2026-08-03</span></div>
+      <svg viewBox="0 0 640 160" class="chart"><polyline points='40,38.2 335,36.8 630,10' class='trendline' /><circle cx='40' cy='38.2' r='3' class='dot'><title>2026-08-03: 182421.05 CU(s)</title></circle><circle cx='335' cy='36.8' r='3' class='dot'><title>2026-08-04: 184973.77 CU(s)</title></circle><circle cx='630' cy='10' r='3' class='dot'><title>2026-08-05: 234995.78 CU(s)</title></circle></svg>
+    </div>    <div class="card">
+      <h2>Universal_SemanticModel_Refresh_WithPolling</h2>
+      <div class="meta">SynapseNotebook &middot; LH_Master_Data</div>
+      <div class="latest">207842.18 CU(s) <span class="asof">as of 2026-08-05</span></div>
+      <div class="pct-badge band-moderate">4.3% of 14-day F4 budget &middot; Moderate</div>
+      <div class="trend-note"><span class='trend-down'>&#8595; 8.7% since 2026-08-03</span></div>
+      <svg viewBox="0 0 640 160" class="chart"><polyline points='40,10 335,16.5 630,21' class='trendline' /><circle cx='40' cy='10' r='3' class='dot'><title>2026-08-03: 227753.65 CU(s)</title></circle><circle cx='335' cy='16.5' r='3' class='dot'><title>2026-08-04: 216090.93 CU(s)</title></circle><circle cx='630' cy='21' r='3' class='dot'><title>2026-08-05: 207842.18 CU(s)</title></circle></svg>
     </div>    <div class="card">
       <h2>Inspections</h2>
       <div class="meta">Dataset &middot; RP - Service Reports</div>
-      <div class="latest">109837.19 CU(s) <span class="asof">as of 2026-08-05</span></div>
-      <div class="pct-badge band-moderate">2.27% of 14-day F4 budget &middot; Moderate</div>
-      <div class="trend-note"><span class='trend-up'>&#8593; 0.8% since 2026-08-03</span></div>
-      <svg viewBox="0 0 640 160" class="chart"><polyline points='40,11 335,16.8 630,10' class='trendline' /><circle cx='40' cy='11' r='3' class='dot'><title>2026-08-03: 108990.72 CU(s)</title></circle><circle cx='335' cy='16.8' r='3' class='dot'><title>2026-08-04: 103871.89 CU(s)</title></circle><circle cx='630' cy='10' r='3' class='dot'><title>2026-08-05: 109837.19 CU(s)</title></circle></svg>
+      <div class="latest">148237.22 CU(s) <span class="asof">as of 2026-08-05</span></div>
+      <div class="pct-badge band-moderate">3.06% of 14-day F4 budget &middot; Moderate</div>
+      <div class="trend-note"><span class='trend-up'>&#8593; 36% since 2026-08-03</span></div>
+      <svg viewBox="0 0 640 160" class="chart"><polyline points='40,43.4 335,47.7 630,10' class='trendline' /><circle cx='40' cy='43.4' r='3' class='dot'><title>2026-08-03: 108990.72 CU(s)</title></circle><circle cx='335' cy='47.7' r='3' class='dot'><title>2026-08-04: 103871.89 CU(s)</title></circle><circle cx='630' cy='10' r='3' class='dot'><title>2026-08-05: 148237.22 CU(s)</title></circle></svg>
     </div>    <div class="card">
-      <h2>parts-lookup-app</h2>
-      <div class="meta">AppBackend &middot; RP - Fabric Apps</div>
-      <div class="latest">30.62 CU(s) <span class="asof">as of 2026-08-05</span></div>
+      <h2>LH_Master_Data</h2>
+      <div class="meta">Lakehouse &middot; LH_Master_Data</div>
+      <div class="latest">38923.06 CU(s) <span class="asof">as of 2026-08-05</span></div>
+      <div class="pct-badge band-low">0.8% of 14-day F4 budget &middot; Negligible</div>
+      <div class="trend-note"></div>
+      <svg viewBox="0 0 640 160" class="chart"><circle cx='335' cy='10' r='4' class='dot' /></svg>
+    </div>    <div class="card">
+      <h2>Customer Anatomy V2</h2>
+      <div class="meta">Dataset &middot; RP - Service Reports</div>
+      <div class="latest">36328.25 CU(s) <span class="asof">as of 2026-08-05</span></div>
+      <div class="pct-badge band-low">0.75% of 14-day F4 budget &middot; Negligible</div>
+      <div class="trend-note"></div>
+      <svg viewBox="0 0 640 160" class="chart"><circle cx='335' cy='10' r='4' class='dot' /></svg>
+    </div>    <div class="card">
+      <h2>LH_Master_Data</h2>
+      <div class="meta">Warehouse &middot; LH_Master_Data</div>
+      <div class="latest">23107.74 CU(s) <span class="asof">as of 2026-08-05</span></div>
+      <div class="pct-badge band-low">0.48% of 14-day F4 budget &middot; Negligible</div>
+      <div class="trend-note"></div>
+      <svg viewBox="0 0 640 160" class="chart"><circle cx='335' cy='10' r='4' class='dot' /></svg>
+    </div>    <div class="card">
+      <h2>Parts Promo</h2>
+      <div class="meta">Dataset &middot; RP - Parts Reports</div>
+      <div class="latest">22131.36 CU(s) <span class="asof">as of 2026-08-05</span></div>
+      <div class="pct-badge band-low">0.46% of 14-day F4 budget &middot; Negligible</div>
+      <div class="trend-note"></div>
+      <svg viewBox="0 0 640 160" class="chart"><circle cx='335' cy='10' r='4' class='dot' /></svg>
+    </div>    <div class="card">
+      <h2>Transfers</h2>
+      <div class="meta">Dataset &middot; RP - Parts Reports</div>
+      <div class="latest">19036.37 CU(s) <span class="asof">as of 2026-08-05</span></div>
+      <div class="pct-badge band-low">0.39% of 14-day F4 budget &middot; Negligible</div>
+      <div class="trend-note"></div>
+      <svg viewBox="0 0 640 160" class="chart"><circle cx='335' cy='10' r='4' class='dot' /></svg>
+    </div>    <div class="card">
+      <h2>Part Sales with Low Margin</h2>
+      <div class="meta">Dataset &middot; RP - Parts Reports</div>
+      <div class="latest">15074.64 CU(s) <span class="asof">as of 2026-08-05</span></div>
+      <div class="pct-badge band-low">0.31% of 14-day F4 budget &middot; Negligible</div>
+      <div class="trend-note"></div>
+      <svg viewBox="0 0 640 160" class="chart"><circle cx='335' cy='10' r='4' class='dot' /></svg>
+    </div>    <div class="card">
+      <h2>Pin Capture</h2>
+      <div class="meta">Dataset &middot; RP - Parts Reports</div>
+      <div class="latest">11478.14 CU(s) <span class="asof">as of 2026-08-05</span></div>
+      <div class="pct-badge band-low">0.24% of 14-day F4 budget &middot; Negligible</div>
+      <div class="trend-note"></div>
+      <svg viewBox="0 0 640 160" class="chart"><circle cx='335' cy='10' r='4' class='dot' /></svg>
+    </div>    <div class="card">
+      <h2>Parts Adjustments</h2>
+      <div class="meta">Dataset &middot; RP - Parts Reports</div>
+      <div class="latest">11469.16 CU(s) <span class="asof">as of 2026-08-05</span></div>
+      <div class="pct-badge band-low">0.24% of 14-day F4 budget &middot; Negligible</div>
+      <div class="trend-note"></div>
+      <svg viewBox="0 0 640 160" class="chart"><circle cx='335' cy='10' r='4' class='dot' /></svg>
+    </div>    <div class="card">
+      <h2>Price Matrix</h2>
+      <div class="meta">Dataset &middot; RP - Parts Reports</div>
+      <div class="latest">11335.27 CU(s) <span class="asof">as of 2026-08-05</span></div>
+      <div class="pct-badge band-low">0.23% of 14-day F4 budget &middot; Negligible</div>
+      <div class="trend-note"></div>
+      <svg viewBox="0 0 640 160" class="chart"><circle cx='335' cy='10' r='4' class='dot' /></svg>
+    </div>    <div class="card">
+      <h2>First Pass Fill</h2>
+      <div class="meta">Dataset &middot; RP - Parts Reports</div>
+      <div class="latest">5944.87 CU(s) <span class="asof">as of 2026-08-05</span></div>
+      <div class="pct-badge band-low">0.12% of 14-day F4 budget &middot; Negligible</div>
+      <div class="trend-note"></div>
+      <svg viewBox="0 0 640 160" class="chart"><circle cx='335' cy='10' r='4' class='dot' /></svg>
+    </div>    <div class="card">
+      <h2>Planter Inspection Part Sales</h2>
+      <div class="meta">Dataset &middot; RP - Service Reports</div>
+      <div class="latest">4853.25 CU(s) <span class="asof">as of 2026-08-05</span></div>
+      <div class="pct-badge band-low">0.1% of 14-day F4 budget &middot; Negligible</div>
+      <div class="trend-note"></div>
+      <svg viewBox="0 0 640 160" class="chart"><circle cx='335' cy='10' r='4' class='dot' /></svg>
+    </div>    <div class="card">
+      <h2>MD Invoices With No Freight</h2>
+      <div class="meta">Dataset &middot; RP - Parts Reports</div>
+      <div class="latest">4583.71 CU(s) <span class="asof">as of 2026-08-05</span></div>
+      <div class="pct-badge band-low">0.09% of 14-day F4 budget &middot; Negligible</div>
+      <div class="trend-note"></div>
+      <svg viewBox="0 0 640 160" class="chart"><circle cx='335' cy='10' r='4' class='dot' /></svg>
+    </div>    <div class="card">
+      <h2>Unique Parts Customers</h2>
+      <div class="meta">Dataset &middot; RP - Parts Reports</div>
+      <div class="latest">2602.57 CU(s) <span class="asof">as of 2026-08-05</span></div>
+      <div class="pct-badge band-low">0.05% of 14-day F4 budget &middot; Negligible</div>
+      <div class="trend-note"></div>
+      <svg viewBox="0 0 640 160" class="chart"><circle cx='335' cy='10' r='4' class='dot' /></svg>
+    </div>    <div class="card">
+      <h2>Combine Vault Sales</h2>
+      <div class="meta">Dataset &middot; RP - Parts Reports</div>
+      <div class="latest">2502.39 CU(s) <span class="asof">as of 2026-08-05</span></div>
+      <div class="pct-badge band-low">0.05% of 14-day F4 budget &middot; Negligible</div>
+      <div class="trend-note"></div>
+      <svg viewBox="0 0 640 160" class="chart"><circle cx='335' cy='10' r='4' class='dot' /></svg>
+    </div>    <div class="card">
+      <h2>60+ Days Past Due</h2>
+      <div class="meta">Dataset &middot; RP - Financial Reports</div>
+      <div class="latest">2424.69 CU(s) <span class="asof">as of 2026-08-05</span></div>
+      <div class="pct-badge band-low">0.05% of 14-day F4 budget &middot; Negligible</div>
+      <div class="trend-note"></div>
+      <svg viewBox="0 0 640 160" class="chart"><circle cx='335' cy='10' r='4' class='dot' /></svg>
+    </div>    <div class="card">
+      <h2>Open Work Orders</h2>
+      <div class="meta">Dataset &middot; RP - Service Reports</div>
+      <div class="latest">1991.99 CU(s) <span class="asof">as of 2026-08-05</span></div>
+      <div class="pct-badge band-low">0.04% of 14-day F4 budget &middot; Negligible</div>
+      <div class="trend-note"></div>
+      <svg viewBox="0 0 640 160" class="chart"><circle cx='335' cy='10' r='4' class='dot' /></svg>
+    </div>    <div class="card">
+      <h2>Labor Performance</h2>
+      <div class="meta">Dataset &middot; RP - Service Reports</div>
+      <div class="latest">1109.11 CU(s) <span class="asof">as of 2026-08-05</span></div>
+      <div class="pct-badge band-low">0.02% of 14-day F4 budget &middot; Negligible</div>
+      <div class="trend-note"></div>
+      <svg viewBox="0 0 640 160" class="chart"><circle cx='335' cy='10' r='4' class='dot' /></svg>
+    </div>    <div class="card">
+      <h2>Bin Location Report</h2>
+      <div class="meta">Dataset &middot; RP - Parts Reports</div>
+      <div class="latest">1062.5 CU(s) <span class="asof">as of 2026-08-05</span></div>
+      <div class="pct-badge band-low">0.02% of 14-day F4 budget &middot; Negligible</div>
+      <div class="trend-note"><span class='trend-up'>&#8593; 5.5% since 2026-08-03</span></div>
+      <svg viewBox="0 0 640 160" class="chart"><polyline points='40,16.6 335,16.6 630,10' class='trendline' /><circle cx='40' cy='16.6' r='3' class='dot'><title>2026-08-03: 1007.13 CU(s)</title></circle><circle cx='335' cy='16.6' r='3' class='dot'><title>2026-08-04: 1007.13 CU(s)</title></circle><circle cx='630' cy='10' r='3' class='dot'><title>2026-08-05: 1062.5 CU(s)</title></circle></svg>
+    </div>    <div class="card">
+      <h2>Open Parts Tickets</h2>
+      <div class="meta">Dataset &middot; RP - Parts Reports</div>
+      <div class="latest">1025.58 CU(s) <span class="asof">as of 2026-08-05</span></div>
+      <div class="pct-badge band-low">0.02% of 14-day F4 budget &middot; Negligible</div>
+      <div class="trend-note"></div>
+      <svg viewBox="0 0 640 160" class="chart"><circle cx='335' cy='10' r='4' class='dot' /></svg>
+    </div>    <div class="card">
+      <h2>Negative On Hand-On Hand No Bin</h2>
+      <div class="meta">Dataset &middot; RP - Parts Reports</div>
+      <div class="latest">575.46 CU(s) <span class="asof">as of 2026-08-05</span></div>
+      <div class="pct-badge band-low">0.01% of 14-day F4 budget &middot; Negligible</div>
+      <div class="trend-note"></div>
+      <svg viewBox="0 0 640 160" class="chart"><circle cx='335' cy='10' r='4' class='dot' /></svg>
+    </div>    <div class="card">
+      <h2>df_JDIS_PART_INFORMATION_Raw</h2>
+      <div class="meta">DataflowFabric &middot; LH_Master_Data</div>
+      <div class="latest">455.56 CU(s) <span class="asof">as of 2026-08-05</span></div>
+      <div class="pct-badge band-low">0.01% of 14-day F4 budget &middot; Negligible</div>
+      <div class="trend-note"></div>
+      <svg viewBox="0 0 640 160" class="chart"><circle cx='335' cy='10' r='4' class='dot' /></svg>
+    </div>    <div class="card">
+      <h2>df_InTrans_Incremental</h2>
+      <div class="meta">DataflowFabric &middot; LH_Master_Data</div>
+      <div class="latest">374.04 CU(s) <span class="asof">as of 2026-08-05</span></div>
+      <div class="pct-badge band-low">0.01% of 14-day F4 budget &middot; Negligible</div>
+      <div class="trend-note"></div>
+      <svg viewBox="0 0 640 160" class="chart"><circle cx='335' cy='10' r='4' class='dot' /></svg>
+    </div>    <div class="card">
+      <h2>df_Invoice_Raw</h2>
+      <div class="meta">DataflowFabric &middot; LH_Master_Data</div>
+      <div class="latest">162.22 CU(s) <span class="asof">as of 2026-08-05</span></div>
       <div class="pct-badge band-low">0% of 14-day F4 budget &middot; Negligible</div>
-      <div class="trend-note"><span class='trend-up'>&#8593; 26.9% since 2026-08-03</span></div>
-      <svg viewBox="0 0 640 160" class="chart"><polyline points='40,36.7 335,46.7 630,10' class='trendline' /><circle cx='40' cy='36.7' r='3' class='dot'><title>2026-08-03: 24.13 CU(s)</title></circle><circle cx='335' cy='46.7' r='3' class='dot'><title>2026-08-04: 21.71 CU(s)</title></circle><circle cx='630' cy='10' r='3' class='dot'><title>2026-08-05: 30.62 CU(s)</title></circle></svg>
-    </div>    <div class="card">
-      <h2>parts-lookup-app</h2>
-      <div class="meta">SQLDbNative &middot; RP - Fabric Apps</div>
-      <div class="latest">230893.23 CU(s) <span class="asof">as of 2026-08-05</span></div>
-      <div class="pct-badge band-moderate">4.77% of 14-day F4 budget &middot; Moderate</div>
-      <div class="trend-note"><span class='trend-up'>&#8593; 26.6% since 2026-08-03</span></div>
-      <svg viewBox="0 0 640 160" class="chart"><polyline points='40,36.5 335,35.1 630,10' class='trendline' /><circle cx='40' cy='36.5' r='3' class='dot'><title>2026-08-03: 182421.05 CU(s)</title></circle><circle cx='335' cy='35.1' r='3' class='dot'><title>2026-08-04: 184973.77 CU(s)</title></circle><circle cx='630' cy='10' r='3' class='dot'><title>2026-08-05: 230893.23 CU(s)</title></circle></svg>
+      <div class="trend-note"></div>
+      <svg viewBox="0 0 640 160" class="chart"><circle cx='335' cy='10' r='4' class='dot' /></svg>
     </div>    <div class="card">
       <h2>Pipeline_SM_Refresh_TEST</h2>
       <div class="meta">Pipeline &middot; LH_Master_Data</div>
@@ -125,12 +310,75 @@
       <div class="trend-note"><span class='trend-up'>&#8593; 0.2% since 2026-08-04</span></div>
       <svg viewBox="0 0 640 160" class="chart"><polyline points='40,10.3 630,10' class='trendline' /><circle cx='40' cy='10.3' r='3' class='dot'><title>2026-08-04: 161.28 CU(s)</title></circle><circle cx='630' cy='10' r='3' class='dot'><title>2026-08-05: 161.61 CU(s)</title></circle></svg>
     </div>    <div class="card">
-      <h2>Universal_SemanticModel_Refresh_WithPolling</h2>
-      <div class="meta">SynapseNotebook &middot; LH_Master_Data</div>
-      <div class="latest">207842.18 CU(s) <span class="asof">as of 2026-08-05</span></div>
-      <div class="pct-badge band-moderate">4.3% of 14-day F4 budget &middot; Moderate</div>
-      <div class="trend-note"><span class='trend-down'>&#8595; 8.7% since 2026-08-03</span></div>
-      <svg viewBox="0 0 640 160" class="chart"><polyline points='40,10 335,16.5 630,21' class='trendline' /><circle cx='40' cy='10' r='3' class='dot'><title>2026-08-03: 227753.65 CU(s)</title></circle><circle cx='335' cy='16.5' r='3' class='dot'><title>2026-08-04: 216090.93 CU(s)</title></circle><circle cx='630' cy='21' r='3' class='dot'><title>2026-08-05: 207842.18 CU(s)</title></circle></svg>
+      <h2>df_InTrans_PartsCounter_Raw</h2>
+      <div class="meta">DataflowFabric &middot; LH_Master_Data</div>
+      <div class="latest">158.97 CU(s) <span class="asof">as of 2026-08-05</span></div>
+      <div class="pct-badge band-low">0% of 14-day F4 budget &middot; Negligible</div>
+      <div class="trend-note"></div>
+      <svg viewBox="0 0 640 160" class="chart"><circle cx='335' cy='10' r='4' class='dot' /></svg>
+    </div>    <div class="card">
+      <h2>df_GlTrans_Raw</h2>
+      <div class="meta">DataflowFabric &middot; LH_Master_Data</div>
+      <div class="latest">144.01 CU(s) <span class="asof">as of 2026-08-05</span></div>
+      <div class="pct-badge band-low">0% of 14-day F4 budget &middot; Negligible</div>
+      <div class="trend-note"></div>
+      <svg viewBox="0 0 640 160" class="chart"><circle cx='335' cy='10' r='4' class='dot' /></svg>
+    </div>    <div class="card">
+      <h2>df_InHist_PmManage_Raw</h2>
+      <div class="meta">DataflowFabric &middot; LH_Master_Data</div>
+      <div class="latest">137.51 CU(s) <span class="asof">as of 2026-08-05</span></div>
+      <div class="pct-badge band-low">0% of 14-day F4 budget &middot; Negligible</div>
+      <div class="trend-note"></div>
+      <svg viewBox="0 0 640 160" class="chart"><circle cx='335' cy='10' r='4' class='dot' /></svg>
+    </div>    <div class="card">
+      <h2>df_PartsLookup_Sync</h2>
+      <div class="meta">DataflowFabric &middot; LH_Master_Data</div>
+      <div class="latest">132.61 CU(s) <span class="asof">as of 2026-08-05</span></div>
+      <div class="pct-badge band-low">0% of 14-day F4 budget &middot; Negligible</div>
+      <div class="trend-note"></div>
+      <svg viewBox="0 0 640 160" class="chart"><circle cx='335' cy='10' r='4' class='dot' /></svg>
+    </div>    <div class="card">
+      <h2>df_WKROFILE_Raw</h2>
+      <div class="meta">DataflowFabric &middot; LH_Master_Data</div>
+      <div class="latest">124.21 CU(s) <span class="asof">as of 2026-08-05</span></div>
+      <div class="pct-badge band-low">0% of 14-day F4 budget &middot; Negligible</div>
+      <div class="trend-note"></div>
+      <svg viewBox="0 0 640 160" class="chart"><circle cx='335' cy='10' r='4' class='dot' /></svg>
+    </div>    <div class="card">
+      <h2>df_Fact_ServiceTimeSheet_Audit</h2>
+      <div class="meta">DataflowFabric &middot; LH_Master_Data</div>
+      <div class="latest">119.44 CU(s) <span class="asof">as of 2026-08-05</span></div>
+      <div class="pct-badge band-low">0% of 14-day F4 budget &middot; Negligible</div>
+      <div class="trend-note"></div>
+      <svg viewBox="0 0 640 160" class="chart"><circle cx='335' cy='10' r='4' class='dot' /></svg>
+    </div>    <div class="card">
+      <h2>df_Fact_Transfers</h2>
+      <div class="meta">DataflowFabric &middot; LH_Master_Data</div>
+      <div class="latest">109.03 CU(s) <span class="asof">as of 2026-08-05</span></div>
+      <div class="pct-badge band-low">0% of 14-day F4 budget &middot; Negligible</div>
+      <div class="trend-note"></div>
+      <svg viewBox="0 0 640 160" class="chart"><circle cx='335' cy='10' r='4' class='dot' /></svg>
+    </div>    <div class="card">
+      <h2>df_Fact_Parts_Details</h2>
+      <div class="meta">DataflowFabric &middot; LH_Master_Data</div>
+      <div class="latest">107.72 CU(s) <span class="asof">as of 2026-08-05</span></div>
+      <div class="pct-badge band-low">0% of 14-day F4 budget &middot; Negligible</div>
+      <div class="trend-note"></div>
+      <svg viewBox="0 0 640 160" class="chart"><circle cx='335' cy='10' r='4' class='dot' /></svg>
+    </div>    <div class="card">
+      <h2>df_NonJD_Parts_Ordering_Raw</h2>
+      <div class="meta">DataflowFabric &middot; LH_Master_Data</div>
+      <div class="latest">105.98 CU(s) <span class="asof">as of 2026-08-05</span></div>
+      <div class="pct-badge band-low">0% of 14-day F4 budget &middot; Negligible</div>
+      <div class="trend-note"></div>
+      <svg viewBox="0 0 640 160" class="chart"><circle cx='335' cy='10' r='4' class='dot' /></svg>
+    </div>    <div class="card">
+      <h2>parts-lookup-app</h2>
+      <div class="meta">AppBackend &middot; RP - Fabric Apps</div>
+      <div class="latest">32.09 CU(s) <span class="asof">as of 2026-08-05</span></div>
+      <div class="pct-badge band-low">0% of 14-day F4 budget &middot; Negligible</div>
+      <div class="trend-note"></div>
+      <svg viewBox="0 0 640 160" class="chart"><polyline points='40,136 335,50.8 630,10' class='trendline' /><circle cx='40' cy='136' r='3' class='dot'><title>2026-08-03: 0 CU(s)</title></circle><circle cx='335' cy='50.8' r='3' class='dot'><title>2026-08-04: 21.71 CU(s)</title></circle><circle cx='630' cy='10' r='3' class='dot'><title>2026-08-05: 32.09 CU(s)</title></circle></svg>
     </div>
   </div>
 </body>
