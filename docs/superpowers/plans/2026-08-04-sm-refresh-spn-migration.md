@@ -198,38 +198,26 @@ A `Wait_Tier1_Gate` still depends on the *last* activity in all 4 Tier 1 lanes (
 
 ---
 
-## Task 5 [AUTOMATABLE]: Track the new pipeline's CU usage
+## Task 5 [DONE 2026-08-05]: Track the new pipeline's CU usage
 
 **Files:**
-- Modify: `projects/fabric-monitoring/scripts/enhanced/Track-ItemCU.ps1`
+- Modified: `projects/fabric-monitoring/scripts/enhanced/Track-ItemCU.ps1`
+- Modified: `projects/fabric-monitoring/scripts/enhanced/Render-CUTrackingDashboard.ps1`
 
-- [ ] **Step 1: Add `Pipeline_SemanticModels_V2` to the tracked items list**
+**Went further than originally planned**, per Brian's request while doing this — rather than just adding `Pipeline_SemanticModels_V2` to the tracked list, added:
+1. **All 20 individual semantic models** from the SM Refresh migration to `$TrackedItems` (real current names, confirmed live).
+2. **A `-TopN` auto-discovery mode** (default 20) — pulls the top CU consumers directly from Capacity Metrics by rank (`TOPN(...)` DAX query against `Metrics By Item`), merged with the named list, so new/unexpected high-CU items (including other dataflows — raw tables, dimensions, facts) surface automatically without needing to be hand-added first. This was the better fit for "quickly see what's burning capacity" than a manually maintained list of every dataflow in the tenant, which would go stale the moment a new one is added.
+3. **Dashboard readability** — durations now display in readable units (`30h 19m` / `2h 17m` / `43s`) instead of raw seconds, and both the summary table and card grid are sorted by latest CU descending, so the biggest consumers are immediately visible.
 
-Find the `$TrackedItems` parameter default (currently includes `Universal_SemanticModel_Refresh_WithPolling`, `Pipeline_SM_Refresh_TEST`, `Bin Location Report`, `Inspections`, `parts-lookup-app`) and add the new pipeline:
+CSV column schema deliberately left unchanged so the existing tracking history (since 2026-08-03) stays valid — only which rows get added changed, not the shape of each row.
 
-```powershell
-[string[]]$TrackedItems = @(
-    "Universal_SemanticModel_Refresh_WithPolling",
-    "Pipeline_SM_Refresh_TEST",
-    "Pipeline_SemanticModels_V2",
-    "Bin Location Report",
-    "Inspections",
-    "parts-lookup-app"
-),
-```
+**First real run already surfaced something directly useful**: `Inspections` (the individual semantic model, not the pipeline) is the **#3 CU consumer on the whole capacity at 148,237 CU(s)/14 days** — a real, concrete data point for the intermittent 9-17 minute duration anomaly flagged during Task 3/4 testing (previously invisible, since only the parent pipeline's aggregate was tracked before).
 
-- [ ] **Step 2: Run it once manually to confirm the new item resolves**
+- [x] **Step 1 (expanded):** all 20 reports + `Pipeline_SemanticModels_V2` added — `Pipeline_SemanticModels_V2` didn't resolve on the first run (expected — same ingestion-lag pattern seen with `Pipeline_SM_Refresh_TEST` when it was brand new), should resolve within a day or two.
 
-```powershell
-.\Track-ItemCU.ps1
-```
-Check the output for a warning like `[WARNING] Not found in Items table` — if `Pipeline_SemanticModels_V2` appears there, it likely just needs another day for Fabric's own metrics ingestion to catch up (same "known minor gap" the memory notes happened with `Pipeline_SM_Refresh_TEST` initially) — not a real problem, just re-run tomorrow.
+- [x] **Step 2: Ran it manually, confirmed items resolve and the dashboard regenerates correctly** — `Render-CUTrackingDashboard.ps1` also re-run, output verified (sorted by CU descending, durations readable).
 
-- [ ] **Step 3: Commit**
-```bash
-git add "projects/fabric-monitoring/scripts/enhanced/Track-ItemCU.ps1"
-git commit -m "Track Pipeline_SemanticModels_V2 CU usage during SM refresh migration validation"
-```
+- [x] **Step 3: Committed** (`projects/fabric-monitoring/scripts/enhanced/Track-ItemCU.ps1`, `Render-CUTrackingDashboard.ps1`, and the fresh `Item-CU-Tracking.csv`/`Capacity-Utilization-Tracking.csv`/`CU-Tracking.html` snapshot).
 
 ---
 
