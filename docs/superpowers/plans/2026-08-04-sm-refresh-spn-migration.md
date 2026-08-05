@@ -41,7 +41,9 @@ fab api -A powerbi "groups/67fefa98-9e80-4a79-afdd-c8988b6e64fc" | grep -i name
 ```
 (If `fab api -A powerbi` isn't the right syntax for a raw Power BI REST passthrough in your installed CLI version, the workspace name is also visible by opening `https://app.powerbi.com/groups/<guid>/list` directly in a browser — faster if the CLI call doesn't cooperate.)
 
-- [x] **Step 3: For each of the 4 workspaces, confirm the SPN is a Contributor** — done 2026-08-04 via `fab api workspaces/{id}/roleAssignments -A fabric`. Real results: workspace names resolved to `RP - Parts Reports`, `RP - Service Reports`, `RP - Sandbox`, `RP - Financial Reports` (via `fab api groups/{id} -A powerbi -q text.name`). `SPN-Fabric-Refresh-Automation` (principal id `8f71b80d-2698-42db-82cf-10ef0ffb8f12`) already had Contributor on Parts/Service/Financial Reports from earlier setup work — only `RP - Sandbox` was missing it (confirmed by listing all principals: only human users present), added via `POST roleAssignments` with `{"principal":{"id":"8f71b80d-...","type":"ServicePrincipal"},"role":"Contributor"}` → `201 Created`. All 4 workspaces now covered.
+- [x] **Step 3: For each of the 4 workspaces, confirm the SPN is a Contributor** — done 2026-08-04 via `fab api workspaces/{id}/roleAssignments -A fabric`. Real results: workspace names resolved to `RP - Parts Reports`, `RP - Service Reports`, `RP - Sandbox`, `RP - Financial Reports` (via `fab api groups/{id} -A powerbi -q text.name`). `SPN-Fabric-Refresh-Automation` (principal id `8f71b80d-2698-42db-82cf-10ef0ffb8f12`) already had Contributor on Parts/Service/Financial Reports from earlier setup work — only `RP - Sandbox` was missing it (confirmed by listing all principals: only human users present), added via `POST roleAssignments` with `{"principal":{"id":"8f71b80d-...","type":"ServicePrincipal"},"role":"Contributor"}` → `201 Created`.
+
+**Correction found during Task 2/3 (see Task 3's note):** it later turned out the 3 reports the stale pipeline JSON had placed in `RP - Sandbox` (Customer Anatomy V2, Parts Promo, MD Invoices With No Freight) have all since moved to production workspaces — meaning `RP - Sandbox` isn't actually needed for any of the real 20 reports. Harmless to leave the SPN's access there regardless (may be useful for other work later), just noting it turned out to be unnecessary for this specific migration.
 
 ---
 
@@ -80,6 +82,16 @@ Run just this `ForEach` activity. **Confirm both Customer Anatomy V2 and Inspect
 
 **Where:** `Pipeline_SemanticModels_V2` canvas.
 
+**Important correction made 2026-08-04, during Task 2's validation test:** the workspace/dataset GUIDs pulled from `fabric-workspace-docs`'s `Pipeline_SemanticModels.DataPipeline/pipeline-content.json` turned out to be stale for 3 of the 20 reports — that JSON snapshot predates some report promotions from `RP - Sandbox` to production workspaces, and the local git mirror is 15 commits behind besides. The Task 2 validation test's Customer Anatomy attempt failed with `ItemNotFound` because of exactly this — the old dataset id no longer exists at all. Cross-checked every one of the 4 workspaces' live dataset lists (via `fab api groups/{id}/datasets`) against the full 20-report list before writing the items below; the other 17 all matched correctly on ID (a few have cosmetic display-name changes only — "Inspections - V2" is now just "Inspections," "Labor Performance V2" is now "Labor Performance," etc. — dataset ID is what's referenced below, not the display name, so those don't matter). Three genuinely needed correcting, confirmed directly with Brian for the one that was ambiguous (two different "Customer Anatomy"-named models exist across workspaces):
+
+| Report | Stale value (don't use) | Corrected, verified live 2026-08-04 |
+|---|---|---|
+| Customer Anatomy V2 | `RP - Sandbox` / `fd9cf725-...` (doesn't exist anymore — this is what actually threw `ItemNotFound`) | `RP - Service Reports` (`fa9b2eef-d507-48ad-bbeb-242037941987`) / `22e741eb-afe5-45c9-b0a6-bfda35830977` |
+| Parts Promo | `RP - Sandbox` / `80eab99c-...` (no longer exists in Sandbox at all) | `RP - Parts Reports` (`4f2d10c6-11e1-4d3a-959d-a461ef9a4cd7`) / `3d4f1acf-f409-41a5-acc4-7be61b101a15` |
+| MD Invoices With No Freight | `RP - Sandbox` / `fd436ed4-...` (no longer exists in Sandbox at all) | `RP - Parts Reports` (`4f2d10c6-11e1-4d3a-959d-a461ef9a4cd7`) / `88bcada9-ceeb-42e5-99f9-9b6cd06a9f0d` |
+
+Both corrected workspaces already have the SPN as Contributor from Task 1 — no new access grant needed. The items JSON below already reflects these corrections.
+
 - [ ] **Step 1: Build the Tier 1 `ForEach`**
 
 Name it `ForEach_Tier1_SM_Refresh`. Settings: `Sequential` unchecked, `Batch count` = `4` (matches this org's established "4-5 concurrent" ceiling for this same F4 capacity, used elsewhere for concurrent dataflow waves — start here rather than assuming native activities allow more just because they're cheaper to trigger; the underlying refresh work itself still consumes real capacity). Items, ordered longest-duration-first (real durations pulled from `Pipeline_SemanticModels`'s run history, 2026-08-04):
@@ -87,8 +99,8 @@ Name it `ForEach_Tier1_SM_Refresh`. Settings: `Sequential` unchecked, `Batch cou
 ```json
 [
   {"name":"Inspections - V2","workspaceId":"fa9b2eef-d507-48ad-bbeb-242037941987","datasetId":"39074778-3a2e-40b7-a30a-afd21f12268c"},
-  {"name":"Parts Promo","workspaceId":"ba9d8de4-ef13-44e6-9156-e23a2511f3ad","datasetId":"80eab99c-646a-4571-8bc5-fba49e764e2c"},
-  {"name":"Customer Anatomy V2","workspaceId":"ba9d8de4-ef13-44e6-9156-e23a2511f3ad","datasetId":"fd9cf725-0db8-429f-a9ab-efd2fe916c2b"},
+  {"name":"Parts Promo","workspaceId":"4f2d10c6-11e1-4d3a-959d-a461ef9a4cd7","datasetId":"3d4f1acf-f409-41a5-acc4-7be61b101a15"},
+  {"name":"Customer Anatomy V2","workspaceId":"fa9b2eef-d507-48ad-bbeb-242037941987","datasetId":"22e741eb-afe5-45c9-b0a6-bfda35830977"},
   {"name":"Inventory Analysis","workspaceId":"4f2d10c6-11e1-4d3a-959d-a461ef9a4cd7","datasetId":"bd49c7c7-4f9d-4475-ac2e-c5d19da56297"},
   {"name":"Part Sales with Low Margin","workspaceId":"4f2d10c6-11e1-4d3a-959d-a461ef9a4cd7","datasetId":"412c8395-7a2f-480c-996b-53af35a3ec02"},
   {"name":"Parts Adjustments","workspaceId":"4f2d10c6-11e1-4d3a-959d-a461ef9a4cd7","datasetId":"97fc2743-290c-46fb-a033-d12a20f8759b"},
@@ -118,7 +130,7 @@ Inside, one Semantic model refresh activity (same as Task 2 Step 3's validated p
   {"name":"Price Matrix","workspaceId":"4f2d10c6-11e1-4d3a-959d-a461ef9a4cd7","datasetId":"4ef73ecc-d314-435c-8ad8-20473eb929fb"},
   {"name":"Physical Inventory","workspaceId":"4f2d10c6-11e1-4d3a-959d-a461ef9a4cd7","datasetId":"80c1dc15-60b3-4c6a-9398-3c79b77a4667"},
   {"name":"Combine Vault Sales","workspaceId":"4f2d10c6-11e1-4d3a-959d-a461ef9a4cd7","datasetId":"6b854ef2-4115-496a-bf71-2509fce18406"},
-  {"name":"MD Invoices With No Freight","workspaceId":"ba9d8de4-ef13-44e6-9156-e23a2511f3ad","datasetId":"fd436ed4-5bf0-4042-9664-b6e2bc105234"},
+  {"name":"MD Invoices With No Freight","workspaceId":"4f2d10c6-11e1-4d3a-959d-a461ef9a4cd7","datasetId":"88bcada9-ceeb-42e5-99f9-9b6cd06a9f0d"},
   {"name":"Labor Performance V2","workspaceId":"fa9b2eef-d507-48ad-bbeb-242037941987","datasetId":"66a341a6-48f6-41dd-8c35-b1c6e6b0baed"},
   {"name":"Unique Parts Customers","workspaceId":"4f2d10c6-11e1-4d3a-959d-a461ef9a4cd7","datasetId":"ed4f7c28-5555-4129-aa84-28d6d1e31e1b"}
 ]
