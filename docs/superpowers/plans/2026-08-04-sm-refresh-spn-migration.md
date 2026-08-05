@@ -135,23 +135,28 @@ Inside, one Semantic model refresh activity (same as Task 2 Step 3's validated p
 ]
 ```
 
-- [ ] **Step 4: Add a final gate + notification activities**
+- [x] **Step 4 [REDESIGNED 2026-08-04, better than originally planned]: Per-report failure handling instead of all-or-nothing tier gates**
 
-`Wait_Tier2_Gate` depending on `ForEach_Tier2_SM_Refresh` (`Succeeded`). Then, same structure as the original:
+While testing, a real gap surfaced in the plan as originally written: a genuine (non-retryable) failure on a single report inside `ForEach_Tier1_SM_Refresh` would mark the whole `ForEach` as `Failed`, which — with `Wait_Tier1_Gate` depending on it via `Succeeded` only — would leave `Wait_Tier1_Gate` **Skipped**, blocking all of Tier 2 (8 more reports) from running at all, just because of one bad report. Brian's explicit ask: one failed report should be easy to spot and fix; 19 other reports going stale because of it is not acceptable. Fixed with a real design change, not a workaround:
 
-```
-Success email — depends on Wait_Tier2_Gate, Succeeded
-Subject: "✅ Pipeline_SemanticModels_V2 - All Reports Refreshed"
+1. **Pipeline variable `FailedReports`** (Array type, empty default) — tracks which specific reports failed, by name, across both tiers.
+2. **Inside each `ForEach` (Tier 1 and Tier 2)**, on the Semantic model refresh activity's failure path, an **Append Variable** activity (`Append_FailedReport_Tier1` / `Append_FailedReport_Tier2`) appends `@item().name` to `FailedReports`. Since this runs inside the loop, it always knows exactly which item just failed — no need to parse the `ForEach`'s aggregate output after the fact.
+3. **The connector from `ForEach_Tier1_SM_Refresh` to `Wait_Tier1_Gate` fires on both `Succeeded` AND `Failed`** (not `Succeeded` only) — this is the actual fix for the blocking problem. `Wait_Tier1_Gate` is just a trivial 1-second pause with no real failure mode of its own, so once it's allowed to run at all (on either condition), it succeeds, and Tier 2 proceeds regardless of whether Tier 1 had a partial failure. Same fix applied identically to `ForEach_Tier2_SM_Refresh` → `Wait_Tier2_Gate`.
+   - **Watch out for this exact mistake if rebuilding:** the first attempt at this fix was applied one hop too late (on `Wait_Tier1_Gate` → `ForEach_Tier2_SM_Refresh` instead of `ForEach_Tier1_SM_Refresh` → `Wait_Tier1_Gate`), which doesn't work — if `Wait_Tier1_Gate`'s own upstream dependency is still `Succeeded`-only, it gets marked `Skipped` (not `Failed`) whenever Tier 1 fails, and a Skipped activity fires neither its Succeeded nor Failed downstream paths. The fix has to go on the connector *into* the Wait gate, not out of it.
+4. **The old three-way Success/Tier-1-alert/Tier-2-alert split is replaced by one consolidated check** at the very end: an `If Condition` activity (`Check_FailedReports`) after `Wait_Tier2_Gate`, expression `@equals(length(variables('FailedReports')), 0)`.
+   - **True branch:** the original `Success email` (unchanged) — "✅ Pipeline_SemanticModels_V2 - All Reports Refreshed"
+   - **False branch:** a new email — subject "⚠️ Pipeline_SemanticModels_V2 - Some Reports Failed To Refresh", body:
+     ```
+     The following reports failed to refresh and may show stale data: @{join(variables('FailedReports'), ', ')}
+     ```
+     (This `@{...}`-embedded-in-static-text syntax is correct and matches the pattern the original pipeline's own `Send_Success_Email` already used for `@{pipeline().RunId}` — Office 365 Email activities evaluate it at runtime even though the editor doesn't visually highlight it as a dynamic-content pill.)
+   - The old `Tier 1 failure alert` and `Tier 2 failure alert` activities are deleted — fully superseded by this single, more informative, non-blocking check.
 
-Tier 1 failure alert — depends on Wait_Tier1_Gate, [Failed, Skipped]
-Subject: "❌ Pipeline_SemanticModels_V2 - Tier 1 SM Refresh Failed"
+Reuse the same Office 365 connection the original pipeline uses, same recipient (`bfox@spitractor.com`).
 
-Tier 2 failure alert — depends on Wait_Tier2_Gate, [Failed, Skipped]
-Subject: "❌ Pipeline_SemanticModels_V2 - Tier 2 SM Refresh Failed"
-```
-Reuse the same Office 365 connection the original uses (`externalReferences.connection: "97d3696e-b886-4770-9fd0-f4aae4c6a7ed"` in the original's JSON), same recipient (`bfox@spitractor.com`).
+**Expected total wall-clock time:** ~10-11 minutes (Tier 1 ~7 min + gate + Tier 2 ~3.3 min + email), versus the original's ~18.7 minutes — confirmed close to this in real testing (see Task 4).
 
-**Expected total wall-clock time:** ~10-11 minutes (Tier 1 ~7 min + gate + Tier 2 ~3.3 min + email), versus the original's ~18.7 minutes — confirm this in Task 4's validation runs rather than taking the estimate on faith.
+**Follow-up flagged, separate from this migration:** one report (seen as both Inspections and Parts Promo across different test runs — the two heaviest reports in Tier 1) has shown wildly inconsistent durations, from ~5 minutes (matching historical baseline) up to 17+ minutes on at least one run. Worth its own investigation later (likely capacity-load-related given today's broader pattern, but not confirmed) — not a blocker for this migration, since the retry+non-blocking design now handles a slow/failed report gracefully either way.
 
 ---
 
