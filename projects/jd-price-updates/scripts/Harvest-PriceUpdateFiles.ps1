@@ -7,7 +7,7 @@
     in <LandingRootPath>\Archive:
       - Validates the filename matches PRICEUPDATE_MM_DD_YYYY_BRANCH.TXT
       - Validates the file's header row (first line, tab-delimited) matches
-        the expected 19-column layout
+        the expected 20-column layout
       - If both checks pass: copies the file into both New\ and Archive\
       - If either check fails: copies the file into Quarantine\ only, and
         does NOT add it to Archive\ (so it will be retried -- and re-logged

@@ -93,6 +93,19 @@ return an unexpected shape at the AddParsedContent step below; nothing in
 this query currently isolates that failure per-file, so it's a known,
 currently-unmitigated residual risk to watch for during the live Fabric
 preview.
+
+UNMITIGATED RISK (value-level type conversion, not addressed by this file):
+ChangedTypes converts Branch and all price/quantity columns to numeric types
+with no try/otherwise wrapping. This is a distinct failure surface from the
+file-level risk above -- here the file parses fine as CSV, but a single
+stray non-numeric value in any one file in that day's New/ batch (a blank
+string, "N/A", a thousands separator, or anything else JD's export might
+emit in a numeric-looking column) risks becoming an error cell that could
+fail the Lakehouse write for the entire batch, not just quarantine the one
+bad row or file. Fixing this properly -- e.g. try/otherwise per column, or
+using a Fabric Dataflow Gen2 "keep errors" destination setting -- is a
+decision best made once real files are visible during the live Fabric
+preview (a separate, later manual task), not here.
 ============================================================================
 */
 
@@ -106,7 +119,7 @@ let
     // Defensive filter -- the harvest script only ever lands valid,
     // header-checked PRICEUPDATE_*.TXT files here, but this costs nothing.
     FilterToPriceUpdateFiles = Table.SelectRows(Source, each
-        Text.StartsWith([Name], "PRICEUPDATE_") and Text.EndsWith(Text.Upper([Name]), ".TXT")
+        Text.StartsWith(Text.Upper([Name]), "PRICEUPDATE_") and Text.EndsWith(Text.Upper([Name]), ".TXT")
     ),
 
     // ------------------------------------------------------------------
