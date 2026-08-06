@@ -58,13 +58,41 @@ step-level "column ... wasn't found" error and fail the entire batch --
 contradicting the design spec's Error Handling section, which requires a
 missing column to degrade to null rather than block the day's whole batch.
 In practice Harvest-PriceUpdateFiles.ps1's header check (Task 3) already
-requires an exact match against all 19 expected column names before a file
+requires an exact match against all 20 expected column names before a file
 reaches New/, so this path is currently a belt-and-suspenders safeguard
 rather than a reachable one -- kept anyway because it directly implements
 what this spec's Error Handling section asks for at the parsing layer, and
 because it's what protects a future backfill of older files (2018+, header
 stability unconfirmed) if the harvest-side check is ever loosened to admit
 a subset-of-columns header.
+
+DEFENSE-IN-DEPTH NOTE (malformed filenames): FilterToPriceUpdateFiles only
+checks the name's prefix/suffix, not its internal shape, so a bypass file
+that still matches "PRICEUPDATE_*.TXT" but doesn't split into exactly 5
+"_"-delimited tokens (e.g. PRICEUPDATE_TEST.TXT) would otherwise crash the
+fixed-index NameParts{4}/{3}/{1}/{2} lookups below with a hard "not enough
+elements in the list" error and fail the whole batch. FilterToWellFormedNames
+guards against that. As with the missing-column case above, this should be
+unreachable in practice -- Harvest-PriceUpdateFiles.ps1 already rejects any
+filename that doesn't match its own MM_DD_YYYY_BRANCH regex before copying
+it into New/ -- but it's the same bypass scenario (manual copy into New/, or
+a future loosening of the harvest-side check) and costs nothing to close
+here too. Rows that fail this guard are silently excluded from this table
+rather than surfaced anywhere else in this query (this dataflow has no
+Quarantine-writing capability of its own -- that's the harvest script's
+job); if this filter ever actually drops a row, that's a signal worth
+investigating directly (visible only as a refresh row count lower than the
+number of files in New/, since there is no separate log sink from inside
+this M query).
+
+UNMITIGATED RISK (not addressed by this file): a zero-byte or genuinely
+non-CSV file that still matches the PRICEUPDATE_*.TXT name/header shape
+checks (e.g. truncated by a mid-write race, see Harvest-PriceUpdateFiles.ps1's
+own docstring caveat about this) could still make Csv.Document error or
+return an unexpected shape at the AddParsedContent step below; nothing in
+this query currently isolates that failure per-file, so it's a known,
+currently-unmitigated residual risk to watch for during the live Fabric
+preview.
 ============================================================================
 */
 
@@ -89,7 +117,12 @@ let
     AddNameParts = Table.AddColumn(FilterToPriceUpdateFiles, "NameParts", each
         Text.Split(Text.BeforeDelimiter([Name], ".", {0, RelativePosition.FromEnd}), "_")),
 
-    AddSourceFileBranch = Table.AddColumn(AddNameParts, "SourceFileBranch", each
+    // Guard against fixed-index access below -- see DEFENSE-IN-DEPTH NOTE
+    // (malformed filenames) above. Only PRICEUPDATE_MM_DD_YYYY_BRANCH.TXT
+    // shapes (exactly 5 "_"-delimited tokens) proceed past this point.
+    FilterToWellFormedNames = Table.SelectRows(AddNameParts, each List.Count([NameParts]) = 5),
+
+    AddSourceFileBranch = Table.AddColumn(FilterToWellFormedNames, "SourceFileBranch", each
         Text.From([NameParts]{4}), type text),
 
     AddSourceFileDate = Table.AddColumn(AddSourceFileBranch, "SourceFileDate", each
@@ -103,13 +136,21 @@ let
     // ------------------------------------------------------------------
     AddParsedContent = Table.AddColumn(AddSourceFileDate, "ParsedContent", each
         Table.PromoteHeaders(
+            // Encoding = 1252 (Windows-1252) is an assumption, not confirmed
+            // against real files -- verify at live Fabric preview time; if
+            // PartDescription/Category show mojibake, the source encoding
+            // is different than assumed here.
             Csv.Document([Content], [Delimiter = "#(tab)", Encoding = 1252, QuoteStyle = QuoteStyle.None]),
             [PromoteAllScalars = true]
         )),
 
-    // Full set of expected source (pre-rename) column names, single source
-    // of truth for both the missing-column normalization below and the
-    // ExpandTableColumn call that follows it.
+    // Full set of expected source (pre-rename) column names. Shared by the
+    // missing-column normalization below and the ExpandTableColumn call
+    // that follows it, so those two stay in sync with each other -- but
+    // note RenameColumns/ChangedTypes/FinalColumnOrder further down each
+    // independently hardcode this same 20-column schema by their renamed
+    // (PascalCase) names, so a future added/removed JD column still needs
+    // updating in more than just this one list.
     ExpectedSourceColumns = {
         "branch", "inmaster_franchise", "part_no", "inmanuf_list_price",
         "inmaster_list_price", "cc_price_decrease", "bin_location", "category",
