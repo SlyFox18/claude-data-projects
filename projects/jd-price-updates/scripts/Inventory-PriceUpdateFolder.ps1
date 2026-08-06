@@ -26,12 +26,30 @@ $allFiles = Get-ChildItem -Path $SourcePath -Filter "PRICEUPDATE_*.TXT" -File
 
 $parsed = foreach ($f in $allFiles) {
     if ($f.Name -match $FilenamePattern) {
-        [PSCustomObject]@{
-            FileName  = $f.Name
-            Branch    = [int]$Matches[4]
-            FileDate  = Get-Date -Year $Matches[3] -Month $Matches[1] -Day $Matches[2]
-            SizeBytes = $f.Length
-            Matched   = $true
+        $mmddyyyy = "$($Matches[1])$($Matches[2])$($Matches[3])"
+        $fileDate = [datetime]::MinValue
+        $isValidDate = [datetime]::TryParseExact(
+            $mmddyyyy, "MMddyyyy",
+            [System.Globalization.CultureInfo]::InvariantCulture,
+            [System.Globalization.DateTimeStyles]::None,
+            [ref]$fileDate)
+
+        if ($isValidDate) {
+            [PSCustomObject]@{
+                FileName  = $f.Name
+                Branch    = [int]$Matches[4]
+                FileDate  = $fileDate
+                SizeBytes = $f.Length
+                Matched   = $true
+            }
+        } else {
+            [PSCustomObject]@{
+                FileName  = $f.Name
+                Branch    = $null
+                FileDate  = $null
+                SizeBytes = $f.Length
+                Matched   = $false
+            }
         }
     } else {
         [PSCustomObject]@{
