@@ -163,6 +163,7 @@ the assortment signal described above).
 | `sell_price_old` | `SellPriceOld` | |
 | *(new)* | `SourceFileName` | Full filename, for traceability/reprocessing |
 | *(new)* | `SourceFileBranch` | Branch parsed from the **filename** (not file content) |
+| *(new)* | `SourceFileDate` | Date parsed from the **filename** (not file content) — paired with `SourceFileBranch`, same "from filename, not content" pattern |
 | *(new)* | `BranchMismatchFlag` | `true` if `SourceFileBranch` ≠ in-file `Branch` — data-quality tripwire only, does not block ingestion |
 | *(new)* | `IngestedAt` | Load timestamp, using the existing DST-aware UTC→Central pattern (`.claude/queries/DATA-REFRESH-TEMPLATE.pq`) |
 
