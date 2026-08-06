@@ -13,7 +13,34 @@
         does NOT add it to Archive\ (so it will be retried -- and re-logged
         -- every run until someone fixes/renames it or manually clears it
         from Quarantine)
+    A per-file error (e.g. a transient network glitch or a locked file) is
+    logged and skipped -- it does not abort the run for the remaining files.
     Never deletes or modifies anything in -SourceFolderPath.
+
+    ASSUMPTION -- NOT YET CONFIRMED: this script assumes source files are
+    written atomically (temp-name + rename, or fully flushed to disk before
+    becoming visible in -SourceFolderPath). If JD's export process instead
+    writes a file in place (header first, body streamed in afterward), and
+    a scheduled run happens to land mid-write, this script could harvest a
+    truncated-but-valid-looking file (passes both filename and header
+    checks) into New\/Archive\. Nobody has verified how JD's export writes
+    these files -- confirm with whoever owns that export before relying on
+    this script unattended in production. No file-stability heuristic
+    (e.g. skip-if-modified-in-last-N-minutes) has been added here because
+    guessing at one without knowing the actual write behavior could just as
+    easily introduce a different bug (e.g. permanently skipping a
+    legitimately slow but complete write).
+
+    ASSUMPTION -- cross-component: once a file is copied into New\, this
+    script does not track whether the (not-yet-built) Fabric-side process
+    has consumed it. If this script is killed mid-loop after copying a file
+    into New\ but before Archive\, the next run will safely re-detect and
+    re-copy it into both (self-healing). But if the Fabric side already
+    picked the file up out of New\ in the meantime, that re-copy re-
+    introduces the file for reprocessing. Whether that causes a downstream
+    duplicate depends entirely on the New\-clearing/append logic (built in
+    a later task) being safe to reprocess an identical file -- it must not
+    blindly append without considering this.
 .PARAMETER SourceFolderPath
     The network folder containing PRICEUPDATE_*.TXT files.
 .PARAMETER LandingRootPath
@@ -140,8 +167,10 @@ try {
                 # Can't determine a real date for this file (either the
                 # filename doesn't match the expected shape at all, or it
                 # matches but encodes an impossible calendar date) -- let it
-                # through so filename validation below still catches and
-                # quarantines it, regardless of the date filter in use.
+                # through the date filter unconditionally. The main harvest
+                # loop below calls the same Get-FileNameDate helper and will
+                # quarantine it as a bad filename, regardless of the date
+                # filter in use.
                 $true
             }
         }
@@ -157,29 +186,51 @@ try {
 
     $harvestedCount   = 0
     $quarantinedCount = 0
+    $errorCount       = 0
 
     foreach ($file in $toHarvest) {
-        if ($file.Name -notmatch $FilenamePattern) {
-            Copy-Item -Path $file.FullName -Destination (Join-Path $quarantinePath $file.Name) -Force
-            Write-HarvestLog "WARN" "QUARANTINED (bad filename): $($file.Name)"
-            $quarantinedCount++
+        try {
+            # Use the same date-aware helper as the -DateFrom/-DateTo filter
+            # above (not a raw shape-only regex match) so a filename like
+            # PRICEUPDATE_02_30_2026_1.TXT -- which matches the expected
+            # shape but encodes an impossible calendar date -- is caught
+            # and quarantined here too. This matters beyond cosmetics: the
+            # downstream Fabric M query builds SourceFileDate via #date(),
+            # which throws hard on an invalid date, unlike PowerShell's
+            # forgiving Get-Date behavior.
+            if ($null -eq (Get-FileNameDate -FileName $file.Name)) {
+                Copy-Item -Path $file.FullName -Destination (Join-Path $quarantinePath $file.Name) -Force
+                Write-HarvestLog "WARN" "QUARANTINED (bad filename): $($file.Name)"
+                $quarantinedCount++
+                continue
+            }
+
+            if (-not (Test-PriceUpdateHeader -FilePath $file.FullName)) {
+                Copy-Item -Path $file.FullName -Destination (Join-Path $quarantinePath $file.Name) -Force
+                Write-HarvestLog "WARN" "QUARANTINED (bad header):   $($file.Name)"
+                $quarantinedCount++
+                continue
+            }
+
+            Copy-Item -Path $file.FullName -Destination (Join-Path $newPath $file.Name) -Force
+            Copy-Item -Path $file.FullName -Destination (Join-Path $archivePath $file.Name) -Force
+            Write-HarvestLog "INFO" "Harvested: $($file.Name)"
+            $harvestedCount++
+        }
+        catch {
+            # Isolate per-file failures (network hiccup, AV file lock, JD's
+            # export process still mid-write, permissions glitch, etc.) so
+            # one bad file doesn't abort the run for every other file still
+            # waiting in $toHarvest. Reserve the outer try/catch below for
+            # genuine setup-level failures (source folder unreachable,
+            # landing folders missing).
+            Write-HarvestLog "ERROR" "FAILED processing $($file.Name): $($_.Exception.Message)"
+            $errorCount++
             continue
         }
-
-        if (-not (Test-PriceUpdateHeader -FilePath $file.FullName)) {
-            Copy-Item -Path $file.FullName -Destination (Join-Path $quarantinePath $file.Name) -Force
-            Write-HarvestLog "WARN" "QUARANTINED (bad header):   $($file.Name)"
-            $quarantinedCount++
-            continue
-        }
-
-        Copy-Item -Path $file.FullName -Destination (Join-Path $newPath $file.Name) -Force
-        Copy-Item -Path $file.FullName -Destination (Join-Path $archivePath $file.Name) -Force
-        Write-HarvestLog "INFO" "Harvested: $($file.Name)"
-        $harvestedCount++
     }
 
-    Write-HarvestLog "INFO" "Harvested: $harvestedCount   Quarantined: $quarantinedCount"
+    Write-HarvestLog "INFO" "Harvested: $harvestedCount   Quarantined: $quarantinedCount   Errors: $errorCount"
     Write-HarvestLog "INFO" "Harvest-PriceUpdateFiles - COMPLETED SUCCESSFULLY"
 }
 catch {
