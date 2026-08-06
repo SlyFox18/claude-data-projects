@@ -3,9 +3,11 @@
     Compares the header row (column names) of two or more PRICEUPDATE files.
 .DESCRIPTION
     Reads the first line of each given file, splits on tab, and reports
-    whether all files share an identical column list. Use this to check
-    whether the file layout has drifted across years before finalizing the
-    Dataflow Gen2 parsing logic.
+    whether all files share an identical column list. Comparison is case-sensitive
+    (BRANCH vs branch will be flagged as different) but order-independent, matching
+    the downstream Power Query M parser which selects columns by exact-match name
+    (case-sensitive) but not by position. Use this to check whether the file layout
+    has drifted across years before finalizing the Dataflow Gen2 parsing logic.
 .PARAMETER FilePaths
     Two or more file paths to compare. The first path is treated as the
     baseline that the others are compared against.
@@ -41,7 +43,7 @@ Write-Host "Baseline columns ($($baseline.Columns.Count)): $($baseline.Columns -
 Write-Host ""
 
 foreach ($h in $headers[1..($headers.Count - 1)]) {
-    $diff = Compare-Object -ReferenceObject $baseline.Columns -DifferenceObject $h.Columns
+    $diff = Compare-Object -ReferenceObject $baseline.Columns -DifferenceObject $h.Columns -CaseSensitive
     if ($null -eq $diff) {
         Write-Host "MATCH:    $($h.FilePath)"
     } else {
