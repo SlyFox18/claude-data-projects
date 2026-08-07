@@ -103,6 +103,21 @@ $ExpectedHeader = @(
     "sel1_diff", "effective_date", "update_code", "part_desc", "sell_price_old"
 )
 
+# LEGACY header shape -- confirmed against real historical files 2026-08-07
+# (full backfill run): every file from 2016-12-25 through 2018-02-25 uses
+# this exact 19-column layout, missing only "sell_price_old" (added to the
+# JD export sometime between Jan 2018 and Feb 2020 -- see Task 6's
+# Compare-PriceUpdateSchema.ps1 findings in the design spec). Without this,
+# Test-PriceUpdateHeader's exact-match check quarantines every one of these
+# 141 legitimate historical files -- confirmed: a first full-backfill run
+# quarantined exactly 141 files, all in this date range, all sharing this
+# identical header. The downstream Fabric M query (Raw_PriceUpdate_History.pq)
+# was already built to tolerate a missing column via MissingField.UseNull
+# (SellPriceOld comes through as null for these rows) -- that tolerance was
+# unreachable until this check was widened to actually let these files past
+# the harvest gate.
+$LegacyExpectedHeader = $ExpectedHeader | Where-Object { $_ -ne "sell_price_old" }
+
 function Write-HarvestLog {
     param([string]$Level, [string]$Message)
     $line = "[$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')] [$Level] $Message"
@@ -121,8 +136,13 @@ function Test-PriceUpdateHeader {
     # case (e.g. "Branch" vs "branch") must NOT be treated as a match here --
     # otherwise the file would be harvested and then fail (or silently
     # mis-map columns) in the Dataflow Gen2.
-    $diff = Compare-Object -ReferenceObject $ExpectedHeader -DifferenceObject $columns -CaseSensitive
-    return ($null -eq $diff)
+    # Accept EITHER the current 20-column header OR the confirmed legacy
+    # 19-column header (missing sell_price_old) -- see $LegacyExpectedHeader
+    # above for why. Any other shape (missing/extra/renamed columns beyond
+    # this one known, confirmed historical variant) still quarantines.
+    $currentDiff = Compare-Object -ReferenceObject $ExpectedHeader -DifferenceObject $columns -CaseSensitive
+    $legacyDiff  = Compare-Object -ReferenceObject $LegacyExpectedHeader -DifferenceObject $columns -CaseSensitive
+    return ($null -eq $currentDiff) -or ($null -eq $legacyDiff)
 }
 
 function Get-FileNameDate {
