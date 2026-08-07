@@ -56,7 +56,7 @@ function Write-ReminderLog {
 }
 
 $reminderText = "Download this week's JD Global Parts Pricing Change Report"
-$reminderNotes = "Log in to pricednld.deere.com (2FA via SMS), download the latest weekly Change Report CSV, and place it in both New/ and Archive/ under OneLake Files/JDChangeReports_Landing/. Only the 4 most recent weeks are ever available -- don't let one roll off."
+$reminderNotes = "Log in to pricednld.deere.com (2FA via SMS), download the latest weekly Change Report CSV, and place it in both New/ and Archive/ under OneLake Files/JDChangeReports_Landing/. Only the 4 most recent weeks are ever available -- don't let one roll off. IMPORTANT: the file must be named exactly US.UPDCOMP.UPDATE.V2-YYYY-MM-DD.csv (matching the report's effective date). If your browser saves it with a suffix like ' (1).csv' (common on a repeat download), rename it back to the exact pattern before copying it in -- a wrong filename gets silently dropped with no error and no way to tell it failed."
 
 $exitCode = 0
 
