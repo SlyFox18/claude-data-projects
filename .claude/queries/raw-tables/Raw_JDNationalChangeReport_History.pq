@@ -48,11 +48,19 @@ not expected to ever fire based on the 4 files checked so far.
 
 DEFENSE-IN-DEPTH (carried over from Raw_PriceUpdate_History, same
 reasoning): missing-column tolerance via MissingField.UseNull, a
-malformed-filename guard before fixed-index NameParts access, and
-try/otherwise on every numeric/date conversion with a HasTypeConversionIssue
-flag. No known defect in this file family yet (unlike Raw_PriceUpdate_History's
-confirmed row-shift issue) -- this is precautionary, not reactive, cheap
-insurance given the sibling table needed exactly this the hard way.
+malformed-filename guard before fixed-index NameParts access, a
+try/otherwise guard around filename-date construction (see
+FilterToValidFileDates below), and try/otherwise on every numeric/date
+conversion with a HasTypeConversionIssue flag. No known defect in this
+file family yet (unlike Raw_PriceUpdate_History's confirmed row-shift
+issue) -- this is precautionary, not reactive, cheap insurance given the
+sibling table needed exactly this the hard way. UNLIKE the sibling query,
+none of these defenses are currently redundant/unreachable here: the
+sibling's equivalents are a belt-and-suspenders backstop behind
+Harvest-PriceUpdateFiles.ps1's own filename/header validation, but this
+file has no harvest script at all (Brian copies files into New/ by hand,
+per the design spec) -- so every guard below is the ONLY protection
+against a hard, batch-aborting error, not a backstop behind one.
 ============================================================================
 */
 
@@ -79,15 +87,31 @@ let
     // shape (prefix, YYYY, MM, DD) proceeds past this point.
     FilterToWellFormedNames = Table.SelectRows(AddNameParts, each List.Count([NameParts]) = 4),
 
+    // try/otherwise wraps BOTH Number.FromText (throws hard on a non-numeric
+    // token) and #date() (throws hard on a shape-valid-but-calendar-impossible
+    // date, e.g. day 30 in February) -- unlike Raw_PriceUpdate_History, no
+    // harvest script validates this filename's date before the file reaches
+    // New/ (Brian copies files in by hand), so this is the ONLY guard against
+    // that failure mode. A hard error here would abort the ENTIRE table
+    // write, not just one row -- exactly the class of incident that already
+    // happened for real in the sibling query (see its header comment).
     AddSourceFileDate = Table.AddColumn(FilterToWellFormedNames, "SourceFileDate", each
-        #date(Number.FromText([NameParts]{1}), Number.FromText([NameParts]{2}), Number.FromText([NameParts]{3})),
-        type date),
+        try #date(Number.FromText([NameParts]{1}), Number.FromText([NameParts]{2}), Number.FromText([NameParts]{3})) otherwise null,
+        type nullable date),
+
+    // Rows whose filename date failed to construct are excluded here rather
+    // than surfaced elsewhere (this dataflow has no Quarantine-writing
+    // capability of its own -- same reasoning as FilterToWellFormedNames
+    // above). A dropped row here is visible only as a refresh row count
+    // lower than expected, since there is no separate log sink from inside
+    // this M query.
+    FilterToValidFileDates = Table.SelectRows(AddSourceFileDate, each [SourceFileDate] <> null),
 
     // ------------------------------------------------------------------
     // Parse file content: comma-delimited, header row promoted (parses by
     // column NAME downstream via ExpandTableColumn, not position).
     // ------------------------------------------------------------------
-    AddParsedContent = Table.AddColumn(AddSourceFileDate, "ParsedContent", each
+    AddParsedContent = Table.AddColumn(FilterToValidFileDates, "ParsedContent", each
         Table.PromoteHeaders(
             Csv.Document([Content], [Delimiter = ",", Encoding = 1252, QuoteStyle = QuoteStyle.None]),
             [PromoteAllScalars = true]
@@ -176,9 +200,16 @@ let
     // ------------------------------------------------------------------
     // Safe numeric/date conversions -- try/otherwise per value, so one
     // row's malformed field degrades just that field to null instead of
-    // aborting the write for the entire batch.
+    // aborting the write for the entire batch. PartNumber is trimmed here
+    // too (not just "risky" per se, but every parsed value needs
+    // Text.Trim -- see FILE FORMAT note above about fixed-length trailing-
+    // space padding -- and PartNumber is a join key for future analysis
+    // against dim_Parts/InMaster, so an untrimmed trailing space here
+    // would silently break string-equality joins with no cheap fix later
+    // since this table loads in Append mode).
     // ------------------------------------------------------------------
     SafeConvertRiskyColumns = Table.TransformColumns(AddConversionIssueFlag, {
+        {"PartNumber", each Text.Trim(Text.From(_ ?? "")), type text},
         {"CurrentDNP", each try Number.From(Text.Trim(Text.From(_ ?? ""))) otherwise null, type nullable number},
         {"CurrentSLP", each try Number.From(Text.Trim(Text.From(_ ?? ""))) otherwise null, type nullable number},
         {"NewDNP", each try Number.From(Text.Trim(Text.From(_ ?? ""))) otherwise null, type nullable number},
@@ -187,10 +218,12 @@ let
     }),
 
     // ------------------------------------------------------------------
-    // Remaining type assignments (plain text) + final column order
+    // Remaining type assignments (plain text -- PartNumber was already
+    // trimmed and typed in SafeConvertRiskyColumns above, so it does not
+    // need to appear here) + final column order
     // ------------------------------------------------------------------
     ChangedTypes = Table.TransformColumnTypes(SafeConvertRiskyColumns, {
-        {"PartNumber", type text}, {"SourceFileName", type text}, {"SourceFileDate", type date}
+        {"SourceFileName", type text}, {"SourceFileDate", type date}
     }),
 
     FinalColumnOrder = Table.ReorderColumns(ChangedTypes, {
