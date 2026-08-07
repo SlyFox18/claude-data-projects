@@ -185,6 +185,7 @@ the assortment signal described above).
 | *(new)* | `SourceFileBranch` | Full raw branch code parsed from the **filename** (not file content), including any sub-branch letter (e.g. `11S`) — unlike `Branch`, this is NOT rolled up |
 | *(new)* | `SourceFileDate` | Date parsed from the **filename** (not file content) — paired with `SourceFileBranch`, same "from filename, not content" pattern |
 | *(new)* | `BranchMismatchFlag` | `true` if `SourceFileBranch` ≠ the raw in-file branch value (compared before either side is rolled up or type-converted) — data-quality tripwire only, does not block ingestion |
+| *(new)* | `HasTypeConversionIssue` | `true` if any numeric/date/branch field had a non-blank value that failed to convert cleanly — confirmed 2026-08-07: JD's export has a real, recurring row-shift defect (6 consecutive fields missing entirely on some rows, shifting everything after left by 6 positions). Affected fields degrade to `null` instead of failing the whole batch; this flag identifies those rows for review rather than letting them blend in as ordinary nulls |
 | *(new)* | `IngestedAt` | Load timestamp, using the existing DST-aware UTC→Central pattern (`.claude/queries/DATA-REFRESH-TEMPLATE.pq`) |
 
 ## Error Handling & Edge Cases
@@ -201,6 +202,18 @@ the assortment signal described above).
   successful append; the harvest script's copy step is filename-based (skip
   if already in `Archive/`). Re-running either side never double-copies or
   double-appends.
+- **Row-shift corruption (confirmed 2026-08-07):** JD's raw export has a
+  real, recurring defect where some rows are missing 6 consecutive
+  tab-delimited fields entirely (not left blank), shifting every field
+  after that point left by 6 positions — e.g. `EffectiveDate`'s real value
+  lands in `DealerReplacePrice`. Confirmed across 800+ rows in multiple
+  files spanning at least 2022-2026 via a direct scan of the full archive.
+  One instance of this produced a value that overflowed Int64 and aborted
+  an entire table write. Handled defensively (not correctively — an
+  affected row's true field boundaries aren't recoverable from the text
+  alone) via `try/otherwise` on every numeric/date/Int64 conversion in
+  `Raw_PriceUpdate_History.pq`, degrading just the affected fields to
+  `null` and setting `HasTypeConversionIssue = true` on that row.
 - **Historical backfill volume risk:** the first run copies potentially
   thousands of files into `New/` at once. If a single Dataflow Gen2 refresh
   can't handle that volume cleanly, the initial backfill may need to be
