@@ -34,8 +34,17 @@ analysis has real data to work with.
   confirmation the environment is sound).
 - **File naming:** `PRICEUPDATE_MM_DD_YYYY_BRANCH.TXT`, e.g.
   `PRICEUPDATE_08_02_2026_97.TXT` (branch 97) or `PRICEUPDATE_08_02_2026_1.TXT`
-  (branch 1). Branch is a 1–3 digit suffix. The folder contains other,
-  unrelated files — only files starting with `PRICEUPDATE` are in scope.
+  (branch 1). Branch is 1–3 digits, optionally followed by a single letter
+  sub-branch/department code, e.g. `PRICEUPDATE_08_28_2022_11S.TXT` (branch
+  11, sub-location "S"). Confirmed 2026-08-07 against the real folder: ~6%
+  of all files across all 10 years use this letter-suffixed shape, and the
+  in-file `branch` column itself carries the same suffix (verified against
+  `PRICEUPDATE_08_28_2022_11S.TXT`'s content, where every row's `branch`
+  value is literally `11S`). Per Brian, the sub-branch letter is not
+  meaningful for this data and is always rolled up to the main branch
+  number for analysis — see Raw Table Schema for how this is implemented.
+  The folder contains other, unrelated files — only files starting with
+  `PRICEUPDATE` are in scope.
 - **File format:** tab-delimited text, first row is a header (`branch`,
   `inmaster_franchise`, `part_no`, `inmanuf_list_price`,
   `inmaster_list_price`, `cc_price_decrease`, `bin_location`, `category`,
@@ -43,13 +52,24 @@ analysis has real data to work with.
   `inmanuf_sell_price1`, `inmaster_sell_price1`, `cost_diff`, `list_diff`,
   `sel1_diff`, `effective_date`, `update_code`, `part_desc`,
   `sell_price_old`).
-- **History depth:** files observed going back to at least 2018; exact
-  earliest date and total file count are unknown and need to be checked
-  before/during implementation. File sizes are small (1 KB – 66 KB
-  observed), so total historical volume is expected to be at most a few GB
-  even across ~8 years × ~20 branches.
-- **Column stability across years:** unconfirmed. The design assumes it may
-  have drifted and parses defensively (see Error Handling).
+- **History depth:** confirmed 2026-08-07 via `Inventory-PriceUpdateFolder.ps1`
+  against the real folder: 4,592 total files, all 4,592 matching the (now
+  letter-suffix-aware) filename pattern, 0 failures — before the sub-branch
+  regex fix, the old digits-only pattern wrongly failed 278 of these (the
+  letter-suffixed ones). Spans **2016-12-25 to 2026-08-02** (further back
+  than the "~2018" originally recalled), 548 MB total, 22 distinct main
+  branches. Well under the plan's chunking threshold (~2 GB / ~20,000
+  files) — the historical backfill (Task 10) can run as a single unchunked
+  pass.
+- **Column stability across years:** confirmed 2026-08-07 via
+  `Compare-PriceUpdateSchema.ps1` against real 2018/2020/2022/2026 sample
+  files: one clean, single drift event — files before some point between
+  Jan 2018 and Feb 2020 have 19 columns (missing `sell_price_old`); every
+  file from ~2020 onward consistently has all 20. No other column
+  differences found across the sampled years. Already handled correctly by
+  the existing by-name, `MissingField.UseNull`-defended parsing (see Raw
+  Table Schema / Error Handling) — older files simply get `SellPriceOld =
+  null`, no further changes needed.
 - **Important business fact about branch:** pricing fields
   (list/replace/sell prices, the `*_diff` columns) are attributes of
   **part + effective date**, not of branch — the same part's price change on
@@ -141,7 +161,7 @@ the assortment signal described above).
 
 | Source column | Raw table column | Notes |
 |---|---|---|
-| `branch` | `Branch` | From file content |
+| `branch` | `Branch` | From file content, **rolled up to the main branch number** (e.g. `11S` → `11`) — sub-branch letter is not meaningful for this data per Brian; the full raw code is preserved separately in `SourceFileBranch` |
 | `inmaster_franchise` | `Franchise` | |
 | `part_no` | `PartNumber` | |
 | `inmanuf_list_price` | `ManufacturerListPrice` | |
@@ -162,9 +182,9 @@ the assortment signal described above).
 | `part_desc` | `PartDescription` | |
 | `sell_price_old` | `SellPriceOld` | |
 | *(new)* | `SourceFileName` | Full filename, for traceability/reprocessing |
-| *(new)* | `SourceFileBranch` | Branch parsed from the **filename** (not file content) |
+| *(new)* | `SourceFileBranch` | Full raw branch code parsed from the **filename** (not file content), including any sub-branch letter (e.g. `11S`) — unlike `Branch`, this is NOT rolled up |
 | *(new)* | `SourceFileDate` | Date parsed from the **filename** (not file content) — paired with `SourceFileBranch`, same "from filename, not content" pattern |
-| *(new)* | `BranchMismatchFlag` | `true` if `SourceFileBranch` ≠ in-file `Branch` — data-quality tripwire only, does not block ingestion |
+| *(new)* | `BranchMismatchFlag` | `true` if `SourceFileBranch` ≠ the raw in-file branch value (compared before either side is rolled up or type-converted) — data-quality tripwire only, does not block ingestion |
 | *(new)* | `IngestedAt` | Load timestamp, using the existing DST-aware UTC→Central pattern (`.claude/queries/DATA-REFRESH-TEMPLATE.pq`) |
 
 ## Error Handling & Edge Cases
@@ -174,9 +194,9 @@ the assortment signal described above).
   `null` rather than failing the row. A file whose header row doesn't match
   a recognizable pattern at all routes to `Quarantine/` instead of blocking
   the day's whole batch.
-- **Filename parsing:** branch suffix is 1–3 digits; date is
-  `MM_DD_YYYY`. Filenames that don't match the expected pattern route to
-  `Quarantine/`.
+- **Filename parsing:** branch suffix is 1–3 digits, optionally followed by
+  a single sub-branch letter (e.g. `11S`); date is `MM_DD_YYYY`. Filenames
+  that don't match the expected pattern route to `Quarantine/`.
 - **Duplicate/re-run safety:** `New/` only clears after a confirmed
   successful append; the harvest script's copy step is filename-based (skip
   if already in `Archive/`). Re-running either side never double-copies or
