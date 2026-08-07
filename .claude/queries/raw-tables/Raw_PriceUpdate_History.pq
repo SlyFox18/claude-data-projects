@@ -104,25 +104,26 @@ this query currently isolates that failure per-file, so it's a known,
 currently-unmitigated residual risk to watch for during the live Fabric
 preview.
 
-UNMITIGATED RISK (value-level type conversion, not addressed by this file):
-ChangedTypes converts Branch and all price/quantity columns to numeric types
-with no try/otherwise wrapping. This is a distinct failure surface from the
-file-level risk above -- here the file parses fine as CSV, but a single
-stray non-numeric value in any one file in that day's New/ batch (a blank
-string, "N/A", a thousands separator, or anything else JD's export might
-emit in a numeric-looking column) risks becoming an error cell that could
-fail the Lakehouse write for the entire batch, not just quarantine the one
-bad row or file. The one previously-known instance of this for Branch
-specifically (a sub-branch letter suffix, e.g. "11S") is now handled by
-NormalizeBranchToMain below, which strips non-digit characters before this
-step runs -- but NormalizeBranchToMain would itself produce an empty string
-(and therefore still fail Int64.Type conversion) if a branch value were
-ever ALL non-digit characters. No such value has been observed in any real
-file to date (2016-2026); every confirmed sub-branch code is digits
-followed by exactly one letter. Fixing the general case properly -- e.g.
-try/otherwise per column, or using a Fabric Dataflow Gen2 "keep errors"
-destination setting -- is a decision best made once real files are visible
-during the live Fabric preview (a separate, later manual task), not here.
+MITIGATED RISK (value-level type conversion) -- CONFIRMED AND FIXED
+2026-08-07 during the live historical backfill: a real row in JD's raw
+export triggered exactly the failure this note originally predicted --
+"The number is out of range of a 64 bit integer value" -- which aborted
+the ENTIRE table write, not just one row. Root cause (confirmed by
+directly scanning all 4,592 archived files): JD's export has a genuine,
+recurring defect where some rows are missing 6 consecutive tab-delimited
+fields entirely (not left blank), causing every field after that point to
+shift left by 6 positions -- e.g. EffectiveDate's real value lands in
+DealerReplacePrice, PartDescription's real value lands in
+ManufacturerSellPrice1. 800+ rows across multiple files hit this exact
+pattern. Fixed via AddConversionIssueFlag + SafeConvertRiskyColumns below:
+every numeric/date/Int64 conversion now uses try/otherwise, so an affected
+row's garbled fields degrade to null instead of failing the whole batch,
+and HasTypeConversionIssue flags the row so it's identifiable later rather
+than silently blending in as an ordinary null. This does not (and cannot)
+un-shift a corrupted row's fields back into their correct positions -- the
+real field boundaries for an affected row are unrecoverable from the text
+alone -- it only prevents one bad row from taking down every other file's
+genuinely good data in the same batch.
 ============================================================================
 */
 
@@ -285,17 +286,82 @@ let
     }),
 
     // ------------------------------------------------------------------
-    // Types + final column order
+    // Data-quality tripwire: flags any row where a numeric/date/branch
+    // field has a non-blank value that fails to convert cleanly.
+    //
+    // CONFIRMED 2026-08-07 during the live historical backfill: JD's raw
+    // export has a genuine, recurring row-shift defect -- some rows are
+    // missing 6 consecutive tab-delimited fields entirely (from
+    // inmanuf_replace_price through list_diff), not just left blank, so
+    // every field after that point shifts left by 6 positions. Symptom
+    // confirmed directly in real files: EffectiveDate's real value (e.g.
+    // "1/31/2022") lands in what should be DealerReplacePrice, and
+    // PartDescription's real value (e.g. "Oil Filter") lands in what
+    // should be ManufacturerSellPrice1. A hit of this same pattern
+    // elsewhere produced a value that overflowed Int64 and aborted the
+    // ENTIRE table write -- not just that one row -- with "The number is
+    // out of range of a 64 bit integer value." A direct scan of all 4,592
+    // archived files found 800+ rows hitting this exact shift, across
+    // multiple files spanning at least 2022-2026. This is a genuine JD
+    // export defect, not something introduced by this query or the
+    // harvest script, and it cannot be un-shifted after the fact (the
+    // real field boundaries for an affected row are unrecoverable from
+    // the text alone) -- so the fix here is defensive (isolate the
+    // damage to just the affected row's fields), not corrective.
+    //
+    // Computed BEFORE SafeConvertRiskyColumns below so it inspects the
+    // RAW text values, not already-nulled ones.
     // ------------------------------------------------------------------
-    ChangedTypes = Table.TransformColumnTypes(NormalizeBranchToMain, {
-        {"Branch", Int64.Type}, {"Franchise", type text}, {"PartNumber", type text},
-        {"ManufacturerListPrice", type number}, {"DealerListPrice", type number},
-        {"ListPriceChangePercent", type number}, {"BinLocation", type text}, {"Category", type text},
-        {"OnHandQty", type number}, {"ManufacturerReplacePrice", type number},
-        {"DealerReplacePrice", type number}, {"ManufacturerSellPrice1", type number},
-        {"DealerSellPrice1", type number}, {"CostDiff", type number}, {"ListDiff", type number},
-        {"SellPrice1Diff", type number}, {"EffectiveDate", type date}, {"UpdateCode", type text},
-        {"PartDescription", type text}, {"SellPriceOld", type number},
+    AddConversionIssueFlag = Table.AddColumn(NormalizeBranchToMain, "HasTypeConversionIssue", each
+        let
+            NumericValues = {
+                [ManufacturerListPrice], [DealerListPrice], [ListPriceChangePercent], [OnHandQty],
+                [ManufacturerReplacePrice], [DealerReplacePrice], [ManufacturerSellPrice1],
+                [DealerSellPrice1], [CostDiff], [ListDiff], [SellPrice1Diff], [SellPriceOld]
+            },
+            IsNumericIssue = (v) =>
+                let t = Text.Trim(Text.From(v ?? "")) in
+                t <> "" and (try Number.From(t) otherwise null) = null,
+            DateText = Text.Trim(Text.From([EffectiveDate] ?? "")),
+            IsDateIssue = DateText <> "" and (try Date.From(DateText) otherwise null) = null,
+            BranchText = Text.Trim(Text.From([Branch] ?? "")),
+            IsBranchIssue = BranchText <> "" and (try Int64.From(BranchText) otherwise null) = null
+        in
+            List.AnyTrue(List.Transform(NumericValues, IsNumericIssue)) or IsDateIssue or IsBranchIssue,
+        type logical),
+
+    // ------------------------------------------------------------------
+    // Safe numeric/date/Int64 conversions -- try/otherwise per value, so
+    // one row's shifted/garbled field (flagged above) degrades just that
+    // field to null instead of aborting the write for the entire batch.
+    // This directly replaces the plain Table.TransformColumnTypes call
+    // that was here before, which is exactly what let a single bad row
+    // take down the whole table refresh.
+    // ------------------------------------------------------------------
+    SafeConvertRiskyColumns = Table.TransformColumns(AddConversionIssueFlag, {
+        {"Branch", each try Int64.From(Text.Trim(Text.From(_ ?? ""))) otherwise null, Int64.Type},
+        {"ManufacturerListPrice", each try Number.From(Text.Trim(Text.From(_ ?? ""))) otherwise null, type nullable number},
+        {"DealerListPrice", each try Number.From(Text.Trim(Text.From(_ ?? ""))) otherwise null, type nullable number},
+        {"ListPriceChangePercent", each try Number.From(Text.Trim(Text.From(_ ?? ""))) otherwise null, type nullable number},
+        {"OnHandQty", each try Number.From(Text.Trim(Text.From(_ ?? ""))) otherwise null, type nullable number},
+        {"ManufacturerReplacePrice", each try Number.From(Text.Trim(Text.From(_ ?? ""))) otherwise null, type nullable number},
+        {"DealerReplacePrice", each try Number.From(Text.Trim(Text.From(_ ?? ""))) otherwise null, type nullable number},
+        {"ManufacturerSellPrice1", each try Number.From(Text.Trim(Text.From(_ ?? ""))) otherwise null, type nullable number},
+        {"DealerSellPrice1", each try Number.From(Text.Trim(Text.From(_ ?? ""))) otherwise null, type nullable number},
+        {"CostDiff", each try Number.From(Text.Trim(Text.From(_ ?? ""))) otherwise null, type nullable number},
+        {"ListDiff", each try Number.From(Text.Trim(Text.From(_ ?? ""))) otherwise null, type nullable number},
+        {"SellPrice1Diff", each try Number.From(Text.Trim(Text.From(_ ?? ""))) otherwise null, type nullable number},
+        {"SellPriceOld", each try Number.From(Text.Trim(Text.From(_ ?? ""))) otherwise null, type nullable number},
+        {"EffectiveDate", each try Date.From(Text.Trim(Text.From(_ ?? ""))) otherwise null, type nullable date}
+    }),
+
+    // ------------------------------------------------------------------
+    // Remaining type assignments (plain text -- Text.From never throws,
+    // no try/otherwise needed) + final column order
+    // ------------------------------------------------------------------
+    ChangedTypes = Table.TransformColumnTypes(SafeConvertRiskyColumns, {
+        {"Franchise", type text}, {"PartNumber", type text}, {"BinLocation", type text},
+        {"Category", type text}, {"UpdateCode", type text}, {"PartDescription", type text},
         {"SourceFileName", type text}, {"SourceFileBranch", type text}, {"SourceFileDate", type date}
     }),
 
@@ -305,7 +371,8 @@ let
         "ManufacturerReplacePrice", "DealerReplacePrice", "ManufacturerSellPrice1",
         "DealerSellPrice1", "SellPriceOld", "CostDiff", "ListDiff", "SellPrice1Diff",
         "BinLocation", "OnHandQty", "UpdateCode",
-        "SourceFileName", "SourceFileBranch", "SourceFileDate", "BranchMismatchFlag", "IngestedAt"
+        "SourceFileName", "SourceFileBranch", "SourceFileDate", "BranchMismatchFlag",
+        "HasTypeConversionIssue", "IngestedAt"
     })
 in
     FinalColumnOrder
