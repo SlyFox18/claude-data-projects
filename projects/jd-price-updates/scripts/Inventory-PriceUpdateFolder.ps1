@@ -5,7 +5,10 @@
     Lists every file matching PRICEUPDATE_*.TXT in -SourcePath, parses the
     branch and date out of each filename, and reports summary stats: file
     count, oldest/newest date, total size, distinct branch count, and any
-    filenames that don't match the expected naming pattern.
+    filenames that don't match the expected naming pattern. Branch numbers
+    may carry a trailing sub-branch/department letter in the filename (e.g.
+    "11S", "93C") -- these are rolled up to the main branch number (11, 93)
+    for reporting here.
 .PARAMETER SourcePath
     Path to scan. Pass the real network folder path when running against
     production; pass a local test folder path when developing/testing.
@@ -20,7 +23,12 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-$FilenamePattern = '^PRICEUPDATE_(\d{2})_(\d{2})_(\d{4})_(\d{1,3})\.TXT$'
+# Branch group accepts an optional trailing single letter (e.g. "11S",
+# "93C") -- confirmed against real data 2026-08-07: ~6% of all files use a
+# sub-branch/department code, not a bare branch number. Branch below is
+# reported as the rolled-up main branch number (e.g. "11S" -> 11), per
+# how this data is normally tied back to the main branch for analysis.
+$FilenamePattern = '^PRICEUPDATE_(\d{2})_(\d{2})_(\d{4})_(\d{1,3}[A-Za-z]?)\.TXT$'
 
 $allFiles = Get-ChildItem -Path $SourcePath -Filter "PRICEUPDATE_*.TXT" -File
 
@@ -35,9 +43,12 @@ $parsed = foreach ($f in $allFiles) {
             [ref]$fileDate)
 
         if ($isValidDate) {
+            # Roll a sub-branch code (e.g. "11S") up to its main branch
+            # number (11) by stripping any trailing non-digit character.
+            $mainBranch = [int]([regex]::Match($Matches[4], '^\d+').Value)
             [PSCustomObject]@{
                 FileName  = $f.Name
-                Branch    = [int]$Matches[4]
+                Branch    = $mainBranch
                 FileDate  = $fileDate
                 SizeBytes = $f.Length
                 Matched   = $true

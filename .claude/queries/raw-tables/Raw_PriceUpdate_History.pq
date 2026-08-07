@@ -18,6 +18,16 @@ assortment signal, not a duplicate. See design spec for why the natural key
 for future price-trend analysis is PartNumber + EffectiveDate, not
 Branch + PartNumber + EffectiveDate.)
 
+BRANCH CODES -- confirmed with Brian 2026-08-07: filenames (and the in-file
+`branch` column itself) sometimes carry a sub-branch/department letter
+suffix (e.g. "11S", "93C", "4B" -- a physical branch's Service/Bulk/Inside-
+sales/etc. sub-location). ~6% of all files across all 10 years of history
+use this shape. Per Brian, the sub-branch distinction is not meaningful for
+this data and should always be rolled up to the main branch number for
+analysis. Accordingly: `Branch` (the final Int64 column) is the rolled-up
+main branch (e.g. 11), while `SourceFileBranch` preserves the full raw code
+exactly as it appeared in the filename (e.g. "11S") for traceability.
+
 SOURCE: OneLake Lakehouse Files -- LH_Master_Data / Files /
 PriceUpdate_Landing / New (folder connector, configured via the Dataflow
 Gen2 "Get Data > Lakehouse > Files" wizard -- the wizard-generated step
@@ -102,10 +112,17 @@ stray non-numeric value in any one file in that day's New/ batch (a blank
 string, "N/A", a thousands separator, or anything else JD's export might
 emit in a numeric-looking column) risks becoming an error cell that could
 fail the Lakehouse write for the entire batch, not just quarantine the one
-bad row or file. Fixing this properly -- e.g. try/otherwise per column, or
-using a Fabric Dataflow Gen2 "keep errors" destination setting -- is a
-decision best made once real files are visible during the live Fabric
-preview (a separate, later manual task), not here.
+bad row or file. The one previously-known instance of this for Branch
+specifically (a sub-branch letter suffix, e.g. "11S") is now handled by
+NormalizeBranchToMain below, which strips non-digit characters before this
+step runs -- but NormalizeBranchToMain would itself produce an empty string
+(and therefore still fail Int64.Type conversion) if a branch value were
+ever ALL non-digit characters. No such value has been observed in any real
+file to date (2016-2026); every confirmed sub-branch code is digits
+followed by exactly one letter. Fixing the general case properly -- e.g.
+try/otherwise per column, or using a Fabric Dataflow Gen2 "keep errors"
+destination setting -- is a decision best made once real files are visible
+during the live Fabric preview (a separate, later manual task), not here.
 ============================================================================
 */
 
@@ -215,17 +232,21 @@ let
     // ------------------------------------------------------------------
     // Data-quality tripwire: filename branch vs in-file branch.
     // NOTE: both sides are compared as trimmed text, at this point still
-    // raw strings straight out of Csv.Document (Branch is not yet
-    // Int64.Type -- that conversion happens later in ChangedTypes). No
-    // leading-zero normalization is applied. Per the design spec's
-    // observed filenames (PRICEUPDATE_08_02_2026_97.TXT, _..._1.TXT) and
-    // Task 3's filename regex (\d{1,3}, no zero-padding requirement),
-    // branch numbers are not expected to be zero-padded in either the
-    // filename or the in-file column, so "097" vs "97" is not expected in
-    // practice -- but this has not been confirmed against real historical
-    // files, so treat any BranchMismatchFlag = true rows as worth a manual
-    // look during Fabric preview rather than assuming they're all genuine
-    // JD data-quality issues.
+    // raw strings straight out of Csv.Document -- BEFORE NormalizeBranchToMain
+    // strips any sub-branch letter and BEFORE ChangedTypes converts Branch
+    // to Int64.Type (both happen later, below). This is deliberate: the
+    // comparison should validate the filename and in-file values agree on
+    // the FULL raw code (e.g. "11S" vs "11S"), not just the rolled-up main
+    // branch -- confirmed against a real file (PRICEUPDATE_08_28_2022_11S.TXT)
+    // that the in-file `branch` column carries the same sub-branch letter as
+    // the filename. No leading-zero normalization is applied. Per the design
+    // spec's observed filenames (PRICEUPDATE_08_02_2026_97.TXT, _..._1.TXT)
+    // and Task 3's filename regex, branch numbers are not expected to be
+    // zero-padded in either the filename or the in-file column, so "097" vs
+    // "97" is not expected in practice -- but this has not been confirmed
+    // against every historical file, so treat any BranchMismatchFlag = true
+    // rows as worth a manual look during Fabric preview rather than assuming
+    // they're all genuine JD data-quality issues.
     // ------------------------------------------------------------------
     AddBranchMismatchFlag = Table.AddColumn(RenameColumns, "BranchMismatchFlag", each
         Text.Trim(Text.From([SourceFileBranch])) <> Text.Trim(Text.From([Branch])), type logical),
@@ -249,9 +270,24 @@ let
     AddIngestedAt = Table.AddColumn(AddBranchMismatchFlag, "IngestedAt", each LocalNow, type datetime),
 
     // ------------------------------------------------------------------
+    // Roll a sub-branch code (e.g. "11S") up to its main branch number
+    // (11) by stripping any trailing non-digit character(s) -- confirmed
+    // with Brian 2026-08-07 this is the correct, expected behavior (sub-
+    // branch distinction is not meaningful for this data). Must happen
+    // BEFORE ChangedTypes converts Branch to Int64.Type below: the raw
+    // in-file branch value can be "11S", which Int64.Type conversion
+    // would otherwise throw a hard, batch-failing error on. This does not
+    // touch SourceFileBranch, which intentionally keeps the full raw code
+    // (including the letter) for traceability.
+    // ------------------------------------------------------------------
+    NormalizeBranchToMain = Table.TransformColumns(AddIngestedAt, {
+        {"Branch", each Text.Select(_, {"0".."9"}), type text}
+    }),
+
+    // ------------------------------------------------------------------
     // Types + final column order
     // ------------------------------------------------------------------
-    ChangedTypes = Table.TransformColumnTypes(AddIngestedAt, {
+    ChangedTypes = Table.TransformColumnTypes(NormalizeBranchToMain, {
         {"Branch", Int64.Type}, {"Franchise", type text}, {"PartNumber", type text},
         {"ManufacturerListPrice", type number}, {"DealerListPrice", type number},
         {"ListPriceChangePercent", type number}, {"BinLocation", type text}, {"Category", type text},

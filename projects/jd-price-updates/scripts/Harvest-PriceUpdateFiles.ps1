@@ -5,7 +5,9 @@
 .DESCRIPTION
     For each PRICEUPDATE_*.TXT file in -SourceFolderPath not already present
     in <LandingRootPath>\Archive:
-      - Validates the filename matches PRICEUPDATE_MM_DD_YYYY_BRANCH.TXT
+      - Validates the filename matches PRICEUPDATE_MM_DD_YYYY_BRANCH.TXT,
+        where BRANCH is 1-3 digits optionally followed by a single letter
+        sub-branch/department code (e.g. "97", "11S", "93C")
       - Validates the file's header row (first line, tab-delimited) matches
         the expected 20-column layout
       - If both checks pass: copies the file into both New\ and Archive\
@@ -78,7 +80,20 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-$FilenamePattern = '^PRICEUPDATE_(\d{2})_(\d{2})_(\d{4})_(\d{1,3})\.TXT$'
+# Branch group accepts an optional trailing single letter (e.g. "11S",
+# "93C", "4B") -- confirmed against real data 2026-08-07: ~6% of all files
+# across all 10 years of history use a sub-branch/department code (a
+# physical branch's Service/Bulk/Inside-sales/etc. sub-location), not a
+# bare branch number. These are real, in-scope price-change data -- NOT
+# malformed filenames -- and must not be quarantined. The raw sub-branch
+# code (e.g. "11S") is captured as-is by this regex's group 4; rolling it
+# up to the main numeric branch (e.g. 11) for analysis happens downstream,
+# in Raw_PriceUpdate_History.pq, not here. Only a SINGLE trailing letter is
+# accepted -- every confirmed real example (11S, 93C, 4B) is one letter.
+# A hypothetical multi-letter sub-branch code would be quarantined rather
+# than silently mis-parsed, which is the safer failure mode if that ever
+# turns out to be wrong.
+$FilenamePattern = '^PRICEUPDATE_(\d{2})_(\d{2})_(\d{4})_(\d{1,3}[A-Za-z]?)\.TXT$'
 
 $ExpectedHeader = @(
     "branch", "inmaster_franchise", "part_no", "inmanuf_list_price",
