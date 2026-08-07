@@ -906,7 +906,7 @@ Check the log file at `projects/jd-price-updates/logs/harvest-<today>.log` and c
 
 - [ ] **Step 2: Paste the parsing logic** — open the Advanced Editor, paste the query from Task 5's `.pq` file, and rename the placeholder `Source = LakehouseFilesFolder_PriceUpdateLandingNew` line's right-hand side to whatever the wizard actually generated for the folder-connection step in Step 1.
 
-- [ ] **Step 3: Preview** — confirm the preview shows the 24 expected output columns (`Branch`, `PartNumber`, `EffectiveDate`, ... `BranchMismatchFlag`, `IngestedAt`) with no errors, using the files Task 8 Step 3 already landed in `New/`.
+- [ ] **Step 3: Preview** — confirm the preview shows the 25 expected output columns (`Branch`, `PartNumber`, `EffectiveDate`, ... `BranchMismatchFlag`, `IngestedAt`) with no errors, using the files Task 8 Step 3 already landed in `New/`.
 
 - [ ] **Step 4: Set the destination** — Lakehouse → `LH_Master_Data` → new table `Raw_PriceUpdate_History` → Update method **Append**. Publish.
 
