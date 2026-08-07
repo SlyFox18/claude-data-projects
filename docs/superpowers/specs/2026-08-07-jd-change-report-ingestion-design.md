@@ -138,12 +138,20 @@ Scheduled Task:
   reminder text. Reuses the existing, already-built `/capture` endpoint
   in `personal-dashboard/app.py` — no changes needed to Reynard itself for
   this specific integration.
-- **Email** — reuses the same Microsoft Graph-based auth pattern already
-  working in `projects/fabric-monitoring` for Teams notifications
-  (`Connect-MgGraph`), adding a `Mail.Send` scope alongside the existing
-  `ChannelMessage.Send`. This may require one interactive
-  `Connect-MgGraph -Scopes "Mail.Send"` consent grant the first time it
-  runs — a manual, one-time step.
+- **Email** — via Outlook COM automation (`New-Object -ComObject
+  Outlook.Application`), driving the already-signed-in Outlook desktop app
+  on this machine to send the reminder. Chosen after checking:
+  `fabric-monitoring`'s Teams notification is actually a plain webhook URL
+  (`Invoke-RestMethod` to an Incoming Webhook), not Microsoft Graph — so
+  there's no existing *unattended* Graph auth pattern in this repo to
+  reuse, and building one from scratch (app registration or cached-token
+  flow) would be disproportionate effort for a low-priority reminder.
+  Outlook COM needs no API auth at all, at the cost of requiring Outlook
+  desktop to be installed and configured on this machine. **Known risk:**
+  Outlook can show a security prompt ("A program is trying to send an
+  email on your behalf") that would block unattended sending — needs a
+  one-time manual test run to confirm this doesn't fire, or a fix if it
+  does (e.g. an Outlook Trust Center / Object Model Guard exception).
 - **Timing:** weekly, targeting Saturday (JD's observed posting day, based
   on the Available/Effective date pattern seen on the portal — worth
   confirming against a few more weeks of real posting behavior before
