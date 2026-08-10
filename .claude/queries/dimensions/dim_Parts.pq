@@ -21,8 +21,17 @@ Source Dependencies: jdis_Part_Information (Raw lakehouse table)
      production data: DZ111141 has 21 source rows (19x Franchise='D',
      1x'TD', 1x'td') but Table.Distinct picked one of the 2 rare rows.
      Same pattern confirmed for 19M7966, Z47990, R78055, R71387, and
-     ~23,000 PartNumbers total. Now uses Table.Group with a per-column
-     majority-vote (mode) for the 6 business filter columns - see STEP 1.
+     ~23,000 PartNumbers total. Uses a per-column majority-vote (mode) for
+     the 6 business filter columns - see STEP 1.
+   - RESTRUCTURED 2026-08-10 (PERFORMANCE): the majority-vote fix above
+     was first implemented with a `ModeOfList` helper invoked BY
+     Table.Group's per-PartNumber aggregation function - i.e. a Table.Group
+     nested inside another Table.Group, re-run ~1M times. That version was
+     logically correct (code-reviewed and merged) but hung/would not load
+     in the live Fabric Dataflow Gen2 preview against the real ~1M-row
+     source table - a confirmed production performance failure. Replaced
+     with a two-level Table.Group pattern run ONCE per business-filter
+     column instead of once per PartNumber group - see STEP 1.
 ✅ OPTIMIZATION #3: Consolidated Text Cleaning - 9 fields in 1 pass
    - Maintains original speed, better code organization
 ✅ OPTIMIZATION #4: Removed Text.Proper on Description (BIGGEST WIN)
@@ -67,15 +76,14 @@ let
     Same pattern confirmed for 19M7966, Z47990, R78055, R71387, and roughly
     23,000 PartNumbers total.
 
-    FIX: Table.Group by PartNumber, with each of the 6 business filter
-    columns (Franchise, Source, SLC, DealerGroupCode, CommodityCode,
-    VendorCode) independently taking a per-column majority-vote (mode) via
-    the ModeOfList helper below. "Independently" is deliberate: these are
-    separate classification facts about the same real part, and each one
-    should be decided by its own majority - not coupled to whichever single
-    row happens to be picked as a "winner" overall. All other columns
-    (Description, and the numeric/operational snapshot columns) keep the
-    prior simple behavior of taking a representative single value
+    FIX: each of the 6 business filter columns (Franchise, Source, SLC,
+    DealerGroupCode, CommodityCode, VendorCode) independently takes a
+    per-column majority-vote (mode). "Independently" is deliberate: these
+    are separate classification facts about the same real part, and each
+    one should be decided by its own majority - not coupled to whichever
+    single row happens to be picked as a "winner" overall. All other
+    columns (Description, and the numeric/operational snapshot columns)
+    keep the prior simple behavior of taking a representative single value
     (first non-null) - majority-vote doesn't apply the same way to
     current-state snapshot values, and Description's casing/formatting
     variance across a part's rows is an already-accepted tradeoff (see
@@ -90,6 +98,53 @@ let
     same part. This is a reasonable, minor, and intentional tradeoff (not a
     regression to fix), consistent with how the business filter columns
     already work - flagged here so it's not mistaken for unchanged behavior.
+
+    ⚡ PERFORMANCE RESTRUCTURING (2026-08-10): the majority-vote logic above
+    was first implemented as a `ModeOfList` helper function invoked BY
+    Table.Group's per-PartNumber-group aggregation callback - i.e. a SECOND,
+    independent Table.Group (plus its own Table.Sort) nested inside and
+    freshly re-run by the FIRST Table.Group's aggregation function, once per
+    distinct PartNumber (~1M times) x 6 business filter columns = ~6 million
+    nested Table.Group/Table.Sort invocations. That version was logically
+    correct - proven via DuckDB SQL prototyping and confirmed in code review
+    - but when the user pasted it into the live Fabric Dataflow Gen2
+    Advanced Editor, the query preview hung/would not load against the real
+    ~1M-row jdis_Part_Information table. This is a real, user-reported
+    production performance failure, not a hypothetical concern, and the
+    root cause is well-established: nesting Table.Group inside another
+    Table.Group's per-group aggregation function is a severe anti-pattern
+    for the M engine at this scale, regardless of correctness.
+
+    THE RESTRUCTURING: replaced the per-group nested-Table.Group pattern
+    with a two-level Table.Group pattern run ONCE per business filter
+    column (not once per PartNumber group), for each of the 6 columns
+    independently:
+      1) Normalize (trim + upper-case) and drop blanks, then run ONE
+         Table.Group over the FULL source table by {PartNumber, Value},
+         counting rows in each combination -> a much smaller table: one
+         row per distinct (PartNumber, value) pair actually observed, with
+         a VoteCount. (`<Column>Votes_Filtered` -> `_Normalized` -> `_Counts`)
+      2) Table.Sort that small table by PartNumber ascending, then VoteCount
+         descending. (`_Sorted`)
+      3) Run a SECOND Table.Group, by PartNumber alone, over that already-
+         sorted small table, taking `List.First` of the value column
+         (`_Mode`). Because of the sort in step 2, the first row within
+         each PartNumber group is guaranteed to be the highest-vote-count
+         row, so `List.First` is a cheap O(1) lookup per group with NO
+         further sorting or grouping inside the aggregation function -
+         unlike the old ModeOfList, which called Table.Group AGAIN inside
+         this step.
+    The 6 resulting `<Column>_Mode` tables (one row per PartNumber that had
+    at least one non-blank value for that column) are then left-joined back
+    onto `EverythingElseByPart` (the FirstNonNullOfList-based "everything
+    else" columns, computed with a single ordinary Table.Group over the
+    full table - unchanged, since that was never the performance problem)
+    to reassemble the new `DeduplicateEarly`.
+    Total Table.Group calls in the new version: 13 (2 per business filter
+    column x 6, plus 1 for "everything else"), each executed ONCE against
+    the full or a reduced table - versus the old version's single outer
+    Table.Group call that itself triggered ~6 million further nested
+    Table.Group/Table.Sort calls from inside ModeOfList.
 
     ⚠️ VENDORCODE IS A DIFFERENT KIND OF CASE - NOT THE SAME BUG, DON'T
     TREAT ITS "FIX" AS FULLY SOLVED (confirmed 2026-08-10, investigated
@@ -127,30 +182,6 @@ let
         [PartNumber] <> null and [PartNumber] <> ""
     ),
 
-    // Reusable helper: mode (most frequent non-blank value) of a list.
-    // M has no built-in List.Mode. Values are trimmed AND upper-cased before
-    // votes are counted, so case variants of the same real value (e.g. "D"
-    // vs "d") are counted as ONE cluster rather than splitting the vote -
-    // without this, a genuinely rare-but-differently-cased minority value
-    // (e.g. "TD") could outnumber either individual case-variant of the true
-    // majority while still losing to their combined total. STEP 3 uppercases
-    // the winning value again anyway, so returning it upper-cased here has
-    // no observable effect on the final stored value - it only changes how
-    // votes are tallied.
-    ModeOfList = (lst as list) as any =>
-        let
-            cleaned = List.Select(List.Transform(lst, each Text.Upper(Text.Trim(Text.From(_ ?? "")))), each _ <> ""),
-            counted = if List.IsEmpty(cleaned) then null else
-                Table.Group(
-                    Table.FromList(cleaned, Splitter.SplitByNothing(), {"Value"}),
-                    {"Value"},
-                    {{"Count", each Table.RowCount(_), Int64.Type}}
-                ),
-            result = if counted = null or Table.IsEmpty(counted) then null else
-                Table.Sort(counted, {{"Count", Order.Descending}}){0}[Value]
-        in
-            result,
-
     // Reusable helper: first non-null value of a list. The SELECTION algorithm
     // itself (first non-null) is unchanged from before this fix, but it's now
     // applied independently per column against the group rather than picking
@@ -163,25 +194,84 @@ let
         in
             result,
 
-    // Deduplicate EARLY via majority-vote per business filter column
-    // (process unique parts only, same "process fewer rows downstream" win
-    // as before - see performance note at the top of this step)
-    DeduplicateEarly = Table.Group(RemoveBlankPartsEarly, {"PartNumber"}, {
-        // === BUSINESS FILTER COLUMNS: independent per-column majority-vote ===
-        {"Franchise", each ModeOfList([Franchise]), type text},
-        {"Source", each ModeOfList([Source]), type text},
-        {"SLC", each ModeOfList([SLC]), type text},
-        {"DealerGroupCode", each ModeOfList([DealerGroupCode]), type text},
-        {"CommodityCode", each ModeOfList([CommodityCode]), type text},
-        {"VendorCode", each ModeOfList([VendorCode]), type text},
+    // ------------------------------------------------------------------
+    // MAJORITY-VOTE via a TWO-LEVEL Table.Group pattern (replaces the old
+    // per-group nested-Table.Group `ModeOfList` helper - see the "PERFORMANCE
+    // RESTRUCTURING" note in this step's header comment above for why).
+    // For each of the 6 business filter columns, independently:
+    //   1) normalize (trim + upper, so case variants count as one vote) and
+    //      drop blanks, then Table.Group the FULL table ONCE by
+    //      {PartNumber, Value} -> a small (PartNumber, value, VoteCount)
+    //      table - one row per distinct pair actually observed
+    //   2) Table.Sort that small table by PartNumber asc, VoteCount desc
+    //   3) Table.Group that already-sorted small table by PartNumber alone,
+    //      taking List.First of the value column - guaranteed to be the
+    //      highest-vote-count row for that part because of the sort in
+    //      step 2, so this is an O(1) List.First per group, NOT another
+    //      nested Table.Group call
+    // Every Table.Group call below runs exactly ONCE against the full (or a
+    // much-reduced) table - there is no custom aggregation function here
+    // that itself calls Table.Group per PartNumber group.
+    // ------------------------------------------------------------------
 
-        // === EVERYTHING ELSE: "representative value" behavior, now decided
-        // independently PER COLUMN (see header note above) - explicit types
-        // added so Table.Group's output matches the source's actual types
-        // instead of defaulting to `type any` (Table.Group aggregation
-        // functions do NOT inherit types the way Table.Distinct passthrough
-        // did). This matters because UnknownPartsRecord below declares these
-        // same columns as typed, and Table.Combine merges the two.
+    FranchiseVotes_Filtered = Table.SelectColumns(
+        Table.SelectRows(RemoveBlankPartsEarly, each [Franchise] <> null and Text.Trim(Text.From([Franchise])) <> ""),
+        {"PartNumber", "Franchise"}),
+    FranchiseVotes_Normalized = Table.TransformColumns(FranchiseVotes_Filtered, {"Franchise", each Text.Upper(Text.Trim(Text.From(_))), type text}),
+    FranchiseVotes_Counts = Table.Group(FranchiseVotes_Normalized, {"PartNumber", "Franchise"}, {{"VoteCount", each Table.RowCount(_), Int64.Type}}),
+    FranchiseVotes_Sorted = Table.Sort(FranchiseVotes_Counts, {{"PartNumber", Order.Ascending}, {"VoteCount", Order.Descending}}),
+    Franchise_Mode = Table.Group(FranchiseVotes_Sorted, {"PartNumber"}, {{"Franchise", each List.First([Franchise]), type text}}),
+
+    SourceVotes_Filtered = Table.SelectColumns(
+        Table.SelectRows(RemoveBlankPartsEarly, each [Source] <> null and Text.Trim(Text.From([Source])) <> ""),
+        {"PartNumber", "Source"}),
+    SourceVotes_Normalized = Table.TransformColumns(SourceVotes_Filtered, {"Source", each Text.Upper(Text.Trim(Text.From(_))), type text}),
+    SourceVotes_Counts = Table.Group(SourceVotes_Normalized, {"PartNumber", "Source"}, {{"VoteCount", each Table.RowCount(_), Int64.Type}}),
+    SourceVotes_Sorted = Table.Sort(SourceVotes_Counts, {{"PartNumber", Order.Ascending}, {"VoteCount", Order.Descending}}),
+    Source_Mode = Table.Group(SourceVotes_Sorted, {"PartNumber"}, {{"Source", each List.First([Source]), type text}}),
+
+    SLCVotes_Filtered = Table.SelectColumns(
+        Table.SelectRows(RemoveBlankPartsEarly, each [SLC] <> null and Text.Trim(Text.From([SLC])) <> ""),
+        {"PartNumber", "SLC"}),
+    SLCVotes_Normalized = Table.TransformColumns(SLCVotes_Filtered, {"SLC", each Text.Upper(Text.Trim(Text.From(_))), type text}),
+    SLCVotes_Counts = Table.Group(SLCVotes_Normalized, {"PartNumber", "SLC"}, {{"VoteCount", each Table.RowCount(_), Int64.Type}}),
+    SLCVotes_Sorted = Table.Sort(SLCVotes_Counts, {{"PartNumber", Order.Ascending}, {"VoteCount", Order.Descending}}),
+    SLC_Mode = Table.Group(SLCVotes_Sorted, {"PartNumber"}, {{"SLC", each List.First([SLC]), type text}}),
+
+    DealerGroupCodeVotes_Filtered = Table.SelectColumns(
+        Table.SelectRows(RemoveBlankPartsEarly, each [DealerGroupCode] <> null and Text.Trim(Text.From([DealerGroupCode])) <> ""),
+        {"PartNumber", "DealerGroupCode"}),
+    DealerGroupCodeVotes_Normalized = Table.TransformColumns(DealerGroupCodeVotes_Filtered, {"DealerGroupCode", each Text.Upper(Text.Trim(Text.From(_))), type text}),
+    DealerGroupCodeVotes_Counts = Table.Group(DealerGroupCodeVotes_Normalized, {"PartNumber", "DealerGroupCode"}, {{"VoteCount", each Table.RowCount(_), Int64.Type}}),
+    DealerGroupCodeVotes_Sorted = Table.Sort(DealerGroupCodeVotes_Counts, {{"PartNumber", Order.Ascending}, {"VoteCount", Order.Descending}}),
+    DealerGroupCode_Mode = Table.Group(DealerGroupCodeVotes_Sorted, {"PartNumber"}, {{"DealerGroupCode", each List.First([DealerGroupCode]), type text}}),
+
+    CommodityCodeVotes_Filtered = Table.SelectColumns(
+        Table.SelectRows(RemoveBlankPartsEarly, each [CommodityCode] <> null and Text.Trim(Text.From([CommodityCode])) <> ""),
+        {"PartNumber", "CommodityCode"}),
+    CommodityCodeVotes_Normalized = Table.TransformColumns(CommodityCodeVotes_Filtered, {"CommodityCode", each Text.Upper(Text.Trim(Text.From(_))), type text}),
+    CommodityCodeVotes_Counts = Table.Group(CommodityCodeVotes_Normalized, {"PartNumber", "CommodityCode"}, {{"VoteCount", each Table.RowCount(_), Int64.Type}}),
+    CommodityCodeVotes_Sorted = Table.Sort(CommodityCodeVotes_Counts, {{"PartNumber", Order.Ascending}, {"VoteCount", Order.Descending}}),
+    CommodityCode_Mode = Table.Group(CommodityCodeVotes_Sorted, {"PartNumber"}, {{"CommodityCode", each List.First([CommodityCode]), type text}}),
+
+    VendorCodeVotes_Filtered = Table.SelectColumns(
+        Table.SelectRows(RemoveBlankPartsEarly, each [VendorCode] <> null and Text.Trim(Text.From([VendorCode])) <> ""),
+        {"PartNumber", "VendorCode"}),
+    VendorCodeVotes_Normalized = Table.TransformColumns(VendorCodeVotes_Filtered, {"VendorCode", each Text.Upper(Text.Trim(Text.From(_))), type text}),
+    VendorCodeVotes_Counts = Table.Group(VendorCodeVotes_Normalized, {"PartNumber", "VendorCode"}, {{"VoteCount", each Table.RowCount(_), Int64.Type}}),
+    VendorCodeVotes_Sorted = Table.Sort(VendorCodeVotes_Counts, {{"PartNumber", Order.Ascending}, {"VoteCount", Order.Descending}}),
+    VendorCode_Mode = Table.Group(VendorCodeVotes_Sorted, {"PartNumber"}, {{"VendorCode", each List.First([VendorCode]), type text}}),
+
+    // "Everything else" columns keep the prior FirstNonNullOfList behavior,
+    // computed with a single ordinary Table.Group over the full table by
+    // PartNumber - this was never the performance problem (FirstNonNullOfList
+    // is a plain O(n) list scan, not a nested Table.Group call), so it's
+    // unchanged. Explicit types added so Table.Group's output matches the
+    // source's actual types instead of defaulting to `type any` (Table.Group
+    // aggregation functions do NOT inherit types the way Table.Distinct
+    // passthrough did). This matters because UnknownPartsRecord below
+    // declares these same columns as typed, and Table.Combine merges the two.
+    EverythingElseByPart = Table.Group(RemoveBlankPartsEarly, {"PartNumber"}, {
         {"Description", each FirstNonNullOfList([Description]), type text},
         {"QuantityOnHand", each FirstNonNullOfList([QuantityOnHand]), type number},
         {"BackOrderQty", each FirstNonNullOfList([BackOrderQty]), type number},
@@ -190,6 +280,57 @@ let
         {"SellPrice1", each FirstNonNullOfList([SellPrice1]), type number},
         {"ListPrice", each FirstNonNullOfList([ListPrice]), type number},
         {"Current12MoSales", each FirstNonNullOfList([Current12MoSales]), type number}
+    }),
+
+    // Recombine: EverythingElseByPart already has exactly one row per
+    // distinct PartNumber (unconditional group, no blank-filtering upstream
+    // of it), so it's the base table every business-filter `_Mode` table
+    // left-joins onto. A part whose business-filter column is blank on
+    // EVERY source row (excluded from that column's Votes_Filtered pipeline
+    // above, so it never reaches that column's `_Mode` table) still gets a
+    // row here, with that column coming back null via the left outer join -
+    // matching the old ModeOfList behavior of returning null for an
+    // all-blank list.
+    JoinFranchise = Table.NestedJoin(EverythingElseByPart, {"PartNumber"}, Franchise_Mode, {"PartNumber"}, "FranchiseJoin", JoinKind.LeftOuter),
+    ExpandFranchise = Table.ExpandTableColumn(JoinFranchise, "FranchiseJoin", {"Franchise"}, {"Franchise"}),
+
+    JoinSource = Table.NestedJoin(ExpandFranchise, {"PartNumber"}, Source_Mode, {"PartNumber"}, "SourceJoin", JoinKind.LeftOuter),
+    ExpandSource = Table.ExpandTableColumn(JoinSource, "SourceJoin", {"Source"}, {"Source"}),
+
+    JoinSLC = Table.NestedJoin(ExpandSource, {"PartNumber"}, SLC_Mode, {"PartNumber"}, "SLCJoin", JoinKind.LeftOuter),
+    ExpandSLC = Table.ExpandTableColumn(JoinSLC, "SLCJoin", {"SLC"}, {"SLC"}),
+
+    JoinDealerGroupCode = Table.NestedJoin(ExpandSLC, {"PartNumber"}, DealerGroupCode_Mode, {"PartNumber"}, "DealerGroupCodeJoin", JoinKind.LeftOuter),
+    ExpandDealerGroupCode = Table.ExpandTableColumn(JoinDealerGroupCode, "DealerGroupCodeJoin", {"DealerGroupCode"}, {"DealerGroupCode"}),
+
+    JoinCommodityCode = Table.NestedJoin(ExpandDealerGroupCode, {"PartNumber"}, CommodityCode_Mode, {"PartNumber"}, "CommodityCodeJoin", JoinKind.LeftOuter),
+    ExpandCommodityCode = Table.ExpandTableColumn(JoinCommodityCode, "CommodityCodeJoin", {"CommodityCode"}, {"CommodityCode"}),
+
+    JoinVendorCode = Table.NestedJoin(ExpandCommodityCode, {"PartNumber"}, VendorCode_Mode, {"PartNumber"}, "VendorCodeJoin", JoinKind.LeftOuter),
+    ExpandVendorCode = Table.ExpandTableColumn(JoinVendorCode, "VendorCodeJoin", {"VendorCode"}, {"VendorCode"}),
+
+    // Explicit final typing (belt-and-suspenders): Table.NestedJoin /
+    // Table.ExpandTableColumn should already carry through the types set on
+    // the Franchise_Mode/Source_Mode/etc. Table.Group columns, but this
+    // guarantees DeduplicateEarly's output types exactly match what STEP 2
+    // (EnhancedColumns) and UnknownPartsRecord below expect - the same
+    // reason explicit types were added to the old Table.Group call.
+    DeduplicateEarly = Table.TransformColumnTypes(ExpandVendorCode, {
+        {"PartNumber", type text},
+        {"Franchise", type text},
+        {"Source", type text},
+        {"SLC", type text},
+        {"DealerGroupCode", type text},
+        {"CommodityCode", type text},
+        {"VendorCode", type text},
+        {"Description", type text},
+        {"QuantityOnHand", type number},
+        {"BackOrderQty", type number},
+        {"Returnable", type text},
+        {"InventoryCost", type number},
+        {"SellPrice1", type number},
+        {"ListPrice", type number},
+        {"Current12MoSales", type number}
     }),
 
     // ========================================================================
