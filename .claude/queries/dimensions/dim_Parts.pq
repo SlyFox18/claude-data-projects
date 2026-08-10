@@ -15,6 +15,14 @@ Source Dependencies: jdis_Part_Information (Raw lakehouse table)
    - Tested savings: ~20 seconds (1:21 → 1:02)
 ✅ OPTIMIZATION #2: Early Deduplication - Process unique parts only
    - Reduces downstream processing by 5-10%
+   - FIXED 2026-08 (CORRECTNESS BUG): previously Table.Distinct, which just
+     keeps whichever row happens to appear FIRST in source row order per
+     PartNumber - not the correct/majority value. Confirmed live on
+     production data: DZ111141 has 21 source rows (19x Franchise='D',
+     1x'TD', 1x'td') but Table.Distinct picked one of the 2 rare rows.
+     Same pattern confirmed for 19M7966, Z47990, R78055, R71387, and
+     ~23,000 PartNumbers total. Now uses Table.Group with a per-column
+     majority-vote (mode) for the 6 business filter columns - see STEP 1.
 ✅ OPTIMIZATION #3: Consolidated Text Cleaning - 9 fields in 1 pass
    - Maintains original speed, better code organization
 ✅ OPTIMIZATION #4: Removed Text.Proper on Description (BIGGEST WIN)
@@ -47,6 +55,30 @@ let
     ⚡ PERFORMANCE CRITICAL: Remove blanks and duplicates EARLY
     TESTING RESULTS: Saves ~20 seconds (1:21 → 1:02 in preview)
     RATIONALE: Process fewer rows through ALL downstream transformations
+
+    ⚠️ DEDUP CORRECTNESS (FIXED 2026-08): jdis_Part_Information has multiple
+    rows per PartNumber (one per branch's own copy of that part's master
+    record). Most agree with each other, but a small number carry a rare
+    branch-level data-entry error in one of the "business filter" columns.
+    Table.Distinct used to just keep whichever row appeared FIRST in source
+    row order - not necessarily the correct/majority value. Confirmed live:
+    DZ111141 has 21 rows (19x Franchise='D', 1x'TD', 1x'td'); the old logic
+    picked one of the 2 rare rows instead of the overwhelming majority 'D'.
+    Same pattern confirmed for 19M7966, Z47990, R78055, R71387, and roughly
+    23,000 PartNumbers total.
+
+    FIX: Table.Group by PartNumber, with each of the 6 business filter
+    columns (Franchise, Source, SLC, DealerGroupCode, CommodityCode,
+    VendorCode) independently taking a per-column majority-vote (mode) via
+    the ModeOfList helper below. "Independently" is deliberate: these are
+    separate classification facts about the same real part, and each one
+    should be decided by its own majority - not coupled to whichever single
+    row happens to be picked as a "winner" overall. All other columns
+    (Description, and the numeric/operational snapshot columns) keep the
+    prior simple behavior of taking a representative single value (first
+    non-null) - majority-vote doesn't apply the same way to current-state
+    snapshot values, and Description's casing/formatting variance across a
+    part's rows is an already-accepted tradeoff (see Text.Upper note below).
     */
 
     Source = jdis_Part_Information,
@@ -56,8 +88,55 @@ let
         [PartNumber] <> null and [PartNumber] <> ""
     ),
 
-    // Deduplicate EARLY (process unique parts only, saves 5-10% processing)
-    DeduplicateEarly = Table.Distinct(RemoveBlankPartsEarly, {"PartNumber"}),
+    // Reusable helper: mode (most frequent non-blank value) of a list.
+    // M has no built-in List.Mode. Values are trimmed/text-normalized for
+    // comparison only (not upper-cased - matches the majority-vote logic
+    // validated against production data via DuckDB before this fix).
+    ModeOfList = (lst as list) as any =>
+        let
+            cleaned = List.Select(List.Transform(lst, each Text.Trim(Text.From(_ ?? ""))), each _ <> ""),
+            counted = if List.IsEmpty(cleaned) then null else
+                Table.Group(
+                    Table.FromList(cleaned, Splitter.SplitByNothing(), {"Value"}),
+                    {"Value"},
+                    {{"Count", each Table.RowCount(_), Int64.Type}}
+                ),
+            result = if counted = null or Table.IsEmpty(counted) then null else
+                Table.Sort(counted, {{"Count", Order.Descending}}){0}[Value]
+        in
+            result,
+
+    // Reusable helper: first non-null value of a list (unchanged "representative
+    // value" behavior for columns that don't need majority-vote logic).
+    FirstNonNullOfList = (lst as list) as any =>
+        let
+            nonNull = List.Select(lst, each _ <> null),
+            result = if List.IsEmpty(nonNull) then null else List.First(nonNull)
+        in
+            result,
+
+    // Deduplicate EARLY via majority-vote per business filter column
+    // (process unique parts only, same "process fewer rows downstream" win
+    // as before - see performance note at the top of this step)
+    DeduplicateEarly = Table.Group(RemoveBlankPartsEarly, {"PartNumber"}, {
+        // === BUSINESS FILTER COLUMNS: independent per-column majority-vote ===
+        {"Franchise", each ModeOfList([Franchise]), type text},
+        {"Source", each ModeOfList([Source]), type text},
+        {"SLC", each ModeOfList([SLC]), type text},
+        {"DealerGroupCode", each ModeOfList([DealerGroupCode]), type text},
+        {"CommodityCode", each ModeOfList([CommodityCode]), type text},
+        {"VendorCode", each ModeOfList([VendorCode]), type text},
+
+        // === EVERYTHING ELSE: unchanged "representative value" behavior ===
+        {"Description", each FirstNonNullOfList([Description])},
+        {"QuantityOnHand", each FirstNonNullOfList([QuantityOnHand])},
+        {"BackOrderQty", each FirstNonNullOfList([BackOrderQty])},
+        {"Returnable", each FirstNonNullOfList([Returnable])},
+        {"InventoryCost", each FirstNonNullOfList([InventoryCost])},
+        {"SellPrice1", each FirstNonNullOfList([SellPrice1])},
+        {"ListPrice", each FirstNonNullOfList([ListPrice])},
+        {"Current12MoSales", each FirstNonNullOfList([Current12MoSales])}
+    }),
 
     // ========================================================================
     // STEP 2: COLUMN SELECTION - ESSENTIAL FIELDS ONLY
