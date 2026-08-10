@@ -151,8 +151,11 @@ let
         in
             result,
 
-    // Reusable helper: first non-null value of a list (unchanged "representative
-    // value" behavior for columns that don't need majority-vote logic).
+    // Reusable helper: first non-null value of a list. The SELECTION algorithm
+    // itself (first non-null) is unchanged from before this fix, but it's now
+    // applied independently per column against the group rather than picking
+    // one whole source row - see the "NOTE ON A REAL BEHAVIOR CHANGE" in this
+    // step's header comment above for what that means in practice.
     FirstNonNullOfList = (lst as list) as any =>
         let
             nonNull = List.Select(lst, each _ <> null),
