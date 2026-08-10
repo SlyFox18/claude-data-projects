@@ -1,5 +1,11 @@
 # JD Price Updates
 
+Two related, independently-built ingestion pipelines covering John Deere
+parts pricing data — see **Next Steps** at the bottom for how they and a
+planned third (analysis) piece fit together.
+
+## Sub-project 1: Branch Price Updates
+
 Ingests John Deere `PRICEUPDATE_*.TXT` branch price-change files from a
 network folder into `LH_Master_Data.Raw_PriceUpdate_History`.
 
@@ -11,7 +17,7 @@ Status: **live and operating.** Full historical backfill complete
 5,096,264 rows. Daily scheduled harvest running unattended since
 2026-08-07.
 
-## Architecture
+### Architecture
 
 ```
 Network share (Price_Update folder — real path known to Brian, passed as
@@ -31,7 +37,7 @@ OneLake Files/PriceUpdate_Landing/
 LH_Master_Data: Raw_PriceUpdate_History (5.1M rows)
 ```
 
-## Scripts
+### Scripts
 
 | Script | Purpose |
 |---|---|
@@ -40,7 +46,7 @@ LH_Master_Data: Raw_PriceUpdate_History (5.1M rows)
 | `scripts/Harvest-PriceUpdateFiles.ps1` | Daily scheduled: copies new files into the OneLake landing area, validates filename + header, quarantines anything that fails. |
 | `scripts/Register-HarvestPriceUpdateTask.ps1` | One-off setup: registers the daily Windows Scheduled Task for the harvest script. |
 
-## Fabric objects (LH_Master_Data workspace)
+### Fabric objects (LH_Master_Data workspace)
 
 - **Dataflow Gen2:** `df_Raw_PriceUpdate_History` — reads
   `Files/PriceUpdate_Landing/New`, parses filename + tab-delimited content,
@@ -59,7 +65,7 @@ Editor, the change must be manually copied back into
 `Raw_PriceUpdate_History.pq` (or vice versa) — nothing keeps them in sync
 automatically.
 
-## Known data realities (confirmed against real files — read before debugging)
+### Known data realities (confirmed against real files — read before debugging)
 
 - **Sub-branch codes roll up to the main branch.** Filenames/rows
   sometimes carry a trailing letter (`11S`, `93C`, `4B` — a physical
@@ -94,7 +100,7 @@ automatically.
   branch. The natural key for future price-trend/margin analysis is
   `PartNumber + EffectiveDate`, not `Branch + PartNumber + EffectiveDate`.
 
-## Operational gotchas (found the hard way during setup — 2026-08-07)
+### Operational gotchas (found the hard way during setup — 2026-08-07)
 
 - **The local OneLake File Explorer mount lags the real backend state,
   in both directions** — it has shown folders as both falsely empty and
@@ -124,7 +130,7 @@ automatically.
   already in `Archive/`. Recovery: copy the specific file(s) directly from
   `Archive/` back into `New/` and re-run the pipeline in Append mode.
 
-## Residual risks (documented, not fixed — deliberate)
+### Residual risks (documented, not fixed — deliberate)
 
 - Harvest script's exit code is always `0` unless a setup-level failure
   occurs (missing landing folders, unreachable source) — a run with
@@ -142,18 +148,178 @@ automatically.
   without setting `HasTypeConversionIssue` — not observed in any real
   file to date.
 
+## Sub-project 2: JD National Change Report
+
+Ingests JD's national weekly "Change Report" CSVs — covering *all* Deere
+parts, not just ones sold here — from a 2FA-gated web portal into
+`LH_Master_Data.Raw_JDNationalChangeReport_History`, plus a weekly
+reminder (Reynard todo + Outlook email) since 2FA blocks any further
+automation of the actual download.
+
+**Design spec:** `docs/superpowers/specs/2026-08-07-jd-change-report-ingestion-design.md`
+**Implementation plan:** `docs/superpowers/plans/2026-08-07-jd-change-report-ingestion.md`
+
+Status: **live and operating.** Full historical backfill complete
+(2026-08-10) — 5 files, 2026-07-13 through 2026-08-10, 48,453 rows.
+Weekly reminder scheduled task confirmed firing correctly (2026-08-10).
+
+### Architecture
+
+```
+pricednld.deere.com (2FA via SMS -- manual download only, no automation)
+        │  [Brian downloads weekly Change Report CSV by hand, copies into
+        │   BOTH New/ and Archive/ -- no harvest script for this source]
+        ▼
+OneLake Files/JDChangeReports_Landing/
+   ├── New/        (cleared after each successful pipeline run)
+   └── Archive/    (permanent copy of every file ever downloaded --
+                     no Quarantine/ here; nothing sorts rejects into one,
+                     since there's no harvest script to do the sorting)
+        │  [Fabric Pipeline pl_Raw_JDNationalChangeReport_History,
+        │   LH_Master_Data workspace]
+        │  1. Dataflow df_Raw_JDNationalChangeReport_History (Append) —
+        │     parses New/, appends to the raw table
+        │  2. On success only: Delete data activity clears New/
+        ▼
+LH_Master_Data: Raw_JDNationalChangeReport_History (48.5K rows)
+
+Separately, weekly reminder (no data flow -- pure notification):
+Windows Scheduled Task "\Fabric\JD Change Report Reminder", Saturdays 10:00
+        │  [Send-JDChangeReportReminder.ps1]
+        ├──▶ Reynard todo item (http://localhost:5151/capture)
+        └──▶ Outlook COM email
+```
+
+### Scripts
+
+| Script | Purpose |
+|---|---|
+| `scripts/Send-JDChangeReportReminder.ps1` | Weekly scheduled: posts a Reynard todo item and sends an Outlook email reminding Brian to download and place the week's file. Does nothing automated about the download itself. |
+| `scripts/Register-JDChangeReportReminderTask.ps1` | One-off setup: registers the weekly Windows Scheduled Task for the reminder script. |
+
+### Fabric objects (LH_Master_Data workspace)
+
+- **Dataflow Gen2:** `df_Raw_JDNationalChangeReport_History` — reads
+  `Files/JDChangeReports_Landing/New`, parses filename + comma-delimited
+  content, writes to the `Raw_JDNationalChangeReport_History` table with
+  **Update method: Append**. Reference M code (kept in sync manually —
+  same caveat as sub-project 1 above):
+  `.claude/queries/raw-tables/Raw_JDNationalChangeReport_History.pq`.
+- **Pipeline:** `pl_Raw_JDNationalChangeReport_History` — Dataflow
+  activity → (on success) Delete data activity clearing
+  `New/*.csv` (Wildcard file path mode — set correctly from the start
+  this time, having learned that lesson the hard way in sub-project 1).
+- **Scheduled task:** `\Fabric\JD Change Report Reminder`, weekly
+  Saturdays at 10:00, runs `Send-JDChangeReportReminder.ps1` on Brian's
+  machine. Requires `LogonType Interactive` (Outlook COM and the Reynard
+  HTTP call both need the interactive session's resources) — if this
+  machine is regularly logged off on Saturdays, the reminder won't fire
+  until next login.
+
+### Known data realities (confirmed against real files — read before debugging)
+
+- **`EffectiveDate` mostly, but not always, matches the filename's date.**
+  Confirmed against the full 48,453-row backfill: 21 rows (~0.04%) had
+  `EffectiveDate` 1-9 days *before* the filename's date, spread
+  proportionally across all 5 files, never the reverse, never off by more
+  than 9 days. Read as the weekly report occasionally listing a change
+  that took effect a few days before publication — not a parsing defect.
+  `FileNameDateMismatchFlag` is a tripwire for this: expect it to fire
+  occasionally at low volume with a small gap; a large gap or a volume
+  spike would mean a real problem instead.
+- **A small number of rows have genuinely malformed (not just blank)
+  price/date fields.** 5 of 48,453 rows in the initial backfill had
+  `HasTypeConversionIssue = true` — confirmed by inspection to be
+  non-blank source text that failed to parse, correctly degraded to
+  `null` rather than corrupting the whole load.
+- **Some parts carry `CurrentSLP`/`NewSLP` = 0, not null**, e.g. the
+  `SWDEF*` part family — read as a legitimate "no suggested list price"
+  business case for that part class, not a data quality issue.
+- **No Quarantine/ folder for this pipeline, unlike sub-project 1.**
+  There's no harvest script to sort rejects into one — a malformed
+  filename (wrong pattern, browser duplicate-download suffix) is
+  silently dropped by the M query's own filters with zero error signal
+  anywhere. The weekly reminder email/Reynard text is the only
+  human-facing defense against this; see Residual risks below.
+
+### Operational gotchas (found the hard way during setup — 2026-08-10)
+
+- **A header row can be padded with trailing whitespace on its last
+  column, breaking an exact-match column selection even though every
+  other column parses fine.** `EFFECTIVE DATE` is the last column in
+  this file's header; because the source rows are padded to a fixed
+  record length (see the `.pq` file's own header comment), the raw
+  header cell came through as `"EFFECTIVE DATE"` plus trailing spaces,
+  which didn't exact-match `ExpectedSourceColumns`, so
+  `MissingField.UseNull` silently substituted an all-null column in its
+  place — 100% empty, zero error, across every file including ones
+  already "confirmed" during initial schema review. Fixed by wrapping
+  the post-`Table.PromoteHeaders` step in
+  `Table.TransformColumnNames(_, Text.Trim)`. **Lesson: trim column
+  *names*, not just column *values*, when a source format is known to
+  pad fixed-length records — the header row is padded too.**
+- **`$PSScriptRoot` can evaluate to an empty string during a parameter's
+  default-value expression**, specifically when a script is launched as
+  a brand-new process via `powershell.exe -File "C:\full\path\..."` —
+  exactly how Windows Task Scheduler invokes scripts. It resolves fine
+  once the script *body* starts executing, and it also resolves fine
+  under the more common manual-testing invocation style
+  (`.\script.ps1` from an already-open console in the script's own
+  folder) — which is exactly why this shipped past an implementer, a
+  spec reviewer, a code-quality reviewer, and several manual test runs
+  undetected: every one of them happened to use the invocation style
+  that masks the bug. It only surfaced on the first real Scheduled Task
+  run, as a `Join-Path : Cannot bind argument to parameter 'Path'
+  because it is an empty string` parameter-binding-time error — before
+  a single line of the script's own body ever executed, so there was no
+  log file, no Reynard item, no email, and no diagnostic trail beyond
+  Task Scheduler's own generic non-zero exit code. **Lesson: never
+  reference `$PSScriptRoot` (or similar automatic variables) inside a
+  parameter's default-value expression — compute it in the script body
+  instead. And when testing a script meant to run under Task Scheduler,
+  test it with the exact same `-File "full\path"` invocation Task
+  Scheduler will actually use, not a `.\` shortcut.**
+- **`New-ScheduledTaskTrigger -RepetitionDuration ([TimeSpan]::MaxValue)`
+  exceeds what the Task Scheduler XML schema's `Duration` element
+  actually accepts**, failing `Register-ScheduledTask` outright with
+  *"The task XML contains a value which is incorrectly formatted or out
+  of range."* (This surfaced while applying the companion Reynard
+  reliability fix in the separate `personal-dashboard` repo, but is
+  recorded here since it directly affects this pipeline's reminder
+  dependency.) Per Microsoft's own `RepetitionPattern.Duration` docs,
+  **omitting `-RepetitionDuration` entirely already means "repeat
+  indefinitely"** — there's no need to pass a value at all, and doing so
+  with an out-of-range one breaks registration completely.
+
+### Residual risks (documented, not fixed — deliberate)
+
+- **No recurring freshness/gap check.** Nothing verifies week-over-week
+  that a new file actually landed and loaded — unlike sub-project 1's
+  daily cadence (where a missed day is easy to backfill from the source
+  share), a missed week here is materially higher stakes: JD's portal
+  only retains the 4 most recent Change Reports, so a week missed for
+  more than ~4 weeks becomes permanently unrecoverable. The weekly
+  reminder (Reynard + email) is the only safeguard today.
+- **The reminder is the sole human-facing defense against a silently
+  malformed filename** (wrong pattern, browser duplicate-download
+  suffix like `" (1).csv"`) — the reminder text explicitly calls out the
+  exact expected filename and this risk, but there's no automated
+  check that a given week's file actually parsed successfully; a
+  mis-copied file would only show up as an unexpectedly low row count
+  if someone happened to check.
+- Source-file atomic-write / partial-download assumption is unverified,
+  same as sub-project 1's equivalent risk.
+
 ## Next Steps
 
-Per the design spec, this is sub-project 1 of a three-part effort:
+Per the design spec, this is a three-part effort:
 
-1. **This project — done.** Raw ingestion of the parts we sell.
-2. **JD website Change Report collection** (not started) — JD's Global
-   Parts Pricing portal publishes weekly Change Reports covering *all*
-   Deere parts, not just ones sold here; 2FA-gated, only 4 reports
-   retained online at a time. Likely a smaller, more exploratory spec,
-   possibly partly manual.
+1. **Sub-project 1 — done.** Raw ingestion of the parts we sell.
+2. **Sub-project 2 — done.** JD website Change Report collection, all
+   Deere parts nationally, weekly reminder-driven manual download.
 3. **Analysis layer** (not started) — margin-impact analysis (did a price
    change erode margin?) and slicing price changes by `dim_Parts`
-   classifications (SLC, DealerGroupCode, CommodityCode). Depends on this
-   project's data (done) and optionally #2. Remember: join/group on
-   `PartNumber + EffectiveDate`, not `Branch + PartNumber + EffectiveDate`.
+   classifications (SLC, DealerGroupCode, CommodityCode). Depends on
+   sub-project 1's data (done) and optionally sub-project 2's (done).
+   Remember: join/group on `PartNumber + EffectiveDate`, not
+   `Branch + PartNumber + EffectiveDate` — true for both raw tables.

@@ -39,12 +39,20 @@ Every line is padded with trailing spaces to a fixed record length (a
 legacy-export quirk) -- every parsed value must be Text.Trim'd, not just
 the last column.
 
-FILENAME DATE: US.UPDCOMP.UPDATE.V2-YYYY-MM-DD.csv -- confirmed the date
-always matches every row's own EFFECTIVE DATE column exactly, since this
-file specifically lists that week's changes (unlike Raw_PriceUpdate_History,
-where effective_date can be years older than the file for slow-moving
-parts). FileNameDateMismatchFlag below is a tripwire for this assumption,
-not expected to ever fire based on the 4 files checked so far.
+FILENAME DATE: US.UPDCOMP.UPDATE.V2-YYYY-MM-DD.csv -- mostly matches every
+row's own EFFECTIVE DATE column, since this file specifically lists that
+week's changes (unlike Raw_PriceUpdate_History, where effective_date can
+be years older than the file for slow-moving parts), but NOT always: a
+full-backfill check against 48,453 real rows (2026-08-10) found 21 rows
+(~0.04%) where EffectiveDate was 1-9 days BEFORE the filename's date,
+spread proportionally across all 5 files checked, never the reverse
+direction, never off by more than 9 days. Read as JD's weekly report
+occasionally listing a change that took effect a few days before the
+report itself was published -- not a parsing defect. FileNameDateMismatchFlag
+below is a tripwire for exactly this: expect it to fire occasionally, at
+low volume, always with a small (single-digit-day) gap; a mismatch of
+weeks/months/years, or a spike in volume, would indicate a real parsing
+problem instead and is worth investigating on its own terms.
 
 DEFENSE-IN-DEPTH (carried over from Raw_PriceUpdate_History, same
 reasoning): missing-column tolerance via MissingField.UseNull, a
