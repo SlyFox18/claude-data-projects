@@ -6,15 +6,21 @@ Power Query M logic is written. Confirms:
      grain to PartNumber+EffectiveDate grain produces a meaningfully smaller
      row count.
   2. AffectedBranchCount (count of distinct rolled-up Branch values per
-     PartNumber+EffectiveDate group) matches a real, manually-confirmed
-     example: PartNumber 57M11134 on EffectiveDate 2026-08-03 was
-     confirmed (via the Fabric table preview, 2026-08-10) to span exactly
-     15 branches. NOTE: if this script is run well after 2026-08-10, this
-     specific historical row's AffectedBranchCount should still read 15 --
-     it's a fixed historical price event, not something that grows over
-     time. If it does NOT read 15, investigate before proceeding --
-     that's a signal the grouping logic doesn't match what was manually
-     observed in Fabric.
+     PartNumber+EffectiveDate group) matches a real, SQL-verified example:
+     PartNumber 57M11134 on EffectiveDate 2026-08-03 spans exactly 16
+     branches (1, 2, 4, 6, 7, 8, 11, 13, 15, 16, 91, 92, 93, 95, 96, 97).
+     NOTE: an earlier manual count from a Fabric table preview screenshot
+     (2026-08-10) suggested 15 -- that count was incomplete (the
+     screenshot only showed however many rows fit before the table's sort
+     order moved to a different part; branch 93 was sitting elsewhere,
+     off-screen). 16 is the real, SQL-verified number this script's own
+     run confirmed, and it's the number documented in
+     Fact_PriceUpdate_Enriched.pq's header comment -- trust this one. If
+     this script is run well after 2026-08-10, this specific historical
+     row's AffectedBranchCount should still read 16 -- it's a fixed
+     historical price event, not something that grows over time. If it
+     does NOT read 16, investigate before proceeding -- that's a signal
+     the grouping logic doesn't match what was SQL-verified.
   3. HasBranchPriceDisagreement (branches disagreeing on price fields for
      the same PartNumber+EffectiveDate) fires rarely/never, per the raw
      table's own documented assumption that branch doesn't affect price.
@@ -97,7 +103,8 @@ sample = con.execute("""
     WHERE PartNumber = '57M11134' AND EffectiveDate = DATE '2026-08-03'
 """).fetchall()
 print(f"\n2. KNOWN EXAMPLE (57M11134 / 2026-08-03): {sample}")
-print("   Expect AffectedBranchCount = 15, HasBranchPriceDisagreement = False.")
+print("   Expect AffectedBranchCount = 16 (not 15 -- an earlier manual screenshot count")
+print("   was incomplete; see this script's docstring), HasBranchPriceDisagreement = False.")
 
 disagreement = con.execute("""
     SELECT SUM(CASE WHEN HasBranchPriceDisagreement THEN 1 ELSE 0 END) AS DisagreementCount,

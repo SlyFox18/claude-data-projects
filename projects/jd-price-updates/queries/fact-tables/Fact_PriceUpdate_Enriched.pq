@@ -53,11 +53,29 @@ fact): Branch, SourceFileBranch, BinLocation, OnHandQty, SourceFileName,
 SourceFileDate, BranchMismatchFlag, PartDescription (raw), Franchise (raw).
 Branch/file-level detail remains available in Raw_PriceUpdate_History
 itself if ever needed -- this fact intentionally doesn't duplicate it.
-NOTE: Raw_PriceUpdate_History has NO HasTypeConversionIssue column despite
-an earlier assumption to the contrary -- confirmed directly against the
-live table schema. This fact's own HasTypeConversionIssue column (see
-below) is instead an aggregation of price/date-field parse issues computed
-inline, described in that column's own note below.
+
+HASTYPECONVERSIONISSUE (attempted, then dropped -- not a column in this
+fact): Raw_PriceUpdate_History has NO HasTypeConversionIssue column --
+re-confirmed 2026-08-10 directly against the LIVE Fabric table (fresh
+DESCRIBE against the deployed table, not just this repo's reference .pq
+copy, which does define the column but has not actually been deployed --
+a separate, known reference-vs-live deployment gap, not this fact's
+concern). An inline reconstruction was attempted here -- re-parsing each
+price/date field with try Number.From(...)/Date.From(...) at this layer
+-- but was dropped as fundamentally uncomputable: by the time a row
+reaches this fact, Raw_PriceUpdate_History's own upstream query has
+already run every risky field through
+try Number.From(...)/Date.From(...) otherwise null, so a genuinely
+garbled source value has already become null there -- indistinguishable
+at this layer from "was always blank." The pre-conversion raw text isn't
+available downstream of Raw_PriceUpdate_History, so this fact cannot
+recover that signal; shipping the column anyway would mean it always
+silently reads False, which is worse than not having it at all. If
+Raw_PriceUpdate_History's live deployment is ever updated to add its own
+HasTypeConversionIssue column (matching its reference .pq), this fact
+could then properly carry it forward via a simple List.AnyTrue
+aggregation over the grouped rows -- a future possibility, not something
+built now.
 
 PARTDESCRIPTION: the raw table's own PartDescription varies inconsistently
 by branch/file (confirmed a leftover artifact, not meaningful data, by Ben
@@ -143,22 +161,6 @@ let
         {"ListDiff", each List.First(List.RemoveNulls([ListDiff]), null), type nullable number},
         {"SellPrice1Diff", each List.First(List.RemoveNulls([SellPrice1Diff]), null), type nullable number},
         {"UpdateCode", each List.First(List.RemoveNulls([UpdateCode]), null), type nullable text},
-        {"HasTypeConversionIssue", each
-            let
-                NumericValues = List.Combine({
-                    [ManufacturerListPrice], [DealerListPrice], [ListPriceChangePercent],
-                    [ManufacturerReplacePrice], [DealerReplacePrice], [ManufacturerSellPrice1],
-                    [DealerSellPrice1], [SellPriceOld], [CostDiff], [ListDiff], [SellPrice1Diff]
-                }),
-                IsNumericIssue = (v) =>
-                    let t = Text.Trim(Text.From(v ?? "")) in
-                    t <> "" and (try Number.From(t) otherwise null) = null,
-                DateIssues = List.Transform([EffectiveDate], each
-                    let t = Text.Trim(Text.From(_ ?? "")) in
-                    t <> "" and (try Date.From(t) otherwise null) = null)
-            in
-                List.AnyTrue(List.Transform(NumericValues, IsNumericIssue)) or List.AnyTrue(DateIssues),
-        type logical},
         {"HasBranchPriceDisagreement", each
             List.Count(List.Distinct(List.RemoveNulls([ManufacturerListPrice]))) > 1 or
             List.Count(List.Distinct(List.RemoveNulls([DealerListPrice]))) > 1 or
@@ -202,19 +204,25 @@ let
     // ------------------------------------------------------------------
     JoinWithDimParts = Table.NestedJoin(AddIngestedAt, {"PartNumber"}, dim_Parts, {"PartNumber"}, "DimPartsMatch", JoinKind.LeftOuter),
 
-    ExpandDimParts = Table.ExpandTableColumn(JoinWithDimParts, "DimPartsMatch",
+    // IsCarriedLocally computed directly from the pre-expand nested join
+    // table -- Table.RowCount([DimPartsMatch]) > 0 tests "did the join
+    // find a match" directly, rather than using any one expanded column
+    // (e.g. SLC) as an indirect proxy, which would false-negative on a
+    // genuinely matched dim_Parts row that happens to have a legitimately
+    // null SLC.
+    AddIsCarriedLocally = Table.AddColumn(JoinWithDimParts, "IsCarriedLocally", each Table.RowCount([DimPartsMatch]) > 0, type logical),
+
+    ExpandDimParts = Table.ExpandTableColumn(AddIsCarriedLocally, "DimPartsMatch",
         {"Description", "Source", "SLC", "DealerGroupCode", "CommodityCode", "VendorCode"},
         {"Description", "Source", "SLC", "DealerGroupCode", "CommodityCode", "VendorCode"}),
 
-    AddIsCarriedLocally = Table.AddColumn(ExpandDimParts, "IsCarriedLocally", each [SLC] <> null, type logical),
-
-    FinalColumnOrder = Table.ReorderColumns(AddIsCarriedLocally, {
+    FinalColumnOrder = Table.ReorderColumns(ExpandDimParts, {
         "PartNumber", "EffectiveDate", "Description", "Category",
         "ManufacturerListPrice", "DealerListPrice", "ListPriceChangePercent",
         "ManufacturerReplacePrice", "DealerReplacePrice", "ManufacturerSellPrice1",
         "DealerSellPrice1", "SellPriceOld", "CostDiff", "ListDiff", "SellPrice1Diff",
         "UpdateCode", "AffectedBranchCount", "HasBranchPriceDisagreement",
-        "HasTypeConversionIssue", "Source", "SLC", "DealerGroupCode", "CommodityCode",
+        "Source", "SLC", "DealerGroupCode", "CommodityCode",
         "VendorCode", "IsCarriedLocally", "IngestedAt"
     })
 in
