@@ -79,6 +79,34 @@ let
     non-null) - majority-vote doesn't apply the same way to current-state
     snapshot values, and Description's casing/formatting variance across a
     part's rows is an already-accepted tradeoff (see Text.Upper note below).
+
+    ⚠️ VENDORCODE IS A DIFFERENT KIND OF CASE - NOT THE SAME BUG, DON'T
+    TREAT ITS "FIX" AS FULLY SOLVED (confirmed 2026-08-10, investigated
+    against real production data): Franchise/Source/SLC/DealerGroupCode/
+    CommodityCode disagree on a small fraction of parts (0.01%-0.7% of
+    ~1M), and every case checked showed a clear, lopsided majority with a
+    rare stray outlier - a genuine data-entry-error pattern, correctly
+    fixed by majority-vote. VendorCode disagrees on ~9.6% of all parts -
+    two orders of magnitude more often - and the disagreement doesn't look
+    like typos: e.g. PartNumber PF91010 has 20 DISTINCT VendorCode values
+    across 31 source rows, with the "winning" value appearing only 4 times
+    (13%) - not a majority at all, just the largest of many small, roughly
+    even clusters. This is much more consistent with VendorCode genuinely
+    varying by branch (which distributor a given branch actually orders a
+    part from) than with data-entry error. dim_VendorCode (a separate
+    dimension, one row per unique vendor code - checked, does NOT help
+    here) can't fix this either: the real gap is that "which vendor(s)
+    does this part use" is fundamentally a one-to-many relationship
+    (part x branch -> vendor), and no single-value-per-PartNumber column
+    can represent that correctly regardless of which value wins the vote.
+    Majority-vote is applied to VendorCode here anyway because it's still
+    a strict improvement over the old arbitrary-first-row-wins (at least
+    picks the most common relationship instead of a random one), but this
+    should NOT be considered "fixed" the way the other 5 columns are - it's
+    a known, accepted simplification pending a real conversation with Ben
+    about whether VendorCode belongs on a part-level dimension at all, or
+    needs a proper part x branch (or part x vendor) bridge/fact table
+    instead. Flagged for a future session, not resolved here.
     */
 
     Source = jdis_Part_Information,
