@@ -31,8 +31,12 @@
 .PARAMETER EmailTo
     Recipient address for the reminder email.
 .PARAMETER LogPath
-    Optional. Defaults to a logs\reminder-YYYY-MM-DD.log file under
-    projects\jd-price-updates\logs\, next to this script's parent folder.
+    Optional. If omitted, computed at the start of the script body as a
+    logs\reminder-YYYY-MM-DD.log file under projects\jd-price-updates\logs\,
+    next to this script's parent folder. (Deliberately not a param default
+    value -- $PSScriptRoot is not reliably populated during parameter-default
+    evaluation when the script is launched via `-File "full\path"`, which is
+    how Windows Task Scheduler invokes it.)
 .EXAMPLE
     .\Send-JDChangeReportReminder.ps1 -EmailTo "bfox@spitractor.com"
 #>
@@ -41,10 +45,14 @@ param(
     [Parameter(Mandatory = $true)]
     [string]$EmailTo,
 
-    [string]$LogPath = (Join-Path $PSScriptRoot "..\logs\reminder-$(Get-Date -Format 'yyyy-MM-dd').log")
+    [string]$LogPath
 )
 
 $ErrorActionPreference = "Stop"
+
+if (-not $LogPath) {
+    $LogPath = Join-Path $PSScriptRoot "..\logs\reminder-$(Get-Date -Format 'yyyy-MM-dd').log"
+}
 
 function Write-ReminderLog {
     param([string]$Level, [string]$Message)
