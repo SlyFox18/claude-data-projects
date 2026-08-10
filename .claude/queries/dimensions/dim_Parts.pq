@@ -15,6 +15,14 @@ Source Dependencies: jdis_Part_Information (Raw lakehouse table)
    - Tested savings: ~20 seconds (1:21 → 1:02)
 ✅ OPTIMIZATION #2: Early Deduplication - Process unique parts only
    - Reduces downstream processing by 5-10%
+   - FIXED 2026-08 (CORRECTNESS BUG): previously Table.Distinct, which just
+     keeps whichever row happens to appear FIRST in source row order per
+     PartNumber - not the correct/majority value. Confirmed live on
+     production data: DZ111141 has 21 source rows (19x Franchise='D',
+     1x'TD', 1x'td') but Table.Distinct picked one of the 2 rare rows.
+     Same pattern confirmed for 19M7966, Z47990, R78055, R71387, and
+     ~23,000 PartNumbers total. Now uses Table.Group with a per-column
+     majority-vote (mode) for the 6 business filter columns - see STEP 1.
 ✅ OPTIMIZATION #3: Consolidated Text Cleaning - 9 fields in 1 pass
    - Maintains original speed, better code organization
 ✅ OPTIMIZATION #4: Removed Text.Proper on Description (BIGGEST WIN)
@@ -47,6 +55,69 @@ let
     ⚡ PERFORMANCE CRITICAL: Remove blanks and duplicates EARLY
     TESTING RESULTS: Saves ~20 seconds (1:21 → 1:02 in preview)
     RATIONALE: Process fewer rows through ALL downstream transformations
+
+    ⚠️ DEDUP CORRECTNESS (FIXED 2026-08): jdis_Part_Information has multiple
+    rows per PartNumber (one per branch's own copy of that part's master
+    record). Most agree with each other, but a small number carry a rare
+    branch-level data-entry error in one of the "business filter" columns.
+    Table.Distinct used to just keep whichever row appeared FIRST in source
+    row order - not necessarily the correct/majority value. Confirmed live:
+    DZ111141 has 21 rows (19x Franchise='D', 1x'TD', 1x'td'); the old logic
+    picked one of the 2 rare rows instead of the overwhelming majority 'D'.
+    Same pattern confirmed for 19M7966, Z47990, R78055, R71387, and roughly
+    23,000 PartNumbers total.
+
+    FIX: Table.Group by PartNumber, with each of the 6 business filter
+    columns (Franchise, Source, SLC, DealerGroupCode, CommodityCode,
+    VendorCode) independently taking a per-column majority-vote (mode) via
+    the ModeOfList helper below. "Independently" is deliberate: these are
+    separate classification facts about the same real part, and each one
+    should be decided by its own majority - not coupled to whichever single
+    row happens to be picked as a "winner" overall. All other columns
+    (Description, and the numeric/operational snapshot columns) keep the
+    prior simple behavior of taking a representative single value
+    (first non-null) - majority-vote doesn't apply the same way to
+    current-state snapshot values, and Description's casing/formatting
+    variance across a part's rows is an already-accepted tradeoff (see
+    Text.Upper note below). NOTE ON A REAL BEHAVIOR CHANGE: the OLD
+    Table.Distinct picked one whole physical source row, so these "everything
+    else" columns were previously guaranteed to all come from that SAME row
+    (internally coherent per-row). The NEW FirstNonNullOfList helper is
+    applied independently per column against the group, matching the same
+    "independent per column" philosophy already used for the majority-vote
+    columns - so it's now possible for Description to come from one branch's
+    row while QuantityOnHand comes from a different branch's row for the
+    same part. This is a reasonable, minor, and intentional tradeoff (not a
+    regression to fix), consistent with how the business filter columns
+    already work - flagged here so it's not mistaken for unchanged behavior.
+
+    ⚠️ VENDORCODE IS A DIFFERENT KIND OF CASE - NOT THE SAME BUG, DON'T
+    TREAT ITS "FIX" AS FULLY SOLVED (confirmed 2026-08-10, investigated
+    against real production data): Franchise/Source/SLC/DealerGroupCode/
+    CommodityCode disagree on a small fraction of parts (0.01%-0.7% of
+    ~1M), and every case checked showed a clear, lopsided majority with a
+    rare stray outlier - a genuine data-entry-error pattern, correctly
+    fixed by majority-vote. VendorCode disagrees on ~9.6% of all parts -
+    two orders of magnitude more often - and the disagreement doesn't look
+    like typos: e.g. PartNumber PF91010 has 20 DISTINCT VendorCode values
+    across 31 source rows, with the "winning" value appearing only 4 times
+    (13%) - not a majority at all, just the largest of many small, roughly
+    even clusters. This is much more consistent with VendorCode genuinely
+    varying by branch (which distributor a given branch actually orders a
+    part from) than with data-entry error. dim_VendorCode (a separate
+    dimension, one row per unique vendor code - checked, does NOT help
+    here) can't fix this either: the real gap is that "which vendor(s)
+    does this part use" is fundamentally a one-to-many relationship
+    (part x branch -> vendor), and no single-value-per-PartNumber column
+    can represent that correctly regardless of which value wins the vote.
+    Majority-vote is applied to VendorCode here anyway because it's still
+    a strict improvement over the old arbitrary-first-row-wins (at least
+    picks the most common relationship instead of a random one), but this
+    should NOT be considered "fixed" the way the other 5 columns are - it's
+    a known, accepted simplification pending a real conversation with Ben
+    about whether VendorCode belongs on a part-level dimension at all, or
+    needs a proper part x branch (or part x vendor) bridge/fact table
+    instead. Flagged for a future session, not resolved here.
     */
 
     Source = jdis_Part_Information,
@@ -56,8 +127,70 @@ let
         [PartNumber] <> null and [PartNumber] <> ""
     ),
 
-    // Deduplicate EARLY (process unique parts only, saves 5-10% processing)
-    DeduplicateEarly = Table.Distinct(RemoveBlankPartsEarly, {"PartNumber"}),
+    // Reusable helper: mode (most frequent non-blank value) of a list.
+    // M has no built-in List.Mode. Values are trimmed AND upper-cased before
+    // votes are counted, so case variants of the same real value (e.g. "D"
+    // vs "d") are counted as ONE cluster rather than splitting the vote -
+    // without this, a genuinely rare-but-differently-cased minority value
+    // (e.g. "TD") could outnumber either individual case-variant of the true
+    // majority while still losing to their combined total. STEP 3 uppercases
+    // the winning value again anyway, so returning it upper-cased here has
+    // no observable effect on the final stored value - it only changes how
+    // votes are tallied.
+    ModeOfList = (lst as list) as any =>
+        let
+            cleaned = List.Select(List.Transform(lst, each Text.Upper(Text.Trim(Text.From(_ ?? "")))), each _ <> ""),
+            counted = if List.IsEmpty(cleaned) then null else
+                Table.Group(
+                    Table.FromList(cleaned, Splitter.SplitByNothing(), {"Value"}),
+                    {"Value"},
+                    {{"Count", each Table.RowCount(_), Int64.Type}}
+                ),
+            result = if counted = null or Table.IsEmpty(counted) then null else
+                Table.Sort(counted, {{"Count", Order.Descending}}){0}[Value]
+        in
+            result,
+
+    // Reusable helper: first non-null value of a list. The SELECTION algorithm
+    // itself (first non-null) is unchanged from before this fix, but it's now
+    // applied independently per column against the group rather than picking
+    // one whole source row - see the "NOTE ON A REAL BEHAVIOR CHANGE" in this
+    // step's header comment above for what that means in practice.
+    FirstNonNullOfList = (lst as list) as any =>
+        let
+            nonNull = List.Select(lst, each _ <> null),
+            result = if List.IsEmpty(nonNull) then null else List.First(nonNull)
+        in
+            result,
+
+    // Deduplicate EARLY via majority-vote per business filter column
+    // (process unique parts only, same "process fewer rows downstream" win
+    // as before - see performance note at the top of this step)
+    DeduplicateEarly = Table.Group(RemoveBlankPartsEarly, {"PartNumber"}, {
+        // === BUSINESS FILTER COLUMNS: independent per-column majority-vote ===
+        {"Franchise", each ModeOfList([Franchise]), type text},
+        {"Source", each ModeOfList([Source]), type text},
+        {"SLC", each ModeOfList([SLC]), type text},
+        {"DealerGroupCode", each ModeOfList([DealerGroupCode]), type text},
+        {"CommodityCode", each ModeOfList([CommodityCode]), type text},
+        {"VendorCode", each ModeOfList([VendorCode]), type text},
+
+        // === EVERYTHING ELSE: "representative value" behavior, now decided
+        // independently PER COLUMN (see header note above) - explicit types
+        // added so Table.Group's output matches the source's actual types
+        // instead of defaulting to `type any` (Table.Group aggregation
+        // functions do NOT inherit types the way Table.Distinct passthrough
+        // did). This matters because UnknownPartsRecord below declares these
+        // same columns as typed, and Table.Combine merges the two.
+        {"Description", each FirstNonNullOfList([Description]), type text},
+        {"QuantityOnHand", each FirstNonNullOfList([QuantityOnHand]), type number},
+        {"BackOrderQty", each FirstNonNullOfList([BackOrderQty]), type number},
+        {"Returnable", each FirstNonNullOfList([Returnable]), type text},
+        {"InventoryCost", each FirstNonNullOfList([InventoryCost]), type number},
+        {"SellPrice1", each FirstNonNullOfList([SellPrice1]), type number},
+        {"ListPrice", each FirstNonNullOfList([ListPrice]), type number},
+        {"Current12MoSales", each FirstNonNullOfList([Current12MoSales]), type number}
+    }),
 
     // ========================================================================
     // STEP 2: COLUMN SELECTION - ESSENTIAL FIELDS ONLY
