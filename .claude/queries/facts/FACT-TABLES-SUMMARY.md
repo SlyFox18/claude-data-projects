@@ -191,6 +191,30 @@ Table/column search tool (metadata queries)
 
 ---
 
+### **Project: JD Price Updates (Sub-project 3)**
+**Location:** `projects/jd-price-updates/queries/fact-tables/`
+**Department:** Parts
+**Created:** 08/10/2026
+
+| Fact Table | Dataflow | Rows | Refresh Time | Schedule | Purpose |
+|------------|----------|------|--------------|----------|---------|
+| Fact_PriceUpdate_Enriched | df_Fact_PriceUpdate_Enriched | TBD (fewer than Raw_PriceUpdate_History's 5.1M, collapsed to PartNumber+EffectiveDate grain) | TBD | Daily | Branch-collapsed, dim_Parts-enriched price change history for parts sold locally |
+| Fact_JDNationalChangeReport_Enriched | df_Fact_JDNationalChangeReport_Enriched | ~48K+ (unchanged grain from raw) | TBD | Weekly | dim_Parts-enriched national Deere price change history (all parts, not just ones carried locally) |
+
+**Raw Tables:** Raw_PriceUpdate_History, Raw_JDNationalChangeReport_History
+
+**Dimensions:** dim_Parts
+
+**Business Context:** Foundational fact layer for JD parts pricing analysis (sub-project 3, phase 1). `Fact_PriceUpdate_Enriched` collapses the raw table's branch-level rows to one row per PartNumber+EffectiveDate with an `AffectedBranchCount` column (how many branches were affected), since branch doesn't affect price, only assortment. `Fact_JDNationalChangeReport_Enriched` keeps the raw table's grain unchanged. Both add `dim_Parts` classification columns (Source, SLC, DealerGroupCode, CommodityCode, VendorCode) and an `IsCarriedLocally` flag. What specific margin/KPI analysis gets built on top of these facts is deferred to a later phase -- see `docs/superpowers/specs/2026-08-10-jd-pricing-fact-tables-design.md`.
+
+**Status:** 🚧 In Development
+
+**Recommended Schedule:** Daily for Fact_PriceUpdate_Enriched (matches Raw_PriceUpdate_History's daily harvest), Weekly for Fact_JDNationalChangeReport_Enriched (matches its source's weekly cadence)
+
+**Note:** building this fact layer also surfaced and fixed a real, separate deduplication bug in `dim_Parts` itself (majority-vote fix, PR #28, 2026-08-10) -- see `.claude/queries/dimensions/dim_Parts.pq`'s header comment.
+
+---
+
 ### **Project: Negative On Hand - On Hand No Bin**
 **Location:** `projects/negative-onhand-nobin/queries/fact-tables/`
 **Department:** Parts
@@ -494,7 +518,7 @@ Understanding which dimensions are used by which facts helps with impact analysi
 |-----------|----------------------|-------------------|------------------|
 | **dim_DateTable** | 14 | ~21 | Nearly all reports (universal time dimension) |
 | **dim_BranchLocation** | 14 | ~21 | Nearly all reports (location-based analysis) |
-| **dim_Parts** | 9 | ~13 | All parts-focused reports |
+| **dim_Parts** | 10 | ~15 | All parts-focused reports, JD Price Updates |
 | **dim_CustomerList** | 5 | ~7 | Customer-facing reports |
 | **dim_UniqueCustomers** | 1 | 2 | Unique Parts Customers (dual-fact) |
 | **dim_AdjustmentType** | 1 | 1 | Parts Adjustments |
@@ -512,7 +536,7 @@ Understanding which dimensions are used by which facts helps with impact analysi
 
 **Impact Analysis:**
 - Modifying **dim_DateTable** or **dim_BranchLocation** → Affects nearly ALL reports (14 projects)
-- Modifying **dim_Parts** → Affects 9 parts-focused reports
+- Modifying **dim_Parts** → Affects 10 parts-focused reports
 - Modifying **dim_UniqueCustomers** → Only affects 1 report (2 facts in dual-fact architecture)
 
 ---
