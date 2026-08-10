@@ -75,10 +75,21 @@ let
     should be decided by its own majority - not coupled to whichever single
     row happens to be picked as a "winner" overall. All other columns
     (Description, and the numeric/operational snapshot columns) keep the
-    prior simple behavior of taking a representative single value (first
-    non-null) - majority-vote doesn't apply the same way to current-state
-    snapshot values, and Description's casing/formatting variance across a
-    part's rows is an already-accepted tradeoff (see Text.Upper note below).
+    prior simple behavior of taking a representative single value
+    (first non-null) - majority-vote doesn't apply the same way to
+    current-state snapshot values, and Description's casing/formatting
+    variance across a part's rows is an already-accepted tradeoff (see
+    Text.Upper note below). NOTE ON A REAL BEHAVIOR CHANGE: the OLD
+    Table.Distinct picked one whole physical source row, so these "everything
+    else" columns were previously guaranteed to all come from that SAME row
+    (internally coherent per-row). The NEW FirstNonNullOfList helper is
+    applied independently per column against the group, matching the same
+    "independent per column" philosophy already used for the majority-vote
+    columns - so it's now possible for Description to come from one branch's
+    row while QuantityOnHand comes from a different branch's row for the
+    same part. This is a reasonable, minor, and intentional tradeoff (not a
+    regression to fix), consistent with how the business filter columns
+    already work - flagged here so it's not mistaken for unchanged behavior.
 
     ⚠️ VENDORCODE IS A DIFFERENT KIND OF CASE - NOT THE SAME BUG, DON'T
     TREAT ITS "FIX" AS FULLY SOLVED (confirmed 2026-08-10, investigated
@@ -117,12 +128,18 @@ let
     ),
 
     // Reusable helper: mode (most frequent non-blank value) of a list.
-    // M has no built-in List.Mode. Values are trimmed/text-normalized for
-    // comparison only (not upper-cased - matches the majority-vote logic
-    // validated against production data via DuckDB before this fix).
+    // M has no built-in List.Mode. Values are trimmed AND upper-cased before
+    // votes are counted, so case variants of the same real value (e.g. "D"
+    // vs "d") are counted as ONE cluster rather than splitting the vote -
+    // without this, a genuinely rare-but-differently-cased minority value
+    // (e.g. "TD") could outnumber either individual case-variant of the true
+    // majority while still losing to their combined total. STEP 3 uppercases
+    // the winning value again anyway, so returning it upper-cased here has
+    // no observable effect on the final stored value - it only changes how
+    // votes are tallied.
     ModeOfList = (lst as list) as any =>
         let
-            cleaned = List.Select(List.Transform(lst, each Text.Trim(Text.From(_ ?? ""))), each _ <> ""),
+            cleaned = List.Select(List.Transform(lst, each Text.Upper(Text.Trim(Text.From(_ ?? "")))), each _ <> ""),
             counted = if List.IsEmpty(cleaned) then null else
                 Table.Group(
                     Table.FromList(cleaned, Splitter.SplitByNothing(), {"Value"}),
@@ -155,15 +172,21 @@ let
         {"CommodityCode", each ModeOfList([CommodityCode]), type text},
         {"VendorCode", each ModeOfList([VendorCode]), type text},
 
-        // === EVERYTHING ELSE: unchanged "representative value" behavior ===
-        {"Description", each FirstNonNullOfList([Description])},
-        {"QuantityOnHand", each FirstNonNullOfList([QuantityOnHand])},
-        {"BackOrderQty", each FirstNonNullOfList([BackOrderQty])},
-        {"Returnable", each FirstNonNullOfList([Returnable])},
-        {"InventoryCost", each FirstNonNullOfList([InventoryCost])},
-        {"SellPrice1", each FirstNonNullOfList([SellPrice1])},
-        {"ListPrice", each FirstNonNullOfList([ListPrice])},
-        {"Current12MoSales", each FirstNonNullOfList([Current12MoSales])}
+        // === EVERYTHING ELSE: "representative value" behavior, now decided
+        // independently PER COLUMN (see header note above) - explicit types
+        // added so Table.Group's output matches the source's actual types
+        // instead of defaulting to `type any` (Table.Group aggregation
+        // functions do NOT inherit types the way Table.Distinct passthrough
+        // did). This matters because UnknownPartsRecord below declares these
+        // same columns as typed, and Table.Combine merges the two.
+        {"Description", each FirstNonNullOfList([Description]), type text},
+        {"QuantityOnHand", each FirstNonNullOfList([QuantityOnHand]), type number},
+        {"BackOrderQty", each FirstNonNullOfList([BackOrderQty]), type number},
+        {"Returnable", each FirstNonNullOfList([Returnable]), type text},
+        {"InventoryCost", each FirstNonNullOfList([InventoryCost]), type number},
+        {"SellPrice1", each FirstNonNullOfList([SellPrice1]), type number},
+        {"ListPrice", each FirstNonNullOfList([ListPrice]), type number},
+        {"Current12MoSales", each FirstNonNullOfList([Current12MoSales]), type number}
     }),
 
     // ========================================================================
