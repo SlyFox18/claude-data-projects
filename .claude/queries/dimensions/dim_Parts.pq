@@ -172,6 +172,81 @@ let
     at that pattern have now both failed or underperformed relative to
     this one.
 
+    ⚡ SCOPE REDUCTION (2026-08-10/11): the working attempt-1 architecture
+    (7:43-8:00 measured refresh, twice) is still ~2x the pre-fix baseline
+    (2.5-4 min) and a real, ongoing CU-consumption concern on F4 capacity -
+    this dimension alone was eating nearly the entire documented 6-8 minute
+    Dimensions-phase pipeline budget every single day. Given the real cost
+    of continued architecture experimentation (see the two attempts above)
+    versus more pressing priorities, majority-vote was deliberately scoped
+    DOWN from 6 business filter columns to 4, dropping CommodityCode and
+    VendorCode back to the cheap FirstNonNullOfList path:
+      - CommodityCode: PROVEN zero real-world benefit. The full-data
+        comparison (buggy Table.Distinct vs. correct majority-vote) found
+        EXACTLY 0 PartNumbers where CommodityCode's value would differ.
+        Majority-voting it was pure wasted computation for zero
+        correctness gain - an unambiguous, risk-free thing to stop doing.
+      - VendorCode: NOT proven harmless (~95,699 of ~100,362 total changed
+        PartNumbers across all 6 columns came from VendorCode alone - by
+        far the single largest share) - but this is deliberately deferred,
+        not ignored. Two independent reasons: (1) it's almost certainly
+        the single most expensive column to majority-vote, given its far
+        higher per-part distinct-value cardinality than the other 5
+        columns (e.g. PartNumber PF91010 has 20 distinct VendorCode values
+        across 31 source rows - see the VENDORCODE warning further below);
+        (2) majority-vote was already known to be an incomplete stopgap
+        for VendorCode even when it WAS being computed - see that same
+        warning for why "which vendor(s) does this part use" cannot be
+        correctly represented by any single value on a one-row-per-part
+        dimension at all, regardless of which value wins a vote. Paying
+        peak computation cost for a result already known to need a real
+        redesign was judged not worth it tonight.
+    Franchise (2,939 changed parts), Source (1,070), SLC (128), and
+    DealerGroupCode (6,526) all keep majority-vote - each has a real,
+    provable disagreement count AND a clean semantic fit (each is a
+    should-be-single-valued classification fact about the part, same
+    reasoning that made the original fix correct for these columns in the
+    first place). NOT YET MEASURED against live Fabric as of this writing -
+    flag the actual refresh time when next tested.
+
+    📋 FOR A FUTURE SESSION - WHAT TO ACTUALLY LOOK AT:
+    The M-engine-only approach has hit its practical limit for tonight
+    (2 real architecture attempts, best measured result ~7:43-8:00 vs. a
+    2.5-4 min baseline, even after scoping down to 4 of 6 columns). If this
+    still isn't fast/cheap enough in practice once you're back in this
+    file, the more promising direction is almost certainly NOT another M
+    rewrite - it's moving the majority-vote computation OUT of Power Query
+    entirely, into a Fabric Notebook (PySpark or Spark SQL) reading
+    jdis_Part_Information as a DataFrame. This exact computation (group by
+    PartNumber+column, count, window-function-rank, take the top row) is
+    precisely what Spark's distributed engine is built for, and is the
+    SAME logical operation already proven correct and FAST in DuckDB
+    throughout this investigation (see
+    projects/jd-price-updates/scripts/investigate_dim_parts_dedup.py and
+    investigate_dim_parts_dedup_perf.py for working SQL to translate).
+    Concretely: (1) a Notebook computes the per-column majority-vote for
+    all 6 columns (including VendorCode, once its architecture question
+    with Ben is resolved - see below) and writes the deduplicated result
+    to a new intermediate Lakehouse table (e.g. jdis_Part_Information_Deduped);
+    (2) this Dataflow Gen2 gets much simpler again - STEP 1 goes back to
+    something close to the ORIGINAL Table.Distinct-shaped query, just
+    reading from the new pre-deduplicated intermediate table instead of
+    jdis_Part_Information directly, since the hard work already happened
+    in the Notebook; (3) this needs the Notebook to run BEFORE this
+    dataflow in the pipeline (a new dependency to add to the Fabric
+    Pipeline, same "Raw -> Dims" ordering constraint that already governs
+    everything else in this pipeline). This is real, new work - a new
+    pipeline artifact, real testing before trusting it in production - not
+    a quick fix, but the architecturally right direction if the M-only
+    approach continues to be too expensive.
+    SEPARATELY: the VendorCode architecture question (does it even belong
+    as a single column on a part-level dimension, or does it need a proper
+    part x branch or part x vendor bridge/fact table instead) still needs
+    Brian's conversation with Ben - see the VENDORCODE warning below and
+    project memory project_dim_parts_vendorcode_limitation.md. Resolve
+    that BEFORE deciding whether/how to bring VendorCode back into
+    whatever the final majority-vote (or Notebook-based) solution becomes.
+
     ⚠️ VENDORCODE IS A DIFFERENT KIND OF CASE - NOT THE SAME BUG, DON'T
     TREAT ITS "FIX" AS FULLY SOLVED (confirmed 2026-08-10, investigated
     against real production data): Franchise/Source/SLC/DealerGroupCode/
@@ -272,33 +347,34 @@ let
     DealerGroupCodeVotes_Sorted = Table.Sort(DealerGroupCodeVotes_Counts, {{"PartNumber", Order.Ascending}, {"VoteCount", Order.Descending}}),
     DealerGroupCode_Mode = Table.Group(DealerGroupCodeVotes_Sorted, {"PartNumber"}, {{"DealerGroupCode", each List.First([DealerGroupCode]), type text}}),
 
-    CommodityCodeVotes_Filtered = Table.SelectColumns(
-        Table.SelectRows(RemoveBlankPartsEarly, each [CommodityCode] <> null and Text.Trim(Text.From([CommodityCode])) <> ""),
-        {"PartNumber", "CommodityCode"}),
-    CommodityCodeVotes_Normalized = Table.TransformColumns(CommodityCodeVotes_Filtered, {"CommodityCode", each Text.Upper(Text.Trim(Text.From(_))), type text}),
-    CommodityCodeVotes_Counts = Table.Group(CommodityCodeVotes_Normalized, {"PartNumber", "CommodityCode"}, {{"VoteCount", each Table.RowCount(_), Int64.Type}}),
-    CommodityCodeVotes_Sorted = Table.Sort(CommodityCodeVotes_Counts, {{"PartNumber", Order.Ascending}, {"VoteCount", Order.Descending}}),
-    CommodityCode_Mode = Table.Group(CommodityCodeVotes_Sorted, {"PartNumber"}, {{"CommodityCode", each List.First([CommodityCode]), type text}}),
+    // CommodityCode and VendorCode are DELIBERATELY excluded from
+    // majority-vote here - see the "SCOPE REDUCTION" note in this step's
+    // header comment above. CommodityCode goes back to FirstNonNullOfList
+    // (proven zero real-world benefit from majority-voting it - 0 parts
+    // changed in the full-data comparison). VendorCode goes back to
+    // FirstNonNullOfList too, NOT because it's provably harmless like
+    // CommodityCode (it isn't - ~95,699 parts differ), but because it's
+    // both the single most expensive column to majority-vote (far higher
+    // per-part distinct-value cardinality than the others) AND a column
+    // whose "fix" was already known to be an incomplete stopgap pending a
+    // real conversation with Ben about part x branch modeling - see the
+    // VENDORCODE warning further below in this comment block. No reason to
+    // pay peak cost for a result already known to need revisiting.
 
-    VendorCodeVotes_Filtered = Table.SelectColumns(
-        Table.SelectRows(RemoveBlankPartsEarly, each [VendorCode] <> null and Text.Trim(Text.From([VendorCode])) <> ""),
-        {"PartNumber", "VendorCode"}),
-    VendorCodeVotes_Normalized = Table.TransformColumns(VendorCodeVotes_Filtered, {"VendorCode", each Text.Upper(Text.Trim(Text.From(_))), type text}),
-    VendorCodeVotes_Counts = Table.Group(VendorCodeVotes_Normalized, {"PartNumber", "VendorCode"}, {{"VoteCount", each Table.RowCount(_), Int64.Type}}),
-    VendorCodeVotes_Sorted = Table.Sort(VendorCodeVotes_Counts, {{"PartNumber", Order.Ascending}, {"VoteCount", Order.Descending}}),
-    VendorCode_Mode = Table.Group(VendorCodeVotes_Sorted, {"PartNumber"}, {{"VendorCode", each List.First([VendorCode]), type text}}),
-
-    // "Everything else" columns keep the prior FirstNonNullOfList behavior,
-    // computed with a single ordinary Table.Group over the full table by
-    // PartNumber - this was never the performance problem (FirstNonNullOfList
-    // is a plain O(n) list scan, not a nested Table.Group call), so it's
-    // unchanged. Explicit types added so Table.Group's output matches the
-    // source's actual types instead of defaulting to `type any` (Table.Group
-    // aggregation functions do NOT inherit types the way Table.Distinct
-    // passthrough did). This matters because UnknownPartsRecord below
-    // declares these same columns as typed, and Table.Combine merges the two.
+    // "Everything else" columns (now including CommodityCode and VendorCode)
+    // keep the FirstNonNullOfList behavior, computed with a single ordinary
+    // Table.Group over the full table by PartNumber - this was never the
+    // performance problem (FirstNonNullOfList is a plain O(n) list scan,
+    // not a nested Table.Group call). Explicit types added so Table.Group's
+    // output matches the source's actual types instead of defaulting to
+    // `type any` (Table.Group aggregation functions do NOT inherit types
+    // the way Table.Distinct passthrough did). This matters because
+    // UnknownPartsRecord below declares these same columns as typed, and
+    // Table.Combine merges the two.
     EverythingElseByPart = Table.Group(RemoveBlankPartsEarly, {"PartNumber"}, {
         {"Description", each FirstNonNullOfList([Description]), type text},
+        {"CommodityCode", each FirstNonNullOfList([CommodityCode]), type text},
+        {"VendorCode", each FirstNonNullOfList([VendorCode]), type text},
         {"QuantityOnHand", each FirstNonNullOfList([QuantityOnHand]), type number},
         {"BackOrderQty", each FirstNonNullOfList([BackOrderQty]), type number},
         {"Returnable", each FirstNonNullOfList([Returnable]), type text},
@@ -316,7 +392,9 @@ let
     // above, so it never reaches that column's `_Mode` table) still gets a
     // row here, with that column coming back null via the left outer join -
     // matching the old ModeOfList behavior of returning null for an
-    // all-blank list.
+    // all-blank list. Only 4 join/expand pairs now (down from 6) - no
+    // CommodityCode/VendorCode join, they're already present via
+    // EverythingElseByPart above.
     JoinFranchise = Table.NestedJoin(EverythingElseByPart, {"PartNumber"}, Franchise_Mode, {"PartNumber"}, "FranchiseJoin", JoinKind.LeftOuter),
     ExpandFranchise = Table.ExpandTableColumn(JoinFranchise, "FranchiseJoin", {"Franchise"}, {"Franchise"}),
 
@@ -329,19 +407,13 @@ let
     JoinDealerGroupCode = Table.NestedJoin(ExpandSLC, {"PartNumber"}, DealerGroupCode_Mode, {"PartNumber"}, "DealerGroupCodeJoin", JoinKind.LeftOuter),
     ExpandDealerGroupCode = Table.ExpandTableColumn(JoinDealerGroupCode, "DealerGroupCodeJoin", {"DealerGroupCode"}, {"DealerGroupCode"}),
 
-    JoinCommodityCode = Table.NestedJoin(ExpandDealerGroupCode, {"PartNumber"}, CommodityCode_Mode, {"PartNumber"}, "CommodityCodeJoin", JoinKind.LeftOuter),
-    ExpandCommodityCode = Table.ExpandTableColumn(JoinCommodityCode, "CommodityCodeJoin", {"CommodityCode"}, {"CommodityCode"}),
-
-    JoinVendorCode = Table.NestedJoin(ExpandCommodityCode, {"PartNumber"}, VendorCode_Mode, {"PartNumber"}, "VendorCodeJoin", JoinKind.LeftOuter),
-    ExpandVendorCode = Table.ExpandTableColumn(JoinVendorCode, "VendorCodeJoin", {"VendorCode"}, {"VendorCode"}),
-
     // Explicit final typing (belt-and-suspenders): Table.NestedJoin /
     // Table.ExpandTableColumn should already carry through the types set on
     // the Franchise_Mode/Source_Mode/etc. Table.Group columns, but this
     // guarantees DeduplicateEarly's output types exactly match what STEP 2
     // (EnhancedColumns) and UnknownPartsRecord below expect - the same
     // reason explicit types were added to the old Table.Group call.
-    DeduplicateEarly = Table.TransformColumnTypes(ExpandVendorCode, {
+    DeduplicateEarly = Table.TransformColumnTypes(ExpandDealerGroupCode, {
         {"PartNumber", type text},
         {"Franchise", type text},
         {"Source", type text},
