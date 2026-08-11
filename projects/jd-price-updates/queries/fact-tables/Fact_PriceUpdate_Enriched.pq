@@ -112,17 +112,35 @@ zero -- VendorCode-style genuine branch variation was ruled out
 specifically for Franchise via the investigation above, but re-verifying
 after deployment is still the right practice, not an assumption).
 
-HASBRANCHPRICEDISAGREEMENT: safety-net flag -- true if the branch rows
+HASBRANCHPRICEDISAGREEMENT (attempted, then dropped -- PERFORMANCE,
+2026-08-11): originally a safety-net flag -- true if the branch rows
 being collapsed for a given PartNumber+EffectiveDate don't actually agree
-on price/change fields. Per the raw table's own documented assumption
-("branch does not affect pricing values, only assortment"), expected to
-be rare-to-never -- confirmed via verify_fact_priceupdate_enriched.py:
-7,422 of 1,292,823 groups (0.57%) actually show this as of 2026-08-10.
-Not zero, but consistent with "rare" rather than "never" -- this project
-has repeatedly found real, rare exceptions to "should never happen"
-assumptions elsewhere (JD's row-shift defect, the header-padding bug, the
-FileNameDateMismatchFlag hits), so this flag stays in place as cheap
-insurance rather than being removed as "obviously always false."
+on price/change fields. Confirmed correct and real via
+verify_fact_priceupdate_enriched.py (7,422 of 1,292,823 groups, 0.57%,
+actually show this) -- the logic itself was never wrong. It was dropped
+because of a real, live production performance failure: this column's
+per-group aggregation function ran a 3-step List.Count(List.Distinct(
+List.RemoveNulls(...))) chain 12 SEPARATE times (once per price/change
+field checked) for every one of the ~1.29 million PartNumber+EffectiveDate
+groups, on top of the ~5.1M-row source scan already required to build
+those groups. When built into the live Fabric Dataflow Gen2 and refreshed,
+this ran for 45+ minutes without completing and had to be cancelled --
+directly analogous to (and diagnosed using the same lesson learned from)
+the dim_Parts.pq performance saga the same night: a single Table.Group
+call bundling multiple complex custom per-group functions is a severe
+M-engine anti-pattern at ~1M+-group scale, regardless of whether the
+functions use Table.* or List.* primitives. AffectedBranchCount (kept)
+uses this same 3-step chain, but only ONCE per group, not twelve times --
+by far the smaller share of the total per-group cost, and the one Ben
+explicitly asked for as this fact's core value-add, unlike
+HasBranchPriceDisagreement which was a secondary safety net. See project
+memory project_dim_parts_perf_followup.md for the shared root cause and
+the recommended real fix (a Fabric Notebook/Spark redesign) for both this
+fact and dim_Parts in a future session -- if/when that happens,
+HasBranchPriceDisagreement (or an equivalent per-column disagreement
+check) can be reintroduced there without the same per-group cost, since
+Spark's engine is built for exactly this kind of group-by-and-compare
+computation at this scale.
 
 NO CURRENT-SNAPSHOT VALUES: dim_Parts is a current snapshot, not
 point-in-time history. Adding today's SellPrice1/InventoryCost/etc. onto a
@@ -160,21 +178,11 @@ let
         {"CostDiff", each List.First(List.RemoveNulls([CostDiff]), null), type nullable number},
         {"ListDiff", each List.First(List.RemoveNulls([ListDiff]), null), type nullable number},
         {"SellPrice1Diff", each List.First(List.RemoveNulls([SellPrice1Diff]), null), type nullable number},
-        {"UpdateCode", each List.First(List.RemoveNulls([UpdateCode]), null), type nullable text},
-        {"HasBranchPriceDisagreement", each
-            List.Count(List.Distinct(List.RemoveNulls([ManufacturerListPrice]))) > 1 or
-            List.Count(List.Distinct(List.RemoveNulls([DealerListPrice]))) > 1 or
-            List.Count(List.Distinct(List.RemoveNulls([ListPriceChangePercent]))) > 1 or
-            List.Count(List.Distinct(List.RemoveNulls([ManufacturerReplacePrice]))) > 1 or
-            List.Count(List.Distinct(List.RemoveNulls([DealerReplacePrice]))) > 1 or
-            List.Count(List.Distinct(List.RemoveNulls([ManufacturerSellPrice1]))) > 1 or
-            List.Count(List.Distinct(List.RemoveNulls([DealerSellPrice1]))) > 1 or
-            List.Count(List.Distinct(List.RemoveNulls([SellPriceOld]))) > 1 or
-            List.Count(List.Distinct(List.RemoveNulls([CostDiff]))) > 1 or
-            List.Count(List.Distinct(List.RemoveNulls([ListDiff]))) > 1 or
-            List.Count(List.Distinct(List.RemoveNulls([SellPrice1Diff]))) > 1 or
-            List.Count(List.Distinct(List.RemoveNulls([UpdateCode]))) > 1,
-        type logical}
+        {"UpdateCode", each List.First(List.RemoveNulls([UpdateCode]), null), type nullable text}
+        // HasBranchPriceDisagreement dropped here -- see the header comment's
+        // "HASBRANCHPRICEDISAGREEMENT (attempted, then dropped -- PERFORMANCE)"
+        // note for the full reasoning. Do not re-add a per-group custom
+        // function like this without re-reading that note first.
     }),
 
     // ------------------------------------------------------------------
@@ -221,7 +229,7 @@ let
         "ManufacturerListPrice", "DealerListPrice", "ListPriceChangePercent",
         "ManufacturerReplacePrice", "DealerReplacePrice", "ManufacturerSellPrice1",
         "DealerSellPrice1", "SellPriceOld", "CostDiff", "ListDiff", "SellPrice1Diff",
-        "UpdateCode", "AffectedBranchCount", "HasBranchPriceDisagreement",
+        "UpdateCode", "AffectedBranchCount",
         "Source", "SLC", "DealerGroupCode", "CommodityCode",
         "VendorCode", "IsCarriedLocally", "IngestedAt"
     })
