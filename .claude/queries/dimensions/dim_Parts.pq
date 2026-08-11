@@ -206,8 +206,32 @@ let
     provable disagreement count AND a clean semantic fit (each is a
     should-be-single-valued classification fact about the part, same
     reasoning that made the original fix correct for these columns in the
-    first place). NOT YET MEASURED against live Fabric as of this writing -
-    flag the actual refresh time when next tested.
+    first place).
+
+    MEASURED RESULT OF SCOPE REDUCTION: 8:12 - NOT faster than the 6-column
+    version's 7:43/8:00, actually slightly slower. This is a genuinely
+    counter-intuitive, disappointing result (dropping 2 of 6 columns'
+    worth of Table.Group calls and 2 of 6 joins should have helped) and is
+    recorded honestly rather than glossed over. Two honest possibilities,
+    neither confirmed: (1) run-to-run variance in live Fabric F4 capacity
+    load (other concurrent activity on the same capacity at refresh time)
+    dominates over the actual size of this specific optimization, i.e. the
+    real signal-to-noise ratio at this scale may be too small for a
+    2-of-6-column reduction to show up as a measurable difference; (2) the
+    true bottleneck may not be primarily the majority-vote computation
+    itself at all - it could be elsewhere in this dataflow (the 4 remaining
+    Table.NestedJoin/Table.ExpandTableColumn pairs, or something in STEP
+    2-10 downstream, or the base cost of scanning ~1M rows from
+    jdis_Part_Information multiple times regardless of what's computed per
+    row). NOT investigated further - this was the deliberate stopping
+    point for tonight per real time/priority constraints (see the
+    "FOR A FUTURE SESSION" note below) - but this result is exactly why
+    the recommended next real step is a fundamentally different
+    architecture (Fabric Notebook/Spark), not another M-engine tweak. Two
+    different M restructurings and a scope reduction have now all failed
+    to get meaningfully below ~7:43, which is reasonably strong evidence
+    the M engine itself, not any one specific implementation detail within
+    it, is the actual limiting factor here.
 
     📋 FOR A FUTURE SESSION - WHAT TO ACTUALLY LOOK AT:
     The M-engine-only approach has hit its practical limit for tonight
