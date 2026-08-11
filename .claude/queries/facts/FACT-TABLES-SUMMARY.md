@@ -198,14 +198,14 @@ Table/column search tool (metadata queries)
 
 | Fact Table | Dataflow | Rows | Refresh Time | Schedule | Purpose |
 |------------|----------|------|--------------|----------|---------|
-| Fact_PriceUpdate_Enriched | df_Fact_PriceUpdate_Enriched | TBD (fewer than Raw_PriceUpdate_History's 5.1M, collapsed to PartNumber+EffectiveDate grain) | TBD | Daily | Branch-collapsed, dim_Parts-enriched price change history for parts sold locally |
+| Fact_PriceUpdate_Enriched | df_Fact_PriceUpdate_Enriched | ~5.1M (unchanged grain from raw -- see note below) | TBD | Daily | dim_Parts-enriched price change history for parts sold locally |
 | Fact_JDNationalChangeReport_Enriched | df_Fact_JDNationalChangeReport_Enriched | ~48K+ (unchanged grain from raw) | TBD | Weekly | dim_Parts-enriched national Deere price change history (all parts, not just ones carried locally) |
 
 **Raw Tables:** Raw_PriceUpdate_History, Raw_JDNationalChangeReport_History
 
 **Dimensions:** dim_Parts
 
-**Business Context:** Foundational fact layer for JD parts pricing analysis (sub-project 3, phase 1). `Fact_PriceUpdate_Enriched` collapses the raw table's branch-level rows to one row per PartNumber+EffectiveDate with an `AffectedBranchCount` column (how many branches were affected), since branch doesn't affect price, only assortment. `Fact_JDNationalChangeReport_Enriched` keeps the raw table's grain unchanged. Both add `dim_Parts` classification columns (Source, SLC, DealerGroupCode, CommodityCode, VendorCode) and an `IsCarriedLocally` flag. What specific margin/KPI analysis gets built on top of these facts is deferred to a later phase -- see `docs/superpowers/specs/2026-08-10-jd-pricing-fact-tables-design.md`.
+**Business Context:** Foundational fact layer for JD parts pricing analysis (sub-project 3, phase 1). Both facts keep their raw source's grain unchanged and add `dim_Parts` classification columns (Source, SLC, DealerGroupCode, CommodityCode, VendorCode) and an `IsCarriedLocally` flag -- pure enrichment, no aggregation. `Fact_PriceUpdate_Enriched` originally collapsed branch-level rows to PartNumber+EffectiveDate with a computed `AffectedBranchCount` column, but that Table.Group ran 45+ minutes live in Fabric without completing (severe M-engine anti-pattern at 5.1M-row scale, same root cause as a separate dim_Parts.pq performance issue found the same night -- see project memory `project_dim_parts_perf_followup.md`). Redesigned 2026-08-11 to do the branch-collapse NOT AT ALL in this dataflow: the fact stays at raw (branch-level) grain, and `AffectedBranchCount` is planned as a DAX measure (`DISTINCTCOUNT(Branch)`) at the semantic-model layer instead -- faster, simpler, and more correct (a measure recalculates properly under report-level branch filters; a frozen ETL column couldn't). What specific margin/KPI analysis gets built on top of these facts is deferred to a later phase -- see `docs/superpowers/specs/2026-08-10-jd-pricing-fact-tables-design.md`.
 
 **Status:** 🚧 In Development
 

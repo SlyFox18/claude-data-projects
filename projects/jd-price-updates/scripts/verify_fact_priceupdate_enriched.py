@@ -1,4 +1,21 @@
 """
+UPDATED 2026-08-11: Fact_PriceUpdate_Enriched.pq no longer does any of
+this grouping in Power Query -- collapsing 5.1M rows via Table.Group
+proved to be a severe M-engine performance anti-pattern live in Fabric
+(45+ minutes, cancelled -- same root cause as dim_Parts.pq's own
+performance saga the same night, see project memory
+project_dim_parts_perf_followup.md). The fact table now keeps
+Raw_PriceUpdate_History's own branch-level grain unchanged and is just a
+plain join/lookup against dim_Parts -- fast, simple, no grouping.
+AffectedBranchCount is planned as a DAX measure at the semantic-model
+layer instead (DISTINCTCOUNT(Branch) grouped by PartNumber+EffectiveDate)
+-- not yet built as of this update. This script's grouping/dedup logic
+below is KEPT as a reference for validating that future DAX measure's
+output once it's built, and as the historical record of what was
+originally tried in the M query -- it does NOT reflect current
+Fact_PriceUpdate_Enriched.pq behavior anymore.
+
+ORIGINAL DOCSTRING (historical context):
 Verifies the Fact_PriceUpdate_Enriched grouping/dedup logic against real
 production data via DuckDB + OneLake delta_scan, BEFORE the equivalent
 Power Query M logic is written. Confirms:
