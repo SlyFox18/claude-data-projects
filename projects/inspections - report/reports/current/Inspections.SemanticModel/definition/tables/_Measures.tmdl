@@ -1254,326 +1254,6 @@ table _Measures
 			```
 		lineageTag: dfd274f2-19fb-49b0-96b1-fb623c0e7dc2
 
-	measure 'Revenue Breakdown Cards HTML V2' = ```
-			
-			VAR InspectionRev = [Inspection $$]
-			VAR PartsRev = [Parts $ Total]
-			VAR LaborRev = [Labor With Inspection]
-			VAR TotalRev = InspectionRev + PartsRev + LaborRev
-			VAR InspectionPct =
-			    DIVIDE ( InspectionRev, TotalRev, 0 )
-			VAR Hours = [Hours Worked With Inspection]
-			VAR HoursInspection = [Hours Worked]
-			VAR AdditionalHours = Hours - HoursInspection
-			VAR PartsPct = [% to Goal - Parts]
-			VAR LaborPct = [% to Goal - Labor With Inspection]
-			RETURN
-			    "
-			<div style='
-			    font-family: Segoe UI, Arial, sans-serif;
-			    display: flex;
-			    gap: 20px;
-			    height: 160px;
-			'>
-			    <!-- Card 1: Inspection $$ -->
-			    <div style='
-			        flex: 1;
-			        background: white;
-			        border-radius: 12px;
-			        padding: 24px;
-			        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-			        border-top: 4px solid #1D3C4E;
-			        display: flex;
-			        flex-direction: column;
-			        justify-content: space-between;
-			    '>
-			        <div>
-			            <div style='font-size: 12px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;'>
-			                💵 Inspection Revenue
-			            </div>
-			            <div style='font-size: 36px; font-weight: 700; color: #111827; line-height: 1;'>
-			                "
-			        & FORMAT ( InspectionRev / 1000, "$#,##0" ) & "K
-			            </div>
-			        </div>
-			        <div style='
-			            background: #e0f2fe;
-			            padding: 6px 10px;
-			            border-radius: 6px;
-			            font-size: 12px;
-			            color: #0c4a6e;
-			            font-weight: 600;
-			            text-align: center;
-			        '>
-			            Only "
-			        & FORMAT ( InspectionPct, "0%" ) & " of total • Drives upsell
-			        </div>
-			    </div>
-			    
-			    <!-- Card 2: Parts $ -->
-			    <div style='
-			        flex: 1;
-			        background: white;
-			        border-radius: 12px;
-			        padding: 24px;
-			        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-			        border-top: 4px solid #10b981;
-			        display: flex;
-			        flex-direction: column;
-			        justify-content: space-between;
-			    '>
-			        <div>
-			            <div style='font-size: 12px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;'>
-			                🔧 Parts Revenue
-			            </div>
-			            <div style='font-size: 36px; font-weight: 700; color: #111827; line-height: 1;'>
-			                "
-			        & FORMAT ( PartsRev / 1000000, "$#,##0.0" ) & "M
-			            </div>
-			        </div>
-			        <div style='
-			            background: #d1fae5;
-			            padding: 6px 10px;
-			            border-radius: 6px;
-			            font-size: 12px;
-			            color: #065f46;
-			            font-weight: 600;
-			            text-align: center;
-			        '>
-			            From inspection work orders
-			        </div>
-			    </div>
-			    
-			    <!-- Card 3: Labor With Inspection -->
-			    <div style='
-			        flex: 1;
-			        background: white;
-			        border-radius: 12px;
-			        padding: 24px;
-			        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-			        border-top: 4px solid #3b82f6;
-			        display: flex;
-			        flex-direction: column;
-			        justify-content: space-between;
-			    '>
-			        <div>
-			            <div style='font-size: 12px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;'>
-			                💼 Total Labor
-			            </div>
-			            <div style='font-size: 36px; font-weight: 700; color: #111827; line-height: 1;'>
-			                "
-			        & FORMAT ( LaborRev / 1000000, "$#,##0.0" ) & "M
-			            </div>
-			        </div>
-			        <div style='
-			            background: #dbeafe;
-			            padding: 6px 10px;
-			            border-radius: 6px;
-			            font-size: 12px;
-			            color: #1e40af;
-			            font-weight: 600;
-			            text-align: center;
-			        '>
-			            All work from inspections
-			        </div>
-			    </div>
-			    
-			    <!-- Card 4: Hours with Better Context -->
-			    <div style='
-			        flex: 1;
-			        background: white;
-			        border-radius: 12px;
-			        padding: 24px;
-			        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-			        border-top: 4px solid #f59e0b;
-			        display: flex;
-			        flex-direction: column;
-			        justify-content: space-between;
-			    '>
-			        <div>
-			            <div style='font-size: 12px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;'>
-			                ⏱️ Total Hours
-			            </div>
-			            <div style='font-size: 36px; font-weight: 700; color: #111827; line-height: 1;'>
-			                "
-			        & FORMAT ( Hours / 1000, "#,##0.0" ) & "K
-			            </div>
-			        </div>
-			        <div style='
-			            background: #fef3c7;
-			            padding: 6px 10px;
-			            border-radius: 6px;
-			            font-size: 12px;
-			            color: #92400e;
-			            font-weight: 600;
-			            text-align: center;
-			        '>
-			            +"
-			        & FORMAT ( AdditionalHours / 1000, "#,##0.0" ) & "K additional hours 🚀
-			        </div>
-			    </div>
-			</div>
-			"
-			```
-		lineageTag: 0509f3f5-41df-4e4a-8ec0-2651e2cff007
-
-	measure 'Revenue Breakdown Cards HTML V3' = ```
-			
-			VAR InspectionRev = [Inspection $$]
-			VAR PartsRev = [Parts $ Total]
-			VAR LaborRev = [Labor With Inspection]
-			VAR LaborAdditional = [Labor $$]
-			VAR Hours = [Hours Worked With Inspection]
-			VAR HoursInspection = [Hours Worked]
-			VAR AdditionalHours = [Additional Hours Worked]
-			RETURN
-			    "
-			<div style='
-			    font-family: Segoe UI, Arial, sans-serif;
-			    display: flex;
-			    gap: 20px;
-			    height: 180px;
-			'>
-			    <!-- Card 1: Inspection $$ -->
-			    <div style='
-			        flex: 1;
-			        background: white;
-			        border-radius: 12px;
-			        padding: 20px;
-			        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-			        border-top: 4px solid #1D3C4E;
-			        display: flex;
-			        flex-direction: column;
-			        justify-content: space-between;
-			    '>
-			        <div>
-			            <div style='font-size: 11px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;'>
-			                💵 Inspection Revenue
-			            </div>
-			            <div style='font-size: 28px; font-weight: 700; color: #111827; line-height: 1.1;'>
-			                "
-			        & FORMAT ( InspectionRev, "$#,##0" ) & "
-			            </div>
-			        </div>
-			        <div style='
-			            background: #e0f2fe;
-			            padding: 8px 10px;
-			            border-radius: 6px;
-			            font-size: 11px;
-			            color: #0c4a6e;
-			            line-height: 1.4;
-			        '>
-			            Labor charged for performing the 1,421 inspection job codes
-			        </div>
-			    </div>
-			    
-			    <!-- Card 2: Parts $ -->
-			    <div style='
-			        flex: 1;
-			        background: white;
-			        border-radius: 12px;
-			        padding: 20px;
-			        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-			        border-top: 4px solid #10b981;
-			        display: flex;
-			        flex-direction: column;
-			        justify-content: space-between;
-			    '>
-			        <div>
-			            <div style='font-size: 11px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;'>
-			                🔧 Parts Revenue
-			            </div>
-			            <div style='font-size: 28px; font-weight: 700; color: #111827; line-height: 1.1;'>
-			                "
-			        & FORMAT ( PartsRev, "$#,##0" ) & "
-			            </div>
-			        </div>
-			        <div style='
-			            background: #d1fae5;
-			            padding: 8px 10px;
-			            border-radius: 6px;
-			            font-size: 11px;
-			            color: #065f46;
-			            line-height: 1.4;
-			        '>
-			            Parts sold on work orders that included an inspection job code
-			        </div>
-			    </div>
-			    
-			    <!-- Card 3: Labor With Inspection -->
-			    <div style='
-			        flex: 1;
-			        background: white;
-			        border-radius: 12px;
-			        padding: 20px;
-			        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-			        border-top: 4px solid #3b82f6;
-			        display: flex;
-			        flex-direction: column;
-			        justify-content: space-between;
-			    '>
-			        <div>
-			            <div style='font-size: 11px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;'>
-			                💼 Total Labor Revenue
-			            </div>
-			            <div style='font-size: 28px; font-weight: 700; color: #111827; line-height: 1.1;'>
-			                "
-			        & FORMAT ( LaborRev, "$#,##0" ) & "
-			            </div>
-			        </div>
-			        <div style='
-			            background: #dbeafe;
-			            padding: 8px 10px;
-			            border-radius: 6px;
-			            font-size: 11px;
-			            color: #1e40af;
-			            line-height: 1.4;
-			        '>
-			            All labor on WOs with inspections ("
-			        & FORMAT ( InspectionRev, "$#,##0" ) & " insp + "
-			        & FORMAT ( LaborAdditional, "$#,##0" ) & " other)
-			        </div>
-			    </div>
-			    
-			    <!-- Card 4: Hours -->
-			    <div style='
-			        flex: 1;
-			        background: white;
-			        border-radius: 12px;
-			        padding: 20px;
-			        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-			        border-top: 4px solid #f59e0b;
-			        display: flex;
-			        flex-direction: column;
-			        justify-content: space-between;
-			    '>
-			        <div>
-			            <div style='font-size: 11px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;'>
-			                ⏱️ Total Hours Worked
-			            </div>
-			            <div style='font-size: 28px; font-weight: 700; color: #111827; line-height: 1.1;'>
-			                "
-			        & FORMAT ( Hours, "#,##0" ) & "
-			            </div>
-			        </div>
-			        <div style='
-			            background: #fef3c7;
-			            padding: 8px 10px;
-			            border-radius: 6px;
-			            font-size: 11px;
-			            color: #92400e;
-			            line-height: 1.4;
-			        '>
-			            All hours on WOs with inspections ("
-			        & FORMAT ( HoursInspection, "#,##0" ) & " insp + "
-			        & FORMAT ( AdditionalHours, "#,##0" ) & " other)
-			        </div>
-			    </div>
-			</div>
-			"
-			```
-		lineageTag: 2726afb3-60e3-42d4-a074-b089767c906e
-
 	measure 'Revenue Breakdown Cards HTML V4' = ```
 			
 			VAR InspectionRev = [Inspection $$]
@@ -3436,11 +3116,6 @@ table _Measures
 			    )
 		formatString: 0
 		lineageTag: 8a687385-fc54-4b11-b936-253c45fdb03d
-
-	measure 'Test - Selected JobCode' =
-			
-			SELECTEDVALUE ( Fact_PendingInspections[JobCode] )
-		lineageTag: d0542b13-df6e-4dcc-ae24-62cefe751104
 
 	measure 'Service Frequency %' =
 			
@@ -6481,26 +6156,6 @@ table _Measures
 			```
 		lineageTag: 8f4fbf34-8fbf-49e2-bd5b-1705d29d723c
 
-	measure 'Test - WO Count' =
-			
-			DISTINCTCOUNT ( Fact_LaborJobSummary[WorkOrderNumber] )
-		formatString: 0
-		lineageTag: 0e6d73c6-f191-4071-ab26-9461bd035d56
-
-	measure 'Test - Parts Revenue' =
-			
-			VAR CurrentWOs =
-			    VALUES ( Fact_LaborJobSummary[WorkOrderNumber] )
-			RETURN
-			    CALCULATE (
-			        SUM ( Fact_WorkOrderParts[SaleValue] ),
-			        Fact_WorkOrderParts[InvoiceNumber] IN CurrentWOs,
-			        Fact_WorkOrderParts[Franchise] <> "ZP"
-			    )
-		lineageTag: 5254c6f9-d5f1-45c8-9e11-67d9e519e9a8
-
-		annotation PBI_FormatHint = {"isGeneralNumber":true}
-
 	measure 'Date Range Display' =
 			
 			VAR MinDate =
@@ -6591,86 +6246,6 @@ table _Measures
 			    " (" & FORMAT(PctDiff, "0%") & ")"
 			```
 		lineageTag: af1ea54c-e7f3-437c-bd61-f1af8caf9c11
-
-	measure 'WO List - Total Parts Test' = ```
-			
-			// Check if at total row (no branch or job code filter)
-			VAR IsTotal = 
-			    NOT(ISFILTERED(Fact_LaborJobSummary[JobCode])) && 
-			    NOT(ISFILTERED(dim_BranchLocation[Branch]))
-			
-			// Total level: simple aggregate
-			VAR TotalLevelResult = 
-			    CALCULATE(
-			        SUM(Fact_WorkOrderParts[SaleValue]),
-			        Fact_LaborJobSummary[IsInspection] = TRUE,
-			        NOT(ISBLANK(Fact_LaborJobSummary[InvoiceNumber])),
-			        Fact_WorkOrderParts[Franchise] <> "ZP",
-			        NOT(Fact_WorkOrderParts[PartNumber] IN {"ADV", "LEGACY", "4900", "*10PROMO"})
-			    )
-			
-			// Row level: existing logic
-			VAR WorkOrdersInContext = VALUES(Fact_LaborJobSummary[WorkOrderNumber])
-			VAR RowLevelResult = 
-			    SUMX (
-			        WorkOrdersInContext,
-			        VAR CurrentWO = Fact_LaborJobSummary[WorkOrderNumber]
-			        VAR InvoiceForThisWO =
-			            CALCULATE (
-			                SELECTEDVALUE ( Fact_LaborJobSummary[InvoiceNumber] ),
-			                Fact_LaborJobSummary[WorkOrderNumber] = CurrentWO,
-			                NOT ( ISBLANK ( Fact_LaborJobSummary[InvoiceNumber] ) ),
-			                ALL ( Fact_LaborJobSummary[JobCode] )
-			            )
-			        RETURN
-			            IF (
-			                NOT ( ISBLANK ( InvoiceForThisWO ) ),
-			                CALCULATE (
-			                    SUM ( Fact_WorkOrderParts[SaleValue] ),
-			                    Fact_WorkOrderParts[InvoiceNumber] = InvoiceForThisWO,
-			                    Fact_WorkOrderParts[Franchise] <> "ZP",
-			                    NOT ( Fact_WorkOrderParts[PartNumber] IN { "ADV", "LEGACY", "4900", "*10PROMO" } )
-			                ),
-			                0
-			            )
-			    )
-			
-			RETURN
-			    IF(IsTotal, TotalLevelResult, RowLevelResult)
-			```
-		lineageTag: a93a157a-13c4-4cb8-afd6-a0d794a2798b
-
-		annotation PBI_FormatHint = {"isGeneralNumber":true}
-
-	measure 'Parts Discount Test' = ```
-			
-			VAR InspectionWOs = 
-			    CALCULATETABLE(
-			        VALUES(Fact_LaborJobSummary[WorkOrderNumber]),
-			        Fact_LaborJobSummary[IsInspection] = TRUE,
-			        Fact_LaborJobSummary[IsPendingInspection] = FALSE
-			    )
-			VAR InspectionInvoices = 
-			    CALCULATETABLE(
-			        VALUES(Fact_LaborJobSummary[InvoiceNumber]),
-			        Fact_LaborJobSummary[WorkOrderNumber] IN InspectionWOs,
-			        NOT(ISBLANK(Fact_LaborJobSummary[InvoiceNumber]))
-			    )
-			VAR ValidInspectionInvoices = 
-			    FILTER(
-			        VALUES(ValidInvoiceNumbers[InvoiceNumber]),
-			        ValidInvoiceNumbers[InvoiceNumber] IN InspectionInvoices
-			    )
-			RETURN
-			    CALCULATE(
-			        SUM(Fact_WorkOrderParts[SaleValue]),
-			        Fact_WorkOrderParts[InvoiceNumber] IN ValidInspectionInvoices,
-			        Fact_WorkOrderParts[PartNumber] = "*10PROMO"
-			    )
-			```
-		lineageTag: 61c52aba-94a3-4871-8fac-a25508b5a84b
-
-		annotation PBI_FormatHint = {"isGeneralNumber":true}
 
 	measure 'Avg Parts $ /Inspection' =
 			
@@ -6769,6 +6344,101 @@ table _Measures
 		lineageTag: edccb391-3997-4169-92d8-8723727b6d30
 
 		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure 'Trend Tooltip - HTML' =
+			
+			VAR _Month = SELECTEDVALUE( dim_DateTable[MonthYear], "This Month" )
+			VAR _PartsCur = [Parts $ Total (Filtered)]
+			VAR _PartsLY = [Parts $ Total Fixed LY]
+			VAR _PartsVar = DIVIDE( _PartsCur - _PartsLY, _PartsLY )
+			VAR _PartsUp = _PartsVar >= 0
+			VAR _PartsArrow = IF( _PartsUp, "▲", "▼" )
+			VAR _PartsColor = IF( _PartsUp, "#22C55E", "#EF4444" )
+			VAR _PartsVarTxt = IF( _PartsUp, "+", "" ) & FORMAT( _PartsVar, "0.0%" )
+			VAR _PartsCurTxt = "$" & FORMAT( ROUND( _PartsCur / 1000, 0 ), "#,0" ) & "K"
+			VAR _PartsLYTxt = "$" & FORMAT( ROUND( _PartsLY / 1000, 0 ), "#,0" ) & "K"
+			VAR _LaborCur = [WO List - Total Labor]
+			VAR _LaborLY = [WO List - Total Labor LY]
+			VAR _LaborVar = DIVIDE( _LaborCur - _LaborLY, _LaborLY )
+			VAR _LaborUp = _LaborVar >= 0
+			VAR _LaborArrow = IF( _LaborUp, "▲", "▼" )
+			VAR _LaborColor = IF( _LaborUp, "#22C55E", "#EF4444" )
+			VAR _LaborVarTxt = IF( _LaborUp, "+", "" ) & FORMAT( _LaborVar, "0.0%" )
+			VAR _LaborCurTxt = "$" & FORMAT( ROUND( _LaborCur / 1000, 0 ), "#,0" ) & "K"
+			VAR _LaborLYTxt = "$" & FORMAT( ROUND( _LaborLY / 1000, 0 ), "#,0" ) & "K"
+			VAR _AvgParts = [Avg Parts $ / Inspection (Rolling 12)]
+			VAR _AvgPartsLY = [Avg Parts $ / Inspection (Rolling 12) LY]
+			VAR _AvgPartsVar = DIVIDE( _AvgParts - _AvgPartsLY, _AvgPartsLY )
+			VAR _AvgPartsUp = _AvgPartsVar >= 0
+			VAR _AvgPartsArrow = IF( _AvgPartsUp, "▲", "▼" )
+			VAR _AvgPartsColor = IF( _AvgPartsUp, "#22C55E", "#EF4444" )
+			VAR _AvgPartsVarTxt = IF( _AvgPartsUp, "+", "" ) & FORMAT( _AvgPartsVar, "0.0%" )
+			VAR _AvgPartsTxt = "$" & FORMAT( _AvgParts, "#,0.00" )
+			VAR _AvgPartsLYTxt = "$" & FORMAT( _AvgPartsLY, "#,0.00" )
+			VAR _AvgLabor = [Avg Labor $ / Inspection (Rolling 12)]
+			VAR _AvgLaborLY = [Avg Labor $ / Inspection (Rolling 12) LY]
+			VAR _AvgLaborVar = DIVIDE( _AvgLabor - _AvgLaborLY, _AvgLaborLY )
+			VAR _AvgLaborUp = _AvgLaborVar >= 0
+			VAR _AvgLaborArrow = IF( _AvgLaborUp, "▲", "▼" )
+			VAR _AvgLaborColor = IF( _AvgLaborUp, "#22C55E", "#EF4444" )
+			VAR _AvgLaborVarTxt = IF( _AvgLaborUp, "+", "" ) & FORMAT( _AvgLaborVar, "0.0%" )
+			VAR _AvgLaborTxt = "$" & FORMAT( _AvgLabor, "#,0.00" )
+			VAR _AvgLaborLYTxt = "$" & FORMAT( _AvgLaborLY, "#,0.00" )
+			VAR _Inspections = [Total Inspections]
+			VAR _InspLY = [Total Inspections LY]
+			VAR _InspDiff = _Inspections - _InspLY
+			VAR _InspUp = _InspDiff >= 0
+			VAR _InspArrow = IF( _InspUp, "▲", "▼" )
+			VAR _InspColor = IF( _InspUp, "#22C55E", "#EF4444" )
+			VAR _InspDiffTxt = IF( _InspUp, "+", "" ) & FORMAT( _InspDiff, "#,0" )
+			VAR _InspectionsTxt = FORMAT( _Inspections, "#,0" )
+			VAR _InspLYTxt = FORMAT( _InspLY, "#,0" )
+			RETURN
+			"
+			<div style='font-family:Segoe UI,Arial,sans-serif;width:100%;background:#1D3C4E;border-radius:12px;padding:16px 18px;color:#fff;box-shadow:0 4px 14px rgba(0,0,0,0.3);box-sizing:border-box;'>
+			    <div style='font-size:13px;font-weight:600;letter-spacing:0.5px;opacity:0.75;text-transform:uppercase;margin-bottom:12px;'>" & _Month & "</div>
+			    <div style='display:flex;gap:10px;margin-bottom:10px;'>
+			        <div style='flex:1;padding:10px 12px;background:rgba(129,140,248,0.15);border-left:4px solid #818CF8;border-radius:6px;'>
+			            <div style='font-size:11px;opacity:0.75;margin-bottom:2px;'>Parts $</div>
+			            <div style='font-size:20px;font-weight:700;line-height:1.15;'>" & _PartsCurTxt & "</div>
+			            <div style='font-size:11px;opacity:0.6;margin-bottom:4px;'>LY: " & _PartsLYTxt & "</div>
+			            <div style='color:" & _PartsColor & ";font-weight:700;font-size:14px;'>" & _PartsArrow & " " & _PartsVarTxt & "</div>
+			        </div>
+			        <div style='flex:1;padding:10px 12px;background:rgba(251,191,36,0.15);border-left:4px solid #FBBF24;border-radius:6px;'>
+			            <div style='font-size:11px;opacity:0.75;margin-bottom:2px;'>Labor $</div>
+			            <div style='font-size:20px;font-weight:700;line-height:1.15;'>" & _LaborCurTxt & "</div>
+			            <div style='font-size:11px;opacity:0.6;margin-bottom:4px;'>LY: " & _LaborLYTxt & "</div>
+			            <div style='color:" & _LaborColor & ";font-weight:700;font-size:14px;'>" & _LaborArrow & " " & _LaborVarTxt & "</div>
+			        </div>
+			    </div>
+			    <div style='display:flex;gap:10px;margin-bottom:12px;'>
+			        <div style='flex:1;padding:9px 12px;background:rgba(129,140,248,0.08);border-left:4px solid #818CF8;border-radius:6px;'>
+			            <div style='font-size:10px;opacity:0.7;margin-bottom:2px;'>Avg Parts $ / Insp</div>
+			            <div style='font-size:16px;font-weight:700;line-height:1.15;'>" & _AvgPartsTxt & "</div>
+			            <div style='font-size:10px;opacity:0.55;margin-bottom:3px;'>LY: " & _AvgPartsLYTxt & "</div>
+			            <div style='color:" & _AvgPartsColor & ";font-weight:700;font-size:12px;'>" & _AvgPartsArrow & " " & _AvgPartsVarTxt & "</div>
+			        </div>
+			        <div style='flex:1;padding:9px 12px;background:rgba(251,191,36,0.08);border-left:4px solid #FBBF24;border-radius:6px;'>
+			            <div style='font-size:10px;opacity:0.7;margin-bottom:2px;'>Avg Labor $ / Insp</div>
+			            <div style='font-size:16px;font-weight:700;line-height:1.15;'>" & _AvgLaborTxt & "</div>
+			            <div style='font-size:10px;opacity:0.55;margin-bottom:3px;'>LY: " & _AvgLaborLYTxt & "</div>
+			            <div style='color:" & _AvgLaborColor & ";font-weight:700;font-size:12px;'>" & _AvgLaborArrow & " " & _AvgLaborVarTxt & "</div>
+			        </div>
+			    </div>
+			    <div style='display:flex;justify-content:space-between;align-items:center;border-top:1px solid rgba(255,255,255,0.15);padding-top:10px;'>
+			        <div>
+			            <div style='font-size:10px;opacity:0.7;'>Total Inspections</div>
+			            <div style='font-size:18px;font-weight:700;'>" & _InspectionsTxt & "</div>
+			        </div>
+			        <div style='text-align:center;'>
+			            <div style='font-size:10px;opacity:0.7;'>Last Year</div>
+			            <div style='font-size:16px;font-weight:600;opacity:0.85;'>" & _InspLYTxt & "</div>
+			        </div>
+			        <div style='text-align:right;color:" & _InspColor & ";font-weight:700;font-size:15px;'>" & _InspArrow & " " & _InspDiffTxt & "</div>
+			    </div>
+			</div>
+			"
+		lineageTag: f5a0bb5f-c81d-49cc-820d-b87ecf1d9a95
 
 	column Value
 		isHidden

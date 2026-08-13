@@ -1,127 +1,64 @@
 table ServiceRecommendations
-	lineageTag: 433aebf1-26ce-4677-9bdb-36acf6492387
+	lineageTag: 81576fba-0d69-439e-9803-dc9934ec236b
+
+	column InspectionJobCode
+		dataType: string
+		lineageTag: db37f9a9-1c6f-413b-bfbe-f10aa6d9e023
+		summarizeBy: none
+		sourceColumn: InspectionJobCode
+
+		annotation SummarizationSetBy = Automatic
+
+	column JobCode
+		dataType: string
+		lineageTag: d0e5ace5-a376-4c1f-b357-581aa51c3b0b
+		summarizeBy: none
+		sourceColumn: JobCode
+
+		annotation SummarizationSetBy = Automatic
+
+	column JobType
+		dataType: string
+		lineageTag: a04592b8-cc95-431c-b5cb-3c78f33e5e4a
+		summarizeBy: none
+		sourceColumn: JobType
+
+		annotation SummarizationSetBy = Automatic
+
+	column CompletedInspections
+		dataType: int64
+		formatString: 0
+		lineageTag: 2cb116ab-db86-4369-a391-5fc77f1dee98
+		summarizeBy: sum
+		sourceColumn: CompletedInspections
+
+		annotation SummarizationSetBy = Automatic
+
+	column TimesAdded
+		dataType: int64
+		formatString: 0
+		lineageTag: 9413122c-e5be-4599-a7de-d1564e0ab8db
+		summarizeBy: sum
+		sourceColumn: TimesAdded
+
+		annotation SummarizationSetBy = Automatic
 
 	column TotalLabor
-		lineageTag: 10de3be0-6830-4b60-b474-ba0d6c864b36
+		dataType: double
+		lineageTag: adbcc232-9b57-4311-879d-47fd68b363ba
 		summarizeBy: sum
-		isNameInferred
-		sourceColumn: [TotalLabor]
+		sourceColumn: TotalLabor
 
 		annotation SummarizationSetBy = Automatic
 
 		annotation PBI_FormatHint = {"isGeneralNumber":true}
 
-	column InspectionJobCode
-		lineageTag: ce961c90-859f-4676-9c9b-7b5c55d3ae86
-		summarizeBy: none
-		isNameInferred
-		sourceColumn: [InspectionJobCode]
-
-		annotation SummarizationSetBy = Automatic
-
-	column CompletedInspections
-		formatString: 0
-		lineageTag: 677466eb-35dc-4fd3-ac39-a92d369dd562
-		summarizeBy: sum
-		isNameInferred
-		sourceColumn: [CompletedInspections]
-
-		annotation SummarizationSetBy = Automatic
-
-	column TimesAdded
-		formatString: 0
-		lineageTag: 85e42361-bfdb-4308-88b0-fc77c65bb9c3
-		summarizeBy: sum
-		isNameInferred
-		sourceColumn: [TimesAdded]
-
-		annotation SummarizationSetBy = Automatic
-
-	column JobCode
-		lineageTag: aa1683da-6a85-4503-950a-ebdcddefe73f
-		summarizeBy: none
-		isNameInferred
-		sourceColumn: Fact_LaborJobSummary[JobCode]
-
-		annotation SummarizationSetBy = Automatic
-
-	column JobType
-		lineageTag: f63517f9-cbdf-4987-9667-ba9cc8608cda
-		summarizeBy: none
-		isNameInferred
-		sourceColumn: Fact_LaborJobSummary[JobType]
-
-		annotation SummarizationSetBy = Automatic
-
-	partition ServiceRecommendations = calculated
+	partition ServiceRecommendations = m
 		mode: import
-		source = ```
-				
-				VAR InspectionCodes = 
-				    SELECTCOLUMNS(
-				        DISTINCT(Fact_PendingInspections[JobCode]),
-				        "InspectionJobCode", Fact_PendingInspections[JobCode]
-				    )
-				
-				RETURN
-				GENERATE(
-				    InspectionCodes,
-				    
-				    VAR CurrentInspection = [InspectionJobCode]
-				    
-				    // Get work orders with this inspection
-				    VAR InspectionWorkOrders = 
-				        CALCULATETABLE(
-				            VALUES(Fact_LaborJobSummary[WorkOrderNumber]),
-				            Fact_LaborJobSummary[JobCode] = CurrentInspection,
-				            Fact_LaborJobSummary[IsInspection] = TRUE,
-				            NOT(ISBLANK(Fact_LaborJobSummary[InvoiceNumber]))
-				        )
-				    
-				    VAR CompletedCount = COUNTROWS(InspectionWorkOrders)
-				    
-				    // Get unique services (one row per service)
-				    VAR UniqueServices = 
-				        CALCULATETABLE(
-				            SUMMARIZE(
-				                Fact_LaborJobSummary,
-				                Fact_LaborJobSummary[JobCode],
-				                Fact_LaborJobSummary[JobType]
-				            ),
-				            Fact_LaborJobSummary[WorkOrderNumber] IN InspectionWorkOrders,
-				            Fact_LaborJobSummary[IsInspection] = FALSE
-				        )
-				    
-				    RETURN
-				    ADDCOLUMNS(
-				        UniqueServices,
-				        
-				        "CompletedInspections", CompletedCount,
-				        
-				        // FIXED: Count distinct work orders with this service
-				        "TimesAdded", 
-				            VAR ServiceCode = Fact_LaborJobSummary[JobCode]
-				            VAR WorkOrdersWithService = 
-				                CALCULATETABLE(
-				                    VALUES(Fact_LaborJobSummary[WorkOrderNumber]),
-				                    Fact_LaborJobSummary[WorkOrderNumber] IN InspectionWorkOrders,
-				                    Fact_LaborJobSummary[JobCode] = ServiceCode
-				                )
-				            RETURN
-				                COUNTROWS(WorkOrdersWithService),
-				        
-				        // FIXED: Total labor for this service (all rows combined)
-				        "TotalLabor",
-				            VAR ServiceCode = Fact_LaborJobSummary[JobCode]
-				            RETURN
-				            CALCULATE(
-				                SUM(Fact_LaborJobSummary[InvoicedLaborAmount]),
-				                Fact_LaborJobSummary[WorkOrderNumber] IN InspectionWorkOrders,
-				                Fact_LaborJobSummary[JobCode] = ServiceCode
-				            )
-				    )
-				)
-				```
-
-	annotation PBI_Id = 1e617297560045f9aee152df39056d35
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-gxnyznhdptpenfw724g3o5sjzm.datawarehouse.fabric.microsoft.com", "LH_Master_Data"),
+				    dbo_Fact_ServiceRecommendations = Source{[Schema="dbo",Item="Fact_ServiceRecommendations"]}[Data]
+				in
+				    dbo_Fact_ServiceRecommendations
 

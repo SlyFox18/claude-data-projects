@@ -1,6 +1,21 @@
 table Fact_WorkOrderParts
 	lineageTag: cea83721-0be5-4a5c-8eb6-935d26222a12
 
+	refreshPolicy
+		policyType: basic
+		rollingWindowGranularity: year
+		rollingWindowPeriods: 3
+		incrementalGranularity: day
+		incrementalPeriods: 30
+		sourceExpression =
+			let
+			    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-gxnyznhdptpenfw724g3o5sjzm.datawarehouse.fabric.microsoft.com", "LH_Master_Data"),
+			    dbo_Fact_WorkOrderParts = Source{[Schema="dbo",Item="Fact_WorkOrderParts"]}[Data],
+			    #"Changed Type" = Table.TransformColumnTypes(dbo_Fact_WorkOrderParts,{{"TransactionDate", type datetime}}),
+			    #"Filtered Rows" = Table.SelectRows(#"Changed Type", each [TransactionDate] >= RangeStart and [TransactionDate] < RangeEnd)
+			in
+			    #"Filtered Rows"
+
 	column TransactionDate
 		dataType: dateTime
 		formatString: Long Date
@@ -9,8 +24,6 @@ table Fact_WorkOrderParts
 		sourceColumn: TransactionDate
 
 		annotation SummarizationSetBy = Automatic
-
-		annotation UnderlyingDateTimeDataType = Date
 
 	column PartNumber
 		dataType: string
@@ -127,13 +140,17 @@ table Fact_WorkOrderParts
 
 		annotation SummarizationSetBy = Automatic
 
-	column TransactionDateKey =
+	column TransactionDateKey = ```
 			
 			IF(
 			    ISBLANK(Fact_WorkOrderParts[TransactionDate]),
 			    BLANK(),
-			    INT(FORMAT(Fact_WorkOrderParts[TransactionDate], "YYYYMMDD"))
+			    YEAR(Fact_WorkOrderParts[TransactionDate]) * 10000
+			        + MONTH(Fact_WorkOrderParts[TransactionDate]) * 100
+			        + DAY(Fact_WorkOrderParts[TransactionDate])
 			)
+			
+			```
 		formatString: 0
 		lineageTag: 712ea8fe-60c7-4297-8b32-c1c1fe3d3c7c
 		summarizeBy: none
@@ -145,11 +162,15 @@ table Fact_WorkOrderParts
 		source =
 				let
 				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-gxnyznhdptpenfw724g3o5sjzm.datawarehouse.fabric.microsoft.com", "LH_Master_Data"),
-				    dbo_Fact_WorkOrderParts = Source{[Schema="dbo",Item="Fact_WorkOrderParts"]}[Data]
+				    dbo_Fact_WorkOrderParts = Source{[Schema="dbo",Item="Fact_WorkOrderParts"]}[Data],
+				    #"Changed Type" = Table.TransformColumnTypes(dbo_Fact_WorkOrderParts,{{"TransactionDate", type datetime}}),
+				    #"Filtered Rows" = Table.SelectRows(#"Changed Type", each [TransactionDate] >= RangeStart and [TransactionDate] < RangeEnd)
 				in
-				    dbo_Fact_WorkOrderParts
+				    #"Filtered Rows"
 
 	annotation PBI_NavigationStepName = Navigation
 
 	annotation PBI_ResultType = Table
+
+	annotation PBI_IsMQueryFoldable = True
 
