@@ -1,25 +1,6 @@
 table _Measures
 	lineageTag: 3b1a6758-3ca4-47e9-8791-b5d6002e665c
 
-	measure 'Welcome Name' =
-			
-			VAR _User =
-			    USERPRINCIPALNAME ()
-			VAR _Position =
-			    SEARCH ( "@", _User, 1 )
-			VAR _Name =
-			    LEFT ( _User, _Position - 1 )
-			VAR _FirstLetter =
-			    UPPER ( LEFT ( _Name, 1 ) )
-			VAR _LastName =
-			    MID ( _Name, 2, LEN ( _Name ) - 1 )
-			VAR _FormattedLastName =
-			    UPPER ( LEFT ( _LastName, 1 ) )
-			        & LOWER ( MID ( _LastName, 2, LEN ( _LastName ) ) )
-			RETURN
-			    "Welcome Back, " & _FirstLetter & "." & _FormattedLastName
-		lineageTag: 1ebd317f-6819-4431-9dc5-f7f3415056d0
-
 	measure 'Applied Filters' =
 			
 			VAR MaxFilters = 7
@@ -1090,54 +1071,6 @@ table _Measures
 		formatString: 0
 		lineageTag: 8cbd1748-cf6a-458b-af5f-541abcd8f846
 
-	measure 'Parts $ by Job Code' =
-			
-			VAR CurrentJobCode =
-			    SELECTEDVALUE ( Fact_LaborJobSummary[JobCode] )
-			VAR WorkOrdersWithThisJobCode =
-			    CALCULATETABLE (
-			        VALUES ( Fact_LaborJobSummary[WorkOrderNumber] ),
-			        Fact_LaborJobSummary[JobCode] = CurrentJobCode,
-			        Fact_LaborJobSummary[IsInspection] = TRUE
-			    )
-			VAR InvoicesForTheseWOs =
-			    CALCULATETABLE (
-			        VALUES ( Fact_LaborJobSummary[InvoiceNumber] ),
-			        Fact_LaborJobSummary[WorkOrderNumber] IN WorkOrdersWithThisJobCode,
-			        NOT ( ISBLANK ( Fact_LaborJobSummary[InvoiceNumber] ) )
-			    )
-			RETURN
-			    CALCULATE (
-			        SUM ( Fact_WorkOrderParts[SaleValue] ),
-			        Fact_WorkOrderParts[InvoiceNumber] IN InvoicesForTheseWOs,
-			        Fact_WorkOrderParts[Franchise] <> "ZP",
-			        NOT ( Fact_WorkOrderParts[PartNumber] IN { "ADV", "LEGACY", "4900", "*10PROMO" } )
-			    )
-		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
-		lineageTag: 5133fb14-e5bf-4dbb-bdba-31e5a04738cb
-
-		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
-
-	measure 'Labor $ by Job Code' =
-			
-			VAR CurrentJobCode =
-			    SELECTEDVALUE ( Fact_LaborJobSummary[JobCode] )
-			VAR WorkOrdersWithThisJobCode =
-			    CALCULATETABLE (
-			        VALUES ( Fact_LaborJobSummary[WorkOrderNumber] ),
-			        Fact_LaborJobSummary[JobCode] = CurrentJobCode,
-			        Fact_LaborJobSummary[IsInspection] = TRUE
-			    )
-			RETURN
-			    CALCULATE (
-			        SUM ( Fact_LaborJobSummary[InvoicedLaborAmount] ),
-			        Fact_LaborJobSummary[WorkOrderNumber] IN WorkOrdersWithThisJobCode
-			    )
-		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
-		lineageTag: be006fae-70a3-4d65-b18a-0ce1979c1e3d
-
-		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
-
 	measure 'Avg Parts $ by Job Code' =
 			
 			DIVIDE ( [WO List - Total Parts], [Inspection Count by Job Code], 0 )
@@ -1247,32 +1180,6 @@ table _Measures
 		lineageTag: acfc5cfe-a21a-4db1-940f-985aed2e5357
 
 		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
-
-	measure 'Trucking Discount by Job Code' =
-			
-			VAR CurrentJobCode =
-			    SELECTEDVALUE ( Fact_LaborJobSummary[JobCode] )
-			VAR WorkOrdersWithThisJobCode =
-			    CALCULATETABLE (
-			        VALUES ( Fact_LaborJobSummary[WorkOrderNumber] ),
-			        Fact_LaborJobSummary[JobCode] = CurrentJobCode,
-			        Fact_LaborJobSummary[IsInspection] = TRUE
-			    )
-			VAR InvoicesForTheseWOs =
-			    CALCULATETABLE (
-			        VALUES ( Fact_LaborJobSummary[InvoiceNumber] ),
-			        Fact_LaborJobSummary[WorkOrderNumber] IN WorkOrdersWithThisJobCode,
-			        NOT ( ISBLANK ( Fact_LaborJobSummary[InvoiceNumber] ) )
-			    )
-			RETURN
-			    CALCULATE (
-			        SUM ( Fact_WorkOrderParts[SaleValue] ),
-			        Fact_WorkOrderParts[InvoiceNumber] IN InvoicesForTheseWOs,
-			        Fact_WorkOrderParts[PartNumber] = "4900"
-			    )
-		lineageTag: 9d260486-5d8e-4827-ba3f-c28666fa2fb7
-
-		annotation PBI_FormatHint = {"isGeneralNumber":true}
 
 	measure 'Avg Part Discount by Job Code' =
 			
@@ -1412,26 +1319,6 @@ table _Measures
 
 		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
 
-	measure 'Customer Name' =
-			
-			VAR CurrentInvoice =
-			    SELECTEDVALUE ( Fact_LaborJobSummary[InvoiceNumber] )
-			VAR CustomerNum =
-			    CALCULATE (
-			        SELECTEDVALUE ( Fact_WorkOrderParts[CustomerNumber] ),
-			        Fact_WorkOrderParts[InvoiceNumber] = CurrentInvoice
-			    )
-			RETURN
-			    IF (
-			        NOT ( ISBLANK ( CustomerNum ) ),
-			        LOOKUPVALUE (
-			            dim_CustomerList[PrimaryName],
-			            dim_CustomerList[CustomerNumber], CustomerNum
-			        ),
-			        BLANK ()
-			    )
-		lineageTag: d6969647-3941-4dd2-a3fa-c340beabd10f
-
 	measure 'Total Current Inspections' =
 			
 			[Total Inspections]
@@ -1443,12 +1330,6 @@ table _Measures
 			[Total Inspection Goal]
 		formatString: 0
 		lineageTag: ae701c33-ab21-43dc-a9b9-0bc6ad2fadd7
-
-	measure 'Overall % to Goal Inspections' =
-			
-			[% to Goal - Inspections]
-		formatString: 0%;-0%;0%
-		lineageTag: 2fcf103f-dd18-4c8b-aabd-008513d86651
 
 	measure 'Total Current Parts' =
 			
@@ -1572,31 +1453,6 @@ table _Measures
 		lineageTag: 52c10f69-7a26-4e6a-bdb3-3a3e02bc5d7b
 
 		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
-
-	measure 'Estimated Revenue by Job Code' =
-			
-			VAR CurrentJobCode =
-			    SELECTEDVALUE ( Fact_PendingInspections[JobCode] )
-			VAR PendingCountThisCode =
-			    CALCULATE (
-			        COUNTROWS ( Fact_PendingInspections ),
-			        Fact_PendingInspections[JobCode] = CurrentJobCode
-			    )
-			VAR AvgRevenueThisCode =
-			    CALCULATE (
-			        DIVIDE (
-			            SUM ( Fact_LaborJobSummary[InvoicedLaborAmount] ) + [Parts $ Total],
-			            DISTINCTCOUNT ( Fact_LaborJobSummary[WorkOrderNumber] )
-			        ),
-			        Fact_LaborJobSummary[JobCode] = CurrentJobCode,
-			        Fact_LaborJobSummary[IsInspection] = TRUE,
-			        NOT ( ISBLANK ( Fact_LaborJobSummary[InvoiceNumber] ) )
-			    )
-			RETURN
-			    PendingCountThisCode * AvgRevenueThisCode
-		lineageTag: f63cf6fd-9255-4f37-b0d4-636b82e5fd8a
-
-		annotation PBI_FormatHint = {"isGeneralNumber":true}
 
 	measure 'Completed Inspections - Selected JobCode' =
 			
@@ -1772,48 +1628,6 @@ table _Measures
 		formatString: 0
 		lineageTag: b67d6552-4005-4f0d-8a9f-52feb143de26
 
-	measure 'Service Frequency % - For JobCode' =
-			
-			DIVIDE (
-			    [Service Count - For JobCode],
-			    [Completed Inspections - Selected JobCode],
-			    0
-			)
-		formatString: 0%;-0%;0%
-		lineageTag: 5d26c3ae-c891-454c-a7cf-5d17b011fe06
-
-	measure 'Avg Labor $ - For Service' =
-			
-			VAR SelectedInspectionCode =
-			    SELECTEDVALUE ( Fact_PendingInspections[JobCode] )
-			VAR CurrentServiceCode =
-			    SELECTEDVALUE ( Fact_LaborJobSummary[JobCode] )
-			RETURN
-			    IF (
-			        NOT ( ISBLANK ( SelectedInspectionCode ) )
-			            && NOT ( ISBLANK ( CurrentServiceCode ) )
-			                && CurrentServiceCode <> SelectedInspectionCode,
-			        VAR WorkOrdersWithInspection =
-			            CALCULATETABLE (
-			                VALUES ( Fact_LaborJobSummary[WorkOrderNumber] ),
-			                Fact_LaborJobSummary[JobCode] = SelectedInspectionCode,
-			                Fact_LaborJobSummary[IsInspection] = TRUE,
-			                NOT ( ISBLANK ( Fact_LaborJobSummary[InvoiceNumber] ) )
-			            )
-			        VAR TotalLabor =
-			            CALCULATE (
-			                SUM ( Fact_LaborJobSummary[InvoicedLaborAmount] ),
-			                Fact_LaborJobSummary[WorkOrderNumber] IN WorkOrdersWithInspection,
-			                Fact_LaborJobSummary[JobCode] = CurrentServiceCode
-			            )
-			        VAR ServiceCount = [Service Count - For JobCode]
-			        RETURN
-			            DIVIDE ( TotalLabor, ServiceCount, 0 ),
-			        BLANK ()
-			    )
-		formatString: 0
-		lineageTag: 7ba0644d-a4f2-4778-bb5d-a90c342d897b
-
 	measure 'Est Service Opportunities' =
 			
 			VAR PendingCount =
@@ -1873,34 +1687,6 @@ table _Measures
 		lineageTag: 46e45ede-6633-47b0-be6d-de9ff46a966a
 
 		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
-
-	measure CreationDateAge =
-			
-			SWITCH (
-			    TRUE (),
-			    MAX ( 'Fact_PendingInspections'[CreationDate] ) < TODAY () - 60, 2,
-			    -- Over 2 months old
-			    MAX ( 'Fact_PendingInspections'[CreationDate] )
-			        < TODAY () - 30, 1,
-			    -- Over 1 month old
-			    0 -- Within the last month
-			)
-		formatString: 0
-		lineageTag: 4b9f9f7c-46b2-4c99-a937-67a9e27cfa6d
-
-	measure LastPunchDateAge =
-			
-			SWITCH (
-			    TRUE (),
-			    MAX ( 'Fact_PendingInspections'[CreationDate] ) < TODAY () - 60, 2,
-			    -- Over 2 months old
-			    MAX ( 'Fact_PendingInspections'[CreationDate] )
-			        < TODAY () - 30, 1,
-			    -- Over 1 month old
-			    0 -- Within the last month
-			)
-		formatString: 0
-		lineageTag: 58822577-14b3-49a8-b2b7-780cfa1155c9
 
 	measure 'Pending Hero Card HTML' = ```
 			
@@ -4423,23 +4209,6 @@ table _Measures
 			"
 			```
 		lineageTag: 649eb23e-4a78-441e-8c3c-f78c32887bf4
-
-	measure Blur = ```
-			
-			"<div style="" 
-			position: fixed;  
-			top: 0;  
-			left: 0;  
-			width: 100%;  
-			height: 100%;  
-			backdrop-filter: blur(50px); 
-			-webkit-backdrop-filter: blur(50px);  
-			z-index: 9999;
-			"">
-			</div>
-			"
-			```
-		lineageTag: 8f4fbf34-8fbf-49e2-bd5b-1705d29d723c
 
 	measure 'Date Range Display' =
 			
