@@ -158,16 +158,59 @@ Not started — deferred pending capacity headroom, since this needs a live quer
 
 ## Phase 1 (re-scoped 2026-08-13, was "V3 measure rebuild"): In-place measure library cleanup
 
-No new report, no parallel build — all directly on the current V2 model, once Phase 0.7 is done. Not detailed task-by-task yet. At a minimum:
+No new report, no parallel build — all directly on the current V2 model. **Dead-measure removal, renames, and folder organization are DONE (2026-08-13). Descriptions are the one remaining item, not yet started.**
 
-- Inventory all 182 remaining measures (post-Task 0.4 deletions), sort into: keep as-is / fold into a calculation group / merge with a duplicate / delete (dead).
-- Add a `displayFolder` to every measure (0 of 182 have one today) — folder taxonomy TBD, something like `Inspections/`, `Labor/`, `Parts/`, `Goals/`, `_Helpers/` for hidden intermediate measures.
-- Add a `description` to every measure that isn't obviously self-explanatory from its name — this is what actually solves "I can't keep up with what is what," since descriptions surface as tooltips in the field list.
-- Build a calculation group for the repeated Goal/%-to-Goal pattern (audit finding #8) — 12 near-identical measures collapsible into one calculation group + a handful of base measures.
-- Hide every intermediate/helper measure that isn't meant to be dragged onto a visual directly (currently only 1 of 182 is hidden).
-- Adopt a naming rule going forward: no `V2`/`V3`/`Test` suffixes land in the committed model — WIP measures get finished or deleted before leaving them in place "just in case" (directly caused Task 0.4's cleanup).
+### Dead-measure removal ✅ DONE
 
-**Deliverable:** an updated `dax-measures-library.md` reflecting the cleaned-up measure set (folder, description, and whether it replaced/merged an old measure) — same doc convention as today, not a new format.
+Built a full usage dependency graph rather than deleting by name-pattern guesswork: parsed every measure's DAX body, found which measures are directly referenced anywhere in the report (visuals/bookmarks, exact quoted-string match against the PBIR JSON), then computed the transitive closure by following `[OtherMeasure]` bracket references inside each live measure's own DAX — so a measure that's only used by another *unused* measure still correctly shows up as dead, not just top-level orphans. Cross-checked the full candidate list against Copilot's "Verified Answers" definitions too (a place a measure could be referenced without any visual binding).
+
+Applied in 5 verified batches directly in Desktop (multi-select delete → full refresh → spot-check the relevant pages → commit), each batch its own git rollback point:
+1. 13 design-iteration/debug measures (`Hero Card HTML - Brand Colors A-D`, `Hero Card HTML Option 2`, `Hero Cards HTML Option 3`, unsuffixed duplicates of now-versioned HTML cards, `Debug - *` ×3)
+2. 8 measures (`Top 10 Parts/Services Needed` superseded by `Top 5 * Compact`; `WO Labor/Parts/Total Revenue` orphaned in *both* its original and "-Fixed" bug-fix form)
+3. 12 more orphaned Work Order helper measures
+4. 9 superseded base-KPI measures (`Hours Invoiced`, `Estimated Hours`, etc. — superseded by "With Inspection" variants)
+5. 12 final orphans (job-code breakdown duplicates, Recommendations-page helpers, misc — `Welcome Name`, `Blur`, `CreationDateAge`, `LastPunchDateAge`, `Customer Name`, `Overall % to Goal Inspections`)
+
+**Result: 182 → 128 measures (54 removed, ~30% of the library). Zero regressions confirmed across every page after every batch.**
+
+### Rename cleanup ✅ DONE
+
+6 measures renamed via Desktop's native Rename (F2) — not manual TMDL text edits — so every internal DAX cross-reference and every report visual binding cascaded automatically. Verified zero broken references on both sides afterward.
+- `Revenue Breakdown Cards HTML V4` → `Revenue Breakdown Cards HTML`
+- `CS690-CS770 Panel HTML V2` → `CS690-CS770 Panel HTML`
+- `Discount Panel HTML V2` → `Discount Panel HTML`
+- `Parts $ Total Fixed LY` → `Parts $ Total LY`
+- `Avg Parts $ /Inspection` → `Avg Parts $ / Inspection` (spacing fix, matches its own Rolling-12 sibling)
+- `Total` → `Total Revenue` (clarity — was far too generic a name for a flat field list)
+
+### Display folder taxonomy ✅ DONE
+
+11 folders, applied by editing `_Measures.tmdl` directly while Desktop was closed (Brian's suggestion — far faster and lower-risk than 128 manual property edits in the UI). The folder mapping was verified complete and exact against the actual 128-measure list (script-checked: zero measures missing from the map, zero stale map entries) before writing anything; a timestamped local backup was made before the edit (not committed — git history is the real restore point). Confirmed clean reopen in Desktop afterward, no TMDL syntax errors, no visual regressions.
+
+| Folder | Count |
+|---|---|
+| Goals & % to Goal | 25 |
+| Recommendations Engine | 18 |
+| Core KPIs | 15 |
+| Work Order List | 13 |
+| Page Headers & Subtitles | 12 |
+| Work Order Detail | 12 |
+| Job Code Breakdown | 10 |
+| HTML Cards & Visual Chrome | 9 |
+| Trend - Rolling 12 | 8 |
+| Pending Queue | 4 |
+| _Helpers (hidden) | 2 |
+
+The two `_Helpers` measures (`BranchPerformanceManualSort`, `IsPendingInspection`) were also marked `isHidden` — pure internal plumbing, not meant to be dragged onto a visual directly. One pre-existing hidden measure (`Trend Tooltip - HTML`, hidden before this session) was left untouched.
+
+### Descriptions — NOT YET STARTED
+
+- [ ] Add a `description` to every measure that isn't obviously self-explanatory from its name — this is the piece that actually puts explanations in front of someone via field-list tooltips, on top of the folder organization already done.
+- [ ] Update `dax-measures-library.md` to match the current 128-measure/11-folder state (currently flagged stale at the top of that file, pointing back to this plan and to the model's own folders as the authoritative reference in the meantime).
+
+### Goal calculation group — NOT YET STARTED (optional, lower priority)
+
+- [ ] Build a calculation group for the repeated Goal/%-to-Goal pattern (audit finding #8) — the "Goals & % to Goal" folder above is 25 measures, many following the identical `DIVIDE(actual, goal)` shape; a calculation group could collapse a good chunk of that to one object + a few base measures. Not blocking anything — the folder alone already made this cluster far more navigable than it was.
 
 ---
 
@@ -181,19 +224,16 @@ No new report, no parallel build — all directly on the current V2 model, once 
 
 ---
 
-## Next: publish everything and validate in the service
+## Publish and service validation — ✅ DONE (2026-08-13)
 
-Phase 0 and Phase 0.7 are both done and confirmed **in Desktop only** — nothing has been published to the Fabric service since these fixes landed. Before calling the CU goal achieved:
+Published and refreshed for real in the Fabric service (not just Desktop). **Confirmed: full semantic model refresh in the service is now ~1 minute** (was ~7-8 min baseline immediately prior to this session's fixes, up to 14.5 min historically documented). No errors, no visual regressions on any page. `ARCHITECTURE.md` and `README.md` updated with the final numbers.
 
-- [ ] Publish the model (RP-Dev or wherever Brian validates first)
-- [ ] Trigger a full refresh, time it, confirm it completes without error
-- [ ] Trigger a second refresh, confirm it stays fast (not just the first-run number)
-- [ ] Open the Recommendations page and a few others in the published report, confirm everything renders correctly against real service data (not just Desktop's local cache)
-- [ ] After a few nightly pipeline cycles, check the `Inspections` dataset's CU(s) figure in Fabric Capacity Metrics against the original 156K/14-day baseline — this is the number that actually proves the goal was hit, since whole-model refresh time in Desktop and CU cost in the service are related but not identical measurements
-- [ ] Once stable, update `ARCHITECTURE.md`'s Performance Optimization table and `README.md` with the new numbers (this session's results: Fact_WorkOrderParts 15 sec, whole model ~10 sec in Desktop)
+**Still open — needs the next ~2 weeks, not something to check today:**
+- [ ] Watch the `Inspections` dataset's CU(s) figure in Fabric Capacity Metrics roll off the original 156K/14-day baseline as old expensive refreshes age out of the rolling window and get replaced by the new ~1-min refreshes — this is the number that ultimately proves the capacity win, since a single fast refresh doesn't retroactively change a 14-day rolling total.
 
 ## Open questions
 
 - **Incremental refresh window (Task 0.1):** currently 30 days/3 years. Brian wants to tighten to 7 days once a few refresh cycles confirm parts data doesn't get corrected further back than that — revisit after a week or two of stable operation.
 - **Task 0.5 (InTrans dedup workaround):** still open, deferred for capacity reasons, no urgency now that the CU goal is otherwise met.
-- **Goal calculation group design (Phase 1):** confirm the exact set of Goal-family measures to consolidate before building the calc group, since some (like the CS690-CS770-specific goals) may have slightly different business rules than a naive "same pattern" read suggests. Phase 1 (measure cleanup) is now unblocked and can start whenever Brian wants — it's no longer gated on anything.
+- **Measure descriptions (Phase 1):** not yet started — the last piece of the original ask. Folder organization alone already addresses most of "I can't keep up with what is what," but descriptions are what turn the field list into actual documentation via tooltips.
+- **Goal calculation group (Phase 1, optional):** confirm the exact set of Goal-family measures to consolidate before building it, since some (like the CS690-CS770-specific goals) may have slightly different business rules than a naive "same pattern" read suggests. Not blocking — the "Goals & % to Goal" folder already makes this cluster far more navigable even without it.

@@ -1,5 +1,7 @@
 # DAX Measures Library - Inspections Report
 
+> ⚠️ **STALE as of 2026-08-13 — measure-by-measure content below predates a major cleanup, do not trust counts/names below until this notice is removed.** The model was audited and cleaned up on 2026-08-13 (see `docs/superpowers/plans/2026-08-12-inspections-report-rebuild.md` and `ARCHITECTURE.md` Decision 9): 54 confirmed-dead measures were deleted (design-iteration leftovers, superseded "-Fixed" versions, debug scaffolding), 6 measures were renamed to drop leftover version suffixes, and all 128 survivors were organized into 11 display folders in the model itself (Core KPIs, Goals & % to Goal, Pending Queue, Job Code Breakdown, Work Order Detail, Work Order List, Recommendations Engine, HTML Cards & Visual Chrome, Page Headers & Subtitles, Trend - Rolling 12, _Helpers). **The model's own display folders + Desktop's field list are the authoritative reference right now** — this file's rewrite (matching the new folder taxonomy, with the 54 deleted measures removed and the 6 renames applied) is tracked as a follow-up, not yet done.
+
 **Complete documentation of all 179 DAX measures in the Inspections Report.**
 
 ---

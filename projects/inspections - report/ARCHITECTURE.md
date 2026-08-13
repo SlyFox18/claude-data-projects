@@ -607,14 +607,17 @@ Each fact table grain carefully chosen for business analysis needs:
 
 ### **Refresh Time Analysis**
 
+**Updated 2026-08-13** — see `docs/superpowers/plans/2026-08-12-inspections-report-rebuild.md` for the full audit/fix writeup. The two rows marked below were the real cost centers; everything else in this table was already fine.
+
 | Component | Time | Optimization Status |
 |-----------|------|---------------------|
 | Raw Tables (6) | ~3 min | ✅ Optimized (incremental where possible) |
-| Fact_LaborJobSummary | 3 min | ✅ Excellent (pre-aggregation working) |
-| Fact_PendingInspections | 1.5 min | ✅ Excellent (small dataset) |
-| Fact_WorkOrderParts | 10 min | ⚠️ Monitoring (complex joins) |
+| Fact_LaborJobSummary | fast | ✅ Excellent (pre-aggregation working) |
+| Fact_PendingInspections | fast | ✅ Excellent (small dataset) |
+| Fact_WorkOrderParts | **15 sec** (was 10-18 min) | ✅ Fixed 2026-08-13 — incremental refresh policy added (30-day window / 3-year archive) |
+| ServiceRecommendations | folded into whole-model time below (was ~8 min alone) | ✅ Fixed 2026-08-13 — moved from a DAX calculated table to a Dataflow Gen2/M query (`df_Fact_ServiceRecommendations`), validated row-for-row against the old table's live output before cutover |
 | Dimensions (4) | ~2 min | ✅ Good (master data, infrequent changes) |
-| **Total** | **~14.5 min** | **✅ Acceptable, monitoring WorkOrderParts** |
+| **Total (whole semantic model, in the service)** | **~1 min** (was ~7-8 min baseline, up to 14.5 min historically) | **✅ Confirmed via real service refresh 2026-08-13** |
 
 ### **Optimization Strategies Implemented**
 
@@ -648,32 +651,15 @@ Each fact table grain carefully chosen for business analysis needs:
    - **Benefit:** Operations pushed to SQL Server (faster than M engine)
    - **Trade-off:** Balance between folding and complex transformations
 
-### **Fact_WorkOrderParts Optimization Opportunities**
+### **Fact_WorkOrderParts Optimization — RESOLVED 2026-08-13**
 
-**Current Issue:** 10-minute refresh time
+**Original issue:** 10-18 minute refresh time, no incremental refresh, full re-import of the whole lakehouse table every model refresh.
 
-**Potential Optimizations to Investigate:**
+**Fix applied:** standard Power BI incremental refresh policy — 30-day incremental window (started wide, tighten to 7 days once a few cycles confirm parts data doesn't get corrected further back than that), 3-year archive window, filtered on `TransactionDate`. Two real gotchas hit and fixed along the way, worth knowing if this pattern gets reused elsewhere in this repo:
+1. Desktop won't enable the Incremental Refresh dialog until `RangeStart`/`RangeEnd` parameters already exist in the query — they have to be created manually first (Manage Parameters, both typed `Date/Time`), and the range filter has to be built via the UI then hand-edited in the M formula bar to reference the parameters instead of the literal placeholder dates.
+2. `TransactionDate`'s underlying SQL type is `Date`, not `DateTime` (visible via the `UnderlyingDateTimeDataType = Date` annotation already in the model) — comparing it directly against the `DateTime`-typed `RangeStart`/`RangeEnd` throws a type-mismatch error. Fixed with an explicit `Table.TransformColumnTypes(..., {{"TransactionDate", type datetime}})` step before the range filter.
 
-1. **Incremental Refresh Evaluation**
-   - Consider if ModifiedDate available on InTrans
-   - Scope could be 2024+ with incremental updates
-   - Risk: Invoice numbers may reference older work orders
-
-2. **Index Optimization**
-   - Ensure Branch + Invoice indexed on source tables
-   - PartNumber index for dim_Parts join
-   - May require DBA coordination
-
-3. **Join Order Optimization**
-   - Test different join sequences
-   - Consider materializing inspection invoices list separately
-
-4. **Parallel Processing**
-   - Evaluate if partitioning possible
-   - Separate by branch or date range
-   - Combine results (more complex to maintain)
-
-**Current Assessment:** 10 minutes acceptable for now, monitor CU usage
+**Result:** confirmed via isolated single-table refresh in Desktop (15 sec, was 10-18 min) and via a real refresh in the service after publishing (whole model ~1 min).
 
 ## Pipeline Architecture
 
@@ -799,15 +785,27 @@ Score Components:
 - **Rationale:** Single source of truth, version controlled, no external dependency
 - **Impact:** Consistent across all fact tables, easy maintenance
 
+### **Decision 8: ServiceRecommendations moved from DAX calculated table to Dataflow Gen2**
+- **Decision:** Replace the `GENERATE`/nested-`CALCULATETABLE` DAX calculated table with a Dataflow Gen2/M query (`df_Fact_ServiceRecommendations`) computing the identical co-occurrence logic as a set-based SQL join
+- **Date:** 2026-08-13
+- **Rationale:** DAX calculated tables can't be incrementally refreshed and always fully recompute on every model refresh — confirmed via isolated Desktop refresh timing that this was costing ~8 min every single refresh, the largest remaining cost after `Fact_WorkOrderParts`'s incremental refresh fix. The logic (find historical work orders per pending inspection code, self-join to find co-occurring services, count/aggregate) is naturally expressible as a warehouse-side join, which the SQL Analytics Endpoint executes far faster than DAX's per-row nested table evaluation.
+- **Validation:** prototyped and cross-checked row-for-row against the live DAX table's actual output (via DuckDB directly against the Lakehouse) *before* building anything in Fabric — 10 spot-checked rows matched exactly, including floating-point totals, for `IS-CS690 INSPECT`.
+- **Impact:** dataflow runs in 53 sec (9,688 rows, exact match to the old table's row count). Model cutover kept the table/column names identical (deleted the old calculated table, renamed the new dataflow-sourced table into its place) so none of the ~15 dependent measures or the relationship to `Fact_PendingInspections` needed any changes. Whole-model refresh dropped to ~1 min in the service.
+
+### **Decision 9: Measure library cleanup — 182 → 128 measures, organized into 11 display folders**
+- **Decision:** Delete confirmed-dead measures, normalize leftover version-suffix names, organize survivors into display folders, hide pure-plumbing helper measures
+- **Date:** 2026-08-13
+- **Rationale:** Iterative report-building over time (multiple HTML card design attempts, bug-fix "- Fixed" versions, debug scaffolding) had left ~30% of the measure library unused, with zero organization (0 of 182 measures had a display folder or description) — making the model very hard to navigate for anyone (including the original author) coming back to it later
+- **Method:** built a full usage dependency graph (which measures are referenced by any visual/bookmark, plus transitively anything *those* measures reference internally) rather than deleting based on name patterns alone — cross-checked against the report definition and Copilot "Verified Answers" definitions before deleting anything. Deletions and renames applied directly in Desktop in small verified batches (each batch: apply → refresh → spot-check pages → commit), so every step has its own git rollback point. Folder assignment applied via direct TMDL edit while Desktop was closed (faster and lower-risk than 128 manual property edits), with the folder mapping verified complete and exact against the actual measure list before writing anything.
+- **Impact:** 54 dead measures removed (design-iteration leftovers, superseded "-Fixed" versions, debug scaffolding), 6 measures renamed to drop meaningless leftover suffixes, all 128 survivors organized into 11 display folders (Core KPIs, Goals & % to Goal, Pending Queue, Job Code Breakdown, Work Order Detail, Work Order List, Recommendations Engine, HTML Cards & Visual Chrome, Page Headers & Subtitles, Trend - Rolling 12, _Helpers), 2 pure-plumbing measures hidden from the field list. Zero regressions confirmed across every page after every batch. Measure-by-measure descriptions in `documentation/dax/dax-measures-library.md` are being refreshed incrementally as a follow-up — not yet complete as of this entry.
+
 ---
 
 ## 🔄 Evolution & Future Enhancements
 
 ### **Potential Future Enhancements**
 
-1. **Incremental Refresh for WorkOrderParts**
-   - Reduce 10-minute refresh time
-   - Requires ModifiedDate or similar field
+1. ~~**Incremental Refresh for WorkOrderParts**~~ — **DONE 2026-08-13**, see Decision log above and the Performance Optimization section
 
 2. **Automated Goals Calculation**
    - Generate goals from historical patterns

@@ -1,8 +1,8 @@
 # Inspections Report - Complete Analytics Solution
 
 > **Status:** Production ✅ - All components operational with advanced analytics  
-> **Last Updated:** 2025-11-14  
-> **Total Refresh Time:** ~14.5 minutes (3 fact tables + 4 dimensions)
+> **Last Updated:** 2026-08-13  
+> **Total Refresh Time:** ~1 minute (was ~14.5 minutes historically, ~7-8 min immediately prior to the 2026-08-13 CU/performance fix — see `docs/superpowers/plans/2026-08-12-inspections-report-rebuild.md` and `ARCHITECTURE.md`'s Performance Optimization section for the full writeup)
 
 ---
 
@@ -12,7 +12,7 @@ A comprehensive inspection analytics solution providing complete lifecycle track
 
 ### **Business Value Delivered**
 
-- ✅ **97% faster data refresh** (120 min → 14.5 min)
+- ✅ **97% faster data refresh** (120 min → 14.5 min), **then a further ~90% faster still as of 2026-08-13** (~7-8 min → ~1 min) via incremental refresh on Fact_WorkOrderParts and moving ServiceRecommendations off DAX onto a Dataflow Gen2
 - ✅ **Complete inspection lifecycle tracking** (Pending → In Progress → Completed)
 - ✅ **Goals performance management** with branch-level tracking (15 locations)
 - ✅ **Predictive recommendations** for parts and services based on historical patterns
@@ -27,19 +27,20 @@ A comprehensive inspection analytics solution providing complete lifecycle track
 ### **Fact Tables Performance**
 | Fact Table | Rows | Refresh Time | Status |
 |------------|------|--------------|--------|
-| Fact_LaborJobSummary | ~50K | 3 min | ✅ Production |
-| Fact_PendingInspections | ~100 | 1.5 min | ✅ Production |
-| Fact_WorkOrderParts | ~150K | 10 min | ✅ Production |
-| **Total Fact Tables** | **~200K** | **~14.5 min** | **✅ Zero Failures** |
+| Fact_LaborJobSummary | ~380K (actual — corrects the ~50K figure documented pre-2026-08-13) | fast | ✅ Production |
+| Fact_PendingInspections | ~130 | fast | ✅ Production |
+| Fact_WorkOrderParts | ~150K | **15 sec** (was 10 min — incremental refresh added 2026-08-13) | ✅ Production |
+| ServiceRecommendations | ~9,700 | **53 sec** (was ~8 min as a DAX calculated table — moved to Dataflow Gen2 2026-08-13) | ✅ Production |
+| **Total (whole semantic model, in the service)** | | **~1 min** | **✅ Zero Failures** |
 
 ### **Supporting Tables**
 | Table Type | Count | Purpose |
 |------------|-------|---------|
 | Dimension Tables | 4 | Branch, Customer, Date, Parts lookups |
 | Goals Table | 1 | Excel-based branch performance targets |
-| Calculated Table | 1 | ServiceRecommendations (predictive analytics) |
+| Dataflow-Sourced Table | 1 | ServiceRecommendations (predictive analytics — Dataflow Gen2/M as of 2026-08-13, was a DAX calculated table) |
 
-**Overall Improvement: 97% faster than legacy system, 100% reliable**
+**Overall Improvement: 97% faster than legacy system as of the original build, then a further ~90% faster still as of the 2026-08-13 CU/performance fix, 100% reliable**
 
 ---
 
