@@ -1386,49 +1386,6 @@ table _Measures
 
 		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
 
-	measure 'WO Date' =
-			
-			SELECTEDVALUE ( Fact_LaborJobSummary[WorkOrderCreationDate] )
-		formatString: General Date
-		lineageTag: 3d34dfb6-b460-4713-b479-4ab1347e9d83
-
-	measure 'WO Number Display' =
-			
-			"Work Order #" & SELECTEDVALUE ( Fact_LaborJobSummary[WorkOrderNumber] )
-		lineageTag: 7bedad29-4839-414c-950b-ece35b6f4d40
-
-	measure 'WO Branch Display' =
-			
-			"Branch: " & SELECTEDVALUE ( Fact_LaborJobSummary[BranchName] )
-		lineageTag: 57d881ee-046a-412f-b030-da48646f524e
-
-	measure 'WO Date Display' =
-			
-			"Date: "
-			    & FORMAT (
-			        SELECTEDVALUE ( Fact_LaborJobSummary[WorkOrderCreationDate] ),
-			        "MM/DD/YYYY"
-			    )
-		lineageTag: 729df17f-37d4-46be-8f24-4ef939788287
-
-	measure 'WO Invoice Display' =
-			
-			"Invoice # " & SELECTEDVALUE ( Fact_LaborJobSummary[InvoiceNumber] )
-		lineageTag: bab8f150-bd05-4b37-ae83-68af7231aed8
-
-	measure 'Parts for This WO' =
-			
-			VAR CurrentInvoice =
-			    SELECTEDVALUE ( Fact_LaborJobSummary[InvoiceNumber] )
-			RETURN
-			    CALCULATE (
-			        SUM ( Fact_WorkOrderParts[SaleValue] ),
-			        Fact_WorkOrderParts[InvoiceNumber] = CurrentInvoice
-			    )
-		lineageTag: 2cb48792-7852-47bf-9d8f-56103cbb5999
-
-		annotation PBI_FormatHint = {"isGeneralNumber":true}
-
 	measure 'WO Total Labor' =
 			
 			CALCULATE (
@@ -1438,22 +1395,6 @@ table _Measures
 			)
 		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
 		lineageTag: 373d77c5-4a66-4d4a-a766-9041608e23e0
-
-		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
-
-	measure 'WO Total Parts' =
-			
-			VAR CurrentInvoice =
-			    SELECTEDVALUE ( Fact_LaborJobSummary[InvoiceNumber] )
-			RETURN
-			    CALCULATE (
-			        SUM ( Fact_WorkOrderParts[SaleValue] ),
-			        Fact_WorkOrderParts[InvoiceNumber] = CurrentInvoice,
-			        Fact_WorkOrderParts[Franchise] <> "ZP",
-			        NOT ( Fact_WorkOrderParts[PartNumber] IN { "ADV", "LEGACY", "4900", "*10PROMO" } )
-			    )
-		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
-		lineageTag: 7b9b0d81-9fae-4709-9603-7cb068841d63
 
 		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
 
@@ -1469,21 +1410,6 @@ table _Measures
 			
 			SELECTEDVALUE ( Fact_LaborJobSummary[InvoiceNumber] )
 		lineageTag: c599a695-2332-48a1-a06d-49dff7b0ebfe
-
-	measure 'Part Number Filtered' =
-			
-			VAR CurrentInvoice =
-			    SELECTEDVALUE ( Fact_LaborJobSummary[InvoiceNumber] )
-			RETURN
-			    IF (
-			        NOT ( ISBLANK ( CurrentInvoice ) ),
-			        CALCULATE (
-			            SELECTEDVALUE ( Fact_WorkOrderParts[PartNumber] ),
-			            Fact_WorkOrderParts[InvoiceNumber] = CurrentInvoice
-			        ),
-			        BLANK ()
-			    )
-		lineageTag: 5a2c53d3-f501-4708-8b8c-47ceb8eaeb1b
 
 	measure 'Part Sale Value Filtered' =
 			
@@ -1534,17 +1460,6 @@ table _Measures
 			        BLANK ()
 			    )
 		lineageTag: 9b50f434-9efb-41f2-ad92-f300764ab42e
-
-	measure 'Show Parts for This WO' =
-			
-			VAR CurrentInvoice =
-			    SELECTEDVALUE ( Fact_LaborJobSummary[InvoiceNumber] )
-			VAR PartInvoice =
-			    SELECTEDVALUE ( Fact_WorkOrderParts[InvoiceNumber] )
-			RETURN
-			    IF ( PartInvoice = CurrentInvoice, 1, 0 )
-		formatString: 0
-		lineageTag: b9c7c71b-01e2-4a66-bd62-c50934433f13
 
 	measure 'WO Gross Parts' =
 			
@@ -3467,32 +3382,6 @@ table _Measures
 			"
 		lineageTag: 69c22641-e5d0-48f4-b5b9-059be799dd17
 
-	measure 'WO List - Date Range' =
-			
-			VAR MinDate =
-			    MIN ( Fact_LaborJobSummary[WorkOrderCreationDate] )
-			VAR MaxDate =
-			    MAX ( Fact_LaborJobSummary[WorkOrderCreationDate] )
-			RETURN
-			    "
-			<div style='
-			    font-family: Segoe UI, Arial, sans-serif;
-			    text-align: center;
-			    padding: 12px 20px;
-			    background: #EFF6FF;
-			    border-left: 4px solid #3A7CA5;
-			    border-radius: 6px;
-			    margin: 10px 0;
-			'>
-			    <span style='font-size: 13px; color: #1E40AF; font-weight: 600;'>
-			        📅 Work orders from "
-			        & FORMAT ( MinDate, "MMM D, YYYY" ) & " to "
-			        & FORMAT ( MaxDate, "MMM D, YYYY" ) & "
-			    </span>
-			</div>
-			"
-		lineageTag: f210ba6e-60e1-4b8b-9ab2-12ba8d8ecee0
-
 	measure 'WO List - Top Work Order Callout' =
 			
 			VAR TopWO =
@@ -3625,106 +3514,6 @@ table _Measures
 			DISTINCTCOUNT ( Fact_LaborJobSummary[WorkOrderNumber] )
 		formatString: 0
 		lineageTag: f5e77595-b1b3-4d25-99df-c54de73f11ca
-
-	measure 'WO List - Completion Trend Card' = ```
-			
-			VAR MinDate =
-			    MIN ( Fact_LaborJobSummary[WorkOrderCreationDate] )
-			VAR MaxDate =
-			    MAX ( Fact_LaborJobSummary[WorkOrderCreationDate] )
-			VAR TotalMonths =
-			    DATEDIFF ( MinDate, MaxDate, MONTH ) + 1
-			VAR AvgPerMonth =
-			    DIVIDE ( [WO List - Total Orders], TotalMonths, 0 ) // Get month-by-month counts for sparkline effect
-			VAR MonthlyData =
-			    ADDCOLUMNS (
-			        CALENDAR ( MinDate, MaxDate ),
-			        "@Month", [Date],
-			        "@Count",
-			            CALCULATE (
-			                DISTINCTCOUNT ( Fact_LaborJobSummary[WorkOrderCreationDate] ),
-			                DATESINPERIOD (
-			                    Fact_LaborJobSummary[WorkOrderCreationDate],
-			                    [CreationDateAge],
-			                    1,
-			                    MONTH
-			                )
-			            )
-			    )
-			VAR PeakMonth =
-			    MAXX ( MonthlyData, [@Count] )
-			VAR PeakMonthDate =
-			    MAXX ( FILTER ( MonthlyData, [@Count] = PeakMonth ), [@Month] )
-			RETURN
-			    "
-			<div style='
-			    font-family: Segoe UI, Arial, sans-serif;
-			    background: white;
-			    padding: 20px;
-			    border-radius: 8px;
-			    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-			    border-left: 4px solid #3A7CA5;
-			'>
-			    <div style='
-			        font-size: 11px;
-			        color: #6B7280;
-			        font-weight: 600;
-			        text-transform: uppercase;
-			        letter-spacing: 0.8px;
-			        margin-bottom: 15px;
-			    '>
-			        📅 Inspection Timeline
-			    </div>
-			    
-			    <div style='display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;'>
-			        <div>
-			            <div style='font-size: 13px; color: #6B7280; margin-bottom: 4px;'>Date Range</div>
-			            <div style='font-size: 16px; font-weight: 600; color: #1D3C4E;'>
-			                "
-			        & FORMAT ( MinDate, "MMM D, YYYY" ) & " - "
-			        & FORMAT ( MaxDate, "MMM D, YYYY" ) & "
-			            </div>
-			        </div>
-			        <div style='text-align: right;'>
-			            <div style='font-size: 13px; color: #6B7280; margin-bottom: 4px;'>Avg per Month</div>
-			            <div style='font-size: 20px; font-weight: 700; color: #3A7CA5;'>
-			                "
-			        & FORMAT ( AvgPerMonth, "#,##0.0" ) & "
-			            </div>
-			        </div>
-			    </div>
-			    
-			    <div style='
-			        padding: 12px;
-			        background: #EFF6FF;
-			        border-radius: 6px;
-			        display: flex;
-			        align-items: center;
-			        gap: 10px;
-			    '>
-			        <div style='font-size: 24px;'>📈</div>
-			        <div>
-			            <div style='font-size: 12px; color: #1E40AF; margin-bottom: 2px;'>Peak Activity</div>
-			            <div style='font-size: 14px; font-weight: 600; color: #1D3C4E;'>
-			                "
-			        & FORMAT ( PeakMonth, "#,##0" ) & " inspections in "
-			        & FORMAT ( PeakMonthDate, "MMMM YYYY" ) & "
-			            </div>
-			        </div>
-			    </div>
-			</div>
-			"
-			```
-		lineageTag: 29642940-6243-4453-9e6d-6fe7504900a1
-
-	measure 'WO Count - Direct Date' =
-			
-			CALCULATE (
-			    DISTINCTCOUNT ( Fact_LaborJobSummary[WorkOrderNumber] ),
-			    DATESBETWEEN ( dim_DateTable[Date], DATE ( 2024, 12, 1 ), DATE ( 2025, 4, 30 ) )
-			)
-		formatString: 0
-		lineageTag: 18d72e18-1147-4c0c-b5ef-eac0cf72d975
 
 	measure 'WO Details - Context Header' = ```
 			
