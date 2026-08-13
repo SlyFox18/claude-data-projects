@@ -114,22 +114,6 @@ table _Measures
 
 		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
 
-	measure 'Has Inspection' =
-			
-			VAR InspectionWOs =
-			    CALCULATETABLE (
-			        VALUES ( Fact_LaborJobSummary[WorkOrderNumber] ),
-			        Fact_LaborJobSummary[IsInspection] = TRUE
-			    )
-			RETURN
-			    IF (
-			        SELECTEDVALUE ( Fact_LaborJobSummary[WorkOrderNumber] ) IN InspectionWOs,
-			        TRUE,
-			        FALSE
-			    )
-		formatString: """TRUE"";""TRUE"";""FALSE"""
-		lineageTag: 16401fdf-83d5-41a5-bd3a-b9d77ef5f9ab
-
 	measure 'Parts Discount' = ```
 			
 			VAR InspectionWOs = 
@@ -229,34 +213,6 @@ table _Measures
 
 		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
 
-	measure 'Parts Total $ - Discount $' =
-			
-			[Parts $ Total] + [Parts Discount] + [ADV Discount] + [Trucking Discount]
-		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
-		lineageTag: afcb5113-0cdd-4005-a0e5-f8075befa3cf
-
-		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
-
-	measure 'Hours Invoiced' =
-			
-			CALCULATE (
-			    SUM ( Fact_LaborJobSummary[InvoicedHours] ),
-			    Fact_LaborJobSummary[IsInspection] = TRUE
-			)
-		lineageTag: 8e21fb80-b6b3-4447-9e10-c5715dd5a342
-
-		annotation PBI_FormatHint = {"isGeneralNumber":true}
-
-	measure 'Estimated Hours' =
-			
-			CALCULATE (
-			    SUM ( Fact_LaborJobSummary[EstimatedHours] ),
-			    Fact_LaborJobSummary[IsInspection] = TRUE
-			)
-		lineageTag: fd0ca13f-7043-48b6-b463-5f0a26e69968
-
-		annotation PBI_FormatHint = {"isGeneralNumber":true}
-
 	measure 'Total Discount %' =
 			
 			DIVIDE (
@@ -267,25 +223,11 @@ table _Measures
 		formatString: 0.00%;-0.00%;0.00%
 		lineageTag: 24c8c985-0e8e-4996-a410-7e6719ddcc9b
 
-	measure 'Hours Realization Rate' =
-			
-			DIVIDE ( [Hours Worked], [Hours Invoiced], 0 )
-		formatString: 0.0%;-0.0%;0.0%
-		lineageTag: fdc2f171-50b1-450e-867f-20444b0faba3
-
 	measure Total =
 			
 			[Parts $ Total] + [Inspection $$] + [Labor $$]
 		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
 		lineageTag: b694dff9-dbb9-4395-b180-c7c6f7878e2d
-
-		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
-
-	measure 'Total $ - Discount $' =
-			
-			[Total] + [Parts Discount] + [ADV Discount] + [Trucking Discount]
-		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
-		lineageTag: ce95666e-ceb2-4151-91e0-f451b3ef1c89
 
 		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
 
@@ -331,33 +273,10 @@ table _Measures
 
 		annotation PBI_FormatHint = {"isGeneralNumber":true}
 
-	measure 'Hours Invoiced With Inspection' =
-			
-			VAR InspectionWOs =
-			    CALCULATETABLE (
-			        VALUES ( Fact_LaborJobSummary[WorkOrderNumber] ),
-			        Fact_LaborJobSummary[IsInspection] = TRUE
-			    )
-			RETURN
-			    CALCULATE (
-			        SUM ( Fact_LaborJobSummary[InvoicedHours] ),
-			        Fact_LaborJobSummary[WorkOrderNumber] IN InspectionWOs
-			    )
-		lineageTag: 9addd749-7957-4a45-ac14-94150ab3bbe6
-
-		annotation PBI_FormatHint = {"isGeneralNumber":true}
-
 	measure 'Additional Hours Worked' =
 			
 			[Hours Worked With Inspection] - [Hours Worked]
 		lineageTag: b458f463-fd0e-425c-88e2-cea0f9aeb714
-
-		annotation PBI_FormatHint = {"isGeneralNumber":true}
-
-	measure 'Additional Hours Invoiced' =
-			
-			[Hours Invoiced With Inspection] - [Hours Invoiced]
-		lineageTag: 19c54d36-5c63-4e8b-8ff4-50b50e891aaa
 
 		annotation PBI_FormatHint = {"isGeneralNumber":true}
 
@@ -533,13 +452,6 @@ table _Measures
 			COUNTROWS ( Fact_PendingInspections )
 		formatString: 0
 		lineageTag: d8516816-45a5-44ac-9df8-96791eab65f4
-
-	measure 'Pending Hours Worked' =
-			
-			SUM ( Fact_PendingInspections[HoursWorked] )
-		lineageTag: afaf65e6-7aa4-4d48-baae-cebb26ab56b7
-
-		annotation PBI_FormatHint = {"isGeneralNumber":true}
 
 	measure 'Average Pending Age' =
 			
