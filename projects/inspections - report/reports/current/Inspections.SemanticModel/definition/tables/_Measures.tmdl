@@ -204,7 +204,7 @@ table _Measures
 		formatString: 0.00%;-0.00%;0.00%
 		lineageTag: 24c8c985-0e8e-4996-a410-7e6719ddcc9b
 
-	measure Total =
+	measure 'Total Revenue' =
 			
 			[Parts $ Total] + [Inspection $$] + [Labor $$]
 		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
@@ -441,7 +441,7 @@ table _Measures
 
 		annotation PBI_FormatHint = {"isGeneralNumber":true}
 
-	measure 'Revenue Breakdown Cards HTML V4' = ```
+	measure 'Revenue Breakdown Cards HTML' = ```
 			
 			VAR InspectionRev = [Inspection $$]
 			VAR PartsRev = [Parts $ Total]
@@ -753,7 +753,7 @@ table _Measures
 			```
 		lineageTag: 2b0cc8c4-c6d8-4654-9e64-cb468f8a1f4d
 
-	measure 'CS690-CS770 Panel HTML V2' = ```
+	measure 'CS690-CS770 Panel HTML' = ```
 			
 			VAR _Count = [CS690-CS770 Inspections]
 			VAR CountGoal = [CS690-CS770 Inspection Goal]
@@ -919,7 +919,7 @@ table _Measures
 			```
 		lineageTag: aacaa27d-c4ea-4d0e-86a7-1a6041632172
 
-	measure 'Discount Panel HTML V2' = ```
+	measure 'Discount Panel HTML' = ```
 			
 			VAR TotalDiscount = [Total Discount $]
 			VAR DiscountPct = [Total Discount %]
@@ -4261,7 +4261,7 @@ table _Measures
 		formatString: 0
 		lineageTag: 27c633c8-4161-4bc2-a3f9-8ce9062db257
 
-	measure 'Avg Parts $ /Inspection' =
+	measure 'Avg Parts $ / Inspection' =
 			
 			DIVIDE([WO List - Total Parts], [Inspection Count by Job Code], 0)
 		formatString: \$#,0;(\$#,0);\$#,0
@@ -4315,7 +4315,7 @@ table _Measures
 
 		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
 
-	measure 'Parts $ Total Fixed LY' =
+	measure 'Parts $ Total LY' =
 			
 			CALCULATE(
 			    [Parts $ Total (Filtered)],
@@ -4363,7 +4363,7 @@ table _Measures
 			
 			VAR _Month = SELECTEDVALUE( dim_DateTable[MonthYear], "This Month" )
 			VAR _PartsCur = [Parts $ Total (Filtered)]
-			VAR _PartsLY = [Parts $ Total Fixed LY]
+			VAR _PartsLY = [Parts $ Total LY]
 			VAR _PartsVar = DIVIDE( _PartsCur - _PartsLY, _PartsLY )
 			VAR _PartsUp = _PartsVar >= 0
 			VAR _PartsArrow = IF( _PartsUp, "▲", "▼" )
