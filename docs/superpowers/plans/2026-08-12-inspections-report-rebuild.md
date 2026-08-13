@@ -203,10 +203,15 @@ Applied in 5 verified batches directly in Desktop (multi-select delete → full 
 
 The two `_Helpers` measures (`BranchPerformanceManualSort`, `IsPendingInspection`) were also marked `isHidden` — pure internal plumbing, not meant to be dragged onto a visual directly. One pre-existing hidden measure (`Trend Tooltip - HTML`, hidden before this session) was left untouched.
 
-### Descriptions — NOT YET STARTED
+### Descriptions ✅ DONE (2026-08-13)
 
-- [ ] Add a `description` to every measure that isn't obviously self-explanatory from its name — this is the piece that actually puts explanations in front of someone via field-list tooltips, on top of the folder organization already done.
-- [ ] Update `dax-measures-library.md` to match the current 128-measure/11-folder state (currently flagged stale at the top of that file, pointing back to this plan and to the model's own folders as the authoritative reference in the meantime).
+All 128 measures now have a real description, written by actually reading each measure's DAX body rather than guessing from its name — grounded in what it calculates, which filters apply, and any calculation-path quirks worth flagging (e.g. `WO List - Total Labor` uses a different formula in matrix context vs. the true grand total).
+
+**Real TMDL gotcha hit and fixed along the way, worth knowing if this repo touches measure descriptions again:** TMDL does **not** support `description: "..."` as a measure property — Desktop hard-fails on reopen with `UnknownKeyword` / `Unsupported property`. The correct syntax is a `///` doc-comment line immediately **before** the `measure` declaration line, not a property inside the measure body. The first attempt (applied while Desktop was closed, per the same safe pattern as the folder work) caught this cleanly on reopen — Desktop refused to load the malformed project rather than corrupting anything — fixed and reverified before the second reopen succeeded.
+
+`dax-measures-library.md` updated: flagged stale at the top (as before), but now also notes the model's own folders + tooltips are the authoritative reference going forward — a full rewrite of that file is optional, not a required follow-up, since it would just be re-documenting what's already visible in Desktop's field list.
+
+**This closes out the full measure-library cleanup — dead-measure removal, renames, folders, and descriptions are all done.**
 
 ### Goal calculation group — NOT YET STARTED (optional, lower priority)
 
@@ -235,5 +240,8 @@ Published and refreshed for real in the Fabric service (not just Desktop). **Con
 
 - **Incremental refresh window (Task 0.1):** currently 30 days/3 years. Brian wants to tighten to 7 days once a few refresh cycles confirm parts data doesn't get corrected further back than that — revisit after a week or two of stable operation.
 - **Task 0.5 (InTrans dedup workaround):** still open, deferred for capacity reasons, no urgency now that the CU goal is otherwise met.
-- **Measure descriptions (Phase 1):** not yet started — the last piece of the original ask. Folder organization alone already addresses most of "I can't keep up with what is what," but descriptions are what turn the field list into actual documentation via tooltips.
 - **Goal calculation group (Phase 1, optional):** confirm the exact set of Goal-family measures to consolidate before building it, since some (like the CS690-CS770-specific goals) may have slightly different business rules than a naive "same pattern" read suggests. Not blocking — the "Goals & % to Goal" folder already makes this cluster far more navigable even without it.
+
+## Session complete (2026-08-13)
+
+Everything from the original audit is done: Phase 0 (CU/performance fixes), Phase 0.7 (ServiceRecommendations redesign), publish + service validation, and the full measure library cleanup (dead-measure removal, renames, folders, descriptions). Only genuinely open items are the ~2-week CU(s) capacity-metrics watch (not something to check yet), Task 0.5 (low priority), and the optional Goal calculation group.
