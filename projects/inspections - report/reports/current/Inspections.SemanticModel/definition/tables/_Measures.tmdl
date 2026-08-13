@@ -1,6 +1,7 @@
 table _Measures
 	lineageTag: 3b1a6758-3ca4-47e9-8791-b5d6002e665c
 
+	/// Text summary of the currently selected branches (up to 7 shown, then '+N more'), used in report headers to show what's filtered.
 	measure 'Applied Filters' =
 			
 			VAR MaxFilters = 7
@@ -24,6 +25,7 @@ table _Measures
 		displayFolder: 'Page Headers & Subtitles'
 		lineageTag: 55ecb7c5-666c-4eee-81ed-601b4d20b195
 
+	/// Count of completed inspection job codes (IsInspection = TRUE), excluding anything still in the pending queue.
 	measure 'Total Inspections' =
 			
 			CALCULATE (
@@ -35,6 +37,7 @@ table _Measures
 		displayFolder: 'Core KPIs'
 		lineageTag: 35b83e37-1ab5-4391-9b69-93e28dcbabbb
 
+	/// Invoiced labor amount for inspection job codes only (IsInspection = TRUE) - the direct labor revenue from performing inspections.
 	measure 'Inspection $$' =
 			
 			CALCULATE (
@@ -47,6 +50,7 @@ table _Measures
 
 		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
 
+	/// Parts revenue from valid inspection-related invoices, excluding ZP-franchise discount line items (ADV, LEGACY, 4900, *10PROMO).
 	measure 'Parts $ Total' =
 			
 			CALCULATE (
@@ -62,6 +66,7 @@ table _Measures
 
 		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
 
+	/// Additional (non-inspection) labor revenue on inspection work orders - Labor With Inspection minus the inspection labor itself.
 	measure 'Labor $$' =
 			
 			[Labor With Inspection] - [Inspection $$]
@@ -71,6 +76,7 @@ table _Measures
 
 		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
 
+	/// Actual hours worked on inspection job codes (IsInspection = TRUE).
 	measure 'Hours Worked' =
 			
 			CALCULATE (
@@ -82,6 +88,7 @@ table _Measures
 
 		annotation PBI_FormatHint = {"isGeneralNumber":true}
 
+	/// Total invoiced labor across every completed, invoiced work order that included an inspection - inspection labor plus any other work performed on the same order.
 	measure 'Labor With Inspection' =
 			
 			VAR InspectionWOs =
@@ -102,6 +109,7 @@ table _Measures
 
 		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
 
+	/// Sum of *10PROMO discount line items on invoices tied to completed inspection work orders.
 	measure 'Parts Discount' = ```
 			
 			VAR InspectionWOs = 
@@ -134,6 +142,7 @@ table _Measures
 
 		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
 
+	/// Sum of ADV/LEGACY discount line items on invoices tied to completed inspection work orders.
 	measure 'ADV Discount' = ```
 			
 			// Get inspection work orders
@@ -172,6 +181,7 @@ table _Measures
 
 		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
 
+	/// Sum of the 4900 trucking discount line item on invoices tied to completed inspection work orders.
 	measure 'Trucking Discount' = ```
 			
 			VAR InspectionWOs = 
@@ -204,6 +214,7 @@ table _Measures
 
 		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
 
+	/// Total discount dollars as a percentage of total revenue (Inspection + Parts + Labor).
 	measure 'Total Discount %' =
 			
 			DIVIDE (
@@ -215,6 +226,7 @@ table _Measures
 		displayFolder: 'Core KPIs'
 		lineageTag: 24c8c985-0e8e-4996-a410-7e6719ddcc9b
 
+	/// Grand total revenue - Parts $ Total + Inspection $$ + Labor $$.
 	measure 'Total Revenue' =
 			
 			[Parts $ Total] + [Inspection $$] + [Labor $$]
@@ -224,6 +236,7 @@ table _Measures
 
 		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
 
+	/// Sum of all three discount types (Parts Promo + ADV/Legacy + Trucking) - always negative since discounts reduce revenue.
 	measure 'Total Discount $' =
 			
 			[Parts Discount] + [ADV Discount] + [Trucking Discount]
@@ -233,6 +246,7 @@ table _Measures
 
 		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
 
+	/// Count of completed inspections restricted to the CS690/CS770/CP690/CP770/Stripper combine codes, excluding pending.
 	measure 'CS690-CS770 Inspections' =
 			
 			CALCULATE (
@@ -252,6 +266,7 @@ table _Measures
 		displayFolder: 'Core KPIs'
 		lineageTag: ef5ab67b-3bbb-460d-bc94-102d637bcd92
 
+	/// Actual hours worked across every work order that included an inspection, not just the inspection hours themselves.
 	measure 'Hours Worked With Inspection' =
 			
 			VAR InspectionWOs =
@@ -269,6 +284,7 @@ table _Measures
 
 		annotation PBI_FormatHint = {"isGeneralNumber":true}
 
+	/// Non-inspection hours on inspection work orders - Hours Worked With Inspection minus Hours Worked.
 	measure 'Additional Hours Worked' =
 			
 			[Hours Worked With Inspection] - [Hours Worked]
@@ -277,6 +293,7 @@ table _Measures
 
 		annotation PBI_FormatHint = {"isGeneralNumber":true}
 
+	/// This branch's inspection count goal, from the Inspection Goals table.
 	measure 'Total Inspection Goal' =
 			
 			CALCULATE (
@@ -290,6 +307,7 @@ table _Measures
 		displayFolder: 'Goals & % to Goal'
 		lineageTag: bad18d36-0247-4222-88f9-d1831804804a
 
+	/// This branch's labor-with-inspection dollar goal, from the Inspection Goals table.
 	measure 'Labor With Inspection Goal' =
 			
 			CALCULATE (
@@ -305,6 +323,7 @@ table _Measures
 
 		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
 
+	/// This branch's parts dollar goal, from the Inspection Goals table.
 	measure 'Parts Goal' =
 			
 			CALCULATE (
@@ -320,6 +339,7 @@ table _Measures
 
 		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
 
+	/// Total Inspections divided by Total Inspection Goal.
 	measure '% to Goal - Inspections' =
 			
 			DIVIDE ( [Total Inspections], [Total Inspection Goal], 0 )
@@ -327,6 +347,7 @@ table _Measures
 		displayFolder: 'Goals & % to Goal'
 		lineageTag: c9cbfff3-62ad-4bc8-8629-51e6e33732fe
 
+	/// Labor With Inspection divided by its goal.
 	measure '% to Goal - Labor With Inspection' =
 			
 			DIVIDE ( [Labor With Inspection], [Labor With Inspection Goal], 0 )
@@ -334,6 +355,7 @@ table _Measures
 		displayFolder: 'Goals & % to Goal'
 		lineageTag: b3351694-d22f-4f07-b96d-80b92808198f
 
+	/// Parts $ Total divided by Parts Goal.
 	measure '% to Goal - Parts' =
 			
 			DIVIDE ( [Parts $ Total], [Parts Goal], 0 )
@@ -341,6 +363,7 @@ table _Measures
 		displayFolder: 'Goals & % to Goal'
 		lineageTag: 3215a9d5-e101-4c9b-8687-773cb54f2f22
 
+	/// Total invoiced labor on every work order carrying a CS690/CS770/CP690/CP770/Stripper job code, regardless of invoice status.
 	measure 'CS690-CS770 Labor With Inspection' =
 			
 			VAR CS690WOs =
@@ -366,6 +389,7 @@ table _Measures
 
 		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
 
+	/// Parts revenue on invoiced work orders carrying a CS690/CS770/CP690/CP770/Stripper job code, excluding ZP-franchise discount items.
 	measure 'CS690-CS770 Parts Total' =
 			
 			VAR CS690Invoices =
@@ -394,6 +418,7 @@ table _Measures
 
 		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
 
+	/// This branch's CS690/770 inspection count goal.
 	measure 'CS690-CS770 Inspection Goal' =
 			
 			CALCULATE (
@@ -407,6 +432,7 @@ table _Measures
 		displayFolder: 'Goals & % to Goal'
 		lineageTag: dd7e6d74-c869-47d1-9558-d487b7cbf4f1
 
+	/// This branch's CS690/770 labor dollar goal.
 	measure 'CS690-CS770 Labor Goal' =
 			
 			CALCULATE (
@@ -422,6 +448,7 @@ table _Measures
 
 		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
 
+	/// This branch's CS690/770 parts dollar goal.
 	measure 'CS690-CS770 Parts Goal' =
 			
 			CALCULATE (
@@ -437,6 +464,7 @@ table _Measures
 
 		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
 
+	/// CS690-CS770 Inspections divided by its goal.
 	measure '% to Goal - CS690-CS770 Inspections' =
 			
 			DIVIDE ( [CS690-CS770 Inspections], [CS690-CS770 Inspection Goal], 0 )
@@ -444,6 +472,7 @@ table _Measures
 		displayFolder: 'Goals & % to Goal'
 		lineageTag: 0af8ccd2-5570-4a5e-9612-8ac593c9a5ed
 
+	/// CS690-CS770 Labor With Inspection divided by its goal.
 	measure '% to Goal - CS690-CS770 Labor' =
 			
 			DIVIDE ( [CS690-CS770 Labor With Inspection], [CS690-CS770 Labor Goal], 0 )
@@ -451,6 +480,7 @@ table _Measures
 		displayFolder: 'Goals & % to Goal'
 		lineageTag: 22c552fa-7c8d-44e6-b0de-97830cf5469d
 
+	/// CS690-CS770 Parts Total divided by its goal.
 	measure '% to Goal - CS690-CS770 Parts' =
 			
 			DIVIDE ( [CS690-CS770 Parts Total], [CS690-CS770 Parts Goal], 0 )
@@ -458,6 +488,7 @@ table _Measures
 		displayFolder: 'Goals & % to Goal'
 		lineageTag: 340f5d50-f26b-49a8-b2d8-b8e87fc3d64f
 
+	/// Row count of Fact_PendingInspections - the current size of the pending inspection queue.
 	measure 'Pending Inspections Count' =
 			
 			COUNTROWS ( Fact_PendingInspections )
@@ -465,6 +496,7 @@ table _Measures
 		displayFolder: 'Pending Queue'
 		lineageTag: d8516816-45a5-44ac-9df8-96791eab65f4
 
+	/// Average days since creation across every pending inspection.
 	measure 'Average Pending Age' =
 			
 			AVERAGE ( Fact_PendingInspections[DaysSinceCreation] )
@@ -473,6 +505,7 @@ table _Measures
 
 		annotation PBI_FormatHint = {"isGeneralNumber":true}
 
+	/// 4-card HTML strip on the Home page: Inspection Revenue, Parts Revenue (with % to goal), Total Labor (with % to goal), and Total Hours.
 	measure 'Revenue Breakdown Cards HTML' = ```
 			
 			VAR InspectionRev = [Inspection $$]
@@ -661,6 +694,7 @@ table _Measures
 		displayFolder: 'HTML Cards & Visual Chrome'
 		lineageTag: 9958bdaa-7cf3-426c-a616-4c9040396ec6
 
+	/// 5-section hero banner on the Home page: total inspections vs. goal, total revenue, performance %, pending queue count, and year-over-year comparison. This is the live version - several earlier design drafts (Brand Colors A-D, Option 2/3) were deleted in the 2026-08-13 cleanup.
 	measure 'Hero Card HTML with Pending' = ```
 			
 			VAR Inspections = [Total Inspections]
@@ -787,6 +821,7 @@ table _Measures
 		displayFolder: 'HTML Cards & Visual Chrome'
 		lineageTag: 2b0cc8c4-c6d8-4654-9e64-cb468f8a1f4d
 
+	/// 3-card HTML panel showing CS690/CS770 combine inspection performance specifically - count, labor revenue, and parts revenue, each vs. goal.
 	measure 'CS690-CS770 Panel HTML' = ```
 			
 			VAR _Count = [CS690-CS770 Inspections]
@@ -954,6 +989,7 @@ table _Measures
 		displayFolder: 'HTML Cards & Visual Chrome'
 		lineageTag: aacaa27d-c4ea-4d0e-86a7-1a6041632172
 
+	/// HTML panel breaking down total discount dollars into ADV/Advertising, Trucking, and Parts Promo.
 	measure 'Discount Panel HTML' = ```
 			
 			VAR TotalDiscount = [Total Discount $]
@@ -1098,6 +1134,7 @@ table _Measures
 		displayFolder: 'HTML Cards & Visual Chrome'
 		lineageTag: c4e61b6c-5078-4e82-8085-5ea6cc493331
 
+	/// Distinct completed work order count - the denominator for the Job Code Breakdown table's per-code averages.
 	measure 'Inspection Count by Job Code' =
 			
 			CALCULATE (
@@ -1108,6 +1145,7 @@ table _Measures
 		displayFolder: 'Job Code Breakdown'
 		lineageTag: 8cbd1748-cf6a-458b-af5f-541abcd8f846
 
+	/// WO List - Total Parts divided by Inspection Count by Job Code.
 	measure 'Avg Parts $ by Job Code' =
 			
 			DIVIDE ( [WO List - Total Parts], [Inspection Count by Job Code], 0 )
@@ -1117,6 +1155,7 @@ table _Measures
 
 		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
 
+	/// WO List - Total Labor divided by Inspection Count by Job Code.
 	measure 'Avg Labor $ by Job Code' =
 			
 			DIVIDE ( [WO List - Total Labor], [Inspection Count by Job Code], 0 )
@@ -1126,6 +1165,7 @@ table _Measures
 
 		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
 
+	/// Parts + labor revenue for the current job-code context, net of Parts/Labor Discount by Job Code (discounts are already negative, so this adds them).
 	measure 'Total $ - Discounts by Job Code' =
 			
 			VAR TotalRevenue = [WO List - Total Parts] + [WO List - Total Labor]
@@ -1139,6 +1179,7 @@ table _Measures
 
 		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
 
+	/// Total discount dollars as a percentage of total parts+labor revenue for the current job-code context.
 	measure 'Avg % Discounted by Job Code' =
 			
 			VAR TotalDiscount =
@@ -1150,6 +1191,7 @@ table _Measures
 		displayFolder: 'Job Code Breakdown'
 		lineageTag: 363dad33-01ba-4af2-95af-2eda2cc4fcab
 
+	/// ADV/LEGACY discount dollars for the selected job code specifically; falls back to the whole-report ADV Discount measure at the matrix Total row (nothing filtered to a single job code).
 	measure 'Labor Discount by Job Code' =
 			
 			VAR InMatrixContext = ISFILTERED(Fact_LaborJobSummary[JobCode])
@@ -1187,6 +1229,7 @@ table _Measures
 
 		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
 
+	/// *10PROMO discount dollars for the selected job code specifically; falls back to the whole-report Parts Discount measure at the matrix Total row.
 	measure 'Parts Discount by Job Code' =
 			
 			VAR InMatrixContext = ISFILTERED(Fact_LaborJobSummary[JobCode])
@@ -1224,6 +1267,7 @@ table _Measures
 
 		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
 
+	/// Parts Discount by Job Code divided by Inspection Count by Job Code.
 	measure 'Avg Part Discount by Job Code' =
 			
 			DIVIDE ( [Parts Discount by Job Code], [Inspection Count by Job Code], 0 )
@@ -1233,6 +1277,7 @@ table _Measures
 
 		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
 
+	/// Labor Discount by Job Code divided by Inspection Count by Job Code.
 	measure 'Avg Labor Discount by Job Code' =
 			
 			DIVIDE ( [Labor Discount by Job Code], [Inspection Count by Job Code], 0 )
@@ -1242,6 +1287,7 @@ table _Measures
 
 		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
 
+	/// Avg Parts $ by Job Code + Avg Labor $ by Job Code combined.
 	measure 'Avg Labor & Parts by Job Code' =
 			
 			[Avg Parts $ by Job Code] + [Avg Labor $ by Job Code]
@@ -1251,6 +1297,7 @@ table _Measures
 
 		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
 
+	/// Invoiced labor amount for the specific work order selected on the drill-through page.
 	measure 'WO Total Labor' =
 			
 			CALCULATE (
@@ -1264,6 +1311,7 @@ table _Measures
 
 		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
 
+	/// WO Total Labor + WO Net Parts for the selected work order.
 	measure 'WO Grand Total' =
 			
 			[WO Total Labor] + [WO Net Parts]
@@ -1273,12 +1321,14 @@ table _Measures
 
 		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
 
+	/// The invoice number tied to the currently selected work order.
 	measure 'Current Invoice Number' =
 			
 			SELECTEDVALUE ( Fact_LaborJobSummary[InvoiceNumber] )
 		displayFolder: 'Work Order Detail'
 		lineageTag: c599a695-2332-48a1-a06d-49dff7b0ebfe
 
+	/// Total parts sale value on the current invoice, excluding ZP-franchise discount items.
 	measure 'Part Sale Value Filtered' =
 			
 			VAR CurrentInvoice =
@@ -1299,6 +1349,7 @@ table _Measures
 
 		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
 
+	/// Total part quantity sold on the current invoice.
 	measure 'Part Quantity Filtered' =
 			
 			VAR CurrentInvoice =
@@ -1316,6 +1367,7 @@ table _Measures
 		displayFolder: 'Work Order Detail'
 		lineageTag: 3e96b6f8-94e0-42cc-b98f-17805c309b43
 
+	/// Part description for the currently selected part on the current invoice.
 	measure 'Part Description Filtered' =
 			
 			VAR CurrentInvoice =
@@ -1332,6 +1384,7 @@ table _Measures
 		displayFolder: 'Work Order Detail'
 		lineageTag: 9b50f434-9efb-41f2-ad92-f300764ab42e
 
+	/// Parts revenue on the selected work order's invoice before any discount, excluding ZP-franchise discount line items themselves.
 	measure 'WO Gross Parts' =
 			
 			VAR CurrentInvoice =
@@ -1349,6 +1402,7 @@ table _Measures
 
 		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
 
+	/// *10PROMO discount dollars applied to the selected work order's invoice.
 	measure 'WO Parts Discount' =
 			
 			VAR CurrentInvoice =
@@ -1365,6 +1419,7 @@ table _Measures
 
 		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
 
+	/// WO Gross Parts + WO Parts Discount - parts revenue after the promo discount.
 	measure 'WO Net Parts' =
 			
 			[WO Gross Parts] + [WO Parts Discount]
@@ -1374,6 +1429,7 @@ table _Measures
 
 		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
 
+	/// Alias of Total Inspections, used on the Goals page.
 	measure 'Total Current Inspections' =
 			
 			[Total Inspections]
@@ -1381,6 +1437,7 @@ table _Measures
 		displayFolder: 'Goals & % to Goal'
 		lineageTag: 1b67f016-32ab-456e-a033-13ddb710194a
 
+	/// Alias of Total Inspection Goal, used on the Goals page.
 	measure 'Total Inspection Goal All' =
 			
 			[Total Inspection Goal]
@@ -1388,6 +1445,7 @@ table _Measures
 		displayFolder: 'Goals & % to Goal'
 		lineageTag: ae701c33-ab21-43dc-a9b9-0bc6ad2fadd7
 
+	/// Alias of Parts $ Total, used on the Goals page.
 	measure 'Total Current Parts' =
 			
 			[Parts $ Total]
@@ -1397,6 +1455,7 @@ table _Measures
 
 		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
 
+	/// Alias of Parts $ Goal, used on the Goals page.
 	measure 'Total Parts Goal All' =
 			
 			[Parts $ Goal]
@@ -1406,6 +1465,7 @@ table _Measures
 
 		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
 
+	/// This branch's parts dollar goal - unfiltered sum (no branch TREATAS join), used where the Goals page's own context already handles branch filtering.
 	measure 'Parts $ Goal' =
 			
 			SUM ( 'Inspection Goals'[Total Parts $$ Goal] )
@@ -1415,6 +1475,7 @@ table _Measures
 
 		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
 
+	/// Alias of % to Goal - Parts, used on the Goals page.
 	measure 'Overall % to Goal Parts' =
 			
 			[% to Goal - Parts]
@@ -1422,6 +1483,7 @@ table _Measures
 		displayFolder: 'Goals & % to Goal'
 		lineageTag: 517d9c06-2216-4331-b085-ba44d676a999
 
+	/// Alias of Labor With Inspection, used on the Goals page.
 	measure 'Total Current Labor' =
 			
 			[Labor With Inspection]
@@ -1431,6 +1493,7 @@ table _Measures
 
 		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
 
+	/// Alias of Labor With Inspection Goal, used on the Goals page.
 	measure 'Total Labor Goal All' =
 			
 			[Labor With Inspection Goal]
@@ -1440,6 +1503,7 @@ table _Measures
 
 		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
 
+	/// Alias of % to Goal - Labor With Inspection, used on the Goals page.
 	measure 'Overall % to Goal Labor' =
 			
 			[% to Goal - Labor With Inspection]
@@ -1447,6 +1511,7 @@ table _Measures
 		displayFolder: 'Goals & % to Goal'
 		lineageTag: 904d7dbd-ec0b-4917-a18d-f3e7152ae7f8
 
+	/// Alias of Pending Inspections Count, used on the Pending page.
 	measure 'Total Pending Inspections' =
 			
 			COUNTROWS ( Fact_PendingInspections )
@@ -1454,6 +1519,7 @@ table _Measures
 		displayFolder: 'Pending Queue'
 		lineageTag: 8ca4db4a-e747-4f5f-89b8-199ae590496f
 
+	/// Sum of hours already worked on inspections still sitting in the pending queue.
 	measure 'Total Pending Hours' =
 			
 			SUM ( Fact_PendingInspections[HoursWorked] )
@@ -1461,6 +1527,7 @@ table _Measures
 		displayFolder: 'Pending Queue'
 		lineageTag: 1f956452-76af-459f-beaf-1e25eb58c203
 
+	/// Average combined labor + parts revenue per completed, invoiced inspection - used as a fallback average in the Recommendations projections.
 	measure 'Average Inspection Revenue' =
 			
 			CALCULATE (
@@ -1477,6 +1544,7 @@ table _Measures
 
 		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
 
+	/// Average net revenue per completed work order for the currently selected pending inspection code - feeds the pending-queue revenue projection.
 	measure 'Avg Revenue by Job Code' =
 			
 			VAR CurrentJobCode =
@@ -1502,6 +1570,7 @@ table _Measures
 
 		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
 
+	/// Projected revenue for the whole pending queue - pending count times average revenue per completed inspection.
 	measure 'Estimated Revenue - Pending' =
 			
 			VAR PendingCount = [Total Pending Inspections]
@@ -1523,6 +1592,7 @@ table _Measures
 
 		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
 
+	/// Count of historical completed, invoiced work orders carrying the currently selected pending inspection code - the denominator for every frequency % calculation on the Recommendations page.
 	measure 'Completed Inspections - Selected JobCode' =
 			
 			VAR SelectedJobCode =
@@ -1542,6 +1612,7 @@ table _Measures
 		displayFolder: 'Recommendations Engine'
 		lineageTag: 51245346-cc76-4ff4-aaba-3bd432a9f358
 
+	/// How many times the selected part was sold on invoices tied to completed work orders for the selected pending inspection code.
 	measure 'Part Sold Count - For JobCode' =
 			
 			VAR SelectedJobCode =
@@ -1579,6 +1650,7 @@ table _Measures
 		displayFolder: 'Recommendations Engine'
 		lineageTag: 243eef61-f0eb-42da-9c00-dc310726e931
 
+	/// Part Sold Count - For JobCode divided by Completed Inspections - Selected JobCode - how often this part gets used when this inspection type is performed.
 	measure 'Part Frequency % - For JobCode' =
 			
 			DIVIDE (
@@ -1590,6 +1662,7 @@ table _Measures
 		displayFolder: 'Recommendations Engine'
 		lineageTag: 8bad27c6-5df0-4ae7-85d7-37763b8156fc
 
+	/// Average quantity of the selected part used per work order where it was sold, for the selected inspection code.
 	measure 'Avg Part Quantity - For JobCode' =
 			
 			VAR SelectedJobCode =
@@ -1628,6 +1701,7 @@ table _Measures
 		displayFolder: 'Recommendations Engine'
 		lineageTag: 853dc63c-862c-480c-8471-3c1078fdb13d
 
+	/// Projected part quantity needed to service the current pending queue - pending count times frequency % times average quantity per use.
 	measure 'Est Quantity Needed - For Pending' =
 			
 			VAR PendingCount =
@@ -1643,6 +1717,7 @@ table _Measures
 		displayFolder: 'Recommendations Engine'
 		lineageTag: 1a4b42e9-8130-4fd6-b4d5-b777e01fcb75
 
+	/// 1/0 flag - whether the selected part has ever been sold on a work order for the selected inspection code. Used to filter the parts recommendation table to relevant parts only.
 	measure 'Show Part for JobCode' =
 			
 			VAR SelectedJobCode =
@@ -1659,6 +1734,7 @@ table _Measures
 		displayFolder: 'Recommendations Engine'
 		lineageTag: 9094f27e-70fb-4e20-a69e-0a50390c5a87
 
+	/// Total projected parts dollar value across every part flagged relevant by Show Part for JobCode, for the current pending queue.
 	measure 'Est Parts Value - For Pending' =
 			
 			SUMX (
@@ -1671,6 +1747,7 @@ table _Measures
 
 		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
 
+	/// How many historical work orders for the selected pending inspection code also included the currently iterated (different) service job code.
 	measure 'Service Count - For JobCode' =
 			
 			VAR SelectedInspectionCode =
@@ -1705,6 +1782,7 @@ table _Measures
 		displayFolder: 'Recommendations Engine'
 		lineageTag: b67d6552-4005-4f0d-8a9f-52feb143de26
 
+	/// Projected count of times a co-occurring service will be needed across the pending queue - pending count times Service Frequency %.
 	measure 'Est Service Opportunities' =
 			
 			VAR PendingCount =
@@ -1718,6 +1796,7 @@ table _Measures
 		displayFolder: 'Recommendations Engine'
 		lineageTag: d3195968-40f2-4dc3-89f9-3155d6808d22
 
+	/// Est Service Opportunities times Avg Service Labor - projected labor revenue from recommended services.
 	measure 'Est Service Revenue' =
 			
 			[Est Service Opportunities] * [Avg Service Labor]
@@ -1727,6 +1806,7 @@ table _Measures
 
 		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
 
+	/// 1/0 flag - whether the iterated service job code has ever co-occurred with the selected pending inspection code. Filters the services recommendation table.
 	measure 'Show Service for JobCode' =
 			
 			VAR SelectedInspectionCode =
@@ -1746,6 +1826,7 @@ table _Measures
 		displayFolder: 'Recommendations Engine'
 		lineageTag: 8a687385-fc54-4b11-b936-253c45fdb03d
 
+	/// TimesAdded / CompletedInspections from the ServiceRecommendations table - how often a given service gets added alongside a given inspection type, historically.
 	measure 'Service Frequency %' =
 			
 			DIVIDE (
@@ -1757,6 +1838,7 @@ table _Measures
 		displayFolder: 'Recommendations Engine'
 		lineageTag: 2c6ec7f8-b192-4468-a5f1-33c72cc85f65
 
+	/// Average invoiced labor amount per occurrence of a recommended service, from the ServiceRecommendations table.
 	measure 'Avg Service Labor' =
 			
 			DIVIDE (
@@ -1770,6 +1852,7 @@ table _Measures
 
 		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
 
+	/// 4-section hero banner on the Pending Inspections page: total pending count, hours worked so far, average age, and estimated revenue on completion.
 	measure 'Pending Hero Card HTML' = ```
 			
 			VAR TotalPending = [Total Pending Inspections]
@@ -1873,6 +1956,7 @@ table _Measures
 		displayFolder: 'HTML Cards & Visual Chrome'
 		lineageTag: 3ca41c99-fd0a-4f74-a1b6-ef4fef096de6
 
+	/// HTML card list of every distinct job code currently in the pending queue, sorted by count, each with an estimated revenue figure.
 	measure 'Pending Inspection Types HTML' = ```
 			
 			// Get ALL pending inspection types
@@ -2001,6 +2085,7 @@ table _Measures
 		displayFolder: 'HTML Cards & Visual Chrome'
 		lineageTag: 64e27502-70dd-4b49-bbc3-22dbc0695101
 
+	/// Hidden. Builds the HTML table ranking all 16 branches by combined performance vs. goal (worst first) - feeds a single visual, not meant for ad hoc use.
 	measure BranchPerformanceManualSort = ```
 			
 			// Get filtered branches
@@ -2162,6 +2247,7 @@ table _Measures
 		displayFolder: '_Helpers'
 		lineageTag: f22e2d89-8ea7-45f6-9016-c31f490ddd27
 
+	/// Sum of the branch labor-with-inspection goal column directly (no branch TREATAS filter) - feeds the Branch Performance HTML table.
 	measure 'Total Labor Goal With Inspection' =
 			
 			SUM ( 'Inspection Goals'[Labor $$ w/ Inspection Goal] )
@@ -2170,6 +2256,7 @@ table _Measures
 
 		annotation PBI_FormatHint = {"isGeneralNumber":true}
 
+	/// Simple average of the three % to Goal measures (Inspections, Parts, Labor) - a single blended performance score.
 	measure 'Overall % to Goal' =
 			
 			VAR InspPct = [% to Goal - Inspections]
@@ -2182,6 +2269,7 @@ table _Measures
 		displayFolder: 'Goals & % to Goal'
 		lineageTag: 81bec21e-f438-49a5-9d46-944b8e177ee4
 
+	/// Empty decorative gradient background with vertical dividers - a layout/visual-chrome element, not a data card.
 	measure 'Hero Background with Dividers' = ```
 			
 			"
@@ -2223,6 +2311,7 @@ table _Measures
 		displayFolder: 'HTML Cards & Visual Chrome'
 		lineageTag: 4802f9b5-86fc-4d0e-a9c4-30aeefb83aeb
 
+	/// Goal and % to goal text for the Total Inspections KPI card.
 	measure 'Inspections Subtitle' =
 			
 			"Goal: " & FORMAT ( [Total Inspection Goal All], "#,##0" ) & " | "
@@ -2230,6 +2319,7 @@ table _Measures
 		displayFolder: 'Page Headers & Subtitles'
 		lineageTag: 295926b4-1e98-4ba8-9069-e608d3eb763f
 
+	/// Goal (in $M) and % to goal text for the Parts KPI card.
 	measure 'Parts Subtitle' =
 			
 			VAR GoalM = [Total Parts Goal All] / 1000000
@@ -2239,6 +2329,7 @@ table _Measures
 		displayFolder: 'Page Headers & Subtitles'
 		lineageTag: 6aea00cd-fe31-473c-ba42-45597ceff301
 
+	/// Goal (in $M) and % to goal text for the Labor KPI card.
 	measure 'Labor Subtitle' =
 			
 			VAR GoalM = [Total Labor Goal All] / 1000000
@@ -2248,6 +2339,7 @@ table _Measures
 		displayFolder: 'Page Headers & Subtitles'
 		lineageTag: d26f439c-bb1c-41cd-83d4-62e42bad64f7
 
+	/// Combined total revenue (Inspection + Parts + Labor) in $M, shown under the Overall performance card.
 	measure 'Overall Subtitle' =
 			
 			"Total: "
@@ -2258,6 +2350,7 @@ table _Measures
 		displayFolder: 'Page Headers & Subtitles'
 		lineageTag: f9cc2d98-c0ab-4219-99fa-faf375d559dd
 
+	/// Compact 3-metric hero banner on the Recommendations page: pending inspection count, estimated service revenue, and estimated parts revenue, for the currently selected job code (or all codes).
 	measure 'Parts Services Hero HTML Compact' = ```
 			
 			VAR PendingInsp = [Total Pending Inspections]
@@ -2410,6 +2503,7 @@ table _Measures
 		displayFolder: 'HTML Cards & Visual Chrome'
 		lineageTag: 47712d54-45e3-4448-8554-de8a5a9fd925
 
+	/// HTML list of the 5 parts most likely to be needed for the selected pending inspection code, ranked by historical frequency then projected dollar value, color-coded red/yellow/green by frequency.
 	measure 'Top 5 Parts Compact' =
 			
 			VAR CurrentInspectionCode =
@@ -2514,6 +2608,7 @@ table _Measures
 		displayFolder: 'Recommendations Engine'
 		lineageTag: d4d4c91f-4b52-4821-babd-e4515ae52ff5
 
+	/// HTML list of the 5 services most likely to be added alongside the selected pending inspection code, ranked by historical frequency then projected revenue, color-coded red/yellow/green by frequency.
 	measure 'Top 5 Services Compact' =
 			
 			VAR CurrentInspectionCode =
@@ -2640,6 +2735,7 @@ table _Measures
 		displayFolder: 'Recommendations Engine'
 		lineageTag: b69a41ca-dad1-4508-968f-e4217fc454a6
 
+	/// HTML explainer panel for the Recommendations page - describes what the page shows, how the frequency/projection math works, what the red/yellow/green colors mean, and what to do with the numbers.
 	measure 'Page Help Documentation' = ```
 			
 			"
@@ -2784,6 +2880,7 @@ table _Measures
 		displayFolder: 'Page Headers & Subtitles'
 		lineageTag: c7f73f26-d6ef-4612-858d-2edfc1f0192c
 
+	/// HTML header for the Work Order List drill-through page - selected job code and branch.
 	measure 'WO List - Context Header' = ```
 			
 			VAR SelectedJobCode =
@@ -2855,6 +2952,7 @@ table _Measures
 		displayFolder: 'Work Order List'
 		lineageTag: cbb14218-5eeb-45eb-9dc9-58e0ce638dde
 
+	/// Distinct count of work order numbers in the current filter context.
 	measure 'WO List - Total Orders' =
 			
 			DISTINCTCOUNT ( Fact_LaborJobSummary[WorkOrderNumber] )
@@ -2862,6 +2960,7 @@ table _Measures
 		displayFolder: 'Work Order List'
 		lineageTag: ace6c53f-1ed3-4020-8124-aa9342693ad8
 
+	/// WO List - Total Labor + WO List - Total Parts.
 	measure 'WO List - Total Revenue' =
 			
 			[WO List - Total Labor] + [WO List - Total Parts]
@@ -2871,6 +2970,7 @@ table _Measures
 
 		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
 
+	/// Invoiced labor total. Uses one calculation path when filtered to a specific job code (matrix rows) and a different path at the grand total (explicitly re-applies the inspection/not-pending filter) - see the DAX comments if this needs to change.
 	measure 'WO List - Total Labor' =
 			
 			VAR InMatrixContext = ISFILTERED(Fact_LaborJobSummary[JobCode])
@@ -2908,6 +3008,7 @@ table _Measures
 
 		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
 
+	/// Parts revenue tied to the invoice for each work order in context, excluding ZP-franchise discount items. Uses Parts $ Total directly at the true grand total, otherwise sums per work order.
 	measure 'WO List - Total Parts' = ```
 			
 			// Only check if we're at the absolute grand total
@@ -2958,6 +3059,7 @@ table _Measures
 		displayFolder: 'Work Order List'
 		lineageTag: 9058330b-ebe2-4191-889f-ef898703b7a3
 
+	/// WO List - Total Labor as a share of WO List - Total Revenue.
 	measure 'WO List - Labor %' =
 			
 			DIVIDE ( [WO List - Total Labor], [WO List - Total Revenue], 0 )
@@ -2966,6 +3068,7 @@ table _Measures
 
 		annotation PBI_FormatHint = {"isGeneralNumber":true}
 
+	/// WO List - Total Parts as a share of WO List - Total Revenue.
 	measure 'WO List - Parts %' =
 			
 			DIVIDE ( [WO List - Total Parts], [WO List - Total Revenue], 0 )
@@ -2974,6 +3077,7 @@ table _Measures
 
 		annotation PBI_FormatHint = {"isGeneralNumber":true}
 
+	/// WO List - Total Revenue divided by WO List - Total Orders.
 	measure 'WO List - Avg per Order' =
 			
 			DIVIDE ( [WO List - Total Revenue], [WO List - Total Orders], 0 )
@@ -2982,6 +3086,7 @@ table _Measures
 
 		annotation PBI_FormatHint = {"isGeneralNumber":true}
 
+	/// 4-card HTML strip for the Work Order List page: work order count, labor revenue, parts revenue, total revenue with average per order.
 	measure 'WO List - Summary Cards HTML' =
 			
 			VAR WorkOrders = [WO List - Total Orders]
@@ -3186,6 +3291,7 @@ table _Measures
 		displayFolder: 'Work Order List'
 		lineageTag: 69c22641-e5d0-48f4-b5b9-059be799dd17
 
+	/// HTML callout highlighting the single highest-revenue work order in the current filter context.
 	measure 'WO List - Top Work Order Callout' =
 			
 			VAR TopWO =
@@ -3250,6 +3356,7 @@ table _Measures
 		displayFolder: 'Work Order List'
 		lineageTag: cc3ff56b-4d77-4350-a015-ef1928c5f678
 
+	/// HTML horizontal bar showing the labor vs. parts revenue split for the current filter context.
 	measure 'WO List - Split Visual' = ```
 			
 			VAR LaborPct = [WO List - Labor %]
@@ -3315,6 +3422,7 @@ table _Measures
 		displayFolder: 'Work Order List'
 		lineageTag: a2a46cf7-7b29-4ec7-9a1d-bc26b2ccc918
 
+	/// Distinct work order count, used for a by-date trend visual on the Work Order List page.
 	measure 'WO Timeline - Count by Creation Date' =
 			
 			DISTINCTCOUNT ( Fact_LaborJobSummary[WorkOrderNumber] )
@@ -3322,6 +3430,7 @@ table _Measures
 		displayFolder: 'Work Order List'
 		lineageTag: f5e77595-b1b3-4d25-99df-c54de73f11ca
 
+	/// HTML header for the Work Order Details drill-through page - work order number, date, invoice, customer name (looked up via CustomerNumber on the matching Fact_WorkOrderParts invoice), and branch.
 	measure 'WO Details - Context Header' = ```
 			
 			VAR WONumber =
@@ -3434,6 +3543,7 @@ table _Measures
 		displayFolder: 'Work Order Detail'
 		lineageTag: 3ee414f4-bcea-4afa-8f6b-08ed72411dd1
 
+	/// 5-card HTML strip on the Work Order Details page: labor total (with hours and $/hr), gross parts, parts discount, net parts, and grand total.
 	measure 'WO Details - Summary Cards' =
 			
 			VAR LaborTotal = [WO Total Labor]
@@ -3658,6 +3768,7 @@ table _Measures
 		displayFolder: 'Work Order Detail'
 		lineageTag: 98927ef9-586d-4a36-9e91-e18db70e5a3d
 
+	/// Tall single-card HTML summary for the Work Order Details page - job code count, total hours, parts count, work-type classification (labor-heavy/parts-heavy/balanced), and top job code / most expensive part.
 	measure 'WO Details - Summary Card' = ```
 			
 			VAR LaborTotal = [WO Total Labor]
@@ -3897,6 +4008,7 @@ table _Measures
 		displayFolder: 'Work Order Detail'
 		lineageTag: 2c209c16-9d33-4c0c-a2e3-5496867f0aeb
 
+	/// Personalized page header for the Home page - time-of-day-aware greeting, user's name, dashboard title, and today's date.
 	measure 'Home - Header' = ```
 			
 			// Get user name
@@ -3983,6 +4095,7 @@ table _Measures
 		displayFolder: 'Page Headers & Subtitles'
 		lineageTag: 5ce9ade1-3550-448d-96be-270f845cca33
 
+	/// Personalized page header for the Details page.
 	measure 'Detail - Header' = ```
 			
 			// Get user name
@@ -4069,6 +4182,7 @@ table _Measures
 		displayFolder: 'Page Headers & Subtitles'
 		lineageTag: de38ea3b-d7aa-467f-85d8-82b2cde0ee92
 
+	/// Personalized page header for the Goals page.
 	measure 'Goals - Header' = ```
 			
 			// Get user name
@@ -4155,6 +4269,7 @@ table _Measures
 		displayFolder: 'Page Headers & Subtitles'
 		lineageTag: bbef268e-9d27-4f48-814e-fbbdabac31de
 
+	/// Personalized page header for the Pending Inspections page.
 	measure 'Pending - Header' = ```
 			
 			// Get user name
@@ -4241,6 +4356,7 @@ table _Measures
 		displayFolder: 'Page Headers & Subtitles'
 		lineageTag: 5e5313a7-4a50-451c-98b5-c3d4c181d00b
 
+	/// Personalized page header for the Recommendations page.
 	measure 'Recommend - Header' = ```
 			
 			// Get user name
@@ -4327,6 +4443,7 @@ table _Measures
 		displayFolder: 'Page Headers & Subtitles'
 		lineageTag: 649eb23e-4a78-441e-8c3c-f78c32887bf4
 
+	/// Text summary of the currently selected date range - 'All Dates', a single date, or a from-to range.
 	measure 'Date Range Display' =
 			
 			VAR MinDate =
@@ -4356,6 +4473,7 @@ table _Measures
 		displayFolder: 'Page Headers & Subtitles'
 		lineageTag: a6e84087-7c47-43d2-a65d-0e040da339ee
 
+	/// Hidden. 1/0 flag - whether the selected work order is currently in the pending queue. Internal plumbing for other measures/visual logic, not meant to be dragged onto a visual directly.
 	measure IsPendingInspection =
 			
 			VAR CurrentWO =
@@ -4381,6 +4499,7 @@ table _Measures
 		displayFolder: '_Helpers'
 		lineageTag: 27c633c8-4161-4bc2-a3f9-8ce9062db257
 
+	/// WO List - Total Parts divided by Inspection Count by Job Code - a simpler, non-rolling-window version of the Rolling 12 measure below.
 	measure 'Avg Parts $ / Inspection' =
 			
 			DIVIDE([WO List - Total Parts], [Inspection Count by Job Code], 0)
@@ -4388,6 +4507,7 @@ table _Measures
 		displayFolder: 'Trend - Rolling 12'
 		lineageTag: babcc8fa-fdcc-43c4-8226-7b4be3b07a61
 
+	/// Total Inspections shifted back exactly one year via DATEADD - the year-over-year comparison baseline.
 	measure 'Total Inspections LY' = ```
 			
 			CALCULATE(
@@ -4400,6 +4520,7 @@ table _Measures
 		displayFolder: 'Trend - Rolling 12'
 		lineageTag: a1660ac9-8877-4c9d-ab62-013a0ddeb833
 
+	/// Parts revenue for completed, invoiced inspections, dated by the inspection's own work order date (not the parts transaction date) - the base measure the Rolling 12 trend and its LY comparison are both built from.
 	measure 'Parts $ Total (Filtered)' =
 			
 			VAR ValidInv =
@@ -4422,6 +4543,7 @@ table _Measures
 
 		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
 
+	/// Parts $ Total (Filtered) divided by Total Inspections - average parts revenue per inspection over the selected trailing window.
 	measure 'Avg Parts $ / Inspection (Rolling 12)' =
 			
 			DIVIDE([Parts $ Total (Filtered)], [Total Inspections], 0)
@@ -4431,6 +4553,7 @@ table _Measures
 
 		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
 
+	/// WO List - Total Labor divided by Total Inspections - average labor revenue per inspection over the selected trailing window.
 	measure 'Avg Labor $ / Inspection (Rolling 12)' =
 			
 			DIVIDE([WO List - Total Labor], [Total Inspections], 0)
@@ -4440,6 +4563,7 @@ table _Measures
 
 		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
 
+	/// Parts $ Total (Filtered) shifted back one year.
 	measure 'Parts $ Total LY' =
 			
 			CALCULATE(
@@ -4452,6 +4576,7 @@ table _Measures
 
 		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
 
+	/// WO List - Total Labor for the same period one year earlier.
 	measure 'WO List - Total Labor LY' =
 			
 			CALCULATE(
@@ -4464,6 +4589,7 @@ table _Measures
 
 		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
 
+	/// Avg Parts $ / Inspection (Rolling 12) shifted back one year.
 	measure 'Avg Parts $ / Inspection (Rolling 12) LY' =
 			
 			CALCULATE(
@@ -4476,6 +4602,7 @@ table _Measures
 
 		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
 
+	/// Avg Labor $ / Inspection (Rolling 12) shifted back one year.
 	measure 'Avg Labor $ / Inspection (Rolling 12) LY' =
 			
 			CALCULATE(
@@ -4488,6 +4615,7 @@ table _Measures
 
 		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
 
+	/// Custom tooltip HTML shown when hovering a point on the Details page's rolling-12 trend chart - parts $, labor $, average per inspection, and total inspections, each vs. the same month last year.
 	measure 'Trend Tooltip - HTML' =
 			
 			VAR _Month = SELECTEDVALUE( dim_DateTable[MonthYear], "This Month" )
