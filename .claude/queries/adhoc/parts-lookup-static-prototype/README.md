@@ -49,11 +49,70 @@ column completeness.
   few extra seconds of generation time.
 - **Upload (Task 3):** 1,248 files, ~6 minutes, via drag-and-drop in the
   SharePoint web UI. One transient "render failed" browser error occurred
-  mid-upload (page auto-reloaded); all files appeared present afterward by
-  visual inspection, but an exact file-count verification against 1,248 is
-  still pending before this is treated as fully confirmed.
+  mid-upload (page auto-reloaded) and genuinely did drop files — a Ctrl+A
+  count afterward showed only 1,239 of 1,248. A second drag-and-drop pass
+  ("Replace all" on the conflict prompt — safe here since the re-uploaded
+  content is identical, and it also uploads the missing files with no
+  conflict) closed the gap; confirmed all 1,248 present afterward.
 - **Test library URL:** `https://spitractor.sharepoint.com/sites/SouthPlainsImplement-ReportSite/Test%20%20Part%20Availability/`
   (site: South Plains Implement - Report Site, library: "Test - Part
   Availability" — note the library's actual URL path segment is
   `Test%20%20Part%20Availability`, a double space, which differs slightly
   from its displayed title).
+- **Read latency (Task 4), sequential lookups of 6 real part numbers:**
+
+  | Part number | Prefix | File size (rows) | Elapsed |
+  |---|---|---|---|
+  | SE501403 | SE | 11,551 | 254ms |
+  | JDE80 | JD | 20,168 | 276ms |
+  | 19M7775 | 19 | 21,641 | 228ms |
+  | AN220364 | AN | 29,046 | 288ms |
+  | R127764 | R1 | 36,727 | 361ms |
+  | RE568839 | RE | **97,654** | **1,014ms** |
+
+  Five of six land 228-361ms, comfortably under the "well under 1 second"
+  target. `RE568839`'s file is an outlier — nearly 3x the rows of the
+  next-largest and by far the biggest partition file on disk (~18.2 MB,
+  the same file already flagged as the largest at the partitioning stage).
+  Latency scales with file size as expected; this specific bucket crosses
+  the 1-second mark.
+- **Concurrency (Task 4), 10 simultaneous fetches of `RE568839`'s file
+  (deliberately the largest/worst-case file, to stress-test):** 10/10
+  succeeded, 1,354.2ms total wall time. Individual elapsed times show a
+  queuing pattern — the first 4 finished in 170-542ms, the last 6 clustered
+  at 1,265-1,350ms — consistent with the browser's own per-origin
+  connection cap (commonly ~6 simultaneous connections per domain) rather
+  than necessarily a SharePoint-side throttle. Note this test is harsher
+  than real production usage: it's one browser repeatedly hitting one file,
+  where real usage is ~70 independent browsers each making one request,
+  spread across time, each with its own connection pool — so this result
+  likely overstates real-world contention rather than understating it.
+
+## Success criteria comparison
+
+| Measurement | Target | Actual | Pass? |
+|---|---|---|---|
+| Generation time (full extract, both prefix lengths) | small fraction of 15-30 min window | 12.6-20.2 sec | ✅ Y |
+| Upload time to SharePoint | fits comfortably alongside generation | ~6 min (plus a short second pass to close a gap caused by a transient browser error, unrelated to file count/size) | ✅ Y |
+| Single-lookup read latency | well under 1 second | 228-361ms for 5 of 6 test lookups; 1,014ms for the largest partition file (`RE`) | ⚠️ Mostly — one identified outlier |
+| Concurrent reads (10 simultaneous) | no significant throttling/slowdown | 10/10 succeeded; visible queuing on the largest file under single-browser same-origin load, likely browser connection-pool behavior rather than SharePoint throttling; not representative of real multi-user usage | ⚠️ Qualified pass — real-world pattern likely easier than this test |
+| File size distribution | no pathologically large partition files at chosen prefix length | 2-char: 0.2 KB-18.2 MB range, most files well under 200 KB; the one ~18 MB file is a real, now-measured outlier | ⚠️ One confirmed outlier bucket |
+
+## Conclusion
+
+**GO, with one specific follow-up before a production build.** The core idea
+is validated: typical lookups are fast (228-361ms, well within target),
+generation and upload both comfortably fit inside the 15-30 min refresh
+window, and the approach requires no live database, no server, and no
+Fabric/Azure capacity at all. The one real, measured weakness is the
+largest partition bucket (`RE`, ~97K rows / ~18.2 MB) crossing the 1-second
+mark — not catastrophic, but not "well under" either. Before a production
+build, this should be addressed directly: either a finer-grained scheme for
+the handful of high-volume prefixes specifically (e.g. 3-char partitioning
+only for buckets that exceed some size threshold, while leaving small
+buckets at 2-char), or a deliberate decision that ~1 second is an
+acceptable worst case for the least-common searches. Next step: a follow-up
+design spec for the real production build (Rayfin/React frontend
+integration, production refresh scheduling, decommissioning the current
+Fabric App) — see design spec Section 8 for the fallback options (Azure
+PaaS, dedicated gateway machine) if that build ever stalls.
