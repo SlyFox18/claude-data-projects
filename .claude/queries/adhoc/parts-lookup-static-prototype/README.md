@@ -32,5 +32,28 @@ column completeness.
 
 ## Results
 
-_(filled in after Tasks 2-5 run — see the design spec's Section 5 success
-criteria for what's being measured)_
+- **Extraction (Task 1):** 1,060,738 rows in 10.7 sec (`OnOrder` excluded,
+  see Known limitation above).
+- **Partitioning (Task 2):**
+
+  | Prefix length | Files | Size range | Total | Generation time |
+  |---|---|---|---|---|
+  | 1-char | 38 | 0.4 KB – 43,371.7 KB (~42.4 MB) | ~197.2 MB | 12.6 sec |
+  | 2-char | 1,248 | 0.2 KB – 18,682.5 KB (~18.2 MB) | ~197.2 MB | 20.2 sec |
+
+- **Prefix length chosen: 2-char.** 1-char produces a few very large files
+  (up to ~42 MB — a dominant leading character swallowing a large share of
+  parts), which is exactly the "pathologically large partition file" the
+  design spec's success criteria warns against. 2-char is far more evenly
+  distributed (max ~18 MB, average ~162 KB) at the cost of more files and a
+  few extra seconds of generation time.
+- **Upload (Task 3):** 1,248 files, ~6 minutes, via drag-and-drop in the
+  SharePoint web UI. One transient "render failed" browser error occurred
+  mid-upload (page auto-reloaded); all files appeared present afterward by
+  visual inspection, but an exact file-count verification against 1,248 is
+  still pending before this is treated as fully confirmed.
+- **Test library URL:** `https://spitractor.sharepoint.com/sites/SouthPlainsImplement-ReportSite/Test%20%20Part%20Availability/`
+  (site: South Plains Implement - Report Site, library: "Test - Part
+  Availability" — note the library's actual URL path segment is
+  `Test%20%20Part%20Availability`, a double space, which differs slightly
+  from its displayed title).
