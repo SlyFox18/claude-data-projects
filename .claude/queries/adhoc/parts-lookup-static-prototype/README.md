@@ -23,12 +23,27 @@ its current Fabric SQL Database backend, given the capacity cost confirmed
 Re-run `extract.py` any time for a fresh pull (requires `fab auth login`
 and `az login` to be active).
 
-**Known limitation:** `OnOrder` is excluded from the extract — it isn't
-currently live on `InMaster_PartsLookup_Raw` in Fabric (the `.pq` file was
-edited 2026-08-04 to add it, but that dataflow appears to need a redeploy
-before the column actually lands on the table). Doesn't affect this
-prototype's validation, which is about partitioning/file-size/latency, not
-column completeness.
+**Known limitations:**
+- `OnOrder` is excluded from the extract — it isn't currently live on
+  `InMaster_PartsLookup_Raw` in Fabric (the `.pq` file was edited 2026-08-04
+  to add it, but that dataflow appears to need a redeploy before the column
+  actually lands on the table). Doesn't affect this prototype's validation,
+  which is about partitioning/file-size/latency, not column completeness.
+- After the upload's transient browser error and re-upload (see Results),
+  only the *file count* was reverified (1,248 present). The 1,239 files
+  that survived the first pass weren't independently checked for content
+  corruption from that same error — for this prototype that's low-stakes
+  (no bad read occurred during Task 4's actual test), but it's a real gap,
+  not a verified-clean bill of health.
+- **File size and query frequency are different things, and only size was
+  measured here.** The `RE` outlier is flagged below as the largest
+  partition file, but whether it's also a *frequently searched* prefix
+  (plausible — common part-number prefixes, e.g. a frequent OEM code, could
+  plausibly cluster on real high-traffic parts) is unknown. If so, the
+  "one rare edge case" framing in the Conclusion would understate the real
+  impact — it could be the highest-traffic bucket, not just the largest.
+  Worth checking against the current Fabric App's real usage logs before
+  finalizing the production design.
 
 ## Results
 
@@ -100,19 +115,31 @@ column completeness.
 
 ## Conclusion
 
-**GO, with one specific follow-up before a production build.** The core idea
-is validated: typical lookups are fast (228-361ms, well within target),
-generation and upload both comfortably fit inside the 15-30 min refresh
-window, and the approach requires no live database, no server, and no
-Fabric/Azure capacity at all. The one real, measured weakness is the
-largest partition bucket (`RE`, ~97K rows / ~18.2 MB) crossing the 1-second
-mark — not catastrophic, but not "well under" either. Before a production
-build, this should be addressed directly: either a finer-grained scheme for
-the handful of high-volume prefixes specifically (e.g. 3-char partitioning
-only for buckets that exceed some size threshold, while leaving small
-buckets at 2-char), or a deliberate decision that ~1 second is an
-acceptable worst case for the least-common searches. Next step: a follow-up
-design spec for the real production build (Rayfin/React frontend
-integration, production refresh scheduling, decommissioning the current
-Fabric App) — see design spec Section 8 for the fallback options (Azure
-PaaS, dedicated gateway machine) if that build ever stalls.
+**GO, with two specific follow-ups before a production build.** The core
+idea is validated: typical lookups are fast (228-361ms, well within
+target), generation and upload both comfortably fit inside the 15-30 min
+refresh window, and the approach requires no live database and no server —
+only a light, one-time-per-refresh Fabric/OneLake read to regenerate the
+files, not zero Fabric capacity forever.
+
+Two real, measured-or-identified items to resolve before a production
+build, not before calling this prototype validated:
+
+1. **The largest partition bucket (`RE`, ~97K rows / ~18.2 MB) crosses the
+   1-second latency mark** — not catastrophic, but not "well under" either.
+   Fix directly: a finer-grained scheme for the handful of high-volume
+   prefixes specifically (e.g. 3-char partitioning only for buckets that
+   exceed some size threshold, while leaving small buckets at 2-char), or a
+   deliberate decision that ~1 second is an acceptable worst case.
+2. **File size and query frequency weren't distinguished.** Whether `RE` (or
+   any other large bucket) is also a *frequently searched* prefix is
+   unknown from this prototype — only its size was measured. If real usage
+   skews toward it, "one rare edge case" understates the real impact.
+   Check against the current Fabric App's real usage logs before finalizing
+   the production partitioning scheme, not after.
+
+Next step: a follow-up design spec for the real production build
+(Rayfin/React frontend integration, production refresh scheduling,
+decommissioning the current Fabric App) — see design spec Section 8 for
+the fallback options (Azure PaaS, dedicated gateway machine) if that build
+ever stalls.
