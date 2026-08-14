@@ -34,7 +34,9 @@ def partition(df: pd.DataFrame, prefix_len: int, out_dir: str) -> None:
 
     sizes_kb = []
     for prefix, group in df.groupby("_prefix"):
-        rows = group.drop(columns="_prefix").to_dict(orient="records")
+        group = group.drop(columns="_prefix")
+        group = group.astype(object).where(group.notna(), None)
+        rows = group.to_dict(orient="records")
         file_path = os.path.join(out_dir, f"{prefix}.json")
         with open(file_path, "w", encoding="utf-8") as f:
             json.dump(rows, f, ensure_ascii=False, separators=(",", ":"))
