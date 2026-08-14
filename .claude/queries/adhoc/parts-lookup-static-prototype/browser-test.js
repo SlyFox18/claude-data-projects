@@ -18,9 +18,13 @@
  *   3. Times fetch+JSON-parse with performance.now(), filters for exact
  *      PartNumber matches, and logs elapsed ms / row count / match count
  *      for each part number, run sequentially.
- *   4. Runs a concurrency test: 10 simultaneous fetches of the same file
- *      (first test part number) via Promise.all, logging total wall-clock
- *      time for all 10 to complete.
+ *   4. Runs a concurrency test: 10 simultaneous timedLookup() calls for the
+ *      same file (first test part number) via Promise.allSettled, logging
+ *      total wall-clock time and how many of the 10 succeeded. Reuses
+ *      timedLookup() (rather than a separate bare fetch) so a throttled or
+ *      erroring response under load - e.g. SharePoint returning 429/5xx
+ *      with an HTML body, exactly the condition this test exists to detect
+ *      - surfaces as a clear logged error instead of an uncaught rejection.
  *
  * Requires: browser already authenticated into the
  * SouthPlainsImplement-ReportSite SharePoint site (i.e. this tab is
@@ -104,20 +108,32 @@
 
   console.log("\n=== Concurrency test: 10 simultaneous fetches of the same file ===");
   const concurrencyPartNumber = TEST_PART_NUMBERS[0];
-  const concurrencyPrefix = safePrefix(concurrencyPartNumber, 2);
-  const concurrencyUrl = partitionUrl(concurrencyPrefix);
 
+  // Reuse timedLookup() for each of the 10 concurrent calls (rather than
+  // reimplementing fetch here) so the .ok check and per-call logging stay
+  // identical to the sequential path. This matters specifically because a
+  // throttled/error response under load (e.g. SharePoint returning a
+  // 429/5xx with an HTML body) is exactly the failure mode this test is
+  // meant to surface - without the .ok check, response.json() would throw
+  // on the HTML body and Promise.all would reject with an opaque parse
+  // error instead of a clear "fetch failed: 429" message.
   const concurrencyStart = performance.now();
-  await Promise.all(
-    Array.from({ length: 10 }, () =>
-      fetch(concurrencyUrl, { credentials: "include" }).then((r) => r.json())
-    )
+  const concurrencyResults = await Promise.allSettled(
+    Array.from({ length: 10 }, () => timedLookup(concurrencyPartNumber))
   );
   const concurrencyElapsedMs = performance.now() - concurrencyStart;
 
+  const concurrencyFailures = concurrencyResults.filter((r) => r.status === "rejected");
+  if (concurrencyFailures.length > 0) {
+    console.error(
+      `${concurrencyFailures.length}/10 concurrent requests failed:`,
+      concurrencyFailures.map((r) => r.reason)
+    );
+  }
+
   console.log(
-    `10 concurrent fetches of ${concurrencyPrefix}.json completed in ${concurrencyElapsedMs.toFixed(
+    `10 concurrent fetches of ${concurrencyPartNumber}'s partition file completed in ${concurrencyElapsedMs.toFixed(
       1
-    )}ms total`
+    )}ms total (${10 - concurrencyFailures.length}/10 succeeded)`
   );
 })();
