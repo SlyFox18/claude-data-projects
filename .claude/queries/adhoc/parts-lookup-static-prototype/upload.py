@@ -52,11 +52,27 @@ CONNECT_TIMEOUT_SEC = 10  # time to establish the TCP connection
 READ_TIMEOUT_SEC = 30  # time between bytes once the connection is open
 
 
+class _TimeoutSession(requests.Session):
+    """requests.Session that enforces a default (connect, read) timeout on
+    every request it makes. MSAL's acquire_token_for_client() doesn't take
+    a timeout parameter directly, so this is the documented way to bound
+    its internal HTTP calls - without it, the very first network call
+    upload.py makes each run (the token request) is exactly the same
+    'requests waits forever' failure class already fixed below for the
+    Graph PUT/POST calls, just unprotected.
+    """
+
+    def request(self, *args, **kwargs):
+        kwargs.setdefault("timeout", (CONNECT_TIMEOUT_SEC, READ_TIMEOUT_SEC))
+        return super().request(*args, **kwargs)
+
+
 def get_access_token() -> str:
     app = msal.ConfidentialClientApplication(
         client_id=config.CLIENT_ID,
         client_credential=config.CLIENT_SECRET,
         authority=f"https://login.microsoftonline.com/{config.TENANT_ID}",
+        http_client=_TimeoutSession(),
     )
     result = app.acquire_token_for_client(scopes=["https://graph.microsoft.com/.default"])
     if "access_token" not in result:
