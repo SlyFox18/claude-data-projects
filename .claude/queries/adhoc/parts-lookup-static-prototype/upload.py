@@ -15,6 +15,13 @@ backoff - confirmed via a real 1,248-file run that SharePoint can return a
 transient 409 Conflict under sustained sequential write load even with no
 actual concurrent writer; an immediate retry of the identical request
 succeeded, so this is not treated as a fatal error.
+
+Every Graph call (session creation, chunk PUT, simple PUT) goes through
+request_with_retry, which also retries network-level exceptions
+(ConnectionError, Timeout, ChunkedEncodingError, etc.) and sets a request
+timeout - without a timeout, requests waits forever by default, which on
+an unattended schedule turns one stalled connection into a hung process
+instead of a failed run the next scheduled cycle can retry.
 ============================================================================
 """
 
@@ -34,6 +41,7 @@ SOURCE_DIR = "output/2char"
 RETRYABLE_STATUS_CODES = {409, 423, 429, 503, 504}
 MAX_RETRIES = 5
 RETRY_BACKOFF_SEC = 3
+REQUEST_TIMEOUT_SEC = 30  # (connect, read) uses the same value for both
 
 
 def get_access_token() -> str:
@@ -48,24 +56,45 @@ def get_access_token() -> str:
     return result["access_token"]
 
 
-def put_with_retry(url: str, headers: dict, data: bytes) -> requests.Response:
-    """PUT with retry-and-backoff on transient Graph/SharePoint errors.
+def request_with_retry(
+    method: str, url: str, headers: dict, data: bytes | None = None, json: dict | None = None
+) -> requests.Response:
+    """PUT/POST with retry-and-backoff on transient Graph/SharePoint errors.
 
-    A real end-to-end run against the live library hit a 409 Conflict on a
-    single file near the end of a 1,248-file sequential run with no
-    concurrent writer involved; retrying the identical request immediately
-    succeeded, confirming it was a transient SharePoint condition under
-    sustained write load rather than a real naming or permission conflict.
+    Covers two distinct failure modes seen (or plausible) across a
+    ~1,250-request, ~20-minute sequential run:
+
+    1. Transient bad status codes - a real end-to-end run hit a 409
+       Conflict on a single file near the end of a 1,248-file run with no
+       concurrent writer involved; retrying the identical request
+       immediately succeeded, confirming it was a transient SharePoint
+       condition under sustained write load rather than a real naming or
+       permission conflict.
+    2. Network-level exceptions (ConnectionError, Timeout,
+       ChunkedEncodingError, etc.) - plausible across that many sequential
+       requests and previously propagated uncaught, killing the whole run
+       with zero retry even though this retry machinery existed.
+
+    Every call also sets an explicit timeout - without one, requests waits
+    forever by default, which on an unattended schedule turns one stalled
+    connection into a hung process instead of a failed run the next
+    scheduled cycle can retry.
     """
     last_exc = None
     for attempt in range(1, MAX_RETRIES + 1):
-        resp = requests.put(url, headers=headers, data=data)
-        if resp.status_code not in RETRYABLE_STATUS_CODES:
-            return resp
-        last_exc = requests.exceptions.HTTPError(
-            f"{resp.status_code} error (attempt {attempt}/{MAX_RETRIES}) for url: {url}",
-            response=resp,
-        )
+        try:
+            resp = requests.request(
+                method, url, headers=headers, data=data, json=json, timeout=REQUEST_TIMEOUT_SEC
+            )
+        except requests.exceptions.RequestException as exc:
+            last_exc = exc
+        else:
+            if resp.status_code not in RETRYABLE_STATUS_CODES:
+                return resp
+            last_exc = requests.exceptions.HTTPError(
+                f"{resp.status_code} error (attempt {attempt}/{MAX_RETRIES}) for url: {url}",
+                response=resp,
+            )
         if attempt < MAX_RETRIES:
             time.sleep(RETRY_BACKOFF_SEC * attempt)
     raise last_exc
@@ -78,7 +107,7 @@ def upload_file(local_path: str, file_name: str, access_token: str) -> None:
     if file_size <= SIMPLE_UPLOAD_LIMIT:
         url = f"{GRAPH_BASE}/sites/{config.SITE_ID}/drives/{config.DRIVE_ID}/root:/{file_name}:/content"
         with open(local_path, "rb") as f:
-            resp = put_with_retry(url, headers, f.read())
+            resp = request_with_retry("PUT", url, headers, data=f.read())
         resp.raise_for_status()
         return
 
@@ -86,9 +115,10 @@ def upload_file(local_path: str, file_name: str, access_token: str) -> None:
         f"{GRAPH_BASE}/sites/{config.SITE_ID}/drives/{config.DRIVE_ID}"
         f"/root:/{file_name}:/createUploadSession"
     )
-    session_resp = requests.post(
+    session_resp = request_with_retry(
+        "POST",
         session_url,
-        headers=headers,
+        headers,
         json={"item": {"@microsoft.graph.conflictBehavior": "replace"}},
     )
     session_resp.raise_for_status()
@@ -104,7 +134,7 @@ def upload_file(local_path: str, file_name: str, access_token: str) -> None:
                 "Content-Range": f"bytes {offset}-{offset + chunk_len - 1}/{file_size}",
             }
             # No Authorization header here - upload session URLs are pre-authenticated.
-            chunk_resp = put_with_retry(upload_url, chunk_headers, chunk)
+            chunk_resp = request_with_retry("PUT", upload_url, chunk_headers, data=chunk)
             chunk_resp.raise_for_status()
             offset += chunk_len
 
