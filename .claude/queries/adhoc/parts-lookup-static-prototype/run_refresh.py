@@ -29,6 +29,19 @@ log output, root-caused to a client-side network hang in upload.py):
   schedule interval (e.g. a slow upload still running when the next
   hourly trigger fires) - the newer invocation logs SKIPPED and exits
   cleanly rather than running two uploads of the same files concurrently.
+  The lock is staleness-checked (see STALE_LOCK_THRESHOLD_SEC below): a
+  normal exit (success, failure, or a per-step timeout caught inside
+  run_pipeline) always removes it via the try/finally in main(), but a
+  hard kill of this process itself (Task Scheduler force-stop past its
+  own time limit, a forced TerminateProcess, an OS crash/reboot) skips
+  Python's finally entirely and would otherwise leave the lock behind
+  forever - silently turning every subsequent scheduled run into a
+  logged-success SKIPPED no-op with no failure signal anywhere. The
+  staleness check reclaims a lock older than the threshold instead of
+  trusting it indefinitely. Lock creation itself is also inside main()'s
+  own try/except, not just run_pipeline()'s, so a failure to write the
+  lock file (permissions, disk full, path issue) still produces a logged
+  failure rather than an uncaught exception with zero refresh.log output.
 - upload.py's own real-time per-file stdout (~1,250 lines/run) stays in
   its own console/log when run standalone for live debugging, but only
   its final one-line summary is copied into refresh.log here - looping
@@ -40,12 +53,24 @@ import datetime
 import os
 import subprocess
 import sys
+import time
 
 LOG_PATH = "refresh.log"
 LOCK_PATH = "refresh.lock"
 STEPS = ["extract.py", "partition.py", "upload.py"]
 REDACTED_PLACEHOLDER = "***REDACTED***"
 STEP_TIMEOUT_SEC = 60 * 60  # generous ceiling per step; normal runs finish in minutes
+# A lock is considered abandoned (not a genuinely in-progress run) once it's
+# older than this. Set to 3x STEP_TIMEOUT_SEC + a buffer: 3x because that's
+# the true worst-case *legitimate* total run time under the current design
+# (all three steps could in the most pathological case each run right up to
+# their own STEP_TIMEOUT_SEC before failing and returning control - in
+# practice a single hang stops the run at one step, but this stays a safe
+# upper bound rather than an average-case guess), plus 5 minutes of buffer
+# for filesystem/logging latency around that boundary. At hourly cadence
+# this means a lock abandoned by a hard kill self-heals within at most 3
+# skipped cycles instead of wedging the pipeline permanently.
+STALE_LOCK_THRESHOLD_SEC = STEP_TIMEOUT_SEC * 3 + 5 * 60
 
 
 def log(message: str) -> None:
@@ -121,13 +146,57 @@ def run_pipeline() -> int:
     return 0
 
 
+def _acquire_lock() -> bool:
+    """Atomically creates the lock file if no live lock currently exists.
+
+    Uses exclusive-create ("x" mode) rather than a separate
+    exists()-then-open() pair, closing the check-then-act race a plain
+    os.path.exists() + open("w") would have between two invocations
+    starting at nearly the same instant (a low-risk gap for a single
+    hourly-triggered scheduler, but free to close here).
+
+    Returns True if this call created the lock (safe to proceed). Returns
+    False if a live lock already exists (a run is genuinely in progress).
+    If an existing lock is older than STALE_LOCK_THRESHOLD_SEC, treats it
+    as abandoned by a hard-killed prior process, removes it, and creates a
+    fresh one instead of skipping.
+    """
+    try:
+        with open(LOCK_PATH, "x", encoding="utf-8") as f:
+            f.write(str(os.getpid()))
+        return True
+    except FileExistsError:
+        pass
+
+    lock_age_sec = time.time() - os.path.getmtime(LOCK_PATH)
+    if lock_age_sec < STALE_LOCK_THRESHOLD_SEC:
+        return False
+
+    log(
+        f"Found stale lock file (age {lock_age_sec:.0f}s > "
+        f"{STALE_LOCK_THRESHOLD_SEC}s threshold) - removing and proceeding"
+    )
+    os.remove(LOCK_PATH)
+    with open(LOCK_PATH, "x", encoding="utf-8") as f:
+        f.write(str(os.getpid()))
+    return True
+
+
 def main() -> int:
-    if os.path.exists(LOCK_PATH):
+    try:
+        acquired = _acquire_lock()
+    except OSError as exc:
+        # Covers a failure to write/remove the lock file itself
+        # (permissions, disk full, path issue) as well as the narrow race
+        # where a stale lock is reclaimed by two invocations at once - both
+        # must still produce a logged failure rather than an uncaught
+        # exception with zero refresh.log output.
+        log(f"FAILED: could not acquire lock file - {exc}")
+        return 1
+
+    if not acquired:
         log("SKIPPED - previous run still in progress")
         return 0
-
-    with open(LOCK_PATH, "w", encoding="utf-8") as f:
-        f.write(str(os.getpid()))
 
     try:
         return run_pipeline()
