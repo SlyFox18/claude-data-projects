@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Turn the validated static-file prototype's manual extract/partition/upload steps into an unattended pipeline, scheduled every 15 minutes, using a dedicated service principal instead of Brian's personal login.
+**Goal:** Turn the validated static-file prototype's manual extract/partition/upload steps into an unattended pipeline, scheduled hourly (revised from an original 15-minute target once real upload timing was measured — see design spec Section 6), using a dedicated service principal instead of Brian's personal login.
 
 **Architecture:** Extend `extract.py`/`partition.py` (from the prototype) to authenticate via an Entra ID service principal instead of interactive CLI login; add a new `upload.py` that pushes files to SharePoint via Microsoft Graph API; chain all three behind a logging orchestrator; run it from Windows Task Scheduler.
 
@@ -485,7 +485,7 @@ This task is manual (Windows UI), not code.
 
 - [ ] **Step 1: Create the scheduled task**
 
-Task Scheduler → Create Task. Trigger: repeat every 15 minutes, indefinitely. Action: start a program — point it at your Python executable, with the argument set to the full path of `run_refresh.py`, and "Start in" set to the `.claude/queries/adhoc/parts-lookup-static-prototype/` folder (so relative paths in the scripts resolve correctly).
+Task Scheduler → Create Task. Trigger: repeat every hour, indefinitely (revised from the original 15-minute target — the real ~20 min upload time measured in Task 5 doesn't fit a 15-minute window with reasonable margin, and the source Lakehouse dataflow this pipeline reads from only refreshes every ~2.5 hours anyway, so hourly doesn't lose real freshness). Action: start a program — point it at your Python executable, with the argument set to the full path of `run_refresh.py`, and "Start in" set to the `.claude/queries/adhoc/parts-lookup-static-prototype/` folder (so relative paths in the scripts resolve correctly).
 
 - [ ] **Step 2: Run it once manually from Task Scheduler**
 
