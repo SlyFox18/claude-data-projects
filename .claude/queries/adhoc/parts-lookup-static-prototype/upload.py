@@ -18,10 +18,17 @@ succeeded, so this is not treated as a fatal error.
 
 Every Graph call (session creation, chunk PUT, simple PUT) goes through
 request_with_retry, which also retries network-level exceptions
-(ConnectionError, Timeout, ChunkedEncodingError, etc.) and sets a request
-timeout - without a timeout, requests waits forever by default, which on
-an unattended schedule turns one stalled connection into a hung process
-instead of a failed run the next scheduled cycle can retry.
+(ConnectionError, Timeout, ChunkedEncodingError, etc.) and sets an
+explicit (connect, read) timeout tuple - without one, requests waits
+forever by default, which on an unattended schedule turns one stalled
+connection into a hung process instead of a failed run the next
+scheduled cycle can retry. A single scalar timeout only bounds the read
+phase reliably; splitting it out bounds the connect phase specifically,
+since a real run stalled for 40+ minutes on what was very likely a
+connect/DNS-level hang that a single-value timeout did not catch (a
+known Windows/urllib3 edge case - DNS resolution itself is not fully
+covered by either value, so this tightens but does not eliminate that
+risk).
 ============================================================================
 """
 
@@ -41,7 +48,8 @@ SOURCE_DIR = "output/2char"
 RETRYABLE_STATUS_CODES = {409, 423, 429, 503, 504}
 MAX_RETRIES = 5
 RETRY_BACKOFF_SEC = 3
-REQUEST_TIMEOUT_SEC = 30  # (connect, read) uses the same value for both
+CONNECT_TIMEOUT_SEC = 10  # time to establish the TCP connection
+READ_TIMEOUT_SEC = 30  # time between bytes once the connection is open
 
 
 def get_access_token() -> str:
@@ -84,7 +92,8 @@ def request_with_retry(
     for attempt in range(1, MAX_RETRIES + 1):
         try:
             resp = requests.request(
-                method, url, headers=headers, data=data, json=json, timeout=REQUEST_TIMEOUT_SEC
+                method, url, headers=headers, data=data, json=json,
+                timeout=(CONNECT_TIMEOUT_SEC, READ_TIMEOUT_SEC),
             )
         except requests.exceptions.RequestException as exc:
             last_exc = exc
@@ -148,6 +157,7 @@ def main() -> None:
     start = time.time()
     for i, path in enumerate(files, 1):
         file_name = os.path.basename(path)
+        print(f"  uploading {file_name}...", flush=True)
         upload_file(path, file_name, access_token)
         if i % 100 == 0:
             print(f"  uploaded {i}/{len(files)}")
