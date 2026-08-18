@@ -50,6 +50,7 @@ log output, root-caused to a client-side network hang in upload.py):
 """
 
 import datetime
+import json
 import os
 import subprocess
 import sys
@@ -106,9 +107,33 @@ def redact(text: str) -> str:
     return text.replace(secret, REDACTED_PLACEHOLDER)
 
 
+def write_meta_file() -> None:
+    """Write output/_meta.json with the current UTC generation timestamp.
+
+    Uploaded by upload.py alongside the partition files (it lives in the
+    same output/2char/ directory upload.py already reads), so the frontend
+    can fetch a single small file to display "Data as of ..." instead of
+    relying on a per-row timestamp that no longer exists in the static
+    files.
+    """
+    meta_path = os.path.join("output", "2char", "_meta.json")
+    with open(meta_path, "w", encoding="utf-8") as f:
+        json.dump(
+            {"generatedAt": datetime.datetime.now(datetime.timezone.utc).isoformat()},
+            f,
+        )
+
+
 def run_pipeline() -> int:
     log("=== refresh run starting ===")
     for step in STEPS:
+        if step == "upload.py":
+            # Write the fresh generation timestamp just before upload.py
+            # runs, so this cycle's own upload picks it up immediately -
+            # writing it after the whole loop (including upload.py) would
+            # leave it sitting locally until the *next* cycle's upload,
+            # making "Data as of" lag a full hour behind the real refresh.
+            write_meta_file()
         try:
             result = subprocess.run(
                 [sys.executable, step],
