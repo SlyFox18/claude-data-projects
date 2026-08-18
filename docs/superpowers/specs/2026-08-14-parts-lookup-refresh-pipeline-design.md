@@ -67,7 +67,7 @@ A simple orchestrator (`run_refresh.py` or equivalent) runs all three in sequenc
 
 ## 6. Scheduling
 
-Windows Task Scheduler on Brian's computer, running the orchestrator every 15 minutes. Chosen because: the prototype's own generation timing (12.6-20.2 sec) plus an expected-fast scripted upload (replacing the ~6 min manual drag-and-drop) should comfortably complete well within that window, and it directly serves the stated stakeholder wish for "more frequent" refreshes. Easy to adjust later — this is a Task Scheduler trigger setting, not a code change, including when the job moves to the eventual gateway machine.
+**Revised during implementation (originally planned as every 15 minutes):** Windows Task Scheduler on Brian's computer, running the orchestrator **every hour**. The original 15-minute target assumed the scripted upload would be considerably faster than the prototype's ~6 min manual drag-and-drop; real end-to-end testing (Task 5) instead measured ~20 minutes for a full 1,248-file sequential upload (the simple `requests` implementation makes one HTTP round-trip per file with no connection reuse or concurrency — a real, separately-tracked performance follow-up, not fixed as part of this plan). An hourly cadence gives real margin (20 min inside a 60 min window, not razor-thin, versus barely fitting inside 15-30 min). Still easy to adjust later — this is a Task Scheduler trigger setting, not a code change, including when the job moves to the eventual gateway machine or if the upload performance follow-up lands and a faster cadence becomes worthwhile.
 
 ---
 

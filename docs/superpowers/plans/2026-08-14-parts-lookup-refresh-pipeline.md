@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Turn the validated static-file prototype's manual extract/partition/upload steps into an unattended pipeline, scheduled every 15 minutes, using a dedicated service principal instead of Brian's personal login.
+**Goal:** Turn the validated static-file prototype's manual extract/partition/upload steps into an unattended pipeline, scheduled hourly (revised from an original 15-minute target once real upload timing was measured — see design spec Section 6), using a dedicated service principal instead of Brian's personal login.
 
 **Architecture:** Extend `extract.py`/`partition.py` (from the prototype) to authenticate via an Entra ID service principal instead of interactive CLI login; add a new `upload.py` that pushes files to SharePoint via Microsoft Graph API; chain all three behind a logging orchestrator; run it from Windows Task Scheduler.
 
@@ -389,7 +389,9 @@ git commit -m "Add upload.py: automated Graph API upload replacing manual drag-a
 **Files:**
 - Create: `.claude/queries/adhoc/parts-lookup-static-prototype/run_refresh.py`
 
-- [ ] **Step 1: Write the orchestrator**
+- [x] **Step 1: Write the orchestrator**
+
+> Implemented with more robustness than shown below, added through two code-quality review cycles: `(connect, read)` timeouts on both Graph calls and MSAL token acquisition, a 60-min per-step `subprocess.run` timeout, top-level exception handling so every failure path logs, truncated per-step log capture (final summary line only, not full progress output), and a `refresh.lock` file with staleness detection (185 min threshold) to prevent overlapping runs while self-healing after a hard kill. See `run_refresh.py` as committed (`a0af0861`, `b4b17ee0`, `739cc81f`) for the real implementation; the code block below is the original starting point from planning.
 
 ```python
 """
@@ -438,20 +440,22 @@ if __name__ == "__main__":
     sys.exit(main())
 ```
 
-- [ ] **Step 2: Run it end-to-end**
+- [x] **Step 2: Run it end-to-end**
 
 Run: `python run_refresh.py`
 Expected: exit code 0, `refresh.log` created/appended with a full run's worth of lines from all three steps ending in `=== refresh run completed successfully ===`.
 
-- [ ] **Step 3: Add the log file to `.gitignore`**
+Verified live: full run completed 1248/1248 files uploaded in ~21 min, `refresh.log` showed a clean successful cycle end to end.
+
+- [x] **Step 3: Add the log file to `.gitignore`**
 
 ```
 refresh.log
 ```
 
-(Append to the existing `.gitignore` alongside `*.parquet`, `output/`, `.env`.)
+(Append to the existing `.gitignore` alongside `*.parquet`, `output/`, `.env`.) Also added `refresh.lock`.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add .claude/queries/adhoc/parts-lookup-static-prototype/run_refresh.py .claude/queries/adhoc/parts-lookup-static-prototype/.gitignore
@@ -485,7 +489,7 @@ This task is manual (Windows UI), not code.
 
 - [ ] **Step 1: Create the scheduled task**
 
-Task Scheduler → Create Task. Trigger: repeat every 15 minutes, indefinitely. Action: start a program — point it at your Python executable, with the argument set to the full path of `run_refresh.py`, and "Start in" set to the `.claude/queries/adhoc/parts-lookup-static-prototype/` folder (so relative paths in the scripts resolve correctly).
+Task Scheduler → Create Task. Trigger: repeat every hour, indefinitely (revised from the original 15-minute target — the real ~20 min upload time measured in Task 5 doesn't fit a 15-minute window with reasonable margin; hourly gives real headroom). Action: start a program — point it at your Python executable, with the argument set to the full path of `run_refresh.py`, and "Start in" set to the `.claude/queries/adhoc/parts-lookup-static-prototype/` folder (so relative paths in the scripts resolve correctly).
 
 - [ ] **Step 2: Run it once manually from Task Scheduler**
 
