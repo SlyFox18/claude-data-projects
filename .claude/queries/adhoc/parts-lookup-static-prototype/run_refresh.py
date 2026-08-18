@@ -108,7 +108,7 @@ def redact(text: str) -> str:
 
 
 def write_meta_file() -> None:
-    """Write output/_meta.json with the current UTC generation timestamp.
+    """Write output/2char/_meta.json with the current UTC generation timestamp.
 
     Uploaded by upload.py alongside the partition files (it lives in the
     same output/2char/ directory upload.py already reads), so the frontend
@@ -133,7 +133,12 @@ def run_pipeline() -> int:
             # writing it after the whole loop (including upload.py) would
             # leave it sitting locally until the *next* cycle's upload,
             # making "Data as of" lag a full hour behind the real refresh.
-            write_meta_file()
+            try:
+                write_meta_file()
+            except OSError as exc:
+                log(f"FAILED at write_meta_file: {exc}")
+                log("=== refresh run FAILED ===")
+                return 1
         try:
             result = subprocess.run(
                 [sys.executable, step],
