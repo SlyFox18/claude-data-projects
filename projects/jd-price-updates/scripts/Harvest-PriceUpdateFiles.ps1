@@ -56,8 +56,15 @@
     Optional. Only consider source files whose filename date is on or before
     this date.
 .PARAMETER LogPath
-    Optional. Defaults to a logs\harvest-YYYY-MM-DD.log file next to this
-    script.
+    Optional. If omitted, computed at the start of the script body as a
+    logs\harvest-YYYY-MM-DD.log file next to this script. (Deliberately not
+    a param default value -- $PSScriptRoot is not reliably populated during
+    parameter-default evaluation when the script is launched via
+    `-File "full\path"`, which is how Windows Task Scheduler invokes it --
+    same bug already found and fixed in Send-JDChangeReportReminder.ps1.
+    Left unfixed here, this crashes at parameter-binding time before a
+    single log line is written, which is exactly what silently broke the
+    daily harvest for 13 days starting 2026-08-07.)
 .EXAMPLE
     .\Harvest-PriceUpdateFiles.ps1 -SourceFolderPath "\\<server>\...\Price_Update" -LandingRootPath "C:\Users\bfox\OneLake - Microsoft\LH_Master_Data.Lakehouse\Files\PriceUpdate_Landing"
 .EXAMPLE
@@ -75,10 +82,14 @@ param(
     [Nullable[datetime]]$DateFrom = $null,
     [Nullable[datetime]]$DateTo = $null,
 
-    [string]$LogPath = (Join-Path $PSScriptRoot "..\logs\harvest-$(Get-Date -Format 'yyyy-MM-dd').log")
+    [string]$LogPath
 )
 
 $ErrorActionPreference = "Stop"
+
+if (-not $LogPath) {
+    $LogPath = Join-Path $PSScriptRoot "..\logs\harvest-$(Get-Date -Format 'yyyy-MM-dd').log"
+}
 
 # Branch group accepts an optional trailing single letter (e.g. "11S",
 # "93C", "4B") -- confirmed against real data 2026-08-07: ~6% of all files
