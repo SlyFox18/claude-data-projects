@@ -12,10 +12,14 @@ network folder into `LH_Master_Data.Raw_PriceUpdate_History`.
 **Design spec:** `docs/superpowers/specs/2026-08-06-jd-price-update-ingestion-design.md`
 **Implementation plan:** `docs/superpowers/plans/2026-08-06-jd-price-update-ingestion.md`
 
-Status: **live and operating.** Full historical backfill complete
-(2026-08-07) — 4,592 files, 2008-08-25 through 2026-08-03,
-5,096,264 rows. Daily scheduled harvest running unattended since
-2026-08-07.
+Status: **live and operating** — with a caveat: the daily harvest silently
+failed for 13 days (2026-08-07 to 2026-08-20, see Operational gotchas
+below) before being caught and fixed. Full historical backfill complete
+(2026-08-07) — 4,592 files, 2008-08-25 through 2026-08-03. Gap backfilled
+2026-08-20 (42 files, 2026-08-09 and 2026-08-16). Current state: 4,634
+files, 5,096,660 rows, latest `SourceFileDate` 2026-08-16. Daily scheduled
+harvest resumed 2026-08-20 with the underlying bug fixed — not yet
+confirmed clean on an unattended overnight run.
 
 ### Architecture
 
@@ -121,6 +125,23 @@ automatically.
   took over an hour to become queryable, and a manual "Refresh" didn't
   help). Use the Lakehouse's own Tables data preview if you need to see a
   new column immediately.
+- **`$PSScriptRoot` inside a parameter's default-value expression silently
+  broke the daily harvest for 13 days (2026-08-07 to 2026-08-20), with zero
+  log output the entire time.** `Harvest-PriceUpdateFiles.ps1` originally
+  defaulted `-LogPath` to `(Join-Path $PSScriptRoot ...)` directly in the
+  `param()` block. Under Task Scheduler's `-File "full\path"` invocation,
+  `$PSScriptRoot` is empty during parameter-default evaluation, so
+  `Join-Path` threw before the script body (and its own logging) ever ran —
+  no log file, no error visible anywhere except a bare exit code 1 in Task
+  Scheduler. This is the exact same bug already documented and fixed in
+  sub-project 2's `Send-JDChangeReportReminder.ps1` below, but it was never
+  backported here. **Fixed 2026-08-20**: `LogPath` now has no param default;
+  it's computed in the script body instead, and was verified with the exact
+  `-File` invocation style Task Scheduler uses. **Why this went undetected
+  for 13 days:** the Fabric pipeline's own refresh history showed "Succeeded"
+  every single day, because it succeeds trivially on an empty `New/` — there
+  is currently no check anywhere that new data actually landed, only that
+  the job didn't error. See the freshness-check item in Residual risks below.
 - **`Archive/` tracks "have we ever harvested this file," not "is this
   file's data currently in the table."** If `New/` is ever cleared without
   a file's data having actually landed in a *successful* table write
@@ -147,6 +168,12 @@ automatically.
   sub-branch letter (i.e., entirely non-numeric) would become `null`
   without setting `HasTypeConversionIssue` — not observed in any real
   file to date.
+- **No freshness/gap check.** Nothing verifies day-over-day that
+  `Raw_PriceUpdate_History` actually received new rows — only that
+  `pl_Raw_PriceUpdate_History` didn't error, which (as the 13-day gap above
+  demonstrated) succeeds trivially even when nothing new arrived. Worth a
+  cheap addition — e.g. hook into the existing `fabric-monitoring` freshness
+  scripts, or a small standalone check on `MAX(IngestedAt)` — not yet built.
 
 ## Sub-project 2: JD National Change Report
 
@@ -159,9 +186,14 @@ automation of the actual download.
 **Design spec:** `docs/superpowers/specs/2026-08-07-jd-change-report-ingestion-design.md`
 **Implementation plan:** `docs/superpowers/plans/2026-08-07-jd-change-report-ingestion.md`
 
-Status: **live and operating.** Full historical backfill complete
-(2026-08-10) — 5 files, 2026-07-13 through 2026-08-10, 48,453 rows.
-Weekly reminder scheduled task confirmed firing correctly (2026-08-10).
+Status: **live, but the Fabric pipeline has no recurring schedule** (see
+Residual risks below) — it only ever runs when manually triggered. Full
+historical backfill complete (2026-08-10) — 5 files, 2026-07-13 through
+2026-08-10, 48,453 rows. Weekly reminder scheduled task confirmed firing
+correctly (last 2026-08-15, next 2026-08-22). Current state (after a
+manual trigger 2026-08-20 caught up a file that had been sitting
+downloaded-but-unloaded since the 15th): 6 files, 49,331 rows, latest
+`SourceFileDate` 2026-08-17.
 
 ### Architecture
 
@@ -300,6 +332,18 @@ Windows Scheduled Task "\Fabric\JD Change Report Reminder", Saturdays 10:00
   only retains the 4 most recent Change Reports, so a week missed for
   more than ~4 weeks becomes permanently unrecoverable. The weekly
   reminder (Reynard + email) is the only safeguard today.
+- **`pl_Raw_JDNationalChangeReport_History` itself has no recurring
+  schedule — confirmed 2026-08-20.** The implementation plan only ever
+  says "run the pipeline manually once" (for backfill verification); no
+  task gives it a recurring trigger. The weekly reminder tells Brian to
+  download the file, but nothing tells him (or automates) actually running
+  the pipeline afterward — confirmed as the reason the raw table sat at
+  its 2026-08-10 state for 10 days despite the 2026-08-15 reminder firing
+  and the file being manually copied into `New/`/`Archive/` on time.
+  Recommended fix (not yet decided): give the pipeline its own recurring
+  schedule (daily or weekly) so it no longer depends on anyone remembering
+  a second manual step, mirroring sub-project 1's "safe to run against an
+  empty `New/`" pattern.
 - **The reminder is the sole human-facing defense against a silently
   malformed filename** (wrong pattern, browser duplicate-download
   suffix like `" (1).csv"`) — the reminder text explicitly calls out the
