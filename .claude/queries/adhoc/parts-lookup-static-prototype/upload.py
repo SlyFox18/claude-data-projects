@@ -166,7 +166,13 @@ def upload_file(local_path: str, file_name: str, access_token: str) -> None:
 
 def main() -> None:
     access_token = get_access_token()
-    files = sorted(glob.glob(os.path.join(SOURCE_DIR, "*.json")))
+    # Partition files are now gzip-compressed (*.json.gz, added 2026-08-25 -
+    # see partition.py's header comment). _meta.json stays plain - it's a
+    # few bytes, not worth compressing, and matches *.json on its own.
+    files = sorted(
+        glob.glob(os.path.join(SOURCE_DIR, "*.json"))
+        + glob.glob(os.path.join(SOURCE_DIR, "*.json.gz"))
+    )
     if not files:
         raise RuntimeError(f"No files found in {SOURCE_DIR} - run partition.py first")
 
