@@ -6,28 +6,43 @@ Location: LH_Master_Data → Dataflows (fact-tables folder, or alongside
 other JD price update dataflows -- see Fabric workspace organization)
 ============================================================================
 
-PURPOSE: Enriched, deduplicated fact table built from Raw_PriceUpdate_History
-+ dim_Parts. Part of sub-project 3 phase 1 (foundational fact layer) -- see
+PURPOSE: Enriched fact table built from Raw_PriceUpdate_History + dim_Parts.
+Part of sub-project 3 phase 1 (foundational fact layer) -- see
 docs/superpowers/specs/2026-08-10-jd-pricing-fact-tables-design.md. What
 specific analysis/KPIs get built on top of this fact is explicitly out of
 scope for this query.
 
-GRAIN: One row per PartNumber + EffectiveDate -- NOT Branch + PartNumber +
-EffectiveDate + SourceFileName like the raw table. Confirmed with Brian and
-Ben (2026-08-10): branch doesn't affect price, only assortment, so
-collapsing across branches removes an assortment artifact that was never
-analytically meaningful for pricing questions, and AffectedBranchCount
-below captures exactly the "how many branches" signal that's actually
-useful. This logic was verified against real production data via
-projects/jd-price-updates/scripts/verify_fact_priceupdate_enriched.py
-BEFORE this query was written. Real verified example: PartNumber 57M11134,
-EffectiveDate 2026-08-03, AffectedBranchCount = 16 (branches 1, 2, 4, 6, 7,
-8, 11, 13, 15, 16, 91, 92, 93, 95, 96, 97). NOTE: an earlier manual count
-from a Fabric table preview screenshot suggested 15 branches for this same
-example -- that count was incomplete (the screenshot only showed however
-many rows fit before the table's sort order moved to a different part;
-branch 93 was sitting elsewhere, off-screen). 16 is the real, SQL-verified
-number -- trust this one.
+REDESIGNED 2026-08-11 (SIMPLICITY + PERFORMANCE): this query originally
+collapsed Raw_PriceUpdate_History's branch-level grain down to
+PartNumber+EffectiveDate via a Table.Group, computing AffectedBranchCount
+and a per-column "first non-null across branches" value for 13 other
+fields, plus a HasBranchPriceDisagreement safety-net flag. Live in Fabric,
+this took 45+ minutes and had to be cancelled (HasBranchPriceDisagreement
+was dropped first as the dominant cost, per PR #31 -- but even after that,
+the remaining Table.Group over 5.1M rows / ~1.29M groups still ran 20+
+minutes without finishing). The real lesson, once named plainly: this
+query was never actually "a lookup" -- it had a genuine large-scale
+GROUP BY buried inside it, and Power Query's M engine is a poor fit for
+that operation at multi-million-row scale, the same conclusion already
+reached independently for dim_Parts.pq the same night (see project memory
+project_dim_parts_perf_followup.md). Concrete proof this isn't "Fabric is
+just slow": the sibling fact table Fact_JDNationalChangeReport_Enriched
+has NO grouping at all (pure join/lookup) and built/refreshed cleanly on
+the first try, no drama. REDESIGN: stopped doing the collapse in M
+entirely. This query now keeps Raw_PriceUpdate_History's own grain
+unchanged (one row per Branch + PartNumber + EffectiveDate +
+SourceFileName, same as the raw table) and does nothing but normalize
+PartNumber and left-join dim_Parts -- genuinely just "get a part number,
+look up additional columns," matching the raw table's own row count and
+performance characteristics (fast). AffectedBranchCount is NOT computed
+here anymore -- see that section below for where it goes instead
+(a DAX measure, not a pre-computed ETL column, which is also more
+correct, not just faster -- see that section for why).
+
+GRAIN: Unchanged from Raw_PriceUpdate_History -- one row per
+Branch + PartNumber + EffectiveDate + SourceFileName. This fact does NOT
+collapse across branches (see REDESIGNED note above for why that was
+tried and reverted).
 
 SOURCE: Two Lakehouse table connectors within this same dataflow (via
 "Get Data > Lakehouse > Tables", which names the resulting query after the
@@ -39,7 +54,10 @@ REFRESH: Daily, full Replace (not Append) -- this is a derived/enriched
 rebuild of the ENTIRE source table on every refresh, not new-rows-only.
 Scheduled after both Raw_PriceUpdate_History (harvested daily 02:00) and
 dim_Parts have refreshed. See Fabric Pipeline setup in the implementation
-plan's Task 10.
+plan's Task 10. Expected to be FAST now (a plain left-outer join over
+5.1M rows, no grouping) -- should behave similarly to the sibling
+Fact_JDNationalChangeReport_Enriched, not to dim_Parts' grouping-heavy
+refresh time.
 
 PARTNUMBER NORMALIZATION: dim_Parts normalizes PartNumber with
 Text.Upper(Text.Trim(...)); Raw_PriceUpdate_History does neither. A naive
@@ -49,33 +67,14 @@ PartNumber to dim_Parts' convention before joining -- the underlying raw
 table is not touched.
 
 DROPPED COLUMNS (present in Raw_PriceUpdate_History, not carried into this
-fact): Branch, SourceFileBranch, BinLocation, OnHandQty, SourceFileName,
-SourceFileDate, BranchMismatchFlag, PartDescription (raw), Franchise (raw).
-Branch/file-level detail remains available in Raw_PriceUpdate_History
-itself if ever needed -- this fact intentionally doesn't duplicate it.
-
-HASTYPECONVERSIONISSUE (attempted, then dropped -- not a column in this
-fact): Raw_PriceUpdate_History has NO HasTypeConversionIssue column --
-re-confirmed 2026-08-10 directly against the LIVE Fabric table (fresh
-DESCRIBE against the deployed table, not just this repo's reference .pq
-copy, which does define the column but has not actually been deployed --
-a separate, known reference-vs-live deployment gap, not this fact's
-concern). An inline reconstruction was attempted here -- re-parsing each
-price/date field with try Number.From(...)/Date.From(...) at this layer
--- but was dropped as fundamentally uncomputable: by the time a row
-reaches this fact, Raw_PriceUpdate_History's own upstream query has
-already run every risky field through
-try Number.From(...)/Date.From(...) otherwise null, so a genuinely
-garbled source value has already become null there -- indistinguishable
-at this layer from "was always blank." The pre-conversion raw text isn't
-available downstream of Raw_PriceUpdate_History, so this fact cannot
-recover that signal; shipping the column anyway would mean it always
-silently reads False, which is worse than not having it at all. If
-Raw_PriceUpdate_History's live deployment is ever updated to add its own
-HasTypeConversionIssue column (matching its reference .pq), this fact
-could then properly carry it forward via a simple List.AnyTrue
-aggregation over the grouped rows -- a future possibility, not something
-built now.
+fact -- unrelated to the grain redesign above, same rationale as before):
+SourceFileBranch, BinLocation, OnHandQty, SourceFileName, SourceFileDate,
+BranchMismatchFlag, PartDescription (raw), Franchise (raw). Branch/file-
+level traceability detail remains available in Raw_PriceUpdate_History
+itself if ever needed. Branch ITSELF is now KEPT (unlike the prior
+collapsed-grain version) since it's part of this fact's actual grain
+again, and is the raw material for the AffectedBranchCount DAX measure
+described below.
 
 PARTDESCRIPTION: the raw table's own PartDescription varies inconsistently
 by branch/file (confirmed a leftover artifact, not meaningful data, by Ben
@@ -100,35 +99,54 @@ downstream reports) that it was fixed immediately as its own priority
 item -- see the dedup fix in dim_Parts.pq (merged via PR #28, 2026-08-10)
 and project memory notes project_dim_parts_dedup_fix.md and
 project_dim_parts_vendorcode_limitation.md. IMPORTANT: as of this fact
-table being written, that dim_Parts fix exists in this repo's reference
-copy but has NOT yet been deployed to the live Fabric Dataflow Gen2 --
-until someone manually pastes the corrected dim_Parts.pq into Fabric and
-refreshes it, live dim_Parts still has the old, buggy classification, and
-this fact's dim_Parts-joined enrichment columns will inherit whatever
-dim_Parts currently has live. Re-verify this Franchise consistency check
-after the dim_Parts fix is actually deployed -- the ~61,000-row mismatch
-count should shrink substantially (though not necessarily to exactly
-zero -- VendorCode-style genuine branch variation was ruled out
-specifically for Franchise via the investigation above, but re-verifying
-after deployment is still the right practice, not an assumption).
+table being written, that dim_Parts fix is deployed to live Fabric but its
+own performance-scoped version does NOT majority-vote CommodityCode or
+VendorCode (see project_dim_parts_perf_followup.md) -- re-verify this
+Franchise consistency check periodically, since dim_Parts' own correctness
+can keep evolving independently of this fact.
 
-HASBRANCHPRICEDISAGREEMENT: safety-net flag -- true if the branch rows
-being collapsed for a given PartNumber+EffectiveDate don't actually agree
-on price/change fields. Per the raw table's own documented assumption
-("branch does not affect pricing values, only assortment"), expected to
-be rare-to-never -- confirmed via verify_fact_priceupdate_enriched.py:
-7,422 of 1,292,823 groups (0.57%) actually show this as of 2026-08-10.
-Not zero, but consistent with "rare" rather than "never" -- this project
-has repeatedly found real, rare exceptions to "should never happen"
-assumptions elsewhere (JD's row-shift defect, the header-padding bug, the
-FileNameDateMismatchFlag hits), so this flag stays in place as cheap
-insurance rather than being removed as "obviously always false."
+AFFECTEDBRANCHCOUNT (moved OUT of this query -- now a DAX measure, not an
+ETL column): originally computed here via Table.Group -- see REDESIGNED
+note above for why that was reverted. Ben's original ask ("how many
+branches were affected by this price change") is still fully answerable,
+just at the semantic-model layer instead of the ETL layer, which is
+actually the MORE correct place for it, not just the faster one: a DAX
+measure like
+    AffectedBranchCount := DISTINCTCOUNT(Fact_PriceUpdate_Enriched[Branch])
+evaluated in a visual/table grouped by PartNumber+EffectiveDate will
+compute the exact same number the old M column did, but will also
+correctly RECALCULATE if a report ever filters to a subset of branches
+(e.g. one region) -- something a frozen, pre-computed ETL column could
+never do; it would just keep showing the all-branches total even when a
+report is filtered down to fewer branches, which is a real, subtle
+correctness trap, not just a missed nice-to-have. Not yet built as of
+this note -- a semantic-model task, not a dataflow task. See
+projects/jd-price-updates/scripts/verify_fact_priceupdate_enriched.py for
+the SQL-equivalent logic (still useful as a reference for validating the
+eventual DAX measure's output) and project memory
+project_dim_parts_perf_followup.md for the fuller context on why ETL-time
+GROUP BY was avoided here.
+
+HASBRANCHPRICEDISAGREEMENT: no longer applicable/needed. It existed to
+flag when collapsing branches together would have hidden a real
+disagreement -- since this fact no longer collapses branches at all, any
+such disagreement is just directly visible in the data itself (different
+rows, different values, for the same PartNumber+EffectiveDate) -- nothing
+gets hidden that would need a tripwire. If ever needed at query time, the
+same check can be expressed directly in DAX or SQL against this table's
+now-uncollapsed rows.
 
 NO CURRENT-SNAPSHOT VALUES: dim_Parts is a current snapshot, not
 point-in-time history. Adding today's SellPrice1/InventoryCost/etc. onto a
 historical price-change row (some back to 2008) would misleadingly invite
 "today's price" being used to compute a "margin at the time." Deliberately
 excluded -- see design spec.
+
+INGESTEDAT: carried through from Raw_PriceUpdate_History as-is, not
+recomputed -- since this fact's grain is unchanged from raw, each row
+still corresponds to exactly one raw row, so its original IngestedAt
+value remains meaningful. Same reasoning already used in the sibling
+Fact_JDNationalChangeReport_Enriched.
 ============================================================================
 */
 
@@ -143,66 +161,12 @@ let
     }),
 
     // ------------------------------------------------------------------
-    // Collapse Branch + PartNumber + EffectiveDate + SourceFileName grain
-    // down to PartNumber + EffectiveDate. See GRAIN note above.
-    // ------------------------------------------------------------------
-    GroupedByPartAndDate = Table.Group(NormalizePartNumber, {"PartNumber", "EffectiveDate"}, {
-        {"AffectedBranchCount", each List.Count(List.Distinct(List.RemoveNulls([Branch]))), Int64.Type},
-        {"Category", each List.First(List.RemoveNulls([Category]), null), type nullable text},
-        {"ManufacturerListPrice", each List.First(List.RemoveNulls([ManufacturerListPrice]), null), type nullable number},
-        {"DealerListPrice", each List.First(List.RemoveNulls([DealerListPrice]), null), type nullable number},
-        {"ListPriceChangePercent", each List.First(List.RemoveNulls([ListPriceChangePercent]), null), type nullable number},
-        {"ManufacturerReplacePrice", each List.First(List.RemoveNulls([ManufacturerReplacePrice]), null), type nullable number},
-        {"DealerReplacePrice", each List.First(List.RemoveNulls([DealerReplacePrice]), null), type nullable number},
-        {"ManufacturerSellPrice1", each List.First(List.RemoveNulls([ManufacturerSellPrice1]), null), type nullable number},
-        {"DealerSellPrice1", each List.First(List.RemoveNulls([DealerSellPrice1]), null), type nullable number},
-        {"SellPriceOld", each List.First(List.RemoveNulls([SellPriceOld]), null), type nullable number},
-        {"CostDiff", each List.First(List.RemoveNulls([CostDiff]), null), type nullable number},
-        {"ListDiff", each List.First(List.RemoveNulls([ListDiff]), null), type nullable number},
-        {"SellPrice1Diff", each List.First(List.RemoveNulls([SellPrice1Diff]), null), type nullable number},
-        {"UpdateCode", each List.First(List.RemoveNulls([UpdateCode]), null), type nullable text},
-        {"HasBranchPriceDisagreement", each
-            List.Count(List.Distinct(List.RemoveNulls([ManufacturerListPrice]))) > 1 or
-            List.Count(List.Distinct(List.RemoveNulls([DealerListPrice]))) > 1 or
-            List.Count(List.Distinct(List.RemoveNulls([ListPriceChangePercent]))) > 1 or
-            List.Count(List.Distinct(List.RemoveNulls([ManufacturerReplacePrice]))) > 1 or
-            List.Count(List.Distinct(List.RemoveNulls([DealerReplacePrice]))) > 1 or
-            List.Count(List.Distinct(List.RemoveNulls([ManufacturerSellPrice1]))) > 1 or
-            List.Count(List.Distinct(List.RemoveNulls([DealerSellPrice1]))) > 1 or
-            List.Count(List.Distinct(List.RemoveNulls([SellPriceOld]))) > 1 or
-            List.Count(List.Distinct(List.RemoveNulls([CostDiff]))) > 1 or
-            List.Count(List.Distinct(List.RemoveNulls([ListDiff]))) > 1 or
-            List.Count(List.Distinct(List.RemoveNulls([SellPrice1Diff]))) > 1 or
-            List.Count(List.Distinct(List.RemoveNulls([UpdateCode]))) > 1,
-        type logical}
-    }),
-
-    // ------------------------------------------------------------------
-    // IngestedAt -- freshly computed at THIS fact's build time (not
-    // carried from raw rows' IngestedAt, which becomes ambiguous once
-    // multiple branch rows collapse into one group). DST-aware UTC ->
-    // Central, same pattern as .claude/queries/DATA-REFRESH-TEMPLATE.pq
-    // ------------------------------------------------------------------
-    UtcNow    = DateTimeZone.UtcNow(),
-    UtcDT     = DateTimeZone.RemoveZone(UtcNow),
-    CurYear   = Date.Year(DateTime.Date(UtcDT)),
-    Mar1      = #date(CurYear, 3, 1),
-    Sun1Mar   = Date.AddDays(Mar1, Number.Mod(7 - Date.DayOfWeek(Mar1, Day.Sunday), 7)),
-    DstStart  = #datetime(CurYear, 3, Date.Day(Date.AddDays(Sun1Mar, 7)), 8, 0, 0),
-    Nov1      = #date(CurYear, 11, 1),
-    Sun1Nov   = Date.AddDays(Nov1, Number.Mod(7 - Date.DayOfWeek(Nov1, Day.Sunday), 7)),
-    DstEnd    = #datetime(CurYear, 11, Date.Day(Sun1Nov), 7, 0, 0),
-    OffsetHrs = if UtcDT >= DstStart and UtcDT < DstEnd then -5 else -6,
-    LocalNow  = DateTimeZone.RemoveZone(DateTimeZone.SwitchZone(UtcNow, OffsetHrs, 0)),
-
-    AddIngestedAt = Table.AddColumn(GroupedByPartAndDate, "IngestedAt", each LocalNow, type datetime),
-
-    // ------------------------------------------------------------------
     // Enrich with dim_Parts classification columns. Left outer join --
     // dim_Parts guarantees PartNumber uniqueness (its own final
-    // deduplication step), so this cannot fan out rows.
+    // deduplication step), so this cannot fan out rows. No grouping
+    // anywhere in this query -- see REDESIGNED note above.
     // ------------------------------------------------------------------
-    JoinWithDimParts = Table.NestedJoin(AddIngestedAt, {"PartNumber"}, dim_Parts, {"PartNumber"}, "DimPartsMatch", JoinKind.LeftOuter),
+    JoinWithDimParts = Table.NestedJoin(NormalizePartNumber, {"PartNumber"}, dim_Parts, {"PartNumber"}, "DimPartsMatch", JoinKind.LeftOuter),
 
     // IsCarriedLocally computed directly from the pre-expand nested join
     // table -- Table.RowCount([DimPartsMatch]) > 0 tests "did the join
@@ -217,12 +181,11 @@ let
         {"Description", "Source", "SLC", "DealerGroupCode", "CommodityCode", "VendorCode"}),
 
     FinalColumnOrder = Table.ReorderColumns(ExpandDimParts, {
-        "PartNumber", "EffectiveDate", "Description", "Category",
+        "Branch", "PartNumber", "EffectiveDate", "Description", "Category",
         "ManufacturerListPrice", "DealerListPrice", "ListPriceChangePercent",
         "ManufacturerReplacePrice", "DealerReplacePrice", "ManufacturerSellPrice1",
         "DealerSellPrice1", "SellPriceOld", "CostDiff", "ListDiff", "SellPrice1Diff",
-        "UpdateCode", "AffectedBranchCount", "HasBranchPriceDisagreement",
-        "Source", "SLC", "DealerGroupCode", "CommodityCode",
+        "UpdateCode", "Source", "SLC", "DealerGroupCode", "CommodityCode",
         "VendorCode", "IsCarriedLocally", "IngestedAt"
     })
 in
