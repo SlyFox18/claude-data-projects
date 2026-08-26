@@ -46,6 +46,12 @@ log output, root-caused to a client-side network hang in upload.py):
   its own console/log when run standalone for live debugging, but only
   its final one-line summary is copied into refresh.log here - looping
   all of it in would add ~30,000 lines/day at hourly cadence.
+
+Alerting (added 2026-08-26): every FAILED path also posts to the "Parts
+Availability App Alerts" Teams channel via notify_teams_failure() - see
+that function's docstring. Before this, a failed unattended run had no
+signal beyond someone opening refresh.log by hand. Optional per
+environment (config.TEAMS_WEBHOOK_URL can be unset).
 ============================================================================
 """
 
@@ -55,6 +61,8 @@ import os
 import subprocess
 import sys
 import time
+
+import requests
 
 LOG_PATH = "refresh.log"
 LOCK_PATH = "refresh.lock"
@@ -90,6 +98,61 @@ except Exception as exc:
     log(f"FAILED at config import: {exc}")
     log("=== refresh run FAILED ===")
     sys.exit(1)
+
+
+def notify_teams_failure(message: str) -> None:
+    """Posts a failure alert to the "Parts Availability App Alerts" Teams
+    channel - added 2026-08-26 because a failed unattended run previously
+    had no signal beyond someone happening to open refresh.log by hand.
+
+    Uses a Teams Workflow's "Send webhook alerts to a channel" trigger,
+    the modern replacement for the old Office 365 Incoming Webhook
+    connector - it accepts the same legacy MessageCard JSON schema
+    already proven working by projects/fabric-monitoring's
+    Run-PostPipeline-Monitoring.ps1, just posted here via requests
+    instead of Invoke-RestMethod.
+
+    Deliberately never raises: a Teams outage or a bad webhook URL must
+    not crash the pipeline or mask the real failure this exists to
+    report - both network errors and non-2xx responses are caught and
+    just logged as a secondary note. Skips entirely if no webhook URL is
+    configured (config.TEAMS_WEBHOOK_URL is None), so Teams alerting
+    stays optional per-environment rather than a hard requirement to run
+    this pipeline at all.
+
+    `message` must already be redact()-ed by the caller - this function
+    doesn't redact anything itself, since every call site already has an
+    already-redacted string in hand for refresh.log.
+    """
+    if not config.TEAMS_WEBHOOK_URL:
+        return
+    card = {
+        "@type": "MessageCard",
+        "@context": "http://schema.org/extensions",
+        "themeColor": "FF0000",
+        "summary": "Parts Lookup Refresh Failed",
+        "sections": [
+            {
+                "activityTitle": "[FAIL] Parts Lookup Refresh",
+                "activitySubtitle": datetime.datetime.now().isoformat(),
+                "text": message,
+            }
+        ],
+    }
+    try:
+        resp = requests.post(config.TEAMS_WEBHOOK_URL, json=card, timeout=(10, 15))
+        if not resp.ok:
+            log(f"  (Teams notification rejected: {resp.status_code} {resp.text[:200]})")
+    except requests.exceptions.RequestException as exc:
+        log(f"  (Teams notification also failed to send: {exc})")
+
+
+def log_failure(message: str) -> None:
+    """log() plus a Teams alert - the pairing used at every FAILED point in
+    this file, so a real failure can't be logged without also being
+    alerted (or vice versa)."""
+    log(message)
+    notify_teams_failure(message)
 
 
 def redact(text: str) -> str:
@@ -136,7 +199,7 @@ def run_pipeline() -> int:
             try:
                 write_meta_file()
             except OSError as exc:
-                log(f"FAILED at write_meta_file: {exc}")
+                log_failure(f"FAILED at write_meta_file: {exc}")
                 log("=== refresh run FAILED ===")
                 return 1
         try:
@@ -148,7 +211,7 @@ def run_pipeline() -> int:
             )
         except subprocess.TimeoutExpired as exc:
             partial_stderr = redact((exc.stderr or "").strip())[-500:]
-            log(
+            log_failure(
                 f"FAILED at {step}: exceeded {STEP_TIMEOUT_SEC}s timeout and was "
                 f"killed. Partial stderr: {partial_stderr}"
             )
@@ -157,7 +220,7 @@ def run_pipeline() -> int:
 
         if result.returncode != 0:
             safe_stderr = redact(result.stderr.strip())[-500:]
-            log(f"FAILED at {step}: {safe_stderr}")
+            log_failure(f"FAILED at {step}: {safe_stderr}")
             log("=== refresh run FAILED ===")
             return 1
 
@@ -221,7 +284,7 @@ def main() -> int:
         # where a stale lock is reclaimed by two invocations at once - both
         # must still produce a logged failure rather than an uncaught
         # exception with zero refresh.log output.
-        log(f"FAILED: could not acquire lock file - {exc}")
+        log_failure(f"FAILED: could not acquire lock file - {exc}")
         return 1
 
     if not acquired:
@@ -231,7 +294,7 @@ def main() -> int:
     try:
         return run_pipeline()
     except Exception as exc:
-        log(f"FAILED: unexpected error - {redact(str(exc))}")
+        log_failure(f"FAILED: unexpected error - {redact(str(exc))}")
         log("=== refresh run FAILED ===")
         return 1
     finally:
