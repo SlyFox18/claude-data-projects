@@ -148,7 +148,7 @@ Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 **Files:**
 - Create: `.claude/queries/adhoc/associated-parts-profiling/validate_association_logic.py`
 
-- [ ] **Step 1: Write the synthetic worked-example test (expected values known up front)**
+- [x] **Step 1: Write the synthetic worked-example test (expected values known up front)**
 
 ```python
 """
@@ -281,16 +281,70 @@ print("\nPick MIN_COOCCURRENCE for a row count that's usefully small (tens of\n"
 
 Edit the script: set `BASKET_CAP` to the literal integer decided in Task 2, Step 3. (Already done above — `BASKET_CAP = 25`.)
 
-- [ ] **Step 3: Run the validation script**
+- [x] **Step 3: Run the validation script**
 
 Run: `python3 .claude/queries/adhoc/associated-parts-profiling/validate_association_logic.py`
 Expected: `Synthetic test PASSED — aggregation logic is correct.` printed, followed by three row-count lines (one per `MIN_COOCCURRENCE` candidate). If the assertion fails, the aggregation SQL has a bug — fix it before proceeding to real data.
 
-- [ ] **Step 4: Set `MIN_COOCCURRENCE`**
+**Synthetic test: PASSED** (run 2026-08-27) — all four expected pairs
+((D,A,B), (D,B,A), (D,A,C), (D,C,A)) matched hand-computed values exactly
+on the first attempt. `ASSOCIATION_SQL` required no logic changes.
+
+**Real-data run — hit a real resource error first, root-caused and fixed
+(not a logic bug):** The first attempt threw
+`_duckdb.OutOfMemoryException: ... max_temp_directory_size exceeded`
+(claimed 45.9 GiB temp-spill cap, on a host with 185 GB free disk and
+31.6 GB RAM) on the very first threshold iteration. A diagnostic pass
+(materializing each intermediate CTE — `filtered_intrans`,
+`baskets`, `basket_sizes`, `capped_baskets` — as physical DuckDB tables
+one at a time) showed the actual filtered data is small: 1,290,947 raw
+rows → 447,661 baskets (matches Task 2's profiling exactly) →
+1,031,637 capped-basket rows → an estimated ~4.8M pairs. None of that
+should need 46 GB of spill. Root cause: `ASSOCIATION_SQL`'s CTEs
+(`baskets`, `capped_baskets`) reference `{source}` — and `capped_baskets`
+is self-joined against itself in the `pairs` step — so when `{source}`
+is a live `delta_scan(...)`-backed remote subquery, DuckDB's planner
+re-inlines and re-evaluates that remote OneLake scan on every reference
+instead of computing it once, multiplying the effective I/O and spill
+many times over even though the final data volume is tiny. Fix applied
+(query-planning only, `ASSOCIATION_SQL` itself untouched from the
+validated version): materialize the filtered extract into a local
+DuckDB table (`filtered_intrans`) once via `CREATE TABLE AS SELECT ...`,
+then pass `source="filtered_intrans"` into `ASSOCIATION_SQL` instead of
+the raw subquery text. Added `PRAGMA memory_limit='10GB'` and
+`SET max_temp_directory_size='150GiB'` as a belt-and-suspenders safety
+margin on top of that fix. Rerun succeeded cleanly with no further
+errors.
+
+**Recorded real-data row counts (run 2026-08-27, `InTrans_Incremental`,
+last 24 months, `BASKET_CAP = 25`, source: locally-materialized
+`filtered_intrans` = 1,290,947 rows / 447,661 baskets):**
+
+| MIN_COOCCURRENCE | Fact_PartAssociation row count |
+|---|---|
+| 3 | 229,452 |
+| 5 | 108,338 |
+| 10 | 44,326 |
+
+- [x] **Step 4: Set `MIN_COOCCURRENCE`**
 
 Pick the value from Step 3's three candidates whose row count looks right per the script's own guidance (tens of thousands, not millions). Write this exact integer down — it's a literal constant in Task 4.
 
-- [ ] **Step 5: Commit the validation script**
+**Decided: `MIN_COOCCURRENCE = 10`** (44,326 rows). Of the three
+candidates, only 10 lands in the "tens of thousands" range the script's
+own guidance calls for — 3 and 5 are both still in the hundreds of
+thousands (229,452 and 108,338 respectively), too large to be a useful
+curated recommendation list. Requiring at least 10 invoices to have
+carried both parts together (out of 447,661 qualifying invoices) is
+also a defensible real-world confidence bar — a pair that only
+co-occurred once or twice in two years of sales is noise, not a
+reliable recommendation. Business-side spot-checking of specific
+PartA/PartB pairs against known-good pairings is still recommended
+before this ships (per the script's own printed guidance) but is
+deferred to Task 9 (manual/Brian) since it requires domain knowledge
+this session doesn't have.
+
+- [x] **Step 5: Commit the validation script**
 
 ```bash
 git add ".claude/queries/adhoc/associated-parts-profiling/validate_association_logic.py"
