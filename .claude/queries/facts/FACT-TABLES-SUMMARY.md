@@ -871,6 +871,22 @@ See "Fact Tables by Project" section above
 
 ---
 
-*Last Updated: February 25, 2026*
+### **Project: Associated Parts - Report**
+**Location:** `projects/associated parts - report/queries/fact-tables/`
+**Department:** Parts
+**Created:** 08/27/2026
+
+| Fact Table | Dataflow | Rows | Refresh Time | Schedule | Purpose |
+|------------|----------|------|--------------|----------|---------|
+| Fact_PartAssociation | (Fabric Notebook / DuckDB+Spark) | 44,326 | TBD | Weekly | Market-basket analysis: Part×Part co-occurrence across all sales invoices |
+
+**Raw Tables:** InTrans_Incremental (24-month window, Type='I', Qty>0, basket-size capped at 25 distinct parts per invoice)
+**Dimensions:** dim_Parts (referenced for enrichment; facts table stores PartA/PartB as text keys)
+**Business Context:** For each Franchise × PartA × PartB, tracks how often invoices containing PartA also contain PartB — across all sales activity (counter sales and service work order parts). Identifies recommended parts for upsells and cross-sell opportunities. Raw counts stored (not pre-computed percentages) to enable both franchise-specific and company-wide rollup views from one table. See `.claude/queries/facts/Fact_PartAssociation.md` for full specification, `docs/superpowers/specs/2026-08-27-associated-parts-design.md` for design, and `docs/superpowers/plans/2026-08-27-associated-parts-recommended-parts.md` for validation and threshold profiling.
+**Status:** 🚧 In Development — Notebook built and committed at `projects/associated parts - report/notebooks/Fact_PartAssociation_Build.ipynb`; weekly refresh cadence not yet wired into pipeline (scheduled per Task 9).
+
+---
+
+*Last Updated: August 27, 2026*
 *Maintained by: Brian Fox / Claude Code Assistant*
 *Next Review: Weekly (as facts are documented)*
