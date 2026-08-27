@@ -61,7 +61,9 @@ percentages), and it's what makes the Lift calculation possible at all.
 | `TotalInvoiceCount` | int | Total qualifying invoices (this franchise) |
 
 **DAX measures** (computed at query time, so they aggregate correctly
-whether filtered to one franchise or all of them):
+whether filtered to one franchise or all of them; the actual shipped
+measure names are `Confidence %` and `Baseline %`, not the bare
+`Confidence`/`Baseline` used below as shorthand):
 
 - **Confidence** = `CoOccurrenceCount / AnchorInvoiceCount` — "of everyone
   who bought A, what % also bought B"

@@ -28,12 +28,12 @@
 
 **Files:** none (verification only)
 
-- [ ] **Step 1: Confirm Azure CLI auth**
+- [x] **Step 1: Confirm Azure CLI auth**
 
 Run: `az account show`
 Expected: JSON output showing `"user": {"name": "bfox@spitractor.com", ...}`. If this fails, stop and run `az login` interactively before continuing — no later step in this plan can substitute for this.
 
-- [ ] **Step 2: Confirm DuckDB is importable and can load the delta/azure extensions**
+- [x] **Step 2: Confirm DuckDB is importable and can load the delta/azure extensions**
 
 Run:
 ```bash
@@ -47,7 +47,7 @@ print('OK')
 ```
 Expected: prints `OK` with no errors.
 
-- [ ] **Step 3: Confirm read access to `InTrans_Incremental` via OneLake**
+- [x] **Step 3: Confirm read access to `InTrans_Incremental` via OneLake**
 
 Run:
 ```bash
@@ -421,7 +421,7 @@ notebook = {
                 "    SELECT Franchise, Branch, RONumber, PartNumber\n",
                 "    FROM InTrans_Incremental\n",
                 "    WHERE Type = 'I' AND Qty > 0\n",
-                "      AND TransDatetime >= date_sub(current_date(), 730)\n",
+                "      AND TransDatetime >= add_months(current_date(), -24)\n",
                 "      AND PartNumber IS NOT NULL AND PartNumber <> ''\n",
                 "\"\"\")\n",
                 "intrans_pdf = intrans_df.toPandas()\n",
@@ -485,7 +485,13 @@ notebook = {
                 "    WHERE c.CoOccurrenceCount >= {MIN_COOCCURRENCE}\n",
                 "\"\"\").df()\n",
                 "\n",
-                "print(f\"Fact_PartAssociation rows: {len(result_pdf):,}\")"
+                "print(f\"Fact_PartAssociation rows: {len(result_pdf):,}\")\n",
+                "\n",
+                "# Guard against a broken upstream read silently overwriting a good\n",
+                "# table with a near-empty one -- this runs weekly, unattended, forever.\n",
+                "# 1000 is well below the validated ~44,326-row expectation but high\n",
+                "# enough to catch a genuinely broken read.\n",
+                "assert len(result_pdf) > 1000, f\"Fact_PartAssociation row count ({len(result_pdf):,}) is suspiciously low — aborting write.\""
             ]
         },
         {
@@ -539,6 +545,12 @@ Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 
 **Note for Task 9:** this notebook file is not yet a live Fabric item — it still needs to be created as a Notebook in the `LH_Master_Data` workspace and its content pasted in (Fabric doesn't currently git-sync notebook *content* from `data-projects`, only from `fabric-workspace-docs` — same two-repo distinction as everything else in this CLAUDE.md). That step is in Task 9's checklist.
 
+**Post-implementation fixes (found by code review, applied before merge):** two real issues were found and fixed after the notebook above was first committed, and this section has been updated in place to reflect the shipped version rather than the original:
+1. **Date filter drift:** the Spark read originally used `date_sub(current_date(), 730)` (730 calendar days), which doesn't exactly match Task 3's validated `CURRENT_DATE - INTERVAL 24 MONTH` (24 calendar months — not the same number of days depending which months are spanned). Fixed to `add_months(current_date(), -24)`, the Spark SQL equivalent of calendar-month subtraction.
+2. **No row-count sanity guard:** this notebook runs weekly, unattended, forever, and does `mode("overwrite")` on a real Lakehouse table. Without a guard, a broken upstream read (an empty `InTrans_Incremental`, a schema rename, a filter bug) would silently overwrite a good table with a near-empty one. Added `assert len(result_pdf) > 1000` before the write.
+
+Both fixes are reflected in the generator script above and are live in the shipped `Fact_PartAssociation_Build.ipynb`.
+
 ---
 
 ### Task 5: Scaffold the project folder and update the query library
@@ -548,14 +560,14 @@ Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 - Create: `.claude/queries/facts/Fact_PartAssociation.md`
 - Modify: `.claude/queries/facts/FACT-TABLES-SUMMARY.md`
 
-- [ ] **Step 1: Create the project folder structure**
+- [x] **Step 1: Create the project folder structure**
 
 ```bash
 mkdir -p "projects/associated parts - report/queries/fact-tables"
 mkdir -p "projects/associated parts - report/documentation"
 ```
 
-- [ ] **Step 2: Write the query-library documentation for the new fact table**
+- [x] **Step 2: Write the query-library documentation for the new fact table**
 
 This mirrors the header-comment convention used by every `.pq` file in `.claude/queries/`, but documents a notebook instead (no `.pq` file exists for this one — it's Spark/DuckDB, not Power Query).
 
@@ -583,12 +595,19 @@ separate row from PartB→PartA).
 - Source: `InTrans_Incremental` (Lakehouse), last 24 months
 - `Type = 'I'` (invoiced sales only), `Qty > 0`
 - Basket = one invoice: `(Franchise, Branch, RONumber)`
-- Basket-size cap: `<BASKET_CAP value from Task 2>` distinct parts (excludes
+- Basket-size cap: 25 distinct parts (excludes
   the top ~1% of invoices by distinct-part count — large shop orders/bulk
   counter sales that would otherwise dominate the pair counts without
   reflecting a genuine "these go together" pairing)
-- Minimum `CoOccurrenceCount`: `<MIN_COOCCURRENCE value from Task 3>` (drops
+- Minimum `CoOccurrenceCount`: 10 (drops
   one-off noise pairs)
+- Note: `TotalInvoiceCount` (the denominator behind `Baseline %`) is computed
+  from ALL qualifying invoices, including the ~1% excluded by the basket-size
+  cap above — only `CoOccurrenceCount`/`AnchorInvoiceCount`/`AssociatedInvoiceCount`
+  are computed from capped baskets. This is a deliberate, minor definitional
+  asymmetry (found during a whole-branch review) that understates Baseline
+  and overstates Lift by roughly 1%; ranking of associated parts is
+  unaffected since it's a constant offset per franchise.
 
 ## Output Columns
 
@@ -622,7 +641,7 @@ writing.
 - Full design: `docs/superpowers/specs/2026-08-27-associated-parts-design.md`
 ```
 
-- [ ] **Step 3: Add a summary line to FACT-TABLES-SUMMARY.md**
+- [x] **Step 3: Add a summary line to FACT-TABLES-SUMMARY.md**
 
 Add this row under the closest existing table-listing section (the file is
 acknowledged stale elsewhere in it, so match whatever section header
@@ -634,7 +653,7 @@ association, weekly refresh, Fabric Notebook (DuckDB+Spark), see
 .claude/queries/facts/Fact_PartAssociation.md
 ```
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add "projects/associated parts - report/queries/fact-tables" \
@@ -671,7 +690,15 @@ Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 - Object descriptions use a `///` line immediately before the declaration, never a `description:` property.
 - TMDL files must be UTF-8 **without BOM**.
 
-- [ ] **Step 1: Write and run the generator script**
+- [x] **Step 1: Write and run the generator script** — **ALREADY EXECUTED. Do
+  not re-run this script** — a whole-branch review (after the run recorded
+  below) found and fixed two real bugs in it (space-indented M partition
+  bodies instead of tabs; `MeasuresTable` missing a required column/partition)
+  plus hid three non-additive raw-count columns on `Fact_PartAssociation`.
+  The version embedded below already reflects all three fixes and was
+  re-run once, fresh, to produce the files actually committed. If Desktop
+  has opened these files by the time you're reading this, re-running would
+  destroy real lineageTags/Desktop edits — see the script's own docstring.
 
 ```python
 """
@@ -700,6 +727,13 @@ def write_utf8_no_bom(path: Path, content: str):
     path.write_bytes(content.encode("utf-8"))
 
 def sql_partition(table_name: str, source_item: str, select_columns=None, rename_map=None) -> str:
+    # M body indentation must be 4 tabs before let/in, 4 tabs + 4 spaces
+    # before step/return lines -- matches every real working partition in
+    # this repo (verified against dim_UniqueCustomers.tmdl and others).
+    # Plain 4-space indentation with no tabs (an earlier bug in this script)
+    # is inconsistent with TMDL's indentation-significant parsing and was
+    # caught by a whole-branch review before anything was published.
+    indent = "\t\t\t\t"
     steps = [f'Source = Sql.Database("{SQL_SERVER}", "{SQL_DB}"),']
     var = f"dbo_{source_item}"
     steps.append(f'{var} = Source{{[Schema="dbo",Item="{source_item}"]}}[Data]')
@@ -713,16 +747,16 @@ def sql_partition(table_name: str, source_item: str, select_columns=None, rename
         pairs = ", ".join(f'{{"{k}", "{v}"}}' for k, v in rename_map.items())
         extra_lines.append(f"Renamed = Table.RenameColumns({body_var}, {{{pairs}}})")
         body_var = "Renamed"
-    lines = [f"    let", f"        {steps[0]}"]
-    lines.append(f"        {steps[1]}" + ("," if extra_lines else ""))
+    lines = [f"{indent}let", f"{indent}    {steps[0]}"]
+    lines.append(f"{indent}    {steps[1]}" + ("," if extra_lines else ""))
     for i, line in enumerate(extra_lines):
         suffix = "," if i < len(extra_lines) - 1 else ""
-        lines.append(f"        {line}{suffix}")
-    lines.append(f"    in")
-    lines.append(f"        {body_var}")
+        lines.append(f"{indent}    {line}{suffix}")
+    lines.append(f"{indent}in")
+    lines.append(f"{indent}    {body_var}")
     return "\n".join(lines)
 
-def column_block(name, dtype, summarize="none", hidden=False, format_string=None, source_column=None):
+def column_block(name, dtype, summarize="none", hidden=False, format_string=None, source_column=None, underlying_datetime_type=None):
     lines = [f"\tcolumn {name}"]
     lines.append(f"\t\tdataType: {dtype}")
     if hidden:
@@ -737,6 +771,11 @@ def column_block(name, dtype, summarize="none", hidden=False, format_string=None
         lines.append("\t\tchangedProperty = IsHidden")
         lines.append("")
     lines.append("\t\tannotation SummarizationSetBy = Automatic")
+    if underlying_datetime_type:
+        # Matches the real Data Refresh precedent elsewhere in this repo
+        # (e.g. Inspections' Data Refresh.tmdl) for its Date/Time columns.
+        lines.append("")
+        lines.append(f"\t\tannotation UnderlyingDateTimeDataType = {underlying_datetime_type}")
     lines.append("")
     return "\n".join(lines)
 
@@ -748,9 +787,15 @@ fact_cols = (
     + column_block("PartA", "string")
     + column_block("PartB", "string")
     + column_block("CoOccurrenceCount", "int64", summarize="sum", format_string="0")
-    + column_block("AnchorInvoiceCount", "int64", summarize="sum", format_string="0")
-    + column_block("AssociatedInvoiceCount", "int64", summarize="sum", format_string="0")
-    + column_block("TotalInvoiceCount", "int64", summarize="sum", format_string="0")
+    # AnchorInvoiceCount/AssociatedInvoiceCount/TotalInvoiceCount are
+    # repeated values, not additive facts (see design doc) -- a bare SUM
+    # on any of them silently overcounts. Hidden so the *Invoices measures
+    # (which correctly de-duplicate via SUMX/SUMMARIZE) are the only way
+    # to reach these values from the report -- a warning in CLAUDE.md
+    # alone isn't enough to stop someone dragging the raw column in.
+    + column_block("AnchorInvoiceCount", "int64", summarize="sum", format_string="0", hidden=True)
+    + column_block("AssociatedInvoiceCount", "int64", summarize="sum", format_string="0", hidden=True)
+    + column_block("TotalInvoiceCount", "int64", summarize="sum", format_string="0", hidden=True)
 )
 fact_partition = sql_partition("Fact_PartAssociation", "Fact_PartAssociation")
 fact_tmdl = f"""table Fact_PartAssociation
@@ -808,29 +853,32 @@ write_utf8_no_bom(TABLES_DIR / "dim_Franchise.tmdl", franchise_tmdl)
 # Data Refresh (standard UTC->Central watermark pattern used everywhere else)
 # ---------------------------------------------------------------------
 data_refresh_tag = tag()
-data_refresh_m = """    let
-        UtcNow    = DateTimeZone.UtcNow(),
-        UtcDT     = DateTimeZone.RemoveZone(UtcNow),
-        CurYear   = Date.Year(DateTime.Date(UtcDT)),
-        Mar1      = #date(CurYear, 3, 1),
-        Sun1Mar   = Date.AddDays(Mar1, Number.Mod(7 - Date.DayOfWeek(Mar1, Day.Sunday), 7)),
-        DstStart  = #datetime(CurYear, 3, Date.Day(Date.AddDays(Sun1Mar, 7)), 8, 0, 0),
-        Nov1      = #date(CurYear, 11, 1),
-        Sun1Nov   = Date.AddDays(Nov1, Number.Mod(7 - Date.DayOfWeek(Nov1, Day.Sunday), 7)),
-        DstEnd    = #datetime(CurYear, 11, Date.Day(Sun1Nov), 7, 0, 0),
-        OffsetHrs = if UtcDT >= DstStart and UtcDT < DstEnd then -5 else -6,
-        LocalDT   = DateTimeZone.RemoveZone(DateTimeZone.SwitchZone(UtcNow, OffsetHrs, 0)),
-        Source    = #table({"CurrentDateTime"}, {{LocalDT}}),
-        AddDate   = Table.DuplicateColumn(Source, "CurrentDateTime", "Date"),
-        AddTime   = Table.DuplicateColumn(AddDate, "Date", "Time"),
-        ChgTypes  = Table.TransformColumnTypes(AddTime, {{"Date", type date}, {"Time", type time}})
-    in
-        ChgTypes"""
+# Same 4-tabs-then-4-spaces indentation fix as sql_partition() above --
+# this table's M body is hand-written rather than built via sql_partition()
+# since it has no SQL source, but must follow the identical convention.
+data_refresh_m = """\t\t\t\tlet
+\t\t\t\t    UtcNow    = DateTimeZone.UtcNow(),
+\t\t\t\t    UtcDT     = DateTimeZone.RemoveZone(UtcNow),
+\t\t\t\t    CurYear   = Date.Year(DateTime.Date(UtcDT)),
+\t\t\t\t    Mar1      = #date(CurYear, 3, 1),
+\t\t\t\t    Sun1Mar   = Date.AddDays(Mar1, Number.Mod(7 - Date.DayOfWeek(Mar1, Day.Sunday), 7)),
+\t\t\t\t    DstStart  = #datetime(CurYear, 3, Date.Day(Date.AddDays(Sun1Mar, 7)), 8, 0, 0),
+\t\t\t\t    Nov1      = #date(CurYear, 11, 1),
+\t\t\t\t    Sun1Nov   = Date.AddDays(Nov1, Number.Mod(7 - Date.DayOfWeek(Nov1, Day.Sunday), 7)),
+\t\t\t\t    DstEnd    = #datetime(CurYear, 11, Date.Day(Sun1Nov), 7, 0, 0),
+\t\t\t\t    OffsetHrs = if UtcDT >= DstStart and UtcDT < DstEnd then -5 else -6,
+\t\t\t\t    LocalDT   = DateTimeZone.RemoveZone(DateTimeZone.SwitchZone(UtcNow, OffsetHrs, 0)),
+\t\t\t\t    Source    = #table({"CurrentDateTime"}, {{LocalDT}}),
+\t\t\t\t    AddDate   = Table.DuplicateColumn(Source, "CurrentDateTime", "Date"),
+\t\t\t\t    AddTime   = Table.DuplicateColumn(AddDate, "Date", "Time"),
+\t\t\t\t    ChgTypes  = Table.TransformColumnTypes(AddTime, {{"Date", type date}, {"Time", type time}})
+\t\t\t\tin
+\t\t\t\t    ChgTypes"""
 data_refresh_tmdl = f"""table 'Data Refresh'
 \tisHidden
 \tlineageTag: {data_refresh_tag}
 
-{column_block("CurrentDateTime", "string", hidden=True)}{column_block("Date", "dateTime", hidden=True, format_string="Long Date")}{column_block("Time", "dateTime", hidden=True, format_string="Long Time")}
+{column_block("CurrentDateTime", "string", hidden=True)}{column_block("Date", "dateTime", hidden=True, format_string="Long Date", underlying_datetime_type="Date")}{column_block("Time", "dateTime", hidden=True, format_string="Long Time", underlying_datetime_type="Time")}
 \tpartition 'Data Refresh' = m
 \t\tmode: import
 \t\tsource =
@@ -907,10 +955,30 @@ measures = (
         format_string="0.00",
     )
 )
+# A pure measures-holding table still needs at least one column and one
+# partition -- the Tabular engine requires both, even for a table that
+# exists only to hold measures. Every real measures table in this repo
+# (e.g. Inspections' _Measures.tmdl) uses this exact pattern: one hidden
+# "Value" column plus a `calculated` partition sourced from a placeholder
+# string. Missing this entirely (an earlier bug in this script) would have
+# made Desktop refuse to load the model on first open.
 measures_tmdl = f"""table MeasuresTable
 \tlineageTag: {tag()}
 
-{measures}"""
+{measures}
+\tcolumn Value
+\t\tisHidden
+\t\tlineageTag: {tag()}
+\t\tsummarizeBy: none
+\t\tisNameInferred
+\t\tsourceColumn: [Value]
+
+\t\tannotation SummarizationSetBy = Automatic
+
+\tpartition MeasuresTable = calculated
+\t\tmode: import
+\t\tsource = {{ "This table holds all measures for the Associated Parts report" }}
+"""
 write_utf8_no_bom(TABLES_DIR / "MeasuresTable.tmdl", measures_tmdl)
 
 # ---------------------------------------------------------------------
@@ -997,7 +1065,7 @@ Run this as a one-off script from the repo root, then discard it (it's a generat
 
 Note: the generated top-level `Associated Parts.pbip` references `Associated Parts.Report`, which doesn't exist yet — that's expected. Desktop will show a broken reference until Task 9 creates the report; don't try to open the `.pbip` in Desktop before then. Opening the `.SemanticModel` folder's contents is fine.
 
-- [ ] **Step 2: Check for the three known TMDL gotchas**
+- [x] **Step 2: Check for the three known TMDL gotchas**
 
 Run:
 ```bash
@@ -1014,7 +1082,7 @@ print('BOM check complete.')
 ```
 Expected: `No // comments found (good)`, `No description: properties found (good)`, `BOM check complete.` with no `BOM FOUND` lines.
 
-- [ ] **Step 3: Verify the JSON files parse**
+- [x] **Step 3: Verify the JSON files parse**
 
 Run:
 ```bash
@@ -1032,7 +1100,7 @@ for f in [base / 'Associated Parts.pbip',
 ```
 Expected: four `OK` lines, no `json.decoder.JSONDecodeError`.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add "projects/associated parts - report/reports/current"
@@ -1049,7 +1117,7 @@ Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 - Create: `projects/associated parts - report/CLAUDE.md`
 - Create: `projects/associated parts - report/README.md`
 
-- [ ] **Step 1: Write CLAUDE.md**
+- [x] **Step 1: Write CLAUDE.md**
 
 Follow the exact structure already used by `projects/unique parts customers - report/CLAUDE.md` (Report Overview, Semantic Model tables, Dimensions, Key Measures, Report Pages, Data Flow, Known Issues & Gotchas, Refresh Pipeline Position, Documentation Status):
 
@@ -1121,7 +1189,7 @@ EquipRDB (ODBC) → InTrans_Incremental (Lakehouse)
 - Obsidian stakeholder docs: ⬜ Not yet created — run `/document-report` once the report is live in Sandbox/production
 ```
 
-- [ ] **Step 2: Write a short README.md**
+- [x] **Step 2: Write a short README.md**
 
 ```markdown
 # Associated Parts
@@ -1139,7 +1207,7 @@ published to Fabric. See `docs/superpowers/plans/2026-08-27-associated-parts-rec
 Task 9, for remaining steps.
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add "projects/associated parts - report/CLAUDE.md" "projects/associated parts - report/README.md"
