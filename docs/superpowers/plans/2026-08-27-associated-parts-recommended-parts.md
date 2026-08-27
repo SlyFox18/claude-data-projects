@@ -72,7 +72,7 @@ Expected: prints a row count in the millions (no connection/permission error). T
 **Files:**
 - Create: `.claude/queries/adhoc/associated-parts-profiling/profile_basket_sizes.py`
 
-- [ ] **Step 1: Write the profiling script**
+- [x] **Step 1: Write the profiling script**
 
 ```python
 """
@@ -115,16 +115,24 @@ result = con.execute(f"""
 print(result.to_string(index=False))
 ```
 
-- [ ] **Step 2: Run it and record the output**
+- [x] **Step 2: Run it and record the output**
 
 Run: `python3 .claude/queries/adhoc/associated-parts-profiling/profile_basket_sizes.py`
 Expected: one row of summary stats (TotalBaskets, MinParts, P50/P90/P95/P99, MaxParts). Record these numbers — they're the input to Step 3.
 
-- [ ] **Step 3: Set `BASKET_CAP`**
+**Recorded output (run 2026-08-27, live `InTrans_Incremental`, 12,186,352 total rows in the table):**
+
+| TotalBaskets | MinParts | P50 | P90 | P95 | P99 | MaxParts |
+|---|---|---|---|---|---|---|
+| 447,661 | 1 | 1 | 5 | 8 | 24 | 377 |
+
+- [x] **Step 3: Set `BASKET_CAP`**
 
 Set `BASKET_CAP = <P99 value from Step 2, rounded up to the nearest 5>`. This excludes the top ~1% of invoices by distinct-part count (the "big shop order" outliers the design doc flags) while keeping the overwhelming majority of real baskets intact. Write this exact value down — it's a literal constant in Task 3 and Task 4, not a placeholder to fill in later.
 
-- [ ] **Step 4: Commit the profiling script**
+**Decided: `BASKET_CAP = 25`** (P99 = 24, rounded up to the nearest 5 = 25).
+
+- [x] **Step 4: Commit the profiling script**
 
 ```bash
 git add ".claude/queries/adhoc/associated-parts-profiling/profile_basket_sizes.py"
@@ -247,7 +255,7 @@ base = f"abfss://{WS_ID}@onelake.dfs.fabric.microsoft.com/{LH_ID}/Tables"
 con.execute("INSTALL delta; LOAD delta; INSTALL azure; LOAD azure;")
 con.execute("CREATE SECRET (TYPE azure, PROVIDER credential_chain, CHAIN 'cli');")
 
-BASKET_CAP = 999  # <-- replace with the value determined in Task 2, Step 3
+BASKET_CAP = 25  # Task 2's determined value (P99=24, rounded up to nearest 5)
 
 filtered_source = f"""(
     SELECT Franchise, Branch, RONumber, PartNumber
@@ -269,9 +277,9 @@ print("\nPick MIN_COOCCURRENCE for a row count that's usefully small (tens of\n"
       "before finalizing.")
 ```
 
-- [ ] **Step 2: Replace `BASKET_CAP = 999` with the real value from Task 2**
+- [x] **Step 2: Replace `BASKET_CAP = 999` with the real value from Task 2**
 
-Edit the script: set `BASKET_CAP` to the literal integer decided in Task 2, Step 3.
+Edit the script: set `BASKET_CAP` to the literal integer decided in Task 2, Step 3. (Already done above — `BASKET_CAP = 25`.)
 
 - [ ] **Step 3: Run the validation script**
 
