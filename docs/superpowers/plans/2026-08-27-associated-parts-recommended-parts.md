@@ -360,15 +360,15 @@ Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 **Files:**
 - Create: `projects/associated parts - report/notebooks/Fact_PartAssociation_Build.ipynb`
 
-- [ ] **Step 1: Write the notebook JSON**
+- [x] **Step 1: Write the notebook JSON**
 
 This runs *inside* Fabric (not locally) — it uses the notebook's attached default lakehouse (`LH_Master_Data`) via native Spark, which needs no OneLake/az-login workaround. DuckDB still does the actual pairwise aggregation (per the design's engine choice), it just receives its input as an in-memory pandas frame instead of via `delta_scan` over abfss. The final write uses `.save("Tables/Fact_PartAssociation")` (path-based, **not** `saveAsTable()`) specifically to avoid the documented Fabric lowercase-table-name gotcha.
 
 ```python
 import json
 
-BASKET_CAP = 999          # <-- replace with Task 2's value
-MIN_COOCCURRENCE = 5      # <-- replace with Task 3's value
+BASKET_CAP = 25           # Task 2's determined value (P99=24, rounded up to nearest 5)
+MIN_COOCCURRENCE = 10     # Task 3's determined value (44,326 rows at this threshold)
 
 notebook = {
     "nbformat": 4,
@@ -515,7 +515,7 @@ print("Notebook written.")
 
 Run this as a one-off Python script (not committed itself — it's just the file generator) to produce the `.ipynb` file, then discard it.
 
-- [ ] **Step 2: Verify the notebook JSON is well-formed**
+- [x] **Step 2: Verify the notebook JSON is well-formed**
 
 Run:
 ```bash
@@ -528,7 +528,7 @@ print(f'{len(nb[\"cells\"])} cells, nbformat {nb[\"nbformat\"]}')
 ```
 Expected: `5 cells, nbformat 4` with no JSON parse error.
 
-- [ ] **Step 3: Commit the notebook**
+- [x] **Step 3: Commit the notebook**
 
 ```bash
 git add "projects/associated parts - report/notebooks/Fact_PartAssociation_Build.ipynb"
