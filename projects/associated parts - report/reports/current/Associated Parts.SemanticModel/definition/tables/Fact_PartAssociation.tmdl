@@ -1,0 +1,65 @@
+table Fact_PartAssociation
+	lineageTag: 48bfa121-7eef-4242-9af7-f9976dab047a
+
+	column Franchise
+		dataType: string
+		lineageTag: fc72d091-6f48-4274-86ec-0ebe4ea93283
+		summarizeBy: none
+		sourceColumn: Franchise
+
+		annotation SummarizationSetBy = Automatic
+	column PartA
+		dataType: string
+		lineageTag: da36030e-3d7a-43fa-a8e8-174d18c87944
+		summarizeBy: none
+		sourceColumn: PartA
+
+		annotation SummarizationSetBy = Automatic
+	column PartB
+		dataType: string
+		lineageTag: 863c76cd-b817-4a85-aa1c-eebf2bf6f11f
+		summarizeBy: none
+		sourceColumn: PartB
+
+		annotation SummarizationSetBy = Automatic
+	column CoOccurrenceCount
+		dataType: int64
+		formatString: 0
+		lineageTag: a89f84d6-a864-4d16-995e-323ac8a5362e
+		summarizeBy: sum
+		sourceColumn: CoOccurrenceCount
+
+		annotation SummarizationSetBy = Automatic
+	column AnchorInvoiceCount
+		dataType: int64
+		formatString: 0
+		lineageTag: 37fcc864-c343-47fc-bcca-bf4646b871f2
+		summarizeBy: sum
+		sourceColumn: AnchorInvoiceCount
+
+		annotation SummarizationSetBy = Automatic
+	column AssociatedInvoiceCount
+		dataType: int64
+		formatString: 0
+		lineageTag: c64a888a-1dc5-4ba3-828b-c67d25f3ce85
+		summarizeBy: sum
+		sourceColumn: AssociatedInvoiceCount
+
+		annotation SummarizationSetBy = Automatic
+	column TotalInvoiceCount
+		dataType: int64
+		formatString: 0
+		lineageTag: 2cc455af-83f7-4e74-b7ea-8d17cb7bc2a5
+		summarizeBy: sum
+		sourceColumn: TotalInvoiceCount
+
+		annotation SummarizationSetBy = Automatic
+
+	partition Fact_PartAssociation = m
+		mode: import
+		source =
+    let
+        Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-gxnyznhdptpenfw724g3o5sjzm.datawarehouse.fabric.microsoft.com", "LH_Master_Data"),
+        dbo_Fact_PartAssociation = Source{[Schema="dbo",Item="Fact_PartAssociation"]}[Data]
+    in
+        dbo_Fact_PartAssociation

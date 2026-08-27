@@ -1,0 +1,47 @@
+table MeasuresTable
+	lineageTag: bf4d65e2-2817-4010-a396-345c7f3e0589
+
+	measure 'Co-Occurrence Count' =
+			
+			SUM ( Fact_PartAssociation[CoOccurrenceCount] )
+		formatString: #,0
+		lineageTag: 59718788-8e31-4d01-b603-9a3c4b9e37eb
+	measure 'Anchor Invoices' =
+			
+			SUMX (
+				SUMMARIZE ( Fact_PartAssociation, Fact_PartAssociation[Franchise], Fact_PartAssociation[PartA], Fact_PartAssociation[AnchorInvoiceCount] ),
+				Fact_PartAssociation[AnchorInvoiceCount]
+			)
+		formatString: #,0
+		lineageTag: 9810c36f-9036-4fc3-a7c9-e60a0e5c21b5
+	measure 'Associated Invoices' =
+			
+			SUMX (
+				SUMMARIZE ( Fact_PartAssociation, Fact_PartAssociation[Franchise], Fact_PartAssociation[PartB], Fact_PartAssociation[AssociatedInvoiceCount] ),
+				Fact_PartAssociation[AssociatedInvoiceCount]
+			)
+		formatString: #,0
+		lineageTag: a82a5208-c708-4c90-8d7b-353a92b33596
+	measure 'Total Invoices' =
+			
+			SUMX (
+				SUMMARIZE ( Fact_PartAssociation, Fact_PartAssociation[Franchise], Fact_PartAssociation[TotalInvoiceCount] ),
+				Fact_PartAssociation[TotalInvoiceCount]
+			)
+		formatString: #,0
+		lineageTag: 579fe385-d997-4c3f-8ce9-a7a4c4538e62
+	measure 'Confidence %' =
+			
+			DIVIDE ( [Co-Occurrence Count], [Anchor Invoices] )
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: ceedfb67-bf75-4cab-a926-75aef67f8e59
+	measure 'Baseline %' =
+			
+			DIVIDE ( [Associated Invoices], [Total Invoices] )
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 971f747d-0b8c-42a5-9372-b5507dc3919e
+	measure Lift =
+			
+			DIVIDE ( [Confidence %], [Baseline %] )
+		formatString: 0.00
+		lineageTag: 5e2f677d-86a1-43ae-a2a7-438c202758f0
