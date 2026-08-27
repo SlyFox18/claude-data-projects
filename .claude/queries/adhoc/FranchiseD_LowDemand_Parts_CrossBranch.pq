@@ -87,12 +87,20 @@ NOTES:
          branch/part — covering every branch except 2 & 4 (not just the 5
          candidates). This is what feeds OtherBranchDemands/OtherLocationCount
          and also supplies candidate-branch rows that DO have demand.
-      2. A zero-fill pull — jdis rows for the 5 candidate branches only, for
-         parts that qualify (via the same part-filter + qualifying-parts
-         criteria) but have NO matching InTrans row (NOT EXISTS), emitted
+      2. A zero-fill pull — jdis rows for the 5 candidate branches only,
+         eligibility-filtered, LEFT JOINed to a small InTrans aggregate
+         scoped to just those 5 branches, keeping only rows where nothing
+         matched (d.PartNumber IS NULL — a set-based anti-join). Emitted
          with Demands = 0.
     Part 2 exists specifically so a candidate branch that has never sold a
     qualifying part still shows up instead of being silently dropped.
+    (2026-08-27: originally written with a correlated NOT EXISTS subquery
+    and a separate "qualifying parts" IN-subquery — that ran a lookup
+    against InTrans per jdis row instead of one bulk aggregation, and hung
+    for a long time on a query that used to run in seconds. Rewritten as a
+    LEFT JOIN anti-join; the qualifying-parts pre-filter was dropped too,
+    since OtherBranchDemands >= 10 downstream already excludes any part
+    with no real demand — it was redundant, not just slow.)
   - INNER JOIN to jdis in part 1 (and the WHERE filters in part 2) ensures
     all part filters are applied. Parts with no jdis record are excluded
     (cannot verify Package Qty, Return Indicator, etc.)
@@ -119,8 +127,10 @@ NOTES:
     the shared dim_CommodityCode Fabric dataflow. Update that one file to
     relabel/add codes for both this query and the Fabric dimension at once.
   - Run during off-peak hours (before 7 AM or after 5 PM) — InTrans is large,
-    and this version scans it three times (demand aggregate, qualifying-parts
-    list, and the NOT EXISTS zero-fill check).
+    and this version scans it twice (the broad demand aggregate covering all
+    non-2/4 branches, and a second aggregate scoped to just the 5 candidate
+    branches for the zero-fill anti-join). Both are bulk GROUP BY scans, not
+    row-by-row lookups.
 
 LAST RUN: 2026-06-08
 REQUESTED BY: Corp Parts Manager (Ben)
@@ -132,6 +142,11 @@ UPDATED: 2026-08-27 — added visible OnOrder column; fixed candidate branches
   with zero qualifying demand being dropped instead of showing Demands = 0
   (via UNION ALL zero-fill pull); added OtherLocationCount >= 5 filter
   (now required alongside OtherBranchDemands >= 10)
+UPDATED: 2026-08-27 (perf) — zero-fill rewritten from a correlated NOT EXISTS
+  subquery (per-row lookup against InTrans) to a LEFT JOIN anti-join against
+  a small pre-aggregated InTrans scope; dropped the redundant "qualifying
+  parts" pre-filter subquery. The NOT EXISTS version hung indefinitely where
+  the original single-scan query ran in seconds.
 ============================================================================
 
 Power Query M — paste into Excel Advanced Editor:
@@ -143,9 +158,11 @@ let
     // and are correctly excluded. BRANCH NOT IN ('2','4') defines the broad
     // "other branch" universe — the narrower 5-branch candidate restriction
     // is applied later, in Filtered.
-    // Part 2: zero-fill pull for the 5 candidate branches — jdis rows for
-    // qualifying parts with NO matching InTrans row, emitted as Demands = 0,
-    // so a candidate branch that never sold a qualifying part still appears.
+    // Part 2: zero-fill pull for the 5 candidate branches — jdis rows LEFT
+    // JOINed to a small InTrans aggregate scoped to just those 5 branches,
+    // keeping only unmatched rows (anti-join), emitted as Demands = 0, so a
+    // candidate branch that never sold a qualifying part still appears.
+    // Set-based LEFT JOIN, not a per-row correlated lookup — see NOTES.
     SQL = "
         SELECT
             i.BRANCH,
@@ -197,6 +214,24 @@ let
             p.pi_On_Hand_Qty                AS OnHandQty,
             0                                AS Demands
         FROM jdis_Part_Information p
+        LEFT JOIN (
+            SELECT
+                i2.BRANCH,
+                i2.PART_NO AS PartNumber
+            FROM InTrans i2
+            WHERE
+                i2.FRANCHISE = 'D'
+                AND i2.TYPE = 'I'
+                AND i2.QTY > 0
+                AND i2.BRANCH IN ('7', '14', '95', '91', '96')
+                AND i2.Trans_Datetime >= DATEADD(month, -18, GETDATE())
+                AND i2.Trans_Datetime <= DATEADD(day, -7, GETDATE())
+            GROUP BY
+                i2.BRANCH,
+                i2.PART_NO
+        ) d
+            ON  d.BRANCH     = p.pi_Branch
+            AND d.PartNumber = p.pi_Part_No
         WHERE
             p.pi_Franchise = 'D'
             AND p.pi_Branch IN ('7', '14', '95', '91', '96')
@@ -208,29 +243,7 @@ let
             AND p.pi_SLC NOT LIKE '90%'
             AND p.pi_SLC NOT LIKE '91%'
             AND p.pi_SLC NOT LIKE '99%'
-            AND p.pi_Part_No IN (
-                SELECT DISTINCT i2.PART_NO
-                FROM InTrans i2
-                WHERE
-                    i2.FRANCHISE = 'D'
-                    AND i2.TYPE = 'I'
-                    AND i2.QTY > 0
-                    AND i2.BRANCH NOT IN ('2', '4')
-                    AND i2.Trans_Datetime >= DATEADD(month, -18, GETDATE())
-                    AND i2.Trans_Datetime <= DATEADD(day, -7, GETDATE())
-            )
-            AND NOT EXISTS (
-                SELECT 1
-                FROM InTrans i3
-                WHERE
-                    i3.BRANCH = p.pi_Branch
-                    AND i3.PART_NO = p.pi_Part_No
-                    AND i3.FRANCHISE = 'D'
-                    AND i3.TYPE = 'I'
-                    AND i3.QTY > 0
-                    AND i3.Trans_Datetime >= DATEADD(month, -18, GETDATE())
-                    AND i3.Trans_Datetime <= DATEADD(day, -7, GETDATE())
-            )
+            AND d.PartNumber IS NULL
     ",
     Source = Odbc.Query("dsn=EquipRDB64", SQL),
 
