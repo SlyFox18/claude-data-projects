@@ -1,23 +1,23 @@
 table Fact_PartAssociation
-	lineageTag: 48bfa121-7eef-4242-9af7-f9976dab047a
+	lineageTag: 8c9e4c3f-2b33-42a0-a646-469a620b6679
 
 	column Franchise
 		dataType: string
-		lineageTag: fc72d091-6f48-4274-86ec-0ebe4ea93283
+		lineageTag: b4c21439-cbc5-4964-a16a-d4b44ca0c4cb
 		summarizeBy: none
 		sourceColumn: Franchise
 
 		annotation SummarizationSetBy = Automatic
 	column PartA
 		dataType: string
-		lineageTag: da36030e-3d7a-43fa-a8e8-174d18c87944
+		lineageTag: 2bfda930-6865-4d1e-9b80-dc3bb9d5f543
 		summarizeBy: none
 		sourceColumn: PartA
 
 		annotation SummarizationSetBy = Automatic
 	column PartB
 		dataType: string
-		lineageTag: 863c76cd-b817-4a85-aa1c-eebf2bf6f11f
+		lineageTag: d529238a-2d5e-4858-9741-51c2e9e06f3f
 		summarizeBy: none
 		sourceColumn: PartB
 
@@ -25,41 +25,50 @@ table Fact_PartAssociation
 	column CoOccurrenceCount
 		dataType: int64
 		formatString: 0
-		lineageTag: a89f84d6-a864-4d16-995e-323ac8a5362e
+		lineageTag: af9a752a-effe-4f16-8354-d99ae50bb028
 		summarizeBy: sum
 		sourceColumn: CoOccurrenceCount
 
 		annotation SummarizationSetBy = Automatic
 	column AnchorInvoiceCount
 		dataType: int64
+		isHidden
 		formatString: 0
-		lineageTag: 37fcc864-c343-47fc-bcca-bf4646b871f2
+		lineageTag: ffb1a348-be9f-4f3c-a67d-e55d9c827a0b
 		summarizeBy: sum
 		sourceColumn: AnchorInvoiceCount
+
+		changedProperty = IsHidden
 
 		annotation SummarizationSetBy = Automatic
 	column AssociatedInvoiceCount
 		dataType: int64
+		isHidden
 		formatString: 0
-		lineageTag: c64a888a-1dc5-4ba3-828b-c67d25f3ce85
+		lineageTag: 6a4d377a-ddc5-42c2-a90c-d58129b58ecd
 		summarizeBy: sum
 		sourceColumn: AssociatedInvoiceCount
+
+		changedProperty = IsHidden
 
 		annotation SummarizationSetBy = Automatic
 	column TotalInvoiceCount
 		dataType: int64
+		isHidden
 		formatString: 0
-		lineageTag: 2cc455af-83f7-4e74-b7ea-8d17cb7bc2a5
+		lineageTag: 8ee2fcbe-24a7-474d-9bb1-cb9b43fb3cdf
 		summarizeBy: sum
 		sourceColumn: TotalInvoiceCount
+
+		changedProperty = IsHidden
 
 		annotation SummarizationSetBy = Automatic
 
 	partition Fact_PartAssociation = m
 		mode: import
 		source =
-    let
-        Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-gxnyznhdptpenfw724g3o5sjzm.datawarehouse.fabric.microsoft.com", "LH_Master_Data"),
-        dbo_Fact_PartAssociation = Source{[Schema="dbo",Item="Fact_PartAssociation"]}[Data]
-    in
-        dbo_Fact_PartAssociation
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-gxnyznhdptpenfw724g3o5sjzm.datawarehouse.fabric.microsoft.com", "LH_Master_Data"),
+				    dbo_Fact_PartAssociation = Source{[Schema="dbo",Item="Fact_PartAssociation"]}[Data]
+				in
+				    dbo_Fact_PartAssociation

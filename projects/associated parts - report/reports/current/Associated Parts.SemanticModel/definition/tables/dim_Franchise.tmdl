@@ -1,9 +1,9 @@
 table dim_Franchise
-	lineageTag: d330d5e3-63e9-4a58-8984-518c34f1dcbf
+	lineageTag: 7d8fa1a9-e873-49fc-a5fb-3ef16b7f3cca
 
 	column Franchise
 		dataType: string
-		lineageTag: ffc50a3a-fb63-432c-a673-b1fd320cc73f
+		lineageTag: 38e1a3b7-ff8f-47a8-a6b5-fe0a56ce948c
 		summarizeBy: none
 		sourceColumn: Franchise
 
@@ -12,9 +12,9 @@ table dim_Franchise
 	partition dim_Franchise = m
 		mode: import
 		source =
-    let
-        Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-gxnyznhdptpenfw724g3o5sjzm.datawarehouse.fabric.microsoft.com", "LH_Master_Data"),
-        dbo_dim_Franchise = Source{[Schema="dbo",Item="dim_Franchise"]}[Data],
-        Selected = Table.SelectColumns(dbo_dim_Franchise, {"Franchise"})
-    in
-        Selected
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-gxnyznhdptpenfw724g3o5sjzm.datawarehouse.fabric.microsoft.com", "LH_Master_Data"),
+				    dbo_dim_Franchise = Source{[Schema="dbo",Item="dim_Franchise"]}[Data],
+				    Selected = Table.SelectColumns(dbo_dim_Franchise, {"Franchise"})
+				in
+				    Selected

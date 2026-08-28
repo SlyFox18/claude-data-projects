@@ -1,16 +1,16 @@
 table dim_Parts_Recommended
-	lineageTag: 2a0cd05e-7ccc-47c7-8512-7255e197cccc
+	lineageTag: 8a942d3c-a2b4-49fc-9886-c6b084376f29
 
 	column PartNumber
 		dataType: string
-		lineageTag: ca9b1164-ec73-44d3-9e9d-28d8f90fe105
+		lineageTag: 9081d333-d3a7-47fc-a471-1655f9d31d55
 		summarizeBy: none
 		sourceColumn: PartNumber
 
 		annotation SummarizationSetBy = Automatic
 	column Description
 		dataType: string
-		lineageTag: 6a8b1c6b-369e-4360-8332-c35d85606540
+		lineageTag: 881e367a-bb75-446f-a63f-9c1e32519bfa
 		summarizeBy: none
 		sourceColumn: Description
 
@@ -19,9 +19,9 @@ table dim_Parts_Recommended
 	partition dim_Parts_Recommended = m
 		mode: import
 		source =
-    let
-        Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-gxnyznhdptpenfw724g3o5sjzm.datawarehouse.fabric.microsoft.com", "LH_Master_Data"),
-        dbo_dim_Parts = Source{[Schema="dbo",Item="dim_Parts"]}[Data],
-        Selected = Table.SelectColumns(dbo_dim_Parts, {"PartNumber", "Description"})
-    in
-        Selected
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-gxnyznhdptpenfw724g3o5sjzm.datawarehouse.fabric.microsoft.com", "LH_Master_Data"),
+				    dbo_dim_Parts = Source{[Schema="dbo",Item="dim_Parts"]}[Data],
+				    Selected = Table.SelectColumns(dbo_dim_Parts, {"PartNumber", "Description"})
+				in
+				    Selected

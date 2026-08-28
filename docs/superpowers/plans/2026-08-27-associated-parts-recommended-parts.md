@@ -895,8 +895,16 @@ write_utf8_no_bom(TABLES_DIR / "Data Refresh.tmdl", data_refresh_tmdl)
 # ---------------------------------------------------------------------
 # MeasuresTable
 # ---------------------------------------------------------------------
+def tmdl_name(name):
+    # TMDL requires single-quoting any object name containing a space
+    # (verified against real precedent, e.g. Unique Parts Customers'
+    # MeasuresTable.tmdl: 'Sales Rule 1' quoted, Lift-style single-word
+    # names bare). An earlier version of this script left multi-word
+    # measure names unquoted, which is invalid TMDL Desktop cannot parse.
+    return f"'{name}'" if " " in name else name
+
 def measure_block(name, expr, format_string=None):
-    lines = [f"\tmeasure {name} =", "\t\t\t", f"\t\t\t{expr}"]
+    lines = [f"\tmeasure {tmdl_name(name)} =", "\t\t\t", f"\t\t\t{expr}"]
     if format_string:
         lines.append(f"\t\tformatString: {format_string}")
     lines.append(f"\t\tlineageTag: {tag()}")

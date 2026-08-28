@@ -1,11 +1,11 @@
 table MeasuresTable
-	lineageTag: bf4d65e2-2817-4010-a396-345c7f3e0589
+	lineageTag: 472e60f3-1b63-4097-bbc8-e926e606925c
 
 	measure 'Co-Occurrence Count' =
 			
 			SUM ( Fact_PartAssociation[CoOccurrenceCount] )
 		formatString: #,0
-		lineageTag: 59718788-8e31-4d01-b603-9a3c4b9e37eb
+		lineageTag: 60a9d935-57e1-498c-99c3-329b3c49a5ba
 	measure 'Anchor Invoices' =
 			
 			SUMX (
@@ -13,7 +13,7 @@ table MeasuresTable
 				Fact_PartAssociation[AnchorInvoiceCount]
 			)
 		formatString: #,0
-		lineageTag: 9810c36f-9036-4fc3-a7c9-e60a0e5c21b5
+		lineageTag: 5aaa970b-25e7-4011-9841-da67a79556b6
 	measure 'Associated Invoices' =
 			
 			SUMX (
@@ -21,7 +21,7 @@ table MeasuresTable
 				Fact_PartAssociation[AssociatedInvoiceCount]
 			)
 		formatString: #,0
-		lineageTag: a82a5208-c708-4c90-8d7b-353a92b33596
+		lineageTag: 1472a474-77be-444d-9e0d-8a207d32fc58
 	measure 'Total Invoices' =
 			
 			SUMX (
@@ -29,19 +29,32 @@ table MeasuresTable
 				Fact_PartAssociation[TotalInvoiceCount]
 			)
 		formatString: #,0
-		lineageTag: 579fe385-d997-4c3f-8ce9-a7a4c4538e62
+		lineageTag: 8071817f-91fd-4069-9879-26c2c65e7c40
 	measure 'Confidence %' =
 			
 			DIVIDE ( [Co-Occurrence Count], [Anchor Invoices] )
 		formatString: 0.0%;-0.0%;0.0%
-		lineageTag: ceedfb67-bf75-4cab-a926-75aef67f8e59
+		lineageTag: cac631e4-3beb-4a7a-9bbe-d7468fe077a3
 	measure 'Baseline %' =
 			
 			DIVIDE ( [Associated Invoices], [Total Invoices] )
 		formatString: 0.0%;-0.0%;0.0%
-		lineageTag: 971f747d-0b8c-42a5-9372-b5507dc3919e
+		lineageTag: c5dd03d5-3424-45f2-b4f7-5249315fac8f
 	measure Lift =
 			
 			DIVIDE ( [Confidence %], [Baseline %] )
 		formatString: 0.00
-		lineageTag: 5e2f677d-86a1-43ae-a2a7-438c202758f0
+		lineageTag: 86ae6be6-ea1b-4517-9f03-fccafb4040df
+
+	column Value
+		isHidden
+		lineageTag: 0375f2ba-5a28-4d73-99ae-7f57f6892730
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Value]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition MeasuresTable = calculated
+		mode: import
+		source = { "This table holds all measures for the Associated Parts report" }

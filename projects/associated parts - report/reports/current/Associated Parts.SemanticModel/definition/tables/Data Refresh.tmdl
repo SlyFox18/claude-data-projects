@@ -1,11 +1,11 @@
 table 'Data Refresh'
 	isHidden
-	lineageTag: 16ce74a3-99ab-4318-b6eb-935c56dade83
+	lineageTag: 85d8182b-e504-4268-9ecf-43052a54d912
 
 	column CurrentDateTime
 		dataType: string
 		isHidden
-		lineageTag: 0efcfda6-a97e-4639-8cc5-bed9bf2be73e
+		lineageTag: 99312bac-758a-4ed9-93cc-269136e5e9d7
 		summarizeBy: none
 		sourceColumn: CurrentDateTime
 
@@ -16,18 +16,20 @@ table 'Data Refresh'
 		dataType: dateTime
 		isHidden
 		formatString: Long Date
-		lineageTag: c95c8056-4e6c-4f7d-81b3-094538eb0868
+		lineageTag: 131e3d3e-1761-43e4-a0f6-4e8a4e68e96c
 		summarizeBy: none
 		sourceColumn: Date
 
 		changedProperty = IsHidden
 
 		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
 	column Time
 		dataType: dateTime
 		isHidden
 		formatString: Long Time
-		lineageTag: d59aaca5-0d1d-4b38-a376-824a45b4f41f
+		lineageTag: 5f3d5447-3995-4d2e-ae64-cbc04b7b5498
 		summarizeBy: none
 		sourceColumn: Time
 
@@ -35,27 +37,29 @@ table 'Data Refresh'
 
 		annotation SummarizationSetBy = Automatic
 
+		annotation UnderlyingDateTimeDataType = Time
+
 	partition 'Data Refresh' = m
 		mode: import
 		source =
-    let
-        UtcNow    = DateTimeZone.UtcNow(),
-        UtcDT     = DateTimeZone.RemoveZone(UtcNow),
-        CurYear   = Date.Year(DateTime.Date(UtcDT)),
-        Mar1      = #date(CurYear, 3, 1),
-        Sun1Mar   = Date.AddDays(Mar1, Number.Mod(7 - Date.DayOfWeek(Mar1, Day.Sunday), 7)),
-        DstStart  = #datetime(CurYear, 3, Date.Day(Date.AddDays(Sun1Mar, 7)), 8, 0, 0),
-        Nov1      = #date(CurYear, 11, 1),
-        Sun1Nov   = Date.AddDays(Nov1, Number.Mod(7 - Date.DayOfWeek(Nov1, Day.Sunday), 7)),
-        DstEnd    = #datetime(CurYear, 11, Date.Day(Sun1Nov), 7, 0, 0),
-        OffsetHrs = if UtcDT >= DstStart and UtcDT < DstEnd then -5 else -6,
-        LocalDT   = DateTimeZone.RemoveZone(DateTimeZone.SwitchZone(UtcNow, OffsetHrs, 0)),
-        Source    = #table({"CurrentDateTime"}, {{LocalDT}}),
-        AddDate   = Table.DuplicateColumn(Source, "CurrentDateTime", "Date"),
-        AddTime   = Table.DuplicateColumn(AddDate, "Date", "Time"),
-        ChgTypes  = Table.TransformColumnTypes(AddTime, {{"Date", type date}, {"Time", type time}})
-    in
-        ChgTypes
+				let
+				    UtcNow    = DateTimeZone.UtcNow(),
+				    UtcDT     = DateTimeZone.RemoveZone(UtcNow),
+				    CurYear   = Date.Year(DateTime.Date(UtcDT)),
+				    Mar1      = #date(CurYear, 3, 1),
+				    Sun1Mar   = Date.AddDays(Mar1, Number.Mod(7 - Date.DayOfWeek(Mar1, Day.Sunday), 7)),
+				    DstStart  = #datetime(CurYear, 3, Date.Day(Date.AddDays(Sun1Mar, 7)), 8, 0, 0),
+				    Nov1      = #date(CurYear, 11, 1),
+				    Sun1Nov   = Date.AddDays(Nov1, Number.Mod(7 - Date.DayOfWeek(Nov1, Day.Sunday), 7)),
+				    DstEnd    = #datetime(CurYear, 11, Date.Day(Sun1Nov), 7, 0, 0),
+				    OffsetHrs = if UtcDT >= DstStart and UtcDT < DstEnd then -5 else -6,
+				    LocalDT   = DateTimeZone.RemoveZone(DateTimeZone.SwitchZone(UtcNow, OffsetHrs, 0)),
+				    Source    = #table({"CurrentDateTime"}, {{LocalDT}}),
+				    AddDate   = Table.DuplicateColumn(Source, "CurrentDateTime", "Date"),
+				    AddTime   = Table.DuplicateColumn(AddDate, "Date", "Time"),
+				    ChgTypes  = Table.TransformColumnTypes(AddTime, {{"Date", type date}, {"Time", type time}})
+				in
+				    ChgTypes
 
 	changedProperty = IsHidden
 
