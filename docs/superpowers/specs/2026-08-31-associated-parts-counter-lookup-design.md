@@ -116,6 +116,33 @@ treatment the availability table already gives users.
 ~1.3) only if real testing surfaces generic/noise parts creeping into
 results — don't pre-build the filter speculatively (see Testing below).
 
+## Empty / No-Recommendation State
+
+`Fact_PartAssociation` only keeps pairs with at least 10 shared invoices in
+the last 24 months (`MIN_COOCCURRENCE`, see the underlying design/plan) —
+so a real, valid, in-stock part can legitimately have **zero** qualifying
+associated parts if it's low-volume, new, or just doesn't have a strong
+pairing pattern. This is an expected, honest outcome, not an error.
+
+`AssociatedPartsPanel` must show an explicit message in this case, matching
+the pattern `HomePage.tsx` already uses for an empty availability search
+("No branches found carrying part..."):
+
+> *No frequently-bought-together data available for this part.*
+
+Do **not** render a blank panel (looks broken) or hide the section entirely
+(makes the feature seem unreliable — "does this ever work?"). Showing an
+explicit message either way (has recommendations / doesn't) keeps this
+feature consistent with the rest of the app and makes clear it ran
+successfully even when it found nothing.
+
+Deliberately out of scope for v1: distinguishing "this part doesn't exist
+at all" from "it exists but has no qualifying pairings" — that would need
+extra plumbing (a full parts-existence list) for a distinction that
+probably doesn't matter much to a counter person in the moment. A single
+generic message covers both cases; revisit only if real Fedora testing
+shows it's actually confusing.
+
 ## Testing & Rollout
 
 The Parts Availability app is rolling out to the parts department (~70
