@@ -61,15 +61,14 @@ one row per `(PartA, PartB)`:
 `ConfidencePercent`, `Lift`.
 
 **File format:** a single JSON file (gzip-compressed, matching the existing
-app's `.json.gz` convention) — `Fact_PartAssociation` is only 44K rows
-before this collapse (fewer after, since collapsing away the franchise
-dimension merges some rows), dramatically smaller than the 1M+-row
-`InMaster` data that required the existing app's 2-char-prefix partitioning
-scheme. **Verify actual gzipped size during implementation** before
-assuming no partitioning is needed — if it turns out too large for a single
-practical fetch, fall back to the same prefix-partitioning approach already
-proven for `PartLocations`, keyed on `PartA`. Don't pre-build partitioning
-speculatively.
+app's `.json.gz` convention). **Confirmed via a real run against live data
+during planning:** the collapsed export is 44,258 rows across 5,635
+distinct `PartA` values, 5.6 MB uncompressed, **718 KB gzipped** — no
+partitioning needed at all, dramatically smaller than the 1M+-row
+`InMaster` data that required the existing app's 2-char-prefix scheme.
+Given the small size and the weekly (not hourly) refresh cadence, the app
+fetches and caches this file once per page load rather than re-fetching it
+on every search — see App Integration below.
 
 **Refresh cadence:** weekly, immediately following
 `Fact_PartAssociation_Build.ipynb`'s own weekly run — either as an
@@ -82,11 +81,21 @@ Entra app registration, no new SharePoint site, no new auth flow.
 ## App Integration (parts-lookup-app)
 
 **New data-fetch function**, `lookupAssociatedParts(partNumber)` in
-`dataService.ts`, following `lookupPartNumber()`'s existing shape: acquire
-a Graph token, fetch the associated-parts JSON file via the same
-`graphFileUrl()`/`parseGzipJsonResponse()` helpers already in that file,
-filter to rows where `PartA` matches the searched term, sort by
+`dataService.ts`, following `lookupPartNumber()`'s existing shape (acquire
+a Graph token, fetch via the same `graphFileUrl()`/`parseGzipJsonResponse()`
+helpers), filter to rows where `PartA` matches the searched term, sort by
 `CoOccurrenceCount` descending, return the top 10.
+
+**Deliberate difference from `lookupPartNumber()`: cache the whole file in
+memory per page load, not fetch-per-search.** `lookupPartNumber()`
+intentionally never caches, because that data refreshes hourly and a parts
+counter tab realistically stays open all day — a stale cache there would
+show wrong availability. This export refreshes weekly, and at 718 KB for
+the *entire* dataset, there's no reason to re-fetch it on every single part
+lookup throughout the day. Fetch it once (lazily, on first use) and hold it
+in a module-level variable; a page reload (which a "Data as of" staleness
+banner can prompt the user to do, same as today) picks up the latest
+version.
 
 **One shared `AssociatedPartsPanel` component**, rendering a table with
 `Description`, `CoOccurrenceCount`, `ConfidencePercent`, `Lift` (same
@@ -172,15 +181,10 @@ branch/Fedora/production-server equivalents.
 
 ## Open Items (deferred to implementation)
 
-- Real gzipped file size of the collapsed export — determines whether
-  single-file is sufficient or prefix-partitioning is needed after all.
-- Whether the weekly export runs as an added cell in
-  `Fact_PartAssociation_Build.ipynb` or a separate follow-on
-  script/notebook — decide based on how the existing notebook is
-  structured at implementation time.
 - Whether a `Lift` floor filter is needed — decided from real Fedora
   testing, not assumed here.
-- Exact `_meta.json` freshness-tracking mechanism for this new file (reuse
-  the existing one as-is, since both files come from the same weekly
-  pipeline run, vs. tracking them separately) — decide during
-  implementation by reading the existing meta-writing code.
+- Exact freshness-tracking file for this new export (a separate
+  `_meta_associated_parts.json` vs. reusing the existing `_meta.json`) —
+  a separate file is likely correct, since this export runs on its own
+  weekly schedule, independent of the hourly `PartLocations` refresh that
+  owns the existing `_meta.json`; confirmed during implementation.
