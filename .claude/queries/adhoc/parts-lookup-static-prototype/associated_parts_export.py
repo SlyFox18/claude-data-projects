@@ -29,12 +29,15 @@ for full design rationale.
 Run standalone: python associated_parts_export.py
 ============================================================================
 """
+import datetime
 import gzip
 import json
 import os
 import time
 
 import duckdb
+
+import config
 
 WS_ID = "b48cdb35-7ce3-46de-96df-d70db77649cb"
 LH_ID = "3e74497b-8c51-4a1a-91a1-888c59118f48"
@@ -43,13 +46,23 @@ DATA_FILE = "associated_parts.json.gz"
 META_FILE = "_meta_associated_parts.json"
 
 
-def build_export() -> "list[dict]":
+def build_export() -> list[dict]:
     """Runs the collapse query against live Fact_PartAssociation/dim_Parts
     and returns the result as a list of row dicts, ready for JSON export."""
     base = f"abfss://{WS_ID}@onelake.dfs.fabric.microsoft.com/{LH_ID}/Tables"
     con = duckdb.connect()
     con.execute("INSTALL delta; LOAD delta; INSTALL azure; LOAD azure;")
-    con.execute("CREATE SECRET (TYPE azure, PROVIDER credential_chain, CHAIN 'cli');")
+    con.execute(
+        f"""
+        CREATE SECRET (
+            TYPE azure,
+            PROVIDER service_principal,
+            TENANT_ID '{config.TENANT_ID}',
+            CLIENT_ID '{config.CLIENT_ID}',
+            CLIENT_SECRET '{config.CLIENT_SECRET}'
+        );
+        """
+    )
 
     result = con.execute(f"""
         WITH per_franchise AS (
@@ -109,8 +122,6 @@ def write_meta_file(out_dir: str = OUT_DIR) -> None:
     timestamp -- a separate file from the existing pipeline's _meta.json,
     since this export runs on its own weekly schedule, independent of the
     hourly PartLocations refresh that owns that file."""
-    import datetime
-
     meta_path = os.path.join(out_dir, META_FILE)
     with open(meta_path, "w", encoding="utf-8") as f:
         json.dump(
