@@ -1,9 +1,11 @@
 # Parts Lookup Refresh Pipeline — Gateway PC Deployment Record
 
 **Migrated:** 2026-08-26
-**Status:** Live, running as primary on the Gateway PC. Brian's PC's equivalent scheduled task is **disabled, not deleted** — kept as a fallback until this proves out through the Sep 1 department-wide unveiling, same philosophy as keeping the Fedora frontend deployment running behind the Gateway PC's IIS hosting.
+**Status:** Live, running as primary on the Gateway PC, fully proven through real use. Brian's PC's equivalent scheduled task is **disabled, not deleted** — kept as a fallback. Failure alerting, a staleness check, and (as of 2026-08-31) an app-uptime check are all in place - see below.
 
-This is the technical reference for what's actually running, so anyone picking this up later (including future-you) doesn't have to reconstruct it from scratch. See `docs/GATEWAY-PC-DEPLOYMENT.md` in `parts-lookup-app` for the frontend's deployment on this same machine - this doc covers the separate refresh pipeline that now also lives here.
+**Note on this machine's role:** as of 2026-08-31, the Gateway PC is retired as the app's *frontend* host (see `docs/GATEWAY-PC-DEPLOYMENT.md` in `parts-lookup-app` - it had a real, hard 10-connection IIS limit that couldn't support the real user count). It kept this refresh pipeline and the Fabric on-premises Gateway service, both unrelated to that limit. The actual production frontend now runs on a separate Windows Server 2016 machine (`parts-lookup-app`'s `WINDOWS-SERVER-2016-DEPLOYMENT.md`), reachable at `https://go-parts.spitractor.com`.
+
+This is the technical reference for what's actually running, so anyone picking this up later (including future-you) doesn't have to reconstruct it from scratch.
 
 ---
 
@@ -14,8 +16,8 @@ This is the technical reference for what's actually running, so anyone picking t
 | Machine | `SPI00T4022W11` (`10.30.100.50`) - the same Gateway PC hosting the frontend and the Fabric on-premises Gateway |
 | Repo clone | `C:\data-projects` (git, tracks `dev` - matches how this pipeline is actually iterated day-to-day; unlike `parts-lookup-app`, this repo doesn't currently use a per-change `dev` → `main` PR cadence) |
 | Pipeline folder | `C:\data-projects\.claude\queries\adhoc\parts-lookup-static-prototype\` |
-| Scheduled task | `Parts Lookup Refresh` (Task Scheduler), disabled state confirmed off during setup, enabled once validated |
-| Monitoring | VS Code Remote Tunnels (see below) |
+| Scheduled tasks | `Parts Lookup Refresh` (hourly, Mon-Fri 8am-8pm), `Parts Lookup Staleness Check` (hourly, offset +45 min, same window), `Parts Availability App Uptime Check` (every 15 min, all day every day - added 2026-08-31, see below) |
+| Monitoring | VS Code Remote Tunnels for live log viewing (see below), Teams alerts on failure/staleness/downtime |
 
 ## What the pipeline actually does (recap)
 
@@ -99,6 +101,22 @@ Brian previously watched `refresh.log` live in VS Code on his own PC (same machi
 3. File → Open Folder → `C:\data-projects` (connecting to the tunnel alone doesn't open anything - the folder has to be opened explicitly, and the Open Folder dialog now browses the *Gateway PC's* filesystem, not the local one)
 4. Navigate to `.claude\queries\adhoc\parts-lookup-static-prototype\refresh.log` - updates live, same as before
 
+## Failure alerting, staleness check, and app uptime check (added 2026-08-26/31)
+
+Three layers of Teams alerting now exist, all posting to the "Parts Availability App Alerts" channel via the same webhook (`TEAMS_WEBHOOK_URL` in `.env`, a Teams Workflow's "Send webhook alerts to a channel" trigger - the modern replacement for the old Office 365 Incoming Webhook connector). All three reuse `run_refresh.py`'s `notify_teams_failure()`/`log_failure()` helpers, which never raise on their own (a Teams outage can't crash any of these checks) and are optional per-environment (no webhook configured just means no alerts, not an error).
+
+1. **`run_refresh.py` itself** - every existing `FAILED` path now also posts to Teams, not just `refresh.log`. Closes the original gap: a failed 3 AM run used to have no signal beyond someone happening to check the log by hand.
+2. **`check_staleness.py`** - a separate scheduled task, offset 45 minutes after each hourly refresh trigger, only during the same Mon-Fri 8am-8pm window. Catches the blind spot failure-alerting alone can't: if the scheduled task itself gets disabled, or the machine loses power, nothing *fails* - the pipeline just silently stops running. This checks `output/2char/_meta.json`'s age directly and alerts if it's older than 90 minutes.
+3. **`check_app_uptime.py`** (2026-08-31) - a different concern entirely: not "did the pipeline run," but "is the app itself actually reachable and correct." Runs every 15 minutes, every day, checking `https://go-parts.spitractor.com` from *this* machine (deliberately not from the server being checked - a monitor can't alert about its own host going down). Checks two things, both real failure modes already hit once building this project: the root page serving actual app content (not IIS's generic default page) and `manifest.webmanifest` returning valid JSON (not a 404 - see `parts-lookup-app`'s `WINDOWS-SERVER-2016-DEPLOYMENT.md` for both incidents). Only alerts on a state *change* (up→down or down→up) via a small `uptime_state.json` file, so a multi-hour outage doesn't spam a new message every 15 minutes.
+
+Uses a distinct Teams card title ("Parts Availability App Uptime") from the pipeline's own alerts ("Parts Lookup Refresh") - `notify_teams_failure()`/`log_failure()` both take an optional `title` parameter for exactly this, so an uptime alert can't be mistaken for the refresh pipeline itself failing.
+
+Task Scheduler registration for the uptime check hit the same trigger-construction issue as the others but with a new twist - `-RepetitionDuration ([TimeSpan]::MaxValue)` (attempting "run forever") failed with `The task XML contains a value which is incorrectly formatted or out of range` (Task Scheduler's schema has a real duration ceiling `TimeSpan.MaxValue` blows past). Fixed with the same daily-recurring-with-bounded-repetition pattern as the other two tasks, just scoped to (nearly) the whole day instead of a business-hours window:
+```powershell
+$trigger = New-ScheduledTaskTrigger -Daily -At "12:00AM"
+$trigger.Repetition = (New-ScheduledTaskTrigger -Once -At "12:00AM" -RepetitionInterval (New-TimeSpan -Minutes 15) -RepetitionDuration (New-TimeSpan -Hours 23 -Minutes 59)).Repetition
+```
+
 ## Redeploying after a pipeline code change
 
 ```powershell
@@ -111,6 +129,6 @@ No restart of anything needed - Task Scheduler launches a fresh `python.exe run_
 
 ## Open items
 
-- **Failure alerting** - none exists today. A failed 3 AM run currently has no signal beyond someone happening to check `refresh.log`. `projects/fabric-monitoring/` already has a working Teams-webhook-via-Microsoft.Graph pattern for exactly this kind of thing; wiring it into `run_refresh.py`'s existing `FAILED` log points is the natural next step, not yet done.
-- **Single point of failure, now doubled up on one machine** - the frontend (IIS) and this pipeline both now depend on the Gateway PC. If it goes down, the frontend fails over to the Fedora fallback, but nothing would be refreshing the underlying data until either this machine comes back or Brian's PC's disabled task is manually re-enabled. Acceptable for now given the fallback is one `Enable-ScheduledTask` away, but worth keeping in mind.
-- **True push-triggered CI/CD** - not part of this migration. Deliberately deferred to after Sep 1, same reasoning as the frontend's equivalent open item.
+- ~~Failure alerting~~ - **done**, see "Failure alerting, staleness check, and app uptime check" above.
+- **This machine is still a single point of failure for the pipeline.** The frontend no longer depends on it (that risk went away when the frontend moved to its own Server 2016 machine), but if the Gateway PC goes down, nothing refreshes the underlying data until either it comes back or Brian's PC's disabled task is manually re-enabled. Acceptable given the fallback is one `Enable-ScheduledTask` away, but worth keeping in mind.
+- **True push-triggered CI/CD** - not part of this migration, not yet pursued.
