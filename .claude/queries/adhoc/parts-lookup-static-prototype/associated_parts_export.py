@@ -38,6 +38,7 @@ import time
 import duckdb
 
 import config
+import upload  # same folder -- reuses get_access_token()/upload_file(), no duplicated retry/chunking logic
 
 WS_ID = "b48cdb35-7ce3-46de-96df-d70db77649cb"
 LH_ID = "3e74497b-8c51-4a1a-91a1-888c59118f48"
@@ -130,6 +131,19 @@ def write_meta_file(out_dir: str = OUT_DIR) -> None:
         )
 
 
+def upload_export(out_dir: str = OUT_DIR) -> None:
+    """Uploads the data file and meta file to the same SharePoint
+    site/drive the Parts Availability app reads from, reusing upload.py's
+    existing get_access_token()/upload_file() (retry/chunking logic already
+    proven by the PartLocations pipeline)."""
+    access_token = upload.get_access_token()
+    for file_name in (DATA_FILE, META_FILE):
+        local_path = os.path.join(out_dir, file_name)
+        print(f"  uploading {file_name}...")
+        upload.upload_file(local_path, file_name, access_token)
+    print(f"Uploaded {DATA_FILE} and {META_FILE}")
+
+
 def main() -> None:
     start = time.time()
     rows = build_export()
@@ -140,6 +154,8 @@ def main() -> None:
 
     write_meta_file()
     print(f"Wrote {META_FILE}")
+
+    upload_export()
 
 
 if __name__ == "__main__":
