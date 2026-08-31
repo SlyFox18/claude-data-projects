@@ -38,6 +38,7 @@ import time
 import duckdb
 
 import config
+import run_refresh  # same folder -- reuses log_failure()'s shared log + Teams alert, with a custom title
 import upload  # same folder -- reuses get_access_token()/upload_file(), no duplicated retry/chunking logic
 
 WS_ID = "b48cdb35-7ce3-46de-96df-d70db77649cb"
@@ -45,6 +46,7 @@ LH_ID = "3e74497b-8c51-4a1a-91a1-888c59118f48"
 OUT_DIR = "output_associated_parts"
 DATA_FILE = "associated_parts.json.gz"
 META_FILE = "_meta_associated_parts.json"
+ALERT_TITLE = "Associated Parts Export"
 
 
 def build_export() -> list[dict]:
@@ -135,27 +137,55 @@ def upload_export(out_dir: str = OUT_DIR) -> None:
     """Uploads the data file and meta file to the same SharePoint
     site/drive the Parts Availability app reads from, reusing upload.py's
     existing get_access_token()/upload_file() (retry/chunking logic already
-    proven by the PartLocations pipeline)."""
+    proven by the PartLocations pipeline).
+
+    Uploads DATA_FILE before META_FILE deliberately: if only one upload
+    can succeed, the newer data file existing without an updated meta file
+    is a safer inconsistency than the reverse (a meta file claiming fresher
+    data than what's actually present would be actively misleading to a
+    consumer checking staleness).
+
+    Each file's upload is wrapped individually so a failure re-raises with
+    the file name and which uploads (if any) already succeeded this run
+    prepended - without this, a partial failure (e.g. DATA_FILE uploads
+    fine but META_FILE fails after upload.py's retries exhaust) would
+    surface as a bare Graph error with no way to tell, from the eventual
+    Teams alert alone, whether SharePoint is now stale-but-consistent or
+    genuinely inconsistent (new data file, old/missing meta file) - this
+    pipeline runs weekly with no self-healing until the next run, so that
+    distinction matters and shouldn't require manually checking both files.
+    """
     access_token = upload.get_access_token()
+    uploaded = []
     for file_name in (DATA_FILE, META_FILE):
         local_path = os.path.join(out_dir, file_name)
         print(f"  uploading {file_name}...")
-        upload.upload_file(local_path, file_name, access_token)
+        try:
+            upload.upload_file(local_path, file_name, access_token)
+        except Exception as exc:
+            already_uploaded = ", ".join(uploaded) if uploaded else "none"
+            raise RuntimeError(
+                f"Failed uploading {file_name} (already uploaded this run: {already_uploaded}): {exc}"
+            ) from exc
+        uploaded.append(file_name)
     print(f"Uploaded {DATA_FILE} and {META_FILE}")
 
 
 def main() -> None:
-    start = time.time()
-    rows = build_export()
-    print(f"Query returned {len(rows):,} rows in {time.time() - start:.1f}s")
+    try:
+        start = time.time()
+        rows = build_export()
+        run_refresh.log(f"Associated Parts export: query returned {len(rows):,} rows in {time.time() - start:.1f}s")
 
-    size_bytes = write_gzip_json(rows)
-    print(f"Wrote {DATA_FILE}: {size_bytes / 1024:.1f} KB")
+        size_bytes = write_gzip_json(rows)
+        run_refresh.log(f"Associated Parts export: wrote {DATA_FILE} ({size_bytes / 1024:.1f} KB)")
 
-    write_meta_file()
-    print(f"Wrote {META_FILE}")
-
-    upload_export()
+        write_meta_file()
+        upload_export()
+        run_refresh.log("Associated Parts export: completed successfully")
+    except Exception as exc:
+        run_refresh.log_failure(f"Associated Parts export FAILED: {exc}", title=ALERT_TITLE)
+        raise
 
 
 if __name__ == "__main__":
