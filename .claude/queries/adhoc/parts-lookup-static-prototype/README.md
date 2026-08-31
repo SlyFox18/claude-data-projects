@@ -143,3 +143,33 @@ Next step: a follow-up design spec for the real production build
 decommissioning the current Fabric App) — see design spec Section 8 for
 the fallback options (Azure PaaS, dedicated gateway machine) if that build
 ever stalls.
+
+## Associated Parts export (added 2026-08-31)
+
+`associated_parts_export.py`, added to this same folder, is a second,
+unrelated export that just happens to reuse this pipeline's
+infrastructure — `config.py`'s service-principal auth, `run_refresh.py`'s
+`log()`/`log_failure()` Teams alerting, and `upload.py`'s
+`get_access_token()`/`upload_file()` — rather than duplicating any of it.
+It has nothing to do with the PartLocations prototype documented above.
+
+It collapses `Fact_PartAssociation` (Franchise x PartA x PartB grain) down
+to a single `(PartA, PartB)` grain, computes `ConfidencePercent`/`Lift` as
+plain numbers (there's no live DAX engine on the client), and joins in
+PartB's `Description` from `dim_Parts`. Unlike `partition.py`, the result
+is small enough for a single file: it writes one gzip-compressed
+`associated_parts.json.gz` plus its own `_meta_associated_parts.json`
+(kept separate from the PartLocations pipeline's `_meta.json` since it
+runs on its own schedule), then uploads both to the same SharePoint site
+the Parts Availability app reads from.
+
+**Real numbers, confirmed during a real run:** 44,258 rows / 5,635
+distinct PartA / 718 KB gzipped.
+
+**Schedule: weekly**, not hourly like the PartLocations refresh above —
+see Task 5 of the implementation plan for the actual Task Scheduler
+registration.
+
+See `docs/superpowers/specs/2026-08-31-associated-parts-counter-lookup-design.md`
+for the full design rationale, and the `parts-lookup-app` repo for the
+consuming feature.
