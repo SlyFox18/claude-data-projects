@@ -100,7 +100,7 @@ except Exception as exc:
     sys.exit(1)
 
 
-def notify_teams_failure(message: str) -> None:
+def notify_teams_failure(message: str, title: str = "Parts Lookup Refresh") -> None:
     """Posts a failure alert to the "Parts Availability App Alerts" Teams
     channel - added 2026-08-26 because a failed unattended run previously
     had no signal beyond someone happening to open refresh.log by hand.
@@ -120,6 +120,13 @@ def notify_teams_failure(message: str) -> None:
     stays optional per-environment rather than a hard requirement to run
     this pipeline at all.
 
+    `title` defaults to this pipeline's own name, but is overridable -
+    added 2026-08-31 when check_app_uptime.py started reusing this same
+    function for a genuinely different concern (the app being
+    unreachable, not the refresh pipeline failing). Without this, an
+    uptime alert would misleadingly say "Parts Lookup Refresh" in the
+    card title even though the refresh pipeline itself is fine.
+
     `message` must already be redact()-ed by the caller - this function
     doesn't redact anything itself, since every call site already has an
     already-redacted string in hand for refresh.log.
@@ -130,10 +137,10 @@ def notify_teams_failure(message: str) -> None:
         "@type": "MessageCard",
         "@context": "http://schema.org/extensions",
         "themeColor": "FF0000",
-        "summary": "Parts Lookup Refresh Failed",
+        "summary": f"{title} Failed",
         "sections": [
             {
-                "activityTitle": "[FAIL] Parts Lookup Refresh",
+                "activityTitle": f"[FAIL] {title}",
                 "activitySubtitle": datetime.datetime.now().isoformat(),
                 "text": message,
             }
@@ -147,12 +154,12 @@ def notify_teams_failure(message: str) -> None:
         log(f"  (Teams notification also failed to send: {exc})")
 
 
-def log_failure(message: str) -> None:
+def log_failure(message: str, title: str = "Parts Lookup Refresh") -> None:
     """log() plus a Teams alert - the pairing used at every FAILED point in
     this file, so a real failure can't be logged without also being
-    alerted (or vice versa)."""
+    alerted (or vice versa). `title` passes through to notify_teams_failure()."""
     log(message)
-    notify_teams_failure(message)
+    notify_teams_failure(message, title=title)
 
 
 def redact(text: str) -> str:
