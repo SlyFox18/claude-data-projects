@@ -12,14 +12,22 @@ network folder into `LH_Master_Data.Raw_PriceUpdate_History`.
 **Design spec:** `docs/superpowers/specs/2026-08-06-jd-price-update-ingestion-design.md`
 **Implementation plan:** `docs/superpowers/plans/2026-08-06-jd-price-update-ingestion.md`
 
-Status: **live and operating** — with a caveat: the daily harvest silently
-failed for 13 days (2026-08-07 to 2026-08-20, see Operational gotchas
-below) before being caught and fixed. Full historical backfill complete
-(2026-08-07) — 4,592 files, 2008-08-25 through 2026-08-03. Gap backfilled
-2026-08-20 (42 files, 2026-08-09 and 2026-08-16). Current state: 4,634
-files, 5,096,660 rows, latest `SourceFileDate` 2026-08-16. Daily scheduled
-harvest resumed 2026-08-20 with the underlying bug fixed — not yet
-confirmed clean on an unattended overnight run.
+Status: **live and operating** — with a second caveat now on top of the
+first: the daily harvest has silently failed *twice*. First for 13 days
+(2026-08-07 to 2026-08-20, a script bug, see Operational gotchas below),
+then for 11 more days (2026-08-22 to 2026-09-01, an early-morning
+session-availability issue — see the `TriggerTime` note below and in
+`Register-HarvestPriceUpdateTask.ps1`). Full historical backfill complete
+(2026-08-07) — 4,592 files, 2008-08-25 through 2026-08-03. Gap 1 backfilled
+2026-08-20 (42 files). Gap 2 backfilled 2026-09-01 (51 files, 2026-08-23/
+08-30/08-31). Current state: 4,685 files, latest `SourceFileDate`
+2026-08-31. **Scheduled task moved from 02:00 to 13:00 on 2026-09-01** —
+this report isn't on the Tier 1-3 automated pipeline schedule (refreshed
+manually in Desktop) and the harvest step has zero Fabric CU cost
+regardless of time of day, so there was never a real reason to run it
+before dawn; 1 PM lands inside hours this machine has already proven
+reliable for unattended tasks. Not yet confirmed clean on a real
+unattended 1 PM run.
 
 ### Architecture
 
@@ -27,7 +35,7 @@ confirmed clean on an unattended overnight run.
 Network share (Price_Update folder — real path known to Brian, passed as
                 -SourceFolderPath at runtime, never hardcoded in this repo)
         │  [Harvest-PriceUpdateFiles.ps1, Windows Scheduled Task
-        │   "JD Price Update Harvest" \Fabric\, daily 02:00, this machine]
+        │   "JD Price Update Harvest" \Fabric\, daily 13:00, this machine]
         ▼
 OneLake Files/PriceUpdate_Landing/
    ├── New/        (cleared after each successful pipeline run)
@@ -59,8 +67,9 @@ LH_Master_Data: Raw_PriceUpdate_History (5.1M rows)
   `.claude/queries/raw-tables/Raw_PriceUpdate_History.pq`.
 - **Pipeline:** `pl_Raw_PriceUpdate_History` — Dataflow activity → (on
   success) Delete data activity clearing `New/*.TXT` (non-recursive).
-- **Scheduled task:** `\Fabric\JD Price Update Harvest`, daily at 02:00,
-  runs `Harvest-PriceUpdateFiles.ps1` on Brian's machine.
+- **Scheduled task:** `\Fabric\JD Price Update Harvest`, daily at 13:00
+  (moved from 02:00 2026-09-01 — see Status above), runs
+  `Harvest-PriceUpdateFiles.ps1` on Brian's machine.
 
 **Important — the `.pq` file in this repo is a reference copy, not a live
 sync.** `data-projects` is not Fabric-integrated (see root `CLAUDE.md`).
@@ -142,6 +151,27 @@ automatically.
   every single day, because it succeeds trivially on an empty `New/` — there
   is currently no check anywhere that new data actually landed, only that
   the job didn't error. See the freshness-check item in Residual risks below.
+- **The 2:00 AM trigger time itself was the second, separate cause of a
+  silent outage — 11 more days (2026-08-22 to 2026-09-01), right after the
+  first outage above was fixed.** `Harvest-PriceUpdateFiles.ps1` uses
+  `LogonType = Interactive`, which requires an actively logged-in user
+  session to reliably reach network resources — this was flagged as a
+  documented risk in `Register-HarvestPriceUpdateTask.ps1`'s own original
+  header comment, and it materialized: every run failed with `Cannot find
+  path '...\Price_Update' because it does not exist`, even though the
+  share was fully reachable moments later during business hours. Confirmed
+  it wasn't a general `LogonType=Interactive` problem in this environment —
+  two other scheduled tasks on the same machine (`Post-Pipeline Monitoring`,
+  `Azure Login Refresh`) use the identical logon type and run successfully
+  every day at 7-8 AM. The variable was specifically the early-morning
+  timing, not the logon configuration. **Fixed 2026-09-01**: moved the
+  trigger to 13:00 (1 PM) — this report isn't on the Tier 1-3 automated
+  pipeline schedule and the harvest step costs zero Fabric CU regardless of
+  time of day, so there was never a real reason to run it before dawn.
+  **Lesson for any future unattended task on this machine**: before
+  trusting an early-morning trigger time, check whether other tasks using
+  the same logon type already run successfully at that hour — if nothing
+  does, don't assume a new one will.
 - **`Archive/` tracks "have we ever harvested this file," not "is this
   file's data currently in the table."** If `New/` is ever cleared without
   a file's data having actually landed in a *successful* table write
@@ -159,10 +189,10 @@ automatically.
   log file shows `Errors: N > 0`. Worth a decision before this matters
   operationally (e.g. if per-file failures start happening regularly).
 - No `-WakeToRun` on the scheduled task. If the machine is asleep before
-  02:00, the run is delayed to next wake, not skipped, but could land
+  13:00, the run is delayed to next wake, not skipped, but could land
   after downstream consumers expect fresh data.
 - Source-file atomic-write assumption is unverified — unknown whether
-  JD's export process could ever be caught mid-write by the 02:00
+  JD's export process could ever be caught mid-write by the 13:00
   schedule.
 - A malformed `Branch` value with zero digits after stripping the
   sub-branch letter (i.e., entirely non-numeric) would become `null`

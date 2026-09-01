@@ -8,7 +8,7 @@
 .DESCRIPTION
     Must be run as Administrator. Creates a task named
     "JD Price Update Harvest" under Task Scheduler Library \ Fabric,
-    running daily at 2:00 AM (well before the Fabric pipeline's 4:15 AM start).
+    running daily at 1:00 PM by default.
 
     Configured for reliable unattended operation:
       - Execution timeout: 45 minutes (prevents hung network access blocking pipeline)
@@ -27,23 +27,30 @@
     The real local OneLake-mounted PriceUpdate_Landing path.
 
 .PARAMETER TriggerTime
-    Time of day to run, as "HH:mm". Defaults to 02:00 (well before the main
-    Fabric pipeline's 4:15 AM start, so the day's harvest is sitting in
-    New\ before the Fabric-side pipeline runs).
+    Time of day to run, as "HH:mm". Defaults to 13:00. Originally 02:00 (to
+    land before the main Fabric pipeline's 4:15 AM start) -- changed
+    2026-09-01 after the 2:00 AM schedule silently failed for 11 straight
+    days (2026-08-22 to 2026-09-01) with "Cannot find path" errors against
+    the source share, while other unattended tasks on this same machine
+    using the identical LogonType=Interactive succeeded reliably at 7-8 AM.
+    Root cause: this exact CRITICAL risk, documented below since this
+    script's original version, of the user session not being active that
+    early. This report isn't on the Tier 1-3 automated pipeline schedule
+    (it's refreshed manually in Desktop), and the harvest step itself has
+    zero Fabric CU cost regardless of time of day (it's a local file copy,
+    not a Fabric operation) -- so there was never a real reason to run this
+    before dawn. 1:00 PM lands well inside the hours this machine has
+    already proven reliable for unattended Interactive-logon tasks.
 
 .EXAMPLE
     .\Register-HarvestPriceUpdateTask.ps1 -SourceFolderPath "\\<server>\...\Price_Update" -LandingRootPath "C:\Users\bfox\OneLake - Microsoft\LH_Master_Data.Lakehouse\Files\PriceUpdate_Landing"
 
 .NOTES
     CRITICAL: Tasks run as the current user and require the user session to be
-    active (logged in) at the scheduled time. The 2:00 AM default trigger time
-    creates a HIGH RISK that the machine may be asleep or logged off.
-
-    Before registering, ENSURE ONE OF THE FOLLOWING:
-      1. Machine is configured to NOT sleep before 4:15 AM, OR
-      2. You configure Windows Power Settings to wake the machine at 2:00 AM, OR
-      3. You accept that the task may fail silently if the machine is asleep
-         (it will run on next wake, potentially missing the Fabric pipeline cutoff)
+    active (logged in) at the scheduled time. An early-morning trigger time
+    (before you're typically logged in) creates a HIGH RISK of exactly this
+    failure -- confirmed in production 2026-08-22 to 2026-09-01. Keep the
+    trigger time within hours this machine is reliably logged in and active.
 
     If you need the task to run even when logged off, re-register this script with:
       -RunLevel Highest and supply a stored password in Windows Credential Manager.
@@ -56,7 +63,7 @@ param(
     [Parameter(Mandatory = $true)]
     [string]$LandingRootPath,
 
-    [string]$TriggerTime = "02:00"
+    [string]$TriggerTime = "13:00"
 )
 
 $ErrorActionPreference = "Stop"
