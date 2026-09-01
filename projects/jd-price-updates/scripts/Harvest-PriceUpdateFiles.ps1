@@ -65,6 +65,17 @@
     Left unfixed here, this crashes at parameter-binding time before a
     single log line is written, which is exactly what silently broke the
     daily harvest for 13 days starting 2026-08-07.)
+.PARAMETER AlertEmailTo
+    Email address to notify on a setup-level failure (unreachable source,
+    missing landing folders) -- the same class of failure that caused two
+    separate silent multi-day outages (2026-08-07/08-20 and 2026-08-22/
+    09-01), both caught only because Brian happened to notice stale data,
+    not because anything alerted him. Defaults to "bfox@spitractor.com".
+    Does NOT alert on per-file errors (a bad individual file is expected,
+    isolated, and already visible as "Errors: N" in the daily log -- see
+    the Residual risks note in README.md) -- only on a failure severe
+    enough to abort the whole run, which is exactly the failure mode this
+    project has twice gone 11+ days without noticing.
 .EXAMPLE
     .\Harvest-PriceUpdateFiles.ps1 -SourceFolderPath "\\<server>\...\Price_Update" -LandingRootPath "C:\Users\bfox\OneLake - Microsoft\LH_Master_Data.Lakehouse\Files\PriceUpdate_Landing"
 .EXAMPLE
@@ -82,7 +93,9 @@ param(
     [Nullable[datetime]]$DateFrom = $null,
     [Nullable[datetime]]$DateTo = $null,
 
-    [string]$LogPath
+    [string]$LogPath,
+
+    [string]$AlertEmailTo = "bfox@spitractor.com"
 )
 
 $ErrorActionPreference = "Stop"
@@ -156,6 +169,67 @@ function Test-PriceUpdateHeader {
     return ($null -eq $currentDiff) -or ($null -eq $legacyDiff)
 }
 
+function Send-HarvestFailureAlert {
+    # Fires only on a setup-level failure (see outer catch below) -- the
+    # exact failure class that went unnoticed for 11-13 days, twice, before
+    # this alert existed. Mirrors Send-JDChangeReportReminder.ps1's proven
+    # dual-channel pattern (Reynard todo + Outlook email via a background
+    # job with a timeout) so this project has one consistent notification
+    # approach, not two. Each channel is independently try/caught -- a
+    # failure sending the alert itself must never mask or replace the
+    # original error already written to the log by the caller.
+    param([string]$ErrorMessage)
+
+    try {
+        $body = @{
+            text  = "JD Price Update Harvest FAILED"
+            notes = "$ErrorMessage`n`nCheck the log at $LogPath and Task Scheduler (\Fabric\JD Price Update Harvest) for details. This is the same failure class that caused two separate silent multi-day outages before this alert existed -- don't let it sit unnoticed."
+        } | ConvertTo-Json
+        $response = Invoke-RestMethod -Uri "http://localhost:5151/capture" -Method Post -Body $body -ContentType "application/json" -TimeoutSec 10
+        Write-HarvestLog "INFO" "Failure alert: Reynard todo item created, id=$($response.id)"
+    }
+    catch {
+        Write-HarvestLog "ERROR" "Failure alert: FAILED to create Reynard todo item: $($_.Exception.Message)"
+    }
+
+    $outlookJob = Start-Job -ScriptBlock {
+        param($To, $Subject, $Body)
+        $outlook = New-Object -ComObject Outlook.Application
+        try {
+            $mail = $outlook.CreateItem(0)  # 0 = olMailItem
+            try {
+                $mail.To = $To
+                $mail.Subject = $Subject
+                $mail.Body = $Body
+                $mail.Send()
+            }
+            finally {
+                [System.Runtime.InteropServices.Marshal]::ReleaseComObject($mail) | Out-Null
+            }
+        }
+        finally {
+            [System.Runtime.InteropServices.Marshal]::ReleaseComObject($outlook) | Out-Null
+        }
+    } -ArgumentList $AlertEmailTo, "JD Price Update Harvest FAILED", $ErrorMessage
+
+    try {
+        if (Wait-Job -Job $outlookJob -Timeout 30) {
+            Receive-Job -Job $outlookJob -ErrorAction Stop | Out-Null
+            Write-HarvestLog "INFO" "Failure alert: email sent to $AlertEmailTo"
+        }
+        else {
+            Stop-Job -Job $outlookJob
+            Write-HarvestLog "ERROR" "Failure alert: TIMEOUT sending email (likely a blocked Outlook security prompt) -- not confirmed sent"
+        }
+    }
+    catch {
+        Write-HarvestLog "ERROR" "Failure alert: FAILED to send email: $($_.Exception.Message)"
+    }
+    finally {
+        Remove-Job -Job $outlookJob -Force
+    }
+}
+
 function Get-FileNameDate {
     # Safely parses the MM/DD/YYYY embedded in a PRICEUPDATE filename.
     # Returns $null if the filename doesn't match the pattern at all, OR if
@@ -189,19 +263,23 @@ Write-HarvestLog "INFO" "Harvest-PriceUpdateFiles - Start"
 Write-HarvestLog "INFO" "Source: $SourceFolderPath"
 Write-HarvestLog "INFO" "Landing root: $LandingRootPath"
 
-$newPath        = Join-Path $LandingRootPath "New"
-$archivePath    = Join-Path $LandingRootPath "Archive"
-$quarantinePath = Join-Path $LandingRootPath "Quarantine"
-
-foreach ($p in @($newPath, $archivePath, $quarantinePath)) {
-    if (-not (Test-Path $p)) {
-        throw "Required landing folder not found: $p -- create New\, Archive\, and Quarantine\ under $LandingRootPath before running this script."
-    }
-}
-
 $exitCode = 0
 
 try {
+    # Deliberately inside the try block (not before it) -- a failure here
+    # must go through the same catch/alert path as every other setup-level
+    # failure below. It didn't originally, which would have meant a missing
+    # landing folder failed with no alert at all.
+    $newPath        = Join-Path $LandingRootPath "New"
+    $archivePath    = Join-Path $LandingRootPath "Archive"
+    $quarantinePath = Join-Path $LandingRootPath "Quarantine"
+
+    foreach ($p in @($newPath, $archivePath, $quarantinePath)) {
+        if (-not (Test-Path $p)) {
+            throw "Required landing folder not found: $p -- create New\, Archive\, and Quarantine\ under $LandingRootPath before running this script."
+        }
+    }
+
     $sourceFiles = Get-ChildItem -Path $SourceFolderPath -Filter "PRICEUPDATE_*.TXT" -File
 
     if ($DateFrom -or $DateTo) {
@@ -282,6 +360,7 @@ try {
 catch {
     Write-HarvestLog "ERROR" "Harvest-PriceUpdateFiles - FAILED: $($_.Exception.Message)"
     $exitCode = 1
+    Send-HarvestFailureAlert -ErrorMessage $_.Exception.Message
 }
 
 exit $exitCode

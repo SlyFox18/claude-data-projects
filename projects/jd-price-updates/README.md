@@ -58,6 +58,19 @@ LH_Master_Data: Raw_PriceUpdate_History (5.1M rows)
 | `scripts/Harvest-PriceUpdateFiles.ps1` | Daily scheduled: copies new files into the OneLake landing area, validates filename + header, quarantines anything that fails. |
 | `scripts/Register-HarvestPriceUpdateTask.ps1` | One-off setup: registers the daily Windows Scheduled Task for the harvest script. |
 
+**Failure alerting (added 2026-09-01)**: `Harvest-PriceUpdateFiles.ps1` now
+sends a failure alert — a Reynard todo item and an Outlook email (same
+dual-channel pattern as sub-project 2's reminder script below) — on any
+setup-level failure (unreachable source, missing landing folders). Default
+recipient `bfox@spitractor.com`, overridable via `-AlertEmailTo`. Added
+after two separate silent multi-day outages (13 days, then 11 more) that
+were only caught because Brian happened to notice stale data — the harvest
+script's own exit code and log were always correct, nothing was actually
+watching them. Does **not** alert on per-file errors (an isolated bad file
+is expected and already visible as `Errors: N` in the daily log) — only on
+a failure severe enough to abort the whole run. Verified end-to-end
+2026-09-01 against a synthetic unreachable path — both channels fired.
+
 ### Fabric objects (LH_Master_Data workspace)
 
 - **Dataflow Gen2:** `df_Raw_PriceUpdate_History` — reads
