@@ -245,6 +245,56 @@ two flows' `Compose_HTML_Body` action content, not from scratch.
 `Unit Price`, `Weight`, `Actual Freight`, `Calculated Freight`,
 `% Freight Difference`, `Missed Freight`.
 
+## Corp Manager CC + sendMail Body Rewrite (added 2026-08-18)
+
+Ben Hill asked to receive every branch's daily alert, and to add Barry
+Sheets (Corporate North) and Curt Summers (Corporate South) scoped to
+their own branch groups — same ask, same implementation pattern, applied
+identically to the Low Margin New Item Alert Orchestrator on the same
+date; see that flow's setup doc
+(`projects/part sales with low margin/docs/06-power-automate/POWER-AUTOMATE-SETUP.md`,
+"Corp Manager CC" section) for the full rationale and the branch-group
+table. Corp managers remain skipped from the per-recipient loop
+(`officeLocation = "Support Center"`) — they're CC'd on the relevant
+branch manager's own email instead, no new SharePoint columns or loop
+changes.
+
+**This flow's `HTTP_sendMail` body was also converted from the old
+string-concatenated JSON pattern to a native JSON object body** (matching
+the fix already applied to Low Margin on 2026-07-28 — see that flow's
+Known Issues #12 / "sendMail Body" note) as part of adding the CC field,
+rather than splicing another string fragment into the fragile concat
+pattern. The `body` input is now:
+
+```json
+"body": {
+  "message": {
+    "subject": "@{concat('New Freight Alert - ', variables('RecipientBranchName'), ' - ', formatDateTime(utcNow(),'MMMM d, yyyy'))}",
+    "body": { "contentType": "HTML", "content": "@{outputs('Compose_HTML_Body')}" },
+    "toRecipients": [ { "emailAddress": { "address": "@{variables('RecipientEmail')}" } } ],
+    "ccRecipients": "@if(contains(createArray('Lamesa','Littlefield','Levelland','Morton','Tahoka','Lorenzo','Slaton','Lubbock','Crosbyton','Abernathy'), variables('RecipientBranchName')), createArray(createObject('emailAddress', createObject('address', 'bhill@spitractor.com')), createObject('emailAddress', createObject('address', 'bsheets@spitractor.com'))), if(contains(createArray('Seminole','Tornillo','Denver City','Mesquite','San Angelo','Ballinger','Big Spring','Brownfield','Snyder'), variables('RecipientBranchName')), createArray(createObject('emailAddress', createObject('address', 'bhill@spitractor.com')), createObject('emailAddress', createObject('address', 'csummers@spitractor.com'))), createArray(createObject('emailAddress', createObject('address', 'bhill@spitractor.com')))))",
+    "attachments": [ { "name": "New_MD_Freight_Missed.csv", "contentBytes": "@{base64(body('Create_CSV_table'))}", "@@odata.type": "#microsoft.graph.fileAttachment" } ]
+  }
+}
+```
+
+Note the `"@@odata.type"` double-@ escape (native-object form, required —
+see Known Issues #12 in the Low Margin doc) versus the old pattern's
+single `\"@odata.type\"` (fine inside a plain string).
+
+Applied 2026-08-18 via `preview_update` → diff-verified (only the
+`Apply_to_each` loop's nested actions changed, all 5 other top-level
+actions byte-identical) → `update_flow` with the returned `previewToken`.
+Expression syntax confirmed via `validate_flow`. This flow was Stopped
+until earlier the same day (2026-08-18) when Brian turned it on per Ben's
+go-ahead — first live run (weekdays 9:00 AM CST) will be the first real
+confirmation of both the daily-alert logic itself and this CC addition.
+**Not yet applied to the Parts Action Summary Orchestrator** — see the
+Low Margin doc's Corp Manager CC section for why, and the exact manual
+steps needed there instead.
+
+---
+
 ## Known Issues / Gotchas (discovered while building)
 
 1. **`copy_flow`/`edit_flow` are broken** in this flowagent MCP environment

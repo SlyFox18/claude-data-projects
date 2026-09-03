@@ -168,9 +168,18 @@ report's own adjustable "Alert Threshold %" slider.
   built and fully tested first, then superseded by this merge — it's kept
   around Stopped as a fallback, not deleted.
 - **Daily alert:** still its own standalone flow, **MD Freight New Item
-  Alert** — only newly-crossed invoices, daily (placeholder weekdays
-  9:00 AM CST). Built and fully tested, left **Stopped** pending Ben's
-  go-ahead.
+  Alert** — only newly-crossed invoices, daily (weekdays 9:00 AM CST).
+  Turned live 2026-08-18 after Ben's go-ahead — first live run pending
+  confirmation.
+- **2026-08-18 — Corp manager CC:** Ben Hill now CC'd on every branch's
+  daily alert; Barry Sheets (Corporate North) and Curt Summers (Corporate
+  South) CC'd only on their own 10/9 branches, via a conditional
+  expression on `HTTP_sendMail` — same pattern applied to the Low Margin
+  alert the same day. Also converted this action's body from the old
+  string-concatenated JSON to a native JSON object (matching Low Margin's
+  2026-07-28 fix) while making the change. See
+  `docs/power-automate/POWER-AUTOMATE-SETUP.md`, "Corp Manager CC +
+  sendMail Body Rewrite" section.
 
 Both reuse the Parts Action Summary / Low Margin distribution pipeline
 (SPI-PARTS group + PartsBranchMapping) but with distinct turquoise (weekly,
