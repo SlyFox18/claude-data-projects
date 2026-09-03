@@ -1,39 +1,35 @@
 table 'Data Refresh'
 	isHidden
-	lineageTag: 85d8182b-e504-4268-9ecf-43052a54d912
+	lineageTag: 5d7b604e-97b7-4d33-ae36-90dbf7bda192
 
 	column CurrentDateTime
 		dataType: string
 		isHidden
-		lineageTag: 99312bac-758a-4ed9-93cc-269136e5e9d7
+		lineageTag: 26d24d4e-d512-4cd9-91fa-f11f2507e70b
 		summarizeBy: none
 		sourceColumn: CurrentDateTime
 
 		changedProperty = IsHidden
 
 		annotation SummarizationSetBy = Automatic
+
 	column Date
 		dataType: dateTime
-		isHidden
 		formatString: Long Date
-		lineageTag: 131e3d3e-1761-43e4-a0f6-4e8a4e68e96c
+		lineageTag: e017b600-29cc-463a-95ef-71ebb2ea1fd5
 		summarizeBy: none
 		sourceColumn: Date
-
-		changedProperty = IsHidden
 
 		annotation SummarizationSetBy = Automatic
 
 		annotation UnderlyingDateTimeDataType = Date
+
 	column Time
 		dataType: dateTime
-		isHidden
 		formatString: Long Time
-		lineageTag: 5f3d5447-3995-4d2e-ae64-cbc04b7b5498
+		lineageTag: cf55c357-d896-4a28-b1b3-4c615ba84b69
 		summarizeBy: none
 		sourceColumn: Time
-
-		changedProperty = IsHidden
 
 		annotation SummarizationSetBy = Automatic
 
@@ -43,6 +39,8 @@ table 'Data Refresh'
 		mode: import
 		source =
 				let
+				    // Fabric/Power BI Service runs in UTC — DateTime.LocalNow() returns UTC, not local time.
+				    // DateTimeZone.SwitchZone converts UTC to Central Time with automatic DST handling.
 				    UtcNow    = DateTimeZone.UtcNow(),
 				    UtcDT     = DateTimeZone.RemoveZone(UtcNow),
 				    CurYear   = Date.Year(DateTime.Date(UtcDT)),
@@ -66,3 +64,4 @@ table 'Data Refresh'
 	annotation PBI_NavigationStepName = Navigation
 
 	annotation PBI_ResultType = Table
+

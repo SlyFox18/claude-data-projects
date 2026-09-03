@@ -1,27 +1,122 @@
 table dim_Parts_Recommended
-	lineageTag: 8a942d3c-a2b4-49fc-9886-c6b084376f29
+	lineageTag: f4f64c22-b3b6-4278-a679-1ce135c79104
+
+	column PartNumberKey
+		dataType: int64
+		lineageTag: ace65b8a-ba26-4380-b6fc-129306323489
+		sourceColumn: PartNumberKey
 
 	column PartNumber
 		dataType: string
-		lineageTag: 9081d333-d3a7-47fc-a471-1655f9d31d55
-		summarizeBy: none
+		lineageTag: b6b0ffcb-417e-4ee8-88b7-58732af11f82
 		sourceColumn: PartNumber
 
-		annotation SummarizationSetBy = Automatic
 	column Description
 		dataType: string
-		lineageTag: 881e367a-bb75-446f-a63f-9c1e32519bfa
-		summarizeBy: none
+		lineageTag: 125380fe-25be-4dcf-9d05-b35bf82cca87
 		sourceColumn: Description
 
-		annotation SummarizationSetBy = Automatic
+	column Franchise
+		dataType: string
+		lineageTag: d61de033-ce0f-40b8-9838-090b0d6bc3aa
+		sourceColumn: Franchise
+
+	column Source
+		dataType: string
+		lineageTag: 8a5508fe-aac0-42a1-829a-a69a05e1fef3
+		sourceColumn: Source
+
+	column SLC
+		dataType: string
+		lineageTag: 36986741-1de6-4925-8472-753dac6f9cc2
+		sourceColumn: SLC
+
+	column DealerGroupCode
+		dataType: string
+		lineageTag: 87e0c64f-ace3-4200-82d5-6e51be6b4fc4
+		sourceColumn: DealerGroupCode
+
+	column CommodityCode
+		dataType: string
+		lineageTag: cbb4b34d-363e-406c-97e1-cef8089cecc0
+		sourceColumn: CommodityCode
+
+	column VendorCode
+		dataType: string
+		lineageTag: a1becc99-f610-49d3-8680-db9114e8361b
+		sourceColumn: VendorCode
+
+	column QuantityOnHand
+		dataType: double
+		lineageTag: 58672dbc-9121-4ed4-b71a-81d80fc27521
+		sourceColumn: QuantityOnHand
+
+	column BackOrderQty
+		dataType: double
+		lineageTag: 70284817-4f89-4026-a883-413b8a13fc2b
+		sourceColumn: BackOrderQty
+
+	column StockStatus
+		dataType: string
+		lineageTag: 5be093f3-0cff-4578-9bbb-86ac26d2638d
+		sourceColumn: StockStatus
+
+	column IsAvailable
+		dataType: boolean
+		lineageTag: 4a192248-7b0e-4299-a8d9-49032c5ed6d6
+		sourceColumn: IsAvailable
+
+	column InventoryCost
+		dataType: double
+		lineageTag: 68aaba75-8bf5-4fa6-a31f-72919bf50c27
+		sourceColumn: InventoryCost
+
+	column SellPrice1
+		dataType: double
+		lineageTag: fb798398-a079-424d-83d8-ad7732cab1d3
+		sourceColumn: SellPrice1
+
+	column ListPrice
+		dataType: double
+		lineageTag: 49a05140-cd88-4de0-a149-21a8a341915e
+		sourceColumn: ListPrice
+
+	column Current12MoSales
+		dataType: double
+		lineageTag: 1168df73-0f7f-47fe-a23c-e86188e11fce
+		sourceColumn: Current12MoSales
+
+	column HasRecentSales
+		dataType: boolean
+		lineageTag: fe80ca12-2f7a-4fea-80d2-2063f9fed2b3
+		sourceColumn: HasRecentSales
+
+	column ActivityStatus
+		dataType: string
+		lineageTag: 25cf1660-37d5-46a9-b076-77936a214dab
+		sourceColumn: ActivityStatus
+
+	column Returnable
+		dataType: string
+		lineageTag: 62e0729c-7efb-4ebb-b36a-e5316c6cff5a
+		sourceColumn: Returnable
+
+	column IsReturnable
+		dataType: boolean
+		lineageTag: 024108ca-9d1b-4c6e-a4bf-6c9f30535b52
+		sourceColumn: IsReturnable
+
+	column IsHighValue
+		dataType: boolean
+		lineageTag: 6a9bb6a9-4808-4ce6-9659-d0d277e5432b
+		sourceColumn: IsHighValue
 
 	partition dim_Parts_Recommended = m
 		mode: import
 		source =
 				let
 				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-gxnyznhdptpenfw724g3o5sjzm.datawarehouse.fabric.microsoft.com", "LH_Master_Data"),
-				    dbo_dim_Parts = Source{[Schema="dbo",Item="dim_Parts"]}[Data],
-				    Selected = Table.SelectColumns(dbo_dim_Parts, {"PartNumber", "Description"})
+				    dbo_dim_Parts = Source{[Schema="dbo",Item="dim_Parts"]}[Data]
 				in
-				    Selected
+				    dbo_dim_Parts
+

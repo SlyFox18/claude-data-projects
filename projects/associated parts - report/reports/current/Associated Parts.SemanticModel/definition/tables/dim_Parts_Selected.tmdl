@@ -1,27 +1,205 @@
 table dim_Parts_Selected
-	lineageTag: afa177f4-45ee-4126-9d21-ea28b9285326
+	lineageTag: bf4bd4ea-c939-442e-a99a-9fa9cf3f8d32
+
+	column PartNumberKey
+		dataType: int64
+		formatString: 0
+		lineageTag: 948f7d5f-33d8-4e89-9677-3d5070dbd091
+		summarizeBy: count
+		sourceColumn: PartNumberKey
+
+		annotation SummarizationSetBy = Automatic
 
 	column PartNumber
 		dataType: string
-		lineageTag: cf9246e4-4c84-4d13-ab50-9b07e7cff00e
+		lineageTag: 312614b5-5193-4315-ba78-1912b0493847
 		summarizeBy: none
 		sourceColumn: PartNumber
 
 		annotation SummarizationSetBy = Automatic
+
 	column Description
 		dataType: string
-		lineageTag: ae2ed23c-c408-4e98-a198-b3c377f2df5a
+		lineageTag: 6bd32052-eb0c-4d34-8e04-803726080d33
 		summarizeBy: none
 		sourceColumn: Description
 
 		annotation SummarizationSetBy = Automatic
 
-	partition dim_Parts_Selected = m
+	column Franchise
+		dataType: string
+		lineageTag: ac370adc-b6ea-40ee-9352-4a3d40b284e4
+		summarizeBy: none
+		sourceColumn: Franchise
+
+		annotation SummarizationSetBy = Automatic
+
+	column Source
+		dataType: string
+		lineageTag: a78f4fc3-e55a-43f4-a6f2-396f7d1ac452
+		summarizeBy: none
+		sourceColumn: Source
+
+		annotation SummarizationSetBy = Automatic
+
+	column SLC
+		dataType: string
+		lineageTag: 2fac064e-a857-488c-9e5a-dbdf05d234ae
+		summarizeBy: none
+		sourceColumn: SLC
+
+		annotation SummarizationSetBy = Automatic
+
+	column DealerGroupCode
+		dataType: string
+		lineageTag: ef498d49-8c54-48e8-8bad-6b260c586502
+		summarizeBy: none
+		sourceColumn: DealerGroupCode
+
+		annotation SummarizationSetBy = Automatic
+
+	column CommodityCode
+		dataType: string
+		lineageTag: 8809c610-6250-45bf-ae89-72b4e083c449
+		summarizeBy: none
+		sourceColumn: CommodityCode
+
+		annotation SummarizationSetBy = Automatic
+
+	column VendorCode
+		dataType: string
+		lineageTag: b6f325f4-bffd-4a0f-84ae-f575686ad3bb
+		summarizeBy: none
+		sourceColumn: VendorCode
+
+		annotation SummarizationSetBy = Automatic
+
+	column QuantityOnHand
+		dataType: double
+		lineageTag: 824bffa8-951d-480b-bfbb-81b75e2ea7be
+		summarizeBy: sum
+		sourceColumn: QuantityOnHand
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column BackOrderQty
+		dataType: double
+		lineageTag: d5ebc1d2-4699-4b74-85df-7f043db5aad4
+		summarizeBy: sum
+		sourceColumn: BackOrderQty
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column StockStatus
+		dataType: string
+		lineageTag: 4e495d36-1bce-4ed6-b279-ddcc885f7de1
+		summarizeBy: none
+		sourceColumn: StockStatus
+
+		annotation SummarizationSetBy = Automatic
+
+	column IsAvailable
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: aad9c90e-edb9-405b-b608-d0ac57b742cc
+		summarizeBy: none
+		sourceColumn: IsAvailable
+
+		annotation SummarizationSetBy = Automatic
+
+	column InventoryCost
+		dataType: double
+		lineageTag: f8952268-29b0-4d4c-b462-ed324663a2df
+		summarizeBy: sum
+		sourceColumn: InventoryCost
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column SellPrice1
+		dataType: double
+		lineageTag: 76bd39a0-8c2c-46d2-90e8-13c02489b292
+		summarizeBy: sum
+		sourceColumn: SellPrice1
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column ListPrice
+		dataType: double
+		lineageTag: b1aa1091-7d76-4e42-bfef-6638408bebb6
+		summarizeBy: sum
+		sourceColumn: ListPrice
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column Current12MoSales
+		dataType: double
+		lineageTag: f9061628-e517-4fd8-a3cc-62fa9b761063
+		summarizeBy: sum
+		sourceColumn: Current12MoSales
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column HasRecentSales
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 3bb1e154-9237-411b-b4cc-e1c730b7d818
+		summarizeBy: none
+		sourceColumn: HasRecentSales
+
+		annotation SummarizationSetBy = Automatic
+
+	column ActivityStatus
+		dataType: string
+		lineageTag: 110e5211-b562-4bc7-9903-0dfb06086dc8
+		summarizeBy: none
+		sourceColumn: ActivityStatus
+
+		annotation SummarizationSetBy = Automatic
+
+	column Returnable
+		dataType: string
+		lineageTag: 2e680762-1cbe-4570-adca-b8ecddd21606
+		summarizeBy: none
+		sourceColumn: Returnable
+
+		annotation SummarizationSetBy = Automatic
+
+	column IsReturnable
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: d95f01aa-d1a5-4b9b-aba1-36c3d1bf2b1a
+		summarizeBy: none
+		sourceColumn: IsReturnable
+
+		annotation SummarizationSetBy = Automatic
+
+	column IsHighValue
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 7f9a4637-abb4-4125-ac6a-8bddc05515ce
+		summarizeBy: none
+		sourceColumn: IsHighValue
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dim_Parts = m
 		mode: import
 		source =
 				let
 				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-gxnyznhdptpenfw724g3o5sjzm.datawarehouse.fabric.microsoft.com", "LH_Master_Data"),
-				    dbo_dim_Parts = Source{[Schema="dbo",Item="dim_Parts"]}[Data],
-				    Selected = Table.SelectColumns(dbo_dim_Parts, {"PartNumber", "Description"})
+				    dbo_dim_Parts = Source{[Schema="dbo",Item="dim_Parts"]}[Data]
 				in
-				    Selected
+				    dbo_dim_Parts
+
