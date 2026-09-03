@@ -14,7 +14,7 @@
 
 **Resolved design question:** See "Task 1" below — Dataflow Gen2's SQL database destination does **not** support upsert/merge natively (Append/Replace only), confirmed against Microsoft's own docs. This is why a Script-activity `MERGE` step is required; it's not a workaround, it's the only path Fabric offers for this.
 
-**⏸ PAUSED mid-Task 6 (2026-08-04)** — Fabric Capacity Metrics confirmed real throttling in progress on `fabric1cap1` (peak 251.69% utilization, 27 rejected operations in 14 days, `parts-lookup-app` is the #1 CU consumer on the entire capacity). Stopped deliberately rather than continuing to test against a struggling capacity. Full detail in memory (`project_parts_lookup_tool.md`, "Capacity incident #3"). Nothing destructive happened — Tasks 1-5 and 6.5 are done and verified; staging table safely holds the full validated batch; live `PartLocations` untouched. **Before resuming:** check Capacity Metrics again, and try the original plain `MERGE` Script activity again first — the repeated `Value cannot be null. Parameter name: source` failures were likely a symptom of connection drops under load, not an actual platform bug in the Script activity, so the workarounds below (alias rename, UPDATE/DELETE/INSERT rewrite, Stored Procedure activity) may turn out to be unnecessary.
+**✅ RESUMED AND BUILT (2026-08-05/06)** — Tasks 1-8 (Step 1-2) all complete. The original `Value cannot be null. Parameter name: source` blocker turned out to be a real connection-wiring bug (not a capacity symptom as first suspected) — see Task 6's attempt log for the fix. A second real bug (duplicate rows from two incompatible `id` schemes meeting on the first live merge) was found and cleaned up after Task 6 first succeeded — see `ARCHITECTURE.md`'s "Status as of 2026-08-06" section for full detail on both. The pipeline has completed a fully clean, validated end-to-end run with real production data (genuine 17,443-row watermark delta, correct merge, watermark advanced, zero duplicates after). **Task 8 Step 3 (scheduling) is deliberately not done yet** — see that task below for why. Full session detail: `ARCHITECTURE.md` and memory `project_parts_lookup_tool.md`.
 
 ---
 
@@ -338,7 +338,7 @@ SELECT COUNT(*) FROM dbo.PartLocations_Staging_Incremental;
 
 **Prerequisite:** Task 6.5 (below) must run first — this script references `PartLocations.onOrder`, which doesn't exist on the live table yet.
 
-- [ ] **Step 1: Create the Script activity, name it `Merge_Staging_Incremental_To_Live`**
+- [x] **Step 1: Create the Script activity, name it `Merge_Staging_Incremental_To_Live`**
 
 Query type: Non-Query. Paste this T-SQL:
 
@@ -372,9 +372,9 @@ DELETE FROM dbo.PartLocations_Staging_Incremental;
 
 **Why `DELETE` and not `TRUNCATE` for the staging cleanup:** this is the exact lesson from the 2026-08-03/04 capacity incident (`INCIDENT-2026-07-28-capacity-and-refresh-fix.md` / memory `project_parts_lookup_tool.md`) — Fabric SQL Database mirroring treats `TRUNCATE` as a DDL-adjacent change and forces a full reseed of that table's OneLake mirror. `DELETE` doesn't trigger it. The staging table here is small (~10K rows steady-state) so the cost difference is minor per-run, but there's no reason to reintroduce the exact pattern that caused the original incident.
 
-- [ ] **Step 2: Test it manually once**, after Task 5's first sync run has populated staging with ~1.1M rows. Expect this first run to take noticeably longer than steady-state (it's reconciling the full table once) — that's fine, it's a one-time cost.
+- [x] **Step 2: Test it manually once**, after Task 5's first sync run has populated staging with ~1.1M rows. Expect this first run to take noticeably longer than steady-state (it's reconciling the full table once) — that's fine, it's a one-time cost. Done 2026-08-06 — succeeded at 4 vCores (1m50s) after the connection-wiring fix.
 
-- [ ] **Step 3: Verify**
+- [x] **Step 3: Verify** — done, plus an unplanned real cleanup: found and fixed ~1.06M old-scheme duplicate rows and 32 whitespace-hash-collision pairs. See `ARCHITECTURE.md`.
 
 ```sql
 SELECT COUNT(*) FROM dbo.PartLocations;                          -- should be ~1.05M, roughly unchanged from before
@@ -387,7 +387,9 @@ Step 1 (the plain `MERGE` above) failed 7 consecutive times with the identical e
 
 **Conclusion: this was very likely capacity throttling the whole time, not a Script activity bug or a `source`-alias issue.** Confirmed via Fabric Capacity Metrics: `fabric1cap1` hit 251.69% peak utilization with 27 rejected operations in the trailing 14 days, and `parts-lookup-app` (this app's own SQL Database) was the #1 CU consumer on the entire capacity. Work paused at this point rather than continuing to test against a struggling capacity — see the pause banner at the top of this doc and memory `project_parts_lookup_tool.md` ("Capacity incident #3") for full detail.
 
-**Resume here:** check Capacity Metrics first. Try the original plain `MERGE` Step 1 again before anything else — there's a real chance it just works now with zero changes needed. Only fall back to the alternatives below if it fails again with the *same* error after confirming capacity has actually settled.
+**Resolved 2026-08-05/06:** the plain `MERGE` script itself was never the problem — retrying it verbatim after a capacity-settle wait produced the *same* error, which ruled out the capacity theory. Root cause found by diffing this Script activity's exported pipeline JSON against the old, proven-working `Swap_Staging_To_Live` activity: this activity's connection was wired via a newer `connectionSettings`-wrapped binding (`type: "FabricSqlDatabase"`, missing the `database` field the working pattern has) instead of the older, working shape (top-level `externalReferences.connection` + `typeProperties.database` name string). The current Fabric portal UI defaults fresh Script activities into this broken shape — recreating from scratch (already tried, see log above) doesn't avoid it. **Fix:** rebuilt the activity reusing the same existing connection object `Swap_Staging_To_Live` uses, instead of letting it auto-create a new native connection binding. First run after the fix got past the instant failure and ran for real (1m41s) before hitting a *different*, expected error (`10054` connection reset) — confirmed as the one-time heavy reconciliation needing more than the newly-lowered 2-vCore cap; a temporary bump to 4 vCores let it complete (1m50s, succeeded). Neither the Fallback A (UPDATE/DELETE/INSERT rewrite) nor Fallback B (stored procedure) below were needed — kept in this doc for reference only, not used.
+
+A second, separate bug surfaced only after this first successful merge: the live `PartLocations` table (populated by the *old* row-index `id` scheme) had never been re-keyed to the new hash `id` scheme, so `ON target.id = source.id` matched nothing for existing parts and the whole batch inserted as duplicates instead of updating in place. Full cleanup detail in `ARCHITECTURE.md`'s "Status as of 2026-08-06" section — not repeated here since it's a one-time historical event, not part of the ongoing script logic.
 
 **Fallback A — plain UPDATE/DELETE/INSERT instead of MERGE** (three separate script blocks, in case MERGE itself is genuinely unsupported by the Script activity rather than this being purely a capacity symptom):
 ```sql
@@ -529,7 +531,7 @@ else:
 ```
 ````
 
-- [ ] **Step 2 [MANUAL]: Build the actual notebook in Fabric** using the guarded version from Step 1. Name it `Update_Watermark_PartsLookup`. Test it manually once against the current state (watermark should update to a recent timestamp, not stay at `2018-01-01`).
+- [x] **Step 2 [MANUAL]: Build the actual notebook in Fabric** using the guarded version from Step 1. Name it `Update_Watermark_PartsLookup`. Test it manually once against the current state (watermark should update to a recent timestamp, not stay at `2018-01-01`). Done 2026-08-06 — built as a `%%sql` cell (matching the actual `Update_InTrans_Watermark` convention already in the workspace, not the more verbose Python form originally sketched in this doc's Step 1; the `.md` reference file has been updated to match). Confirmed correctly attached to `LH_Master_Data`, and confirmed **not** the same object as `Parts_Availability_App_WaterMark` (that one is the Task 3 one-time seed script — reusing it would have reset the watermark every run). Tested successfully twice: once in isolation (advanced to `2026-08-04T10:18:54Z`), once as the last step of a full real pipeline run (advanced to `2026-08-06T12:40:57Z`).
 
 ---
 
@@ -537,7 +539,7 @@ else:
 
 **Where:** Fabric pipeline canvas, `LH_Master_Data` workspace.
 
-- [ ] **Step 1: Create `Pipeline_PartsLookup_Incremental`**, sequence:
+- [x] **Step 1: Create `Pipeline_PartsLookup_Incremental`**, sequence:
   1. `df_InMaster_PartsLookup_Incremental` (Dataflow Gen2 activity)
   2. Wait (30-60s — same pattern as the existing pipeline, lets the Lakehouse commit before the next dataflow reads it)
   3. `df_PartsLookup_Sync_Incremental` (Dataflow Gen2 activity)
@@ -545,12 +547,15 @@ else:
   5. `Merge_Staging_Incremental_To_Live` (Script activity, from Task 6)
   6. `Update_Watermark_PartsLookup` (Notebook activity, from Task 7)
   - Chain each step on **Success**. Add the same success/failure email notification pattern the existing `InMaster_PartLookUp → Wait → PartLookUp_Sync` pipeline already uses.
+  - **Built 2026-08-06, with one deliberate deviation from "same pattern as the existing pipeline":** instead of one shared failure email fed by multiple activities (which Microsoft's docs confirm combines with AND logic, not OR — meaning the old pipeline's shared failure email likely never actually fires in a normal single-point-of-failure case, since a failed upstream activity leaves downstream activities `Skipped` rather than `Failed`), this pipeline gives each of the four real activities its own independent single-dependency failure email. Five email activities total instead of two. See `ARCHITECTURE.md`.
 
-- [ ] **Step 2: Run it manually end-to-end once** and confirm all 6 steps succeed in order.
+- [x] **Step 2: Run it manually end-to-end once** and confirm all 6 steps succeed in order. Done 2026-08-06 — clean run, all 7 activities (6 + success email) green. Verified: real 17,443-row watermark-filtered delta (not a full re-pull), `PartLocations` count moved by a small sensible amount (+761), staging cleared to 0, watermark advanced correctly, zero duplicate parts.
 
-- [ ] **Step 3: Schedule conservatively at first**
+- [ ] **Step 3: Schedule conservatively at first** — **deliberately not done yet, as of 2026-08-06.**
 
 Per the 2026-08-04 incident finding, don't jump straight to an aggressive cadence. Start at the same 4x/day times the old pipeline used (7:45 AM, 10:00 AM, 2:00 PM, 4:00 PM) and confirm several clean runs with the SQL Database's Performance Dashboard showing low CPU cost before tightening further (e.g., hourly).
+
+**Brian's explicit decision (2026-08-06):** even though the pipeline is proven correct, there's no clean baseline yet for what it actually costs in CU, because every manual run so far happened alongside other Fabric activity (validation queries, portal poking) that muddies the reading — and two real capacity incidents happened during this build. Plan: (1) one manual run done in isolation, nothing else touching Fabric at the same time, to get a real clean cost reading; (2) if that looks fine, schedule once daily at an off-peak time and observe; (3) if still fine, gradually increase toward the 4x/day target above. Do not schedule 4x/day directly from here, regardless of how the earlier urgency felt — that urgency is exactly why this needs a real baseline first.
 
 ---
 
@@ -558,9 +563,11 @@ Per the 2026-08-04 incident finding, don't jump straight to an aggressive cadenc
 
 **Where:** Fabric pipeline canvas — the existing `InMaster_PartLookUp → Wait → PartLookUp_Sync` (→ swap) pipeline.
 
-- [ ] **Step 1: Change its trigger from 4x/day to weekly**, off-hours (matches this org's existing Tier 3 convention — Monday 5 AM, same slot as Price Matrix / Bin Location). This is the safety net described in `INCREMENTAL-REFRESH-FEASIBILITY.md` — catches anything the watermark might silently miss (clock skew, a write path that doesn't bump `Last_Upd_Datetime`).
+**Status 2026-08-06: Steps 2 and 3 (the `.pq` updates) are done — confirmed still in place in both files. Step 1 (the actual trigger change) has not been done yet** — intentionally left alone while the new incremental pipeline is still in its cautious, not-yet-scheduled validation phase (see Task 8 Step 3). The old pipeline is still running its original 4x/day schedule for now, which is fine as a stopgap since it's a known-working mechanism, just not the end state.
 
-- [ ] **Step 2: Update `InMaster_PartsLookup_Raw.pq`'s header comment and add `OnOrder`**
+- [ ] **Step 1: Change its trigger from 4x/day to weekly**, off-hours (matches this org's existing Tier 3 convention — Monday 5 AM, same slot as Price Matrix / Bin Location). This is the safety net described in `INCREMENTAL-REFRESH-FEASIBILITY.md` — catches anything the watermark might silently miss (clock skew, a write path that doesn't bump `Last_Upd_Datetime`). **Do this only after the new incremental pipeline has an actual schedule and has proven itself over a few real cycles** — don't pull the old safety net away before the new mechanism is trusted.
+
+- [x] **Step 2: Update `InMaster_PartsLookup_Raw.pq`'s header comment and add `OnOrder`**
 
 Open the existing file and fix the grain line, per the feasibility doc's load-bearing correction:
 
@@ -578,7 +585,7 @@ actually keeps PartLocations current.
 
 Then add `OS_ORDER_QTY AS OnOrder` to the `SELECT` list (same column as the incremental path, Task 2) and `{"OnOrder", Int64.Type}` to the `Table.TransformColumnTypes` call. **This is required, not optional** — this pipeline still runs weekly (Task 9 above) and does a full `Replace` write straight to `PartLocations` via the existing swap mechanism. If `onOrder` isn't selected here too, every weekly reconciliation run will null out the column for all ~1.05M rows until the next incremental run repopulates it.
 
-- [ ] **Step 3: Update `PartsLookup_Sync.pq`'s rename/select lists**
+- [x] **Step 3: Update `PartsLookup_Sync.pq`'s rename/select lists**
 
 Same reasoning — add `{"OnOrder", "onOrder"}` to `Table.RenameColumns` and `"onOrder"` to the final `Table.SelectColumns` list, mirroring Task 4's incremental version.
 
@@ -588,11 +595,13 @@ Same reasoning — add `{"OnOrder", "onOrder"}` to `Table.RenameColumns` and `"o
 
 **Where:** Fabric SQL Database query editor + LH_Master_Data.
 
-- [ ] **Step 1: Confirm no data loss vs. the old mechanism.** Right after Task 8 Step 2's first end-to-end run:
+- [x] **Step 1: Confirm no data loss vs. the old mechanism.** Right after Task 8 Step 2's first end-to-end run:
 ```sql
 SELECT COUNT(*) FROM dbo.PartLocations;
 ```
 Compare against the row count the old full-replace pipeline was producing (~1.05M, per the incident doc). Should be in the same ballpark — this run is effectively a full reconciliation since the watermark started at 2018-01-01.
+
+**Done, across two runs, 2026-08-06:** the first real merge (the full-batch reconciliation, watermark still at its 2018-01-01 seed) landed at 1,059,058 after cleanup — in the expected ballpark, and the id-scheme duplicate cleanup (see Task 6 / `ARCHITECTURE.md`) is exactly what got it there cleanly. The second run (a genuine small incremental delta, watermark already advanced) moved the count to 1,059,819 — a sensible +761, not another large jump, and zero duplicates both times. No data loss found at either point. **Remaining open item, not yet done:** the isolated, no-other-activity capacity baseline test Brian is doing separately before scheduling (see Task 8 Step 3) — that's the last piece of real validation left, and it's about capacity cost, not correctness.
 
 - [ ] **Step 2: Spot-check that updates actually update, not just insert.** Pick a part you can find in `InMaster` via SQL Anywhere, note its `SELL_PRICE1`, wait for a source-side value to change naturally (or coordinate a controlled test change if you have write access), then run the pipeline again and confirm `PartLocations.sellPrice1` reflects the new value without a duplicate row appearing (same `id` before and after).
 
