@@ -664,7 +664,42 @@ Barry Sheets (Corporate North), Curt Summers (Corporate South), and Shannon Broo
 (Corporate North + South) were intentionally excluded from the initial launch.
 Ben Hill is also TBD.
 
-When ready to add corp managers, two approaches are under consideration:
+**2026-08-18 update:** Ben asked to receive every branch's alert across all
+three flows (this one, Low Margin New Item Alert, MD Freight New Item
+Alert), with Barry and Curt added scoped to the branch groups below. Rather
+than either Option A or B below, a lighter-weight approach was used instead
+— a conditional CC directly on the existing `HTTP_sendMail` action, no
+SharePoint schema change, no change to the SKIP condition or `Get_items`
+lookup. **This has been applied to Low Margin and MD Freight New Item Alert
+already** (see their setup docs' "Corp Manager CC" sections for the exact
+expression) **but NOT yet to this flow** — its definition (92 actions) is
+too large to safely round-trip through the flowagent MCP tools without risk
+of the truncated-fetch corrupting untouched sections on write-back. Add it
+by hand in the Power Automate portal designer instead:
+
+1. Open `Parts Action Summary - Orchestrator` in the flow designer
+2. Navigate to the `HTTP_sendMail` action inside `Apply_to_each` → the
+   `Condition_1` → `Condition - Should We Send` branch
+3. In the message JSON body, add a `ccRecipients` field alongside the
+   existing `toRecipients`, set to this expression (paste into the
+   expression editor, not as literal text):
+   ```
+   if(contains(createArray('Lamesa','Littlefield','Levelland','Morton','Tahoka','Lorenzo','Slaton','Lubbock','Crosbyton','Abernathy'), variables('RecipientBranchName')), createArray(createObject('emailAddress', createObject('address', 'bhill@spitractor.com')), createObject('emailAddress', createObject('address', 'bsheets@spitractor.com'))), if(contains(createArray('Seminole','Tornillo','Denver City','Mesquite','San Angelo','Ballinger','Big Spring','Brownfield','Snyder'), variables('RecipientBranchName')), createArray(createObject('emailAddress', createObject('address', 'bhill@spitractor.com')), createObject('emailAddress', createObject('address', 'csummers@spitractor.com'))), createArray(createObject('emailAddress', createObject('address', 'bhill@spitractor.com')))))
+   ```
+4. Save, then test via the "Parts Action Summary - Weekly Branch Email"
+   test flow before trusting the live Wednesday run
+5. Also apply the same field/expression to the safety-redirected Branch 12
+   section's sendMail calls only if Ben/Barry/Curt should see that mailing
+   too — not done by default, since that section already goes to
+   Ballinger/Abernathy staff specifically
+
+Shannon Brooks was not part of this ask — left out of the CC expression
+above. Add her the same way (a third branch check, or add her address
+alongside Ben's if she should see everything) if/when needed.
+
+The original two heavier-weight options are still documented below for
+reference, worth revisiting only if several more corp-level recipients are
+expected (the CC-expression approach gets unwieldy past 3-4 people):
 
 **Option A — Flag columns on PartsBranchMapping**
 Add CorpNorth (Yes/No) and CorpSouth (Yes/No) columns to the SharePoint list.
