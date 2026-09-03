@@ -538,6 +538,16 @@ table dim_CustomerList
 
 		annotation SummarizationSetBy = Automatic
 
+	column YTDDebits
+		dataType: double
+		lineageTag: 26223c77-7f01-43f2-9327-ed9682e9cdc8
+		summarizeBy: sum
+		sourceColumn: YTDDebits
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
 	partition dim_CustomerList = m
 		mode: import
 		source =
