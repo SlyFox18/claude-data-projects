@@ -163,6 +163,57 @@ rather than copying the old string-concat approach.
   the PartsBranchMapping recipient lookup, just not for a tracking list
   anymore.
 
+## Corp Manager CC (added 2026-08-18)
+
+Ben Hill asked to receive every branch's alert, and to add Barry Sheets
+(Corporate North) and Curt Summers (Corporate South) scoped to their own
+branch groups — see the identical "Corp Managers — Future Work" groundwork
+already laid out in
+`projects/parts action dashboard - report/documentation/power-automate-setup.md`.
+Rather than the heavier SharePoint-schema redesign sketched there (flag
+columns or a UserEmail-keyed lookup), this was implemented as a lightweight
+conditional CC directly on the existing `HTTP_sendMail` action — no new
+SharePoint columns, no change to the SKIP condition or `Get_items` lookup,
+no new loop. Corp managers are still skipped from the per-recipient loop
+(`officeLocation = "Support Center"`); they just get CC'd on the relevant
+branch manager's own email.
+
+`HTTP_sendMail`'s `message.ccRecipients` field is now a single expression
+(no new actions added):
+
+```
+@if(contains(createArray('Lamesa','Littlefield','Levelland','Morton','Tahoka','Lorenzo','Slaton','Lubbock','Crosbyton','Abernathy'), variables('RecipientBranchName')),
+    createArray(createObject('emailAddress', createObject('address', 'bhill@spitractor.com')), createObject('emailAddress', createObject('address', 'bsheets@spitractor.com'))),
+    if(contains(createArray('Seminole','Tornillo','Denver City','Mesquite','San Angelo','Ballinger','Big Spring','Brownfield','Snyder'), variables('RecipientBranchName')),
+        createArray(createObject('emailAddress', createObject('address', 'bhill@spitractor.com')), createObject('emailAddress', createObject('address', 'csummers@spitractor.com'))),
+        createArray(createObject('emailAddress', createObject('address', 'bhill@spitractor.com')))))
+```
+
+| Branch | CC |
+|---|---|
+| One of Barry's 10 (Corporate North: Lamesa, Littlefield, Levelland, Morton, Tahoka, Lorenzo, Slaton, Lubbock, Crosbyton, Abernathy) | `bhill@spitractor.com`, `bsheets@spitractor.com` |
+| One of Curt's 9 (Corporate South: Seminole, Tornillo, Denver City, Mesquite, San Angelo, Ballinger, Big Spring, Brownfield, Snyder) | `bhill@spitractor.com`, `csummers@spitractor.com` |
+| Any other branch (shouldn't occur — the 19 groups above cover all mapped branches) | `bhill@spitractor.com` only |
+
+Applied 2026-08-18 via `preview_update` → diff-verified (only the
+`Apply_to_each` loop's nested actions changed, all 6 other top-level
+actions byte-identical) → `update_flow` with the returned `previewToken`.
+Expression syntax confirmed via `validate_flow`. Not yet confirmed against
+a live weekday run — first real send since this change will be the
+confirmation. **Not yet applied to the Parts Action Summary Orchestrator**
+— its definition is too large to safely round-trip through the flowagent
+tools without truncation risk; that one needs the same CC expression added
+by hand in the Power Automate portal designer (`HTTP_sendMail`'s message
+body, same field/expression as above).
+
+To add a fourth corp-level recipient or change either group's branch list
+later: edit the two `createArray(...)` branch lists and the corresponding
+CC address in this expression (and the matching one in MD Freight's and
+Parts Action Summary's `HTTP_sendMail` actions — all three should stay in
+sync since they share the same distribution model).
+
+---
+
 ## Known Issues / Gotchas (discovered while building)
 
 1. **`copy_flow` and `edit_flow` are broken** in this flowagent MCP

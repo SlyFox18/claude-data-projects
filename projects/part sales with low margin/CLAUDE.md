@@ -153,10 +153,16 @@ dollar floor: every qualifying invoice line alerts.
 Reuses the Parts Action Summary distribution pipeline (SPI-PARTS group +
 PartsBranchMapping) with red styling copied from the MD Freight alert.
 Email includes an inline HTML table plus a full CSV attachment, and states
-the trigger criteria explicitly per Ben's request. The Orchestrator
-(`6427c9b7-b74c-455a-afbe-b0ce417a18b0`) is currently **Stopped** — built
-and tested; a test run was sent to Ben on 2026-07-28 for review, awaiting
-his decision on go-live timing / further changes.
+the trigger criteria explicitly per Ben's request. Turned live 2026-08-18
+after Ben's approval (Orchestrator `6427c9b7-b74c-455a-afbe-b0ce417a18b0`,
+weekdays 8:30 AM CST) — first live run pending confirmation.
+
+**2026-08-18 — Corp manager CC:** Ben Hill now CC'd on every branch's
+alert; Barry Sheets (Corporate North) and Curt Summers (Corporate South)
+CC'd only on their own 10/9 branches, via a conditional expression on the
+existing `HTTP_sendMail` action — no SharePoint/pipeline changes. See
+`docs/06-power-automate/POWER-AUTOMATE-SETUP.md`, "Corp Manager CC"
+section, for the branch lists and exact expression.
 
 **2026-07-28 update:** Ben's Seminole test run surfaced 3 low-margin parts
 all on the same invoice (an internal/employee-discount purchase, not a
