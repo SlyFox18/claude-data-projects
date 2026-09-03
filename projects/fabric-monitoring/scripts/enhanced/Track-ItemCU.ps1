@@ -57,6 +57,15 @@ param(
         "Bin Location Report",
         "Inspections",
         "parts-lookup-app",
+        # Parts Lookup incremental-refresh objects (added 2026-08-06, after the
+        # capacity incident + incremental refresh build). Explicitly tracked
+        # rather than left to TopN auto-discovery, since the whole point of the
+        # incremental design is for these to be modest/well-behaved consumers -
+        # we want the trend line even on days they don't make the top 20.
+        "Pipeline_PartsLookup_Incremental",
+        "df_InMaster_PartsLookup_Incremental",
+        "df_PartsLookup_Sync_Incremental",
+        "Update_Watermark_PartsLookup",
         # The 20 individual semantic models covered by the SM Refresh migration
         # (real current names, confirmed live against the Power BI API 2026-08-05 -
         # a few differ from the stale pipeline JSON's names, e.g. "Open Parts
