@@ -1,0 +1,1127 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
+  "name": "03dc303b2bf81fc5e96e",
+  "position": {
+    "x": 51.869017632241814,
+    "y": 190.97229219143577,
+    "z": 0,
+    "height": 717.91435768261965,
+    "width": 1600.8664987405541,
+    "tabOrder": 3000
+  },
+  "visual": {
+    "visualType": "tableEx",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "After_Market_Parts_Orders"
+                    }
+                  },
+                  "Property": "Branch"
+                }
+              },
+              "queryRef": "Query.Branch",
+              "nativeQueryRef": "Loc",
+              "displayName": "Loc"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "After_Market_Parts_Orders"
+                    }
+                  },
+                  "Property": "Franchise"
+                }
+              },
+              "queryRef": "Query.Franchise",
+              "nativeQueryRef": "WH",
+              "displayName": "WH"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "After_Market_Parts_Orders"
+                    }
+                  },
+                  "Property": "Part_No"
+                }
+              },
+              "queryRef": "Query.Part_No",
+              "nativeQueryRef": "Part #",
+              "displayName": "Part #"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "After_Market_Parts_Orders"
+                    }
+                  },
+                  "Property": "Description"
+                }
+              },
+              "queryRef": "Query.Description",
+              "nativeQueryRef": "Description"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "After_Market_Parts_Orders"
+                    }
+                  },
+                  "Property": "Vendor_Code"
+                }
+              },
+              "queryRef": "CountNonNull(After_Market_Parts_Orders.Vendor_Code)",
+              "nativeQueryRef": "Vendor Code",
+              "displayName": "Vendor Code"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "After_Market_Parts_Orders"
+                    }
+                  },
+                  "Property": "Dealer_Group_Code"
+                }
+              },
+              "queryRef": "After_Market_Parts_Orders.Dealer_Group_Code",
+              "nativeQueryRef": "DGC",
+              "displayName": "DGC"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "After_Market_Parts_Orders"
+                    }
+                  },
+                  "Property": "UserField2"
+                }
+              },
+              "queryRef": "After_Market_Parts_Orders.UserField2",
+              "nativeQueryRef": "UF2",
+              "displayName": "UF2"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "After_Market_Parts_Orders"
+                    }
+                  },
+                  "Property": "Bin"
+                }
+              },
+              "queryRef": "After_Market_Parts_Orders.Bin",
+              "nativeQueryRef": "Bin"
+            },
+            {
+              "field": {
+                "Aggregation": {
+                  "Expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "After_Market_Parts_Orders"
+                        }
+                      },
+                      "Property": "Bin_Qty"
+                    }
+                  },
+                  "Function": 0
+                }
+              },
+              "queryRef": "Sum(After_Market_Parts_Orders.Bin_Qty)",
+              "nativeQueryRef": "Sum of Bin_Qty",
+              "displayName": "O/H"
+            },
+            {
+              "field": {
+                "Aggregation": {
+                  "Expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "After_Market_Parts_Orders"
+                        }
+                      },
+                      "Property": "To Order"
+                    }
+                  },
+                  "Function": 0
+                }
+              },
+              "queryRef": "Sum(After_Market_Parts_Orders.To Order)",
+              "nativeQueryRef": "To Order:",
+              "displayName": "To Order:"
+            },
+            {
+              "field": {
+                "Aggregation": {
+                  "Expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "After_Market_Parts_Orders"
+                        }
+                      },
+                      "Property": "To Do"
+                    }
+                  },
+                  "Function": 0
+                }
+              },
+              "queryRef": "Sum(After_Market_Parts_Orders.To Do)",
+              "nativeQueryRef": "To Do:",
+              "displayName": "To Do:"
+            },
+            {
+              "field": {
+                "Aggregation": {
+                  "Expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "After_Market_Parts_Orders"
+                        }
+                      },
+                      "Property": "On_Order"
+                    }
+                  },
+                  "Function": 0
+                }
+              },
+              "queryRef": "Sum(Query.On_Order)",
+              "nativeQueryRef": "Sum of On_Order",
+              "displayName": "O/O"
+            },
+            {
+              "field": {
+                "Aggregation": {
+                  "Expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "After_Market_Parts_Orders"
+                        }
+                      },
+                      "Property": "In_Transit_Qty"
+                    }
+                  },
+                  "Function": 0
+                }
+              },
+              "queryRef": "Sum(After_Market_Parts_Orders.In_Transit_Qty)",
+              "nativeQueryRef": "Sum of In_Transit_Qty",
+              "displayName": "In Tran"
+            },
+            {
+              "field": {
+                "Aggregation": {
+                  "Expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "After_Market_Parts_Orders"
+                        }
+                      },
+                      "Property": "Pending_Qty"
+                    }
+                  },
+                  "Function": 0
+                }
+              },
+              "queryRef": "Sum(After_Market_Parts_Orders.Pending_Qty)",
+              "nativeQueryRef": "Sum of Pending_Qty",
+              "displayName": "Pend"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "After_Market_Parts_Orders"
+                    }
+                  },
+                  "Property": "Cost"
+                }
+              },
+              "queryRef": "Sum(Query.Cost)",
+              "nativeQueryRef": "Cost1",
+              "displayName": "Cost"
+            },
+            {
+              "field": {
+                "Aggregation": {
+                  "Expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "After_Market_Parts_Orders"
+                        }
+                      },
+                      "Property": "Inventory_Cost"
+                    }
+                  },
+                  "Function": 0
+                }
+              },
+              "queryRef": "Sum(After_Market_Parts_Orders.Inventory_Cost)",
+              "nativeQueryRef": "Sum of Inventory_Cost",
+              "displayName": "Inv Total"
+            },
+            {
+              "field": {
+                "Aggregation": {
+                  "Expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "After_Market_Parts_Orders"
+                        }
+                      },
+                      "Property": "R6mS"
+                    }
+                  },
+                  "Function": 0
+                }
+              },
+              "queryRef": "Sum(After_Market_Parts_Orders.R6mS)",
+              "nativeQueryRef": "R6mS",
+              "displayName": "R6mS"
+            },
+            {
+              "field": {
+                "Aggregation": {
+                  "Expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "After_Market_Parts_Orders"
+                        }
+                      },
+                      "Property": "R12S"
+                    }
+                  },
+                  "Function": 0
+                }
+              },
+              "queryRef": "Sum(After_Market_Parts_Orders.R12S)",
+              "nativeQueryRef": "R12S",
+              "displayName": "R12S"
+            },
+            {
+              "field": {
+                "Aggregation": {
+                  "Expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "After_Market_Parts_Orders"
+                        }
+                      },
+                      "Property": "R24S"
+                    }
+                  },
+                  "Function": 0
+                }
+              },
+              "queryRef": "Sum(After_Market_Parts_Orders.R24S)",
+              "nativeQueryRef": "R24S",
+              "displayName": "R24S"
+            },
+            {
+              "field": {
+                "Aggregation": {
+                  "Expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "After_Market_Parts_Orders"
+                        }
+                      },
+                      "Property": "R36S"
+                    }
+                  },
+                  "Function": 0
+                }
+              },
+              "queryRef": "Sum(After_Market_Parts_Orders.R36S)",
+              "nativeQueryRef": "R36S",
+              "displayName": "R36S"
+            },
+            {
+              "field": {
+                "Aggregation": {
+                  "Expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "After_Market_Parts_Orders"
+                        }
+                      },
+                      "Property": "R6m $"
+                    }
+                  },
+                  "Function": 0
+                }
+              },
+              "queryRef": "Sum(After_Market_Parts_Orders.R6m $)",
+              "nativeQueryRef": "R6m $",
+              "displayName": "R6m $"
+            },
+            {
+              "field": {
+                "Aggregation": {
+                  "Expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "After_Market_Parts_Orders"
+                        }
+                      },
+                      "Property": "R12 $"
+                    }
+                  },
+                  "Function": 0
+                }
+              },
+              "queryRef": "Sum(After_Market_Parts_Orders.R12 $)",
+              "nativeQueryRef": "R12 $",
+              "displayName": "R12 $"
+            },
+            {
+              "field": {
+                "Aggregation": {
+                  "Expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "After_Market_Parts_Orders"
+                        }
+                      },
+                      "Property": "R24 $"
+                    }
+                  },
+                  "Function": 0
+                }
+              },
+              "queryRef": "Sum(After_Market_Parts_Orders.R24 $)",
+              "nativeQueryRef": "R24 $",
+              "displayName": "R24 $"
+            },
+            {
+              "field": {
+                "Aggregation": {
+                  "Expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "After_Market_Parts_Orders"
+                        }
+                      },
+                      "Property": "R36 $"
+                    }
+                  },
+                  "Function": 0
+                }
+              },
+              "queryRef": "Sum(After_Market_Parts_Orders.R36 $)",
+              "nativeQueryRef": "R36 $",
+              "displayName": "R36 $"
+            },
+            {
+              "field": {
+                "Aggregation": {
+                  "Expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "After_Market_Parts_Orders"
+                        }
+                      },
+                      "Property": "Order $"
+                    }
+                  },
+                  "Function": 0
+                }
+              },
+              "queryRef": "Sum(After_Market_Parts_Orders.Order $)",
+              "nativeQueryRef": "Order $",
+              "displayName": "Order $"
+            }
+          ]
+        }
+      },
+      "sortDefinition": {
+        "sort": [
+          {
+            "field": {
+              "Aggregation": {
+                "Expression": {
+                  "Column": {
+                    "Expression": {
+                      "SourceRef": {
+                        "Entity": "After_Market_Parts_Orders"
+                      }
+                    },
+                    "Property": "R12S"
+                  }
+                },
+                "Function": 0
+              }
+            },
+            "direction": "Descending"
+          }
+        ]
+      }
+    },
+    "objects": {
+      "grid": [
+        {
+          "properties": {
+            "gridVertical": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "gridVerticalColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "ThemeDataColor": {
+                      "ColorId": 1,
+                      "Percent": 0.6
+                    }
+                  }
+                }
+              }
+            },
+            "outlineStyle": {
+              "expr": {
+                "Literal": {
+                  "Value": "15D"
+                }
+              }
+            },
+            "outlineColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "ThemeDataColor": {
+                      "ColorId": 1,
+                      "Percent": 0.6
+                    }
+                  }
+                }
+              }
+            },
+            "gridHorizontalColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "ThemeDataColor": {
+                      "ColorId": 1,
+                      "Percent": 0.6
+                    }
+                  }
+                }
+              }
+            },
+            "rowPadding": {
+              "expr": {
+                "Literal": {
+                  "Value": "4D"
+                }
+              }
+            },
+            "textSize": {
+              "expr": {
+                "Literal": {
+                  "Value": "13D"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "columnHeaders": [
+        {
+          "properties": {
+            "bold": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "backColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#1D3C4E'"
+                    }
+                  }
+                }
+              }
+            },
+            "fontColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "ThemeDataColor": {
+                      "ColorId": 0,
+                      "Percent": 0
+                    }
+                  }
+                }
+              }
+            },
+            "fontSize": {
+              "expr": {
+                "Literal": {
+                  "Value": "11D"
+                }
+              }
+            },
+            "alignment": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Center'"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "values": [
+        {
+          "properties": {
+            "fontSize": {
+              "expr": {
+                "Literal": {
+                  "Value": "11D"
+                }
+              }
+            },
+            "urlIcon": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            },
+            "wordWrap": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "total": [
+        {
+          "properties": {
+            "fontSize": {
+              "expr": {
+                "Literal": {
+                  "Value": "10D"
+                }
+              }
+            },
+            "totals": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "general": [
+        {
+          "properties": {}
+        }
+      ],
+      "columnWidth": [
+        {
+          "properties": {
+            "value": {
+              "expr": {
+                "Literal": {
+                  "Value": "147.88680119585297D"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "Query.Description"
+          }
+        },
+        {
+          "properties": {
+            "value": {
+              "expr": {
+                "Literal": {
+                  "Value": "99.23678305885113D"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "Query.Part_No"
+          }
+        },
+        {
+          "properties": {
+            "value": {
+              "expr": {
+                "Literal": {
+                  "Value": "78.24432392105253D"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "After_Market_Parts_Orders.Dealer_Group_Code"
+          }
+        },
+        {
+          "properties": {
+            "value": {
+              "expr": {
+                "Literal": {
+                  "Value": "109.3576827280503D"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "Sum(Query.Cost)"
+          }
+        }
+      ],
+      "columnFormatting": [
+        {
+          "properties": {
+            "backColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#F3EA81'"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "Sum(After_Market_Parts_Orders.Bin_Qty)"
+          }
+        },
+        {
+          "properties": {
+            "backColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#F1A03E'"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "Sum(After_Market_Parts_Orders.To Order)"
+          }
+        },
+        {
+          "properties": {
+            "backColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#FFC7CE'"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "Sum(After_Market_Parts_Orders.R36 $)"
+          }
+        },
+        {
+          "properties": {
+            "backColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#FFC7CE'"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "Sum(After_Market_Parts_Orders.R24 $)"
+          }
+        },
+        {
+          "properties": {
+            "backColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#FFC7CE'"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "Sum(After_Market_Parts_Orders.R12 $)"
+          }
+        },
+        {
+          "properties": {
+            "backColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#F3EA81'"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "Sum(After_Market_Parts_Orders.R6m $)"
+          }
+        },
+        {
+          "properties": {
+            "backColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#F3EA81'"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "Sum(After_Market_Parts_Orders.R6mS)"
+          }
+        },
+        {
+          "properties": {
+            "backColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#C6EFCE'"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "Sum(After_Market_Parts_Orders.R12S)"
+          }
+        },
+        {
+          "properties": {
+            "backColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#C6EFCE'"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "Sum(After_Market_Parts_Orders.R24S)"
+          }
+        },
+        {
+          "properties": {
+            "backColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#C6EFCE'"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "Sum(After_Market_Parts_Orders.R36S)"
+          }
+        },
+        {
+          "properties": {
+            "backColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#E7B87E'"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "Sum(After_Market_Parts_Orders.To Do)"
+          }
+        },
+        {
+          "properties": {
+            "backColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#F1A03E'"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "Sum(After_Market_Parts_Orders.Order $)"
+          }
+        }
+      ]
+    },
+    "visualContainerObjects": {
+      "visualTooltip": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            },
+            "section": {
+              "expr": {
+                "Literal": {
+                  "Value": "'2bda6878df01539521d0'"
+                }
+              }
+            },
+            "type": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Canvas'"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "dropShadow": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            },
+            "color": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "ThemeDataColor": {
+                      "ColorId": 0,
+                      "Percent": -0.3
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ],
+      "title": [
+        {
+          "properties": {
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "''"
+                }
+              }
+            },
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            },
+            "titleWrap": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "fontFamily": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Verdana'"
+                }
+              }
+            },
+            "fontColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "ThemeDataColor": {
+                      "ColorId": 1,
+                      "Percent": 0.4
+                    }
+                  }
+                }
+              }
+            },
+            "alignment": {
+              "expr": {
+                "Literal": {
+                  "Value": "'center'"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "background": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "transparency": {
+              "expr": {
+                "Literal": {
+                  "Value": "0D"
+                }
+              }
+            },
+            "color": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "ThemeDataColor": {
+                      "ColorId": 0,
+                      "Percent": 0
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ],
+      "border": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "radius": {
+              "expr": {
+                "Literal": {
+                  "Value": "10D"
+                }
+              }
+            },
+            "width": {
+              "expr": {
+                "Literal": {
+                  "Value": "1D"
+                }
+              }
+            },
+            "color": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "ThemeDataColor": {
+                      "ColorId": 0,
+                      "Percent": -0.2
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "drillFilterOtherVisuals": true
+  }
+}
