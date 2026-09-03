@@ -178,41 +178,11 @@ For minor changes (label fixes, formatting, job code updates):
 Located at `.github/PULL_REQUEST_TEMPLATE/dev_to_main.md` in both repos.
 Covers: reports changed, data model changes, refresh pipeline impact, sandbox testing checklist, query library updates, deployment notes.
 
-### Session Start Protocol (Claude must do this automatically)
+### Session Start Orientation (automated)
 
-At the start of every session, before doing any work, run this orientation check and report findings:
+A `SessionStart` hook (`~/.claude/scripts/git-status-check.sh`, registered in `~/.claude/settings.json`) runs automatically at the start of every session and prints: `data-projects` git status, `fabric-workspace-docs` git status + dev/main divergence, and open High/Medium items from `C:/Users/bfox/todo.md`. This is hook-guaranteed, not a prompt instruction — if its output is missing from context at session start, the hook itself is broken (check for a stray `"async": true` on that SessionStart entry; SessionStart hooks must run synchronously to inject context).
 
-```bash
-# 1. Check data-projects status
-cd "C:/Users/bfox/Documents/Git-Projects/data-projects"
-git status
-git log --oneline -3
-
-# 2. Check fabric-workspace-docs status
-cd "C:/Users/bfox/Documents/Git-Projects/fabric-workspace-docs"
-git status
-git log --oneline origin/dev -3
-git log --oneline origin/main -1
-```
-
-Flag any of these conditions and tell the user before starting work:
-- `data-projects` has uncommitted changes
-- `fabric-workspace-docs` local is behind origin/dev (needs `git pull`)
-- `fabric-workspace-docs` dev is ahead of main (open PR may be waiting)
-- Either repo is on the wrong branch (should be `dev`)
-
-### Daily To-Do Check (run at every session start)
-
-After the git orientation check, read `C:/Users/bfox/todo.md` and print open High and Medium items in this format:
-
-```
-📋 Your open tasks:
-  HIGH   Meet with HR re: Technician Pay data access
-  HIGH   Review pipeline run — Friday data looked stale
-  MEDIUM Minor adjustment to Customer Anatomy — slicer width
-```
-
-Only show High and Medium. Skip Low and Completed. If the file doesn't exist yet, skip silently.
+`C:/Users/bfox/todo.html` (the browser-viewable dashboard rendering of `todo.md`) is regenerated automatically by `~/.claude/scripts/render_todo_html.py` — on every SessionStart, and via a PostToolUse hook (`~/.claude/scripts/todo-html-sync.sh`) whenever `todo.md` is edited. Never hand-edit `todo.html` directly or manually "re-render" it — edit `todo.md` only, the hook keeps the HTML in sync deterministically.
 
 ### When Claude Is Helping With Development
 
