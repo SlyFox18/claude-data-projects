@@ -4,7 +4,7 @@
 
 **Goal:** Build the silver-layer `Silver_InTrans` Delta table in `DP_Staging` (the `DP - Staging - Dev` lakehouse from Plan 2), sourced from the `InTrans` bronze shortcut, using a PK-based merge/upsert instead of an append-plus-watermark — the specific design change that makes the original Parts Promo bug structurally impossible to repeat.
 
-**Architecture:** One Fabric Notebook (`Build_Silver_InTrans`, PySpark), reading `InTrans` (the shortcut), selecting and renaming just the columns Parts Promo's rebuild actually needs (Plan 4), deduplicating by `trans_id` (the confirmed true primary key), and writing to `Silver_InTrans` via `MERGE ... ON TransId` (create-with-full-load on first run, since the target doesn't exist yet; upsert on every subsequent run). Scoped to the same 11 columns `dim_RepairOrder`/`Fact_PartsPromo` actually use, not all 66 raw `InTrans` columns — same YAGNI reasoning as Plan 2's shortcut being `InTrans`-only.
+**Architecture:** One Fabric Notebook (`Build_Silver_InTrans`, PySpark), reading `InTrans` (the shortcut), selecting and renaming just the columns Parts Promo's rebuild actually needs (Plan 4), deduplicating by `(TransId, TransDatetime)` — **not** `TransId` alone, which the source system reuses for unrelated transactions (see the Task 1 correction note below) — with `ModifiedDate DESC NULLS LAST` breaking rare genuine same-key ties, and writing to `Silver_InTrans` via `MERGE` on that same compound key (create-with-full-load on first run, upsert on every subsequent run). Scoped to the same 11 columns `dim_RepairOrder`/`Fact_PartsPromo` actually use, not all 66 raw `InTrans` columns — same YAGNI reasoning as Plan 2's shortcut being `InTrans`-only.
 
 **Tech Stack:** PySpark (Fabric notebook, `synapse_pyspark` kernel), authored directly as git-tracked files (this is how every other notebook in this tenant is already managed — see `workspaces/LH_Master_Data/Notebooks/*.Notebook/notebook-content.py` in `fabric-workspace-docs` for the established format this plan follows exactly).
 
@@ -208,6 +208,10 @@ git push origin dev
 
 If the push is blocked by the sandbox classifier (same pattern as before), hand it to Brian to run directly.
 
+**⚠️ CORRECTED 2026-09-08, after the first real run:** the original notebook keyed the dedupe/merge on `TransId` alone. That's wrong — a prior, unrelated investigation (project memory `project_intrans_incremental_dedup_2026-08-11`, and `InTrans_Incremental.pq`'s own header comment) already found and documented that the source system **reuses `TransId`** for genuinely different transactions, sometimes years apart. Confirmed again directly against JD's Bronze mirror: 3,691,552 `TransId` values are each shared by 2+ completely unrelated real transactions (10,450,804 rows total) — e.g. `trans_id 92717` covers three distinct transactions dated 2011, 2012, and 2014 with different order numbers, parts, and dollar values. The first run's `dropDuplicates(["TransId"])` silently collapsed these down to one row each: 20,612,638 bronze rows → 13,853,386 silver rows, a real ~6.75M row loss. RO 1985073 still passed because none of its TransIds happen to collide — a reminder that a single spot check only proves what it specifically tests.
+
+**Fix, already applied to the notebook file:** the true key is `(TransId, TransDatetime)`, with `ModifiedDate DESC NULLS LAST` breaking the rarer genuine same-key ties (real corrections applied later). The code below reflects the corrected version — if you're re-reading this plan after the fact, this is what actually shipped, not the original flawed draft.
+
 ---
 
 ### Task 2: Sync and run the notebook
@@ -216,15 +220,22 @@ If the push is blocked by the sandbox classifier (same pattern as before), hand 
 
 - [ ] **Step 1: Pull the notebook into the workspace**
 
-In the Fabric portal: open `DP - Staging - Dev` → **Source control** → there should be 1 pending update (`Build_Silver_InTrans`). Click **Update all** (safe this time — we know exactly what's incoming, unlike the Plan 1 git-folder incident, because this workspace's git folder is correctly scoped and this is the only pending item).
+In the Fabric portal: open `DP - Staging - Dev` → **Source control** → there should be 1 pending update (`Build_Silver_InTrans`, the corrected version). Click **Update all**.
 
-- [ ] **Step 2: Open and run the notebook**
+- [ ] **Step 2: Drop the existing (bad) table before re-running**
 
-Open `Build_Silver_InTrans` in the workspace. Run all cells in order (Run All, or cell-by-cell — either is fine). This is a first-time full build of ~20.6M rows through Spark, so expect it to take a few minutes, not seconds.
+The first run already created `Silver_InTrans` with the flawed `TransId`-only dedupe — re-running the corrected notebook's MERGE logic against that existing bad data won't retroactively fix the rows it already lost, since MERGE only reconciles what it's told to match on. Cleanest fix at this stage (nothing downstream depends on this table yet): drop and rebuild clean. In the notebook, run this once in a scratch cell (or the notebook's SQL context) before re-running the main cells:
+```sql
+DROP TABLE IF EXISTS Silver_InTrans
+```
 
-- [ ] **Step 3: Read the output of the last cell**
+- [ ] **Step 3: Open and run the notebook**
 
-Report back what it printed — specifically the three verification lines (total row count, duplicate TransId groups, RO 1985073 row count). Expect roughly 20.6M total rows, 0 duplicate groups, and 9 rows for RO 1985073.
+Run all cells in order (Run All, or cell-by-cell — either is fine). This is a full build of ~20.6M rows through Spark, so expect it to take a few minutes, not seconds.
+
+- [ ] **Step 4: Read the output of the last cell**
+
+Report back what it printed — specifically the three verification lines (total row count, duplicate `(TransId, TransDatetime)` groups, RO 1985073 row count). Expect somewhat fewer than 20.6M total rows (some rows are true exact duplicates or genuine same-key corrections that legitimately collapse), 0 duplicate groups, and 9 rows for RO 1985073.
 
 ---
 
@@ -263,16 +274,25 @@ bronze_count = con.execute(f"SELECT COUNT(*) AS cnt FROM delta_scan('{dp_base}/I
 silver_count = con.execute(f"SELECT COUNT(*) AS cnt FROM delta_scan('{dp_base}/Silver_InTrans')").df()
 print(f"Bronze (InTrans) row count: {bronze_count['cnt'][0]:,}")
 print(f"Silver (Silver_InTrans) row count: {silver_count['cnt'][0]:,}")
-print("(Silver may be slightly lower if bronze has any exact-duplicate TransId rows — that's expected and correct, not a bug)")
+print("Silver should be CLOSE to bronze (within maybe 1-2%, not a third lower like the flawed first run) —")
+print("some drop is expected and correct: true exact duplicates, and rare genuine same-(TransId,TransDatetime)")
+print("corrections collapsed by the ModifiedDate tiebreak. A large drop (order of 10%+) means the key is still wrong.")
 
-print("\n=== Check 2: no duplicate TransId in silver ===")
+# NOTE: this table's provenance is a single fresh Spark write (not the years of
+# multi-engine rewrites that caused the DuckDB TransDatetime read artifact
+# documented in project memory project_intrans_incremental_dedup_2026-08-11 on
+# InTrans_Incremental), so grouping by TransDatetime here should be reliable —
+# but if this check's duplicate count disagrees with the notebook's own
+# Spark-based verification cell, trust Spark and investigate rather than
+# assuming DuckDB's read is correct, per that same lesson.
+print("\n=== Check 2: no duplicate (TransId, TransDatetime) in silver ===")
 dupes = con.execute(f"""
-    SELECT TransId, COUNT(*) AS cnt
+    SELECT TransId, TransDatetime, COUNT(*) AS cnt
     FROM delta_scan('{dp_base}/Silver_InTrans')
-    GROUP BY TransId
+    GROUP BY TransId, TransDatetime
     HAVING COUNT(*) > 1
 """).df()
-print(f"Duplicate TransId groups: {len(dupes)} (expect 0)")
+print(f"Duplicate (TransId, TransDatetime) groups: {len(dupes)} (expect 0)")
 
 print("\n=== Check 3: RO 1985073 through silver ===")
 ro_check = con.execute(f"""
@@ -293,9 +313,9 @@ cd "C:\Users\bfox\Documents\Git-Projects\data-projects"
 python ".claude/queries/adhoc/dp-bronze-verify/verify_silver_intrans.py"
 ```
 
-Expected: Check 1 shows silver's count equal to (or very marginally below, if any true duplicates existed) bronze's count; Check 2 shows 0 duplicate groups; Check 3 shows exactly 9 rows for RO 1985073.
+Expected: Check 1 shows silver's count close to bronze's (not a third lower — see the flawed-first-run note above for what a real key bug looks like); Check 2 shows 0 duplicate groups; Check 3 shows exactly 9 rows for RO 1985073.
 
-**If Check 2 finds duplicate groups, or Check 3 doesn't show 9 rows:** stop, do not proceed to Task 4 — the merge logic or the dedupe step has a real bug that needs fixing before anything gets built on top of this table.
+**If Check 1 shows a large drop, Check 2 finds duplicate groups, or Check 3 doesn't show 9 rows:** stop, do not proceed to Task 4 — something is still wrong with the key or the merge logic and needs fixing before anything gets built on top of this table. Don't just spot-check RO 1985073 and call it done — that check alone already missed the TransId-reuse bug once.
 
 - [ ] **Step 3: Commit the verification script**
 
