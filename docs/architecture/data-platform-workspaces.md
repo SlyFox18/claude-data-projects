@@ -79,11 +79,60 @@ Variables defined so far:
 
 | Variable | Type | Default | Dev | Prod |
 |---|---|---|---|---|
-| `staging_lakehouse_id` | String | `876255e0-d462-4697-adc1-4a655f5bb101` | `876255e0-d462-4697-adc1-4a655f5bb101` | `not-yet-created` (Prod staging lakehouse doesn't exist yet) |
-| `presentation_lakehouse_id` | String | `966efc8a-16f9-423b-aa43-e368fcd8fb91` | `966efc8a-16f9-423b-aa43-e368fcd8fb91` | `not-yet-created` (Prod presentation lakehouse doesn't exist yet) |
+| `staging_lakehouse_id` | String | `876255e0-d462-4697-adc1-4a655f5bb101` | `876255e0-d462-4697-adc1-4a655f5bb101` | `6713bd45-a4ad-47e6-8bff-1bb0415e9784` |
+| `presentation_lakehouse_id` | String | `966efc8a-16f9-423b-aa43-e368fcd8fb91` | `966efc8a-16f9-423b-aa43-e368fcd8fb91` | `29d9df80-a383-4d40-9807-1e2e6cbff88f` |
 
 **Gotcha (confirmed 2026-09-04):** Variable Library value sets require non-blank values to save —
 leaving a value empty blocks both saving and adding further value sets. Also, the Git integration
 connect dialog's "Git folder" field defaults to the repo **root** if left blank, which pulls in
 every other workspace's items as pending updates — always fill it in explicitly (no leading slash),
 and check the Updates count immediately after connecting before touching anything else.
+
+## Prod tier
+
+Stood up 2026-09-08 (`docs/superpowers/plans/2026-09-08-dp-prod-tier.md`). Same content as the Dev
+tier above, built and verified **independently** — not copied or assumed identical.
+
+| Lakehouse | Workspace | Lakehouse ID | Contents |
+|---|---|---|---|
+| DP_Staging | DP - Staging - Prod | `6713bd45-a4ad-47e6-8bff-1bb0415e9784` | `Tables/InTrans` — OneLake shortcut into `JD_EquipRDB_Production_Bronze.InTrans`, same source as Dev. `Tables/Silver_InTrans` — built by the Prod-tier `Build_Silver_InTrans.Notebook` (`workspaces/DP - Staging - Prod/Build_Silver_InTrans.Notebook`), cell code byte-identical to Dev's — only the notebook's own `default_lakehouse` METADATA binding differs. |
+| DP_Presentation | DP - Presentation - Prod | `29d9df80-a383-4d40-9807-1e2e6cbff88f` | `Tables/Silver_InTrans` — OneLake shortcut into `DP_Staging (Prod).Silver_InTrans`. `Tables/dim_RepairOrder`, `Tables/Fact_PartsPromo`, `Tables/Fact_InTrans_AllPromo` — built by the Prod-tier `Build_Gold_PartsPromo.Notebook` (`workspaces/DP - Presentation - Prod/Build_Gold_PartsPromo.Notebook`). |
+
+**First-run output (2026-09-08):** `Silver_InTrans` 20,462,845 rows (0.73% below bronze's
+20,612,638 — expected, same as Dev); `Silver_InTrans` filtered ≥2022-01-01: 6,352,677 rows;
+`dim_RepairOrder` 16,251 rows; `Fact_PartsPromo` 16,918 rows; `Fact_InTrans_AllPromo` (≥2023-01-01)
+5,008,913 rows — all match Dev's counts exactly, as expected since both tiers read the same JD
+Bronze source.
+
+Verified independently via `verify_shortcut_prod.py`, `verify_silver_intrans_prod.py`,
+`verify_gold_parts_promo_prod.py` (`.claude/queries/adhoc/dp-bronze-verify/`) — not cross-checked
+against Dev's own result. Bronze shortcut matches JD source exactly (20,612,638 rows, same max
+timestamp, RO 1985073's 9 rows match). Silver has 0 duplicate `(TransId, TransDatetime)` groups and
+0 orphaned rows. **Gold matches `EquipRDB` (the real source system) exactly for all 11 known-bad
+repair orders** — differences shown are floating-point noise (1e-12 to 1e-14), not real
+discrepancies. RO 1985073: $627.64 sales / $414.73 cost / 8 lines, matching the live-fixed figure
+already confirmed in the Dev tier and in the actual report UI.
+
+**Variable Library `Prod` value set populated 2026-09-08** with the real GUIDs above, replacing the
+`not-yet-created` placeholders (see table above).
+
+**Corrected during planning, not left as a later fix:** notebooks do NOT call
+`notebookutils.variableLibrary` at runtime — confirmed via current Fabric docs that this API only
+supports access to variable libraries within the same workspace, which every consumer here
+(`Build_Gold_PartsPromo` living in a different workspace than the Variable Library) would have
+needed to violate. Both notebooks resolve their own lakehouse via `default_lakehouse` METADATA
+binding (an environment-specific difference in the same category as a `.tmdl` connection string
+differing per report tier) and reach the one genuinely cross-workspace dependency (Gold's need for
+Silver_InTrans) via a OneLake shortcut instead — the same "shortcuts, not copies" principle already
+used for bronze. Zero hardcoded GUIDs in either notebook's actual code; cell code is byte-identical
+between the Dev and Prod tiers. The Variable Library remains the authoritative record of the 4
+lakehouse GUIDs for humans and any future consumer that *does* support cross-workspace resolution
+(a Fabric pipeline, or an item-reference shortcut variable — both Fabric-documented, neither used by
+this build).
+
+**Gotcha (confirmed 2026-09-08):** `fabric-workspace-docs` has a local git hook enforcing the
+repo's own stated convention (root `CLAUDE.md`: "Direct pushes to `main` should be avoided even on
+`fabric-workspace-docs`") — a direct `git push origin main` is rejected outright, even though GitHub
+itself can't technically enforce branch protection on this repo (Free plan limitation). New
+Prod-tier files with no `dev` counterpart to promote via merge (different git folder paths per
+workspace) still need a real branch + PR + `gh pr merge` into `main`, not a direct push.
