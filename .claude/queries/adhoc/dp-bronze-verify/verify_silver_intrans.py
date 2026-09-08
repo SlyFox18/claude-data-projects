@@ -27,17 +27,13 @@ DP_STAGING_WS_ID = "ab15d64d-c7ba-415d-9bcf-7feb1ef9b201"   # DP - Staging - Dev
 DP_STAGING_LH_ID = "876255e0-d462-4697-adc1-4a655f5bb101"   # DP_Staging lakehouse
 dp_base = f"abfss://{DP_STAGING_WS_ID}@onelake.dfs.fabric.microsoft.com/{DP_STAGING_LH_ID}/Tables"
 
-# NOTE: the physical table is "silver_intrans" (lowercase) on disk, not
-# "Silver_InTrans" as named in the notebook's spark.sql/saveAsTable calls.
-# Fabric's saveAsTable() lowercases the physical OneLake folder name
-# regardless of the case passed in code (confirmed previously in
-# feedback_fabric_saveastable_casing.md — FreightCalculator, MD Invoices
-# snapshot). Spark's own catalog resolves the name case-insensitively so
-# the notebook runs fine, but anything reading the direct OneLake path
-# (like this script, or a future TMDL semantic model partition) must use
-# the lowercase physical name or it fails with a delta-kernel "No files
-# in log segment" error that looks like a missing/broken table but isn't.
-SILVER_INTRANS_TABLE = "silver_intrans"
+# Fixed 2026-09-08: notebook switched from saveAsTable() (which lowercases
+# the physical OneLake folder name regardless of code casing — confirmed
+# a third time in this environment, see feedback_fabric_saveastable_casing.md)
+# to a path-based .save("Tables/Silver_InTrans") write, which preserves
+# exact case. Confirmed via `fab ls` the physical table is now correctly
+# "Silver_InTrans".
+SILVER_INTRANS_TABLE = "Silver_InTrans"
 
 con = duckdb.connect()
 con.execute("INSTALL delta; LOAD delta; INSTALL azure; LOAD azure;")
