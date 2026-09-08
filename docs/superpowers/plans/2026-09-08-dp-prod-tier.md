@@ -26,7 +26,7 @@ Because `DP - Staging - Prod` and `DP - Presentation - Prod` are different git f
 
 **Files:** none (Fabric tenant infrastructure)
 
-- [ ] **Step 1: Brian creates both lakehouses**
+- [x] **Step 1: Brian creates both lakehouses**
 
 Run in your own terminal (not this session — every mutating `fab` command in this series gets auto-blocked by the sandbox classifier but runs fine directly):
 ```
@@ -35,7 +35,9 @@ fab mkdir "DP - Presentation - Prod.Workspace/DP_Presentation.Lakehouse"
 ```
 Expected: both commands complete with no error.
 
-- [ ] **Step 2: Verify and record the IDs (agent-executed)**
+**Done 2026-09-08:** `DP_Staging` already existed in `DP - Staging - Prod` from earlier work; `DP_Presentation` was newly created in `DP - Presentation - Prod`.
+
+- [x] **Step 2: Verify and record the IDs (agent-executed)**
 
 Once Brian confirms Step 1 is done, run:
 ```
@@ -44,14 +46,21 @@ fab get "DP - Presentation - Prod.Workspace/DP_Presentation.Lakehouse" -q "id"
 ```
 Expected: two GUIDs. Record both — needed for every later task in this plan.
 
+**Recorded 2026-09-08:**
+- `DP_Staging` (Prod) lakehouse ID: `6713bd45-a4ad-47e6-8bff-1bb0415e9784`
+- `DP_Presentation` (Prod) lakehouse ID: `29d9df80-a383-4d40-9807-1e2e6cbff88f`
+- (Workspace IDs, already on record in `docs/architecture/data-platform-workspaces.md`: `DP - Staging - Prod` = `189e5c0a-548a-4feb-93d6-dda9ebbe96c1`, `DP - Presentation - Prod` = `7836042d-adb1-4846-b70d-bd42980054c5`)
+
 ---
 
-### Task 2: Create the Prod bronze shortcut and verify it independently
+### Task 2: Create the Prod bronze shortcut and verify it independently ✅ DONE 2026-09-08
 
 **Files:**
 - Create: `.claude/queries/adhoc/dp-bronze-verify/verify_shortcut_prod.py`
 
-- [ ] **Step 1: Brian creates the shortcut**
+Verified: row count (20,612,638), min/max timestamp, and RO 1985073 (9 rows) all match JD Bronze source exactly. Committed `df6300bf`.
+
+- [x] **Step 1: Brian creates the shortcut**
 
 In the Fabric portal:
 1. Open workspace `DP - Staging - Prod` → lakehouse `DP_Staging`
@@ -157,7 +166,9 @@ Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 
 ---
 
-### Task 3: Fix the Dev-tier Gold notebook's hardcoded cross-workspace path
+### Task 3: Fix the Dev-tier Gold notebook's hardcoded cross-workspace path ✅ DONE 2026-09-08
+
+Verified as a pure refactor: `verify_gold_parts_promo.py` re-run after the fix produced an identical result to Plan 4's original run — 0 mismatches across all 11 known-bad orders, RO 1985073 still $627.64. Commits `aebabb78` (the fix) and `05dc40fa` (a stale header paragraph the subagent flagged but correctly left out of scope, cleaned up separately).
 
 **Files:**
 - Modify: `workspaces/DP - Presentation - Dev/Build_Gold_PartsPromo.Notebook/notebook-content.py` (in `fabric-workspace-docs`)
@@ -279,7 +290,9 @@ Expected: `Orders checked: 11`, `Orders with a real mismatch: 0` — identical t
 
 ---
 
-### Task 4: Author the Prod-tier notebooks
+### Task 4: Author the Prod-tier notebooks ✅ DONE 2026-09-08
+
+**Correction found during execution:** Step 4 below originally said to `git push origin main` directly. `fabric-workspace-docs` has a local hook enforcing the repo's own stated convention ("Direct pushes to `main` should be avoided even on `fabric-workspace-docs`," per root `CLAUDE.md`) — it correctly rejected the push. Fixed by branching the commit off (`dp-prod-tier-notebooks`), opening a PR (`SlyFox18/fabric-workspace-docs#15`), and merging via `gh pr merge` — Brian's call to proceed since this was the first `main` merge of the session. Local `main` fast-forwarded cleanly, branch deleted, back on `dev`. Logical IDs generated fresh (not reused from Dev, since these are independently-provisioned items, not deployment-pipeline-linked): Silver `7c1ac7f4-948f-4166-ae09-f27bb4df60ef`, Gold `b77e2ad5-26a1-45e5-bbef-cdcc32e2790b`.
 
 **Files:**
 - Create: `workspaces/DP - Staging - Prod/Build_Silver_InTrans.Notebook/.platform`
@@ -374,7 +387,7 @@ git checkout dev
 
 ---
 
-### Task 5: Add the Prod-tier Silver_InTrans shortcut
+### Task 5: Add the Prod-tier Silver_InTrans shortcut ✅ DONE 2026-09-08
 
 **Files:** none (Fabric portal action)
 
@@ -401,7 +414,9 @@ Report back once `Silver_InTrans` shows with a shortcut icon in `DP - Presentati
 
 ---
 
-### Task 6: Run the Prod Gold notebook
+### Task 6: Run the Prod Gold notebook ✅ DONE 2026-09-08
+
+Output: `Silver_InTrans` 6,352,677 rows (>=2022-01-01), `dim_RepairOrder` 16,251 rows, `Fact_PartsPromo` 16,918 rows, `Fact_InTrans_AllPromo` 5,008,913 rows (>=2023-01-01) — matches Dev's counts exactly. All 11 known-bad orders present, RO 1985073 shows $627.64. This is the notebook's own sanity check, not the final proof — Task 7 is that proof.
 
 **Files:** none (Fabric portal action)
 
@@ -415,7 +430,9 @@ Report the row counts and the notebook's own built-in verification cell output (
 
 ---
 
-### Task 7: Independently verify Prod output
+### Task 7: Independently verify Prod output ✅ DONE 2026-09-08
+
+Both scripts pass: silver shows 20,462,845 rows (0.73% below bronze's 20,612,638 — expected), 0 duplicate `(TransId, TransDatetime)` groups, 0 orphaned rows, 9 rows for RO 1985073. Gold matches `EquipRDB` exactly for all 11 known-bad orders (differences are 1e-12 to 1e-14 floating-point noise, not real mismatches). Committed `f45a86a4`. **The Prod tier is confirmed correct against ground truth — the same rigor as the original bug investigation, not just cross-checked against Dev.**
 
 **Files:**
 - Create: `.claude/queries/adhoc/dp-bronze-verify/verify_silver_intrans_prod.py`
