@@ -212,6 +212,12 @@ If the push is blocked by the sandbox classifier (same pattern as before), hand 
 
 **Fix, already applied to the notebook file:** the true key is `(TransId, TransDatetime)`, with `ModifiedDate DESC NULLS LAST` breaking the rarer genuine same-key ties (real corrections applied later). The code below reflects the corrected version — if you're re-reading this plan after the fact, this is what actually shipped, not the original flawed draft.
 
+**⚠️ SECOND CORRECTION 2026-09-08, same day, after that fix ran successfully:** two more changes, both applied to the notebook file, neither reflected in the code block below (still the first-correction version):
+1. `saveAsTable()` lowercases the physical OneLake table name regardless of code casing — confirmed a third time in this environment (see `feedback_fabric_saveastable_casing.md`). Switched to a path-based `.save("Tables/Silver_InTrans")` write, which preserves exact case, matching this project's PascalCase convention. Verification queries now address `delta.\`Tables/Silver_InTrans\`` directly rather than by catalog name, for the same reason.
+2. Widened from the 11-column pilot scope to full column parity with `InTrans_Incremental` (all 66 raw `InTrans` columns), reusing the exact rename mapping already in production use in `df_InTrans_Incremental.Dataflow`'s `mashup.pq` — done while a rebuild was already needed, so the other 8+ fact tables that currently depend on `InTrans_Incremental` won't need a future widening pass when they migrate.
+
+The actual notebook file in `fabric-workspace-docs` is the source of truth for both corrections — this plan doc's embedded code blocks are historical record, not meant to be re-copied.
+
 ---
 
 ### Task 2: Sync and run the notebook
