@@ -17,7 +17,35 @@ All 4 verified `gitConnectionState: ConnectedAndInitialized` with 0 pending chan
 
 | Lakehouse | Workspace | Lakehouse ID | Contents |
 |---|---|---|---|
-| DP_Staging | DP - Staging - Dev | `876255e0-d462-4697-adc1-4a655f5bb101` | `Tables/InTrans` — OneLake shortcut (passthrough identity) into `JD_EquipRDB_Production_Bronze.InTrans` (`JD_FabricOneLake` workspace `4bd21b07-f4ce-4b28-b0f1-0397fb5d5ea9`, lakehouse `7348c3a6-8694-4d11-bc70-1bd55be84ea2`). Verified 2026-09-04: row count, min/max timestamp, and the RO 1985073 spot check (9 rows) all match the source exactly — see `.claude/queries/adhoc/dp-bronze-verify/verify_shortcut.py`. |
+| DP_Staging | DP - Staging - Dev | `876255e0-d462-4697-adc1-4a655f5bb101` | `Tables/InTrans` — OneLake shortcut (passthrough identity) into `JD_EquipRDB_Production_Bronze.InTrans` (`JD_FabricOneLake` workspace `4bd21b07-f4ce-4b28-b0f1-0397fb5d5ea9`, lakehouse `7348c3a6-8694-4d11-bc70-1bd55be84ea2`). Verified 2026-09-04: row count, min/max timestamp, and the RO 1985073 spot check (9 rows) all match the source exactly — see `.claude/queries/adhoc/dp-bronze-verify/verify_shortcut.py`. Also holds `Tables/Silver_InTrans` — see below. |
+
+### `Silver_InTrans`
+
+Built by `Build_Silver_InTrans.Notebook` (in `DP - Staging - Dev`, git-tracked at
+`workspaces/DP - Staging - Dev/Build_Silver_InTrans.Notebook`). PySpark, PK-merge on
+`(TransId, TransDatetime)` — not `TransId` alone, which the source system reuses for
+unrelated transactions (see the notebook's header comment and project memory
+`project_intrans_incremental_dedup_2026-08-11` for the full story). `ModifiedDate DESC
+NULLS LAST` breaks rare genuine same-key conflicts. Written via path-based
+`.save("Tables/Silver_InTrans")`, not `saveAsTable()`, to preserve exact PascalCase
+(a third confirmed instance of `saveAsTable()` lowercasing physical table names in
+this environment — see `feedback_fabric_saveastable_casing.md`).
+
+Full column parity with `InTrans_Incremental` (all 66 raw `InTrans` columns, using the
+same rename mapping already in production use in `df_InTrans_Incremental.Dataflow`'s
+`mashup.pq`), not just the 11 columns Parts Promo needs — done deliberately once, so
+the other 8+ fact tables that currently depend on `InTrans_Incremental`
+(`Fact_WorkOrderParts`, `Fact_Transfers`, Parts Adjustments, Parts Not Re-Ordered,
+Unique Parts Customers, etc.) can point at this table with zero column-name surprises
+when they eventually migrate.
+
+Verified 2026-09-08 via `.claude/queries/adhoc/dp-bronze-verify/verify_silver_intrans.py`
+(independent DuckDB check, separate from the notebook's own verification cell):
+20,462,845 rows (0.73% fewer than bronze's 20,612,638 — expected, true exact
+duplicates + genuine same-key corrections collapsed), 0 duplicate
+`(TransId, TransDatetime)` groups, 0 orphaned rows (nothing stale survived two earlier
+flawed builds — first used `TransId` alone as the key, second used `saveAsTable()`
+with the wrong case), and the RO 1985073 spot check still shows exactly 9 rows.
 
 **Variable Library:** `DP - Environment Config`, lives in `DP - Staging - Dev`, git-synced under
 `workspaces/DP - Staging - Dev/DP - Environment Config.VariableLibrary`. Value sets: `Default`
