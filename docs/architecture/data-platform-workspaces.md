@@ -18,6 +18,7 @@ All 4 verified `gitConnectionState: ConnectedAndInitialized` with 0 pending chan
 | Lakehouse | Workspace | Lakehouse ID | Contents |
 |---|---|---|---|
 | DP_Staging | DP - Staging - Dev | `876255e0-d462-4697-adc1-4a655f5bb101` | `Tables/InTrans` — OneLake shortcut (passthrough identity) into `JD_EquipRDB_Production_Bronze.InTrans` (`JD_FabricOneLake` workspace `4bd21b07-f4ce-4b28-b0f1-0397fb5d5ea9`, lakehouse `7348c3a6-8694-4d11-bc70-1bd55be84ea2`). Verified 2026-09-04: row count, min/max timestamp, and the RO 1985073 spot check (9 rows) all match the source exactly — see `.claude/queries/adhoc/dp-bronze-verify/verify_shortcut.py`. Also holds `Tables/Silver_InTrans` — see below. |
+| DP_Presentation | DP - Presentation - Dev | `966efc8a-16f9-423b-aa43-e368fcd8fb91` | `Tables/dim_RepairOrder`, `Tables/Fact_PartsPromo` — see below. |
 
 ### `Silver_InTrans`
 
@@ -47,6 +48,29 @@ duplicates + genuine same-key corrections collapsed), 0 duplicate
 flawed builds — first used `TransId` alone as the key, second used `saveAsTable()`
 with the wrong case), and the RO 1985073 spot check still shows exactly 9 rows.
 
+### `dim_RepairOrder` / `Fact_PartsPromo`
+
+Built by `Build_Gold_PartsPromo.Notebook` (in `DP - Presentation - Dev`, git-tracked at
+`workspaces/DP - Presentation - Dev/Build_Gold_PartsPromo.Notebook`). PySpark, reads
+`Silver_InTrans` cross-workspace via its full OneLake path (no shortcut — a direct
+same-tenant Spark read), reproduces the existing production business logic exactly
+(`dim_RepairOrder.pq` / `Fact_PartsPromo_v2.pq`: promo = `PartNumber` starts with `*`;
+non-promo aggregates exclude `Franchise = 'ZP'`; promo aggregates do not). Full
+overwrite each run — both tables are small (promo-active orders since 2022-01-01
+only). Written via path-based `.save()` from the start (no casing mistake to make
+here, unlike `Silver_InTrans`'s first attempt).
+
+As of 2026-09-08: 16,251 `dim_RepairOrder` rows, 16,918 `Fact_PartsPromo` rows.
+
+**This is the actual bug-fix proof.** Verified via
+`.claude/queries/adhoc/dp-bronze-verify/verify_gold_parts_promo.py` — compared
+`dim_RepairOrder` directly against `EquipRDB` (the real source system, not another
+copy of our own data) for all 11 repair orders confirmed wrong in the original
+investigation. **All 11 now match to the penny** (differences shown are
+floating-point noise on the order of `1e-13`, not real discrepancies). The original
+Parts Promo bug — RO 1985073 showing $229.18 instead of $627.64, and 10 other
+orders similarly understated — is fixed at the gold layer.
+
 **Variable Library:** `DP - Environment Config`, lives in `DP - Staging - Dev`, git-synced under
 `workspaces/DP - Staging - Dev/DP - Environment Config.VariableLibrary`. Value sets: `Default`
 (built-in), `Dev`, `Prod`.
@@ -56,7 +80,7 @@ Variables defined so far:
 | Variable | Type | Default | Dev | Prod |
 |---|---|---|---|---|
 | `staging_lakehouse_id` | String | `876255e0-d462-4697-adc1-4a655f5bb101` | `876255e0-d462-4697-adc1-4a655f5bb101` | `not-yet-created` (Prod staging lakehouse doesn't exist yet) |
-| `presentation_lakehouse_id` | String | `not-yet-created` | `not-yet-created` | `not-yet-created` (set once the Presentation lakehouse is created) |
+| `presentation_lakehouse_id` | String | `966efc8a-16f9-423b-aa43-e368fcd8fb91` | `966efc8a-16f9-423b-aa43-e368fcd8fb91` | `not-yet-created` (Prod presentation lakehouse doesn't exist yet) |
 
 **Gotcha (confirmed 2026-09-04):** Variable Library value sets require non-blank values to save —
 leaving a value empty blocks both saving and adding further value sets. Also, the Git integration
