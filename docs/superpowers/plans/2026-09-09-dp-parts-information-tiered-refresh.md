@@ -10,7 +10,9 @@
 
 ---
 
-### Task 1: Bronze — Active tier Dataflow Gen2
+### Task 1: Bronze — Active tier Dataflow Gen2 ✅ DONE 2026-09-09
+
+Refresh completed in 1:17 (vs. ~8 min for the full unfiltered table) — early confirmation the tiering approach reduces refresh time roughly in line with the row-count reduction.
 
 **Files:** none (Fabric portal action — Dataflow Gen2 creation)
 
@@ -94,7 +96,9 @@ Refresh manually to populate `DP_Staging.PartInformation_Active` for the first t
 
 ---
 
-### Task 2: Bronze — Dead tier Dataflow Gen2
+### Task 2: Bronze — Dead tier Dataflow Gen2 ✅ DONE 2026-09-09
+
+Refresh completed in 1:39 (813k rows, ~73% of the table) — barely slower than the Active tier's 1:17 despite far more rows, and both dramatically faster than the original ~8-minute full pull. Not a linear row-count relationship — likely because both new queries use an explicit 30-column SELECT vs. production's `pi.*`-style full-column pull, on top of whatever the row filtering itself contributes.
 
 **Files:** none (Fabric portal action)
 
@@ -125,7 +129,9 @@ Refresh manually to populate `DP_Staging.PartInformation_Dead` for the first tim
 
 ---
 
-### Task 3: Independently verify both bronze tiers
+### Task 3: Independently verify both bronze tiers ✅ DONE 2026-09-09
+
+**Real finding, investigated properly rather than assumed:** first run found 2,215 "overlapping" rows using `(Branch, PartNumber)` as the key. Traced directly against real data (pulled every column for a live duplicate example): the true grain of `jdis_Part_Information` is `(Branch, PartNumber, Franchise)` — the same part number can be carried under multiple franchise codes at the same branch, each an independent inventory/cost/sales record. Confirmed via a new Check 2b that this corrected key is genuinely unique within each tier (0 duplicates in either). Corrected key drops the overlap to 5 rows (0.00045% of 1.1M), fully explained by the two dataflows being non-atomic point-in-time pulls against a live source ~2 minutes apart — a few rows can legitimately flip Active/Dead status in that window, same magnitude as Check 3's own 1-row live-count drift. Committed `e525ef99`. **Note for Task 4:** the Silver notebook's row-count assertion (combined == active + dead) still holds regardless of this — union doesn't dedupe, so these 5 rows will appear twice in `Silver_PartInformation` (once per tier). Acceptable for this proof-of-concept pass; not adding dedup complexity here.
 
 **Files:**
 - Create: `.claude/queries/adhoc/dp-bronze-verify/verify_shortcut_partinformation_tiers.py`
