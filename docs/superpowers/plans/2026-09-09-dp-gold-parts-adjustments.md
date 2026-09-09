@@ -12,7 +12,7 @@
 
 ---
 
-### Task 1: Migrate Parts Adjustments' report-layer git tracking into `RP - Dev`
+### Task 1: Migrate Parts Adjustments' report-layer git tracking into `RP - Dev` ✅ DONE 2026-09-09
 
 **Files:** none yet (this task lands the report in `fabric-workspace-docs` for the first time — same gap Parts Promo had before its own migration, confirmed via `find` this session)
 
@@ -80,7 +80,9 @@ git push origin dev
 
 ---
 
-### Task 2: Bronze — add the `GlTrans` OneLake shortcut to `DP_Staging` (Dev)
+### Task 2: Bronze — add the `GlTrans` OneLake shortcut to `DP_Staging` (Dev) ✅ DONE 2026-09-09
+
+Verified: row count matches JD source exactly (29,923,573), Parts-Adjustments-scoped slice (DEPT=30, ACCT=480, since 2023-01-01) = 238,380 rows, sensible sample. Committed `411116c7`.
 
 **Files:** none (Fabric portal action)
 
@@ -180,7 +182,7 @@ Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 
 ---
 
-### Task 3: Add the `GlTrans` shortcut to `DP_Presentation` (Dev)
+### Task 3: Add the `GlTrans` shortcut to `DP_Presentation` (Dev) ✅ DONE 2026-09-09
 
 **Files:** none (Fabric portal action)
 
@@ -217,7 +219,9 @@ Expected: `Match: True`.
 
 ---
 
-### Task 4: Build `Build_Gold_PartsAdjustments.Notebook`
+### Task 4: Build `Build_Gold_PartsAdjustments.Notebook` ✅ DONE 2026-09-09
+
+Authored, committed `a7939cd7`. First run: 277,916 InTrans adjustment rows, 58,468 deduped GlTrans rows, 277,916 output rows (exact match, join didn't multiply/drop). PAType breakdown healthy: Stock Check 258,818, Count Off 12,358, Unknown 4,031 (~1.5%), Customer BIN 2,234, Damaged 192, Lost 172, Overage 111 — sums to 277,916 exactly.
 
 **Files:**
 - Create: `workspaces/DP - Presentation - Dev/Build_Gold_PartsAdjustments.Notebook/.platform` (in `fabric-workspace-docs`)
@@ -532,7 +536,11 @@ Row counts from each cell, and the PAType breakdown table from the verification 
 
 ---
 
-### Task 5: Independently verify against `EquipRDB`
+### Task 5: Independently verify against `EquipRDB` ✅ DONE 2026-09-09
+
+**Real finding, not a plan gap:** first run found a 674-row "mismatch" (row count, both dollar totals). Root-caused via direct investigation (not guessed): Dev's `Silver_InTrans` was stale (last built 2026-09-07, bronze already a day newer) — re-ran Dev's Silver then Gold notebooks, gap narrowed to 128, and confirmed via direct trace that 100% of the remainder was rows not yet captured by JD's own nightly bronze mirror (zero were a logic defect). Fixed the verification script itself to bound both sides of the comparison to the bronze mirror's own freshness cutoff (computed dynamically, converted to naive UTC to match `EquipRDB`'s storage convention) instead of comparing against an ever-moving "now". Re-run: **exact match, 0.0000 diff** on row count and both dollar totals. Committed `e2be1f8f`.
+
+**Generalizable lesson for every future report migration in this program:** any verification comparing a built pipeline against live `EquipRDB` needs a bounded cutoff, not an open-ended date filter — a live source will always show drift against a point-in-time snapshot. Also: **Dev-tier `Silver_InTrans` needs a fresh re-run before trusting any Dev-tier verification**, same as we learned for the Prod tier before its production cutover — it does not stay fresh on its own (no refresh scheduling yet).
 
 **Files:**
 - Create: `.claude/queries/adhoc/dp-bronze-verify/verify_gold_parts_adjustments.py`
