@@ -10,7 +10,7 @@
 
 ---
 
-### Task 1: Build `Build_Gold_DateTable.Notebook`
+### Task 1: Build `Build_Gold_DateTable.Notebook` — authored, committed & pushed `594c23e8`
 
 **Files:**
 - Create: `workspaces/DP - Presentation - Dev/Build_Gold_DateTable.Notebook/.platform` (in `fabric-workspace-docs`)
@@ -350,7 +350,9 @@ Row count, column count, the 2025-12-25 spot check, and the dropped-columns chec
 
 ---
 
-### Task 2: Independently verify `dim_DateTable`
+### Task 2: Independently verify `dim_DateTable` ✅ DONE 2026-09-09
+
+All checks pass exactly: 4,018 rows, 28 columns, all 3 spot-check dates correct, 0 dropped "today"-relative columns leaked. Also: Brian reorganized `DP - Presentation - Dev` into `Dimensions/` and `Fact Tables/<Report>/` folders — `Build_Gold_DateTable.Notebook` now lives at `Dimensions/Build_Gold_DateTable.Notebook`. New notebooks (Task 4) go straight into `Dimensions/` to match. Committed `89d3454a`.
 
 **Files:**
 - Create: `.claude/queries/adhoc/dp-bronze-verify/verify_gold_datetable.py`
@@ -454,7 +456,9 @@ Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 
 ---
 
-### Task 3: Create the `BranchOperational` bronze ingestion
+### Task 3: Create the `BranchOperational` bronze ingestion ✅ DONE 2026-09-09
+
+Verified: 99 rows landed, `BranchID '1'` (Seminole) present.
 
 **Files:** none (Fabric portal action — Dataflow Gen2 creation)
 
@@ -507,7 +511,9 @@ Expected: some non-zero row count (production's copy of this view is small, well
 
 ---
 
-### Task 4: Build `Build_Gold_BranchLocation.Notebook`
+### Task 4: Build `Build_Gold_BranchLocation.Notebook` — authored, committed & pushed `0f3229a5`
+
+Note: created inside `Dimensions/` per Brian's new folder convention, not flat as originally written. Brian also organized `DP - Staging - Dev` similarly: `Data Notebooks/`, `Raw Data - Dataflows/`, `Variable - Environment Config/`.
 
 **Files:**
 - Create: `workspaces/DP - Presentation - Dev/Build_Gold_BranchLocation.Notebook/.platform` (in `fabric-workspace-docs`)
@@ -877,7 +883,9 @@ Row counts at each stage and the Seminole spot check.
 
 ---
 
-### Task 5: Independently verify `dim_BranchLocation`
+### Task 5: Independently verify `dim_BranchLocation` ✅ DONE 2026-09-09
+
+All checks pass: 69 rows (matches production exactly), Seminole present and correctly classified, 0 Hourly/Salary leaks, healthy BranchType distribution (23/22/15/9). Committed `0a28ce95`.
 
 **Files:**
 - Create: `.claude/queries/adhoc/dp-bronze-verify/verify_gold_branchlocation.py`
@@ -968,7 +976,7 @@ Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 
 ---
 
-### Task 6: Update the reference doc
+### Task 6: Update the reference doc ✅ DONE 2026-09-09 (`73303ac4`)
 
 **Files:**
 - Modify: `docs/architecture/data-platform-workspaces.md`
@@ -1039,7 +1047,9 @@ Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 
 ---
 
-### Task 7: Final end-to-end check
+### Task 7: Final end-to-end check ✅ DONE 2026-09-09
+
+`fabric-workspace-docs` clean. `data-projects` clean except pre-existing unrelated local noise (Parts Promo report visuals, Service Time Sheets templates — present since before this plan, not caused by it).
 
 **Files:** none
 
