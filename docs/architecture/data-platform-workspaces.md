@@ -32,7 +32,7 @@ history still shows the old flat paths for older commits.
 
 | Lakehouse | Workspace | Lakehouse ID | Contents |
 |---|---|---|---|
-| DP_Staging | DP - Staging - Dev | `876255e0-d462-4697-adc1-4a655f5bb101` | `Tables/InTrans` — OneLake shortcut (passthrough identity) into `JD_EquipRDB_Production_Bronze.InTrans` (`JD_FabricOneLake` workspace `4bd21b07-f4ce-4b28-b0f1-0397fb5d5ea9`, lakehouse `7348c3a6-8694-4d11-bc70-1bd55be84ea2`). Verified 2026-09-04: row count, min/max timestamp, and the RO 1985073 spot check (9 rows) all match the source exactly — see `.claude/queries/adhoc/dp-bronze-verify/verify_shortcut.py`. Also holds `Tables/Silver_InTrans`, `Tables/GlTrans` (OneLake shortcut into JD's Bronze mirror), and `Tables/BranchOperational` (Dataflow Gen2 ingestion, not a shortcut — see `dim_BranchLocation` below) — see below for each. |
+| DP_Staging | DP - Staging - Dev | `876255e0-d462-4697-adc1-4a655f5bb101` | `Tables/InTrans` — OneLake shortcut (passthrough identity) into `JD_EquipRDB_Production_Bronze.InTrans` (`JD_FabricOneLake` workspace `4bd21b07-f4ce-4b28-b0f1-0397fb5d5ea9`, lakehouse `7348c3a6-8694-4d11-bc70-1bd55be84ea2`). Verified 2026-09-04: row count, min/max timestamp, and the RO 1985073 spot check (9 rows) all match the source exactly — see `.claude/queries/adhoc/dp-bronze-verify/verify_shortcut.py`. Also holds `Tables/Silver_InTrans`, `Tables/GlTrans` (OneLake shortcut into JD's Bronze mirror), `Tables/BranchOperational` (Dataflow Gen2 ingestion, not a shortcut — see `dim_BranchLocation` below), `Tables/PartInformation_Active`, `Tables/PartInformation_Dead`, and `Tables/Silver_PartInformation` — see below for each. |
 | DP_Presentation | DP - Presentation - Dev | `966efc8a-16f9-423b-aa43-e368fcd8fb91` | `Tables/dim_RepairOrder`, `Tables/Fact_PartsPromo`, `Tables/Fact_InTrans_AllPromo`, `Tables/Fact_PartsAdjustments`, `Tables/dim_DateTable`, `Tables/dim_BranchLocation` — see below for each. |
 
 ### `Silver_InTrans`
@@ -161,6 +161,80 @@ arbitrary `Table.Skip(30)`, used to drop) is present and correctly classified as
 `Main Branch` / `West Texas`, zero Hourly/Salary branches leaked through the filter,
 `BranchType` distribution shows a healthy mix (23 Main Branch, 22 IS Shop, 15 Set-Up
 Shop, 9 CP Shop).
+
+## jdis_Part_Information tiered refresh (2026-09-09) — first step of a larger design
+
+`jdis_Part_Information` has no `ModifiedDate`/change-tracking field at all, so full
+refresh is structurally required regardless of tooling. Its current production refresh
+(3x/day, full ~1.1M-row pull, ~8 min each) is already documented as the Fabric
+capacity's **#3 CU consumer** (`projects/shannon-report/CLAUDE.md`'s "Refresh" section).
+It's also not in JD's Bronze mirror — almost certainly the same volatility reason it has
+no change-tracking field to begin with.
+
+**The idea, validated with real numbers before building anything** (queried directly
+against `EquipRDB` 2026-09-09): of 1,111,728 total rows, **73.2% (813,379) are
+genuinely dormant** by a reasonable 24-month definition (zero on-hand quantity, zero
+sales in the trailing 24 months) — only **26.8% (298,349) is "active."** That active
+slice is close in scale to Shannon's own "Aftermarket - Parts Orders" report (a
+completely separate, non-shared-pipeline tool), which proved a 202,262-row filtered
+query against this same source refreshes in **33 seconds** — strong evidence the active
+tier here could refresh far more often than the dormant majority, once refresh
+scheduling exists for this backend.
+
+**Built:** two Dataflow Gen2 bronze ingestions (`df_JDIS_PartInformation_Active_Raw` /
+`df_JDIS_PartInformation_Dead_Raw`, `Raw Data - Dataflows/` in `DP - Staging - Dev`,
+WHERE-split by the 24-month definition, landing `PartInformation_Active`/
+`PartInformation_Dead`) recombined by `Build_Silver_PartInformation.Notebook`
+(`Data Notebooks/`) into one logical `Silver_PartInformation` table.
+
+**First-run results, far better than expected:** Active tier (298,384 rows) refreshed in
+**1:17**, Dead tier (813,390 rows) in **1:39** — both dramatically faster than the
+original ~8-minute full pull, and far from proportional to row count (813k rows took
+barely longer than 298k). Likely explanation: both new queries use an explicit
+30-column `SELECT` instead of production's `pi.*`-style full-column pull — that alone
+probably accounts for most of the win, independent of the row filtering itself.
+
+**Two real findings from execution, worth remembering for future work on this table:**
+1. **The true row-level grain of `jdis_Part_Information` is `(Branch, PartNumber,
+   Franchise)`, not `(Branch, PartNumber)` alone.** The same part number can be carried
+   under multiple franchise codes at the same branch, each an independent inventory/
+   cost/sales record — confirmed by pulling every column for a real example (Franchise
+   `'D'` vs `'UD'`, fully independent data otherwise). A verification script that
+   assumed `(Branch, PartNumber)` was unique found 2,215 false-positive "overlaps";
+   correcting the key dropped that to 5 (0.00045%), fully explained by the two
+   dataflows being non-atomic point-in-time pulls against a live source run ~2 minutes
+   apart — not a bug.
+2. **`jdis_Part_Information` has genuine sentinel "never happened" dates** (e.g.
+   `DateLastRequested = 1900-01-01`) that trigger `SparkUpgradeException:
+   [INCONSISTENT_BEHAVIOR_CROSS_VERSION.READ_ANCIENT_DATETIME]` when Spark writes a
+   table containing them — a known Spark/Parquet cross-engine calendar ambiguity
+   (SPARK-31404) for timestamps before 1900-01-01T00:00:00Z, since Dataflow Gen2's
+   Parquet writer uses a different calendar convention than native Spark expects. Fix:
+   `spark.conf.set("spark.sql.parquet.datetimeRebaseModeInRead", "CORRECTED")` and the
+   same for `...InWrite`, set once at the top of any notebook reading/writing tables
+   built from this source. **Any future notebook touching `jdis_Part_Information` (or
+   its derivatives) should expect this and set both configs up front.**
+
+Verified 2026-09-09: `verify_shortcut_partinformation_tiers.py` confirms the bronze
+split is correct on the true grain (0 duplicate `(Branch, PartNumber, Franchise)`
+groups within either tier) and its combined total matches a fresh live `EquipRDB` count
+almost exactly. `verify_silver_partinformation.py` confirms the recombined silver total
+matches the bronze sum exactly (1,111,774) and `ActivityTier` classification is 100%
+internally consistent with the underlying on-hand/sales data.
+
+**Explicitly deferred, not part of this step** (this plan proves the tier-and-recombine
+pattern only — see `docs/superpowers/plans/2026-09-09-dp-parts-information-tiered-refresh.md`):
+- The actual `dim_Parts` gold business-logic enrichment (promo/margin/supersession
+  classification) — a separate, substantial future project, same category as
+  `dim_CustomerList` (already has its own open, deferred Spark-redesign ticket in
+  project memory).
+- Any refresh schedule/cadence for either bronze dataflow — both are manually triggered
+  for now, same as every other piece of this backend before scheduling exists (still the
+  platform's biggest open gap).
+- Periodic reclassification of which tier a part belongs to — not needed yet, since
+  there's no schedule driving repeated runs at different cadences; each manual run
+  re-evaluates activity status fresh against live source data. This becomes a real
+  design question once an asymmetric schedule (Active hourly, Dead daily/weekly) exists.
 
 ## Prod tier
 
