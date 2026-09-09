@@ -461,7 +461,9 @@ Active/Dead row counts, the combined count assertion result, the `ActivityTier` 
 
 ---
 
-### Task 5: Independently verify `Silver_PartInformation`
+### Task 5: Independently verify `Silver_PartInformation` ✅ DONE 2026-09-09
+
+All checks pass: combined row count matches bronze sum exactly (1,111,774), ActivityTier breakdown matches, 0 rows where classification contradicts the underlying activity data.
 
 **Files:**
 - Create: `.claude/queries/adhoc/dp-bronze-verify/verify_silver_partinformation.py`
@@ -555,7 +557,7 @@ Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 
 ---
 
-### Task 6: Update the reference doc
+### Task 6: Update the reference doc ✅ DONE 2026-09-09 (`5534f5d7`)
 
 **Files:**
 - Modify: `docs/architecture/data-platform-workspaces.md`
