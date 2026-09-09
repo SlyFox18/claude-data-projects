@@ -663,7 +663,11 @@ Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 
 ---
 
-### Task 6: Repoint `Fact_PartsAdjustments.tmdl` in `RP - Dev`
+### Task 6: Repoint `Fact_PartsAdjustments.tmdl` in `RP - Dev` — repointed, refresh succeeded ✅, then a real classification bug found via live review
+
+**Second real finding, from Brian actually reviewing the refreshed report (not caught by Task 5's verification, which only checks InTrans-side row counts/dollar totals — PAType classification was untested):** RefNo 13070766 showed PAType "Stock Check" in the new build vs. "Count Off" in production, for the identical $71.39 line. Root-caused: `DocRef` (like `TransId` before it) is reused by the source system for unrelated GL postings at different times — 1,146 of 58,467 DocRefs in scope (~2%) have more than one posting. The original design deduplicated `GlTrans` to one row per `DocRef` *before* joining, which can only pick one posting globally, not one per InTrans line. Fixed in `Build_Gold_PartsAdjustments.Notebook` by joining to the full (non-deduplicated) filtered `GlTrans`, then picking the closest-in-time match per InTrans line via a Window keyed on `(TransId, TransDatetime)` — the direct analog of the fix already applied to `Silver_InTrans`'s own `TransId` reuse. Also found and fixed a false-negative in the notebook's own regression check for this case: `RONumber` is *also* reused across unrelated years (13070766 legitimately has two distinct InTrans lines, not one). Re-verified after the fix: `verify_gold_parts_adjustments.py` still shows an exact match (row count/dollar totals unaffected, as expected — PAType is additive metadata), and the specific RefNo now correctly shows both lines classified right (2023 line → Stock Check, 2025 line → Count Off). Captured as a generalizable lesson in `feedback` memory — see `project_intrans_incremental_dedup_2026-08-11.md`'s third recurrence note: assume any reference/document-number column in this source system is reusable until proven otherwise.
+
+**Still needed:** Brian re-refresh Desktop to pick up the corrected gold table data (the report's Import-mode cache is now stale relative to the fix), then a final live spot-check.
 
 **Files:**
 - Modify: `workspaces/RP - Dev/Parts Adjustments.SemanticModel/definition/tables/Fact_PartsAdjustments.tmdl` (in `fabric-workspace-docs`)
