@@ -223,7 +223,9 @@ Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 
 ---
 
-### Task 4: Build `Build_Silver_PartInformation.Notebook`
+### Task 4: Build `Build_Silver_PartInformation.Notebook` ✅ DONE 2026-09-09
+
+**Real finding, root-caused properly:** first write attempt failed twice at the same task (Task 8, stage 44) with `TASK_WRITE_FAILED`. Not infrastructure flakiness (retrying blindly would not have fixed it) — the full stack trace revealed `SparkUpgradeException: [INCONSISTENT_BEHAVIOR_CROSS_VERSION.READ_ANCIENT_DATETIME]`. Root cause: `jdis_Part_Information` has genuine sentinel "never happened" dates (e.g. `DateLastRequested = 1900-01-01`, confirmed present in real source data) written into the bronze Parquet files by Dataflow Gen2's own writer — a different engine than native Spark, using a different calendar convention for dates before 1900-01-01 (SPARK-31404). Row counts succeeded first (metadata-only, no timestamp decoding needed) while the write failed (must fully materialize every column). Fixed by setting `spark.sql.parquet.datetimeRebaseModeInRead`/`datetimeRebaseModeInWrite` to `CORRECTED` — committed `d54c1b1d`. Re-run succeeded: 298,384 Active / 813,390 Dead rows, samples confirm the classification logic is correct (Active rows show real sales activity, Dead rows are all zeros).
 
 **Files:**
 - Create: `workspaces/DP - Staging - Dev/Data Notebooks/Build_Silver_PartInformation.Notebook/.platform` (in `fabric-workspace-docs`)
