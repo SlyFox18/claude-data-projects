@@ -13,12 +13,27 @@ Created 2026-09-04 as part of the JD Bronze migration / data platform redesign
 All 4 verified `gitConnectionState: ConnectedAndInitialized` with 0 pending changes as of 2026-09-04.
 `fabric1cap1` capacity ID: `c703247c-8451-4349-b95d-93e4eac756e8` (F8, North Central US).
 
+## Folder organization (Dev tier)
+
+2026-09-09: Brian reorganized both Dev-tier workspaces into folders so items stay easy
+to find as this grows. Current convention — new items should follow it:
+- **`DP - Staging - Dev`**: `Data Notebooks/` (Spark notebooks), `Raw Data - Dataflows/`
+  (Dataflow Gen2 items for sources that can't be a JD Bronze shortcut, e.g.
+  `df_BranchOperational_Raw`), `Variable - Environment Config/` (the Variable Library).
+- **`DP - Presentation - Dev`**: `Dimensions/` (shared dimension notebooks — flat, not
+  split by report, since dimensions cross report boundaries) and `Fact Tables/<Report>/`
+  (fact table notebooks, grouped by the report/subject that owns them).
+
+Git paths below reflect the folder each item is actually in as of this move — items
+created before 2026-09-09 were moved into these folders, not recreated, so their git
+history still shows the old flat paths for older commits.
+
 ## Lakehouses
 
 | Lakehouse | Workspace | Lakehouse ID | Contents |
 |---|---|---|---|
-| DP_Staging | DP - Staging - Dev | `876255e0-d462-4697-adc1-4a655f5bb101` | `Tables/InTrans` — OneLake shortcut (passthrough identity) into `JD_EquipRDB_Production_Bronze.InTrans` (`JD_FabricOneLake` workspace `4bd21b07-f4ce-4b28-b0f1-0397fb5d5ea9`, lakehouse `7348c3a6-8694-4d11-bc70-1bd55be84ea2`). Verified 2026-09-04: row count, min/max timestamp, and the RO 1985073 spot check (9 rows) all match the source exactly — see `.claude/queries/adhoc/dp-bronze-verify/verify_shortcut.py`. Also holds `Tables/Silver_InTrans` — see below. |
-| DP_Presentation | DP - Presentation - Dev | `966efc8a-16f9-423b-aa43-e368fcd8fb91` | `Tables/dim_RepairOrder`, `Tables/Fact_PartsPromo` — see below. |
+| DP_Staging | DP - Staging - Dev | `876255e0-d462-4697-adc1-4a655f5bb101` | `Tables/InTrans` — OneLake shortcut (passthrough identity) into `JD_EquipRDB_Production_Bronze.InTrans` (`JD_FabricOneLake` workspace `4bd21b07-f4ce-4b28-b0f1-0397fb5d5ea9`, lakehouse `7348c3a6-8694-4d11-bc70-1bd55be84ea2`). Verified 2026-09-04: row count, min/max timestamp, and the RO 1985073 spot check (9 rows) all match the source exactly — see `.claude/queries/adhoc/dp-bronze-verify/verify_shortcut.py`. Also holds `Tables/Silver_InTrans`, `Tables/GlTrans` (OneLake shortcut into JD's Bronze mirror), and `Tables/BranchOperational` (Dataflow Gen2 ingestion, not a shortcut — see `dim_BranchLocation` below) — see below for each. |
+| DP_Presentation | DP - Presentation - Dev | `966efc8a-16f9-423b-aa43-e368fcd8fb91` | `Tables/dim_RepairOrder`, `Tables/Fact_PartsPromo`, `Tables/Fact_InTrans_AllPromo`, `Tables/Fact_PartsAdjustments`, `Tables/dim_DateTable`, `Tables/dim_BranchLocation` — see below for each. |
 
 ### `Silver_InTrans`
 
@@ -87,6 +102,65 @@ leaving a value empty blocks both saving and adding further value sets. Also, th
 connect dialog's "Git folder" field defaults to the repo **root** if left blank, which pulls in
 every other workspace's items as pending updates — always fill it in explicitly (no leading slash),
 and check the Updates count immediately after connecting before touching anything else.
+
+## Foundational dimensions (2026-09-09)
+
+First shared dimensions built in the new backend, per Brian's direction to pause report
+migration and build shared foundation first — see
+`docs/superpowers/plans/2026-09-09-dp-foundational-dims.md`. Dev tier only; no report is
+repointed at either of these yet.
+
+### `dim_DateTable` — deliberately slimmer than production, not an incomplete port
+
+Built by `Build_Gold_DateTable.Notebook` (`Dimensions/Build_Gold_DateTable.Notebook` in
+`DP - Presentation - Dev`). Pure calendar generation, no source dependency at all — same
+as production.
+
+Production's `dim_DateTable` (`LH_Master_Data`) has 76 columns. This one has 28. The
+missing ~48 are every "today"-relative column (`IsCurrentYear`, `IsCurrentMonth`,
+`IsPrevious*`, `IsYearToDate`/`IsQuarterToDate`/`IsMonthToDate`, every `IsRolling*`,
+`IsLast*Days`, `IsNext30Days`, `IsSameMonthLastYear`/`IsSameQuarterLastYear`,
+`RollingPeriodCategory`, `DaysFromToday`, `YearOffset`) — all of which were computed off
+`DateTime.LocalNow()` baked into static refresh-time columns in production, the same
+UTC-not-actual-local-time bug class already found and fixed twice this session
+(`Fact_PartsAdjustments.LoadedDatetime`, and the documented 2026-02-27 Data Refresh Table
+fix). Confirmed live and silently wrong for hours around midnight in every one of those
+flags in production, the whole time.
+
+**This was a deliberate redesign, agreed with Brian 2026-09-09, not a mistake or an
+unfinished port:** that class of logic belongs in report-layer DAX measures (or a
+calculation group) evaluated dynamically against `TODAY()` at query time, not frozen at
+whatever moment the backend last refreshed. It will come back as report-layer work when
+each report actually migrates onto this backend — deliberately not part of this table.
+
+Verified 2026-09-09 via `verify_gold_datetable.py`: 4,018 rows (2020-01-01 to
+2030-12-31, matching production's range), 28 columns, hand-computed spot checks correct
+for three known dates, zero dropped columns leaked back in.
+
+### `dim_BranchLocation` — faithful port, no bug found
+
+Built by `Build_Gold_BranchLocation.Notebook` (`Dimensions/Build_Gold_BranchLocation.Notebook`
+in `DP - Presentation - Dev`). Unlike `dim_DateTable`, no correctness issue was found in
+this table's enrichment logic during review — the `MarketPresence`/`TerritoryCoverage`/
+`OperationalPriority`/`RegionalClassification`/`ServiceHours`/`DistanceFromHub`/
+`DataQualityScore` heuristics are all pattern-matched on `BranchID`/`BranchName`/`State`/
+`City`, none date-dependent. Ported faithfully to PySpark from production's
+`dim_BranchLocation.pq`.
+
+Its source, `BranchOperational`, is an EquipRDB **view**, not a base table — confirmed
+this session it isn't in JD's Bronze mirror (JD's replication apparently only covers
+base tables). Gets its own small Dataflow Gen2 ingestion instead
+(`df_BranchOperational_Raw`, `Raw Data - Dataflows/` in `DP - Staging - Dev` — same
+mechanism production already uses), landing into `DP_Staging`, then reaches the gold
+notebook via a cross-workspace shortcut — same "shortcuts, not copies" pattern as
+`Silver_InTrans`/`GlTrans`.
+
+Verified 2026-09-09 via `verify_gold_branchlocation.py`: 69 rows (matches production
+exactly). Seminole (`BranchID '1'` — the specific branch a prior production bug, an
+arbitrary `Table.Skip(30)`, used to drop) is present and correctly classified as
+`Main Branch` / `West Texas`, zero Hourly/Salary branches leaked through the filter,
+`BranchType` distribution shows a healthy mix (23 Main Branch, 22 IS Shop, 15 Set-Up
+Shop, 9 CP Shop).
 
 ## Prod tier
 
