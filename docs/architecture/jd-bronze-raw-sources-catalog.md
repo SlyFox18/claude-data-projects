@@ -65,19 +65,25 @@ lives in the dataflow's later steps.
 **27 dataflows, ~21 distinct source tables** — the largest single category, and the
 most direct extension of the already-proven pattern.
 
-### InMaster consolidation opportunity
+### InMaster group — investigated 2026-09-10, NOT a simple consolidation
 
-Four separate dataflows (`df_InMaster_Raw`, `df_InMaster_PartsLookup_Raw`,
-`df_InMaster_PartsLookup_Incremental`, `df_InMaster_Parts_Ordering_Raw`) all pull the
-same `InMaster` table, each with its own column subset/rename/filter. A single
-`DP_Staging` shortcut plus one silver notebook producing whatever column shapes each
-downstream consumer needs would collapse 4 ODBC pulls into 1 shortcut — real CU
-savings, not just a tidiness win. `df_InMaster_PartsLookup_Incremental`'s
-watermark/incremental logic in particular may no longer be needed at all once sourced
-from a live-updating JD mirror instead of a point-in-time ODBC pull, matching what
-happened to `InTrans`/`GlTrans` (the "reused-reference-number" bugs in those tables'
-old incremental logic went away entirely once the design moved off ODBC pulls) — worth
-confirming, not assuming, before dropping the incremental logic.
+Four separate dataflows all trace back to `InMaster`, but direct investigation (real
+consumers, live job history, refresh logs — not assumed) found they serve four
+genuinely different purposes with different criticality, not one redundant pull to
+collapse into a shortcut. Full findings: [[project_nonjd_parts_order_tool_paused]]
+(covers all four, despite the name). Summary:
+
+| Dataflow | Real output table | Status | Notes |
+|---|---|---|---|
+| `df_InMaster_PartsLookup_Raw` | `InMaster_PartsLookup_Raw` | **Mission-critical, live** | Feeds the current production Parts Availability tool (static-file backend, confirmed via its live `extract.py` refresh pipeline) — do not touch as part of any consolidation |
+| `df_InMaster_Raw` | `InMaster` (plain) | Live, real report use | Confirmed consumer: "Part Sales with Low Margin" report reads `dbo.InMaster` directly (`LowMarginFlag`, `StockOrderPrice`) |
+| `df_InMaster_Parts_Ordering_Raw` | `InMaster_Raw` (confusingly named — the dataflow name `df_InMaster_Raw` was already taken when this one was built) | Paused, not dead | Feeds the Non-JD Parts Order Tool's `Fact_NonJD_Reorder` — confirmed via refresh-history logs that the whole pipeline (both raw dataflows + both fact notebooks) stopped together on 2026-08-04 and hasn't run since; a real project, deliberately paused |
+| `df_InMaster_PartsLookup_Incremental` | own copy | **Confirmed dead** | Built for the SQL-Database/Fabric-App architecture that was abandoned in favor of the current static-file backend; zero downstream consumers anywhere. Cleanup candidate (delete/turn off), not a migration candidate |
+
+**Not a migration target for this catalog's Category A batches** — each of the live
+ones needs its own design pass at its own time (PartsLookup_Raw's frequent-refresh
+need is nothing like the Low Margin report's occasional one), and the paused one
+shouldn't be touched until Brian picks the Non-JD Parts Order Tool project back up.
 
 ## Category B — Source is a source-side VIEW, not mirrored by JD (needs rebuild, not a shortcut)
 
