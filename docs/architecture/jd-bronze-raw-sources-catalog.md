@@ -88,28 +88,32 @@ shouldn't be touched until Brian picks the Non-JD Parts Order Tool project back 
 ## Category B — Source is a source-side VIEW, not mirrored by JD (needs rebuild, not a shortcut)
 
 JD's mirror only replicates physical tables — it does not mirror source-side SQL
-Anywhere views. Five dataflows pull from views; JD Bronze does have the *detail*
-tables those views appear to aggregate, so the aggregation logic itself would need to
-be rebuilt (likely a Spark notebook, matching this backend's established silver-layer
-pattern) rather than simply shortcut in.
+Anywhere views. Five dataflows pull from views: `BranchOperational`, `Technician`,
+`TechnicianAttendance`, `TechnicianEfficiency`, `TechnicianInvoice`,
+`TechnicianPunchedTime`.
 
-| Current dataflow | Source view | JD Bronze has (underlying detail) |
-|---|---|---|
-| `df_BranchOperational_Raw` | `BranchOperational` (View) | — (no obvious underlying detail table found) |
-| `df_Technician_Raw` | `Technician` (View) | — |
-| `df_TechnicianAttendance_Raw` | `TechnicianAttendance` (View, "aggregated view (not detail table)" per its own header) | `TechnicianAttendanceDetail` |
-| `df_TechnicianEfficiency_Raw` | `TechnicianEfficiency` (View) | derived from `TechnicianAttendanceDetail` + `TechnicianPunchedDetail` + `TechnicianInvoiceDetail` |
-| `df_TechnicianInvoice_Raw` | `TechnicianInvoice` (View) | `TechnicianInvoiceDetail` |
-| `df_TechnicianPunchedTime_Raw` | `TechnicianPunchedTime` (View) | `TechnicianPunchedDetail` |
+**Update 2026-09-10 — fully resolved, correcting an earlier wrong assumption in this
+doc.** This section originally guessed the Technician-family views aggregate from the
+three `*Detail` tables JD's mirror does carry (`TechnicianAttendanceDetail`,
+`TechnicianInvoiceDetail`, `TechnicianPunchedDetail`). **That guess was wrong.** Brian
+pulled the real `CREATE/ALTER VIEW` SQL directly from SQL Central this session — none
+of the 5 views touch any `*Detail` table at all. The real sources are `WkMechWk`,
+`WkOthSub`, `WkMechAdj`, `WkMechFl`, and `Contact` — full lineage, the actual
+Efficiency formula, and everything else found is in project memory
+`project_labor_performance_technician_views_resolved.md`, with the raw+Silver
+groundwork (`WKMECHADJ`, `WKMECHFL` — the two pieces not already covered by other
+batches) documented in `data-platform-workspaces.md`'s "WKMECHADJ and WKMECHFL"
+section. The actual Gold-layer Fact rebuild remains deliberately deferred, Brian's own
+call — this is no longer an "undone design question," it's a fully-scoped, not-yet-
+started piece of future work.
 
-`BranchOperational` is already handled (built via direct `Dataflow Gen2` pull this
-session, since it has no JD Bronze equivalent at all — same finding, independently
-reconfirmed here). The four Technician-family views are a real, undone design
-question: JD's mirror gives us the three *Detail tables already migrated in Category
-A, but the view logic that turns them into `TechnicianAttendance` /
-`TechnicianInvoice` / `TechnicianPunchedTime` / `TechnicianEfficiency` would need to
-be re-derived from scratch in a notebook. Not a cheap win — flagging it here so it's
-catalogued, not attempting it now.
+Same investigation also surfaced a real simplification opportunity for
+`BranchOperational` (currently built via a direct `Dataflow Gen2` pull, since it has
+no JD Bronze equivalent) — its real view SQL is a plain transform over `Branch_Name`,
+which is already migrated (`Silver_BranchName`, raw sources batch 1). Could likely be
+rebuilt as a trivial Spark transform instead, eliminating one more direct-ODBC
+dependency. Low urgency (Brian's own assessment: this data essentially never changes),
+not acted on — see the project memory file for the exact SQL and mapping.
 
 ## Category C — Real table, genuinely excluded from JD's mirror (same pattern as `jdis_Part_Information`)
 

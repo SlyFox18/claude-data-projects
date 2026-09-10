@@ -32,7 +32,7 @@ history still shows the old flat paths for older commits.
 
 | Lakehouse | Workspace | Lakehouse ID | Contents |
 |---|---|---|---|
-| DP_Staging | DP - Staging - Dev | `876255e0-d462-4697-adc1-4a655f5bb101` | `Tables/InTrans` — OneLake shortcut (passthrough identity) into `JD_EquipRDB_Production_Bronze.InTrans` (`JD_FabricOneLake` workspace `4bd21b07-f4ce-4b28-b0f1-0397fb5d5ea9`, lakehouse `7348c3a6-8694-4d11-bc70-1bd55be84ea2`). Verified 2026-09-04: row count, min/max timestamp, and the RO 1985073 spot check (9 rows) all match the source exactly — see `.claude/queries/adhoc/dp-bronze-verify/verify_shortcut.py`. Also holds `Tables/Silver_InTrans`, `Tables/GlTrans` (OneLake shortcut into JD's Bronze mirror), `Tables/BranchOperational` (Dataflow Gen2 ingestion, not a shortcut — see `dim_BranchLocation` below), `Tables/PartInformation_Active`, `Tables/PartInformation_Dead`, and `Tables/Silver_PartInformation` — see below for each. Also holds 9 more OneLake shortcuts into `JD_EquipRDB_Production_Bronze` (`ArMaster`, `ArMaster_Customer`, `contact`, `GLMASTER`, `InSalOrd`, `InSalPar`, `VhStockAccess`, `WarSubCl_Labour`, `Branch_Name`) plus their corresponding `Silver_*` tables — see "Raw sources batch 1" below. Also holds 10 more OneLake shortcuts (`TechnicianInvoiceDetail`, `TechnicianPunchedDetail`, `VhStock`, `VhTrans`, `WkInvReg`, `WKMECHWK`, `WKOTHSUB`, `WkRoFile`, `WkVehFl`, `WarClaim`) plus their corresponding `Silver_*` tables — see "Raw sources batch 2" below. Also holds `Tables/Invoice` (OneLake shortcut, 6,505,866 rows — the largest table this backend has touched) and `Tables/Silver_Invoice` — see "Invoice" below for the real grain bug found in this table. Also holds `Tables/InHist_PmManage` and `Tables/WKRODESC` (OneLake shortcuts) plus `Tables/Silver_InHist_PmManage` and `Tables/Silver_WkRoDesc` — see "InHist_PmManage and WKRODESC" below for the real business-rule-filter findings on both. |
+| DP_Staging | DP - Staging - Dev | `876255e0-d462-4697-adc1-4a655f5bb101` | `Tables/InTrans` — OneLake shortcut (passthrough identity) into `JD_EquipRDB_Production_Bronze.InTrans` (`JD_FabricOneLake` workspace `4bd21b07-f4ce-4b28-b0f1-0397fb5d5ea9`, lakehouse `7348c3a6-8694-4d11-bc70-1bd55be84ea2`). Verified 2026-09-04: row count, min/max timestamp, and the RO 1985073 spot check (9 rows) all match the source exactly — see `.claude/queries/adhoc/dp-bronze-verify/verify_shortcut.py`. Also holds `Tables/Silver_InTrans`, `Tables/GlTrans` (OneLake shortcut into JD's Bronze mirror), `Tables/BranchOperational` (Dataflow Gen2 ingestion, not a shortcut — see `dim_BranchLocation` below), `Tables/PartInformation_Active`, `Tables/PartInformation_Dead`, and `Tables/Silver_PartInformation` — see below for each. Also holds 9 more OneLake shortcuts into `JD_EquipRDB_Production_Bronze` (`ArMaster`, `ArMaster_Customer`, `contact`, `GLMASTER`, `InSalOrd`, `InSalPar`, `VhStockAccess`, `WarSubCl_Labour`, `Branch_Name`) plus their corresponding `Silver_*` tables — see "Raw sources batch 1" below. Also holds 10 more OneLake shortcuts (`TechnicianInvoiceDetail`, `TechnicianPunchedDetail`, `VhStock`, `VhTrans`, `WkInvReg`, `WKMECHWK`, `WKOTHSUB`, `WkRoFile`, `WkVehFl`, `WarClaim`) plus their corresponding `Silver_*` tables — see "Raw sources batch 2" below. Also holds `Tables/Invoice` (OneLake shortcut, 6,505,866 rows — the largest table this backend has touched) and `Tables/Silver_Invoice` — see "Invoice" below for the real grain bug found in this table. Also holds `Tables/InHist_PmManage` and `Tables/WKRODESC` (OneLake shortcuts) plus `Tables/Silver_InHist_PmManage` and `Tables/Silver_WkRoDesc` — see "InHist_PmManage and WKRODESC" below for the real business-rule-filter findings on both. Also holds `Tables/WKMECHADJ` and `Tables/WKMECHFL` (OneLake shortcuts) plus `Tables/Silver_WkMechAdj` and `Tables/Silver_WkMechFl` — see "WKMECHADJ and WKMECHFL" below for the Technician-family investigation these unblock. |
 | DP_Presentation | DP - Presentation - Dev | `966efc8a-16f9-423b-aa43-e368fcd8fb91` | `Tables/dim_RepairOrder`, `Tables/Fact_PartsPromo`, `Tables/Fact_InTrans_AllPromo`, `Tables/Fact_PartsAdjustments`, `Tables/dim_DateTable`, `Tables/dim_BranchLocation` — see below for each. |
 
 ### `Silver_InTrans`
@@ -516,6 +516,64 @@ JD's mirror — `ArMaster_Contact`, `InSalPar_Audit`, `Parts_InterbranchTransfer
 
 **Explicitly not part of this work:** no Franchise D or `LINE_NO = 1` scoping applied,
 no gold-layer business logic, no report repointing, no refresh schedule.
+
+## WKMECHADJ and WKMECHFL (2026-09-10) — the two missing pieces for the Technician-family rebuild
+
+Brian pulled the real `CREATE/ALTER VIEW` SQL for all 5 Technician-family source-side
+views directly from SQL Central this session (`Technician`, `TechnicianAttendance`,
+`TechnicianEfficiency`, `TechnicianInvoice`, `TechnicianPunchedTime`) — fully decoding
+Category B of the raw-sources catalog, previously the most opaque, undecided piece of
+the whole migration effort. Full writeup — the actual Efficiency formula, complete
+lineage for all 5 views, a real `BranchOperational` simplification opportunity found
+along the way, and Brian's own stated intent to revisit the whole Labor Performance
+report design once this reaches Gold — lives in project memory:
+`project_labor_performance_technician_views_resolved.md`.
+
+**The short version:** every input the eventual Gold rebuild needs traces back to a
+table already in this backend — `Contact` (batch 1), `WkMechWk` and `WkOthSub` (batch
+2) — except two new ones, both confirmed present in JD Bronze this session (no
+direct-ODBC pull needed anywhere in this category, unlike Category C):
+- **`WKMECHADJ`** — the real source behind `TechnicianAttendance`, and part of
+  `TechnicianPunchedTime`'s join-gate logic (only counts labor on days a technician
+  has a valid same-day attendance record).
+- **`WKMECHFL`** — the real source behind `TechnicianInformation`, which `Technician`
+  routes through.
+
+Neither table ever had its own `LH_Master_Data` dataflow — both were only ever
+consumed indirectly through the views — so there was no old dataflow column contract
+to replicate here, unlike every other table migrated this session.
+
+**What was built:** `WKMECHADJ` (1,583,585 rows) brought in whole — narrow enough (12
+columns total) that there was no real curation decision to make. `WKMECHFL` (1,454
+rows — matches the existing live `Technician` table's own row count exactly,
+confirming it's the true one-row-per-technician master) curated to the 5 columns the
+real `TechnicianInformation` view proved necessary, out of 38 total — the shortcut
+itself stays full-fidelity regardless, so nothing is permanently lost by curating
+Silver narrowly; the other 33 columns are one query away whenever the Gold-layer
+rework wants them.
+
+**One real casing correction:** the view's own SQL text references `Team_Code`, the
+live bronze schema stores it as `TEAM_CODE`.
+
+**One real, deliberate omission:** `TechnicianInformation`'s view applies
+`CASE WHEN Is_Terminated = 'N' THEN 0 ELSE 1 END` to derive a boolean `IsTerminated`
+flag — a real business interpretation (any non-`'N'` value, including nulls, means
+"terminated"), not a faithful passthrough. `Silver_WkMechFl` carries the raw
+`is_terminated` value through unconverted — same principle already applied to every
+other business-rule filter deferred this session (`InHist_PmManage`'s `Franchise='D'`,
+`WKRODESC`'s `LINE_NO=1`).
+
+**Verification:** both independent DuckDB scripts pass exactly —
+`verify_shortcuts_wkmechadj_wkmechfl.py` (`WKMECHADJ` 1,583,585 = 1,583,585,
+`WKMECHFL` 1,454 = 1,454) and `verify_silver_wkmechadj_wkmechfl.py` (both Silver
+tables match their bronze shortcut exactly).
+
+**This is raw + Silver only.** The actual Gold-layer Technician-family Fact rebuild —
+the real joins (`WkMechWk` ⋈ `WkOthSub`, gated by `WkMechAdj`), the invoiced-only and
+2-year-window decisions, the Efficiency formula, the grouping logic — and any Labor
+Performance report rework are deliberately separate, future pieces of work, not
+started here. So is the `BranchOperational` simplification opportunity found in the
+same investigation (see the project memory file for detail).
 
 ## Prod tier
 
