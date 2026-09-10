@@ -34,7 +34,7 @@ Brian's own reasoning, endorsed: "whatever we do with the InMaster it will happe
 
 **Files:** none (Fabric portal action)
 
-- [ ] **Step 1: Create the shortcut**
+- [x] **Step 1: Create the shortcut**
 
 In the Fabric portal:
 1. Open workspace `DP - Staging - Dev`
@@ -46,7 +46,7 @@ In the Fabric portal:
 7. Keep the destination name as `InMaster` (don't rename)
 8. **Create**
 
-- [ ] **Step 2: Confirm it appears**
+- [x] **Step 2: Confirm it appears**
 
 In `DP_Staging` → `Tables`, confirm `InMaster` is listed. Report back once done.
 
@@ -95,7 +95,7 @@ print(f"JD Bronze direct row count:     {jd_count:,}")
 print(f"Match: {dp_count == jd_count}")
 ```
 
-- [ ] **Step 2: Brian runs it and reports the output**
+- [x] **Step 2: Brian runs it and reports the output**
 
 ```bash
 cd "C:\Users\bfox\Documents\Git-Projects\data-projects"
@@ -320,15 +320,15 @@ git push origin dev
 
 **Files:** none (Fabric portal action)
 
-- [ ] **Step 1: Sync the workspace**
+- [x] **Step 1: Sync the workspace**
 
 `DP - Staging - Dev` → Source control → **Update all**.
 
-- [ ] **Step 2: Run the notebook**
+- [x] **Step 2: Run the notebook**
 
 Open `Build_Silver_InMaster` (in `Data Notebooks/`) and **Run all** cells.
 
-- [ ] **Step 3: Report back the notebook's own output**
+- [x] **Step 3: Report back the notebook's own output**
 
 Bronze row count, Silver row count, the sample rows, and the `LowMarginFlag` breakdown. If the assertion fails or the write throws an error, stop and report the full error rather than re-running blindly.
 
@@ -370,7 +370,7 @@ print(f"Silver InMaster rows:  {silver_count:,}")
 print(f"Match: {bronze_count == silver_count}")
 ```
 
-- [ ] **Step 2: Brian runs it and reports the output**
+- [x] **Step 2: Brian runs it and reports the output**
 
 ```bash
 cd "C:\Users\bfox\Documents\Git-Projects\data-projects"

@@ -611,11 +611,12 @@ with Low Margin" report, which already reads `dbo.InMaster` directly via the SQL
 Endpoint. This migration doesn't change that report's behavior, just gives it — and any
 future consumer — a non-ODBC path to the same data.
 
-**Verification:** `verify_shortcut_inmaster.py` (bronze shortcut vs. JD Bronze direct) and
-`verify_silver_inmaster.py` (Silver vs. bronze shortcut) in
-`.claude/queries/adhoc/dp-bronze-verify/`. Run after Brian creates the shortcut and runs
-`Build_Silver_InMaster.Notebook` — see `docs/superpowers/plans/2026-09-10-dp-inmaster.md`
-Tasks 1–5 for the exact steps.
+**Verification:** both independent DuckDB scripts pass exactly —
+`verify_shortcut_inmaster.py` (JD Bronze 1,111,807 rows / 73 columns = DP_Staging shortcut
+1,111,807 rows / 73 columns) and `verify_silver_inmaster.py` (Silver_InMaster 1,111,807 rows,
+20-column contract confirmed including `IN_TRANSIT_QTY`). `LowMarginFlag` breakdown: 1,065,514
+null, 45,014 empty string, 1,279 `LOW` — confirms the field is real and sparsely populated, as
+expected for a manually-maintained flag.
 
 **This is raw + Silver only.** No Gold-layer logic, no `Parts_InterbranchTransfers` rebuild
 (deliberately deferred — a separate future piece of work), no report work.
