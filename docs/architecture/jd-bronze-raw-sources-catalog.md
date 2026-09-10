@@ -39,7 +39,7 @@ lives in the dataflow's later steps.
 | `df_GlTrans_Full_Raw` | `GlTrans` | `GlTrans` | Same source table as above, just a wider 3-yr pull — redundant once `DP`'s shortcut exists |
 | `df_INSALORD_Raw` | `insalord` | `InSalOrd` | **Migrated 2026-09-10** — see "Raw sources batch 1" in `data-platform-workspaces.md` |
 | `df_INSALPAR_Raw` | `InSalPar` | `InSalPar` | **Migrated 2026-09-10** — see "Raw sources batch 1" in `data-platform-workspaces.md` |
-| `df_InHist_PmManage_Raw` | `InHist_PmManage` | `InHist_PmManage` | |
+| `df_InHist_PmManage_Raw` | `InHist_PmManage` | `InHist_PmManage` | **Migrated 2026-09-10** — see "InHist_PmManage and WKRODESC" in `data-platform-workspaces.md`. `Franchise = 'D'` not replicated (would have excluded a lowercase `'d'` variant, 212 rows) |
 | `df_InMaster_PartsLookup_Incremental` | `InMaster` | `InMaster` | Incremental/watermark logic — see "InMaster consolidation" below |
 | `df_InMaster_PartsLookup_Raw` | `InMaster` | `InMaster` | |
 | `df_InMaster_Parts_Ordering_Raw` | `InMaster` | `InMaster` | |
@@ -56,7 +56,7 @@ lives in the dataflow's later steps.
 | `df_WKINVREG_Raw` | `WkInvReg` | `WkInvReg` | **Migrated 2026-09-10** — see "Raw sources batch 2" in `data-platform-workspaces.md` |
 | `df_WKMECHWK_Raw` | `wkmechwk` | `WKMECHWK` | **Migrated 2026-09-10** — see "Raw sources batch 2" in `data-platform-workspaces.md` |
 | `df_WKOTHSUB_Raw` | `wkothsub` | `WKOTHSUB` | **Migrated 2026-09-10** — see "Raw sources batch 2" in `data-platform-workspaces.md` |
-| `df_WKRODESC_Raw` | `wkrodesc` | `WKRODESC` | |
+| `df_WKRODESC_Raw` | `wkrodesc` | `WKRODESC` | **Migrated 2026-09-10** — see "InHist_PmManage and WKRODESC" in `data-platform-workspaces.md`. `LINE_NO = 1` not replicated (10 ROs have no line-1 row; `1000001`/`1000002` line numbers, 26% of the table, were unexplained and silently dropped) |
 | `df_WKROFILE_Raw` | `wkrofile` | `WkRoFile` | **Migrated 2026-09-10** — see "Raw sources batch 2" in `data-platform-workspaces.md` |
 | `df_WKVEHFL_Raw` | `wkvehfl` | `WkVehFl` | **Migrated 2026-09-10** — see "Raw sources batch 2" in `data-platform-workspaces.md` |
 | `df_WarClaim_Raw` | `WarClaim` | `WarClaim` | **Migrated 2026-09-10** — see "Raw sources batch 2" in `data-platform-workspaces.md` |

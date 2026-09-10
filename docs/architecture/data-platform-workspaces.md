@@ -32,7 +32,7 @@ history still shows the old flat paths for older commits.
 
 | Lakehouse | Workspace | Lakehouse ID | Contents |
 |---|---|---|---|
-| DP_Staging | DP - Staging - Dev | `876255e0-d462-4697-adc1-4a655f5bb101` | `Tables/InTrans` — OneLake shortcut (passthrough identity) into `JD_EquipRDB_Production_Bronze.InTrans` (`JD_FabricOneLake` workspace `4bd21b07-f4ce-4b28-b0f1-0397fb5d5ea9`, lakehouse `7348c3a6-8694-4d11-bc70-1bd55be84ea2`). Verified 2026-09-04: row count, min/max timestamp, and the RO 1985073 spot check (9 rows) all match the source exactly — see `.claude/queries/adhoc/dp-bronze-verify/verify_shortcut.py`. Also holds `Tables/Silver_InTrans`, `Tables/GlTrans` (OneLake shortcut into JD's Bronze mirror), `Tables/BranchOperational` (Dataflow Gen2 ingestion, not a shortcut — see `dim_BranchLocation` below), `Tables/PartInformation_Active`, `Tables/PartInformation_Dead`, and `Tables/Silver_PartInformation` — see below for each. Also holds 9 more OneLake shortcuts into `JD_EquipRDB_Production_Bronze` (`ArMaster`, `ArMaster_Customer`, `contact`, `GLMASTER`, `InSalOrd`, `InSalPar`, `VhStockAccess`, `WarSubCl_Labour`, `Branch_Name`) plus their corresponding `Silver_*` tables — see "Raw sources batch 1" below. Also holds 10 more OneLake shortcuts (`TechnicianInvoiceDetail`, `TechnicianPunchedDetail`, `VhStock`, `VhTrans`, `WkInvReg`, `WKMECHWK`, `WKOTHSUB`, `WkRoFile`, `WkVehFl`, `WarClaim`) plus their corresponding `Silver_*` tables — see "Raw sources batch 2" below. Also holds `Tables/Invoice` (OneLake shortcut, 6,505,866 rows — the largest table this backend has touched) and `Tables/Silver_Invoice` — see "Invoice" below for the real grain bug found in this table. |
+| DP_Staging | DP - Staging - Dev | `876255e0-d462-4697-adc1-4a655f5bb101` | `Tables/InTrans` — OneLake shortcut (passthrough identity) into `JD_EquipRDB_Production_Bronze.InTrans` (`JD_FabricOneLake` workspace `4bd21b07-f4ce-4b28-b0f1-0397fb5d5ea9`, lakehouse `7348c3a6-8694-4d11-bc70-1bd55be84ea2`). Verified 2026-09-04: row count, min/max timestamp, and the RO 1985073 spot check (9 rows) all match the source exactly — see `.claude/queries/adhoc/dp-bronze-verify/verify_shortcut.py`. Also holds `Tables/Silver_InTrans`, `Tables/GlTrans` (OneLake shortcut into JD's Bronze mirror), `Tables/BranchOperational` (Dataflow Gen2 ingestion, not a shortcut — see `dim_BranchLocation` below), `Tables/PartInformation_Active`, `Tables/PartInformation_Dead`, and `Tables/Silver_PartInformation` — see below for each. Also holds 9 more OneLake shortcuts into `JD_EquipRDB_Production_Bronze` (`ArMaster`, `ArMaster_Customer`, `contact`, `GLMASTER`, `InSalOrd`, `InSalPar`, `VhStockAccess`, `WarSubCl_Labour`, `Branch_Name`) plus their corresponding `Silver_*` tables — see "Raw sources batch 1" below. Also holds 10 more OneLake shortcuts (`TechnicianInvoiceDetail`, `TechnicianPunchedDetail`, `VhStock`, `VhTrans`, `WkInvReg`, `WKMECHWK`, `WKOTHSUB`, `WkRoFile`, `WkVehFl`, `WarClaim`) plus their corresponding `Silver_*` tables — see "Raw sources batch 2" below. Also holds `Tables/Invoice` (OneLake shortcut, 6,505,866 rows — the largest table this backend has touched) and `Tables/Silver_Invoice` — see "Invoice" below for the real grain bug found in this table. Also holds `Tables/InHist_PmManage` and `Tables/WKRODESC` (OneLake shortcuts) plus `Tables/Silver_InHist_PmManage` and `Tables/Silver_WkRoDesc` — see "InHist_PmManage and WKRODESC" below for the real business-rule-filter findings on both. |
 | DP_Presentation | DP - Presentation - Dev | `966efc8a-16f9-423b-aa43-e368fcd8fb91` | `Tables/dim_RepairOrder`, `Tables/Fact_PartsPromo`, `Tables/Fact_InTrans_AllPromo`, `Tables/Fact_PartsAdjustments`, `Tables/dim_DateTable`, `Tables/dim_BranchLocation` — see below for each. |
 
 ### `Silver_InTrans`
@@ -455,6 +455,67 @@ written Silver data).
 
 **Explicitly not part of this work:** deduplication, gold-layer business logic,
 partitioning, any report repointing, any refresh schedule.
+
+## InHist_PmManage and WKRODESC (2026-09-10) — real business-rule filters, brought in unfiltered anyway
+
+The last two Category A tables from the original raw-sources catalog that needed more
+thought before migrating — both old dataflows filtered on something more meaningful
+than a date window, unlike every other table migrated so far.
+
+**`InHist_PmManage`'s `Franchise = 'D'` filter** is genuinely tied to the real "First
+Pass Fill" report's purpose (John Deere equipment specifically), and Franchise D really
+is the dominant scope: 1,105,419 of 1,328,067 rows (83.2%). But a lowercase `'d'`
+variant (212 rows) sits right next to uppercase `'D'` in the live data — almost
+certainly the same franchise with a data-entry casing inconsistency, which the old
+exact-match `= 'D'` filter would have silently excluded. The remaining 16.8% spans 43
+other franchise codes, some down to single-digit row counts.
+
+**`WKRODESC`'s `WHERE LINE_NO = 1` filter** is a grain-narrowing rule ("primary job per
+work order"), not a date bound, and it has two real, confirmed costs:
+- **10 work orders have no `LINE_NO = 1` row at all** (716,698 distinct
+  `(Branch, WorkOrder)` combos, only 716,688 have a line-1 row) — a report trusting
+  "every RO has a primary job" would silently get zero rows for those 10.
+- **`LINE_NO` values of `1000001` and `1000002` account for 426,921 rows** — 26% of the
+  whole 1,623,053-row table. Not organic sequential numbers — an unexplained offset
+  pattern the old filter silently drops entirely, and nobody has yet investigated what
+  it represents.
+
+**Neither filter is replicated.** Both encode a real business-scoping decision, not a
+data-quality guard (unlike `WarClaim`'s or `Invoice`'s `IS NOT NULL` filters, which
+were kept) — and both have a confirmed real cost on top of that. Consistent with every
+other business-shaping call already deferred this session (date windows, no
+partitioning on `Invoice`): bring in everything at Silver, let Gold decide. The
+eventual First Pass Fill Gold/Fact table can still scope to Franchise D there. A future
+`WKRODESC` Fact table consumer can decide whether it wants "primary job only" or
+something else, once the `1000001`/`1000002` pattern is actually understood.
+
+**One real casing correction found:** `InHist_PmManage`'s `PART_NO` → `Part_No` (the
+old dataflow's all-caps SQL text worked under SQL Anywhere's case-insensitive
+resolution, but the live bronze schema stores it mixed-case). `WKRODESC` needed no
+casing corrections.
+
+**What was built:** plain OneLake shortcuts (`InHist_PmManage`, `WKRODESC`) plus
+`Build_Silver_InHist_PmManage` and `Build_Silver_WkRoDesc`, both in
+`DP - Staging - Dev/Data Notebooks/` — full unfiltered data, no WHERE clause on
+either.
+
+**Verification:** both independent DuckDB scripts pass exactly —
+`verify_shortcuts_inhist_wkrodesc.py` (both bronze shortcuts match JD Bronze direct:
+`InHist_PmManage` 1,328,067 = 1,328,067, `WKRODESC` 1,623,053 = 1,623,053) and
+`verify_silver_inhist_wkrodesc.py` (both Silver tables match their bronze shortcut
+exactly).
+
+**This closes out every Category A table in the original raw-sources catalog except
+the InMaster group** (filed separately — see `project_nonjd_parts_order_tool_paused.md`
+in project memory). Remaining, each needing its own future design work: Category B
+(the Technician-family views — `Technician`, `TechnicianAttendance`,
+`TechnicianEfficiency`, `TechnicianInvoice`, `TechnicianPunchedTime` — source-side
+views JD's mirror doesn't replicate) and Category C (tables genuinely excluded from
+JD's mirror — `ArMaster_Contact`, `InSalPar_Audit`, `Parts_InterbranchTransfers`,
+`RepairOrderDetail`).
+
+**Explicitly not part of this work:** no Franchise D or `LINE_NO = 1` scoping applied,
+no gold-layer business logic, no report repointing, no refresh schedule.
 
 ## Prod tier
 
