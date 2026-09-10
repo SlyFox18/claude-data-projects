@@ -57,7 +57,7 @@ In `DP_Staging` → `Tables`, confirm `InMaster` is listed. Report back once don
 **Files:**
 - Create: `.claude/queries/adhoc/dp-bronze-verify/verify_shortcut_inmaster.py`
 
-- [ ] **Step 1: Write the verification script**
+- [x] **Step 1: Write the verification script**
 
 ```python
 """
@@ -104,7 +104,7 @@ python .claude/queries/adhoc/dp-bronze-verify/verify_shortcut_inmaster.py
 
 Expected: `Match: True`.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 cd "C:\Users\bfox\Documents\Git-Projects\data-projects"
@@ -126,7 +126,7 @@ git push origin dev
 - Create: `workspaces/DP - Staging - Dev/Data Notebooks/Build_Silver_InMaster.Notebook/.platform` (in `fabric-workspace-docs`)
 - Create: `workspaces/DP - Staging - Dev/Data Notebooks/Build_Silver_InMaster.Notebook/notebook-content.py`
 
-- [ ] **Step 1: Create the `.platform` file**
+- [x] **Step 1: Create the `.platform` file**
 
 ```json
 {
@@ -142,7 +142,7 @@ git push origin dev
 }
 ```
 
-- [ ] **Step 2: Create the notebook content**
+- [x] **Step 2: Create the notebook content**
 
 ```python
 # Fabric notebook source
@@ -298,7 +298,7 @@ print(low_margin_breakdown.to_string())
 # META }
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 cd "C:\Users\bfox\Documents\Git-Projects\fabric-workspace-docs"
@@ -339,7 +339,7 @@ Bronze row count, Silver row count, the sample rows, and the `LowMarginFlag` bre
 **Files:**
 - Create: `.claude/queries/adhoc/dp-bronze-verify/verify_silver_inmaster.py`
 
-- [ ] **Step 1: Write the verification script**
+- [x] **Step 1: Write the verification script**
 
 ```python
 """
@@ -379,7 +379,7 @@ python .claude/queries/adhoc/dp-bronze-verify/verify_silver_inmaster.py
 
 Expected: `Match: True`.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 cd "C:\Users\bfox\Documents\Git-Projects\data-projects"
@@ -400,7 +400,7 @@ git push origin dev
 - Create: `C:\Users\bfox\.claude\projects\c--Users-bfox-Documents-Git-Projects-data-projects\memory\project_category_c_views_resolved.md`
 - Modify: `C:\Users\bfox\.claude\projects\c--Users-bfox-Documents-Git-Projects-data-projects\memory\MEMORY.md`
 
-- [ ] **Step 1: Write the memory file**
+- [x] **Step 1: Write the memory file**
 
 Following the exact same pattern as `project_labor_performance_technician_views_resolved.md`, write a new memory file capturing this session's Category C investigation:
 
@@ -483,7 +483,7 @@ strong pull to prioritize these two the way `InMaster`/`ArMaster_Contact` had a
 concrete reason to move now.
 ```
 
-- [ ] **Step 2: Add a pointer in `MEMORY.md`**
+- [x] **Step 2: Add a pointer in `MEMORY.md`**
 
 Add a one-line pointer under the "In Progress" section, near the JD Bronze project line:
 
@@ -499,11 +499,11 @@ Add a one-line pointer under the "In Progress" section, near the JD Bronze proje
 - Modify: `docs/architecture/data-platform-workspaces.md`
 - Modify: `docs/architecture/jd-bronze-raw-sources-catalog.md`
 
-- [ ] **Step 1: Add `InMaster`/`Silver_InMaster` to `DP_Staging`'s Lakehouses table**
+- [x] **Step 1: Add `InMaster`/`Silver_InMaster` to `DP_Staging`'s Lakehouses table**
 
 In `docs/architecture/data-platform-workspaces.md`, find the `DP_Staging` lakehouse row and add a mention of the new `InMaster` shortcut and `Silver_InMaster` table, pointing to the new section below.
 
-- [ ] **Step 2: Add a new section**
+- [x] **Step 2: Add a new section**
 
 Add a `## InMaster (2026-09-10) — the plain base table, separate from PartsLookup/Parts-Ordering` section (after the "WKMECHADJ and WKMECHFL" section) covering:
 - The scope clarification: this is the plain `InMaster` table, a separate Fabric object from `InMaster_PartsLookup_Raw` (mission-critical, untouched) and the Non-JD Parts Order Tool's `InMaster_Parts_Ordering_Raw` (paused, untouched)
@@ -513,11 +513,11 @@ Add a `## InMaster (2026-09-10) — the plain base table, separate from PartsLoo
 - Verification results (both scripts, all passing)
 - Explicit note: raw+Silver only — no Gold logic, no `Parts_InterbranchTransfers` rebuild, no report work
 
-- [ ] **Step 3: Update the catalog doc's Category C section**
+- [x] **Step 3: Update the catalog doc's Category C section**
 
 In `docs/architecture/jd-bronze-raw-sources-catalog.md`'s Category C section, note that `ArMaster_Contact` and `Parts_InterbranchTransfers` were found this session (via their real SQL Anywhere definitions) to be views, not excluded base tables — point to `project_category_c_views_resolved.md` in project memory for the full detail. Note `ArMaster_Contact` is now fully unblocked and `Parts_InterbranchTransfers` is unblocked for all three of its inputs as of this plan. Note `InSalPar_Audit` and `RepairOrderDetail` were confirmed genuine base tables — the catalog's original assessment holds for those two.
 
-- [ ] **Step 4: Commit and push**
+- [x] **Step 4: Commit and push**
 
 ```bash
 cd "C:\Users\bfox\Documents\Git-Projects\data-projects"
@@ -552,7 +552,7 @@ git push origin dev
 
 **Files:** none
 
-- [ ] **Step 1: Confirm both repos clean**
+- [x] **Step 1: Confirm both repos clean**
 
 ```bash
 cd "C:\Users\bfox\Documents\Git-Projects\fabric-workspace-docs" && git status --short
