@@ -133,14 +133,15 @@ including the real view SQL for both, is in project memory
 |---|---|---|
 | `df_JDIS_PART_INFORMATION_Raw` / `df_NonJD_Parts_Ordering_Raw` | `jdis_Part_Information` | Base table — **already migrated this session** (tiered Active/Dead split) |
 | `df_ArMaster_Contact` | `ArMaster_Contact` | **View** — joins `ArMaster` + `contact`, both already migrated (batch 1). Fully unblocked. Gold-layer rebuild not yet started (Brian's own call, staying focused on raw/Silver) |
-| `df_Insalpar_Audit_Raw` | `InSalPar_Audit` | Confirmed genuine base table — original assessment holds, stays on direct ODBC pull, not attempted this session |
+| `df_Insalpar_Audit_Raw` | `InSalPar_Audit` | Confirmed genuine base table, original assessment holds — **migrated this session** via `df_InSalPar_Audit_Raw` (direct ODBC pull, Dataflow Gen2). Kept the source's `PURORDER_TYPE='E'` filter (real 7.2x recurring-ODBC-cost reduction) and stayed curated to 9 columns. See `docs/superpowers/plans/2026-09-10-dp-insalpar-audit-repairorderdetail.md` |
 | `df_Parts_InterbranchTransfer_Raw` | `Parts_InterbranchTransfers` | **View** — joins `InSalPar` + `InMaster` + `InSalOrd`. All 3 inputs now migrated (`InSalPar`/`InSalOrd` batch 1, `InMaster` via `docs/superpowers/plans/2026-09-10-dp-inmaster.md`) — unblocked for all 3 inputs. Contains a real business-rule filter (`WHERE ord.type = 'T'`) and a query-time-relative `OrderAge` column that can't be frozen into a static table as-is; see project memory for detail. Gold-layer rebuild not yet started |
-| `df_RepairOrderDetail_Raw` | `RepairOrderDetail` | Confirmed genuine base table — original assessment holds, stays on direct ODBC pull, not attempted this session |
+| `df_RepairOrderDetail_Raw` | `RepairOrderDetail` | Confirmed genuine base table, original assessment holds — **migrated this session** via `df_RepairOrderDetail_Raw` (direct ODBC pull, Dataflow Gen2). Only 2,875 real rows (a live open-WO/WIP snapshot, not history) — brought in all 31 real columns unfiltered. See `docs/superpowers/plans/2026-09-10-dp-insalpar-audit-repairorderdetail.md` |
 
-`InSalPar_Audit` and `RepairOrderDetail` are the only two of the original four still
-genuinely excluded from JD's mirror — no shortcut path exists for either, the only
-way in remains a direct ODBC pull (Dataflow Gen2), same pattern as
-`jdis_Part_Information`/`BranchOperational`.
+`InSalPar_Audit` and `RepairOrderDetail` were the only two of the original four still
+genuinely excluded from JD's mirror — no shortcut path exists for either, so both stayed on
+a direct ODBC pull (Dataflow Gen2), same pattern as `jdis_Part_Information`/
+`BranchOperational`. **Both now migrated (2026-09-10)** — this closes out every table in
+Category A, B, and C of this catalog.
 
 ## Category D — Not a database source at all (out of scope for this comparison)
 
@@ -157,7 +158,7 @@ way in remains a direct ODBC pull (Dataflow Gen2), same pattern as
 |---|---|---|
 | A — direct shortcut match | 27 dataflows (~21 tables) | Cheap win, proven pattern (`InTrans`/`GlTrans` precedent) |
 | B — view, needs rebuild | 5 dataflows | Real design work — notebook rebuild of view logic, not a shortcut |
-| C — genuinely excluded from JD mirror | 2 dataflows (+ `jdis_Part_Information`, already done; `ArMaster_Contact`/`Parts_InterbranchTransfers` corrected to Category B-style views, see above) | `InSalPar_Audit`/`RepairOrderDetail` stay on direct ODBC pull, same as today |
+| C — genuinely excluded from JD mirror | 2 dataflows, **both migrated** (+ `jdis_Part_Information`, already done; `ArMaster_Contact`/`Parts_InterbranchTransfers` corrected to Category B-style views, see above) | `InSalPar_Audit`/`RepairOrderDetail` migrated via direct ODBC pull (Dataflow Gen2) — every Category C table now done |
 | D — not a DB source | 4 dataflows | Out of scope for this migration entirely |
 
 **Not covered here:** `02 - Analysis`, `03 - Dimensions`, `04 - Facts`, `05 -

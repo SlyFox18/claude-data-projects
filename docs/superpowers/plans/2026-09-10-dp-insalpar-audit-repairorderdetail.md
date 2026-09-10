@@ -430,11 +430,11 @@ git push origin dev
 
 **Files:** none (Fabric portal action)
 
-- [ ] **Step 1: Sync the workspace**
+- [x] **Step 1: Sync the workspace**
 
 `DP - Staging - Dev` → Source control → **Update all**.
 
-- [ ] **Step 2: Run both dataflows**
+- [x] **Step 2: Run both dataflows**
 
 Open `df_InSalPar_Audit_Raw` (in `Raw Data - Dataflows/`) and **Refresh now**. Then open
 `df_RepairOrderDetail_Raw` and **Refresh now**.
@@ -444,7 +444,7 @@ bindings, the git-synced connection reference may need to be manually re-pointed
 same `dsn=EquipRDB64` connection the other 3 dataflows in this workspace already use —
 report back the exact error if this happens rather than guessing at a fix.
 
-- [ ] **Step 3: Report back**
+- [x] **Step 3: Report back**
 
 Both dataflows' refresh status (success/failure), and if either fails, the full error
 text.
@@ -542,7 +542,7 @@ print("DONE")
 print("=" * 80)
 ```
 
-- [ ] **Step 2: Brian runs it and reports the output**
+- [x] **Step 2: Brian runs it and reports the output**
 
 ```bash
 cd "C:\Users\bfox\Documents\Git-Projects\data-projects"
@@ -610,7 +610,7 @@ git push origin dev
 
 **Files:** none
 
-- [ ] **Step 1: Confirm both repos clean**
+- [x] **Step 1: Confirm both repos clean**
 
 ```bash
 cd "C:\Users\bfox\Documents\Git-Projects\fabric-workspace-docs" && git status --short

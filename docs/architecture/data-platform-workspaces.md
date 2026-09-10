@@ -32,7 +32,7 @@ history still shows the old flat paths for older commits.
 
 | Lakehouse | Workspace | Lakehouse ID | Contents |
 |---|---|---|---|
-| DP_Staging | DP - Staging - Dev | `876255e0-d462-4697-adc1-4a655f5bb101` | `Tables/InTrans` — OneLake shortcut (passthrough identity) into `JD_EquipRDB_Production_Bronze.InTrans` (`JD_FabricOneLake` workspace `4bd21b07-f4ce-4b28-b0f1-0397fb5d5ea9`, lakehouse `7348c3a6-8694-4d11-bc70-1bd55be84ea2`). Verified 2026-09-04: row count, min/max timestamp, and the RO 1985073 spot check (9 rows) all match the source exactly — see `.claude/queries/adhoc/dp-bronze-verify/verify_shortcut.py`. Also holds `Tables/Silver_InTrans`, `Tables/GlTrans` (OneLake shortcut into JD's Bronze mirror), `Tables/BranchOperational` (Dataflow Gen2 ingestion, not a shortcut — see `dim_BranchLocation` below), `Tables/PartInformation_Active`, `Tables/PartInformation_Dead`, and `Tables/Silver_PartInformation` — see below for each. Also holds 9 more OneLake shortcuts into `JD_EquipRDB_Production_Bronze` (`ArMaster`, `ArMaster_Customer`, `contact`, `GLMASTER`, `InSalOrd`, `InSalPar`, `VhStockAccess`, `WarSubCl_Labour`, `Branch_Name`) plus their corresponding `Silver_*` tables — see "Raw sources batch 1" below. Also holds 10 more OneLake shortcuts (`TechnicianInvoiceDetail`, `TechnicianPunchedDetail`, `VhStock`, `VhTrans`, `WkInvReg`, `WKMECHWK`, `WKOTHSUB`, `WkRoFile`, `WkVehFl`, `WarClaim`) plus their corresponding `Silver_*` tables — see "Raw sources batch 2" below. Also holds `Tables/Invoice` (OneLake shortcut, 6,505,866 rows — the largest table this backend has touched) and `Tables/Silver_Invoice` — see "Invoice" below for the real grain bug found in this table. Also holds `Tables/InHist_PmManage` and `Tables/WKRODESC` (OneLake shortcuts) plus `Tables/Silver_InHist_PmManage` and `Tables/Silver_WkRoDesc` — see "InHist_PmManage and WKRODESC" below for the real business-rule-filter findings on both. Also holds `Tables/WKMECHADJ` and `Tables/WKMECHFL` (OneLake shortcuts) plus `Tables/Silver_WkMechAdj` and `Tables/Silver_WkMechFl` — see "WKMECHADJ and WKMECHFL" below for the Technician-family investigation these unblock. Also holds `Tables/InMaster` (OneLake shortcut) plus `Tables/Silver_InMaster` — see "InMaster" below for the plain-table scope clarification and the `Parts_InterbranchTransfers` dependency this unblocks. |
+| DP_Staging | DP - Staging - Dev | `876255e0-d462-4697-adc1-4a655f5bb101` | `Tables/InTrans` — OneLake shortcut (passthrough identity) into `JD_EquipRDB_Production_Bronze.InTrans` (`JD_FabricOneLake` workspace `4bd21b07-f4ce-4b28-b0f1-0397fb5d5ea9`, lakehouse `7348c3a6-8694-4d11-bc70-1bd55be84ea2`). Verified 2026-09-04: row count, min/max timestamp, and the RO 1985073 spot check (9 rows) all match the source exactly — see `.claude/queries/adhoc/dp-bronze-verify/verify_shortcut.py`. Also holds `Tables/Silver_InTrans`, `Tables/GlTrans` (OneLake shortcut into JD's Bronze mirror), `Tables/BranchOperational` (Dataflow Gen2 ingestion, not a shortcut — see `dim_BranchLocation` below), `Tables/PartInformation_Active`, `Tables/PartInformation_Dead`, and `Tables/Silver_PartInformation` — see below for each. Also holds 9 more OneLake shortcuts into `JD_EquipRDB_Production_Bronze` (`ArMaster`, `ArMaster_Customer`, `contact`, `GLMASTER`, `InSalOrd`, `InSalPar`, `VhStockAccess`, `WarSubCl_Labour`, `Branch_Name`) plus their corresponding `Silver_*` tables — see "Raw sources batch 1" below. Also holds 10 more OneLake shortcuts (`TechnicianInvoiceDetail`, `TechnicianPunchedDetail`, `VhStock`, `VhTrans`, `WkInvReg`, `WKMECHWK`, `WKOTHSUB`, `WkRoFile`, `WkVehFl`, `WarClaim`) plus their corresponding `Silver_*` tables — see "Raw sources batch 2" below. Also holds `Tables/Invoice` (OneLake shortcut, 6,505,866 rows — the largest table this backend has touched) and `Tables/Silver_Invoice` — see "Invoice" below for the real grain bug found in this table. Also holds `Tables/InHist_PmManage` and `Tables/WKRODESC` (OneLake shortcuts) plus `Tables/Silver_InHist_PmManage` and `Tables/Silver_WkRoDesc` — see "InHist_PmManage and WKRODESC" below for the real business-rule-filter findings on both. Also holds `Tables/WKMECHADJ` and `Tables/WKMECHFL` (OneLake shortcuts) plus `Tables/Silver_WkMechAdj` and `Tables/Silver_WkMechFl` — see "WKMECHADJ and WKMECHFL" below for the Technician-family investigation these unblock. Also holds `Tables/InMaster` (OneLake shortcut) plus `Tables/Silver_InMaster` — see "InMaster" below for the plain-table scope clarification and the `Parts_InterbranchTransfers` dependency this unblocks. Also holds `Tables/InSalPar_Audit` and `Tables/RepairOrderDetail` — landed via direct ODBC pull (Dataflow Gen2, `df_InSalPar_Audit_Raw`/`df_RepairOrderDetail_Raw` in `Raw Data - Dataflows/`), no shortcut possible for either — see "InSalPar_Audit and RepairOrderDetail" below, the last 2 Category C tables, closing out the entire raw-sources catalog. |
 | DP_Presentation | DP - Presentation - Dev | `966efc8a-16f9-423b-aa43-e368fcd8fb91` | `Tables/dim_RepairOrder`, `Tables/Fact_PartsPromo`, `Tables/Fact_InTrans_AllPromo`, `Tables/Fact_PartsAdjustments`, `Tables/dim_DateTable`, `Tables/dim_BranchLocation` — see below for each. |
 
 ### `Silver_InTrans`
@@ -620,6 +620,59 @@ expected for a manually-maintained flag.
 
 **This is raw + Silver only.** No Gold-layer logic, no `Parts_InterbranchTransfers` rebuild
 (deliberately deferred — a separate future piece of work), no report work.
+
+## InSalPar_Audit and RepairOrderDetail (2026-09-10) — the last 2 genuinely-excluded Category C tables
+
+Neither of these tables has a JD Bronze mirror (confirmed via direct SQL Anywhere
+system-catalog query — both `table_type = 'BASE'`, genuine base tables, not views). Unlike
+every other table this session, there's no OneLake shortcut path, so both go through a
+direct ODBC pull via Dataflow Gen2 — the same mechanism already proven in this backend by
+`df_BranchOperational_Raw` and `df_JDIS_PartInformation_*_Raw`. Because every refresh is a
+live ODBC query against the production SQL Anywhere box (not a zero-cost shortcut read),
+this pair made different filtering/column-scope calls than the "bring in everything,
+unfiltered" default used everywhere else this session.
+
+**`InSalPar_Audit`** — real numbers from SQL Central (2026-09-10): 2,150,130 total rows,
+only 299,145 (13.9%) match `PURORDER_TYPE = 'E'` (Emergency/Machine-Down orders); 76 total
+real columns, the old dataflow only used 8. **Kept the `PURORDER_TYPE = 'E'` filter** — a
+real 7.2x reduction in recurring ODBC load on the live production database, not a free
+Spark-compute difference like every prior filter-drop decision this session. The table's
+only known consumer (`Fact_MDInvoices_Closed`, matching Machine-Down order `FILE_NO`s) only
+ever needed the `'E'` rows — revisit if a real second consumer shows up. **Stayed curated
+to 9 columns** (the old 8 + one new addition, `Audit_TS`) rather than bringing in all 76 —
+most of the other columns are internal/technical (`GUID_SO`, `Connection_ID`,
+`Windows_User`, `SourceProgram`, `EPC_DocID`, a 4000-char `COMMENTS` field) with no
+identified consumer, same discipline as `WKMECHFL`. `Audit_TS` was a real completeness gap
+— the old dataflow never selected it despite this being literally an audit table.
+
+**`RepairOrderDetail`** — only 2,875 total rows, much smaller than every other
+repair-order-related table this session (`WKRODESC` 1.6M, `InHist_PmManage` 1.3M). The
+column list (`CurrentDate`, `DaysSinceCreationDate`, `DaysSinceROFinishDate`,
+`DaysSinceLastLabor`) strongly suggests this is a **live open-work-orders/WIP snapshot**,
+not a historical archive — closed ROs most likely age out, the same pattern
+`InSalPar_Audit`'s own old-dataflow documentation describes for `InSalPar` itself. Brought
+in **all 31 real columns, unfiltered** — the old dataflow's 17-column "performance
+optimization" (targeting a 1-minute refresh) was solving a problem that doesn't exist at
+this table's real size. Worth knowing for whenever a Gold-layer fact table reads this:
+`DaysSinceLastLabor`, `DaysSinceROFinishDate`, `DaysSinceCreationDate`, and `CurrentDate`
+(landed as `SourceCurrentDate`) are computed by the source system at some point in time, not
+recomputed live by this pull — same caution as `Parts_InterbranchTransfers`'s `OrderAge`.
+
+**No Silver notebook for either** — the Dataflow Gen2's own SQL does the column
+selection/renaming, matching `BranchOperational`'s precedent.
+
+**Verification** (2026-09-10, via `verify_insalpar_audit_repairorderdetail.py`):
+`RepairOrderDetail` matches exactly (2,875 = 2,875, 31-column contract confirmed).
+`InSalPar_Audit` landed 291,124 rows against the raw 299,145 `PURORDER_TYPE='E'` count — the
+gap is expected and not a bug: the query applies `SELECT DISTINCT` across only the 9
+selected columns (same as the old dataflow), so audit events differing only in one of the
+68 excluded technical columns collapse together. Every landed row confirmed
+`PurOrderType = 'E'`, 9-column contract confirmed.
+
+This closes out every table in `docs/architecture/jd-bronze-raw-sources-catalog.md`'s
+Category A, B, and C. **Raw only** — no Gold-layer logic (including no
+`Parts_InterbranchTransfers`/`ArMaster_Contact` rebuilds, no fact tables reading either of
+these two), no report work.
 
 ## Prod tier
 
