@@ -32,7 +32,7 @@ history still shows the old flat paths for older commits.
 
 | Lakehouse | Workspace | Lakehouse ID | Contents |
 |---|---|---|---|
-| DP_Staging | DP - Staging - Dev | `876255e0-d462-4697-adc1-4a655f5bb101` | `Tables/InTrans` — OneLake shortcut (passthrough identity) into `JD_EquipRDB_Production_Bronze.InTrans` (`JD_FabricOneLake` workspace `4bd21b07-f4ce-4b28-b0f1-0397fb5d5ea9`, lakehouse `7348c3a6-8694-4d11-bc70-1bd55be84ea2`). Verified 2026-09-04: row count, min/max timestamp, and the RO 1985073 spot check (9 rows) all match the source exactly — see `.claude/queries/adhoc/dp-bronze-verify/verify_shortcut.py`. Also holds `Tables/Silver_InTrans`, `Tables/GlTrans` (OneLake shortcut into JD's Bronze mirror), `Tables/BranchOperational` (Dataflow Gen2 ingestion, not a shortcut — see `dim_BranchLocation` below), `Tables/PartInformation_Active`, `Tables/PartInformation_Dead`, and `Tables/Silver_PartInformation` — see below for each. Also holds 9 more OneLake shortcuts into `JD_EquipRDB_Production_Bronze` (`ArMaster`, `ArMaster_Customer`, `contact`, `GLMASTER`, `InSalOrd`, `InSalPar`, `VhStockAccess`, `WarSubCl_Labour`, `Branch_Name`) plus their corresponding `Silver_*` tables — see "Raw sources batch 1" below. Also holds 10 more OneLake shortcuts (`TechnicianInvoiceDetail`, `TechnicianPunchedDetail`, `VhStock`, `VhTrans`, `WkInvReg`, `WKMECHWK`, `WKOTHSUB`, `WkRoFile`, `WkVehFl`, `WarClaim`) plus their corresponding `Silver_*` tables — see "Raw sources batch 2" below. Also holds `Tables/Invoice` (OneLake shortcut, 6,505,866 rows — the largest table this backend has touched) and `Tables/Silver_Invoice` — see "Invoice" below for the real grain bug found in this table. Also holds `Tables/InHist_PmManage` and `Tables/WKRODESC` (OneLake shortcuts) plus `Tables/Silver_InHist_PmManage` and `Tables/Silver_WkRoDesc` — see "InHist_PmManage and WKRODESC" below for the real business-rule-filter findings on both. Also holds `Tables/WKMECHADJ` and `Tables/WKMECHFL` (OneLake shortcuts) plus `Tables/Silver_WkMechAdj` and `Tables/Silver_WkMechFl` — see "WKMECHADJ and WKMECHFL" below for the Technician-family investigation these unblock. |
+| DP_Staging | DP - Staging - Dev | `876255e0-d462-4697-adc1-4a655f5bb101` | `Tables/InTrans` — OneLake shortcut (passthrough identity) into `JD_EquipRDB_Production_Bronze.InTrans` (`JD_FabricOneLake` workspace `4bd21b07-f4ce-4b28-b0f1-0397fb5d5ea9`, lakehouse `7348c3a6-8694-4d11-bc70-1bd55be84ea2`). Verified 2026-09-04: row count, min/max timestamp, and the RO 1985073 spot check (9 rows) all match the source exactly — see `.claude/queries/adhoc/dp-bronze-verify/verify_shortcut.py`. Also holds `Tables/Silver_InTrans`, `Tables/GlTrans` (OneLake shortcut into JD's Bronze mirror), `Tables/BranchOperational` (Dataflow Gen2 ingestion, not a shortcut — see `dim_BranchLocation` below), `Tables/PartInformation_Active`, `Tables/PartInformation_Dead`, and `Tables/Silver_PartInformation` — see below for each. Also holds 9 more OneLake shortcuts into `JD_EquipRDB_Production_Bronze` (`ArMaster`, `ArMaster_Customer`, `contact`, `GLMASTER`, `InSalOrd`, `InSalPar`, `VhStockAccess`, `WarSubCl_Labour`, `Branch_Name`) plus their corresponding `Silver_*` tables — see "Raw sources batch 1" below. Also holds 10 more OneLake shortcuts (`TechnicianInvoiceDetail`, `TechnicianPunchedDetail`, `VhStock`, `VhTrans`, `WkInvReg`, `WKMECHWK`, `WKOTHSUB`, `WkRoFile`, `WkVehFl`, `WarClaim`) plus their corresponding `Silver_*` tables — see "Raw sources batch 2" below. Also holds `Tables/Invoice` (OneLake shortcut, 6,505,866 rows — the largest table this backend has touched) and `Tables/Silver_Invoice` — see "Invoice" below for the real grain bug found in this table. Also holds `Tables/InHist_PmManage` and `Tables/WKRODESC` (OneLake shortcuts) plus `Tables/Silver_InHist_PmManage` and `Tables/Silver_WkRoDesc` — see "InHist_PmManage and WKRODESC" below for the real business-rule-filter findings on both. Also holds `Tables/WKMECHADJ` and `Tables/WKMECHFL` (OneLake shortcuts) plus `Tables/Silver_WkMechAdj` and `Tables/Silver_WkMechFl` — see "WKMECHADJ and WKMECHFL" below for the Technician-family investigation these unblock. Also holds `Tables/InMaster` (OneLake shortcut) plus `Tables/Silver_InMaster` — see "InMaster" below for the plain-table scope clarification and the `Parts_InterbranchTransfers` dependency this unblocks. |
 | DP_Presentation | DP - Presentation - Dev | `966efc8a-16f9-423b-aa43-e368fcd8fb91` | `Tables/dim_RepairOrder`, `Tables/Fact_PartsPromo`, `Tables/Fact_InTrans_AllPromo`, `Tables/Fact_PartsAdjustments`, `Tables/dim_DateTable`, `Tables/dim_BranchLocation` — see below for each. |
 
 ### `Silver_InTrans`
@@ -574,6 +574,51 @@ the real joins (`WkMechWk` ⋈ `WkOthSub`, gated by `WkMechAdj`), the invoiced-o
 Performance report rework are deliberately separate, future pieces of work, not
 started here. So is the `BranchOperational` simplification opportunity found in the
 same investigation (see the project memory file for detail).
+
+## InMaster (2026-09-10) — the plain base table, separate from PartsLookup/Parts-Ordering
+
+`InMaster` is a completely separate Fabric object from two other things with confusingly
+similar names, neither touched by this work: **`InMaster_PartsLookup_Raw`** (mission-critical,
+live, feeds the production Parts Availability tool) and **`InMaster_Parts_Ordering_Raw`**
+(which, confusingly, writes to a table literally named `InMaster_Raw`, belonging to the
+Non-JD Parts Order Tool — a real project deliberately paused since 2026-08-04, see
+`project_nonjd_parts_order_tool_paused.md`). This is the plain `InMaster` table — what the
+old `df_InMaster_Raw` dataflow pulls today, feeding the live "Part Sales with Low Margin"
+report.
+
+**Why now:** two real reasons. First, it matches the exact same raw+Silver pattern as every
+other table this session — no new complexity. Second, it's a proven dependency for
+`Parts_InterbranchTransfers` — one of the Category C raw-sources catalog tables, confirmed
+this session (via its actual SQL Anywhere view definition, pulled directly via SQL Central)
+to be a VIEW joining `InSalPar` + `InMaster` + `InSalOrd`, not a table genuinely excluded
+from JD's mirror after all. `InSalPar` and `InSalOrd` were already migrated in batch 1; this
+brings in the third input. Full detail on this and the other Category C findings
+(`ArMaster_Contact` also turned out to be a view) is in project memory
+`project_category_c_views_resolved.md`. Brian's own reasoning, endorsed: "whatever we do
+with the InMaster it will happen downstream from the raw silver layer anyway so we might as
+well scope this in as well."
+
+**Column contract:** replicates the old dataflow's exact 19-column contract — it already had
+NO WHERE clause (full master pull already) and every selected source column matched the live
+bronze schema's real casing exactly, no corrections needed. One deliberate addition beyond
+the old 19 columns: `IN_TRANSIT_QTY` — not in the old dataflow's SELECT list, but proven
+necessary by `Parts_InterbranchTransfers`'s real view SQL (`inm.in_transit_qty`), a specific
+already-identified need, not speculative scope creep.
+
+**Business context:** `LowMarginFlag` (`user_field_3`) is a manually-maintained flag parts
+managers set to "Low" to mark margin-problem parts — the key field for the live "Part Sales
+with Low Margin" report, which already reads `dbo.InMaster` directly via the SQL Analytics
+Endpoint. This migration doesn't change that report's behavior, just gives it — and any
+future consumer — a non-ODBC path to the same data.
+
+**Verification:** `verify_shortcut_inmaster.py` (bronze shortcut vs. JD Bronze direct) and
+`verify_silver_inmaster.py` (Silver vs. bronze shortcut) in
+`.claude/queries/adhoc/dp-bronze-verify/`. Run after Brian creates the shortcut and runs
+`Build_Silver_InMaster.Notebook` — see `docs/superpowers/plans/2026-09-10-dp-inmaster.md`
+Tasks 1–5 for the exact steps.
+
+**This is raw + Silver only.** No Gold-layer logic, no `Parts_InterbranchTransfers` rebuild
+(deliberately deferred — a separate future piece of work), no report work.
 
 ## Prod tier
 
