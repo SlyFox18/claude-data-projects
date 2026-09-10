@@ -49,7 +49,7 @@ Every other table migrated this session either had a JD Bronze shortcut (zero ma
 - Create: `workspaces/DP - Staging - Dev/Raw Data - Dataflows/df_InSalPar_Audit_Raw.Dataflow/mashup.pq`
 - Create: `workspaces/DP - Staging - Dev/Raw Data - Dataflows/df_InSalPar_Audit_Raw.Dataflow/queryMetadata.json`
 
-- [ ] **Step 1: Create the `.platform` file**
+- [x] **Step 1: Create the `.platform` file**
 
 ```json
 {
@@ -65,7 +65,7 @@ Every other table migrated this session either had a JD Bronze shortcut (zero ma
 }
 ```
 
-- [ ] **Step 2: Create `mashup.pq`**
+- [x] **Step 2: Create `mashup.pq`**
 
 ```
 [StagingDefinition = [Kind = "FastCopy"]]
@@ -164,7 +164,7 @@ in
   TableNavigation;
 ```
 
-- [ ] **Step 3: Create `queryMetadata.json`**
+- [x] **Step 3: Create `queryMetadata.json`**
 
 ```json
 {
@@ -213,7 +213,7 @@ in
 - Create: `workspaces/DP - Staging - Dev/Raw Data - Dataflows/df_RepairOrderDetail_Raw.Dataflow/mashup.pq`
 - Create: `workspaces/DP - Staging - Dev/Raw Data - Dataflows/df_RepairOrderDetail_Raw.Dataflow/queryMetadata.json`
 
-- [ ] **Step 1: Create the `.platform` file**
+- [x] **Step 1: Create the `.platform` file**
 
 ```json
 {
@@ -229,7 +229,7 @@ in
 }
 ```
 
-- [ ] **Step 2: Create `mashup.pq`**
+- [x] **Step 2: Create `mashup.pq`**
 
 ```
 [StagingDefinition = [Kind = "FastCopy"]]
@@ -347,7 +347,7 @@ Power Query's own `DateTime.LocalNow()`-adjacent semantics and to make its
 point-in-time-snapshot nature explicit to anyone reading the landed table later
 (see the header comment above).
 
-- [ ] **Step 3: Create `queryMetadata.json`**
+- [x] **Step 3: Create `queryMetadata.json`**
 
 ```json
 {
@@ -393,7 +393,7 @@ point-in-time-snapshot nature explicit to anyone reading the landed table later
 
 **Files:** none new (commits Task 1 + Task 2 output)
 
-- [ ] **Step 1: Check for upstream races, commit, push**
+- [x] **Step 1: Check for upstream races, commit, push**
 
 ```bash
 cd "C:\Users\bfox\Documents\Git-Projects\fabric-workspace-docs"
@@ -456,7 +456,7 @@ text.
 **Files:**
 - Create: `.claude/queries/adhoc/dp-bronze-verify/verify_insalpar_audit_repairorderdetail.py`
 
-- [ ] **Step 1: Write the verification script**
+- [x] **Step 1: Write the verification script**
 
 ```python
 """
@@ -549,7 +549,7 @@ cd "C:\Users\bfox\Documents\Git-Projects\data-projects"
 python .claude/queries/adhoc/dp-bronze-verify/verify_insalpar_audit_repairorderdetail.py
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 cd "C:\Users\bfox\Documents\Git-Projects\data-projects"
