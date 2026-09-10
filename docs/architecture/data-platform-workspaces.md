@@ -32,7 +32,7 @@ history still shows the old flat paths for older commits.
 
 | Lakehouse | Workspace | Lakehouse ID | Contents |
 |---|---|---|---|
-| DP_Staging | DP - Staging - Dev | `876255e0-d462-4697-adc1-4a655f5bb101` | `Tables/InTrans` — OneLake shortcut (passthrough identity) into `JD_EquipRDB_Production_Bronze.InTrans` (`JD_FabricOneLake` workspace `4bd21b07-f4ce-4b28-b0f1-0397fb5d5ea9`, lakehouse `7348c3a6-8694-4d11-bc70-1bd55be84ea2`). Verified 2026-09-04: row count, min/max timestamp, and the RO 1985073 spot check (9 rows) all match the source exactly — see `.claude/queries/adhoc/dp-bronze-verify/verify_shortcut.py`. Also holds `Tables/Silver_InTrans`, `Tables/GlTrans` (OneLake shortcut into JD's Bronze mirror), `Tables/BranchOperational` (Dataflow Gen2 ingestion, not a shortcut — see `dim_BranchLocation` below), `Tables/PartInformation_Active`, `Tables/PartInformation_Dead`, and `Tables/Silver_PartInformation` — see below for each. Also holds 9 more OneLake shortcuts into `JD_EquipRDB_Production_Bronze` (`ArMaster`, `ArMaster_Customer`, `contact`, `GLMASTER`, `InSalOrd`, `InSalPar`, `VhStockAccess`, `WarSubCl_Labour`, `Branch_Name`) plus their corresponding `Silver_*` tables — see "Raw sources batch 1" below. |
+| DP_Staging | DP - Staging - Dev | `876255e0-d462-4697-adc1-4a655f5bb101` | `Tables/InTrans` — OneLake shortcut (passthrough identity) into `JD_EquipRDB_Production_Bronze.InTrans` (`JD_FabricOneLake` workspace `4bd21b07-f4ce-4b28-b0f1-0397fb5d5ea9`, lakehouse `7348c3a6-8694-4d11-bc70-1bd55be84ea2`). Verified 2026-09-04: row count, min/max timestamp, and the RO 1985073 spot check (9 rows) all match the source exactly — see `.claude/queries/adhoc/dp-bronze-verify/verify_shortcut.py`. Also holds `Tables/Silver_InTrans`, `Tables/GlTrans` (OneLake shortcut into JD's Bronze mirror), `Tables/BranchOperational` (Dataflow Gen2 ingestion, not a shortcut — see `dim_BranchLocation` below), `Tables/PartInformation_Active`, `Tables/PartInformation_Dead`, and `Tables/Silver_PartInformation` — see below for each. Also holds 9 more OneLake shortcuts into `JD_EquipRDB_Production_Bronze` (`ArMaster`, `ArMaster_Customer`, `contact`, `GLMASTER`, `InSalOrd`, `InSalPar`, `VhStockAccess`, `WarSubCl_Labour`, `Branch_Name`) plus their corresponding `Silver_*` tables — see "Raw sources batch 1" below. Also holds 10 more OneLake shortcuts (`TechnicianInvoiceDetail`, `TechnicianPunchedDetail`, `VhStock`, `VhTrans`, `WkInvReg`, `WKMECHWK`, `WKOTHSUB`, `WkRoFile`, `WkVehFl`, `WarClaim`) plus their corresponding `Silver_*` tables — see "Raw sources batch 2" below. |
 | DP_Presentation | DP - Presentation - Dev | `966efc8a-16f9-423b-aa43-e368fcd8fb91` | `Tables/dim_RepairOrder`, `Tables/Fact_PartsPromo`, `Tables/Fact_InTrans_AllPromo`, `Tables/Fact_PartsAdjustments`, `Tables/dim_DateTable`, `Tables/dim_BranchLocation` — see below for each. |
 
 ### `Silver_InTrans`
@@ -313,6 +313,82 @@ for every table, confirming the rename/select step never adds or drops rows).
 - Any report repointing, gold-layer business logic, or refresh schedule — this batch is
   Dev-tier, Silver-layer, manually-triggered only, matching every prior piece of this
   backend.
+
+## Raw sources batch 2 (2026-09-10) — date-windowed tables, brought in unfiltered
+
+Second batch of the `LH_Master_Data` raw-sources migration — the 10 Category A tables
+whose old dataflow had a date-range `WHERE` clause (`TechnicianInvoiceDetail`,
+`TechnicianPunchedDetail`, `VhStock`, `VhTrans`, `WkInvReg`, `WKMECHWK`, `WKOTHSUB`,
+`WkRoFile`, `WkVehFl`, `WarClaim`).
+
+**Why the old date windows were dropped, not replicated:** investigated directly with
+Brian this session, three findings together:
+1. The `RangeStart`/`RangeEnd` parameter pattern was Brian's own unfinished attempt at
+   incremental refresh — never completed or validated, not a deliberate "we only need
+   N years" scope decision.
+2. On six of these tables, the filter column (`ModifiedDate`) turned out to be
+   40–91% NULL — a `>=` comparison against NULL is neither true nor false, so the old
+   dataflows were silently dropping most of the table regardless of age, not
+   "excluding old data." Worst case: `WkInvReg` at 90.8% NULL.
+3. Now that a shortcut is free (no ODBC/CU cost), there's no cost reason to filter at
+   this layer — date-scoping is a business decision that belongs at Gold, where a
+   specific consumer's real need is known, matching how Parts Adjustments and Parts
+   Promo were already built (Silver stays complete, filtering happens at Gold).
+
+So every notebook in this batch brings in full table history. The one exception:
+`WarClaim` keeps its two `IS NOT NULL` filters (`INVOICE_NO`, `CLAIM_NO`) — confirmed
+via real data to be legitimate data-quality guards (10.75% of the table excluded, all
+missing `CLAIM_NO`, sample excluded rows all `STATUS='U'` — warranty-eligible records
+that never became a filed claim), unrelated to the date-windowing question.
+
+**`WkVehFl` special case:** unlike the other nine tables, no reliably-populated date
+column exists on this table at all — five candidates checked (`CreationDate` 62.0%
+NULL, `DELIVERY_DATE` 20.9% NULL, `LAST_SERV_DATE` 75.1% NULL, `BUILD_DATE` 76.1%
+NULL, plus the old `ModifiedDate` at 43.3% NULL). Brought in fully unfiltered on the
+data, not as a default.
+
+**New standing practice, starting with this batch:** every notebook in this backend
+now proactively sets
+```python
+spark.conf.set("spark.sql.parquet.datetimeRebaseModeInRead", "CORRECTED")
+spark.conf.set("spark.sql.parquet.datetimeRebaseModeInWrite", "CORRECTED")
+```
+at the top, regardless of whether a sentinel date has already been confirmed on that
+specific table — this source system has shown the pre-1900 sentinel-date pattern often
+enough (`jdis_Part_Information`, `VhStock`, `VhTrans`, and `WKMECHWK.DATE_CLOCKED_IN`
+which has a confirmed **year-0013** minimum) that it's cheaper to always include this
+than wait to hit the write failure again.
+
+**Real casing corrections found and fixed** (live bronze schema vs. the old ODBC-layer
+SQL — SQL Anywhere resolves column names case-insensitively, Delta/Parquet does not):
+`VhStock` had 7 (`OWNER`→`Owner`, `OPTION_COST`→`Option_Cost`, `PAINT_COST`→
+`Paint_Cost`, `TRIM_COST`→`Trim_Cost`, `CHARGE_COST`→`Charge_Cost`,
+`AFTER_MARKET_COST`→`After_Market_Cost`, `PRE_TRADE_OVRALLOW`→`Pre_Trade_Ovrallow`),
+`WkRoFile` had 1 (`RO_PROGRESS_STATUS`→`ro_progress_status`), `WkVehFl` had 1
+(`COMPLIANCE_DATE`→`Compliance_Date`).
+
+**Verification:** both independent DuckDB scripts pass on all 10 tables —
+`verify_shortcuts_rawsources_batch2.py` (bronze shortcut vs. JD Bronze direct) and
+`verify_silver_rawsources_batch2.py` (Silver vs. bronze shortcut, with `WarClaim`
+special-cased for its expected reduction — confirmed exactly -5,042 rows, matching
+the number found during investigation almost to the digit).
+
+**`Invoice` deliberately excluded from this batch** — at 6.5M rows, the largest table
+found in this whole catalog effort and one of the most heavily-relied-upon tables in
+the platform, it gets its own dedicated look next, the same treatment
+`jdis_Part_Information` got, not lumped into a batch with nine other tables.
+
+**Explicitly deferred, not part of this batch:**
+- `InHist_PmManage` (`Franchise = 'D'` business-rule filter) and `WKRODESC`
+  (`WHERE LINE_NO = 1` grain-narrowing rule) — real business logic, not just a
+  performance bound.
+- The InMaster group — investigated in depth this session, filed separately (see
+  `project_nonjd_parts_order_tool_paused.md` in project memory): one table is
+  mission-critical/do-not-touch, one has a real report consumer, one belongs to a
+  real-but-paused project, one is confirmed dead code.
+- Category B (Technician-family views) and Category C (tables excluded from JD's
+  mirror) from the catalog doc.
+- Any report repointing, gold-layer business logic, or refresh schedule.
 
 ## Prod tier
 

@@ -46,20 +46,20 @@ lives in the dataflow's later steps.
 | `df_InMaster_Raw` | `InMaster` | `InMaster` | |
 | `df_InTrans_Incremental` | `InTrans` | `InTrans` | **Already shortcut into `DP_Staging`** |
 | `df_InTrans_PartsCounter_Raw` | `intrans` | `InTrans` | Redundant once `DP`'s shortcut exists |
-| `df_Invoice_Raw` | `Invoice` | `Invoice` | |
-| `df_TechnicianInvoiceDetail_Raw` | `TechnicianInvoiceDetail` | `TechnicianInvoiceDetail` | |
-| `df_TechnicianPunchedDetail_Raw` | `TechnicianPunchedDetail` | `TechnicianPunchedDetail` | |
-| `df_VHSTOCK_Raw` | `VhStock` | `VhStock` | |
+| `df_Invoice_Raw` | `Invoice` | `Invoice` | **Deliberately deferred** — 6.5M rows, the largest table in this catalog and one of the most heavily-relied-upon; gets its own dedicated migration next (same treatment as `jdis_Part_Information`), not lumped into a batch |
+| `df_TechnicianInvoiceDetail_Raw` | `TechnicianInvoiceDetail` | `TechnicianInvoiceDetail` | **Migrated 2026-09-10** — see "Raw sources batch 2" in `data-platform-workspaces.md` |
+| `df_TechnicianPunchedDetail_Raw` | `TechnicianPunchedDetail` | `TechnicianPunchedDetail` | **Migrated 2026-09-10** — see "Raw sources batch 2" in `data-platform-workspaces.md` |
+| `df_VHSTOCK_Raw` | `VhStock` | `VhStock` | **Migrated 2026-09-10** — see "Raw sources batch 2" in `data-platform-workspaces.md` |
 | `df_VhStockAccess_Raw` | `vhstockaccess` | `VhStockAccess` | **Migrated 2026-09-10** — see "Raw sources batch 1" in `data-platform-workspaces.md` |
-| `df_VhTrans_Raw` | `VhTrans` | `VhTrans` | |
+| `df_VhTrans_Raw` | `VhTrans` | `VhTrans` | **Migrated 2026-09-10** — see "Raw sources batch 2" in `data-platform-workspaces.md` |
 | `df_WARSUBCI_LABOUR_Raw` | `WarSubCl_Labour` | `WarSubCl_Labour` | **Migrated 2026-09-10** — see "Raw sources batch 1" in `data-platform-workspaces.md` |
-| `df_WKINVREG_Raw` | `WkInvReg` | `WkInvReg` | |
-| `df_WKMECHWK_Raw` | `wkmechwk` | `WKMECHWK` | |
-| `df_WKOTHSUB_Raw` | `wkothsub` | `WKOTHSUB` | |
+| `df_WKINVREG_Raw` | `WkInvReg` | `WkInvReg` | **Migrated 2026-09-10** — see "Raw sources batch 2" in `data-platform-workspaces.md` |
+| `df_WKMECHWK_Raw` | `wkmechwk` | `WKMECHWK` | **Migrated 2026-09-10** — see "Raw sources batch 2" in `data-platform-workspaces.md` |
+| `df_WKOTHSUB_Raw` | `wkothsub` | `WKOTHSUB` | **Migrated 2026-09-10** — see "Raw sources batch 2" in `data-platform-workspaces.md` |
 | `df_WKRODESC_Raw` | `wkrodesc` | `WKRODESC` | |
-| `df_WKROFILE_Raw` | `wkrofile` | `WkRoFile` | |
-| `df_WKVEHFL_Raw` | `wkvehfl` | `WkVehFl` | |
-| `df_WarClaim_Raw` | `WarClaim` | `WarClaim` | |
+| `df_WKROFILE_Raw` | `wkrofile` | `WkRoFile` | **Migrated 2026-09-10** — see "Raw sources batch 2" in `data-platform-workspaces.md` |
+| `df_WKVEHFL_Raw` | `wkvehfl` | `WkVehFl` | **Migrated 2026-09-10** — see "Raw sources batch 2" in `data-platform-workspaces.md` |
+| `df_WarClaim_Raw` | `WarClaim` | `WarClaim` | **Migrated 2026-09-10** — see "Raw sources batch 2" in `data-platform-workspaces.md` |
 | `df_Branch_Name_Raw` | `Branch_Name` | `Branch_Name` | Confirmed `Kind = "Table"`, not a view. **Migrated 2026-09-10** — see "Raw sources batch 1" in `data-platform-workspaces.md` |
 
 **27 dataflows, ~21 distinct source tables** — the largest single category, and the
