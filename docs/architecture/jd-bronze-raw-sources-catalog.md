@@ -46,7 +46,7 @@ lives in the dataflow's later steps.
 | `df_InMaster_Raw` | `InMaster` | `InMaster` | |
 | `df_InTrans_Incremental` | `InTrans` | `InTrans` | **Already shortcut into `DP_Staging`** |
 | `df_InTrans_PartsCounter_Raw` | `intrans` | `InTrans` | Redundant once `DP`'s shortcut exists |
-| `df_Invoice_Raw` | `Invoice` | `Invoice` | **Deliberately deferred** — 6.5M rows, the largest table in this catalog and one of the most heavily-relied-upon; gets its own dedicated migration next (same treatment as `jdis_Part_Information`), not lumped into a batch |
+| `df_Invoice_Raw` | `Invoice` | `Invoice` | **Migrated 2026-09-10** — see the dedicated "Invoice" section in `data-platform-workspaces.md`. Real grain bug found: `InvoiceNumber` is NOT unique (old dataflow's header claimed it was) — real grain is `(InvoiceNumber, Branch, ModuleType, InvoiceType)`; any future Fact table built on `Silver_Invoice` must account for this |
 | `df_TechnicianInvoiceDetail_Raw` | `TechnicianInvoiceDetail` | `TechnicianInvoiceDetail` | **Migrated 2026-09-10** — see "Raw sources batch 2" in `data-platform-workspaces.md` |
 | `df_TechnicianPunchedDetail_Raw` | `TechnicianPunchedDetail` | `TechnicianPunchedDetail` | **Migrated 2026-09-10** — see "Raw sources batch 2" in `data-platform-workspaces.md` |
 | `df_VHSTOCK_Raw` | `VhStock` | `VhStock` | **Migrated 2026-09-10** — see "Raw sources batch 2" in `data-platform-workspaces.md` |

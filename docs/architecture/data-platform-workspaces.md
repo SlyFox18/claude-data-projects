@@ -32,7 +32,7 @@ history still shows the old flat paths for older commits.
 
 | Lakehouse | Workspace | Lakehouse ID | Contents |
 |---|---|---|---|
-| DP_Staging | DP - Staging - Dev | `876255e0-d462-4697-adc1-4a655f5bb101` | `Tables/InTrans` — OneLake shortcut (passthrough identity) into `JD_EquipRDB_Production_Bronze.InTrans` (`JD_FabricOneLake` workspace `4bd21b07-f4ce-4b28-b0f1-0397fb5d5ea9`, lakehouse `7348c3a6-8694-4d11-bc70-1bd55be84ea2`). Verified 2026-09-04: row count, min/max timestamp, and the RO 1985073 spot check (9 rows) all match the source exactly — see `.claude/queries/adhoc/dp-bronze-verify/verify_shortcut.py`. Also holds `Tables/Silver_InTrans`, `Tables/GlTrans` (OneLake shortcut into JD's Bronze mirror), `Tables/BranchOperational` (Dataflow Gen2 ingestion, not a shortcut — see `dim_BranchLocation` below), `Tables/PartInformation_Active`, `Tables/PartInformation_Dead`, and `Tables/Silver_PartInformation` — see below for each. Also holds 9 more OneLake shortcuts into `JD_EquipRDB_Production_Bronze` (`ArMaster`, `ArMaster_Customer`, `contact`, `GLMASTER`, `InSalOrd`, `InSalPar`, `VhStockAccess`, `WarSubCl_Labour`, `Branch_Name`) plus their corresponding `Silver_*` tables — see "Raw sources batch 1" below. Also holds 10 more OneLake shortcuts (`TechnicianInvoiceDetail`, `TechnicianPunchedDetail`, `VhStock`, `VhTrans`, `WkInvReg`, `WKMECHWK`, `WKOTHSUB`, `WkRoFile`, `WkVehFl`, `WarClaim`) plus their corresponding `Silver_*` tables — see "Raw sources batch 2" below. |
+| DP_Staging | DP - Staging - Dev | `876255e0-d462-4697-adc1-4a655f5bb101` | `Tables/InTrans` — OneLake shortcut (passthrough identity) into `JD_EquipRDB_Production_Bronze.InTrans` (`JD_FabricOneLake` workspace `4bd21b07-f4ce-4b28-b0f1-0397fb5d5ea9`, lakehouse `7348c3a6-8694-4d11-bc70-1bd55be84ea2`). Verified 2026-09-04: row count, min/max timestamp, and the RO 1985073 spot check (9 rows) all match the source exactly — see `.claude/queries/adhoc/dp-bronze-verify/verify_shortcut.py`. Also holds `Tables/Silver_InTrans`, `Tables/GlTrans` (OneLake shortcut into JD's Bronze mirror), `Tables/BranchOperational` (Dataflow Gen2 ingestion, not a shortcut — see `dim_BranchLocation` below), `Tables/PartInformation_Active`, `Tables/PartInformation_Dead`, and `Tables/Silver_PartInformation` — see below for each. Also holds 9 more OneLake shortcuts into `JD_EquipRDB_Production_Bronze` (`ArMaster`, `ArMaster_Customer`, `contact`, `GLMASTER`, `InSalOrd`, `InSalPar`, `VhStockAccess`, `WarSubCl_Labour`, `Branch_Name`) plus their corresponding `Silver_*` tables — see "Raw sources batch 1" below. Also holds 10 more OneLake shortcuts (`TechnicianInvoiceDetail`, `TechnicianPunchedDetail`, `VhStock`, `VhTrans`, `WkInvReg`, `WKMECHWK`, `WKOTHSUB`, `WkRoFile`, `WkVehFl`, `WarClaim`) plus their corresponding `Silver_*` tables — see "Raw sources batch 2" below. Also holds `Tables/Invoice` (OneLake shortcut, 6,505,866 rows — the largest table this backend has touched) and `Tables/Silver_Invoice` — see "Invoice" below for the real grain bug found in this table. |
 | DP_Presentation | DP - Presentation - Dev | `966efc8a-16f9-423b-aa43-e368fcd8fb91` | `Tables/dim_RepairOrder`, `Tables/Fact_PartsPromo`, `Tables/Fact_InTrans_AllPromo`, `Tables/Fact_PartsAdjustments`, `Tables/dim_DateTable`, `Tables/dim_BranchLocation` — see below for each. |
 
 ### `Silver_InTrans`
@@ -389,6 +389,72 @@ the platform, it gets its own dedicated look next, the same treatment
 - Category B (Technician-family views) and Category C (tables excluded from JD's
   mirror) from the catalog doc.
 - Any report repointing, gold-layer business logic, or refresh schedule.
+
+## Invoice (2026-09-10) — the grain bug and why Silver stays unpartitioned
+
+`Invoice` was deliberately excluded from raw sources batch 2 and given its own
+dedicated migration — at 6,505,866 rows it's the largest table this backend has
+touched (4.3x the next-largest, `WKMECHWK` at 1.5M), and one of the most
+foundational tables in the whole source system.
+
+**The real finding this table's migration exists to carry forward.** The old
+`df_Invoice_Raw` dataflow's own header comment claims:
+```
+Grain: One row per invoice (unique by InvoiceNumber)
+```
+This is false. Confirmed via direct query against live data: 6,505,866 total rows,
+but only 3,806,166 distinct `document_no` (`InvoiceNumber`) values. Two real examples
+pulled directly:
+- `document_no = '900022'` — 4 completely unrelated records spanning **2012, 2020,
+  2021, and 2023**, different customers (`JOHNDEERV2`, `22253`, a null,
+  `HERITAGE-CRYS26`), different branches, different module/invoice types.
+- `document_no = '2331659999'` — 3 unrelated records across **2014, 2015, 2016**.
+
+This is the same reused-reference-number bug class already confirmed 3 times this
+session in this exact source system (`TransId`, `GlTrans.DocRef`, `RONumber`) — the
+source system recycles document numbers over the years. `InvoiceNumber` alone is
+never a safe join or dedup key.
+
+**The real, confirmed-unique grain is `(InvoiceNumber, Branch, ModuleType,
+InvoiceType)`.** Tested directly this session and re-confirmed independently against
+the written Silver data: `SELECT COUNT(*) FROM (SELECT DISTINCT InvoiceNumber,
+Branch, ModuleType, InvoiceType FROM Silver_Invoice)` returns exactly 6,505,866,
+matching the row count exactly.
+
+**Not fixed here** — `Silver_Invoice` stays a faithful passthrough of the source, no
+deduplication or grain-correction (that's Gold's job if/when it's ever needed, same
+pattern as how the `InTrans`/`GlTrans` reused-key bugs were ultimately handled: a
+closest-date-match join at the point of actual use, not a magic key baked into
+Silver). **Any future Fact table built on `Silver_Invoice` must account for this** —
+joining or grouping on `InvoiceNumber` alone will silently produce wrong results, the
+same class of bug that caused Parts Adjustments' PA Type misclassification earlier
+this session.
+
+**Why `Silver_Invoice` is deliberately unpartitioned**, despite being by far the
+largest table here: partitioning (e.g. by year) would bet on a specific future
+Gold-layer consumer's query pattern before any such consumer exists — the same
+category of premature decision as date-filtering at Silver, which this whole backend
+has consistently rejected. Every real optimization built here so far
+(`jdis_Part_Information`'s tiering, the ancient-date config, the various grain fixes)
+came from a measured, already-documented problem, not speculation — `Invoice` isn't
+feeding anything yet. If a real Fact table is later built on top of it and shows an
+actual, measured need, partitioning (or Delta `OPTIMIZE`/`ZORDER`, a lighter-weight
+alternative) is the fix to reach for then, informed by that consumer's real query
+pattern — not decided now.
+
+**What was built:** a plain OneLake shortcut (`Invoice`) plus `Build_Silver_Invoice`
+in `DP - Staging - Dev/Data Notebooks/` — full history, no date filter, keeps the old
+dataflow's two data-quality filters (`document_no IS NOT NULL AND document_no <>
+''`), confirmed to have zero current impact (0 of 6,505,866 rows excluded).
+
+**Verification:** both independent DuckDB scripts pass —
+`verify_shortcut_invoice.py` (bronze shortcut exactly matches JD Bronze direct,
+6,505,866 = 6,505,866) and `verify_silver_invoice.py` (Silver matches bronze exactly,
+0 rows excluded, and independently re-confirms the grain finding directly against the
+written Silver data).
+
+**Explicitly not part of this work:** deduplication, gold-layer business logic,
+partitioning, any report repointing, any refresh schedule.
 
 ## Prod tier
 
