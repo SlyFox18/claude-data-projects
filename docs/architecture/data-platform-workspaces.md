@@ -32,7 +32,7 @@ history still shows the old flat paths for older commits.
 
 | Lakehouse | Workspace | Lakehouse ID | Contents |
 |---|---|---|---|
-| DP_Staging | DP - Staging - Dev | `876255e0-d462-4697-adc1-4a655f5bb101` | `Tables/InTrans` — OneLake shortcut (passthrough identity) into `JD_EquipRDB_Production_Bronze.InTrans` (`JD_FabricOneLake` workspace `4bd21b07-f4ce-4b28-b0f1-0397fb5d5ea9`, lakehouse `7348c3a6-8694-4d11-bc70-1bd55be84ea2`). Verified 2026-09-04: row count, min/max timestamp, and the RO 1985073 spot check (9 rows) all match the source exactly — see `.claude/queries/adhoc/dp-bronze-verify/verify_shortcut.py`. Also holds `Tables/Silver_InTrans`, `Tables/GlTrans` (OneLake shortcut into JD's Bronze mirror), `Tables/BranchOperational` (Dataflow Gen2 ingestion, not a shortcut — see `dim_BranchLocation` below), `Tables/PartInformation_Active`, `Tables/PartInformation_Dead`, and `Tables/Silver_PartInformation` — see below for each. |
+| DP_Staging | DP - Staging - Dev | `876255e0-d462-4697-adc1-4a655f5bb101` | `Tables/InTrans` — OneLake shortcut (passthrough identity) into `JD_EquipRDB_Production_Bronze.InTrans` (`JD_FabricOneLake` workspace `4bd21b07-f4ce-4b28-b0f1-0397fb5d5ea9`, lakehouse `7348c3a6-8694-4d11-bc70-1bd55be84ea2`). Verified 2026-09-04: row count, min/max timestamp, and the RO 1985073 spot check (9 rows) all match the source exactly — see `.claude/queries/adhoc/dp-bronze-verify/verify_shortcut.py`. Also holds `Tables/Silver_InTrans`, `Tables/GlTrans` (OneLake shortcut into JD's Bronze mirror), `Tables/BranchOperational` (Dataflow Gen2 ingestion, not a shortcut — see `dim_BranchLocation` below), `Tables/PartInformation_Active`, `Tables/PartInformation_Dead`, and `Tables/Silver_PartInformation` — see below for each. Also holds 9 more OneLake shortcuts into `JD_EquipRDB_Production_Bronze` (`ArMaster`, `ArMaster_Customer`, `contact`, `GLMASTER`, `InSalOrd`, `InSalPar`, `VhStockAccess`, `WarSubCl_Labour`, `Branch_Name`) plus their corresponding `Silver_*` tables — see "Raw sources batch 1" below. |
 | DP_Presentation | DP - Presentation - Dev | `966efc8a-16f9-423b-aa43-e368fcd8fb91` | `Tables/dim_RepairOrder`, `Tables/Fact_PartsPromo`, `Tables/Fact_InTrans_AllPromo`, `Tables/Fact_PartsAdjustments`, `Tables/dim_DateTable`, `Tables/dim_BranchLocation` — see below for each. |
 
 ### `Silver_InTrans`
@@ -235,6 +235,84 @@ pattern only — see `docs/superpowers/plans/2026-09-09-dp-parts-information-tie
   there's no schedule driving repeated runs at different cadences; each manual run
   re-evaluates activity status fresh against live source data. This becomes a real
   design question once an asymmetric schedule (Active hourly, Dead daily/weekly) exists.
+
+## Raw sources batch 1 (2026-09-10) — simple shortcuts
+
+First batch of a broader effort to migrate `LH_Master_Data`'s ODBC-based raw-source
+dataflows onto this backend — catalogued in full in
+`docs/architecture/jd-bronze-raw-sources-catalog.md` (45 dataflows sorted into 4
+categories by how they map onto `JD_EquipRDB_Production_Bronze`). This batch covers
+exactly the 9 tables in that catalog's Category A with **zero filtering logic** in
+their old dataflow (no date-range bound, no business-rule `WHERE`, no join/group/
+dedup) — confirmed by reading every candidate dataflow's `mashup.pq` directly, not
+assumed.
+
+**Why:** these 9 tables already exist, live, in JD's own Fabric mirror — the old
+`LH_Master_Data` dataflows were running a redundant ODBC query against `EquipRDB64`
+for data JD already replicates continuously. `ArMaster_Customer` specifically had a
+long-standing, never-diagnosed "300-400% refresh performance degradation" investigation
+open in the old pipeline (refresh time grew from 1-2 minutes to 6-8 minutes, root cause
+never found) — resolved as a side effect of this migration, since there's no ODBC query
+against `EquipRDB64` running for it anymore at all.
+
+**What was built:** a plain OneLake shortcut per table (zero CU cost, always current,
+no refresh action needed — a shortcut points at the same underlying Delta files as its
+JD Bronze source) plus a Spark notebook per table (`Build_Silver_<Name>.Notebook`, all
+in `DP - Staging - Dev/Data Notebooks/`) replicating the exact column rename contract
+the old dataflow used, so nothing downstream needs to change shape. Column mappings
+were verified against the *live* JD Bronze schema (not the old dataflow's SQL text) —
+several columns' real casing differs from what the old ODBC-layer SQL assumed (e.g.
+`VhStockAccess`'s real columns are `Stock_No`/`Sale_Value`/`Qty`, not the old query's
+all-caps `STOCK_NO`/`SALE_VALUE`/`QTY` — SQL Anywhere resolves column names
+case-insensitively so the old query worked regardless, but Delta/Parquet does not).
+
+| Bronze shortcut | Old dataflow | Silver table | Row count (2026-09-10) |
+|---|---|---|---|
+| `ArMaster` | `df_ARMASTER_Raw` | `Silver_ArMaster` | 54,127 |
+| `ArMaster_Customer` | `df_ArMaster_Customer_Raw` | `Silver_ArMasterCustomer` | 54,129 |
+| `contact` | `df_CONTACT_Raw` | `Silver_Contact` | 82,756 |
+| `GLMASTER` | `df_GlMaster_Raw` | `Silver_GlMaster` | 25,924 |
+| `InSalOrd` | `df_INSALORD_Raw` | `Silver_InSalOrd` | 10,134 |
+| `InSalPar` | `df_INSALPAR_Raw` | `Silver_InSalPar` | 20,302 |
+| `VhStockAccess` | `df_VhStockAccess_Raw` | `Silver_VhStockAccess` | 695,965 |
+| `WarSubCl_Labour` | `df_WARSUBCI_LABOUR_Raw` | `Silver_WarSubClLabour` | 68,311 |
+| `Branch_Name` | `df_Branch_Name_Raw` | `Silver_BranchName` | 99 |
+
+One real finding during execution, not a design decision: Brian's first shortcut
+attempt for `VhStockAccess` selected the wrong JD Bronze table (`VhStock` — a
+separate, similarly-named table) by accident. Caught immediately by the bronze
+verification script (`verify_shortcuts_rawsources_batch1.py`), which threw a real
+DuckDB Delta-kernel error ("No files in log segment") rather than a silent mismatch —
+root-caused by listing `DP_Staging`'s actual table contents via `fab ls` rather than
+guessing, which showed `VhStock.Shortcut` where `VhStockAccess.Shortcut` was expected.
+Fixed by deleting the wrong shortcut and creating the correct one; re-verification
+passed cleanly.
+
+**Verification:** both independent DuckDB scripts pass on all 9 tables —
+`.claude/queries/adhoc/dp-bronze-verify/verify_shortcuts_rawsources_batch1.py` (bronze
+shortcut row count == JD Bronze direct, for every table) and
+`verify_silver_rawsources_batch1.py` (Silver row count == bronze shortcut row count,
+for every table, confirming the rename/select step never adds or drops rows).
+
+**Explicitly deferred, not part of this batch:**
+- The 4 dataflows that all pull `InMaster` (`df_InMaster_Raw`,
+  `df_InMaster_PartsLookup_Raw`, `df_InMaster_PartsLookup_Incremental`,
+  `df_InMaster_Parts_Ordering_Raw`) — a real consolidation opportunity (one shortcut +
+  one silver notebook could replace all 4), needs its own design pass.
+- Tables whose old dataflow has a date-range `WHERE` (`TechnicianInvoiceDetail`,
+  `TechnicianPunchedDetail`, `VHSTOCK`, `VhTrans`, `WKINVREG`, `WKMECHWK`, `WKOTHSUB`,
+  `WKROFILE`, `WKVEHFL`, `Invoice`, `WarClaim`) — structurally simple too, but dropping
+  or preserving that windowing is a real scope decision not yet made.
+- `InHist_PmManage` (`Franchise = 'D'` business-rule filter) and `WKRODESC`
+  (`WHERE LINE_NO = 1` grain-narrowing rule) — real business logic embedded in the old
+  SQL, not just a performance bound, needs more thought before treating as "just bring
+  it in."
+- The Technician-family views (Category B in the catalog) and the tables genuinely
+  excluded from JD's mirror (Category C) — each needs its own design work, not a
+  shortcut.
+- Any report repointing, gold-layer business logic, or refresh schedule — this batch is
+  Dev-tier, Silver-layer, manually-triggered only, matching every prior piece of this
+  backend.
 
 ## Prod tier
 

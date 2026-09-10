@@ -31,14 +31,14 @@ lives in the dataflow's later steps.
 
 | Current dataflow | Source table | JD Bronze table | Notes |
 |---|---|---|---|
-| `df_ARMASTER_Raw` | `armaster` | `ArMaster` | |
-| `df_ArMaster_Customer_Raw` | `ArMaster_Customer` | `ArMaster_Customer` | |
-| `df_CONTACT_Raw` | `contact` | `contact` | |
-| `df_GlMaster_Raw` | `GLMASTER` | `GLMASTER` | |
+| `df_ARMASTER_Raw` | `armaster` | `ArMaster` | **Migrated 2026-09-10** — see "Raw sources batch 1" in `data-platform-workspaces.md` |
+| `df_ArMaster_Customer_Raw` | `ArMaster_Customer` | `ArMaster_Customer` | **Migrated 2026-09-10** — see "Raw sources batch 1" in `data-platform-workspaces.md` |
+| `df_CONTACT_Raw` | `contact` | `contact` | **Migrated 2026-09-10** — see "Raw sources batch 1" in `data-platform-workspaces.md` |
+| `df_GlMaster_Raw` | `GLMASTER` | `GLMASTER` | **Migrated 2026-09-10** — see "Raw sources batch 1" in `data-platform-workspaces.md` |
 | `df_GlTrans_Raw` | `GlTrans` | `GlTrans` | **Already shortcut into `DP_Staging`** (Parts Adjustments/Promo work) |
 | `df_GlTrans_Full_Raw` | `GlTrans` | `GlTrans` | Same source table as above, just a wider 3-yr pull — redundant once `DP`'s shortcut exists |
-| `df_INSALORD_Raw` | `insalord` | `InSalOrd` | |
-| `df_INSALPAR_Raw` | `InSalPar` | `InSalPar` | |
+| `df_INSALORD_Raw` | `insalord` | `InSalOrd` | **Migrated 2026-09-10** — see "Raw sources batch 1" in `data-platform-workspaces.md` |
+| `df_INSALPAR_Raw` | `InSalPar` | `InSalPar` | **Migrated 2026-09-10** — see "Raw sources batch 1" in `data-platform-workspaces.md` |
 | `df_InHist_PmManage_Raw` | `InHist_PmManage` | `InHist_PmManage` | |
 | `df_InMaster_PartsLookup_Incremental` | `InMaster` | `InMaster` | Incremental/watermark logic — see "InMaster consolidation" below |
 | `df_InMaster_PartsLookup_Raw` | `InMaster` | `InMaster` | |
@@ -50,9 +50,9 @@ lives in the dataflow's later steps.
 | `df_TechnicianInvoiceDetail_Raw` | `TechnicianInvoiceDetail` | `TechnicianInvoiceDetail` | |
 | `df_TechnicianPunchedDetail_Raw` | `TechnicianPunchedDetail` | `TechnicianPunchedDetail` | |
 | `df_VHSTOCK_Raw` | `VhStock` | `VhStock` | |
-| `df_VhStockAccess_Raw` | `vhstockaccess` | `VhStockAccess` | |
+| `df_VhStockAccess_Raw` | `vhstockaccess` | `VhStockAccess` | **Migrated 2026-09-10** — see "Raw sources batch 1" in `data-platform-workspaces.md` |
 | `df_VhTrans_Raw` | `VhTrans` | `VhTrans` | |
-| `df_WARSUBCI_LABOUR_Raw` | `WarSubCl_Labour` | `WarSubCl_Labour` | |
+| `df_WARSUBCI_LABOUR_Raw` | `WarSubCl_Labour` | `WarSubCl_Labour` | **Migrated 2026-09-10** — see "Raw sources batch 1" in `data-platform-workspaces.md` |
 | `df_WKINVREG_Raw` | `WkInvReg` | `WkInvReg` | |
 | `df_WKMECHWK_Raw` | `wkmechwk` | `WKMECHWK` | |
 | `df_WKOTHSUB_Raw` | `wkothsub` | `WKOTHSUB` | |
@@ -60,7 +60,7 @@ lives in the dataflow's later steps.
 | `df_WKROFILE_Raw` | `wkrofile` | `WkRoFile` | |
 | `df_WKVEHFL_Raw` | `wkvehfl` | `WkVehFl` | |
 | `df_WarClaim_Raw` | `WarClaim` | `WarClaim` | |
-| `df_Branch_Name_Raw` | `Branch_Name` | `Branch_Name` | Confirmed `Kind = "Table"`, not a view |
+| `df_Branch_Name_Raw` | `Branch_Name` | `Branch_Name` | Confirmed `Kind = "Table"`, not a view. **Migrated 2026-09-10** — see "Raw sources batch 1" in `data-platform-workspaces.md` |
 
 **27 dataflows, ~21 distinct source tables** — the largest single category, and the
 most direct extension of the already-proven pattern.
