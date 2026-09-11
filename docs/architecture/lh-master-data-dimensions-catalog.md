@@ -60,7 +60,7 @@ listing every pipeline in the workspace.
 | df_Dim_Branch12_Parts | dim_Branch12_Parts | daily | Combine Vault Sales only | Correctly tiered |
 | df_Dim_BranchPartInventory | dim_BranchPartInventory | daily | Combine Vault Sales only | Correctly tiered |
 | df_Dim_Technicans | dim_Technician_Code_Names | daily | Labor Performance, Open Work Orders, Service Time Sheets (Sandbox) | Correctly tiered (2026-02 doc suggested weekly, never implemented — daily is fine, table is small) |
-| df_Dim_JobCode | dim_JobCode | daily | First Pass Fill only | Correctly tiered |
+| df_Dim_JobCode | dim_JobCode | daily | First Pass Fill only | **Real finding (2026-09-11):** loaded into First Pass Fill's live model, but only 3 of its ~11 columns (`JobCode`, `JobCodeDisplayName`, `JobCodeShortDesc`) are referenced anywhere in that report (visuals, measures, relationships). The other 8 — the whole "intelligent business categorization" layer (`JobCodeCategory`, `EquipmentType`, `EquipmentCategory`, `ServiceComplexity`, `IsInspection`, `IsWarrantyWork`, `IsSeasonalWork`, `IsUrgentWork`), built via text-pattern-matching heuristics — are imported but touched by nothing downstream. Matches Brian's own memory: built for Inspections, "didn't work right," Inspections went a different route, dead weight rode along into First Pass Fill's model instead. Real simplification opportunity for the DP-backend rebuild — likely just needs the 3 real columns |
 | df_Dim_RepairOrder | dim_RepairOrder | monthly | Parts Promo only | Correctly tiered. **Naming collision to be aware of:** unrelated to the new `DP_Presentation.dim_RepairOrder` built this session in the JD Bronze redesign — same name, completely different system/lineage, don't confuse the two |
 | df_Dim_Salesperson | dim_Salesperson | daily | MD Invoices With No Freight, Stock Check | Correctly tiered |
 | df_Dim_Location | dim_BranchLocation | monthly | 22+ reports, nearly every live report | Correctly tiered (static reference data) |
@@ -75,11 +75,11 @@ listing every pipeline in the workspace.
 | df_Dim_AdjustmentType | dim_AdjustmentType | monthly | Parts Adjustments only | Correctly tiered |
 | df_Dim_PromoType | dim_PromoType | monthly | Parts Promo only | Correctly tiered |
 | df_Dim_JobType | Dim_JobType | monthly | **`Top 50 - Job Codes` only** (RP - Sandbox, untracked locally — confirmed via direct `fab export`, invisible to a local-repo grep) | Used by a deliberately dormant report (Brian: "worth holding on to... not actively being used, but may in the future") — leave the monthly refresh as-is, cheap and correct given the report may return |
-| **df_Dim_BranchUserAccess** | dim_BranchUserAccess | **NONE — not wired into any pipeline** | Parts Action Dashboard (RP - Sandbox, not live in production yet) | **Real gap.** RLS-mapping table (branch security) for a report not yet live — needs pipeline wiring before that report goes live |
-| **df_Dim_WKCDPART** | dim_WkcdPart | **NONE — not wired into any pipeline** | **Job Code Parts Advisor — LIVE IN PRODUCTION** (`RP - Service Reports`) | **Real, active production bug.** Serving frozen/never-refreshed data since deployment. Noted with Brian 2026-09-10, deferred to fix together with the item below rather than as an emergency patch |
-| **df_Dim_WkCodeFl** | dim_JobCodes | **NONE — not wired into any pipeline** | **Job Code Parts Advisor — LIVE IN PRODUCTION** (`RP - Service Reports`) | Same as above. **Naming collision to fix while wiring this in:** `dim_JobCodes` (this table) vs `dim_JobCode` (df_Dim_JobCode, a completely different dataflow, daily-refreshed) — easy to confuse, worth a clearer name |
-| **df_Dim_PartDemands** | dim_PartDemands | **NONE — not wired into any pipeline** | **Zero live usage anywhere** — not referenced by any current report, tracked or untracked | **True dead code.** Real archive candidate |
-| df_CustomerLookup | CustomerLookup | daily (misfiled under `04 - Facts/Customer Anatomy Queries/`, not `03 - Dimensions`) | **Ambiguous** — zero direct TMDL table references found, but the Feb 2026 doc describes it as "Fact-building helper, refreshes with dims for ordering" for Customer Anatomy V2, meaning it may feed that report's own Fact dataflow as an intermediate step rather than being loaded into the semantic model directly | Needs verification before any action — don't assume dead from a TMDL grep alone, since it may not be a report-facing table at all |
+| df_Dim_BranchUserAccess | dim_BranchUserAccess | NONE — not wired into any pipeline | Parts Action Dashboard (RP - Sandbox) — but that report ended up going a different route (Power Automate email to parts managers, since they don't have Power BI access yet) | **Not dead — built ahead of need.** Brian: worth holding onto for future RLS access once parts managers get Power BI access. No action needed now |
+| df_Dim_WKCDPART | dim_WkcdPart | NONE — not wired into any pipeline | Job Code Parts Advisor — live in `RP - Service Reports`, but usage is low right now and the report may evolve | Serving frozen data, but Brian: not a priority at this point — **note for when we work through reports/refresh scheduling on the new (DP) system**, not an emergency patch |
+| df_Dim_WkCodeFl | dim_JobCodes | NONE — not wired into any pipeline | Job Code Parts Advisor — same as above | Same as above. **Naming collision confirmed real** by Brian (didn't remember which dataflow built `dim_JobCodes` until this catalog resolved it) — worth a clearer name whenever this gets wired in |
+| df_Dim_PartDemands | dim_PartDemands | NONE — not wired into any pipeline | Zero live usage anywhere yet | **Not dead — built recently, ahead of use.** Brian: may be valuable in the future, just hasn't been put into use yet. No action needed now |
+| df_CustomerLookup | CustomerLookup | daily (misfiled under `04 - Facts/Customer Anatomy Queries/`, not `03 - Dimensions`) | Used in building Customer Anatomy V2's fact tables, not as a report-facing dim (confirmed by Brian) | Deferred — Brian: address this when we get to the facts/report side of this work, not now |
 
 ## Archived dims (`Archive Dimensions/`, 9 total) — sanity-checked, still correctly archived
 
@@ -96,23 +96,50 @@ though it's still technically deployed. No action needed on the archived `df_Dim
 dataflow; `Key Customers` itself is a cleanup candidate (delete the live Sandbox item)
 whenever Brian wants to do that housekeeping — not urgent, not addressed by this catalog.
 
-## Summary of real findings
+## Summary of findings (updated 2026-09-11 with Brian's corrections)
 
-1. **Real, active production bug:** `Job Code Parts Advisor` is live in `RP - Service Reports`
-   but its 2 dimension tables (`dim_WkcdPart`, `dim_JobCodes`) have never been refreshed —
-   noted with Brian, deferred to fix alongside the other pipeline-wiring gaps below rather
-   than patched immediately.
-2. **`dim_PartDemands` is true dead code** — zero pipeline wiring, zero live usage anywhere. Archive candidate.
-3. **`dim_BranchUserAccess` needs pipeline wiring before Parts Action Dashboard goes live** (RLS-critical table).
-4. **Naming collision, `dim_JobCode` vs `dim_JobCodes`** — worth a clearer name for the latter when it gets wired in.
-5. **`CustomerLookup` is misfiled** under `04 - Facts/Customer Anatomy Queries/` instead of `03 - Dimensions`, and its real usage is ambiguous (may be a Fact-building intermediate, not a report-facing table) — needs verification before any action.
-6. **Two live Sandbox reports (`Key Customers`, `Top 50 - Job Codes`) are completely untracked in git** — a process gap distinct from the dimension audit itself, worth deciding whether to pull them into the repo.
-7. Every other actively-refreshed dim (23 of the 26 in the active folder) checked out as **correctly tiered and genuinely used** — the Feb 2026 doc's daily/monthly assignments still hold up against current real usage.
-8. The 9 already-archived dims are correctly archived — no live production dependency found on any of them, aside from the retired `Key Customers` report noted above.
+1. **`Job Code Parts Advisor`'s 2 unrefreshed dims** (`dim_WkcdPart`, `dim_JobCodes`) — real,
+   but not a priority right now (low current usage, report may evolve). **Noted for later:**
+   address when working through reports/refresh scheduling on the new (DP) system.
+2. **`dim_PartDemands` and `dim_BranchUserAccess` are NOT dead** — both built ahead of need,
+   intentionally not yet in use, kept for future value. No action needed on either.
+3. **`dim_JobCode` vs `dim_JobCodes` naming collision confirmed real** — worth a clearer name
+   for `dim_JobCodes` whenever it gets wired in (not urgent, bundled with item 1).
+4. **`dim_JobCode` (First Pass Fill) has a real, concrete quality finding:** 8 of its ~11
+   columns — an entire speculative "intelligent business categorization" layer — are loaded
+   into the live model but touched by nothing downstream. See the matrix row above. First
+   confirmed example of the "loaded but not really used" pattern this catalog is now hunting
+   for systematically (see next section).
+5. **`CustomerLookup`** feeds Customer Anatomy V2's fact-table build, not the report directly —
+   deferred to the facts/report phase of this work, not a dimensions-catalog concern.
+6. **`Key Customers`/`Top 50 - Job Codes`** are live-but-untracked Sandbox reports — noted,
+   revisit later, not a priority right now.
+7. The 9 already-archived dims are correctly archived — no live production dependency on any
+   of them, aside from the retired `Key Customers` report (already accounted for above).
 
-**Not yet decided / needs Brian's direction:**
-- Whether to fix the `Job Code Parts Advisor` pipeline-wiring gap now or bundle it with other fixes
-- Whether to archive `dim_PartDemands`
-- Whether to rename `dim_JobCodes` while wiring it in
-- What `CustomerLookup` actually feeds, before deciding whether to relocate/keep/retire it
-- Whether to pull `Key Customers`/`Top 50 - Job Codes` into the local repo, and whether to delete the retired `Key Customers` Sandbox item
+## Next phase: column-usage-depth audit (started 2026-09-11)
+
+**Goal, per Brian's direction:** for every dim genuinely in current use, don't just confirm
+"is the table used" (this catalog's first pass) — check **which of its columns are actually
+referenced by anything downstream** (report visuals, measures, relationships), the same method
+that found `dim_JobCode`'s 8 dead columns. This is prep work for rebuilding each dim on the new
+DP backend: know exactly what's real before deciding what the rebuilt version should carry.
+
+**Scope:** the 21 dims confirmed in real current use (excludes `dim_JobCode`, already done;
+excludes `dim_PartDemands`/`dim_BranchUserAccess`, not yet in use; excludes the 2 `Job Code
+Parts Advisor` dims and `CustomerLookup`, both explicitly deferred above).
+
+Broken into batches, same approach as the raw-sources migration:
+
+**Batch 1 — simple monthly reference-code dims (11):** `dim_AdjustmentType`, `dim_CommodityCode`,
+`dim_DealerGroupCode`, `dim_Franchise`, `dim_ModuleType`, `dim_PaymentMethod`, `dim_PromoType`,
+`dim_RepairOrder`, `dim_SLC`, `dim_Source`, `dim_VendorCode` — each used by 1-4 reports, small
+static code tables. Likely quick, mechanical checks.
+
+**Batch 2 — smaller daily operational dims (6):** `dim_Branch12_Parts`, `dim_BranchPartInventory`,
+`dim_Salesperson`, `dim_Technician_Code_Names`, `lookup_UniqueCustomers_Invoice`, `dim_UniqueCustomers`
+— each used by 1-3 reports, more behavioral/operational than the reference codes above.
+
+**Individually — the 4 heaviest-hitters (10-24 reports each, highest blast radius):**
+`dim_CustomerList`, `dim_DateTable`, `dim_Parts`, `dim_BranchLocation` — same treatment `Invoice`
+got in the raw-sources work, one at a time, given their complexity and how many reports touch each.
