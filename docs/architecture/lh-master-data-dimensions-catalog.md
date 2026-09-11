@@ -482,6 +482,27 @@ landing as a literal `"S"` row with the fallback `ModuleTypeKey=99`/`SortOrder=9
 is a genuine gap in production's own original business rule, correctly carried forward
 by faithful reproduction — not a bug introduced here.
 
-**All 4 verified:** `dim_Franchise` 39 rows/4 columns, `dim_JobCode` (pending re-run
-after the fix), `dim_ModuleType` 12 rows/3 columns, `dim_Technician_Code_Names` 1,456
-rows/4 columns (real `IsActive` breakdown, not the old fake always-true column).
+**`dim_JobCode` needed 3 attempts to fix properly** — the first 2 chased a Spark
+`unionByName` lineage red herring (`.toDF()` rename, then `localCheckpoint(eager=True)`),
+neither of which was the real problem. The actual bug: the pipeline never dropped the
+original, pre-clean `JobCode` column after deriving `CleanJobCode` from it — renaming
+`CleanJobCode` to `JobCode` then created a genuine second column with that name, and the
+final `.select("JobCode", ...)` couldn't disambiguate. Fixed by selecting `CleanJobCode`
+with an output alias directly, never re-introducing a literal `"JobCode"` column as an
+intermediate step. Production's own code never hits this because its own
+`Table.SelectColumns` step only ever keeps `CleanJobCode`, not the raw pre-clean version.
+
+**`dim_Technician_Code_Names`'s real-`IsActive` fix had a bug of its own**: the fixed
+column came back all `NULL`. Root cause — wrongly assumed `Silver_WkMechFl.IsTerminated`
+had already been converted to `0`/`1` by that Silver notebook's own build. It hasn't —
+confirmed via DuckDB it's actually `VARCHAR` with the raw `"Y"`/`"N"` values (517 `N`,
+937 `Y`); that Silver notebook deliberately keeps the raw value rather than applying the
+source view's CASE-boolean conversion. Comparing a string column to an int literal
+(`== 0`) silently evaluates to null for every row in Spark's non-ANSI mode — the same bug
+class as `dim_VendorCode`'s integer-vs-string mismatch in Batch A, just the reverse
+direction. Fixed to compare against the real `"N"` string value.
+
+**All 4 verified:** `dim_Franchise` 39 rows/4 columns, `dim_JobCode` 45,848 rows/4
+columns (Inspection classification confirmed correctly applied, e.g. `/COMBINE VIP
+INSPECT` → `Inspection - Combine`), `dim_ModuleType` 12 rows/3 columns,
+`dim_Technician_Code_Names` (pending re-verification after the `IsActive` fix).
