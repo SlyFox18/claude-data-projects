@@ -195,3 +195,69 @@ built deliberately lean (`dim_BranchPartInventory`, `lookup_UniqueCustomers_Invo
 2-3 column reference dims from Batch 1) checks out clean. This strengthens the takeaway above:
 the DP-backend rebuild should default to lean, and treat any "comprehensive" business-intelligence
 layer as something to leave out until a real, proven need appears.
+
+## The 4 heaviest-hitters, individually (2026-09-11)
+
+Same method, checked across each dim's **entire** real consumer portfolio at once (a column only
+needs one genuine consumer out of many to count as used) — these are shared across 10-24 reports
+each, so the bar for "unused" is much higher than for the single- or few-report dims above.
+
+### `dim_CustomerList` — 43 of 55 columns used (78%)
+
+The healthiest of the 4 — makes sense, 10 reports with genuinely different purposes (financial
+aging, marketing, work orders, customer analytics) naturally exercise more of a wide table than
+any single report would. The documented "Special Customer Assignment Logic" (`-1` through `-9`
+keys resolving Stock/Internal/Warranty work orders with no real ArMaster customer) is real,
+important, and already correctly captured in the header — not part of this finding.
+
+**12 genuinely unused columns**, all address-detail or marketing fields nobody's built a use for
+yet: `CustomerNumberText`, `Street`, `Street2`, `PostalCode`, `Country`, `HomePhone`, `IsCompany`,
+`HasCreditLimit`, `Account_Class`, `ContactClass`, `IsMarketingEligible`, `PreferredContactMethod`.
+(`City`/`State` ARE used — territory/geographic analysis is a real, live use case.)
+
+### `dim_DateTable` — 19 of 67 columns used (28%) — the single biggest finding in this catalog
+
+Refreshed **daily**, the highest-frequency tier, carrying 67 columns across an 11-year date span
+when only 19 are ever touched by any of its 24 consumers. Of ~25 speculative "cover every
+conceivable rolling window" flags (`IsRolling6Months` through `IsRolling156Weeks`, `IsLast30Days`,
+`IsNext30Days`, etc.), only 4 are real: `IsRolling12Months` (the actual workhorse — 11 files,
+this is what "R12" metrics across the backend actually mean), `IsRolling24Months`,
+`IsRolling365Days`, `IsRolling730Days` (1 file each). Every fiscal-calendar column
+(`FiscalYear`, `FiscalQuarter`), every seasonal-intelligence column (`Season`, `IsPeakSeason`),
+every business-day column (`IsBusinessDay`, `WorkingDaysInMonth/Quarter/Year`), and roughly 21 of
+the 25 rolling-window flags are dead weight. The 19 real columns are almost entirely the basic
+date hierarchy (`DateKey`, `Date`, `Year`, `Quarter`, `Month`, `Day`, `WeekOfYear`, `DayOfWeek`,
+`MonthName`, `MonthNameShort`, `MonthYear`) plus a handful of real period flags (`IsWeekend`,
+`IsPreviousMonth`, `IsYearToDate`, the 4 real rolling flags above).
+
+### `dim_Parts` — 22 of 22 columns used (100%)
+
+Fully clean. Even the `Returnable`/`IsReturnable` pair that showed up dead in the smaller
+`dim_Branch12_Parts` (Batch 2) is genuinely used here (9 and 3 files respectively) — the
+redundancy earns its keep at this dim's broader 18-report scale even though it didn't at
+`dim_Branch12_Parts`'s narrower scale. The best-curated dim found in this entire catalog.
+
+### `dim_BranchLocation` — 9 of 16 columns used (56%)
+
+The 7 unused columns are exactly the heuristic "business intelligence" layer already flagged
+during this session's earlier DP-backend work (`docs/architecture/data-platform-workspaces.md`'s
+`dim_RepairOrder`/`Fact_PartsPromo` section) as pattern-matched on `BranchID`/`BranchName`/
+`State`/`City`, faithfully ported to the new backend without re-verifying real usage:
+`ServiceCapacity`, `MarketPresence`, `TerritoryCoverage`, `OperationalPriority`,
+`RegionalClassification`, `ServiceHours`, `DistanceFromHub`. Now confirmed genuinely dead in
+every live report. `DataQualityScore` (also heuristic-flavored) is the one survivor — actually
+used (14 files). Worth revisiting whether the already-ported DP-backend version of this dim
+should drop the 7 dead columns, since they rode along into the new system as part of a
+"faithful port."
+
+## Full audit complete (2026-09-11)
+
+All 26 active dims (batches 1+2, the 4 heavy-hitters) have now been checked for real column-level
+usage. Summary: the "comprehensive business intelligence" over-engineering pattern showed up 5
+times total (`dim_JobCode`, `dim_Franchise`, `dim_RepairOrder`, `dim_Technician_Code_Names`,
+`dim_DateTable` — the last being by far the largest and most-refreshed offender), always in the
+same shape: extra categorization/scoring/flag columns bolted onto a real, useful core, left
+unused because the report that would've needed them was never built or went a different route.
+Every dim built deliberately lean, and the widely-shared `dim_Parts`, checked out clean. This is
+the concrete evidence base for the DP-backend rebuild takeaway repeated throughout this catalog:
+default lean, add speculative columns only on a proven, identified need.
