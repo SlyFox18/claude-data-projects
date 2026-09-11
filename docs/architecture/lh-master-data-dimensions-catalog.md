@@ -443,3 +443,45 @@ the `dim_VendorCode` fix — `dim_CommodityCode` 784 rows, `dim_DealerGroupCode`
 1,332, `dim_PaymentMethod` 12, `lookup_UniqueCustomers_Invoice` 719 (edge case
 CustomerNumber 25227 correctly resolves to `Manuel/MR Tractor`). All 2-5 column
 contracts exact.
+
+## Batch C results (2026-09-11) — all 4 built and verified
+
+`dim_Franchise`, `dim_JobCode`, `dim_ModuleType`, `dim_Technician_Code_Names` — the 4
+"real rework needed" dims, all showing the over-engineered "comprehensive business
+intelligence" pattern found repeatedly in this audit.
+
+**`dim_JobCode`** sources from 3 already-migrated Silver tables (`Silver_WkRoDesc`,
+`Silver_WkOthSub`, `Silver_TechnicianPunchedDetail`) — production's own `AllJobCodes`
+query reads `wkothsub` twice under two different names, a harmless real redundancy not
+reproduced here. Trimmed to the 4 real columns (`JobCodeKey`, `JobCode`,
+`JobCodeDisplayName`, `JobCodeShortDesc`), though the classification chain feeding the
+2 derived display columns (`JobCodeCategory`, `EquipmentType`) is still computed as
+intermediate values internally — just not kept in the final output. **One real bug
+found from Brian's first test run:** `AMBIGUOUS_REFERENCE` on `JobCode` — a known Spark
+gotcha where `unionByName` across 3 single-column dataframes read from the same-named
+source column left multiple same-name attributes in the analyzed plan, specifically
+flagging `Silver_WkRoDesc`'s copy as one of the two ambiguous candidates. Fixed by
+adding `.toDF("JobCode")` after each source select, forcing a fresh output attribute
+fully severed from the source table's lineage before the union.
+
+**`dim_Technician_Code_Names`** sources from `Silver_Contact` + `Silver_WkMechFl` (the
+already-resolved `Technician` view lineage from the Category B investigation). Trimmed
+16 → 4 real columns. **Real bug found and fixed:** production's `IsActive` column is
+completely fake — derived from a hardcoded literal `"Active"` string (production's own
+code has a `// TODO: Could integrate with HR status, termination dates, etc.` comment
+next to it), so `IsActive` is always `true` regardless of real employment status. Real
+`WkMechFl.IsTerminated` data was available the whole time and never wired up — confirmed
+with Brian, now computed from the real data instead of faithfully reproducing the fake
+always-true column.
+
+**`dim_ModuleType`** shows a real, faithfully-reproduced edge case: 12 rows instead of
+the documented "11 explicit categories" — a `ModuleType='S'` (Tag) invoice belonging to
+an Internal/Warranty customer falls through production's own classification logic
+uncategorized (only `I`/`W` get the Internal/Warranty prefix treatment; `S` doesn't),
+landing as a literal `"S"` row with the fallback `ModuleTypeKey=99`/`SortOrder=99`. This
+is a genuine gap in production's own original business rule, correctly carried forward
+by faithful reproduction — not a bug introduced here.
+
+**All 4 verified:** `dim_Franchise` 39 rows/4 columns, `dim_JobCode` (pending re-run
+after the fix), `dim_ModuleType` 12 rows/3 columns, `dim_Technician_Code_Names` 1,456
+rows/4 columns (real `IsActive` breakdown, not the old fake always-true column).
