@@ -246,9 +246,9 @@ during this session's earlier DP-backend work (`docs/architecture/data-platform-
 `ServiceCapacity`, `MarketPresence`, `TerritoryCoverage`, `OperationalPriority`,
 `RegionalClassification`, `ServiceHours`, `DistanceFromHub`. Now confirmed genuinely dead in
 every live report. `DataQualityScore` (also heuristic-flavored) is the one survivor — actually
-used (14 files). Worth revisiting whether the already-ported DP-backend version of this dim
-should drop the 7 dead columns, since they rode along into the new system as part of a
-"faithful port."
+used (14 files). **Done (2026-09-11):** the DP-backend version now drops these 7 columns, and
+was also rebuilt off `Silver_BranchName` instead of the `BranchOperational` bronze table —
+see "Already-built dims" below for the trim and source-swap, both verified.
 
 ## Full audit complete (2026-09-11)
 
@@ -293,7 +293,24 @@ known:
   corrected above.** Faithful full 15-column port, carrying all 13 columns this audit found
   unused in the live Parts Promo report.
 
-**Decision (2026-09-11):** trim all 3 now — see Task-by-task plan below.
+**Decision (2026-09-11):** trim all 3 now. **Done and verified (2026-09-11):**
+
+- `dim_DateTable`: trimmed to the 13 real columns (`DateKey`, `Date`, `Year`, `Quarter`, `Month`,
+  `Day`, `WeekOfYear`, `DayOfWeek`, `MonthName`, `MonthNameShort`, `MonthYear`, `QuarterYear`,
+  `IsWeekend`). Verified: 4,018 rows (unchanged), 13-column contract exact.
+- `dim_BranchLocation`: rebuilt off `Silver_BranchName` (new shortcut added to `DP_Presentation`),
+  retiring the `df_BranchOperational_Raw` direct-ODBC dependency, and trimmed to 9 columns
+  (`BranchKey`, `Branch`, `BranchType`, `BranchID`, `BranchName`, `LocationID`, `State`, `City`,
+  `DataQualityScore`). Verified: 69 rows (exact match to the original build), 9-column contract
+  exact, Seminole (`BranchID '1'`) spot check passes (`BranchType = Main Branch`,
+  `DataQualityScore = 100`). `df_BranchOperational_Raw` itself is now a real retirement candidate
+  — nothing reads it anymore, pending Brian's go-ahead to delete it.
+- `dim_RepairOrder`: trimmed to 2 columns (`REF_NO`, `CustomerNo`). Verified: 16,269 rows
+  (unchanged), 2-column contract exact, all 11 known-important promo orders present including
+  RO 1985073 (the same order used for this backend's original production verification).
+
+All 3 built/verified via `docs/architecture/lh-master-data-dimensions-catalog.md`'s own
+verification script, `.claude/queries/adhoc/dp-bronze-verify/verify_dim_trims_datetable_branchlocation_repairorder.py`.
 
 ## Implementation plan: building the remaining ~23 dims on the DP backend
 

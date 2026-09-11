@@ -86,6 +86,19 @@ floating-point noise on the order of `1e-13`, not real discrepancies). The origi
 Parts Promo bug — RO 1985073 showing $229.18 instead of $627.64, and 10 other
 orders similarly understated — is fixed at the gold layer.
 
+**`dim_RepairOrder` trimmed 2026-09-11:** the LH_Master_Data dimensions catalog's
+column-usage-depth audit (`docs/architecture/lh-master-data-dimensions-catalog.md`) found
+only 2 of the original 15 columns (`REF_NO` as the relationship key, `CustomerNo` in a
+visual) are genuinely used by the live Parts Promo report. Dropped the 13 unused
+pre-aggregated order-level metrics (`TotalPartsSales`, `TotalPartsCost`, `PartsCount`,
+`TotalPromoDiscount`, `PromoCount`, `NetOrderValue`, `OriginalMargin`, `NetMargin`,
+`DiscountAmount`, `DiscountPercent`, `BranchKey`, `OrderDate`, `LastActivityDate`) — all
+genuinely well-designed (they replaced a runtime self-join in the original Power Query),
+just never surfaced in the report; full derivation preserved in the catalog doc and git
+history if a future report enhancement needs them back. Verified 2026-09-11: 16,269 rows
+(unchanged), 2-column contract exact, all 11 known-important orders (including RO
+1985073) still present.
+
 **Variable Library:** `DP - Environment Config`, lives in `DP - Staging - Dev`, git-synced under
 `workspaces/DP - Staging - Dev/DP - Environment Config.VariableLibrary`. Value sets: `Default`
 (built-in), `Dev`, `Prod`.
@@ -137,30 +150,54 @@ Verified 2026-09-09 via `verify_gold_datetable.py`: 4,018 rows (2020-01-01 to
 2030-12-31, matching production's range), 28 columns, hand-computed spot checks correct
 for three known dates, zero dropped columns leaked back in.
 
-### `dim_BranchLocation` — faithful port, no bug found
+**Further trimmed 2026-09-11:** the LH_Master_Data dimensions catalog's column-usage-depth
+audit (`docs/architecture/lh-master-data-dimensions-catalog.md`) cross-checked this table's
+28 columns against real usage across all 24 of `dim_DateTable`'s production consumers and
+found only 13 are genuinely referenced by any of them. The other 15 (`DayOfWeekName`,
+`DayOfWeekNameShort`, `SortableMonthYear`, `DateDisplayName`, `Season`, `IsPeakSeason`,
+`FiscalYear`, `FiscalQuarter`, `MonthSort`, `QuarterSort`, `IsWeekday`, `IsBusinessDay`,
+`WorkingDaysInMonth`, `WorkingDaysInQuarter`, `WorkingDaysInYear`) are all genuine,
+non-buggy calendar attributes — nothing wrong with any of them, just never proven needed —
+dropped per the same "build what's proven needed" discipline used throughout this backend.
+Verified 2026-09-11 (`verify_dim_trims_datetable_branchlocation_repairorder.py`): 4,018
+rows (unchanged), 13-column contract exact.
+
+### `dim_BranchLocation` — no bug found, rebuilt off Silver_BranchName, trimmed (2026-09-11)
 
 Built by `Build_Gold_BranchLocation.Notebook` (`Dimensions/Build_Gold_BranchLocation.Notebook`
-in `DP - Presentation - Dev`). Unlike `dim_DateTable`, no correctness issue was found in
-this table's enrichment logic during review — the `MarketPresence`/`TerritoryCoverage`/
-`OperationalPriority`/`RegionalClassification`/`ServiceHours`/`DistanceFromHub`/
-`DataQualityScore` heuristics are all pattern-matched on `BranchID`/`BranchName`/`State`/
-`City`, none date-dependent. Ported faithfully to PySpark from production's
-`dim_BranchLocation.pq`.
+in `DP - Presentation - Dev`). No correctness issue was ever found in this table's
+enrichment logic (`BranchType` classification, branch-number fixes, `DataQualityScore`) —
+unlike `dim_DateTable`, this was never a bug fix, just first a faithful port (2026-09-09)
+and now a source-swap + column trim (2026-09-11), both driven by real findings.
 
-Its source, `BranchOperational`, is an EquipRDB **view**, not a base table — confirmed
-this session it isn't in JD's Bronze mirror (JD's replication apparently only covers
-base tables). Gets its own small Dataflow Gen2 ingestion instead
-(`df_BranchOperational_Raw`, `Raw Data - Dataflows/` in `DP - Staging - Dev` — same
-mechanism production already uses), landing into `DP_Staging`, then reaches the gold
-notebook via a cross-workspace shortcut — same "shortcuts, not copies" pattern as
-`Silver_InTrans`/`GlTrans`.
+**Original source (2026-09-09), now retired:** `BranchOperational`, an EquipRDB **view**
+confirmed not in JD's Bronze mirror, landed via its own small direct-ODBC Dataflow Gen2
+(`df_BranchOperational_Raw`, `Raw Data - Dataflows/` in `DP - Staging - Dev`).
 
-Verified 2026-09-09 via `verify_gold_branchlocation.py`: 69 rows (matches production
-exactly). Seminole (`BranchID '1'` — the specific branch a prior production bug, an
+**Current source (2026-09-11):** during the Category B Technician-family investigation,
+Brian pulled `BranchOperational`'s real SQL Anywhere view definition and found it's a
+trivial rename over `Branch_Name` — already migrated as `Silver_BranchName` (raw sources
+batch 1, a zero-cost OneLake shortcut). This notebook now reads `Silver_BranchName`
+directly (via a new cross-workspace shortcut added to `DP_Presentation`, same
+"shortcuts, not copies" pattern as `Silver_InTrans`/`GlTrans`) and reproduces
+`BranchOperational`'s own 7-column projection inline before the same downstream logic
+runs unchanged. `df_BranchOperational_Raw` itself is now a real retirement candidate —
+nothing reads it anymore — pending Brian's go-ahead to delete it.
+
+**Column trim (2026-09-11):** the LH_Master_Data dimensions catalog's column-usage-depth
+audit (`docs/architecture/lh-master-data-dimensions-catalog.md`) found only 9 of the
+original 16 columns are genuinely used by any of `dim_BranchLocation`'s 22+ real
+consumers. Dropped the 7 heuristic columns pattern-matched on `BranchID`/`BranchName`/
+`State`/`City` (`ServiceCapacity`, `MarketPresence`, `TerritoryCoverage`,
+`OperationalPriority`, `RegionalClassification`, `ServiceHours`, `DistanceFromHub`) —
+`DataQualityScore` survived, confirmed genuinely used.
+
+Verified 2026-09-11 (independent DuckDB check,
+`verify_dim_trims_datetable_branchlocation_repairorder.py`): 69 rows (exact match to the
+original 2026-09-09 build — confirms the source swap changed nothing about which branches
+qualify). Seminole (`BranchID '1'` — the specific branch a much older production bug, an
 arbitrary `Table.Skip(30)`, used to drop) is present and correctly classified as
-`Main Branch` / `West Texas`, zero Hourly/Salary branches leaked through the filter,
-`BranchType` distribution shows a healthy mix (23 Main Branch, 22 IS Shop, 15 Set-Up
-Shop, 9 CP Shop).
+`Main Branch`, `DataQualityScore = 100`. 9-column contract confirmed exact.
 
 ## jdis_Part_Information tiered refresh (2026-09-09) — first step of a larger design
 
