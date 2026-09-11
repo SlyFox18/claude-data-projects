@@ -143,3 +143,32 @@ static code tables. Likely quick, mechanical checks.
 **Individually — the 4 heaviest-hitters (10-24 reports each, highest blast radius):**
 `dim_CustomerList`, `dim_DateTable`, `dim_Parts`, `dim_BranchLocation` — same treatment `Invoice`
 got in the raw-sources work, one at a time, given their complexity and how many reports touch each.
+
+## Batch 1 results (2026-09-11) — column-usage-depth audit, 11 simple reference dims
+
+**A clear, repeatable pattern emerged:** every dim with only 2-3 columns (a surrogate key plus
+1-2 plain lookup fields) checks out completely clean. Every dim with an elaborate,
+"comprehensive business intelligence"-style header — extra categorization/scoring/flag columns
+beyond the basic key+description — has most of that elaboration sitting unused in every live
+report that touches it. Same shape as the `dim_JobCode` finding that kicked this phase off.
+
+| Dim | Real columns | Genuinely used (visuals/measures/relationships) | Finding |
+|---|---|---|---|
+| `dim_AdjustmentType` | 5 | **0 of 5** (relationship exists but on `AdjustmentTypeName`, not the `AdjustmentTypeKey` surrogate the dataflow's own header describes) | Table is never actually surfaced in any Parts Adjustments visual. Relationship joins on a text field instead of the intended surrogate key — fragile if names ever change |
+| `dim_CommodityCode` | 2 (`CommodityCodeKey`, `CommodityCode`) | Both | Clean. A 3rd column (`CommodityGroup`) is planned but explicitly not yet applied to production — already tracked in `project_commodity_code_groups.md`, not a new finding |
+| `dim_DealerGroupCode` | 2 | Both | Clean, simple, no issues |
+| `dim_Franchise` | 15 | **4 of 15** (`FranchiseKey`, `Franchise`, `FranchiseCode`, `FranchiseDisplayName`) | The other 10 — an entire "comprehensive brand intelligence" layer (`FranchiseType`, `FranchiseCategory`, `MarketPosition`, `ServiceComplexity`, `FranchiseSortOrder`, `BusinessPriority`, `FranchiseStatus`, `IsPrimaryBrand`, `IsAgriculturalBrand`, `IsMajorBrand`) — are unused across all 4 live consuming reports (Bin Location, Inventory Analysis, MD Invoices, Price Matrix) |
+| `dim_ModuleType` | 5 | 3 of 5 (`ModuleTypeKey`, `ModuleTypeDescription`, `SortOrder`) | `BusinessGrouping` (a documented "business requirement") and `RecordCount` (a dev validation field) unused in Inventory Analysis. Separately, the classification logic hardcodes ~40 specific customer numbers into 2 arrays (`InternalCustomers`, `WarrantyCustomers`) to override standard ModuleType mapping — a new Internal/Warranty customer added to the source system won't be classified correctly until someone remembers to update this M code by hand |
+| `dim_PaymentMethod` | 5 | All 5 | Clean, genuinely used in Inventory Analysis |
+| `dim_PromoType` | 6 (3 documented + 3 undocumented: `FirstSeen`, `LastSeen`, `UsageCount`) | **0 of 6 displayed** (only the relationship key, `PromoPartNo`, is wired) | Entire table imported and related in Parts Promo but contributes zero visible columns — not even the 2 columns the dataflow's own header describes as the point of the table |
+| `dim_RepairOrder` | 15 (14 documented + 1 undocumented: `DiscountAmount`) | **1 of 15** (`CustomerNo`, plus the `REF_NO` relationship key) | The pre-aggregated order-level metrics (`TotalPartsSales`, `NetOrderValue`, `OriginalMargin`, `NetMargin`, `DiscountPercent`, etc.) are well-designed — genuinely good pre-aggregation logic that replaced a runtime self-join — but none of it is surfaced in Parts Promo today. "Good bones, unused," not badly built |
+| `dim_SLC` | 2 | Both | Clean, simple, no issues |
+| `dim_Source` | 2 | Both | Clean, simple, no issues |
+| `dim_VendorCode` | 2 | Both | Clean, simple, no issues. **Not** the same table as the known `VendorCode` branch-variance limitation (`project_dim_parts_vendorcode_limitation.md`) — that issue is on `dim_Parts.VendorCode` (a part-level attribute), this is a separate flat reference-code lookup |
+
+**Takeaway for the DP-backend rebuild:** build what's proven needed (matching the discipline
+already used for raw sources — e.g. `InMaster`'s `IN_TRANSIT_QTY` addition was a specific,
+proven need, not speculative). For every dim rebuilt going forward, carry over only the columns
+confirmed genuinely used here; anything speculative can be added later if a real, identified
+need shows up (same as the raw-sources precedent), rather than rebuilding unused categorization
+layers by default.
