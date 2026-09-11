@@ -327,10 +327,25 @@ remain deferred per Brian's earlier direction.
 (2-7 columns), all single-or-few consumers — build exactly as documented, no design decisions
 pending.
 
-**Batch B — minor cleanup, still simple (5):** `dim_Branch12_Parts` (drop 2 dead columns),
-`dim_UniqueCustomers` (decide whether to keep the 4 unused audit-trail columns), `dim_Salesperson`
-(clean, grouped here), `dim_AdjustmentType` (tiny static table, also fix the relationship-key
-design inconsistency found in the audit), `dim_PromoType` (trim to real need).
+**Batch B — minor cleanup, still simple (5, later reduced to 4 — see below):**
+`dim_Branch12_Parts` (drop 2 dead columns), `dim_UniqueCustomers` (decide whether to keep
+the 4 unused audit-trail columns), `dim_Salesperson` (clean, grouped here),
+`dim_AdjustmentType` (tiny static table, also fix the relationship-key design
+inconsistency found in the audit), `dim_PromoType` (trim to real need).
+
+**Real finding while starting Batch B (2026-09-11):** `dim_Branch12_Parts` is **also
+blocked** on `Fact_Branch12_Transactions` — same missing Fact table that already blocked
+`dim_BranchPartInventory` out of Batch A. Its 3 genuinely-used columns (`Demands`,
+`R12_Sales_Qty`, `R12_Sales_Dollars`, confirmed real in the earlier audit) all come from
+that fact table. **Decision: deferred alongside `dim_BranchPartInventory`**, to be built
+together whenever Combine Vault Sales itself migrates. Batch B is now 4 dims.
+
+**Also found while reading its source (not yet proven wrong empirically, just structurally
+identical to an already-confirmed bug):** `dim_Branch12_Parts`'s R12 window is computed as
+`DateTime.Date(DateTime.LocalNow())` minus 365 days, baked into static columns at refresh
+time — the same UTC/local-time anti-pattern already found and fixed in `dim_DateTable`
+(`Fact_PartsAdjustments.LoadedDatetime`, the 2026-02-27 Data Refresh Table fix). Worth
+checking for real when `Fact_Branch12_Transactions`/`dim_Branch12_Parts` actually get built.
 
 **Batch C — real rework needed (4):** `dim_JobCode` (trim from 11 to 3 real columns, resolve the
 `dim_JobCode`/`dim_JobCodes` naming collision), `dim_Franchise` (trim from 15 to 4),
