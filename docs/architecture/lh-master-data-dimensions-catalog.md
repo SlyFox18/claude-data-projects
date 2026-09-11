@@ -347,6 +347,40 @@ time — the same UTC/local-time anti-pattern already found and fixed in `dim_Da
 (`Fact_PartsAdjustments.LoadedDatetime`, the 2026-02-27 Data Refresh Table fix). Worth
 checking for real when `Fact_Branch12_Transactions`/`dim_Branch12_Parts` actually get built.
 
+## Batch B results (2026-09-11) — 4 of 5 built and fully verified
+
+**Real discovery investigating `dim_Salesperson`:** its 2 sources
+(`Salesperson`/`SalespersonInformation`) had never been cataloged as raw sources — they're
+embedded ODBC pulls inside the dimension dataflow itself, not separate `01 - Raw Sources`
+dataflows. Brian pulled both views' real SQL Anywhere definitions and found they resolve to
+a single new base table, `VhSalman` (confirmed in JD Bronze, 645 rows, shortcut-able),
+joined to already-migrated `Silver_Contact` — no direct-ODBC Dataflow Gen2 needed after
+all. Built as a normal raw source (`Build_Silver_VhSalman`) alongside the 4 dims.
+
+**One real bug found from Brian's first test run:** `dim_Salesperson` failed with
+`AMBIGUOUS_REFERENCE` on `SalespersonCode`. The join used an explicit condition (not a
+same-name join), so both sides' code columns (`SalesPerson`, `SalespersonCode`) survived
+into the joined dataframe; a later rename of `SalesPerson` to `SalespersonCode` then
+collided with the column already there. Fixed by dropping the redundant column right after
+the join.
+
+**Column scope decisions:** `dim_AdjustmentType` and `dim_UniqueCustomers` are pure static
+tables (matching production's own hardcoded Power Query data exactly, no source dependency
+at all). `dim_PromoType` kept all 6 columns rather than trimming to just the relationship
+key — unlike `dim_RepairOrder`'s complex, genuinely-unused derived margin metrics,
+`PromoDescription`/`PromoCategory` are the table's whole documented purpose and
+`FirstSeen`/`LastSeen`/`UsageCount` are cheap real aggregates serving the table's own stated
+business use cases, not speculative "comprehensive business intelligence" bloat.
+`dim_AdjustmentType` keeps both `AdjustmentTypeKey` and `AdjustmentTypeName` — the
+relationship-key design inconsistency found in the audit (production's relationship joins
+on the name, not the intended surrogate key) is left for whoever migrates the Parts
+Adjustments report itself to resolve.
+
+**All 4 verified exact:** `dim_AdjustmentType` 7 rows/5 columns, `dim_PromoType` 42
+rows/6 columns, `dim_UniqueCustomers` 11 rows/7 columns, `dim_Salesperson` 645 rows/7
+columns (370 active, 275 inactive). `dim_Branch12_Parts` remains deferred alongside
+`dim_BranchPartInventory`.
+
 **Batch C — real rework needed (4):** `dim_JobCode` (trim from 11 to 3 real columns, resolve the
 `dim_JobCode`/`dim_JobCodes` naming collision), `dim_Franchise` (trim from 15 to 4),
 `dim_ModuleType` (trim from 5 to 3, and resolve the hardcoded ~40-customer-number
