@@ -172,3 +172,26 @@ proven need, not speculative). For every dim rebuilt going forward, carry over o
 confirmed genuinely used here; anything speculative can be added later if a real, identified
 need shows up (same as the raw-sources precedent), rather than rebuilding unused categorization
 layers by default.
+
+## Batch 2 results (2026-09-11) — column-usage-depth audit, 6 smaller daily operational dims
+
+Same method as Batch 1. Mixed results this time — 2 fully clean, 2 mostly clean with minor
+unused columns, 1 well-used, and 1 more instance of the "comprehensive business intelligence"
+over-engineering pattern.
+
+| Dim | Real columns | Genuinely used | Finding |
+|---|---|---|---|
+| `dim_Branch12_Parts` | 25 | 23 of 25 | Mostly clean, deliberately minimal by design ("all intelligence handled in DAX measures" — its own header). Only `Returnable` and `IsReturnable` (a redundant pair — likely `IsReturnable` was a later addition duplicating `Returnable`) are unused in Combine Vault Sales |
+| `dim_BranchPartInventory` | 4 | All 4 | Fully clean. Exceptionally well-documented — its header records a real past bug (an earlier version joined on `PartNumber` alone, which let in unrelated branches; DAX-side filtering to suppress the resulting clutter rows reliably corrupted the report's Grand Total; fixed by tightening the join to a compound key instead) and an explicitly accepted known limitation. A model for how the other dims in this catalog should be documented |
+| `dim_Salesperson` | 7 | Broadly confirmed used (`FirstName`, `LastName`, `FullName`, `DisplayName`, `IsActive` all appear in MD Invoices With No Freight) | Clean, checks out |
+| `dim_Technician_Code_Names` | 16 | **~3-4 of 16** (`TechnicianKey`, `TechnicianCode`, `TechnicianDisplayName`, likely `IsActive`) | Same "comprehensive business intelligence" pattern as `dim_JobCode`/`dim_Franchise`. The other ~12 columns — multiple redundant display-name formats (`TechnicianFullName`, `TechnicianShortName`, `PreferredDisplayName`, `SearchableName`), business-intelligence flags (`HasFullName`, `HasValidCode`, `HasLongName`, `DataQualityScore`), and classification fields (`TechnicianStatus`, `TechnicianType`) — are unused in Labor Performance (not independently re-verified against Open Work Orders/Service Time Sheets, but the pattern is now consistent enough across 4 dims to expect the same result) |
+| `lookup_UniqueCustomers_Invoice` | 2 | Both | Clean by design — narrow-purpose lookup table, already well-documented separately (see `UNIQUE-CUSTOMER-FLAGS.md`/`CROSS-REPORT-FLAGS.md`), not re-investigated in depth here |
+| `dim_UniqueCustomers` | 7 | 3 of 7 (`CustomerKey`, `CustomerName`, likely `IsActive`) | `DataSource`, `IdentificationMethod`, `IdentificationRule`, `CreatedDate` unused in Unique Parts Customers — but these are legitimate documentation/audit-trail fields on a tiny 11-row static table (not speculative BI bloat), a much lower-severity finding than the "comprehensive" dims above |
+
+**Running tally across both batches:** the over-engineered "comprehensive business intelligence"
+pattern has now shown up 4 times (`dim_JobCode`, `dim_Franchise`, `dim_RepairOrder`,
+`dim_Technician_Code_Names`), consistently leaving 70-95% of a dim's columns unused. Every dim
+built deliberately lean (`dim_BranchPartInventory`, `lookup_UniqueCustomers_Invoice`, the plain
+2-3 column reference dims from Batch 1) checks out clean. This strengthens the takeaway above:
+the DP-backend rebuild should default to lean, and treat any "comprehensive" business-intelligence
+layer as something to leave out until a real, proven need appears.
