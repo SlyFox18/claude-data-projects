@@ -502,7 +502,9 @@ source view's CASE-boolean conversion. Comparing a string column to an int liter
 class as `dim_VendorCode`'s integer-vs-string mismatch in Batch A, just the reverse
 direction. Fixed to compare against the real `"N"` string value.
 
-**All 4 verified:** `dim_Franchise` 39 rows/4 columns, `dim_JobCode` 45,848 rows/4
-columns (Inspection classification confirmed correctly applied, e.g. `/COMBINE VIP
-INSPECT` → `Inspection - Combine`), `dim_ModuleType` 12 rows/3 columns,
-`dim_Technician_Code_Names` (pending re-verification after the `IsActive` fix).
+**All 4 verified complete (2026-09-11):** `dim_Franchise` 39 rows/4 columns,
+`dim_JobCode` 45,848 rows/4 columns (Inspection classification confirmed correctly
+applied, e.g. `/COMBINE VIP INSPECT` → `Inspection - Combine`), `dim_ModuleType` 12
+rows/3 columns, `dim_Technician_Code_Names` 1,456 rows/4 columns — real `IsActive`
+breakdown after the fix (517 active, 939 inactive, matching real `WkMechFl`
+termination data), not the old fake always-true column.
