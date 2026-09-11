@@ -61,7 +61,7 @@ listing every pipeline in the workspace.
 | df_Dim_BranchPartInventory | dim_BranchPartInventory | daily | Combine Vault Sales only | Correctly tiered |
 | df_Dim_Technicans | dim_Technician_Code_Names | daily | Labor Performance, Open Work Orders, Service Time Sheets (Sandbox) | Correctly tiered (2026-02 doc suggested weekly, never implemented — daily is fine, table is small) |
 | df_Dim_JobCode | dim_JobCode | daily | First Pass Fill only | **Real finding (2026-09-11):** loaded into First Pass Fill's live model, but only 3 of its ~11 columns (`JobCode`, `JobCodeDisplayName`, `JobCodeShortDesc`) are referenced anywhere in that report (visuals, measures, relationships). The other 8 — the whole "intelligent business categorization" layer (`JobCodeCategory`, `EquipmentType`, `EquipmentCategory`, `ServiceComplexity`, `IsInspection`, `IsWarrantyWork`, `IsSeasonalWork`, `IsUrgentWork`), built via text-pattern-matching heuristics — are imported but touched by nothing downstream. Matches Brian's own memory: built for Inspections, "didn't work right," Inspections went a different route, dead weight rode along into First Pass Fill's model instead. Real simplification opportunity for the DP-backend rebuild — likely just needs the 3 real columns |
-| df_Dim_RepairOrder | dim_RepairOrder | monthly | Parts Promo only | Correctly tiered. **Naming collision to be aware of:** unrelated to the new `DP_Presentation.dim_RepairOrder` built this session in the JD Bronze redesign — same name, completely different system/lineage, don't confuse the two |
+| df_Dim_RepairOrder | dim_RepairOrder | monthly | Parts Promo only | Correctly tiered. **Correction (2026-09-11):** earlier noted here as "unrelated to `DP_Presentation.dim_RepairOrder`, a naming collision" — that was wrong, not verified before writing. They're the **same table**: `DP_Presentation.dim_RepairOrder` (built 2026-09-08 by `Build_Gold_PartsPromo.Notebook`) is this dim's actual migration, reproducing `dim_RepairOrder.pq`'s exact business logic off the corrected `Silver_InTrans` instead of buggy `InTrans_Incremental`. It's a faithful full 15-column port — carries all 13 columns this audit found unused in the live Parts Promo report (only `REF_NO`/`CustomerNo` are real). See "Already-built dims" below |
 | df_Dim_Salesperson | dim_Salesperson | daily | MD Invoices With No Freight, Stock Check | Correctly tiered |
 | df_Dim_Location | dim_BranchLocation | monthly | 22+ reports, nearly every live report | Correctly tiered (static reference data) |
 | df_Dim_DealerGroupCode | dim_DealerGroupCode | monthly | Bin Location Report, Inventory Analysis, Price Matrix | Correctly tiered |
@@ -261,3 +261,66 @@ unused because the report that would've needed them was never built or went a di
 Every dim built deliberately lean, and the widely-shared `dim_Parts`, checked out clean. This is
 the concrete evidence base for the DP-backend rebuild takeaway repeated throughout this catalog:
 default lean, add speculative columns only on a proven, identified need.
+
+## Already-built dims in DP_Presentation (discovered 2026-09-11, built earlier this session)
+
+Before planning the DP-backend implementation batches, checked which of these 26 dims already
+have a live counterpart in the new backend from earlier work this session (the Parts Promo Gold
+rebuild). 3 do — none of them need a fresh build, only an optional trim now that real usage is
+known:
+
+- **`dim_DateTable`** — rebuilt 2026-09-09, *before* this column-usage audit existed, for a more
+  serious reason than unused columns: every "today"-relative column (`IsCurrentMonth`,
+  `IsYearToDate`, all `IsRolling*` flags, etc.) was being computed at refresh time and frozen —
+  the same UTC/local-time bug class already fixed twice elsewhere this session
+  (`Fact_PartsAdjustments.LoadedDatetime`, the 2026-02-27 Data Refresh Table fix). Brian agreed
+  at the time to drop every one of those ~48 columns entirely, deferring that logic to
+  report-layer DAX when each report actually migrates. Correctness fix already live. Kept 26
+  columns (down from production's 76) — cross-checking against this audit's real-usage findings,
+  **14 of those 26 are still not proven-needed by any current report** (`DateDisplayName`,
+  `DayOfWeekName`, `DayOfWeekNameShort`, `FiscalYear`, `FiscalQuarter`, `IsBusinessDay`,
+  `IsPeakSeason`, `IsWeekday`, `MonthSort`, `QuarterSort`, `SortableMonthYear`,
+  `WorkingDaysInMonth`, `WorkingDaysInQuarter`, `WorkingDaysInYear`) — a further trim on top of
+  the already-completed bug fix.
+- **`dim_BranchLocation`** — rebuilt 2026-09-09 as a deliberate faithful full port ("no bug found
+  in this table's enrichment logic during review, so this is a faithful port, not a redesign,
+  unlike dim_DateTable" — its own header). All 16 columns carried over, including the 7 this
+  audit found dead: `ServiceCapacity`, `MarketPresence`, `TerritoryCoverage`,
+  `OperationalPriority`, `RegionalClassification`, `ServiceHours`, `DistanceFromHub`.
+- **`dim_RepairOrder`** — rebuilt 2026-09-08 by `Build_Gold_PartsPromo.Notebook`, reproducing
+  `dim_RepairOrder.pq`'s exact business logic off the corrected `Silver_InTrans`. **This catalog
+  originally (2026-09-11) wrongly called this "unrelated, a naming collision" without checking —
+  corrected above.** Faithful full 15-column port, carrying all 13 columns this audit found
+  unused in the live Parts Promo report.
+
+**Decision (2026-09-11):** trim all 3 now — see Task-by-task plan below.
+
+## Implementation plan: building the remaining ~23 dims on the DP backend
+
+Per Brian's direction: batch the dims by real difficulty (matching the raw-sources migration's
+approach) — easy/clean first, then dims needing real adjustments, then the big ones last.
+`dim_DateTable`/`dim_BranchLocation`/`dim_RepairOrder` are excluded (already built, trim-only —
+see above). `dim_PartDemands`/`dim_BranchUserAccess` are excluded (not yet in use, no urgency —
+see the corrected findings above). The 2 `Job Code Parts Advisor` dims and `CustomerLookup`
+remain deferred per Brian's earlier direction.
+
+**Batch A — easy/clean, straightforward builds (8):** `dim_CommodityCode`, `dim_DealerGroupCode`,
+`dim_PaymentMethod`, `dim_SLC`, `dim_Source`, `dim_VendorCode`, `dim_BranchPartInventory`,
+`lookup_UniqueCustomers_Invoice`. All checked out clean or nearly clean in the audit, all small
+(2-7 columns), all single-or-few consumers — build exactly as documented, no design decisions
+pending.
+
+**Batch B — minor cleanup, still simple (5):** `dim_Branch12_Parts` (drop 2 dead columns),
+`dim_UniqueCustomers` (decide whether to keep the 4 unused audit-trail columns), `dim_Salesperson`
+(clean, grouped here), `dim_AdjustmentType` (tiny static table, also fix the relationship-key
+design inconsistency found in the audit), `dim_PromoType` (trim to real need).
+
+**Batch C — real rework needed (4):** `dim_JobCode` (trim from 11 to 3 real columns, resolve the
+`dim_JobCode`/`dim_JobCodes` naming collision), `dim_Franchise` (trim from 15 to 4),
+`dim_ModuleType` (trim from 5 to 3, and resolve the hardcoded ~40-customer-number
+Internal/Warranty classification — a real design decision, not just a column trim),
+`dim_Technician_Code_Names` (trim from 16 to ~4).
+
+**Batch D — the big ones, individually (2):** `dim_CustomerList` (55→43 real columns, 10
+consumers, real special-customer-key business logic to preserve exactly), `dim_Parts` (22/22
+already clean, but 18 consumers — high blast radius despite needing no column changes).
