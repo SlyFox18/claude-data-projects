@@ -57,31 +57,34 @@ check_table(
     "dim_DealerGroupCode",
     {"DealerGroupKey", "DealerGroupCode"},
     unknown_key_col="DealerGroupKey", unknown_key_val=0,
+    expect_row_range="1,867 (1,866 real codes + Unknown) - verified real via DuckDB directly against Silver_PartInformation, genuinely messy/high-cardinality data (mix of real dealer names and numeric-looking codes), not a bug",
 )
 check_table(
     "dim_SLC",
     {"SLCKey", "SLC"},
     unknown_key_col="SLCKey", unknown_key_val=0,
+    expect_row_range="123 (matches the Feb 2026 dimension-analysis.md documentation exactly)",
 )
 check_table(
     "dim_Source",
     {"SourceKey", "Source"},
     unknown_key_col="SourceKey", unknown_key_val=0,
+    expect_row_range="~273 (close to the Feb 2026 doc's 267 - small real growth expected, live source)",
 )
 check_table(
     "dim_VendorCode",
     {"VendorCodeKey", "VendorCode"},
-    expect_row_range="~1,311",
+    expect_row_range="1,332 - verified real via DuckDB directly against Silver_PartInformation. Real bug found+fixed 2026-09-11: VendorCode is an INTEGER column in Silver_PartInformation, not text - the original string-empty filter silently zeroed out every row",
 )
 check_table(
     "dim_PaymentMethod",
     {"PaymentMethodKey", "PaymentMethod", "PaymentMethodDescription", "PaymentCategory", "SortOrder"},
-    expect_row_range="5",
+    expect_row_range="12, not the documented 5 - verified real via DuckDB directly against Silver_Invoice.PaymentMethod. 7 extra rows are genuine (if messy) production data - rare garbage-looking values (e.g. '1005', 'ASHBURNBC4529', 1-14 rows each) that the old dataflow's own filter (<> null and <> \"\") would also pick up; its '5, unlikely to grow' documentation was simply never checked against real data",
 )
 check_table(
     "lookup_UniqueCustomers_Invoice",
     {"CustomerNumber", "UniqueCustomerGroup"},
-    expect_row_range="~513",
+    expect_row_range="719, not the documented ~513 - verified real: each group's individual count is proportionally higher than the old documentation (e.g. Manuel/MR Tractor 300->472), consistent with organic invoice growth since that number was last checked, not an implementation bug. Raw per-group counts summed exactly match the final 719",
 )
 
 print("=" * 80)
