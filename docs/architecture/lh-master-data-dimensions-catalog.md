@@ -387,3 +387,10 @@ preserve argument order across a distributed union the way Power Query's
 column, deterministic regardless of execution plan.
 
 Full verification: `.claude/queries/adhoc/dp-bronze-verify/verify_batch_a_dims.py`.
+
+**Batch A complete and fully verified (2026-09-11):** all 7 dims pass exactly after
+the `dim_VendorCode` fix — `dim_CommodityCode` 784 rows, `dim_DealerGroupCode` 1,867,
+`dim_SLC` 123 (matches the Feb 2026 doc exactly), `dim_Source` 273, `dim_VendorCode`
+1,332, `dim_PaymentMethod` 12, `lookup_UniqueCustomers_Invoice` 719 (edge case
+CustomerNumber 25227 correctly resolves to `Manuel/MR Tractor`). All 2-5 column
+contracts exact.
