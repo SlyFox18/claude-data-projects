@@ -181,8 +181,8 @@ batch 1, a zero-cost OneLake shortcut). This notebook now reads `Silver_BranchNa
 directly (via a new cross-workspace shortcut added to `DP_Presentation`, same
 "shortcuts, not copies" pattern as `Silver_InTrans`/`GlTrans`) and reproduces
 `BranchOperational`'s own 7-column projection inline before the same downstream logic
-runs unchanged. `df_BranchOperational_Raw` itself is now a real retirement candidate —
-nothing reads it anymore — pending Brian's go-ahead to delete it.
+runs unchanged. `df_BranchOperational_Raw` itself has been **deleted** (both from the live
+`DP - Staging - Dev` workspace and this repo) — confirmed nothing read it anymore.
 
 **Column trim (2026-09-11):** the LH_Master_Data dimensions catalog's column-usage-depth
 audit (`docs/architecture/lh-master-data-dimensions-catalog.md`) found only 9 of the

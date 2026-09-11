@@ -303,8 +303,8 @@ known:
   (`BranchKey`, `Branch`, `BranchType`, `BranchID`, `BranchName`, `LocationID`, `State`, `City`,
   `DataQualityScore`). Verified: 69 rows (exact match to the original build), 9-column contract
   exact, Seminole (`BranchID '1'`) spot check passes (`BranchType = Main Branch`,
-  `DataQualityScore = 100`). `df_BranchOperational_Raw` itself is now a real retirement candidate
-  — nothing reads it anymore, pending Brian's go-ahead to delete it.
+  `DataQualityScore = 100`). `df_BranchOperational_Raw` itself has been **deleted** (both from
+  the live `DP - Staging - Dev` workspace and this repo) — confirmed nothing read it anymore.
 - `dim_RepairOrder`: trimmed to 2 columns (`REF_NO`, `CustomerNo`). Verified: 16,269 rows
   (unchanged), 2-column contract exact, all 11 known-important promo orders present including
   RO 1985073 (the same order used for this backend's original production verification).
