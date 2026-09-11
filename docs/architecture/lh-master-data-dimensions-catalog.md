@@ -341,3 +341,49 @@ Internal/Warranty classification — a real design decision, not just a column t
 **Batch D — the big ones, individually (2):** `dim_CustomerList` (55→43 real columns, 10
 consumers, real special-customer-key business logic to preserve exactly), `dim_Parts` (22/22
 already clean, but 18 consumers — high blast radius despite needing no column changes).
+
+## Batch A results (2026-09-11) — 7 of 8 built, verified against real DuckDB checks
+
+`dim_BranchPartInventory` deferred per plan (blocked on a not-yet-built
+`Fact_Branch12_Transactions`). All 7 built as new `Build_Gold_*` notebooks in
+`DP_Presentation`, sourced from already-migrated Silver tables
+(`Silver_PartInformation`, `Silver_Invoice`, `Silver_ArMasterCustomer`, `Silver_InTrans`)
+instead of fresh ODBC pulls, reproducing each production dataflow's business logic
+faithfully.
+
+**One real bug found and fixed:** `dim_VendorCode` came back 0 rows on first run.
+Root cause: `Silver_PartInformation.VendorCode` is stored as an **integer** column
+(confirmed via DuckDB: 1,332 distinct values, 0 nulls, values 0-286600), unlike
+every other reference-code column in this batch. The notebook's `!= ""` blank-string
+filter silently evaluated to null/false for every row in Spark's non-ANSI mode (no
+error thrown), filtering out the entire table. Fixed by dropping the inapplicable
+string check — `0` is a legitimate real code here, not a blank sentinel.
+
+**Three "surprising" numbers investigated and confirmed real, not bugs** (each
+verified independently via DuckDB directly against the source Silver table, not just
+trusted from the notebook's own output):
+
+- `dim_DealerGroupCode`: 1,867 rows (1,866 real codes + Unknown), not a small handful
+  as the name might suggest — genuinely messy, high-cardinality source data (a mix of
+  real dealer names like `COMBINE`/`KUHN` and numeric-looking codes).
+- `dim_PaymentMethod`: **12 rows, not the documented 5.** 7 extra rows are real (if
+  messy) production data — rare garbage-looking `PaymentMethod` values on `Silver_Invoice`
+  (`1005`, `ASHBURNBC4529`, `MIMINTEC3503`, etc., 1-14 rows each out of 6.5M+ invoice
+  rows) that the old production dataflow's own filter (`<> null and <> ""`) would
+  equally pick up — its "only 5, unlikely to grow" documentation was simply never
+  checked against real data.
+- `lookup_UniqueCustomers_Invoice`: **719 rows, not the documented ~513.** Each
+  individual group's count is proportionally higher than the old documentation (e.g.
+  Manuel/MR Tractor 300→472, Jim Justice 87→99, David Arizmendi 59→75) — consistent
+  with organic invoice growth since that figure was last checked, not an
+  implementation bug. Raw per-group counts summed exactly match the final 719.
+
+**Also fixed a real correctness risk found while writing the notebook** (not from
+Brian's test run, caught during authoring): the original combine-and-dedupe logic for
+`lookup_UniqueCustomers_Invoice`'s Invoice > TradeType > Direct priority tie-break used
+`monotonically_increasing_id()` over a Spark `union()`, which isn't guaranteed to
+preserve argument order across a distributed union the way Power Query's
+`Table.Combine` + `Table.Distinct` does. Replaced with an explicit `_SourcePriority`
+column, deterministic regardless of execution plan.
+
+Full verification: `.claude/queries/adhoc/dp-bronze-verify/verify_batch_a_dims.py`.
