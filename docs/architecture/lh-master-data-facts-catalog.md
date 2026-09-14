@@ -439,7 +439,15 @@ same-name-list join instead of an explicit condition.
 Fixed the recurring `DateTime.LocalNow()` UTC bug — more consequential here than most
 instances: the 24-month cutoff determines the entire real scope of both tables, not just
 a cosmetic `LoadedDatetime` stamp. Now 8+ confirmed instances of this bug pattern
-project-wide. Not yet run by Brian as of this doc update.
+project-wide.
+
+**Verified (2026-09-14): fully clean.** `Fact_AdjustmentPairs`: 25-column contract,
+21,607 rows. `Fact_AdjPairs_Summary`: 24-column contract, 45,591 rows. `DaysBetween`
+within the 0-730 window as expected; `IsWithin12Mo`/`IsExact` derivations both have 0
+mismatches against their underlying conditions; unmatched negatives correctly show 0s
+not nulls; the intentional multi-match fan-out is present (3,623 `NegTransId`s with
+more than one pair match). Both tables fully closed out. Verification script:
+`.claude/queries/adhoc/dp-bronze-verify/verify_batch_c_adjustmentpairs.py`.
 
 **Batch D — Customer Anatomy, 9 dataflows, on its own.** All raw dependencies already
 migrated; complexity is business-logic depth (the real `CustomerVehicleFlag`
