@@ -420,6 +420,27 @@ in `dim_Parts` (likely obsolete/deleted) — a genuine, expected left-join miss,
 bug. `Fact_Part_Transactions` fully closed out. Verification script:
 `.claude/queries/adhoc/dp-bronze-verify/verify_batch_c_parttransactions.py`.
 
+**`Fact_AdjustmentPairs` + `Fact_AdjPairs_Summary` built (2026-09-14, Batch C 4/5).**
+`Build_Gold_AdjustmentPairs.Notebook` (Fact Tables/Parts Adjustments/) — production's
+dataflow defines 2 real output tables, both built here: `Fact_AdjustmentPairs` (one row
+per matched negative/positive pair — self-join on `Branch`+`PartNumber`, 24-month
+bidirectional window, `IsExact`/`MatchType` per pair; multiple matches per transaction
+are intentional, documented by production itself) and `Fact_AdjPairs_Summary` (one row
+per negative transaction, ALL negatives from `Fact_PartsAdjustments` — not just matched
+ones — with matches aggregated into 12/24-month windows; unmatched negatives get 0s and
+`MatchType = "No Match"`).
+
+Built the self-join safely from the start: `Negatives` and `Positives` both derive from
+`Fact_PartsAdjustments` and share identical `Branch`/`PartNumber` column names — the
+exact self-join shape that's already caused `AMBIGUOUS_REFERENCE` bugs elsewhere in this
+project (`dim_Salesperson`, `dim_JobCode`, Planter Inspection Part Sales) — used a
+same-name-list join instead of an explicit condition.
+
+Fixed the recurring `DateTime.LocalNow()` UTC bug — more consequential here than most
+instances: the 24-month cutoff determines the entire real scope of both tables, not just
+a cosmetic `LoadedDatetime` stamp. Now 8+ confirmed instances of this bug pattern
+project-wide. Not yet run by Brian as of this doc update.
+
 **Batch D — Customer Anatomy, 9 dataflows, on its own.** All raw dependencies already
 migrated; complexity is business-logic depth (the real `CustomerVehicleFlag`
 Stock/Unknown customer-assignment logic), not missing infrastructure.
