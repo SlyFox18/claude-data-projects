@@ -574,8 +574,18 @@ stable sort isn't documented more precisely than that).
 (`Silver_Contact` and `Silver_ArMasterCustomer` already did, from earlier batches) —
 confirmed via `fab ls`. One new shortcut needed before this notebook can run.
 
-**Not yet run/verified in Fabric** (blocked on Brian's manual portal steps — see below).
-Verification script written: `.claude/queries/adhoc/dp-bronze-verify/verify_batch_d_customerlist.py`.
+**Built and fully verified (2026-09-14):** `dim_CustomerList` 54,128 rows (9 special +
+54,119 real), 43-column contract exact match, 0 duplicate `CustomerKey`s, all 9 special
+rows present with correct `AccountNumber`/`TradeType`/`DisplayName`. Strongest signal:
+`IsKeyCustomer=true` count (312) ties out **exactly** against `Silver_Contact.
+ContactClass='KEY'` (312) — end-to-end proof the join/dedup/derivation chain didn't
+drop, duplicate, or mismatch rows. `CustomerTier` breakdown: 312 Key Account (matches
+`IsKeyCustomer` 1:1 as expected), 73 Premium, 127 Standard, 53,616 Basic. One real,
+faithfully-reproduced edge case spotted in samples: some `AccountStatus` values show raw
+`StatusCode`s (e.g. `"N"`, `"F"`) that don't map to any of `A`/`I`/`H`/`C` and fall
+through to the pass-through branch — same category as `dim_ModuleType`'s uncategorized-
+row edge case, not a bug. Verified via
+`.claude/queries/adhoc/dp-bronze-verify/verify_batch_d_customerlist.py`.
 
 `dim_Parts` (Batch D's other heavy-hitter, already confirmed 22/22 columns used — 100%
 clean, no trim needed) is still pending; its full source logic has not yet been read.
