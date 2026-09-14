@@ -120,7 +120,7 @@ already built unless noted), and a rough complexity call.
 | `Fact_Inventory` | Inventory Analysis + Price Matrix (shared) | `jdis_Part_Information` | `dim_BranchLocation`, `dim_Parts`, `dim_Franchise`, `dim_VendorCode`, `dim_Source`, `dim_SLC`, `dim_DealerGroupCode`, `dim_CommodityCode` | Real per-branch grain (confirmed this session during the `dim_Parts.VendorCode` investigation) — this is where `VendorCode` is correctly captured at the branch level; preserve that exact pattern (read `VendorCode` directly from `Silver_PartInformation` at its native grain, not from `dim_Parts`). ~138K rows historically, ~6 min old refresh. |
 | `df_FactPartTransactions_Incremental` | Inventory Analysis + Price Matrix (shared) | `InTrans_Incremental` | `dim_Parts`, `dim_Franchise`, `dim_BranchLocation` | **Redesigned, not ported (2026-09-14, confirmed with Brian)** — real usage audit found only ~10 of 40+ columns are ever used by either real report; rebuilt lean, dropped the matrix-pricing block and customer join entirely, full overwrite instead of watermark incremental. See the dedicated write-up below. |
 | `Fact_AdjustmentPairs` | Parts Adjustments | `Fact_PartsAdjustments` (self-referencing) | none directly | Matches negative adjustments to positive ones within 12/24-month windows — real matching logic. `Fact_PartsAdjustments` itself is now re-audited/confirmed correct (Batch A), so this is safe to build against. |
-| `Fact_Parts_Open_Tickets`, `Fact_Parts_Open_Tickets_Details` | Open Parts Tickets | `vw_Fact_Parts_Open_Tickets`, `vw_Fact_Parts_Open_Tickets_Details` (SQL views via the SQL Analytics Endpoint — **origin not yet identified**, old doc says "raw tables not specified") | `dim_BranchLocation`, `dim_DateTable` | Needs investigation before scoping — these read pre-built SQL views, not a Lakehouse table; find what builds those views before deciding how to port. |
+| `Fact_Parts_Open_Tickets`, `Fact_Parts_Open_Tickets_Details` | Open Parts Tickets (now "Parts on Open Orders") | **Origin found (2026-09-14)** — real `CREATE VIEW` SQL + full migration history live in `projects/open parts tickets - report/` in this repo, a dedicated January 2026 project. See the Batch C write-up below. | `dim_BranchLocation`, `dim_DateTable` | Built — see Batch C results. |
 
 ### Flagship — Customer Anatomy (9 dataflows, biggest single undertaking)
 
@@ -448,6 +448,41 @@ mismatches against their underlying conditions; unmatched negatives correctly sh
 not nulls; the intentional multi-match fan-out is present (3,623 `NegTransId`s with
 more than one pair match). Both tables fully closed out. Verification script:
 `.claude/queries/adhoc/dp-bronze-verify/verify_batch_c_adjustmentpairs.py`.
+
+**`Fact_Parts_Open_Tickets` + `Fact_Parts_Open_Tickets_Details` built (2026-09-14, Batch
+C 5/5, LAST).** `Build_Gold_PartsOpenTickets.Notebook` (Fact Tables/Open Parts Tickets/)
+— the "origin not yet identified" item. Found it: production's own dataflow does zero
+transformation, just reads two pre-built custom SQL views (`vw_Fact_Parts_Open_Tickets`,
+`vw_Fact_Parts_Open_Tickets_Details`) on the `LH_Master_Data` SQL Analytics Endpoint. The
+real `CREATE VIEW` SQL and a full, dedicated migration history live in
+`projects/open parts tickets - report/` in this repo (January 2026 project) — its own
+`DATA-FIX-DOCUMENTATION.md` records 4 real bugs already found and fixed in the source SQL
+(all already applied in the version ported here).
+
+Real mechanical simplification: the source SQL computes the same aging-base-date logic
+via a correlated subquery chain **6 times per view** (once each for `WO_Creation_Date`,
+`Aging_Base_Date`, `Days_Open`, `Aging`, `Aging_Sort_Order`, `Aging_Date_Source`) — not a
+deliberate design, just SQL lacking a natural "compute once" construct without a CTE.
+Computed once here instead, identical results.
+
+Real `TOP 1` safety verified directly, not assumed: `Silver_Contact.ContactID` has 6 real
+duplicate groups (production's defensive `TOP 1` subqueries were genuinely necessary
+there) — replicated via a stable dedup. `Silver_ArMasterCustomer.ContactID` and
+`Silver_BranchName.branch` are both confirmed unique — plain joins are exactly equivalent
+to `TOP 1` there. `RepairOrderDetail`'s `(Branch, RONumber)` has 650 real duplicate
+groups, matching the source SQL's own `MIN(CreationDate)` handling, not a bug.
+
+Real bug fix (evidence-based, not directly testable from here): replaced `GETDATE()`
+with an explicit UTC-to-Central conversion, following the same pattern already confirmed
+8+ times for Power Query's `DateTime.LocalNow()` in this Fabric environment.
+
+Real discrepancy preserved, not silently unified: the two source views' `Invoice_Type`
+formulas genuinely differ (Details has an extra `'I' -> 'Invoice'` branch); kept as each
+view's own real, documented behavior — cosmetic only, doesn't affect any filter/join/
+aggregation.
+
+**This closes out Batch C (5/5) and the entire facts catalog implementation plan except
+Batch D (Customer Anatomy).** Not yet run by Brian as of this doc update.
 
 **Batch D — Customer Anatomy, 9 dataflows, on its own.** All raw dependencies already
 migrated; complexity is business-logic depth (the real `CustomerVehicleFlag`
