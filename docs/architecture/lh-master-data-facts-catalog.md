@@ -154,6 +154,29 @@ class as `MDInvoicesClosed`'s `InSalPar_Audit` gap in Batch B. Brian hit a real
 `Build_Gold_ServiceDetail.Notebook`'s own header for the record. All other 8 tables ran
 clean on the first try.
 
+**Verified (2026-09-14): all 9 tables fully clean.** Every column contract matches
+exactly. `CustomerLookup` has 0 duplicate `MatchKey`s. The real bug fix in
+`Fact_Service_Invoices` is confirmed working: Unknown Customer revenue is $2,129,640 —
+right at the documented ~$2.3M production baseline (not the pre-fix ~$19M, and not some
+new inflated number from a residual dedup bug) — and 0 duplicate
+`(InvoiceNumber, Branch)` groups confirm the reused-key merging is fully resolved.
+`Fact_CustomerPerformance`'s single-source-of-truth design holds exactly: Level 1
+`PartsSales` totals ($364,681,518.24) match Level 2 `Fact_Parts_Invoices.TotalPartsSales`
+to the penny.
+
+One real, investigated data-completeness gap in `Fact_Service_Detail`: 4,712 of 139,403
+Service invoices (~3.4%, $83,324 total — ~0.35% of revenue) have no matching row in
+either half of the union. Traced directly: these invoices simply don't exist in *either*
+`Silver_WkOthSub` or `Silver_WkInvReg`, at any branch — mostly `Branch=NULL`, mostly `$0`
+value (void/administrative entries). Not a bug in the Branch-widening fix or the
+fallback logic — no fallback mechanism, production's own included, can create a detail
+row from source data that doesn't exist anywhere. Same real limitation production's own
+report would have. Verification script:
+`.claude/queries/adhoc/dp-bronze-verify/verify_batch_d_customeranatomy.py`.
+
+**Batch D fully closed out, all 9 tables verified. This closes the entire facts catalog
+implementation plan (Batches A–D).**
+
 ## Deferred, blocked, or otherwise not startable yet
 
 | Fact | Blocked on |
