@@ -146,7 +146,13 @@ table back to `Silver_Invoice`/`Silver_WkOthSub` by `InvoiceNumber` alone was wi
 also match `Branch` — `InvoiceNumber` is a reused key (see `Fact_Service_Invoices` above),
 and `Branch` was already available on both sides in every case.
 
-Not yet run by Brian as of this doc update.
+**Ran clean after 1 real shortcut gap**: `Silver_WkInvReg` exists in `DP_Staging` but,
+unlike `Silver_WkOthSub`/`Silver_WkRoFile`, was never called out as needing a new
+OneLake shortcut into `DP_Presentation` — a real gap in the original instructions, same
+class as `MDInvoicesClosed`'s `InSalPar_Audit` gap in Batch B. Brian hit a real
+`TABLE_OR_VIEW_NOT_FOUND` error and added the shortcut manually; documented in
+`Build_Gold_ServiceDetail.Notebook`'s own header for the record. All other 8 tables ran
+clean on the first try.
 
 ## Deferred, blocked, or otherwise not startable yet
 
