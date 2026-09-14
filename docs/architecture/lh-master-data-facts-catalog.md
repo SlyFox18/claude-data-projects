@@ -232,6 +232,25 @@ it manually on first run without being told to. Now documented here and in the
 notebook's own header). Verification script:
 `.claude/queries/adhoc/dp-bronze-verify/verify_batch_b_facts.py`.
 
+**Batch B fully verified complete (2026-09-14).** All 17 tables ran successfully after
+the 2 fixes below; `verify_batch_b_facts.py` confirms all 17 column contracts match
+exactly. 2 row-count anomalies flagged by the script were investigated independently
+against source data and confirmed NOT bugs:
+- `Fact_Invoice_InventoryAnalysis` (562,669 rows vs. the doc's "~300-350K"): an
+  independent DuckDB recount of `Silver_Invoice` under the exact same filter produced
+  562,669 exactly — the doc estimate was simply stale (same pattern as Batch A's row
+  counts running higher than its own stale doc). `ModuleTypeKey=99` correctly shows 0
+  rows: verified directly that 0 real invoices in the 2023+ window have an
+  Internal/Warranty customer with `ModuleType='S'` — the fix (matching `dim_ModuleType`'s
+  real `.otherwise(99)`) is still correct, that edge case just isn't populated in current
+  data.
+- `Fact_InternalWorkOrders` (4,257 rows vs. the doc's "~7,000-12,000"): independently
+  recomputed the full join (`JobType='I' AND LineNumber=1` joined to
+  `WkRoFile.CreatedOn >= '2026-01-01'`) directly in SQL and got exactly 4,257 — an exact
+  match, confirming the notebook's join/filter logic is correct. The doc's higher
+  estimate is stale relative to the current sparse 2026-01-01+ window (only 15,376 total
+  work orders of any type fall in that window so far this year).
+
 **Real bugs found from Brian's live run (2026-09-14), fixed:**
 - `Fact_PlanterInspectionParts`/`Fact_PlanterInvoiceAllParts` (Planter Inspection Part
   Sales) hit `AnalysisException: Column RONumber#903, Branch#902 are ambiguous` — same
