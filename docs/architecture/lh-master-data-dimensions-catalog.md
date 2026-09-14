@@ -707,13 +707,21 @@ same-named column on a different table is a false positive, not confirmed usage 
 verify which entity a visual/relationship actually points to, not just whether the
 string appears in the file.
 
-**Not yet re-run/re-verified in Fabric since this change** — needs Brian to re-run
-`Build_Gold_Parts.Notebook`, then re-run `verify_batch_d_parts.py` (also updated to
-match the 21-column contract).
+**Real bug hit on re-run, fixed immediately:** `PySparkValueError
+[LENGTH_SHOULD_BE_THE_SAME]` — dropping `VendorCode` from `real_parts.select(...)` should
+have removed exactly one `"UNKNOWN"` literal from the special row's tuple, but a second
+one was accidentally removed too, leaving 20 values against the 21-column schema. Fixed
+by restoring the missing `CommodityCode` literal and adding an inline column-order
+comment so the tuple's length is easy to verify against the schema at a glance.
 
-**This closes out the entire dimensions catalog implementation plan (Batches A–D)**,
-pending this one final re-run + re-verification. Remaining deferred items:
-`dim_BranchPartInventory`/`dim_Branch12_Parts` (blocked on `Fact_Branch12_Transactions`,
-not yet built) and `CustomerLookup` (Category C, deferred to the facts/report migration
-phase) — both intentionally out of scope for this plan,
+**Re-verified complete (2026-09-14, after the VendorCode drop):** 21-column contract
+exact match (no `VendorCode`), 316,365 rows exact, 0 duplicate `PartNumber`/
+`PartNumberKey`, `DZ111141` Franchise = `'D'` still confirmed. Independent SQL
+cross-check: **0 mismatches across all 5 remaining business filter columns**, on every
+part compared.
+
+**This closes out the entire dimensions catalog implementation plan (Batches A–D).**
+Remaining deferred items: `dim_BranchPartInventory`/`dim_Branch12_Parts` (blocked on
+`Fact_Branch12_Transactions`, not yet built) and `CustomerLookup` (Category C, deferred
+to the facts/report migration phase) — both intentionally out of scope for this plan,
 not oversights.
