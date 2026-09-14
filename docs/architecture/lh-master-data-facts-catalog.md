@@ -268,11 +268,33 @@ against source data and confirmed NOT bugs:
   nested-join-then-rename-on-expand pattern that a flat Spark join-then-rename didn't
   replicate.
 
-**Batch C — 5 large/perf-sensitive facts:** `Fact_WorkOrderParts` (the known 18-19 min
-refresh), `Fact_Inventory` (real per-branch `VendorCode` grain — preserve exactly),
-`df_FactPartTransactions_Incremental` (10M+ rows, needs a real incremental design),
-`Fact_AdjustmentPairs` (needs `Fact_PartsAdjustments` reconfirmed first),
-`Fact_Parts_Open_Tickets`+`_Details` (SQL-view origin needs investigation first).
+**Batch C — 5 large/perf-sensitive facts:** `Fact_WorkOrderParts`, `Fact_Inventory` (real
+per-branch `VendorCode` grain — preserve exactly), `df_FactPartTransactions_Incremental`
+(10M+ rows, needs a real incremental design), `Fact_AdjustmentPairs` (needs
+`Fact_PartsAdjustments` reconfirmed first), `Fact_Parts_Open_Tickets`+`_Details` (SQL-view
+origin needs investigation first).
+
+**CORRECTION (2026-09-14):** the "known 18-19 min refresh" note above and
+`REFRESH-TIMES.md`'s "Top Optimization Target #1" both describe the *original*
+`df_Fact_WorkOrderParts.Dataflow` (full-history `Raw_InTrans`, no incremental source).
+Production's own dataflow was already optimized at some later point (its own header says
+"OPTIMIZED", switched to `InTrans_Incremental`, target 2-4 min) and Brian confirms real
+recent runs are ~2 minutes — those docs were simply never updated after that change
+shipped. **Not a live performance problem** by the time this batch started. Built anyway
+as `Build_Gold_WorkOrderParts.Notebook` (Fact Tables/Inspections/) — feeds the
+Inspections report alongside `Fact_LaborJobSummary`/`Fact_PendingInspections`, so it got
+the same care regardless of urgency. Preserved 2 pieces of real production logic exactly
+rather than simplifying them away: the sub-branch normalization fix (a documented real
+$29K+ bug in production's history — `wkothsub`'s sub-branch codes like "11S" vs
+`InTrans`'s main branch code "11" silently dropping the join) and the "keep all
+franchises including ZP" decision (ZP rows are discount line items, filtered in DAX not
+at the source). Fixed the same recurring `DateTime.LocalNow()` UTC bug on the 3-year
+rolling cutoff (now 7 confirmed instances project-wide). Carried forward, not newly
+introduced, one real caveat: production's own business-grain dedup step (a defense
+against a known historical InTrans duplicate-loading issue) is likely a no-op now that
+`Silver_InTrans` is MERGE-deduplicated by its own `(TransId, TransDatetime)` key, but was
+kept as a faithful port with before/after row counts printed so any real collapse would
+be visible, not silent.
 
 **Batch D — Customer Anatomy, 9 dataflows, on its own.** All raw dependencies already
 migrated; complexity is business-logic depth (the real `CustomerVehicleFlag`

@@ -417,9 +417,16 @@ Run 1 (Successful): Feb 23, 2026, ~2:01 PM CST. 16/16 active SMs succeeded. Inve
 - **Batch balance:** Excellent - 9m / 3.5m / 4m / 4m / 3m
 
 ### Top Optimization Targets
-1. **Fact_WorkOrderParts** (18.5 min) - Implement watermark-based incremental (target: 3-5 min)
+1. ~~**Fact_WorkOrderParts** (18.5 min) - Implement watermark-based incremental (target: 3-5 min)~~
+   **RESOLVED, doc was stale (confirmed 2026-09-14):** production's own dataflow was
+   switched to `InTrans_Incremental` at some point after this baseline was measured
+   (Feb 2026) - its own header now says "OPTIMIZED... target 2-4 min," and Brian confirms
+   real recent runs are ~2 minutes. This whole baseline table (measured Feb 2026) is old;
+   treat any row here as a historical snapshot, not current reality, without reconfirming.
 2. **Fact_Service_Invoices** (10 min) - Query optimization or incremental refresh
+   (unconfirmed whether this is also stale - not yet rechecked)
 3. **JDIS_PART_INFORMATION** (9m 13s) - Largest raw table bottleneck (Batch 1)
+   (unconfirmed whether this is also stale - not yet rechecked)
 
 ### Refresh Schedule Strategy
 - **Raw tables:** 3:30 AM in Pipeline_Raw_Data (5 sequential batches)
