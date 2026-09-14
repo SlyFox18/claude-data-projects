@@ -679,11 +679,41 @@ re-implementation of the majority-vote logic in raw SQL against
 `Silver_PartInformation` directly) found **0 mismatches across all 6 business filter
 columns, on every one of the ~316K parts compared** — end-to-end proof the Spark
 majority-vote logic is correct, not just internally consistent with itself.
-`VendorCode` disagreement count: 138,577 parts (confirms the real, still-unresolved
-branch-variance limitation — not a bug, see `project_dim_parts_vendorcode_limitation.md`).
+`VendorCode` disagreement count: 138,577 parts (confirmed the real branch-variance
+limitation — not a bug, see `project_dim_parts_vendorcode_limitation.md`).
 
-**This closes out the entire dimensions catalog implementation plan (Batches A–D).**
-Remaining deferred items: `dim_BranchPartInventory`/`dim_Branch12_Parts` (blocked on
-`Fact_Branch12_Transactions`, not yet built) and `CustomerLookup` (Category C, deferred
-to the facts/report migration phase) — both intentionally out of scope for this plan,
+**VendorCode dropped from dim_Parts entirely (2026-09-14), after a real follow-up
+question from Brian post-Ben-conversation: "is VendorCode even needed on dim_Parts,
+given dim_VendorCode already exists separately, or is it better to build that bridge?"**
+Traced every real `VendorCode` reference across the whole report portfolio (51 files) —
+`dim_Parts.VendorCode` has **zero real usage anywhere**: no report relationship ever
+joins through it (the only 2 reports with a real `dim_VendorCode` relationship,
+Inventory Analysis and Price Matrix, both go through `Fact_Inventory.VendorCodeKey`
+instead), and every visual/measure that puts `VendorCode` on a table/slicer pulls it
+from the `dim_VendorCode` entity directly, never `dim_Parts`. Better still: **the real
+part × branch bridge Ben's conversation called for already exists**, just not as a
+standalone dimension — `Fact_Inventory`'s own dataflow reads `VendorCode` directly from
+`jdis_Part_Information` at *its own* native "one row per part per branch" grain, before
+any dedup/majority-vote collapse, then looks it up against `dim_VendorCode`. No new
+bridge table needed. `Build_Gold_Parts.Notebook` was updated to drop `VendorCode`
+entirely (21 real columns now, not 22).
+
+**This corrects the earlier "22/22 columns used" audit claim** — it was a bare-string
+`grep -rlw "VendorCode"` false positive, which can't distinguish which *table* a column
+is really being used from when the same column name exists on multiple tables
+(`dim_Parts.VendorCode` vs `dim_VendorCode.VendorCode` vs `Fact_Inventory`'s own
+pre-lookup `VendorCode`). Worth remembering for any future column-usage-depth audit: a
+same-named column on a different table is a false positive, not confirmed usage —
+verify which entity a visual/relationship actually points to, not just whether the
+string appears in the file.
+
+**Not yet re-run/re-verified in Fabric since this change** — needs Brian to re-run
+`Build_Gold_Parts.Notebook`, then re-run `verify_batch_d_parts.py` (also updated to
+match the 21-column contract).
+
+**This closes out the entire dimensions catalog implementation plan (Batches A–D)**,
+pending this one final re-run + re-verification. Remaining deferred items:
+`dim_BranchPartInventory`/`dim_Branch12_Parts` (blocked on `Fact_Branch12_Transactions`,
+not yet built) and `CustomerLookup` (Category C, deferred to the facts/report migration
+phase) — both intentionally out of scope for this plan,
 not oversights.

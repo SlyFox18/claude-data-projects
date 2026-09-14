@@ -3,11 +3,11 @@ DP_PRESENTATION - BATCH D VERIFICATION: dim_Parts
 ============================================================================
 Confirms the dim_Parts build landed correctly - a dim with real documented
 history (project_dim_parts_dedup_fix.md, project_dim_parts_perf_followup.md,
-project_dim_parts_vendorcode_limitation.md). Checks the 3 real issues found
+project_dim_parts_vendorcode_limitation.md). Checks the real issues found
 and fixed this batch:
-  1. Majority-vote restored to all 6 business filter columns (production
-     only does 4, due to a Power Query M-engine performance limit that
-     doesn't apply in Spark).
+  1. Majority-vote restored to all 5 remaining business filter columns
+     (production only does 4, due to a Power Query M-engine performance
+     limit that doesn't apply in Spark).
   2. PartNumberKey is a stable xxhash64(PartNumber) hash, not a sequential
      index (avoids the same key-shift bug class already fixed on
      dim_CustomerList's CustomerKey).
@@ -15,6 +15,16 @@ and fixed this batch:
      whitespace variants of the same real part are treated as one part
      (production normalizes AFTER its dedup step, silently dropping one
      variant's data for ~81 real parts).
+  4. VendorCode DROPPED entirely (2026-09-14, after Brian's Ben conversation
+     confirmed the branch-variance interpretation). Confirmed zero real
+     usage of dim_Parts.VendorCode anywhere in the report portfolio - the
+     real part x branch vendor relationship already exists correctly inside
+     Fact_Inventory (reads VendorCode at its own native per-branch grain,
+     before any dedup collapse). dim_Parts is 21 real columns now, not 22 -
+     corrects the original column-usage-depth audit's "22/22 used" claim,
+     which was a bare-string-grep false positive (couldn't distinguish
+     dim_Parts.VendorCode from dim_VendorCode.VendorCode or
+     Fact_Inventory's own pre-lookup VendorCode).
 
 Run manually after Brian runs Build_Gold_Parts.Notebook.
 ============================================================================
@@ -35,19 +45,19 @@ con.execute("CREATE SECRET (TYPE azure, PROVIDER credential_chain, CHAIN 'cli');
 
 EXPECTED_COLS = {
     "PartNumberKey", "PartNumber", "Description", "Franchise", "Source", "SLC",
-    "DealerGroupCode", "CommodityCode", "VendorCode", "QuantityOnHand", "BackOrderQty",
+    "DealerGroupCode", "CommodityCode", "QuantityOnHand", "BackOrderQty",
     "StockStatus", "IsAvailable", "InventoryCost", "SellPrice1", "ListPrice",
     "Current12MoSales", "HasRecentSales", "ActivityStatus", "Returnable",
     "IsReturnable", "IsHighValue",
 }
 
 print("=" * 80)
-print("VERIFY: dim_Parts - column contract (22 columns, 100% used - no trim)")
+print("VERIFY: dim_Parts - column contract (21 columns - VendorCode dropped 2026-09-14)")
 print("=" * 80)
 cols = con.execute(f"DESCRIBE SELECT * FROM delta_scan('{pres_base}/dim_Parts') LIMIT 0").df()
 col_set = set(cols["column_name"].tolist())
 if col_set == EXPECTED_COLS:
-    print(f"PASS: {len(EXPECTED_COLS)}-column contract matches exactly.")
+    print(f"PASS: {len(EXPECTED_COLS)}-column contract matches exactly (no VendorCode).")
 else:
     print(f"Missing: {EXPECTED_COLS - col_set}")
     print(f"Extra: {col_set - EXPECTED_COLS}")
@@ -83,7 +93,7 @@ print("=" * 80)
 print("VERIFY: known Franchise disagreement spot check (majority-vote, not arbitrary row)")
 print("=" * 80)
 spot = con.execute(f"""
-    SELECT PartNumber, Franchise, Source, SLC, DealerGroupCode, CommodityCode, VendorCode
+    SELECT PartNumber, Franchise, Source, SLC, DealerGroupCode, CommodityCode
     FROM delta_scan('{pres_base}/dim_Parts')
     WHERE PartNumber IN ('DZ111141', '19M7966', 'Z47990', 'R78055', 'R71387')
     ORDER BY PartNumber
@@ -97,12 +107,12 @@ else:
 print()
 
 print("=" * 80)
-print("INDEPENDENT CROSS-CHECK: recompute majority-vote for all 6 columns via pure SQL")
+print("INDEPENDENT CROSS-CHECK: recompute majority-vote for all 5 columns via pure SQL")
 print("=" * 80)
 print("(Same logic as the notebook's majority_vote() helper, written independently in SQL")
 print(" against Silver_PartInformation directly - a true cross-check, not just re-reading")
 print(" the notebook's own output.)")
-for col in ["Franchise", "Source", "SLC", "DealerGroupCode", "CommodityCode", "VendorCode"]:
+for col in ["Franchise", "Source", "SLC", "DealerGroupCode", "CommodityCode"]:
     q = f"""
         WITH normalized AS (
             SELECT UPPER(TRIM(PartNumber)) AS PartNumber,
@@ -136,8 +146,13 @@ for col in ["Franchise", "Source", "SLC", "DealerGroupCode", "CommodityCode", "V
 print()
 
 print("=" * 80)
-print("VendorCode still-real disagreement count (not a bug - documented limitation)")
+print("VERIFY: VendorCode is NOT present on dim_Parts (dropped 2026-09-14)")
 print("=" * 80)
+if "VendorCode" not in col_set:
+    print("PASS: VendorCode correctly absent from dim_Parts.")
+else:
+    print("FAIL: VendorCode still present - the drop didn't land, investigate.")
+print("(Reference only - real branch-variance count, unaffected by this dim's own build:")
 vendor_disagree = con.execute(f"""
     WITH normalized AS (
         SELECT UPPER(TRIM(PartNumber)) AS PartNumber, UPPER(TRIM(CAST(VendorCode AS VARCHAR))) AS v
@@ -149,8 +164,9 @@ vendor_disagree = con.execute(f"""
         SELECT PartNumber FROM normalized GROUP BY PartNumber HAVING COUNT(DISTINCT v) > 1
     )
 """).fetchone()[0]
-print(f"PartNumbers with >1 distinct VendorCode: {vendor_disagree:,} - expected to stay large, "
-      f"this is real branch variance, not something majority-vote is meant to resolve.")
+print(f" {vendor_disagree:,} PartNumbers with >1 distinct VendorCode in the raw source - "
+      f"this is why VendorCode was dropped rather than majority-voted; the real part x "
+      f"branch relationship this represents already lives correctly in Fact_Inventory.)")
 
 print("\n" + "=" * 80)
 print("DONE")
