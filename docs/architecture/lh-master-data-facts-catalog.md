@@ -361,6 +361,11 @@ and fixed one more real bug during this verification pass:
 
 Verification script: `.claude/queries/adhoc/dp-bronze-verify/verify_batch_c_inventory.py`.
 
+**Re-verified after the fix (2026-09-14): fully clean.** All 8 dimension keys
+(`BranchKey`, `PartNumberKey`, `FranchiseKey`, `VendorCodeKey`, `SourceKey`, `SLCKey`,
+`DealerGroupKey`, `CommodityCodeKey`) have 0 nulls — the `SLCKey` fix resolved exactly
+the 690 rows it was expected to. `Fact_Inventory` fully closed out.
+
 **Batch D — Customer Anatomy, 9 dataflows, on its own.** All raw dependencies already
 migrated; complexity is business-logic depth (the real `CustomerVehicleFlag`
 Stock/Unknown customer-assignment logic), not missing infrastructure.
