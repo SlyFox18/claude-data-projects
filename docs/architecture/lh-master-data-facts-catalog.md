@@ -118,7 +118,7 @@ already built unless noted), and a rough complexity call.
 |---|---|---|---|---|
 | `Fact_WorkOrderParts` | Inspections | `wkothsub`, `InTrans_Incremental` | none directly | **The known 18-19 minute refresh** — longest fact in the whole old system, flagged as the #1 optimization priority in the old summary doc. This is exactly the kind of large-scale operation Spark should handle far better than Power Query M (same category of win as `dim_Parts`'s majority-vote fix) — but confirm the real bottleneck (row count vs. join shape vs. something else) before assuming a straight port fixes it. |
 | `Fact_Inventory` | Inventory Analysis + Price Matrix (shared) | `jdis_Part_Information` | `dim_BranchLocation`, `dim_Parts`, `dim_Franchise`, `dim_VendorCode`, `dim_Source`, `dim_SLC`, `dim_DealerGroupCode`, `dim_CommodityCode` | Real per-branch grain (confirmed this session during the `dim_Parts.VendorCode` investigation) — this is where `VendorCode` is correctly captured at the branch level; preserve that exact pattern (read `VendorCode` directly from `Silver_PartInformation` at its native grain, not from `dim_Parts`). ~138K rows historically, ~6 min old refresh. |
-| `df_FactPartTransactions_Incremental` | Inventory Analysis + Price Matrix (shared) | `InTrans_Incremental` | `dim_Parts`, `dim_Franchise`, `dim_BranchLocation`, `dim_CustomerList` | 10M+ rows, already incremental in production (the "success story" the old doc cites) — needs a real incremental-refresh design on the DP backend, not just a faithful one-shot port. 40+ output columns, several derived pricing-analytics fields. |
+| `df_FactPartTransactions_Incremental` | Inventory Analysis + Price Matrix (shared) | `InTrans_Incremental` | `dim_Parts`, `dim_Franchise`, `dim_BranchLocation` | **Redesigned, not ported (2026-09-14, confirmed with Brian)** — real usage audit found only ~10 of 40+ columns are ever used by either real report; rebuilt lean, dropped the matrix-pricing block and customer join entirely, full overwrite instead of watermark incremental. See the dedicated write-up below. |
 | `Fact_AdjustmentPairs` | Parts Adjustments | `Fact_PartsAdjustments` (self-referencing) | none directly | Matches negative adjustments to positive ones within 12/24-month windows — real matching logic. `Fact_PartsAdjustments` itself is now re-audited/confirmed correct (Batch A), so this is safe to build against. |
 | `Fact_Parts_Open_Tickets`, `Fact_Parts_Open_Tickets_Details` | Open Parts Tickets | `vw_Fact_Parts_Open_Tickets`, `vw_Fact_Parts_Open_Tickets_Details` (SQL views via the SQL Analytics Endpoint — **origin not yet identified**, old doc says "raw tables not specified") | `dim_BranchLocation`, `dim_DateTable` | Needs investigation before scoping — these read pre-built SQL views, not a Lakehouse table; find what builds those views before deciding how to port. |
 
@@ -365,6 +365,51 @@ Verification script: `.claude/queries/adhoc/dp-bronze-verify/verify_batch_c_inve
 (`BranchKey`, `PartNumberKey`, `FranchiseKey`, `VendorCodeKey`, `SourceKey`, `SLCKey`,
 `DealerGroupKey`, `CommodityCodeKey`) have 0 nulls — the `SLCKey` fix resolved exactly
 the 690 rows it was expected to. `Fact_Inventory` fully closed out.
+
+**`Fact_Part_Transactions` REDESIGNED, not ported (2026-09-14, Batch C 3/5).** Brian's
+own assessment before building anything: "I know that this was one of the very first
+fact tables that I ever built and I think I may have tried to do too much with it...
+I am wondering if there may be a better way here." Real usage audit confirmed it —
+exhaustively checked every relationship, DAX measure, and visual-level column reference
+across BOTH real consuming semantic models (`Inventory Analysis`, `Price Matrix`) and
+BOTH real reports:
+- `Inventory Analysis` imports only 8 columns via its own direct SQL query
+  (`TransactionDate`, `FranchiseKey`, `PartNumberKey`, `BranchKey`, `Branch`,
+  `SaleAmount`, `CostAmount`, `Quantity`), filtered to `Type IN ('C','I')` and a rolling
+  7-year window.
+- `Price Matrix` imports nearly all 70+ real columns wholesale, filtered at import to
+  `FranchiseKey = 7 AND Type IN ('C','I')` and a rolling 13-month window — but across
+  every measure, relationship, and visual in the entire report, only 6 more columns are
+  ever referenced (`BranchKey`, `CostAmount`, `PartNumberKey`, `Quantity`, `SaleAmount`,
+  `TransactionDate`) plus `SalesType` in one visual. **None** of the 8 matrix-pricing
+  columns, **none** of the 7 customer-dimension columns, and **none** of the ~40 raw JD
+  pass-through columns are used anywhere — despite the report's own name.
+
+Real combined usage: ~10 of 70+ columns. Decision (confirmed): rebuild lean rather than
+port the bloat. `Build_Gold_PartTransactions.Notebook` (Fact Tables/Inventory Analysis/)
+drops the entire matrix-pricing block, the entire customer-dimension join, and every
+unused raw column — keeps `TransactionDate`, `Branch`, `BranchKey`, `FranchiseKey`,
+`PartNumber`, `PartNumberKey`, `Type`, `Quantity`, `SaleAmount`, `CostAmount`, `Margin`,
+`MarginPercent`, `SalesType` (13 columns; `PartNumber`/`Margin`/`MarginPercent` kept as
+essentially-free join-byproduct/derived columns, matching convention elsewhere in this
+backend). Filtered to `Type IN ('C','I')` at the ETL layer — cuts `Silver_InTrans` from
+20,473,073 to 11,237,844 rows, exactly what both reports consume (the excluded types are
+P/T/A/R, which neither report ever reads).
+
+This also eliminates the watermark-safety question entirely: production's own dataflow
+used append + `TransDatetime > watermark`, the exact same structurally-unsafe pattern
+already found and fixed once at the Silver layer (a late-committing row gets permanently
+skipped once the watermark advances past it). With the matrix-pricing calcs and customer
+join gone, a full overwrite every run is now entirely reasonable — same pattern as every
+other Gold notebook in this backend, no incremental complexity, no watermark risk.
+
+Also verified production's own "critical fix" comment (strip leading zeros from
+`Branch`) is unneeded against real `Silver_InTrans` data — 0 real leading-zero values, 0
+real unmatched `Branch` values against `dim_BranchLocation`, confirmed directly.
+
+**Report-level correctness against this leaner shape is deliberately deferred to the
+report-rebuild phase**, per Brian's explicit direction — not blocking this backend work.
+Not yet run by Brian as of this doc update.
 
 **Batch D — Customer Anatomy, 9 dataflows, on its own.** All raw dependencies already
 migrated; complexity is business-logic depth (the real `CustomerVehicleFlag`
