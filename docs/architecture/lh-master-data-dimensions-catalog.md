@@ -587,5 +587,78 @@ through to the pass-through branch — same category as `dim_ModuleType`'s uncat
 row edge case, not a bug. Verified via
 `.claude/queries/adhoc/dp-bronze-verify/verify_batch_d_customerlist.py`.
 
-`dim_Parts` (Batch D's other heavy-hitter, already confirmed 22/22 columns used — 100%
-clean, no trim needed) is still pending; its full source logic has not yet been read.
+## `dim_Parts` (2026-09-14) — Batch D's other heavy-hitter, built, 3 real issues found and fixed
+
+Confirmed 22/22 real columns used earlier in this audit (100% clean, no trim needed) —
+but this dim has real, documented history (`project_dim_parts_dedup_fix.md`,
+`project_dim_parts_perf_followup.md`, `project_dim_parts_vendorcode_limitation.md`), so
+Brian asked for a real look at whether anything needed fixing, not just a faithful port.
+Three real issues found by reading the live production `df_Dim_Part.Dataflow` mashup.pq
+directly (not the local repo's own possibly-stale reference copies) and cross-checked
+against current live data via DuckDB:
+
+**1. Majority-vote restored to all 6 business filter columns.** Production's live
+dataflow only majority-votes 4 of 6 (`Franchise`/`Source`/`SLC`/`DealerGroupCode`) —
+`CommodityCode` and `VendorCode` were reverted to cheap "first non-null"
+(arbitrary-row-wins in practice) purely because the Power Query M engine couldn't do a
+per-column majority-vote at ~1M-row/~316K-group scale without hanging or costing ~2x
+baseline refresh time (2 failed M-engine architecture rewrites are documented in gory
+detail in the dataflow's own header comment before landing on the 4-column scope-down as
+a stopgap — exactly the "move it to a Spark Notebook" recommendation that memory already
+flagged). That constraint doesn't exist in Spark — a `groupBy` + window-function mode
+computation is a native operation, not a perf risk. `CommodityCode`'s majority-vote
+changes 0 real parts (reconfirmed this session — free to include). `VendorCode`'s
+changes ~138,570 of ~316K real parts (reconfirmed this session against current live data
+— production's own 2026-08-10 figure of ~95,699 has drifted upward with real data
+growth) — still a strict improvement over first-non-null, but see the VendorCode caveat
+below, unchanged from before.
+
+**2. `PartNumberKey`: stable hash, not sequential index.** Production's live
+`PartNumberKey` is `Table.AddIndexColumn` (sort by `PartNumber`, assign 1, 2, 3...) — the
+exact same anti-pattern that caused the real, documented `CustomerKey` key-shift incident
+on `dim_CustomerList` (fixed in production 2026-03-27; correctly *not* replicated when
+this dim's sibling was built earlier in this same batch). No DP-backend fact table
+references `dim_Parts` yet, so this was the cheapest possible moment to fix it — user
+confirmed via `AskUserQuestion`: `PartNumberKey = xxhash64(PartNumber)` instead of a
+sequential index. Stable (a pure function of the immutable business key, never shifts
+when parts are added/removed), `Int64`-typed (same contract as today), negligible
+collision risk at ~316K real parts against a 64-bit hash space. The literal special
+`UNKNOWN` row keeps `PartNumberKey = -1`, matching production.
+
+**3. `PartNumber` normalized BEFORE grouping, not after — a real, independent bug.**
+Production normalizes `PartNumber` (upper+trim) in STEP 3, *after* the majority-vote/
+dedup `Table.Group` calls in STEP 1 already ran on the raw un-normalized value. Confirmed
+via DuckDB: raw-distinct `PartNumber` count is 316,445 but upper+trim-normalized-distinct
+is 316,364 — 81 real parts have casing/whitespace variants in the source. Under
+production's step order, each such variant is treated as a *separate* part all the way
+through majority-vote, then silently collapsed by the final `Table.Distinct` "keep
+first" safety net — which drops one variant's data/votes entirely instead of correctly
+combining them. Fixed here by normalizing `PartNumber` first, so casing/whitespace
+variants of the same real part are one part throughout. Unambiguous fix, no tradeoff —
+there's no legitimate reason two casings of the same `PartNumber` should vote separately.
+
+**VendorCode is still not a full fix — flagged, not resolved, same as before.**
+Franchise/Source/SLC/DealerGroupCode/CommodityCode disagree on a small fraction of parts
+with one clear majority and a rare outlier (genuine data-entry-typo pattern, correctly
+fixed by majority-vote). VendorCode disagrees on a much larger share, and the pattern
+(many small, roughly-even clusters, no dominant value) is far more consistent with real
+branch-level variance (which distributor a given branch actually orders from) than
+data-entry error. `dim_VendorCode` (the flat lookup dim) doesn't help — "which vendor(s)
+does this part use" is a one-to-many (part × branch → vendor) relationship no
+single-value-per-part column can represent correctly regardless of which value wins.
+Still pending Brian's conversation with Ben about a real part × branch bridge/fact table
+— see `project_dim_parts_vendorcode_limitation.md`.
+
+**Everything else** is a faithful port: `Description` stays `Text.Upper` (not `Proper` —
+production's own deliberate, accepted display choice, not a bug; changing it would be a
+cosmetic change visible across 18+ reports, out of scope here), all 6 derived columns
+unchanged, "everything else" columns (`Description` + 6 numeric/operational snapshot
+columns) still first-non-null (majority-vote doesn't apply the same way to snapshot
+values).
+
+Built: `Build_Gold_Parts.Notebook` in `DP_Presentation/Dimensions/` — no new shortcut
+needed (`Silver_PartInformation` already shortcut from Batch A). Verification script:
+`.claude/queries/adhoc/dp-bronze-verify/verify_batch_d_parts.py`, including an
+independent SQL cross-check of the majority-vote logic against `Silver_PartInformation`
+directly (not just re-reading the notebook's own output). **Not yet run/verified in
+Fabric** — needs Brian to run the notebook.
