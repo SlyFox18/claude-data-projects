@@ -67,17 +67,18 @@ already built on the DP backend, listed separately below) across 21 live report 
 ## Known recurring bug to check for in every remaining dataflow: `DateTime.LocalNow()`
 
 `DateTime.LocalNow()` returns UTC in the Fabric service, not actual local time — a
-confirmed-recurring pattern across this whole backend, not a one-off: the original Data
-Refresh Table bug (fixed 2026-02-27), `Fact_PartsAdjustments.LoadedDatetime` (fixed
-2026-09-09, before this catalog existed), and `Fact_NegativeOnHand.DaysSinceLastRequest` +
-`Fact_InSalOrd_InSalPar.Days_Open`/`Aging` (both found and fixed in Batch A). Grepped every
-in-scope dataflow for it — these still have a live instance to check when their batch comes
-up (don't assume it needs fixing, some uses may be harmless logging timestamps like the
-`Fact_PartsAdjustments` one was, but check each one against what the value actually feeds):
+confirmed-recurring pattern across this whole backend, not a one-off. **6 real instances
+found and fixed so far**: the original Data Refresh Table bug (fixed 2026-02-27),
+`Fact_PartsAdjustments.LoadedDatetime` (fixed 2026-09-09, before this catalog existed),
+`Fact_NegativeOnHand.DaysSinceLastRequest` + `Fact_InSalOrd_InSalPar.Days_Open`/`Aging`
+(Batch A), and `Fact_JobCodePartFrequency`(+`_Branch`)'s 3-year cutoff +
+`Fact_Invoice_InventoryAnalysis`'s `RangeEnd` + `Fact_PartsNotReordered`'s 7-day window
+(all 3 Batch B). Grepped every in-scope dataflow for it up front — these still have a
+live instance to check when their batch comes up (don't assume it needs fixing, some
+uses may be harmless logging timestamps like the `Fact_PartsAdjustments` one was, but
+check each one against what the value actually feeds):
 
-`Fact_Branch12_Transactions`, `Fact_WorkOrderParts`, `Fact_Invoice_InventoryAnalysis`,
-`Fact_JobCodeFrequency_Branch`, `Fact_JobCodePartFrequency`, `Fact_PartsNotReordered`,
-`Fact_AdjustmentPairs`.
+`Fact_Branch12_Transactions`, `Fact_WorkOrderParts`, `Fact_AdjustmentPairs`.
 
 ## Full fact-dataflow matrix (42 in scope)
 
@@ -170,12 +171,62 @@ Mirrors the dims A→D structure. Confirmed with Brian via `AskUserQuestion` as 
   `FileNumber`s in `Fact_InSalOrd_InSalPar` (confirms the order-level aggregation correctly
   collapsed to one row per order).
 
-**Batch B — ~12 medium facts:** `Fact_JobCodePartFrequency`(+`_Branch`),
-`Fact_InternalWorkOrders`, `Fact_PendingInspections`, `Fact_LaborJobSummary`,
-`Fact_ServiceRecommendations` (after the 2 Inspections facts above), `Fact_PlanterInspectionParts`,
+**Batch B — built 2026-09-14, not yet run.** Turned out to be 17 real Gold tables once
+built (not ~12) — 3 dataflows had extra real outputs found only by reading their full
+body, not just headers (Planter Inspection Part Sales: 4 tables in 1; MD Invoices
+NoFreight: a 3rd table, `FreightCalculator`, deliberately skipped — not yet a live
+dependency; Transfers: a 2nd table, `Fact_OutstandingTransfers`, deliberately deferred —
+see below).
+
+Built: `Fact_JobCodePartFrequency`(+`_Branch`), `Fact_InternalWorkOrders`,
+`Fact_PendingInspections`, `Fact_LaborJobSummary`, `Fact_ServiceRecommendations` (after
+the 2 Inspections facts above), `Fact_PlanterInspectionParts`+`Fact_PlanterInspections`+
+`Fact_PlanterPartSales`+`Fact_PlanterInvoiceAllParts` (all 4 from one dataflow),
 `Fact_Invoice_UniqueCustomers`+`Fact_InTrans_UniqueCustomers`, `Fact_Invoice_InventoryAnalysis`,
 `Fact_PartsNotReordered` (added on re-check — see the correction note above),
 `Fact_MDInvoices_Closed`+`Fact_MDInvoices_NoFreight`, `Fact_Transfers`.
+
+**Real bugs found and fixed this batch** (beyond faithful porting):
+- **3 more `DateTime.LocalNow()` UTC bugs** (now 6 confirmed instances across this whole
+  project): the 2 `Fact_JobCodePartFrequency` dataflows' 3-year rolling cutoff,
+  `Fact_Invoice_InventoryAnalysis`'s `RangeEnd`, `Fact_PartsNotReordered`'s 7-day window
+  (the most consequential of these three — a much smaller window, and the only
+  twice-daily-scheduled fact in the whole catalog).
+- **`Fact_InternalWorkOrders` real grain gap**: `Silver_WkRoDesc` deliberately doesn't
+  pre-filter to `LineNumber=1` (a real, documented, deferred decision from its own build)
+  — this fact is the first real consumer that needs that filter, and without it would
+  have silently included ~26% extra rows (the unexplained `1000001`/`1000002`
+  `LineNumber` pattern). Fixed by adding the filter explicitly.
+- **`Fact_LaborJobSummary.IsPending` confirmed permanently broken in real production
+  itself** (not a new regression): checks lowercase `"wip"/"bi"/"va"` against real
+  uppercase 2-letter `ProgressStatus` codes — 0 real rows have ever matched. Discussed
+  with Brian: ported faithfully (matches real current behavior) given this feeds one of
+  the most-used reports in the portfolio, clearly flagged as needing a real business
+  definition before anything depending on `IsPending` specifically is trusted.
+- **`Fact_Invoice_InventoryAnalysis` real data-completeness bug**: `ModuleTypeKey`
+  assignment claimed to be "IDENTICAL to `dim_ModuleType`" but used an incomplete
+  fallback (`null`, then filtered out entirely) instead of `dim_ModuleType`'s own real
+  `.otherwise(99)` for its documented 12th-row edge case — real invoice dollars were
+  silently missing from every Inventory Analysis visual. Fixed by using the exact same
+  complete mapping as the dimension.
+
+**Deliberately deferred, not silently dropped:**
+- `FreightCalculator` (from the MD Invoices NoFreight dataflow) — its own header says
+  the one calculation that would consume it is "DEFERRED pending stakeholder input," so
+  it isn't a live dependency yet. Needs a CSV upload to this backend's Files section if
+  ever picked up.
+- `Fact_OutstandingTransfers` (from the Transfers dataflow, Page 3) — its real source,
+  the `Parts_InterbranchTransfers` VIEW, was already fully resolved earlier this project
+  with **no live ODBC needed** (`Silver_InSalPar`+`Silver_InSalOrd`+`Silver_InMaster`
+  cover it), but needs (1) a new `Silver_InSalOrd` column (`trf_to_branch`, for
+  `RequestingBranch`) and (2) a real design decision already flagged in that
+  investigation: its `OrderAge` column is computed relative to query time and must
+  become a DAX measure, not a frozen ETL column. A well-defined next step, not scoped
+  into this batch.
+
+Needs 3 new shortcuts in `DP_Presentation` before this batch can run: `RepairOrderDetail`,
+`Silver_WkMechWk`, `Silver_VhStock`. Verification script:
+`.claude/queries/adhoc/dp-bronze-verify/verify_batch_b_facts.py`.
 
 **Batch C — 5 large/perf-sensitive facts:** `Fact_WorkOrderParts` (the known 18-19 min
 refresh), `Fact_Inventory` (real per-branch `VendorCode` grain — preserve exactly),
