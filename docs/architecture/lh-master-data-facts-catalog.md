@@ -9,11 +9,19 @@ the dimensions catalog: real ground truth over any stale local doc.
 
 **Supersedes** `.claude/queries/facts/FACT-TABLES-SUMMARY.md` as the authoritative inventory —
 that doc (last updated Aug 27) undercounted real production scope significantly: it listed
-"24 fact tables" but production actually has **44 fact dataflows**, missing `Customer Anatomy`'s
+"24 fact tables" but production actually has **45 fact dataflows**, missing `Customer Anatomy`'s
 9 entirely, `MD Invoices`' 2, `Service Time Sheets`' 2, `Top 50 Job Codes`, `Stock Check`,
 `Planter Inspection Part Sales`, and `Transfers`. `FACT-TABLES-SUMMARY.md` is still useful for
 its refresh-time/row-count history and its documentation-status tracking per project — not
 superseded on those points, just on "what exists."
+
+**Correction (2026-09-14, same day):** this catalog's own first pass missed
+`Fact_PartsNotReordered` (source dataflow `df_Fact_PartSales_24Hours`, folder `Part Sales - 24
+Hours`) — confirmed live production (`Parts Not Re-Ordered 24 Hours` report, `RP - Parts
+Reports`, twice-daily scheduled per the old summary doc). Added below. A real reminder that
+even a "full ground-truth audit" benefits from a second pass — this was caught while grepping
+every in-scope dataflow for `DateTime.LocalNow()` (a known recurring bug pattern), not by the
+audit's own methodology.
 
 ## Methodology
 
@@ -36,8 +44,8 @@ superseded on those points, just on "what exists."
    reports total, confirming which fact-owning "projects" are real vs. sandbox-only or
    not-yet-promoted.
 
-**Real total in scope: 41 fact dataflows** (44 minus `Fact_PartsPromo`/`Fact_PartsAdjustments`,
-already built on the DP backend, listed separately below) across 20 live report projects, plus
+**Real total in scope: 42 fact dataflows** (45 minus `Fact_PartsPromo`/`Fact_PartsAdjustments`,
+already built on the DP backend, listed separately below) across 21 live report projects, plus
 3 dataflows flagged as out-of-scope-for-now (see "Explicitly excluded" below).
 
 ## Already built on the DP backend
@@ -56,7 +64,22 @@ already built on the DP backend, listed separately below) across 20 live report 
 | `Fact_Top_JobCode_Anaysis` (Top 50 Job Codes) | Confirmed sandbox-only, zero git tracking, per `project_dimensions_catalog_audit.md`'s earlier finding — not live production. |
 | `Fact_ServiceTimeSheet_Audit`, `AuditLog` (Service Time Sheets) | Not a Power BI report — an Excel/SharePoint-based audit tool (`projects/service time sheets/`) with its own separate "Phase 1" raw ingestion and pipeline. Different workstream; flag for a separate conversation rather than folding into this batch plan silently. |
 
-## Full fact-dataflow matrix (41 in scope)
+## Known recurring bug to check for in every remaining dataflow: `DateTime.LocalNow()`
+
+`DateTime.LocalNow()` returns UTC in the Fabric service, not actual local time — a
+confirmed-recurring pattern across this whole backend, not a one-off: the original Data
+Refresh Table bug (fixed 2026-02-27), `Fact_PartsAdjustments.LoadedDatetime` (fixed
+2026-09-09, before this catalog existed), and `Fact_NegativeOnHand.DaysSinceLastRequest` +
+`Fact_InSalOrd_InSalPar.Days_Open`/`Aging` (both found and fixed in Batch A). Grepped every
+in-scope dataflow for it — these still have a live instance to check when their batch comes
+up (don't assume it needs fixing, some uses may be harmless logging timestamps like the
+`Fact_PartsAdjustments` one was, but check each one against what the value actually feeds):
+
+`Fact_Branch12_Transactions`, `Fact_WorkOrderParts`, `Fact_Invoice_InventoryAnalysis`,
+`Fact_JobCodeFrequency_Branch`, `Fact_JobCodePartFrequency`, `Fact_PartsNotReordered`,
+`Fact_AdjustmentPairs`.
+
+## Full fact-dataflow matrix (42 in scope)
 
 Grouped by report project, with real source tables (bronze table names, not yet re-verified
 against Silver column names — that happens per-batch same as every dim did), dims needed (all
@@ -86,6 +109,7 @@ already built unless noted), and a rough complexity call.
 | `Fact_Invoice_InventoryAnalysis` | Inventory Analysis | `Invoice` | `dim_ModuleType`, `dim_PaymentMethod`, `dim_BranchLocation`, `dim_CustomerList` | Straightforward invoice-level filter/select, ~469K rows historically. |
 | `Fact_MDInvoices_Closed`, `Fact_MDInvoices_NoFreight` | MD Invoices With No Freight | `InSalPar_Audit`, `InTrans_Incremental`, `jdis_Part_Information` (direct SQL Analytics Endpoint queries, not standard Lakehouse dataflow reads) | `dim_BranchLocation`, `dim_Franchise`, `dim_CustomerList`, `dim_DateTable`, `dim_Parts` | Real documented business logic (freight-as-line-item pattern, `PurOrderType='E'`) already reasoned through by a past investigation — read that reasoning before rebuilding, don't re-derive from scratch. |
 | `Fact_Transfers` | Transfers | `InTrans_Incremental` | `dim_DateTable`, `dim_BranchLocation`, `dim_Parts` | 🚧 Already in development per the (superseded but still useful) old summary doc — check current state before starting fresh. Real documented Branch-12-exclusion and transfer-subtype-classification logic. |
+| `Fact_PartsNotReordered` (source dataflow `df_Fact_PartSales_24Hours`) | Parts Not Re-Ordered 24 Hours | `InTrans_Incremental`, `jdis_Part_Information` | `dim_BranchLocation`, `dim_DateTable` | **Missed in this catalog's first pass — added on re-check.** 7-day rolling window, `Franchise='D'` only, real documented dedup logic on both source queries. Twice-daily scheduled in production per the old summary doc (~7,965 rows) — the only twice-daily fact in the whole catalog, worth preserving that cadence rather than defaulting to daily. Uses `DateTime.LocalNow()` — check for the same UTC bug already found 3x this project before porting. |
 
 ### Large / needs real design attention (known perf landmines or big scale)
 
@@ -140,10 +164,11 @@ Mirrors the dims A→D structure. Confirmed with Brian via `AskUserQuestion` as 
   `Silver_InSalOrd`, `Silver_InSalPar`, `Silver_WkRoFile`. Verification script:
   `.claude/queries/adhoc/dp-bronze-verify/verify_batch_a_facts.py`.
 
-**Batch B — ~11 medium facts:** `Fact_JobCodePartFrequency`(+`_Branch`),
+**Batch B — ~12 medium facts:** `Fact_JobCodePartFrequency`(+`_Branch`),
 `Fact_InternalWorkOrders`, `Fact_PendingInspections`, `Fact_LaborJobSummary`,
 `Fact_ServiceRecommendations` (after the 2 Inspections facts above), `Fact_PlanterInspectionParts`,
 `Fact_Invoice_UniqueCustomers`+`Fact_InTrans_UniqueCustomers`, `Fact_Invoice_InventoryAnalysis`,
+`Fact_PartsNotReordered` (added on re-check — see the correction note above),
 `Fact_MDInvoices_Closed`+`Fact_MDInvoices_NoFreight`, `Fact_Transfers`.
 
 **Batch C — 5 large/perf-sensitive facts:** `Fact_WorkOrderParts` (the known 18-19 min
