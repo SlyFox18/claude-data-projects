@@ -121,9 +121,33 @@ logic depth, not missing infrastructure. Real 3-level drill-through architecture
 |---|---|
 | `Fact_Branch12_Transactions` (Combine Vault Sales) | `dim_Branch12_Parts` — already deliberately deferred in the dimensions catalog, blocked on `Fact_Branch12_Transactions` itself not existing yet (circular in the old catalog's own framing; needs a decision on which comes first, or whether `dim_Branch12_Parts` can build off `Silver_PartInformation` directly without the fact). |
 
-## Next step
+## Implementation plan (confirmed 2026-09-14)
 
-Batching/prioritization plan to be proposed and confirmed before any building starts — see
-chat for the proposed batches (mirrors the dims A→D structure: easy self-contained facts first,
-then medium joins, then the large/perf-sensitive facts, Customer Anatomy last as its own
-multi-step batch given its real size).
+Mirrors the dims A→D structure. Confirmed with Brian via `AskUserQuestion` as proposed:
+
+**Batch A — re-audit + 4 easy facts:**
+- Re-audit `Fact_PartsPromo` and `Fact_PartsAdjustments` (built early, before the
+  "hunt for real bugs" discipline was standard — every dim that got that treatment found
+  at least one real issue).
+- Build: `Fact_NegativeOnHand_OnHandNoBin`, `Fact_InSalOrd_InSalPar`, `Fact_OpenOrderParts`,
+  `Fact_OpenOrders`.
+
+**Batch B — ~11 medium facts:** `Fact_JobCodePartFrequency`(+`_Branch`),
+`Fact_InternalWorkOrders`, `Fact_PendingInspections`, `Fact_LaborJobSummary`,
+`Fact_ServiceRecommendations` (after the 2 Inspections facts above), `Fact_PlanterInspectionParts`,
+`Fact_Invoice_UniqueCustomers`+`Fact_InTrans_UniqueCustomers`, `Fact_Invoice_InventoryAnalysis`,
+`Fact_MDInvoices_Closed`+`Fact_MDInvoices_NoFreight`, `Fact_Transfers`.
+
+**Batch C — 5 large/perf-sensitive facts:** `Fact_WorkOrderParts` (the known 18-19 min
+refresh), `Fact_Inventory` (real per-branch `VendorCode` grain — preserve exactly),
+`df_FactPartTransactions_Incremental` (10M+ rows, needs a real incremental design),
+`Fact_AdjustmentPairs` (needs `Fact_PartsAdjustments` reconfirmed first),
+`Fact_Parts_Open_Tickets`+`_Details` (SQL-view origin needs investigation first).
+
+**Batch D — Customer Anatomy, 9 dataflows, on its own.** All raw dependencies already
+migrated; complexity is business-logic depth (the real `CustomerVehicleFlag`
+Stock/Unknown customer-assignment logic), not missing infrastructure.
+
+Still deferred/blocked, not part of any batch yet: `Fact_Branch12_Transactions` (blocked
+on `dim_Branch12_Parts`, itself circularly blocked in the dims catalog — needs a real
+build-order decision).
