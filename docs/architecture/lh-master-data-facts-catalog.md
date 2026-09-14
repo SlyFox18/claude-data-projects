@@ -409,7 +409,16 @@ real unmatched `Branch` values against `dim_BranchLocation`, confirmed directly.
 
 **Report-level correctness against this leaner shape is deliberately deferred to the
 report-rebuild phase**, per Brian's explicit direction — not blocking this backend work.
-Not yet run by Brian as of this doc update.
+
+**Verified (2026-09-14): fully clean.** Ran successfully first try. 13-column contract
+matches exactly, 11,237,844 rows — independently recounted `Silver_InTrans`
+(`Type IN ('C','I')`) and got an exact match. `Type` breakdown confirms only `C`/`I`
+present. `Margin` calculation: 0 mismatches against `SaleAmount - CostAmount`. Only
+anomaly: 8 rows (0.00007%) have a null `PartNumberKey` — traced to a single real part
+number (`RRH-801355`) that has real transactions in `Silver_InTrans` but doesn't exist
+in `dim_Parts` (likely obsolete/deleted) — a genuine, expected left-join miss, not a
+bug. `Fact_Part_Transactions` fully closed out. Verification script:
+`.claude/queries/adhoc/dp-bronze-verify/verify_batch_c_parttransactions.py`.
 
 **Batch D — Customer Anatomy, 9 dataflows, on its own.** All raw dependencies already
 migrated; complexity is business-logic depth (the real `CustomerVehicleFlag`
