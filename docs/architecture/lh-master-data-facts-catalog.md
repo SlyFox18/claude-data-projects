@@ -44,9 +44,9 @@ already built on the DP backend, listed separately below) across 20 live report 
 
 | Fact | Report | Location | Notes |
 |---|---|---|---|
-| `Fact_PartsPromo` | Parts Promo | `DP_Presentation` | Built alongside `dim_RepairOrder` earlier this project. **Not yet re-audited** the way every dim was (real-bug-hunting pass) — worth a quick look before considering it done, given every dim that got that treatment turned up at least one real issue. |
-| `Fact_PartsAdjustments` | Parts Adjustments | `DP_Presentation` | Same caveat — built early, not yet re-audited. Its sibling `Fact_AdjustmentPairs` (self-referencing match logic) is NOT yet built. |
-| `Fact_InTrans_AllPromo` | (supporting `Fact_PartsPromo`) | `DP_Presentation` | Built alongside `Fact_PartsPromo`. |
+| `Fact_PartsPromo` | Parts Promo | `DP_Presentation` | **Re-audited 2026-09-14 (Batch A) — clean.** No correctness bugs found. |
+| `Fact_InTrans_AllPromo` | (supporting `Fact_PartsPromo`) | `DP_Presentation` | **Re-audited 2026-09-14 (Batch A).** One misleading header comment fixed (it's NOT scoped to promo-active orders — confirmed against the real original production `.pq`, which has no such filter at all: every InTrans transaction since 2023-01-01, related via many-to-many `REF_NO` for "% of total" DAX context measures). One real improvement found and documented: `Qty` is now safely included where production explicitly excluded it (text-value data-quality problem in the old ODBC path, confirmed via DuckDB that `Silver_InTrans.Qty` is a clean `DECIMAL(8,2)` now). |
+| `Fact_PartsAdjustments` | Parts Adjustments | `DP_Presentation` | **Re-audited 2026-09-14 (Batch A) — already clean.** Turns out this one had already been through a real bug-hunt before this session: a genuine `DocRef`-reuse misclassification (same bug class as `InTrans.TransId`'s own reuse problem) and a `DateTime.LocalNow()` UTC bug were both found and fixed on 2026-09-09. Independently re-verified this session: `GlTrans.DEPT`/`ACCT`/`SUB_ACCT` cast-and-filter chain doesn't silently drop real rows (confirmed via DuckDB — no non-numeric `DEPT` values near "30"). No new issues found. Its sibling `Fact_AdjustmentPairs` (self-referencing match logic) is still NOT yet built — now safe to build against, since this fact is confirmed correct. |
 
 ## Explicitly excluded from this phase
 
@@ -94,7 +94,7 @@ already built unless noted), and a rough complexity call.
 | `Fact_WorkOrderParts` | Inspections | `wkothsub`, `InTrans_Incremental` | none directly | **The known 18-19 minute refresh** — longest fact in the whole old system, flagged as the #1 optimization priority in the old summary doc. This is exactly the kind of large-scale operation Spark should handle far better than Power Query M (same category of win as `dim_Parts`'s majority-vote fix) — but confirm the real bottleneck (row count vs. join shape vs. something else) before assuming a straight port fixes it. |
 | `Fact_Inventory` | Inventory Analysis + Price Matrix (shared) | `jdis_Part_Information` | `dim_BranchLocation`, `dim_Parts`, `dim_Franchise`, `dim_VendorCode`, `dim_Source`, `dim_SLC`, `dim_DealerGroupCode`, `dim_CommodityCode` | Real per-branch grain (confirmed this session during the `dim_Parts.VendorCode` investigation) — this is where `VendorCode` is correctly captured at the branch level; preserve that exact pattern (read `VendorCode` directly from `Silver_PartInformation` at its native grain, not from `dim_Parts`). ~138K rows historically, ~6 min old refresh. |
 | `df_FactPartTransactions_Incremental` | Inventory Analysis + Price Matrix (shared) | `InTrans_Incremental` | `dim_Parts`, `dim_Franchise`, `dim_BranchLocation`, `dim_CustomerList` | 10M+ rows, already incremental in production (the "success story" the old doc cites) — needs a real incremental-refresh design on the DP backend, not just a faithful one-shot port. 40+ output columns, several derived pricing-analytics fields. |
-| `Fact_AdjustmentPairs` | Parts Adjustments | `Fact_PartsAdjustments` (self-referencing) | none directly | Matches negative adjustments to positive ones within 12/24-month windows — real matching logic, needs `Fact_PartsAdjustments` re-audited/confirmed correct first (see "already built" caveat above). |
+| `Fact_AdjustmentPairs` | Parts Adjustments | `Fact_PartsAdjustments` (self-referencing) | none directly | Matches negative adjustments to positive ones within 12/24-month windows — real matching logic. `Fact_PartsAdjustments` itself is now re-audited/confirmed correct (Batch A), so this is safe to build against. |
 | `Fact_Parts_Open_Tickets`, `Fact_Parts_Open_Tickets_Details` | Open Parts Tickets | `vw_Fact_Parts_Open_Tickets`, `vw_Fact_Parts_Open_Tickets_Details` (SQL views via the SQL Analytics Endpoint — **origin not yet identified**, old doc says "raw tables not specified") | `dim_BranchLocation`, `dim_DateTable` | Needs investigation before scoping — these read pre-built SQL views, not a Lakehouse table; find what builds those views before deciding how to port. |
 
 ### Flagship — Customer Anatomy (9 dataflows, biggest single undertaking)
@@ -125,12 +125,20 @@ logic depth, not missing infrastructure. Real 3-level drill-through architecture
 
 Mirrors the dims A→D structure. Confirmed with Brian via `AskUserQuestion` as proposed:
 
-**Batch A — re-audit + 4 easy facts:**
-- Re-audit `Fact_PartsPromo` and `Fact_PartsAdjustments` (built early, before the
-  "hunt for real bugs" discipline was standard — every dim that got that treatment found
-  at least one real issue).
-- Build: `Fact_NegativeOnHand_OnHandNoBin`, `Fact_InSalOrd_InSalPar`, `Fact_OpenOrderParts`,
-  `Fact_OpenOrders`.
+**Batch A — re-audit + 4 easy facts — built 2026-09-14, not yet run:**
+- Re-audit `Fact_PartsPromo` and `Fact_PartsAdjustments` — **done**, see "Already built on
+  the DP backend" above for results (both clean; one misleading comment fixed on
+  `Fact_InTrans_AllPromo`).
+- Built: `Build_Gold_NegativeOnHand`, `Build_Gold_InSalOrdInSalPar`, `Build_Gold_OpenOrderParts`,
+  `Build_Gold_OpenOrders` (all in `DP_Presentation/Fact Tables/`). **2 real bugs found and
+  fixed**, both the same `DateTime.LocalNow()`-returns-UTC class already hit twice this
+  project: `Fact_NegativeOnHand`'s `DaysSinceLastRequest` and — the most consequential
+  instance yet — `Fact_InSalOrd_InSalPar`'s `Days_Open`/`Aging`, since aging-bucket
+  classification is the entire point of the 60+ Days Past Due report. Both fixed via
+  explicit UTC-to-Central conversion. `Fact_OpenOrderParts`/`Fact_OpenOrders` are faithful
+  ports, no bugs found. **Needs 3 new shortcuts in `DP_Presentation`** before these can run:
+  `Silver_InSalOrd`, `Silver_InSalPar`, `Silver_WkRoFile`. Verification script:
+  `.claude/queries/adhoc/dp-bronze-verify/verify_batch_a_facts.py`.
 
 **Batch B — ~11 medium facts:** `Fact_JobCodePartFrequency`(+`_Branch`),
 `Fact_InternalWorkOrders`, `Fact_PendingInspections`, `Fact_LaborJobSummary`,
