@@ -657,8 +657,33 @@ columns) still first-non-null (majority-vote doesn't apply the same way to snaps
 values).
 
 Built: `Build_Gold_Parts.Notebook` in `DP_Presentation/Dimensions/` — no new shortcut
-needed (`Silver_PartInformation` already shortcut from Batch A). Verification script:
-`.claude/queries/adhoc/dp-bronze-verify/verify_batch_d_parts.py`, including an
-independent SQL cross-check of the majority-vote logic against `Silver_PartInformation`
-directly (not just re-reading the notebook's own output). **Not yet run/verified in
-Fabric** — needs Brian to run the notebook.
+needed (`Silver_PartInformation` already shortcut from Batch A).
+
+**Real bug hit on first run, fixed immediately:** `PySparkTypeError
+[CANNOT_ACCEPT_OBJECT_IN_TYPE]` — `Silver_PartInformation`'s 6 numeric columns
+(`QuantityOnHand`, `BackOrderQty`, `InventoryCost`, `SellPrice1`, `ListPrice`,
+`Current12MoSales`) are `DECIMAL(34,6)`; the special `UNKNOWN` row is built from plain
+Python `0.0` float literals via `spark.createDataFrame` against `real_parts`'s own
+inferred schema, and PySpark doesn't auto-coerce `float` into `DecimalType` there. Fixed
+by casting those 6 columns to `double` once, at read time, so the schema matches the
+literals used downstream — same class of fix as `dim_VendorCode`'s earlier
+integer-vs-string mismatch, just the reverse direction (decimal-vs-float, not text-vs-int).
+
+**Fully verified complete (2026-09-14):** 316,365 rows (316,364 normalized-distinct real
+parts + 1 UNKNOWN — exact match), 22-column contract exact match, 0 duplicate
+`PartNumber`, 0 duplicate `PartNumberKey`, `DZ111141` Franchise = `'D'` (the real
+19-of-21-row majority, confirming the historical bug case is actually fixed). Strongest
+check: the independent SQL cross-check
+(`.claude/queries/adhoc/dp-bronze-verify/verify_batch_d_parts.py`, a completely separate
+re-implementation of the majority-vote logic in raw SQL against
+`Silver_PartInformation` directly) found **0 mismatches across all 6 business filter
+columns, on every one of the ~316K parts compared** — end-to-end proof the Spark
+majority-vote logic is correct, not just internally consistent with itself.
+`VendorCode` disagreement count: 138,577 parts (confirms the real, still-unresolved
+branch-variance limitation — not a bug, see `project_dim_parts_vendorcode_limitation.md`).
+
+**This closes out the entire dimensions catalog implementation plan (Batches A–D).**
+Remaining deferred items: `dim_BranchPartInventory`/`dim_Branch12_Parts` (blocked on
+`Fact_Branch12_Transactions`, not yet built) and `CustomerLookup` (Category C, deferred
+to the facts/report migration phase) — both intentionally out of scope for this plan,
+not oversights.
