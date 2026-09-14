@@ -482,7 +482,18 @@ view's own real, documented behavior — cosmetic only, doesn't affect any filte
 aggregation.
 
 **This closes out Batch C (5/5) and the entire facts catalog implementation plan except
-Batch D (Customer Anatomy).** Not yet run by Brian as of this doc update.
+Batch D (Customer Anatomy).**
+
+**Verified (2026-09-14): fully clean.** `Fact_Parts_Open_Tickets`: 23-column contract,
+2,308 rows. `Fact_Parts_Open_Tickets_Details`: 23-column contract, 19,552 rows.
+`Aging_Sort_Order` matches its `Aging` bucket text exactly (0 mismatches), 0 negative
+`Days_Open` rows, every `Details.Order_No` exists in `Summary`. The documented
+`Invoice_Type` discrepancy between the two views showed up exactly as expected: Summary
+shows raw `'I'` and `NULL` for cases Details maps to `'Invoice'`/`'Unknown'` — confirms
+both formulas are faithfully preserved, not a bug. Verification script:
+`.claude/queries/adhoc/dp-bronze-verify/verify_batch_c_openparttickets.py`.
+
+**Batch C fully closed out (5/5), all verified clean.**
 
 **Batch D — Customer Anatomy, 9 dataflows, on its own.** All raw dependencies already
 migrated; complexity is business-logic depth (the real `CustomerVehicleFlag`
