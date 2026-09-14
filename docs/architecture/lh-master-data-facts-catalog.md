@@ -224,9 +224,30 @@ the 2 Inspections facts above), `Fact_PlanterInspectionParts`+`Fact_PlanterInspe
   become a DAX measure, not a frozen ETL column. A well-defined next step, not scoped
   into this batch.
 
-Needs 3 new shortcuts in `DP_Presentation` before this batch can run: `RepairOrderDetail`,
-`Silver_WkMechWk`, `Silver_VhStock`. Verification script:
+Needs 4 new shortcuts in `DP_Presentation` before this batch can run: `RepairOrderDetail`,
+`Silver_WkMechWk`, `Silver_VhStock`, and `InSalPar_Audit` (this last one was a real
+documentation gap on my part — `Build_Gold_MDInvoicesClosed.Notebook` reads it directly
+but I never called out that it needed a new shortcut like the other 3; Brian had to add
+it manually on first run without being told to. Now documented here and in the
+notebook's own header). Verification script:
 `.claude/queries/adhoc/dp-bronze-verify/verify_batch_b_facts.py`.
+
+**Real bugs found from Brian's live run (2026-09-14), fixed:**
+- `Fact_PlanterInspectionParts`/`Fact_PlanterInvoiceAllParts` (Planter Inspection Part
+  Sales) hit `AnalysisException: Column RONumber#903, Branch#902 are ambiguous` — same
+  same-name-join anti-pattern already seen on `dim_Salesperson`/`dim_JobCode`: both used
+  explicit `df["col"] == df2["col"]` join conditions where a shared-origin column name
+  existed on both sides. Fixed by renaming to matching names before each join and using
+  same-name-list joins (`.join(other, ["Branch", "RONumber"], "inner")`) instead.
+- `Fact_InTrans_UniqueCustomers` (Unique Parts Customers) hit
+  `AnalysisException [COLUMN_ALREADY_EXISTS]: The column customer_tradetype already
+  exists` — `Silver_InTrans` already has its own native `TradeType` column (transaction-
+  level, distinct from the joined-in customer-classification `TradeType`); renaming the
+  joined-in column to `Customer_TradeType` *after* the join renamed both copies to the
+  same name. Fixed by aliasing to `Customer_TradeType` inside the lookup's own `.select()`
+  *before* the join, so the collision never occurs — matching production's own real
+  nested-join-then-rename-on-expand pattern that a flat Spark join-then-rename didn't
+  replicate.
 
 **Batch C — 5 large/perf-sensitive facts:** `Fact_WorkOrderParts` (the known 18-19 min
 refresh), `Fact_Inventory` (real per-branch `VendorCode` grain — preserve exactly),
