@@ -725,3 +725,21 @@ Remaining deferred items: `dim_BranchPartInventory`/`dim_Branch12_Parts` (blocke
 `Fact_Branch12_Transactions`, not yet built) and `CustomerLookup` (Category C, deferred
 to the facts/report migration phase) — both intentionally out of scope for this plan,
 not oversights.
+
+## Post-closure correction: `dim_DealerGroupCode` duplicate-key bug (2026-09-14)
+
+Found while building `Fact_Inventory` (Batch C, facts catalog): 9 real
+`Silver_PartInformation` rows have `DealerGroupCode` literally equal to the text
+"UNKNOWN" (a genuine raw source value, not blank/null). After the normal
+trim+uppercase pipeline, this collided with the dimension's own synthetic Unknown
+sentinel row, giving `dim_DealerGroupCode` **two rows both valued "UNKNOWN"** (key=0 the
+sentinel, key=1755 the real one) instead of one — a real join fan-out risk for any
+consumer joining on `DealerGroupCode` by value. Slipped past this notebook's own
+original verification cell because it only checked key=0's row, not whether "UNKNOWN"
+appeared anywhere else. Fixed by folding real "UNKNOWN"-valued codes into the same
+key=0 bucket before key assignment, and broadened the verification cell to check for
+any duplicate value across the whole table. No fact table had referenced this dimension
+yet, so the fix is clean — nothing downstream needed re-pointing. Independently verified
+all 7 other dimensions `Fact_Inventory` joins against (`dim_BranchLocation`, `dim_Parts`,
+`dim_Franchise`, `dim_VendorCode`, `dim_Source`, `dim_SLC`, `dim_CommodityCode`) have
+zero natural-key duplicates — this was an isolated issue.

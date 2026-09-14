@@ -318,6 +318,28 @@ share the same list):
 
 Verification script: `.claude/queries/adhoc/dp-bronze-verify/verify_batch_c_workorderparts.py`.
 
+**`Fact_Inventory` built (2026-09-14, Batch C 2/5).** `Build_Gold_Inventory.Notebook`
+(Fact Tables/Inventory/) - shared by Inventory Analysis and Price Matrix. Preserved the
+real per-branch `VendorCode` grain flagged during the `dim_Parts.VendorCode`
+investigation (`VendorCode` read directly from `Silver_PartInformation`, joined straight
+to `dim_VendorCode`, not through `dim_Parts`). 3 real findings, all fixed:
+- **`dim_DealerGroupCode` duplicate-key bug** (fixed at the dimension - see the
+  dimensions catalog's "Post-closure correction" section): 9 real rows with
+  `DealerGroupCode` literally "UNKNOWN" collided with the dimension's own sentinel row,
+  a real join fan-out risk. Independently confirmed all 7 other dimensions this fact
+  joins against have zero natural-key duplicates - an isolated issue.
+- **CommodityCode data-completeness bug**: production's own fallback uses literal
+  "UNKNOWN" (uppercase) but `dim_CommodityCode`'s real sentinel row is "Unknown" (mixed
+  case) - a case mismatch that silently drops ~22% of real inventory rows (32,382 of
+  147,831) to a NULL `CommodityCodeKey` in PRODUCTION ITSELF. Fixed to match the
+  dimension's real casing.
+- **Real discrepancy resolved by reading the actual code, not the header prose**:
+  production's header claims "all natural keys removed," but its own `RemoveColumns`
+  step and its `DataDestinations` mapping both keep `PartNumber` as a real output column
+  (25 columns total, not 24). Preserved here to match the real contract.
+
+Not yet run by Brian as of this doc update.
+
 **Batch D — Customer Anatomy, 9 dataflows, on its own.** All raw dependencies already
 migrated; complexity is business-logic depth (the real `CustomerVehicleFlag`
 Stock/Unknown customer-assignment logic), not missing infrastructure.
