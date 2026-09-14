@@ -508,3 +508,74 @@ applied, e.g. `/COMBINE VIP INSPECT` → `Inspection - Combine`), `dim_ModuleTyp
 rows/3 columns, `dim_Technician_Code_Names` 1,456 rows/4 columns — real `IsActive`
 breakdown after the fix (517 active, 939 inactive, matching real `WkMechFl`
 termination data), not the old fake always-true column.
+
+## Batch D results (2026-09-14) — `dim_CustomerList` built, `dim_Parts` still pending
+
+`dim_CustomerList` is the most complex dim in the whole catalog: 4 real source tables
+joined (in production), a post-join deduplication step guarding against join fan-out,
+a stable-not-sequential surrogate key with its own real 2026-03-27 bug-fix history, and
+9 hardcoded "special customer" rows (`CustomerKey` -1 to -9) that recovered a real ~$19M
++ ~$44M of service revenue previously misattributed to "Unknown Customer" — none of this
+is speculative BI cruft, all of it is real, load-bearing business logic, replicated
+verbatim.
+
+**Source simplification found this batch:** production's own dataflow joins a 4th
+source, `Raw_ArMaster_Contact`, purely to pull one column, `ContactClass` (needed as an
+*intermediate* value — not itself a final output — to compute `IsKeyCustomer` →
+`CustomerTier` → `IsHighValue`, all three confirmed genuinely used by the
+column-usage-depth audit). `ArMaster_Contact` was already resolved earlier this session
+(`project_category_c_views_resolved.md`) to be a plain view over the bronze `contact`
+table — tracing its own `SELECT UPPER(TRIM(contact_code)) AS ContactID, contact_class AS
+ContactClass FROM ArMaster_Contact` further back through the already-resolved view SQL
+lands on a real base column, `contact.class` (confirmed via DuckDB: 98 total columns on
+the live bronze `contact` mirror, real values include `"KEY"`, 312 of ~82K+ rows). Since
+`Silver_Contact` already exists and is already a real dependency of this dim, the 4th
+join collapses entirely: `Build_Silver_Contact.Notebook` was extended to select
+`ContactClass` (from `class`) directly — a proven-need Silver-layer addition, same
+discipline as `InMaster`'s `IN_TRANSIT_QTY` precedent (see
+`project_dimensions_catalog_audit.md`). Purely additive; no existing Silver_Contact
+consumer (`dim_Salesperson`, `dim_Technician_Code_Names`) references the new column.
+
+**Column trim:** 55 real columns in production's own `SelectFinalColumns` → 43 confirmed
+used by the column-usage-depth audit (dropped: `CustomerNumberText`, `Street`, `Street2`,
+`PostalCode`, `Country`, `HomePhone`, `IsCompany`, `HasCreditLimit`, `Account_Class`,
+`ContactClass`, `IsMarketingEligible`, `PreferredContactMethod`). `ContactClass` and
+`Street` are both still computed as intermediates (the latter feeds `DataQualityScore`'s
+address-completeness check) even though dropped from final output — the same
+intermediate-vs-final-column nuance seen on `dim_JobCode`.
+
+**A real, deliberate step-order subtlety, replicated faithfully:** production computes
+`FullName`/`PrimaryName`/`DisplayName`/`PrimaryPhone` from the *raw* (pre-text-cleaning)
+`FirstName`/`LastName`/`CompanyName`/`MobilePhone`/`BusinessPhone` values, and only
+afterward runs the `CleanTextFields` Proper/Upper/Lower pass that produces the final
+`CustomerName`/`CompanyName`/`FirstName`/`LastName`/`City`/`State`/`Email`/`TradeType`
+output columns. `Build_Gold_CustomerList.Notebook` reproduces this exact ordering rather
+than "fixing" it — changing it would silently change values in a way not proven safe.
+
+**Special customer rows:** production's dataflow appends these as a literal
+`Table.FromRecords` block, none of them dependent on any joined source data, combined
+with the real customers via `Table.Combine` and re-sorted by `CustomerKey` ascending
+(which, since these keys are negative, naturally puts them first). Reproduced as a
+literal Spark DataFrame with an explicit schema, `unionByName`'d with the real
+customers, same final sort.
+
+**Deduplication:** production's own header documents a real bug fix — multiple
+`Raw_ArMaster_Customer` records per `ContactID` created a cartesian product, so dedup on
+`AccountNumber` (sort ascending, keep first) must happen *before* the surrogate key is
+assigned, or duplicate `CustomerKey`s result. Re-verified this batch against the current
+live data: `Silver_ArMasterCustomer.ContactID` is now 1:1 (54,129 rows / 54,129
+distinct) — but `Silver_Contact.ContactID` isn't (82,756 rows / 82,750 distinct, 6 real
+duplicates) — a different source table than production's own note called out, same
+category of problem. The defensive post-join dedup step is kept regardless, using a
+deterministic `row_number()` tiebreak (Power Query's own "first/primary record wins" via
+stable sort isn't documented more precisely than that).
+
+**Shortcut needed:** `Silver_ArMaster` did not yet have a shortcut into `DP_Presentation`
+(`Silver_Contact` and `Silver_ArMasterCustomer` already did, from earlier batches) —
+confirmed via `fab ls`. One new shortcut needed before this notebook can run.
+
+**Not yet run/verified in Fabric** (blocked on Brian's manual portal steps — see below).
+Verification script written: `.claude/queries/adhoc/dp-bronze-verify/verify_batch_d_customerlist.py`.
+
+`dim_Parts` (Batch D's other heavy-hitter, already confirmed 22/22 columns used — 100%
+clean, no trim needed) is still pending; its full source logic has not yet been read.

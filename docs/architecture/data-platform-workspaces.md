@@ -711,6 +711,25 @@ Category A, B, and C. **Raw only** — no Gold-layer logic (including no
 `Parts_InterbranchTransfers`/`ArMaster_Contact` rebuilds, no fact tables reading either of
 these two), no report work.
 
+## Silver_Contact — ContactClass column added (2026-09-14, Batch D / dim_CustomerList)
+
+`Build_Silver_Contact.Notebook` (`workspaces/DP - Staging - Dev/Data Notebooks/`) gained
+a new column, `ContactClass` (from real bronze `contact.class`, confirmed via DuckDB —
+real values include `"KEY"`, 312 of ~82K+ rows). Proven-need addition, same discipline as
+`InMaster`'s `IN_TRANSIT_QTY`: `dim_CustomerList`'s real `IsKeyCustomer`/`CustomerTier`/
+`IsHighValue` columns (all confirmed genuinely used) trace through the already-resolved
+`ArMaster_Contact` view SQL to this exact column — not something `ArMaster_Contact`
+computes itself. Purely additive; existing consumers (`dim_Salesperson`,
+`dim_Technician_Code_Names`) don't reference it. Requires Brian to re-run
+`Build_Silver_Contact.Notebook` before `Build_Gold_CustomerList.Notebook` can pick up the
+new column (the shortcut-based `Silver_Contact` reads reflect the Delta table's live
+schema automatically once rebuilt — no shortcut recreation needed).
+
+Also new this batch: a `Silver_ArMaster` shortcut into `DP_Presentation` (did not exist
+before — `Silver_Contact` and `Silver_ArMasterCustomer` already did, from earlier
+batches). See `docs/architecture/lh-master-data-dimensions-catalog.md`'s "Batch D
+results" section for the full `dim_CustomerList` build detail.
+
 ## Prod tier
 
 Stood up 2026-09-08 (`docs/superpowers/plans/2026-09-08-dp-prod-tier.md`). Same content as the Dev
