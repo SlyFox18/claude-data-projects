@@ -149,7 +149,7 @@ logic depth, not missing infrastructure. Real 3-level drill-through architecture
 
 Mirrors the dims A→D structure. Confirmed with Brian via `AskUserQuestion` as proposed:
 
-**Batch A — re-audit + 4 easy facts — built 2026-09-14, not yet run:**
+**Batch A — re-audit + 4 easy facts — COMPLETE, built and verified 2026-09-14:**
 - Re-audit `Fact_PartsPromo` and `Fact_PartsAdjustments` — **done**, see "Already built on
   the DP backend" above for results (both clean; one misleading comment fixed on
   `Fact_InTrans_AllPromo`).
@@ -160,9 +160,15 @@ Mirrors the dims A→D structure. Confirmed with Brian via `AskUserQuestion` as 
   instance yet — `Fact_InSalOrd_InSalPar`'s `Days_Open`/`Aging`, since aging-bucket
   classification is the entire point of the 60+ Days Past Due report. Both fixed via
   explicit UTC-to-Central conversion. `Fact_OpenOrderParts`/`Fact_OpenOrders` are faithful
-  ports, no bugs found. **Needs 3 new shortcuts in `DP_Presentation`** before these can run:
-  `Silver_InSalOrd`, `Silver_InSalPar`, `Silver_WkRoFile`. Verification script:
-  `.claude/queries/adhoc/dp-bronze-verify/verify_batch_a_facts.py`.
+  ports, no bugs found.
+- **Verified 2026-09-14** via `.claude/queries/adhoc/dp-bronze-verify/verify_batch_a_facts.py`:
+  all 4 column contracts match exactly. Row counts (2,015 / 2,308 / 10,740 / 2,831) run
+  higher than the old summary doc's historical snapshot (~1,398 / ~1,386) — expected, not a
+  defect: these are dynamic operational tables (open bin issues, open orders) that grow
+  daily, and that doc was already months stale. The invariants that actually matter both
+  passed clean: 0 "No Issue" rows leaked through `Fact_NegativeOnHand`'s filter, 0 duplicate
+  `FileNumber`s in `Fact_InSalOrd_InSalPar` (confirms the order-level aggregation correctly
+  collapsed to one row per order).
 
 **Batch B — ~12 medium facts:** `Fact_JobCodePartFrequency`(+`_Branch`),
 `Fact_InternalWorkOrders`, `Fact_PendingInspections`, `Fact_LaborJobSummary`,
