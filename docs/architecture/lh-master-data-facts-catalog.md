@@ -296,6 +296,28 @@ against a known historical InTrans duplicate-loading issue) is likely a no-op no
 kept as a faithful port with before/after row counts printed so any real collapse would
 be visible, not silent.
 
+**Verified (2026-09-14) after Brian ran it clean.** 14-column contract matches exactly,
+93,294 rows. Independently recomputed the full join directly in SQL (inspection-invoice
+lookup with sub-branch normalization, 3-year cutoff, business-grain dedup) and got
+93,294 exactly, confirming the notebook's logic is correct. Two more real findings from
+this verification pass, both non-bugs, both now documented in the notebook headers (and
+retroactively in `Build_Gold_LaborJobSummary`/`Build_Gold_PendingInspections`, which
+share the same list):
+- The shared 111-code inspection list actually has **113** real codes — verified
+  directly against production's own `mashup.pq` `InspectionCodes` table. Production's own
+  "111" comment was itself stale/wrong; the list content itself was copied correctly (no
+  transcription error), just the expected-count comment was off. Cosmetic, fixed in all 3
+  notebooks so the print doesn't look like a bug later.
+- `Franchise='ZP'` is NOT purely "discount items" the way production's own header
+  comment claims — confirmed independently against `Silver_InTrans` directly. It's a
+  broader fee/surcharge bucket: freight (`3750`), service fees (`VEHSERV`), filter fees,
+  battery core charges, warranty deductibles, dyno fees, etc. are mostly *positive*, while
+  only the specifically-named discount codes (`LEGACY`/`*10PROMO`/`ADV`/`4900`) are ~100%
+  negative. Only ~58% of all ZP rows are negative overall — expected given this mix, not
+  a defect. Flagged so no future DAX measure assumes "Franchise='ZP' implies discount."
+
+Verification script: `.claude/queries/adhoc/dp-bronze-verify/verify_batch_c_workorderparts.py`.
+
 **Batch D — Customer Anatomy, 9 dataflows, on its own.** All raw dependencies already
 migrated; complexity is business-logic depth (the real `CustomerVehicleFlag`
 Stock/Unknown customer-assignment logic), not missing infrastructure.
