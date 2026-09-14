@@ -338,7 +338,28 @@ to `dim_VendorCode`, not through `dim_Parts`). 3 real findings, all fixed:
   step and its `DataDestinations` mapping both keep `PartNumber` as a real output column
   (25 columns total, not 24). Preserved here to match the real contract.
 
-Not yet run by Brian as of this doc update.
+**Ran clean after fixing a real `WRITE_ANCIENT_DATETIME` bug** (missed the ancient-
+datetime Spark config that's standing practice elsewhere in this backend - `DateCreated`/
+`DateLastRequested` carry real pre-1900 JD source sentinel dates; fixed by setting
+`datetimeRebaseModeInWrite`/`InRead` to `CORRECTED`).
+
+**Verified (2026-09-14).** 25-column contract matches, 147,831 rows — independently
+recounted `Silver_PartInformation` (`InventoryCost <> 0`) and got an exact match. Found
+and fixed one more real bug during this verification pass:
+- **SOURCE/SLC trim-order bug**: both lookups checked for blank *before* trimming
+  instead of after (unlike `DealerGroupCode`/`CommodityCode`, which already had the
+  correct order). 690 real rows have a raw `SLC` value of pure whitespace (`"   "`,
+  confirmed via hex dump — not `""` or `NULL`), which slipped past the blank check,
+  trimmed down to an actual empty string too late for the `UNKNOWN` fallback, and
+  silently joined to nothing. Fixed by trimming first on both columns, matching
+  production's real step order.
+- Also confirmed the `(PartNumber, BranchKey)` "duplicates" the verification script
+  first flagged are **not a bug**: `Silver_PartInformation`'s true natural key is
+  `(Branch, PartNumber, Franchise)` — the same part can have separate real records at
+  the same branch under different franchise codes. 0 duplicates at the real
+  `(PartNumber, BranchKey, FranchiseKey)` grain.
+
+Verification script: `.claude/queries/adhoc/dp-bronze-verify/verify_batch_c_inventory.py`.
 
 **Batch D — Customer Anatomy, 9 dataflows, on its own.** All raw dependencies already
 migrated; complexity is business-logic depth (the real `CustomerVehicleFlag`
