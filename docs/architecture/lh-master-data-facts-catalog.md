@@ -122,23 +122,31 @@ already built unless noted), and a rough complexity call.
 | `Fact_AdjustmentPairs` | Parts Adjustments | `Fact_PartsAdjustments` (self-referencing) | none directly | Matches negative adjustments to positive ones within 12/24-month windows — real matching logic. `Fact_PartsAdjustments` itself is now re-audited/confirmed correct (Batch A), so this is safe to build against. |
 | `Fact_Parts_Open_Tickets`, `Fact_Parts_Open_Tickets_Details` | Open Parts Tickets (now "Parts on Open Orders") | **Origin found (2026-09-14)** — real `CREATE VIEW` SQL + full migration history live in `projects/open parts tickets - report/` in this repo, a dedicated January 2026 project. See the Batch C write-up below. | `dim_BranchLocation`, `dim_DateTable` | Built — see Batch C results. |
 
-### Flagship — Customer Anatomy (9 dataflows, biggest single undertaking)
+### Flagship — Customer Anatomy (9 dataflows) — BUILT 2026-09-14, Batch D complete
 
 All raw dependencies are already migrated to Silver (`Invoice`, `InTrans`, `wkothsub`,
 `WkInvReg`, `WKROFILE`, `VhStock`, `VhTrans` all confirmed present) — complexity here is business
-logic depth, not missing infrastructure. Real 3-level drill-through architecture:
+logic depth, not missing infrastructure. Real 3-level drill-through architecture, built in
+Fact Tables/Customer Anatomy/ in this dependency order:
 
 | Fact | Level | Source(s) | Notes |
 |---|---|---|---|
-| `CustomerLookup` | Bridge | `dim_CustomerList` | Denormalized 3-key (AccountNumber/CustomerNumber/ContactID) matching bridge — avoids every downstream fact doing 2-3 joins. Build this first, everything else in this group depends on it. |
-| `dim_EngagedAcres` | Support | CSV (SharePoint-sourced file in Lakehouse Files) | Small reference table, unrelated to invoices. |
-| `Fact_CustomerPerformance` | Level 1 | Aggregates Level 2 facts below | Must build AFTER the 3 Level-2 facts it aggregates. |
-| `Fact_Parts_Invoices` | Level 2 | `Invoice` (`ModuleType='I'`) | |
-| `Fact_Service_Invoices` | Level 2 | `Invoice` (`ModuleType='W'`) | Real `CustomerVehicleFlag`-based Stock/Unknown assignment logic (`CustomerKey=-9`/`-1`) — same special-key pattern as `dim_CustomerList`. Already reduced Unknown-Customer revenue from ~$19M to ~$2.3M in production; preserve that logic exactly, don't re-derive. |
-| `Fact_Equipment_Sales` | Level 2 | `VhStock` | |
-| `Fact_Parts_Details` | Level 3 | `InTrans` (pre-filtered "PartsCounter" variant — confirm this filtered raw table's real Silver equivalent before building) | |
-| `Fact_Service_Detail` | Level 3 | `wkothsub` + `WkInvReg` (fallback) | Same `CustomerVehicleFlag` logic as `Fact_Service_Invoices`. |
-| `Fact_Service_Parts_Detail` | Level 3 | `InTrans_Incremental` | |
+| `CustomerLookup` | Bridge | `dim_CustomerList` | Denormalized 3-key (AccountNumber/CustomerNumber/ContactID) matching bridge — avoids every downstream fact doing 2-3 joins. Built first. `Account_Class` dropped — already absent from `dim_CustomerList` (zero downstream usage at an earlier audit); report doesn't exist yet to verify a proven need. |
+| `dim_EngagedAcres` | Support | CSV (SharePoint-sourced, real sample in `projects/customer anatomy - report/`) | **Needs a manual step**: upload `engaged-acres.csv` to `DP_Presentation`'s Files section before this can run. |
+| `Fact_Parts_Invoices` | Level 2 | `Silver_Invoice` (`ModuleType='I'`) | Faithful port — production doesn't dedup this one, and doesn't need to. |
+| `Fact_Service_Invoices` | Level 2 | `Silver_Invoice` (`ModuleType='W'`) + `Silver_WkOthSub` + `Silver_WkRoFile` | **Real bug found and fixed**: production's dedup-by-`InvoiceNumber`+`SUM` step actually merges unrelated customers' revenue — `InvoiceNumber` is reused by the source system over years (same class as `TransId`/`GlTrans.DocRef`/`RONumber`, already documented in `Silver_Invoice`'s own build notebook). Fixed by dropping the dedup entirely; `Branch` (already a kept column) gives the real safe grain for free. `CustomerVehicleFlag` Stock/Unknown logic (the proven $19M→$2.3M fix) preserved exactly. |
+| `Fact_Equipment_Sales` | Level 2 | `Silver_VhStock` | Faithful port — verified `StockNumber` really is unique here (unlike `Invoice`). |
+| `Fact_CustomerPerformance` | Level 1 | Aggregates the 3 Level-2 facts above | **Real finding**: production's dataflow file is ~1,200 lines but only ~330 are real (one `DataDestination` in the whole file) — the rest is 2 never-deployed "Executive Intelligence" experiments with hardcoded years 2025/2024. Skipped entirely, only the real aggregation query ported. |
+| `Fact_Parts_Detail` | Level 3 | `Silver_InTrans` + `Silver_Invoice` | **Real simplification**: production needed a whole separate pre-filtered raw table (3 documented optimization iterations, 20+ min → 2-4 min) purely to work around Power Query. Unneeded on Spark — built directly off Silver tables, same proven shape as `Fact_WorkOrderParts`. |
+| `Fact_Service_Parts_Details` | Level 3 | `Silver_InTrans` + `Silver_Invoice` | Faithful port, same shape as `Fact_WorkOrderParts`. No `CustomerKey` — matches production. |
+| `Fact_Service_Detail` | Level 3 | `Silver_WkOthSub` + `Silver_WkInvReg` (fallback) + `Silver_WkRoFile` | Most complex table — a real, deliberate 2-part union (job-level rows + `WkInvReg` fallback rows for invoices with no job records) preserved exactly. Same `CustomerVehicleFlag` logic and the same reused-`InvoiceNumber` join fixes as `Fact_Service_Invoices`, applied in both halves. |
+
+**Real bug found in a Silver-layer join throughout**: every join from a Customer Anatomy
+table back to `Silver_Invoice`/`Silver_WkOthSub` by `InvoiceNumber` alone was widened to
+also match `Branch` — `InvoiceNumber` is a reused key (see `Fact_Service_Invoices` above),
+and `Branch` was already available on both sides in every case.
+
+Not yet run by Brian as of this doc update.
 
 ## Deferred, blocked, or otherwise not startable yet
 
