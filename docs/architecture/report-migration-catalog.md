@@ -79,24 +79,45 @@ shortcut, or one small missing piece)
 ## Proposed approach
 
 Mirrors the dims/facts precedent that's worked well throughout this project: batch by
-readiness tier, not by workspace or alphabetically, so the earliest work is also the
-lowest-risk and highest-value (Customer Anatomy and Inspections are both in Tier 1).
+readiness, not by workspace or alphabetically. **Confirmed with Brian (2026-09-15)**:
+sequence by real business impact too, not just migration readiness — start with the
+*lowest*-impact reports (cross-referenced against `CLAUDE.md`'s real refresh-priority
+tiers, a different classification than this doc's readiness tiers), prove the manual
+repoint process and `fabric-cicd`/Variable Library deployment both work on low-stakes
+reports, *then* move to the higher-impact ones.
 
-1. **Batch 1 — Tier 1 (9 reports)**: the real pilot this project never got to. Repoint,
-   validate column-by-column against each report's real measures/relationships, fix
-   whatever a real per-report audit turns up (same "verify, don't assume" discipline as
-   every prior batch). `Price Matrix` needs extra scrutiny given the `Fact_Part_Transactions`
-   redesign; `Inspections` needs the `IsPending` business-rule flag carried forward
-   clearly into the report layer, not just the backend notebook comment.
-2. **Batch 2 — Tier 2 (9 reports)**: small, well-understood gaps first (`dim_Date`,
-   the `InMaster` shortcut, the snapshot table), then the raw-table repoints. Each is
-   small enough to fold into the same batch as its report.
-3. **Batch 3 — Tier 3 (4 reports)**: real new Gold-layer work first (`Fact_FirstPassFill`
-   needs its own full audit-and-build; `dim_WkcdPart`/`dim_JobCodes` needs investigation;
-   Combine Vault Sales and Labor Performance both need their already-known blockers
-   resolved) — same rigor as Batches A–D, not a shortcut.
+### Batch 0 — 3 low-impact reports, manual repoint first, deployment tooling proven second
 
-**Not addressed by this catalog, real open questions from the design spec itself**:
-Variable Library parameterization and `fabric-cicd` deployment adoption (Section 5 of
-the design spec) — whether these are needed *before* Batch 1 starts or can be layered in
-once a few reports are proven manually repointed is a real decision, not resolved here.
+| Report | Readiness tier | Refresh-priority tier (`CLAUDE.md`) | Why this one |
+|---|---|---|---|
+| `Bin Location Report` | Tier 2 (1 small gap) | 3 (weekly, lowest impact) | Simplest report in the whole catalog — 4 dims + 1 raw repoint with an existing shortcut |
+| `Physical Inventory` | Tier 2 (1 small gap) | 2 (low impact) | Same shape, same 1 gap |
+| `Unique Parts Customers` | Tier 1 (fully ready) | 2 (low impact) | Zero gaps, but 2 real fact tables — proves the full fact-table repoint pattern before anything higher-stakes |
+
+After these 3 are repointed and validated manually, set up Variable Library +
+`fabric-cicd` and verify the deployment path works using these same 3 already-proven
+reports before touching anything business-critical.
+
+### Batch 1 — remaining Tier 1 reports (Customer Anatomy, Inspections, Price Matrix,
+Negative On Hand, Parts Not Re-Ordered, Parts Adjustments, Planter Inspection Part
+Sales, Stock Check)
+
+The real pilot this project's original design spec called for, now de-risked by Batch
+0. Repoint, validate column-by-column against each report's real measures/
+relationships, fix whatever a real per-report audit turns up (same "verify, don't
+assume" discipline as every prior batch). `Price Matrix` needs extra scrutiny given the
+`Fact_Part_Transactions` redesign; `Inspections` needs the `IsPending` business-rule
+flag carried forward clearly into the report layer, not just the backend notebook
+comment.
+
+### Batch 2 — remaining Tier 2 reports (small gaps + raw-table repoints)
+
+`dim_Date`, the `InMaster` shortcut, the snapshot table, then the raw-table repoints
+(Open Work Orders, 60+ Days Past Due, Pin Capture, Transfers, Part Sales with Low
+Margin). Each gap is small enough to fold into the same pass as its report.
+
+### Batch 3 — Tier 3 (4 reports needing real new Gold-layer work first)
+
+`Fact_FirstPassFill` needs its own full audit-and-build; `dim_WkcdPart`/`dim_JobCodes`
+needs investigation; Combine Vault Sales and Labor Performance both need their
+already-known blockers resolved — same rigor as Batches A–D, not a shortcut.
