@@ -86,17 +86,60 @@ tiers, a different classification than this doc's readiness tiers), prove the ma
 repoint process and `fabric-cicd`/Variable Library deployment both work on low-stakes
 reports, *then* move to the higher-impact ones.
 
-### Batch 0 — 3 low-impact reports, manual repoint first, deployment tooling proven second
+### Batch 0 — 3 low-impact reports, manual repoint first, deployment tooling proven second — **COMPLETE (2026-09-16)**
 
 | Report | Readiness tier | Refresh-priority tier (`CLAUDE.md`) | Why this one |
 |---|---|---|---|
 | `Bin Location Report` | Tier 2 (1 small gap) | 3 (weekly, lowest impact) | Simplest report in the whole catalog — 4 dims + 1 raw repoint with an existing shortcut |
 | `Physical Inventory` | Tier 2 (1 small gap) | 2 (low impact) | Same shape, same 1 gap |
-| `Unique Parts Customers` | Tier 1 (fully ready) | 2 (low impact) | Zero gaps, but 2 real fact tables — proves the full fact-table repoint pattern before anything higher-stakes |
+| `60+ Days Past Due` | Tier 2 (1 small gap) | 1 (daily, but only report in `RP - Financial Reports` — swapped in for `Unique Parts Customers` per Brian's own suggestion, 2026-09-15, since it proves the pattern across a 3rd workspace/data domain (AR, not parts) for near-zero extra risk) | Only report in `RP - Financial Reports` |
 
-After these 3 are repointed and validated manually, set up Variable Library +
-`fabric-cicd` and verify the deployment path works using these same 3 already-proven
-reports before touching anything business-critical.
+All 3 repointed, validated, published to `RP - Dev`, and confirmed live pointed at
+`DP_Presentation`. Real bugs found and fixed along the way (see
+`project_report_migration_batch0.md` in memory for full detail):
+- `dim_Parts` had 3 rows (of 316,365) with a stray control character in `PartNumber`
+  that survived normalization and created an invisible duplicate — root-caused to
+  `F.trim()` only stripping literal spaces, not `\r`/`\t`; fixed in
+  `Build_Gold_Parts.Notebook` with an explicit control-character strip, plus a new
+  guard assertion.
+- `Physical Inventory`'s M query used `DateTime.LocalNow()` for year-boundary counting
+  logic — the same UTC-not-local bug class fixed 8+ times elsewhere in this project.
+- A **new bug class** found on `60+ Days Past Due`: trimming a shared dimension's
+  column list in the TMDL model *without* also restricting the M query itself
+  (`Table.SelectColumns`) does not survive a Desktop refresh — Power Query
+  auto-detects and silently re-adds any column the query can still return. Caught on
+  `dim_CustomerList` (46→3 trim reverted to 43 on refresh, plus spawned an unwanted
+  auto-detected relationship); fixed there and retroactively pinned on
+  `dim_BranchLocation`/`dim_Franchise` across all 3 reports.
+- `dim_DateTable` was completely unused (zero fields, zero relationships) in both
+  `Physical Inventory` and `60+ Days Past Due` — removed entirely rather than migrated,
+  in both cases confirmed with Brian first.
+
+**New workflow established this batch**, now the standard going forward for any report
+touched by this migration: the report's real working copy moves to
+`fabric-workspace-docs/workspaces/RP - Dev/<Report>.pbip` (a `.pbip` Fabric's own Git
+integration never creates, added manually — same pattern already used for Parts Promo/
+Parts Adjustments) once first published there; the `data-projects` copy is archived
+under `report(s)/archive/`, not edited again.
+
+**Real, pre-existing infrastructure gap found and partially fixed while validating
+this batch's promotion path**: `RP - Service Reports` and `RP - Financial Reports`
+were both actually git-connected to the `dev` branch, not `main` as `CLAUDE.md`
+documents — confirmed via the Fabric REST API, not assumed. Brian corrected both to
+`main` directly in the portal (2026-09-16). `RP - Financial Reports` was low-risk —
+`main`/`dev` content was identical there. `RP - Service Reports` surfaced a deeper,
+separate, pre-existing problem: its live production content doesn't match *either*
+git branch (old, unversioned report names live; `main` has newer "V2" versions;
+`dev` additionally has `Customer Anatomy V2`/`Job Code Parts Advisor`/`Stock Check`
+that never reached `main`) — production and git have been drifting independently
+there, unrelated to today's fix, not yet resolved. Brian's own words: "the RP -
+Service workspace needs to be cleaned up any way" — flagged as a real follow-up
+before any deployment automation targets that workspace specifically.
+
+Next: Variable Library + `fabric-cicd` deployment tooling, proven on these same 3
+reports (and the DP backend's own Dev→Prod tier promotion, the other open gap
+surfaced during Batch 0 — see `docs/architecture/data-platform-workspaces.md`'s
+"Prod tier" section) before touching anything business-critical.
 
 ### Batch 1 — remaining Tier 1 reports (Customer Anatomy, Inspections, Price Matrix,
 Negative On Hand, Parts Not Re-Ordered, Parts Adjustments, Planter Inspection Part
