@@ -66,14 +66,6 @@ table dim_Parts
 
 		annotation SummarizationSetBy = Automatic
 
-	column VendorCode
-		dataType: string
-		lineageTag: ec3aec8d-9107-409f-a76b-03ef04d68af3
-		summarizeBy: none
-		sourceColumn: VendorCode
-
-		annotation SummarizationSetBy = Automatic
-
 	column QuantityOnHand
 		dataType: double
 		lineageTag: 4674ccf5-fb56-4de7-9d9a-3e6809cb4395
@@ -198,7 +190,7 @@ table dim_Parts
 		mode: import
 		source =
 				let
-				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-gxnyznhdptpenfw724g3o5sjzm.datawarehouse.fabric.microsoft.com", "LH_Master_Data"),
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-inkp24yoeqfedgiktcbh6mwaq4.datawarehouse.fabric.microsoft.com", "DP_Presentation"),
 				    dbo_dim_Parts = Source{[Schema="dbo",Item="dim_Parts"]}[Data]
 				in
 				    dbo_dim_Parts

@@ -7,6 +7,21 @@
 - **Refresh tier:** Tier 3 — Weekly (Monday)
 - **Status:** Production
 
+## Migrated to the DP backend (2026-09-16)
+
+This report's semantic model now sources from `DP_Presentation` (the new JD Bronze /
+data platform backend), not `LH_Master_Data` — see `docs/architecture/report-migration-catalog.md`
+for the full migration plan. Real bug fixed along the way: `dim_Parts.PartNumber` had 3
+rows (of 316,365) with a stray control character (`\r`/`\t`) that survived normalization
+and created an invisible duplicate — fixed in `Build_Gold_Parts.Notebook`.
+
+**The working copy of this report is no longer here.** It now lives at
+`fabric-workspace-docs/workspaces/RP - Dev/Bin Location Report.pbip` — that's what Fabric's
+Git integration actually reads/writes, so all future edits should open from there, not
+from this repo. The copy under `report/archive/` in this project is retired — kept only
+for history, not for editing. (Same pattern already used for Parts Promo and Parts
+Adjustments.)
+
 ## Semantic Model
 
 ### Primary Table
@@ -35,14 +50,21 @@ EquipRDB (ODBC) / JDIS Source
   └─ jdis_Part_Information (parts inventory + bin assignments, 1M+ parts)
                 │
                 ▼
-  LH_Master_Data (Lakehouse)
-  └─ jdis_Part_Information table
-  └─ dim_Parts, dim_BranchLocation (shared dims)
-  └─ dim_Franchise, dim_DealerGroupCode (dedicated dims)
+  JD_EquipRDB_Production_Bronze (OneLake shortcut) → DP_Staging.Silver_PartInformation
+                │
+                ▼
+  DP_Presentation (Lakehouse) - the new DP backend
+  └─ Silver_PartInformation (shortcut) - queried directly as this report's main table
+  └─ dim_Parts, dim_BranchLocation (shared Gold dims)
+  └─ dim_Franchise, dim_DealerGroupCode (dedicated Gold dims)
                 │
                 ▼
             Bin Location Report
 ```
+
+Still `DP - Presentation - Dev` (Dev tier), not yet promoted to the Prod-tier
+`DP - Presentation - Prod` — see `docs/architecture/report-migration-catalog.md` for the
+open Dev→Prod data promotion gap this report is part of proving out.
 
 ## Known Issues & Gotchas
 

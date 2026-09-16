@@ -69,79 +69,20 @@ table dim_BranchLocation
 
 		annotation SummarizationSetBy = Automatic
 
-	column ServiceCapacity
-		dataType: string
-		lineageTag: 801657f6-bc17-495f-97aa-fb9ba20f7b59
-		summarizeBy: none
-		sourceColumn: ServiceCapacity
-
-		annotation SummarizationSetBy = Automatic
-
-	column MarketPresence
-		dataType: string
-		lineageTag: 8968896b-5c4a-44b1-9779-db1827f370cf
-		summarizeBy: none
-		sourceColumn: MarketPresence
-
-		annotation SummarizationSetBy = Automatic
-
-	column TerritoryCoverage
-		dataType: string
-		lineageTag: 2d7b8399-bb5c-450d-b2b3-9ae906ef9360
-		summarizeBy: none
-		sourceColumn: TerritoryCoverage
-
-		annotation SummarizationSetBy = Automatic
-
-	column OperationalPriority
-		dataType: double
-		lineageTag: e0eeeaee-4594-4e1d-b59f-79d3fa57d29a
-		summarizeBy: none
-		sourceColumn: OperationalPriority
-
-		annotation SummarizationSetBy = Automatic
-
-		annotation PBI_FormatHint = {"isGeneralNumber":true}
-
-	column RegionalClassification
-		dataType: string
-		lineageTag: 7e219346-eb8d-41a0-a7ed-e07b409fd67a
-		summarizeBy: none
-		sourceColumn: RegionalClassification
-
-		annotation SummarizationSetBy = Automatic
-
-	column ServiceHours
-		dataType: string
-		lineageTag: 57abf96b-933a-450c-a23a-f1213087ae0f
-		summarizeBy: none
-		sourceColumn: ServiceHours
-
-		annotation SummarizationSetBy = Automatic
-
-	column DistanceFromHub
-		dataType: string
-		lineageTag: d849ed35-d3a8-4242-839e-c1a8a6f92633
-		summarizeBy: none
-		sourceColumn: DistanceFromHub
-
-		annotation SummarizationSetBy = Automatic
-
 	column DataQualityScore
-		dataType: double
+		dataType: int64
+		formatString: 0
 		lineageTag: d1265e8a-9c03-4e05-b8fd-893dd7fc97ec
 		summarizeBy: none
 		sourceColumn: DataQualityScore
 
 		annotation SummarizationSetBy = Automatic
 
-		annotation PBI_FormatHint = {"isGeneralNumber":true}
-
 	partition dim_BranchLocation = m
 		mode: import
 		source =
 				let
-				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-gxnyznhdptpenfw724g3o5sjzm.datawarehouse.fabric.microsoft.com", "LH_Master_Data"),
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-inkp24yoeqfedgiktcbh6mwaq4.datawarehouse.fabric.microsoft.com", "DP_Presentation"),
 				    dbo_dim_BranchLocation = Source{[Schema="dbo",Item="dim_BranchLocation"]}[Data]
 				in
 				    dbo_dim_BranchLocation
