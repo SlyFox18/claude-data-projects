@@ -66,82 +66,28 @@ table dim_BranchLocation
 
 		annotation SummarizationSetBy = Automatic
 
-	column ServiceCapacity
-		dataType: string
-		lineageTag: f5e86c29-8e1f-4879-a418-8ff404a24b06
-		summarizeBy: none
-		sourceColumn: ServiceCapacity
-
-		annotation SummarizationSetBy = Automatic
-
-	column MarketPresence
-		dataType: string
-		lineageTag: 764a0865-0e9e-49b7-bf65-545d71894022
-		summarizeBy: none
-		sourceColumn: MarketPresence
-
-		annotation SummarizationSetBy = Automatic
-
-	column TerritoryCoverage
-		dataType: string
-		lineageTag: d4eb4853-5faf-4861-a87f-93db1243602f
-		summarizeBy: none
-		sourceColumn: TerritoryCoverage
-
-		annotation SummarizationSetBy = Automatic
-
-	column OperationalPriority
-		dataType: double
-		lineageTag: ab016b62-08d7-4f34-92fe-a17fb0746c70
-		summarizeBy: none
-		sourceColumn: OperationalPriority
-
-		annotation SummarizationSetBy = Automatic
-
-		annotation PBI_FormatHint = {"isGeneralNumber":true}
-
-	column RegionalClassification
-		dataType: string
-		lineageTag: 124e7d8e-0167-4617-ba6f-ddecdbc67359
-		summarizeBy: none
-		sourceColumn: RegionalClassification
-
-		annotation SummarizationSetBy = Automatic
-
-	column ServiceHours
-		dataType: string
-		lineageTag: ec774fb3-8de6-4d85-95bd-623313a9bcd5
-		summarizeBy: none
-		sourceColumn: ServiceHours
-
-		annotation SummarizationSetBy = Automatic
-
-	column DistanceFromHub
-		dataType: string
-		lineageTag: a0c293e7-0ad0-4a1b-977f-c611c4c5e47a
-		summarizeBy: none
-		sourceColumn: DistanceFromHub
-
-		annotation SummarizationSetBy = Automatic
-
 	column DataQualityScore
-		dataType: double
+		dataType: int64
+		formatString: 0
 		lineageTag: d8bca930-68b6-4ff7-9034-0f08644c571b
 		summarizeBy: none
 		sourceColumn: DataQualityScore
 
 		annotation SummarizationSetBy = Automatic
 
-		annotation PBI_FormatHint = {"isGeneralNumber":true}
-
 	partition dim_BranchLocation = m
 		mode: import
 		source =
 				let
-				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-gxnyznhdptpenfw724g3o5sjzm.datawarehouse.fabric.microsoft.com", "LH_Master_Data"),
-				    dbo_dim_BranchLocation = Source{[Schema="dbo",Item="dim_BranchLocation"]}[Data]
+				    // Defensively pinned to today's real 9-column dim_BranchLocation schema
+				    // via Table.SelectColumns - without this, a future column added to the
+				    // Gold table would silently reappear here on the next Desktop refresh
+				    // (same class of issue found and fixed on dim_CustomerList in this report).
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-inkp24yoeqfedgiktcbh6mwaq4.datawarehouse.fabric.microsoft.com", "DP_Presentation"),
+				    dbo_dim_BranchLocation = Source{[Schema="dbo",Item="dim_BranchLocation"]}[Data],
+				    #"Removed Other Columns" = Table.SelectColumns(dbo_dim_BranchLocation, {"BranchKey", "Branch", "BranchType", "BranchID", "BranchName", "LocationID", "State", "City", "DataQualityScore"})
 				in
-				    dbo_dim_BranchLocation
+				    #"Removed Other Columns"
 
 	annotation PBI_NavigationStepName = Navigation
 
