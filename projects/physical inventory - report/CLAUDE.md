@@ -5,7 +5,31 @@
 - **Primary users:** Parts managers, branch managers, inventory coordinators
 - **Workspace:** RP - Parts Reports
 - **Refresh tier:** Tier 2 — Daily
-- **Status:** Production (V2 is current; V1 archive exists; also a non-V2 current version exists)
+- **Status:** Production
+
+## Migrated to the DP backend (2026-09-16)
+
+This report's semantic model now sources from `DP_Presentation` (the new JD Bronze /
+data platform backend), not `LH_Master_Data` — see `docs/architecture/report-migration-catalog.md`.
+`jdis_Part_Information` → `Silver_PartInformation` (same columns, no logic changes).
+Also fixed a real bug found along the way: the M query computed "current year" via
+`DateTime.LocalNow()`, which returns UTC in the Fabric service, not local time - could
+misclassify "Is Part Counted" for several hours around New Year's. Replaced with the
+project's standard DST-aware Central Time conversion.
+
+**`dim_DateTable` was removed from this model entirely** — confirmed zero field usage
+and zero relationships before deleting it (count-progress logic uses `TODAY()`/`YEAR()`
+in DAX, not a date-table filter). Not repointed, just dropped as dead weight.
+
+**The working copy of this report is no longer here.** It now lives at
+`fabric-workspace-docs/workspaces/RP - Dev/Physical Inventory.pbip` — that's what
+Fabric's Git integration actually reads/writes, so all future edits should open from
+there, not from this repo. The copy under `reports/archive/` in this project is
+retired — kept only for history, not for editing.
+
+**Also resolved this session:** the "two current versions" confusion below. Brian
+confirmed `Physical Inventory.pbip` (not `Physical Inventory - V2.pbip`) was the real,
+current report — V2 was an old unused variant, now moved to `reports/archive/`.
 
 ## Semantic Model
 
@@ -19,8 +43,11 @@
 | Table | Source | Key Relationship |
 |-------|--------|-----------------|
 | `dim_BranchLocation` | Shared Lakehouse dimension | `Physical Inventory.Branch` → `BranchID` |
-| `dim_DateTable` | Shared Lakehouse dimension | No direct relationship (count tracking uses `TODAY()` not a date filter) |
 | `Data Refresh` | Calculated table | Refresh timestamp display |
+
+`dim_DateTable` was removed 2026-09-16 — it had zero relationships and zero real field
+usage in this report (count tracking uses `TODAY()`/`YEAR()` in DAX, not a date-table
+filter), so it was dropped rather than migrated.
 
 ### Calculated Columns on `Physical Inventory`
 | Column | Logic |
@@ -48,26 +75,28 @@
 
 ## Data Flow
 ```
-EquipRDB (ODBC)
-  └─ Physical inventory / bin location data (all branches)
+EquipRDB (ODBC) / JDIS Source
+  └─ jdis_Part_Information (parts inventory + bin assignments, includes StocktakeDate)
                 │
                 ▼
-  LH_Master_Data (Lakehouse)
-  └─ Physical Inventory (includes StocktakeDate from count records)
-  └─ Weeks (helper table — 52-week schedule)
-  └─ dim_BranchLocation (shared)
+  JD_EquipRDB_Production_Bronze (OneLake shortcut) → DP_Staging.Silver_PartInformation
                 │
                 ▼
-            Physical Inventory Report (V2)
+  DP_Presentation (Lakehouse) - the new DP backend
+  └─ Silver_PartInformation (shortcut) - queried directly, same bin filtering + counting
+     logic applied in Power Query as before
+  └─ dim_BranchLocation (shared Gold dim)
+  └─ Weeks (local calculated table, unchanged)
+                │
+                ▼
+            Physical Inventory Report
 ```
 
-## Known Issues & Gotchas
+Still `DP - Presentation - Dev` (Dev tier), not yet promoted to the Prod-tier
+`DP - Presentation - Prod` — see `docs/architecture/report-migration-catalog.md` for the
+open Dev→Prod data promotion gap this report is part of proving out.
 
-### Two "Current" Versions
-There are two semantic models in `reports/current/`:
-- `Physical Inventory - V2.SemanticModel` — the active current version
-- `Physical Inventory.SemanticModel` — appears to be another current copy (same tables/structure)
-Only the `Physical Inventory - V2.SemanticModel` is documented here. Verify which one is deployed in production.
+## Known Issues & Gotchas
 
 ### Page Name Typo
 The main page `displayName` is **"Pysical Inventory"** (missing the "h"). This is the internal page name only — the report tab visible to users may display differently. Do not "fix" this in the JSON without confirming it won't break bookmarks.
