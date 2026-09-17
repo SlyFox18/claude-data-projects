@@ -38,7 +38,7 @@
 
 - Dev-tier and Prod-tier `DP_Presentation` SQL Analytics Endpoints (already confirmed this session, used in every report's `Sql.Database(...)` M query):
   - Dev: `xcrafcusadsu3d3wi4anbgp6we-inkp24yoeqfedgiktcbh6mwaq4.datawarehouse.fabric.microsoft.com`
-  - Prod: **not yet looked up** — Task 1 includes finding this before it's needed in Task 6.
+  - Prod: `xcrafcusadsu3d3wi4anbgp6we-fucdm6frvvdernynxvbjqacuyu.datawarehouse.fabric.microsoft.com` (looked up 2026-09-17, Task 1)
 
 ---
 
@@ -279,7 +279,7 @@ find_replace:
   - find_value: "xcrafcusadsu3d3wi4anbgp6we-inkp24yoeqfedgiktcbh6mwaq4.datawarehouse.fabric.microsoft.com"
     replace_value:
       dev: "xcrafcusadsu3d3wi4anbgp6we-inkp24yoeqfedgiktcbh6mwaq4.datawarehouse.fabric.microsoft.com"
-      prod: "<PROD_SQL_ENDPOINT_FROM_TASK_1>"
+      prod: "xcrafcusadsu3d3wi4anbgp6we-fucdm6frvvdernynxvbjqacuyu.datawarehouse.fabric.microsoft.com"
     item_type: ["Report", "SemanticModel"]
 
   - find_value: '"DP_Presentation"\)'
@@ -289,9 +289,9 @@ find_replace:
     item_type: ["Report", "SemanticModel"]
 ```
 
-Replace `<PROD_SQL_ENDPOINT_FROM_TASK_1>` with the real value found in Task 1 before
-committing this file — this is the one placeholder in this plan, and it's a
-placeholder for a fact this plan itself instructs you to go look up first, not an
+The Prod-tier endpoint above (`...fucdm6frvvdernynxvbjqacuyu...`) was looked up as
+part of Task 1 (2026-09-17) and is already the real value — nothing left to fill in
+here. It's included in this plan as a resolved fact rather than a placeholder, not an
 unresolved design question.
 
 (The database name itself, `"DP_Presentation"`, is identical between Dev and Prod
