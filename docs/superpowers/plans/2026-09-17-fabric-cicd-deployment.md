@@ -166,6 +166,16 @@ workspace folder.
 
 - [ ] **Step 1: Write `lib.py`**
 
+**Real correction made during execution (2026-09-17, via Task 11's actual dry run
+against live Fabric workspaces):** `stage_items()` must also copy `parameter.yml`
+into the staging directory. `fabric-cicd` looks for `parameter.yml` directly inside
+`repository_directory`, not the original repo root — without this, every
+`find_replace` rule silently never applies (`fabric-cicd` logs "Parameter file not
+found" and continues anyway rather than failing loudly), which would have meant a
+Prod deploy silently kept pointing notebooks at Dev-tier lakehouse IDs. The version
+below is the corrected one — write this, not a version that skips the parameter.yml
+copy.
+
 ```python
 """Shared helpers for the fabric-cicd deployment scripts."""
 import os
@@ -186,12 +196,17 @@ def get_credential() -> ClientSecretCredential:
     )
 
 
-def stage_items(source_workspace_dir: Path, item_folder_names: list[str]) -> Path:
+def stage_items(
+    repo_root: Path, source_workspace_dir: Path, item_folder_names: list[str]
+) -> Path:
     """Copy only the named Fabric item folders (e.g. 'Build_Gold_Parts.Notebook')
     from a real workspace folder into a fresh temp directory, and return that temp
     directory's path. fabric-cicd deploys everything it finds under
     repository_directory, so this is how we scope a deploy to a specific allowlist
     instead of the whole workspace folder.
+
+    Also copies parameter.yml from the repo root into the stage directory - see the
+    note above this code block for why this is required, not optional.
     """
     stage_dir = Path(tempfile.mkdtemp(prefix="fabric_cicd_stage_"))
     for item_name in item_folder_names:
@@ -201,6 +216,12 @@ def stage_items(source_workspace_dir: Path, item_folder_names: list[str]) -> Pat
                 f"Expected item folder not found: {source_item_dir}"
             )
         shutil.copytree(source_item_dir, stage_dir / item_name)
+
+    parameter_file = repo_root / "parameter.yml"
+    if not parameter_file.is_file():
+        raise FileNotFoundError(f"parameter.yml not found at repo root: {parameter_file}")
+    shutil.copy2(parameter_file, stage_dir / "parameter.yml")
+
     return stage_dir
 
 
@@ -251,37 +272,59 @@ Expected: `lib.py imports OK`, no import errors.
   `fabric-cicd` looks for it there by convention relative to `repository_directory`'s
   parent, so keep it alongside the `workspaces/` folder)
 
-Two kinds of environment-specific values need swapping at deploy time: each Gold
-notebook's `default_lakehouse` METADATA binding (regex, using `fabric-cicd`'s dynamic
-`$items.Lakehouse.<Name>.$id` variable so the real ID is resolved per target
-workspace rather than hardcoded), and each report's `Sql.Database(...)` connection
-string (literal replacement, since a SQL connection string isn't part of Fabric's own
-item-reference graph).
+Two kinds of environment-specific values need swapping at deploy time: each backend
+notebook's `default_lakehouse` METADATA binding, and each report's
+`Sql.Database(...)` connection string.
+
+**Real correction made during execution (2026-09-17, via Task 11's actual dry run):**
+the original version of this task used `fabric-cicd`'s dynamic
+`$items.Lakehouse.<Name>.$id` variable for the notebook rebinding, on the theory that
+it would resolve the real per-environment lakehouse ID automatically. Confirmed live
+this does NOT work with our staging approach: that variable requires the named
+Lakehouse item to be part of the *same* staged deployment batch (fabric-cicd resolves
+it as "an item deployed in this run"), but `deploy_backend.py` deliberately stages
+only notebooks, never the Lakehouse itself — real error hit:
+`Item 'DP_Presentation' not found as a deployed Lakehouse`. Separately, a single
+generic regex matching every notebook's `default_lakehouse` would have been wrong on
+its own even if it had worked: Silver notebooks need `DP_Staging`'s lakehouse, Gold
+notebooks need `DP_Presentation`'s — a pattern-based match can't tell them apart, only
+per-source-value literal rules can. The version below (literal GUID find/replace,
+matching `fabric-cicd`'s own documented real-world example pattern) is the corrected,
+actually-working one — write this, not a regex/dynamic-variable version.
 
 - [ ] **Step 1: Write the file**
 
 ```yaml
 find_replace:
-  # Notebook default_lakehouse rebinding - matches the real METADATA block format
-  # confirmed in every Build_Gold_*.Notebook / Build_Silver_*.Notebook this session,
-  # e.g.:
-  #   # META     "default_lakehouse": "966efc8a-16f9-423b-aa43-e368fcd8fb91",
-  - find_value: '#\s*META\s+"default_lakehouse":\s*"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})"'
+  # Notebook default_lakehouse rebinding - literal GUID swaps. See the note above
+  # this code block for why a regex or the $items dynamic variable doesn't work here.
+
+  # Build_Silver_InTrans.Notebook -> DP_Staging lakehouse (Dev tier source value)
+  - find_value: "876255e0-d462-4697-adc1-4a655f5bb101"
     replace_value:
-      dev: "$items.Lakehouse.DP_Presentation.$id"
-      prod: "$items.Lakehouse.DP_Presentation.$id"
-    is_regex: "true"
+      dev: "876255e0-d462-4697-adc1-4a655f5bb101"
+      prod: "6713bd45-a4ad-47e6-8bff-1bb0415e9784"
+    item_type: "Notebook"
+  - find_value: "ab15d64d-c7ba-415d-9bcf-7feb1ef9b201"
+    replace_value:
+      dev: "ab15d64d-c7ba-415d-9bcf-7feb1ef9b201"
+      prod: "189e5c0a-548a-4feb-93d6-dda9ebbe96c1"
     item_type: "Notebook"
 
-  - find_value: '#\s*META\s+"default_lakehouse_workspace_id":\s*"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})"'
+  # Build_Gold_*.Notebook (4 of them) -> DP_Presentation lakehouse (Dev tier source value)
+  - find_value: "966efc8a-16f9-423b-aa43-e368fcd8fb91"
     replace_value:
-      dev: "$workspace.$id"
-      prod: "$workspace.$id"
-    is_regex: "true"
+      dev: "966efc8a-16f9-423b-aa43-e368fcd8fb91"
+      prod: "29d9df80-a383-4d40-9807-1e2e6cbff88f"
+    item_type: "Notebook"
+  - find_value: "73fd5443-240e-410a-990a-98827f32c087"
+    replace_value:
+      dev: "73fd5443-240e-410a-990a-98827f32c087"
+      prod: "7836042d-adb1-4846-b70d-bd42980054c5"
     item_type: "Notebook"
 
   # Report connection string - literal host + database swap, not part of Fabric's
-  # own item graph so the $items dynamic variable doesn't apply here.
+  # own item graph so the $items dynamic variable doesn't apply here either.
   - find_value: "xcrafcusadsu3d3wi4anbgp6we-inkp24yoeqfedgiktcbh6mwaq4.datawarehouse.fabric.microsoft.com"
     replace_value:
       dev: "xcrafcusadsu3d3wi4anbgp6we-inkp24yoeqfedgiktcbh6mwaq4.datawarehouse.fabric.microsoft.com"
@@ -295,10 +338,9 @@ find_replace:
     item_type: ["Report", "SemanticModel"]
 ```
 
-The Prod-tier endpoint above (`...fucdm6frvvdernynxvbjqacuyu...`) was looked up as
-part of Task 1 (2026-09-17) and is already the real value — nothing left to fill in
-here. It's included in this plan as a resolved fact rather than a placeholder, not an
-unresolved design question.
+Verified via a real local deploy run (Task 11): `deploy_backend.py --environment dev`
+succeeded end-to-end against live `DP - Staging - Dev`/`DP - Presentation - Dev` with
+this parameter.yml in place, no lakehouse-resolution errors.
 
 (The database name itself, `"DP_Presentation"`, is identical between Dev and Prod
 tiers — only the server hostname differs — so that last rule is a same-to-same
@@ -323,7 +365,8 @@ Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 
 Stages exactly the notebooks in scope (Silver first, then the 4 Gold dims — order
 matters because Gold depends on Silver's OneLake shortcut), then deploys them to the
-target tier.
+target tier. Note `stage_items()` now takes `REPO_ROOT` as its first argument (Task 5's
+correction) so it can also copy `parameter.yml` into the staging directory.
 
 - [ ] **Step 1: Write the script**
 
@@ -366,7 +409,9 @@ WORKSPACE_FOLDERS = {
 def main(environment: str) -> None:
     ids = WORKSPACE_IDS[environment]
 
-    staging_stage = stage_items(WORKSPACE_FOLDERS["staging"], STAGING_NOTEBOOKS)
+    staging_stage = stage_items(
+        REPO_ROOT, WORKSPACE_FOLDERS["staging"], STAGING_NOTEBOOKS
+    )
     deploy(
         workspace_id=ids["staging"],
         repository_directory=staging_stage,
@@ -376,7 +421,7 @@ def main(environment: str) -> None:
     print(f"Deployed Silver notebook to {environment} staging workspace.")
 
     presentation_stage = stage_items(
-        WORKSPACE_FOLDERS["presentation"], PRESENTATION_NOTEBOOKS
+        REPO_ROOT, WORKSPACE_FOLDERS["presentation"], PRESENTATION_NOTEBOOKS
     )
     deploy(
         workspace_id=ids["presentation"],
@@ -564,7 +609,8 @@ Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 
 Stages each report individually (never the whole `RP - Dev` folder as one unit, since
 the 2 production targets differ per report) and deploys `SemanticModel` before
-`Report` — required order, not a style choice (Section: "Real API facts" above).
+`Report` — required order, not a style choice (Section: "Real API facts" above). Note
+`stage_items()` takes `REPO_ROOT` as its first argument (Task 5's correction).
 
 - [ ] **Step 1: Write the script**
 
@@ -599,6 +645,7 @@ WORKSPACE_IDS = {
 
 def deploy_one_report(report_name: str, workspace_id: str, environment: str) -> None:
     stage_dir = stage_items(
+        REPO_ROOT,
         RP_DEV_DIR,
         [f"{report_name}.SemanticModel", f"{report_name}.Report"],
     )
@@ -759,6 +806,15 @@ python deploy/deploy_reports.py --environment dev
 Expected: both scripts print their "Deployed ... to dev" success messages, no
 exceptions. Then open `RP - Sandbox` in the Fabric portal and confirm all 3 reports
 are present and openable.
+
+**Steps 1-2 completed and verified 2026-09-17:** ran both scripts for real against
+live Fabric workspaces. First attempt surfaced the two real bugs described in Tasks 5
+and 6's correction notes (missing `parameter.yml` in the staging directory, and the
+`$items.Lakehouse` dynamic variable not working with our staging approach) - both
+fixed, then a clean re-run succeeded: all 5 backend notebooks deployed to
+`DP - Staging - Dev`/`DP - Presentation - Dev`, and all 3 reports deployed (correct
+SemanticModel-then-Report order) to `RP - Sandbox`, confirmed present via
+`fab ls "RP - Sandbox.Workspace"`.
 
 - [ ] **Step 3: Push to `dev` and confirm the workflow does the same thing**
 
