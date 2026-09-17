@@ -243,7 +243,7 @@ model (14-day rolling window), for the notebooks already run this session:
 **Finding:** several of the lightest notebooks converge on almost exactly ~4.0 CU
 regardless of actual data volume — this is Spark session startup overhead, not
 workload. Heavier notebooks (PartInformation, InSalOrd, Parts, CustomerList) run
-higher. A fully-unbatched parallel run of all 7 daily-tier Silver notebooks would
+higher. A fully-unbatched parallel run of the 6 daily-tier Silver notebooks would
 peak in the mid-30s CU — well above F8's 8 CU nominal sustained rate, repeating the
 exact "too many concurrent jobs spikes CU" failure mode `REFRESH-PIPELINE.md`
 documents from the old Dataflow Gen2 pipeline (4-7x slowdowns from over-parallelizing
@@ -255,6 +255,55 @@ budget, so this is about smoothing bursts, not conserving scarce daily capacity.
 Gold, and semantic model refresh), matching `Pipeline_SemanticModels_V2`'s own
 `batchCount: 4` in spirit. Adjust up or down once real scheduled runs are observed —
 same judgment-based approach already used elsewhere in this project (no fixed rule).
+
+### High Concurrency Mode (real, additional CU reduction, confirmed 2026-09-17)
+
+The ~4 CU floor several notebooks show (Section 5, above) is Spark session startup
+overhead, not workload — and Fabric has a real, GA (since April 2025) feature
+specifically for this: **High Concurrency mode for pipelines**
+(`learn.microsoft.com/fabric/data-engineering/high-concurrency-overview`). Multiple
+notebook activities in a pipeline can share one Spark session instead of each
+starting its own, as long as they run as the same user, share the same default
+lakehouse, and use the same Spark compute configuration — which every notebook within
+a given tier already satisfies (all Silver notebooks default to `DP_Staging`; all
+Gold notebooks default to `DP_Presentation`). Billing is per shared session, not per
+notebook: *"only the initiating notebook or pipeline activity that starts the shared
+Spark application is billed... shared notebooks aren't billed individually."* This
+directly targets the fixed ~4 CU floor found in Section 5 — paid once per tier
+instead of once per notebook.
+
+**Mechanism:**
+1. Enable **Workspace settings → Data Engineering/Science → Spark settings → High
+   concurrency → "For pipeline running multiple notebooks"** in both
+   `DP - Staging - Dev` and `DP - Presentation - Dev` (and, later, the Prod-tier
+   workspaces — a manual portal step per workspace, not something `fabric-cicd`
+   deploys).
+2. Give each pipeline's Notebook activities a **session tag** (Advanced settings) —
+   e.g. `dp-silver-daily`, `dp-gold-daily`, `dp-silver-monthly`, `dp-gold-monthly` —
+   so each tier's notebooks pack into their own shared session, distinct from other
+   tiers (aids monitoring/log separation, per the docs' "Related notebook" tab).
+3. Default session sharing limit is 5 notebooks. The daily Silver tier has 6
+   (one over) — **decision: create a Fabric Environment item** (new item type, not
+   yet used anywhere in this project), attach it to the Silver and Gold notebooks in
+   each workspace, and set `spark.highConcurrency.max = 20` on it (generous headroom
+   for future report migrations adding more notebooks to these same tiers, matching
+   the "build for the ~20 more reports coming" reasoning already applied elsewhere in
+   this design), rather than relying on Fabric's automatic 5+1 session split.
+
+**Real implementation unknown, to verify during the plan (not assumed):** whether
+`fabric-cicd` supports `"Environment"` as a deployable `item_type_in_scope` value
+(Environment items are confirmed Git-integration- and deployment-pipeline-supported
+by Fabric generally, per Microsoft Docs, but the exact `fabric-cicd` support needs a
+real dry run, same discipline as every other item type introduced this session). If
+unsupported, the Environment item may need to be created directly per-tier via the
+portal rather than through the CI/CD deploy — a fallback, not a blocker.
+
+**Net effect on the CU numbers above:** the mid-30s CU worst-case peak in this
+section was calculated assuming each concurrent notebook pays its own ~4-10 CU
+in full. With session sharing, only the first notebook in each tier's shared session
+pays the ~4 CU floor; the rest pay only their real (smaller) variable workload cost.
+This means `batchCount: 3` has more headroom than the numbers above suggest — a good
+thing, not a reason to revisit the decision now.
 
 ## 6. Prod Promotion Cutover (Checklist Addition, Not Built Now)
 
