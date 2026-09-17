@@ -4,7 +4,7 @@
 
 **Goal:** Build a GitHub Actions + `fabric-cicd` pipeline that promotes the DP backend (Dev tier → Prod tier, notebooks run and independently verified) and the 3 Batch 0 reports (`RP - Dev` → `RP - Sandbox` → real production) through git, with a manual approval gate and a proven recurring refresh schedule required before anything reaches production.
 
-**Architecture:** One GitHub Actions workflow in `fabric-workspace-docs`, triggered on push to `dev` (auto-deploys to Dev-tier backend + `RP - Sandbox`, no gate) and on push to `main` (deploys through a `production` GitHub Environment requiring manual approval, then to Prod-tier backend + real production report workspaces). A small set of Python scripts do the actual deployment work using `fabric-cicd` as a library; the workflow YAML is orchestration only.
+**Architecture:** One GitHub Actions workflow in `fabric-workspace-docs`, triggered on push to `dev` (auto-deploys to Dev-tier backend + `RP - Sandbox`, no gate) and manually via `workflow_dispatch` gated to `main` (deploys to Prod-tier backend + real production report workspaces — a deliberate "Run workflow" click is the approval gate, since GitHub's Required Reviewers protection rule isn't available on this repo's plan for a private repo). A small set of Python scripts do the actual deployment work using `fabric-cicd` as a library; the workflow YAML is orchestration only.
 
 **Tech Stack:** Python 3.12, `fabric-cicd` (pip), `azure-identity` (`ClientSecretCredential`), `requests` (Fabric Jobs REST API), `duckdb` (independent verification), GitHub Actions.
 
@@ -110,21 +110,27 @@ secret **Value** from Step 1. Task 4 needs these as GitHub secrets.
 
 **Files:** none — GitHub repo settings, on `fabric-workspace-docs`.
 
+**Real correction made during execution (2026-09-17):** the original version of this
+task called for a Required Reviewers gate. Confirmed live in the GitHub portal:
+Required Reviewers is a Team/Enterprise-only protection rule for private
+repositories — this repo's `production` environment settings page only shows
+"Deployment branches and tags" and secrets/variables, no "Deployment protection
+rules" section at all. The steps below reflect what was actually done instead:
+`.github/workflows/deploy.yml` (Task 10) uses `workflow_dispatch` as the production
+trigger, gated to `refs/heads/main` — a deliberate manual "Run workflow" click is the
+approval gate, not an automatic run pausing for review.
+
 - [ ] **Step 1: Create the environment**
 
 `fabric-workspace-docs` repo on GitHub → Settings → Environments → New environment →
-name it exactly `production`.
+name it exactly `production`. (Still worth creating even without Required Reviewers —
+it's what scopes the 3 secrets to production-only jobs, via `environment: production`
+in the workflow.)
 
-- [ ] **Step 2: Require a reviewer**
+- [ ] **Step 2: Confirm no deployment branch restriction blocks `main`**
 
-On the `production` environment's settings page → Required reviewers → add yourself
-(Brian). This is the actual mechanism that pauses the workflow and waits for a manual
-approval click before any job using `environment: production` can run.
-
-- [ ] **Step 3: Confirm no deployment branch restriction blocks `main`**
-
-Same page → Deployment branches → should default to "All branches" or explicitly
-allow `main`. If it's set to something else, add `main`.
+Same page → Deployment branches and tags → should default to "No restriction" or
+explicitly allow `main`. If it's set to something else, add `main`.
 
 ---
 
@@ -641,16 +647,22 @@ Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 
 - [ ] **Step 1: Write the workflow**
 
+**Real correction made during execution (2026-09-17):** the version below uses
+`workflow_dispatch` for the production job, not an automatic trigger on push to
+`main` as originally planned — see Task 3's note for why (Required Reviewers isn't
+available on this repo's GitHub plan). This is the actual, correct version to write.
+
 ```yaml
 name: Deploy DP backend and Batch 0 reports
 
 on:
   push:
-    branches: [dev, main]
+    branches: [dev]
+  workflow_dispatch: {}
 
 jobs:
   deploy-dev:
-    if: github.ref == 'refs/heads/dev'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -671,8 +683,13 @@ jobs:
           FABRIC_CICD_CLIENT_SECRET: ${{ secrets.FABRIC_CICD_CLIENT_SECRET }}
         run: python deploy/deploy_reports.py --environment dev
 
+  # Manual trigger only, not auto-deployed on push to main - GitHub's Required
+  # Reviewers protection rule isn't available on this repo's plan for a private
+  # repo, so a deliberate "Run workflow" click (only possible when main is
+  # selected as the branch to run from) is the approval gate instead. The
+  # github.ref check guards against an accidental dispatch from any other branch.
   deploy-prod:
-    if: github.ref == 'refs/heads/main'
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment: production
     steps:
@@ -817,16 +834,19 @@ watching happen once before it matters for real.
 
 - [ ] **Step 1: Introduce a deliberate failure**
 
-Temporarily edit `RUN_ORDER` in `run_and_verify_notebooks.py` to point the first
+Create a throwaway branch off `main` (not `main` itself). On it, make two temporary
+changes: (a) edit `RUN_ORDER` in `run_and_verify_notebooks.py` to point the first
 entry at a notebook ID that doesn't exist (e.g. change the last character of the
-Silver notebook's GUID). Commit this to a throwaway branch off `main` (not `main`
-itself) and push.
+Silver notebook's GUID), and (b) since `deploy-prod` is gated to
+`github.ref == 'refs/heads/main'` (Task 10), temporarily loosen that check in
+`.github/workflows/deploy.yml` to also match this throwaway branch, so a manual
+dispatch against it will actually run. Push the branch.
 
 - [ ] **Step 2: Trigger and observe**
 
-Manually run the `deploy-prod` job against that branch (or temporarily adjust the
-workflow's `on.push.branches` to include it, then revert). Approve the production
-gate. Confirm: `deploy_backend.py` succeeds (it doesn't call the broken notebook ID),
+GitHub Actions tab → "Deploy DP backend and Batch 0 reports" → **Run workflow** →
+select the throwaway branch from the dropdown → **Run workflow**. Confirm:
+`deploy_backend.py` succeeds (it doesn't call the broken notebook ID),
 `run_and_verify_notebooks.py` fails clearly (the API call 404s or the run fails), and
 the `deploy_reports.py` step never runs — GitHub Actions should show it skipped
 because an earlier step in the same job failed.
@@ -838,11 +858,13 @@ should have changed there, since the report-deploy step never ran.
 
 - [ ] **Step 4: Revert the deliberate breakage**
 
-Discard the throwaway branch; `run_and_verify_notebooks.py` on `main` never had the
-bad GUID in the first place (Task 8's placeholders are still unfilled at this point,
-same as intended — this task validates failure behavior using a manufactured
-failure, not the real not-yet-filled-in placeholder, so it doesn't consume Task 15's
-actual first attempt).
+Discard the throwaway branch — this removes both the deliberate failure and the
+temporary ref-check loosening together, so `main` and its real `deploy-prod` gate are
+never actually touched. `run_and_verify_notebooks.py` on `main` never had the bad GUID
+in the first place (Task 8's placeholders are still unfilled at this point, same as
+intended — this task validates failure behavior using a manufactured failure, not the
+real not-yet-filled-in placeholder, so it doesn't consume Task 15's actual first
+attempt).
 
 ---
 
@@ -855,10 +877,12 @@ the first time against real production.
 
 Open a PR from `dev` to `main` in `fabric-workspace-docs`, review the diff, merge it.
 
-- [ ] **Step 2: Approve the production deployment**
+- [ ] **Step 2: Manually trigger the production deployment**
 
-GitHub Actions tab → the `deploy-prod` job will be waiting at the `production`
-environment gate → click Review deployments → Approve.
+GitHub Actions tab → "Deploy DP backend and Batch 0 reports" → **Run workflow** →
+select **main** from the branch dropdown → **Run workflow**. This manual dispatch,
+gated to `main` (Task 10), is the approval step — there's no separate review/approve
+click since Required Reviewers isn't available on this repo's plan (Task 3).
 
 - [ ] **Step 3: Watch it run, get the real notebook IDs, re-run if needed**
 
@@ -873,8 +897,8 @@ fab get "DP - Presentation - Prod.Workspace/Build_Gold_DealerGroupCode.Notebook"
 fab get "DP - Presentation - Prod.Workspace/Build_Gold_Franchise.Notebook" -q "id"
 fab get "DP - Presentation - Prod.Workspace/Build_Gold_BranchLocation.Notebook" -q "id"
 ```
-Fill the 5 real GUIDs into `RUN_ORDER` in `deploy/run_and_verify_notebooks.py`,
-commit, and re-run the workflow (re-approve when it reaches the gate again).
+Fill the 5 real GUIDs into `RUN_ORDER` in `deploy/run_and_verify_notebooks.py`, commit
+and merge to `main`, then manually trigger the workflow again (Run workflow → `main`).
 
 - [ ] **Step 4: Promote the recurring pipeline to Prod tier**
 
