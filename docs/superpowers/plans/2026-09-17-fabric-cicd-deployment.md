@@ -451,6 +451,130 @@ Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 
 ---
 
+**Major scoping correction found during implementation (2026-09-17, after Task 12 and
+Brian's first live pipeline run):** the `STAGING_NOTEBOOKS`/`PRESENTATION_NOTEBOOKS`
+lists above (`Silver_InTrans` + 4 Gold dims) were carried over from the unrelated
+Parts Promo pilot's scope rather than derived from what the 3 Batch 0 reports actually
+need. Brian's own observation after his first pipeline run — "It also seems like
+there should be more data that needs to be refreshed and not just these" — prompted a
+real ground-truth trace of every report's `.tmdl` `Item=` references plus every Gold
+notebook's own `spark.read.table()` calls. Findings: `Silver_InTrans` is used by
+**none** of the 3 reports (dead weight in scope); missing entirely from both this
+script and the recurring pipeline were `Silver_BranchName`, `Silver_ArMaster`,
+`Silver_ArMasterCustomer`, `Silver_Contact`, `Silver_InSalOrd`, `Silver_InSalPar`,
+`Silver_PartInformation`, `Build_Gold_CustomerList`, and `Build_Gold_InSalOrdInSalPar`.
+In practice, Physical Inventory/Bin Location's part data and all of 60+ Days Past
+Due's data were never actually being deployed or refreshed by anything built so far.
+
+The corrected scope is 7 Silver notebooks + 6 Gold notebooks (13 total). `lib.py`'s
+`stage_items()` was also refactored from `(repo_root, source_workspace_dir,
+item_folder_names)` to `(repo_root, item_paths: list[Path])`, since the corrected
+Gold list no longer shares one common parent folder (some notebooks live in
+`Dimensions/`, one in `Fact Tables/60 Days Past Due/`, and 4 were separately moved to
+the workspace root by Fabric's own portal — see the Task 12 correction below). The
+real, current `deploy_backend.py` (committed `f25e5056` on `dev`) is:
+
+```python
+"""Deploy the DP backend notebooks in scope to a target tier (dev or prod)."""
+import argparse
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent))
+from lib import deploy, stage_items
+
+REPO_ROOT = Path(__file__).parent.parent
+STAGING_DIR = REPO_ROOT / "workspaces" / "DP - Staging - Dev" / "Data Notebooks"
+PRESENTATION_DIR = REPO_ROOT / "workspaces" / "DP - Presentation - Dev"
+
+# Full real dependency graph for the 3 Batch 0 reports (Bin Location Report,
+# Physical Inventory, 60+ Days Past Due), traced directly from each report's real
+# Item= source references and each Gold notebook's own spark.read.table() calls
+# (2026-09-17) - not assumed. Silver_InTrans was in an earlier version of this list
+# by mistake (carried over from the unrelated Parts Promo pilot's scope) and has
+# been removed - none of these 3 reports use it.
+#
+# Silver layer: each reads its own independent Bronze shortcut, no interdependencies.
+STAGING_NOTEBOOKS = [
+    STAGING_DIR / "Build_Silver_PartInformation.Notebook",   # Bin Location, Physical Inventory (direct) + 3 Gold dims below
+    STAGING_DIR / "Build_Silver_BranchName.Notebook",        # Build_Gold_BranchLocation (used by all 3 reports)
+    STAGING_DIR / "Build_Silver_ArMaster.Notebook",          # 60+ Days Past Due (direct) + Build_Gold_CustomerList
+    STAGING_DIR / "Build_Silver_ArMasterCustomer.Notebook",  # 60+ Days Past Due (direct) + Build_Gold_CustomerList
+    STAGING_DIR / "Build_Silver_Contact.Notebook",           # Build_Gold_CustomerList
+    STAGING_DIR / "Build_Silver_InSalOrd.Notebook",          # Build_Gold_InSalOrdInSalPar
+    STAGING_DIR / "Build_Silver_InSalPar.Notebook",          # Build_Gold_InSalOrdInSalPar
+]
+
+# Gold layer: each needs its Silver dependency built first. Real folder locations
+# vary (some at workspace root, some in Dimensions/, some in Fact Tables/<report>/)
+# - confirmed 2026-09-17 after Fabric's own portal moved 4 of these out of
+# Dimensions/ into the workspace root while Brian was building the Data Pipeline.
+PRESENTATION_NOTEBOOKS = [
+    PRESENTATION_DIR / "Build_Gold_Parts.Notebook",
+    PRESENTATION_DIR / "Build_Gold_DealerGroupCode.Notebook",
+    PRESENTATION_DIR / "Build_Gold_Franchise.Notebook",
+    PRESENTATION_DIR / "Build_Gold_BranchLocation.Notebook",
+    PRESENTATION_DIR / "Dimensions" / "Build_Gold_CustomerList.Notebook",
+    PRESENTATION_DIR / "Fact Tables" / "60 Days Past Due" / "Build_Gold_InSalOrdInSalPar.Notebook",
+]
+
+WORKSPACE_IDS = {
+    "dev": {
+        "staging": "ab15d64d-c7ba-415d-9bcf-7feb1ef9b201",
+        "presentation": "73fd5443-240e-410a-990a-98827f32c087",
+    },
+    "prod": {
+        "staging": "189e5c0a-548a-4feb-93d6-dda9ebbe96c1",
+        "presentation": "7836042d-adb1-4846-b70d-bd42980054c5",
+    },
+}
+
+
+def main(environment: str) -> None:
+    ids = WORKSPACE_IDS[environment]
+
+    staging_stage = stage_items(REPO_ROOT, STAGING_NOTEBOOKS)
+    deploy(
+        workspace_id=ids["staging"],
+        repository_directory=staging_stage,
+        item_type_in_scope=["Notebook"],
+        environment=environment,
+    )
+    print(f"Deployed {len(STAGING_NOTEBOOKS)} Silver notebooks to "
+          f"{environment} staging workspace.")
+
+    presentation_stage = stage_items(REPO_ROOT, PRESENTATION_NOTEBOOKS)
+    deploy(
+        workspace_id=ids["presentation"],
+        repository_directory=presentation_stage,
+        item_type_in_scope=["Notebook"],
+        environment=environment,
+    )
+    print(f"Deployed {len(PRESENTATION_NOTEBOOKS)} Gold notebooks to "
+          f"{environment} presentation workspace.")
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--environment", choices=["dev", "prod"], required=True)
+    args = parser.parse_args()
+    main(args.environment)
+```
+
+`lib.py`'s `stage_items()` signature also changed to match (takes `item_paths:
+list[Path]` instead of a shared folder + name list) and now raises
+`FileNotFoundError` per-item with the full path if an item folder isn't found —
+this is exactly what caught the real portal-move issue during a live CI run (workflow
+run `35247215270`, failed with `FileNotFoundError: ... Dimensions/Build_Gold_Parts.Notebook`
+not found, because Fabric's portal had silently moved it to the workspace root).
+`deploy_reports.py`'s `stage_items()` call site was updated to pass full `Path`
+objects for the same reason. All three scripts were re-verified via real local dry
+runs against live Dev-tier Fabric workspaces (all 13 backend notebooks + all 3
+reports deployed cleanly), then the fix was pushed to `dev` and confirmed green in CI
+(workflow run `35248901768`).
+
+---
+
 ### Task 8: Write `run_and_verify_notebooks.py`
 
 **Files:**
@@ -855,6 +979,36 @@ Add a "Notebook" activity for `Build_Silver_InTrans.Notebook` (in
 activity (all 4 Gold notebooks can run in parallel — they don't depend on each
 other, only on Silver).
 
+**Built by Brian 2026-09-17** as `Pipeline_DP_Master_Orchestrator.DataPipeline` in
+`DP - Presentation - Dev` (committed via Fabric Git integration, commits `90ac319a`/
+`7ebbf5fb` on `dev`), all 9 activities (5 notebooks + wait/success/failure-email
+activities Brian added himself) confirmed Succeeded on first run. Building this
+pipeline in the portal also had a real side effect worth flagging for anyone touching
+it again: **Fabric silently moved 4 notebooks** (`Build_Gold_BranchLocation`,
+`Build_Gold_DealerGroupCode`, `Build_Gold_Franchise`, `Build_Gold_Parts`) out of their
+`Dimensions/` subfolder to the `DP - Presentation - Dev` workspace root — this broke
+`deploy_backend.py`'s folder-path assumption (see the Task 7 correction note above)
+and is the reason `stage_items()` now takes full item paths instead of a shared
+parent folder.
+
+**Scoping correction found after this first run (2026-09-17):** this 5-activity
+pipeline (`Silver_InTrans` + 4 Gold dims) has the exact same scope bug as the
+original `deploy_backend.py` (see Task 7's correction) — it was never actually
+refreshing the data the 3 Batch 0 reports need. Brian's own feedback after watching
+it run: *"It also seems like there should be more data that needs to be refreshed and
+not just these."* The pipeline needs 7 more Notebook activities added:
+- **Silver tier** (parallel, no interdependencies): `Build_Silver_PartInformation`,
+  `Build_Silver_BranchName`, `Build_Silver_ArMaster`, `Build_Silver_ArMasterCustomer`,
+  `Build_Silver_Contact`, `Build_Silver_InSalOrd`, `Build_Silver_InSalPar` (all in
+  `DP - Staging - Dev/Data Notebooks/`)
+- **Gold tier** (after their Silver dependency succeeds): `Build_Gold_CustomerList`
+  (in `DP - Presentation - Dev/Dimensions/`) and `Build_Gold_InSalOrdInSalPar` (in
+  `DP - Presentation - Dev/Fact Tables/60 Days Past Due/`)
+
+`Silver_InTrans` is used by none of the 3 reports and can be left in place harmlessly
+or removed — Brian's call, not urgent either way. This pipeline update is a manual
+portal task for Brian; not yet done as of this note.
+
 - [ ] **Step 3: Add a daily schedule trigger**
 
 Pipeline → Add trigger → New → Schedule → Daily, pick an early-morning time (e.g.
@@ -871,6 +1025,13 @@ Pipeline → Add trigger → New → Schedule → Daily, pick an early-morning t
 ### Task 13: Watch the Dev-tier schedule
 
 **Files:** none — this is a real-world observation period, not a code task.
+
+**Note (2026-09-17):** the pipeline's first run (9 activities, all succeeded) does
+**not** count toward this task's observation period — it ran the pre-correction
+5-activity scope (see Task 12's correction note), which was missing 9 of the 13
+notebooks the 3 reports actually depend on. The "handful of successful runs" clock
+restarts once Brian adds the 9 missing activities and the corrected, full pipeline
+has actually run.
 
 - [ ] **Step 1: Let it run for a handful of days**
 

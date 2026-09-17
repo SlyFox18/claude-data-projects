@@ -149,13 +149,26 @@ environments:
       reports_financial: 67fefa98-9e80-4a79-afdd-c8988b6e64fc # RP - Financial Reports
 
 items_in_scope:
+  # Corrected 2026-09-17 (originally listed only Silver_InTrans + 4 Gold dims,
+  # carried over by mistake from the unrelated Parts Promo pilot's scope - traced
+  # the real dependency graph from each report's .tmdl Item= references and each
+  # Gold notebook's own spark.read.table() calls to get this list; see the
+  # implementation plan's Task 7 correction note for how this was found).
   staging_notebooks:
-    - Build_Silver_InTrans.Notebook
+    - Build_Silver_PartInformation.Notebook
+    - Build_Silver_BranchName.Notebook
+    - Build_Silver_ArMaster.Notebook
+    - Build_Silver_ArMasterCustomer.Notebook
+    - Build_Silver_Contact.Notebook
+    - Build_Silver_InSalOrd.Notebook
+    - Build_Silver_InSalPar.Notebook
   presentation_notebooks:
     - Build_Gold_Parts.Notebook
     - Build_Gold_DealerGroupCode.Notebook
     - Build_Gold_Franchise.Notebook
     - Build_Gold_BranchLocation.Notebook
+    - Build_Gold_CustomerList.Notebook
+    - Build_Gold_InSalOrdInSalPar.Notebook
   reports:
     - {name: "Bin Location Report", target: reports_parts}
     - {name: "Physical Inventory", target: reports_parts}
@@ -205,11 +218,18 @@ working, independent of whether the one-time CI/CD deploy itself succeeded.**
 
 **Mechanism**: a new Fabric Data Pipeline (e.g. `Pipeline_DP_Master_Orchestrator`),
 built in Dev tier first, with a daily schedule trigger. Orchestrates, in dependency
-order: `Build_Silver_InTrans.Notebook` → the 4 Gold dim notebooks in scope (Section
-5). One shared daily schedule for everything in scope for now — not per-report tiers
-like the old `LH_Master_Data` pipeline's Tier 1/2/3 cadence. Revisit per-report
-cadence once more of the backend is on this pipeline and the orchestration itself is
-proven; not worth the added complexity for 3 reports today.
+order, every notebook the 3 Batch 0 reports actually depend on (the full real
+dependency graph — 7 Silver notebooks in parallel, then 6 Gold notebooks, corrected
+2026-09-17 after Brian's own observation that the pipeline's first build was missing
+most of the required data; see Section 5 and the implementation plan's Task 7/12
+correction notes for the full list and how it was found). One shared daily schedule
+for everything in scope for now — not per-report tiers like the old `LH_Master_Data`
+pipeline's Tier 1/2/3 cadence. Revisit per-report cadence once more of the backend is
+on this pipeline and the orchestration itself is proven; not worth the added
+complexity for 3 reports today. (Also deferred, per Brian's own follow-up feedback:
+per-notebook cadence — e.g. `BranchLocation`/`DealerGroupCode` likely don't need daily
+refresh — and pipeline failure-isolation, so one failed activity doesn't block the
+rest. Both are real, valid future improvements, not urgent.)
 
 **Proof bar before Prod promotion**: no fixed number of consecutive clean runs —
 Brian watches it run for a handful of days and uses his own judgment on when it's
