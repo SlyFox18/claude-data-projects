@@ -290,3 +290,43 @@ logic to build ahead of time.
   Section 10.
 - `RP - Service Reports`' own git/production drift — a separate, already-documented
   cleanup effort, unrelated to this pipeline.
+
+## 8. Known High-Priority Follow-On: `jdis_Part_Information` Rebuild
+
+**Not addressed by this spec, but discovered while writing it and worth flagging
+loudly.** `Build_Silver_PartInformation.Notebook` (in scope above) reads from two
+tables, `PartInformation_Active` and `PartInformation_Dead`, which are populated by
+two Dataflow Gen2 items — `df_JDIS_PartInformation_Active_Raw` and
+`df_JDIS_PartInformation_Dead_Raw` (`DP - Staging - Dev/Raw Data - Dataflows/`) —
+that query the live source system directly via ODBC (`dsn=EquipRDB64`), bypassing the
+JD Bronze mirror architecture entirely. Confirmed 2026-09-17:
+
+- Both dataflows query `jdis_Part_Information`, which is itself a **SQL Anywhere
+  view** (real `ALTER VIEW` SQL obtained from Brian), not a base table — it joins
+  `inmaster`, `INHIST_MONTH_4_PI`, `branch_name`, `InManuf_Locale`/`InManuf`, plus
+  correlated subqueries against `InHistMQT` (a 5-year rolling window), `insugor`,
+  `company`, and `syscalendar` for ~200 columns including 60 months each of rolling
+  sales/lost-sales/sales-activity history and fiscal-year-aware YTD sums.
+- **Neither dataflow has a `.schedules` file** — no automated refresh exists at all.
+  Real commit history shows only two manual refreshes, a week apart (2026-09-09 and
+  2026-09-16).
+- Both are Dataflow Gen2 items, outside `deploy_backend.py`'s current
+  `item_type_in_scope=["Notebook"]` and outside this pipeline design's `notebooks`
+  array — entirely invisible to everything built or designed this session.
+- **The good news, confirmed via `fab ls` against `JD_EquipRDB_Production_Bronze`**:
+  every real table the view depends on is already mirrored there as a 1:1 copy,
+  including the two that matter most — `InHistMQT` and `INHIST_MONTH_4_PI` are
+  mirrored as already-computed/aggregated tables, not raw transaction data needing
+  re-aggregation from scratch. This makes rebuilding the view's join/selection logic
+  as a proper Silver notebook (reading Bronze shortcuts, same pattern as every other
+  table in this project) a tractable, real rebuild — not a from-scratch 5-year
+  aggregation engineering project.
+
+**Decision (2026-09-17):** this pipeline design proceeds as written, with
+`Build_Silver_PartInformation` continuing to depend on the two unmanaged dataflows
+for now. The `jdis_Part_Information` rebuild (eliminating both dataflows, sourcing
+from Bronze shortcuts instead, bringing this data fully into the JD Bronze
+architecture) is scoped as its **own follow-on migration effort**, to go through the
+same brainstorm→spec→plan cycle as every other table in this project, once this
+refresh pipeline is proven. Do not re-derive the dependency list or Bronze
+availability above when that effort starts — it's already confirmed real.
