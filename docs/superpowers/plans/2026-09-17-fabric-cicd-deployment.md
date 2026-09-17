@@ -352,8 +352,8 @@ WORKSPACE_IDS = {
 }
 
 WORKSPACE_FOLDERS = {
-    "staging": REPO_ROOT / "workspaces" / "DP - Staging - Dev",
-    "presentation": REPO_ROOT / "workspaces" / "DP - Presentation - Dev",
+    "staging": REPO_ROOT / "workspaces" / "DP - Staging - Dev" / "Data Notebooks",
+    "presentation": REPO_ROOT / "workspaces" / "DP - Presentation - Dev" / "Dimensions",
 }
 
 
