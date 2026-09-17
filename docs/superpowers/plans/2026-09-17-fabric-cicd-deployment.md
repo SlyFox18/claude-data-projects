@@ -825,6 +825,14 @@ Watch the Actions tab on GitHub → `deploy-dev` job should run and succeed with
 same result as Step 2. This confirms the CI environment (secrets, permissions) works
 identically to the local run before Task 15 touches anything in production.
 
+**Completed and verified 2026-09-17:** merged `fabric-cicd-deployment` into `dev`,
+pushed to origin. Real GitHub Actions run (`35239341908`) completed with conclusion
+`success` — `deploy-dev` ran end-to-end in 45s (checkout, Python setup, deps,
+`deploy_backend.py --environment dev`, `deploy_reports.py --environment dev`, all
+green), and `deploy-prod` correctly never triggered, since it's `workflow_dispatch`-
+only, not push-triggered (Task 10's correction). CI now proven to work identically to
+the local dry run. **Task 11 is complete.**
+
 ---
 
 ### Task 12: Create the recurring refresh Data Pipeline (Brian, Fabric portal)
