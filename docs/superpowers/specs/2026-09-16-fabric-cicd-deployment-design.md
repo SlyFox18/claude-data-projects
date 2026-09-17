@@ -66,9 +66,10 @@ push to dev
      (Section 7)
 
 PR merged to main
-  └─ workflow runs, deploys up through an approval gate
-  └─ Brian clicks Approve in GitHub — gated not just on the one-time deploy succeeding,
-     but on the Dev-tier scheduled refresh having already run reliably (Section 7)
+  └─ nothing deploys automatically (see gotcha below) — Brian manually triggers
+     the production deploy via GitHub Actions' "Run workflow" button once ready
+  └─ gated not just on that manual trigger, but on the Dev-tier scheduled refresh
+     having already run reliably first (Section 7)
   └─ deploys, in order:
        1. DP - Staging - Prod / DP - Presentation - Prod: notebook code (Silver then
           Gold), each notebook's default_lakehouse rebound to the Prod-tier lakehouse
@@ -86,6 +87,19 @@ PR merged to main
           lakehouse ID as part of this deploy — this is the last step, only reached
           once both one-time deploy AND recurring refresh are confirmed working
 ```
+
+**Gotcha found during implementation (2026-09-17):** the original design called for
+"PR merged to main auto-triggers the workflow, which pauses at a GitHub Environment's
+Required Reviewers gate for manual approval." Confirmed live in the GitHub portal:
+Required Reviewers is a Team/Enterprise-only protection rule for private
+repositories, not available on this repo's plan — the `production` environment's
+settings page only exposes "Deployment branches and tags," no "Deployment protection
+rules" section. Switched to `workflow_dispatch` (manual trigger only, gated to
+`refs/heads/main`) as the approval mechanism instead — Brian clicks "Run workflow" in
+the Actions tab when ready, rather than an automatic run pausing for his approval.
+Same practical safety (nothing reaches production without a deliberate action), works
+on any GitHub plan. The `production` Environment itself is still used for secret
+scoping (that part of Environments isn't plan-gated), just not its protection rules.
 
 A single Python script, using `fabric-cicd` as a library, does the actual deployment
 work. The workflow YAML is orchestration only — it doesn't contain deployment logic
@@ -232,8 +246,9 @@ Once backend verification passes AND the recurring refresh schedule is proven
 
 ## 9. Testing / Validation Plan
 
-- **Dry run first**: point the pipeline at `dev` → `RP - Sandbox` only, with the
-  approval-gated Prod step disabled, and confirm a real push correctly deploys
+- **Dry run first**: point the pipeline at `dev` → `RP - Sandbox` only — a push to
+  `dev` only ever triggers `deploy-dev`, since `deploy-prod` is `workflow_dispatch`-
+  only (Section 3) and never fires on its own. Confirm a real push correctly deploys
   `Bin Location Report` (simplest of the 3) end-to-end into Sandbox with no errors.
 - **Stand up and watch the Dev-tier recurring schedule** (Section 7) — build
   `Pipeline_DP_Master_Orchestrator` in Dev tier, let it run daily, watch it for a
