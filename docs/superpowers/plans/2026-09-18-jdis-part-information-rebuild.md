@@ -22,6 +22,17 @@
   - `InHistMQT` (12 cols): `BRANCH`, `FRANCHISE`, `PART_NO`, `MM_YYYY`, `DATEHIST`, `SAL_QTY`, `REQ_CNT`, `SAL_VAL`, `LOST_CNT`, `LOST_VAL`, `LOST_QTY`, `SALES_ACTIVITY_CNT`. Needed for `Current12MoDollars`/`Previous12MoDollars` — real rolling-12-month `SUM(SAL_VAL)`, grouped by `(BRANCH, FRANCHISE, PART_NO)`.
   - `InMaster` (73 cols, already shortcut): confirmed real columns include `BIN_LOCATION`, `BULK_BIN`, `dealer_group_code`, `Pending_Qty`, `ON_HAND_VAL`, `VENDOR_CODE`, `STOCKTAKE_DATE` — none of these are in the existing `Silver_InMaster` table's narrower 20-column selection, confirming the rebuild must read `InMaster.Shortcut` directly, not through `Silver_InMaster`.
   - `Branch_Name` (105 cols, already shortcut): confirmed real column `FR_LOC_INDICATOR` lives here (not on `InMaster`/`InManuf`) — join key `branch` = `InMaster.BRANCH`. This flag decides whether a part's manufacturer-level fields come from `InManuf_Locale` or `InManuf`.
+
+- **Real finding (Task 2, 2026-09-18): `InManuf_Locale` is completely empty (0 rows) in
+  live Bronze data, and all 99 real branches have `FR_LOC_INDICATOR = 'N'`** — the
+  locale-pricing path is entirely dormant in this business's current real data.
+  Task 5's code below uses a `coalesce(when(flag='Y', locale_value), standard_value,
+  default)` pattern rather than a strict either/or `CASE`, so it produces identical
+  output to a strict `CASE` for all of today's real data (flag is always 'N', so it
+  always falls through to `InManuf`), but gracefully degrades to `InManuf`'s value
+  instead of silently going blank if a future branch ever gets `FR_LOC_INDICATOR='Y'`
+  without matching `InManuf_Locale` data. Confirmed via direct query, not assumed —
+  do not re-verify.
 - **Confirmed via `git grep`:** the current notebook's `ActivityTier` column (a marker of which of the two old dataflows a row came from) has zero downstream consumers — safe to drop entirely in the rebuild.
 - **Real sample parts with non-zero sales** (from the current, still-ODBC-sourced `Silver_PartInformation` table, queried 2026-09-18 — use these exact values as the verification target in Task 4, since they reflect genuinely correct production data from the live source):
 
@@ -579,9 +590,11 @@ silver = base.select(
     F.col("FRANCHISE").alias("Franchise"),
     F.when((F.col("CATEGORY") == "") | F.col("CATEGORY").isNull(), "").otherwise(F.col("CATEGORY")).alias("Source"),
     F.when((F.col("SALES_CLASS") == "") | F.col("SALES_CLASS").isNull(), "").otherwise(F.col("SALES_CLASS")).alias("SLC"),
-    F.when(F.col("_fr_loc_indicator") == "Y", F.trim(F.coalesce(F.col("_ml_commodity_code"), F.lit(""))))
-        .otherwise(F.trim(F.coalesce(F.col("_m_commodity_code"), F.lit(""))))
-        .alias("CommodityCode"),
+    F.coalesce(
+        F.when(F.col("_fr_loc_indicator") == "Y", F.trim(F.col("_ml_commodity_code"))),
+        F.trim(F.col("_m_commodity_code")),
+        F.lit(""),
+    ).alias("CommodityCode"),
     F.when((F.col("dealer_group_code") == "") | F.col("dealer_group_code").isNull(), "").otherwise(F.col("dealer_group_code")).alias("DealerGroupCode"),
     F.coalesce(F.col("ON_HAND_QTY"), F.lit(0)).alias("QuantityOnHand"),
     (
@@ -595,15 +608,21 @@ silver = base.select(
     F.coalesce(F.col("BACK_ORD_QTY"), F.lit(0)).alias("BackOrderQty"),
     F.when((F.col("BULK_BIN") == "") | F.col("BULK_BIN").isNull(), "").otherwise(F.col("BULK_BIN")).alias("BulkBin"),
     F.when((F.col("BIN_LOCATION") == "") | F.col("BIN_LOCATION").isNull(), "").otherwise(F.col("BIN_LOCATION")).alias("Bin"),
-    F.when(F.col("_fr_loc_indicator") == "Y", F.trim(F.coalesce(F.col("_ml_unit_pack_qty").cast("string"), F.lit(""))))
-        .otherwise(F.trim(F.coalesce(F.col("_m_unit_pack_qty").cast("string"), F.lit(""))))
-        .alias("PackageQty"),
-    F.when(F.col("_fr_loc_indicator") == "Y", F.trim(F.coalesce(F.col("_ml_return_indicator"), F.lit(""))))
-        .otherwise(F.trim(F.coalesce(F.col("_m_return_indicator"), F.lit(""))))
-        .alias("Returnable"),
-    F.when(F.col("_fr_loc_indicator") == "Y", F.coalesce(F.col("_ml_unit_weight"), F.lit(0)))
-        .otherwise(F.coalesce(F.col("_m_unit_weight"), F.lit(0)))
-        .alias("Weight"),
+    F.coalesce(
+        F.when(F.col("_fr_loc_indicator") == "Y", F.trim(F.col("_ml_unit_pack_qty").cast("string"))),
+        F.trim(F.col("_m_unit_pack_qty").cast("string")),
+        F.lit(""),
+    ).alias("PackageQty"),
+    F.coalesce(
+        F.when(F.col("_fr_loc_indicator") == "Y", F.trim(F.col("_ml_return_indicator"))),
+        F.trim(F.col("_m_return_indicator")),
+        F.lit(""),
+    ).alias("Returnable"),
+    F.coalesce(
+        F.when(F.col("_fr_loc_indicator") == "Y", F.col("_ml_unit_weight")),
+        F.col("_m_unit_weight"),
+        F.lit(0),
+    ).alias("Weight"),
     F.coalesce(F.col("OS_ORDER_QTY"), F.lit(0)).alias("OnOrder"),
     F.coalesce(F.col("SUPER_TO"), F.lit("")).alias("SuperTo"),
     F.coalesce(F.col("SUPER_FROM"), F.lit("")).alias("SuperFrom"),
