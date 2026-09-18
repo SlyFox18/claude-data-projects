@@ -739,6 +739,121 @@ Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 
 ---
 
+### Real findings from Task 5's code-quality review (2026-09-18)
+
+The code-quality reviewer returned NOT APPROVED with 5 Important findings. Each was
+independently verified against live Fabric/Bronze data (this project's standard
+discipline) rather than accepted or dismissed on the reviewer's word alone. Two were
+confirmed as real bugs and fixed; three were confirmed as non-issues given real data.
+
+**Confirmed real bug #1 — `PackageQty`'s empty-string fallback introduces new blanks.**
+The reviewer flagged `PackageQty` as a type mismatch against the Bin Location Report's
+TMDL (`Int64.Type` conversion). Querying the live table showed `PackageQty` is
+*already* VARCHAR today (not a type regression) — but with **zero blank values**
+across all 1,112,605 rows, formatted like `"1.000000"`/`"0.000000"`. The new
+notebook's final fallback for unmatched `InManuf`/`InManuf_Locale` joins was
+`F.lit("")` (empty string). Since `InMaster`↔`InManuf` only matches 81.5% of rows
+(907,328/1,112,784 — verified via a direct join), the remaining ~18.5% (~205K rows)
+would get `PackageQty = ""` where today they get a real zero-value string — and an
+empty string fails Power Query's `Int64.Type` conversion in the Bin Location Report
+(a real regression risk for ~205K rows). **Fixed:** changed the fallback to
+`F.lit("0")`. (Separately: Bronze `InManuf.UNIT_PACK_QTY` is `DECIMAL(8,2)`, so
+`.cast("string")` naturally produces `"1.00"` not `"1.000000"` — a cosmetic format
+difference from the old ODBC-view output, harmless since Power Query's `Int64.Type`
+conversion truncates either format to the same integer.)
+
+**Confirmed real bug #2 — date-literal coalesce silently promotes to StringType.**
+`DateCreated`/`DateLastRequested`/`StocktakeDate` were built as
+`F.coalesce(F.col("CREATION_DATE"), F.lit("1900-01-01"))` — coalescing a real
+`TIMESTAMP WITH TIME ZONE` column (confirmed live) with a bare string literal. Under
+Spark's non-ANSI type coercion (Fabric's default), `coalesce`/`case`/`least`/
+`greatest` resolve a Timestamp/String mismatch by promoting the **entire result
+column** to StringType — not just the sentinel rows, every row. This would have
+silently turned all three date columns into strings in the output Delta table,
+regardless of whether any row actually needed the sentinel fallback. **Fixed:**
+wrapped each literal in an explicit timestamp cast (`F.to_timestamp(F.lit("1900-01-01"))`)
+so both `coalesce` arguments are the same type and the result stays `TimestampType`.
+
+**Confirmed non-issue #3 — sentinel-date fallback doesn't introduce new NULL-handling risk.**
+The reviewer worried the `coalesce(..., "1900-01-01")` pattern was *new* behavior that
+could break Physical Inventory's `KEEPFILTERS(NOT ISBLANK(...))` measure on
+`StocktakeDate`. **Correction (found by the Task 5 re-review):** the earlier draft of
+this finding stated there were "zero real NULLs" in the date columns today, framing
+the sentinel fallback as effectively dead code — that's only true of the *old output
+table*. The raw Bronze source columns this notebook actually reads DO have real
+NULLs: `STOCKTAKE_DATE` 567,767 (51.0%), `LAST_DEM_DATE` 222,210 (20.0%),
+`CREATION_DATE` 3,051 — the fallback fires constantly, for over half of
+`StocktakeDate`. The conclusion still holds, but for the right reason: the source
+view's own real SQL (obtained from Brian earlier this session) already does
+`isnull(inmaster.Creation_date, '1900-01-01')`-style sentinel substitution, so the old
+ODBC-sourced dataflow's *output* never contained raw NULLs — confirmed by row-count
+reconciliation, the old table has exactly 3,051 / 222,160 / 567,672 rows at the
+sentinel, matching Bronze's NULL counts within normal live drift. The new notebook's
+coalesce logic *replicates* the view's existing, heavily-used behavior; it doesn't
+introduce it. No fix needed beyond bug #2's type fix (which remains necessary
+regardless of null volume, since it affects every row's type, not just sentinel rows).
+
+**Confirmed non-issue #4 — the 81.5% `InMaster`↔`InManuf` join match rate is not a regression.**
+The reviewer flagged the join with no guard against a silent miss, citing
+`Build_Gold_VendorCode`'s real precedent bug. Direct verification found 81.5% match
+(907,328/1,112,784 `InMaster` rows match `InManuf` on `FRANCHISE=FR AND
+PART_NO=PART_NO`) — meaning ~18.5% of rows get blank manufacturer-sourced fields.
+Comparing against the **current live table**: `CommodityCode` (same manufacturer-join
+lineage) is already 31.0% blank today, and `Returnable` is already 24.1% blank today
+— both *exceeding* the 18.5% miss rate. The join-miss contributes to, but doesn't
+exceed, blankness that already exists in production. This is expected/faithful
+behavior (not every part has a manufacturer detail record), not a new key-format bug.
+No fix needed.
+
+**Deferred, not fixed — Important #5 (anchor_monthnum observability).** The reviewer
+noted `anchor_monthnum` (the global current-month pointer for the rolling 12-month
+dollar windows) is computed via `.collect()` but never printed or guarded — a future
+Bronze-mirror lag could silently shift both dollar windows by a month with no error
+signal. Task 3's real-data verification already confirmed today's anchor value
+produces exact matches on all 5 sample parts, so this isn't a "wrong today" issue.
+Added a print statement for observability (cheap, non-blocking) rather than a hard
+guard, since there's no clear "correct" bound to assert against.
+
+Minor issues (double materialization of the join/aggregation, the verification
+cell's silent-zero-match risk, a verbose `F.when(...).otherwise(...)` no-op pattern,
+imprecise SPARK-31404 comment wording) were left as-is per the reviewer's own
+"non-blocking" framing, consistent with how Task 2's sibling-script stylistic drift
+was handled.
+
+**Fixes applied and re-reviewed — Task 5 now APPROVED (commit `4b657917`,
+`fabric-workspace-docs`).** The re-review independently verified both fixes against
+live data rather than trusting them on inspection alone — notably confirming
+`PackageQty`'s empty-string fallback would have injected ~205K real NULLs into a
+Gold-layer column (`Fact_Inventory.PackageQty`, via `Build_Gold_Inventory`'s
+`.cast("long")`) that has zero today, and that the date-literal fix's sentinel
+fallback fires far more often than the plan's now-corrected finding #3 states
+(51.0% of `StocktakeDate` rows). It also did a full fresh review beyond the two
+diffs and found the row-count assert is sound (all four join keys are genuinely 1:1
+unique in live Bronze today), the asymmetric column-trimming is deliberate/correct
+(not sloppiness — verified column-by-column against both Bronze and the old output's
+untrimmed-row counts), and the rolling 12-month dollar window's month-bucket
+arithmetic is timezone-invariant even though it looked timezone-sensitive (a uniform
+UTC-vs-Central one-month shift cancels between the anchor and the data since both are
+derived from the same expression — verified empirically both ways against all 5
+sample parts).
+
+New minor findings from the re-review, left unfixed (non-blocking, noted for future
+reference):
+- `Weight` silently changes type from the old table's VARCHAR to DECIMAL(10,4) (only
+  `PackageQty` was explicitly cast to string to preserve its VARCHAR-ness). Verified
+  benign — both real downstream consumers (`Build_Gold_MDInvoicesClosed`,
+  `Build_Gold_MDInvoicesNoFreight`) already cast it to double before use.
+- Numeric precision narrows slightly (old columns were `DECIMAL(34,6)`; the rebuild's
+  are ~`DECIMAL(12,2)`/`DECIMAL(22,2)`, inherited from Bronze's own `DECIMAL(8,2)`/
+  `(12,2)` sources) — no value loss since sources only carry 2 decimal places, but
+  Task 6's schema diff will show it, so don't treat it as a surprise regression.
+- The new `anchor_monthnum` print is off-by-one from the intuitive business month in
+  UTC (e.g. prints `24321` when the real latest populated month is 2026-08) — fine
+  for its stated purpose (spotting a future Bronze-mirror lag via drift in the raw
+  number) but would need decoding to read as a calendar month.
+
+---
+
 ### Task 6: Real dry run — compare rebuilt output against the pre-rewrite snapshot
 
 **Files:** none — verification only.
