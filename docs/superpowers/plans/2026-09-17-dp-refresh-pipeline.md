@@ -157,6 +157,14 @@ property picker), which still works structurally, just isn't driven by the
 dropdown UI. Either way, delete `zz_test_dynamic_notebook` once confirmed — it's not
 part of the real architecture.
 
+**Completed and confirmed 2026-09-18:** ran the 2-item test with
+`Build_Gold_Franchise` and `Build_Gold_DealerGroupCode`. The dropdown pickers
+themselves (Workspace/Notebook fields switched to dynamic content) accepted
+`@item().workspaceId`/`@item().notebookId` directly — no Code view fallback needed.
+Confirmed via the Input pane of each of the 2 iterations: two different, correct
+`notebookId` values, one per notebook. Mechanism fully proven; used directly (via
+the dropdown pickers) in Tasks 11-13.
+
 ---
 
 ### Task 5: Write the shared config file
@@ -703,6 +711,37 @@ fresh choice).
 `DP - Presentation - Dev` → Source control → Commit. Confirm
 `Pipeline_DP_Daily_Refresh.DataPipeline` appears after `git pull origin dev`.
 
+**Real corrections found while building this (2026-09-18):**
+
+- **Session tags reject hyphens.** The first real run failed all 13 notebooks
+  immediately with `Session tag can only contain letters, numbers, and underscores`
+  — `dp-silver-daily`/`dp-gold-daily` are invalid. Fixed to `dp_silver_daily`/
+  `dp_gold_daily` (underscores). Every session tag anywhere in this plan (including
+  Tasks 12-13 below) must use underscores, not hyphens — the plan's own examples
+  above already show the corrected hyphen-free form where written after this fix.
+- **Renaming an activity breaks string-literal references to its old name.**
+  Discovered while duplicating this pipeline for Task 12 — renaming `Filter_SilverDaily`
+  left `ForEach_SilverDaily`'s `items` expression pointing at a name that no longer
+  existed (`@activity('Filter_SilverDaily')...`), producing a save-time validation
+  error ("output... can't be referenced since it... does not exist"). Fabric doesn't
+  auto-update expression references when you rename an activity. Simplest fix:
+  don't rename activities that already work — keep names like `Filter_SilverDaily`
+  even inside `Pipeline_DP_Monthly_Refresh`, since they're just internal identifiers
+  and don't need to semantically match "monthly."
+- **Fabric pipelines support "Save as" for full duplication** (workspace item list →
+  "..." next to the pipeline → **Save as**) — used for Task 12 instead of rebuilding
+  from scratch. Not obvious from the UI's main toolbar; only found via the "..."
+  context menu.
+- Brian's own schedule choice: **weekdays only** (Mon-Fri, 4:15 AM), not every day —
+  matches the old `LH_Master_Data` pipeline's own Mon-Fri cadence even more closely
+  than this plan originally specified.
+
+**Completed and verified 2026-09-18:** real pipeline run, all 13 notebooks
+Succeeded (6 Silver + 6 Gold, ~5m48s total — real evidence High Concurrency mode's
+session sharing is working, not just configured). Independently verified via DuckDB
+(not just the green checkmarks): `dim_Parts` 316,540 rows, `dim_CustomerList` 54,117
+rows, `Fact_InSalOrd_InSalPar` 2,400 rows — all real, sensible counts.
+
 ---
 
 ### Task 12: Build `Pipeline_DP_Monthly_Refresh` (Brian, Fabric portal)
@@ -711,12 +750,16 @@ fresh choice).
 
 - [ ] **Step 1: Build the same shape as `Pipeline_DP_Daily_Refresh`**
 
-Create `Pipeline_DP_Monthly_Refresh`. Repeat Task 11's Steps 2-6 exactly, with two
-changes: every `Filter` condition checks `cadence == 'monthly'` instead of `'daily'`
-(e.g. `@and(equals(item().tier, 'silver'), equals(item().cadence, 'monthly'))`), and
-session tags are `dp-silver-monthly`/`dp-gold-monthly` instead of the daily ones.
-Email subjects: `Pipeline_DP_Monthly_Refresh - Success` /
-`- Some Items Failed`.
+Use **Save as** on `Pipeline_DP_Daily_Refresh` (workspace list → "..." → Save as) to
+create `Pipeline_DP_Monthly_Refresh` as a full duplicate, rather than rebuilding from
+scratch. Then make exactly 4 changes: both `Filter` activities' conditions check
+`cadence == 'monthly'` instead of `'daily'` (e.g.
+`@and(equals(item().tier, 'silver'), equals(item().cadence, 'monthly'))`); both
+session tags become `dp_silver_monthly`/`dp_gold_monthly` (underscores); email
+subjects become `Pipeline_DP_Monthly_Refresh - Success` / `- Some Items Failed`. **Do
+not rename any activity** (see Task 11's correction note above) — leave
+`Filter_SilverDaily`, `ForEach_SilverDaily`, etc. named as-is even in this monthly
+pipeline; it's cosmetic only and renaming breaks the existing expression references.
 
 - [ ] **Step 2: Add the monthly schedule**
 
@@ -726,6 +769,11 @@ Pipeline → Add trigger → New → Schedule → Monthly → **1st of month, 7:
 - [ ] **Step 3: Save and commit via Fabric Git integration**
 
 Same as Task 11 Step 8.
+
+**Completed and verified 2026-09-18:** real pipeline run, all 4 notebooks (1 Silver +
+3 Gold) Succeeded. Independently verified via DuckDB: `dim_BranchLocation` 69 rows,
+`dim_DealerGroupCode` 1,817 rows, `dim_Franchise` 39 rows — all real, sensible
+reference-table sizes.
 
 ---
 
@@ -787,6 +835,33 @@ this project's real scale).
 
 Same as Task 11 Step 8.
 
+**Real, generally-applicable finding (2026-09-18):** the first real run failed all 3
+semantic model refreshes with `Premium_ASWL_Error` — *"We cannot refresh this
+semantic model because this semantic model uses a default data connection without
+explicit connection credentials."* Root cause: `deploy_reports.py` publishes reports
+via the `SPN-Fabric-CICD-Deploy` service principal, and that SPN becomes the
+semantic model's configured owner — but a `fabric-cicd` publish only pushes the
+model *definition*, it never establishes real sign-in credentials for the underlying
+data connection, leaving it with nothing authenticating it at all. This affects
+**every report deployed via this SPN**, not just these 3 — a real gap in the deploy
+process itself, worth a note in the CI/CD plan for future Prod promotions (see
+Task 15 below), not something to fix in the deploy scripts right now.
+
+**Fix applied:** for each of the 3 reports' Sandbox semantic models — open the
+report in `RP - Sandbox` → "..." → **Settings** → **Semantic models** tab → select
+the report → since it shows *"configured by SPN-Fabric-CICD-Deploy... Would you like
+to take over the settings?"*, click **Take over**. This alone resolved the
+credential gap for all 3 reports (they apparently share enough of the underlying
+connection configuration that fixing ownership on one execution context resolved
+it for all three once each was taken over) — no separate manual gateway/cloud
+connection setup was needed beyond claiming ownership.
+
+**Completed and verified 2026-09-18:** real pipeline run, all 3 semantic model
+refreshes Succeeded. Independently verified via `Physical Inventory`'s real
+**Refresh history** panel (not just the pipeline activity's own status) — shows a
+"Data Factory" type refresh, "Completed," with a real timestamp matching the
+pipeline run. Brian confirmed the other two reports' refresh history the same way.
+
 ---
 
 ### Task 14: Trigger all three pipelines manually and verify with real data
@@ -831,6 +906,13 @@ check its semantic model's **Refresh history** — confirm a real, recent succes
 refresh timestamp, not just the pipeline activity's own "Succeeded" status (the
 `PBISemanticModelRefresh` activity waiting on completion doesn't guarantee the
 refresh itself did something meaningful — check the actual refresh history).
+
+**Completed 2026-09-18, organically during Tasks 11-13's own build-and-debug
+process** rather than as a separate final pass — each pipeline was run for real and
+independently verified (DuckDB row counts for the two data pipelines, refresh
+history for the semantic model pipeline) immediately after being built, per the
+completion notes under each of those tasks above. All 4 steps' real acceptance
+criteria are satisfied; no separate Task 14 pass needed.
 
 ---
 

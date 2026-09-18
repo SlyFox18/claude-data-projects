@@ -1020,6 +1020,14 @@ Pipeline → Add trigger → New → Schedule → Daily, pick an early-morning t
 `fabric-workspace-docs` (after `git pull origin dev`) that a new
 `Pipeline_DP_Master_Orchestrator.DataPipeline` folder appears.
 
+**Superseded 2026-09-18** by `docs/superpowers/plans/2026-09-17-dp-refresh-pipeline.md`
+— that plan replaced this single pipeline with three config-driven pipelines
+(`Pipeline_DP_Daily_Refresh`, `Pipeline_DP_Monthly_Refresh`,
+`Pipeline_DP_SemanticModel_Refresh`), scoped from the shared `dp_backend_scope.json`
+config instead of hardcoded activities, and all three are built and independently
+verified working. `Pipeline_DP_Master_Orchestrator` itself was left in place (not
+deleted) — harmless, Brian's call on cleanup timing, not urgent.
+
 ---
 
 ### Task 13: Watch the Dev-tier schedule
@@ -1124,6 +1132,19 @@ fab get "DP - Presentation - Prod.Workspace/Build_Gold_BranchLocation.Notebook" 
 ```
 Fill the 5 real GUIDs into `RUN_ORDER` in `deploy/run_and_verify_notebooks.py`, commit
 and merge to `main`, then manually trigger the workflow again (Run workflow → `main`).
+
+**Real finding to watch for at this step (2026-09-18, from the refresh pipeline
+plan's Task 13):** semantic models deployed via `deploy_reports.py` are published
+under the `SPN-Fabric-CICD-Deploy` service principal's ownership, and `fabric-cicd`
+publishes the model *definition* only — it never establishes real sign-in
+credentials for the underlying data connection. The first refresh attempt against
+each newly-deployed Prod-tier report will likely fail with `Premium_ASWL_Error`
+("uses a default data connection without explicit connection credentials"). Fix:
+open the report in the real production workspace → Settings → Semantic models →
+select it → **Take over** (it'll show as configured by the SPN) — this alone
+resolved it for all 3 Sandbox reports without any further gateway/credential setup.
+Do this for each report right after its first Prod deploy, before assuming its
+recurring refresh will work.
 
 - [ ] **Step 4: Promote the recurring pipeline to Prod tier**
 
