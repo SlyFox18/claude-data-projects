@@ -542,19 +542,43 @@ base = base.join(
 # CELL ********************
 
 # Current12MoDollars / Previous12MoDollars: real rolling-12-month SUM(SAL_VAL)
-# from InHistMQT, grouped by (Branch, Franchise, PartNumber). Window boundaries
-# confirmed against real sample data in Task 3 before this code was written -
-# see that task's verification script for how the exact boundary was derived.
-max_date = in_hist_mqt.agg(F.max("DATEHIST")).collect()[0][0]
+# from InHistMQT, grouped by (Branch, Franchise, PartNumber).
+#
+# CORRECTED 2026-09-18 after Task 3's real-data verification found the naive
+# "DATEHIST > MAX(DATEHIST) - 12 months" window wrong for 2 of 5 sample parts.
+# Root cause: DATEHIST is a per-row MONTH BUCKET marker (identical to MM_YYYY),
+# not a transaction timestamp, and different parts have different "most recent
+# populated month" (a part with no activity in the most recent month simply has
+# no row for it) - so anchoring the window to each part's own MAX(DATEHIST) is
+# wrong. The real view anchors to a GLOBAL current-month pointer and EXCLUDES
+# that in-progress month entirely from both windows:
+#   Current12MoDollars  = SUM(SAL_VAL) over the 12 complete calendar months
+#                          immediately before the table's global current month
+#   Previous12MoDollars = SUM(SAL_VAL) over the 12 complete calendar months
+#                          immediately before that
+# Uses integer year*12+month arithmetic (not date/interval math) to sidestep
+# DATEHIST's TIMESTAMP WITH TIME ZONE offset flipping between -05:00/-06:00 by
+# season (US Central DST) - year()/month() on a timestamptz already reflects
+# the correct stored calendar month, no manual UTC conversion needed. Verified
+# exactly against all 5 real sample parts in this plan's "Real facts" table -
+# see .claude/queries/adhoc/dp-bronze-verify/verify_jdis_partinfo_mapping.py
+# (data-projects repo) for the real DuckDB proof this PySpark logic mirrors.
+anchor_monthnum = in_hist_mqt.agg(
+    F.max(F.year("DATEHIST") * 12 + F.month("DATEHIST"))
+).collect()[0][0]
 
-dollars_agg = in_hist_mqt.groupBy("BRANCH", "FRANCHISE", "PART_NO").agg(
+dollars_agg = in_hist_mqt.withColumn(
+    "_monthnum", F.year("DATEHIST") * 12 + F.month("DATEHIST")
+).groupBy("BRANCH", "FRANCHISE", "PART_NO").agg(
     F.sum(
-        F.when(F.col("DATEHIST") > F.add_months(F.lit(max_date), -12), F.col("SAL_VAL")).otherwise(0)
+        F.when(
+            (F.col("_monthnum") >= anchor_monthnum - 12) & (F.col("_monthnum") < anchor_monthnum),
+            F.col("SAL_VAL"),
+        ).otherwise(0)
     ).alias("_current_12mo_dollars"),
     F.sum(
         F.when(
-            (F.col("DATEHIST") <= F.add_months(F.lit(max_date), -12))
-            & (F.col("DATEHIST") > F.add_months(F.lit(max_date), -24)),
+            (F.col("_monthnum") >= anchor_monthnum - 24) & (F.col("_monthnum") < anchor_monthnum - 12),
             F.col("SAL_VAL"),
         ).otherwise(0)
     ).alias("_previous_12mo_dollars"),
