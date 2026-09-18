@@ -93,7 +93,7 @@
 **Files:** none (Fabric portal action). Follows the exact same click-path already
 proven for every other shortcut in this project (e.g. `docs/superpowers/plans/2026-09-10-dp-invoice.md` Task 1).
 
-- [ ] **Step 1: Create the `InManuf` shortcut**
+- [x] **Step 1: Create the `InManuf` shortcut**
 
 In the Fabric portal:
 1. Open workspace `DP - Staging - Dev`
@@ -105,19 +105,19 @@ In the Fabric portal:
 7. Keep the destination name as `InManuf` (don't rename)
 8. **Create**
 
-- [ ] **Step 2: Create the `InManuf_Locale` shortcut**
+- [x] **Step 2: Create the `InManuf_Locale` shortcut**
 
 Same steps as Step 1, selecting `InManuf_Locale` instead.
 
-- [ ] **Step 3: Create the `INHIST_MONTH_4_PI` shortcut**
+- [x] **Step 3: Create the `INHIST_MONTH_4_PI` shortcut**
 
 Same steps as Step 1, selecting `INHIST_MONTH_4_PI` instead.
 
-- [ ] **Step 4: Create the `InHistMQT` shortcut**
+- [x] **Step 4: Create the `InHistMQT` shortcut**
 
 Same steps as Step 1, selecting `InHistMQT` instead.
 
-- [ ] **Step 5: Confirm all 4 appear**
+- [x] **Step 5: Confirm all 4 appear**
 
 In `DP_Staging` → `Tables`, confirm `InManuf`, `InManuf_Locale`, `INHIST_MONTH_4_PI`,
 and `InHistMQT` are all listed alongside everything else already there. Report back
@@ -130,7 +130,7 @@ once done.
 **Files:**
 - Create: `.claude/queries/adhoc/dp-bronze-verify/verify_shortcuts_jdis_partinfo.py`
 
-- [ ] **Step 1: Write the verification script**
+- [x] **Step 1: Write the verification script**
 
 ```python
 """
@@ -172,7 +172,7 @@ for table in ["InManuf", "InManuf_Locale", "INHIST_MONTH_4_PI", "InHistMQT"]:
 print(f"\nAll 4 shortcuts match: {all_match}")
 ```
 
-- [ ] **Step 2: Run it**
+- [x] **Step 2: Run it**
 
 ```bash
 python .claude/queries/adhoc/dp-bronze-verify/verify_shortcuts_jdis_partinfo.py
@@ -182,7 +182,7 @@ Expected: `Match=True` for all 4 tables, `All 4 shortcuts match: True`. If any s
 `False`, stop and check that shortcut was pointed at the right table before
 proceeding (revisit Task 1 for that specific shortcut).
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add .claude/queries/adhoc/dp-bronze-verify/verify_shortcuts_jdis_partinfo.py
@@ -202,7 +202,7 @@ This is the real proof step for the spec's Section 6 verification plan — confi
 the "Real facts" mapping table above is actually correct before it goes into the
 notebook, using the 5 real sample parts already captured above.
 
-- [ ] **Step 1: Write the verification script**
+- [x] **Step 1: Write the verification script**
 
 ```python
 """
@@ -281,7 +281,7 @@ for branch, part_no, franchise in SAMPLE_PARTS:
           f"(expected Current$={exp_dollars}, Previous$={exp_prev_dollars})")
 ```
 
-- [ ] **Step 2: Run it and evaluate the real output**
+- [x] **Step 2: Run it and evaluate the real output**
 
 ```bash
 python .claude/queries/adhoc/dp-bronze-verify/verify_jdis_partinfo_mapping.py
@@ -303,7 +303,7 @@ values match exactly and the `InHistMQT` dollar values are understood (matching,
 clearly-identified and accepted small real-world timing difference, not an unexplained
 gap).
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add .claude/queries/adhoc/dp-bronze-verify/verify_jdis_partinfo_mapping.py
@@ -324,7 +324,7 @@ comparison baseline now, before Task 5 touches anything, so Task 6 has real old
 data to compare the new notebook's output against — not just the 5 sample rows
 already in this plan (a broader, real comparison).
 
-- [ ] **Step 1: Export a full snapshot for comparison**
+- [x] **Step 1: Export a full snapshot for comparison**
 
 ```python
 import duckdb
@@ -365,7 +365,7 @@ reaches the live notebook, matching how every other notebook rewrite in this
 project has worked. Confirm with the user before committing directly to `dev` if
 unsure).
 
-- [ ] **Step 1: Write the new notebook content**
+- [x] **Step 1: Write the new notebook content**
 
 Replace the entire file with:
 
@@ -703,7 +703,7 @@ print("Sample rows (compare against plan's 'Real sample parts' table):")
 print(sample.to_string())
 ```
 
-- [ ] **Step 2: Compile-check the notebook's Python cells for syntax errors**
+- [x] **Step 2: Compile-check the notebook's Python cells for syntax errors**
 
 Since this doesn't run locally (it needs live Spark + the real Bronze shortcuts),
 at minimum confirm the file has valid Python syntax:
@@ -720,7 +720,7 @@ print('Syntax OK')
 ```
 Expected: `Syntax OK`.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add "workspaces/DP - Staging - Dev/Build_Silver_PartInformation.Notebook/notebook-content.py"
@@ -858,13 +858,13 @@ reference):
 
 **Files:** none — verification only.
 
-- [ ] **Step 1: Run the rebuilt notebook for real**
+- [x] **Step 1: Run the rebuilt notebook for real**
 
 Brian: in the Fabric portal, open `Build_Silver_PartInformation.Notebook` in
 `DP - Staging - Dev` and click **Run**. Watch it complete. Report the printed
 sample-rows output from the notebook's own final cell.
 
-- [ ] **Step 2: Compare the sample rows against this plan's expected values**
+- [x] **Step 2: Compare the sample rows against this plan's expected values**
 
 Check the notebook's own printed output (Step 1) against the "Real sample parts"
 table in this plan's "Real facts" section. `QuantityOnHand` should match exactly (0
@@ -873,7 +873,7 @@ from the simple `INHIST_MONTH_4_PI` join). `Current12MoDollars`/`Previous12MoDol
 should be close to the expected values — if Task 3's window-boundary refinement
 was needed, use whatever adjusted logic was confirmed there.
 
-- [ ] **Step 3: Compare full-table row counts against the pre-rewrite snapshot**
+- [x] **Step 3: Compare full-table row counts against the pre-rewrite snapshot**
 
 ```python
 import duckdb
@@ -897,7 +897,7 @@ Expected: counts should be close (both represent all real parts in `InMaster` /
 the source system at slightly different points in time — small drift is normal
 and expected on a live source, a large unexplained gap is not).
 
-- [ ] **Step 4: Record the real CU/duration this run took**
+- [x] **Step 4: Record the real CU/duration this run took**
 
 Use `Track-ItemCU.ps1` (already proven in this project,
 `projects/fabric-monitoring/scripts/enhanced/Track-ItemCU.ps1`) with
@@ -988,18 +988,18 @@ further config/pipeline changes are needed (`dp_backend_scope.json`'s `notebookI
 `workspaceId` for `Build_Silver_PartInformation` are unchanged — same item, same ID,
 different internal logic).
 
-- [ ] **Step 1: Delete the two old Dataflow Gen2 items**
+- [x] **Step 1: Delete the two old Dataflow Gen2 items**
 
 Brian, Fabric portal: in `DP - Staging - Dev`, delete
 `df_JDIS_PartInformation_Active_Raw.Dataflow` and
 `df_JDIS_PartInformation_Dead_Raw.Dataflow`.
 
-- [ ] **Step 2: Delete their now-unused output tables**
+- [x] **Step 2: Delete their now-unused output tables**
 
 Same workspace, `DP_Staging` lakehouse → `Tables` → delete `PartInformation_Active`
 and `PartInformation_Dead`.
 
-- [ ] **Step 3: Commit via Fabric Git integration**
+- [x] **Step 3: Commit via Fabric Git integration**
 
 `DP - Staging - Dev` → Source control → Commit. Confirm in `fabric-workspace-docs`
 (after `git pull origin dev`) that both `.Dataflow` folders are gone.
