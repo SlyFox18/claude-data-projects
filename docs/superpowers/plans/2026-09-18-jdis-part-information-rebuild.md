@@ -908,6 +908,56 @@ result) before deciding anything about splitting.
 
 ---
 
+### Task 6 — Real results (2026-09-18)
+
+**Step 1 (real run):** Brian ran the rebuilt notebook in `DP - Staging - Dev`.
+Succeeded. (Hit one unrelated real snag along the way: after the Git "Update all"
+pull, opening the notebook showed "You don't have permission to use the environment
+originally attached to this notebook" for `DP_Silver_HighConcurrency` — a Fabric
+permission quirk unrelated to this rebuild's logic. Worked around it for this
+one-off manual run by using the workspace default environment instead, since the
+environment only affects Spark session-sharing configuration, not data/logic
+correctness. Flagged as a follow-up to check before relying on this environment for
+`Pipeline_DP_Daily_Refresh`'s scheduled runs — not yet investigated.)
+
+**Steps 2-3 (real comparison, run directly via DuckDB against the written Delta
+table rather than relying on the notebook's own console output — a stronger check
+since it validates the actual persisted output):**
+
+- All 5 real sample parts from this plan's "Real facts" table matched **exactly**,
+  including `VendorCode`/`ListPrice`: `PK11/13/M` (1, 1491.31, 4, 5544.40), `341-645/15/SC`
+  (1, 185.23, 1, 170.88), `VAK1/3/M` (2, 174.90, 1, 79.76), `221228/3/RM` (2, 66.50, 1,
+  28.59), `9RNJA/8/M` (18, 1219.44, 9, 441.70) — every value matched, including
+  `VAK1`/`221228`, the two parts that originally exposed Task 3's rolling-window bug.
+  `QuantityOnHand` was 0 for all 5 as expected.
+- Row count: new table 1,112,784 vs. the pre-rewrite snapshot's 1,112,605 — a
+  difference of +179 rows, matching normal live-source drift between when the
+  snapshot was captured and today (not a discrepancy — the code-quality reviewer had
+  independently predicted this exact +179 figure from its own live column
+  reconciliation before this run ever happened).
+- Column count: exactly 33, as scoped.
+
+**Step 4 (real CU/duration, via `Track-ItemCU.ps1`):** `Build_Silver_PartInformation`
+(SynapseNotebook) — **13,594.62 CU-seconds, 1,368.01 seconds (~22.8 min) duration, 9
+operations** for this one run. For rough context, the same snapshot's historical
+figures for the old dataflow (`df_JDIS_PART_INFORMATION_Raw`, cumulative across its
+lifetime — not a single-run number) show 89,351.14 CU-seconds / 8,161.85s across 20
+operations; dividing by the two manual refreshes on record (per the design spec)
+gives a rough per-refresh average of ~44,675 CU-seconds / ~68 minutes — meaning the
+new unified notebook appears substantially cheaper and faster per run than the old
+ODBC dataflow, though this comparison is approximate (different metrics windows,
+different operation-counting granularity) rather than an exact apples-to-apples
+figure.
+
+**Design spec Section 5 (Active/Dead split) — real decision:** given a single real
+run costs ~13.6K CU-seconds / ~23 minutes, well within this backend's normal daily
+notebook range and already cheaper than the old approach, there is no real evidence
+today that a split would meaningfully help. **Decision: do not build a split.** Revisit
+only if real future measurements show this notebook becoming either much larger (row
+growth) or a genuine capacity bottleneck.
+
+---
+
 ### Task 7: Cutover and cleanup
 
 **Files:** none — the notebook was already rewritten in place (Task 5), so no
