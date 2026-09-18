@@ -937,24 +937,47 @@ since it validates the actual persisted output):**
   reconciliation before this run ever happened).
 - Column count: exactly 33, as scoped.
 
-**Step 4 (real CU/duration, via `Track-ItemCU.ps1`):** `Build_Silver_PartInformation`
-(SynapseNotebook) — **13,594.62 CU-seconds, 1,368.01 seconds (~22.8 min) duration, 9
-operations** for this one run. For rough context, the same snapshot's historical
-figures for the old dataflow (`df_JDIS_PART_INFORMATION_Raw`, cumulative across its
-lifetime — not a single-run number) show 89,351.14 CU-seconds / 8,161.85s across 20
-operations; dividing by the two manual refreshes on record (per the design spec)
-gives a rough per-refresh average of ~44,675 CU-seconds / ~68 minutes — meaning the
-new unified notebook appears substantially cheaper and faster per run than the old
-ODBC dataflow, though this comparison is approximate (different metrics windows,
-different operation-counting granularity) rather than an exact apples-to-apples
-figure.
+**Step 4 (real CU/duration) — corrected after a real discrepancy Brian caught:**
+The first pass through this step used `Track-ItemCU.ps1`'s default query against
+the Capacity Metrics model's `Metrics By Item` table, which the script's own header
+comment already documents as "a rolling-window total matching the app's 'Items (14
+days)' view" — i.e. a **14-day cumulative total**, not a single-run number. That
+was misread as a single-run figure (13,594.62 CU-seconds / 1,368s), which is really
+the sum of the OLD notebook's prior daily runs plus today's one new run, all under
+the same long-lived Item Id (the notebook was rewritten in place, so its Item Id
+never changed). Brian caught this by directly timing a second real run at 1:31
+(91 seconds) — nowhere close to the ~23 minutes that number implied.
 
-**Design spec Section 5 (Active/Dead split) — real decision:** given a single real
-run costs ~13.6K CU-seconds / ~23 minutes, well within this backend's normal daily
-notebook range and already cheaper than the old approach, there is no real evidence
-today that a split would meaningfully help. **Decision: do not build a split.** Revisit
-only if real future measurements show this notebook becoming either much larger (row
-growth) or a genuine capacity bottleneck.
+Querying the model's `Metrics By Item And Day` table (filtered to just 2026-09-18)
+gives a much closer per-day figure: **3,878.68 CU-seconds / 378.36s across 2
+operations** for today. This still doesn't equal Brian's 91-second stopwatch time
+exactly, and per Microsoft's own documentation
+(`learn.microsoft.com/fabric/enterprise/throttling`), that remaining gap has a real,
+documented explanation: Spark notebook runs are classified as **background
+operations**, and Fabric smooths background-operation CU usage over a **24-hour**
+window (vs. 5-64 minutes for interactive operations) specifically to avoid capacity
+throttling spikes from bursty scheduled jobs — so the Capacity Metrics app's
+"Duration (s)" column for a background/Spark item reflects smoothing-related billing
+accounting, not literal wall-clock runtime. **The trustworthy number for "how long did
+this actually take" is Brian's direct stopwatch measurement: ~91 seconds.** The CU(s)
+figure is still a real, meaningful total-compute-cost number (Fabric bills real CU
+consumption regardless of how it's smoothed across time), just not one that maps
+cleanly to a "minutes per run" duration for background items.
+
+**Lesson for future use of `Track-ItemCU.ps1` on Spark/notebook items:** its default
+`Metrics By Item` table is a 14-day rolling total, not a per-run number — for a
+single-run check, either query `Metrics By Item And Day` filtered to the specific
+date, or just time the run directly. Its "Duration (s)" should not be read as
+wall-clock time for background-classified items (notebooks, warehouse jobs, dataflow
+refreshes) regardless of which table it's pulled from.
+
+**Design spec Section 5 (Active/Dead split) — real decision:** a real run takes ~91
+seconds and ~3,879 CU-seconds/day total across today's 2 operations — both trivial
+relative to this backend's normal daily notebook range, and clearly cheaper/faster
+than the old ODBC dataflow's historical footprint. There is no real evidence a split
+would meaningfully help. **Decision: do not build a split.** Revisit only if real
+future measurements show this notebook becoming either much larger (row growth) or a
+genuine capacity bottleneck.
 
 ---
 
