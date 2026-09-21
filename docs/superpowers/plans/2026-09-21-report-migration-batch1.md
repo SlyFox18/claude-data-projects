@@ -161,7 +161,7 @@ missing — proceeding to Task 2.
 - Modify: `projects/unique parts customers - report/reports/current/Unique Parts Customers.SemanticModel/definition/tables/dim_DateTable.tmdl`
 - Modify: `projects/unique parts customers - report/reports/current/Unique Parts Customers.SemanticModel/definition/tables/dim_UniqueCustomers.tmdl`
 
-- [ ] **Step 1: Edit each table's partition source**
+- [x] **Step 1: Edit each table's partition source**
 
 All 6 tables in this report use the identical simple pattern — find this exact line
 in each file:
@@ -174,14 +174,14 @@ Replace with:
 ```
 No other line changes — every `Item="<TableName>"` stays exactly as-is (`Fact_InTrans_UniqueCustomers`, `Fact_Invoice_UniqueCustomers`, `dim_BranchLocation`, `dim_CustomerList`, `dim_DateTable`, `dim_UniqueCustomers` respectively).
 
-- [ ] **Step 2: Confirm no other `LH_Master_Data` references remain in this report**
+- [x] **Step 2: Confirm no other `LH_Master_Data` references remain in this report**
 
 ```bash
 grep -rn "LH_Master_Data" "projects/unique parts customers - report/reports/current/Unique Parts Customers.SemanticModel/"
 ```
 Expected: no output.
 
-- [ ] **Step 3: Commit the file changes**
+- [x] **Step 3: Commit the file changes**
 
 ```bash
 git add "projects/unique parts customers - report/reports/current/Unique Parts Customers.SemanticModel/definition/tables/"*.tmdl
@@ -189,6 +189,10 @@ git commit -m "Repoint Unique Parts Customers to DP_Presentation
 
 Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 ```
+
+**Real result (2026-09-21):** commit `34e40766`. Both spec-compliance and
+code-quality review passed (APPROVED — byte-identical connection string across all
+6 files, TMDL syntax/indentation intact, no unrelated changes).
 
 - [ ] **Step 4: Brian — Desktop refresh, validate, and publish**
 
