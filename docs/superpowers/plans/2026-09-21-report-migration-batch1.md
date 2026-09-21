@@ -597,6 +597,85 @@ Expected: `unmatched` should be 0 or very close to it for all three fact tables.
 
 ---
 
+## Real, significant finding (2026-09-21) — a genuine dimension-schema gap, not a repoint bug
+
+After the repoint (commits `6d9c4918`/`3c956739`/`a817a8e3`/`37617707`/`1bdcf64c`/`adde403d`)
+and credentials fix, **all 6 semantic model refreshes failed** with `Data source
+error: The '<column>' column does not exist in the rowset` — a different missing
+column per report (`ServiceCapacity`, `BranchKey`, `DayOfWeekName`, `Street`).
+
+**Real root cause:** not a mistake in this batch's work — a genuine gap between
+what these 6 reports' models declare for `dim_BranchLocation`/`dim_DateTable`/
+`dim_CustomerList` and what the Gold-layer versions of those tables actually carry.
+The Gold dimensions were deliberately trimmed during an earlier project phase (the
+LH_Master_Data dimensions catalog's column-usage-depth audit, `docs/architecture/lh-master-data-dimensions-catalog.md`)
+based on usage across the reports checked *at that time* — which didn't include
+these 6, since they hadn't been migrated yet.
+
+**Investigation, not a guess:** Brian asked "figure out if these are actually
+needed or just there but unused" before any Gold-layer or model change was made.
+Two independent checks, cross-verified against each other:
+1. `pbir fields list` (a real CLI tool for this project, not a text grep) scanned
+   every visual/measure binding across all 6 reports for the ~72 flagged columns.
+2. Brian independently opened the real, confirmed-production versions of each
+   report in Desktop and visually checked for any use of the flagged columns,
+   catching a hidden dependency the text scan alone couldn't fully confirm: a
+   `sortByColumn` property (`MonthYear -> SortableMonthYear`) with no direct visual
+   binding of its own, but load-bearing for a column (`MonthYear`) that IS visually
+   used (Unique Parts Customers' "Rolling 12" visual, confirmed spanning Sep
+   2025 -> Sep 2026 in real chronological order — only possible with a real
+   year-aware sort key, not `MonthName`'s own plain-`Month` sort).
+
+**Real result: ~71 of ~72 flagged columns were confirmed genuinely unused** (only
+ever appearing in their own column declaration and the auto-generated
+`cultures/en-US.tmdl` translation file — never in any visual, measure, or
+relationship). **`SortableMonthYear` was the one real exception.**
+
+**`ContactClass` specifically** (flagged by Brian as "used for the key customer
+flag in other reports") was traced to the real Gold `dim_CustomerList` build logic
+(`.claude/queries/dimensions/dim_CustomerList.pq`): `IsKeyCustomer` is computed
+*from* `ContactClass` at build time (`([ContactClass] ?? "") = "KEY"`) and
+`IsKeyCustomer` is already a real, present Gold column — the business need is
+already served without exposing the raw `ContactClass` text column. Confirmed
+none of these 6 reports reference raw `ContactClass` directly.
+
+**Fix, in two parts:**
+1. Added `SortableMonthYear` back to the real Gold `dim_DateTable`
+   (`Build_Gold_DateTable.Notebook`, commit `73fef14d`) — using the exact real
+   logic from the original production dataflow
+   (`.claude/queries/dimensions/dim_DateTable.pq`), not guessed:
+   `Text.From([Year]) & "-" & Text.PadStart(Text.From([Month]), 2, "0") & " " & [MonthNameShort]`,
+   e.g. `"2026-09 Sep"`. Brian ran the notebook; verified live via DuckDB — 14
+   columns, correct value (`"2025-12 Dec"` for 2025-12-25), and correct sort order
+   across the Sep 2025 -> Sep 2026 boundary matching the real production visual
+   exactly. This is a real, working precedent for what this same notebook's own
+   header comment already anticipated: *"add any of these back later if a real,
+   identified need for one shows up during a report's actual migration."*
+2. Trimmed all 6 reports' models directly in `fabric-workspace-docs` (not
+   `data-projects` — these are edits to the already-published `RP - Dev` copies,
+   the same "safe to edit directly since nothing's open in Desktop" situation as
+   the original repoint) — commits `ccf3afae`/`ab3361f8`/`ee18395a`/`dfc0f144`/
+   `ec2651fe`/`0603a701`. Removed 7 `dim_BranchLocation` columns (all 6 reports),
+   53 `dim_DateTable` columns (all 6 reports, keeping the now-14-column real
+   schema including `SortableMonthYear`), and 11 `dim_CustomerList` columns
+   (Unique Parts Customers and Planter Inspection Part Sales only — the only 2
+   reports with this dimension). Independently reviewed: pure deletions confirmed
+   (zero unexpected added/modified lines in any of the 6 diffs), exact column
+   counts matched, `SortableMonthYear` and both real `sortByColumn` dependencies
+   confirmed intact everywhere, zero references to any removed column found in any
+   report's relationships or measures. One non-blocking, pre-existing finding: all
+   6 reports' `cultures/en-US.tmdl` files still have stale Q&A linguistic-metadata
+   entries for the removed columns — harmless (doesn't affect refresh, only Power
+   BI's optional Q&A feature), deliberately left alone rather than risk editing
+   that file's embedded JSON structure for a cosmetic-only cleanup.
+
+**Real, still-open next step:** Brian needs to pull these 6 model-trim commits into
+each live `RP - Dev` semantic model (Source control → Update) and re-attempt each
+refresh — this plan's original per-task post-publish verification scripts (Task
+2-7, Step 5/6) are still the right next check once refresh succeeds.
+
+---
+
 ### Task 8: Archive the data-projects copies and update the catalog doc
 
 **Files:**
