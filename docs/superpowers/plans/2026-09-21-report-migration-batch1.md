@@ -76,6 +76,50 @@ reference/verification context — Brian can cross-check what Desktop shows agai
 per-task below) against the live `DP_Presentation` data to confirm the real numbers
 match.
 
+## Real process correction #2 (2026-09-21) — how this batch actually finished
+
+**What actually happened, for all 6 reports at once (not per-report as originally
+planned):** Brian opened each report from `data-projects`, did his own cleanup pass,
+and published each to `RP - Dev` **as-is, still pointed at `LH_Master_Data`** —
+deliberately, so the published `RP - Dev` copy matches production exactly and the
+`data-projects` copy stays a clean, unmodified fallback. He then explicitly asked
+Claude to do the connection-string repoint on the `RP - Dev` copies directly.
+
+This is a real, load-bearing distinction from the "Real process correction" section
+above: **once a report's data-source switch hasn't happened yet AND nobody has it
+open in Desktop, Claude editing the TMDL files directly is safe** (confirmed with
+Brian before proceeding — none of the 6 were open in Desktop at this point). The
+earlier problem was specifically about Desktop's in-memory state winning over an
+external file edit — that risk doesn't exist when Desktop isn't running against the
+file at all. **The actual final pattern for this and future batches:** Brian
+publishes the unmodified report to `RP - Dev` first (creating the clean baseline +
+preserving the fallback), confirms nothing's open in Desktop, then Claude does the
+repoint directly on the `RP - Dev` copy and creates the `.pbip` if missing.
+
+**Real result:** all 6 reports repointed directly in `fabric-workspace-docs`
+(commits `6d9c4918`, `3c956739`, `a817a8e3`, `37617707`, `1bdcf64c`, `adde403d` —
+Unique Parts Customers, Stock Check, Negative On Hand-On Hand No Bin, Parts Not
+Re-Ordered 24 Hours, Planter Inspection Part Sales, Parts Adjustments
+respectively), pushed to `origin/dev`. 5 new `.pbip` files created (Parts
+Adjustments already had one). A consolidated review (spec + code-quality) passed
+all 6 with nothing flagged — connection strings byte-identical, all
+business-logic steps (`Filtered Rows`, `Extracted Date`, `FilterValidCustomers`)
+confirmed untouched, `jdis_Part_Information` → `Silver_PartInformation` rename
+confirmed correct with no extra column-handling steps added, `dim_PAType.tmdl`
+confirmed excluded.
+
+**Real, still-open next step, not yet done:** these commits only update the
+*Git-tracked* content in `fabric-workspace-docs` — the live `RP - Dev` Fabric
+workspace itself still needs a **Source control → Update** (in the Fabric portal)
+to actually pull this change into the live semantic models. Given this session's
+own real precedent earlier today (the `DMTS_MonikerWithUnboundDataSources`
+incident — a semantic model's SQL data-source credentials can come back unbound
+after a redeploy even when previously set), **it's plausible each of these 6
+reports' new `DP_Presentation` connection will need its Data source credentials
+set/confirmed in the Fabric portal** (Settings → Data source credentials) before a
+real refresh succeeds — flagging this now so it isn't a surprise, not confirmed
+either way yet.
+
 ---
 
 ## Real facts this plan relies on (verified 2026-09-21, not assumed)
