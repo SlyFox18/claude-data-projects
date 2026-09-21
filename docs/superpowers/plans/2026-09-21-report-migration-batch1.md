@@ -425,7 +425,7 @@ filter.
 `calculated`/DATATABLE table with no `Sql.Database` reference — do not touch it,
 not part of this migration.)
 
-- [ ] **Step 1: Edit the 6 straightforward tables' partition sources**
+- [x] **Step 1: Edit the 6 straightforward tables' partition sources**
 
 Same single-line swap as Task 2, Step 1, applied to `Fact_AdjPairs_Summary`,
 `Fact_AdjustmentPairs`, `Fact_PartsAdjustments`, `dim_AdjustmentType`,
@@ -435,7 +435,7 @@ Same single-line swap as Task 2, Step 1, applied to `Fact_AdjPairs_Summary`,
 step after the `Source`/`dbo_...` lines — leave those completely untouched, only
 the `Sql.Database(...)` line changes in each.
 
-- [ ] **Step 2: Edit `jdis_Part_Information.tmdl` — connection swap AND table rename**
+- [x] **Step 2: Edit `jdis_Part_Information.tmdl` — connection swap AND table rename**
 
 The current full M-query in this file:
 ```
@@ -461,14 +461,14 @@ real schema exactly, including `PackageQty` already being typed `string` in both
 places. Do not copy Bin Location Report's narrower 18-column/`Int64.Type`-cast
 pattern here — it doesn't apply to this report's own column set.
 
-- [ ] **Step 3: Confirm no other `LH_Master_Data` references remain**
+- [x] **Step 3: Confirm no other `LH_Master_Data` references remain**
 
 ```bash
 grep -rn "LH_Master_Data" "projects/parts adjustments - report/reports/current/Parts Adjustments.SemanticModel/"
 ```
 Expected: no output.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add "projects/parts adjustments - report/reports/current/Parts Adjustments.SemanticModel/definition/tables/"*.tmdl
@@ -481,6 +481,22 @@ exactly, including PackageQty already being typed string in both places.
 
 Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 ```
+
+**Real result (2026-09-21):** commit `1957ca97`. Both spec-compliance and
+code-quality review passed (APPROVED) — the code reviewer independently
+cross-checked all 33 `jdis_Part_Information` column names against the real
+`Build_Silver_PartInformation.Notebook` output and confirmed an exact match,
+including `PackageQty`'s string typing. **Real finding surfaced by the review and
+independently confirmed via DuckDB, pre-existing and unrelated to this commit's own
+correctness:** `Weight` is declared `string` in this report's model, but
+`Silver_PartInformation.Weight` is actually `DECIMAL(14,4)` — a genuine type
+mismatch (unlike `PackageQty`, which the notebook explicitly casts to match). This
+predates the migration and isn't something to fix in this repoint, but **watch for
+it specifically during Step 5's Desktop refresh** — if refresh errors or complains
+about the `Weight` column, this is almost certainly why, and the fix would be
+adding a `Table.TransformColumnTypes` step to cast it, matching how the same
+report's `PackageQty` column doesn't need one (already a string) but `Weight`
+would.
 
 - [ ] **Step 5: Brian — Desktop refresh, validate, and publish**
 
