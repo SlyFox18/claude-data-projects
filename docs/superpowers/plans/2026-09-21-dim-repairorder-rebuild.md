@@ -192,6 +192,8 @@ check = spark.sql(f"""
 
 No test framework applies to a Fabric notebook — the real test is Task 3's independent DuckDB verification against `EquipRDB` (ground truth), run after Brian executes the notebook in Task 4. Do not attempt to run PySpark locally; there is no local Spark environment for this project.
 
+**Real correction (found during code-quality review, fixed in a follow-up commit):** the plan's own `non_promo_agg` filter as originally written above used `F.col("Franchise") != "ZP"`. Under Spark's three-valued null logic, `!=` against a null `Franchise` evaluates to `NULL` (not `true`), so those rows were silently dropped from the aggregate — a real divergence from the original Power Query's `<>` comparison, where `null <> "ZP"` is `true` (row included). Both the spec-compliance and code-quality reviewers independently caught this. Fixed by using `~F.col("Franchise").eqNullSafe("ZP")` instead, which correctly treats a null `Franchise` as not-ZP (included) — see commit `777cebc8` in `fabric-workspace-docs`. The code block above has been left as originally planned for historical accuracy; implementers following this plan in the future should use the null-safe form.
+
 - [ ] **Step 6: Commit**
 
 ```bash
@@ -291,6 +293,13 @@ gold = con.execute(f"""
 # column names confirmed against .claude/queries/raw-tables/
 # Raw_InTrans_Incremental.pq: BRANCH, customer_no, REF_NO, PART_NO,
 # FRANCHISE, Trans_Datetime, SALE_VAL, COST_VAL.
+#
+# "(FRANCHISE IS NULL OR FRANCHISE != 'ZP')" rather than a plain
+# "FRANCHISE != 'ZP'" - SQL's != also evaluates to unknown/false against
+# NULL, same three-valued-logic trap found and fixed in the notebook's
+# own PySpark filter (see the plan's "Real correction" note on Task 1).
+# Must match the notebook's eqNullSafe behavior or this ground-truth
+# check would silently validate against the wrong rule.
 # ------------------------------------------------------------------
 cn = pyodbc.connect('DSN=EquipRDB64', timeout=30)
 cur = cn.cursor()
@@ -316,7 +325,7 @@ cur.execute(f"""
     SELECT REF_NO, SUM(SALE_VAL) AS SRC_TotalPartsSales, SUM(COST_VAL) AS SRC_TotalPartsCost, COUNT(*) AS SRC_PartsCount
     FROM InTrans
     WHERE PART_NO NOT LIKE '*%'
-      AND FRANCHISE != 'ZP'
+      AND (FRANCHISE IS NULL OR FRANCHISE != 'ZP')
       AND Trans_Datetime >= '2022-01-01'
       AND REF_NO IN ({placeholders})
     GROUP BY REF_NO
@@ -399,6 +408,8 @@ else:
     print("BranchKey/CustomerNo/OrderDate/LastActivityDate are in the printed table above for manual eyeball")
     print("confirmation (identifiers/dates, not tolerance-compared numerics).")
 ```
+
+**Real correction (found during code-quality review, fixed in a follow-up commit):** pyodbc returns Python `Decimal` objects for EquipRDB's `DECIMAL`/`NUMERIC` columns (`SALE_VAL`, `COST_VAL`, `BRANCH`, and the `COUNT(*)` results), which would raise `TypeError` when compared against the gold table's `float64` columns in the mismatch-detection loop. Fixed by adding `.astype(float)` casts on `order_attrs["SRC_BranchKey"]`, `non_promo["SRC_TotalPartsSales"/"SRC_TotalPartsCost"/"SRC_PartsCount"]`, and `promo["SRC_TotalPromoDiscount"/"SRC_PromoCount"]` immediately after each DataFrame is built — see commit `50234dec` in `data-projects`. The code block above has been left as originally planned for historical accuracy; run the actual committed file, not this block, when executing Step 2.
 
 - [ ] **Step 2: Run the script**
 
