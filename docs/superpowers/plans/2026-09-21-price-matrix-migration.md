@@ -673,6 +673,8 @@ git commit -m "Trim genuinely-unused columns on Price Matrix per exhaustive audi
 Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 ```
 
+**Real correction (found during spec-compliance review, fixed in a follow-up commit):** the trim removed `LocationID` from `dim_BranchLocation`, but the kept `Branch` column still declared `sortByColumn: LocationID` — a dangling reference to a column that no longer exists, which would fail TOM validation on the next Desktop refresh. This is the same "hidden functional dependency via `sortByColumn`" class of bug already found once this session (the `dim_DateTable.SortableMonthYear` gap in Batch 1). No other trimmed table had a `sortByColumn` referencing a removed column (confirmed via a full grep across all 6 files). Fixed by removing the dangling `sortByColumn`/`changedProperty` lines entirely (no other column remained in the trimmed set to re-point it to) — see commit `da84b2da` in `fabric-workspace-docs`.
+
 ---
 
 ### Task 10: Push all report-layer changes
