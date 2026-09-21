@@ -535,6 +535,36 @@ grep -rln "\[PartNumber\]" "workspaces/RP - Dev/Price Matrix.SemanticModel/defin
 
 Confirm whether any relationship or M-query transform joins/filters on raw `PartNumber` text (as opposed to `PartNumberKey`), which would expose the known `dim_Parts` control-character issue.
 
+## Real findings (2026-09-21) — Task 6's actual audit results
+
+Ran against the real, now-published `RP - Dev/Price Matrix.SemanticModel`, combining `pbir fields list` (visual-level) with a full DAX-text grep across every measure/calculated table plus `relationships.tmdl` (the exact two-tool combination that caught this whole plan's central finding — a visual-only scan would have missed the same gaps again here).
+
+**Step 4 (`DateTime.LocalNow()`):** No other instance found. `Data Refresh.tmdl` already uses the correct, already-fixed UTC→Central-Time pattern (`DateTimeZone.UtcNow()` + manual DST-aware offset calculation) — only `Fact_Part_Transactions.tmdl`'s own rolling-window filter has the bug, as already known.
+
+**Step 5 (`PartNumber` control-character exposure):** No risk found. Both relationships touching `dim_Parts` (`Fact_Inventory.PartNumberKey`/`Fact_Part_Transactions.PartNumberKey` → `dim_Parts.PartNumberKey`) use the surrogate key, never raw `PartNumber` text.
+
+**Correctness-blocking gaps (declared columns that no longer exist in the redesigned `DP_Presentation` tables — MUST be trimmed or refresh fails with "column does not exist"):**
+
+| Table | Declared | Real in Gold | Gone |
+|---|---|---|---|
+| `Fact_Part_Transactions` | 87 | 17 | 70 |
+| `dim_Franchise` | 15 | 4 | 11 |
+| `dim_BranchLocation` | 16 | 9 | 7 (`ServiceCapacity`, `MarketPresence`, `TerritoryCoverage`, `OperationalPriority`, `RegionalClassification`, `ServiceHours`, `DistanceFromHub` — the exact same 7 already trimmed from these same 2 other reports in Batch 1) |
+| `dim_Parts` | 22 | 21 | 1 (`VendorCode` — already known dropped from the Gold rebuild, see `project_dim_parts_vendorcode_limitation` memory) |
+| `Fact_Inventory` | 25 | 25 | 0 — exact match, no correctness gap |
+| `dim_SLC` / `dim_Source` / `dim_VendorCode` / `dim_DealerGroupCode` | 2 each | 2 each | 0 — exact match |
+| `dim_DateTable` | 67 | (not yet checked — see below) | — |
+
+**Real, confirmed-used columns per table** (DAX-text grep + `pbir` + relationships, cross-checked against each table's live Gold schema):
+
+- **`Fact_Part_Transactions`:** `TransactionDate`, `BranchKey`, `FranchiseKey`, `PartNumber`, `PartNumberKey`, `Quantity`, `SaleAmount`, `CostAmount`, `Margin`, `SalesType`, `EffectiveListSalVal`, `EffectiveListMargin`, `MatrixSaleGained`, `MatrixMarginGained` (14 of 17 real Gold columns). `Branch`, `Type`, `MarginPercent` exist in Gold but aren't referenced anywhere in this report — trim candidates, not correctness-required.
+- **`Fact_Inventory`:** relationship keys `BranchKey`, `PartNumberKey`, `FranchiseKey`, `VendorCodeKey`, `SourceKey`, `SLCKey`, `DealerGroupKey` (7) + DAX-used `Cost`, `Current12MoDollars`, `Current12MoSales`, `DateLastRequested`, `InventoryCost`, `ListPrice`, `PartNumber`, `QuantityOnHand`, `SellPrice1` (9) = 16 of 25. Unused: `Description`, `BinQty`, `BackOrderQty`, `PackageQty`, `Returnable`, `DateCreated`, `Previous12MoSales`, `Previous12MoDollars`, `CommodityCodeKey` (9 — `CommodityCodeKey`'s own relationship target, `dim_CommodityCode`, isn't even one of this report's 9 tables, so it's fully orphaned).
+- **`dim_BranchLocation`:** `BranchKey`, `Branch` only (2 of 9).
+- **`dim_Franchise`:** `FranchiseKey` (relationship), `Franchise` (visual slicer), `FranchiseCode` (relationship via `Price_Matrix.franchise` → `dim_Franchise.FranchiseCode`) = 3 of 4. `FranchiseDisplayName` exists in Gold but unused.
+- **`dim_Parts`:** `PartNumberKey` (relationship), `PartNumber` (DAX, via `PartsInRange`/`AllPartsWithSales` filter tables), `Franchise` (an inactive relationship to `dim_Franchise.FranchiseCode` — kept even though inactive, since `USERELATIONSHIP` could reactivate it; confirmed no measure currently does) = 3 of 21.
+- **`dim_SLC` / `dim_Source` / `dim_VendorCode` / `dim_DealerGroupCode`:** each table's own 2 columns (`*Key` + name) are both used (relationship + visual slicer) — already minimal, no trim needed.
+- **`dim_DateTable`:** genuinely **zero** real usage beyond its own `Date` column serving as the `Fact_Part_Transactions.TransactionDate` relationship target. No DAX measure, no visual, no slicer references anything else on this table — confirmed via the same grep, `pbir` output, and a full `relationships.tmdl` read. This is the same "completely unused beyond the join key" pattern already found and handled in Batch 0 for `Physical Inventory`/`60+ Days Past Due` (`dim_DateTable` removed entirely in both, confirmed with Brian first each time) — **flagged for Brian's decision before Task 9 proceeds on this table**: keep it trimmed to just `Date`, or remove the table entirely (dropping the relationship too, since nothing else depends on it).
+
 ---
 
 ### Task 7: Repoint all 9 tables' SQL connections
