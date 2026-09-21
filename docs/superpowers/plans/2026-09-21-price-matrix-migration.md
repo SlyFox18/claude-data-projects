@@ -675,6 +675,8 @@ Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 
 **Real correction (found during spec-compliance review, fixed in a follow-up commit):** the trim removed `LocationID` from `dim_BranchLocation`, but the kept `Branch` column still declared `sortByColumn: LocationID` — a dangling reference to a column that no longer exists, which would fail TOM validation on the next Desktop refresh. This is the same "hidden functional dependency via `sortByColumn`" class of bug already found once this session (the `dim_DateTable.SortableMonthYear` gap in Batch 1). No other trimmed table had a `sortByColumn` referencing a removed column (confirmed via a full grep across all 6 files). Fixed by removing the dangling `sortByColumn`/`changedProperty` lines entirely (no other column remained in the trimmed set to re-point it to) — see commit `da84b2da` in `fabric-workspace-docs`.
 
+**Non-blocking follow-up flagged (code-quality review):** `cultures/en-US.tmdl`'s linguistic-schema (Q&A/Copilot synonym bindings) still has ~129 `ConceptualEntity`/`ConceptualProperty` entries pointing at now-removed columns across all 6 trimmed tables. Confirmed this does NOT break refresh or Desktop load — TOM doesn't validate linguistic bindings against physical columns at partition/refresh time — so it's orphaned metadata, not a correctness bug. Not fixed as part of this plan; Desktop's own "Optimize Q&A" feature can regenerate it, or it can be left as harmless cruft. Flagging for Brian's awareness, not blocking.
+
 ---
 
 ### Task 10: Push all report-layer changes
