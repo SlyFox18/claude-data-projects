@@ -690,6 +690,10 @@ cd "/c/Users/bfox/Documents/Git-Projects/fabric-workspace-docs"
 git push origin dev
 ```
 
+**Real correction (found when Brian first opened the report in Desktop, fixed in a follow-up commit):** refresh failed with `We cannot apply operator < to types Date and DateTime.` on `Fact_Part_Transactions` (cascading into "Load was cancelled" errors on `dim_DealerGroupCode`/`dim_Source`/`dim_SLC`/`dim_VendorCode`, which were never independently broken — just collateral from the same load sequence). Root cause: Task 8's DST-aware `LocalNow` replacement is built entirely from foldable M functions, so Power Query's query-folding engine tried to translate the whole DST calculation into native SQL against the live `DP_Presentation` connection and produced a type-mismatched generated query. The original `DateTime.LocalNow()` call was non-foldable, so it always evaluated client-side and only ever pushed a literal date into the SQL filter — this never surfaced against `LH_Master_Data` for the same reason. Fixed by forcing the same client-side-evaluation behavior back via `List.Buffer` on the computed cutoff date (`CutoffDate = List.Buffer({Date.AddMonths(Date.From(LocalNow), -13)}){0}`), without touching the DST logic itself — see commit `a79d5673` in `fabric-workspace-docs`. Also added a `.pbip` for `RP - Dev/Price Matrix.pbip` (Fabric's own Git integration doesn't create this — same pattern as every other Batch 0/1 report), since it didn't exist yet when Brian went to open the report — commit `71b306c2`.
+
+Also needs a Git integration pull of this fix in `RP - Dev` and a fresh Desktop refresh before Task 11 can proceed.
+
 ---
 
 ### Task 11: Brian — pull into RP - Dev, refresh, publish, and confirm
