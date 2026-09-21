@@ -674,6 +674,35 @@ each live `RP - Dev` semantic model (Source control → Update) and re-attempt e
 refresh — this plan's original per-task post-publish verification scripts (Task
 2-7, Step 5/6) are still the right next check once refresh succeeds.
 
+## Round 2 (2026-09-21) — the first trim was incomplete, now fully audited
+
+3 of 6 reports refreshed clean after the first trim. 3 hit **new** real errors:
+`VendorCode` (Parts Adjustments, Planter Inspection Part Sales — both from
+`dim_Parts`, not one of the 3 dimensions originally investigated) and
+`CustomerNumberText` (Unique Parts Customers, `dim_CustomerList` — genuinely
+missed in the original diff against that dimension, a real oversight, not a
+deliberate exclusion like the other 71).
+
+**Real lesson: the original investigation checked only the 3 dimensions the
+initial error messages happened to name first, not every dimension every report
+actually depends on.** Rather than keep fixing these one refresh-failure at a
+time, ran an exhaustive audit — every `dim_*`/`Fact_*`/other Sql.Database-backed
+table in all 6 reports' current models, diffed column-by-column against its real
+Gold table (resolving `jdis_Part_Information` → `Silver_PartInformation` correctly
+for Parts Adjustments) — confirming **zero remaining gaps anywhere** before
+declaring this done, not just the 2 that happened to surface via a refresh
+attempt.
+
+Both `VendorCode` and `CustomerNumberText` confirmed genuinely unused via the same
+method as the original 71 (pbir scan + full-file text reference check) — removed,
+not added to Gold. Commits `f0e31e00`/`2524bfaf`/`d90a42c7`. `VendorCode` also
+legitimately exists on `jdis_Part_Information`/`Silver_PartInformation` in Parts
+Adjustments (a different, real column on a different table, same name by
+coincidence) — confirmed untouched.
+
+**Real, still-open next step:** Brian pulls these 3 additional commits and
+re-attempts the 3 still-failing refreshes.
+
 ---
 
 ### Task 8: Archive the data-projects copies and update the catalog doc
