@@ -26,6 +26,58 @@ existing design for this whole multi-batch project — no new brainstorming need
 
 ---
 
+## Real process correction (2026-09-21) — read before executing Tasks 3-7 again
+
+**Tasks 2-7's original Steps 1-3 (Claude directly editing/committing the
+`Sql.Database(...)` connection-string swap in `data-projects`) turned out to be the
+wrong layer, and were reverted for 5 of the 6 reports** (commits `9acce508`,
+`566136ee`, `1230ac95`, `2d7d8fe2`, `93c31482` — reverting `54d0c1f8`, `82003bf1`,
+`25b3c766`, `1957ca97`, `4ed253d5` respectively). Unique Parts Customers' edit
+(`34e40766`) was left as-is since Brian was already mid-workflow on it when this was
+caught and it's moot regardless of file content.
+
+**The real, established workflow (confirmed directly by Brian, matching how Batch 0
+actually worked, not how this plan originally assumed):**
+1. Brian opens the report from its `data-projects` folder in Power BI Desktop.
+2. Brian makes any needed minor adjustments himself in Desktop (e.g., deleting
+   unused `INFO.VIEW.*`-backed helper tables like `Current-Columns`/`Current-Measures`/
+   `Current-Relationships`/`Current-Tables` if they're just taking up space) — this
+   is Brian's own review pass, not something Claude pre-edits.
+3. **Brian switches the data source himself**, interactively, inside Desktop's own
+   Power Query / Data Source Settings UI — this is the actual point where the
+   `LH_Master_Data` → `DP_Presentation` switch happens. Claude pre-editing the TMDL
+   text file ahead of this step doesn't help and can actively confuse things: if
+   Desktop already has the report open (loaded with the old model in memory) when
+   Claude's edit lands on disk, Desktop's own state — not the edited file — wins the
+   moment Desktop writes anything back to disk, silently reverting the edit and
+   making it look like something broke when nothing did.
+4. Brian publishes to `RP - Dev`.
+5. Once published, Claude creates the `.pbip` at
+   `fabric-workspace-docs/workspaces/RP - Dev/<Report>.pbip` (Fabric's own Git
+   integration never creates this file) — this becomes the new working copy.
+6. **All future edits to that report happen by opening Desktop from the `RP - Dev`
+   location going forward** — the `data-projects` copy is frozen from this point on,
+   kept only as a fallback/reference copy to verify the migrated report against, and
+   is eventually archived (Task 8).
+
+**Corrected Tasks 3-7 (Stock Check, Negative On Hand-On Hand No Bin, Parts Not
+Re-Ordered 24 Hours, Parts Adjustments, Planter Inspection Part Sales):** Steps 1-3
+are no longer Claude's job. Brian opens each from `data-projects`, does his own
+cleanup pass, switches the source himself, and publishes — exactly like Task 2 and
+exactly like Batch 0. The specific real mapping/column-rename knowledge already
+gathered for each report (the exact old/new table names, the `jdis_Part_Information`
+→ `Silver_PartInformation` rename and why no column changes are needed, the two
+`dim_Parts.PartNumber`-relationship-exposed reports, etc.) stays valuable as
+reference/verification context — Brian can cross-check what Desktop shows against it
+— it's just not something Claude pre-applies to the files anymore.
+
+**Once Brian publishes each report to `RP - Dev`, Claude's role resumes:** create the
+`.pbip`, then run that report's post-publish verification script (already written
+per-task below) against the live `DP_Presentation` data to confirm the real numbers
+match.
+
+---
+
 ## Real facts this plan relies on (verified 2026-09-21, not assumed)
 
 - **Old connection:** `Sql.Database("xcrafcusadsu3d3wi4anbgp6we-gxnyznhdptpenfw724g3o5sjzm.datawarehouse.fabric.microsoft.com", "LH_Master_Data")`
@@ -190,18 +242,23 @@ git commit -m "Repoint Unique Parts Customers to DP_Presentation
 Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 ```
 
-**Real result (2026-09-21):** commit `34e40766`. Both spec-compliance and
-code-quality review passed (APPROVED — byte-identical connection string across all
-6 files, TMDL syntax/indentation intact, no unrelated changes).
+**Real result (2026-09-21):** commit `34e40766` passed both reviews, but turned out
+to be the wrong layer entirely — see "Real process correction" above. Brian already
+had this report open in Desktop when this was caught, so the edit is moot regardless
+of file content (Desktop's own loaded state governs what gets written back, not the
+file on disk). **Not reverted** (no need to — Brian proceeds with his own normal
+workflow below either way, superseding it).
 
-- [ ] **Step 4: Brian — Desktop refresh, validate, and publish**
+- [ ] **Step 4: Brian — clean up, switch source yourself, and publish**
 
-Open `Unique Parts Customers.pbip` from this `data-projects` folder in Power BI
-Desktop (it should prompt to reload since the underlying files changed). Refresh
-all tables. Confirm the report's visuals still render sensibly (row counts,
-customer names, branch names all look real). Publish to `RP - Dev`, then in the
-Fabric portal for that workspace, **Source control → Commit** to push the change
-into `fabric-workspace-docs`.
+In the already-open `Unique Parts Customers.pbip` session, finish your cleanup pass
+(e.g. removing the unused `Current-*`/`INFO.VIEW.*` helper tables), switch the data
+source for all 6 tables from `LH_Master_Data` to `DP_Presentation` yourself in
+Desktop's Data Source Settings (keeping each `Item=`/table name the same — no
+renames in this report), confirm the report's visuals still render sensibly (row
+counts, customer names, branch names all look real). Publish to `RP - Dev`, then in
+the Fabric portal for that workspace, **Source control → Commit** to push the
+change into `fabric-workspace-docs`.
 
 - [ ] **Step 5: Post-publish verification — real row counts match what Desktop showed**
 
@@ -233,35 +290,19 @@ the new source, not a data problem.
 - Modify: `projects/stock-check - report/reports/Stock Check.SemanticModel/definition/tables/dim_DateTable.tmdl`
 - Modify: `projects/stock-check - report/reports/Stock Check.SemanticModel/definition/tables/dim_Salesperson.tmdl`
 
-- [x] **Step 1: Edit each table's partition source**
+- [ ] **Step 1-3 (superseded — see "Real process correction" above):** ~~Claude
+edits the connection string, verifies, commits~~. Claude's edit (commit `54d0c1f8`)
+was reverted in `9acce508` — this is Brian's own action inside Desktop now, per the
+corrected workflow.
 
-Same single-line swap as Task 2, Step 1, applied to all 4 files in this folder
-(`Fact_InternalWorkOrders`, `dim_BranchLocation`, `dim_DateTable`,
-`dim_Salesperson` — each keeps its own `Item="<TableName>"` unchanged).
+- [ ] **Step 4: Brian — open, clean up, switch source, and publish**
 
-- [x] **Step 2: Confirm no other `LH_Master_Data` references remain**
-
-```bash
-grep -rn "LH_Master_Data" "projects/stock-check - report/reports/Stock Check.SemanticModel/"
-```
-Expected: no output.
-
-- [x] **Step 3: Commit**
-
-```bash
-git add "projects/stock-check - report/reports/Stock Check.SemanticModel/definition/tables/"*.tmdl
-git commit -m "Repoint Stock Check to DP_Presentation
-
-Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
-```
-
-**Real result (2026-09-21):** commit `54d0c1f8`. Both spec-compliance and
-code-quality review passed (APPROVED).
-
-- [ ] **Step 4: Brian — Desktop refresh, validate, and publish**
-
-Open `Stock Check.pbip` (note: this project has no `current`/`archive` subfolder
-split yet — the `.pbip` sits directly under `reports/`). Refresh, validate visuals
+Open `Stock Check.pbip` from `data-projects` (note: this project has no
+`current`/`archive` subfolder split yet — the `.pbip` sits directly under
+`reports/`). Make any needed cleanup adjustments, switch the data source for all 4
+tables (`Fact_InternalWorkOrders`, `dim_BranchLocation`, `dim_DateTable`,
+`dim_Salesperson`) from `LH_Master_Data` to `DP_Presentation` yourself in Desktop's
+Data Source Settings, keeping each `Item=`/table name the same, validate visuals
 render real data, publish to `RP - Dev`, commit via Fabric Git integration.
 
 - [ ] **Step 5: Post-publish verification — real row counts match what Desktop showed**
@@ -289,35 +330,18 @@ match exactly (no row-dropping transforms on any of these 4 tables).
 - Modify: `projects/negative on hand - on hand no bin - report/reports/current/Negative On Hand-On Hand No Bin.SemanticModel/definition/tables/dim_BranchLocation.tmdl`
 - Modify: `projects/negative on hand - on hand no bin - report/reports/current/Negative On Hand-On Hand No Bin.SemanticModel/definition/tables/dim_DateTable.tmdl`
 
-- [x] **Step 1: Edit each table's partition source**
+- [ ] **Step 1-3 (superseded — see "Real process correction" above):** ~~Claude
+edits the connection string, verifies, commits~~. Claude's edit (commit `82003bf1`)
+was reverted in `566136ee` — this is Brian's own action inside Desktop now.
 
-Same single-line swap as Task 2, Step 1, applied to all 3 files
-(`Fact_NegativeOnHand_OnHandNoBin`, `dim_BranchLocation`, `dim_DateTable`).
+- [ ] **Step 4: Brian — open, clean up, switch source, and publish**
 
-- [x] **Step 2: Confirm no other `LH_Master_Data` references remain**
-
-```bash
-grep -rn "LH_Master_Data" "projects/negative on hand - on hand no bin - report/reports/current/Negative On Hand-On Hand No Bin.SemanticModel/"
-```
-Expected: no output.
-
-- [x] **Step 3: Commit**
-
-```bash
-git add "projects/negative on hand - on hand no bin - report/reports/current/Negative On Hand-On Hand No Bin.SemanticModel/definition/tables/"*.tmdl
-git commit -m "Repoint Negative On Hand-On Hand No Bin to DP_Presentation
-
-Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
-```
-
-**Real result (2026-09-21):** commit `82003bf1`. Both spec-compliance and
-code-quality review passed (APPROVED).
-
-- [ ] **Step 4: Brian — Desktop refresh, validate, and publish**
-
-Open `Negative On Hand-On Hand No Bin.pbip`. Refresh, validate visuals (branch
-names, part numbers, issue severity all look real), publish to `RP - Dev`, commit
-via Fabric Git integration.
+Open `Negative On Hand-On Hand No Bin.pbip` from `data-projects`. Make any needed
+cleanup adjustments, switch the data source for all 3 tables
+(`Fact_NegativeOnHand_OnHandNoBin`, `dim_BranchLocation`, `dim_DateTable`) from
+`LH_Master_Data` to `DP_Presentation` yourself in Desktop, keeping each
+`Item=`/table name the same, validate visuals (branch names, part numbers, issue
+severity all look real), publish to `RP - Dev`, commit via Fabric Git integration.
 
 - [ ] **Step 5: Post-publish verification — real row counts match what Desktop showed**
 
@@ -344,44 +368,25 @@ match exactly (no row-dropping transforms on any of these 3 tables).
 - Modify: `projects/parts not re-orderd 24 hours - report/report/current/Parts Not Re-Ordered 24 Hours.SemanticModel/definition/tables/dim_BranchLocation.tmdl`
 - Modify: `projects/parts not re-orderd 24 hours - report/report/current/Parts Not Re-Ordered 24 Hours.SemanticModel/definition/tables/dim_DateTable.tmdl`
 
-- [x] **Step 1: Edit each table's partition source**
-
-Same single-line swap as Task 2, Step 1, applied to all 3 files
-(`Fact_PartsNotReordered`, `dim_BranchLocation`, `dim_DateTable`). `Fact_PartsNotReordered`
-also has a `#"Filtered Rows" = Table.SelectRows(dbo_Fact_PartsNotReordered, each ([Type] = "C" or [Type] = "I"))`
-step immediately after — leave this line completely untouched, only the
-`Sql.Database(...)` line changes.
+- [ ] **Step 1-3 (superseded — see "Real process correction" above):** ~~Claude
+edits the connection string, verifies, commits~~. Claude's edit (commit `25b3c766`)
+was reverted in `1230ac95` — this is Brian's own action inside Desktop now.
 
 **Do not touch** the `Fact_PartsNotReordered[Business Hours Since Sale]` DAX
-calculated column — it already has its own independent, correct DST-aware `NOW()`
-fix and is unrelated to this M-query migration.
+calculated column when switching the source — it already has its own independent,
+correct DST-aware `NOW()` fix and is unrelated to this migration. Same for the
+`#"Filtered Rows" = Table.SelectRows(dbo_Fact_PartsNotReordered, each ([Type] = "C" or [Type] = "I"))`
+step — switching the source shouldn't disturb it.
 
-- [x] **Step 2: Confirm no other `LH_Master_Data` references remain**
+- [ ] **Step 4: Brian — open, clean up, switch source, and publish**
 
-```bash
-grep -rn "LH_Master_Data" "projects/parts not re-orderd 24 hours - report/report/current/Parts Not Re-Ordered 24 Hours.SemanticModel/"
-```
-Expected: no output.
-
-- [x] **Step 3: Commit**
-
-```bash
-git add "projects/parts not re-orderd 24 hours - report/report/current/Parts Not Re-Ordered 24 Hours.SemanticModel/definition/tables/"*.tmdl
-git commit -m "Repoint Parts Not Re-Ordered 24 Hours to DP_Presentation
-
-Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
-```
-
-**Real result (2026-09-21):** commit `25b3c766`. Both spec-compliance and
-code-quality review passed (APPROVED) — `#"Filtered Rows"` step and DAX columns
-confirmed untouched.
-
-- [ ] **Step 4: Brian — Desktop refresh, validate, and publish**
-
-Open `Parts Not Re-Ordered 24 Hours.pbip`. Refresh, confirm the `Filtered Rows`
-step still correctly limits to Type C/I rows and the `Business Hours Since Sale`
-measure still computes sensible values, publish to `RP - Dev`, commit via Fabric
-Git integration.
+Open `Parts Not Re-Ordered 24 Hours.pbip` from `data-projects`. Make any needed
+cleanup adjustments, switch the data source for all 3 tables
+(`Fact_PartsNotReordered`, `dim_BranchLocation`, `dim_DateTable`) from
+`LH_Master_Data` to `DP_Presentation` yourself in Desktop, confirm the `Filtered
+Rows` step still correctly limits to Type C/I rows and the `Business Hours Since
+Sale` measure still computes sensible values, publish to `RP - Dev`, commit via
+Fabric Git integration.
 
 - [ ] **Step 5: Post-publish verification — real filtered row count matches what Desktop showed**
 
@@ -425,82 +430,36 @@ filter.
 `calculated`/DATATABLE table with no `Sql.Database` reference — do not touch it,
 not part of this migration.)
 
-- [x] **Step 1: Edit the 6 straightforward tables' partition sources**
+- [ ] **Step 1-4 (superseded — see "Real process correction" above):** ~~Claude
+edits the connection strings + `jdis_Part_Information` rename, verifies,
+commits~~. Claude's edit (commit `1957ca97`) was reverted in `2d7d8fe2` — this is
+Brian's own action inside Desktop now.
 
-Same single-line swap as Task 2, Step 1, applied to `Fact_AdjPairs_Summary`,
-`Fact_AdjustmentPairs`, `Fact_PartsAdjustments`, `dim_AdjustmentType`,
-`dim_BranchLocation`, `dim_DateTable`, and `dim_Parts`. Note that
-`Fact_AdjPairs_Summary`/`Fact_AdjustmentPairs`/`Fact_PartsAdjustments` each have a
-`#"Extracted Date" = Table.TransformColumns(dbo_<TableName>,{{"<DateCol>", DateTime.Date, type date}})`
-step after the `Source`/`dbo_...` lines — leave those completely untouched, only
-the `Sql.Database(...)` line changes in each.
+**Important reference for Brian's own switch:** in `jdis_Part_Information`
+specifically, the new source table is named `Silver_PartInformation` — not the same
+name as the old `jdis_Part_Information` raw table, so Desktop's "Change Source"
+flow needs the table picked explicitly (it won't auto-match by name like the other
+7 tables in this report will). **No column changes are needed** — this report's
+existing 33-column model already matches `Silver_PartInformation`'s real schema
+exactly, including `PackageQty` already being typed `string` in both places (don't
+add a `Table.SelectColumns`/`Int64.Type` cast like Bin Location Report's version of
+this same table has — that doesn't apply to this report's own column set).
 
-- [x] **Step 2: Edit `jdis_Part_Information.tmdl` — connection swap AND table rename**
+**Real finding, still valid and worth watching for regardless of who makes the
+edit:** `Weight` is declared `string` in this report's model, but the real
+`Silver_PartInformation.Weight` column is actually `DECIMAL(14,4)` (confirmed via
+DuckDB) — a genuine, pre-existing type mismatch (unlike `PackageQty`, which the
+Gold notebook explicitly casts to match). If Desktop errors or complains about the
+`Weight` column during the switch/refresh, this is almost certainly why — the fix
+is adding a `Table.TransformColumnTypes` step to cast it.
 
-The current full M-query in this file:
-```
-let
-    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-gxnyznhdptpenfw724g3o5sjzm.datawarehouse.fabric.microsoft.com", "LH_Master_Data"),
-    dbo_jdis_Part_Information = Source{[Schema="dbo",Item="jdis_Part_Information"]}[Data]
-in
-    dbo_jdis_Part_Information
-```
-Replace with:
-```
-let
-    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-inkp24yoeqfedgiktcbh6mwaq4.datawarehouse.fabric.microsoft.com", "DP_Presentation"),
-    dbo_jdis_Part_Information = Source{[Schema="dbo",Item="Silver_PartInformation"]}[Data]
-in
-    dbo_jdis_Part_Information
-```
-Two changes on top of the standard swap: the database name, and `Item="jdis_Part_Information"`
-becomes `Item="Silver_PartInformation"`. **No `Table.SelectColumns` or
-`Table.TransformColumnTypes` step is added** — per the "Real facts" section above,
-this report's existing 33-column model already matches `Silver_PartInformation`'s
-real schema exactly, including `PackageQty` already being typed `string` in both
-places. Do not copy Bin Location Report's narrower 18-column/`Int64.Type`-cast
-pattern here — it doesn't apply to this report's own column set.
+- [ ] **Step 5: Brian — open, clean up, switch source (including the
+`jdis_Part_Information` rename), and publish**
 
-- [x] **Step 3: Confirm no other `LH_Master_Data` references remain**
-
-```bash
-grep -rn "LH_Master_Data" "projects/parts adjustments - report/reports/current/Parts Adjustments.SemanticModel/"
-```
-Expected: no output.
-
-- [x] **Step 4: Commit**
-
-```bash
-git add "projects/parts adjustments - report/reports/current/Parts Adjustments.SemanticModel/definition/tables/"*.tmdl
-git commit -m "Repoint Parts Adjustments to DP_Presentation
-
-Includes jdis_Part_Information -> Silver_PartInformation - the table this
-session's own rebuild replaced. No column changes needed: this report's
-33-column model already matches Silver_PartInformation's real schema
-exactly, including PackageQty already being typed string in both places.
-
-Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
-```
-
-**Real result (2026-09-21):** commit `1957ca97`. Both spec-compliance and
-code-quality review passed (APPROVED) — the code reviewer independently
-cross-checked all 33 `jdis_Part_Information` column names against the real
-`Build_Silver_PartInformation.Notebook` output and confirmed an exact match,
-including `PackageQty`'s string typing. **Real finding surfaced by the review and
-independently confirmed via DuckDB, pre-existing and unrelated to this commit's own
-correctness:** `Weight` is declared `string` in this report's model, but
-`Silver_PartInformation.Weight` is actually `DECIMAL(14,4)` — a genuine type
-mismatch (unlike `PackageQty`, which the notebook explicitly casts to match). This
-predates the migration and isn't something to fix in this repoint, but **watch for
-it specifically during Step 5's Desktop refresh** — if refresh errors or complains
-about the `Weight` column, this is almost certainly why, and the fix would be
-adding a `Table.TransformColumnTypes` step to cast it, matching how the same
-report's `PackageQty` column doesn't need one (already a string) but `Weight`
-would.
-
-- [ ] **Step 5: Brian — Desktop refresh, validate, and publish**
-
-Open `Parts Adjustments.pbip`. Refresh all tables — pay particular attention to
+Open `Parts Adjustments.pbip` from `data-projects`. Make any needed cleanup
+adjustments, switch the data source for all 8 tables (7 simple ones plus
+`jdis_Part_Information` → `Silver_PartInformation`, per the note above) from
+`LH_Master_Data`/`DP_Presentation` yourself in Desktop. Pay particular attention to
 `jdis_Part_Information` actually loading real part data (not blank/erroring), since
 this is the one table with a real name change, not just a connection swap. Confirm
 the `dim_Parts` relationship still resolves correctly (this report is one of the
@@ -553,41 +512,20 @@ with today's real `dim_Parts` data.
 (Work only in the `new report/` folder — `old report/` has a stale `V1` copy and a
 stale duplicate, neither in scope.)
 
-- [x] **Step 1: Edit each table's partition source**
+- [ ] **Step 1-3 (superseded — see "Real process correction" above):** ~~Claude
+edits the connection string, verifies, commits~~. Claude's edit (commit `4ed253d5`)
+was reverted in `93c31482` — this is Brian's own action inside Desktop now.
 
-Same single-line swap as Task 2, Step 1, applied to all 8 files. `dim_CustomerList`
-here has a `FilterValidCustomers = Table.SelectRows(dbo_dim_CustomerList, each [CustomerNumber] <> null and [CustomerNumber] <> "")`
-step after the `Source`/`dbo_...` lines — leave that completely untouched, only the
-`Sql.Database(...)` line changes.
+- [ ] **Step 4: Brian — open, clean up, switch source, and publish**
 
-- [x] **Step 2: Confirm no other `LH_Master_Data` references remain**
-
-```bash
-grep -rn "LH_Master_Data" "projects/planter inspection part sales - report/reports/new report/Planter Inspection Part Sales.SemanticModel/"
-```
-Expected: no output.
-
-- [x] **Step 3: Commit**
-
-```bash
-git add "projects/planter inspection part sales - report/reports/new report/Planter Inspection Part Sales.SemanticModel/definition/tables/"*.tmdl
-git commit -m "Repoint Planter Inspection Part Sales to DP_Presentation
-
-Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
-```
-
-**Real result (2026-09-21):** commit `4ed253d5` (amended once — the implementer
-subagent's original commit used a wrong attribution line, fixed via message-only
-amend before review). Both spec-compliance and code-quality review passed
-(APPROVED).
-
-- [ ] **Step 4: Brian — Desktop refresh, validate, and publish**
-
-Open `Planter Inspection Part Sales.pbip` from the `new report` folder. Refresh,
-confirm the `FilterValidCustomers` step still excludes blank customer numbers and
-`dim_Parts` relationships resolve correctly (this is the second of the two reports
-in this batch exposed to the historical `PartNumber` control-character relationship
-bug — see Step 5 below). Publish to `RP - Dev`, commit via Fabric Git integration.
+Open `Planter Inspection Part Sales.pbip` from the `new report` folder in
+`data-projects`. Make any needed cleanup adjustments, switch the data source for
+all 8 tables from `LH_Master_Data` to `DP_Presentation` yourself in Desktop
+(keeping each `Item=`/table name the same — no renames in this report), confirm the
+`FilterValidCustomers` step still excludes blank customer numbers and `dim_Parts`
+relationships resolve correctly (this is the second of the two reports in this
+batch exposed to the historical `PartNumber` control-character relationship bug —
+see Step 5 below). Publish to `RP - Dev`, commit via Fabric Git integration.
 
 - [ ] **Step 5: Post-publish verification — relationship integrity check**
 
