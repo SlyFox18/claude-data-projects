@@ -103,7 +103,7 @@ existing design for this whole multi-batch project — no new brainstorming need
 
 **Files:** none — verification only.
 
-- [ ] **Step 1: Write and run a DuckDB check confirming every target table/column exists in `DP_Presentation`**
+- [x] **Step 1: Write and run a DuckDB check confirming every target table/column exists in `DP_Presentation`**
 
 ```python
 import duckdb
@@ -138,11 +138,16 @@ the actual proof every table this batch depends on genuinely exists in
 `DP_Presentation` before touching any report file — don't skip this and assume the
 catalog doc's dependency list is still accurate.
 
-- [ ] **Step 2: If anything is missing, stop and report back before proceeding**
+- [x] **Step 2: If anything is missing, stop and report back before proceeding**
 
 Do not start editing report files if any table from Step 1 is missing — that means
 the catalog doc's assumption for that report is stale and needs to be re-investigated
 before this plan can proceed for that specific report.
+
+**Real result (2026-09-21):** all 20 unique tables across the 6 reports confirmed
+present in `DP_Presentation` with real row counts (e.g. `dim_Parts`: 316,634,
+`Silver_PartInformation`: 1,112,990, `Fact_PartsAdjustments`: 278,467). Nothing
+missing — proceeding to Task 2.
 
 ---
 
