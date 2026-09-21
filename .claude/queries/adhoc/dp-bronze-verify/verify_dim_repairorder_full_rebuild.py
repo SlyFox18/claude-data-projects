@@ -76,6 +76,10 @@ gold = con.execute(f"""
 # own PySpark filter (Franchise handling uses eqNullSafe there). Must
 # match the notebook's null-safe behavior or this ground-truth check
 # would silently validate against the wrong rule.
+#
+# pyodbc returns Decimal for SQL Anywhere DECIMAL/NUMERIC columns - cast
+# to float here so later comparisons against the gold table's float64
+# columns don't raise TypeError.
 # ------------------------------------------------------------------
 cn = pyodbc.connect('DSN=EquipRDB64', timeout=30)
 cur = cn.cursor()
@@ -96,6 +100,7 @@ order_attrs = pd.DataFrame.from_records(
     [tuple(r) for r in order_rows],
     columns=["REF_NO", "SRC_BranchKey", "SRC_CustomerNo", "SRC_OrderDate", "SRC_LastActivityDate"],
 )
+order_attrs["SRC_BranchKey"] = order_attrs["SRC_BranchKey"].astype(float)
 
 cur.execute(f"""
     SELECT REF_NO, SUM(SALE_VAL) AS SRC_TotalPartsSales, SUM(COST_VAL) AS SRC_TotalPartsCost, COUNT(*) AS SRC_PartsCount
@@ -111,6 +116,9 @@ non_promo = pd.DataFrame.from_records(
     [tuple(r) for r in non_promo_rows],
     columns=["REF_NO", "SRC_TotalPartsSales", "SRC_TotalPartsCost", "SRC_PartsCount"],
 )
+non_promo["SRC_TotalPartsSales"] = non_promo["SRC_TotalPartsSales"].astype(float)
+non_promo["SRC_TotalPartsCost"] = non_promo["SRC_TotalPartsCost"].astype(float)
+non_promo["SRC_PartsCount"] = non_promo["SRC_PartsCount"].astype(float)
 
 cur.execute(f"""
     SELECT REF_NO, SUM(SALE_VAL) AS SRC_TotalPromoDiscount, COUNT(*) AS SRC_PromoCount
@@ -125,6 +133,8 @@ promo = pd.DataFrame.from_records(
     [tuple(r) for r in promo_rows],
     columns=["REF_NO", "SRC_TotalPromoDiscount", "SRC_PromoCount"],
 )
+promo["SRC_TotalPromoDiscount"] = promo["SRC_TotalPromoDiscount"].astype(float)
+promo["SRC_PromoCount"] = promo["SRC_PromoCount"].astype(float)
 
 # ------------------------------------------------------------------
 # Assemble source-side dim_RepairOrder from scratch, independently of
