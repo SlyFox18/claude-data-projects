@@ -469,6 +469,8 @@ git commit -m "Add ground-truth verification for Fact_Part_Transactions matrix p
 Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 ```
 
+**Real correction (found on first real run, fixed in a follow-up commit):** every one of the first 20 sample rows came back `NOT FOUND` against EquipRDB. Root cause, confirmed via direct investigation: DuckDB reads the Gold table's `TransactionDate` back as tz-aware (`America/Chicago`), while `EquipRDB.Trans_Datetime` stores a naive timestamp that's actually UTC — the same real instant, different representation (`14:15:17-05:00` in Gold = `19:15:17` naive in EquipRDB, confirmed to be the identical row). The exact-equality match query needs `row["TransactionDate"].tz_convert("UTC").tz_localize(None)`, not the raw tz-aware value — see commit `921bb440`. Also fixed in the same review pass: `TRADE_TYPE` needs `.strip()` before comparison (SQL Anywhere fixed-width `CHAR` padding) — commit `0ae3756c`. After both fixes: 20/20 rows matched, 0 real mismatches.
+
 ---
 
 ### Task 5: Brian — publish Price Matrix as-is to RP - Dev
