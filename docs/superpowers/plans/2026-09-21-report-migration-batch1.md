@@ -553,21 +553,21 @@ with today's real `dim_Parts` data.
 (Work only in the `new report/` folder — `old report/` has a stale `V1` copy and a
 stale duplicate, neither in scope.)
 
-- [ ] **Step 1: Edit each table's partition source**
+- [x] **Step 1: Edit each table's partition source**
 
 Same single-line swap as Task 2, Step 1, applied to all 8 files. `dim_CustomerList`
 here has a `FilterValidCustomers = Table.SelectRows(dbo_dim_CustomerList, each [CustomerNumber] <> null and [CustomerNumber] <> "")`
 step after the `Source`/`dbo_...` lines — leave that completely untouched, only the
 `Sql.Database(...)` line changes.
 
-- [ ] **Step 2: Confirm no other `LH_Master_Data` references remain**
+- [x] **Step 2: Confirm no other `LH_Master_Data` references remain**
 
 ```bash
 grep -rn "LH_Master_Data" "projects/planter inspection part sales - report/reports/new report/Planter Inspection Part Sales.SemanticModel/"
 ```
 Expected: no output.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add "projects/planter inspection part sales - report/reports/new report/Planter Inspection Part Sales.SemanticModel/definition/tables/"*.tmdl
@@ -575,6 +575,11 @@ git commit -m "Repoint Planter Inspection Part Sales to DP_Presentation
 
 Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 ```
+
+**Real result (2026-09-21):** commit `4ed253d5` (amended once — the implementer
+subagent's original commit used a wrong attribution line, fixed via message-only
+amend before review). Both spec-compliance and code-quality review passed
+(APPROVED).
 
 - [ ] **Step 4: Brian — Desktop refresh, validate, and publish**
 
