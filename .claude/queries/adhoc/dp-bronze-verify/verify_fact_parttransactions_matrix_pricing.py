@@ -78,6 +78,10 @@ for _, row in sample.iterrows():
     list_price = float(list_price) if list_price is not None else 0.0
     qty = float(qty) if qty is not None else 0.0
     sale_val = float(sale_val)
+    # SQL Anywhere fixed-width CHAR columns can come back with trailing
+    # padding via pyodbc - strip before comparing, or a real "W" trade
+    # type would be missed and produce a false mismatch below.
+    trade_type = (trade_type or "").strip()
 
     sell_price1_sale_val = sell_price1 * qty
     list_sale_val = list_price * qty
