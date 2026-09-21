@@ -43,7 +43,7 @@ The current `dim_repair_order` build cell (lines 117–156) computes only `REF_N
 **Files:**
 - Modify: `C:\Users\bfox\Documents\Git-Projects\fabric-workspace-docs\workspaces\DP - Presentation - Dev\Fact Tables\Parts Promo\Build_Gold_PartsPromo.Notebook\notebook-content.py` (lines 117–156, the `dim_repair_order` build cell, plus its header comment)
 
-- [ ] **Step 1: Replace the build cell's header comment**
+- [x] **Step 1: Replace the build cell's header comment**
 
 The current comment (lines 117–131) says the table was "TRIMMED 2026-09-11" to 2 columns because a usage audit found the other 13 unused. That's now stale — replace it with:
 
@@ -68,7 +68,7 @@ The current comment (lines 117–131) says the table was "TRIMMED 2026-09-11" to
 # the module header's "CORRECTED 2026-09-08" note above for that history.
 ```
 
-- [ ] **Step 2: Replace the build cell's logic**
+- [x] **Step 2: Replace the build cell's logic**
 
 Replace lines 133–156 (from `promo_ros = (` through the final `print(...)` line) with:
 
@@ -156,7 +156,7 @@ print(f"dim_RepairOrder rows (one per promo-active order): {dim_count:,}")
 print(f"dim_RepairOrder columns: {final_col_count} (expect 15 - full column set restored 2026-09-21)")
 ```
 
-- [ ] **Step 3: Update the module-level header comment**
+- [x] **Step 3: Update the module-level header comment**
 
 Lines 32–38 describe `dim_RepairOrder` as "one row per promo order (REF_NO)... plus CustomerNo" and reference "the 2026-09-11 trim note further down for why this is no longer the full order-level metrics table it originally was." Replace that bullet with:
 
@@ -169,7 +169,7 @@ Lines 32–38 describe `dim_RepairOrder` as "one row per promo order (REF_NO)...
 #   then restored.
 ```
 
-- [ ] **Step 4: Update the verification cell to select all 15 columns**
+- [x] **Step 4: Update the verification cell to select all 15 columns**
 
 The existing verification cell (lines 283–297) only selects `REF_NO, CustomerNo`. Update the `spark.sql` query to select every column, so the printed sanity check actually shows the restored data:
 
@@ -188,13 +188,13 @@ check = spark.sql(f"""
 
 (Only the `SELECT` line changes — `known_bad_ros`, the `FROM`/`WHERE`/`ORDER BY` clauses, and everything after stay as-is.)
 
-- [ ] **Step 5: Save the file**
+- [x] **Step 5: Save the file**
 
 No test framework applies to a Fabric notebook — the real test is Task 3's independent DuckDB verification against `EquipRDB` (ground truth), run after Brian executes the notebook in Task 4. Do not attempt to run PySpark locally; there is no local Spark environment for this project.
 
 **Real correction (found during code-quality review, fixed in a follow-up commit):** the plan's own `non_promo_agg` filter as originally written above used `F.col("Franchise") != "ZP"`. Under Spark's three-valued null logic, `!=` against a null `Franchise` evaluates to `NULL` (not `true`), so those rows were silently dropped from the aggregate — a real divergence from the original Power Query's `<>` comparison, where `null <> "ZP"` is `true` (row included). Both the spec-compliance and code-quality reviewers independently caught this. Fixed by using `~F.col("Franchise").eqNullSafe("ZP")` instead, which correctly treats a null `Franchise` as not-ZP (included) — see commit `777cebc8` in `fabric-workspace-docs`. The code block above has been left as originally planned for historical accuracy; implementers following this plan in the future should use the null-safe form.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 cd "/c/Users/bfox/Documents/Git-Projects/fabric-workspace-docs"
@@ -219,7 +219,7 @@ Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 
 This extends the existing `verify_gold_parts_promo.py` pattern (2026-09-08, which independently checked `TotalPartsSales`/`TotalPartsCost`/`PartsCount` against `EquipRDB` directly for the same 11 known-tricky orders, before the 2026-09-11 trim removed those columns) to the full 15-column design, and adds 5 arbitrary real orders so the check isn't only proving the already-known-tricky cases.
 
-- [ ] **Step 1: Write the script**
+- [x] **Step 1: Write the script**
 
 ```python
 """
@@ -411,7 +411,7 @@ else:
 
 **Real correction (found during code-quality review, fixed in a follow-up commit):** pyodbc returns Python `Decimal` objects for EquipRDB's `DECIMAL`/`NUMERIC` columns (`SALE_VAL`, `COST_VAL`, `BRANCH`, and the `COUNT(*)` results), which would raise `TypeError` when compared against the gold table's `float64` columns in the mismatch-detection loop. Fixed by adding `.astype(float)` casts on `order_attrs["SRC_BranchKey"]`, `non_promo["SRC_TotalPartsSales"/"SRC_TotalPartsCost"/"SRC_PartsCount"]`, and `promo["SRC_TotalPromoDiscount"/"SRC_PromoCount"]` immediately after each DataFrame is built — see commit `50234dec` in `data-projects`. The code block above has been left as originally planned for historical accuracy; run the actual committed file, not this block, when executing Step 2.
 
-- [ ] **Step 2: Run the script**
+- [x] **Step 2: Run the script**
 
 This step requires Task 4 (Brian running the notebook) to have completed first, since it queries the real `dim_RepairOrder` table in `DP_Presentation`. Do not run it until Task 4 confirms the notebook ran successfully.
 
@@ -422,7 +422,7 @@ python .claude/queries/adhoc/dp-bronze-verify/verify_dim_repairorder_full_rebuil
 
 Expected: `Orders checked: 16 (expect 16)`, then `Orders with a real mismatch...: 0 (expect 0)`.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 cd "/c/Users/bfox/Documents/Git-Projects/data-projects"
@@ -442,15 +442,15 @@ Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 
 This is Brian's own action; Claude cannot drive the Fabric portal interactively.
 
-- [ ] **Step 1: Pull the committed notebook change into the Fabric workspace**
+- [x] **Step 1: Pull the committed notebook change into the Fabric workspace**
 
 In the `DP - Presentation - Dev` workspace's Git integration pane, sync/update the `Build_Gold_PartsPromo` notebook so it picks up Task 1's commit.
 
-- [ ] **Step 2: Run the notebook**
+- [x] **Step 2: Run the notebook**
 
 Open `Build_Gold_PartsPromo` in the Fabric portal and run all cells (or trigger it via `Pipeline_DP_Daily_Refresh`, if that's more convenient — the notebook's own `notebookId` is unchanged, only its internal code changed).
 
-- [ ] **Step 3: Confirm success**
+- [x] **Step 3: Confirm success**
 
 Check the notebook's own output:
 - `dim_RepairOrder columns: 15 (expect 15 - full column set restored 2026-09-21)`
@@ -464,7 +464,7 @@ Report back with a screenshot or a copy of the printed output before Task 2 Step
 
 **Files:** none (uses Task 2's script)
 
-- [ ] **Step 1: Run the verification script**
+- [x] **Step 1: Run the verification script**
 
 Now that Task 3 has confirmed the notebook ran, execute Task 2's script:
 
@@ -473,11 +473,11 @@ cd "/c/Users/bfox/Documents/Git-Projects/data-projects"
 python .claude/queries/adhoc/dp-bronze-verify/verify_dim_repairorder_full_rebuild.py
 ```
 
-- [ ] **Step 2: Confirm zero mismatches**
+- [x] **Step 2: Confirm zero mismatches**
 
 If mismatches are found, do not proceed — this means either the PySpark logic (Task 1) or the ground-truth SQL (Task 2) has a real bug; go back to `systematic-debugging` rather than guessing at a fix. If zero mismatches, dim_RepairOrder is confirmed correct against real source data.
 
-- [ ] **Step 3: Report to Brian**
+- [x] **Step 3: Report to Brian**
 
 Summarize the verification result (16 orders checked, 0 mismatches across all 10 aggregate/calculated columns) so Brian can decide whether to visually confirm Parts Promo's margin/discount visuals in Desktop before considering this done — matching this project's established three-way verification pattern (DuckDB/ground-truth + Brian's own visual confirmation) used throughout Batch 1.
 
