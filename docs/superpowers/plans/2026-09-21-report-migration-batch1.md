@@ -754,3 +754,39 @@ Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 - Any change to `Build_Gold_Parts.Notebook` or the `dim_Parts.PartNumber`
   control-character fix itself — already fixed; Tasks 6/7 only re-verify it holds
   for these two newly-migrated reports' real data.
+
+## Addendum (2026-09-21) — Parts Promo, discovered while checking for other issues
+
+While verifying nothing else in `RP - Dev` was affected by the dimension-schema
+work above, Brian found `Parts Promo` (a different, older report — the actual
+original DP backend pilot, predating this whole project's Batch 0/Batch 1
+structure) failing the same way. Real investigation, not assumed:
+
+- `Parts Promo` had only ever had its **fact tables**
+  (`Fact_InTrans_AllPromo`, `Fact_PartsPromo`) and `dim_RepairOrder` repointed to
+  `DP_Presentation` at the time of the original pilot. `dim_BranchLocation`,
+  `dim_CustomerList`, `dim_DateTable`, `dim_Parts` were still on `LH_Master_Data`
+  the entire time — a real, pre-existing gap, unrelated to anything from this
+  batch's own work, just never caught until now.
+- A full exhaustive audit (every `Sql.Database`-backed table in Parts Promo,
+  diffed column-by-column against its real Gold schema) found: the 4 stale
+  dimensions needed the exact same repoint + trim already proven across this
+  whole batch (confirmed via a fresh pbir + text-reference usage check specific
+  to Parts Promo, not assumed from the other 6 reports' results) — fixed,
+  reviewed, and approved (commit `faad6ae2`).
+- **`dim_RepairOrder` is a genuinely different, bigger problem**, deliberately
+  NOT touched here: the real Gold `dim_RepairOrder` only has 2 columns
+  (`REF_NO`, `CustomerNo`) against Parts Promo's declared 15, and — unlike every
+  other trim in this whole project — 5 of those 13 missing columns
+  (`NetMargin`, `NetOrderValue`, `OriginalMargin`, `TotalPartsCost`,
+  `TotalPartsSales`) are confirmed genuinely used in live, real DAX measures
+  computing this report's own core margin/discount analysis. This is real,
+  necessary Gold-layer rebuild work, not a safe trim — deliberately deferred as
+  its own separate, focused piece of work rather than rushed here. The real
+  original source logic for these columns is at
+  `projects/parts promo - report/queries/new report/dimensions/dim_RepairOrder.pq`.
+- Also confirmed a completely separate, real Fabric platform issue while
+  investigating: `LH_Master_Data`'s own SQL analytics endpoint had a stale
+  metadata cache (a documented Fabric behavior — the SQL endpoint's schema view
+  can lag behind the underlying Delta table). Not caused by anything in this
+  project; real fix is the endpoint's own portal **Refresh** button.
