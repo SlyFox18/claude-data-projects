@@ -1,0 +1,626 @@
+# Report Migration Batch 1 Implementation Plan
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** Repoint 6 confirmed-clean Tier 1 reports (32 tables total) from the old
+`LH_Master_Data` Fabric warehouse to the new `DP_Presentation` Gold-layer warehouse,
+continuing the report migration project this session already proved on Batch 0
+(Bin Location Report, Physical Inventory, 60+ Days Past Due — complete 2026-09-16).
+
+**Architecture:** Each table's M-query `partition` source in its `.tmdl` file gets a
+one- or two-line edit swapping the `Sql.Database(...)` connection string/database
+name from `LH_Master_Data` to `DP_Presentation`. 31 of 32 tables keep the exact same
+`Item="<TableName>"` (the Gold layer was built under identical real table names,
+confirmed by this project's own history). The one exception, `jdis_Part_Information`
+in Parts Adjustments, is repointed to `Item="Silver_PartInformation"` (the notebook
+rebuilt earlier this same session) — confirmed to need no column changes since its
+existing 33-column model already matches `Silver_PartInformation`'s real schema
+exactly.
+
+**Tech Stack:** Power BI Desktop (`.pbip`/TMDL text format), DuckDB + `delta_scan()`
+for pre/post verification against live `DP_Presentation` data, Fabric Git integration
+for publishing `RP - Dev` changes back to `fabric-workspace-docs`.
+
+**Reference:** `docs/architecture/report-migration-catalog.md` (the approved,
+existing design for this whole multi-batch project — no new brainstorming needed).
+
+---
+
+## Real facts this plan relies on (verified 2026-09-21, not assumed)
+
+- **Old connection:** `Sql.Database("xcrafcusadsu3d3wi4anbgp6we-gxnyznhdptpenfw724g3o5sjzm.datawarehouse.fabric.microsoft.com", "LH_Master_Data")`
+- **New connection (confirmed via Batch 0's already-migrated Bin Location Report):**
+  `Sql.Database("xcrafcusadsu3d3wi4anbgp6we-inkp24yoeqfedgiktcbh6mwaq4.datawarehouse.fabric.microsoft.com", "DP_Presentation")`
+- **Real folder paths for each report's SemanticModel** (confirmed via direct
+  directory listing — these do NOT all follow the same `reports/current/` pattern
+  the catalog doc assumes):
+  - Report 1: `projects/unique parts customers - report/reports/current/Unique Parts Customers.SemanticModel/definition/tables/`
+  - Report 2: `projects/stock-check - report/reports/Stock Check.SemanticModel/definition/tables/` (no `current` subfolder)
+  - Report 3: `projects/negative on hand - on hand no bin - report/reports/current/Negative On Hand-On Hand No Bin.SemanticModel/definition/tables/`
+  - Report 4: `projects/parts not re-orderd 24 hours - report/report/current/Parts Not Re-Ordered 24 Hours.SemanticModel/definition/tables/` (singular `report/`, and note the real folder's misspelling "re-orderd")
+  - Report 5: `projects/parts adjustments - report/reports/current/Parts Adjustments.SemanticModel/definition/tables/`
+  - Report 6: `projects/planter inspection part sales - report/reports/new report/Planter Inspection Part Sales.SemanticModel/definition/tables/` (`new report/`, not `current/` — an `old report/` folder also exists with stale V1 content, not in scope)
+- **No `DateTime.LocalNow()` bugs found** across all 32 tables or any of the 6
+  reports' `Data Refresh` utility tables — every one already uses the fixed
+  `DateTimeZone.UtcNow()`/`SwitchZone()` pattern from `.claude/queries/DATA-REFRESH-TEMPLATE.pq`.
+  Confirmed via direct read, not assumed. No action needed in this plan for that bug
+  class. (One DAX-layer analog exists in Report 4's `Fact_PartsNotReordered[Business
+  Hours Since Sale]` calculated column using `NOW()` — already independently
+  DST-fixed there too. Do not touch it.)
+- **No column-trimming-without-`Table.SelectColumns` bugs found** — every table's
+  M-query is currently a straight passthrough (or has only row filters/date-extraction
+  transforms, never column drops), and every model's declared column list matches its
+  M-query's real output 1:1. No action needed for that bug class either, **except** see
+  the `jdis_Part_Information` note below.
+- **`jdis_Part_Information` → `Silver_PartInformation` (Parts Adjustments only):**
+  Parts Adjustments' `jdis_Part_Information` table declares exactly 33 columns —
+  `Branch, PartNumber, Description, Franchise, Source, SLC, CommodityCode,
+  DealerGroupCode, QuantityOnHand, BinQty, BulkBin, Bin, BackOrderQty, Returnable,
+  PackageQty, InventoryCost, Cost, SellPrice1, ListPrice, Current12MoSales,
+  Current12MoDollars, Previous12MoSales, Previous12MoDollars, VendorCode,
+  DateCreated, DateLastRequested, StocktakeDate, BulkBinQty, PendingQty, SuperTo,
+  SuperFrom, OnOrder, Weight` — confirmed to be the **exact same 33-column set**
+  `Silver_PartInformation` now has (per this session's own `jdis_Part_Information`
+  rebuild, `docs/superpowers/plans/2026-09-18-jdis-part-information-rebuild.md`),
+  just in a different column order. **No `Table.SelectColumns` or
+  `Table.TransformColumnTypes` step is needed** — a straight connection+`Item=` swap
+  is correct and sufficient. (This is a genuinely different situation from Bin
+  Location Report's own `jdis_Part_Information → Silver_PartInformation` repoint,
+  which narrows to 18 columns and casts `PackageQty` to `Int64.Type` — do not copy
+  that pattern here. Parts Adjustments' own `PackageQty` is already typed `string` in
+  its model, matching `Silver_PartInformation.PackageQty`'s real `VARCHAR` type
+  exactly — no cast needed.)
+- **Two reports are exposed to this project's known `dim_Parts.PartNumber`
+  control-character relationship bug** (a stray `\r`/`\t` in 3 of 316,365
+  `PartNumber` values that `Table.Trim()`/`F.trim()` doesn't strip, found and fixed
+  in `Build_Gold_Parts.Notebook` during the dims catalog work) — both because they
+  have real fact-to-`dim_Parts.PartNumber` relationships, not just a `PartNumber`
+  column:
+  - Report 5 (Parts Adjustments): `Fact_PartsAdjustments`, `Fact_AdjustmentPairs`,
+    `Fact_AdjPairs_Summary` all relate to `dim_Parts.PartNumber`.
+  - Report 6 (Planter Inspection Part Sales): `Fact_PlanterInspectionParts`,
+    `Fact_PlanterPartSales`, `Fact_PlanterInvoiceAllParts` all relate to
+    `dim_Parts.PartNumber`.
+  The bug itself is already fixed at the source (`Build_Gold_Parts.Notebook`), so
+  this shouldn't recur — but Tasks 6 and 7 (below) include an explicit relationship
+  cardinality check as a real verification step for these two reports specifically,
+  since they're the ones that would show a symptom if it ever did.
+- Reports 1–4 have **no** `dim_Parts.PartNumber` relationship (some have a
+  `PartNumber` column on a fact table, but it isn't used as a join key anywhere) —
+  not exposed to that bug class, no special check needed for them.
+- **Established real workflow (confirmed via Batch 0, and memory of a real mistake
+  to avoid repeating):** the file edits in this plan happen directly in the
+  `data-projects` repo copy (`projects/<report>/reports/...`) — **not** in
+  `fabric-workspace-docs`. Brian's actual Desktop workflow opens reports from
+  `data-projects`. After Brian confirms a report looks right and publishes it to
+  `RP - Dev` from Desktop, and commits via Fabric Git integration in the portal, the
+  `fabric-workspace-docs` mirror updates automatically — editing that mirror
+  directly, as happened by mistake once during Batch 0, is the wrong file to touch.
+
+---
+
+### Task 1: Pre-migration verification — confirm all 32 target tables are real and match expectations
+
+**Files:** none — verification only.
+
+- [ ] **Step 1: Write and run a DuckDB check confirming every target table/column exists in `DP_Presentation`**
+
+```python
+import duckdb
+con = duckdb.connect()
+con.execute("INSTALL delta; LOAD delta; INSTALL azure; LOAD azure;")
+con.execute("CREATE SECRET (TYPE azure, PROVIDER credential_chain, CHAIN 'cli');")
+
+# DP - Presentation - Dev workspace/lakehouse IDs (confirmed earlier this session)
+base = "abfss://73fd5443-240e-410a-990a-98827f32c087@onelake.dfs.fabric.microsoft.com/966efc8a-16f9-423b-aa43-e368fcd8fb91"
+
+tables = [
+    "Fact_InTrans_UniqueCustomers", "Fact_Invoice_UniqueCustomers", "dim_BranchLocation",
+    "dim_CustomerList", "dim_DateTable", "dim_UniqueCustomers",
+    "Fact_InternalWorkOrders", "dim_Salesperson",
+    "Fact_NegativeOnHand_OnHandNoBin",
+    "Fact_PartsNotReordered",
+    "Fact_AdjPairs_Summary", "Fact_AdjustmentPairs", "Fact_PartsAdjustments",
+    "dim_AdjustmentType", "dim_Parts", "Silver_PartInformation",
+    "Fact_PlanterInspectionParts", "Fact_PlanterInspections",
+    "Fact_PlanterInvoiceAllParts", "Fact_PlanterPartSales",
+]
+for t in sorted(set(tables)):
+    try:
+        n = con.execute(f"SELECT COUNT(*) FROM delta_scan('{base}/Tables/{t}')").fetchone()[0]
+        print(f"  OK  {t}: {n:,} rows")
+    except Exception as e:
+        print(f"  MISSING/ERROR  {t}: {e}")
+```
+
+Expected: every table prints a real row count, none print `MISSING/ERROR`. This is
+the actual proof every table this batch depends on genuinely exists in
+`DP_Presentation` before touching any report file — don't skip this and assume the
+catalog doc's dependency list is still accurate.
+
+- [ ] **Step 2: If anything is missing, stop and report back before proceeding**
+
+Do not start editing report files if any table from Step 1 is missing — that means
+the catalog doc's assumption for that report is stale and needs to be re-investigated
+before this plan can proceed for that specific report.
+
+---
+
+### Task 2: Repoint Unique Parts Customers (6 tables)
+
+**Files:**
+- Modify: `projects/unique parts customers - report/reports/current/Unique Parts Customers.SemanticModel/definition/tables/Fact_InTrans_UniqueCustomers.tmdl`
+- Modify: `projects/unique parts customers - report/reports/current/Unique Parts Customers.SemanticModel/definition/tables/Fact_Invoice_UniqueCustomers.tmdl`
+- Modify: `projects/unique parts customers - report/reports/current/Unique Parts Customers.SemanticModel/definition/tables/dim_BranchLocation.tmdl`
+- Modify: `projects/unique parts customers - report/reports/current/Unique Parts Customers.SemanticModel/definition/tables/dim_CustomerList.tmdl`
+- Modify: `projects/unique parts customers - report/reports/current/Unique Parts Customers.SemanticModel/definition/tables/dim_DateTable.tmdl`
+- Modify: `projects/unique parts customers - report/reports/current/Unique Parts Customers.SemanticModel/definition/tables/dim_UniqueCustomers.tmdl`
+
+- [ ] **Step 1: Edit each table's partition source**
+
+All 6 tables in this report use the identical simple pattern — find this exact line
+in each file:
+```
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-gxnyznhdptpenfw724g3o5sjzm.datawarehouse.fabric.microsoft.com", "LH_Master_Data"),
+```
+Replace with:
+```
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-inkp24yoeqfedgiktcbh6mwaq4.datawarehouse.fabric.microsoft.com", "DP_Presentation"),
+```
+No other line changes — every `Item="<TableName>"` stays exactly as-is (`Fact_InTrans_UniqueCustomers`, `Fact_Invoice_UniqueCustomers`, `dim_BranchLocation`, `dim_CustomerList`, `dim_DateTable`, `dim_UniqueCustomers` respectively).
+
+- [ ] **Step 2: Confirm no other `LH_Master_Data` references remain in this report**
+
+```bash
+grep -rn "LH_Master_Data" "projects/unique parts customers - report/reports/current/Unique Parts Customers.SemanticModel/"
+```
+Expected: no output.
+
+- [ ] **Step 3: Commit the file changes**
+
+```bash
+git add "projects/unique parts customers - report/reports/current/Unique Parts Customers.SemanticModel/definition/tables/"*.tmdl
+git commit -m "Repoint Unique Parts Customers to DP_Presentation
+
+Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
+```
+
+- [ ] **Step 4: Brian — Desktop refresh, validate, and publish**
+
+Open `Unique Parts Customers.pbip` from this `data-projects` folder in Power BI
+Desktop (it should prompt to reload since the underlying files changed). Refresh
+all tables. Confirm the report's visuals still render sensibly (row counts,
+customer names, branch names all look real). Publish to `RP - Dev`, then in the
+Fabric portal for that workspace, **Source control → Commit** to push the change
+into `fabric-workspace-docs`.
+
+- [ ] **Step 5: Post-publish verification — real row counts match what Desktop showed**
+
+```python
+import duckdb
+con = duckdb.connect()
+con.execute("INSTALL delta; LOAD delta; INSTALL azure; LOAD azure;")
+con.execute("CREATE SECRET (TYPE azure, PROVIDER credential_chain, CHAIN 'cli');")
+base = "abfss://73fd5443-240e-410a-990a-98827f32c087@onelake.dfs.fabric.microsoft.com/966efc8a-16f9-423b-aa43-e368fcd8fb91"
+for t in ["Fact_InTrans_UniqueCustomers", "Fact_Invoice_UniqueCustomers", "dim_BranchLocation",
+          "dim_CustomerList", "dim_DateTable", "dim_UniqueCustomers"]:
+    n = con.execute(f"SELECT COUNT(*) FROM delta_scan('{base}/Tables/{t}')").fetchone()[0]
+    print(f"  {t}: {n:,} rows")
+```
+
+Compare these real counts against what the refreshed report's own visuals/table
+view show in Desktop (check via a card visual or the Data pane's row count) — they
+should match exactly, since the semantic model does no row-dropping transforms on
+any of these 6 tables. A mismatch means the Desktop refresh didn't actually pick up
+the new source, not a data problem.
+
+---
+
+### Task 3: Repoint Stock Check (4 tables)
+
+**Files:**
+- Modify: `projects/stock-check - report/reports/Stock Check.SemanticModel/definition/tables/Fact_InternalWorkOrders.tmdl`
+- Modify: `projects/stock-check - report/reports/Stock Check.SemanticModel/definition/tables/dim_BranchLocation.tmdl`
+- Modify: `projects/stock-check - report/reports/Stock Check.SemanticModel/definition/tables/dim_DateTable.tmdl`
+- Modify: `projects/stock-check - report/reports/Stock Check.SemanticModel/definition/tables/dim_Salesperson.tmdl`
+
+- [ ] **Step 1: Edit each table's partition source**
+
+Same single-line swap as Task 2, Step 1, applied to all 4 files in this folder
+(`Fact_InternalWorkOrders`, `dim_BranchLocation`, `dim_DateTable`,
+`dim_Salesperson` — each keeps its own `Item="<TableName>"` unchanged).
+
+- [ ] **Step 2: Confirm no other `LH_Master_Data` references remain**
+
+```bash
+grep -rn "LH_Master_Data" "projects/stock-check - report/reports/Stock Check.SemanticModel/"
+```
+Expected: no output.
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add "projects/stock-check - report/reports/Stock Check.SemanticModel/definition/tables/"*.tmdl
+git commit -m "Repoint Stock Check to DP_Presentation
+
+Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
+```
+
+- [ ] **Step 4: Brian — Desktop refresh, validate, and publish**
+
+Open `Stock Check.pbip` (note: this project has no `current`/`archive` subfolder
+split yet — the `.pbip` sits directly under `reports/`). Refresh, validate visuals
+render real data, publish to `RP - Dev`, commit via Fabric Git integration.
+
+- [ ] **Step 5: Post-publish verification — real row counts match what Desktop showed**
+
+```python
+import duckdb
+con = duckdb.connect()
+con.execute("INSTALL delta; LOAD delta; INSTALL azure; LOAD azure;")
+con.execute("CREATE SECRET (TYPE azure, PROVIDER credential_chain, CHAIN 'cli');")
+base = "abfss://73fd5443-240e-410a-990a-98827f32c087@onelake.dfs.fabric.microsoft.com/966efc8a-16f9-423b-aa43-e368fcd8fb91"
+for t in ["Fact_InternalWorkOrders", "dim_BranchLocation", "dim_DateTable", "dim_Salesperson"]:
+    n = con.execute(f"SELECT COUNT(*) FROM delta_scan('{base}/Tables/{t}')").fetchone()[0]
+    print(f"  {t}: {n:,} rows")
+```
+
+Compare against what Desktop's Data pane shows for the refreshed report — should
+match exactly (no row-dropping transforms on any of these 4 tables).
+
+---
+
+### Task 4: Repoint Negative On Hand-On Hand No Bin (3 tables)
+
+**Files:**
+- Modify: `projects/negative on hand - on hand no bin - report/reports/current/Negative On Hand-On Hand No Bin.SemanticModel/definition/tables/Fact_NegativeOnHand_OnHandNoBin.tmdl`
+- Modify: `projects/negative on hand - on hand no bin - report/reports/current/Negative On Hand-On Hand No Bin.SemanticModel/definition/tables/dim_BranchLocation.tmdl`
+- Modify: `projects/negative on hand - on hand no bin - report/reports/current/Negative On Hand-On Hand No Bin.SemanticModel/definition/tables/dim_DateTable.tmdl`
+
+- [ ] **Step 1: Edit each table's partition source**
+
+Same single-line swap as Task 2, Step 1, applied to all 3 files
+(`Fact_NegativeOnHand_OnHandNoBin`, `dim_BranchLocation`, `dim_DateTable`).
+
+- [ ] **Step 2: Confirm no other `LH_Master_Data` references remain**
+
+```bash
+grep -rn "LH_Master_Data" "projects/negative on hand - on hand no bin - report/reports/current/Negative On Hand-On Hand No Bin.SemanticModel/"
+```
+Expected: no output.
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add "projects/negative on hand - on hand no bin - report/reports/current/Negative On Hand-On Hand No Bin.SemanticModel/definition/tables/"*.tmdl
+git commit -m "Repoint Negative On Hand-On Hand No Bin to DP_Presentation
+
+Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
+```
+
+- [ ] **Step 4: Brian — Desktop refresh, validate, and publish**
+
+Open `Negative On Hand-On Hand No Bin.pbip`. Refresh, validate visuals (branch
+names, part numbers, issue severity all look real), publish to `RP - Dev`, commit
+via Fabric Git integration.
+
+- [ ] **Step 5: Post-publish verification — real row counts match what Desktop showed**
+
+```python
+import duckdb
+con = duckdb.connect()
+con.execute("INSTALL delta; LOAD delta; INSTALL azure; LOAD azure;")
+con.execute("CREATE SECRET (TYPE azure, PROVIDER credential_chain, CHAIN 'cli');")
+base = "abfss://73fd5443-240e-410a-990a-98827f32c087@onelake.dfs.fabric.microsoft.com/966efc8a-16f9-423b-aa43-e368fcd8fb91"
+for t in ["Fact_NegativeOnHand_OnHandNoBin", "dim_BranchLocation", "dim_DateTable"]:
+    n = con.execute(f"SELECT COUNT(*) FROM delta_scan('{base}/Tables/{t}')").fetchone()[0]
+    print(f"  {t}: {n:,} rows")
+```
+
+Compare against what Desktop's Data pane shows for the refreshed report — should
+match exactly (no row-dropping transforms on any of these 3 tables).
+
+---
+
+### Task 5: Repoint Parts Not Re-Ordered 24 Hours (3 tables)
+
+**Files:**
+- Modify: `projects/parts not re-orderd 24 hours - report/report/current/Parts Not Re-Ordered 24 Hours.SemanticModel/definition/tables/Fact_PartsNotReordered.tmdl`
+- Modify: `projects/parts not re-orderd 24 hours - report/report/current/Parts Not Re-Ordered 24 Hours.SemanticModel/definition/tables/dim_BranchLocation.tmdl`
+- Modify: `projects/parts not re-orderd 24 hours - report/report/current/Parts Not Re-Ordered 24 Hours.SemanticModel/definition/tables/dim_DateTable.tmdl`
+
+- [ ] **Step 1: Edit each table's partition source**
+
+Same single-line swap as Task 2, Step 1, applied to all 3 files
+(`Fact_PartsNotReordered`, `dim_BranchLocation`, `dim_DateTable`). `Fact_PartsNotReordered`
+also has a `#"Filtered Rows" = Table.SelectRows(dbo_Fact_PartsNotReordered, each ([Type] = "C" or [Type] = "I"))`
+step immediately after — leave this line completely untouched, only the
+`Sql.Database(...)` line changes.
+
+**Do not touch** the `Fact_PartsNotReordered[Business Hours Since Sale]` DAX
+calculated column — it already has its own independent, correct DST-aware `NOW()`
+fix and is unrelated to this M-query migration.
+
+- [ ] **Step 2: Confirm no other `LH_Master_Data` references remain**
+
+```bash
+grep -rn "LH_Master_Data" "projects/parts not re-orderd 24 hours - report/report/current/Parts Not Re-Ordered 24 Hours.SemanticModel/"
+```
+Expected: no output.
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add "projects/parts not re-orderd 24 hours - report/report/current/Parts Not Re-Ordered 24 Hours.SemanticModel/definition/tables/"*.tmdl
+git commit -m "Repoint Parts Not Re-Ordered 24 Hours to DP_Presentation
+
+Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
+```
+
+- [ ] **Step 4: Brian — Desktop refresh, validate, and publish**
+
+Open `Parts Not Re-Ordered 24 Hours.pbip`. Refresh, confirm the `Filtered Rows`
+step still correctly limits to Type C/I rows and the `Business Hours Since Sale`
+measure still computes sensible values, publish to `RP - Dev`, commit via Fabric
+Git integration.
+
+- [ ] **Step 5: Post-publish verification — real filtered row count matches what Desktop showed**
+
+```python
+import duckdb
+con = duckdb.connect()
+con.execute("INSTALL delta; LOAD delta; INSTALL azure; LOAD azure;")
+con.execute("CREATE SECRET (TYPE azure, PROVIDER credential_chain, CHAIN 'cli');")
+base = "abfss://73fd5443-240e-410a-990a-98827f32c087@onelake.dfs.fabric.microsoft.com/966efc8a-16f9-423b-aa43-e368fcd8fb91"
+total = con.execute(f"SELECT COUNT(*) FROM delta_scan('{base}/Tables/Fact_PartsNotReordered')").fetchone()[0]
+filtered = con.execute(f"""
+    SELECT COUNT(*) FROM delta_scan('{base}/Tables/Fact_PartsNotReordered')
+    WHERE Type = 'C' OR Type = 'I'
+""").fetchone()[0]
+print(f"  Fact_PartsNotReordered: {total:,} total, {filtered:,} after Type C/I filter (this is what the report should show)")
+for t in ["dim_BranchLocation", "dim_DateTable"]:
+    n = con.execute(f"SELECT COUNT(*) FROM delta_scan('{base}/Tables/{t}')").fetchone()[0]
+    print(f"  {t}: {n:,} rows")
+```
+
+Compare the `filtered` count against what Desktop's Data pane shows for
+`Fact_PartsNotReordered` in the refreshed report — should match exactly, since the
+M-query's `Table.SelectRows` step reproduces this same `Type = "C" or Type = "I"`
+filter.
+
+---
+
+### Task 6: Repoint Parts Adjustments (8 tables, including the `Silver_PartInformation` rename)
+
+**Files:**
+- Modify: `projects/parts adjustments - report/reports/current/Parts Adjustments.SemanticModel/definition/tables/Fact_AdjPairs_Summary.tmdl`
+- Modify: `projects/parts adjustments - report/reports/current/Parts Adjustments.SemanticModel/definition/tables/Fact_AdjustmentPairs.tmdl`
+- Modify: `projects/parts adjustments - report/reports/current/Parts Adjustments.SemanticModel/definition/tables/Fact_PartsAdjustments.tmdl`
+- Modify: `projects/parts adjustments - report/reports/current/Parts Adjustments.SemanticModel/definition/tables/dim_AdjustmentType.tmdl`
+- Modify: `projects/parts adjustments - report/reports/current/Parts Adjustments.SemanticModel/definition/tables/dim_BranchLocation.tmdl`
+- Modify: `projects/parts adjustments - report/reports/current/Parts Adjustments.SemanticModel/definition/tables/dim_DateTable.tmdl`
+- Modify: `projects/parts adjustments - report/reports/current/Parts Adjustments.SemanticModel/definition/tables/dim_Parts.tmdl`
+- Modify: `projects/parts adjustments - report/reports/current/Parts Adjustments.SemanticModel/definition/tables/jdis_Part_Information.tmdl`
+
+(`dim_PAType.tmdl` also exists in this folder but is a hardcoded 7-row
+`calculated`/DATATABLE table with no `Sql.Database` reference — do not touch it,
+not part of this migration.)
+
+- [ ] **Step 1: Edit the 6 straightforward tables' partition sources**
+
+Same single-line swap as Task 2, Step 1, applied to `Fact_AdjPairs_Summary`,
+`Fact_AdjustmentPairs`, `Fact_PartsAdjustments`, `dim_AdjustmentType`,
+`dim_BranchLocation`, `dim_DateTable`, and `dim_Parts`. Note that
+`Fact_AdjPairs_Summary`/`Fact_AdjustmentPairs`/`Fact_PartsAdjustments` each have a
+`#"Extracted Date" = Table.TransformColumns(dbo_<TableName>,{{"<DateCol>", DateTime.Date, type date}})`
+step after the `Source`/`dbo_...` lines — leave those completely untouched, only
+the `Sql.Database(...)` line changes in each.
+
+- [ ] **Step 2: Edit `jdis_Part_Information.tmdl` — connection swap AND table rename**
+
+The current full M-query in this file:
+```
+let
+    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-gxnyznhdptpenfw724g3o5sjzm.datawarehouse.fabric.microsoft.com", "LH_Master_Data"),
+    dbo_jdis_Part_Information = Source{[Schema="dbo",Item="jdis_Part_Information"]}[Data]
+in
+    dbo_jdis_Part_Information
+```
+Replace with:
+```
+let
+    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-inkp24yoeqfedgiktcbh6mwaq4.datawarehouse.fabric.microsoft.com", "DP_Presentation"),
+    dbo_jdis_Part_Information = Source{[Schema="dbo",Item="Silver_PartInformation"]}[Data]
+in
+    dbo_jdis_Part_Information
+```
+Two changes on top of the standard swap: the database name, and `Item="jdis_Part_Information"`
+becomes `Item="Silver_PartInformation"`. **No `Table.SelectColumns` or
+`Table.TransformColumnTypes` step is added** — per the "Real facts" section above,
+this report's existing 33-column model already matches `Silver_PartInformation`'s
+real schema exactly, including `PackageQty` already being typed `string` in both
+places. Do not copy Bin Location Report's narrower 18-column/`Int64.Type`-cast
+pattern here — it doesn't apply to this report's own column set.
+
+- [ ] **Step 3: Confirm no other `LH_Master_Data` references remain**
+
+```bash
+grep -rn "LH_Master_Data" "projects/parts adjustments - report/reports/current/Parts Adjustments.SemanticModel/"
+```
+Expected: no output.
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add "projects/parts adjustments - report/reports/current/Parts Adjustments.SemanticModel/definition/tables/"*.tmdl
+git commit -m "Repoint Parts Adjustments to DP_Presentation
+
+Includes jdis_Part_Information -> Silver_PartInformation - the table this
+session's own rebuild replaced. No column changes needed: this report's
+33-column model already matches Silver_PartInformation's real schema
+exactly, including PackageQty already being typed string in both places.
+
+Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
+```
+
+- [ ] **Step 5: Brian — Desktop refresh, validate, and publish**
+
+Open `Parts Adjustments.pbip`. Refresh all tables — pay particular attention to
+`jdis_Part_Information` actually loading real part data (not blank/erroring), since
+this is the one table with a real name change, not just a connection swap. Confirm
+the `dim_Parts` relationship still resolves correctly (this report is one of the
+two in this batch exposed to the historical `PartNumber` control-character
+relationship bug — see Step 6 below). Publish to `RP - Dev`, commit via Fabric Git
+integration.
+
+- [ ] **Step 6: Post-publish verification — relationship integrity check**
+
+Since `Fact_PartsAdjustments`, `Fact_AdjustmentPairs`, and `Fact_AdjPairs_Summary`
+all relate to `dim_Parts.PartNumber`, and this project has a real history of a
+stray `\r`/`\t` control character silently breaking that exact relationship (fixed
+in `Build_Gold_Parts.Notebook`, but worth re-confirming here rather than assuming):
+
+```python
+import duckdb
+con = duckdb.connect()
+con.execute("INSTALL delta; LOAD delta; INSTALL azure; LOAD azure;")
+con.execute("CREATE SECRET (TYPE azure, PROVIDER credential_chain, CHAIN 'cli');")
+base = "abfss://73fd5443-240e-410a-990a-98827f32c087@onelake.dfs.fabric.microsoft.com/966efc8a-16f9-423b-aa43-e368fcd8fb91"
+
+for fact in ["Fact_PartsAdjustments", "Fact_AdjustmentPairs", "Fact_AdjPairs_Summary"]:
+    row = con.execute(f"""
+        SELECT COUNT(*) AS total,
+               COUNT(*) FILTER (WHERE p.PartNumber IS NULL) AS unmatched
+        FROM delta_scan('{base}/Tables/{fact}') f
+        LEFT JOIN delta_scan('{base}/Tables/dim_Parts') p ON f.PartNumber = p.PartNumber
+    """).fetchone()
+    print(f"  {fact}: total={row[0]:,}  unmatched to dim_Parts={row[1]:,}")
+```
+
+Expected: `unmatched` should be 0 or very close to it (a real business-data gap, not
+a join bug) for all three fact tables — confirms the relationship resolves cleanly
+with today's real `dim_Parts` data.
+
+---
+
+### Task 7: Repoint Planter Inspection Part Sales (8 tables)
+
+**Files:**
+- Modify: `projects/planter inspection part sales - report/reports/new report/Planter Inspection Part Sales.SemanticModel/definition/tables/Fact_PlanterInspectionParts.tmdl`
+- Modify: `projects/planter inspection part sales - report/reports/new report/Planter Inspection Part Sales.SemanticModel/definition/tables/Fact_PlanterInspections.tmdl`
+- Modify: `projects/planter inspection part sales - report/reports/new report/Planter Inspection Part Sales.SemanticModel/definition/tables/Fact_PlanterInvoiceAllParts.tmdl`
+- Modify: `projects/planter inspection part sales - report/reports/new report/Planter Inspection Part Sales.SemanticModel/definition/tables/Fact_PlanterPartSales.tmdl`
+- Modify: `projects/planter inspection part sales - report/reports/new report/Planter Inspection Part Sales.SemanticModel/definition/tables/dim_BranchLocation.tmdl`
+- Modify: `projects/planter inspection part sales - report/reports/new report/Planter Inspection Part Sales.SemanticModel/definition/tables/dim_CustomerList.tmdl`
+- Modify: `projects/planter inspection part sales - report/reports/new report/Planter Inspection Part Sales.SemanticModel/definition/tables/dim_DateTable.tmdl`
+- Modify: `projects/planter inspection part sales - report/reports/new report/Planter Inspection Part Sales.SemanticModel/definition/tables/dim_Parts.tmdl`
+
+(Work only in the `new report/` folder — `old report/` has a stale `V1` copy and a
+stale duplicate, neither in scope.)
+
+- [ ] **Step 1: Edit each table's partition source**
+
+Same single-line swap as Task 2, Step 1, applied to all 8 files. `dim_CustomerList`
+here has a `FilterValidCustomers = Table.SelectRows(dbo_dim_CustomerList, each [CustomerNumber] <> null and [CustomerNumber] <> "")`
+step after the `Source`/`dbo_...` lines — leave that completely untouched, only the
+`Sql.Database(...)` line changes.
+
+- [ ] **Step 2: Confirm no other `LH_Master_Data` references remain**
+
+```bash
+grep -rn "LH_Master_Data" "projects/planter inspection part sales - report/reports/new report/Planter Inspection Part Sales.SemanticModel/"
+```
+Expected: no output.
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add "projects/planter inspection part sales - report/reports/new report/Planter Inspection Part Sales.SemanticModel/definition/tables/"*.tmdl
+git commit -m "Repoint Planter Inspection Part Sales to DP_Presentation
+
+Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
+```
+
+- [ ] **Step 4: Brian — Desktop refresh, validate, and publish**
+
+Open `Planter Inspection Part Sales.pbip` from the `new report` folder. Refresh,
+confirm the `FilterValidCustomers` step still excludes blank customer numbers and
+`dim_Parts` relationships resolve correctly (this is the second of the two reports
+in this batch exposed to the historical `PartNumber` control-character relationship
+bug — see Step 5 below). Publish to `RP - Dev`, commit via Fabric Git integration.
+
+- [ ] **Step 5: Post-publish verification — relationship integrity check**
+
+Same real check as Task 6 Step 6, for this report's three `dim_Parts`-related fact
+tables:
+
+```python
+import duckdb
+con = duckdb.connect()
+con.execute("INSTALL delta; LOAD delta; INSTALL azure; LOAD azure;")
+con.execute("CREATE SECRET (TYPE azure, PROVIDER credential_chain, CHAIN 'cli');")
+base = "abfss://73fd5443-240e-410a-990a-98827f32c087@onelake.dfs.fabric.microsoft.com/966efc8a-16f9-423b-aa43-e368fcd8fb91"
+
+for fact in ["Fact_PlanterInspectionParts", "Fact_PlanterPartSales", "Fact_PlanterInvoiceAllParts"]:
+    row = con.execute(f"""
+        SELECT COUNT(*) AS total,
+               COUNT(*) FILTER (WHERE p.PartNumber IS NULL) AS unmatched
+        FROM delta_scan('{base}/Tables/{fact}') f
+        LEFT JOIN delta_scan('{base}/Tables/dim_Parts') p ON f.PartNumber = p.PartNumber
+    """).fetchone()
+    print(f"  {fact}: total={row[0]:,}  unmatched to dim_Parts={row[1]:,}")
+```
+
+Expected: `unmatched` should be 0 or very close to it for all three fact tables.
+
+---
+
+### Task 8: Archive the data-projects copies and update the catalog doc
+
+**Files:**
+- Move: all 6 reports' `data-projects` folders to `report(s)/archive/` (matching the
+  established Batch 0 pattern — the `fabric-workspace-docs/workspaces/RP - Dev/`
+  copy becomes the real working copy going forward)
+- Modify: `docs/architecture/report-migration-catalog.md`
+
+- [ ] **Step 1: Confirm all 6 reports published and verified successfully**
+
+Do not archive anything until every report in Tasks 2–7 has a confirmed-working
+published version in `RP - Dev` with its post-publish verification step passed.
+
+- [ ] **Step 2: Archive each report's `data-projects` copy**
+
+Following the exact Batch 0 precedent (see `git log --oneline` for
+`a370cc28`/`d7e4c3d7`/`c82cb3e8`, "Archive `<Report>`'s data-projects copy (migrated
+to DP backend)"), move each of the 6 reports' folders into their own archive
+location and commit with the same message pattern, one commit per report.
+
+- [ ] **Step 3: Update the catalog doc**
+
+Mark all 6 reports as complete in `docs/architecture/report-migration-catalog.md`'s
+Batch 1 section, documenting the real per-report verification results (row counts,
+relationship-integrity check results for Parts Adjustments/Planter Inspection Part
+Sales) the same way Batch 0's section documents its own real findings.
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add docs/architecture/report-migration-catalog.md
+git commit -m "Update report migration catalog: Batch 1 complete
+
+Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
+```
+
+---
+
+## What this plan deliberately does not cover
+
+- Customer Anatomy V2, Inspections - V2, Price Matrix — explicitly held back by
+  Brian's own call ("need special care"); a future Batch 2.
+- The remaining Tier 2/Tier 3 reports from the catalog doc — future batches.
+- Any fabric-cicd/Variable Library deployment automation for these 6 reports — this
+  plan uses the same manual Desktop-publish workflow proven in Batch 0. Automating
+  the publish step itself is a separate, not-yet-scoped piece of work.
+- Any change to `Build_Gold_Parts.Notebook` or the `dim_Parts.PartNumber`
+  control-character fix itself — already fixed; Tasks 6/7 only re-verify it holds
+  for these two newly-migrated reports' real data.
