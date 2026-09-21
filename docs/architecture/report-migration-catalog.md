@@ -153,6 +153,26 @@ assume" discipline as every prior batch). `Price Matrix` needs extra scrutiny gi
 flag carried forward clearly into the report layer, not just the backend notebook
 comment.
 
+**6 of 8 — COMPLETE (2026-09-21):** Negative On Hand, Parts Not Re-Ordered, Parts
+Adjustments, Planter Inspection Part Sales, Stock Check, and Unique Parts Customers
+(swapped in for this batch per Brian's own call) all repointed, validated, and live in
+`RP - Dev` — see `docs/superpowers/plans/2026-09-21-report-migration-batch1.md`.
+`Customer Anatomy` and `Inspections` deliberately deferred, held back for "special
+care" per Brian's explicit instruction.
+
+**`Price Matrix` — COMPLETE (2026-09-21), done separately from the rest of Batch 1**
+per Brian's own choice (`docs/superpowers/plans/2026-09-21-price-matrix-migration.md`).
+The "real report-level risk" flagged above was worse than this catalog's own audit
+found: the `Fact_Part_Transactions` redesign's real-usage audit was itself wrong for
+this report — it only checked visual-level field references, not DAX measure bodies,
+and missed that 4 "matrix-pricing" columns (`EffectiveListSalVal`,
+`EffectiveListMargin`, `MatrixSaleGained`, `MatrixMarginGained`) are genuinely used by
+this report's own namesake measures. Fixed by restoring those 4 columns to the Gold
+table (verified against real `EquipRDB` ground truth), then repointing + exhaustively
+re-auditing + trimming the report itself. See
+`docs/architecture/lh-master-data-facts-catalog.md`'s own corrected `Fact_Part_Transactions`
+section for the full finding.
+
 ### Batch 2 — remaining Tier 2 reports (small gaps + raw-table repoints)
 
 `dim_Date`, the `InMaster` shortcut, the snapshot table, then the raw-table repoints
