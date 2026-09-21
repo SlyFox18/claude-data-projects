@@ -1011,20 +1011,20 @@ and `PartInformation_Dead`.
 **Files:** none — verification only, matching this project's "don't just trust a
 green checkmark" discipline used throughout.
 
-- [ ] **Step 1: Run `Pipeline_DP_Daily_Refresh` for real**
+- [x] **Step 1: Run `Pipeline_DP_Daily_Refresh` for real**
 
 Brian: Fabric portal → open `Pipeline_DP_Daily_Refresh` (built earlier today) →
 **Run**. This pipeline invokes `Build_Silver_PartInformation` by its `notebookId`,
 which hasn't changed — so this should just work, but needs a real proof run, not an
 assumption.
 
-- [ ] **Step 2: Confirm it Succeeded and check the real output**
+- [x] **Step 2: Confirm it Succeeded and check the real output**
 
 Watch it complete in **Monitor**. Expected: all activities Succeeded (matching the
 same pattern already proven earlier today), `FailedItems` empty, success email
 received.
 
-- [ ] **Step 3: Independently verify `dim_Parts` still builds correctly downstream**
+- [x] **Step 3: Independently verify `dim_Parts` still builds correctly downstream**
 
 ```python
 import duckdb
@@ -1039,6 +1039,86 @@ print(f"dim_Parts: {n:,} rows")
 Expected: a real, sensible row count (in the same ballpark as `dim_Parts`' known
 real size, ~316K rows) — confirms `Build_Gold_Parts` (which reads
 `Silver_PartInformation`) still works correctly with the rebuilt notebook's output.
+
+### Task 8 — Real results and a genuine production incident (2026-09-18)
+
+The first real run of `Pipeline_DP_Daily_Refresh` after Task 7's cleanup failed
+**every single notebook** in both the Silver and Gold tiers (not just
+`Build_Silver_PartInformation`) with the same error:
+
+```
+[InvalidEnvironmentArtifact] Invalid provided environment artifact
+{"id":"35c7a5de-35f2-83b3-4e32-e3ddecb30b6e","workspaceId":"ab15d64d-..."}
+```
+
+**Root-cause investigation, including one real misdiagnosis along the way:**
+
+1. Initial (wrong) diagnosis: queried the Fabric REST API directly
+   (`GET workspaces/{id}/environments`) and found the *live* `DP_Silver_HighConcurrency`
+   environment's real runtime ObjectId (`ecb30b6e-e3dd-4e32-83b3-35f235c7a5de`) didn't
+   match the ID baked into every notebook's `# META` block
+   (`35c7a5de-35f2-83b3-4e32-e3ddecb30b6e`). Rewrote all 14 affected notebooks
+   (8 Silver + 6 Gold, across both `DP - Staging - Dev` and `DP - Presentation - Dev`)
+   to use the "real" ObjectId, committed, pushed.
+2. **This was wrong and had to be reverted.** Attempting to pull the fix into the
+   live workspaces produced Git "missing dependency" errors and a hard update
+   failure. Checking the Environment item's own git-tracked `.platform` file
+   (`DP_Silver_HighConcurrency.Environment/.platform`) showed its `logicalId` is
+   `35c7a5de-35f2-83b3-4e32-e3ddecb30b6e` — the value I'd just replaced was
+   Fabric's own correct, stable Git-tracking identifier for this item (deliberately
+   different from its live runtime ObjectId, by Fabric's own Git-integration
+   design — `logicalId` is meant to stay constant across environments while the
+   real ObjectId varies per-workspace). Reverted the bad commit immediately
+   (`git revert`), and Brian resolved the resulting portal merge-conflict dialog
+   with "Keep current content" to avoid the "may be permanently deleted" risk that
+   dialog warned about.
+3. **Real, confirmed root cause:** manually re-selecting the environment from the
+   notebook's own Environment dropdown in the live portal (not editing git) writes
+   the correct real runtime ObjectId directly into the live item — and that
+   notebook then runs successfully. But **the fix doesn't persist** — a subsequent
+   Git sync (Commit, Update, or similar) silently reverts the live binding back to
+   the unresolved `logicalId`, breaking it again. Confirmed reproducible: after
+   fixing and testing `Build_Silver_PartInformation` standalone (worked), a full
+   pipeline re-run failed on **all** notebooks again with the identical error, and
+   spot-checking the portal showed the environment had reverted. This matches
+   Brian's own real, independently-noticed symptom from earlier today's commit
+   messages ("What does this keep coming back after a commit?") — a genuine,
+   reproducible Fabric platform bug in how Git integration resolves an Environment
+   dependency into a live workspace item, not a one-off glitch.
+
+**Real fix (not a workaround):** per Microsoft's own docs
+(`learn.microsoft.com/fabric/data-engineering/high-concurrency-overview`), a custom
+Environment is only required to raise `spark.highConcurrency.max` above the default
+cap of 5 notebooks per shared session — high concurrency itself is on by default
+workspace-wide and doesn't need a custom Environment at all. Without a raised cap,
+Fabric automatically splits notebooks sharing a `sessionTag` into multiple
+5-notebook sessions instead of one larger one (still capturing most of the
+session-sharing benefit). **Removed the custom Environment binding entirely from
+all 14 notebooks** (deleted the `"environment": {...}` block from each notebook's
+`# META`, keeping `sessionTag` unchanged in the pipelines) — this eliminates the
+exact mechanism that was breaking, without disabling high concurrency, and scales
+automatically as more notebooks are added later (Fabric just creates more
+5-notebook sessions, no manual cap-raising needed). Confirmed working: both
+`Pipeline_DP_Daily_Refresh` and `Pipeline_DP_Monthly_Refresh` completed successfully
+after this fix.
+
+**Separate, unrelated incident found in the same test pass:** the semantic model
+refresh (feeding off the `DP - Presentation - Dev` Warehouse/Lakehouse SQL
+endpoint, database `dp_presentation`) failed with `DMTS_MonikerWithUnboundDataSources`
+— the semantic model's own internal data-source credentials (Settings → Data source
+credentials, separate from the pipeline activity's own connection used to trigger
+the refresh) had gone unbound, despite having been set before. Fixed by re-entering
+credentials. Real cause not fully confirmed, but the best available explanation:
+today's session did several unusual rounds of Git "Update all" on this same
+workspace while chasing the environment-binding bug above, and Fabric is known to
+reset a semantic model's data-source binding on certain redeploys even without a
+real content change. Brian is watching for recurrence on future unrelated syncs to
+confirm; if it recurs, it's a one-time re-entry each time, not a self-reverting loop
+like the environment issue was.
+
+**Final real verification:** `dim_Parts` — 316,634 rows (matches its known real
+size). `Silver_PartInformation` — 1,112,990 rows, continuing the same small, healthy
+daily drift seen throughout this plan (1,112,605 → 1,112,784 → 1,112,990).
 
 ---
 
