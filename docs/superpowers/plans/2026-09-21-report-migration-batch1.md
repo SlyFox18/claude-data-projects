@@ -289,19 +289,19 @@ match exactly (no row-dropping transforms on any of these 4 tables).
 - Modify: `projects/negative on hand - on hand no bin - report/reports/current/Negative On Hand-On Hand No Bin.SemanticModel/definition/tables/dim_BranchLocation.tmdl`
 - Modify: `projects/negative on hand - on hand no bin - report/reports/current/Negative On Hand-On Hand No Bin.SemanticModel/definition/tables/dim_DateTable.tmdl`
 
-- [ ] **Step 1: Edit each table's partition source**
+- [x] **Step 1: Edit each table's partition source**
 
 Same single-line swap as Task 2, Step 1, applied to all 3 files
 (`Fact_NegativeOnHand_OnHandNoBin`, `dim_BranchLocation`, `dim_DateTable`).
 
-- [ ] **Step 2: Confirm no other `LH_Master_Data` references remain**
+- [x] **Step 2: Confirm no other `LH_Master_Data` references remain**
 
 ```bash
 grep -rn "LH_Master_Data" "projects/negative on hand - on hand no bin - report/reports/current/Negative On Hand-On Hand No Bin.SemanticModel/"
 ```
 Expected: no output.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add "projects/negative on hand - on hand no bin - report/reports/current/Negative On Hand-On Hand No Bin.SemanticModel/definition/tables/"*.tmdl
@@ -309,6 +309,9 @@ git commit -m "Repoint Negative On Hand-On Hand No Bin to DP_Presentation
 
 Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 ```
+
+**Real result (2026-09-21):** commit `82003bf1`. Both spec-compliance and
+code-quality review passed (APPROVED).
 
 - [ ] **Step 4: Brian — Desktop refresh, validate, and publish**
 
