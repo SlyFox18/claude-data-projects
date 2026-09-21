@@ -57,11 +57,17 @@ cur = cn.cursor()
 
 results = []
 for _, row in sample.iterrows():
+    # Gold's TransactionDate reads back from DuckDB as tz-aware (America/Chicago),
+    # but EquipRDB.Trans_Datetime is a naive UTC timestamp - confirmed directly
+    # (14:15:17-05:00 in Gold matches 19:15:17 naive in EquipRDB, the same real
+    # instant). Converting to naive UTC before the match is required, or every
+    # row comes back NOT FOUND despite genuinely existing in both places.
+    trans_datetime_utc_naive = row["TransactionDate"].tz_convert("UTC").tz_localize(None)
     cur.execute("""
         SELECT SELL_PRICE1, LIST_PRICE, QTY, TRADE_TYPE, SALE_VAL
         FROM InTrans
         WHERE BRANCH = ? AND PART_NO = ? AND Trans_Datetime = ? AND SALE_VAL = ?
-    """, row["Branch"], row["PartNumber"], row["TransactionDate"], float(row["SaleAmount"]))
+    """, row["Branch"], row["PartNumber"], trans_datetime_utc_naive, float(row["SaleAmount"]))
     src_rows = cur.fetchall()
 
     if len(src_rows) != 1:
