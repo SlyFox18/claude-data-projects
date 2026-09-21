@@ -223,6 +223,8 @@ print("(all three expect 0 - these check the notebook's own internal arithmetic,
 print(matrix_check.to_string())
 ```
 
+**Real correction (found during code-quality review, fixed in a follow-up commit):** the `_PctChange` guard as originally written (`F.when(F.col("_SellPrice1SaleVal") != 0, ...).otherwise(F.lit(0.0))`) was inconsistent — a null `SellPrice1` silently defaulted to `0.0` (treated as "no price change"), while a null `ListPrice` cascaded to a null result instead, with no comment explaining either as deliberate. Fixed by adding an explicit `.isNull()` branch first, so both null inputs now propagate null consistently (matching the sibling `MarginPercent` column's own null-preserving pattern), while a genuinely zero `SellPrice1SaleVal` still resolves to `0.0` per the original production formula's intent — see commit `c98228e4` in `fabric-workspace-docs`. The code block above has been left as originally planned for historical accuracy; implementers following this plan in the future should use the null-safe 3-branch form.
+
 - [ ] **Step 6: Commit**
 
 ```bash
