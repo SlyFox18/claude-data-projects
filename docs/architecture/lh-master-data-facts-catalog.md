@@ -422,6 +422,19 @@ BOTH real reports:
   columns, **none** of the 7 customer-dimension columns, and **none** of the ~40 raw JD
   pass-through columns are used anywhere — despite the report's own name.
 
+**Correction (2026-09-21):** the claim above that none of the matrix-pricing
+columns are used is wrong. A direct grep of `MeasuresTable.tmdl`'s actual DAX
+measure bodies (not just visual-level field references, which is what the
+original audit checked) found 4 of the 8 matrix-pricing columns
+(`EffectiveListSalVal`, `EffectiveListMargin`, `MatrixSaleGained`,
+`MatrixMarginGained`) genuinely referenced by real measures (`Effective List
+Sale Value for Parts in Range`, `Matrix Sale Gained for Parts in Range`, and
+others), confirmed placed on real report visuals and bookmarks. See
+`docs/superpowers/specs/2026-09-21-price-matrix-migration-design.md` for the
+full finding and the fix. `CustomerNo` is also DAX-referenced but its
+measure (`Customer Concentration`) isn't placed on any page - confirmed
+genuinely unused, unlike the other 4.
+
 Real combined usage: ~10 of 70+ columns. Decision (confirmed): rebuild lean rather than
 port the bloat. `Build_Gold_PartTransactions.Notebook` (Fact Tables/Inventory Analysis/)
 drops the entire matrix-pricing block, the entire customer-dimension join, and every
