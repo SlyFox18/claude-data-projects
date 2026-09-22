@@ -179,6 +179,38 @@ section for the full finding.
 (Open Work Orders, 60+ Days Past Due, Pin Capture, Transfers, Part Sales with Low
 Margin). Each gap is small enough to fold into the same pass as its report.
 
+**Batch 2a — 3 of 6, COMPLETE (2026-09-22):** Open Work Orders, Pin Capture, Part
+Sales with Low Margin — the reports needing zero-to-minimal new backend work,
+repointed and refreshed clean. See `docs/superpowers/plans/2026-09-22-report-migration-batch2a.md`
+for the full real-finding trail. `InMaster`'s real gap was smaller than this
+catalog's own original claim: `DP_Staging` already had a fully-built `Silver_InMaster`
+(not just a raw shortcut) — only a `DP_Presentation`-side shortcut was needed, not
+new backend work. 3 real refresh-blocking bugs found and fixed, none caught by the
+standard audit alone:
+- `dim_DateTable.IsPreviousMonth`/`IsRolling12Months` (Pin Capture) — deliberately
+  dropped from the Gold table for baking in `DateTime.LocalNow()` at refresh time;
+  restored as report-layer DAX calculated columns sourced from the report's own
+  `Data Refresh` table instead.
+- `RepairOrderDetail.WorkOrder`→`RONumber` and the `*Sale`→`*Revenue` column
+  renames (Open Work Orders) — a real, silent schema drift from that table's own
+  earlier Category C migration, unrelated to this batch, invisible to both
+  existence and usage checks.
+- `RepairOrderDetail.DaysSinceLastLabor` (Open Work Orders) — a real source column
+  colliding with a calculated column of the same name.
+
+A genuinely new audit blind spot was also found and fixed going forward: bookmark
+filters can reference a column with zero visual or DAX-formula usage (caught on
+Pin Capture's `IsRolling12Months`) — see `feedback_report_audit_bookmark_blindspot`
+in memory. Part Sales with Low Margin refreshed clean but the data looked stale —
+flagged for a full validation pass (including confirming the daily pipeline refresh
+covers it) before production promotion, not blocking further report migrations.
+
+Remaining for Batch 2: 60+ Days Past Due (already done in Batch 0, listed here in
+error — confirm and remove), Transfers (needs `Fact_OutstandingTransfers`),
+Inventory Analysis (needs `dim_Date`), Parts on Open Orders (needs the snapshot
+table) — the 3 genuinely needing new Gold-layer work, deferred to a later round
+per Brian's own sequencing call.
+
 ### Batch 3 — Tier 3 (4 reports needing real new Gold-layer work first)
 
 `Fact_FirstPassFill` needs its own full audit-and-build; `dim_WkcdPart`/`dim_JobCodes`
