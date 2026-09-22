@@ -708,11 +708,17 @@ git push origin dev
 **Files:**
 - Modify (disable, don't delete): `fabric-workspace-docs/workspaces/LH_Master_Data/Pipelines/Pipeline_Monthly_Open_Orders_Snapshot.DataPipeline/.schedules`
 
-- [ ] **Step 1: Confirm the new notebook has run successfully at least once**
+- [x] **Step 1: Confirm the new notebook has run successfully at least once**
 
 Either wait for its first real scheduled run inside `Pipeline_DP_Monthly_Refresh`, or manually trigger it once via the Fabric UI and confirm success (row count printed, no errors) — don't disable the old pipeline until this is confirmed, per the design spec's explicit ordering (never remove the old one first).
 
-- [ ] **Step 2: Disable the old pipeline's schedule**
+**Execution note (2026-09-22) — real limitation, read before trusting this as full proof:** `Build_Gold_PartsOpenOrdersSnapshot.Notebook` has not yet run through its real scheduled cadence (first real scheduled run is 2026-10-01 via `Pipeline_DP_Monthly_Refresh`). It was manually triggered once today via `fab job run "DP - Presentation - Dev.Workspace/Fact Tables.Folder/Open Parts Tickets.Folder/Build_Gold_PartsOpenOrdersSnapshot.Notebook" --timeout 300` (job instance `672c30b0-e618-49a7-b516-909f5ea29980`, status `Completed`, no `failureReason`, ran 18:56:44–18:57:14 UTC). Because the one-time backfill (Task 3) already wrote a `2026-09-01` row, this run's own duplicate-guard correctly took its skip branch rather than its write branch — this is CORRECT behavior, not a failure.
+
+The Fabric job-instance REST API does not expose the notebook's actual print/log output (`GET /v1/workspaces/{id}/items/{id}/jobs/instances/{jobId}` returns only status/timestamps, no cell output), so the exact console string (`"SKIPPED: Snapshot for 2026-09-01 already exists (1907 rows). No action taken."`) could not be captured directly this session. Instead confirmed the same fact a stronger way — queried `DP_Presentation.Fact_Parts_Open_Orders_Snapshot` directly via DuckDB `delta_scan` immediately after the run: `2026-09-01` still shows exactly **1,907 rows** (total 13,070, unchanged from the Task 3 backfill's verified count). Had the guard failed and taken the write branch instead, `2026-09-01` would show 3,814 rows. This proves the skip branch executed, not just that the job returned success.
+
+**What this does and does NOT prove:** Confirmed — the notebook deploys, connects, reads `Fact_Parts_Open_Tickets`, evaluates the duplicate-guard correctly against real data, and completes without error. **Not yet proven** — the notebook's actual WRITE path (append + `mergeSchema`, `df.write...save(snapshot_path)`) has never executed for a month that wasn't already present; that code path is fully untested against real Fabric execution until it runs against a genuinely new month. That first real proof happens naturally on **2026-10-01**, when `Pipeline_DP_Monthly_Refresh` triggers this notebook for real against `SnapshotDate = 2026-10-01` (a month with no existing row). Recommend a quick manual check on/after Oct 1 that the new month landed with a sane row count, though no separate task currently tracks that check.
+
+- [x] **Step 2: Disable the old pipeline's schedule**
 
 Edit `.schedules` to set `"enabled": false`:
 ```json
@@ -740,7 +746,9 @@ Edit `.schedules` to set `"enabled": false`:
 ```
 Leave the pipeline and notebook themselves in place (not deleted) — this is a disable, not a removal, preserving the old table and its history as a reference.
 
-- [ ] **Step 3: Commit**
+**Execution note (2026-09-22):** `.schedules`' `enabled` flag flipped `true` → `false` exactly as specified; no other fields touched. Pipeline (`Pipeline_Monthly_Open_Orders_Snapshot.DataPipeline`) and notebook (`nb_Snapshot_Parts_Open_Orders.Notebook`, notebookId `911d8be7-cd08-a5ac-402d-45283a006add`) both left fully in place in `LH_Master_Data` — not deleted, not modified beyond this one flag.
+
+- [x] **Step 3: Commit**
 
 ```bash
 cd "/c/Users/bfox/Documents/Git-Projects/fabric-workspace-docs"
@@ -755,6 +763,8 @@ diverging future months. Pipeline and notebook left in place
 Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 git push origin dev
 ```
+
+**Execution note (2026-09-22):** Ran exactly as written. Committed as `714fe601` on `fabric-workspace-docs`/`dev` (only the `.schedules` file staged) and pushed (`419a73e6..714fe601`). Unrelated pre-existing untracked `.pbi/` Desktop-artifact folders for other reports (Inventory Analysis, Open Work Orders, Part Sales with Low Margin, Pin Capture, Price Matrix) were present in the working tree and left alone, same discipline as Task 4's commit.
 
 ---
 
