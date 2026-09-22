@@ -772,7 +772,7 @@ git push origin dev
 
 **Files:** none — investigation only. Findings get documented directly in this plan before Task 7 proceeds (same discipline as the Inventory Analysis migration's Task 1).
 
-- [ ] **Step 1: `pbir fields list`**
+- [x] **Step 1: `pbir fields list`**
 
 ```bash
 export PATH="$HOME/.local/bin:$PATH"
@@ -780,7 +780,7 @@ cd "/c/Users/bfox/Documents/Git-Projects/fabric-workspace-docs/workspaces/RP - D
 pbir fields list "Open Parts Tickets.Report"
 ```
 
-- [ ] **Step 2: DAX-text grep across every measure/calculated table + relationships**
+- [x] **Step 2: DAX-text grep across every measure/calculated table + relationships**
 
 ```bash
 cd "/c/Users/bfox/Documents/Git-Projects/fabric-workspace-docs/workspaces/RP - Dev/Open Parts Tickets.SemanticModel/definition"
@@ -791,20 +791,68 @@ for tbl in Fact_Parts_Open_Tickets Fact_Parts_Open_Tickets_Details dim_BranchLoc
 done
 ```
 
-- [ ] **Step 3: Bookmark check**
+- [x] **Step 3: Bookmark check**
 
 ```bash
 ls "Open Parts Tickets.Report/definition/bookmarks/" 2>/dev/null
 grep -rn "<ColumnName>" "Open Parts Tickets.Report/definition/bookmarks/" 2>/dev/null
 ```
 
-- [ ] **Step 4: `relationships.tmdl` cross-reference**
+- [x] **Step 4: `relationships.tmdl` cross-reference**
 
 Relationship key columns use TMDL `fromColumn:`/`toColumn:` syntax, not `Table[Column]` DAX syntax, so they won't match Step 2's grep pattern — read `relationships.tmdl` directly and note every column used as a relationship endpoint for these 6 tables (same real miss class already found and corrected on Inventory Analysis's `Fact_Inventory` relationship keys).
 
-- [ ] **Step 5: Document findings**
+- [x] **Step 5: Document findings**
 
 For each of the 6 tables, record confirmed-used columns (keep) vs. confident-unused columns (trim) vs. ambiguous (leave as-is, note why). Expect `fact_parts_open_orders_snapshot` to land mostly/entirely in "keep everything" (it's a purpose-built append-only snapshot table where every column was deliberately selected) — confirm this against real usage rather than assuming, but don't be surprised if there's little or nothing to trim there. Add a "### Task 6 Findings" section to this plan file (same structure as the Inventory Analysis plan's "Task 1 Findings" section) before starting Task 7.
+
+### Task 6 Findings
+
+**Method note (applies to every table below):** "Used" was tested against 4 independent checks, matching the plan's own step list, with two of them strengthened beyond a naive text/line-proximity match to avoid both false negatives and false positives: (1) `pbir fields list` — catches direct visual/slicer field drags and implicit (auto-summarized) measures; (2) the `Table[Column]`-qualified DAX-text grep across `tables/*.tmdl` + `relationships.tmdl`, cross-validated with a second, more precise grep directly against every `visual.json`'s `"queryRef": "Table.Column"` / `"metadata": "Table.Column"` strings (catches implicit-aggregation fields like `Sum(Fact_Parts_Open_Tickets_Details.Unit_Price)` that never appear as literal DAX text anywhere, which the plain `Table[Column]` grep alone would have silently missed); (3) the bookmark check, done with a small Python script that parses each `.bookmark.json`'s query DSL properly (resolving `From`/`Name` alias tables to their real `Entity` before pairing with `Property`) rather than naive line-proximity grep, since bookmarks can have multiple `From` sources in one filter block and naive proximity would mis-attribute a property to the wrong table; (4) `relationships.tmdl`'s `fromColumn`/`toColumn` declarations, checked directly since relationship keys use different TMDL syntax than DAX bracket refs. A broad whole-report/whole-model grep (scoped to just `Open Parts Tickets.SemanticModel`/`.Report`) was additionally run on every column that came back unconfirmed by checks 1–4, to rule out any usage format the four narrower checks could still miss (cultures-file auto-translation entries were excluded as known false positives, per the same pattern already documented on Inventory Analysis).
+
+**Real blind-spot catch (exactly what Step 4 was designed to find):** `Fact_PartsInvoiced_ByBranch.Branch` does **not** appear anywhere in the Step 2 DAX-text grep output (only `InvoiceDate` and `Invoiced_Parts` did) — but `relationships.tmdl` shows `Fact_PartsInvoiced_ByBranch.Branch -> dim_BranchLocation.BranchID` as a real relationship key. Had Step 4 been skipped, `Branch` would have been wrongly flagged as an unused trim candidate on a table that in fact has zero trimmable columns.
+
+#### `Fact_Parts_Open_Tickets`
+- **Keep (17 stored columns):** `Location` (relationship key to `dim_BranchLocation.BranchID`, + pbir + bookmark), `Order_No` (relationship key from `Fact_Parts_Open_Tickets_Details.Order_No`, + pbir/DAX-grep/bookmark), `Invoice_Type` (pbir + bookmark), `Order_Date` (relationship key to `dim_DateTable.Date`, + DAX-grep via `SAMEPERIODLASTYEAR(Fact_Parts_Open_Tickets[Order_Date])`), `Days_Open` (pbir + DAX-grep + bookmark), `Aging` (pbir + DAX-grep + bookmark), `Aging_Sort_Order` (`sortByColumn` target of `Aging`, + independently DAX-grep-confirmed via `HTML_Parts_Overview.tmdl`'s calculated-table row constructor — not just a sort dependency), `#_Parts_On_Order` (DAX-grep, `'# Parts On Order'` measure), `#_On_Back_Order` (DAX-grep, multiple measures), `Order_Total_$$` (DAX-grep, `'Order Total'` measure), `$$_Available` (DAX-grep, `'$$ not BO'`/`'Available $$'` measures), `$$_BackOrdered` (DAX-grep + bookmark), `Deposit` (DAX-grep, `Deposit` measure), `Salesman` (DAX-grep, Salesman Rank/Bar-Color measures + bookmark + visual queryRef), `Contact_Code` (pbir + bookmark), `Customer` (DAX-grep, Customer Rank measures + bookmark + pbir), `Aging_Base_Date` (pbir + bookmark).
+- **Trim (6 stored columns, confident — zero hits on every check including the broad whole-report grep):** `Location_Name`, `Created_On`, `WO_Creation_Date`, `Aging_Date_Source`, `Backorder_Pct`, `AR_Acct`.
+- **Calculated column (1 — left as-is, out of scope per this migration's established trim pattern, which only ever trims stored/M-sourced columns):** `'Order Count'` — kept regardless, but also independently confirmed used (`Sum(Order Count)` in pbir, referenced by other measures).
+
+#### `Fact_Parts_Open_Tickets_Details`
+- **Keep (6 columns):** `Order_No` (relationship key to `Fact_Parts_Open_Tickets.Order_No`, + pbir/bookmark/queryRef), `Part_No` (DAX-grep, `'Parts Line Count'`/`'Line Count'` measures + bookmark + pbir), `BackOrdered_QTY` (DAX-grep, several backorder measures + bookmark + pbir), `Unit_Price` (queryRef `Sum(Fact_Parts_Open_Tickets_Details.Unit_Price)` + bookmark — never appears as literal DAX text, only as an implicit-aggregation visual field), `Line_Total` (same pattern as `Unit_Price`), `Customer` (queryRef + bookmark + pbir — this table's **own** `Customer` column, distinct from `Fact_Parts_Open_Tickets.Customer`, confirmed separately).
+- **Trim (17 columns, confident — zero hits on every check, verified individually via table-qualified queryRef grep so as not to conflate with `Fact_Parts_Open_Tickets`'s identically-named columns):** `Location`, `Location_Name`, `RO_Number`, `File_No`, `Invoice_Type`, `Order_Date`, `Created_On`, `WO_Creation_Date`, `Days_Open`, `Aging`, `Aging_Sort_Order`, `Aging_Date_Source`, `Quantity_Ordered`, `Available_QTY`, `Line_Backorder_Pct`, `Contact_Code`, `Salesman`. Notable: this table duplicates most of `Fact_Parts_Open_Tickets`'s own column set (same names, same grain-adjacent data) but the report only ever pulls the 6 line-item-specific columns from it — everything else is redundant with the parent ticket-level table it's related to.
+- No `sortByColumn` property anywhere in this table (confirmed via full read) — no dangling-sort risk from any of the 17 trims.
+
+#### `dim_BranchLocation`
+- **Keep (3 columns):** `Branch` (direct: pbir + bookmark + queryRef; also carries `sortByColumn: LocationID`), `BranchID` (relationship key — **not** `BranchKey** — real from all 3 of this report's fact-table relationships: `Fact_Parts_Open_Tickets.Location`, `fact_parts_open_orders_snapshot.Location`, and `Fact_PartsInvoiced_ByBranch.Branch` all point to `dim_BranchLocation.BranchID`), `LocationID` (not directly used itself, but is `Branch`'s `sortByColumn` target — must stay to avoid a dangling sort).
+- **Trim (13 columns, confident — zero hits on every check):** `BranchKey`, `BranchType`, `BranchName`, `State`, `City`, `ServiceCapacity`, `MarketPresence`, `TerritoryCoverage`, `OperationalPriority`, `RegionalClassification`, `ServiceHours`, `DistanceFromHub`, `DataQualityScore`.
+- **Real difference from Inventory Analysis's `dim_BranchLocation` audit, worth flagging explicitly:** on Inventory Analysis, `BranchKey` was the real relationship join key and was kept. On this report, the join key is `BranchID` instead — `BranchKey`'s only appearances anywhere in this model are its own two-line declaration plus its auto-generated `cultures/en-US.tmdl` translation entry (the same false-positive pattern already documented for `State`/`City` on Inventory Analysis). Same shared dimension table, same column set, but a genuinely different real join key per report — don't assume `BranchKey` is protected just because it was on a sibling report.
+
+#### `dim_DateTable`
+- **Keep (3 columns):** `Date` (relationship key — all 3 of this report's fact-table date relationships point here: `Fact_Parts_Open_Tickets.Order_Date`, `fact_parts_open_orders_snapshot.SnapshotDate`, `Fact_PartsInvoiced_ByBranch.InvoiceDate`), `MonthYear` (direct: pbir + bookmark + queryRef, used as a slicer/axis across multiple visuals), `Month` (not directly used itself, but is `MonthYear`'s `sortByColumn` target — must stay).
+- **Trim (59 columns, confident — zero hits on every check, including a whole-report `dim_DateTable` grep that found only the `MonthYear`/`Date` references already accounted for above):** `DateKey`, `Year`, `Quarter`, `Day`, `WeekOfYear`, `DayOfWeek`, `MonthName`, `MonthNameShort`, `DayOfWeekName`, `DayOfWeekNameShort`, `QuarterYear`, `DateDisplayName`, `IsWeekend`, `IsWeekday`, `IsCurrentYear`, `IsCurrentMonth`, `DaysFromToday`, `SortableMonthYear`, `Season`, `IsPeakSeason`, `FiscalYear`, `FiscalQuarter`, `MonthSort`, `QuarterSort`, `YearOffset`, `IsBusinessDay`, `WorkingDaysInMonth`, `WorkingDaysInQuarter`, `WorkingDaysInYear`, `IsPreviousYear`, `IsPreviousMonth`, `IsPreviousQuarter`, `IsYearToDate`, `IsQuarterToDate`, `IsMonthToDate`, `IsRolling6Months`, `IsRolling12Months`, `IsRolling24Months`, `IsRolling36Months`, `IsRolling48Months`, `IsRolling4Quarters`, `IsRolling8Quarters`, `IsRolling52Weeks`, `IsRolling365Days`, `IsRolling730Days`, `IsRolling1095Days`, `IsRolling1460Days`, `IsRolling180Days`, `IsRolling545Days`, `IsRolling45Days`, `IsRolling120Days`, `IsRolling270Days`, `IsRolling450Days`, `IsRolling13Weeks`, `IsRolling26Weeks`, `IsRolling104Weeks`, `IsRolling156Weeks`, `IsLast30Days`, `IsLast60Days`, `IsLast90Days`, `IsNext30Days`, `IsSameMonthLastYear`, `IsSameQuarterLastYear`, `RollingPeriodCategory`.
+- Note: `MonthNameShort` also carries `sortByColumn: Month`, but since `MonthNameShort` itself is a confident trim (not kept), its own `sortByColumn` property is removed along with the whole column block — no dangling reference results (the target, `Month`, stays regardless, kept for `MonthYear`'s sake). Consistent with the same 28%-utilization finding already documented for this exact shared table on Inventory Analysis (memory: `project_dimensions_catalog_audit`) — this report uses it even more narrowly (3 of 62 columns) since it has no need for most of the fiscal/rolling-window flags that report used.
+
+#### `fact_parts_open_orders_snapshot`
+- **Keep (9 columns, confirmed directly used):** `Location` (relationship key to `dim_BranchLocation.BranchID`), `Order_No` (DAX-grep, `'Snapshot Order Count'`/`'Snapshot Orders with Backorder'` measures), `Invoice_Type` (pbir + queryRef), `Aging` (pbir + DAX-grep + bookmark), `Aging_Sort_Order` (`sortByColumn` target of `Aging`), `#_On_Back_Order` (DAX-grep, `'Snapshot Backorder Count'`/`'Snapshot Orders with Backorder'`), `Order_Total_$$` (DAX-grep, `'Snapshot Order Total $'`), `$$_BackOrdered` (DAX-grep, `'Snapshot Backorder $'`), `SnapshotDate` (relationship key to `dim_DateTable.Date`, + pbir + bookmark).
+- **Ambiguous — leave as-is (8 columns, zero hits on every check but deliberately NOT trimmed):** `Location_Name`, `Order_Date`, `Days_Open`, `#_Parts_On_Order`, `$$_Available`, `Backorder_Pct`, `Customer`, `Salesman`. Per this task's own instruction, confirmed against real usage rather than assumed — these 8 genuinely show no current measure/visual/bookmark/relationship reference. Left untouched anyway because this table is the one genuine exception to the migration's usual trim discipline: it's a purpose-built, append-only monthly historical snapshot whose entire 16-column (+`SnapshotDate`) selection was deliberately mirrored 1:1 from `Fact_Parts_Open_Tickets`'s own schema by design (see Task 2's notebook SELECT list), specifically so future trend/drill-through analysis has the full picture available across all captured months without needing a backend rebuild. Trimming currently-unused columns here would permanently and irreversibly lose that historical detail for all 13,070 already-captured rows going forward, for a dataset small enough (13K rows) that there's no real storage/performance case for trimming it the way there is for `dim_DateTable`'s 59-column cut.
+- **Trim:** none. Matches the plan's own stated expectation for this table.
+
+#### `Fact_PartsInvoiced_ByBranch`
+- **Keep (3 columns, all):** `Branch` (relationship key to `dim_BranchLocation.BranchID` — the real Step-4 blind-spot catch described above), `InvoiceDate` (DAX-grep, `_Measures.tmdl` lines 1777–1780 + relationship key to `dim_DateTable.Date`), `Invoiced_Parts` (DAX-grep, same measure block, `SUM(Fact_PartsInvoiced_ByBranch[Invoiced_Parts])`).
+- **Trim:** none. Matches the plan's own expectation for this newly-built table (Task 4) — its 3-column schema was already minimal by construction, faithfully replicating the original native query's exact 3-column output, and this audit confirms all 3 are genuinely used, not just assumed correct.
+- **Side finding, not a trim decision but relevant to Task 7:** unlike the other 5 tables, this table's current M query (`Fact_PartsInvoiced_ByBranch.tmdl` lines 30–42) is a `Value.NativeQuery(..., [EnableFolding=false])` running the *original* raw SQL directly against `LH_Master_Data.Invoice` — not a simple `Source{[Schema="dbo",Item="Fact_PartsInvoiced_ByBranch"]}[Data]` read. Task 7 Step 1's generic "replace the `Sql.Database(...)` line" instruction is necessary but **not sufficient** for this one file: the whole `Value.NativeQuery(...)` block (the native SQL string, `EnableFolding=false`, and the `Query`/`in Query` wiring) needs to be replaced with a plain read of the new Gold table `Fact_PartsInvoiced_ByBranch` in `DP_Presentation` (same pattern as the other 5 tables' `Source{[Schema="dbo",Item="..."]}[Data]` form), not just a connection-string swap on top of the old native query. Flagging this now so Task 7's executor doesn't apply the same mechanical find/replace to this file that works for the other 5.
+
+#### Ambiguous columns summary
+Only `fact_parts_open_orders_snapshot`'s 8 columns (listed above) are ambiguous, and all 8 share the same single reason: the table's purpose-built append-only historical design overrides the "zero usage = trim" default used everywhere else in this migration. No other table has any ambiguous columns — every other candidate resolved cleanly to keep or trim once cross-checked against all 4 methods plus the broad whole-report grep. The out-of-scope calculated column on `Fact_Parts_Open_Tickets` (`'Order Count'`) is not ambiguous about usage (it's confirmed used) — it's simply outside this migration's trim pattern by design, same as calculated columns were treated on Inventory Analysis.
+
+#### sortByColumn dependency summary
+- `Fact_Parts_Open_Tickets.Aging` → `sortByColumn: Aging_Sort_Order` — `Aging_Sort_Order` must be kept (also independently confirmed used regardless).
+- `fact_parts_open_orders_snapshot.Aging` → `sortByColumn: Aging_Sort_Order` — `Aging_Sort_Order` must be kept (also independently confirmed used regardless).
+- `dim_BranchLocation.Branch` → `sortByColumn: LocationID` — `LocationID` must be kept (same pattern already documented on Inventory Analysis for this identical shared table).
+- `dim_DateTable.MonthYear` → `sortByColumn: Month` — `Month` must be kept.
+- `dim_DateTable.MonthNameShort` → `sortByColumn: Month` — same target, already covered by the `MonthYear` dependency above; `MonthNameShort` itself is a confident trim since removing the whole column block removes this property along with it, with no dangling reference (the target column isn't being removed).
+
+`Fact_Parts_Open_Tickets_Details` and `Fact_PartsInvoiced_ByBranch` have no `sortByColumn` property anywhere (confirmed via full reads) — no constraint on either table's trim list.
 
 ---
 
