@@ -370,7 +370,7 @@ git push origin dev
 **Files:**
 - Create (scratch, not committed): a backfill script/notebook cell run once, ad hoc.
 
-- [ ] **Step 1: Write and run the backfill (as a temporary Fabric notebook cell, or via `spark.sql`/DataFrame API in an ad hoc session against `DP_Presentation`)**
+- [x] **Step 1: Write and run the backfill (as a temporary Fabric notebook cell, or via `spark.sql`/DataFrame API in an ad hoc session against `DP_Presentation`)**
 
 ```python
 from pyspark.sql import functions as F
@@ -399,7 +399,7 @@ df.write \
 print(f"SUCCESS: {row_count} rows backfilled to Fact_Parts_Open_Orders_Snapshot")
 ```
 
-- [ ] **Step 2: Verify the backfill matches exactly**
+- [x] **Step 2: Verify the backfill matches exactly**
 
 ```python
 import duckdb
@@ -426,9 +426,16 @@ print("MATCH: backfill verified.")
 ```
 Expected: both lists identical — `[('2026-03-01', 1717), ('2026-04-01', 1709), ('2026-05-01', 1700), ('2026-06-01', 2010), ('2026-07-01', 1824), ('2026-08-01', 2203), ('2026-09-01', 1907)]`.
 
-- [ ] **Step 3: Document the backfill in this plan**
+- [x] **Step 3: Document the backfill in this plan**
 
 Add a note here recording the run timestamp and confirmation the assert passed, since this is a one-time manual operation with no other audit trail.
+
+**Execution note (2026-09-22, ~18:45 UTC):** Executed as a real one-time Fabric notebook run, not an ad hoc session — `Utilities_BackfillPartsOpenOrdersSnapshot_20260922.Notebook` was created locally (METADATA header copied from `Build_Gold_PartsOpenOrdersSnapshot.Notebook`, same `DP_Presentation` default-lakehouse attachment), imported via `fab import "DP - Presentation - Dev.Workspace/Fact Tables.Folder/Open Parts Tickets.Folder/Utilities_BackfillPartsOpenOrdersSnapshot_20260922.Notebook" -i "<local path>" --format .py -f` (same `.Folder`-suffix + `--format .py` fix already documented in Task 2's execution notes), then run synchronously via `fab job run "DP - Presentation - Dev.Workspace/Fact Tables.Folder/Open Parts Tickets.Folder/Utilities_BackfillPartsOpenOrdersSnapshot_20260922.Notebook" --timeout 300`. Job instance `f3ab50a4-c077-469a-9cac-169fe4f7f60a` completed successfully — the in-notebook `assert row_count == 13070` passed (13,070 rows read from `LH_Master_Data`'s `fact_parts_open_orders_snapshot`), and the path-based write created `Fact_Parts_Open_Orders_Snapshot` in `DP_Presentation` for the first time.
+
+Step 2's verification query was then run directly (local DuckDB script against both lakehouses via `delta_scan`, not inside the notebook) and confirmed an **exact match**, both sides identical:
+`[('2026-03-01', 1717), ('2026-04-01', 1709), ('2026-05-01', 1700), ('2026-06-01', 2010), ('2026-07-01', 1824), ('2026-08-01', 2203), ('2026-09-01', 1907)]` — 13,070 rows total on both `LH_Master_Data.fact_parts_open_orders_snapshot` and the new `DP_Presentation.Fact_Parts_Open_Orders_Snapshot`.
+
+Per the plan's precedent from `Utilities_InTrans_FullDedup_20260811.Notebook`: the utility notebook item is left in place in Fabric (harmless, one-time) but was **not** committed to `fabric-workspace-docs` git history and **not** added to `deploy/dp_backend_scope.json` (not a recurring pipeline notebook). Local scratch source files used for the import were kept outside both repos (session scratchpad only).
 
 ---
 
