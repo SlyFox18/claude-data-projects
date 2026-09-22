@@ -60,7 +60,7 @@ shortcut, or one small missing piece)
 | `Bin Location Report` | Parts | Only gap is `jdis_Part_Information` (raw) → `Silver_PartInformation` (shortcut exists) |
 | `Physical Inventory` | Parts | Same — only real dependency is the `jdis_Part_Information` raw repoint |
 | `Inventory Analysis` | Parts | **COMPLETE (2026-09-22).** Original plan below (new `dim_Date` Gold build) was superseded — see the completion note after this table. |
-| `Parts on Open Orders` | Parts | `Fact_Parts_Open_Tickets`/`_Details` are ready; missing `fact_parts_open_orders_snapshot` (the separate monthly-snapshot notebook table, `nb_Snapshot_Parts_Open_Orders` — a different, smaller piece of work than the main facts) |
+| `Open Parts Tickets` (real name — catalog previously called this "Parts on Open Orders") | Parts | **COMPLETE (2026-09-22).** Original plan below (single missing snapshot table) was superseded — see the completion note after this table. |
 | `Transfers` | Parts | `Fact_Transfers` is ready; missing `Fact_OutstandingTransfers` — already deliberately deferred in Batch B (real path known: `Silver_InSalPar`+`Silver_InSalOrd`+`Silver_InMaster`, needs a new `Silver_InSalOrd.trf_to_branch` column and an `OrderAge`-as-DAX-measure design decision) |
 | `Open Work Orders` | Service | All raw refs (`RepairOrderDetail`, `TechnicianPunchedDetail`, `WKROFILE`) already have real Silver shortcuts (`RepairOrderDetail.Shortcut`, `Silver_TechnicianPunchedDetail.Shortcut`, `Silver_WkRoFile.Shortcut`) — needs column-rename repoints, not new Gold builds |
 | `60+ Days Past Due` | Financial | Same pattern — `ArMaster_Customer`/`armaster` raw refs already have Silver shortcuts (`Silver_ArMasterCustomer.Shortcut`, `Silver_ArMaster.Shortcut`); `Fact_InSalOrd_InSalPar` already ready |
@@ -234,11 +234,51 @@ Brian's awareness, not acted on since it predates this migration and isn't cause
 by it. Full validation pass (beyond the spot-checks done here) still recommended
 before production promotion, same standing caveat as the rest of Batch 2a/2.
 
+**Open Parts Tickets — COMPLETE (2026-09-22).** Real investigation found the
+catalog's original single-gap description ("missing `fact_parts_open_orders_snapshot`")
+was incomplete. Two real Gold-layer gaps, both closed:
+- `Fact_Parts_Open_Orders_Snapshot` — the old `LH_Master_Data` table
+  (`fact_parts_open_orders_snapshot`, lowercase due to the confirmed
+  `saveAsTable()`-lowercases-Delta-names bug) held 7 months of real,
+  unbackfillable history (13,070 rows, March–September 2026). New
+  `Build_Gold_PartsOpenOrdersSnapshot.Notebook` (proper PascalCase, a
+  path-based write to avoid the casing bug) replaces it going forward;
+  the 7 months were copied forward once via a one-time backfill script,
+  verified exact-match per `SnapshotDate`. The old
+  `Pipeline_Monthly_Open_Orders_Snapshot` was disabled (not deleted) once
+  the new notebook's guard logic was confirmed working against real data.
+- `Fact_PartsInvoiced_ByBranch` — not flagged in the original catalog at
+  all. Turned out to have no Gold table anywhere; it was a raw
+  `Value.NativeQuery` (`EnableFolding=false`) directly against
+  `LH_Master_Data.Invoice`, baked into the report's own TMDL, with a
+  hardcoded ~30-customer exclusion list. New
+  `Build_Gold_PartsInvoicedByBranch.Notebook` faithfully ports the exact
+  same logic (verified: exact match to the penny against its real
+  source, `Silver_Invoice`, once pipeline-lag was accounted for).
+
+Both new notebooks registered in `deploy/dp_backend_scope.json`
+(monthly/daily respectively), running inside the existing
+`Pipeline_DP_Monthly_Refresh`/daily pipeline — no new pipelines. See
+`docs/superpowers/specs/2026-09-22-open-parts-tickets-migration-design.md`
+and `docs/superpowers/plans/2026-09-22-open-parts-tickets-migration.md`
+for the full design and 11-task execution trail.
+
+**Real backend-freshness gap also found and fixed during this migration**
+(unrelated to the 2 new tables above, but only surfaced because this
+migration's own verification caught it): `Build_Gold_PartsOpenTickets.Notebook`
+— which builds `Fact_Parts_Open_Tickets`/`Fact_Parts_Open_Tickets_Details`,
+both previously believed "already migrated and ready" — existed in
+`DP_Presentation` but had never been registered in any automated refresh
+pipeline. It had last run manually on 2026-09-14 and was stuck 12+ days
+stale, causing the migrated report to initially show ~$5.4M instead of the
+real ~$19.3M in Desktop. Registered as `tier: gold, cadence: daily` and run
+once to catch up; now exact match to `LH_Master_Data`'s live production
+copy. Worth checking whether any other "already migrated" table from
+earlier phases of this project has the same never-registered gap.
+
 Remaining for Batch 2: 60+ Days Past Due (already done in Batch 0, listed here in
-error — confirm and remove), Transfers (needs `Fact_OutstandingTransfers`),
-Parts on Open Orders / Open Parts Tickets (needs the snapshot table) — the 2
-remaining reports genuinely needing new Gold-layer work, sequenced next per
-Brian's own "one at a time, easiest first" call.
+error — confirm and remove), Transfers (needs `Fact_OutstandingTransfers`) —
+the last report genuinely needing new Gold-layer work, sequenced next.
 
 ### Batch 3 — Tier 3 (4 reports needing real new Gold-layer work first)
 

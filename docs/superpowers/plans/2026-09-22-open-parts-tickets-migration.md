@@ -999,15 +999,17 @@ Watch for "column does not exist" errors — if any appear, that means Task 6's 
 1. First refresh attempt hit "5 queries are blocked... The key didn't match any rows in the table" on `fact_parts_open_orders_snapshot`/`Fact_PartsInvoiced_ByBranch` — confirmed as documented Fabric behavior (SQL analytics endpoint metadata sync lag for tables created via a path-based Spark write rather than `saveAsTable()`/`CREATE TABLE`). Fixed by forcing a sync via `POST .../sqlEndpoints/18effb0e-7bc2-47a1-854c-f4f2e8129145/refreshMetadata`; confirmed both tables synced. Retry succeeded.
 2. Second refresh succeeded but showed **$5.4M Order Total instead of the real ~$19.3M** — a genuine pre-existing backend gap, not caused by this migration's own changes: `Build_Gold_PartsOpenTickets.Notebook` (builds `Fact_Parts_Open_Tickets`/`Fact_Parts_Open_Tickets_Details`, both "already exists, repoint-only" tables per this plan's Context section) existed in `DP_Presentation` but was **never registered in `deploy/dp_backend_scope.json`** — it had last run manually on 2026-09-14 and was stuck 12+ days stale (max `Order_Date` 2026-09-09 vs. production's 2026-09-21). Fixed by registering it (`tier: gold, cadence: daily`, commit `a611ee79` on `fabric-workspace-docs`/`dev`) and running it once manually to catch up — verified exact match to `LH_Master_Data`'s live copy afterward (2,464 rows, $19,279,807.21 both sides). This table is now on the daily pipeline going forward, so this won't recur.
 
-- [ ] **Step 3: Visually confirm real output**
+- [x] **Step 3: Visually confirm real output**
 
 Against the real, currently-live `RP - Parts Reports` production version (under its old name "Parts on Open Orders") — specifically the open-orders aging visuals, the branch-invoiced-parts visuals, and anything using the monthly snapshot history (if any trend visual reads multiple `SnapshotDate`s) to confirm the new Gold tables produce equivalent output.
 
-- [ ] **Step 4: Publish to `RP - Dev`, then Source control → Commit**
+- [x] **Step 4: Publish to `RP - Dev`, then Source control → Commit**
 
-- [ ] **Step 5: Report back**
+- [x] **Step 5: Report back**
 
 Once confirmed, Claude runs the final post-publish verification (Task 11).
+
+**Execution note (2026-09-22):** Brian confirmed: "Ok, perfect this looks great now." Republish landed as `fabric-workspace-docs`/`dev` commit `54c26427` ("Fixed the data refresh to match the production report") — both real diffs in that commit were benign (a Desktop-managed `UnderlyingDateTimeDataType` annotation, and a Desktop schema-version/visual-filter-state normalization unrelated to this migration).
 
 ---
 
@@ -1016,7 +1018,7 @@ Once confirmed, Claude runs the final post-publish verification (Task 11).
 **Files:**
 - Modify: `data-projects/docs/architecture/report-migration-catalog.md`
 
-- [ ] **Step 1: DuckDB row-count check**
+- [x] **Step 1: DuckDB row-count check**
 
 ```python
 import duckdb
@@ -1038,9 +1040,11 @@ for t in sorted(set(tables)):
         print(f"  MISSING/ERROR  {t}: {e}")
 ```
 
-- [ ] **Step 2: Update the catalog doc**
+- [x] **Step 2: Update the catalog doc**
 
 Mark Open Parts Tickets complete in `docs/architecture/report-migration-catalog.md`'s Batch 2 section, matching the completion-note pattern already used for Batch 2a and Inventory Analysis. Note the real name correction (catalog previously called this "Parts on Open Orders") and both new Gold tables built.
+
+**Execution note (2026-09-22):** All 6 backend tables (Fact_Parts_Open_Tickets 2,464 rows, Fact_Parts_Open_Tickets_Details 20,754, dim_BranchLocation 69, dim_DateTable 4,018, Fact_Parts_Open_Orders_Snapshot 13,070, Fact_PartsInvoiced_ByBranch 9,119) resolved cleanly via `delta_scan` against `DP_Presentation`. Catalog doc updated: Tier 2 table row + a new Batch 2 completion note, including the real `Build_Gold_PartsOpenTickets` never-registered-pipeline gap found and fixed along the way. **Open Parts Tickets migration is COMPLETE.**
 
 ---
 
