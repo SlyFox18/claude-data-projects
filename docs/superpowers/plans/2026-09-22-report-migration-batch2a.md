@@ -43,7 +43,7 @@ All 3 reports live in `fabric-workspace-docs/workspaces/RP - Dev/`. **Real conne
 - Modify: `fabric-workspace-docs/workspaces/RP - Dev/Open Work Orders.SemanticModel/definition/tables/dim_CustomerList.tmdl`
 - Modify: `fabric-workspace-docs/workspaces/RP - Dev/Open Work Orders.SemanticModel/definition/tables/dim_DateTable.tmdl`
 
-- [ ] **Step 1: Exhaustive real-usage audit**
+- [x] **Step 1: Exhaustive real-usage audit**
 
 ```bash
 export PATH="$HOME/.local/bin:$PATH"
@@ -64,7 +64,7 @@ done
 
 Record findings: which columns on `dim_BranchLocation`/`dim_CustomerList`/`dim_DateTable` are genuinely used (candidates to keep) vs. not (candidates to trim, matching the same trim discipline already used in Batch 1 — but only trim if you're confident, don't guess). `dim_Technician_Code_Names` is in scope too even though it wasn't in the original 4-table list — check whether it's a real data table needing its own repoint (it has a `Sql.Database`/`Item=` reference per the earlier investigation this session, same standard repoint pattern).
 
-- [ ] **Step 2: Repoint `Fact_OpenWorkOrders.tmdl` and rename 2 of its 3 `Item=` references**
+- [x] **Step 2: Repoint `Fact_OpenWorkOrders.tmdl` and rename 2 of its 3 `Item=` references**
 
 Find:
 ```
@@ -129,7 +129,7 @@ Replace with:
 
 Note `RepairOrderDetail`'s own `Item=` line is unchanged — its shortcut kept the same name.
 
-- [ ] **Step 3: Repoint `dim_BranchLocation.tmdl`, `dim_CustomerList.tmdl`, `dim_DateTable.tmdl`**
+- [x] **Step 3: Repoint `dim_BranchLocation.tmdl`, `dim_CustomerList.tmdl`, `dim_DateTable.tmdl`**
 
 In each file, find:
 ```
@@ -141,22 +141,22 @@ Replace with:
 ```
 No `Item=` changes in any of these 3 files.
 
-- [ ] **Step 4: Repoint `dim_Technician_Code_Names.tmdl` if Step 1 confirmed it's a real data table**
+- [x] **Step 4: Repoint `dim_Technician_Code_Names.tmdl` if Step 1 confirmed it's a real data table**
 
 Same connection-string swap as Step 3, applied to this file too (confirm its `Item=` value first — expected to be `dim_Technician_Code_Names`, already existing under that exact name in `DP_Presentation`, no rename needed, but verify against Step 1's findings before assuming).
 
-- [ ] **Step 5: Trim any genuinely-unused columns Step 1 found, with matching `Table.SelectColumns` M-query pins**
+- [x] **Step 5: Trim any genuinely-unused columns Step 1 found, with matching `Table.SelectColumns` M-query pins**
 
 Only if Step 1's audit found real, confident trim candidates — don't trim speculatively. If trimming, add a `Table.SelectColumns` step to that table's M query listing exactly the kept columns (the Batch 0 lesson: a TMDL-only trim doesn't survive a Desktop refresh), and check for any `sortByColumn` that might now dangle (the real bug already found and fixed once this session on Price Matrix's `dim_BranchLocation`).
 
-- [ ] **Step 6: Confirm no `LH_Master_Data` references remain**
+- [x] **Step 6: Confirm no `LH_Master_Data` references remain**
 
 ```bash
 grep -rn "LH_Master_Data" "workspaces/RP - Dev/Open Work Orders.SemanticModel/"
 ```
 Expected: no output.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 cd "/c/Users/bfox/Documents/Git-Projects/fabric-workspace-docs"
@@ -183,7 +183,7 @@ Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 - Modify: `fabric-workspace-docs/workspaces/RP - Dev/Pin Capture.SemanticModel/definition/tables/dim_DateTable.tmdl`
 - Modify: `fabric-workspace-docs/workspaces/RP - Dev/Pin Capture.SemanticModel/definition/tables/dim_Parts.tmdl`
 
-- [ ] **Step 1: Exhaustive real-usage audit**
+- [x] **Step 1: Exhaustive real-usage audit**
 
 ```bash
 export PATH="$HOME/.local/bin:$PATH"
@@ -210,7 +210,7 @@ If it has a real `Sql.Database` call pointed at `LH_Master_Data`, it needs the s
 
 Check `New Report Columns.tmdl`/`New Report Relationships.tmdl`/`New Report Tables.tmdl` too — expected to be empty leftover placeholders (matching every other report already migrated this session), confirm and leave them for Brian's own Desktop cleanup pass rather than deleting them yourself.
 
-- [ ] **Step 2: Repoint `Fact_PinTransactions.tmdl` and rename its 2 `Item=` references**
+- [x] **Step 2: Repoint `Fact_PinTransactions.tmdl` and rename its 2 `Item=` references**
 
 Find:
 ```
@@ -253,7 +253,7 @@ Replace with:
 				    dbo_wkothsub = Source{[Schema="dbo",Item="Silver_WkOthSub"]}[Data],
 ```
 
-- [ ] **Step 3: Repoint `dim_BranchLocation.tmdl`, `dim_CustomerList.tmdl`, `dim_DateTable.tmdl`, `dim_Parts.tmdl`**
+- [x] **Step 3: Repoint `dim_BranchLocation.tmdl`, `dim_CustomerList.tmdl`, `dim_DateTable.tmdl`, `dim_Parts.tmdl`**
 
 In each file, find:
 ```
@@ -265,18 +265,18 @@ Replace with:
 ```
 No `Item=` changes in any of these 4 files.
 
-- [ ] **Step 4: Trim per Step 1's findings, with matching `Table.SelectColumns` pins**
+- [x] **Step 4: Trim per Step 1's findings, with matching `Table.SelectColumns` pins**
 
 Same discipline as Task 1 Step 5 — only trim confident findings, pin with `Table.SelectColumns`, check for dangling `sortByColumn`.
 
-- [ ] **Step 5: Confirm no `LH_Master_Data` or `DateTime.LocalNow()` references remain**
+- [x] **Step 5: Confirm no `LH_Master_Data` or `DateTime.LocalNow()` references remain**
 
 ```bash
 grep -rn "LH_Master_Data\|DateTime.LocalNow" "workspaces/RP - Dev/Pin Capture.SemanticModel/"
 ```
 Expected: no output.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 cd "/c/Users/bfox/Documents/Git-Projects/fabric-workspace-docs"
@@ -307,7 +307,7 @@ Also confirmed (code-quality review): trimmed tables document their own kept/dro
 - Modify: `fabric-workspace-docs/workspaces/RP - Dev/Part Sales with Low Margin.SemanticModel/definition/tables/dim_DateTable.tmdl`
 - Modify: `fabric-workspace-docs/workspaces/RP - Dev/Part Sales with Low Margin.SemanticModel/definition/tables/dim_Parts.tmdl`
 
-- [ ] **Step 1: Exhaustive real-usage audit**
+- [x] **Step 1: Exhaustive real-usage audit**
 
 ```bash
 export PATH="$HOME/.local/bin:$PATH"
@@ -328,7 +328,7 @@ grep -n "PartNumber" relationships.tmdl
 
 `dim_Parts_LowMargin` itself joins on raw `PartNumber` text (confirmed in its own M query — `Table.NestedJoin(AggregateJdis, {"PartNumber", "Branch", "Franchise"}, InMaster_Fields, {"PartNumber", "Branch", "Franchise"}, ...)`), but that join happens entirely within this table's own M query between its two own sources (not a model-level relationship to `dim_Parts`) — confirm this doesn't also relate to the report's `dim_Parts` table via raw `PartNumber` (the real control-character risk is a `dim_Parts` relationship specifically, not an internal M-query join between two sources that both come from the same normalized-text pipeline).
 
-- [ ] **Step 2: Repoint `Fact_InTrans.tmdl`, rename its `Item=`, and fix its `DateTime.LocalNow()`**
+- [x] **Step 2: Repoint `Fact_InTrans.tmdl`, rename its `Item=`, and fix its `DateTime.LocalNow()`**
 
 Find:
 ```
@@ -367,7 +367,7 @@ Replace with:
 				    ),
 ```
 
-- [ ] **Step 3: Repoint `dim_Parts_LowMargin.tmdl` and rename its 2 `Item=` references**
+- [x] **Step 3: Repoint `dim_Parts_LowMargin.tmdl` and rename its 2 `Item=` references**
 
 Find:
 ```
@@ -391,7 +391,7 @@ Replace with:
 
 (`Source_jdis = Source_InMaster` is unchanged — it already reuses the one connection variable this step just repointed.)
 
-- [ ] **Step 4: Repoint `dim_BranchLocation.tmdl`, `dim_CustomerList.tmdl`, `dim_DateTable.tmdl`, `dim_Parts.tmdl`**
+- [x] **Step 4: Repoint `dim_BranchLocation.tmdl`, `dim_CustomerList.tmdl`, `dim_DateTable.tmdl`, `dim_Parts.tmdl`**
 
 In each file, find:
 ```
@@ -403,18 +403,18 @@ Replace with:
 ```
 No `Item=` changes in any of these 4 files.
 
-- [ ] **Step 5: Trim per Step 1's findings, with matching `Table.SelectColumns` pins**
+- [x] **Step 5: Trim per Step 1's findings, with matching `Table.SelectColumns` pins**
 
 Same discipline as Task 1 Step 5.
 
-- [ ] **Step 6: Confirm no `LH_Master_Data` or `DateTime.LocalNow()` references remain**
+- [x] **Step 6: Confirm no `LH_Master_Data` or `DateTime.LocalNow()` references remain**
 
 ```bash
 grep -rn "LH_Master_Data\|DateTime.LocalNow" "workspaces/RP - Dev/Part Sales with Low Margin.SemanticModel/"
 ```
 Expected: no output.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 cd "/c/Users/bfox/Documents/Git-Projects/fabric-workspace-docs"
@@ -448,7 +448,7 @@ Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 
 **Files:** none.
 
-- [ ] **Step 1: Push to origin**
+- [x] **Step 1: Push to origin**
 
 ```bash
 cd "/c/Users/bfox/Documents/Git-Projects/fabric-workspace-docs"
@@ -461,21 +461,21 @@ git push origin dev
 
 **Files:** none — Brian's action.
 
-- [ ] **Step 1: Pull into `RP - Dev`**
+- [x] **Step 1: Pull into `RP - Dev`**
 
 In each of the 3 reports' Git integration state (or the workspace-level Source control pane), sync/update to pick up Tasks 1-3's commits.
 
-- [ ] **Step 2: Open each report from `RP - Dev` in Desktop and refresh**
+- [x] **Step 2: Open each report from `RP - Dev` in Desktop and refresh**
 
 Watch for "column does not exist" errors on each — if any appear, that means the audit (Task 1/2/3 Step 1) missed a real usage; report back for investigation rather than assuming the trim is wrong.
 
-- [ ] **Step 3: Visually confirm each report's real output**
+- [x] **Step 3: Visually confirm each report's real output**
 
 Against the real, currently-live production versions (`RP - Service Reports` for Open Work Orders, `RP - Parts Reports` for Pin Capture and Part Sales with Low Margin).
 
-- [ ] **Step 4: Publish each to `RP - Dev`, then Source control → Commit**
+- [x] **Step 4: Publish each to `RP - Dev`, then Source control → Commit**
 
-- [ ] **Step 5: Report back**
+- [x] **Step 5: Report back**
 
 Once all 3 are confirmed, Claude runs the final post-publish verification (Task 6).
 
@@ -485,7 +485,7 @@ Once all 3 are confirmed, Claude runs the final post-publish verification (Task 
 
 **Files:** none.
 
-- [ ] **Step 1: Run a DuckDB row-count check against the real tables each report now depends on**
+- [x] **Step 1: Run a DuckDB row-count check against the real tables each report now depends on**
 
 ```python
 import duckdb
@@ -509,7 +509,7 @@ for t in sorted(set(tables)):
 
 Expected: every table prints a real row count, none print `MISSING/ERROR`.
 
-- [ ] **Step 2: Update the report migration catalog doc**
+- [x] **Step 2: Update the report migration catalog doc**
 
 Mark Open Work Orders, Pin Capture, and Part Sales with Low Margin as complete in `docs/architecture/report-migration-catalog.md`, matching the same completion-note pattern already used for Batch 0, Batch 1, and Price Matrix.
 
