@@ -347,23 +347,25 @@ git push origin dev
 
 **Files:** none — Brian's action.
 
-- [ ] **Step 1: Pull into `RP - Dev`**
+- [x] **Step 1: Pull into `RP - Dev`**
 
 Sync/update to pick up Tasks 2-4's commits.
 
-- [ ] **Step 2: Open Inventory Analysis from `RP - Dev` in Desktop and refresh**
+- [x] **Step 2: Open Inventory Analysis from `RP - Dev` in Desktop and refresh**
 
 Watch for "column does not exist" errors — if any appear, that means Task 1's audit missed a real usage; report back for investigation rather than assuming the trim is wrong.
 
-- [ ] **Step 3: Visually confirm real output**
+- [x] **Step 3: Visually confirm real output**
 
 Against the real, currently-live `RP - Parts Reports` production version — specifically the date-based visuals (YoY comparisons, the 5-year trend measure, the area-chart category axis using `MonthName`) to confirm the `dim_DateTable` consolidation didn't change any date-based behavior.
 
-- [ ] **Step 4: Publish to `RP - Dev`, then Source control → Commit**
+- [x] **Step 4: Publish to `RP - Dev`, then Source control → Commit**
 
-- [ ] **Step 5: Report back**
+- [x] **Step 5: Report back**
 
 Once confirmed, Claude runs the final post-publish verification (Task 7).
+
+**Execution note (2026-09-22):** Brian confirmed: "This worked great and is looking good so far, again some more thorough validation will need to be done and data refreshed, but this is great and looking good. Re-published and committed." Republish landed as `fabric-workspace-docs`/`dev` commit `8698434d` (removed an auto-generated, harmless `UnderlyingDateTimeDataType` annotation on `Fact_Part_Transactions.TransactionDate` — Desktop-managed metadata, not a real change). A full validation pass is still pending before production promotion, matching the same standing caveat already noted for Batch 2a's Part Sales with Low Margin.
 
 ---
 
@@ -372,7 +374,7 @@ Once confirmed, Claude runs the final post-publish verification (Task 7).
 **Files:**
 - Modify: `data-projects/docs/architecture/report-migration-catalog.md`
 
-- [ ] **Step 1: DuckDB row-count check**
+- [x] **Step 1: DuckDB row-count check**
 
 ```python
 import duckdb
@@ -395,9 +397,11 @@ for t in sorted(set(tables)):
         print(f"  MISSING/ERROR  {t}: {e}")
 ```
 
-- [ ] **Step 2: Update the catalog doc**
+- [x] **Step 2: Update the catalog doc**
 
 Mark Inventory Analysis complete in `docs/architecture/report-migration-catalog.md`'s Batch 2 section, matching the same completion-note pattern already used for Batch 2a, noting the `dim_Date`-consolidation approach superseded the originally-planned new-table build.
+
+**Execution note (2026-09-22):** All 14 backend tables (Fact_Inventory 147,831 rows, Fact_Invoice_InventoryAnalysis 562,669, Fact_Part_Transactions 11,250,205, dim_BranchLocation 69, dim_CommodityCode 784, dim_DateTable 4,018, dim_DealerGroupCode 1,821, dim_Franchise 39, dim_ModuleType 12, dim_Parts 316,671, dim_PaymentMethod 12, dim_SLC 123, dim_Source 273, dim_VendorCode 1,332) resolved cleanly via `delta_scan` against `DP_Presentation`. Catalog doc updated: Tier 2 table row + a new Batch 2 completion note. **Inventory Analysis migration is COMPLETE.**
 
 ---
 

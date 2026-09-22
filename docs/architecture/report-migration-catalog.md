@@ -59,7 +59,7 @@ shortcut, or one small missing piece)
 |---|---|---|
 | `Bin Location Report` | Parts | Only gap is `jdis_Part_Information` (raw) → `Silver_PartInformation` (shortcut exists) |
 | `Physical Inventory` | Parts | Same — only real dependency is the `jdis_Part_Information` raw repoint |
-| `Inventory Analysis` | Parts | **Real gap found this pass**: references `dim_Date`, a genuinely different (simpler) table than `dim_DateTable` — both are built by the *same* production dataflow (`df_Dim_Date.Dataflow`), but only `dim_DateTable` was carried into the DP backend during the dims catalog work. `dim_Date` itself is small (basic year/month/day/quarter columns, no rolling-period logic) — a quick Gold build, not a redesign. Every other dependency (`Fact_Inventory`, `Fact_Invoice_InventoryAnalysis`, `Fact_Part_Transactions`, 7 dims) already exists. |
+| `Inventory Analysis` | Parts | **COMPLETE (2026-09-22).** Original plan below (new `dim_Date` Gold build) was superseded — see the completion note after this table. |
 | `Parts on Open Orders` | Parts | `Fact_Parts_Open_Tickets`/`_Details` are ready; missing `fact_parts_open_orders_snapshot` (the separate monthly-snapshot notebook table, `nb_Snapshot_Parts_Open_Orders` — a different, smaller piece of work than the main facts) |
 | `Transfers` | Parts | `Fact_Transfers` is ready; missing `Fact_OutstandingTransfers` — already deliberately deferred in Batch B (real path known: `Silver_InSalPar`+`Silver_InSalOrd`+`Silver_InMaster`, needs a new `Silver_InSalOrd.trf_to_branch` column and an `OrderAge`-as-DAX-measure design decision) |
 | `Open Work Orders` | Service | All raw refs (`RepairOrderDetail`, `TechnicianPunchedDetail`, `WKROFILE`) already have real Silver shortcuts (`RepairOrderDetail.Shortcut`, `Silver_TechnicianPunchedDetail.Shortcut`, `Silver_WkRoFile.Shortcut`) — needs column-rename repoints, not new Gold builds |
@@ -205,11 +205,40 @@ in memory. Part Sales with Low Margin refreshed clean but the data looked stale 
 flagged for a full validation pass (including confirming the daily pipeline refresh
 covers it) before production promotion, not blocking further report migrations.
 
+**Inventory Analysis — COMPLETE (2026-09-22).** Real investigation superseded the
+originally-planned new `dim_Date` Gold build: `dim_DateTable` (already live,
+already used by every other migrated report) turned out to already have every
+column this report needs under identical names, so the report's `dim_Date` table
+was repointed to `dim_DateTable` instead — model table name kept as `dim_Date` so
+none of the ~35 existing DAX measures or 2 relationships needed to change, only
+the M query's source and column selection. See
+`docs/superpowers/specs/2026-09-22-inventory-analysis-datetable-consolidation-design.md`
+and `docs/superpowers/plans/2026-09-22-inventory-analysis-migration.md` for the
+full design and exhaustive per-table audit trail. All 13 real data tables
+repointed to `DP_Presentation`; 9 of them trimmed to confirmed-used columns
+(Fact_Inventory, Fact_Invoice_InventoryAnalysis, dim_BranchLocation,
+dim_CommodityCode, dim_Franchise, dim_ModuleType, dim_Parts, dim_PaymentMethod,
+plus dim_Date itself), 4 left untrimmed (dim_DealerGroupCode, dim_SLC, dim_Source,
+dim_VendorCode — every column genuinely used). Two `sortByColumn` dependencies
+found and preserved (`dim_BranchLocation.LocationID`, `dim_ModuleType.SortOrder`),
+matching the same discipline already applied to `dim_Date`'s own `Month` column.
+Also found and fixed a real, previously-unflagged `DateTime.LocalNow()` bug live
+in `Fact_Part_Transactions.tmdl`'s own rolling-7-year cutoff filter — same bug
+class fixed repeatedly elsewhere in this project, replaced with the DST-aware
+pattern from `.claude/queries/DATA-REFRESH-TEMPLATE.pq`. Refreshed clean in
+Desktop and republished to `RP - Dev` by Brian; post-publish DuckDB row-count
+check confirmed all 14 backend tables resolve with sensible counts. A pre-existing,
+unrelated stale filter referencing a nonexistent `dim_Branch` entity (should be
+`dim_BranchLocation`) was found in one visual and ~26 bookmarks — flagged for
+Brian's awareness, not acted on since it predates this migration and isn't caused
+by it. Full validation pass (beyond the spot-checks done here) still recommended
+before production promotion, same standing caveat as the rest of Batch 2a/2.
+
 Remaining for Batch 2: 60+ Days Past Due (already done in Batch 0, listed here in
 error — confirm and remove), Transfers (needs `Fact_OutstandingTransfers`),
-Inventory Analysis (needs `dim_Date`), Parts on Open Orders (needs the snapshot
-table) — the 3 genuinely needing new Gold-layer work, deferred to a later round
-per Brian's own sequencing call.
+Parts on Open Orders / Open Parts Tickets (needs the snapshot table) — the 2
+remaining reports genuinely needing new Gold-layer work, sequenced next per
+Brian's own "one at a time, easiest first" call.
 
 ### Batch 3 — Tier 3 (4 reports needing real new Gold-layer work first)
 
