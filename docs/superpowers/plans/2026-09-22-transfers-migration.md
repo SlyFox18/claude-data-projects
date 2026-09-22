@@ -87,7 +87,7 @@ ALTER VIEW "Administrator"."Parts_InterbranchTransfers"
 
 **Files:** none — investigation only, confirms Task 2/3's exact insertion points before editing.
 
-- [ ] **Step 1: Re-read both notebooks**
+- [x] **Step 1: Re-read both notebooks**
 
 ```bash
 cd "/c/Users/bfox/Documents/Git-Projects/fabric-workspace-docs"
@@ -96,6 +96,8 @@ cat "workspaces/DP - Staging - Dev/Build_Silver_InSalOrd.Notebook/notebook-conte
 ```
 Expected: `Build_Silver_InSalPar.Notebook`'s `silver = bronze.select(...)` call ends with `F.col("Creation_Datetime").alias("CreationDate"),` (13 columns). `Build_Silver_InSalOrd.Notebook`'s `silver = bronze.select(...)` call ends with `F.col("REC_CONTROL").alias("RecControl"),` (18 columns). If either differs from this, stop and re-investigate before Task 2/3 — something changed since this plan was written.
 
+**Execution note (2026-09-22):** Confirmed exactly as expected — `Build_Silver_InSalPar.Notebook` has the 13-column `select()` ending in `CreationDate`, `Build_Silver_InSalOrd.Notebook` has the 18-column `select()` ending in `RecControl`. No drift since this plan was written; proceeded to Task 2.
+
 ---
 
 ### Task 2: Add `ShippedQty`/`SoRoRef` to `Build_Silver_InSalPar.Notebook`
@@ -103,7 +105,7 @@ Expected: `Build_Silver_InSalPar.Notebook`'s `silver = bronze.select(...)` call 
 **Files:**
 - Modify: `fabric-workspace-docs/workspaces/DP - Staging - Dev/Build_Silver_InSalPar.Notebook/notebook-content.py`
 
-- [ ] **Step 1: Add the 2 new columns to the `select()` call**
+- [x] **Step 1: Add the 2 new columns to the `select()` call**
 
 Find:
 ```python
@@ -119,7 +121,7 @@ Replace with:
 ```
 (Inserting after `JobCode` keeps the new columns grouped near the other quantity/reference columns — exact position within the `select()` call doesn't matter functionally, this just keeps the list readable.)
 
-- [ ] **Step 2: Run the notebook and verify**
+- [x] **Step 2: Run the notebook and verify**
 
 ```bash
 export PATH="$HOME/.local/bin:$PATH"
@@ -127,7 +129,9 @@ fab job run "DP - Staging - Dev.Workspace/Build_Silver_InSalPar.Notebook" --time
 ```
 Expected: `Completed`, no `failureReason`. The notebook's own `silver_count == bronze_count` assertion guarantees this addition didn't add/drop rows — if the assertion fails, the job itself fails, which is the expected safety net.
 
-- [ ] **Step 3: Confirm the new columns landed correctly**
+**Execution note (2026-09-22):** First `fab job run` completed successfully, but the DuckDB check in Step 3 then showed `ShippedQty` wasn't present — editing the local git-mirrored `.py` file does not by itself push to the live Fabric notebook. Ran `fab import "DP - Staging - Dev.Workspace/Build_Silver_InSalPar.Notebook" -i "workspaces/DP - Staging - Dev/Build_Silver_InSalPar.Notebook" --format .py -f` to publish the edited content to the live item first (reported "An item with the same name exists... imported"), then re-ran `fab job run` — that second run completed successfully against the actually-updated notebook. **New pattern worth carrying into Task 3 and any other existing-notebook edit in this plan: `fab import` (update) before `fab job run` whenever a notebook's local file was edited but not freshly created via `fab import` already.**
+
+- [x] **Step 3: Confirm the new columns landed correctly**
 
 ```python
 import duckdb
@@ -140,7 +144,9 @@ print(f"total rows={r[0]:,}  non-null ShippedQty={r[1]:,}  non-null SoRoRef={r[2
 ```
 Expected: total rows still 21,444 (or close — real data may have grown slightly since this plan was written, but should not have shrunk). `ShippedQty`/`SoRoRef` both present with plausible non-null counts (not 0, not necessarily 21,444 either since some rows may legitimately have nulls).
 
-- [ ] **Step 4: Commit**
+**Execution note (2026-09-22): real observed numbers — `total rows=21,444  non-null ShippedQty=711  non-null SoRoRef=305`.** Row count matches exactly (no growth/shrinkage since plan was written); both new columns present with plausible non-null counts.
+
+- [x] **Step 4: Commit**
 
 ```bash
 cd "/c/Users/bfox/Documents/Git-Projects/fabric-workspace-docs"
