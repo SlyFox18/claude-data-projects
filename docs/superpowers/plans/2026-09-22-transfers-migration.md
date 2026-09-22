@@ -836,7 +836,7 @@ None. Every candidate on all 6 tables resolved cleanly to keep or trim once cros
 - Modify: `fabric-workspace-docs/workspaces/RP - Dev/Transfers.SemanticModel/definition/tables/dim_DateTable.tmdl`
 - Modify: `fabric-workspace-docs/workspaces/RP - Dev/Transfers.SemanticModel/definition/tables/dim_Parts.tmdl`
 
-- [ ] **Step 1: Repoint all 6 tables' SQL connections**
+- [x] **Step 1: Repoint all 6 tables' SQL connections**
 
 In each file, find:
 ```
@@ -847,7 +847,7 @@ Replace with:
 				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-inkp24yoeqfedgiktcbh6mwaq4.datawarehouse.fabric.microsoft.com", "DP_Presentation"),
 ```
 
-- [ ] **Step 2: Fix `Inv_Snapshot.tmdl`'s `Item=` to the new Silver shortcut name**
+- [x] **Step 2: Fix `Inv_Snapshot.tmdl`'s `Item=` to the new Silver shortcut name**
 
 Find:
 ```
@@ -859,18 +859,18 @@ Replace with:
 ```
 (Keep the local variable name `jdis_Part_Information` as-is if that minimizes the diff, or rename it to `Silver_PartInformation` for clarity and update the `in` clause reference accordingly — either is fine, just keep the file internally consistent.)
 
-- [ ] **Step 3: Trim per Task 7's findings**
+- [x] **Step 3: Trim per Task 7's findings**
 
 For each of the 6 tables, apply Task 7's documented keep/trim decisions: remove confidently-unused `column` blocks, add/update a matching `Table.SelectColumns(...)` M-query step, check for any dangling `sortByColumn` on a trim candidate before removing it. Leave ambiguous columns untouched.
 
-- [ ] **Step 4: Confirm no `LH_Master_Data` references remain**
+- [x] **Step 4: Confirm no `LH_Master_Data` references remain**
 
 ```bash
 grep -rn "LH_Master_Data" "workspaces/RP - Dev/Transfers.SemanticModel/"
 ```
 Expected: no output.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 cd "/c/Users/bfox/Documents/Git-Projects/fabric-workspace-docs"
@@ -884,6 +884,8 @@ audit where confident, left as-is where ambiguous.
 Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 git push origin dev
 ```
+
+**Execution note (2026-09-22):** All 6 tables repointed and trimmed exactly per Task 7 Findings. `Fact_OutstandingTransfers`: added a new `Table.SelectColumns` step (table had none before), 12 kept/3 trimmed (`TransDatetime`, `Line_No`, `SuppliedQty`), calculated column `'Aging Bucket'` untouched. `Fact_Transfers`: `Table.SelectColumns` inserted before the existing `Table.AddColumn` (`AddSortOrder`) step so `TransferSubTypeSortOrder` still computes correctly on top of the trimmed set; 9 stored columns kept + `TransferSubTypeSortOrder`, 7 trimmed (`Date`, `TransId`, `TransDatetime`, `RONumber`, `OrderQty`, `ShippedQty`, `OrderSalesman`). `Inv_Snapshot`: `Item=` changed `jdis_Part_Information`→`Silver_PartInformation` (kept the local M variable name `jdis_Part_Information` to minimize diff per the plan's own allowance), existing `SelectColumns` step narrowed from 4 to 3 columns (dropped `PartNumber`), `FilterZero` step left untouched. `dim_BranchLocation`: 3 kept (`Branch`, `BranchID`, `LocationID`) including the `Branch`→`LocationID` sortByColumn pair, 12 trimmed. `dim_DateTable`: 2 kept (`DateKey`, `Date`) of 62, 60 trimmed including both `MonthYear`→`SortableMonthYear` and `MonthNameShort`→`Month` sortByColumn pairs (both sides of each pair zero-usage, trimmed together, no dangling reference) — this table's edit was done via a scoped `sed` line-range delete rather than the Edit tool (the block was too large for a single old_string match); a line-ending check afterward found `sed -i` had silently converted the file from CRLF to LF (all sibling TMDL files are CRLF), fixed by normalizing back to CRLF before committing so the diff stayed clean and consistent with the rest of the repo. `dim_Parts`: 2 kept (`PartNumber`, `Description`) of 21, 19 trimmed — confirmed table-qualified throughout so `dim_Parts.QuantityOnHand`/`InventoryCost` (trimmed) weren't confused with `Inv_Snapshot`'s identically-named, genuinely-used columns (kept). Step 4's `grep -rn "LH_Master_Data"` returned no output (confirmed twice, once before and once after the CRLF fix). Committed as `2bd6109a` on `fabric-workspace-docs`/`dev` (6 files changed, 22 insertions, 991 deletions), pushed cleanly (`dadc86ae..2bd6109a`).
 
 ---
 
