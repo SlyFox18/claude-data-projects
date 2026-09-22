@@ -995,6 +995,10 @@ Sync/update to pick up Tasks 7-8's commits.
 
 Watch for "column does not exist" errors — if any appear, that means Task 6's audit missed a real usage; report back for investigation rather than assuming the trim is wrong.
 
+**Real findings during this step (2026-09-22), both since fixed:**
+1. First refresh attempt hit "5 queries are blocked... The key didn't match any rows in the table" on `fact_parts_open_orders_snapshot`/`Fact_PartsInvoiced_ByBranch` — confirmed as documented Fabric behavior (SQL analytics endpoint metadata sync lag for tables created via a path-based Spark write rather than `saveAsTable()`/`CREATE TABLE`). Fixed by forcing a sync via `POST .../sqlEndpoints/18effb0e-7bc2-47a1-854c-f4f2e8129145/refreshMetadata`; confirmed both tables synced. Retry succeeded.
+2. Second refresh succeeded but showed **$5.4M Order Total instead of the real ~$19.3M** — a genuine pre-existing backend gap, not caused by this migration's own changes: `Build_Gold_PartsOpenTickets.Notebook` (builds `Fact_Parts_Open_Tickets`/`Fact_Parts_Open_Tickets_Details`, both "already exists, repoint-only" tables per this plan's Context section) existed in `DP_Presentation` but was **never registered in `deploy/dp_backend_scope.json`** — it had last run manually on 2026-09-14 and was stuck 12+ days stale (max `Order_Date` 2026-09-09 vs. production's 2026-09-21). Fixed by registering it (`tier: gold, cadence: daily`, commit `a611ee79` on `fabric-workspace-docs`/`dev`) and running it once manually to catch up — verified exact match to `LH_Master_Data`'s live copy afterward (2,464 rows, $19,279,807.21 both sides). This table is now on the daily pipeline going forward, so this won't recur.
+
 - [ ] **Step 3: Visually confirm real output**
 
 Against the real, currently-live `RP - Parts Reports` production version (under its old name "Parts on Open Orders") — specifically the open-orders aging visuals, the branch-invoiced-parts visuals, and anything using the monthly snapshot history (if any trend visual reads multiple `SnapshotDate`s) to confirm the new Gold tables produce equivalent output.
