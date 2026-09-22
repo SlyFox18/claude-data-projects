@@ -925,14 +925,14 @@ git push origin dev
 **Files:**
 - Create: `fabric-workspace-docs/workspaces/RP - Dev/Open Parts Tickets.pbip`
 
-- [ ] **Step 1: Confirm it doesn't already exist**
+- [x] **Step 1: Confirm it doesn't already exist**
 
 ```bash
 ls "workspaces/RP - Dev/" | grep "Open Parts Tickets"
 ```
 Expected: only `Open Parts Tickets.Report` and `Open Parts Tickets.SemanticModel` — no `.pbip` (already confirmed this session; re-check in case something changed).
 
-- [ ] **Step 2: Create the `.pbip` file**
+- [x] **Step 2: Create the `.pbip` file**
 
 ```json
 {
@@ -951,7 +951,7 @@ Expected: only `Open Parts Tickets.Report` and `Open Parts Tickets.SemanticModel
 }
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 cd "/c/Users/bfox/Documents/Git-Projects/fabric-workspace-docs"
@@ -964,18 +964,22 @@ already used for every other report migrated in this project.
 Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 ```
 
+**Execution note (2026-09-22):** Committed as `0a26bacd` on `fabric-workspace-docs`/`dev`.
+
 ---
 
 ### Task 9: Push
 
 **Files:** none.
 
-- [ ] **Step 1: Push to origin**
+- [x] **Step 1: Push to origin**
 
 ```bash
 cd "/c/Users/bfox/Documents/Git-Projects/fabric-workspace-docs"
 git push origin dev
 ```
+
+**Execution note (2026-09-22):** Pushed `cfb3408a..0a26bacd` to `origin/dev` (covers Task 7's repoint+trim commit and Task 8's `.pbip`).
 
 ---
 
