@@ -291,6 +291,10 @@ the project's canonical DST-aware conversion.
 Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 ```
 
+**Real methodology finding (Task 2, worth carrying into future audits):** the standard 2-tool audit (`pbir fields list` + DAX-text grep) has a real blind spot — **bookmark filters**. `dim_DateTable.IsRolling12Months` was referenced only inside 2 bookmark JSON files' filter definitions, invisible to both `pbir` and the DAX-text grep, and would have been wrongly trimmed on a standard 2-check pass. Caught this time by writing a one-off script to recursively parse every JSON file under the report's `.Report/` folder (bookmarks, pages, visuals) and resolve PBIR's alias-based `{"Source":"d","Entity":"X"}` → `{"SourceRef":{"Source":"d"},"Property":"Y"}` pattern back to real (table, column) pairs. This is now a 3rd real class of "hidden usage" this project has found (after: DAX-measure-body-only usage on `dim_RepairOrder`/`Fact_Part_Transactions`, and now bookmark-filter-only usage here) — worth adding a bookmark-JSON check to the standard audit pattern for any report with bookmarks going forward, not just this one.
+
+Also confirmed (code-quality review): trimmed tables document their own kept/dropped reasoning directly in-file (M-query comments + `///` table-level doc-comments), not just in the implementer's own report — e.g. `dim_DateTable.tmdl`'s comment explicitly calls out `IsRolling12Months` as "used in a bookmark filter" so a future maintainer doesn't mistake it for dead weight and re-trim it.
+
 ---
 
 ### Task 3: Repoint Part Sales with Low Margin and fix its `DateTime.LocalNow()` bug
