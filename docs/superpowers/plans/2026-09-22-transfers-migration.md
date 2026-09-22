@@ -894,14 +894,14 @@ git push origin dev
 **Files:**
 - Create: `fabric-workspace-docs/workspaces/RP - Dev/Transfers.pbip`
 
-- [ ] **Step 1: Confirm it doesn't already exist**
+- [x] **Step 1: Confirm it doesn't already exist**
 
 ```bash
 ls "workspaces/RP - Dev/" | grep "Transfers"
 ```
 Expected: only `Transfers.Report` and `Transfers.SemanticModel` — no `.pbip` (already confirmed this session; re-check in case something changed).
 
-- [ ] **Step 2: Create the `.pbip` file**
+- [x] **Step 2: Create the `.pbip` file**
 
 ```json
 {
@@ -920,7 +920,7 @@ Expected: only `Transfers.Report` and `Transfers.SemanticModel` — no `.pbip` (
 }
 ```
 
-- [ ] **Step 3: Commit and push**
+- [x] **Step 3: Commit and push**
 
 ```bash
 cd "/c/Users/bfox/Documents/Git-Projects/fabric-workspace-docs"
@@ -933,6 +933,8 @@ already used for every other report migrated in this project.
 Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 git push origin dev
 ```
+
+**Execution note (2026-09-22):** Committed as `4e951d91` on `fabric-workspace-docs`/`dev`, pushed (`2bd6109a..4e951d91`).
 
 ---
 
