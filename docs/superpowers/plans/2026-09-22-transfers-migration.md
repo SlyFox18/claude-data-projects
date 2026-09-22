@@ -241,7 +241,7 @@ git push origin dev
 **Files:**
 - Modify: `fabric-workspace-docs/deploy/dp_backend_scope.json`
 
-- [ ] **Step 1: Re-confirm the notebook exists and is unregistered**
+- [x] **Step 1: Re-confirm the notebook exists and is unregistered**
 
 ```bash
 cd "/c/Users/bfox/Documents/Git-Projects/fabric-workspace-docs"
@@ -252,7 +252,7 @@ fab get "DP - Presentation - Dev.Workspace/Fact Tables.Folder/Transfers.Folder/B
 ```
 Expected: `Build_Gold_Transfers.Notebook` exists on disk; `grep` returns no output (not yet registered); `fab get` returns `1305ecbd-79c5-4355-b443-0bd0087f3c98`.
 
-- [ ] **Step 2: Register it in `dp_backend_scope.json`**
+- [x] **Step 2: Register it in `dp_backend_scope.json`**
 
 Add this entry to the `notebooks` array (matching the file's existing compact style — do NOT use a script that reformats the whole file):
 ```json
@@ -261,14 +261,14 @@ Add this entry to the `notebooks` array (matching the file's existing compact st
  "path": "workspaces/DP - Presentation - Dev/Fact Tables/Transfers/Build_Gold_Transfers.Notebook"}
 ```
 
-- [ ] **Step 3: Run it once to catch up to real current data**
+- [x] **Step 3: Run it once to catch up to real current data**
 
 ```bash
 fab job run "DP - Presentation - Dev.Workspace/Fact Tables.Folder/Transfers.Folder/Build_Gold_Transfers.Notebook" --timeout 300
 ```
 Expected: `Completed`, no `failureReason`. This is a full-overwrite rebuild (confirmed via the notebook's own `mode("overwrite")` write) so it will fully replace the stale data with current data in one run.
 
-- [ ] **Step 4: Verify it now matches real production**
+- [x] **Step 4: Verify it now matches real production**
 
 ```python
 import duckdb
@@ -283,7 +283,13 @@ for label, base in [("LH_Master_Data", lh_base), ("DP_Presentation", dp_base)]:
 ```
 Expected: both sides' row counts and `max_date` match closely (may differ by 1 day if the two pulls happen to straddle a pipeline refresh, but should NOT still show the ~12-day/30K-row gap seen before this fix).
 
-- [ ] **Step 5: Commit**
+**Execution notes (2026-09-22):**
+- **Before** (pre-fix, notebook never run by the pipeline): `LH_Master_Data`: rows=4,638,256, max_date=2026-09-21. `DP_Presentation`: rows=4,608,775, max_date=2026-09-09 — the ~12-day/29,481-row gap this task targeted, confirmed live before touching anything.
+- Registered the notebook in `dp_backend_scope.json` (tier=gold, cadence=daily), then ran it via `fab job run` — completed cleanly, `Job instance ... completed`, no failureReason.
+- **After**: `LH_Master_Data`: rows=4,638,256, max_date=2026-09-21. `DP_Presentation`: rows=4,632,500, max_date=2026-09-16. Gap closed from 12 days/29,481 rows down to 5 days/5,756 rows — the specific bug this task targeted (Gold notebook never registered/run) is fixed.
+- **Residual 5-day gap explained, separate issue, NOT fixed here (out of Task 4's scope):** `Build_Gold_Transfers` reads from `Silver_InTrans`, whose own max `TransDatetime` is 2026-09-16 — exactly matching the new Gold max_date. So the Gold notebook now faithfully reflects 100% of what's in its Silver source; the remaining gap is `Silver_InTrans` itself being 5 days behind. Checked `dp_backend_scope.json`: `Build_Silver_InTrans.Notebook` (at `DP - Staging - Dev/Build_Silver_InTrans.Notebook`) is **not registered anywhere in the `notebooks` array** — same unregistered-notebook bug class as this task and the earlier Open Parts Tickets fix, one level upstream. Flagging as a new candidate follow-up task, not silently fixing it here since it touches the 10M+-row InTrans backbone shared by many reports and was not part of this task's authorized scope.
+
+- [x] **Step 5: Commit**
 
 ```bash
 cd "/c/Users/bfox/Documents/Git-Projects/fabric-workspace-docs"
