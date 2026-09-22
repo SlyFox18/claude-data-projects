@@ -36,7 +36,7 @@ All files live under `fabric-workspace-docs/workspaces/RP - Dev/Inventory Analys
 
 **Files:** none — investigation only. Findings get documented directly in this plan before Task 3 proceeds.
 
-- [ ] **Step 1: `pbir fields list`**
+- [x] **Step 1: `pbir fields list`**
 
 ```bash
 export PATH="$HOME/.local/bin:$PATH"
@@ -44,7 +44,7 @@ cd "/c/Users/bfox/Documents/Git-Projects/fabric-workspace-docs/workspaces/RP - D
 pbir fields list "Inventory Analysis.Report"
 ```
 
-- [ ] **Step 2: DAX-text grep across every measure/calculated table + relationships**
+- [x] **Step 2: DAX-text grep across every measure/calculated table + relationships**
 
 ```bash
 cd "/c/Users/bfox/Documents/Git-Projects/fabric-workspace-docs/workspaces/RP - Dev/Inventory Analysis.SemanticModel/definition"
@@ -55,7 +55,7 @@ for tbl in Fact_Inventory Fact_Invoice_InventoryAnalysis Fact_Part_Transactions 
 done
 ```
 
-- [ ] **Step 3: Bookmark check**
+- [x] **Step 3: Bookmark check**
 
 This project has already found bookmark filters are a real, independent hidden-usage class (missed by both `pbir` and DAX-text grep on Pin Capture's `dim_DateTable.IsRolling12Months` in Batch 2a). Check whether this report has bookmarks and, if so, grep them for any column you're considering trimming:
 
@@ -64,16 +64,89 @@ ls "Inventory Analysis.Report/definition/bookmarks/" 2>/dev/null
 grep -rn "<ColumnName>" "Inventory Analysis.Report/definition/bookmarks/" 2>/dev/null
 ```
 
-- [ ] **Step 4: Confirm no `DateTime.LocalNow()` beyond what's already known**
+- [x] **Step 4: Confirm no `DateTime.LocalNow()` beyond what's already known**
 
 ```bash
 grep -rn "DateTime.LocalNow" "Inventory Analysis.SemanticModel/"
 ```
 Expected: no live call anywhere (only the explanatory comment already in `Data Refresh.tmdl`, matching every other report's own already-fixed `Data Refresh` table).
 
-- [ ] **Step 5: Document findings**
+- [x] **Step 5: Document findings**
 
 For each of the 13 tables in Step 2's list (excluding `dim_Date`, handled separately in Task 2), record which columns are genuinely used (confident to keep) vs. genuinely unused (confident to trim). **Only trim a column if you're confident it's unused by ALL applicable checks — if ambiguous, don't trim it, note it instead.**
+
+---
+
+### Task 1 Findings
+
+**Method note (applies to every table below):** "Used" was tested against five independent sources, not just the two named in Step 2: (1) `pbir fields list` output, (2) the `Table[Column]`-qualified DAX-text grep across `tables/*.tmdl` + `relationships.tmdl`, (3) `relationships.tmdl`'s `fromColumn`/`toColumn` declarations (a different TMDL syntax than DAX bracket refs — relationship key columns like `FranchiseKey`/`PartNumberKey`/`BranchKey`/etc. don't match the `Table[Column]` grep pattern at all and had to be cross-checked separately, or they'd have been falsely flagged unused), (4) the bookmark `Entity`/`Property` check, and (5) a broad whole-report/whole-model text grep for every column name that survived checks 1–4 with zero hits, to rule out cultures-file/visual-JSON usage the narrower checks could miss. A handful of broad-grep hits turned out to be false positives (auto-generated `cultures/en-US.tmdl` translation entries that exist for every column regardless of use, a `LastName` collision with an unrelated local DAX variable name in `MeasuresTable.tmdl`, and `State`/`City` matching common substrings elsewhere in the repo) — those are called out per-table below rather than left silently resolved.
+
+**Scope decision on DAX-calculated columns:** Several tables (mainly `Fact_Inventory`, also `dim_Franchise`) have calculated (DAX `=`) columns, not just stored/M-sourced ones. This migration's established trim pattern (`dim_Date` in Task 2, `Fact_Part_Transactions` in Task 3 Step 2) only ever trims **stored** columns via `Table.SelectColumns` in the M query — calculated columns aren't part of the M source at all and removing one is a different, riskier action (deleting a TMDL column block that other calculated columns may depend on internally). All calculated columns are therefore left as-is in every table below, regardless of whether they show confirmed usage — this keeps the trim scope consistent with the rest of the plan and avoids unwinding internal calc-column dependency chains by hand.
+
+#### `Fact_Inventory`
+- **Keep (18 stored columns):** `FranchiseKey`, `PartNumberKey`, `SourceKey`, `SLCKey`, `DealerGroupKey`, `CommodityCodeKey`, `VendorCodeKey`, `BranchKey` (all 8 are relationship join keys per `relationships.tmdl` — none matched the `Table[Column]` DAX grep pattern since relationship TMDL syntax is `fromColumn: Fact_Inventory.X`, not `Fact_Inventory[X]`), `InventoryCost`, `QuantityOnHand`, `Description`, `Current12MoSales`, `DateLastRequested`, `PartNumber`, `Previous12MoSales` (direct: pbir + DAX-grep + bookmarks), `BinQty` and `Returnable` (not directly used by any measure/visual, but feed calculated columns `ExcessQtyFlag`/`InventoryStatusCategory` and `'Is Returnable'` respectively, which are kept per the calc-column scope decision above — trimming the stored column would break the calc column), `PackageQty` (confirmed via `PackageQtyMeasures` visuals).
+- **Trim (7 stored columns, confident — zero references anywhere, not even inside another calculated column):** `SellPrice1`, `Cost`, `BackOrderQty`, `DateCreated`, `ListPrice`, `Current12MoDollars`, `Previous12MoDollars`. Verified each appears only in its own two-line declaration (`column X` / `sourceColumn: X`) in `Fact_Inventory.tmdl` and nowhere else in the model or report.
+- **Calculated columns (11 total — left as-is, out of scope per the method note):** `InventoryCategory`, `ExcessQty`, `ExcessLevel`, `SalesCategory`, `'Is Returnable'` all show confirmed real usage (pbir and/or bookmarks — `InventoryCategory` specifically is a real hidden-usage find: it's referenced **only** inside a bookmark filter, invisible to both `pbir fields list` and the DAX-text grep, the same hidden-usage class this project already found once on Pin Capture). `ExcessQtyFlag`, `ExcessInventoryCostPerRow`, `InventoryStatusCategory`, `ExcessStockFlag`, `DeadStockFlag`, `CategoryIcon` show no confirmed usage by any check, but are calculated (not M-sourced) so are not trim candidates under this migration's pattern — ambiguous/out of scope, left untouched.
+
+#### `Fact_Invoice_InventoryAnalysis`
+- **Keep (6 columns):** `InvoiceNumber` (DAX-grep — feeds the `Invoice Count` measure), `InvoiceDate` (relationship to `dim_Date` + direct pbir `Column`), `Branch` (relationship to `dim_BranchLocation.BranchID`), `ModuleTypeKey` (relationship to `dim_ModuleType`), `PartsSaleValue` (DAX-grep + pbir measure), `PaymentMethodKey` (relationship to `dim_PaymentMethod`).
+- **Trim (10 columns, confident):** `CustomerNumber`, `CompanyName`, `FirstName`, `LastName`, `PartsCostValue`, `PartsMargin`, `PartsMarginPct`, `ModifiedDate`, `ModuleType`, `PaymentMethod`. Broad grep initially flagged `LastName` (3 hits) and the others (2 hits each), but all resolved to false positives: the 2-hit pattern is always just the column's own TMDL declaration plus its auto-generated `cultures/en-US.tmdl` translation entry (present for every column regardless of use); `LastName`'s 3rd hit in `MeasuresTable.tmdl` is an unrelated local DAX variable (`VAR _LastName = MID(_Name, ...)`, part of a "Welcome Back" username-greeting measure, not a reference to this table's column). Note: `PartsCostValue`/`PartsMargin`/`PartsMarginPct` look redundant with `Fact_Part_Transactions`' `SaleAmount`/`CostAmount` — the margin measures likely compute from there instead.
+
+#### `Fact_Part_Transactions`
+- Pre-specified in Task 3 Step 2 and independently reconfirmed here: all 5 checks agree the 8 already-declared columns (`TransactionDate`, `FranchiseKey`, `PartNumberKey`, `BranchKey`, `Branch`, `SaleAmount`, `CostAmount`, `Quantity`) are exactly the used set — `TransactionDate`, `FranchiseKey`, `Branch` are additionally relationship keys (to `dim_Date`, `dim_Franchise`, `dim_BranchLocation.BranchID`) beyond their direct DAX-grep hits. The table's M query already only selects these 8 columns (a prior trim, already done) — Task 3 Step 2 is a repoint-only step for this table, not a new trim.
+- **`DateTime.LocalNow()` finding (real, needs fixing in Task 3):** `Fact_Part_Transactions.tmdl` line 87 has a **live** call — `CutoffDate = Date.AddYears(Date.From(DateTime.LocalNow()), -7)` — inside the M query's rolling-7-year filter. This is a genuine instance of the known `DateTime.LocalNow()`-returns-UTC-in-service bug (see `feedback` memory + `.claude/queries/DATA-REFRESH-TEMPLATE.pq`'s DST-aware pattern), separate from `Data Refresh.tmdl`'s already-fixed, already-fine `UtcNow`/`UtcDT`/`LocalDT` pattern (confirmed at `Data Refresh.tmdl` line 38 — that occurrence is only an explanatory **comment**, not a live call). Task 3 will need to replace this `CutoffDate` calculation with a DST-aware or fixed-literal approach when it repoints this table's connection string.
+
+#### `dim_BranchLocation`
+- **Keep (4 columns):** `BranchKey` (relationship, hidden key), `Branch` (direct: pbir + bookmark), `BranchID` (relationship, to two fact tables), `LocationID` (not directly used anywhere, but `Branch` has `sortByColumn: LocationID` — trimming `LocationID` would leave that sort dangling, so it must stay, matching how `dim_Date`'s `Month` was kept solely to support `MonthName`'s sort).
+- **Trim (10 columns, confident — zero hits on every check, including a broad substring grep):** `BranchType`, `BranchName`, `State`, `City`, `ServiceCapacity`, `MarketPresence`, `TerritoryCoverage`, `OperationalPriority`, `RegionalClassification`, `ServiceHours`, `DistanceFromHub`, `DataQualityScore`. Note: `State` and `City` are common words that produced 156 and 42 false-positive hits respectively in an unscoped repo-wide grep (unrelated files/words) — a table-qualified/bookmark-scoped recheck came back with zero real matches for both, so they're confident trims, not ambiguous.
+- **Side finding, not a trim decision:** one visual (`pages/a68c4f7fda606ccd0a48/visuals/b1f046a1ec00e1b1246e/visual.json`) and ~26 bookmark files carry a filter with `"Entity": "dim_Branch"` / `"Property": "Branch"` — but no table named `dim_Branch` (only `dim_BranchLocation`) exists anywhere in this semantic model. This looks like a pre-existing stale/orphaned filter reference (possibly predating a table rename), unrelated to this migration and not something trimming `dim_BranchLocation`'s columns affects either way. Flagging for Brian's awareness during Task 6's visual validation, not something Task 2/3 needs to act on.
+
+#### `dim_CommodityCode`
+- **Keep (1 column):** `CommodityCodeKey` (relationship, hidden key, joins from `Fact_Inventory.CommodityCodeKey`).
+- **Trim (2 columns, confident):** `CommodityCode`, `CommodityGroup` — zero hits on every check. Notable: this entire dimension contributes nothing but its join key to the report — no display attribute is used anywhere. Not treated as ambiguous since the absence is confirmed by all 5 checks, not just a gap in one.
+
+#### `dim_DealerGroupCode`
+- **Keep (2 columns, both):** `DealerGroupKey` (relationship, hidden key), `DealerGroupCode` (direct: pbir + DAX-grep + bookmark).
+- **Trim:** none.
+
+#### `dim_Franchise`
+- **Keep (2 columns):** `FranchiseKey` (relationship, hidden key), `Franchise` (direct: pbir + DAX-grep + bookmark).
+- **Trim (13 stored columns, confident — zero hits on every check):** `FranchiseCode`, `FranchiseDisplayName`, `FranchiseType`, `FranchiseCategory`, `MarketPosition`, `ServiceComplexity`, `FranchiseSortOrder`, `BusinessPriority`, `FranchiseStatus`, `IsActive`, `IsPrimaryBrand`, `IsAgriculturalBrand`, `IsMajorBrand`.
+- **Calculated columns (2 — left as-is, out of scope):** `'Franchise Group'` and `'Franchise Display'` both reference only `dim_Franchise[Franchise]` (kept regardless) and show no confirmed usage themselves, but per the calc-column scope decision they're not trimmed.
+
+#### `dim_ModuleType`
+- **Keep (3 columns):** `ModuleTypeKey` (relationship, hidden key), `ModuleTypeDescription` (direct: pbir + DAX-grep + bookmark), `SortOrder` (not directly used, but `ModuleTypeDescription` has `sortByColumn: SortOrder` — must stay to avoid a dangling sort, same pattern as `dim_BranchLocation.LocationID` and `dim_Date`'s kept `Month`).
+- **Trim (2 columns, confident):** `RecordCount`, `BusinessGrouping` — zero hits on every check.
+
+#### `dim_Parts`
+- **Keep (2 columns):** `PartNumberKey` (relationship, joins from both fact tables), `PartNumber` (direct: pbir + DAX-grep + bookmark).
+- **Trim (18 columns, confident — zero hits on every check, verified individually via table-qualified grep):** `Description`, `Franchise`, `Source`, `SLC`, `DealerGroupCode`, `CommodityCode`, `VendorCode`, `QuantityOnHand`, `BackOrderQty`, `StockStatus`, `IsAvailable`, `InventoryCost`, `SellPrice1`, `ListPrice`, `Current12MoSales`, `HasRecentSales`, `ActivityStatus`, `Returnable`, `IsReturnable`, `IsHighValue`. This report uses `dim_Parts` purely as the `PartNumber` display/relationship anchor — all its denormalized attribute columns duplicate what `dim_Franchise`/`dim_Source`/`dim_SLC`/`dim_DealerGroupCode`/`dim_CommodityCode`/`dim_VendorCode` already provide via `Fact_Inventory`'s own separate keys, so they're genuinely redundant here, not just under-used.
+
+#### `dim_PaymentMethod`
+- **Keep (2 columns):** `PaymentMethodKey` (relationship, hidden key), `PaymentMethodDescription` (direct: pbir + DAX-grep + bookmark).
+- **Trim (3 columns, confident):** `PaymentMethod`, `PaymentCategory`, `SortOrder`. Explicitly checked for a `sortByColumn` on `PaymentMethodDescription` pointing at this table's own `SortOrder` (since `dim_ModuleType` has an identically-named column protected by exactly this pattern) — confirmed **no** `sortByColumn` property exists anywhere in `dim_PaymentMethod.tmdl`, so `SortOrder` here is a true, unprotected trim candidate, not a false match to the `dim_ModuleType` case.
+
+#### `dim_SLC`
+- **Keep (2 columns, both):** `SLCKey` (relationship, hidden key), `SLC` (direct: pbir + DAX-grep + bookmark).
+- **Trim:** none.
+
+#### `dim_Source`
+- **Keep (2 columns, both):** `SourceKey` (relationship, hidden key), `Source` (direct: pbir + DAX-grep + bookmark).
+- **Trim:** none.
+
+#### `dim_VendorCode`
+- **Keep (2 columns, both):** `VendorCodeKey` (relationship, hidden key), `VendorCode` (direct: pbir + DAX-grep + bookmark).
+- **Trim:** none.
+
+#### Ambiguous columns
+None of the stored/M-sourced columns landed in a genuinely ambiguous state — every candidate resolved cleanly to keep or trim once cross-checked against relationships.tmdl and a broad whole-repo grep. The only "leave as-is regardless of usage status" columns are the calculated (DAX) columns called out per-table above (`Fact_Inventory`'s `ExcessQtyFlag`/`ExcessInventoryCostPerRow`/`InventoryStatusCategory`/`ExcessStockFlag`/`DeadStockFlag`/`CategoryIcon`, `dim_Franchise`'s `'Franchise Group'`/`'Franchise Display'`) — these aren't ambiguous about usage (all show zero confirmed usage), they're out of scope for the M-query trim pattern this migration uses, by design.
+
+#### sortByColumn dependency summary
+Two tables (besides `dim_Date`, already handled in Task 2) have a `sortByColumn` property that constrains trimming:
+- `dim_BranchLocation.Branch` → `sortByColumn: LocationID` — `LocationID` must be kept.
+- `dim_ModuleType.ModuleTypeDescription` → `sortByColumn: SortOrder` — `SortOrder` must be kept.
+
+No other table among the 13 has any `sortByColumn` property (confirmed via a direct grep across all 13 files).
 
 ---
 
