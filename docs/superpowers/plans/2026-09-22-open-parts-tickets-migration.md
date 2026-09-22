@@ -866,7 +866,7 @@ Only `fact_parts_open_orders_snapshot`'s 8 columns (listed above) are ambiguous,
 - Modify: `fabric-workspace-docs/workspaces/RP - Dev/Open Parts Tickets.SemanticModel/definition/tables/fact_parts_open_orders_snapshot.tmdl`
 - Modify: `fabric-workspace-docs/workspaces/RP - Dev/Open Parts Tickets.SemanticModel/definition/tables/Fact_PartsInvoiced_ByBranch.tmdl`
 
-- [ ] **Step 1: Repoint all 6 tables' SQL connections**
+- [x] **Step 1: Repoint all 6 tables' SQL connections**
 
 In each file, find:
 ```
@@ -877,7 +877,7 @@ Replace with:
 				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-inkp24yoeqfedgiktcbh6mwaq4.datawarehouse.fabric.microsoft.com", "DP_Presentation"),
 ```
 
-- [ ] **Step 2: Fix `fact_parts_open_orders_snapshot.tmdl`'s `Item=` to the new PascalCase name**
+- [x] **Step 2: Fix `fact_parts_open_orders_snapshot.tmdl`'s `Item=` to the new PascalCase name**
 
 Find:
 ```
@@ -889,18 +889,18 @@ Replace with:
 ```
 (and update the `in` clause / any other reference to the old variable name accordingly). No other `Item=` changes needed in any of the 6 files — every other real table name already matches exactly between `LH_Master_Data` and `DP_Presentation`.
 
-- [ ] **Step 3: Trim per Task 6's findings**
+- [x] **Step 3: Trim per Task 6's findings**
 
 For each of the 6 tables, apply Task 6's documented keep/trim decisions: remove confidently-unused `column` blocks, add/update a matching `Table.SelectColumns(...)` M-query step, check for any dangling `sortByColumn` on a trim candidate before removing it. Leave ambiguous columns untouched.
 
-- [ ] **Step 4: Confirm no `LH_Master_Data` references remain**
+- [x] **Step 4: Confirm no `LH_Master_Data` references remain**
 
 ```bash
 grep -rn "LH_Master_Data" "workspaces/RP - Dev/Open Parts Tickets.SemanticModel/"
 ```
 Expected: no output.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 cd "/c/Users/bfox/Documents/Git-Projects/fabric-workspace-docs"
@@ -915,6 +915,8 @@ where ambiguous.
 Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 git push origin dev
 ```
+
+**Execution note (2026-09-22):** All 6 files done and pushed (`fabric-workspace-docs` commit `cfb3408a`). `Fact_Parts_Open_Tickets`: 6 columns trimmed (`Location_Name`, `Created_On`, `WO_Creation_Date`, `Aging_Date_Source`, `Backorder_Pct`, `AR_Acct`), 17 stored + 1 calculated column kept, `Table.SelectColumns` added. `Fact_Parts_Open_Tickets_Details`: 17 columns trimmed, 6 kept, `Table.SelectColumns` added. `dim_BranchLocation`: 13 columns trimmed, 3 kept (`Branch`, `BranchID`, `LocationID`), `Table.SelectColumns` added — confirmed `BranchID` (not `BranchKey`) is the real join key per Task 6's findings for this report. `dim_DateTable`: 59 columns trimmed, 3 kept (`Date`, `Month`, `MonthYear`), `Table.SelectColumns` added; `MonthNameShort`'s own `sortByColumn: Month` property removed along with its column block, no dangling reference since `Month` itself stays. `fact_parts_open_orders_snapshot`: connection repointed + `Item=`/variable name fixed to `Fact_Parts_Open_Orders_Snapshot`; zero column trims per Task 6 (all 17 columns, including the 8 ambiguous ones, left untouched — no `Table.SelectColumns` added). `Fact_PartsInvoiced_ByBranch`: entire `Value.NativeQuery(EnableFolding=false)` block replaced with a plain `Source{[Schema="dbo",Item="Fact_PartsInvoiced_ByBranch"]}[Data]` read of the new Gold table; all 3 report columns (`Branch`/`InvoiceDate`/`Invoiced_Parts`) confirmed matching `sourceColumn` values, zero trims. Post-edit `grep -rn "LH_Master_Data"` across the whole SemanticModel folder returned no output. No TMDL validation-hook errors hit during editing. Report not open in Desktop; no Fabric refresh/publish performed.
 
 ---
 
