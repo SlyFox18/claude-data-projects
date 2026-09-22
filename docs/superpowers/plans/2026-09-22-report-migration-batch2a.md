@@ -440,6 +440,8 @@ Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 
 **Real lesson for future batches:** a shortcut keeping (or not keeping) its original column names is a real, independent risk from "does the shortcut exist" and "is the column used" — both already-checked questions in this project's standard audit. Worth adding a direct schema diff (old production column list vs. the real live shortcut's column list) to the standard audit for any report whose M query references a table by a name that predates that table's own migration/rename history, not just existence + usage checks.
 
+**Open Work Orders failed again (2nd real attempt):** `The field 'DaysSinceLastLabor' already exists in the record.` Self-inflicted gap — this exact collision risk was noticed during the first investigation (`DaysSinceLastLabor` is both a real `RepairOrderDetail` column AND a `Table.AddColumn` target the query computes fresh from `LastLaborPunch`) but dismissed as harmless rather than fixed. `Table.AddColumn` rejects adding a column name that already exists in the row. Fixed by dropping the source's own `DaysSinceLastLabor` (`Table.RemoveColumns`) immediately after the earlier rename fix, so the calculated step gets a clean slate — `DaysSinceCreationDate` was correctly left alone, since the query reads that one directly from source rather than recomputing it. Re-checked every other `Table.AddColumn` target in the query against all 3 real source schemas afterward — no further collisions found. See commit `ebb456b8`.
+
 ---
 
 ### Task 4: Push
