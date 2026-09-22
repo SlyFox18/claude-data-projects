@@ -79,7 +79,7 @@ Report's own 3 columns: `Branch` (string), `InvoiceDate` (dateTime), `Invoiced_P
 
 **Files:** none — investigation and a note, no changes yet (actual retirement happens in Task 5, after the new notebook is proven).
 
-- [ ] **Step 1: Re-confirm the old pipeline's real content**
+- [x] **Step 1: Re-confirm the old pipeline's real content**
 
 ```bash
 cd "/c/Users/bfox/Documents/Git-Projects/fabric-workspace-docs"
@@ -88,9 +88,11 @@ cat "workspaces/LH_Master_Data/Pipelines/Pipeline_Monthly_Open_Orders_Snapshot.D
 ```
 Expected: matches the Context section above exactly (3 activities, one notebook + 2 emails; monthly/day-1/noon-Central schedule). If it doesn't match (e.g. the pipeline has been edited since this plan was written), stop and re-investigate before Task 5 — don't assume the earlier read is still accurate.
 
-- [ ] **Step 2: Record the real notebookId this pipeline currently calls**
+- [x] **Step 2: Record the real notebookId this pipeline currently calls**
 
 The `nb_Snapshot_Parts_Open_Orders` activity's `notebookId` is `911d8be7-cd08-a5ac-402d-45283a006add` (already captured from the read above) — record it in this plan's own execution notes so Task 5 doesn't need to re-derive it.
+
+**Execution note (2026-09-22):** Confirmed exact match — 3 activities (notebook + 2 emails), `enabled: true`, monthly/day-1/noon-Central. No drift since this plan was written.
 
 ---
 
@@ -286,7 +288,7 @@ else:
 # META }
 ```
 
-- [ ] **Step 2: Write the `.platform` file**
+- [x] **Step 2: Write the `.platform` file**
 
 ```json
 {
@@ -303,7 +305,9 @@ else:
 ```
 Generate a real GUID for `logicalId` (e.g. `python -c "import uuid; print(uuid.uuid4())"`) before writing this file — it must be unique, not left as the placeholder text.
 
-- [ ] **Step 3: Import the notebook into Fabric**
+**Execution note (2026-09-22):** Real `logicalId` generated: `db997abe-6fd2-4db6-91d8-1b214f5e4bb1`.
+
+- [x] **Step 3: Import the notebook into Fabric**
 
 ```bash
 export PATH="$HOME/.local/bin:$PATH"
@@ -313,14 +317,27 @@ fab import "DP - Presentation - Dev.Workspace/Fact Tables/Open Parts Tickets/Bui
 ```
 Expected: success output. If the `Fact Tables/Open Parts Tickets` folder doesn't exist yet as a Fabric workspace folder, `fab import` creates the needed folder structure automatically (matches how every other nested-folder notebook in this project was created).
 
-- [ ] **Step 4: Capture the real notebookId**
+**Execution note (2026-09-22) — real deviations found, the command above doesn't work as written:**
+1. Fabric CLI requires an explicit `.Folder` suffix on every folder segment in the path — the plan's bare `Fact Tables/Open Parts Tickets` fails with `[InvalidPath]`. Real working path: `Fact Tables.Folder/Open Parts Tickets.Folder`.
+2. Even with the corrected path, import fails with `InvalidNotebookContent` (`Unexpected character encountered while parsing value: #`) — `fab` tries to parse the `.py` source as raw `.ipynb` JSON by default. Fix: pass `--format .py` explicitly (the literal `.py` with dot — bare `py` is rejected).
+
+**Real working command:**
+```bash
+fab import "DP - Presentation - Dev.Workspace/Fact Tables.Folder/Open Parts Tickets.Folder/Build_Gold_PartsOpenOrdersSnapshot.Notebook" \
+  -i "workspaces/DP - Presentation - Dev/Fact Tables/Open Parts Tickets/Build_Gold_PartsOpenOrdersSnapshot.Notebook" --format .py -f
+```
+Result: `'Build_Gold_PartsOpenOrdersSnapshot.Notebook' imported` — confirmed success. **Task 4's identical `fab import` step needs this same fix.**
+
+- [x] **Step 4: Capture the real notebookId**
 
 ```bash
 fab get "DP - Presentation - Dev.Workspace/Fact Tables/Open Parts Tickets/Build_Gold_PartsOpenOrdersSnapshot.Notebook" -q "id"
 ```
 Record the returned GUID — needed for Step 5.
 
-- [ ] **Step 5: Register in `dp_backend_scope.json`**
+**Execution note (2026-09-22):** Real notebookId: `69082a46-1676-40ff-84e1-3146244793e3`.
+
+- [x] **Step 5: Register in `dp_backend_scope.json`**
 
 Add this entry to the `notebooks` array in `fabric-workspace-docs/deploy/dp_backend_scope.json` (matching the existing `tier: "gold", cadence: "monthly"` entries' shape exactly):
 ```json
@@ -329,7 +346,7 @@ Add this entry to the `notebooks` array in `fabric-workspace-docs/deploy/dp_back
  "path": "workspaces/DP - Presentation - Dev/Fact Tables/Open Parts Tickets/Build_Gold_PartsOpenOrdersSnapshot.Notebook"}
 ```
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 cd "/c/Users/bfox/Documents/Git-Projects/fabric-workspace-docs"
@@ -572,11 +589,13 @@ Generate a real, unique GUID before writing (same as Task 2 Step 2).
 
 - [ ] **Step 3: Import the notebook into Fabric**
 
+**Real command, already corrected from Task 2's own execution findings** (the plan's original bare-folder-name/default-format command doesn't work — Fabric CLI requires an explicit `.Folder` suffix on each folder segment, and `.py` source needs `--format .py` explicitly or `fab` tries to parse it as `.ipynb` JSON and fails with `InvalidNotebookContent`):
+
 ```bash
 export PATH="$HOME/.local/bin:$PATH"
 cd "/c/Users/bfox/Documents/Git-Projects/fabric-workspace-docs"
-fab import "DP - Presentation - Dev.Workspace/Fact Tables/Open Parts Tickets/Build_Gold_PartsInvoicedByBranch.Notebook" \
-  -i "workspaces/DP - Presentation - Dev/Fact Tables/Open Parts Tickets/Build_Gold_PartsInvoicedByBranch.Notebook" -f
+fab import "DP - Presentation - Dev.Workspace/Fact Tables.Folder/Open Parts Tickets.Folder/Build_Gold_PartsInvoicedByBranch.Notebook" \
+  -i "workspaces/DP - Presentation - Dev/Fact Tables/Open Parts Tickets/Build_Gold_PartsInvoicedByBranch.Notebook" --format .py -f
 ```
 
 - [ ] **Step 4: Run it once and capture the real notebookId**
