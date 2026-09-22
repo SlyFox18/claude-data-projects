@@ -446,7 +446,7 @@ Per the plan's precedent from `Utilities_InTrans_FullDedup_20260811.Notebook`: t
 - Create: `fabric-workspace-docs/workspaces/DP - Presentation - Dev/Fact Tables/Open Parts Tickets/Build_Gold_PartsInvoicedByBranch.Notebook/.platform`
 - Modify: `fabric-workspace-docs/deploy/dp_backend_scope.json`
 
-- [ ] **Step 1: Write the notebook content**
+- [x] **Step 1: Write the notebook content**
 
 ```python
 # Fabric notebook source
@@ -577,7 +577,7 @@ print(f"SUCCESS: {row_count} rows written to Fact_PartsInvoiced_ByBranch")
 # META }
 ```
 
-- [ ] **Step 2: Write the `.platform` file**
+- [x] **Step 2: Write the `.platform` file**
 
 ```json
 {
@@ -594,7 +594,9 @@ print(f"SUCCESS: {row_count} rows written to Fact_PartsInvoiced_ByBranch")
 ```
 Generate a real, unique GUID before writing (same as Task 2 Step 2).
 
-- [ ] **Step 3: Import the notebook into Fabric**
+**Execution note (2026-09-22):** Real `logicalId` generated: `28221a7e-d399-425b-919c-ff864bf69efc`.
+
+- [x] **Step 3: Import the notebook into Fabric**
 
 **Real command, already corrected from Task 2's own execution findings** (the plan's original bare-folder-name/default-format command doesn't work — Fabric CLI requires an explicit `.Folder` suffix on each folder segment, and `.py` source needs `--format .py` explicitly or `fab` tries to parse it as `.ipynb` JSON and fails with `InvalidNotebookContent`):
 
@@ -605,14 +607,18 @@ fab import "DP - Presentation - Dev.Workspace/Fact Tables.Folder/Open Parts Tick
   -i "workspaces/DP - Presentation - Dev/Fact Tables/Open Parts Tickets/Build_Gold_PartsInvoicedByBranch.Notebook" --format .py -f
 ```
 
-- [ ] **Step 4: Run it once and capture the real notebookId**
+**Execution note (2026-09-22):** Ran exactly as written (the pre-corrected command). Result: `'Build_Gold_PartsInvoicedByBranch.Notebook' imported` — confirmed success, no further deviations found.
+
+- [x] **Step 4: Run it once and capture the real notebookId**
 
 Run the notebook manually in the Fabric UI (or via `fab` job trigger) to confirm it executes cleanly and creates `Fact_PartsInvoiced_ByBranch`, then:
 ```bash
 fab get "DP - Presentation - Dev.Workspace/Fact Tables/Open Parts Tickets/Build_Gold_PartsInvoicedByBranch.Notebook" -q "id"
 ```
 
-- [ ] **Step 5: Verify against the original native query**
+**Execution note (2026-09-22):** Ran via `fab job run "DP - Presentation - Dev.Workspace/Fact Tables.Folder/Open Parts Tickets.Folder/Build_Gold_PartsInvoicedByBranch.Notebook" --timeout 300` (same pattern as Task 3's backfill run) — job instance `55e1fae5-1a3a-4cf1-943f-1e6313f6b098` completed successfully, creating `Fact_PartsInvoiced_ByBranch` in `DP_Presentation`. Real notebookId: `432002bc-2c17-45c1-bf1c-d4929d2e08a8`.
+
+- [x] **Step 5: Verify against the original native query**
 
 ```python
 import duckdb
@@ -655,7 +661,17 @@ print(f"Difference: {abs(new_total - old_total):,.2f} ({abs(new_total - old_tota
 ```
 Expected: totals within a small tolerance (a few days' worth of invoices at the rolling window's edges, given the two queries run on different days) — a large mismatch (more than a day or two's typical invoice volume) means the port has a real logic bug, investigate before proceeding.
 
-- [ ] **Step 6: Register in `dp_backend_scope.json`**
+**Execution note (2026-09-22) — pyodbc/ActiveDirectoryInteractive route confirmed unusable in this session, fell back to DuckDB `delta_scan`:** `pyodbc` is installed but this machine has no `ODBC Driver 18 for SQL Server` registered (`pyodbc.drivers()` returns only `SQL Server`, `SQL Anywhere 17`, and local desktop-file drivers) — the connection failed at the driver-resolution stage (`IM002`), before authentication was even attempted, confirming this isn't just an interactive-auth limitation but a genuine missing-driver gap in this non-interactive session. Fell back to the plan's specified alternative: DuckDB `delta_scan` directly against both `DP_Presentation.Fact_PartsInvoiced_ByBranch` (the new Gold table) and `LH_Master_Data.Invoice` (the exact original native query's real source table), translating the original SQL's WHERE/GROUP BY into equivalent DuckDB SQL.
+
+**Verification result — the notebook's port logic is exact, the residual is fully explained (not a bug):**
+1. **New Gold table total:** `Fact_PartsInvoiced_ByBranch` = 9,119 rows, `$135,488,294.70` (InvoiceDate range `2025-06-01` to `2026-09-04`, confirming the notebook's month-start-truncated cutoff computed to `2025-06-01`, 15 months back from a 2026-09-22 run).
+2. **First comparison (raw `LH_Master_Data.Invoice`, original SQL's exact `DATEADD(month,-15,GETDATE())` cutoff):** `$134,419,430.53` — diff of `$1,068,864.17` (0.80%). This alone looked small enough to pass, but per the task's instruction not to stop at a surface-level match, dug into *why* rather than accepting the number blind.
+3. **Root-cause decomposition (two real, fully-explained effects netting together):**
+   - **Effect A — intentional month-truncation design:** the ported notebook's cutoff is always the 1st of the month 15 months back (documented in its own header comment as a DST-safe fixed-per-run cutoff), which starts ~3 weeks earlier than the original's exact day-level `GETDATE()-15mo`. Re-running the raw-Invoice query with the *same* `>= 2025-06-01` cutoff the notebook used isolates this: it adds `$5,495,569.61` (10,867 rows, `2025-06-01` to `2025-06-21`) that the original day-exact query would have excluded.
+   - **Effect B — source-table freshness gap, not a logic error:** comparing the notebook's *actual* source (`Silver_Invoice` in `DP_Presentation`) against the new Gold table for the identical filter/cutoff produced an **exact match to the penny**: `$135,488,294.70` = `$135,488,294.70` (transform logic in the notebook is proven 100% correct relative to its own source data). The gap between `Silver_Invoice` and `LH_Master_Data.Invoice` for the same nominal date range (`$135,488,294.70` vs `$139,915,000.14` before bounding) is a refresh-cadence artifact: `Silver_Invoice`'s max `InvoiceDate` was `2026-09-04`, while `LH_Master_Data.Invoice`'s max was `2026-09-21` — a 17-day freshness lag. Bounding the raw-Invoice comparison to `Silver_Invoice`'s own actual date range (`2025-06-01` to `2026-09-04`) narrows the gap to `$135,611,992.38` vs `$135,488,294.70` — a residual of just `$123,697.68` (0.09%, 256 rows out of ~208K), consistent with normal snapshot-timing noise at the table edges, not a logic bug.
+4. **Conclusion:** the notebook's ModuleType/customer-exclusion/branch-date-grouping/SUM logic is verified exact against its real source table. The larger-looking 0.80% headline difference vs. the original query is a coincidental near-cancellation of two independent, well-understood, non-bug effects (the intentional month-start window design choice, and `Silver_Invoice` currently running ~17 days behind `LH_Master_Data.Invoice`'s refresh) — not a defect in the port. No further action needed; `Silver_Invoice`'s refresh lag is a pipeline-cadence fact of the existing DP backend, not something this notebook introduced or needs to compensate for.
+
+- [x] **Step 6: Register in `dp_backend_scope.json`**
 
 ```json
 {"name": "Build_Gold_PartsInvoicedByBranch", "tier": "gold", "cadence": "daily",
@@ -663,7 +679,9 @@ Expected: totals within a small tolerance (a few days' worth of invoices at the 
  "path": "workspaces/DP - Presentation - Dev/Fact Tables/Open Parts Tickets/Build_Gold_PartsInvoicedByBranch.Notebook"}
 ```
 
-- [ ] **Step 7: Commit**
+**Execution note (2026-09-22):** Registered in `fabric-workspace-docs/deploy/dp_backend_scope.json` with real notebookId `432002bc-2c17-45c1-bf1c-d4929d2e08a8`.
+
+- [x] **Step 7: Commit**
 
 ```bash
 cd "/c/Users/bfox/Documents/Git-Projects/fabric-workspace-docs"
@@ -680,6 +698,8 @@ Central-time cutoff. Registered in dp_backend_scope.json
 Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 git push origin dev
 ```
+
+**Execution note (2026-09-22):** Committed as `419a73e6` on `fabric-workspace-docs`/`dev` and pushed (`ab4f2746..419a73e6`). Only the notebook's two new files plus `deploy/dp_backend_scope.json` were staged — other unrelated untracked `.pbi/` Desktop-artifact folders present in the working tree (from other reports) were left alone.
 
 ---
 
