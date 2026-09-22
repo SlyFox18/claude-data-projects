@@ -171,7 +171,7 @@ git push origin dev
 **Files:**
 - Modify: `fabric-workspace-docs/workspaces/DP - Staging - Dev/Build_Silver_InSalOrd.Notebook/notebook-content.py`
 
-- [ ] **Step 1: Add the new column to the `select()` call**
+- [x] **Step 1: Add the new column to the `select()` call**
 
 Find:
 ```python
@@ -185,15 +185,21 @@ Replace with:
     F.col("RO_BRANCH").alias("ROBranch"),
 ```
 
-- [ ] **Step 2: Run the notebook and verify**
+- [x] **Step 2: Push the local edit into Fabric, then run the notebook**
 
+**Real gotcha found during Task 2's execution**: editing the local git-mirrored `notebook-content.py` does NOT by itself update the live Fabric notebook — `fab job run` runs whatever is currently live in Fabric, not the local file. Must `fab import` first to push the edit, THEN run it:
 ```bash
 export PATH="$HOME/.local/bin:$PATH"
+cd "/c/Users/bfox/Documents/Git-Projects/fabric-workspace-docs"
+fab import "DP - Staging - Dev.Workspace/Build_Silver_InSalOrd.Notebook" \
+  -i "workspaces/DP - Staging - Dev/Build_Silver_InSalOrd.Notebook" --format .py -f
 fab job run "DP - Staging - Dev.Workspace/Build_Silver_InSalOrd.Notebook" --timeout 300
 ```
-Expected: `Completed`, no `failureReason`.
+Expected: `fab import` reports the item was updated/imported; the job run then completes with `Completed`, no `failureReason`.
 
-- [ ] **Step 3: Confirm the new column landed correctly**
+**Execution note (2026-09-22):** `fab import` reported "An item with the same name exists" then "'Build_Silver_InSalOrd.Notebook' imported" (update succeeded). `fab job run` then completed in one shot with job instance status `Completed`, no `failureReason` — the corrected import-then-run sequence worked cleanly on the first try, no retries needed this time.
+
+- [x] **Step 3: Confirm the new column landed correctly**
 
 ```python
 import duckdb
@@ -206,7 +212,9 @@ print(f"total rows={r[0]:,}  non-null TrfToBranch={r[1]:,}")
 ```
 Expected: total rows still ~10,346. `TrfToBranch` present with a plausible non-null count — most rows are NOT transfer orders (`OrderType != 'T'`), so a low non-null count here is expected and fine (only transfer-type orders would have a meaningful `trf_to_branch`).
 
-- [ ] **Step 4: Commit**
+**Execution note (2026-09-22): real observed numbers — `total rows=10,346  non-null TrfToBranch=3,264`.** Row count matches the plan's expected baseline exactly (no growth/shrinkage); `TrfToBranch` present with a plausible non-null count (31.5% of rows, consistent with only transfer-type orders having a meaningful value).
+
+- [x] **Step 4: Commit**
 
 ```bash
 cd "/c/Users/bfox/Documents/Git-Projects/fabric-workspace-docs"
@@ -223,6 +231,8 @@ no rows were added or dropped.
 Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 git push origin dev
 ```
+
+**Execution note (2026-09-22):** Committed as `ac99b53c` on `fabric-workspace-docs`/`dev`, pushed cleanly (`f04c89c1..ac99b53c  dev -> dev`). Task 3 complete.
 
 ---
 
