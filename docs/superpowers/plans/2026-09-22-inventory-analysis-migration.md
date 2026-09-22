@@ -286,13 +286,13 @@ Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 **Files:**
 - Create: `fabric-workspace-docs/workspaces/RP - Dev/Inventory Analysis.pbip`
 
-- [ ] **Step 1: Confirm the Report and SemanticModel folders exist**
+- [x] **Step 1: Confirm the Report and SemanticModel folders exist**
 
 ```bash
 ls -d "workspaces/RP - Dev/Inventory Analysis.Report" "workspaces/RP - Dev/Inventory Analysis.SemanticModel"
 ```
 
-- [ ] **Step 2: Create the `.pbip` file**
+- [x] **Step 2: Create the `.pbip` file**
 
 ```json
 {
@@ -311,7 +311,7 @@ ls -d "workspaces/RP - Dev/Inventory Analysis.Report" "workspaces/RP - Dev/Inven
 }
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 cd "/c/Users/bfox/Documents/Git-Projects/fabric-workspace-docs"
@@ -324,18 +324,22 @@ already used for every other report migrated in this project.
 Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 ```
 
+**Execution note (2026-09-22):** Committed as `89fc828d` on `fabric-workspace-docs`/`dev`.
+
 ---
 
 ### Task 5: Push
 
 **Files:** none.
 
-- [ ] **Step 1: Push to origin**
+- [x] **Step 1: Push to origin**
 
 ```bash
 cd "/c/Users/bfox/Documents/Git-Projects/fabric-workspace-docs"
 git push origin dev
 ```
+
+**Execution note (2026-09-22):** Pushed `148df486..89fc828d` to `origin/dev` (covers the Task 2 code-quality fix, Task 1 findings doc, Task 3's repoint+trim commit, and Task 4's `.pbip`).
 
 ---
 
