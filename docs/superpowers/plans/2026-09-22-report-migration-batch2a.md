@@ -170,6 +170,8 @@ RepairOrderDetail's shortcut kept its original name.
 Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 ```
 
+**Real finding (Task 1's audit):** `dim_DateTable` in Open Work Orders is genuinely orphaned — zero columns referenced by any DAX measure or visual, AND (unlike the `dim_DateTable`-is-just-join-key-unused pattern found on Price Matrix) zero relationship object anywhere in `relationships.tmdl` connects to it at all. Confirmed via `pbir` + full DAX-text grep, independently re-verified by the spec reviewer. Deliberately left fully untrimmed (repoint only) rather than trimmed or removed — whether the whole table should be dropped is a real scope decision for Brian, not a column-trim call. An in-file marker comment was added (commit `dfe7b3b8`) so this doesn't require re-discovery later. Also found and fixed: `dim_CustomerList` trims to a single column (`AccountNumberText`, its only real use — the relationship key), confirmed via code-quality review this is a normal, well-supported pattern, not a structural concern.
+
 ---
 
 ### Task 2: Repoint Pin Capture and fix its `DateTime.LocalNow()` bug
