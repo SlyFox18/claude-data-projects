@@ -235,7 +235,7 @@ Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 - Modify: `fabric-workspace-docs/workspaces/RP - Dev/Inventory Analysis.SemanticModel/definition/tables/dim_Source.tmdl`
 - Modify: `fabric-workspace-docs/workspaces/RP - Dev/Inventory Analysis.SemanticModel/definition/tables/dim_VendorCode.tmdl`
 
-- [ ] **Step 1: Repoint all 10 tables' SQL connections**
+- [x] **Step 1: Repoint all 10 tables' SQL connections**
 
 In each file, find:
 ```
@@ -247,22 +247,22 @@ Replace with:
 ```
 No `Item=` changes in any of these 10 files — every real table name already matches exactly.
 
-- [ ] **Step 2: Trim `Fact_Part_Transactions.tmdl` to its 8 confirmed-used columns**
+- [x] **Step 2: Trim `Fact_Part_Transactions.tmdl` to its 8 confirmed-used columns**
 
 Keep only `TransactionDate`, `FranchiseKey`, `PartNumberKey`, `BranchKey`, `Branch`, `SaleAmount`, `CostAmount`, `Quantity`. Remove every other declared `column` block. Add a matching `Table.SelectColumns(dbo_Fact_Part_Transactions, {"TransactionDate", "FranchiseKey", "PartNumberKey", "BranchKey", "Branch", "SaleAmount", "CostAmount", "Quantity"})` step to the M query, with the `in` clause pointing at it. Check for any `sortByColumn` on a kept column pointing at a column being removed — repoint or remove it if dangling, matching the discipline already applied to `dim_Date` in Task 2.
 
-- [ ] **Step 3: Trim the other 9 tables per Task 1's findings**
+- [x] **Step 3: Trim the other 9 tables per Task 1's findings**
 
 For each of `Fact_Inventory`, `Fact_Invoice_InventoryAnalysis`, `dim_BranchLocation`, `dim_CommodityCode`, `dim_DealerGroupCode`, `dim_Franchise`, `dim_ModuleType`, `dim_Parts`, `dim_PaymentMethod`, `dim_SLC`, `dim_Source`, `dim_VendorCode`: if Task 1 found confident, unambiguous unused columns, remove them and add a matching `Table.SelectColumns` M-query step. Check for dangling `sortByColumn` on every trim. If Task 1's findings for a given table were ambiguous or found nothing confidently trimmable, leave that table's columns as-is (repoint only) — do not trim speculatively.
 
-- [ ] **Step 4: Confirm no `LH_Master_Data` references remain anywhere in the report**
+- [x] **Step 4: Confirm no `LH_Master_Data` references remain anywhere in the report**
 
 ```bash
 grep -rn "LH_Master_Data" "workspaces/RP - Dev/Inventory Analysis.SemanticModel/"
 ```
 Expected: no output.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 cd "/c/Users/bfox/Documents/Git-Projects/fabric-workspace-docs"
@@ -276,6 +276,8 @@ ambiguous.
 
 Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 ```
+
+**Execution note (2026-09-22):** Committed as `deb52e6a` on `fabric-workspace-docs`/`dev`. The commit message was expanded beyond the text above to explicitly call out the `Fact_Part_Transactions` `DateTime.LocalNow()` DST-aware fix (Task 3 Step 2), since that fix isn't mentioned in this pre-written message. Two count discrepancies surfaced between Task 1's summary counts and its own named column lists (not actual data errors — the named lists were followed exactly): `dim_BranchLocation`'s trim list names 12 columns but the summary says "10 columns"; `dim_Parts`'s trim list names 20 columns but the summary says "18 columns". Both tables' full named lists were verified individually in Task 1 and trimmed exactly as named.
 
 ---
 
