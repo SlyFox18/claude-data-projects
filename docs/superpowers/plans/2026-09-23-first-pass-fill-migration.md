@@ -477,7 +477,7 @@ Add a note here with the actual numbers observed.
 
 **Files:** none — investigation only. Findings get documented directly in this plan before Task 4 proceeds.
 
-- [ ] **Step 1: `pbir fields list`**
+- [x] **Step 1: `pbir fields list`**
 
 ```bash
 export PATH="$HOME/.local/bin:$PATH"
@@ -485,7 +485,7 @@ cd "/c/Users/bfox/Documents/Git-Projects/fabric-workspace-docs/workspaces/RP - D
 pbir fields list "First Pass Fill.Report"
 ```
 
-- [ ] **Step 2: DAX-text grep across every measure/calculated table + relationships**
+- [x] **Step 2: DAX-text grep across every measure/calculated table + relationships**
 
 ```bash
 cd "/c/Users/bfox/Documents/Git-Projects/fabric-workspace-docs/workspaces/RP - Dev/First Pass Fill.SemanticModel/definition"
@@ -496,20 +496,78 @@ for tbl in Fact_FirstPassFill dim_BranchLocation dim_DateTable dim_JobCode dim_P
 done
 ```
 
-- [ ] **Step 3: Bookmark check**
+- [x] **Step 3: Bookmark check**
 
 ```bash
 ls "First Pass Fill.Report/definition/bookmarks/" 2>/dev/null
 grep -rn "<ColumnName>" "First Pass Fill.Report/definition/bookmarks/" 2>/dev/null
 ```
 
-- [ ] **Step 4: `relationships.tmdl` cross-reference**
+- [x] **Step 4: `relationships.tmdl` cross-reference**
 
 Relationship key columns use TMDL `fromColumn:`/`toColumn:` syntax, not `Table[Column]` DAX syntax — invisible to Step 2's grep. Read `relationships.tmdl` directly and note every column used as a relationship endpoint (expect `Fact_FirstPassFill[PeriodDateKey]`/`[BranchKey]`/`[PartNumberKey]`/`[JobCodeKey]` as the 4 real join keys, but confirm directly rather than assuming).
 
-- [ ] **Step 5: Document findings**
+- [x] **Step 5: Document findings**
 
 For each of the 5 tables, record confirmed-used columns (keep) vs. confident-unused columns (trim) vs. ambiguous (leave as-is, note why). Also check each table for any `sortByColumn` property before trimming anything. Add a "### Task 3 Findings" section to this plan file before starting Task 4.
+
+### Task 3 Findings
+
+**Method:** 4 independent checks were run and cross-referenced against each table's own declared `column` blocks: (1) `pbir fields list` for direct visual-field usage, (2) a DAX-text `Table[Column]` bracket-syntax grep across `tables/*.tmdl` + `relationships.tmdl`, (3) a bookmark check (`Entity`/`Property` JSON keys across all 16 files in `First Pass Fill.Report/definition/bookmarks/`, plus a broad keyword sweep for every candidate column name), and (4) a direct read of `relationships.tmdl` for `fromColumn:`/`toColumn:` relationship-key syntax (invisible to the Step 2 grep). A 5th supplementary check — grepping every report page/visual folder for each table's `Entity` name — confirmed `Fact_FirstPassFill`, `dim_JobCode`, and `dim_Parts` have **zero direct entity references anywhere in the report's visuals** (they're pure DAX/relationship-backing tables; only `dim_DateTable` (41 files) and `dim_BranchLocation` (34 files) are bound directly into visuals, e.g. slicers). Every "confident unused" column below was verified absent from all 4 checks plus this supplementary sweep before being marked trimmable.
+
+**`relationships.tmdl` — confirmed real join keys** (matches the plan's expectation exactly):
+```
+Fact_FirstPassFill.BranchKey     -> dim_BranchLocation.BranchKey
+Fact_FirstPassFill.PartNumberKey -> dim_Parts.PartNumberKey
+Fact_FirstPassFill.JobCodeKey    -> dim_JobCode.JobCodeKey
+Fact_FirstPassFill.PeriodDateKey -> dim_DateTable.DateKey
+```
+(A 5th relationship, `dim_DateTable.Date` bidirectional to `Date_Supplemental.Date`, also exists but is outside the 5-table migration scope — noted, not acted on.)
+
+**`Fact_FirstPassFill` (46 columns) — usage lower than the plan's stated expectation.** The plan anticipated high usage across the rate/composite/flag layer; the audit found real usage is concentrated in the Counter/Total composite tier and 3 Workshop base metrics only — the Internal/Parts base-metric breakdowns, all 6 pre-calculated rates, and all 4 business flags are unreferenced anywhere in this report.
+- **Keep (14):** 4 relationship keys (`PeriodDateKey`, `BranchKey`, `PartNumberKey`, `JobCodeKey`) + 10 DAX-referenced columns: `CounterFirstPassAttempts`, `CounterFirstPassSuccesses`, `CounterTransferSuccesses`, `TotalFirstPassAttempts`, `TotalFirstPassSuccesses`, `TotalFirstPassRate`, `TotalTransferSuccesses`, `WorkshopFirstPassAttempts`, `WorkshopFirstPassSuccesses`, `WorkshopTransferSuccesses`
+- **Confident trim (32):**
+  - Grain (7, zero usage anywhere): `PeriodDate`, `Branch`, `PartNumber`, `JobCode`, `JobType`, `Franchise`, `StockedIndicator`
+  - Base metrics (12 of 15 — only the 3 Workshop ones above are used): `InternalFirstPassAttempts`, `InternalFirstPassSuccesses`, `InternalTransferSuccesses`, `Internal24HourAttempts`, `Internal24HourSuccesses`, `PartsFirstPassAttempts`, `PartsFirstPassSuccesses`, `PartsTransferSuccesses`, `Parts24HourAttempts`, `Parts24HourSuccesses`, `Workshop24HourAttempts`, `Workshop24HourSuccesses`
+  - Rates (6 of 6 — none used, despite 2 of their underlying base metrics feeding used composites): `InternalFirstPassRate`, `Internal24HourRate`, `PartsFirstPassRate`, `Parts24HourRate`, `WorkshopFirstPassRate`, `Workshop24HourRate`
+  - Composite (3 of 10): `CounterFirstPassRate`, `CounterServiceRate`, `TotalServiceRate`
+  - Flags (4 of 4 — none used): `MeetsCounterTarget`, `MeetsTotalTarget`, `HasAnyActivity`, `StockImpactFlag`
+- **Ambiguous:** none — every column resolved cleanly to keep or trim.
+- **`sortByColumn`:** none present on this table.
+
+**`dim_BranchLocation` (16 columns).**
+- **Keep (4):** `BranchKey` (relationship key), `Branch` (DAX + bookmarks + visuals), `BranchID` (DAX — `SELECTEDVALUE`/`DISTINCTCOUNT`/`ALLSELECTED` in `MeasuresTable.tmdl`), `BranchType` (DAX — `= "Main Branch"` filter condition, used 20+ times across measures)
+- **Keep for `sortByColumn` dependency (1):** `LocationID` — otherwise-unused, but is `Branch`'s `sortByColumn` target (`sortByColumn: LocationID` on the `Branch` column); trimming it would break `Branch`'s sort order
+- **Confident trim (11):** `BranchName`, `State`, `City`, `ServiceCapacity`, `MarketPresence`, `TerritoryCoverage`, `OperationalPriority`, `RegionalClassification`, `ServiceHours`, `DistanceFromHub`, `DataQualityScore` — all `isHidden`, zero usage across all 4 checks
+- **Ambiguous:** none.
+- **`sortByColumn`:** `Branch` → `LocationID` (real dependency, handled above).
+
+**`dim_DateTable` (67 columns) — confirms the CLAUDE.md-documented low-utilization pattern for this shared dimension.**
+- **Keep (10):** `DateKey` (relationship key), `Date` (relationship key + DAX), `Year` (DAX + bookmark), `Month` (DAX), `MonthName` (DAX + bookmark; also a `sortByColumn` source column), `MonthNameShort` (bookmark; also a `sortByColumn` source column), `MonthYear` (bookmark; also a `sortByColumn` source column), `IsRolling12Months` (DAX), `IsRolling24Months` (DAX), `IsYearToDate` (DAX)
+- **Keep for `sortByColumn` dependency (1):** `SortableMonthYear` — otherwise-unused, but is `MonthYear`'s `sortByColumn` target
+- **Confident trim (56):** every other column — `Quarter`, `Day`, `WeekOfYear`, `DayOfWeek`, `DayOfWeekName`, `DayOfWeekNameShort`, `QuarterYear`, `DateDisplayName`, `IsWeekend`, `IsWeekday`, `IsCurrentYear`, `IsCurrentMonth`, `DaysFromToday`, `Season`, `IsPeakSeason`, `FiscalYear`, `FiscalQuarter`, `MonthSort`, `QuarterSort`, `YearOffset`, `IsBusinessDay`, `WorkingDaysInMonth`, `WorkingDaysInQuarter`, `WorkingDaysInYear`, `IsPreviousYear`, `IsPreviousMonth`, `IsPreviousQuarter`, `IsQuarterToDate`, `IsMonthToDate`, `IsRolling6Months`, `IsRolling36Months`, `IsRolling48Months`, `IsRolling4Quarters`, `IsRolling8Quarters`, `IsRolling52Weeks`, `IsLast30Days`, `IsLast60Days`, `IsLast90Days`, `IsNext30Days`, `IsSameMonthLastYear`, `IsSameQuarterLastYear`, `IsRolling365Days`, `IsRolling730Days`, `IsRolling1095Days`, `IsRolling1460Days`, `IsRolling180Days`, `IsRolling545Days`, `IsRolling45Days`, `IsRolling120Days`, `IsRolling270Days`, `IsRolling450Days`, `IsRolling13Weeks`, `IsRolling26Weeks`, `IsRolling104Weeks`, `IsRolling156Weeks`, `RollingPeriodCategory`. A handful of these names (`Quarter`, `Day`, `DayOfWeek`) also appear elsewhere in the model, but only as *other tables'* own same-named columns (`Date_Supplemental.tmdl`, `Data Refresh.tmdl`) — confirmed as false positives, not real `dim_DateTable` usage.
+- **Ambiguous:** none.
+- **`sortByColumn`:** `MonthName` → `Month` (kept independently), `MonthNameShort` → `Month` (kept independently), `MonthYear` → `SortableMonthYear` (kept only for this dependency).
+
+**`dim_JobCode` (12 columns) — real finding: the whole dimension is unused beyond its relationship key.**
+- **Keep (1):** `JobCodeKey` (relationship key only)
+- **Confident trim (11):** `JobCode`, `JobCodeDisplayName`, `JobCodeShortDesc`, `JobCodeCategory`, `EquipmentType`, `EquipmentCategory`, `ServiceComplexity`, `IsInspection`, `IsWarrantyWork`, `IsSeasonalWork`, `IsUrgentWork` — zero usage across all 4 checks, and zero entity references anywhere in the report's pages/visuals
+- **Ambiguous:** none.
+- **`sortByColumn`:** none present.
+
+**`dim_Parts` (22 columns) — same pattern as `dim_JobCode`.**
+- **Keep (1):** `PartNumberKey` (relationship key only)
+- **Confident trim (21):** `PartNumber`, `Description`, `Franchise`, `Source`, `SLC`, `DealerGroupCode`, `CommodityCode`, `VendorCode`, `QuantityOnHand`, `BackOrderQty`, `StockStatus`, `IsAvailable`, `InventoryCost`, `SellPrice1`, `ListPrice`, `Current12MoSales`, `HasRecentSales`, `ActivityStatus`, `Returnable`, `IsReturnable`, `IsHighValue` — zero usage across all 4 checks; `Franchise` and `PartNumber` hits were confirmed to be `Fact_FirstPassFill`'s own same-named (unused) grain columns, and `Source` hits were confirmed to be the generic JSON key `"Source":` used throughout PBIR files, not the `dim_Parts.Source` column — both false positives ruled out by direct inspection
+- **Ambiguous:** none.
+- **`sortByColumn`:** none present.
+
+**`sortByColumn` dependency summary (only real ones found):**
+- `dim_BranchLocation.Branch` → `LocationID`
+- `dim_DateTable.MonthName` → `Month` (both already kept independently)
+- `dim_DateTable.MonthNameShort` → `Month` (both already kept independently)
+- `dim_DateTable.MonthYear` → `SortableMonthYear` (`SortableMonthYear` kept only for this)
+
+**Ambiguous-columns summary:** none across all 5 tables — every column resolved cleanly to a confident keep or confident trim; no guessing was required.
 
 ---
 
