@@ -766,6 +766,12 @@ Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 git push origin dev
 ```
 
+**Execution note (2026-09-23):** Completed by implementer subagent, DONE_WITH_CONCERNS. Both notebooks ran clean (notebookIds `b0d026f6-df7b-4cc2-b6cf-f0846e366d81` for `Build_Gold_JobCodes`, `b9de2812-7db0-40de-8f7b-d2f627dd5c3f` for `Build_Gold_WkcdPart`), registered, committed as `a7ce9a48`.
+
+`dim_WkcdPart` verified with an **exact match** against production (1,846 rows, 866 distinct job codes both sides) — confirms the port methodology is correct.
+
+`dim_JobCodes` showed a large row-count difference (OLD 75,563 rows vs. NEW 575,887 rows) — investigated and confirmed **not a bug**: production's `dim_JobCodes` is stale (last refreshed ~Jun 2026, `ModifiedDate` range Jan–Jun 2026), while the new build reflects the live current Bronze mirror (`ModifiedDate` range Aug–Sep 2026, entirely within the last ~26 days). The two windows don't overlap, so this is the same "live source vs. stale snapshot" comparison pattern already documented in project memory (`feedback_verification_live_source_vs_snapshot`), not a defect in the column-rename logic. Secondary finding worth keeping in mind for any future incremental-refresh work on this table: `WkCodeFl`'s `ModifiedDate` appears to reflect a rolling extraction/touch date across the whole table rather than genuine per-record business-modification timestamps (the entire 575,887-row Bronze table falls within that same narrow ~26-day window) — not actionable for this faithful-port task, just a data-characteristic note.
+
 ---
 
 ### Task 5: Report-layer exhaustive real-usage audit
