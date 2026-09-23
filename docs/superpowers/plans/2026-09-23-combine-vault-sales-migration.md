@@ -756,6 +756,14 @@ Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 git push origin dev
 ```
 
+**Execution note (2026-09-23):** Completed by implementer subagent, DONE_WITH_CONCERNS — 2 real bugs found in this plan's own notebook code (not just deviations), both confirmed correct and necessary:
+1. **`VendorCode` type mismatch**: `Silver_PartInformation.VendorCode` is real-schema `INTEGER`, not string — the plan's code called `F.upper(F.trim(...))` on it directly, which fails. Fixed with `.cast("string")` before trim/upper.
+2. **Space-containing Delta column names**: `"Unit Margin Dollars"`/`"Unit Margin Percent"` (with spaces) violate this project's own documented Delta naming rule ("Delta tables reject column names with spaces") — this plan's own PySpark code missed applying that rule when porting the original Power Query column names literally. Renamed to `UnitMarginDollars`/`UnitMarginPercent` in the actual deployed table, matching the convention every other Gold notebook in this repo already uses.
+
+**Real impact on Task 5**: the report's `dim_Branch12_Parts.tmdl` currently has `column 'Unit Margin Dollars'` with `sourceColumn: Unit Margin Dollars` (and the same pattern for `'Unit Margin Percent'`) — confirmed via direct read. The column **display name** can stay as-is (report-facing, unaffected), but **`sourceColumn:` must be updated** to the real deployed names `UnitMarginDollars`/`UnitMarginPercent` during Task 5's repoint, or the report will fail to refresh with a "column not found" error. Task 5's implementer must apply this rename in addition to the plain connection-string swap.
+
+Verified results: notebookId `00fa8f68-4523-47f1-ae1b-efa8dd3ff34d`, commit `b68ebae7`. Row count 1,490 (exact match vs. production). `total_inventory_cost` exact match ($278,217.82). Key-alignment check (fact→dim anti-join): **0 unmatched rows**, confirmed independently via DuckDB — proves the `PartNumberKey` hash formula matches Task 1's exactly, unaffected by the 2 fixes above.
+
 ---
 
 ### Task 3: `Build_Gold_BranchPartInventory.Notebook`
