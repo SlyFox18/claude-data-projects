@@ -1037,14 +1037,14 @@ git push origin dev
 **Files:**
 - Create: `fabric-workspace-docs/workspaces/RP - Dev/MD Invoices With No Freight.pbip`
 
-- [ ] **Step 1: Confirm it doesn't already exist**
+- [x] **Step 1: Confirm it doesn't already exist**
 
 ```bash
 ls "workspaces/RP - Dev/" | grep "MD Invoices"
 ```
 Expected: only `MD Invoices With No Freight.Report` and `MD Invoices With No Freight.SemanticModel` — no `.pbip` (already confirmed this session; re-check in case something changed).
 
-- [ ] **Step 2: Create the `.pbip` file**
+- [x] **Step 2: Create the `.pbip` file**
 
 ```json
 {
@@ -1063,7 +1063,7 @@ Expected: only `MD Invoices With No Freight.Report` and `MD Invoices With No Fre
 }
 ```
 
-- [ ] **Step 3: Commit and push**
+- [x] **Step 3: Commit and push**
 
 ```bash
 cd "/c/Users/bfox/Documents/Git-Projects/fabric-workspace-docs"
@@ -1076,6 +1076,8 @@ already used for every other report migrated in this project.
 Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 git push origin dev
 ```
+
+**Execution note (2026-09-23):** Committed and pushed clean — commit `a10b6e8b` on `fabric-workspace-docs/dev`, 1 file added (`MD Invoices With No Freight.pbip`), content matches the plan's example exactly.
 
 ---
 
