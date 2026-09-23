@@ -793,7 +793,7 @@ git push origin dev
 
 **Files:** none — investigation only. Findings get documented directly in this plan before Task 7 proceeds.
 
-- [ ] **Step 1: `pbir fields list`**
+- [x] **Step 1: `pbir fields list`**
 
 ```bash
 export PATH="$HOME/.local/bin:$PATH"
@@ -801,7 +801,7 @@ cd "/c/Users/bfox/Documents/Git-Projects/fabric-workspace-docs/workspaces/RP - D
 pbir fields list "MD Invoices With No Freight.Report"
 ```
 
-- [ ] **Step 2: DAX-text grep across every measure/calculated table + relationships**
+- [x] **Step 2: DAX-text grep across every measure/calculated table + relationships**
 
 ```bash
 cd "/c/Users/bfox/Documents/Git-Projects/fabric-workspace-docs/workspaces/RP - Dev/MD Invoices With No Freight.SemanticModel/definition"
@@ -812,24 +812,128 @@ for tbl in Fact_MDInvoices_Closed Fact_MDInvoices_NoFreight Fact_MDInvoices_NoFr
 done
 ```
 
-- [ ] **Step 3: Bookmark check**
+- [x] **Step 3: Bookmark check**
 
 ```bash
 ls "MD Invoices With No Freight.Report/definition/bookmarks/" 2>/dev/null
 grep -rn "<ColumnName>" "MD Invoices With No Freight.Report/definition/bookmarks/" 2>/dev/null
 ```
 
-- [ ] **Step 4: `relationships.tmdl` cross-reference**
+- [x] **Step 4: `relationships.tmdl` cross-reference**
 
 Relationship key columns use TMDL `fromColumn:`/`toColumn:` syntax, not `Table[Column]` DAX syntax — invisible to Step 2's grep. Read `relationships.tmdl` directly and note every column used as a relationship endpoint for all 10 tables.
 
-- [ ] **Step 5: `dim_DateTable` real-schema cross-check (mandatory, not optional)**
+- [x] **Step 5: `dim_DateTable` real-schema cross-check (mandatory, not optional)**
 
 For every `dim_DateTable` column Steps 1-4 find genuinely used, check it against the real 14-column `DP_Presentation.dim_DateTable` schema (`DateKey, Date, Year, Quarter, Month, Day, WeekOfYear, DayOfWeek, MonthName, MonthNameShort, MonthYear, SortableMonthYear, QuarterYear, IsWeekend`, already given in the Context section). Any used column NOT in that list needs the DAX-calculated-column treatment in Task 7, not a repoint — look up its exact original logic in `LH_Master_Data/Dataflows/03 - Dimensions/df_Dim_Date.Dataflow` if it's not already one of the patterns given in this plan's Context section.
 
-- [ ] **Step 6: Document findings**
+- [x] **Step 6: Document findings**
 
 For each of the 10 tables, record confirmed-used columns (keep — noting which need DAX-restoration vs. plain repoint for `dim_DateTable`) vs. confident-unused columns (trim) vs. ambiguous (leave as-is, note why). Check every table for `sortByColumn` properties before trimming. Add a "### Task 6 Findings" section to this plan file before starting Task 7.
+
+---
+
+### Task 6 Findings
+
+**Method:** 4 independent checks were run and cross-referenced against each table's own declared `column` blocks: (1) `pbir fields list "MD Invoices With No Freight.Report"` (with `COLUMNS=300` to avoid rich-table truncation) for direct visual-field usage — 68 unique fields total, and notably **zero** direct visual bindings for `dim_CustomerList`, `dim_DateTable`, `dim_Parts`, `FreightCalculator`, or `Fact_MDInvoices_NoFreight_Snapshot` (pure DAX/relationship-backing tables, same class as `Fact_FirstPassFill`/`dim_JobCode`/`dim_Parts` on First Pass Fill); (2) a DAX-text `Table[Column]` bracket-syntax grep across `tables/*.tmdl` + `relationships.tmdl` per the plan's exact loop, cross-checked column-by-column against `_Measures.tmdl` reads for every candidate to confirm context (e.g. distinguishing a table's own self-referencing `ALLEXCEPT`/`SWITCH` calculated-column internals from genuine cross-table measure usage); (3) a bookmark check — all 9 files in `MD Invoices With No Freight.Report/definition/bookmarks/` parsed programmatically for `Entity`/`Property` pairs (34 unique pairs found, all a strict subset of what Steps 1-2 already found — no new hidden usage surfaced, and a supplementary whole-report-folder grep for each of the 5 zero-visual tables' entity name confirmed literally zero occurrences anywhere in `MD Invoices With No Freight.Report/`, ruling out a bookmark-only blind spot this time); (4) a direct read of `relationships.tmdl` (57 lines, 12 relationships) for `fromColumn:`/`toColumn:` syntax, plus a supplementary dot-notation (`Table.Column`) grep run across every remaining unresolved candidate column to close out any doubt before marking a column confident-unused. Every "confident trim" column below was verified absent from all 4 checks (bracket-syntax AND dot-notation) before being marked trimmable.
+
+**`relationships.tmdl` — confirmed real join keys (12 relationships, all 3 fact tables' own grain columns join out to the 6 shared dims):**
+```
+Fact_MDInvoices_NoFreight.Franchise    -> dim_Franchise.Franchise
+Fact_MDInvoices_NoFreight.PartNumber   -> dim_Parts.PartNumber
+Fact_MDInvoices_NoFreight.Branch       -> dim_BranchLocation.BranchID
+Fact_MDInvoices_NoFreight.OrderDate    -> dim_DateTable.Date
+Fact_MDInvoices_NoFreight.Salesperson  -> dim_Salesperson.SalespersonCode
+Fact_MDInvoices_NoFreight.FreightBucket -> dim_FreightPerformanceGroup.Group   (out of scope table)
+
+Fact_MDInvoices_Closed.Franchise       -> dim_Franchise.Franchise
+Fact_MDInvoices_Closed.PartNumber      -> dim_Parts.PartNumber
+Fact_MDInvoices_Closed.Branch          -> dim_BranchLocation.BranchID
+Fact_MDInvoices_Closed.Salesperson     -> dim_Salesperson.SalespersonCode
+Fact_MDInvoices_Closed.InvoiceDate     -> dim_DateTable.Date
+Fact_MDInvoices_Closed.FreightBucket   -> dim_FreightPerformanceGroup.Group   (out of scope table)
+
+Fact_MDInvoices_NoFreight_Snapshot.Branch       -> dim_BranchLocation.BranchID
+Fact_MDInvoices_NoFreight_Snapshot.SnapshotDate -> dim_DateTable.Date
+```
+Real finding: `Fact_MDInvoices_NoFreight_Snapshot` has **only 2 relationships** (Branch, SnapshotDate) — unlike the other two fact tables, it has no `Franchise`/`PartNumber`/`Salesperson` relationships even though it carries those same grain columns. This is consistent with the table being brand-new (built in Task 3/4 of this same plan) and not yet wired into any report visual — see its findings below.
+
+**DAX calculated-column note (applies to all 3 fact tables):** `MissedFreightAmount`, `PctFreightDifference`, and `FreightBucket` are DAX calculated columns (not M-sourced), identical in structure on all 3 fact tables. Because they are model-layer DAX, not partition-sourced columns, they are never candidates for `Table.SelectColumns` trimming regardless of usage — Task 7 already explicitly excludes touching them. Their own internal `ALLEXCEPT`/`SWITCH` logic self-references a small set of each table's plain columns (`FileNumber`, `TotalLineWeight`, `TotalFreightCharged`, `FreightStatus`, and — for `PctFreightDifference`/`FreightBucket`'s inputs — `MissedFreightAmount` itself), which is why those plain columns show up as "used" below even on the otherwise-unvisualized `Fact_MDInvoices_NoFreight_Snapshot`.
+
+**`Fact_MDInvoices_Closed` (18 plain columns + 3 untouched DAX calc columns).**
+- **Keep (12):** `FileNumber` (DAX `ALLEXCEPT` grain + pbir Column + bookmark), `Branch` (relationship key + pbir + bookmark), `Franchise` (relationship key), `InvoiceDate` (relationship key + pbir Column + bookmark), `PartNumber` (relationship key + pbir Column), `Salesperson` (relationship key), `OrderQty` (pbir `Sum(OrderQty)`), `UnitPrice` (pbir `Sum(UnitPrice)`), `UnitCost` (pbir `Sum(UnitCost)`), `TotalFreightCharged` (DAX calc-column dependency + `_Measures.tmdl` MAX), `TotalLineWeight` (DAX calc-column dependency + `_Measures.tmdl` SUM), `FreightStatus` (DAX calc-column dependency + `_Measures.tmdl` + pbir + bookmark)
+- **Confident trim (6):** `TransId`, `CustomerNumber`, `LineTotal`, `Weight`, `FreightLineCount`, `JobCode` — zero usage across all 4 checks (bracket AND dot notation)
+- **Ambiguous:** none.
+- **`sortByColumn`:** none present.
+
+**`Fact_MDInvoices_NoFreight` (23 plain columns + 3 untouched DAX calc columns).**
+- **Keep (15):** `FileNumber` (DAX `ALLEXCEPT` grain, `DISTINCTCOUNT` in multiple measures, pbir Selector Metadata, bookmark), `Branch` (relationship key + pbir + bookmark), `Franchise` (relationship key + pbir Selector Metadata), `OrderDate` (relationship key + pbir Selector Metadata + bookmark), `RONumber` (pbir `Max(RONumber)` — bound directly in a visual), `PartNumber` (relationship key + pbir Column), `OrderQty` (DAX `SUM` in measure `'Order Qty'`), `UnitPrice` (DAX `SUM` in measure `'Unit Price'`), `UnitCost` (DAX `SUM` in measure `'Sell Price 1'`), `LineTotal` (DAX `SUM` in measure `'Total Parts Value'`), `TotalLineWeight` (DAX calc-column dependency + measure `'Total Weight'`), `TotalFreightCharged` (DAX calc-column dependency + measure `'Actual Freight'`), `FreightStatus` (DAX calc-column dependency + multiple measures + pbir + bookmark), `Salesperson` (relationship key + DAX `VALUES()` in `'Top Opportunity Salesperson Amount'`), `OrderType` (pbir Column)
+- **Confident trim (8):** `LineNumber`, `CustomerNumber`, `CustomerOrderNumber`, `Weight`, `FreightLineCount`, `JobCode`, `SuppliedQty`, `BackorderQty` — zero usage across all 4 checks
+- **Ambiguous:** none.
+- **`sortByColumn`:** none present.
+
+**`Fact_MDInvoices_NoFreight_Snapshot` (24 plain columns + 3 untouched DAX calc columns) — special case, real finding.**
+
+Unlike every other table in this report, `Fact_MDInvoices_NoFreight_Snapshot` currently has **zero real consumers**: it appears in no `pbir fields list` entry, no `_Measures.tmdl` measure (direct grep for `Fact_MDInvoices_NoFreight_Snapshot[` and `Fact_MDInvoices_NoFreight_Snapshot.` across every `.tmdl` in `tables/` returned nothing outside its own 3 DAX calc columns), no bookmark, and only 2 of the usual 5 relationship keys (`Branch`, `SnapshotDate` — no `Franchise`/`PartNumber`/`Salesperson` relationship exists for it at all).
+- **Keep (6):** `FileNumber`, `TotalLineWeight`, `TotalFreightCharged`, `FreightStatus` — all 4 required only because they're read by the table's own untouchable `MissedFreightAmount`/`PctFreightDifference`/`FreightBucket` DAX calculated columns (per-row `ALLEXCEPT`/`SWITCH` logic), not by any report visual — plus `Branch`, `SnapshotDate` (the table's only 2 relationship keys).
+- **Leave as-is / ambiguous (18):** `LineNumber`, `Franchise`, `CustomerNumber`, `OrderDate`, `CustomerOrderNumber`, `RONumber`, `PartNumber`, `OrderQty`, `UnitPrice`, `UnitCost`, `LineTotal`, `Weight`, `FreightLineCount`, `Salesperson`, `JobCode`, `SuppliedQty`, `BackorderQty`, `OrderType`. Usage evidence for these is unambiguous — zero, across every check — but the table itself is brand-new (built and backfilled in this plan's own Task 3/4, published for the first time alongside this migration) with an explicitly documented purpose of preserving full-grain monthly history for future freight-difference analysis (per the plan's Context section and the notebook's own header comment). Trimming its grain down to the 6 bare-minimum columns now would need to be undone the moment a follow-on snapshot-history visual is built, and Task 9 Step 3's own verification instruction ("anything using the monthly snapshot history") anticipates such visuals existing or being built soon. Recommend leaving this table's plain-column set fully intact in Task 7 (repoint SQL connection + fix the `Item=` casing only, no `Table.SelectColumns` trim) — revisit trimming in a future pass once real downstream usage (or explicit non-use) is established.
+- **Confident trim:** none.
+- **`sortByColumn`:** none present.
+
+**`FreightCalculator` (4 columns) — fully used, no trim.**
+- **Keep (4):** `PartWeightFrom`, `PartWeightTo`, `BaseRate`, `AdditiveRatePerPound` — all 4 read directly by all 3 fact tables' `MissedFreightAmount`/`PctFreightDifference` DAX calculated columns (`FILTER`/`MAXX` bracket rate-lookup logic).
+- **Confident trim:** none.
+- **Ambiguous:** none.
+- **`sortByColumn`:** none present.
+
+**`dim_BranchLocation` (16 columns).**
+- **Keep (3):** `BranchID` (relationship key, 3x — the real join column, not `BranchKey`), `Branch` (DAX — `'Worst Branch'`/`'Worst Branch Rate'` measures — + pbir Column + bookmark), `LocationID` (otherwise unused, but is `Branch`'s `sortByColumn` target — real dependency)
+- **Confident trim (13):** `BranchKey`, `BranchType`, `BranchName`, `State`, `City`, `ServiceCapacity`, `MarketPresence`, `TerritoryCoverage`, `OperationalPriority`, `RegionalClassification`, `ServiceHours`, `DistanceFromHub`, `DataQualityScore` — zero usage across all 4 checks (confirmed `BranchKey` itself is never the relationship column — the model joins via `BranchID` — and `BranchType`, despite being a common cross-table-flag pattern elsewhere in this project, is not referenced anywhere in this specific report)
+- **Ambiguous:** none.
+- **`sortByColumn`:** `Branch` → `LocationID` (real, handled above).
+
+**`dim_CustomerList` (39 columns) — special case, real finding: the entire table is unused, with no anchor at all.**
+
+Every one of `dim_CustomerList`'s 39 columns was checked individually (bracket and dot notation) — **zero hits, on every single column**, including `CustomerNumber`/`CustomerNumberText` despite all 3 fact tables carrying their own `CustomerNumber` grain column. Unlike `dim_Parts`, `dim_Franchise`, or `dim_JobCode`-class dimensions on prior reports (which at minimum anchor one relationship key), `dim_CustomerList` has **no relationship to any fact table at all** in `relationships.tmdl` — it is a fully orphaned table in this specific report. (The `ref table dim_CustomerList` and `PBI_QueryOrder` lines in `model.tmdl`, and the auto-generated `ConceptualEntity` linguistic-schema entries in `cultures/en-US.tmdl`, are Power BI-generated scaffolding present for every table regardless of actual usage — not usage evidence.)
+- **Keep:** none identifiable — there is no anchor column to preserve, unlike every other dimension in this report.
+- **Confident trim:** not applicable in the normal sense — trimming to zero columns isn't a meaningful `Table.SelectColumns` outcome.
+- **Recommendation (ambiguous, leave as-is):** Do not touch this table's columns in Task 7. A table with zero real usage and zero relationship anchor is a genuinely different situation from "some columns of an actively-used table are dead" — it raises the separate question of whether the whole table belongs in this report's model at all, which is outside Task 7's per-column trim mechanism. Flag for Brian: either (a) a `CustomerNumber` relationship to the 3 fact tables' own `CustomerNumber` column was planned but never wired up (a genuine future integration point, matching this project's established "dimension flagging via `LOOKUPVALUE`" and customer-anatomy patterns elsewhere in the repo), or (b) the table is legacy/copy-paste scaffolding from another report template and can be removed entirely in a future cleanup pass. Repoint its SQL connection in Task 7 like every other table (so it doesn't silently break), but leave its column set untouched.
+- **`sortByColumn`:** none present.
+
+**`dim_DateTable` (62 columns) — real-schema cross-check result: clean, no DAX restoration needed.**
+
+Every column was checked individually (bracket and dot notation) across `tables/*.tmdl` and `relationships.tmdl`. Only **one** column has any real usage anywhere in this report:
+- **Keep (1):** `Date` — the relationship key (3x: `Fact_MDInvoices_NoFreight.OrderDate`, `Fact_MDInvoices_Closed.InvoiceDate`, `Fact_MDInvoices_NoFreight_Snapshot.SnapshotDate`, all → `dim_DateTable.Date`), and also the table's own `isKey` column plus the table-level `dataCategory: Time` "Mark as Date Table" designation — must stay regardless of relationship usage.
+- **Confident trim (61):** `DateKey` and every other column (`Year`, `Quarter`, `Month`, `Day`, `WeekOfYear`, `DayOfWeek`, `MonthName`, `MonthNameShort`, `DayOfWeekName`, `DayOfWeekNameShort`, `MonthYear`, `QuarterYear`, `DateDisplayName`, `IsWeekend`, `IsWeekday`, `IsCurrentYear`, `IsCurrentMonth`, `DaysFromToday`, `SortableMonthYear`, `Season`, `IsPeakSeason`, `FiscalYear`, `FiscalQuarter`, `MonthSort`, `QuarterSort`, `YearOffset`, `IsBusinessDay`, `WorkingDaysInMonth`, `WorkingDaysInQuarter`, `WorkingDaysInYear`, `IsPreviousYear`, `IsPreviousMonth`, `IsPreviousQuarter`, `IsYearToDate`, `IsQuarterToDate`, `IsMonthToDate`, `IsRolling6Months`, `IsRolling12Months`, `IsRolling24Months`, `IsRolling36Months`, `IsRolling48Months`, `IsRolling4Quarters`, `IsRolling8Quarters`, `IsRolling52Weeks`, `IsRolling365Days`, `IsRolling730Days`, `IsRolling1095Days`, `IsRolling1460Days`, `IsRolling180Days`, `IsRolling545Days`, `IsRolling45Days`, `IsRolling120Days`, `IsRolling270Days`, `IsRolling450Days`, `IsRolling13Weeks`, `IsRolling26Weeks`, `IsRolling104Weeks`, `IsRolling156Weeks`, `IsLast30Days`, `IsLast60Days`, `IsLast90Days`, `IsNext30Days`, `IsSameMonthLastYear`, `IsSameQuarterLastYear`, `RollingPeriodCategory`) — confirmed zero usage, with zero exceptions, across `pbir fields list`, the DAX-bracket grep, the bookmark parse, and `relationships.tmdl`.
+- **Ambiguous:** none.
+- **`sortByColumn`:** `MonthNameShort` → `Month` and `MonthYear` → `SortableMonthYear` both present on paper, but moot — all 4 columns involved (`MonthNameShort`, `Month`, `MonthYear`, `SortableMonthYear`) are themselves confidently unused and being trimmed together as a unit, so no dangling dependency results.
+- **dim_DateTable DAX-restoration verdict: NONE NEEDED.** This is the clean case this check exists to catch: the only genuinely-used column (`Date`) *is* present in the real 14-column `DP_Presentation.dim_DateTable` schema (`DateKey, Date, Year, Quarter, Month, Day, WeekOfYear, DayOfWeek, MonthName, MonthNameShort, MonthYear, SortableMonthYear, QuarterYear, IsWeekend`), so a plain `Table.SelectColumns` repoint is sufficient. No "today-relative" column (`IsYearToDate`, `IsRolling12Months`, `IsCurrentMonth`, etc. — the exact class that bit Pin Capture and First Pass Fill) is referenced anywhere in this report. Task 7 Step 3 (DAX-column restoration) has nothing to do for this report.
+
+**`dim_Franchise` (15 columns).**
+- **Keep (1):** `Franchise` (relationship key, 2x, + DAX text via `dim_Franchise[Franchise]`-pattern dot-notation match + pbir Column + bookmark)
+- **Confident trim (14):** `FranchiseKey`, `FranchiseCode`, `FranchiseDisplayName`, `FranchiseType`, `FranchiseCategory`, `MarketPosition`, `ServiceComplexity`, `FranchiseSortOrder`, `BusinessPriority`, `FranchiseStatus`, `IsActive`, `IsPrimaryBrand`, `IsAgriculturalBrand`, `IsMajorBrand` — zero usage across all 4 checks
+- **Ambiguous:** none.
+- **`sortByColumn`:** none present.
+
+**`dim_Parts` (22 columns) — same pattern as First Pass Fill's `dim_Parts`/`dim_JobCode`: the whole dimension is unused beyond its relationship key.**
+- **Keep (1):** `PartNumber` (relationship key, 2x)
+- **Confident trim (21):** `PartNumberKey`, `Description`, `Franchise`, `Source`, `SLC`, `DealerGroupCode`, `CommodityCode`, `VendorCode`, `QuantityOnHand`, `BackOrderQty`, `StockStatus`, `IsAvailable`, `InventoryCost`, `SellPrice1`, `ListPrice`, `Current12MoSales`, `HasRecentSales`, `ActivityStatus`, `Returnable`, `IsReturnable`, `IsHighValue` — zero usage across all 4 checks; `Franchise` and `PartNumber`(-adjacent) hits during the initial broad grep were confirmed to be the 2 fact tables' own same-named columns, not `dim_Parts`'s, ruled out by the per-column dot-notation isolation check
+- **Ambiguous:** none.
+- **`sortByColumn`:** none present.
+
+**`dim_Salesperson` (7 columns).**
+- **Keep (2):** `SalespersonCode` (relationship key, 2x, + DAX `VALUES()`/`MAX()` across multiple measures), `FullName` (DAX `MAX()` in `'Top Opportunity Salesperson'` + pbir Column + bookmark)
+- **Confident trim (5):** `FirstName`, `LastName`, `DisplayName`, `Branch`, `IsActive` — zero usage across all 4 checks
+- **Ambiguous:** none.
+- **`sortByColumn`:** none present.
+
+**`sortByColumn` dependency summary (only one real, live dependency found):**
+- `dim_BranchLocation.Branch` → `LocationID` (`LocationID` kept only for this)
+- `dim_DateTable.MonthNameShort` → `Month`, `dim_DateTable.MonthYear` → `SortableMonthYear` — both present but moot (all 4 columns trimmed together as a unit, no dangling reference)
+
+**Ambiguous-columns summary:**
+- `Fact_MDInvoices_NoFreight_Snapshot`'s 18 non-essential grain columns — leave fully intact; brand-new table, explicit historical-preservation design intent, trim in a later pass once real usage is established (see table section above for full reasoning)
+- `dim_CustomerList`'s entire 39-column set — leave fully intact; genuinely orphaned (zero usage, zero relationship anchor, unlike every other dimension in this report) and flagged for Brian's judgment on whether the table itself belongs in the model at all (see table section above)
 
 ---
 
