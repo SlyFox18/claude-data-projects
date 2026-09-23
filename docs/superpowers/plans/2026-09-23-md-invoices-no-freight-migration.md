@@ -198,7 +198,7 @@ git push origin dev
 
 **Files:** none — investigation only, prepares for Task 5's eventual retirement.
 
-- [ ] **Step 1: Re-confirm the pipeline's real full content**
+- [x] **Step 1: Re-confirm the pipeline's real full content**
 
 ```bash
 cd "/c/Users/bfox/Documents/Git-Projects/fabric-workspace-docs"
@@ -207,9 +207,13 @@ cat "workspaces/LH_Master_Data/Pipelines/Pipeline_Monthly_MDInvoices_Snapshot.Da
 ```
 Expected: confirms the `MDInvoices_Snapshot` `TridentNotebook` activity (notebookId `31921cae-a955-8f82-44cf-c0a2a545003f`) plus email activities, matching the plan's Context section. If a genuinely different activity exists beyond notebook+email(s), stop and re-investigate before Task 5 — don't assume it's single-purpose without checking, same discipline as every prior report this session.
 
-- [ ] **Step 2: Record the schedule details**
+- [x] **Step 2: Record the schedule details**
 
 Note the real schedule (day-of-month, time, timezone) for reference in Task 5's disable step.
+
+**Execution note (2026-09-23):** Confirmed clean, matches the plan's Context section exactly. Pipeline has exactly 3 activities: `TridentNotebook` named `MDInvoices_Snapshot` (notebookId `31921cae-a955-8f82-44cf-c0a2a545003f`, `workspaceId` placeholder `00000000-0000-0000-0000-000000000000`), a `Success Email` (`Office365Email`, dependsOn `MDInvoices_Snapshot` Succeeded), and a `Failure Email` (`Office365Email`, dependsOn `MDInvoices_Snapshot` Failed) — no other activities. Nothing beyond notebook+email(s), safe to treat as single-purpose for Task 5.
+
+Schedule (`.schedules`): `enabled: true`, `jobType: Execute`, type `Monthly`, `startDateTime: 2026-07-08T00:00:00`, `endDateTime: 2027-07-08T00:00:00`, `localTimeZoneId: Central Standard Time`, `times: ["05:30"]`, `recurrence: 1`, `occurrence: {occurrenceType: DayOfMonth, dayOfMonth: 1}` — i.e. 1st of every month at 5:30 AM CST/CDT.
 
 ---
 
@@ -220,7 +224,7 @@ Note the real schedule (day-of-month, time, timezone) for reference in Task 5's 
 - Create: `fabric-workspace-docs/workspaces/DP - Presentation - Dev/Fact Tables/MD Invoices with No Freight/Build_Gold_FreightCalculator.Notebook/.platform`
 - Modify: `fabric-workspace-docs/deploy/dp_backend_scope.json`
 
-- [ ] **Step 1: Copy the real CSV from `LH_Master_Data`'s Files section to `DP_Presentation`'s**
+- [x] **Step 1: Copy the real CSV from `LH_Master_Data`'s Files section to `DP_Presentation`'s**
 
 ```bash
 export PATH="$HOME/.local/bin:$PATH"
@@ -229,7 +233,9 @@ fab cp "LH_Master_Data.Workspace/LH_Master_Data.Lakehouse/Files/FREIGHT CALCULAT
 ```
 This project hasn't done a cross-workspace Files-section copy before — if this exact path syntax doesn't work, check `fab cp --help` and `fab dir "LH_Master_Data.Workspace/LH_Master_Data.Lakehouse/Files"` to find the real addressable path, don't guess blindly.
 
-- [ ] **Step 2: Write the notebook content**
+**Execution note (2026-09-23):** The plan's exact `fab cp` syntax worked on the first try (`Done`). Verified via `fab dir "DP - Presentation - Dev.Workspace/DP_Presentation.Lakehouse/Files"` — `FREIGHT CALCULATOR 2026 - UPDATED.csv` now present alongside the pre-existing `config` and `engaged-acres.csv`.
+
+- [x] **Step 2: Write the notebook content**
 
 ```python
 # Fabric notebook source
@@ -323,7 +329,7 @@ print(f"SUCCESS: {row_count} rows written to FreightCalculator")
 # META }
 ```
 
-- [ ] **Step 3: Write the `.platform` file**
+- [x] **Step 3: Write the `.platform` file**
 
 ```json
 {
@@ -340,7 +346,9 @@ print(f"SUCCESS: {row_count} rows written to FreightCalculator")
 ```
 Generate a real, unique GUID via `python -c "import uuid; print(uuid.uuid4())"` before writing.
 
-- [ ] **Step 4: Import, run, and capture the real notebookId**
+**Execution note (2026-09-23):** GUID generated: `637ec280-662e-49a0-a8f8-8ca29eb09aab` — used as the `.platform` file's `logicalId`.
+
+- [x] **Step 4: Import, run, and capture the real notebookId**
 
 ```bash
 export PATH="$HOME/.local/bin:$PATH"
@@ -352,13 +360,17 @@ fab get "DP - Presentation - Dev.Workspace/Fact Tables.Folder/MD Invoices with N
 ```
 Expected: `Completed`, no `failureReason`. If the CSV isn't found, Step 1's file copy didn't land — re-check via `fab dir` before re-running, don't guess.
 
-- [ ] **Step 5: Force a SQL analytics endpoint metadata sync**
+**Execution note (2026-09-23):** Import succeeded first try (`'Build_Gold_FreightCalculator.Notebook' imported`). Job run completed clean (job instance `f453e3af-0658-43c7-898b-d715b6dae8b3`, status `Completed`, no `failureReason`). Real notebookId captured via `fab get -q "id"`: **`dc4813e7-5840-4074-b2c9-a1f5fc0c51ee`**.
+
+- [x] **Step 5: Force a SQL analytics endpoint metadata sync**
 
 ```bash
 fab api -X post "workspaces/73fd5443-240e-410a-990a-98827f32c087/sqlEndpoints/18effb0e-7bc2-47a1-854c-f4f2e8129145/refreshMetadata"
 ```
 
-- [ ] **Step 6: Verify against real production**
+**Execution note (2026-09-23):** Ran clean (HTTP 200). Response's per-table sync list confirms `FreightCalculator` synced with `status: "Success"`.
+
+- [x] **Step 6: Verify against real production**
 
 ```python
 import duckdb
@@ -374,7 +386,16 @@ for label, base in [("LH_Master_Data", lh_base), ("DP_Presentation", dp_base)]:
 ```
 Expected: exact or near-exact match — this is a small, mostly-static reference table with no refresh-time-relative logic.
 
-- [ ] **Step 7: Register in `dp_backend_scope.json`**
+**Execution note (2026-09-23) — real mismatch found, root-caused, NOT a bug in the new notebook:**
+
+Real numbers: `FreightCalculator - LH_Master_Data: rows=33  sum_base_rate=3,240.00` vs. `FreightCalculator - DP_Presentation: rows=36  sum_base_rate=3,000.00` — did NOT match as the plan expected. Investigated rather than assuming success:
+
+- Read both CSVs directly (`Files/FREIGHT CALCULATOR 2026 - UPDATED.csv` in both `LH_Master_Data` and `DP_Presentation`, via `duckdb.read_csv` over `abfss://.../Files/...`): **identical**, 36 rows each, byte-for-byte-matching content (same `PartWeightFrom`/`PartWeightTo`/`BaseRate`/`AdditiveRatePerPound` values, weight brackets up to 999999, `SUM(BaseRate) = 3,000`).
+- The new `DP_Presentation.FreightCalculator` Delta table (36 rows, sum 3,000) is an **exact match to the current, real CSV** — the notebook is verified correct.
+- The real, currently-live `LH_Master_Data.FreightCalculator` Delta table is the one that's stale: only 33 rows, `PartWeightFrom` range 0–200 (missing the CSV's top 3 brackets up to 999999). Confirmed `Freight Calculator Update.Notebook` (the source-side manual-update notebook) is not in `dp_backend_scope.json` and is not part of any registered schedule in this repo — it appears to be run ad hoc by hand whenever the CSV changes, and simply hasn't been re-run since the CSV was last updated to add the higher weight brackets.
+- Conclusion: this is a genuine production staleness gap on the LH_Master_Data side (out of scope to fix here — it's Brian's source-of-truth notebook, not part of this migration), not a defect in `Build_Gold_FreightCalculator`. The new notebook is verified correct against the real, current CSV, which is the actual source of truth per the design. Flagging for Brian's awareness: the real production `FreightCalculator` table used by the live report is currently missing 3 weight brackets that exist in the CSV.
+
+- [x] **Step 7: Register in `dp_backend_scope.json`**
 
 ```json
 {"name": "Build_Gold_FreightCalculator", "tier": "gold", "cadence": "daily",
@@ -382,7 +403,9 @@ Expected: exact or near-exact match — this is a small, mostly-static reference
  "path": "workspaces/DP - Presentation - Dev/Fact Tables/MD Invoices with No Freight/Build_Gold_FreightCalculator.Notebook"}
 ```
 
-- [ ] **Step 8: Commit**
+**Execution note (2026-09-23):** Registered with real `notebookId` `dc4813e7-5840-4074-b2c9-a1f5fc0c51ee` via a precise Edit-tool text insertion (not a `json.dump()` rewrite) — diff confirmed minimal (`4 insertions(+), 1 deletion(-)`, only the new entry + a comma fix).
+
+- [x] **Step 8: Commit**
 
 ```bash
 cd "/c/Users/bfox/Documents/Git-Projects/fabric-workspace-docs"
@@ -398,6 +421,8 @@ Registered in dp_backend_scope.json from the start.
 Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 git push origin dev
 ```
+
+**Execution note (2026-09-23):** Committed and pushed clean — commit `4e234676` on `fabric-workspace-docs/dev` (`11a74b2c..4e234676`), 3 files changed (104 insertions, 1 deletion): `notebook-content.py`, `.platform`, and the `dp_backend_scope.json` registration.
 
 ---
 
