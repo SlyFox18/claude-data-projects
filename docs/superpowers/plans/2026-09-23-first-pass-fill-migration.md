@@ -580,7 +580,7 @@ Fact_FirstPassFill.PeriodDateKey -> dim_DateTable.DateKey
 - Modify: `fabric-workspace-docs/workspaces/RP - Dev/First Pass Fill.SemanticModel/definition/tables/dim_JobCode.tmdl`
 - Modify: `fabric-workspace-docs/workspaces/RP - Dev/First Pass Fill.SemanticModel/definition/tables/dim_Parts.tmdl`
 
-- [ ] **Step 1: Repoint all 5 tables' SQL connections**
+- [x] **Step 1: Repoint all 5 tables' SQL connections**
 
 In each file, find:
 ```
@@ -592,18 +592,18 @@ Replace with:
 ```
 No `Item=` changes needed — every real table name already matches between `LH_Master_Data` and `DP_Presentation`.
 
-- [ ] **Step 2: Trim per Task 3's findings**
+- [x] **Step 2: Trim per Task 3's findings**
 
 For each of the 5 tables, apply Task 3's documented keep/trim decisions: remove confidently-unused `column` blocks, add/update a matching `Table.SelectColumns(...)` M-query step, check for any dangling `sortByColumn` on a trim candidate before removing it. Leave ambiguous columns untouched.
 
-- [ ] **Step 3: Confirm no `LH_Master_Data` references remain**
+- [x] **Step 3: Confirm no `LH_Master_Data` references remain**
 
 ```bash
 grep -rn "LH_Master_Data" "workspaces/RP - Dev/First Pass Fill.SemanticModel/"
 ```
 Expected: no output.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 cd "/c/Users/bfox/Documents/Git-Projects/fabric-workspace-docs"
@@ -616,6 +616,8 @@ where confident, left as-is where ambiguous.
 Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 git push origin dev
 ```
+
+**Execution notes (2026-09-23):** All 5 files rewritten in place (Write tool, full reconstruction from the original TMDL rather than incremental Edits, given the volume of column blocks removed) — `Fact_FirstPassFill.tmdl` (46→14 columns), `dim_BranchLocation.tmdl` (16→5, keeping `LocationID` for `Branch`'s sort), `dim_DateTable.tmdl` (67→11, keeping `SortableMonthYear` for `MonthYear`'s sort and `Month` independently for `MonthName`/`MonthNameShort`'s sort), `dim_JobCode.tmdl` (12→1, `JobCodeKey` only), `dim_Parts.tmdl` (22→1, `PartNumberKey` only). Each partition's `Table.SelectColumns(...)` step lists the kept columns by their real `sourceColumn` names, matching the exact step-naming pattern (`SelectedColumns`) already used on every other migrated report in this project (confirmed against `Open Parts Tickets.SemanticModel`'s `dim_BranchLocation.tmdl`/`Fact_Parts_Open_Tickets.tmdl` before writing). No TMDL validation-hook errors during any of the 5 writes. Post-edit `grep -rn "LH_Master_Data"` across the whole `First Pass Fill.SemanticModel/` returned no matches. Net diff: 5 files changed, 20 insertions(+), 1208 deletions(-). Committed as `a2eb3b12` on `fabric-workspace-docs`/`dev`, pushed clean (`0262f925..a2eb3b12`).
 
 ---
 
