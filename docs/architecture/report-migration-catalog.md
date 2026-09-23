@@ -376,5 +376,44 @@ catches:
   (`feedback_datetable_today_relative_columns_dropped`) since this is now a
   confirmed, generalizable pattern for any future report using `dim_DateTable`.
 
-MD Invoices With No Freight and Combine Vault Sales are next in this same
-informal batch, per Brian's own sequencing.
+**MD Invoices With No Freight — COMPLETE (2026-09-23).** 2 of 3 reports in this
+batch now done. Real gap was 4 notebooks that existed in `DP_Presentation` but
+were never registered in `deploy/dp_backend_scope.json` (5th-9th instances of
+this recurring bug class this session): `Build_Gold_MDInvoicesClosed`,
+`Build_Gold_MDInvoicesNoFreight`, `Build_Gold_DateTable`, `Build_Gold_Salesperson`
+— plus 2 genuinely new tables built from scratch, `Build_Gold_FreightCalculator`
+(a manually-maintained CSV lookup, no dataflow) and
+`Build_Gold_MDInvoicesNoFreightSnapshot` (a monthly append-only snapshot,
+backfilled from the old table's real history — same pattern already proven on
+Open Parts Tickets). See
+`docs/superpowers/specs/2026-09-23-md-invoices-no-freight-migration-design.md`
+and `docs/superpowers/plans/2026-09-23-md-invoices-no-freight-migration.md`
+for the full design and 10-task execution trail.
+
+One real bug found and fixed post-publish, caught via Brian's own Desktop
+refresh (not the report-layer audit):
+- **Arbitrary Weight dedup tie-break.** `Build_Gold_MDInvoicesNoFreight` and
+  `Build_Gold_MDInvoicesClosed` both deduped `Silver_PartInformation` on
+  `(Branch, PartNumber)` with an arbitrary tie-break, matching production's
+  equally arbitrary `Table.Distinct`/`ORDER BY (SELECT NULL)`. ~3,300 combos
+  have exactly one zero-weight and one real-weight duplicate, so the two
+  arbitrary picks landed differently between engines — same bug class as the
+  already-fixed `dim_Parts` `Table.Distinct` issue. Fixed to deterministically
+  prefer the non-zero weight; row-level Weight now matches production within
+  0.025% in aggregate.
+
+A second, larger factor turned out **not** to be a migration bug at all:
+production's own materialized `FreightCalculator` table has no bracket
+coverage above 249 lbs (silently falls back to a flat $0.15/lb rate), while
+the new backend correctly uses the current 36-row rate table covering up to
+999,999 lbs. Confirmed via `projects/md invoices with no freight - report/CLAUDE.md`
+that this is Brian's own already-completed 2026-05-18 carrier-rate extension —
+production's Lakehouse table was simply never refreshed to match. The new
+report's higher Opportunity/Missed Freight numbers are the accurate ones. This
+also means the live Power Automate "MD Freight" alerts (weekly digest + daily
+new-item alert, both driven off the stale production table) have likely been
+under-reporting missed freight since May — flagged to Brian as a separate,
+out-of-scope follow-up, not touched here.
+
+Combine Vault Sales is next and last in this batch, per Brian's own
+sequencing.

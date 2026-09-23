@@ -1106,9 +1106,11 @@ Against the real, currently-live production version — specifically the freight
 
 - [ ] **Step 4: Publish to `RP - Dev`, then Source control → Commit**
 
-- [ ] **Step 5: Report back**
+- [x] **Step 5: Report back**
 
 Once confirmed, Claude runs the final post-publish verification (Task 10).
+
+**Execution note (2026-09-23):** Brian confirmed: "Ok, this has been re-published and committed."
 
 ---
 
@@ -1117,7 +1119,7 @@ Once confirmed, Claude runs the final post-publish verification (Task 10).
 **Files:**
 - Modify: `data-projects/docs/architecture/report-migration-catalog.md`
 
-- [ ] **Step 1: DuckDB row-count check**
+- [x] **Step 1: DuckDB row-count check**
 
 ```python
 import duckdb
@@ -1139,9 +1141,11 @@ for t in sorted(set(tables)):
         print(f"  MISSING/ERROR  {t}: {e}")
 ```
 
-- [ ] **Step 2: Update the catalog doc**
+- [x] **Step 2: Update the catalog doc**
 
 Mark MD Invoices With No Freight complete in `docs/architecture/report-migration-catalog.md`, matching the completion-note pattern already used for every prior completed report. Note this is 2 of 3 reports in this batch (Combine Vault Sales still to come), and note the 4 unregistered-notebook gaps found and fixed (a 5th-9th instance of this recurring bug class this session).
+
+**Execution note (2026-09-23):** Row-count check (Step 1) confirmed all 10 tables present and populated (`Fact_MDInvoices_Closed`: 155,073 rows; `Fact_MDInvoices_NoFreight`: 2,189; `Fact_MDInvoices_NoFreight_Snapshot`: 5,492; `FreightCalculator`: 36; `dim_BranchLocation`: 69; `dim_CustomerList`: 54,100; `dim_DateTable`: 4,018; `dim_Franchise`: 39; `dim_Parts`: 316,696; `dim_Salesperson`: 645). Catalog doc updated with the full completion note, including the post-publish Weight dedup bug fix and the stale-production-FreightCalculator finding (confirmed via `projects/md invoices with no freight - report/CLAUDE.md` as Brian's own already-completed 2026-05-18 rate extension, not a new decision).
 
 ---
 
