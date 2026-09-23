@@ -778,17 +778,68 @@ git push origin dev
 
 **Files:** none — investigation only. Findings get documented directly in this plan before Task 6 proceeds (same discipline as every prior report this project).
 
-- [ ] **Step 1: Audit all 7 real data tables**
+- [x] **Step 1: Audit all 7 real data tables**
 
 For `dim_JobCodes`, `dim_WkcdPart`, `Fact_JobCodePartFrequency`, `Fact_JobCodePartFrequency_Branch`, `dim_BranchLocation`, `dim_DateTable`, `dim_Parts`: run `pbir fields list "Job Code Parts Advisor.Report"`, grep every column against `_Measures.tmdl`'s DAX bodies AND against the 2 calculated tables' own DAX (`Fact_GapAnalysis.tmdl`, `Fact_BranchAnalysis.tmdl` — these contain the 4 real `LOOKUPVALUE(dim_JobCodes[...])` calls already confirmed this session), and check every `.bookmark.json` file under `workspaces/RP - Dev/Job Code Parts Advisor.Report/definition/bookmarks/` for filter references (bookmark-only usage is a confirmed real blind spot from prior reports this project).
 
-- [ ] **Step 2: Confirm the 4 `LOOKUPVALUE(dim_JobCodes[...])` calls resolve to real columns**
+- [x] **Step 2: Confirm the 4 `LOOKUPVALUE(dim_JobCodes[...])` calls resolve to real columns**
 
 Cross-check exactly which `dim_JobCodes` columns the 4 `LOOKUPVALUE` calls in `Fact_GapAnalysis.tmdl`/`Fact_BranchAnalysis.tmdl` reference against the real 13-column `dim_JobCodes` build from Task 4 (`JobCode, FactoryCode, Description, Branch, EstHours, SaleMTDQty, SaleYTDQty, Make, Model, WorkCategory, ServiceType, CreationDate, ModifiedDate`). All 4 should resolve — this was a design-time check already, this step re-confirms it against the actual built table, not just the design intent.
 
-- [ ] **Step 3: Document findings**
+- [x] **Step 3: Document findings**
 
 Add a "### Task 5 Findings" section to this plan file recording, for each of the 7 tables: confirmed-used columns (keep), confident-unused columns (trim), and ambiguous columns (leave as-is, note why). Check every table for `sortByColumn` properties before trimming.
+
+---
+
+### Task 5 Findings
+
+**Execution note (2026-09-23):** Audit completed by implementer subagent via `pbir fields list`, `_Measures.tmdl` DAX-body grep, `Fact_GapAnalysis.tmdl`/`Fact_BranchAnalysis.tmdl` calculated-table DAX grep, all 4 `.bookmark.json` files, `sortByColumn` inspection, and `relationships.tmdl` cross-reference (added as a 6th check beyond the plan's original 5, since a relationship join key is real usage even with zero DAX/visual/bookmark hits).
+
+**LOOKUPVALUE(dim_JobCodes[...]) resolution — confirmed clean, no blocker.** Exactly 4 calls found (`Fact_GapAnalysis.tmdl` ×2, `Fact_BranchAnalysis.tmdl` ×2), referencing `FactoryCode` and `Description` — both exist on the real 13-column `dim_JobCodes` build. While there, the `dim_Parts[...]` LOOKUPVALUE calls in both calculated tables (`Franchise`, `PartNumber`, `Description`, `SellPrice1`) were also verified clean against the real `dim_Parts` table.
+
+**Real finding beyond what the plan anticipated, personally re-verified against `Fact_GapAnalysis.tmdl`'s actual DAX:** `dim_WkcdPart` and `dim_DateTable` are **completely unused** — zero DAX, visual, bookmark, or relationship references anywhere in the model or report. `Fact_GapAnalysis`'s real DAX computes its `RecommendationTier` (Always/Usually/Sometimes/Rarely) purely from `Fact_JobCodePartFrequency`'s own historical `FrequencyPct` — it never compares against `dim_WkcdPart`'s "official template" data, despite that being the original design intent documented in the production dataflow's own header comments. The report evolved to a simpler frequency-threshold design that doesn't need the gap-vs-template comparison. `dim_DateTable` has no relationship, no DAX, no visual, and no bookmark touching it at all — a fully orphaned island in this specific report.
+
+**Decision (Brian, 2026-09-23):** keep both tables in the model, repointed and trimmed to minimal footprint — matches this project's established "never remove a whole table, only trim columns" convention used on every prior report, and leaves the door open if a future report redesign wants the gap-vs-template comparison back. Task 6 repoints both connection strings but does not delete either table.
+
+**Per-table findings:**
+
+#### dim_JobCodes
+- **Keep:** JobCode (relationship key + LOOKUPVALUE), FactoryCode (LOOKUPVALUE ×2), Description (LOOKUPVALUE ×2)
+- **Trim:** Branch, EstHours, SaleMTDQty, SaleYTDQty, Make, Model, WorkCategory, ServiceType, CreationDate, ModifiedDate
+- **sortByColumn:** none
+
+#### dim_WkcdPart
+- **Keep:** none (per Brian's decision above, keep the table shell anyway — trim all 8 columns)
+- **Trim:** JobCode, Franchise, PartNumber, Qty, Value, PartFreq, CreationDate, ModifiedDate
+- **sortByColumn:** none
+
+#### Fact_JobCodePartFrequency
+- **Keep:** JobCode, PartNumber, TimesWithPart, TotalOrdersWithJobCode, FrequencyPct (all 5 — consumed by `Fact_GapAnalysis`'s `ADDCOLUMNS(FILTER(...))` and `Fact_BranchAnalysis`'s `CompanyFrequencyPct` calc)
+- **Trim:** none
+- **sortByColumn:** none
+
+#### Fact_JobCodePartFrequency_Branch
+- **Keep:** Branch, JobCode, PartNumber, TimesWithPart, TotalOrdersWithJobCode, FrequencyPct (all 6 — same consumption pattern via `Fact_BranchAnalysis`)
+- **Trim:** none
+- **sortByColumn:** none
+
+#### dim_BranchLocation
+- **Keep:** BranchID (relationship target), Branch (slicer/pivot usage), LocationID (sortByColumn target for Branch)
+- **Trim:** BranchKey, BranchType, BranchName, State, City, ServiceCapacity, MarketPresence, TerritoryCoverage, OperationalPriority, RegionalClassification, ServiceHours, DistanceFromHub, DataQualityScore
+- **sortByColumn:** yes — Branch → LocationID
+
+#### dim_DateTable
+- **Keep:** none (per Brian's decision above, keep the table shell anyway)
+- **Trim:** every column except Month/SortableMonthYear (see Ambiguous)
+- **Ambiguous:** Month, SortableMonthYear — referenced only as internal `sortByColumn` targets for MonthNameShort/MonthYear; since the whole table is orphaned, keep the pair together rather than breaking the internal sortByColumn wiring.
+- **sortByColumn:** yes — MonthNameShort → Month, MonthYear → SortableMonthYear (self-contained, no external consumer)
+- **Note:** no today-relative-column usage of any kind (the recurring bug class this project checks for on every report) — moot here since nothing on the table is used at all.
+
+#### dim_Parts
+- **Keep:** PartNumber (LOOKUPVALUE join key), Franchise (LOOKUPVALUE, ZP-exclusion filter), Description (LOOKUPVALUE), SellPrice1 (LOOKUPVALUE)
+- **Trim:** PartNumberKey, Source, SLC, DealerGroupCode, CommodityCode, VendorCode, QuantityOnHand, BackOrderQty, StockStatus, IsAvailable, InventoryCost, ListPrice, Current12MoSales, HasRecentSales, ActivityStatus, Returnable, IsReturnable, IsHighValue
+- **sortByColumn:** none
 
 ---
 
