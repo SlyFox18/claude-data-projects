@@ -1120,14 +1120,14 @@ git push origin dev
 **Files:**
 - Create: `fabric-workspace-docs/workspaces/RP - Dev/Combine Vault Sales.pbip`
 
-- [ ] **Step 1: Confirm it doesn't already exist**
+- [x] **Step 1: Confirm it doesn't already exist**
 
 ```bash
 ls "workspaces/RP - Dev/" | grep "Combine Vault"
 ```
 Expected: only `Combine Vault Sales.Report` and `Combine Vault Sales.SemanticModel` — no `.pbip`.
 
-- [ ] **Step 2: Create the `.pbip` file**
+- [x] **Step 2: Create the `.pbip` file**
 
 ```json
 {
@@ -1146,7 +1146,7 @@ Expected: only `Combine Vault Sales.Report` and `Combine Vault Sales.SemanticMod
 }
 ```
 
-- [ ] **Step 3: Commit and push**
+- [x] **Step 3: Commit and push**
 
 ```bash
 cd "/c/Users/bfox/Documents/Git-Projects/fabric-workspace-docs"
@@ -1159,6 +1159,8 @@ already used for every other report migrated in this project.
 Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 git push origin dev
 ```
+
+**Execution note (2026-09-23):** Committed and pushed clean — commit `4feeeec5` on `fabric-workspace-docs/dev` (`ba960e82..4feeeec5`), content exactly as specified.
 
 ---
 
