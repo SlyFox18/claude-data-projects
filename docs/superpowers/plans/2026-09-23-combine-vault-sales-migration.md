@@ -1168,23 +1168,25 @@ git push origin dev
 
 **Files:** none — Brian's action.
 
-- [ ] **Step 1: Pull into `RP - Dev`**
+- [x] **Step 1: Pull into `RP - Dev`**
 
 Sync/update to pick up Tasks 1-6's commits.
 
-- [ ] **Step 2: Open Combine Vault Sales from `RP - Dev` in Desktop and refresh**
+- [x] **Step 2: Open Combine Vault Sales from `RP - Dev` in Desktop and refresh**
 
 Watch for "column does not exist" errors (would mean Task 4's audit missed a real usage, or a `dim_DateTable` today-relative column wasn't caught) or relationship errors on `dim_Branch12_Parts` ↔ `Fact_Branch12_Transactions` (would mean the hash-based `PartNumberKey` doesn't align — check Task 2's own "key alignment" verification output first if this happens). Report back for investigation rather than assuming.
 
-- [ ] **Step 3: Visually confirm real output**
+- [x] **Step 3: Visually confirm real output**
 
 Against the real, currently-live production version — specifically the Restock Tool and Greater than Zero pages (the ones most dependent on `dim_BranchPartInventory` and the R12 metrics), to confirm the new Gold tables produce equivalent output.
 
-- [ ] **Step 4: Publish to `RP - Dev`, then Source control → Commit**
+- [x] **Step 4: Publish to `RP - Dev`, then Source control → Commit**
 
-- [ ] **Step 5: Report back**
+- [x] **Step 5: Report back**
 
 Once confirmed, Claude runs the final post-publish verification (Task 8).
+
+**Execution note (2026-09-23):** Brian confirmed: "This looks great, nothing looks of concern for this one that I could see from a quick scan of the pages. Re-published and committed."
 
 ---
 
@@ -1193,7 +1195,7 @@ Once confirmed, Claude runs the final post-publish verification (Task 8).
 **Files:**
 - Modify: `data-projects/docs/architecture/report-migration-catalog.md`
 
-- [ ] **Step 1: DuckDB row-count check**
+- [x] **Step 1: DuckDB row-count check**
 
 ```python
 import duckdb
@@ -1214,9 +1216,13 @@ for t in sorted(set(tables)):
         print(f"  MISSING/ERROR  {t}: {e}")
 ```
 
-- [ ] **Step 2: Update the catalog doc**
+**Execution note (2026-09-23):** All 6 tables present and populated: `Fact_Branch12_Transactions` 5,132 rows, `dim_Branch12_Parts` 1,490, `dim_BranchLocation` 69, `dim_BranchPartInventory` 2,125, `dim_DateTable` 4,018, `dim_Parts` 316,696.
+
+- [x] **Step 2: Update the catalog doc**
 
 Mark Combine Vault Sales complete in `docs/architecture/report-migration-catalog.md`, matching the completion-note pattern already used for First Pass Fill and MD Invoices With No Freight. Note this is the 3rd and last report in this batch, and the real circular-dependency resolution (hash-based `PartNumberKey` replacing the sequential index) as the headline finding — this closes out a blocker that's been on record since the original dims and facts catalog audits.
+
+**Execution note (2026-09-23):** Catalog doc updated with the full completion note, covering the circular-dependency resolution, the 2 real bugs found during the build (VendorCode type, Delta space-column naming), and the 2 real audit findings (IsRolling730Days, MonthYear bookmark usage). This completes the 3-report batch.
 
 ---
 

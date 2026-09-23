@@ -73,7 +73,7 @@ shortcut, or one small missing piece)
 |---|---|---|
 | `First Pass Fill` | Parts | **COMPLETE (2026-09-23).** Original plan below (needs its own audit-and-build pass) was executed — see the completion note after the Batch 3 intro below. |
 | `Job Code Parts Advisor` | Service | References `dim_JobCodes` (plural — confirmed via direct check this is NOT what `df_Dim_JobCode.Dataflow` produces, which writes `dim_JobCode` singular, already built) and `dim_WkcdPart` (a real, separate dataflow, `df_Dim_WKCDPART.Dataflow`, never audited or built). Needs investigation: is `dim_JobCodes` a stale/legacy reference this report should just repoint to `dim_JobCode`, or a genuinely different table? |
-| `Combine Vault Sales` | Parts | `Fact_Branch12_Transactions` + `dim_Branch12_Parts` — already known, deliberately deferred in both the dims and facts catalog work (circular dependency between the two, needs a real build-order decision) |
+| `Combine Vault Sales` | Parts | **COMPLETE (2026-09-23).** Circular dependency resolved via a hash-based `PartNumberKey` — see the completion note after the Batch 3 intro below. |
 | `Labor Performance V2` | Service | `TechnicianAttendance`/`TechnicianEfficiency`/`TechnicianPunchedTime` — Category B (Technician-family) raw sources were decoded early in this project but their Gold-layer facts were deliberately deferred; this is that deferred work coming due |
 
 ## Proposed approach
@@ -415,5 +415,75 @@ new-item alert, both driven off the stale production table) have likely been
 under-reporting missed freight since May — flagged to Brian as a separate,
 out-of-scope follow-up, not touched here.
 
-Combine Vault Sales is next and last in this batch, per Brian's own
-sequencing.
+**Combine Vault Sales — COMPLETE (2026-09-23).** Last of the 3 reports in
+this batch. This closes out a real blocker that's been on record since the
+original dims and facts catalog audits: `Fact_Branch12_Transactions` and
+`dim_Branch12_Parts` each read the other's last-materialized Lakehouse
+table (production's own `df_Fact_Branch12_Transactions.Dataflow` joined
+`dim_Branch12_Parts` for `PartNumberKey`; `df_Dim_Branch12_Parts.Dataflow`
+joined the fact for R12 sales metrics), with no clean build order. Resolved
+by switching `dim_Branch12_Parts`'s `PartNumberKey` from a fragile
+sequential index (`Table.AddIndexColumn` over alphabetically-sorted parts,
+regenerated every refresh — the same shift-risk pattern already fixed once
+on `dim_Parts`, the `CustomerKey` incident) to a stable hash of
+`PartNumber`. Both `Build_Gold_Branch12Transactions.Notebook` and
+`Build_Gold_Branch12Parts.Notebook` compute the same hash independently,
+so the fact no longer needs to join the dimension at all — a genuine
+one-directional dependency graph (Fact → dim_Branch12_Parts,
+dim_BranchPartInventory) where production only ever had an
+eventually-consistent cycle. Brian approved this fix explicitly (not a
+faithful port on this one point, deliberately) since new key-generation
+logic was needed regardless. Verified via 2 independent checks (the
+build notebook's own anti-join, and a separate DuckDB anti-join): 0
+fact rows with no matching `PartNumberKey` in the dimension.
+
+A 3rd new table, `dim_BranchPartInventory`, was ported faithfully with
+zero logic changes — including the deliberate *absence* of an `IsSale`
+filter on its compound-key join, which production tried adding twice
+(2026-07-07) and reverted both times for corrupting the report's Grand
+Total in ways never fully understood. See
+`docs/superpowers/specs/2026-09-23-combine-vault-sales-migration-design.md`
+and `docs/superpowers/plans/2026-09-23-combine-vault-sales-migration.md`
+for the full design and 8-task execution trail.
+
+Two real bugs found and fixed during the build (both caught by an
+implementer subagent, not anticipated by the plan):
+- **`VendorCode` type mismatch.** `Silver_PartInformation.VendorCode` is
+  `INTEGER` in the real schema; the plan's own notebook code called
+  `F.upper(F.trim(...))` on it directly. Fixed with an explicit
+  `.cast("string")` first.
+- **Space-containing Delta column names.** The plan's own code ported
+  `"Unit Margin Dollars"`/`"Unit Margin Percent"` literally from the
+  original Power Query column names, which violates this project's own
+  documented Delta naming rule. Renamed to `UnitMarginDollars`/
+  `UnitMarginPercent` in the deployed table — though the report-layer
+  audit (below) then found both columns are genuinely unused in the
+  report, so Task 5 trimmed them entirely rather than reconciling the
+  rename.
+
+The report-layer exhaustive audit (bookmark check + DAX grep + `pbir`
+fields + `sortByColumn` inspection, same discipline as every prior report)
+found 2 things beyond what the plan anticipated:
+- **A second undocumented `dim_DateTable` "today-relative" column in real
+  use**: `IsRolling730Days`, alongside the already-known `IsRolling365Days`
+  — feeds 3 "previous R12" comparison measures (`Sales Previous R12`,
+  `Demands Previous R12`, `Qty Previous R12`). Neither exists on
+  `DP_Presentation.dim_DateTable`'s real 14-column schema; both restored
+  as report-layer DAX calculated columns off `'Data Refresh'[Date]`.
+- **A genuine bookmark-only column usage**: `dim_DateTable[MonthYear]` —
+  zero hits in DAX or `pbir fields list`, but referenced in 2 bookmark
+  filters. Exactly the blind-spot class this project's bookmark-check step
+  exists to catch (same pattern as Pin Capture's `IsRolling12Months`
+  earlier this project). Kept, not trimmed.
+
+Post-publish DuckDB verification confirmed all 6 backend tables present
+and populated. Brian confirmed the report looks correct on a visual scan
+after his own Desktop refresh/publish/commit cycle.
+
+**This completes the 3-report batch** (First Pass Fill → MD Invoices With
+No Freight → Combine Vault Sales). `Job Code Parts Advisor` and
+`Labor Performance V2` remain separately unscheduled Tier 3 work; Customer
+Anatomy/Inspections/Price Matrix remain held back for "special care" per
+Brian's earlier instruction; `Table-Column-Names-Search` remains tracked
+but deliberately not migrated (informational report, stays on its ODBC
+connection).
