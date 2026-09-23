@@ -992,17 +992,63 @@ git push origin dev
 
 **Files:** none — investigation only. Findings get documented directly in this plan before Task 5 proceeds (same discipline as every prior report this project).
 
-- [ ] **Step 1: Audit all 6 real data tables**
+- [x] **Step 1: Audit all 6 real data tables**
 
 For `Fact_Branch12_Transactions`, `dim_Branch12_Parts`, `dim_BranchLocation`, `dim_BranchPartInventory`, `dim_DateTable`, `dim_Parts`: run `pbir fields list "Combine Vault Sales.Report"`, grep every `.tmdl` measure/column DAX body in `MeasuresTable.tmdl` for each table's columns, and check every `.bookmark.json` file under `workspaces/RP - Dev/Combine Vault Sales.Report/definition/bookmarks/` for filter references (bookmark-only usage is a confirmed real blind spot from a prior report this project — Pin Capture's `IsRolling12Months`).
 
-- [ ] **Step 2: Explicit `dim_DateTable` cross-check**
+- [x] **Step 2: Explicit `dim_DateTable` cross-check**
 
 Cross-reference every DAX-confirmed-used `dim_DateTable` column against the real 14-column `DP_Presentation.dim_DateTable` schema (`DateKey, Date, Year, Quarter, Month, Day, WeekOfYear, DayOfWeek, MonthName, MonthNameShort, MonthYear, SortableMonthYear, QuarterYear, IsWeekend`). `IsRolling365Days` is already confirmed used by the `Sales R12` measure (per the report's own `CLAUDE.md`) and is **not** in that list — this one is already known, but check for any other genuinely-used "today-relative" column the DAX grep surfaces.
 
-- [ ] **Step 3: Document findings**
+- [x] **Step 3: Document findings**
 
 Add a "### Task 4 Findings" section to this plan file recording, for each of the 6 tables: confirmed-used columns (keep), confident-unused columns (trim), and ambiguous columns (leave as-is, note why). Check every table for `sortByColumn` properties before trimming (a sort-by column can be silently referenced without appearing in any measure). Explicitly record the `IsRolling365Days` restoration decision (expected: restore as a DAX calculated column).
+
+---
+
+### Task 4 Findings
+
+**Execution note (2026-09-23):** Audit completed by implementer subagent via `pbir fields list`, DAX-body grep against `MeasuresTable.tmdl` (this report's measures table, not `_Measures`), grep against all 10 `.bookmark.json` files, `relationships.tmdl` cross-reference, and `sortByColumn` inspection.
+
+**Two real findings beyond what the plan anticipated:**
+1. **`IsRolling730Days` is a second genuinely-used today-relative `dim_DateTable` column**, not previously documented anywhere (not in the report's own `CLAUDE.md`). Used alongside `IsRolling365Days` in 3 measures (`Sales Previous R12`, `Demands Previous R12`, `Qty Previous R12`) to compute a "previous 12 months" comparison window (days 366–730 back). Both columns need restoring in Task 5, not just `IsRolling365Days`.
+2. **`dim_DateTable[MonthYear]` is a real bookmark-only usage** — confirmed via `"Entity": "dim_DateTable"` / `"Property": "MonthYear"` in 2 bookmark files, zero hits in DAX or `pbir fields list`. This is exactly the blind-spot class the bookmark-check step exists to catch (same pattern as Pin Capture's `IsRolling12Months`). Must be kept.
+
+**Resolved from Task 2's open question:** `dim_Branch12_Parts['Unit Margin Dollars']`/`['Unit Margin Percent']` are confirmed **genuinely unused** — zero hits anywhere in the report (DAX, `pbir fields list`, bookmarks). Task 5 should **trim these two columns entirely**, not rename-and-keep.
+
+**Per-table findings:**
+
+#### Fact_Branch12_Transactions
+- **Keep:** DateKey, PartNumberKey, Date, PartNumber, TransDatetime, IsSale, SalesQty, SaleValue, CostValue, MarginDollars, SellPrice1, Qty, TransferBranch
+- **Trim:** RONumber, Type, TransactionTypeDescription, IsTransfer, InventoryAddQty, MarginPercent, RawQty, RawCostValue, ListPrice, Description, Franchise, Year, Month, MonthName, Quarter, ModifiedDate
+- **sortByColumn:** none
+
+#### dim_Branch12_Parts
+- **Keep:** PartNumberKey, PartNumber, Description, QuantityOnHand, BinQty, BulkBinQty, PendingQty, IsAvailable, Cost, InventoryCost
+- **Trim:** Franchise, Source, SLC, DealerGroupCode, CommodityCode, VendorCode, BackOrderQty, Bin, BulkBin, SellPrice1, ListPrice, Demands (report's own `Demands` measure recomputes live from the fact table via `COUNTROWS`+`TODAY()-365`, does NOT read this pre-computed column), HasRecentSales, Returnable, IsReturnable, R12_Sales_Qty, R12_Sales_Dollars, `'Unit Margin Dollars'`, `'Unit Margin Percent'`
+- **sortByColumn:** none
+
+#### dim_BranchLocation
+- **Keep:** Branch, BranchID, BranchName
+- **Trim:** BranchKey, BranchType, LocationID, State, City, ServiceCapacity, MarketPresence, TerritoryCoverage, OperationalPriority, RegionalClassification, ServiceHours, DistanceFromHub, DataQualityScore
+- **sortByColumn:** none
+
+#### dim_BranchPartInventory
+- **Keep:** Branch, PartNumber, QuantityOnHand, BinQty (all 4 — this table has only 4 columns and all are used in the `(By Location)` measures)
+- **Trim:** none
+- **sortByColumn:** none
+
+#### dim_DateTable
+- **Keep:** DateKey, Date, Year, Month, MonthYearDate, MonthYear (bookmark-only — see finding above), SortableMonthYear (sortByColumn target of MonthYear), Month (also sortByColumn target of MonthNameShort), **IsRolling365Days**, **IsRolling730Days** (both need restoring as DAX calculated columns — see finding above)
+- **Trim:** Quarter, Day, WeekOfYear, DayOfWeek, DayOfWeekName, DayOfWeekNameShort, QuarterYear, DateDisplayName, IsWeekend, IsWeekday, IsCurrentYear, IsCurrentMonth, DaysFromToday, Season, IsPeakSeason, FiscalYear, FiscalQuarter, MonthSort, QuarterSort, YearOffset, IsBusinessDay, WorkingDaysInMonth, WorkingDaysInQuarter, WorkingDaysInYear, IsPreviousYear, IsPreviousMonth, IsPreviousQuarter, IsYearToDate, IsQuarterToDate, IsMonthToDate, IsRolling6Months, IsRolling12Months, IsRolling24Months, IsRolling36Months, IsRolling48Months, IsRolling4Quarters, IsRolling8Quarters, IsRolling52Weeks, IsRolling1095Days, IsRolling1460Days, IsRolling180Days, IsRolling545Days, IsRolling45Days, IsRolling120Days, IsRolling270Days, IsRolling450Days, IsRolling13Weeks, IsRolling26Weeks, IsRolling104Weeks, IsRolling156Weeks, IsLast30Days, IsLast60Days, IsLast90Days, IsNext30Days, IsSameMonthLastYear, IsSameQuarterLastYear, RollingPeriodCategory
+- **Ambiguous:** MonthNameShort — has its own `sortByColumn: Month` configured but zero direct DAX/visual/bookmark reference found; left as-is (keep) per the "unsure → keep" rule.
+- **sortByColumn:** yes — `MonthNameShort → Month`, `MonthYear → SortableMonthYear`. Note: `Quarter`, `Day`, `WeekOfYear`, `DayOfWeek` are all present in the real 14-column `DP_Presentation.dim_DateTable` schema regardless of this report's own usage, so trimming them here is cosmetic only — no restoration risk.
+
+#### dim_Parts
+- **Keep:** PartNumberKey only — required for the bidirectional relationship to `dim_Branch12_Parts.PartNumberKey` and the inactive relationship from `Fact_Branch12_Transactions`.
+- **Trim:** PartNumber, Description, Franchise, Source, SLC, DealerGroupCode, CommodityCode, VendorCode, QuantityOnHand, BackOrderQty, StockStatus, IsAvailable, InventoryCost, SellPrice1, ListPrice, Current12MoSales, HasRecentSales, ActivityStatus, Returnable, IsReturnable, IsHighValue (all 21 non-key columns — zero hits across every check)
+- **sortByColumn:** none
+- **Note:** this shared dimension is used in this report only for its relationship key — a more aggressive trim than the other 5 tables, but fully verified, not a gap.
 
 ---
 
