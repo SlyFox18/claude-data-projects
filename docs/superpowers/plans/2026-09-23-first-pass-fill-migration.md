@@ -626,14 +626,14 @@ git push origin dev
 **Files:**
 - Create: `fabric-workspace-docs/workspaces/RP - Dev/First Pass Fill.pbip`
 
-- [ ] **Step 1: Confirm it doesn't already exist**
+- [x] **Step 1: Confirm it doesn't already exist**
 
 ```bash
 ls "workspaces/RP - Dev/" | grep "First Pass Fill"
 ```
 Expected: only `First Pass Fill.Report` and `First Pass Fill.SemanticModel` — no `.pbip` (already confirmed this session; re-check in case something changed).
 
-- [ ] **Step 2: Create the `.pbip` file**
+- [x] **Step 2: Create the `.pbip` file**
 
 ```json
 {
@@ -652,7 +652,7 @@ Expected: only `First Pass Fill.Report` and `First Pass Fill.SemanticModel` — 
 }
 ```
 
-- [ ] **Step 3: Commit and push**
+- [x] **Step 3: Commit and push**
 
 ```bash
 cd "/c/Users/bfox/Documents/Git-Projects/fabric-workspace-docs"
@@ -665,6 +665,8 @@ already used for every other report migrated in this project.
 Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 git push origin dev
 ```
+
+**Execution note (2026-09-23):** Committed as `df6c29b1` on `fabric-workspace-docs`/`dev`, pushed (`a2eb3b12..df6c29b1`).
 
 ---
 
