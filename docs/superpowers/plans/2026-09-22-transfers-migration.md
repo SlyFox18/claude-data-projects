@@ -942,23 +942,25 @@ git push origin dev
 
 **Files:** none — Brian's action.
 
-- [ ] **Step 1: Pull into `RP - Dev`**
+- [x] **Step 1: Pull into `RP - Dev`**
 
 Sync/update to pick up Tasks 8-9's commits.
 
-- [ ] **Step 2: Open Transfers from `RP - Dev` in Desktop and refresh**
+- [x] **Step 2: Open Transfers from `RP - Dev` in Desktop and refresh**
 
 Watch for "column does not exist" errors (would mean Task 7's audit missed a real usage) or "the key didn't match any rows in the table" errors (already proactively addressed via Task 5 Step 5's metadata-sync, but flag it if it recurs anyway) — report back for investigation rather than assuming.
 
-- [ ] **Step 3: Visually confirm real output**
+- [x] **Step 3: Visually confirm real output**
 
 Against the real, currently-live `RP - Parts Reports` production version — specifically the Outstanding Transfers page (Page 3 — aging buckets, fulfillment status) and the main Transfers trend/summary pages, to confirm the new `Fact_OutstandingTransfers` produces equivalent output to the old ODBC-sourced table.
 
-- [ ] **Step 4: Publish to `RP - Dev`, then Source control → Commit**
+- [x] **Step 4: Publish to `RP - Dev`, then Source control → Commit**
 
-- [ ] **Step 5: Report back**
+- [x] **Step 5: Report back**
 
 Once confirmed, Claude runs the final post-publish verification (Task 11).
+
+**Execution note (2026-09-23):** Brian refreshed and published; saw a small (~1%) difference between two consecutive report screenshots and flagged it as possible staleness. Investigated directly: `Fact_OutstandingTransfers` was an exact match to production again (516 rows, same `sum_order_qty`/`avg_order_age`, confirming the daily-pipeline registration from Task 5 is working correctly overnight); `Fact_Transfers` had the same `max_date` (2026-09-22) on both sides — the row-count difference was ordinary same-day pipeline-timing noise (DP_Presentation actually had *more* rows than production, not fewer), not a real staleness bug. Republish commit `83a08464` on `fabric-workspace-docs`/`dev` ("Re-publish after the data being pointed to the DP backend") — 7 visual.json schema-version-bump diffs, all benign Desktop normalization, no real content change.
 
 ---
 
@@ -967,7 +969,7 @@ Once confirmed, Claude runs the final post-publish verification (Task 11).
 **Files:**
 - Modify: `data-projects/docs/architecture/report-migration-catalog.md`
 
-- [ ] **Step 1: DuckDB row-count check**
+- [x] **Step 1: DuckDB row-count check**
 
 ```python
 import duckdb
@@ -988,9 +990,13 @@ for t in sorted(set(tables)):
         print(f"  MISSING/ERROR  {t}: {e}")
 ```
 
-- [ ] **Step 2: Update the catalog doc**
+**Execution note (2026-09-23):** All 6 tables resolved cleanly: `Fact_OutstandingTransfers` 516, `Fact_Transfers` 4,653,861, `Silver_PartInformation` 1,113,455, `dim_BranchLocation` 69, `dim_DateTable` 4,018, `dim_Parts` 316,696.
+
+- [x] **Step 2: Update the catalog doc**
 
 Mark Transfers complete in `docs/architecture/report-migration-catalog.md`'s Batch 2 section, matching the completion-note pattern already used for Batch 2a, Inventory Analysis, and Open Parts Tickets. Note this closes out Batch 2 entirely (all 6 reports now done: Open Work Orders, Pin Capture, Part Sales with Low Margin, Inventory Analysis, Open Parts Tickets, Transfers).
+
+**Execution note (2026-09-23):** Catalog updated with the full completion note, including the real join-type bug found/fixed and all 3 unregistered-notebook gaps found/fixed along the way. **Transfers migration is COMPLETE. Batch 2 is COMPLETE.**
 
 ---
 

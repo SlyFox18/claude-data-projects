@@ -61,7 +61,7 @@ shortcut, or one small missing piece)
 | `Physical Inventory` | Parts | Same — only real dependency is the `jdis_Part_Information` raw repoint |
 | `Inventory Analysis` | Parts | **COMPLETE (2026-09-22).** Original plan below (new `dim_Date` Gold build) was superseded — see the completion note after this table. |
 | `Open Parts Tickets` (real name — catalog previously called this "Parts on Open Orders") | Parts | **COMPLETE (2026-09-22).** Original plan below (single missing snapshot table) was superseded — see the completion note after this table. |
-| `Transfers` | Parts | `Fact_Transfers` is ready; missing `Fact_OutstandingTransfers` — already deliberately deferred in Batch B (real path known: `Silver_InSalPar`+`Silver_InSalOrd`+`Silver_InMaster`, needs a new `Silver_InSalOrd.trf_to_branch` column and an `OrderAge`-as-DAX-measure design decision) |
+| `Transfers` | Parts | **COMPLETE (2026-09-23).** Original plan below (Silver_InSalOrd.trf_to_branch + OrderAge-as-DAX-measure) was overstated — see the completion note after this table. |
 | `Open Work Orders` | Service | All raw refs (`RepairOrderDetail`, `TechnicianPunchedDetail`, `WKROFILE`) already have real Silver shortcuts (`RepairOrderDetail.Shortcut`, `Silver_TechnicianPunchedDetail.Shortcut`, `Silver_WkRoFile.Shortcut`) — needs column-rename repoints, not new Gold builds |
 | `60+ Days Past Due` | Financial | Same pattern — `ArMaster_Customer`/`armaster` raw refs already have Silver shortcuts (`Silver_ArMasterCustomer.Shortcut`, `Silver_ArMaster.Shortcut`); `Fact_InSalOrd_InSalPar` already ready |
 | `Pin Capture` | Parts | Raw refs (`InTrans_Incremental`, `wkothsub`) have real Silver shortcuts (`Silver_InTrans`, `Silver_WkOthSub`) already in `DP_Presentation` |
@@ -276,9 +276,56 @@ once to catch up; now exact match to `LH_Master_Data`'s live production
 copy. Worth checking whether any other "already migrated" table from
 earlier phases of this project has the same never-registered gap.
 
-Remaining for Batch 2: 60+ Days Past Due (already done in Batch 0, listed here in
-error — confirm and remove), Transfers (needs `Fact_OutstandingTransfers`) —
-the last report genuinely needing new Gold-layer work, sequenced next.
+**Transfers — COMPLETE (2026-09-23). This closes out Batch 2 entirely** (Open
+Work Orders, Pin Capture, Part Sales with Low Margin, Inventory Analysis,
+Open Parts Tickets, Transfers — all 6 now migrated). Real investigation
+(including Brian pulling the actual `Parts_InterbranchTransfers` view SQL
+directly from SQL Central) found the original gap was smaller than the
+catalog described: `OrderAge` was already a plain stored column with no
+DAX redesign needed, and the Silver-layer rebuild only required 3 trivial
+additive column selections (`ShippedQty`/`SoRoRef` on `Silver_InSalPar`,
+`TrfToBranch` on `Silver_InSalOrd` — all 3 already existed in Bronze, just
+weren't selected into Silver yet). New `Build_Gold_OutstandingTransfers.Notebook`
+faithfully replicates the real production view + the existing
+`df_Fact_Transfers.Dataflow`'s two-step join logic, verified to an
+**exact row-level match** against live production (519 rows,
+`sum(OrderQty)`, `avg(OrderAge)` all identical) both at initial build and
+again the next day. See
+`docs/superpowers/specs/2026-09-22-transfers-migration-design.md` and
+`docs/superpowers/plans/2026-09-22-transfers-migration.md` for the full
+design and 11-task execution trail.
+
+**Real bug found and fixed during the port** (not present in the design,
+caught via Task 6's "investigate large discrepancies, don't assume
+timing" discipline): the first notebook draft used a `left_outer` join to
+`Silver_InSalOrd` even though the query pre-filtered it to `OrderType='T'`
+— in SQL, a `WHERE` clause on a left-joined column is an effective inner
+join (`NULL = 'T'` is never true), so the real source view behaves as an
+inner join despite its own `LEFT OUTER JOIN` syntax. The PySpark port's
+initial `left_outer` wrongly preserved unmatched rows, producing 52 rows
+(29% of the table) with a null-safe `OrderAge` fallback sentinel
+(`46285` days = the day-count to `1900-01-01`). Fixed by changing the
+join kind to `inner`.
+
+**Three separate pre-existing "already migrated, should be fresh" backend
+gaps found and fixed along the way** (same never-registered-in-the-pipeline
+bug class first found on Open Parts Tickets' `Fact_Parts_Open_Tickets`):
+`Build_Gold_Transfers` (12 days stale), `Build_Silver_InTrans` (the
+shared 10M+-row InTrans backbone many other reports also depend on, 5
+days stale), and `Build_Silver_InMaster` (the sole source of
+`InTransitQty`, apparently never run on schedule — this alone accounted
+for the new Gold table initially showing only 128 of the real 519
+outstanding-transfer rows). All 3 registered in
+`deploy/dp_backend_scope.json` and confirmed caught up. **Given this is
+now the 4th instance of this exact gap class found this project, a
+dedicated audit of every notebook referenced by `dp_backend_scope.json`'s
+`reports` section against its `notebooks` array (confirming every listed
+notebook is actually registered and running) is a real candidate
+follow-up, not yet scheduled.**
+
+60+ Days Past Due (already done in Batch 0, listed here in error —
+confirm and remove) is the only remaining Batch 2 cleanup item, not new
+work.
 
 ### Batch 3 — Tier 3 (4 reports needing real new Gold-layer work first)
 
