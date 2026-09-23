@@ -71,7 +71,7 @@ shortcut, or one small missing piece)
 
 | Report | Workspace | What's missing |
 |---|---|---|
-| `First Pass Fill` | Parts | `Fact_FirstPassFill` was never built — **a real miss from the original facts catalog audit**, not caught until this report-level cross-check. Needs its own audit-and-build pass like every other fact table got. |
+| `First Pass Fill` | Parts | **COMPLETE (2026-09-23).** Original plan below (needs its own audit-and-build pass) was executed — see the completion note after the Batch 3 intro below. |
 | `Job Code Parts Advisor` | Service | References `dim_JobCodes` (plural — confirmed via direct check this is NOT what `df_Dim_JobCode.Dataflow` produces, which writes `dim_JobCode` singular, already built) and `dim_WkcdPart` (a real, separate dataflow, `df_Dim_WKCDPART.Dataflow`, never audited or built). Needs investigation: is `dim_JobCodes` a stale/legacy reference this report should just repoint to `dim_JobCode`, or a genuinely different table? |
 | `Combine Vault Sales` | Parts | `Fact_Branch12_Transactions` + `dim_Branch12_Parts` — already known, deliberately deferred in both the dims and facts catalog work (circular dependency between the two, needs a real build-order decision) |
 | `Labor Performance V2` | Service | `TechnicianAttendance`/`TechnicianEfficiency`/`TechnicianPunchedTime` — Category B (Technician-family) raw sources were decoded early in this project but their Gold-layer facts were deliberately deferred; this is that deferred work coming due |
@@ -332,3 +332,49 @@ work.
 `Fact_FirstPassFill` needs its own full audit-and-build; `dim_WkcdPart`/`dim_JobCodes`
 needs investigation; Combine Vault Sales and Labor Performance both need their
 already-known blockers resolved — same rigor as Batches A–D, not a shortcut.
+
+Brian chose to work through 3 real remaining Parts reports next, in his own
+"easiest first" order: `First Pass Fill`, `MD Invoices With No Freight`, then
+`Combine Vault Sales` (`Job Code Parts Advisor`/`Labor Performance V2` remain
+unscheduled). He also published `Table-Column-Names-Search` into `RP - Dev` for
+tracking — an informational, rarely-used report that stays on its existing ODBC
+connection, deliberately not part of this migration project; noted here only so
+it's on record, not forgotten.
+
+**First Pass Fill — COMPLETE (2026-09-23).** Real investigation found the real
+gap was smaller than first assumed: `Fact_FirstPassFill`'s one Silver dependency,
+`Silver_InHist_PmManage`, was already fully migrated with zero column gaps — pure
+Gold-layer work, no Silver-layer additions needed (unlike every other Batch 2
+report this project). New `Build_Gold_FirstPassFill.Notebook` faithfully ports
+the real production `df_Fact_First_Pass_Fill.Dataflow`'s dimensional-key-lookup/
+null-safe-rate/composite-metric/business-flag logic. See
+`docs/superpowers/specs/2026-09-23-first-pass-fill-migration-design.md` and
+`docs/superpowers/plans/2026-09-23-first-pass-fill-migration.md` for the full
+design and 7-task execution trail.
+
+Two real bugs found and fixed during the build, both real "verify, don't assume"
+catches:
+- **Missing Franchise/date-window filters.** First run produced 1.86x too many
+  rows (1,328,067 vs production's 713,482) because `Silver_InHist_PmManage` is
+  an unfiltered full mirror of the raw table, while production's own real ETL
+  (`LH_Master_Data/Dataflows/01 - Raw Sources/df_InHist_PmManage_Raw.Dataflow`)
+  applies `Franchise = 'D'` plus a rolling 2-year/7-day window at the
+  raw-extraction stage — filters that never got carried into the Silver mirror.
+  Fixed by applying both filters in the Gold notebook itself, using a DST-safe
+  US/Central "now" instead of a naive `DateTime.LocalNow()`-style call. Verified:
+  all metrics now match production within ~1.8%, fully explained by normal
+  refresh-timing boundary shift.
+- **`dim_DateTable`'s "today-relative" columns.** The report-layer audit
+  correctly found `IsYearToDate`/`IsRolling12Months`/`IsRolling24Months` as
+  real DAX-used columns, but the repoint step wrongly treated them as stored
+  source columns — they don't exist on `DP_Presentation.dim_DateTable` at all
+  (deliberately dropped during the dims-catalog rebuild for baking in
+  `DateTime.LocalNow()`, same bug class already fixed once on Pin Capture's
+  `dim_DateTable`). Fixed by restoring all 3 as report-layer DAX calculated
+  columns sourced from `'Data Refresh'[Date]`, replicating the exact original
+  `EOMONTH`/`YEAR`-based logic. Saved as a standing project memory
+  (`feedback_datetable_today_relative_columns_dropped`) since this is now a
+  confirmed, generalizable pattern for any future report using `dim_DateTable`.
+
+MD Invoices With No Freight and Combine Vault Sales are next in this same
+informal batch, per Brian's own sequencing.

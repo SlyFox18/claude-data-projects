@@ -684,15 +684,17 @@ Watch for "column does not exist" errors (would mean Task 3's audit missed a rea
 
 **Real error found and fixed (2026-09-23):** Brian's first refresh hit "The column 'IsYearToDate' of the table wasn't found" on `dim_DateTable`. Root cause: Task 3's audit correctly found `IsYearToDate`/`IsRolling12Months`/`IsRolling24Months` as real DAX-used columns, but Task 4 incorrectly treated them as stored source columns to repoint via `Table.SelectColumns` — they don't exist on `DP_Presentation.dim_DateTable` at all. Confirmed via direct schema check: these 3 "today-relative" boolean flags existed on the old `LH_Master_Data.dim_DateTable` (real source logic found in `LH_Master_Data/Dataflows/03 - Dimensions/df_Dim_Date.Dataflow`) but were deliberately dropped during the dims-catalog rebuild for baking in `DateTime.LocalNow()` at refresh time — same bug class already fixed once this session on Pin Capture's `dim_DateTable`. Fixed by restoring all 3 as report-layer DAX calculated columns sourced from `'Data Refresh'[Date]`, replicating the exact original production logic (`EOMONTH`-based month-aligned rolling windows for the 2 rolling-period flags, `YEAR`/`DATE`-based year-to-date check) — commit `dd0464e1` on `fabric-workspace-docs`/`dev`. **This is a new, generalizable finding for future report-layer audits on this project**: `dim_DateTable`'s real column set includes several deliberately-dropped "today-relative" columns (this project's dims-catalog work already found and documented this) — a report-layer audit finding "column X is used in DAX" is necessary but not sufficient; it must also be cross-checked against the *actual current* `DP_Presentation.dim_DateTable` schema before assuming a straight `Table.SelectColumns` repoint will work, since some genuinely-used columns may need the DAX-calculated-column treatment instead.
 
-- [ ] **Step 3: Visually confirm real output**
+- [x] **Step 3: Visually confirm real output**
 
 Against the real, currently-live production version — specifically the 3-page structure (Current vs Prior, Rolling 12, YTD per the real dataflow's own documented intent) and the pre-calculated rate/target-flag visuals, to confirm the new Gold table produces equivalent output.
 
-- [ ] **Step 4: Publish to `RP - Dev`, then Source control → Commit**
+- [x] **Step 4: Publish to `RP - Dev`, then Source control → Commit**
 
-- [ ] **Step 5: Report back**
+- [x] **Step 5: Report back**
 
 Once confirmed, Claude runs the final post-publish verification (Task 7).
+
+**Execution note (2026-09-23):** Brian confirmed: "Ok, this is looking good, I re-published this and committed." Republish landed as `fabric-workspace-docs`/`dev` commit `0ba7e8db` ("Re-Publish after pointing data to the new DP backend") — the only real diff was Desktop's own TMDL re-serialization of the 3 DAX columns (dropped backtick fences/inferred-type annotations it manages itself, same logic); 5 visual.json files got benign schema-version normalization.
 
 ---
 
@@ -701,7 +703,7 @@ Once confirmed, Claude runs the final post-publish verification (Task 7).
 **Files:**
 - Modify: `data-projects/docs/architecture/report-migration-catalog.md`
 
-- [ ] **Step 1: DuckDB row-count check**
+- [x] **Step 1: DuckDB row-count check**
 
 ```python
 import duckdb
@@ -719,9 +721,11 @@ for t in sorted(set(tables)):
         print(f"  MISSING/ERROR  {t}: {e}")
 ```
 
-- [ ] **Step 2: Update the catalog doc**
+- [x] **Step 2: Update the catalog doc**
 
 Mark First Pass Fill complete in `docs/architecture/report-migration-catalog.md`'s Tier 3/Batch 3 section, matching the completion-note pattern already used for every prior completed report. Note this is 1 of 3 reports in this new batch (MD Invoices With No Freight and Combine Vault Sales still to come).
+
+**Execution note (2026-09-23):** All 5 backend tables (Fact_FirstPassFill 700,570 rows, dim_BranchLocation 69, dim_DateTable 4,018, dim_JobCode 45,848, dim_Parts 316,696) resolved cleanly via `delta_scan` against `DP_Presentation`. **First Pass Fill migration is COMPLETE.**
 
 ---
 
