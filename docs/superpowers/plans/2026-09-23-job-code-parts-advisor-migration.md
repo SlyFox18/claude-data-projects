@@ -17,7 +17,7 @@
 
 Both `Build_Gold_JobCodePartFrequency.Notebook` and `Build_Gold_JobCodePartFrequencyBranch.Notebook` already exist in `DP - Presentation - Dev.Workspace/Fact Tables.Folder/Open Order Parts Advisor.Folder/` and are already correct — this is a pure registration fix, no code changes, matching the same bug class (notebook built, never wired into the pipeline) found repeatedly earlier this project.
 
-- [ ] **Step 1: Get the real notebookIds**
+- [x] **Step 1: Get the real notebookIds**
 
 ```bash
 export PATH="$HOME/.local/bin:$PATH"
@@ -28,11 +28,11 @@ fab get "DP - Presentation - Dev.Workspace/Fact Tables.Folder/Open Order Parts A
 ```
 Expected: `Build_Gold_JobCodePartFrequency` returns `4de52a40-792f-442f-9f9c-5267c0e18368` (already confirmed this session). Record the real `Build_Gold_JobCodePartFrequencyBranch` notebookId.
 
-- [ ] **Step 2: Register both in `deploy/dp_backend_scope.json`**
+- [x] **Step 2: Register both in `deploy/dp_backend_scope.json`**
 
 Read the file first to match its exact existing single-line-per-entry style, then insert 2 new entries (tier=gold, cadence=daily) using the real notebookIds from Step 1, via precise Edit-tool text insertions — never a full `json.dump()` rewrite (confirmed multiple times this project that reformats the whole file into a large unwanted diff). Validate afterward: `python -c "import json; json.load(open('deploy/dp_backend_scope.json'))"`.
 
-- [ ] **Step 3: Run both notebooks to catch up**
+- [x] **Step 3: Run both notebooks to catch up**
 
 ```bash
 fab job run "DP - Presentation - Dev.Workspace/Fact Tables.Folder/Open Order Parts Advisor.Folder/Build_Gold_JobCodePartFrequency.Notebook" --timeout 300
@@ -40,13 +40,13 @@ fab job run "DP - Presentation - Dev.Workspace/Fact Tables.Folder/Open Order Par
 ```
 Expected: both `Completed`, no `failureReason`. Both notebooks were last run `2026-09-14` (9 days stale) — this catches them up to current data.
 
-- [ ] **Step 4: Refresh SQL analytics endpoint metadata**
+- [x] **Step 4: Refresh SQL analytics endpoint metadata**
 
 ```bash
 fab api -X post "workspaces/73fd5443-240e-410a-990a-98827f32c087/sqlEndpoints/18effb0e-7bc2-47a1-854c-f4f2e8129145/refreshMetadata"
 ```
 
-- [ ] **Step 5: DuckDB freshness verification**
+- [x] **Step 5: DuckDB freshness verification**
 
 ```python
 import duckdb
@@ -61,7 +61,7 @@ for t in ["Fact_JobCodePartFrequency", "Fact_JobCodePartFrequency_Branch"]:
 ```
 Expected: row counts close to the pre-run baseline (`Fact_JobCodePartFrequency` 1,160,265, `Fact_JobCodePartFrequency_Branch` 1,410,456) — these are frequency-aggregate tables computed off a 3-year rolling window, so small drift is expected, not a fixed count. Report the real numbers.
 
-- [ ] **Step 6: Commit and push**
+- [x] **Step 6: Commit and push**
 
 ```bash
 cd "/c/Users/bfox/Documents/Git-Projects/fabric-workspace-docs"
@@ -85,7 +85,7 @@ git push origin dev
 
 Both raw sources already exist in JD's Bronze mirror — this is a cheap shortcut, not a new ODBC pull. Two shortcuts are needed per table: one from JD's Bronze mirror into `DP_Staging` (the raw source), and later (Task 3) one from `DP_Staging` into `DP_Presentation` for each resulting `Silver_*` table — matching the exact pattern already used for `Silver_WkMechFl`/`Silver_WkMechWk`.
 
-- [ ] **Step 1: Create the `WkCodeFl` shortcut into `DP_Staging`**
+- [x] **Step 1: Create the `WkCodeFl` shortcut into `DP_Staging`**
 
 ```bash
 export PATH="$HOME/.local/bin:$PATH"
@@ -97,7 +97,7 @@ fab ln "DP - Staging - Dev.Workspace/DP_Staging.Lakehouse/Tables/WkCodeFl.Shortc
 ```
 This matches the exact real target pattern already confirmed this session on the existing `WKMECHADJ.Shortcut` (workspace `4bd21b07-f4ce-4b28-b0f1-0397fb5d5ea9`, lakehouse `7348c3a6-8694-4d11-bc70-1bd55be84ea2`, path `Tables/WKMECHADJ`).
 
-- [ ] **Step 2: Create the `WKCDPART` shortcut into `DP_Staging`**
+- [x] **Step 2: Create the `WKCDPART` shortcut into `DP_Staging`**
 
 ```bash
 fab ln "DP - Staging - Dev.Workspace/DP_Staging.Lakehouse/Tables/WKCDPART.Shortcut" \
@@ -105,7 +105,7 @@ fab ln "DP - Staging - Dev.Workspace/DP_Staging.Lakehouse/Tables/WKCDPART.Shortc
   --target "../../JD_FabricOneLake.Workspace/JD_EquipRDB_Production_Bronze.Lakehouse/Tables/WKCDPART"
 ```
 
-- [ ] **Step 3: Verify both shortcuts resolve real data**
+- [x] **Step 3: Verify both shortcuts resolve real data**
 
 ```bash
 fab get "DP - Staging - Dev.Workspace/DP_Staging.Lakehouse/Tables/WkCodeFl.Shortcut" -q "{name: name, wsId: target.oneLake.workspaceId, itemId: target.oneLake.itemId}"
@@ -140,7 +140,7 @@ No commit needed for this task — shortcuts are Fabric-side metadata, not git-t
 
 Both are pure passthrough notebooks, matching the exact established convention (`Build_Silver_BranchName.Notebook`) — the original production dataflows did their column selection/renaming in the Gold layer via direct ODBC `SELECT`, not in a Silver step, so Silver here is a straight Bronze mirror with no transformation, kept for consistency with the rest of the backend.
 
-- [ ] **Step 1: Write `Build_Silver_WkCodeFl.Notebook`**
+- [x] **Step 1: Write `Build_Silver_WkCodeFl.Notebook`**
 
 Create `workspaces/DP - Staging - Dev/Build_Silver_WkCodeFl.Notebook/notebook-content.py`:
 
@@ -237,7 +237,7 @@ print(sample.to_string())
 # META }
 ```
 
-- [ ] **Step 2: Write `Build_Silver_WkCodeFl.Notebook`'s `.platform` file**
+- [x] **Step 2: Write `Build_Silver_WkCodeFl.Notebook`'s `.platform` file**
 
 Generate a real v4 UUID for `logicalId`. Create `workspaces/DP - Staging - Dev/Build_Silver_WkCodeFl.Notebook/.platform`:
 ```json
@@ -254,7 +254,7 @@ Generate a real v4 UUID for `logicalId`. Create `workspaces/DP - Staging - Dev/B
 }
 ```
 
-- [ ] **Step 3: Write `Build_Silver_WKCDPART.Notebook`**
+- [x] **Step 3: Write `Build_Silver_WKCDPART.Notebook`**
 
 Create `workspaces/DP - Staging - Dev/Build_Silver_WKCDPART.Notebook/notebook-content.py` — identical structure to Step 1, with `WKCDPART`/`Silver_WKCDPART` in place of `WkCodeFl`/`Silver_WkCodeFl`:
 
@@ -351,11 +351,11 @@ print(sample.to_string())
 # META }
 ```
 
-- [ ] **Step 4: Write `Build_Silver_WKCDPART.Notebook`'s `.platform` file**
+- [x] **Step 4: Write `Build_Silver_WKCDPART.Notebook`'s `.platform` file**
 
 Same pattern as Step 2, `displayName: "Build_Silver_WKCDPART"`, a new generated GUID.
 
-- [ ] **Step 5: Import both to Fabric**
+- [x] **Step 5: Import both to Fabric**
 
 ```bash
 export PATH="$HOME/.local/bin:$PATH"
@@ -368,7 +368,7 @@ fab import "DP - Staging - Dev.Workspace/Build_Silver_WKCDPART.Notebook" \
 ```
 Both are fresh CREATEs — this works fine (`fab import` is only broken for updates to existing notebooks). If either needs a content fix after this, use the raw API workaround (base64 payload + `fab api -X post .../updateDefinition`), not `fab import` again.
 
-- [ ] **Step 6: Run both notebooks**
+- [x] **Step 6: Run both notebooks**
 
 ```bash
 fab job run "DP - Staging - Dev.Workspace/Build_Silver_WkCodeFl.Notebook" --timeout 300
@@ -376,7 +376,7 @@ fab job run "DP - Staging - Dev.Workspace/Build_Silver_WKCDPART.Notebook" --time
 ```
 Expected: both `Completed`, no `failureReason`.
 
-- [ ] **Step 7: Create the DP_Presentation-side shortcuts to the new Silver tables**
+- [x] **Step 7: Create the DP_Presentation-side shortcuts to the new Silver tables**
 
 ```bash
 fab ln "DP - Presentation - Dev.Workspace/DP_Presentation.Lakehouse/Tables/Silver_WkCodeFl.Shortcut" \
@@ -388,7 +388,7 @@ fab ln "DP - Presentation - Dev.Workspace/DP_Presentation.Lakehouse/Tables/Silve
 ```
 This matches the exact real target pattern already confirmed this session on the existing `Silver_WkMechFl.Shortcut` (workspace `ab15d64d-c7ba-415d-9bcf-7feb1ef9b201`, lakehouse `876255e0-d462-4697-adc1-4a655f5bb101`) — the Gold notebooks in Task 4 read these via `spark.read.table(...)` in the `DP_Presentation` lakehouse context, same as every other Gold notebook reading a Silver source.
 
-- [ ] **Step 8: Verify via DuckDB**
+- [x] **Step 8: Verify via DuckDB**
 
 ```python
 import duckdb
@@ -403,7 +403,7 @@ for t in ["Silver_WkCodeFl", "Silver_WKCDPART"]:
 ```
 Expected: matches the Bronze counts exactly (pure passthrough — `Silver_WkCodeFl` 575,887, `Silver_WKCDPART` 1,846, or whatever the real current counts are at execution time).
 
-- [ ] **Step 9: Commit and push**
+- [x] **Step 9: Commit and push**
 
 ```bash
 cd "/c/Users/bfox/Documents/Git-Projects/fabric-workspace-docs"
@@ -433,7 +433,7 @@ git push origin dev
 
 **Depends on Task 3** — reads `Silver_WkCodeFl`/`Silver_WKCDPART` via their new `DP_Presentation`-side shortcuts.
 
-- [ ] **Step 1: Write `Build_Gold_JobCodes.Notebook`**
+- [x] **Step 1: Write `Build_Gold_JobCodes.Notebook`**
 
 Create `workspaces/DP - Presentation - Dev/Dimensions/Build_Gold_JobCodes.Notebook/notebook-content.py`:
 
@@ -561,7 +561,7 @@ print(factory_code_check.to_string())
 # META }
 ```
 
-- [ ] **Step 2: Write `Build_Gold_JobCodes.Notebook`'s `.platform` file**
+- [x] **Step 2: Write `Build_Gold_JobCodes.Notebook`'s `.platform` file**
 
 Generate a real v4 UUID for `logicalId`. Create `workspaces/DP - Presentation - Dev/Dimensions/Build_Gold_JobCodes.Notebook/.platform`:
 ```json
@@ -578,7 +578,7 @@ Generate a real v4 UUID for `logicalId`. Create `workspaces/DP - Presentation - 
 }
 ```
 
-- [ ] **Step 3: Write `Build_Gold_WkcdPart.Notebook`**
+- [x] **Step 3: Write `Build_Gold_WkcdPart.Notebook`**
 
 Create `workspaces/DP - Presentation - Dev/Dimensions/Build_Gold_WkcdPart.Notebook/notebook-content.py`:
 
@@ -690,11 +690,11 @@ print(coverage_check.to_string())
 # META }
 ```
 
-- [ ] **Step 4: Write `Build_Gold_WkcdPart.Notebook`'s `.platform` file**
+- [x] **Step 4: Write `Build_Gold_WkcdPart.Notebook`'s `.platform` file**
 
 Same pattern as Step 2, `displayName: "Build_Gold_WkcdPart"`, a new generated GUID.
 
-- [ ] **Step 5: Import both to Fabric**
+- [x] **Step 5: Import both to Fabric**
 
 ```bash
 export PATH="$HOME/.local/bin:$PATH"
@@ -707,7 +707,7 @@ fab import "DP - Presentation - Dev.Workspace/Dimensions.Folder/Build_Gold_WkcdP
 ```
 Both are fresh CREATEs. If either needs a content fix after this, use the raw API workaround, not `fab import` again.
 
-- [ ] **Step 6: Get the real notebookIds and run both**
+- [x] **Step 6: Get the real notebookIds and run both**
 
 ```bash
 fab get "DP - Presentation - Dev.Workspace/Dimensions.Folder/Build_Gold_JobCodes.Notebook" -q "id"
@@ -717,18 +717,18 @@ fab job run "DP - Presentation - Dev.Workspace/Dimensions.Folder/Build_Gold_Wkcd
 ```
 Expected: both `Completed`, no `failureReason`. Record both real notebookIds for Step 8.
 
-- [ ] **Step 7: Refresh SQL analytics endpoint metadata**
+- [x] **Step 7: Refresh SQL analytics endpoint metadata**
 
 ```bash
 fab api -X post "workspaces/73fd5443-240e-410a-990a-98827f32c087/sqlEndpoints/18effb0e-7bc2-47a1-854c-f4f2e8129145/refreshMetadata"
 ```
 Expected: HTTP 200, both `dim_JobCodes` and `dim_WkcdPart` listed with `status: "Success"`.
 
-- [ ] **Step 8: Register both in `deploy/dp_backend_scope.json`**
+- [x] **Step 8: Register both in `deploy/dp_backend_scope.json`**
 
 Read the file first to match its exact existing single-line-per-entry style, then insert 2 new entries for `Build_Gold_JobCodes` and `Build_Gold_WkcdPart` (tier=gold, cadence=daily) using the real notebookIds from Step 6, via precise Edit-tool text insertions. Validate afterward: `python -c "import json; json.load(open('deploy/dp_backend_scope.json'))"`.
 
-- [ ] **Step 9: DuckDB verification against real production**
+- [x] **Step 9: DuckDB verification against real production**
 
 ```python
 import duckdb
@@ -749,7 +749,7 @@ for label, path in [("OLD", f"{lh_tables}/dim_WkcdPart"), ("NEW", f"{dp_tables}/
 ```
 Report the real numbers — don't assume a match. Both should be close given both source from the same live Bronze mirror data.
 
-- [ ] **Step 10: Commit and push**
+- [x] **Step 10: Commit and push**
 
 ```bash
 cd "/c/Users/bfox/Documents/Git-Projects/fabric-workspace-docs"
@@ -856,7 +856,7 @@ Add a "### Task 5 Findings" section to this plan file recording, for each of the
 
 **Depends on Task 5's findings.**
 
-- [ ] **Step 1: Swap connection strings on all 7 tables**
+- [x] **Step 1: Swap connection strings on all 7 tables**
 
 Replace every occurrence in each `partition <table> = m` block:
 ```
@@ -864,15 +864,15 @@ Old: Sql.Database("xcrafcusadsu3d3wi4anbgp6we-gxnyznhdptpenfw724g3o5sjzm.datawar
 New: Sql.Database("xcrafcusadsu3d3wi4anbgp6we-inkp24yoeqfedgiktcbh6mwaq4.datawarehouse.fabric.microsoft.com", "DP_Presentation")
 ```
 
-- [ ] **Step 2: Check `dim_DateTable` for the established today-relative-column risk**
+- [x] **Step 2: Check `dim_DateTable` for the established today-relative-column risk**
 
 Even though not flagged as a known issue for this report specifically, cross-check every DAX-confirmed-used `dim_DateTable` column (from Task 5's findings) against the real 14-column `DP_Presentation.dim_DateTable` schema (`DateKey, Date, Year, Quarter, Month, Day, WeekOfYear, DayOfWeek, MonthName, MonthNameShort, MonthYear, SortableMonthYear, QuarterYear, IsWeekend`) before finalizing the trim — this exact bug class has recurred on 4 of the last 5 reports migrated this project. Restore any genuinely-used missing column as a DAX calculated column sourced from `'Data Refresh'[Date]` if found, following the established pattern from prior reports' `dim_DateTable.tmdl` restorations.
 
-- [ ] **Step 3: Apply trims per Task 5's findings**
+- [x] **Step 3: Apply trims per Task 5's findings**
 
 Apply the confirmed-unused column removals to each of the 7 tables per Task 5's documented findings, verifying column-for-column against those findings after editing.
 
-- [ ] **Step 4: Verify no stray connection strings remain**
+- [x] **Step 4: Verify no stray connection strings remain**
 
 ```bash
 cd "/c/Users/bfox/Documents/Git-Projects/fabric-workspace-docs"
@@ -880,7 +880,7 @@ grep -rn "LH_Master_Data" "workspaces/RP - Dev/Job Code Parts Advisor.SemanticMo
 ```
 Expected: zero matches.
 
-- [ ] **Step 5: Commit and push**
+- [x] **Step 5: Commit and push**
 
 ```bash
 cd "/c/Users/bfox/Documents/Git-Projects/fabric-workspace-docs"
@@ -904,14 +904,14 @@ git push origin dev
 **Files:**
 - Create: `fabric-workspace-docs/workspaces/RP - Dev/Job Code Parts Advisor.pbip`
 
-- [ ] **Step 1: Confirm it doesn't already exist**
+- [x] **Step 1: Confirm it doesn't already exist**
 
 ```bash
 ls "workspaces/RP - Dev/" | grep "Job Code"
 ```
 Expected: only `Job Code Parts Advisor.Report` and `Job Code Parts Advisor.SemanticModel` — no `.pbip`.
 
-- [ ] **Step 2: Create the `.pbip` file**
+- [x] **Step 2: Create the `.pbip` file**
 
 ```json
 {
@@ -930,7 +930,7 @@ Expected: only `Job Code Parts Advisor.Report` and `Job Code Parts Advisor.Seman
 }
 ```
 
-- [ ] **Step 3: Commit and push**
+- [x] **Step 3: Commit and push**
 
 ```bash
 cd "/c/Users/bfox/Documents/Git-Projects/fabric-workspace-docs"
