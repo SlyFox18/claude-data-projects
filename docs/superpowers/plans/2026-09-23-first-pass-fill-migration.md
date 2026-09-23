@@ -58,7 +58,7 @@ fab job run "DP - Presentation - Dev.Workspace/Fact Tables.Folder/First Pass Fil
 - Create: `fabric-workspace-docs/workspaces/DP - Presentation - Dev/Fact Tables/First Pass Fill/Build_Gold_FirstPassFill.Notebook/.platform`
 - Modify: `fabric-workspace-docs/deploy/dp_backend_scope.json`
 
-- [ ] **Step 1: Write the notebook content**
+- [x] **Step 1: Write the notebook content**
 
 ```python
 # Fabric notebook source
@@ -343,7 +343,7 @@ print(f"SUCCESS: {row_count:,} rows written to Fact_FirstPassFill")
 # META }
 ```
 
-- [ ] **Step 2: Write the `.platform` file**
+- [x] **Step 2: Write the `.platform` file**
 
 ```json
 {
@@ -360,7 +360,7 @@ print(f"SUCCESS: {row_count:,} rows written to Fact_FirstPassFill")
 ```
 Generate a real, unique GUID for `logicalId` via `python -c "import uuid; print(uuid.uuid4())"` before writing — don't leave the placeholder text.
 
-- [ ] **Step 3: Import the notebook into Fabric**
+- [x] **Step 3: Import the notebook into Fabric**
 
 ```bash
 export PATH="$HOME/.local/bin:$PATH"
@@ -369,7 +369,7 @@ fab import "DP - Presentation - Dev.Workspace/Fact Tables.Folder/First Pass Fill
   -i "workspaces/DP - Presentation - Dev/Fact Tables/First Pass Fill/Build_Gold_FirstPassFill.Notebook" --format .py -f
 ```
 
-- [ ] **Step 4: Run it once and capture the real notebookId**
+- [x] **Step 4: Run it once and capture the real notebookId**
 
 ```bash
 fab job run "DP - Presentation - Dev.Workspace/Fact Tables.Folder/First Pass Fill.Folder/Build_Gold_FirstPassFill.Notebook" --timeout 300
@@ -377,14 +377,14 @@ fab get "DP - Presentation - Dev.Workspace/Fact Tables.Folder/First Pass Fill.Fo
 ```
 Expected: `Completed`, no `failureReason`. If the run fails with a real error (not a syntax typo), read it, form a hypothesis grounded in the real schema data above, and fix the root cause — don't guess. Record the returned notebookId for Step 6. **If you edit the notebook content to fix a bug, you MUST re-run Step 3 (`fab import`) before re-running this step** — `fab job run` executes whatever is currently live in Fabric, not your local edit.
 
-- [ ] **Step 5: Force a SQL analytics endpoint metadata sync**
+- [x] **Step 5: Force a SQL analytics endpoint metadata sync**
 
 This is a brand-new table created via a path-based Spark write — confirmed this session that such tables aren't immediately visible through `Sql.Database()`'s SQL analytics endpoint without a forced sync:
 ```bash
 fab api -X post "workspaces/73fd5443-240e-410a-990a-98827f32c087/sqlEndpoints/18effb0e-7bc2-47a1-854c-f4f2e8129145/refreshMetadata"
 ```
 
-- [ ] **Step 6: Register in `dp_backend_scope.json`**
+- [x] **Step 6: Register in `dp_backend_scope.json`**
 
 Use the Edit tool for a precise text insertion into the `notebooks` array, matching the file's existing compact style exactly — do NOT rewrite the whole file with a script:
 ```json
@@ -393,7 +393,7 @@ Use the Edit tool for a precise text insertion into the `notebooks` array, match
  "path": "workspaces/DP - Presentation - Dev/Fact Tables/First Pass Fill/Build_Gold_FirstPassFill.Notebook"}
 ```
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 cd "/c/Users/bfox/Documents/Git-Projects/fabric-workspace-docs"
@@ -410,6 +410,23 @@ from the start (tier=gold, cadence=daily).
 Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 git push origin dev
 ```
+
+**Execution notes (2026-09-23):**
+
+- **Real bug found and fixed (not a code bug — a missing shortcut):** The first `fab job run` failed with `System_Cancelled_Session_Statements_Failed` on the very first Spark SQL statement. Root cause: `Silver_InHist_PmManage` exists as a real table in `DP_Staging` (`DP - Staging - Dev` workspace `ab15d64d-c7ba-415d-9bcf-7feb1ef9b201`, lakehouse `876255e0-d462-4697-adc1-4a655f5bb101`) but, unlike every other `Silver_*` table this project's Gold notebooks read (`Silver_InTrans`, `Silver_InMaster`, etc. — all present as `.Shortcut` entries in `DP_Presentation/Tables`), it had never been shortcut into `DP_Presentation`. Confirmed via `fab ls "DP - Presentation - Dev.Workspace/DP_Presentation.Lakehouse/Tables"` (table absent) and `fab ls "DP - Staging - Dev.Workspace/DP_Staging.Lakehouse/Tables"` (table present). Fixed by creating the shortcut with the exact same pattern as the existing ones (verified via `fab get ... Silver_InTrans.Shortcut -q target`):
+  ```bash
+  fab ln "DP - Presentation - Dev.Workspace/DP_Presentation.Lakehouse/Tables/Silver_InHist_PmManage.Shortcut" \
+    --type oneLake \
+    --target "DP - Staging - Dev.Workspace/DP_Staging.Lakehouse/Tables/Silver_InHist_PmManage" -f
+  ```
+  No notebook code changes were needed — the PySpark port itself was correct. After creating the shortcut, `fab job run` completed successfully on the next attempt (job instance `39ac0d70-fddb-4a69-bf83-aa41247dcb91`).
+- **Real notebookId:** `8ac1d087-ebc9-48d0-a97a-a674cd368b06`
+- **Real `.platform` logicalId (newly generated GUID):** `18355759-0824-48ba-b679-d4359b259b2e`
+- **First Pass Fill folder:** did not exist under `Fact Tables` in Fabric yet — created via `fab mkdir "DP - Presentation - Dev.Workspace/Fact Tables.Folder/First Pass Fill.Folder"` (folder id `5d2c4764-7693-4a5c-9c18-48f890e9d34b`) before the `fab import` would succeed.
+- **Row count observed:** `Fact_FirstPassFill` = 1,328,067 rows — exactly matches `Silver_InHist_PmManage`'s row count (confirms the left-join lookups preserved grain, no fan-out/dedup issue). Aggregate check: `sum(TotalFirstPassAttempts)=1,870,779`, `sum(TotalFirstPassSuccesses)=1,560,953`, `avg(TotalFirstPassRate)=0.7798`.
+- **Flag for Task 2 (not resolved here, out of Task 1's scope):** production `LH_Master_Data.Fact_FirstPassFill` has only 713,482 rows (`sum_total_attempts=946,007`, `sum_total_successes=761,494`, `avg_total_rate=0.7552`) — noticeably fewer than the new table's 1,328,067. Since this transform has no refresh-time-relative logic, this is a real discrepancy worth investigating in Task 2, not an artifact of timing. Likely candidate: production's dataflow may apply a date-range filter or additional row-level filter not present in `Silver_InHist_PmManage`'s full history that wasn't ported (or wasn't documented in this plan's Context section) — needs real investigation, not a guess, before Task 2 is marked complete.
+- SQL analytics endpoint metadata sync (`refreshMetadata`) confirmed `Fact_FirstPassFill` and `Silver_InHist_PmManage` both synced successfully.
+- Committed as `25f0fb75` on `fabric-workspace-docs`/`dev`, pushed clean (`ffc0bde7..25f0fb75`).
 
 ---
 
