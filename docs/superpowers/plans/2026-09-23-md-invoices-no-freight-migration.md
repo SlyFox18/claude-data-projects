@@ -951,7 +951,7 @@ Every column was checked individually (bracket and dot notation) across `tables/
 - Modify: `fabric-workspace-docs/workspaces/RP - Dev/MD Invoices With No Freight.SemanticModel/definition/tables/dim_Parts.tmdl`
 - Modify: `fabric-workspace-docs/workspaces/RP - Dev/MD Invoices With No Freight.SemanticModel/definition/tables/dim_Salesperson.tmdl`
 
-- [ ] **Step 1: Repoint all 10 tables' SQL connections**
+- [x] **Step 1: Repoint all 10 tables' SQL connections**
 
 In each file, find:
 ```
@@ -962,7 +962,9 @@ Replace with:
 				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-inkp24yoeqfedgiktcbh6mwaq4.datawarehouse.fabric.microsoft.com", "DP_Presentation"),
 ```
 
-- [ ] **Step 2: Fix `Fact_MDInvoices_NoFreight_Snapshot.tmdl`'s `Item=` to the new proper-case name**
+**Execution note (2026-09-23):** Done on all 10 files. Verified via `grep -rn "LH_Master_Data"` returning zero matches (Step 5).
+
+- [x] **Step 2: Fix `Fact_MDInvoices_NoFreight_Snapshot.tmdl`'s `Item=` to the new proper-case name**
 
 Find:
 ```
@@ -974,22 +976,42 @@ Replace with:
 ```
 (exact old text may differ slightly — read the file first and match what's actually there, same discipline as every prior report this session).
 
-- [ ] **Step 3: Restore any DAX-needed `dim_DateTable` columns per Task 6 Findings**
+**Execution note (2026-09-23):** Real current text matched the plan's example text exactly (read first, confirmed). Fixed in the same edit as the connection-string swap for this file.
+
+- [x] **Step 3: Restore any DAX-needed `dim_DateTable` columns per Task 6 Findings**
 
 For every `dim_DateTable` column Task 6 flagged as needing DAX restoration (not a plain repoint), remove its plain M-sourced `column` block and replace with a DAX calculated column sourced from `'Data Refresh'[Date]`, using the exact patterns already given in this plan's Context section (or looked up from `df_Dim_Date.Dataflow` for any flag not already covered). Match the TMDL syntax exactly as already proven on First Pass Fill's `dim_DateTable.tmdl` this session — inline `column Name = ...` DAX on the header line itself (backtick-fenced), never a separate nested `expression =` property.
 
-- [ ] **Step 4: Trim per Task 6's findings**
+**Execution note (2026-09-23):** Nothing to do — Task 6's verdict was "NONE NEEDED" (the only genuinely-used `dim_DateTable` column, `Date`, already exists in the real 14-column `DP_Presentation.dim_DateTable` schema). No DAX-restoration column was added.
+
+- [x] **Step 4: Trim per Task 6's findings**
 
 For each of the 10 tables, apply Task 6's documented keep/trim decisions: remove confidently-unused `column` blocks, add/update a matching `Table.SelectColumns(...)` M-query step, check for any dangling `sortByColumn` on a trim candidate before removing it. Leave ambiguous columns untouched. Don't touch `Fact_MDInvoices_NoFreight_Snapshot`'s 3 existing DAX calculated columns (`MissedFreightAmount`, `PctFreightDifference`, `FreightBucket`).
 
-- [ ] **Step 5: Confirm no `LH_Master_Data` references remain**
+**Execution note (2026-09-23):** Applied to all 8 non-exempt tables, each verified column-for-column against Task 6 Findings after editing:
+- `Fact_MDInvoices_Closed`: 18 plain columns -> 12 kept (`FileNumber, Branch, Franchise, InvoiceDate, PartNumber, Salesperson, OrderQty, UnitPrice, UnitCost, TotalFreightCharged, TotalLineWeight, FreightStatus`); 6 trimmed (`TransId, CustomerNumber, LineTotal, Weight, FreightLineCount, JobCode`). `SelectedColumns` step inserted between the raw `dbo_` load and the existing `#"Extracted Date"` step (which now reads from `SelectedColumns`, not `dbo_...`), preserving the `InvoiceDate` date-extraction transform. 3 DAX calc columns untouched.
+- `Fact_MDInvoices_NoFreight`: 23 plain columns -> 15 kept (`FileNumber, Branch, Franchise, OrderDate, RONumber, PartNumber, OrderQty, UnitPrice, UnitCost, LineTotal, TotalLineWeight, TotalFreightCharged, FreightStatus, Salesperson, OrderType`); 8 trimmed (`LineNumber, CustomerNumber, CustomerOrderNumber, Weight, FreightLineCount, JobCode, SuppliedQty, BackorderQty`). Same `SelectedColumns`-before-`#"Extracted Date"` pattern (on `OrderDate`). 3 DAX calc columns untouched.
+- `Fact_MDInvoices_NoFreight_Snapshot`: no trim per Task 6's explicit recommendation — connection swap + `Item=` fix only, all 24 plain + 3 DAX calc columns left intact (verified: still 27 `column` blocks total after editing, unchanged from before).
+- `FreightCalculator`: all 4 columns kept (`PartWeightFrom, PartWeightTo, BaseRate, AdditiveRatePerPound`) — no trim, but an explicit `SelectedColumns` step added anyway to match this project's established full-pin convention (confirmed via First Pass Fill's `Fact_FirstPassFill.tmdl` and Inventory Analysis's `dim_PaymentMethod.tmdl`, both of which pin even a fully-kept column list).
+- `dim_BranchLocation`: 16 -> 3 kept (`Branch, BranchID, LocationID`); 13 trimmed. The one real `sortByColumn` dependency (`Branch` -> `LocationID`) preserved since `LocationID` is itself a keep column.
+- `dim_CustomerList`: no trim per Task 6's explicit recommendation (fully orphaned table, flagged for Brian) — connection swap only. Note: actual column count is 55, not the "39" figure in Task 6's summary text — a pre-existing documentation discrepancy in Task 6, not something this step needed to reconcile since no column-level action was taken either way.
+- `dim_DateTable`: 62 -> 1 kept (`Date` only, the relationship key + `isKey`/Mark-as-Date-Table column). All 61 other columns removed (done programmatically via a small Python script reading/rewriting the file, to avoid transcription risk on ~580 lines of near-identical boolean-flag column blocks — output verified by re-reading the resulting file). The 2 on-paper `sortByColumn` dependencies (`MonthNameShort`->`Month`, `MonthYear`->`SortableMonthYear`) were moot as documented — all 4 columns trimmed together as a unit.
+- `dim_Franchise`: 15 -> 1 kept (`Franchise`); 14 trimmed.
+- `dim_Parts`: 22 -> 1 kept (`PartNumber`); 21 trimmed.
+- `dim_Salesperson`: 7 -> 2 kept (`SalespersonCode, FullName`); 5 trimmed (`FirstName, LastName, DisplayName, Branch, IsActive`).
+
+Every edited file was re-read in full after editing to confirm the kept-column set matches Task 6's list exactly and that DAX calculated columns/`sortByColumn` properties were left intact. The `validate-tmdl.sh` hook did not flag any syntax errors on any of the 10 files.
+
+- [x] **Step 5: Confirm no `LH_Master_Data` references remain**
 
 ```bash
 grep -rn "LH_Master_Data" "workspaces/RP - Dev/MD Invoices With No Freight.SemanticModel/"
 ```
 Expected: no output.
 
-- [ ] **Step 6: Commit**
+**Execution note (2026-09-23):** Ran clean — zero matches.
+
+- [x] **Step 6: Commit**
 
 ```bash
 cd "/c/Users/bfox/Documents/Git-Projects/fabric-workspace-docs"
@@ -1005,6 +1027,8 @@ Task 6 exhaustive audit where confident, left as-is where ambiguous.
 Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 git push origin dev
 ```
+
+**Execution note (2026-09-23):** Committed and pushed clean — commit `f03e5cdb` on `fabric-workspace-docs/dev` (`9a61136a..f03e5cdb`), exactly the 10 intended files changed (33 insertions, 1199 deletions), verified via `git status` before and after that no other file in the report/model folder was touched (no bookmark or visual side effects, per the standing `feedback_pbir_cli_filter_side_effects` concern — not applicable here since only TMDL text was edited, but checked anyway).
 
 ---
 
