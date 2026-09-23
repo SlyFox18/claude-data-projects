@@ -757,15 +757,19 @@ git push origin dev
 **Files:**
 - Modify (disable, don't delete): `fabric-workspace-docs/workspaces/LH_Master_Data/Pipelines/Pipeline_Monthly_MDInvoices_Snapshot.DataPipeline/.schedules`
 
-- [ ] **Step 1: Confirm the new notebook's guard logic ran successfully (Task 4 Step 7 already did this)**
+- [x] **Step 1: Confirm the new notebook's guard logic ran successfully (Task 4 Step 7 already did this)**
 
 Don't disable the old pipeline until Task 4 Step 7's dry-run confirmed the guard logic works against real data.
 
-- [ ] **Step 2: Disable the old pipeline's schedule**
+**Execution note (2026-09-23):** Confirmed — no new action needed. Task 4 Step 7's registered run correctly SKIPPED the September write (row count stayed at 5,492, matching the backfill exactly), proving the duplicate-guard logic works against real data.
+
+- [x] **Step 2: Disable the old pipeline's schedule**
 
 Edit `.schedules` to set `"enabled": false` (read the real current file first via Task 2 Step 1's output, then flip only that one field — don't guess the file's exact structure).
 
-- [ ] **Step 3: Commit**
+**Execution note (2026-09-23):** Re-read the real current file before editing — structure matched Task 2's summary exactly (single schedule entry, `jobType: Execute`, `Monthly`/`dayOfMonth: 1`/`05:30`/`Central Standard Time`/`2026-07-08` to `2027-07-08`). Flipped only `"enabled": true` → `"enabled": false` via a targeted Edit; no other field touched.
+
+- [x] **Step 3: Commit**
 
 ```bash
 cd "/c/Users/bfox/Documents/Git-Projects/fabric-workspace-docs"
@@ -780,6 +784,8 @@ diverging future months. Pipeline and notebook left in place
 Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 git push origin dev
 ```
+
+**Execution note (2026-09-23):** Committed and pushed clean — commit `9a61136a` on `fabric-workspace-docs/dev` (`5f92ab4d..9a61136a`), 1 file changed (1 insertion, 1 deletion), exactly the `.schedules` field flip. Old pipeline and `nb_Snapshot_MDInvoices_NoFreight` notebook left fully in place in `LH_Master_Data` (disabled, not deleted) — same pattern as Open Parts Tickets' equivalent old pipeline.
 
 ---
 
