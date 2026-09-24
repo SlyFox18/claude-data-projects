@@ -74,7 +74,7 @@ shortcut, or one small missing piece)
 | `First Pass Fill` | Parts | **COMPLETE (2026-09-23).** Original plan below (needs its own audit-and-build pass) was executed — see the completion note after the Batch 3 intro below. |
 | `Job Code Parts Advisor` | Service | **COMPLETE (2026-09-24).** Backend built (`dim_JobCodes`, `dim_WkcdPart`, both fact tables), report repointed and published. Hit a real unresolved `dim_JobCodes` refresh bug along the way — see the completion note after the Batch 3 intro below. |
 | `Combine Vault Sales` | Parts | **COMPLETE (2026-09-23).** Circular dependency resolved via a hash-based `PartNumberKey` — see the completion note after the Batch 3 intro below. |
-| `Labor Performance V2` | Service | `TechnicianAttendance`/`TechnicianEfficiency`/`TechnicianPunchedTime` — Category B (Technician-family) raw sources were decoded early in this project but their Gold-layer facts were deliberately deferred; this is that deferred work coming due |
+| `Labor Performance` | Service | **COMPLETE (2026-09-24).** Backend built (`dim_Technician_Code_Names`, `TechnicianAttendance`, `TechnicianPunchedTime`, `TechnicianEfficiency`), report repointed and published. Renamed from "Labor Performance V2" during evaluation to its permanent name — see the completion note after the Batch 3 intro below for the real bugs found and fixed along the way. |
 
 ## Proposed approach
 
@@ -553,3 +553,81 @@ data was always clean, and the relationship-removal was the right call
 rather than a data fix. `dim_WkcdPart`/both fact tables present and within
 normal day-to-day drift of their build-time baselines. Further validation
 still pending on Brian's side per his own note.
+
+## Labor Performance — COMPLETE (2026-09-24)
+
+Was called "Labor Performance V2" during evaluation; the live Fabric item was
+already renamed to plain "Labor Performance" before this migration started
+(confirmed via `fab ls` — no V2 suffix anywhere live, only a stale git folder
+name in `RP - Service Reports` that never got synced back via a Git
+Integration commit, part of that workspace's already-known drift cleanup).
+
+Backend built faithfully from the real resolved SQL Anywhere view logic
+(`Administrator.TechnicianAttendance`/`TechnicianPunchedTime`/`TechnicianEfficiency`,
+resolved from Brian's own direct `CREATE/ALTER VIEW` pulls both earlier in
+this project and again live during this migration to settle open questions —
+see `project_labor_performance_technician_views_resolved.md`), sourced from
+Silver tables that already existed (`Silver_WkMechAdj`, `Silver_WkMechWk`,
+`Silver_WkOthSub`). `dim_Technician_Code_Names` was leftover completed work
+from the earlier Dimensions catalog audit project — already correct, just
+unregistered, the same pattern found repeatedly on other reports.
+
+**Real bugs found and fixed, none of them anticipated by the original plan:**
+
+1. **A duplicate-key bug in `dim_Technician_Code_Names`**: 3 `TechnicianCode`
+   values (`T200`/`T1011`/`T229`) each had 2 rows in `Silver_Contact` for 2
+   genuinely different real people (the code had been reassigned to a new
+   hire after a prior employee left) — an unordered `dropDuplicates` would
+   arbitrarily pick either one, a silent wrong-name risk caught by code
+   review before it reached the report. Fixed with an explicit
+   most-recent-`ModifiedDate` tie-break.
+2. **A join-predicate bug in `TechnicianPunchedTime`**: the semi-join gating
+   punched time to a same-day attendance record compared full TIMESTAMP
+   equality, but `AdjustmentDate` is always midnight while `ClockInDate`
+   carries a real time-of-day — they could essentially never match. Fixed by
+   comparing calendar dates instead, with the Spark session pinned to UTC for
+   deterministic date extraction. (An intermediate fix attempt wrongly
+   diagnosed this as a timezone-conversion bug in JD's Bronze mirror — that
+   turned out to be a display artifact from un-pinned investigation queries,
+   not real data corruption; caught by code review and reverted.) Verified
+   against production's real live coverage numbers exactly (116 of 286
+   July-2026 technicians matching, both sides).
+3. **The big one — `TechnicianEfficiency` grouped by the wrong date
+   entirely**: the notebook used `ClockInDate` (when labor was performed) for
+   `DateKey`, but the real source view groups by `datepart(yy/mm,
+   invoice_date)` — when the invoice was created, which can be a different,
+   later month than the work itself. This silently misattributed hours to
+   the wrong month whenever invoicing lagged behind the labor date, and got
+   worse for more recent months (a technician's real September invoice total
+   was capped near 94-158 hours by the work-date grouping vs. production's
+   real 284, since work performed in August/July but invoiced in September
+   was being counted under the wrong earlier month instead). Found by
+   comparing against the literal real view SQL (pulled directly by Brian)
+   rather than continuing to trust an earlier session's algebraic
+   derivation. Fixed by regrounding `DateKey` on `InvoiceDate`. Confirmed via
+   DuckDB across 5 months (March/May/July/August/September 2026) against
+   production's real live table: every month now matches exactly, including
+   the underlying `ReworkHours`/`EfficiencyRateNumerator`/
+   `EfficiencyRateDenominator` components, not just the headline
+   `InvoiceHours` total.
+
+Also scoped `TechnicianAttendance`/`TechnicianPunchedTime` to `Year >= 2023`
+at Brian's request, matching production's own dataflow-level scope-down (the
+Gold notebooks initially carried full history back to 2010 with no filter,
+creating an inconsistent history window against `TechnicianEfficiency`'s
+permanent ~2-year source-view limit).
+
+Brian confirmed the numbers line up after the `InvoiceDate` fix, republished,
+and committed via Fabric's own Git integration. Post-publish DuckDB
+verification: all 6 tables present and populated
+(`dim_Technician_Code_Names` 1,453 rows/1,453 distinct TechnicianCode — zero
+duplicates; `TechnicianAttendance` 13,156; `TechnicianPunchedTime` 5,068;
+`TechnicianEfficiency` 2,544; `dim_BranchLocation` 69; `dim_DateTable`
+4,018), all 9 relationships intact, no stray `LH_Master_Data` connection
+strings remaining.
+
+This closes out both of the previously-unscheduled Tier 3 reports (alongside
+`Job Code Parts Advisor` above) — no reports remain in this catalog without
+either a completed migration or an explicit, deliberate hold (Customer
+Anatomy/Inspections/Price Matrix for "special care" per Brian's instruction;
+`Table-Column-Names-Search` staying on its ODBC connection by design).
