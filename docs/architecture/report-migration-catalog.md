@@ -72,7 +72,7 @@ shortcut, or one small missing piece)
 | Report | Workspace | What's missing |
 |---|---|---|
 | `First Pass Fill` | Parts | **COMPLETE (2026-09-23).** Original plan below (needs its own audit-and-build pass) was executed — see the completion note after the Batch 3 intro below. |
-| `Job Code Parts Advisor` | Service | References `dim_JobCodes` (plural — confirmed via direct check this is NOT what `df_Dim_JobCode.Dataflow` produces, which writes `dim_JobCode` singular, already built) and `dim_WkcdPart` (a real, separate dataflow, `df_Dim_WKCDPART.Dataflow`, never audited or built). Needs investigation: is `dim_JobCodes` a stale/legacy reference this report should just repoint to `dim_JobCode`, or a genuinely different table? |
+| `Job Code Parts Advisor` | Service | **COMPLETE (2026-09-24).** Backend built (`dim_JobCodes`, `dim_WkcdPart`, both fact tables), report repointed and published. Hit a real unresolved `dim_JobCodes` refresh bug along the way — see the completion note after the Batch 3 intro below. |
 | `Combine Vault Sales` | Parts | **COMPLETE (2026-09-23).** Circular dependency resolved via a hash-based `PartNumberKey` — see the completion note after the Batch 3 intro below. |
 | `Labor Performance V2` | Service | `TechnicianAttendance`/`TechnicianEfficiency`/`TechnicianPunchedTime` — Category B (Technician-family) raw sources were decoded early in this project but their Gold-layer facts were deliberately deferred; this is that deferred work coming due |
 
@@ -487,3 +487,69 @@ Anatomy/Inspections/Price Matrix remain held back for "special care" per
 Brian's earlier instruction; `Table-Column-Names-Search` remains tracked
 but deliberately not migrated (informational report, stays on its ODBC
 connection).
+
+## Job Code Parts Advisor — COMPLETE (2026-09-24)
+
+Backend built faithfully from the 2 real production dataflows
+(`df_Dim_WkCodeFl.Dataflow` → `dim_JobCodes`, `df_Dim_WKCDPART.Dataflow` →
+`dim_WkcdPart` — confirmed genuinely different from the already-built
+`dim_JobCode` singular table, not a stale reference), plus registering 2
+existing-but-unregistered fact notebooks (`Fact_JobCodePartFrequency`,
+`Fact_JobCodePartFrequency_Branch`) that were leftover completed work from
+the earlier facts-catalog-audit phase. Report-layer audit trimmed the
+report to its real 8 backend tables and repointed the connection string.
+
+**Real, unresolved refresh bug found during Brian's own publish/refresh
+pass**: `dim_JobCodes` repeatedly failed Desktop refresh with "duplicate
+JobCode ... not allowed on the one side of a relationship" — a different
+JobCode each time. Exhaustively investigated: `delta_scan` and raw
+`read_parquet` (bypassing the Delta log entirely) both agreed the data was
+genuinely clean at every layer (Bronze/Silver/Gold, a from-scratch rebuild,
+a brand-new never-used table name), a live XMLA trace of the actual TMSL
+refresh command showed nothing unusual, and Brian's own tests (new blank
+query, cold Desktop restart, cache clear, even a raw OneLake Parquet file
+read bypassing the SQL Analytics Endpoint) all consistently reproduced the
+exact same 2-row duplicate with `ModifiedDate` values 31 seconds apart.
+Root cause never identified — genuinely unresolved, not just unreproduced
+on this end. Along the way, found and fixed a real, separate bug affecting
+the whole DP_Presentation backend: `mode("overwrite")` doesn't physically
+delete a Gold table's previous-run Parquet files, so the SQL endpoint scans
+orphaned files from prior runs too — fixed for `dim_JobCodes` (`VACUUM
+... RETAIN 0 HOURS` after every write) but confirmed via `fab dir` this
+affects other Gold tables too (`dim_Parts`, `dim_BranchLocation`,
+`dim_Franchise`); flagged as a real follow-up, not yet fixed project-wide.
+
+**Workaround, per Brian's explicit direction to stop chasing the root
+cause**: eliminated `dim_JobCodes` from every model relationship. Its 4
+`LOOKUPVALUE` usages in the `Fact_GapAnalysis`/`Fact_BranchAnalysis`
+calculated tables never needed a relationship, so the report's filtering
+UI ("Select a Job Code" list, "Search Job Code" box, and the Branch
+Analysis drillthrough) was repointed to filter those fact tables' own
+native `JobCode` columns directly. This broke the drillthrough in 2
+distinct ways that both got fixed:
+1. The main page's source field (`Fact_GapAnalysis.JobCode`) and the
+   drillthrough target field (initially `Fact_BranchAnalysis.JobCode`)
+   were different, unrelated tables — drillthrough only auto-passes a
+   value when source and target are the exact same field or connected by
+   a relationship. Fixed by adding one new relationship,
+   `Fact_BranchAnalysis.JobCode` → `Fact_GapAnalysis.JobCode`,
+   many-to-many, single direction (never enforces uniqueness on refresh,
+   so it can't reintroduce the `dim_JobCodes` bug), and repointing the
+   drillthrough target back to `Fact_GapAnalysis.JobCode` to match.
+2. The relationship's `fromColumn`/`toColumn` were initially backwards —
+   Power BI's default single-direction cross-filtering flows from the
+   `toColumn`'s table into the `fromColumn`'s table (confirmed against
+   the model's existing `Fact_BranchAnalysis.Branch` →
+   `dim_BranchLocation.BranchID` relationship), so the filter was flowing
+   the wrong way and `SELECTEDVALUE(Fact_BranchAnalysis[JobCode])` in the
+   `Branch Analysis Banner`/`Key Finding` measures came back blank. Fixed
+   by swapping which column is `toColumn`.
+
+Brian confirmed the drillthrough works after both fixes, republished, and
+committed via Fabric's own Git integration. Post-publish DuckDB
+verification: `dim_JobCodes` 575,887 rows, 575,887 distinct JobCode,
+**zero duplicate JobCode groups** — final confirmation the underlying
+data was always clean, and the relationship-removal was the right call
+rather than a data fix. `dim_WkcdPart`/both fact tables present and within
+normal day-to-day drift of their build-time baselines. Further validation
+still pending on Brian's side per his own note.
