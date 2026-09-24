@@ -1,9 +1,20 @@
 # Report Migration Catalog — LH_Master_Data → DP Backend
 
-**Status:** Scoping pass complete (2026-09-15). Not yet started — no report has been
-repointed to the DP backend yet, including the original design spec's own pilot
-candidate (Parts Promo, still sitting in `RP - Dev`/`RP - Sandbox`, never promoted to
-production).
+**Status (2026-09-24):** Every report in `RP - Dev` is repointed to the DP backend
+except the two held back for last — `Inspections` and `Customer Anatomy` (the latter
+now published under its permanent name, "V2" dropped). Confirmed via a full sweep of
+every `RP - Dev` semantic model for any live `LH_Master_Data` reference (by name, old
+SQL endpoint host, and lakehouse GUID). Housekeeping from that sweep:
+- `Parts Promo`'s `dim_PromoType` was never repointed during the original pilot —
+  the one table missed. Fixed by Brian in Desktop and republished 2026-09-24
+  (`fabric-workspace-docs` commit `1a807677`); verified clean.
+- `Planter Inspection Part Sales - V1` (still in `RP - Service Reports`) is a
+  retired legacy duplicate of `Planter Inspection Part Sales` — intentionally
+  excluded from migration, confirmed by Brian 2026-09-24.
+- `Table-Column-Names-Search` stays on direct ODBC by design (see below).
+
+*Original scoping status (2026-09-15, kept for history):* Scoping pass complete; no
+report had yet been repointed, including the pilot candidate (Parts Promo).
 
 ## Why this phase, and what "migration" means here
 
