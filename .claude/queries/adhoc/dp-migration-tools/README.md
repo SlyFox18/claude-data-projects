@@ -8,3 +8,5 @@ Helpers for DP-backend report migrations (Inspections, Customer Anatomy, ...).
 - `inspections_parity.py`: Inspections DP-vs-production parity (added in the Inspections plan, Task 9).
 
 All need `fab` (authenticated) and, for DuckDB scripts, `az login`.
+
+Exit codes: `wait_ci.py` uses 2 = timeout; `run_item.py` uses 2 = timeout, 3 = already running, 4 = ambiguous (multiple new job instances).

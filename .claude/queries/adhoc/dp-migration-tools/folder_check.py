@@ -16,11 +16,32 @@ SCOPE = r"C:/Users/bfox/Documents/Git-Projects/fabric-workspace-docs/deploy/dp_b
 
 def api(path):
     out = subprocess.run(["fab", "api", path], capture_output=True, text=True, encoding="utf-8").stdout
-    return json.loads(out[out.find("{"):])["text"]
+    start = out.find("{")
+    if start < 0:
+        raise SystemExit(f"bad response for {path}: {out[-500:]}")
+    try:
+        return json.loads(out[start:])["text"]
+    except (json.JSONDecodeError, KeyError) as e:
+        raise SystemExit(f"bad JSON ({e}) for {path}: {out[-500:]}")
+
+
+def api_all(path):
+    """Paginate a list endpoint, concatenating 'value' across continuationToken pages."""
+    sep = "&" if "?" in path else "?"
+    values = []
+    token = None
+    while True:
+        p = path + (f"{sep}continuationToken={token}" if token else "")
+        body = api(p)
+        values.extend(body.get("value", []))
+        token = body.get("continuationToken")
+        if not token:
+            break
+    return values
 
 
 def folder_paths(ws):
-    folders = {f["id"]: f for f in api(f"workspaces/{ws}/folders").get("value", [])}
+    folders = {f["id"]: f for f in api_all(f"workspaces/{ws}/folders")}
 
     def full(fid):
         f = folders[fid]
@@ -38,8 +59,13 @@ for nb in scope["notebooks"]:
 mismatches = 0
 for ws, nbs in by_ws.items():
     paths = folder_paths(ws)
-    items = {i["displayName"]: i for i in api(f"workspaces/{ws}/items?type=Notebook")["value"]}
+    items = {i["displayName"]: i for i in api_all(f"workspaces/{ws}/items?type=Notebook")}
     for nb in nbs:
+        parts = nb["path"].split("/")
+        if not nb["path"].startswith("workspaces/") or len(parts) < 3:
+            print(f"BAD PATH {nb['name']:45s} path='{nb['path']}'")
+            mismatches += 1
+            continue
         rel = nb["path"].split("/", 2)[2]          # drop "workspaces/<ws>/"
         repo_dir = rel.rsplit("/", 1)[0] if "/" in rel else ""
         it = items.get(nb["name"])

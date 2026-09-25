@@ -9,15 +9,23 @@ import sys
 import time
 
 repo = sys.argv[1] if len(sys.argv) > 1 else r"C:/Users/bfox/Documents/Git-Projects/fabric-workspace-docs"
-sha = subprocess.run(["git", "-C", repo, "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip()
+rev = subprocess.run(["git", "-C", repo, "rev-parse", "HEAD"], capture_output=True, text=True)
+sha = rev.stdout.strip()
+if rev.returncode != 0 or not sha:
+    print("git rev-parse HEAD failed:", rev.stderr.strip())
+    sys.exit(1)
 print("waiting for CI run of", sha[:8])
 deadline = time.time() + 900
 while time.time() < deadline:
-    out = subprocess.run(
-        ["gh", "run", "list", "--commit", sha, "--json", "databaseId,status,conclusion"],
+    proc = subprocess.run(
+        ["gh", "run", "list", "--commit", sha, "--workflow", "deploy.yml",
+         "--json", "databaseId,status,conclusion"],
         capture_output=True, text=True, cwd=repo,
-    ).stdout
-    runs = json.loads(out or "[]")
+    )
+    if proc.returncode != 0:
+        print("gh run list failed:", proc.stderr.strip())
+        sys.exit(1)
+    runs = json.loads(proc.stdout or "[]")
     if runs:
         run = runs[0]
         print(f"  run {run['databaseId']}: {run['status']} {run.get('conclusion') or ''}")
