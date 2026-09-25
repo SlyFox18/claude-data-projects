@@ -1,8 +1,11 @@
 # Report Migration Catalog — LH_Master_Data → DP Backend
 
-**Status (2026-09-24):** Every report in `RP - Dev` is repointed to the DP backend
-except the two held back for last — `Inspections` and `Customer Anatomy` (the latter
-now published under its permanent name, "V2" dropped). Confirmed via a full sweep of
+**Status (2026-09-25):** Every report in `RP - Dev` is repointed to the DP backend
+except **`Customer Anatomy`** (published under its permanent name, "V2" dropped) — the
+last one. **Inspections completed 2026-09-25** (see "Inspections — COMPLETE" at the end).
+
+*Status 2026-09-24 (history):* every report repointed except the two held back for
+last — `Inspections` and `Customer Anatomy`. Confirmed via a full sweep of
 every `RP - Dev` semantic model for any live `LH_Master_Data` reference (by name, old
 SQL endpoint host, and lakehouse GUID). Housekeeping from that sweep:
 - `Parts Promo`'s `dim_PromoType` was never repointed during the original pilot —
@@ -58,7 +61,7 @@ cross-checked each against the authoritative live `DP_Presentation` table list (
 | `Negative On Hand-On Hand No Bin` | Parts | `Fact_NegativeOnHand_OnHandNoBin`, `dim_BranchLocation`, `dim_DateTable` |
 | `Parts Not Re-Ordered 24 Hours` | Parts | `Fact_PartsNotReordered`, `dim_BranchLocation`, `dim_DateTable` |
 | `Parts Adjustments` | Parts | `Fact_AdjPairs_Summary`, `Fact_AdjustmentPairs`, `Fact_PartsAdjustments`, `dim_AdjustmentType`, `dim_BranchLocation`, `dim_DateTable`, `dim_Parts` (+ `jdis_Part_Information` raw ref — `Silver_PartInformation` shortcut already exists) |
-| `Inspections - V2` | Service | `Fact_LaborJobSummary`, `Fact_PendingInspections`, `Fact_ServiceRecommendations`, `Fact_WorkOrderParts`, `dim_BranchLocation`, `dim_CustomerList`, `dim_DateTable`, `dim_Parts` — **flagged**: `Fact_LaborJobSummary.IsPending` is confirmed permanently `False` in production itself (ported faithfully per Brian's own call in Batch B); a real business-rule fix still needed before this report's pending-count visuals are trustworthy, independent of the migration itself. `Table3` reference (`Inspection Goals.tmdl`) needs a quick look — likely a disconnected manual-entry table, not a real Gold dependency |
+| `Inspections - V2` | Service | **COMPLETE 2026-09-25** (see section at end). Original scoping note: `Fact_LaborJobSummary`, `Fact_PendingInspections`, `Fact_ServiceRecommendations`, `Fact_WorkOrderParts`, `dim_BranchLocation`, `dim_CustomerList`, `dim_DateTable`, `dim_Parts` — **flagged**: `Fact_LaborJobSummary.IsPending` is confirmed permanently `False` in production itself (ported faithfully per Brian's own call in Batch B); a real business-rule fix still needed before this report's pending-count visuals are trustworthy, independent of the migration itself. `Table3` reference (`Inspection Goals.tmdl`) needs a quick look — likely a disconnected manual-entry table, not a real Gold dependency |
 
 **9 reports, the most-used ones in the whole portfolio** (Customer Anatomy, Inspections,
 Unique Parts Customers, Price Matrix) are in this tier.
@@ -642,3 +645,45 @@ This closes out both of the previously-unscheduled Tier 3 reports (alongside
 either a completed migration or an explicit, deliberate hold (Customer
 Anatomy/Inspections/Price Matrix for "special care" per Brian's instruction;
 `Table-Column-Names-Search` staying on its ODBC connection by design).
+
+## Inspections — COMPLETE (2026-09-25)
+
+Spec `docs/superpowers/specs/2026-09-25-inspections-migration-design.md`; plan
+`docs/superpowers/plans/2026-09-25-inspections-migration.md`. Published in `RP - Dev` on
+DP_Presentation (fabric-workspace-docs `fa9e88e1` repoint/trim, `82b6d3b8` Brian's publish).
+
+**Backend.** There are 5 Gold notebooks in `DP - Presentation - Dev/Fact Tables/Inspections/`, all registered with a `wave` field:
+1. The new `Build_Gold_InspectionJobCodes` writes `lookup_InspectionJobCodes`: the 113 codes service defined, git-tracked, and replacing three hard-coded copies.
+2. `LaborJobSummary`, `WorkOrderParts` and `PendingInspections` match on `TRIM(JobCode)` against that lookup.
+3. `ServiceRecommendations` builds on them.
+
+Each notebook got the UTC pin plus VACUUM. The facts were trimmed to the columns in use (LJS 9, WOP 9, Pending 8).
+
+**Owner decisions:**
+- 2023+ scope on `Silver_WkOthSub.ModifiedDate`, with punches scoped through the jobs.
+- **Production under-count fixed:** production's WKMECHWK filter dropped the punches that have a NULL ModifiedDate.
+- WorkOrderParts' Feb-29 crash is fixed with `add_months(-36)`.
+
+**Parity** (complete months through 2026-08; `tools/dp-migration/inspections_parity.py`):
+- **LJS:** rows 384,646, inspections 4,799 and labor $95,353,364.87 are identical in every month. Hours are +36,283.9 against 36,284.0 expected (NULL-ModifiedDate punches plus 11 pre-2023 punches), so 0.0 unexplained in every month.
+- **WOP:** identical through July 2026. August has 13 extra invoices, which production's `InTrans_Incremental` never loaded; see the production gap below.
+- **Pending and ServiceRecommendations:** snapshot timing, verified key by key.
+
+Brian accepted the results.
+
+**Report layer:**
+- 8 tables were repointed. The dims use `Table.SelectColumns`.
+- `dim_DateTable.IsRolling12Months` was restored as a DAX column off `'Data Refresh'[Date]`, keeping its original lineageTag. It's used by 2 visuals and 6 bookmarks, and all 6 are intact.
+- 0 `LH_Master_Data` references remain.
+
+**Gotchas hit:**
+- **Incremental refresh:** WorkOrderParts has an incremental refresh policy. Desktop loads only the `RangeStart`/`RangeEnd` window (Range End was 2026-08-12), so after a publish **the model must be refreshed in the service** to load the full 3-year window. Before that refresh, Parts showed $4.95M; after it, $5.80M (Nov 3 – Sep 25), against production's $5.75M.
+- **Credentials:** the first service refresh failed with `DMTS_MonikerWithUnboundDataSources`. Brian had to set the DP_Presentation data-source credentials (OAuth2) on the model.
+- **Git conflict:** RP - Dev wasn't synced from Git before the publish, which produced a conflict. It was resolved with PreferWorkspace plus a selective commit.
+
+**Found along the way:**
+- The CI deploy was flattening notebook folders. Fixed, and fabric-cicd pinned to 1.3.0.
+- CI and `fab import` acted as a second writer into the Git-connected Dev workspaces, leaving 16 split-identity notebooks. Repaired; Dev is now single-writer through Git sync, using `tools/dp-migration/git_sync.py`.
+- **Production `InTrans_Incremental` is missing 7,101 August 2026 transactions (about $473K)**, so every production InTrans report under-counts August. The $55K Parts excess in the Nov–Sep range suggests the gap continues into September. Not fixed; still to be checked.
+
+**Before production (Brian, 2026-09-25):** run a deeper, page-by-page validation against production with refresh timing controlled for. The spot check here isn't sufficient for promotion.
