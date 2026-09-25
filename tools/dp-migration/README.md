@@ -7,6 +7,11 @@ Helpers for DP-backend report migrations (Inspections, Customer Anatomy, ...).
 - `git_sync.py <wsId> [timeout]`: Fabric updateFromGit for a Git-connected workspace (how notebook code reaches Dev); refuses if any item changed on both sides; exit 0 synced/current.
 - `folder_check.py`: registered notebooks' Fabric folder vs repo path; exit 1 on any mismatch.
 - `inspections_parity.py`: Inspections DP-vs-production parity (added in the Inspections plan, Task 9).
+- `git_status.py [wsId ...]`: Fabric Git status (defaults: DP Presentation/Staging Dev + RP - Dev).
+- `refresh_model.py <wsId> <datasetId>`: service refresh of a semantic model; exit 0 only on Completed.
+- `dax_query.py <wsId> <datasetId> <file.dax>`: run a DAX query against a published model.
+- `customer_anatomy_parity.py`: Customer Anatomy DP-vs-production parity (Customer Anatomy plan, Task 8).
+- `edit_customer_anatomy_tmdl.py`: Customer Anatomy repoint/trim script (Customer Anatomy plan, Task 9).
 
 All need `fab` (authenticated) and, for DuckDB scripts, `az login`.
 
