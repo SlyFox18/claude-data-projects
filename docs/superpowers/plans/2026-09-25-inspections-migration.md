@@ -19,7 +19,7 @@ Before any of that, a CI fix makes the fabric-cicd deploy preserve workspace fol
 
 **Repos:**
 - `C:/Users/bfox/Documents/Git-Projects/fabric-workspace-docs` (branch `dev`). This is the Fabric Git mirror, and it holds the notebooks, the report and `deploy/`.
-- `C:/Users/bfox/Documents/Git-Projects/data-projects` (branch `dev`). Docs, plus the helper scripts in `.claude/queries/adhoc/dp-migration-tools/`.
+- `C:/Users/bfox/Documents/Git-Projects/data-projects` (branch `dev`). Docs, plus the helper scripts in `tools/dp-migration/`.
 
 **Every push to `dev` in fabric-workspace-docs triggers GitHub Actions** (`.github/workflows/deploy.yml`). The workflow runs two scripts:
 - `deploy/deploy_backend.py --environment dev` publishes every notebook registered in `deploy/dp_backend_scope.json` from the repo to the Dev workspaces, and rewrites `Files/config/dp_backend_scope.json` in both lakehouses.
@@ -85,10 +85,10 @@ Before any of that, a CI fix makes the fabric-cicd deploy preserve workspace fol
 ### Task 1: Shared helper scripts
 
 **Files:**
-- Create: `data-projects/.claude/queries/adhoc/dp-migration-tools/run_item.py`
-- Create: `data-projects/.claude/queries/adhoc/dp-migration-tools/wait_ci.py`
-- Create: `data-projects/.claude/queries/adhoc/dp-migration-tools/folder_check.py`
-- Create: `data-projects/.claude/queries/adhoc/dp-migration-tools/README.md`
+- Create: `data-projects/tools/dp-migration/run_item.py`
+- Create: `data-projects/tools/dp-migration/wait_ci.py`
+- Create: `data-projects/tools/dp-migration/folder_check.py`
+- Create: `data-projects/tools/dp-migration/README.md`
 
 These helpers run an item and wait for it to finish, wait for the CI run of the current commit, and compare Fabric folders against repo paths. Customer Anatomy will reuse them.
 
@@ -257,14 +257,14 @@ All need `fab` (authenticated) and, for DuckDB scripts, `az login`.
 
 - [ ] **Step 5: Smoke-test `folder_check.py` (read-only)**
 
-Run: `python "C:/Users/bfox/Documents/Git-Projects/data-projects/.claude/queries/adhoc/dp-migration-tools/folder_check.py"`
+Run: `python "C:/Users/bfox/Documents/Git-Projects/data-projects/tools/dp-migration/folder_check.py"`
 Expected (the bug that Task 2 fixes): nearly every registered notebook with a non-empty repo folder shows `DIFF ... fabric=''`. The summary shows a non-zero mismatch count, and the exit code is 1.
 
 - [ ] **Step 6: Commit (data-projects)**
 
 ```bash
 cd "/c/Users/bfox/Documents/Git-Projects/data-projects"
-git add .claude/queries/adhoc/dp-migration-tools/
+git add tools/dp-migration/
 git commit -m "Add DP migration helper scripts (run item, wait CI, folder check)
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
@@ -427,13 +427,13 @@ CI has been running) and add tests.
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 git push origin dev
-python "/c/Users/bfox/Documents/Git-Projects/data-projects/.claude/queries/adhoc/dp-migration-tools/wait_ci.py"
+python "/c/Users/bfox/Documents/Git-Projects/data-projects/tools/dp-migration/wait_ci.py"
 ```
 Expected: `completed success`. If CI fails, open `gh run view <id> --log-failed`, report it, and stop.
 
 - [ ] **Step 8: Verify the folders are restored**
 
-Run: `python "/c/Users/bfox/Documents/Git-Projects/data-projects/.claude/queries/adhoc/dp-migration-tools/folder_check.py"`
+Run: `python "/c/Users/bfox/Documents/Git-Projects/data-projects/tools/dp-migration/folder_check.py"`
 Expected: `0 mismatch(es) across 38 registered notebooks`, exit 0.
 
 - [ ] **Step 9: Correct the assessment doc (data-projects)**
@@ -474,7 +474,7 @@ The Silver inputs have been frozen since 09-09/09-10. Refresh the Staging datafl
 - [ ] **Step 1: Refresh the RepairOrderDetail dataflow**
 
 ```bash
-T="/c/Users/bfox/Documents/Git-Projects/data-projects/.claude/queries/adhoc/dp-migration-tools"
+T="/c/Users/bfox/Documents/Git-Projects/data-projects/tools/dp-migration"
 python "$T/run_item.py" ab15d64d-c7ba-415d-9bcf-7feb1ef9b201 77de2d0e-334d-478b-8e43-697e604203bb Refresh 1800
 ```
 Expected: `"status": "Completed"`. If submission fails with a job-type error, report the exact output and stop; don't try other job types.
@@ -665,7 +665,7 @@ Wave 1 of the Inspections chain; replaces three hard-coded copies.
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 git push origin dev
-T="/c/Users/bfox/Documents/Git-Projects/data-projects/.claude/queries/adhoc/dp-migration-tools"
+T="/c/Users/bfox/Documents/Git-Projects/data-projects/tools/dp-migration"
 python "$T/wait_ci.py" && python "$T/git_sync.py" 73fd5443-240e-410a-990a-98827f32c087
 export PATH="$HOME/.local/bin:$PATH"; export PYTHONIOENCODING=utf-8
 fab get "DP - Presentation - Dev.Workspace/Fact Tables.Folder/Inspections.Folder/Build_Gold_InspectionJobCodes.Notebook" -q "id"
@@ -679,7 +679,7 @@ If `git_sync.py` refuses because of changes on both sides, stop and report; don'
 - [ ] **Step 4: Run it**
 
 ```bash
-python "/c/Users/bfox/Documents/Git-Projects/data-projects/.claude/queries/adhoc/dp-migration-tools/run_item.py" 73fd5443-240e-410a-990a-98827f32c087 <LOOKUP_ID> RunNotebook
+python "/c/Users/bfox/Documents/Git-Projects/data-projects/tools/dp-migration/run_item.py" 73fd5443-240e-410a-990a-98827f32c087 <LOOKUP_ID> RunNotebook
 ```
 Expected: `Completed`. Then run a DuckDB check that `SELECT COUNT(*), COUNT(DISTINCT JobCode) FROM delta_scan('abfss://73fd5443-240e-410a-990a-98827f32c087@onelake.dfs.fabric.microsoft.com/966efc8a-16f9-423b-aa43-e368fcd8fb91/Tables/lookup_InspectionJobCodes')` returns `(113, 113)`.
 
@@ -702,7 +702,7 @@ git commit -m "Register Build_Gold_InspectionJobCodes (Inspections wave 1)
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 git push origin dev
-T="/c/Users/bfox/Documents/Git-Projects/data-projects/.claude/queries/adhoc/dp-migration-tools"
+T="/c/Users/bfox/Documents/Git-Projects/data-projects/tools/dp-migration"
 python "$T/wait_ci.py" && python "$T/git_sync.py" 73fd5443-240e-410a-990a-98827f32c087
 python "$T/folder_check.py"
 ```
@@ -888,7 +888,7 @@ git commit -m "LaborJobSummary: 2023+ scope via jobs, include NULL-ModifiedDate 
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 git push origin dev
-T="/c/Users/bfox/Documents/Git-Projects/data-projects/.claude/queries/adhoc/dp-migration-tools"
+T="/c/Users/bfox/Documents/Git-Projects/data-projects/tools/dp-migration"
 python "$T/wait_ci.py" && python "$T/git_sync.py" 73fd5443-240e-410a-990a-98827f32c087 && python "$T/run_item.py" 73fd5443-240e-410a-990a-98827f32c087 acee9f09-8ccc-46aa-a553-ae9cb11077ed RunNotebook
 ```
 Expected: CI succeeds and the run shows `Completed`. If the row-count assert fires, stop and report the two counts; don't remove the assert.
@@ -1044,7 +1044,7 @@ git commit -m "WorkOrderParts: 2023+ scope, lookup codes, Feb-29-safe cutoff, tr
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 git push origin dev
-T="/c/Users/bfox/Documents/Git-Projects/data-projects/.claude/queries/adhoc/dp-migration-tools"
+T="/c/Users/bfox/Documents/Git-Projects/data-projects/tools/dp-migration"
 python "$T/wait_ci.py" && python "$T/git_sync.py" 73fd5443-240e-410a-990a-98827f32c087 && python "$T/run_item.py" 73fd5443-240e-410a-990a-98827f32c087 8328ba15-55d8-4f73-abb3-19ea2e5cb2fa RunNotebook
 ```
 Expected: `Completed`. A DuckDB `DESCRIBE` of `Fact_WorkOrderParts` shows exactly 9 columns: TransactionDate (DATE), PartNumber, Quantity, SaleValue, Franchise, BranchCode, Description, CustomerNumber, InvoiceNumber.
@@ -1140,7 +1140,7 @@ git commit -m "PendingInspections: lookup codes, trim, VACUUM
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 git push origin dev
-T="/c/Users/bfox/Documents/Git-Projects/data-projects/.claude/queries/adhoc/dp-migration-tools"
+T="/c/Users/bfox/Documents/Git-Projects/data-projects/tools/dp-migration"
 python "$T/wait_ci.py" && python "$T/git_sync.py" 73fd5443-240e-410a-990a-98827f32c087 && python "$T/run_item.py" 73fd5443-240e-410a-990a-98827f32c087 645d32c8-bff7-4462-b341-525e16b819f3 RunNotebook
 ```
 Expected: `Completed`. A DuckDB check shows 8 columns, and the row count is close to production's current `Fact_PendingInspections` count (135 on 09-23).
@@ -1190,7 +1190,7 @@ git commit -m "ServiceRecommendations: UTC pin, VACUUM; register as Inspections 
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 git push origin dev
-T="/c/Users/bfox/Documents/Git-Projects/data-projects/.claude/queries/adhoc/dp-migration-tools"
+T="/c/Users/bfox/Documents/Git-Projects/data-projects/tools/dp-migration"
 python "$T/wait_ci.py" && python "$T/git_sync.py" 73fd5443-240e-410a-990a-98827f32c087 && python "$T/run_item.py" 73fd5443-240e-410a-990a-98827f32c087 fc54d368-ff80-4a81-8770-fb3a67f08db1 RunNotebook
 export PATH="$HOME/.local/bin:$PATH"; export PYTHONIOENCODING=utf-8
 fab api -X post "workspaces/73fd5443-240e-410a-990a-98827f32c087/sqlEndpoints/18effb0e-7bc2-47a1-854c-f4f2e8129145/refreshMetadata"
@@ -1203,7 +1203,7 @@ Expected: `Completed`, the metadata refresh is accepted, and `folder_check` repo
 ### Task 9: Parity validation against production (stop gate)
 
 **Files:**
-- Create: `data-projects/.claude/queries/adhoc/dp-migration-tools/inspections_parity.py`
+- Create: `data-projects/tools/dp-migration/inspections_parity.py`
 
 - [ ] **Step 1: Write the parity script**
 
@@ -1353,7 +1353,7 @@ show("ServiceRecommendations", f"""
 
 - [ ] **Step 2: Run it and save the output**
 
-Run: `python "/c/Users/bfox/Documents/Git-Projects/data-projects/.claude/queries/adhoc/dp-migration-tools/inspections_parity.py" > "<scratchpad>/inspections_parity_output.txt" 2>&1`, then read the whole file.
+Run: `python "/c/Users/bfox/Documents/Git-Projects/data-projects/tools/dp-migration/inspections_parity.py" > "<scratchpad>/inspections_parity_output.txt" 2>&1`, then read the whole file.
 
 - [ ] **Step 3: Classify every difference**
 
@@ -1367,7 +1367,7 @@ Run: `python "/c/Users/bfox/Documents/Git-Projects/data-projects/.claude/queries
 Commit the script:
 ```bash
 cd "/c/Users/bfox/Documents/Git-Projects/data-projects"
-git add .claude/queries/adhoc/dp-migration-tools/inspections_parity.py
+git add tools/dp-migration/inspections_parity.py
 git commit -m "Add Inspections DP-vs-production parity script
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
@@ -1382,7 +1382,7 @@ Present Brian with the totals table, the month table, and each classified differ
 **Files:**
 - Create: `fabric-workspace-docs/workspaces/RP - Dev/Inspections.pbip`
 - Modify: `fabric-workspace-docs/workspaces/RP - Dev/Inspections.SemanticModel/definition/tables/{Fact_LaborJobSummary,Fact_PendingInspections,Fact_WorkOrderParts,ServiceRecommendations,dim_BranchLocation,dim_CustomerList,dim_DateTable,dim_Parts}.tmdl`
-- Create: `data-projects/.claude/queries/adhoc/dp-migration-tools/edit_inspections_tmdl.py`
+- Create: `data-projects/tools/dp-migration/edit_inspections_tmdl.py`
 
 - [ ] **Step 1: Confirm Desktop is closed (controller asks Brian)**
 
@@ -1536,7 +1536,7 @@ Note that a table which fails its checks is **not written**, while the others ar
 
 - [ ] **Step 4: Run it**
 
-Run: `python "/c/Users/bfox/Documents/Git-Projects/data-projects/.claude/queries/adhoc/dp-migration-tools/edit_inspections_tmdl.py"`
+Run: `python "/c/Users/bfox/Documents/Git-Projects/data-projects/tools/dp-migration/edit_inspections_tmdl.py"`
 Expected: every table prints `removed N (expected N), missing keeps []`, followed by `files still referencing LH_Master_Data: []` and exit 0.
 
 - [ ] **Step 5: Review the diff**
@@ -1571,9 +1571,9 @@ git commit -m "Inspections: add .pbip, repoint to DP_Presentation, trim columns,
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 git push origin dev
-python "/c/Users/bfox/Documents/Git-Projects/data-projects/.claude/queries/adhoc/dp-migration-tools/wait_ci.py"
+python "/c/Users/bfox/Documents/Git-Projects/data-projects/tools/dp-migration/wait_ci.py"
 cd "/c/Users/bfox/Documents/Git-Projects/data-projects"
-git add .claude/queries/adhoc/dp-migration-tools/edit_inspections_tmdl.py
+git add tools/dp-migration/edit_inspections_tmdl.py
 git commit -m "Add Inspections TMDL repoint/trim script
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"

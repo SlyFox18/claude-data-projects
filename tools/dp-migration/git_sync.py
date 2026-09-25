@@ -68,7 +68,12 @@ def main():
     if both:
         sys.exit("Refusing: items changed on both sides - resolve in the Fabric Source control panel.")
 
-    body = {"remoteCommitHash": remote, "workspaceHead": head, "options": {"allowOverrideItems": False}}
+    # allowOverrideItems is Fabric's consent to apply incoming items (the same
+    # confirmation the UI's Update dialog asks for); the API refuses to start
+    # without it whenever an incoming change modifies an existing item. It is
+    # safe here because we already refused above if any incoming item is also
+    # changed in the workspace, and no conflictResolution policy is passed.
+    body = {"remoteCommitHash": remote, "workspaceHead": head, "options": {"allowOverrideItems": True}}
     r = fab_api(f"workspaces/{ws}/git/updateFromGit", "post", body)
     print("updateFromGit status:", r.get("status_code"))
     if r.get("status_code") not in (200, 202):

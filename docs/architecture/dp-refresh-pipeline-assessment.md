@@ -41,7 +41,7 @@ Lookup_Config  (reads DP_Presentation Files/config/dp_backend_scope.json)
 - **Config-driven.** Each entry in the config supplies `notebookId`, `workspaceId`, `tier` and `cadence`. The notebook activity binds `@item().notebookId` and `@item().workspaceId` dynamically.
 - **The pipeline reads a deployed copy of the config**, which sits in the Lakehouse *Files* area. It does not read the repo file (`fabric-workspace-docs/deploy/dp_backend_scope.json`). The copy is refreshed automatically: every push to `dev` runs GitHub Actions (`deploy.yml` → `deploy_backend.py`). That run rewrites the config in both Dev lakehouses. (Corrected 2026-09-25; this doc originally said the copy needed a manual re-upload.)
 - **Single writer per workspace (changed 2026-09-25).** Until then, CI also published every registered notebook into the Git-connected Dev workspaces with fabric-cicd. That made two writers, and it left 16 notebooks unlinked from their Git files ("split identity", Added on both sides), which were repaired by re-committing them from the workspace with their object IDs preserved. Now:
-  - Dev notebook code arrives **only through Fabric Git sync** (Update from Git; scripted as `.claude/queries/adhoc/dp-migration-tools/git_sync.py`).
+  - Dev notebook code arrives **only through Fabric Git sync** (Update from Git; scripted as `tools/dp-migration/git_sync.py`).
   - CI's Dev job only writes the config and checks that the registered folders exist.
   - New notebooks are created by pushing their folder and syncing, never with `fab import`.
   - fabric-cicd publishing is reserved for Prod, which is not Git-connected.
