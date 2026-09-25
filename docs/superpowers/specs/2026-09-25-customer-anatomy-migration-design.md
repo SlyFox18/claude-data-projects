@@ -81,7 +81,7 @@ Claude makes these edits only while the report is closed in Desktop, and confirm
 | Fact_Equipment_Sales | DP adds 2022; 2023–2025 identical to the dollar |
 | Fact_CustomerPerformance | 2022 gains equipment; service is slightly different where Service_Invoices differs |
 | Fact_Service_Invoices | Small differences from the reused-invoice-number fix, verified key by key |
-| Fact_Parts_Detail | DP higher in Aug 2026 (production's InTrans gap, [[project-prod-intrans-aug2026-gap]]). The small 2022–2025 row differences must be explained key by key, not assumed. |
+| Fact_Parts_Detail | DP higher in Aug 2026 (production's InTrans gap: about 7,101 Aug-2026 transactions missing from production's `InTrans_Incremental`; see the Inspections entry in `report-migration-catalog.md`). The small 2022–2025 row differences must be explained key by key, not assumed. |
 | lookup_UniqueCustomers_Invoice | Exactly production's customers and groups |
 | Everything else | Identical for complete months |
 
