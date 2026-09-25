@@ -30,6 +30,8 @@ Before any of that, a CI fix makes the fabric-cicd deploy preserve workspace fol
 > push to `dev` → `wait_ci.py` → `git_sync.py <workspaceId>` (Fabric updateFromGit; it refuses if an item changed on both sides) → run the notebook.
 >
 > **Never use `fab import` to create or update DP notebooks**, and never let anything other than Git sync write notebook content into a Dev workspace. A brand-new notebook is created by pushing its folder (with a `.platform` carrying a new logicalId) and syncing; Fabric then creates it already linked. The Task 4–8 steps below were rewritten to this flow.
+>
+> **Write new `.platform` files with no trailing newline.** Fabric stores them that way, and a single extra newline makes Fabric flag the synced notebook as "Modified". Once flagged, the next `git_sync.py` refuses because the item changed on both sides. (Found on Task 4 and fixed by committing Fabric's normalized version, commit `006012c2`.)
 
 **Never stage unrelated files.** Both repos have many dirty or untracked files left by Brian's Desktop sessions. `git add` only the exact paths each task names. If a push is rejected as non-fast-forward, run `git fetch origin && git merge origin/dev` (no rebase, no force), then push again.
 
