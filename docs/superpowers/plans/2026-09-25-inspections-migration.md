@@ -25,7 +25,11 @@ Before any of that, a CI fix makes the fabric-cicd deploy preserve workspace fol
 - `deploy/deploy_backend.py --environment dev` publishes every notebook registered in `deploy/dp_backend_scope.json` from the repo to the Dev workspaces, and rewrites `Files/config/dp_backend_scope.json` in both lakehouses.
 - `deploy_reports.py` deploys only the three Batch 0 reports to RP - Sandbox. Inspections is not among them.
 
-So **registering a notebook and pushing is how its edited content reaches Fabric.** Registered notebooks are never updated with `fab import`: it is broken for updates, and CI does the job. A brand-new notebook is created once with `fab import` (creates work), which gives it an ID for registration.
+> **REVISED 2026-09-25, after Task 3 (single-writer fix).** The Dev workspaces are Fabric-Git-connected, and CI publishing notebooks into them, along with `fab import` creates, produced 16 "split identity" notebooks. Those were repaired in commits `3a4ba3ec` and `3cb6b1c2`. **CI now writes only the config for Dev (`deploy_backend.py` skips notebook publish when `environment == "dev"`) and fails if a registered folder is missing.** Notebook code reaches Dev only through Fabric Git sync:
+>
+> push to `dev` → `wait_ci.py` → `git_sync.py <workspaceId>` (Fabric updateFromGit; it refuses if an item changed on both sides) → run the notebook.
+>
+> **Never use `fab import` to create or update DP notebooks**, and never let anything other than Git sync write notebook content into a Dev workspace. A brand-new notebook is created by pushing its folder (with a `.platform` carrying a new logicalId) and syncing; Fabric then creates it already linked. The Task 4–8 steps below were rewritten to this flow.
 
 **Never stage unrelated files.** Both repos have many dirty or untracked files left by Brian's Desktop sessions. `git add` only the exact paths each task names. If a push is rejected as non-fast-forward, run `git fetch origin && git merge origin/dev` (no rebase, no force), then push again.
 
@@ -647,16 +651,28 @@ Generate a GUID with `python -c "import uuid; print(uuid.uuid4())"`, then:
 }
 ```
 
-- [ ] **Step 3: Create it in Fabric (a fresh create, so `fab import` works)**
+- [ ] **Step 3: Create it in Fabric through Git sync (never `fab import`)**
 
+Push the new folder, which is not registered yet, then sync the workspace so Fabric creates the notebook already linked to Git:
 ```bash
-export PATH="$HOME/.local/bin:$PATH"; export PYTHONIOENCODING=utf-8
 cd "/c/Users/bfox/Documents/Git-Projects/fabric-workspace-docs"
-fab import "DP - Presentation - Dev.Workspace/Fact Tables.Folder/Inspections.Folder/Build_Gold_InspectionJobCodes.Notebook" \
-  -i "workspaces/DP - Presentation - Dev/Fact Tables/Inspections/Build_Gold_InspectionJobCodes.Notebook" --format .py -f
+git add "workspaces/DP - Presentation - Dev/Fact Tables/Inspections/Build_Gold_InspectionJobCodes.Notebook"
+git commit -m "Add Build_Gold_InspectionJobCodes: single source for the 113 inspection codes
+
+Wave 1 of the Inspections chain; replaces three hard-coded copies.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+git push origin dev
+T="/c/Users/bfox/Documents/Git-Projects/data-projects/.claude/queries/adhoc/dp-migration-tools"
+python "$T/wait_ci.py" && python "$T/git_sync.py" 73fd5443-240e-410a-990a-98827f32c087
+export PATH="$HOME/.local/bin:$PATH"; export PYTHONIOENCODING=utf-8
 fab get "DP - Presentation - Dev.Workspace/Fact Tables.Folder/Inspections.Folder/Build_Gold_InspectionJobCodes.Notebook" -q "id"
 ```
-Record the ID; the steps below call it `<LOOKUP_ID>`.
+Expected:
+- `git_sync.py` prints `incoming Added Build_Gold_InspectionJobCodes (Notebook)` and then `Synced to <sha>`.
+- `fab get` returns the new item ID. Record it; the steps below call it `<LOOKUP_ID>`.
+
+If `git_sync.py` refuses because of changes on both sides, stop and report; don't resolve anything in the workspace.
 
 - [ ] **Step 4: Run it**
 
@@ -675,20 +691,23 @@ Insert the entry with the Edit tool, matching the existing compact style. **Neve
 ```
 Validate: `python -c "import json; json.load(open('deploy/dp_backend_scope.json', encoding='utf-8'))"`.
 
-- [ ] **Step 6: Commit, push, wait for CI, check folders**
+- [ ] **Step 6: Commit the registration, push, wait for CI, check folders and Git status**
 
 ```bash
-git add "workspaces/DP - Presentation - Dev/Fact Tables/Inspections/Build_Gold_InspectionJobCodes.Notebook" deploy/dp_backend_scope.json
-git commit -m "Add Build_Gold_InspectionJobCodes: single source for the 113 inspection codes
-
-Wave 1 of the Inspections chain; replaces three hard-coded copies.
+cd "/c/Users/bfox/Documents/Git-Projects/fabric-workspace-docs"
+git add deploy/dp_backend_scope.json
+git commit -m "Register Build_Gold_InspectionJobCodes (Inspections wave 1)
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 git push origin dev
-python "/c/Users/bfox/Documents/Git-Projects/data-projects/.claude/queries/adhoc/dp-migration-tools/wait_ci.py"
-python "/c/Users/bfox/Documents/Git-Projects/data-projects/.claude/queries/adhoc/dp-migration-tools/folder_check.py"
+T="/c/Users/bfox/Documents/Git-Projects/data-projects/.claude/queries/adhoc/dp-migration-tools"
+python "$T/wait_ci.py" && python "$T/git_sync.py" 73fd5443-240e-410a-990a-98827f32c087
+python "$T/folder_check.py"
 ```
-Expected: CI succeeds, and the output shows `OK  Build_Gold_InspectionJobCodes fabric='Fact Tables/Inspections'` with 0 mismatches.
+Expected:
+- CI succeeds (it now only writes the config for Dev).
+- `git_sync.py` reports `Already up to date` or syncs with no incoming notebook changes.
+- `folder_check` shows `OK  Build_Gold_InspectionJobCodes fabric='Fact Tables/Inspections'` with 0 mismatches.
 
 ---
 
@@ -858,7 +877,7 @@ Append after the `Build_Gold_InspectionJobCodes` entry (add a comma to that entr
 ```
 Validate with the `json.load` one-liner.
 
-- [ ] **Step 6: Commit, push, wait for CI (this deploys the edited content), then run**
+- [ ] **Step 6: Commit, push, wait for CI, Git-sync the workspace (this is what delivers the edited code), then run**
 
 ```bash
 cd "/c/Users/bfox/Documents/Git-Projects/fabric-workspace-docs"
@@ -868,7 +887,7 @@ git commit -m "LaborJobSummary: 2023+ scope via jobs, include NULL-ModifiedDate 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 git push origin dev
 T="/c/Users/bfox/Documents/Git-Projects/data-projects/.claude/queries/adhoc/dp-migration-tools"
-python "$T/wait_ci.py" && python "$T/run_item.py" 73fd5443-240e-410a-990a-98827f32c087 acee9f09-8ccc-46aa-a553-ae9cb11077ed RunNotebook
+python "$T/wait_ci.py" && python "$T/git_sync.py" 73fd5443-240e-410a-990a-98827f32c087 && python "$T/run_item.py" 73fd5443-240e-410a-990a-98827f32c087 acee9f09-8ccc-46aa-a553-ae9cb11077ed RunNotebook
 ```
 Expected: CI succeeds and the run shows `Completed`. If the row-count assert fires, stop and report the two counts; don't remove the assert.
 
@@ -1024,7 +1043,7 @@ git commit -m "WorkOrderParts: 2023+ scope, lookup codes, Feb-29-safe cutoff, tr
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 git push origin dev
 T="/c/Users/bfox/Documents/Git-Projects/data-projects/.claude/queries/adhoc/dp-migration-tools"
-python "$T/wait_ci.py" && python "$T/run_item.py" 73fd5443-240e-410a-990a-98827f32c087 8328ba15-55d8-4f73-abb3-19ea2e5cb2fa RunNotebook
+python "$T/wait_ci.py" && python "$T/git_sync.py" 73fd5443-240e-410a-990a-98827f32c087 && python "$T/run_item.py" 73fd5443-240e-410a-990a-98827f32c087 8328ba15-55d8-4f73-abb3-19ea2e5cb2fa RunNotebook
 ```
 Expected: `Completed`. A DuckDB `DESCRIBE` of `Fact_WorkOrderParts` shows exactly 9 columns: TransactionDate (DATE), PartNumber, Quantity, SaleValue, Franchise, BranchCode, Description, CustomerNumber, InvoiceNumber.
 
@@ -1120,7 +1139,7 @@ git commit -m "PendingInspections: lookup codes, trim, VACUUM
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 git push origin dev
 T="/c/Users/bfox/Documents/Git-Projects/data-projects/.claude/queries/adhoc/dp-migration-tools"
-python "$T/wait_ci.py" && python "$T/run_item.py" 73fd5443-240e-410a-990a-98827f32c087 645d32c8-bff7-4462-b341-525e16b819f3 RunNotebook
+python "$T/wait_ci.py" && python "$T/git_sync.py" 73fd5443-240e-410a-990a-98827f32c087 && python "$T/run_item.py" 73fd5443-240e-410a-990a-98827f32c087 645d32c8-bff7-4462-b341-525e16b819f3 RunNotebook
 ```
 Expected: `Completed`. A DuckDB check shows 8 columns, and the row count is close to production's current `Fact_PendingInspections` count (135 on 09-23).
 
@@ -1170,7 +1189,7 @@ git commit -m "ServiceRecommendations: UTC pin, VACUUM; register as Inspections 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 git push origin dev
 T="/c/Users/bfox/Documents/Git-Projects/data-projects/.claude/queries/adhoc/dp-migration-tools"
-python "$T/wait_ci.py" && python "$T/run_item.py" 73fd5443-240e-410a-990a-98827f32c087 fc54d368-ff80-4a81-8770-fb3a67f08db1 RunNotebook
+python "$T/wait_ci.py" && python "$T/git_sync.py" 73fd5443-240e-410a-990a-98827f32c087 && python "$T/run_item.py" 73fd5443-240e-410a-990a-98827f32c087 fc54d368-ff80-4a81-8770-fb3a67f08db1 RunNotebook
 export PATH="$HOME/.local/bin:$PATH"; export PYTHONIOENCODING=utf-8
 fab api -X post "workspaces/73fd5443-240e-410a-990a-98827f32c087/sqlEndpoints/18effb0e-7bc2-47a1-854c-f4f2e8129145/refreshMetadata"
 python "$T/folder_check.py"

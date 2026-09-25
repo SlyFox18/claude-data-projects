@@ -4,6 +4,7 @@ Helpers for DP-backend report migrations (Inspections, Customer Anatomy, ...).
 
 - `run_item.py <wsId> <itemId> <RunNotebook|Refresh> [timeout]`: run a notebook or Dataflow Gen2 and wait; exit 0 only on Completed.
 - `wait_ci.py [repoPath]`: wait for the GitHub Actions run of fabric-workspace-docs HEAD; exit 0 only on success.
+- `git_sync.py <wsId> [timeout]`: Fabric updateFromGit for a Git-connected workspace (how notebook code reaches Dev); refuses if any item changed on both sides; exit 0 synced/current.
 - `folder_check.py`: registered notebooks' Fabric folder vs repo path; exit 1 on any mismatch.
 - `inspections_parity.py`: Inspections DP-vs-production parity (added in the Inspections plan, Task 9).
 
