@@ -39,7 +39,7 @@ Lookup_Config  (reads DP_Presentation Files/config/dp_backend_scope.json)
 ```
 
 - **Config-driven.** Each entry in the config supplies `notebookId`, `workspaceId`, `tier` and `cadence`. The notebook activity binds `@item().notebookId` and `@item().workspaceId` dynamically.
-- **The pipeline reads a deployed copy of the config**, which sits in the Lakehouse *Files* area. It does not read the repo file (`fabric-workspace-docs/deploy/dp_backend_scope.json`). On 09-24 the two matched at 38 entries (9 Silver, 29 Gold). **Every registration requires two steps: edit the repo file, then re-upload the deployed copy.** If you forget the second step, the change silently has no effect.
+- **The pipeline reads a deployed copy of the config**, which sits in the Lakehouse *Files* area. It does not read the repo file (`fabric-workspace-docs/deploy/dp_backend_scope.json`). The copy is refreshed automatically: every push to `dev` runs GitHub Actions (`deploy.yml` → `deploy_backend.py`). That run publishes every registered notebook from the repo through fabric-cicd, then rewrites the config in both Dev lakehouses. **Pushing to `dev` is therefore a deployment.** (Corrected 2026-09-25; this doc originally said the copy needed a manual re-upload.)
 - **It runs notebooks only.** It cannot run a Dataflow Gen2, which matters because two Staging pulls are ODBC dataflows (see §3).
 - **Two ordering levels only: Silver then Gold.** Nothing orders Gold notebooks among themselves (see §3).
 - **Catch-and-continue:** one failed notebook doesn't stop the rest, and the email reports the failures.
@@ -85,6 +85,7 @@ Two monthly dims feed daily facts: `dim_Technician_Code_Names` and `dim_Salesper
 - the Utilities notebooks
 - `Pipeline_DP_Master_Orchestrator` (`5aa9cecf-…`): points at notebook IDs that no longer exist
 - Gold `OpenOrders` / `OpenOrderParts`: confirm whether any report still reads them before deleting
+- **Fixed 2026-09-25: CI deploy flattened folders.** `deploy/lib.py` `stage_items` staged every notebook flat, and fabric-cicd mirrors the staged structure, so every deploy moved all registered notebooks to the workspace root. Items are now staged at their workspace-relative path, and `fabric-cicd` is pinned to 1.3.0.
 
 ### 3f. CI/CD blocker: hard-coded Dev IDs
 
@@ -126,7 +127,7 @@ One pipeline per report chain. **Not recommended:** it duplicates shared Silver 
 
 ### Supporting fixes (apply with either A or B)
 
-1. **Registration becomes one step.** Either the pipeline reads the config from a git-deployed location, or a small deploy step uploads it, so the repo file really is the source of truth.
+1. **Registration is already one step** (push to dev → CI deploys notebooks and config). Keep it that way; don't add manual upload steps.
 2. **Resolve IDs by environment.** With Option B, name-based references cover notebooks. For anything still ID-based, use the existing `DP - Environment Config` Variable Library (see below) or fabric-cicd `parameter.yml` find/replace.
 3. **Daily cadence** for dims that daily facts join to (§3d).
 4. **Delete the orphans** in §3e.
