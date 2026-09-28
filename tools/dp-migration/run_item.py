@@ -1,13 +1,15 @@
 """Run a Fabric item job by ID and wait for it to finish.
 
-Usage: python run_item.py <workspaceId> <itemId> <jobType> [timeoutSeconds]
+Usage: python run_item.py <workspaceId> <itemId> <jobType> [timeoutSeconds] [--param name=value ...]
   jobType: RunNotebook (notebooks) | Refresh (Dataflow Gen2)
+  --param: notebook parameter (string), repeatable; overrides the notebook's parameter cell.
 Exit codes: 0 completed, 1 failed/submit error, 2 timeout, 3 already running, 4 ambiguous.
 """
 import json
 import os
 import subprocess
 import sys
+import tempfile
 import time
 
 os.environ["PATH"] = os.path.expanduser("~/.local/bin") + os.pathsep + os.environ["PATH"]
@@ -16,9 +18,30 @@ TERMINAL = {"Completed", "Failed", "Cancelled", "Deduped"}
 NON_TERMINAL = {"NotStarted", "InProgress"}
 
 
-def fab_api(path, method=None):
+def build_body(params):
+    """['a=1', 'b=x'] -> Fabric job executionData body, or None when there are no params."""
+    if not params:
+        return None
+    parsed = {}
+    for p in params:
+        if "=" not in p:
+            raise ValueError(f"--param needs name=value, got {p!r}")
+        name, value = p.split("=", 1)
+        parsed[name] = {"value": value, "type": "string"}
+    return {"executionData": {"parameters": parsed}}
+
+
+def fab_api(path, method=None, body=None):
     cmd = ["fab", "api", path] + (["-X", method] if method else [])
+    tmp = None
+    if body is not None:
+        tmp = tempfile.NamedTemporaryFile("w", suffix=".json", delete=False, encoding="utf-8")
+        json.dump(body, tmp)
+        tmp.close()
+        cmd += ["-i", tmp.name]
     out = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8").stdout
+    if tmp:
+        os.unlink(tmp.name)
     start = out.find("{")
     return json.loads(out[start:]) if start >= 0 else {"raw": out[-800:]}
 
@@ -39,8 +62,14 @@ def list_instances(ws, item):
 
 
 def main():
-    ws, item, job_type = sys.argv[1:4]
-    timeout = int(sys.argv[4]) if len(sys.argv) > 4 else 1800
+    args = sys.argv[1:]
+    params = []
+    while "--param" in args:
+        i = args.index("--param")
+        params.append(args[i + 1])
+        del args[i:i + 2]
+    ws, item, job_type = args[0:3]
+    timeout = int(args[3]) if len(args) > 3 else 1800
 
     existing = list_instances(ws, item)
     for inst in existing:
@@ -49,7 +78,7 @@ def main():
             sys.exit(3)
     existing_ids = {i["id"] for i in existing}
 
-    r = fab_api(f"workspaces/{ws}/items/{item}/jobs/instances?jobType={job_type}", "post")
+    r = fab_api(f"workspaces/{ws}/items/{item}/jobs/instances?jobType={job_type}", "post", build_body(params))
     print("submit status:", r.get("status_code"))
     if r.get("status_code") not in (200, 201, 202):
         print(json.dumps(r, indent=1)[:2000])
