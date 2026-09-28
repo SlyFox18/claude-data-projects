@@ -40,7 +40,15 @@ tenant) and created his own client secret, then ran `tools/dp-migration/spn_gran
   `e896ed96-9c3a-43b8-82da-dcb99af18260` (not administered by SPI)
 - Other owners: Deere CE Support, JDIS Support, the SPN, one group
 
-JD's original Incremental pipeline is the one to use; the `_SPI` copy is to be deleted.
+JD's original Incremental pipeline is the one to use; the `_SPI` copy was deleted.
+
+Second problem, same day: JD's gateway (`049694-Gateway`, host **SPI01SR2034W**) had been offline
+since ~09-26 05:00 UTC — its Windows service (`PBIEgwService`) was stopped. The Full pipeline
+reported **Completed** on 09-27 and 09-28 while all 98 copy activities failed: always check
+activity runs, not pipeline status. Brian started the service; manual runs 2026-09-28 verified:
+Incremental 16/16 DeltaCopy succeeded (Parts_Pricing_Admin had no changes), Full 98/98 succeeded.
+
+Target schedule for Incremental: daily 3:30 AM CST (was every 30 min).
 
 ## Files
 
