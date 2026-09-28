@@ -18,6 +18,28 @@ TERMINAL = {"Completed", "Failed", "Cancelled", "Deduped"}
 NON_TERMINAL = {"NotStarted", "InProgress"}
 
 
+def split_params(argv):
+    """Pull out ('--param', value) pairs from argv, in order encountered.
+
+    Returns (positional_args, param_values). Raises ValueError if a trailing
+    --param has no following value.
+    """
+    positional = []
+    params = []
+    args = list(argv)
+    i = 0
+    while i < len(args):
+        if args[i] == "--param":
+            if i + 1 >= len(args):
+                raise ValueError("--param needs a value")
+            params.append(args[i + 1])
+            i += 2
+        else:
+            positional.append(args[i])
+            i += 1
+    return positional, params
+
+
 def build_body(params):
     """['a=1', 'b=x'] -> Fabric job executionData body, or None when there are no params."""
     if not params:
@@ -39,9 +61,11 @@ def fab_api(path, method=None, body=None):
         json.dump(body, tmp)
         tmp.close()
         cmd += ["-i", tmp.name]
-    out = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8").stdout
-    if tmp:
-        os.unlink(tmp.name)
+    try:
+        out = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8").stdout
+    finally:
+        if tmp:
+            os.unlink(tmp.name)
     start = out.find("{")
     return json.loads(out[start:]) if start >= 0 else {"raw": out[-800:]}
 
@@ -62,12 +86,12 @@ def list_instances(ws, item):
 
 
 def main():
-    args = sys.argv[1:]
-    params = []
-    while "--param" in args:
-        i = args.index("--param")
-        params.append(args[i + 1])
-        del args[i:i + 2]
+    try:
+        args, params = split_params(sys.argv[1:])
+        body = build_body(params)
+    except ValueError as e:
+        print(f"error: {e}")
+        sys.exit(1)
     ws, item, job_type = args[0:3]
     timeout = int(args[3]) if len(args) > 3 else 1800
 
@@ -78,7 +102,7 @@ def main():
             sys.exit(3)
     existing_ids = {i["id"] for i in existing}
 
-    r = fab_api(f"workspaces/{ws}/items/{item}/jobs/instances?jobType={job_type}", "post", build_body(params))
+    r = fab_api(f"workspaces/{ws}/items/{item}/jobs/instances?jobType={job_type}", "post", body)
     print("submit status:", r.get("status_code"))
     if r.get("status_code") not in (200, 201, 202):
         print(json.dumps(r, indent=1)[:2000])
