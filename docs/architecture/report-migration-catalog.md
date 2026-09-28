@@ -1,8 +1,12 @@
 # Report Migration Catalog — LH_Master_Data → DP Backend
 
-**Status (2026-09-25):** Every report in `RP - Dev` is repointed to the DP backend
-except **`Customer Anatomy`** (published under its permanent name, "V2" dropped) — the
-last one. **Inspections completed 2026-09-25** (see "Inspections — COMPLETE" at the end).
+**Status (2026-09-28): every report in `RP - Dev` is on the DP backend.** Customer Anatomy,
+the last one, was completed on 2026-09-28, and Inspections on 2026-09-25; see the COMPLETE
+sections at the end. Next come the refresh-pipeline redesign (`dp-refresh-pipeline-assessment.md`),
+full RP-Dev validation, and then Sandbox. **The pre-production gate** is a deeper page-by-page
+validation against production, with refresh timing controlled, before any report is promoted.
+
+*Status 2026-09-25 (history):* every report repointed except Customer Anatomy.
 
 *Status 2026-09-24 (history):* every report repointed except the two held back for
 last — `Inspections` and `Customer Anatomy`. Confirmed via a full sweep of
@@ -687,3 +691,41 @@ Brian accepted the results.
 - **Production `InTrans_Incremental` is missing 7,101 August 2026 transactions (about $473K)**, so every production InTrans report under-counts August. The $55K Parts excess in the Nov–Sep range suggests the gap continues into September. Not fixed; still to be checked.
 
 **Before production (Brian, 2026-09-25):** run a deeper, page-by-page validation against production with refresh timing controlled for. The spot check here isn't sufficient for promotion.
+
+## Customer Anatomy — COMPLETE (2026-09-28)
+
+Spec `docs/superpowers/specs/2026-09-25-customer-anatomy-migration-design.md`; plan
+`docs/superpowers/plans/2026-09-25-customer-anatomy-migration.md`. Published in `RP - Dev` (named "Customer Anatomy", "V2" dropped).
+- fabric-workspace-docs commits: `7547f0a5` (repoint and trim), `696a98d0` (InvoiceKey relationships), and `8f678ca3` (Brian's publish).
+- The service refresh completed after Brian set explicit OAuth2 credentials on the model.
+
+**Backend.** There are 10 Gold notebooks, all registered with waves and given the UTC pin, VACUUM and trims:
+- **Wave 1:** CustomerLookup, EngagedAcres, UniqueCustomersInvoiceLookup, EquipmentSales, PartsDetail.
+- **Wave 2:** PartsInvoices, ServiceInvoices.
+- **Wave 3:** ServiceDetail, ServicePartsDetail and CustomerPerformance. These read the level-2 facts.
+
+**Decisions (Brian) and production bugs fixed:**
+1. **Service_Detail double-counting.** Production joined jobs to Invoice on InvoiceNumber alone, and invoice numbers are reused across years (about 2 Invoice rows per number for 2023–25 invoices). As a result, every job was counted twice for 2023–2025; in 2025 that meant $111.0M in production against the correct $54.6M. DP has one row per job, which affects 16 job-level service measures (GP% is unchanged).
+2. **2022 is included.** Production's code asks for 2022+, but its raw inputs were 2023+, so its 2022 had $0 equipment. DP delivers $382.6M of 2022 equipment.
+3. **Unique-customer lookup = production's 2022+ window.** 542 customers, exact. Multi-pattern customers get a deterministic pattern-priority tie-break.
+4. **Trim.** Gold facts keep the used columns plus the downstream reads.
+5. **Tornillo/Dell City.** 4 customers now carry their true majority branch (10762, 1136, 2550, 70794). Production mislabeled them because of a Power Query `Table.Sort` + `Table.Distinct` without `Table.Buffer`.
+6. **Parts_Detail join.** The Batch D InvoiceNumber+Branch join was dropping 280 legitimate cross-branch part lines ($71,061). Branch is now required only when the invoice number is ambiguous, and the table matches production line for line.
+7. **Composite InvoiceKey (Branch|InvoiceNumber)** on Service_Invoices, Service_Detail and Service_Parts_Details. It relates the model on a unique key, since 263 service invoice numbers are reused. Production had only looked unique because its dedup merged different customers' invoices.
+
+**Parity** (`tools/dp-migration/customer_anatomy_parity.py`, complete months through 2026-08):
+- **Identical:** Parts_Invoices in every month; Equipment 2023+ to the dollar; Parts_Detail line for line (after fix 6); all the dims.
+- **Service_Invoices:** 260 differing invoice numbers, all reused numbers. The net difference over all history is $5,528, with amounts mirroring exactly across years.
+- **The lookup** differs only by the 4 approved corrections.
+
+**Published model check** (executeQueries): matches Gold to the cent for Total, Parts, Service and Equipment sales in every year.
+
+**Known open items (not migration defects):**
+- **JD Bronze mirror freeze.** Invoice, ArMaster, contact, WkInvReg, GlTrans and VhSalman have been stuck since 2026-09-04 in `JD_EquipRDB_Production_Bronze`, which JD owns; Brian is raising it. The effects:
+  - September parts and service invoices are missing.
+  - 39 new customers are missing.
+  - 2,238 September service jobs ($2.69M) have no parent invoice yet, so they drop out of date-sliced service-detail figures. These self-heal once the mirror is fixed and the chain is re-run.
+- **Production's InTrans_Incremental August gap** (7,101 transactions) is logged separately.
+- **Drill-through into one of the 263 reused service invoice numbers shows both invoices,** because the drill-through passes InvoiceNumber only. Add Branch as a drill field if that matters.
+
+**Before production:** the same deeper page-by-page validation gate as Inspections.
