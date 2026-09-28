@@ -26,6 +26,22 @@ pipeline referencing a connection the caller can't use.
 `PL_EquipRDB_To_Fabric_Incremental_SPI` is JD's definition with exactly 3 connection references
 swapped (LookupNewWatermarkValue, ForceFullReload, DeltaCopy) to SPI's own connection.
 
+## Resolution (2026-09-28)
+
+The `_SPI` copy failed too: pipeline ODBC activities don't support Windows auth, and SPI's
+gateway DSN logs in via SQL Anywhere integrated login (no password available for Basic/Anonymous).
+
+Actual fix: Brian (Global Admin) added himself as owner of the Entra app
+`SPITractor_Fabric_Integration_Admin` (appId `2ce2664f-d2e7-4efb-aae9-f2244125de9b`, in SPI's
+tenant) and created his own client secret, then ran `tools/dp-migration/spn_grant_connection.py
+--grant` to have the SPN add him as **Owner** of JD's connection:
+
+- `b062a489` = `049694-Gateway`, ODBC `dsn=EquipRDB`, **Basic** auth, on JD's gateway
+  `e896ed96-9c3a-43b8-82da-dcb99af18260` (not administered by SPI)
+- Other owners: Deere CE Support, JDIS Support, the SPN, one group
+
+JD's original Incremental pipeline is the one to use; the `_SPI` copy is to be deleted.
+
 ## Files
 
 - `PL_EquipRDB_To_Fabric_Incremental_SPI.pipeline-content.json` — definition of our pipeline
