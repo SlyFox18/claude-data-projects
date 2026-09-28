@@ -1,0 +1,89 @@
+"""Phase 0 measurement: jobs and Spark (Livy) sessions for the prototype notebooks in a UTC window.
+
+Usage: python proto_measure.py <startUtcISO> <endUtcISO>
+Prints, per notebook: job instances started in the window (status, start, end, seconds) and its Livy
+sessions in the window (state, running seconds). Then totals: session count, summed session running
+seconds, and wall clock (first start -> last end).
+"""
+import json
+import os
+import subprocess
+import sys
+from datetime import datetime
+
+sys.stdout.reconfigure(encoding="utf-8")
+os.environ["PATH"] = os.path.expanduser("~/.local/bin") + os.pathsep + os.environ["PATH"]
+os.environ["PYTHONIOENCODING"] = "utf-8"
+
+STAGING = "ab15d64d-c7ba-415d-9bcf-7feb1ef9b201"
+PRESENTATION = "73fd5443-240e-410a-990a-98827f32c087"
+NOTEBOOKS = {
+    STAGING: ["Build_Silver_WkMechFl", "Build_Silver_Contact", "Build_Silver_WkMechAdj",
+              "Build_Silver_WkMechWk", "Build_Silver_WkOthSub", "Proto_RunMultiple"],
+    PRESENTATION: ["Build_Gold_TechnicianCodeNames", "Build_Gold_TechnicianAttendance",
+                   "Build_Gold_TechnicianPunchedTime", "Build_Gold_TechnicianEfficiency",
+                   "Proto_RunMultiple", "Proto_FailProbe", "Proto_AfterFail"],
+}
+
+
+def api(path):
+    out = subprocess.run(["fab", "api", path], capture_output=True, text=True, encoding="utf-8").stdout
+    i = out.find("{")
+    return json.loads(out[i:]).get("text", {}) if i >= 0 else {}
+
+
+def ts(s):
+    """Naive UTC datetime from Fabric's timestamps ('...Z', '+00:00', or 7 fractional digits)."""
+    if not s:
+        return None
+    return datetime.fromisoformat(s.rstrip("Z").split("+")[0][:26])
+
+
+def seconds(a, b):
+    return round((ts(b) - ts(a)).total_seconds(), 1) if a and b else None
+
+
+def duration_seconds(d):
+    """Livy durations come as {'value': n, 'timeUnit': 'Seconds'|'Minutes'|...}."""
+    if not isinstance(d, dict):
+        return None
+    mult = {"Seconds": 1, "Minutes": 60, "Hours": 3600, "Milliseconds": 0.001}.get(d.get("timeUnit"), None)
+    return round(d["value"] * mult, 1) if mult is not None and d.get("value") is not None else None
+
+
+def main():
+    start, end = sys.argv[1], sys.argv[2]
+    total_sessions, total_running, starts, ends = 0, 0.0, [], []
+    for ws, names in NOTEBOOKS.items():
+        items = {i["displayName"]: i["id"] for i in api(f"workspaces/{ws}/items?type=Notebook").get("value", [])}
+        for name in names:
+            nid = items.get(name)
+            if not nid:
+                print(f"{name}: NOT FOUND in workspace {ws}")
+                continue
+            jobs = [j for j in api(f"workspaces/{ws}/items/{nid}/jobs/instances").get("value", [])
+                    if start <= (j.get("startTimeUtc") or "") <= end]
+            sessions = [s for s in api(f"workspaces/{ws}/notebooks/{nid}/livySessions").get("value", [])
+                        if start <= (s.get("submittedDateTime") or "") <= end]
+            print(f"\n{name} ({'staging' if ws == STAGING else 'presentation'})")
+            for j in jobs:
+                print(f"  job {j['status']:10s} {j.get('startTimeUtc')} -> {j.get('endTimeUtc')}"
+                      f"  {seconds(j.get('startTimeUtc'), j.get('endTimeUtc'))}s")
+                starts.append(j.get("startTimeUtc"))
+                if j.get("endTimeUtc"):
+                    ends.append(j["endTimeUtc"])
+            for s in sessions:
+                run = duration_seconds(s.get("runningDuration"))
+                print(f"  spark session {s.get('state')}  running {run}s  queued "
+                      f"{duration_seconds(s.get('queuedDuration'))}s  keys={sorted(s.keys())}")
+                total_sessions += 1
+                total_running += run or 0
+    print("\nTOTALS")
+    print(f"  spark sessions: {total_sessions}")
+    print(f"  summed session running seconds: {round(total_running, 1)}")
+    if starts and ends:
+        print(f"  wall clock: {min(starts)} -> {max(ends)} = {seconds(min(starts), max(ends))}s")
+
+
+if __name__ == "__main__":
+    main()
