@@ -26,7 +26,7 @@ the Prod deployment itself, and the report validation that follows this work.
 
 | Topic | Decision |
 |---|---|
-| Orchestration | Option 2: a thin pipeline plus one orchestrator notebook using `notebookutils.notebook.runMultiple` with a dependency DAG in one shared Spark session. **Fallback** if the prototype fails: hybrid (pipeline runs Silver, orchestrator runs Gold) |
+| Orchestration | Option 2: a thin pipeline plus orchestrator notebooks using `notebookutils.notebook.runMultiple` with a dependency DAG in a shared Spark session. **Two identical orchestrators, one per lakehouse** (see revision note below). **Fallback** if the prototype fails: today's per-notebook pipeline ForEach with explicit waves (Option A) |
 | Start time | **4:15 AM CST, Mon–Fri.** It's proven outside the Equip blackout; target: reports fresh by 8:00 AM |
 | JD Incremental | Invoked **by our pipeline** at the start of each run, not on its own schedule (once this pipeline is scheduled) |
 | Bronze failure | **Stop everything.** No notebooks and no model refresh; loud alert |
@@ -37,6 +37,22 @@ the Prod deployment itself, and the report validation that follows this work.
 | Cadences | `daily`, `monthly` (runs on the 1st inside the same pipeline), `intraday` (built, off until measured) |
 | Dev scheduling | On demand until cutover. JD Incremental keeps its own daily schedule until then |
 
+### Revision (2026-09-28, while planning): one orchestrator per lakehouse
+
+Microsoft's `runMultiple` documentation: a child notebook is **blocked if its default lakehouse differs
+from the orchestrator's**. The only bypass (`useRootDefaultLakehouse: True`) makes the child use the
+*orchestrator's* lakehouse, which would send Silver writes into DP_Presentation. So one orchestrator
+can't run both tiers. Every DP notebook is consistent (all 30 Staging notebooks default to DP_Staging,
+all 69 Presentation notebooks to DP_Presentation), so:
+
+- `Run_DP_Refresh` exists **twice with identical code**: in DP - Staging (default lakehouse
+  DP_Staging; runs Silver) and in DP - Presentation (default lakehouse DP_Presentation; runs Gold,
+  then the metadata and model refresh). A CI test asserts the two code bodies are identical.
+- No cross-workspace notebook calls are needed at all, which removes the biggest prototype risk.
+- The pipeline runs Silver's orchestrator, then Gold's, passing the Silver failures forward so Gold
+  skips their dependents. Cross-tier order comes from the pipeline; within-tier order from the DAG.
+- CI gains one check: every registered item's default lakehouse matches its tier.
+
 ## 3. Timeline
 
 ```
@@ -45,9 +61,10 @@ the Prod deployment itself, and the report validation that follows this work.
  4:15 AM  Pipeline_DP_Refresh
             1. Invoke JD PL_EquipRDB_To_Fabric_Incremental (wait; 1 retry) ─┐ parallel
             2. df_RepairOrderDetail_Raw, df_InSalPar_Audit_Raw ─────────────┘
-            3. Run_DP_Refresh(mode): Bronze check → DAG → SQL endpoint metadata refresh
-               → model refresh → run log
-            4. Alerts
+            3. Run_DP_Refresh [Staging](mode): Bronze check → Silver DAG
+            4. Run_DP_Refresh [Presentation](mode, silver_failed): Gold DAG
+               → SQL endpoint metadata refresh → model refresh → run log
+            5. Alerts
 ~5:30–6:00 done; ~2 hours of slack before 8:00 for a rerun
 ```
 
@@ -92,10 +109,16 @@ The single source of truth, deployed by CI to `Files/config/` in both Dev lakeho
 
 These run with the existing unit tests (`deploy/test_lib.py`).
 
-### 4.3 Orchestrator notebook — `Run_DP_Refresh` (DP - Presentation, `Pipelines` folder)
+### 4.3 Orchestrator notebook — `Run_DP_Refresh` (one copy per workspace, `Orchestration` folder)
 
 Parameters: `mode` = `daily` | `monthly` | `intraday` | `rerun_failed`; `dry_run` (bool);
-`dataflow_status` (JSON from the pipeline); `run_id`.
+`dataflow_status` (JSON from the pipeline); `upstream_failed` (JSON list; the Staging copy's failed
+and skipped items, passed to the Presentation copy); `run_id`.
+
+The copy detects its tier from its own default lakehouse (`DP_Staging` → silver,
+`DP_Presentation` → gold). Step 2 (Bronze check) runs in the Staging copy only; steps 5–6 run in the
+Presentation copy only. Both write to `dp_refresh_log` in DP_Presentation (the Staging copy writes by
+absolute OneLake path).
 
 1. **Concurrency guard:** if the run log shows a run `InProgress` started less than 4 hours ago, exit `already_running`.
 2. **Bronze check:** the logic of `tools/dp-migration/jd_bronze_check.py`, using the Fabric REST
@@ -114,8 +137,9 @@ Parameters: `mode` = `daily` | `monthly` | `intraday` | `rerun_failed`; `dry_run
    Dataflow items are resolved from `dataflow_status` (not executed). Items depending on a failed
    dataflow are marked skipped.
 4. **Execute** `runMultiple(dag)`, with per activity `retry = 2`, `retryIntervalInSeconds = 60`,
-   `timeoutPerCellInSeconds` from config (default 1800), `workspace` set for Staging items, and a
-   DAG-level `concurrency` set from the prototype. A failed item's dependents don't run.
+   `timeoutPerCellInSeconds` from config (default 1800), and a DAG-level `concurrency` set from the
+   prototype. Only items of this copy's tier are in its DAG. Items whose dependencies appear in
+   `upstream_failed` are marked skipped. A failed item's dependents don't run.
    With `dry_run`, print the ordered plan and the models, then exit.
 5. **Refresh the SQL analytics endpoint metadata** for DP_Presentation (and DP_Staging), so
    VACUUMed Gold tables resolve.
@@ -141,8 +165,11 @@ Parameters: `mode` = `daily` | `monthly` | `intraday` | `rerun_failed`; `dry_run
 
 ```
 Invoke JD Incremental (wait, retry 1) ─┐
-Dataflow: df_RepairOrderDetail_Raw ────┼→ Notebook: Run_DP_Refresh(mode, dataflow_status)
-Dataflow: df_InSalPar_Audit_Raw ───────┘        │
+Dataflow: df_RepairOrderDetail_Raw ────┼→ Run_DP_Refresh [Staging](mode, dataflow_status)
+Dataflow: df_InSalPar_Audit_Raw ───────┘        │ (stop here if bronze_failed)
+                                                ▼
+                                         Run_DP_Refresh [Presentation](mode, upstream_failed)
+                                                │
                                                 ├→ If status ≠ ok → Teams post
                                                 ├→ If status ∈ {bronze_failed, error} or the notebook
                                                 │   activity failed → alert email (High importance)
@@ -186,10 +213,11 @@ duration, the slowest 5 items, and CU vs. budget (when available, §6).
 
 ## 7. Rollout
 
-**Phase 0: Prototype (decision gate).** A minimal orchestrator runs the Labor Performance chain
-(5 Silver in Staging → 1 dim → 3 facts). Prove cross-workspace `runMultiple`, the shared session
-and a concurrency level for F8. Compare duration and CU against the same 9 notebooks via today's
-pipeline. Brian reviews the numbers → Option 2 or the hybrid.
+**Phase 0: Prototype (decision gate).** A minimal orchestrator in each workspace runs the Labor
+Performance chain (5 Silver in Staging; 1 dim + 3 facts in Presentation). Prove `runMultiple` within
+each lakehouse, the shared session, retry and skip-dependents behaviour, and a concurrency level for
+F8. Compare duration and CU against the same 9 notebooks run one session each. Brian reviews the
+numbers → Option 2 or Option A.
 
 **Phase 1: Config + CI.** Map all producers (~91) with `dependsOn`/`produces`/cadence; the monthly
 dims that feed daily facts (`dim_Technician_Code_Names`, `dim_Salesperson`) → daily; the CI checks;
@@ -221,7 +249,7 @@ gets the 4:15 schedule.
 
 | Risk | Mitigation |
 |---|---|
-| `runMultiple` can't call notebooks in another workspace | Phase 0 gate → hybrid fallback |
+| A child with a different default lakehouse is blocked (or redirected with `useRootDefaultLakehouse`) | One orchestrator per lakehouse; never set `useRootDefaultLakehouse`; CI checks each item's default lakehouse |
 | One shared session is too small for the whole DAG on F8 | Tune `concurrency`; long items get their own timeout; the prototype measures |
 | The dependency scanner misses a read pattern | Start with the patterns used in the repo; any read it can't classify fails CI until handled |
 | The model refresh uses Brian's identity; credentials expire | The failure alert names the model; the SPN migration plan (`2026-08-04-sm-refresh-spn-migration.md`) can later move this to the SPN |
