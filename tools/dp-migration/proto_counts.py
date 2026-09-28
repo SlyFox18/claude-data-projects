@@ -12,6 +12,7 @@ import json
 import os
 import subprocess
 import sys
+import urllib.parse
 
 import duckdb
 
@@ -30,24 +31,61 @@ GOLD = ["dim_Technician_Code_Names", "TechnicianAttendance", "TechnicianPunchedT
 
 
 def api(path):
+    """Call `fab api <path>` and return its parsed 'text' body.
+
+    Raises RuntimeError if the response has no parseable JSON, or a status_code outside 200-299 --
+    a failed call must never silently look like an empty result.
+    """
     out = subprocess.run(["fab", "api", path], capture_output=True, text=True, encoding="utf-8").stdout
+    resp = None
     i = out.find("{")
-    return json.loads(out[i:]).get("text", {}) if i >= 0 else {}
+    if i >= 0:
+        try:
+            resp = json.loads(out[i:])
+        except json.JSONDecodeError:
+            resp = None
+    if resp is None:
+        for line in out.splitlines():
+            if line.startswith("{"):
+                try:
+                    resp = json.loads(line)
+                    break
+                except json.JSONDecodeError:
+                    continue
+    if resp is None:
+        raise RuntimeError(f"fab api {path}: no parseable JSON in output:\n{out}")
+    status = resp.get("status_code")
+    if not isinstance(status, int) or not (200 <= status <= 299):
+        text = resp.get("text")
+        err = text.get("errorCode") if isinstance(text, dict) else None
+        msg = text.get("message") if isinstance(text, dict) else None
+        raise RuntimeError(f"fab api {path}: status_code={status} errorCode={err} message={msg}")
+    return resp.get("text", {})
+
+
+def api_list(path):
+    """All `value` items from a Fabric API list endpoint, following continuationToken.
+
+    Each page URL is built from the ORIGINAL base path (not the previous page's path) to avoid
+    accumulating stale continuationToken query params on the 3rd+ page.
+    """
+    base = path
+    page_path = path
+    values = []
+    while True:
+        resp = api(page_path)
+        values.extend(resp.get("value", []))
+        token = resp.get("continuationToken")
+        if not token:
+            break
+        sep = "&" if "?" in base else "?"
+        page_path = f"{base}{sep}continuationToken={urllib.parse.quote(token)}"
+    return values
 
 
 def list_shortcuts(ws, item):
     """All shortcuts defined on an item, following continuationToken if present."""
-    path = f"workspaces/{ws}/items/{item}/shortcuts"
-    values = []
-    while True:
-        data = api(path)
-        values.extend(data.get("value", []))
-        token = data.get("continuationToken")
-        if not token:
-            break
-        sep = "&" if "?" in path else "?"
-        path = f"workspaces/{ws}/items/{item}/shortcuts{sep}continuationToken={token}"
-    return values
+    return api_list(f"workspaces/{ws}/items/{item}/shortcuts")
 
 
 con = duckdb.connect()
