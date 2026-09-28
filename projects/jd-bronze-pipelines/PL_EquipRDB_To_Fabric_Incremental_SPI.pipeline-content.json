@@ -1,0 +1,413 @@
+{
+  "properties": {
+    "activities": [
+      {
+        "name": "EquipRDB Table Lookup",
+        "type": "Lookup",
+        "dependsOn": [],
+        "policy": {
+          "timeout": "0.01:00:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "typeProperties": {
+          "source": {
+            "type": "LakehouseTableSource"
+          },
+          "firstRowOnly": false,
+          "datasetSettings": {
+            "annotations": [],
+            "linkedService": {
+              "name": "JD_EquipRDB_Production_Bronze",
+              "properties": {
+                "annotations": [],
+                "type": "Lakehouse",
+                "typeProperties": {
+                  "workspaceId": "4bd21b07-f4ce-4b28-b0f1-0397fb5d5ea9",
+                  "artifactId": "7348c3a6-8694-4d11-bc70-1bd55be84ea2",
+                  "rootFolder": "Tables"
+                }
+              }
+            },
+            "type": "LakehouseTable",
+            "schema": [],
+            "typeProperties": {
+              "table": "watermarktable_incremental"
+            }
+          }
+        }
+      },
+      {
+        "name": "Loop EquipRDB Sync to LakeHouse",
+        "type": "ForEach",
+        "dependsOn": [
+          {
+            "activity": "EquipRDB Table Lookup",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ],
+        "typeProperties": {
+          "items": {
+            "value": "@activity('EquipRDB Table Lookup').output.value",
+            "type": "Expression"
+          },
+          "batchCount": 15,
+          "activities": [
+            {
+              "name": "LookupNewWatermarkValue",
+              "type": "Lookup",
+              "dependsOn": [],
+              "policy": {
+                "timeout": "0.01:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureOutput": false,
+                "secureInput": false
+              },
+              "typeProperties": {
+                "source": {
+                  "type": "OdbcSource",
+                  "query": {
+                    "value": "@concat('SELECT MAX(',item().WatermarkColumn,') as NewWatermarkvalue FROM ',item().TableName)",
+                    "type": "Expression"
+                  },
+                  "queryTimeout": "02:00:00"
+                },
+                "datasetSettings": {
+                  "annotations": [],
+                  "type": "OdbcTable",
+                  "schema": [],
+                  "externalReferences": {
+                    "connection": "b00ca7c0-3e40-4b0b-868a-e171c2e71c73",
+                    "table": "watermarktable_incremental"
+                  }
+                }
+              }
+            },
+            {
+              "name": "If MaxDate greater than WatermarkValue",
+              "description": "Proceed to creating the Parquet file only if the Source Max Date Time is greater than the previously saved Watermark Value",
+              "type": "IfCondition",
+              "dependsOn": [
+                {
+                  "activity": "LookupNewWatermarkValue",
+                  "dependencyConditions": [
+                    "Succeeded"
+                  ]
+                }
+              ],
+              "typeProperties": {
+                "expression": {
+                  "value": "@greater(activity('LookupNewWatermarkValue').output.firstRow.NewWatermarkvalue, item().WatermarkValue)",
+                  "type": "Expression"
+                },
+                "ifFalseActivities": [
+                  {
+                    "name": "ForceFullReload",
+                    "type": "Copy",
+                    "state": "Inactive",
+                    "onInactiveMarkAs": "Succeeded",
+                    "dependsOn": [],
+                    "policy": {
+                      "timeout": "0.01:00:00",
+                      "retry": 0,
+                      "retryIntervalInSeconds": 30,
+                      "secureOutput": false,
+                      "secureInput": false
+                    },
+                    "typeProperties": {
+                      "source": {
+                        "type": "OdbcSource",
+                        "query": {
+                          "value": "@concat('select * from Administrator.',item().TableName)",
+                          "type": "Expression"
+                        },
+                        "queryTimeout": "02:00:00",
+                        "datasetSettings": {
+                          "annotations": [],
+                          "type": "OdbcTable",
+                          "schema": [],
+                          "externalReferences": {
+                            "connection": "b00ca7c0-3e40-4b0b-868a-e171c2e71c73"
+                          }
+                        }
+                      },
+                      "sink": {
+                        "type": "ParquetSink",
+                        "storeSettings": {
+                          "type": "LakehouseWriteSettings"
+                        },
+                        "formatSettings": {
+                          "type": "ParquetWriteSettings",
+                          "enableVertiParquet": true
+                        },
+                        "datasetSettings": {
+                          "annotations": [],
+                          "linkedService": {
+                            "name": "JD_EquipRDB_Production_Bronze",
+                            "properties": {
+                              "annotations": [],
+                              "type": "Lakehouse",
+                              "typeProperties": {
+                                "workspaceId": "4bd21b07-f4ce-4b28-b0f1-0397fb5d5ea9",
+                                "artifactId": "7348c3a6-8694-4d11-bc70-1bd55be84ea2",
+                                "rootFolder": "Files"
+                              }
+                            }
+                          },
+                          "type": "Parquet",
+                          "typeProperties": {
+                            "location": {
+                              "type": "LakehouseLocation",
+                              "fileName": {
+                                "value": "@concat(item().TableName,'.parquet')",
+                                "type": "Expression"
+                              },
+                              "folderPath": {
+                                "value": "@concat('Incremental/', item().TableName)",
+                                "type": "Expression"
+                              }
+                            },
+                            "compressionCodec": "none"
+                          },
+                          "schema": []
+                        }
+                      },
+                      "enableStaging": false,
+                      "translator": {
+                        "type": "TabularTranslator",
+                        "typeConversion": true,
+                        "typeConversionSettings": {
+                          "allowDataTruncation": true,
+                          "treatBooleanAsNumber": false
+                        }
+                      }
+                    }
+                  }
+                ],
+                "ifTrueActivities": [
+                  {
+                    "name": "DeltaCopy",
+                    "type": "Copy",
+                    "dependsOn": [],
+                    "policy": {
+                      "timeout": "0.01:00:00",
+                      "retry": 0,
+                      "retryIntervalInSeconds": 30,
+                      "secureOutput": false,
+                      "secureInput": false
+                    },
+                    "typeProperties": {
+                      "source": {
+                        "type": "OdbcSource",
+                        "query": {
+                          "value": "@concat('select * from ',item().TableName, ' where ',item().WatermarkColumn,' between ''',item().WatermarkValue,''' and ''',activity('LookupNewWatermarkValue').output.firstRow.NewWatermarkvalue,'''',item().AuditActionCondition)",
+                          "type": "Expression"
+                        },
+                        "queryTimeout": "02:00:00",
+                        "datasetSettings": {
+                          "annotations": [],
+                          "type": "OdbcTable",
+                          "schema": [],
+                          "externalReferences": {
+                            "connection": "b00ca7c0-3e40-4b0b-868a-e171c2e71c73"
+                          }
+                        }
+                      },
+                      "sink": {
+                        "type": "ParquetSink",
+                        "storeSettings": {
+                          "type": "LakehouseWriteSettings"
+                        },
+                        "formatSettings": {
+                          "type": "ParquetWriteSettings",
+                          "enableVertiParquet": true
+                        },
+                        "datasetSettings": {
+                          "annotations": [],
+                          "linkedService": {
+                            "name": "JD_EquipRDB_Production_Bronze",
+                            "properties": {
+                              "annotations": [],
+                              "type": "Lakehouse",
+                              "typeProperties": {
+                                "workspaceId": "4bd21b07-f4ce-4b28-b0f1-0397fb5d5ea9",
+                                "artifactId": "7348c3a6-8694-4d11-bc70-1bd55be84ea2",
+                                "rootFolder": "Files"
+                              }
+                            }
+                          },
+                          "type": "Parquet",
+                          "typeProperties": {
+                            "location": {
+                              "type": "LakehouseLocation",
+                              "fileName": {
+                                "value": "@concat(item().TableName,'.parquet')",
+                                "type": "Expression"
+                              },
+                              "folderPath": {
+                                "value": "@concat('Incremental/', item().TableName)",
+                                "type": "Expression"
+                              }
+                            },
+                            "compressionCodec": "none"
+                          },
+                          "schema": []
+                        }
+                      },
+                      "enableStaging": false,
+                      "translator": {
+                        "type": "TabularTranslator",
+                        "typeConversion": true,
+                        "typeConversionSettings": {
+                          "allowDataTruncation": true,
+                          "treatBooleanAsNumber": false
+                        }
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      {
+        "name": "ExecuteIncrementalCopy_NB",
+        "type": "TridentNotebook",
+        "dependsOn": [
+          {
+            "activity": "Loop EquipRDB Sync to LakeHouse",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ],
+        "policy": {
+          "timeout": "0.01:00:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "typeProperties": {
+          "notebookId": "e0021322-a38f-43fb-ba29-d9225e4e8c13",
+          "workspaceId": "4bd21b07-f4ce-4b28-b0f1-0397fb5d5ea9",
+          "sessionTag": "HighConcurrencySessionEquipSync1"
+        }
+      },
+      {
+        "name": "Fabric_Alerts_CopyParquetFailed",
+        "type": "TridentNotebook",
+        "dependsOn": [
+          {
+            "activity": "Loop EquipRDB Sync to LakeHouse",
+            "dependencyConditions": [
+              "Failed"
+            ]
+          }
+        ],
+        "policy": {
+          "timeout": "0.01:00:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "typeProperties": {
+          "notebookId": "43f30442-bc14-4fd5-a4bf-0587ce61e725",
+          "workspaceId": "722f90be-6eb2-401c-9b5e-9f89129d8ce0",
+          "parameters": {
+            "PipelineId": {
+              "value": {
+                "value": "@pipeline().Pipeline",
+                "type": "Expression"
+              },
+              "type": "string"
+            },
+            "PipelineName": {
+              "value": {
+                "value": "@pipeline().PipelineName",
+                "type": "Expression"
+              },
+              "type": "string"
+            },
+            "TriggerName": {
+              "value": {
+                "value": "@pipeline().TriggerTime",
+                "type": "Expression"
+              },
+              "type": "string"
+            },
+            "ErrorsLog": {
+              "value": {
+                "value": "Incremental sync failed while retrieving deltas from the Equip RDB server and generating the Parquet files.",
+                "type": "Expression"
+              },
+              "type": "string"
+            }
+          },
+          "sessionTag": "HighConcurrencySessionEquipSync1"
+        }
+      },
+      {
+        "name": "Fabric_Alerts_SyncNotebookFail",
+        "type": "TridentNotebook",
+        "dependsOn": [
+          {
+            "activity": "ExecuteIncrementalCopy_NB",
+            "dependencyConditions": [
+              "Failed"
+            ]
+          }
+        ],
+        "policy": {
+          "timeout": "0.01:00:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "typeProperties": {
+          "notebookId": "43f30442-bc14-4fd5-a4bf-0587ce61e725",
+          "workspaceId": "722f90be-6eb2-401c-9b5e-9f89129d8ce0",
+          "parameters": {
+            "PipelineId": {
+              "value": {
+                "value": "@pipeline().Pipeline",
+                "type": "Expression"
+              },
+              "type": "string"
+            },
+            "PipelineName": {
+              "value": {
+                "value": "@pipeline().PipelineName",
+                "type": "Expression"
+              },
+              "type": "string"
+            },
+            "TriggerName": {
+              "value": {
+                "value": "@pipeline().TriggerTime",
+                "type": "Expression"
+              },
+              "type": "string"
+            },
+            "ErrorsLog": {
+              "value": {
+                "value": "Incremental sync failed during the merge of deltas from Parquet files into Lakehouse tables within the notebook code.",
+                "type": "Expression"
+              },
+              "type": "string"
+            }
+          },
+          "sessionTag": "HighConcurrencySessionEquipSync1"
+        }
+      }
+    ]
+  }
+}
