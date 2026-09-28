@@ -262,6 +262,7 @@ A `SessionStart` hook (`~/.claude/scripts/git-status-check.sh`, registered in `~
 - **F4 CU limit:** Max 4-5 concurrent dataflows per wave. Exceeding this causes throttling and cascading failures. Phase 4 uses 5-wave batching for this reason
 - **ODBC source hours:** `dsn=EquipRDB64` performs well 3–6 AM. Queries during business hours degrade significantly — avoid ad-hoc full refreshes during the day
 - **Phase dependency:** Raw → InTrans → Dims → Facts → Semantic Models is a strict order. If a phase fails, all downstream phases produce stale data even if they "succeed"
+- **JD Bronze (source of all DP data):** JD's pipelines in `JD_FabricOneLake` use JD's gateway on **SPI01SR2034W**. Their pipeline status says "Completed" even when every copy fails — check with `python tools/dp-migration/jd_bronze_check.py`. Runbook: `projects/jd-bronze-pipelines/README.md`
 - **Fact_WorkOrderParts bottleneck:** Consistently ~18.5 min, the pipeline's longest step. Do not add dependencies to it without considering impact on total runtime
 
 ### Customer Anatomy Specific
