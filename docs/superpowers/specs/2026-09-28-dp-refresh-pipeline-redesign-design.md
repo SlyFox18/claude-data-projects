@@ -34,7 +34,8 @@ the Prod deployment itself, and the report validation that follows this work.
 | Model refresh | Always refresh every report model, unless Bronze failed |
 | Alerts | Teams on any failure; separate High-importance alert email on complete failure; summary email every run |
 | Environments | **No custom Spark environment.** Delete `DP_Silver_HighConcurrency` and `DP_Gold_HighConcurrency` (Git-sync binding bug, 2026-09-18) |
-| Cadences | `daily`, `monthly` (runs on the 1st inside the same pipeline), `intraday` (built, off until measured) |
+| Cadences | `daily`, `weekly` (Mondays), `monthly` (the 1st), `manual` (never scheduled; e.g. the fixed 2020–2030 `dim_DateTable`), `intraday` (built, off until measured). Every producer's cadence was reviewed with Brian in Phase 1 (added 2026-09-29) |
+| Session Spark settings | The orchestrator applies session-level settings once (e.g. shuffle partitions / broadcast threshold, adapted from JD's IncrementalCopyData_NB); all children inherit them. Adopted only if Phase 1 tuning shows a gain |
 | Dev scheduling | On demand until cutover. JD Incremental keeps its own daily schedule until then |
 
 ### Revision (2026-09-28, while planning): one orchestrator per lakehouse

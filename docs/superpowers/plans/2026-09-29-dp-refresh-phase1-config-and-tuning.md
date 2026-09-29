@@ -93,7 +93,8 @@ Config schema (`deploy/dp_refresh_dag.json`) — used by every task below:
 ```
 
 - `type`: `notebook` | `dataflow`. `workspace`: `staging` | `presentation`. `tier`: `staging` (dataflows),
-  `silver`, `gold`. `cadence`: `daily` | `monthly` | `intraday`.
+  `silver`, `gold`. `cadence`: `daily` | `weekly` (Mondays) | `monthly` (the 1st) | `manual` (never
+  scheduled; run when its code changes, e.g. a fixed calendar) | `intraday`.
 - `extraReads` / `scanIgnore`: table names the scanner can't see (dynamic code) or wrongly sees.
 - `dynamicReviewed: true` is required when the scanner flags the notebook as dynamic (a human checked
   its reads/writes and filled `extraReads`/`produces`).
@@ -468,7 +469,7 @@ def test_report_tables_must_match_scan_and_have_producers():
 
 def test_bad_enum_values():
     config, notebooks, reports = base()
-    config["items"][0]["cadence"] = "weekly"
+    config["items"][0]["cadence"] = "yearly"
     assert any("cadence" in e for e in check(config, notebooks, reports))
 
 
@@ -495,7 +496,7 @@ CONFIG_PATH = Path(__file__).parent / "dp_refresh_dag.json"
 TYPES = {"notebook", "dataflow"}
 WORKSPACES = {"staging": "DP_Staging", "presentation": "DP_Presentation"}
 TIERS = {"staging": 0, "silver": 1, "gold": 2}
-CADENCES = {"daily", "monthly", "intraday"}
+CADENCES = {"daily", "weekly", "monthly", "manual", "intraday"}
 REQUIRED = ("name", "type", "workspace", "tier", "cadence", "dependsOn", "produces")
 
 
@@ -720,7 +721,6 @@ DATAFLOWS = [
     {"name": "df_InSalPar_Audit_Raw", "type": "dataflow", "workspace": "staging", "tier": "staging",
      "cadence": "daily", "dependsOn": [], "produces": ["InSalPar_Audit"]},
 ]
-MAKE_DAILY = {"Build_Gold_TechnicianCodeNames", "Build_Gold_Salesperson"}  # spec §3d cadence fix
 
 
 def main():
@@ -741,7 +741,7 @@ def main():
         items.append({
             "name": name, "type": "notebook", "workspace": scan["workspace"],
             "tier": "silver" if scan["workspace"] == "staging" else "gold",
-            "cadence": "daily" if name in MAKE_DAILY else cadence.get(name, "daily"),
+            "cadence": cadence.get(name, "daily"),  # Task 4A reviews every cadence with Brian
             "dependsOn": deps, "produces": sorted(scan["writes"]),
             "extraReads": [], "scanIgnore": [], "dynamicReviewed": False,
         })
@@ -778,7 +778,7 @@ Expected: the draft is written; the checker prints some errors. The typical ones
     shortcut, a table produced outside DP), **don't guess**: list it for the controller.
   - **SQL false positives** (a word after FROM/JOIN that happens to match a table name but isn't a
     read): add it to that item's `scanIgnore`, with a note in your report.
-  - Never delete an item or change a cadence other than the two in `MAKE_DAILY`.
+  - Never delete an item or change a cadence (Task 4A decides cadences with Brian).
 - [ ] **Step 4:** Re-run `python deploy/dag_check.py` until it prints `OK`, or only errors you've listed
   for the controller. **Stop and report** with: item counts, the dynamic-notebook notes, `scanIgnore`
   additions, unresolved items, and the full `dependsOn` list for the Customer Anatomy notebooks (used
@@ -787,6 +787,46 @@ Expected: the draft is written; the checker prints some errors. The typical ones
   decide the unresolved items (asking Brian where it's a business question), and confirm `excluded` only
   contains non-producers. Then the implementer commits `deploy/bootstrap_dag_config.py` and
   `deploy/dp_refresh_dag.json` (message `DP refresh DAG config: all producers, reports, exclusions`).
+
+---
+
+### Task 4A: Cadence review (implementer builds the table; Brian decides)
+
+Goal: every producer runs only as often as its output can actually change, weighed against the risk of
+stale joins (e.g. a new technician showing as unmatched until a monthly dim refreshes).
+
+**Files:** Create `C:\Users\bfox\Documents\Git-Projects\data-projects\tools\dp-migration\cadence_review.py`
+(read-only); output `C:\Users\bfox\Documents\Git-Projects\data-projects\docs\architecture\dp-refresh-cadence-review.md`.
+
+- [ ] **Step 1: Write the script.** It must:
+  - load `dp_refresh_dag.json` (import `load_config` from
+    `C:\Users\bfox\Documents\Git-Projects\fabric-workspace-docs\deploy` via `sys.path`, as `tune_run.py` does);
+  - for every notebook item: resolve its item ID (`fab api "workspaces/<ws>/items?type=Notebook"`), list
+    its job instances (follow `continuationToken`, raise on non-2xx; copy `api`/`api_list` from
+    `tools/dp-migration/proto_measure.py`), and compute the **median duration of its Completed runs**
+    and the run count;
+  - for every item, compute from the config: **direct inputs** (the tables it reads that other items
+    produce, plus the Silver→Bronze source names from the scan), **downstream count** (items that
+    depend on it, transitively), and **reports** that use any table it produces;
+  - flag items whose code has **no dependency on data** (no reads at all, e.g. a generated calendar) as
+    `static`;
+  - write a markdown table sorted by tier, then name, with columns: Item · Tier · Current cadence · Reads
+    · Static? · Median run (s) · Runs seen · Downstream items · Reports · **Recommendation** (leave empty)
+    · **Brian's decision** (leave empty).
+- [ ] **Step 2:** Run it; commit the script and the generated doc (data-projects, message `Cadence review table`).
+- [ ] **Step 3 (controller):** fill the Recommendation column with reasons, using these rules:
+  - **manual:** output can't change without a code change (static), e.g. `Build_Gold_DateTable`
+    (fixed 2020–2030 calendar; add a note to extend END_DATE before 2030).
+  - **weekly or manual:** reference data that changes only by business event and has cheap failure
+    modes, e.g. `Build_Gold_BranchLocation`.
+  - **daily:** anything a daily fact joins to where a missing new row shows as Unknown/unmatched
+    (customers, parts, salespeople, technicians), unless it's expensive **and** the business confirms
+    it rarely changes.
+  - **monthly:** month-end snapshots (MD Invoices / Parts Open Orders snapshots) stay as they are.
+  - Cost matters only where it's material: flag items whose median run is in the top 10.
+- [ ] **Step 4 (controller + Brian):** present the table. Brian decides each row. Apply the decisions to
+  `dp_refresh_dag.json` (`cadence`), run `python deploy/dag_check.py` (`OK`), commit (message
+  `Cadences per Brian's review 2026-09-29`), and record his decisions in the review doc's last column.
 
 ---
 
@@ -1080,8 +1120,19 @@ if __name__ == "__main__":
   and `workspaces/DP - Presentation - Dev/Orchestration/Proto_RunMultiple.Notebook/notebook-content.py`
 - Create `C:\Users\bfox\Documents\Git-Projects\data-projects\tools\dp-migration\tune_run.py`
 
-- [ ] **Step 1: Notebook change (identical in both files).** In the PARAMETERS cell add a line
-  `dag_json = ""`. In the next cell, replace the block that picks `items`:
+- [ ] **Step 1: Notebook change (identical in both files).** In the PARAMETERS cell add two lines:
+  `dag_json = ""` and `spark_conf_json = ""`. At the start of the cell that calls `runMultiple`
+  (before `started = …`), add:
+
+```python
+# Session-level Spark settings: every child notebook in this runMultiple session inherits them.
+for key, value in (json.loads(spark_conf_json) if spark_conf_json else {}).items():
+    spark.conf.set(key, str(value))
+    print("spark.conf", key, "=", spark.conf.get(key))
+```
+
+  and add `"spark_conf": spark_conf_json,` to the `summary` dict. Then, in the earlier cell, replace the
+  block that picks `items`:
 
 ```python
 if lakehouse not in CHAINS:
@@ -1105,7 +1156,7 @@ else:
 ```python
 """Tuning run: one report's chain through the prototype orchestrators at a given concurrency.
 
-Usage: python tune_run.py "<report model>" <concurrency> <label>
+Usage: python tune_run.py "<report model>" <concurrency> <label> [spark_conf_json]
 Runs the Silver tier (Staging Proto_RunMultiple) then the Gold tier (Presentation), passing each tier's
 sub-DAG from fabric-workspace-docs/deploy/dp_refresh_dag.json as dag_json. Prints the UTC window and
 the spark_usage.py lines for both orchestrators. Exit 1 if either orchestrator job fails.
@@ -1130,6 +1181,7 @@ def now():
 
 def main():
     model, concurrency, label = sys.argv[1], sys.argv[2], sys.argv[3]
+    spark_conf = sys.argv[4] if len(sys.argv) > 4 else ""
     config = load_config()
     start = now()
     ok = True
@@ -1140,7 +1192,9 @@ def main():
             continue
         r = subprocess.run([sys.executable, str(HERE / "run_item.py"), ws, proto, "RunNotebook", "5400",
                             "--param", f"dag_json={json.dumps(dag)}", "--param", f"concurrency={concurrency}",
-                            "--param", f"run_label={label}_{tier}"], capture_output=True, text=True)
+                            "--param", f"run_label={label}_{tier}"]
+                           + (["--param", f"spark_conf_json={spark_conf}"] if spark_conf else []),
+                           capture_output=True, text=True)
         print(r.stdout[-600:])
         if r.returncode != 0:
             ok = False
@@ -1197,9 +1251,16 @@ Customer Anatomy is the largest chain (4 Gold levels). Each run rebuilds real De
 - [ ] **Step 4:** At least an hour later, get CU per run from Capacity Metrics ('Metrics By Item And Hour',
   **upper-case** item IDs, **local CDT** hours) for the two `Proto_RunMultiple` items. Runs ≥20 minutes
   apart may share an hour, so use it as a cross-check on the core-seconds ranking, not the only source.
-- [ ] **Step 5: Recommend** a default `concurrency` (the lowest CU that keeps wall clock acceptable), and
-  say whether the workspace Spark pool (max nodes / autoscale) looks worth changing. That's Brian's decision;
-  only recommend it.
+- [ ] **Step 5: Spark-settings run.** ≥20 minutes after the last run, repeat with the best concurrency from
+  Step 3 plus session settings adapted from JD's IncrementalCopyData_NB (F8 = 16 Spark vCores):
+  `python tune_run.py "Customer Anatomy" <best> ca_conf '{"spark.sql.shuffle.partitions": "16", "spark.sql.autoBroadcastJoinThreshold": "52428800"}'`
+  (on Windows, put the command in a scratchpad `.sh` so the JSON quoting survives). Check the orchestrator
+  summary shows the settings applied, and the counts match the earlier runs. Compare against the same
+  concurrency without settings. AQE is already on by default in Fabric, so report the difference honestly,
+  even if it's none.
+- [ ] **Step 6: Recommend** a default `concurrency` (the lowest CU that keeps wall clock acceptable),
+  whether to apply the session settings, and whether the workspace Spark pool (max nodes / autoscale)
+  looks worth changing. Pool changes are Brian's decision; only recommend them.
 
 ---
 
@@ -1212,8 +1273,11 @@ Customer Anatomy is the largest chain (4 Gold levels). Each run rebuilds real De
   3. Hygiene fixes.
   4. Orphans deleted or kept.
   5. The core-seconds calibration.
-  6. The tuning table (c=2/4/8: wall, core-seconds, efficiency, CU) and the recommended defaults.
-  7. Anything Phase 2 must know.
+  6. The tuning table (c=2/4/8 and the Spark-settings run: wall, core-seconds, efficiency, CU) and the
+     recommended defaults.
+  7. Cadence decisions (link to `dp-refresh-cadence-review.md`).
+  8. Anything Phase 2 must know (e.g. weekly = Mondays, manual items never scheduled, session settings
+     applied by the orchestrator).
 - [ ] **Step 2:** Commit and push both repos' remaining Phase 1 commits.
 - [ ] **Step 3: STOP.** Present the results to Brian. Phases 2–3 (the `Run_DP_Refresh` orchestrator,
   `dp_refresh_log`, `Pipeline_DP_Refresh`, alerts, drills) get their own plan (writing-plans).
