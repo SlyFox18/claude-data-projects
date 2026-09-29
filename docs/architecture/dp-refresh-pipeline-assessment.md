@@ -1,7 +1,7 @@
 # DP Backend Refresh Pipeline — Current State & Assessment
 
 **Date:** 2026-09-25
-**Status:** Schedules PAUSED. The design fix is deferred until Inspections and Customer Anatomy are migrated.
+**Status (2026-09-29): SUPERSEDED.** The three pipelines described here were replaced by `Pipeline_DP_Refresh` + `Run_DP_Refresh` and deleted. See `dp-refresh-phase2-results.md` (operating guide) and the spec `docs/superpowers/specs/2026-09-28-dp-refresh-pipeline-redesign-design.md`. Kept for history.
 **Related:** `report-migration-catalog.md`, `data-platform-workspaces.md`, `fabric-workspace-docs/deploy/dp_backend_scope.json`
 
 ---

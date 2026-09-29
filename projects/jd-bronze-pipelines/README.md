@@ -24,6 +24,15 @@ comes from the Full pipeline.
 `d98a8d2c-d0df-4a42-a281-aab18e49dbd7` (used by SPI's own dataflows, Windows auth) and
 `SPI-Dev-Gateway` `ca642c75-d40d-4dc4-901d-90c122676926`. JD's pipelines do **not** use them.
 
+## Used by the DP refresh
+
+`Pipeline_DP_Refresh` (DP - Presentation - Dev) triggers the Incremental pipeline itself and then runs
+a Bronze check. The check reads each JD pipeline's activity runs, not the pipeline status. If JD's Full
+load (since last Central midnight) or the Incremental run has failed or stale activities, the DP refresh
+rebuilds nothing, and sends a High-importance alert email plus a Teams post pointing here. See
+`docs/architecture/dp-refresh-phase2-results.md`. Once that pipeline is scheduled in Prod, turn off
+the Incremental pipeline's own schedule.
+
 ## Health check
 
 ```
