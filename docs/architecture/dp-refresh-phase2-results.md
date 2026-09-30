@@ -79,6 +79,11 @@ Retired (Brian approved 2026-09-29): `Pipeline_DP_Daily_Refresh`, `Pipeline_DP_M
   `data-projects/projects/jd-bronze-pipelines/README.md` (gateway on SPI01SR2034W), re-run JD's
   pipelines, then run `Pipeline_DP_Refresh` (`mode=all` or `scheduled`).
 - **🔴 orchestrator error / crashed:** open the pipeline run in the Fabric Monitor, fix, and run again.
+- **🔴 "… crashed" with error 2011 "An error occurred while sending the request"** (seen 2026-09-30):
+  a Fabric blip between the pipeline and the notebook service. The **notebook keeps running** on its
+  own and still writes its log rows, but the pipeline has moved on, so later steps (Gold, emails) don't
+  happen. In the Monitor hub, wait until that `Run_DP_Refresh` run shows Succeeded, then run the
+  pipeline again. A new run started earlier stops itself ("another DP refresh … still InProgress").
 
 **Read the log** (DuckDB, as in `tools/dp-migration/proto_counts.py`):
 `delta_scan('abfss://73fd5443-240e-410a-990a-98827f32c087@onelake.dfs.fabric.microsoft.com/966efc8a-16f9-423b-aa43-e368fcd8fb91/Tables/dp_refresh_log')`.
