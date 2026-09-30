@@ -24,6 +24,27 @@ comes from the Full pipeline.
 `d98a8d2c-d0df-4a42-a281-aab18e49dbd7` (used by SPI's own dataflows, Windows auth) and
 `SPI-Dev-Gateway` `ca642c75-d40d-4dc4-901d-90c122676926`. JD's pipelines do **not** use them.
 
+## ArMaster is on BOTH lists (changed 2026-09-30, Brian approved)
+
+Equip's AR aging roll (month-end) rewrites `DAYS_30/60/90/120` and `CURRENT_VALUE` in `ArMaster`
+**without** updating `Last_Modified_Date`, so the watermark-based Incremental load never picks aging
+changes up. Found while validating 60 Days Past Due on 2026-09-30: production (full ODBC read) showed the
+month-end aging, and DP didn't. The incremental load also can't see deleted accounts (Bronze had 54,148
+rows vs Equip 53,966).
+
+Fix: `ArMaster` was added to `watermarktable_full` (CopyType Full, key ACC_NO) by the one-off notebook
+`Utilities_ArMasterFullReload_20260930`. It **also stays on** `watermarktable_incremental`. The
+midnight Full load rewrites the whole table (correct aging, deletes removed); the Incremental still
+merges intraday edits.
+
+Backups: `watermarktable_full_bak_20260930`, `watermarktable_incremental_bak_20260930`,
+`ArMaster_bak_20260930` in the Bronze lakehouse. Undo: delete the ArMaster row from `watermarktable_full`.
+
+**Watch:** the first Incremental merge after a Full reload (Full uses a Copy activity with
+OverwriteSchema, Incremental a notebook merge). If column types differ, the Incremental run fails; the DP
+refresh's Bronze check would then flag it. **The same blind spot may exist on other Incremental tables**
+if any Equip batch job updates them without touching their watermark column.
+
 ## Used by the DP refresh
 
 `Pipeline_DP_Refresh` (DP - Presentation - Dev) triggers the Incremental pipeline itself and then runs
