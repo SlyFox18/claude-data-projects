@@ -1,0 +1,64 @@
+# Report Promotion — Sandbox Validation Checklist
+
+Written for: Brian. You validate every promoted report in **RP - Sandbox**, which reads **DP Prod**,
+against the **live** report, which reads LH_Master_Data. Plan:
+`docs/superpowers/plans/2026-10-07-report-promotion.md`, Task 9.
+
+## How to check each report
+
+1. **Open both versions side by side**, using the two links in its row. Set the same filters on both: same branch, same date range.
+2. **Every page opens with no broken visuals.** Look for grey "can't display" boxes and red error icons.
+3. **Check 3–5 headline numbers per report** (KPI cards, totals). Each one should either:
+   - match the live report, or
+   - differ only for a reason listed in its row under "Expected differences".
+4. **Click through the slicers and bookmarks once.**
+5. **Mark the last column:**
+   - **OK**: the report matches, or differs only for listed reasons;
+   - **?**: you found something else. Write down which number, the filters, and both values. I'll trace it before that workspace's cutover.
+
+**Expected for every report:**
+- Sandbox refreshes at a different time than live, so today's numbers can be a few hours apart.
+- Check a **closed** period (last month) for exact matches.
+- Use today only to confirm that data is flowing.
+
+## Reports
+
+| Report | Goes to | Live | Sandbox | Expected differences | OK? |
+|---|---|---|---|---|---|
+| 60+ Days Past Due | Financial Reports | [live](https://app.powerbi.com/groups/67fefa98-9e80-4a79-afdd-c8988b6e64fc/reports/3c88348f-4267-44b9-a098-86795fe30eff) | [sandbox](https://app.powerbi.com/groups/ba9d8de4-ef13-44e6-9156-e23a2511f3ad/reports/f2422096-88d1-4b3e-ae3d-fed0b2a3fc24) | Aging comes from JD ArMaster (now also on the Full reload, so month-end aging is corrected each night) | |
+| Customer Anatomy | Service Reports | [live](https://app.powerbi.com/groups/fa9b2eef-d507-48ad-bbeb-242037941987/reports/10d09c40-e68c-4c21-8efa-cbfa3d184684) | [sandbox](https://app.powerbi.com/groups/ba9d8de4-ef13-44e6-9156-e23a2511f3ad/reports/b565c446-76cc-4501-a5ef-08a3d3238b7a) | Service revenue: Fact_Service_Invoices fix ($19M → $2.13M 'Unknown' customer)<br>Service_Detail 2x double-count fixed<br>Starts 2022<br>Tornillo branch fix; parts lines take the branch only when the invoice number is ambiguous<br>Unique-customer lookup = production's 542 rows | |
+| Inspections | Service Reports | [live](https://app.powerbi.com/groups/fa9b2eef-d507-48ad-bbeb-242037941987/reports/3bbabd1f-b1cf-47b4-9d7b-10eee95bd256) | [sandbox](https://app.powerbi.com/groups/ba9d8de4-ef13-44e6-9156-e23a2511f3ad/reports/5aea2db3-3bce-4fb4-bedf-00ca3934aff7) | New: closed-date filtering + Job Code slicer (Casey's request) — not in the live version<br>InTrans Aug–Sep 2026: DP higher (production is missing 7,101 Aug + ~1,419 Sep transactions) | |
+| Job Code Parts Advisor | Service Reports | [live](https://app.powerbi.com/groups/fa9b2eef-d507-48ad-bbeb-242037941987/reports/8d660bcb-3074-4258-9aa2-a30a00c65213) | [sandbox](https://app.powerbi.com/groups/ba9d8de4-ef13-44e6-9156-e23a2511f3ad/reports/70d83666-1464-4c41-a158-51fe88fc01cd) | InTrans Aug–Sep 2026: DP higher (production is missing 7,101 Aug + ~1,419 Sep transactions) | |
+| Labor Performance | Service Reports | [live](https://app.powerbi.com/groups/fa9b2eef-d507-48ad-bbeb-242037941987/reports/c4c91135-4534-40f9-967c-a7ef0491e7dd) | [sandbox](https://app.powerbi.com/groups/ba9d8de4-ef13-44e6-9156-e23a2511f3ad/reports/abe69da2-41da-46c3-9f66-9ae0ce1646b6) | Month/year grouping by invoice date, as the source view does (validated 2026-09-24) | |
+| Open Work Orders | Service Reports | [live](https://app.powerbi.com/groups/fa9b2eef-d507-48ad-bbeb-242037941987/reports/f67319e4-fe5a-4b93-ad1e-70b03ab0cc3d) | [sandbox](https://app.powerbi.com/groups/ba9d8de4-ef13-44e6-9156-e23a2511f3ad/reports/aa8f7f7e-09b7-4cca-8b6a-fa2c424fa60c) | Labor columns renamed in the source (LaborSale → LaborRevenue etc.) — values should match | |
+| Planter Inspection Part Sales | Service Reports | [live](https://app.powerbi.com/groups/fa9b2eef-d507-48ad-bbeb-242037941987/reports/1cb9ad4b-5aba-4126-95e4-74998fe88ac3) | [sandbox](https://app.powerbi.com/groups/ba9d8de4-ef13-44e6-9156-e23a2511f3ad/reports/c4b1b923-0714-40da-b20f-2774bfd8ad77) | InTrans Aug–Sep 2026: DP higher (production is missing 7,101 Aug + ~1,419 Sep transactions) | |
+| Stock Check | Service Reports | [live](https://app.powerbi.com/groups/fa9b2eef-d507-48ad-bbeb-242037941987/reports/fb20f494-4797-447b-81a6-ca81123db1e5) | [sandbox](https://app.powerbi.com/groups/ba9d8de4-ef13-44e6-9156-e23a2511f3ad/reports/c277d293-073d-4999-9459-1b246a769489) | none known | |
+| Service Time Sheets | Service Reports | — (new) | [sandbox](https://app.powerbi.com/groups/ba9d8de4-ef13-44e6-9156-e23a2511f3ad/reports/ddd28b0e-beb7-40d6-a249-8c8bf0ab2f62) | NEW in production — compare with the RP-Dev version instead of a live one<br>Invoice number = latest invoice on the WO for that tech<br>Audit Log button: users click Allow once on first use | |
+| Bin Location Report | Parts Reports | [live](https://app.powerbi.com/groups/4f2d10c6-11e1-4d3a-959d-a461ef9a4cd7/reports/eae918c0-964d-472a-921d-71764d9ab72b) | [sandbox](https://app.powerbi.com/groups/ba9d8de4-ef13-44e6-9156-e23a2511f3ad/reports/31d2bb71-7795-42c3-8d20-6552f303e4b9) | Part-level on hand/back order/12-mo sales/inventory value are company-wide sums now (prices/description = most common across branches) | |
+| Combine Vault Sales | Parts Reports | [live](https://app.powerbi.com/groups/4f2d10c6-11e1-4d3a-959d-a461ef9a4cd7/reports/cac68d82-dcc9-4508-8bcb-c8e68b05477e) | [sandbox](https://app.powerbi.com/groups/ba9d8de4-ef13-44e6-9156-e23a2511f3ad/reports/ae485f31-11f9-47fb-a0fc-4cf28fe5719a) | InTrans Aug–Sep 2026: DP higher (production is missing 7,101 Aug + ~1,419 Sep transactions) | |
+| First Pass Fill | Parts Reports | [live](https://app.powerbi.com/groups/4f2d10c6-11e1-4d3a-959d-a461ef9a4cd7/reports/7613419a-5d2b-420c-a970-a6b735746278) | [sandbox](https://app.powerbi.com/groups/ba9d8de4-ef13-44e6-9156-e23a2511f3ad/reports/e0f3ab4f-5307-4898-9c32-3ecb4d5179e0) | Date flags (rolling 12 months etc.) are now report DAX off the refresh date | |
+| Inventory Analysis | Parts Reports | [live](https://app.powerbi.com/groups/4f2d10c6-11e1-4d3a-959d-a461ef9a4cd7/reports/85e6ccef-a06e-4f3b-959b-9794b570be16) | [sandbox](https://app.powerbi.com/groups/ba9d8de4-ef13-44e6-9156-e23a2511f3ad/reports/46cc6dc0-0b50-41fc-8f65-f699a1037f02) | Part-level on hand/back order/12-mo sales/inventory value are company-wide sums now (prices/description = most common across branches)<br>InTrans Aug–Sep 2026: DP higher (production is missing 7,101 Aug + ~1,419 Sep transactions)<br>Older history (2010–2014) is complete now (~150K transactions restored) | |
+| MD Invoices With No Freight | Parts Reports | [live](https://app.powerbi.com/groups/4f2d10c6-11e1-4d3a-959d-a461ef9a4cd7/reports/685db3a1-418d-4e6b-ba36-3034069a4b02) | [sandbox](https://app.powerbi.com/groups/ba9d8de4-ef13-44e6-9156-e23a2511f3ad/reports/70b88030-77cd-4a03-aab4-67e0a09ca8a2) | none known | |
+| Negative On Hand-On Hand No Bin | Parts Reports | [live](https://app.powerbi.com/groups/4f2d10c6-11e1-4d3a-959d-a461ef9a4cd7/reports/7e4a99e8-dcd1-4e5e-8ee6-c4afe90f0918) | [sandbox](https://app.powerbi.com/groups/ba9d8de4-ef13-44e6-9156-e23a2511f3ad/reports/ca3d8460-a9cd-4a77-9b15-d674ceb06c0c) | ~29 more no-bin parts (padded blank bins now count as blank, like production's SQL did) | |
+| Open Parts Tickets | Parts Reports | [live](https://app.powerbi.com/groups/4f2d10c6-11e1-4d3a-959d-a461ef9a4cd7/reports/7b2a147a-9142-42d0-a5ee-8933c45390b4) | [sandbox](https://app.powerbi.com/groups/ba9d8de4-ef13-44e6-9156-e23a2511f3ad/reports/cfae7c14-715c-46e3-bc0f-0a2ef6d824a2) | none known | |
+| Part Sales with Low Margin | Parts Reports | [live](https://app.powerbi.com/groups/4f2d10c6-11e1-4d3a-959d-a461ef9a4cd7/reports/02676e5e-6ee2-4d92-afc0-cca50a9b4c8b) | [sandbox](https://app.powerbi.com/groups/ba9d8de4-ef13-44e6-9156-e23a2511f3ad/reports/19884b37-f7b0-4302-ac9c-968f7e38a828) | InTrans Aug–Sep 2026: DP higher (production is missing 7,101 Aug + ~1,419 Sep transactions)<br>Part-level on hand/back order/12-mo sales/inventory value are company-wide sums now (prices/description = most common across branches) | |
+| Parts Adjustments | Parts Reports | [live](https://app.powerbi.com/groups/4f2d10c6-11e1-4d3a-959d-a461ef9a4cd7/reports/68f9d8d7-6feb-4b6b-9e5d-9db57678ee9c) | [sandbox](https://app.powerbi.com/groups/ba9d8de4-ef13-44e6-9156-e23a2511f3ad/reports/6204ed4c-eb70-4e97-b6ee-158d45cd9b48) | InTrans Aug–Sep 2026: DP higher (production is missing 7,101 Aug + ~1,419 Sep transactions) | |
+| Parts Not Re-Ordered 24 Hours | Parts Reports | [live](https://app.powerbi.com/groups/4f2d10c6-11e1-4d3a-959d-a461ef9a4cd7/reports/d5dc2bdb-cc61-4f23-9314-e908cf838d89) | [sandbox](https://app.powerbi.com/groups/ba9d8de4-ef13-44e6-9156-e23a2511f3ad/reports/d68d371a-b3ad-4021-af2d-179248325ec8) | Quantities of separate lines with the same branch/part/time/invoice are now added together (was one line at random)<br>7-day window — numbers move with the refresh time | |
+| Parts Promo | Parts Reports | [live](https://app.powerbi.com/groups/4f2d10c6-11e1-4d3a-959d-a461ef9a4cd7/reports/0c7ae1a8-661d-4e16-b0ca-b84637ca9b3a) | [sandbox](https://app.powerbi.com/groups/ba9d8de4-ef13-44e6-9156-e23a2511f3ad/reports/6eb353d5-b363-43c9-9c07-eb5de1f25c02) | InTrans Aug–Sep 2026: DP higher (production is missing 7,101 Aug + ~1,419 Sep transactions)<br>Promo description = most common trimmed text | |
+| Physical Inventory | Parts Reports | [live](https://app.powerbi.com/groups/4f2d10c6-11e1-4d3a-959d-a461ef9a4cd7/reports/194d1dac-dae8-42d3-a5b3-dcc65ca510a9) | [sandbox](https://app.powerbi.com/groups/ba9d8de4-ef13-44e6-9156-e23a2511f3ad/reports/7ff8ee7a-2dfa-46c5-84d4-1bdda662537f) | Part-level on hand/back order/12-mo sales/inventory value are company-wide sums now (prices/description = most common across branches) | |
+| Pin Capture | Parts Reports | [live](https://app.powerbi.com/groups/4f2d10c6-11e1-4d3a-959d-a461ef9a4cd7/reports/2d1b01b1-4988-4bff-93a0-bba94cdc2f9c) | [sandbox](https://app.powerbi.com/groups/ba9d8de4-ef13-44e6-9156-e23a2511f3ad/reports/406d4641-f34f-4305-88bb-27c377e18a01) | Date flags are now report DAX off the refresh date<br>Type column restored (used by a Power Automate flow) | |
+| Price Matrix | Parts Reports | [live](https://app.powerbi.com/groups/4f2d10c6-11e1-4d3a-959d-a461ef9a4cd7/reports/e4b6509c-fb53-484e-8a12-d2c0da19eb8c) | [sandbox](https://app.powerbi.com/groups/ba9d8de4-ef13-44e6-9156-e23a2511f3ad/reports/4bc4d912-bf72-4cda-be6e-9915c5298fe3) | Part-level on hand/back order/12-mo sales/inventory value are company-wide sums now (prices/description = most common across branches)<br>InTrans Aug–Sep 2026: DP higher (production is missing 7,101 Aug + ~1,419 Sep transactions) | |
+| Table-Column-Names-Search | Parts Reports | [live](https://app.powerbi.com/groups/4f2d10c6-11e1-4d3a-959d-a461ef9a4cd7/reports/334f7847-eefc-4196-9e5a-168cc86c241b) | [sandbox](https://app.powerbi.com/groups/ba9d8de4-ef13-44e6-9156-e23a2511f3ad/reports/71b789d4-b7ed-4af8-8310-a07dda4ecd06) | Reads the source system directly (ODBC) — should match exactly | |
+| Transfers | Parts Reports | [live](https://app.powerbi.com/groups/4f2d10c6-11e1-4d3a-959d-a461ef9a4cd7/reports/cb602381-485d-4755-8f9c-23a24e71acd3) | [sandbox](https://app.powerbi.com/groups/ba9d8de4-ef13-44e6-9156-e23a2511f3ad/reports/a422df5d-2b78-4fbe-bed1-e6bebf2559fa) | InTrans Aug–Sep 2026: DP higher (production is missing 7,101 Aug + ~1,419 Sep transactions) | |
+| Unique Parts Customers | Parts Reports | [live](https://app.powerbi.com/groups/4f2d10c6-11e1-4d3a-959d-a461ef9a4cd7/reports/3b3a513e-3511-4f64-b166-ef9b37c115d7) | [sandbox](https://app.powerbi.com/groups/ba9d8de4-ef13-44e6-9156-e23a2511f3ad/reports/84753a2e-398d-472e-a708-a7cbd67e4fa7) | InTrans Aug–Sep 2026: DP higher (production is missing 7,101 Aug + ~1,419 Sep transactions) | |
+| Parts Action Dashboard | Parts Reports | — (new) | [sandbox](https://app.powerbi.com/groups/ba9d8de4-ef13-44e6-9156-e23a2511f3ad/reports/cb9176a3-6ef9-46bf-bafc-cc45ccc0368a) | NEW in production — compare with the RP-Dev version; its Power Automate flow columns were restored 2026-10-02 | |
+
+## Cutover order and log
+
+Cutover order: **Financial** (pilot) → **Service** → **Parts**. A workspace is cut over only after all of its reports are OK.
+
+| Workspace | Validated | Cutover date | Report/model IDs unchanged? | First DP refresh OK? | Notes |
+|---|---|---|---|---|---|
+| RP - Financial Reports | | | | | |
+| RP - Service Reports | | | | | Rename "Customer Anatomy V2" → "Customer Anatomy" first |
+| RP - Parts Reports | | | | | Re-test Power Automate flows (Pin Capture, Low Margin, Parts Action Summary) |
