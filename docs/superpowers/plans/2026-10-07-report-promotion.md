@@ -746,6 +746,13 @@ Same as Task 10 (financial → service, workspace ID `fa9b2eef-d507-48ad-bbeb-24
 - [ ] **Inspections:** after `refresh_reports.py service`, confirm Fact_WorkOrderParts has all its partitions (row count matches Sandbox).
 - [ ] Mark all 9 service reports `"live": true` in one commit.
 
+> **Lessons from the Financial and Service cutovers (2026-10-07), already built into the code:**
+> - **The CI account takes over each existing model before binding** (`pbi_models.take_over`). People own the live models, and only an owner can bind connections.
+> - **The bind check waits up to 2 minutes**, because bindings take a few seconds to appear.
+> - **Existing models are updated with `allowPurgeData`.** Without it, Inspections failed with RequiredOptionsMissing because of its incremental-refresh partitions.
+> - **fabric-cicd publishes all models, then all reports.** If a model fails, no report is published. A failed production run leaves new models under old reports, so **re-run it immediately**.
+> - **The old V2 refresh list can hold stale entries** (a dead "Customer Anatomy V2" ID). Search it by workspace ID, not only by the current dataset IDs.
+
 ### Task 12: Cut over RP - Parts Reports
 
 Same as Task 10 (parts, workspace ID `4f2d10c6-11e1-4d3a-959d-a461ef9a4cd7`), all 18 reports including the new **Parts Action Dashboard**. Additions:
