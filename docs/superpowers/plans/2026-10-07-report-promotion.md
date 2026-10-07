@@ -96,6 +96,12 @@ Not promoted: Top 50 - Job Codes, Transfer App.
 
 ### Task 1: DP Prod cloud connection and the other connections (Brian, in the UI; Claude records IDs)
 
+> **DONE 2026-10-07.**
+> - PROD_SQL = `83966514-b190-4e72-af5f-1cd40cbc7eac`. Inspections' file = `360bb47c-4a03-44d9-9ac1-b676ab0181e0` (SharePoint_Inspections). Price Matrix's file = `ddd23423-cdfa-4fc8-9916-37f40dc42bd4` ("SharePoint"). GATEWAY_ODBC = `70ea8af2-b529-4843-aee6-28297801fe71`. The CI service principal is User on all four.
+> - Gotcha: personal cloud connections with the same file URLs also exist and can't be shared. The live models use the gateway ones.
+>
+> **Task 0 DONE 2026-10-07:** 75/77 Gold tables are identical. The 2 that differ (Fact_OpenOrders, Fact_OpenOrderParts) are manual cadence and expected to.
+
 **Why:** a deployed model must be bound to a cloud connection, or refresh fails (Premium_ASWL_Error; see memory `feedback_model_explicit_connection_for_api_refresh`). The CI service principal must also be allowed to use each connection, or fabric-cicd fails to bind it.
 
 - [ ] **Step 1 (Brian):** In Fabric, go to **Settings → Manage connections and gateways → New → Cloud**.
@@ -419,16 +425,19 @@ semantic_model_binding:
   # cloud connection. Models with a second source list every connection they need.
   default:
     connection_id:
-      prod: "<PROD_SQL>"
+      prod: "83966514-b190-4e72-af5f-1cd40cbc7eac"          # SQL_DP_Presentation_Prod
   models:
-    - semantic_model_name: ["Inspections", "Price Matrix"]
+    - semantic_model_name: "Inspections"
       connection_id:
-        prod: ["<PROD_SQL>", "<ONEDRIVE>"]
+        prod: ["83966514-b190-4e72-af5f-1cd40cbc7eac", "360bb47c-4a03-44d9-9ac1-b676ab0181e0"]  # + SharePoint_Inspections (gateway Web)
+    - semantic_model_name: "Price Matrix"
+      connection_id:
+        prod: ["83966514-b190-4e72-af5f-1cd40cbc7eac", "ddd23423-cdfa-4fc8-9916-37f40dc42bd4"]  # + "SharePoint" (gateway Web, PRICE MATRIX csv)
     - semantic_model_name: "Table-Column-Names-Search"
       connection_id:
-        prod: ["<PROD_SQL>", "<GATEWAY_ODBC>"]
+        prod: ["83966514-b190-4e72-af5f-1cd40cbc7eac", "70ea8af2-b529-4843-aee6-28297801fe71"]  # + dsn=EquipRDB64 (gateway ODBC)
 ```
-  Replace the three `<...>` values with the real GUIDs before committing. There is no `dev:` key on purpose: Dev deploys don't deploy reports.
+  These IDs were verified on 2026-10-07: they're the connections the live production models use (from `datasets/<id>/datasources`), and SPN-Fabric-CICD-Deploy is User on all four. There is no `dev:` key on purpose: Dev deploys don't deploy reports.
 
 - [ ] **Step 2:** Run `python -m pytest deploy -q` (parameter.yml is read by tests only through `stage_items`, so this is a smoke check). Then commit: `git add parameter.yml && git commit -m "parameter.yml: bind promoted models to the DP Prod connection"`.
 
