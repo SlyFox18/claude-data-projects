@@ -25,7 +25,7 @@ against the **live** report, which reads LH_Master_Data. Plan:
 
 | Report | Goes to | Live | Sandbox | Expected differences | OK? |
 |---|---|---|---|---|---|
-| 60+ Days Past Due | Financial Reports | [live](https://app.powerbi.com/groups/67fefa98-9e80-4a79-afdd-c8988b6e64fc/reports/3c88348f-4267-44b9-a098-86795fe30eff) | [sandbox](https://app.powerbi.com/groups/ba9d8de4-ef13-44e6-9156-e23a2511f3ad/reports/f2422096-88d1-4b3e-ae3d-fed0b2a3fc24) | Aging comes from JD ArMaster (now also on the Full reload, so month-end aging is corrected each night) | |
+| 60+ Days Past Due | Financial Reports | [live](https://app.powerbi.com/groups/67fefa98-9e80-4a79-afdd-c8988b6e64fc/reports/3c88348f-4267-44b9-a098-86795fe30eff) | [sandbox](https://app.powerbi.com/groups/ba9d8de4-ef13-44e6-9156-e23a2511f3ad/reports/f2422096-88d1-4b3e-ae3d-fed0b2a3fc24) | Aging comes from JD ArMaster (now also on the Full reload, so month-end aging is corrected each night) | **OK** 2026-10-07: identical to live (Brian) |
 | Customer Anatomy | Service Reports | [live](https://app.powerbi.com/groups/fa9b2eef-d507-48ad-bbeb-242037941987/reports/10d09c40-e68c-4c21-8efa-cbfa3d184684) | [sandbox](https://app.powerbi.com/groups/ba9d8de4-ef13-44e6-9156-e23a2511f3ad/reports/b565c446-76cc-4501-a5ef-08a3d3238b7a) | Service revenue: Fact_Service_Invoices fix ($19M → $2.13M 'Unknown' customer)<br>Service_Detail 2x double-count fixed<br>Starts 2022<br>Tornillo branch fix; parts lines take the branch only when the invoice number is ambiguous<br>Unique-customer lookup = production's 542 rows | |
 | Inspections | Service Reports | [live](https://app.powerbi.com/groups/fa9b2eef-d507-48ad-bbeb-242037941987/reports/3bbabd1f-b1cf-47b4-9d7b-10eee95bd256) | [sandbox](https://app.powerbi.com/groups/ba9d8de4-ef13-44e6-9156-e23a2511f3ad/reports/5aea2db3-3bce-4fb4-bedf-00ca3934aff7) | New: closed-date filtering + Job Code slicer (Casey's request) — not in the live version<br>InTrans Aug–Sep 2026: DP higher (production is missing 7,101 Aug + ~1,419 Sep transactions) | |
 | Job Code Parts Advisor | Service Reports | [live](https://app.powerbi.com/groups/fa9b2eef-d507-48ad-bbeb-242037941987/reports/8d660bcb-3074-4258-9aa2-a30a00c65213) | [sandbox](https://app.powerbi.com/groups/ba9d8de4-ef13-44e6-9156-e23a2511f3ad/reports/70d83666-1464-4c41-a158-51fe88fc01cd) | InTrans Aug–Sep 2026: DP higher (production is missing 7,101 Aug + ~1,419 Sep transactions) | |
@@ -59,6 +59,6 @@ Cutover order: **Financial** (pilot) → **Service** → **Parts**. A workspace 
 
 | Workspace | Validated | Cutover date | Report/model IDs unchanged? | First DP refresh OK? | Notes |
 |---|---|---|---|---|---|
-| RP - Financial Reports | | | | | |
+| RP - Financial Reports | 2026-10-07 | | | | Before: report `3c88348f-4267-44b9-a098-86795fe30eff`, model `2516982b-f52f-4676-b879-525e089e9b9e` (owner bfox, bound to SQL_LH_Master 42fc2aed via gateway). Old refresh: `Pipeline_SemanticModels_V2` list (Mon–Fri 6:30) |
 | RP - Service Reports | | | | | Rename "Customer Anatomy V2" → "Customer Anatomy" first |
 | RP - Parts Reports | | | | | Re-test Power Automate flows (Pin Capture, Low Margin, Parts Action Summary) |
