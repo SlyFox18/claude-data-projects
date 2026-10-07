@@ -59,6 +59,6 @@ Cutover order: **Financial** (pilot) → **Service** → **Parts**. A workspace 
 
 | Workspace | Validated | Cutover date | Report/model IDs unchanged? | First DP refresh OK? | Notes |
 |---|---|---|---|---|---|
-| RP - Financial Reports | 2026-10-07 | | | | Before: report `3c88348f-4267-44b9-a098-86795fe30eff`, model `2516982b-f52f-4676-b879-525e089e9b9e` (owner bfox, bound to SQL_LH_Master 42fc2aed via gateway). Old refresh: `Pipeline_SemanticModels_V2` list (Mon–Fri 6:30) |
+| RP - Financial Reports | 2026-10-07 | **2026-10-07** (PR #24, Deploy reports run) | **Yes**: report and model IDs unchanged; owner is now the CI SPN; bound to SQL_DP_Presentation_Prod | Manual full refresh OK; first 6:15 DP run on 10/8 | The deploy run went red only because the bind check was too quick (fixed in 998c0d1a). Removed from V2 list in be6d77b7. Before: report `3c88348f-4267-44b9-a098-86795fe30eff`, model `2516982b-f52f-4676-b879-525e089e9b9e` (owner bfox, bound to SQL_LH_Master 42fc2aed via gateway). Old refresh: `Pipeline_SemanticModels_V2` list (Mon–Fri 6:30) |
 | RP - Service Reports | | | | | Rename "Customer Anatomy V2" → "Customer Anatomy" first |
 | RP - Parts Reports | | | | | Re-test Power Automate flows (Pin Capture, Low Margin, Parts Action Summary) |
