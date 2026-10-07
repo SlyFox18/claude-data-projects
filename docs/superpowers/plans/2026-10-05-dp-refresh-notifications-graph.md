@@ -1,5 +1,15 @@
 # DP Refresh Notifications via Microsoft Graph — Implementation Plan
 
+> **Status 2026-10-05: DONE.** Built, validated in Dev with 3 drills, deployed to Prod (PR #18, deploy run 37337445301). Changes from the plan as written:
+> - **No Key Vault.** "Azure subscription 1" isn't Brian's, so the client secret lives in `Files/secrets/dp-refresh-notify.txt` in each DP_Presentation lakehouse (Dev and Prod). It isn't in Git, and the workspaces hold only Brian and the 2 service principals. Config uses `secretFile`; Key Vault stays supported (`keyVaultUri` + `secretName`) for later.
+> - **The secret expires 10/5/2027** (Entra secret "dp-refresh-notify" on SPN-Fabric-Refresh-Automation). To rotate: create a new secret, then replace both files.
+> - **The Teams channel's email setting must be "Only email sent from these domains: spitractor.com".** "Members only" makes Teams bounce mail from the shared mailbox ("Undeliverable: Email cannot be delivered to channel").
+> - **Additions:**
+>   - terminal Fail steps, so a crash shows as Failed in the Monitor;
+>   - retry on 429/5xx;
+>   - fail loudly when the tier or config is unknown;
+>   - a "notifications could not be sent" crash message.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** `Pipeline_DP_Refresh` sends its summary email, alert email, Teams post and crash notices without personal Outlook/Teams connections, so CI can deploy it to Prod.

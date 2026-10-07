@@ -1,5 +1,39 @@
 # DP Prod Tier Build-out Implementation Plan
 
+> **Progress 2026-10-07:**
+> - **Task 10 done.**
+>   - The four-pass first run is complete. Seeding also needed the 6 manual-cadence Gold items and 2 uploaded CSVs, which no deploy copies.
+>   - The first runs failed with 403 because the pipeline ran as the CI service principal (the last modifier). Fixed by `deploy/claim_prod_pipeline.py`, which must run after every deploy.
+>   - Snapshot appends needed a schema cast (PR #19).
+> - **Task 11:**
+>   - `compare_tiers.py` was built. It also needed DOUBLE values rounded to 6 decimals.
+>   - Back-to-back comparisons found non-deterministic notebooks plus a Silver_InTrans key bug that dropped about 150K rows.
+>   - Fixed in PR #20 (Brian's decisions: dim_Parts company-wide; Parts Not Re-Ordered sums quantities) and PR #21 (BranchKey and two row-order dedups).
+>   - Rules written up in `docs/architecture/dp-notebook-rules.md`.
+>   - The final comparison is running on 2026-10-07.
+> - **Task 12 done:** "DP Backend: Dev and Prod" in fabric-workspace-docs `OPERATIONS-GUIDE.md`, plus a README section.
+>
+> **Progress 2026-10-05:**
+> - **Tasks 1–9 done.**
+>   - Code: commits 5a7143d3 through 8f32f2e5.
+>   - Prod workspaces disconnected from Git.
+>   - The CI service principal is a User on the 3 dataflow connections. The Outlook and Teams connections can't be shared, so notifications moved to Graph: plan `2026-10-05-dp-refresh-notifications-graph.md`.
+>   - First PR #17 merged after `main` was merged into `dev` (`dev` and `main` had diverged).
+>   - Prod deploy run 37337445301: 36 + 72 items; all IDs checked as Prod.
+>   - Staging shortcuts are created (33). The 29 Presentation shortcuts to Silver can't be created until their target tables exist.
+> - **Task 10 amended. The first Prod run goes in four passes:**
+>   1. `mode=items` with every Staging item;
+>   2. `deploy/sync_shortcuts.py --apply`;
+>   3. the snapshot-history copy;
+>   4. `mode=all`.
+>
+>   Prod `Pipeline_DP_Refresh` is `1fa19eb8-7d5f-465e-b7e7-b31e02e56a2c` in workspace `7836042d-…`.
+> - **Production workspaces sync from different branches:**
+>   - **`main`:** RP - Parts Reports, RP - Financial Reports and the three LH - *_Data_Prep workspaces.
+>   - **`dev`:** RP - Service Reports, LH_Master_Data, RP - Sandbox, RP - Dev, JD_FabricOneLake and Shannon.
+>
+>   The report-promotion plan has to settle this.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Stand up the full DP backend in `DP - Staging - Prod` and `DP - Presentation - Prod`, deployed by CI (fabric-cicd) from `main`. Prove it with a full Prod run whose Gold output matches Dev table for table.
