@@ -24,7 +24,7 @@ object inside the workbook.
 | COTTON 2026 TROUBLE PARTS.xlsx | `COTTON 2026 TROUBLE PARTS/` | `PartData` | live ODBC | Barry's sheet; company-wide part lookup (on order / R12 sales / bin qty) |
 | MLPF Gaps.xlsx | `MLPF Gaps/` | `MLPF Gaps` | live ODBC | exactly 2 demands, all branches except 12, superseded parts excluded |
 | SPI-Pieces In Set.xlsx | `SPI-Pieces In Set/` | `SPI - Pieces In Set`, `SPI - Pieces In Set - Filtered`, `SPI -Pieces In Set Review` | live ODBC (+ workbook table) | set-size detection + reorder rec; Review = InMaster PIS > 1 but Match % < 75% |
-| SPI Corparate Stocking.xlsx | `SPI Corparate Stocking/` | `SPI Corparate Stocking` | file written by `build_report.py` (reads DP Prod) | **refresh ≠ new data** — see its README |
+| SPI Corparate Stocking.xlsx | `SPI Corparate Stocking/` | `SPI Corparate Stocking` | file written by `build_report.py` (reads DP Prod) | **refresh ≠ new data** — see its README; superseded parts excluded (any branch) |
 
 `_reference/` = business reference docs (commodity code groups PDF).
 `_archive/` = pre-split docs and old workbook copies (`*.xlsx` here is gitignored).
@@ -60,7 +60,10 @@ object inside the workbook.
 - **InMaster has cross-franchise duplicates** for the same Branch + Part — filter
   `FRANCHISE = 'D'`.
 - **Pieces_In_Set = 1 is the default** (53K parts) — "a set" means > 1.
-- **"Sub To" = `pi_Super_To`** (blank = empty string, never NULL; a few spaces-only).
+- **"Sub To" = `pi_Super_To`** (`SuperTo` in DP Silver; blank = empty string, never NULL; some
+  spaces-only — always trim). Like Dealer Group Code it's **per branch**, often set at only
+  some branches: MLPF Gaps (branch grain) filters per row; SPI Corparate Stocking (part
+  grain) drops the part if any branch is superseded.
 - **Join strategy is volume-dependent.** Zero-fill anti-joins: `NOT EXISTS` is fast for
   high-volume branches (2 & 4), `LEFT JOIN` was the fix for low-volume ones. Inlining
   a small key list as a literal `IN (...)` beat both subquery forms for the 2 & 4

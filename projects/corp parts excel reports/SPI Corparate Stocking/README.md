@@ -45,7 +45,7 @@ parts catalog, so there's no way to narrow scope.
 DuckDB over OneLake (columnar) runs it in ~30 seconds; the row-store ODBC
 source can't.
 
-## Logic (unchanged since 2026-08-27, confirmed with Ben)
+## Logic (confirmed with Ben)
 
 - **Eligibility (part info):** Franchise D, branches 2 & 4 excluded, Package
   Qty = 1, Returnable = 'R', Source <> 'AN', SLC not 21%/90%/91%/99%, AND
@@ -55,6 +55,14 @@ source can't.
   excluded, 7 days to 18 months back.
 - **Filter:** `LocationCount >= 3` (distinct branches with demand); no floor
   on total demand.
+- **Superseded parts excluded (added 2026-10-08, per Ben — same rule as MLPF
+  Gaps):** a part drops out if **any** eligible branch has a Super To value.
+  Super To is set per branch and often only at some (2026-10-08: 44 affected
+  parts, only 5 superseded at every branch, e.g. RE586742 at 15 of 16), so
+  "any branch" rather than dropping just the superseded rows — a part that's
+  been replaced at most branches isn't a company-wide stocking candidate.
+  Blanks are `''` or spaces-only, hence `TRIM`. To switch to per-branch
+  instead, move the SuperTo condition from the `eligible` HAVING into its WHERE.
 - Judgment call (not explicitly discussed with Ben): a branch excluded by
   Source/SLC or the 2/4 exclusion doesn't count against "zero everywhere".
 
@@ -96,3 +104,4 @@ to that lakehouse for Ben/Barry/Curt.
 - 2026-09-15: last run before the workbook split
 - 2026-10-07: re-run from LH_Master_Data — 1,819 parts (source file had been stale since 9/15)
 - 2026-10-07: switched to DP Prod and re-run — 1,808 parts (corrected demand counts)
+- 2026-10-08: Super To exclusion added — 1,837 → 1,793 parts (44 superseded parts removed)

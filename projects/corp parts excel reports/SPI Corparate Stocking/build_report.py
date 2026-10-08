@@ -64,6 +64,12 @@ CONFIRMED WITH BEN (2026-08-27, via Brian)
      nonzero stock at an excluded branch does not disqualify the part.
      Not explicitly discussed with Ben, but consistent with #3/#4 being
      confirmed as real exclusions rather than just missing data.
+  6. Super To (added 2026-10-08, per Ben - same rule as MLPF Gaps): a part
+     is excluded if ANY eligible branch shows a Super To (superseded) value.
+     SuperTo is per branch and frequently populated at only some branches
+     (39 of 44 affected parts on 2026-10-08), so "any branch" is used rather
+     than dropping just the superseded branch rows - a part superseded at
+     most branches isn't a company-wide stocking candidate.
 
 Output: "Franchise D - Zero Stock Company-Wide Demand.xlsx"
 - One row per qualifying part, sorted by LocationCount desc, then
@@ -143,6 +149,11 @@ result = con.execute(f"""
         GROUP BY PartNumber
         HAVING SUM(CASE WHEN COALESCE(QuantityOnHand, 0) <> 0 THEN 1 ELSE 0 END) = 0
            AND SUM(CASE WHEN COALESCE(OnOrder, 0)        <> 0 THEN 1 ELSE 0 END) = 0
+           -- Not superseded at ANY eligible branch (added 2026-10-08, same
+           -- Super To rule as MLPF Gaps). SuperTo is set per branch and often
+           -- only at some branches, so one populated branch drops the whole
+           -- part. TRIM because blanks are '' or spaces-only.
+           AND SUM(CASE WHEN TRIM(COALESCE(SuperTo, '')) <> '' THEN 1 ELSE 0 END) = 0
     ),
     demand AS (
         -- Branches 2 & 4 excluded (CONFIRMED #3), fine-grained
