@@ -63,4 +63,9 @@ Cutover order: **Financial** (pilot) → **Service** → **Parts**. A workspace 
 | RP - Service Reports | 2026-10-07 | **2026-10-07**: PR #25. Inspections failed (RequiredOptionsMissing); fixed by allowPurgeData in PR #26 and re-run | **Yes**: all 14 IDs unchanged; Service Time Sheets created new | All 8 refreshed OK (Inspections 1,588 / $857,067.25 = closed date, as validated) | Before cutover: Git disconnected; agents copied to RP - Data Agent; V1 + originals + "Old reports" deleted; "Customer Anatomy V2" renamed. Removed from V2 list in 8e29671e, including a stale CA V2 entry (dead model ID 22e741eb) |
 | RP - Parts Reports | 2026-10-07 | **2026-10-07** (PR #27, Deploy reports succeeded first try) | **Yes**: all 36 IDs unchanged; Parts Action Dashboard created new | All 18 refreshed OK; every source on DP Prod and bound | V2 list emptied in a77ba857 (Brian: Update all in LH_Master_Data, then turn off V2's 6:30 schedule). **Open:** Update app "Parts Department - Reports"; re-test Power Automate flows (Pin Capture, Low Margin, Parts Action Summary) |
 
+**2026-10-08 checks:**
+- The first scheduled DP Prod run (6:15 → 6:46) refreshed all 26 DP-fed production models: 77 items, 0 failed.
+- All **4 daily Power Automate flows** ran fine against the cut-over models (Brian).
+- The weekly flow (Wednesday) is still to confirm.
+
 **All 27 promoted reports are live on DP Prod as of 2026-10-07.** From 2026-10-08, the DP Prod run (Mon–Fri 6:15) refreshes all 27 in their production workspaces: Parts 18, Service 8, Financial 1.
