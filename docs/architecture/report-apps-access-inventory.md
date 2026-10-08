@@ -6,7 +6,16 @@
 > - Workspace roles are now: Brian Admin, **Ben Admin (backup)**, 2 SPNs Contributor. Jeff, Mary and Gery were removed.
 > - Users emailed the app link.
 > - Pattern written up in fabric-workspace-docs `OPERATIONS-GUIDE.md` → "Report Org Apps".
-> - **Next: Service, then Parts.**
+> **Service and Parts done (2026-10-08):**
+> - **Service Reports:** org app (8 reports, audience "Service users") + group `PBI - Service Reports` (`38594b38-…`).
+>   - Members: the 7 previous viewers + Ben, plus **Mary Hobson** (CFO; needs Service Time Sheets).
+> - **Parts Reports:** org app (18 reports, audience "Parts users") + group `PBI - Parts Reports` (`88bd445f-…`).
+>   - Members: the 5 previous viewers + Ben, plus **Mary Hobson** and **Casey Hurst** (works across Parts and Service).
+>   - The old test app was removed.
+> - **Both workspaces:** roles are now Brian + Ben Admin, 2 SPNs Contributor. Each group has Read on every model.
+> - Users were emailed. **Barry** tested the Parts app with app-only access: OK.
+>
+> **All three report workspaces are now authoring-only.**
 
 **Goal (Brian, 2026-10-07):**
 - Users reach reports only through a Power BI **app**, one per workspace.
