@@ -13,47 +13,49 @@
 
 ### Task 1: Create the security group (Brian)
 
-- [ ] Go to https://entra.microsoft.com → **Groups** → **All groups** → **New group**. Fill in:
+- [x] Go to https://entra.microsoft.com → **Groups** → **All groups** → **New group**. Fill in:
   - **Group type:** Security
   - **Group name:** `PBI - Financial Reports`
   - **Group description:** `Readers of the Financial Reports org app (RP - Financial Reports).`
   - **Membership type:** Assigned
   - **Owners:** Brian Fox
   - **Members:** Ben Hill, Jeff Coffman, Mary Hobson, Gery Straley
-- [ ] Click **Create**. A new group can take a few minutes to appear in Fabric's people pickers.
-- [ ] **Claude:** look up the group and its members through Microsoft Graph (read-only) and record the group's object ID here.
+- [x] Click **Create**. A new group can take a few minutes to appear in Fabric's people pickers.
+- [x] **Claude:** looked up the group and its members through Microsoft Graph (read-only).
+  - **DONE 2026-10-08.** Group `dd0f6315-22fc-4ce8-ab1f-7ac984525750`: security-enabled, not mail-enabled, not role-assignable.
+  - Owner: Brian. Members: Ben, Jeff, Gery, Mary.
 
 ### Task 2: Create the org app (Brian)
 
-- [ ] In **RP - Financial Reports**, go to **+ New item** → **Org app**. Name it `Financial Reports`.
-- [ ] Add **60+ Days Past Due** and make it the landing page.
-- [ ] Optionally add the SPI logo and theme colour. **Save**.
-- [ ] Open **Manage audiences**. In the default audience (rename it to `Financial users`), add the group `PBI - Financial Reports`. Leave **Share**/reshare and Build **unchecked**. Leave "Access to hidden content" **off**.
-- [ ] **Save**, then copy the app link: **Share** → **Copy link**.
+- [x] In **RP - Financial Reports**, go to **+ New item** → **Org app**. Name it `Financial Reports`.
+- [x] Add **60+ Days Past Due** and make it the landing page.
+- [x] Optionally add the SPI logo and theme colour. **Save**.
+- [x] Open **Manage audiences**. In the default audience (rename it to `Financial users`), add the group `PBI - Financial Reports`. Leave **Share**/reshare and Build **unchecked**. Leave "Access to hidden content" **off**.
+- [x] **Save**, then copy the app link: **Share** → **Copy link**.
 
 ### Task 3: Verify access (Claude)
 
-- [ ] The OrgApp item and its audience child item exist in the workspace (Fabric items API).
-- [ ] The group has access to the report and the model (Power BI dataset/report users API, or the item's Manage permissions pane, which Brian can screenshot if the API refuses).
+- [x] The OrgApp item and its audience child item exist in the workspace (Fabric items API).
+- [x] The group has access to the report and the model (Power BI dataset/report users API, or the item's Manage permissions pane, which Brian can screenshot if the API refuses).
 
 ### Task 4: Tell the users (Brian)
 
-- [ ] Send Ben, Jeff, Mary and Gery the app link. Explain that their existing report links still work, and that the workspace will disappear from their view.
+- [x] Send Ben, Jeff, Mary and Gery the app link. Explain that their existing report links still work, and that the workspace will disappear from their view.
 
 ### Task 5: Change workspace roles (Brian, or Claude through the API)
 
-- [ ] **Manage access** on RP - Financial Reports:
+- [x] **Manage access** on RP - Financial Reports:
   - Ben Hill: Contributor → **Admin**.
   - **Remove** Jeff Coffman, Mary Hobson and Gery Straley.
   - Leave Brian (Admin) and both service principals (Contributor) as they are.
 
 ### Task 6: Confirm (Claude + one user)
 
-- [ ] Workspace roles through the API should be exactly: Brian Admin, Ben Admin, 2 SPNs Contributor.
+- [x] Workspace roles through the API should be exactly: Brian Admin, Ben Admin, 2 SPNs Contributor.
 - [ ] **Gery** (Viewer until now) opens the app link and sees the report with data.
-- [ ] Record the results in `docs/architecture/report-apps-access-inventory.md`.
+- [x] Record the results in `docs/architecture/report-apps-access-inventory.md`.
 
 ### Task 7: Document the pattern (Claude)
 
-- [ ] fabric-workspace-docs `OPERATIONS-GUIDE.md`: a "Report org apps" section covering the pattern, the group per app, and the rule that **a new report must be added to its org app**.
+- [x] fabric-workspace-docs `OPERATIONS-GUIDE.md`: a "Report org apps" section covering the pattern, the group per app, and the rule that **a new report must be added to its org app**.
 - [ ] Update memory, and commit both repos.

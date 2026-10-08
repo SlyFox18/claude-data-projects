@@ -1,5 +1,13 @@
 # Report Apps: Access Inventory (2026-10-07)
 
+> **Financial done (2026-10-08):**
+> - Org app "Financial Reports" (`5c4a400b-0443-484e-9b47-e0640491e32f`), with one audience "Financial users" (`6cd4b087-…`) and hidden content off.
+> - Group `PBI - Financial Reports` (`dd0f6315-22fc-4ce8-ab1f-7ac984525750`) holds Ben, Jeff, Mary and Gery, and has Read on the model.
+> - Workspace roles are now: Brian Admin, **Ben Admin (backup)**, 2 SPNs Contributor. Jeff, Mary and Gery were removed.
+> - Users emailed the app link.
+> - Pattern written up in fabric-workspace-docs `OPERATIONS-GUIDE.md` → "Report Org Apps".
+> - **Next: Service, then Parts.**
+
 **Goal (Brian, 2026-10-07):**
 - Users reach reports only through a Power BI **app**, one per workspace.
 - The three report workspaces become **authoring-only**.
