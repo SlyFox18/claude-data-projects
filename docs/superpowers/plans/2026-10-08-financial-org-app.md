@@ -58,4 +58,4 @@
 ### Task 7: Document the pattern (Claude)
 
 - [x] fabric-workspace-docs `OPERATIONS-GUIDE.md`: a "Report org apps" section covering the pattern, the group per app, and the rule that **a new report must be added to its org app**.
-- [ ] Update memory, and commit both repos.
+- [x] Update memory, and commit both repos.
