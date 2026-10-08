@@ -6,19 +6,24 @@ reorder-candidate view of Franchise D parts: zero on-hand AND zero on-order
 at EVERY branch, but still generating demand at 3+ distinct branches over
 the last 18 months (excluding the most recent 7 days).
 
-This is a SEPARATE analysis from the branch-level report in
-.claude/queries/adhoc/FranchiseD_LowDemand_Parts_CrossBranch.pq (the
-"5 candidate branches vs. everyone else" query). Different grain, different
-question - do not merge them.
+Feeds the "SPI Corparate Stocking.xlsx" workbook (Corp Parts Excel Reports
+SharePoint library) - see README.md in this folder.
 
-Source: LH_Master_Data lakehouse, queried directly via DuckDB over OneLake
-(same pattern as ../kurt-sales/build_report.py) - NOT a live Power Query
-against the ODBC source (dsn=EquipRDB64).
+This is a SEPARATE analysis from Border Stores (../Border Stores/Border
+Stores.pq, the "candidate branches vs. everyone else" query). Different
+grain, different question - do not merge them.
+
+Source: DP - Staging - Prod lakehouse (DP_Staging: Silver_PartInformation +
+Silver_InTrans), queried directly via DuckDB over OneLake (same pattern as
+.claude/queries/adhoc/kurt-sales/build_report.py) - NOT a live Power Query
+against the ODBC source. Switched from LH_Master_Data 2026-10-07: LH's
+InTrans_Incremental over-counts some demand, DP matched live EquipRDB exactly
+on every sampled part - see README "Data source".
 
 Why this is a script and not a Power Query in Excel: the equivalent SQL was
 tried as an ad-hoc .pq query against the live ODBC source
-(FranchiseD_ZeroStock_CompanyWide.pq, still in .claude/queries/adhoc/ for
-reference/history) and hung for 30+ minutes, twice, even with source
+(history/FranchiseD_ZeroStock_CompanyWide (ODBC attempt - hung).pq) and
+hung for 30+ minutes, twice, even with source
 capacity confirmed fine. Diagnosed 2026-08-27 by running the real numbers
 against the Lakehouse: this isn't a badly-written query, the workload is
 just large. Franchise D is ~80% of the ENTIRE parts catalog (886,523 of
@@ -30,17 +35,16 @@ pipeline in ~30 seconds; dsn=EquipRDB64 (row-store OLTP over an ODBC network
 bridge) does not, and there's no rewrite of the SQL that fixes that - the
 scale is the problem, not the query shape.
 
-Tables used:
-- jdis_Part_Information - part attributes + eligibility (PackageQty,
+Tables used (same column names as the old LH_Master_Data tables):
+- Silver_PartInformation - part attributes + eligibility (PackageQty,
   Returnable, Source, SLC, QuantityOnHand, OnOrder)
-- InTrans_Incremental    - demand (Franchise D customer invoices, Qty > 0)
+- Silver_InTrans          - demand (Franchise D customer invoices, Qty > 0)
 
 Trade-off vs. a live Power Query: this is run-on-demand, not
-auto-refreshing in the workbook. Data is as fresh as the last Lakehouse
-dataflow run (jdis refreshes 3x/day; InTrans_Incremental refreshes on the
-nightly pipeline) - not live-ODBC-fresh, but should be more than fresh
-enough for a reorder-candidate scan. Re-run this script any time for an
-updated pull.
+auto-refreshing in the workbook. Data is as fresh as the last DP Prod Silver
+run. Until DP cutover those runs are MANUAL, so the script prints how fresh
+each input is and warns if either is more than 2 days old - run the DP
+Silver notebooks first if it warns.
 
 ============================================================================
 CONFIRMED WITH BEN (2026-08-27, via Brian)
@@ -69,18 +73,48 @@ Run manually - not part of any scheduled pipeline.
 ============================================================================
 """
 
+import os
+
 import duckdb
 import pandas as pd
 
-WS_ID = "b48cdb35-7ce3-46de-96df-d70db77649cb"   # LH_Master_Data workspace
-LH_ID = "3e74497b-8c51-4a1a-91a1-888c59118f48"   # LH_Master_Data lakehouse
-base = f"abfss://{WS_ID}@onelake.dfs.fabric.microsoft.com/{LH_ID}/Tables"
+import datetime
 
-out_path = "Franchise D - Zero Stock Company-Wide Demand.xlsx"
+WS_ID = "189e5c0a-548a-4feb-93d6-dda9ebbe96c1"   # DP - Staging - Prod workspace
+LH_ID = "6713bd45-a4ad-47e6-8bff-1bb0415e9784"   # DP_Staging (Prod) lakehouse
+base = f"abfss://{WS_ID}@onelake.dfs.fabric.microsoft.com/{LH_ID}/Tables"
+STALE_AFTER = datetime.timedelta(days=2)
+
+# Write into the SharePoint-synced "Corp Parts Excel Reports" library's
+# "Source Data" subfolder, NOT next to this script - Supplemental
+# Stocking.xlsx now lives in that same SharePoint library (moved 2026-09-15
+# so Ben/Barry/Curt/Shannon can all reach it), and its Power Query pulls
+# this file straight from SharePoint via SharePoint.Files(), not a local
+# path. This file was moved into "Source Data" 2026-09-17 to keep it out of
+# the way of the workbooks people actually open - it's a data source, not
+# something anyone needs to open directly. Saving here lets OneDrive sync
+# push the update to SharePoint automatically - no manual upload step after
+# each run. Read by the "SPI Corparate Stocking" query in SPI Corparate
+# Stocking.xlsx - see README.md in this folder.
+SHAREPOINT_SYNC_DIR = r"C:\Users\bfox\spitractor\South Plains Implement - Report Site - Corp Parts Excel Reports\Source Data"
+out_path = os.path.join(SHAREPOINT_SYNC_DIR, "Franchise D - Zero Stock Company-Wide Demand.xlsx")
 
 con = duckdb.connect()
 con.execute("INSTALL delta; LOAD delta; INSTALL azure; LOAD azure;")
 con.execute("CREATE SECRET (TYPE azure, PROVIDER credential_chain, CHAIN 'cli');")
+
+# Freshness check - DP Prod Silver is refreshed manually until cutover, so make
+# a stale input obvious instead of silently publishing old data.
+now = datetime.datetime.now(datetime.timezone.utc)
+last_trans = con.execute(f"SELECT MAX(TransDatetime) FROM delta_scan('{base}/Silver_InTrans')").fetchone()[0]
+last_parts = con.execute(f"""
+    SELECT to_timestamp(MAX(commitInfo.timestamp) / 1000)
+    FROM read_json_auto('{base}/Silver_PartInformation/_delta_log/*.json', union_by_name=true, ignore_errors=true)
+    WHERE commitInfo IS NOT NULL""").fetchone()[0]
+for label, ts in (("Silver_InTrans latest transaction", last_trans), ("Silver_PartInformation last refresh", last_parts)):
+    ts = ts if ts.tzinfo else ts.replace(tzinfo=datetime.timezone.utc)
+    flag = "  <-- STALE: run the DP Prod Silver notebooks first" if now - ts > STALE_AFTER else ""
+    print(f"{label}: {ts.astimezone():%Y-%m-%d %H:%M}{flag}")
 
 result = con.execute(f"""
     WITH eligible AS (
@@ -96,7 +130,7 @@ result = con.execute(f"""
             MAX(SLC)             AS SLC,
             MAX(CommodityCode)   AS CommodityCode,
             MAX(DealerGroupCode) AS DealerGroupCode
-        FROM delta_scan('{base}/jdis_Part_Information')
+        FROM delta_scan('{base}/Silver_PartInformation')
         WHERE Franchise = 'D'
           AND Branch NOT IN ('2', '4')
           AND PackageQty = 1
@@ -115,7 +149,7 @@ result = con.execute(f"""
         -- PartNumber+Branch, same demand definition as the branch-level
         -- report (customer invoice, Qty > 0, 7d-18mo window).
         SELECT PartNumber, Branch, COUNT(*) AS Demands
-        FROM delta_scan('{base}/InTrans_Incremental')
+        FROM delta_scan('{base}/Silver_InTrans')
         WHERE Franchise = 'D'
           AND Branch NOT IN ('2', '4')
           AND Type = 'I'

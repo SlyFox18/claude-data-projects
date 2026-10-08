@@ -2,7 +2,7 @@
 ============================================================================
 Query: Franchise D — Low Demand Parts with Cross-Branch Activity
 Type: Ad-hoc Excel Analysis (Power Query Advanced Editor)
-Connection: ODBC — dsn=EquipRDB64
+Connection: ODBC — dsn=EquipRDB
 Source Tables: InTrans (demand), jdis_Part_Information (part attributes)
 ============================================================================
 
@@ -223,7 +223,7 @@ let
                 i2.FRANCHISE = 'D'
                 AND i2.TYPE = 'I'
                 AND i2.QTY > 0
-                AND i2.BRANCH IN ('7', '14', '95', '91', '96')
+                AND i2.BRANCH IN ('95', '91', '96')
                 AND i2.Trans_Datetime >= DATEADD(month, -18, GETDATE())
                 AND i2.Trans_Datetime <= DATEADD(day, -7, GETDATE())
             GROUP BY
@@ -234,7 +234,7 @@ let
             AND d.PartNumber = p.pi_Part_No
         WHERE
             p.pi_Franchise = 'D'
-            AND p.pi_Branch IN ('7', '14', '95', '91', '96')
+            AND p.pi_Branch IN ('95', '91', '96')
             AND COALESCE(p.pi_On_Order, 0) = 0
             AND p.pi_Package_Qty = 1
             AND p.pi_Return_Indicator = 'R'
@@ -245,7 +245,7 @@ let
             AND p.pi_SLC NOT LIKE '99%'
             AND d.PartNumber IS NULL
     ",
-    Source = Odbc.Query("dsn=EquipRDB64", SQL),
+    Source = Odbc.Query("dsn=EquipRDB", SQL),
 
     // Enforce correct data types from SQL results
     Typed = Table.TransformColumnTypes(Source, {
@@ -298,8 +298,8 @@ let
     // SQL WHERE) so they only narrow which rows get flagged, without
     // shrinking the OtherBranchDemands totals computed above.
     Filtered = Table.SelectRows(WithLocationCount, each
-        List.Contains({"7", "14", "95", "91", "96"}, [BRANCH])
-        and [Demands] < 3
+        List.Contains({ "95", "91", "96"}, [BRANCH])
+        and [Demands] >= 1
         and [OtherBranchDemands] >= 10
         and [OtherLocationCount] >= 5
         and [OnHandQty] < 1),

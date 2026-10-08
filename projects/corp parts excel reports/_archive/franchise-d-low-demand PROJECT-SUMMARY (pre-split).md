@@ -22,6 +22,17 @@ One row per branch/part flagged, with part attributes (description, cost, source
 ## Query
 `queries/FranchiseD_LowDemand_Parts_CrossBranch.pq` — full header documentation of adjustable criteria is in the file itself and mirrored in this project's `CLAUDE.md`.
 
+## Related: Supplemental Stocking.xlsx
+`Supplemental Stocking.xlsx` (this folder) is the stakeholder-facing workbook.
+Its **Border Stores** tab is this report's live Power Query. Its
+**SPI Corporate Stocking** tab is a *separate*, company-wide analysis (zero
+stock everywhere + 3+ branch demand, no branch grain) built by
+`.claude/queries/adhoc/franchise-d-zerostock/build_report.py` — different
+grain, do not confuse the two. As of 2026-09-11 that tab is a live Power
+Query (`ZeroStockCompanyWide`) reading the script's output file, so updating
+it is: run the script, then Data > Refresh All in the workbook. See that
+script's README for details.
+
 ## Open Items
 - Not yet converted to a Fabric dataflow / Power BI report — still a manual Excel Advanced Editor query.
 - 2026-07-07 changes (7-day exclusion, 5-branch candidate restriction, on-hand filter, Source/SLC exclusions) implemented per Ben's clarified requirements — pending his review of results before further iteration or before this graduates to a full report.

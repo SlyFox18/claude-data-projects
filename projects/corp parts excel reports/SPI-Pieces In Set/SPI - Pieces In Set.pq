@@ -2,9 +2,10 @@
 ============================================================================
 Query: Franchise D — SPI Pieces In Set (SPI PIS)
 Type: Ad-hoc Excel Analysis (Power Query Advanced Editor)
-Connection: ODBC — dsn=EquipRDB64
-Source Tables: InTrans (sales), jdis_Part_Information (description, bin qty,
-               on-order qty, cost)
+Connection: ODBC — dsn=EquipRDB
+Source Tables: InTrans (sales), jdis_Part_Information (description, source,
+               SLC, commodity code, dealer group code, bin qty, on-order
+               qty, cost)
 ============================================================================
 
 PURPOSE:
@@ -63,6 +64,9 @@ HOW THE REORDER RECOMMENDATION IS CALCULATED (added per Ben's request):
 
 CRITERIA (adjustable):
   - Franchise:              D            (change FRANCHISE = 'D' in WHERE)
+  - Branches:               all EXCEPT 2 & 4 (change BRANCH NOT IN
+                             ('2', '4') — appears in both InvoiceQty and
+                             DemandCounts, keep in sync)
   - Transaction type:       'I'          (customer invoice — excludes
                              transfers, adjustments, returns)
   - Qty:                    > 0          (outbound sale to customer;
@@ -84,6 +88,10 @@ OUTPUT COLUMNS:
                     different SPI PIS at different branches)
   Part #          — Part number
   Description     — Part description (jdis_Part_Information.pi_Description)
+  Source          — Part source code (jdis pi_Source)
+  SLC             — Stocking Logic Code (jdis pi_SLC)
+  Commodity Code  — Commodity code (jdis pi_Commodity_Code)
+  Dealer Group Code — Dealer group code (jdis pi_Dealer_Group_Code)
   SPI PIS         — The modal (most common) sales quantity for this
                     Branch + Part
   Match %         — % of qualifying invoices that sold at exactly SPI PIS
@@ -115,8 +123,9 @@ NOTES:
   - Description does NOT come from InTrans.DESCRIPTION — that column is a
     customer/notation field on the transaction, not the part description
     (same finding documented in FranchiseD_LowDemand_Parts_CrossBranch.pq).
-    Description, Bin Qty, On Order Qty, and Cost all come from
-    jdis_Part_Information via an INNER JOIN on Branch + Part.
+    Description, Source, SLC, Commodity Code, Dealer Group Code, Bin Qty,
+    On Order Qty, and Cost all come from jdis_Part_Information via an
+    INNER JOIN on Branch + Part.
   - FIXED 2026-08-27 (real duplicate-row bug, found via a Claude-in-Excel
     data quality pass on a live extract): the jdis join originally didn't
     guard against jdis_Part_Information having more than one row per
@@ -125,8 +134,9 @@ NOTES:
     in that extract), identical SPI PIS/Match %/Invoices, different
     Description casing/wording only. Fixed via the JdisDedup CTE, which
     picks exactly one jdis row per Branch+Part (longest description wins,
-    alphabetical tie-break) and now also supplies Bin Qty/On Order Qty/Cost
-    from that same single winning row, for internal consistency. Same
+    alphabetical tie-break) and supplies ALL jdis-sourced columns (Source/
+    SLC/Commodity Code/Dealer Group Code/Bin Qty/On Order Qty/Cost) from
+    that same single winning row, for internal consistency. Same
     underlying jdis duplication problem already documented and fixed for
     dim_Parts (dim_Parts.pq STEP 1) — this is the same issue one level more
     granular (duplicates within a single branch+part, not just across
@@ -164,9 +174,12 @@ NOTES:
   - No Source/SLC/On-Order/Package-Qty ELIGIBILITY filters are applied here
     (unlike FranchiseD_LowDemand_Parts_CrossBranch.pq) — this query answers
     a different question (set-size detection from sales history, not
-    stocking-gap eligibility) and none of those were requested. On Order
-    Qty IS pulled through as a plain output column now, but only as
-    context/input to the reorder math, not as a filter.
+    stocking-gap eligibility) and none of those were requested. Source,
+    SLC, Commodity Code, Dealer Group Code, and On Order Qty ARE pulled
+    through as plain output columns, but only as context (and, for On
+    Order Qty, as input to the reorder math) — none of them filter rows.
+    To exclude e.g. Source 'AN' or SLC 21/90/91/99 like the Low Demand
+    query does, filter in Excel or add conditions to FinalJoined's WHERE.
   - Run during off-peak hours (before 7 AM or after 5 PM) — InTrans is
     large and this scans the full 18-month window twice (once for
     InvoiceQty, once for DemandCounts — see that CTE's comment for why it
@@ -183,6 +196,12 @@ UPDATED: 2026-08-27 — added Invoices output column; fixed a real duplicate-
 UPDATED: 2026-08-27 (Ben's round 2) — added Demands, Sales Qty, Bin Qty, On
   Order Qty, Cost, and 3 calculated reorder columns (Round Up, Recommended
   Qty, Recommended Cost) — see HOW THE REORDER RECOMMENDATION IS CALCULATED
+UPDATED: 2026-09-29 — added Source, SLC, Commodity Code, and Dealer Group
+  Code from jdis_Part_Information (display only, no filtering), sourced
+  from the same JdisDedup winning row as Description
+UPDATED: 2026-10-07 — excluded branches 2 & 4 (BRANCH NOT IN ('2', '4') in
+  both InvoiceQty and DemandCounts, so their sales never enter the SPI PIS/
+  Match %/Demands math and no Branch 2 or 4 rows appear in the output)
 ============================================================================
 
 Power Query M — paste into Excel Advanced Editor:
@@ -207,6 +226,7 @@ let
                 AND QTY > 0
                 AND Trans_Datetime >= DATEADD(month, -18, GETDATE())
                 AND Trans_Datetime <= GETDATE()
+                AND BRANCH NOT IN ('2', '4')
             GROUP BY BRANCH, PART_NO, REF_NO
         ),
         QtyCounts AS (
@@ -250,6 +270,7 @@ let
                 AND QTY > 0
                 AND Trans_Datetime >= DATEADD(month, -18, GETDATE())
                 AND Trans_Datetime <= GETDATE()
+                AND BRANCH NOT IN ('2', '4')
             GROUP BY BRANCH, PART_NO
         ),
         Ranked AS (
@@ -288,13 +309,18 @@ let
             -- Pick exactly one row per (pi_Branch, pi_Part_No): prefer the
             -- LONGEST non-null description (best chance of avoiding a
             -- truncated variant when a fuller one exists among the
-            -- duplicates), tie-broken alphabetically for determinism. Bin
-            -- Qty/On Order Qty/Cost are then taken from that same winning
-            -- row, for internal consistency.
+            -- duplicates), tie-broken alphabetically for determinism.
+            -- Source/SLC/Commodity Code/Dealer Group Code and Bin Qty/On
+            -- Order Qty/Cost are then taken from that same winning row,
+            -- for internal consistency.
             SELECT
                 pi_Branch,
                 pi_Part_No,
                 pi_Description,
+                pi_Source,
+                pi_SLC,
+                pi_Commodity_Code,
+                pi_Dealer_Group_Code,
                 pi_Bin_Qty,
                 pi_On_Order,
                 pi_Cost,
@@ -309,6 +335,10 @@ let
                 r.BRANCH                                                    AS BRANCH,
                 r.PART_NO                                                   AS PartNumber,
                 p.pi_Description                                            AS Description,
+                p.pi_Source                                                 AS Source,
+                p.pi_SLC                                                    AS SLC,
+                p.pi_Commodity_Code                                         AS CommodityCode,
+                p.pi_Dealer_Group_Code                                      AS DealerGroupCode,
                 r.Qty                                                       AS SpiPis,
                 ROUND(CAST(r.QtyCount AS FLOAT) / r.TotalInvoices * 100, 1)  AS MatchPercent,
                 r.TotalInvoices                                             AS Invoices,
@@ -349,6 +379,10 @@ let
             BRANCH,
             PartNumber,
             Description,
+            Source,
+            SLC,
+            CommodityCode,
+            DealerGroupCode,
             SpiPis,
             MatchPercent,
             Invoices,
@@ -365,13 +399,17 @@ let
             BRANCH,
             PartNumber
     ",
-    Source = Odbc.Query("dsn=EquipRDB64", SQL),
+    Source = Odbc.Query("dsn=EquipRDB", SQL),
 
     // Enforce correct data types from SQL results
     Typed = Table.TransformColumnTypes(Source, {
         {"BRANCH",          type text},
         {"PartNumber",      type text},
         {"Description",     type text},
+        {"Source",          type text},
+        {"SLC",             type text},
+        {"CommodityCode",   type text},
+        {"DealerGroupCode", type text},
         {"SpiPis",          Int64.Type},
         {"MatchPercent",    type number},
         {"Invoices",        Int64.Type},
@@ -389,6 +427,8 @@ let
     Renamed = Table.RenameColumns(Typed, {
         {"BRANCH",          "Branch"},
         {"PartNumber",      "Part #"},
+        {"CommodityCode",   "Commodity Code"},
+        {"DealerGroupCode", "Dealer Group Code"},
         {"SpiPis",          "SPI PIS"},
         {"MatchPercent",    "Match %"},
         {"SalesQty",        "Sales Qty"},
@@ -402,7 +442,8 @@ let
     Sorted = Table.Sort(Renamed, {
         {"Branch", Order.Ascending},
         {"Part #", Order.Ascending}
-    })
+    }),
+    #"Filtered Rows" = Table.SelectRows(Sorted, each true)
 
 in
-    Sorted
+    #"Filtered Rows"
