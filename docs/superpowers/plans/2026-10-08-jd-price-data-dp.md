@@ -215,34 +215,29 @@ def test_freshness_checks_optional_and_validated():
 - [ ] **Step 1 (Brian): create the dataflow.**
   - In **DP - Staging - Dev**, folder `Raw Data - Dataflows`: **New → Dataflow Gen2**, named `df_JDPriceFiles_Raw`.
   - **Do not tick "Enable Git integration…"**; the workspace commit handles Git.
-  - Open the **Advanced editor** and replace everything with:
+  - Add **two Blank queries**, one at a time. The query box takes a single `let … in` expression, not a whole `section` document; the first version of this plan had that wrong (2026-10-08).
+  - Each query is self-contained. Name the first `Landing_PriceUpdate_Lines` and paste:
 
 ```m
-section Section1;
-
-shared LookbackDays = 100000 meta [IsParameterQuery = true, IsParameterQueryRequired = true, Type = type number];
-
-shared FolderRoot = "\\Eqsvc01-sp2010\equip\UWS\Poll\Daily_Reports";
-
-shared FileLines = (files as table) as table =>
-    let
-        AddLines = Table.AddColumn(files, "L", each
-            let l = Lines.FromBinary([Content], null, null, 1252)
-            in Table.FromColumns({List.Transform(List.Positions(l), each _ + 1), l},
-                                 type table [LineNumber = Int64.Type, LineText = text])),
-        Keep = Table.SelectColumns(AddLines, {"Name", "Date modified", "L"}),
-        Expanded = Table.ExpandTableColumn(Keep, "L", {"LineNumber", "LineText"}),
-        Renamed = Table.RenameColumns(Expanded, {{"Name", "SourceFileName"}, {"Date modified", "SourceFileModified"}}),
-        NonBlank = Table.SelectRows(Renamed, each Text.Trim([LineText] ?? "") <> ""),
-        Typed = Table.TransformColumnTypes(NonBlank, {{"SourceFileName", type text},
-            {"SourceFileModified", type datetime}, {"LineNumber", Int64.Type}, {"LineText", type text}})
-    in
-        Typed;
-
-shared Landing_PriceUpdate_Lines = let
-    // Raw lines only; Build_Silver_JDPriceFiles parses. Only files whose name date is within
-    // LookbackDays (35 in daily use; 100000 for a one-time backfill).
-    Source = Folder.Files(FolderRoot & "\Price_Update"),
+let
+    // Raw lines only; Build_Silver_JDPriceFiles (DP_Staging) parses them.
+    // Only files whose name date is within LookbackDays: 100000 for the one-time backfill, then 35.
+    LookbackDays = 100000,
+    FileLines = (files as table) as table =>
+        let
+            AddLines = Table.AddColumn(files, "L", each
+                let l = Lines.FromBinary([Content], null, null, 1252)
+                in Table.FromColumns({List.Transform(List.Positions(l), each _ + 1), l},
+                                     type table [LineNumber = Int64.Type, LineText = text])),
+            Keep = Table.SelectColumns(AddLines, {"Name", "Date modified", "L"}),
+            Expanded = Table.ExpandTableColumn(Keep, "L", {"LineNumber", "LineText"}),
+            Renamed = Table.RenameColumns(Expanded, {{"Name", "SourceFileName"}, {"Date modified", "SourceFileModified"}}),
+            NonBlank = Table.SelectRows(Renamed, each Text.Trim([LineText] ?? "") <> ""),
+            Typed = Table.TransformColumnTypes(NonBlank, {{"SourceFileName", type text},
+                {"SourceFileModified", type datetime}, {"LineNumber", Int64.Type}, {"LineText", type text}})
+        in
+            Typed,
+    Source = Folder.Files("\\Eqsvc01-sp2010\equip\UWS\Poll\Daily_Reports\Price_Update"),
     Named = Table.SelectRows(Source, each Text.StartsWith(Text.Upper([Name]), "PRICEUPDATE_")
                                      and Text.EndsWith(Text.Upper([Name]), ".TXT")),
     WithDate = Table.AddColumn(Named, "FileDate", each
@@ -252,22 +247,40 @@ shared Landing_PriceUpdate_Lines = let
         [FileDate] >= Date.AddDays(DateTime.Date(DateTimeZone.RemoveZone(DateTimeZone.UtcNow())), -LookbackDays)),
     Result = FileLines(Recent)
 in
-    Result;
+    Result
+```
 
-shared Landing_JDChangeReport_Lines = let
+  - Name the second `Landing_JDChangeReport_Lines` and paste:
+
+```m
+let
+    // Raw lines only; Build_Silver_JDPriceFiles (DP_Staging) parses them.
     // All files every run - the folder is small (about 1 file/week).
-    Source = Folder.Files(FolderRoot & "\JD_Change_Report"),
+    FileLines = (files as table) as table =>
+        let
+            AddLines = Table.AddColumn(files, "L", each
+                let l = Lines.FromBinary([Content], null, null, 1252)
+                in Table.FromColumns({List.Transform(List.Positions(l), each _ + 1), l},
+                                     type table [LineNumber = Int64.Type, LineText = text])),
+            Keep = Table.SelectColumns(AddLines, {"Name", "Date modified", "L"}),
+            Expanded = Table.ExpandTableColumn(Keep, "L", {"LineNumber", "LineText"}),
+            Renamed = Table.RenameColumns(Expanded, {{"Name", "SourceFileName"}, {"Date modified", "SourceFileModified"}}),
+            NonBlank = Table.SelectRows(Renamed, each Text.Trim([LineText] ?? "") <> ""),
+            Typed = Table.TransformColumnTypes(NonBlank, {{"SourceFileName", type text},
+                {"SourceFileModified", type datetime}, {"LineNumber", Int64.Type}, {"LineText", type text}})
+        in
+            Typed,
+    Source = Folder.Files("\\Eqsvc01-sp2010\equip\UWS\Poll\Daily_Reports\JD_Change_Report"),
     Named = Table.SelectRows(Source, each Text.StartsWith(Text.Upper([Name]), "US.UPDCOMP.UPDATE.V2-")
                                      and Text.EndsWith(Text.Upper([Name]), ".CSV")),
     Result = FileLines(Named)
 in
-    Result;
+    Result
 ```
 
-- [ ] **Step 2 (Brian): bind the credentials.** When prompted for credentials, pick the connection `Network_Folder_DailyReports` from Task 2.
+- [ ] **Step 2 (Brian): bind the credentials.** When prompted for credentials, pick the connection `Network_Folder_DailyReports` from Task 2. Both queries use it.
 - [ ] **Step 3 (Brian): set the output.**
-  - Set a **data destination** on `Landing_PriceUpdate_Lines` and on `Landing_JDChangeReport_Lines`: Lakehouse `DP_Staging` (DP - Staging - Dev), new table with the same name, **Update method: Replace**, schema mapping as shown (4 columns).
-  - `LookbackDays`, `FolderRoot` and `FileLines` have no destination; make sure "Enable load" is off for them.
+  - Set a **data destination** on each query: Lakehouse `DP_Staging` (DP - Staging - Dev), new table with the same name, **Update method: Replace**, schema mapping as shown (4 columns).
 - [ ] **Step 4 (Brian): Save & run** (the backfill, because `LookbackDays = 100000`). Expected runtime is 5–15 minutes.
 - [ ] **Step 5 (Claude): check the backfill.** Run read-only DuckDB on the Dev Staging tables:
 
@@ -280,7 +293,7 @@ SELECT count(DISTINCT SourceFileName), count(*) FROM delta_scan('<staging>/Table
 
   - `<staging>` = `abfss://ab15d64d-c7ba-415d-9bcf-7feb1ef9b201@onelake.dfs.fabric.microsoft.com/876255e0-d462-4697-adc1-4a655f5bb101`.
   - If the Change Report table is empty with a credential error, Task 2's parent connection isn't being used. Fix the binding, then re-run.
-- [ ] **Step 6 (Brian, after Task 4 Step 6 passes): switch to daily mode.** Set `LookbackDays` to **35**, then Save. **Do not run it yet.**
+- [ ] **Step 6 (Brian, after Task 4 Step 6 passes): switch to daily mode.** In `Landing_PriceUpdate_Lines`'s Advanced editor, change `LookbackDays = 100000,` to `LookbackDays = 35,`, then Save. **Do not run it yet.**
 - [ ] **Step 7 (Brian): commit from the workspace.** DP - Staging - Dev → **Source control** → commit only `df_JDPriceFiles_Raw`, message `Add df_JDPriceFiles_Raw (gateway file reader)`.
 - [ ] **Step 8 (Claude): pull and copy to the query library.**
   - `git pull` in F.
