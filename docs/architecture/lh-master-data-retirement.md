@@ -23,7 +23,7 @@
 
 | Reader | Reads | Plan |
 |---|---|---|
-| Shannon / **Aftermarket - Parts Orders** (model) | `dim_BranchLocation` + its own tables | **High priority**: move to DP. Shannon uses it daily |
+| Shannon / **Aftermarket - Parts Orders** (model) | `dim_BranchLocation` (its main table is hourly ODBC, not LH) | **Moved 2026-10-09** (PRs #29, #30). The copy in **RP - Parts Reports** reads `dim_BranchLocation` from DP, and its InMaster join now includes Franchise (~3,500 duplicate rows removed). Hourly schedule (weekdays 08:00–18:00 Central) set on the new model, owned by Brian. Left for Brian: add it to the Parts org app + audience, send Shannon the link, then switch off the old "Shannon" workspace model's schedule. The ODBC main table moves to DP in the intraday project |
 | RP - Dev / **Transfer App** (model) | `dim_BranchLocation`, `dim_DateTable` | Research what it is (see [[project_transfer_app_bin_data_source]]) |
 | LH_Master_Data / **TopJobCode_Analysis_Model** | `Fact_Top_JobCode_Anaysis`, `Dim_JobType`, `dim_JobCode`, `dim_BranchLocation`, `dim_DateTable` | Low priority: research whether it's still needed |
 | RP - Data Agent / **Parts & Invoice - Data Query Agent**, **Customer Lookup - Data Agent**, **SPI Service Operations Assistant** | LH dims, `Invoice`, `InTrans_Incremental`, `jdis_Part_Information`, `wkrodesc` | **Don't block anything (Brian, 2026-10-09).** They were an experiment and stale data is fine. Brian removed all user access to the RP - Data Agent workspace on 2026-10-09. Review later whether they're needed at all |
