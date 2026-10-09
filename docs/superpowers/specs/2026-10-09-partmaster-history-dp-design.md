@@ -82,7 +82,9 @@ This table stores only what changed, as dated versions.
 ### 3. Old history: frozen archive copies
 
 - **Tables:** `Fact_PartMaster_Snapshot_Daily_Archive` and `Fact_PartMaster_Snapshot_Weekly_Archive`. They are **exact copies** of the LH tables (same columns and types), with no conversion.
-- **Where:** DP_Presentation **Prod** only. Dev reads them through OneLake shortcuts to Prod, so there's one copy of about 385M rows.
+- **Where:** DP_Presentation **Prod** only; one copy of about 385M rows.
+  - Dev gets **no** shortcut to them (changed while planning). Dev validation compares against the LH tables directly.
+  - A Dev shortcut pointing at Prod would also be copied into Prod by `deploy/sync_shortcuts.py`, where it would collide with the real tables.
 - **How:** a one-off notebook under `deploy/oneoff/`, run with `deploy/run_oneoff_notebook.py`, using the 2026-10-02 snapshot-copy pattern.
   - It reads the LH tables by abfss path, writes them to Prod with a path-based `save`, and asserts that row counts and a content fingerprint match the source.
 - **Not in the DAG.** They're never rebuilt.
