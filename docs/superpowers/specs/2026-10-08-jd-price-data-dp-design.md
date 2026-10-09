@@ -88,11 +88,17 @@ Files older than the 35-day window stay in Silver untouched. Re-running a day, a
 - Numbers use `try_cast`. Dates are `M/d/yyyy` through `try_to_timestamp`.
   - A non-blank value that fails to parse becomes null and sets `HasTypeConversionIssue = true`. This time the flag is actually written.
 - `Branch` is the digits only, rolled up to the main branch (`11S` → 11). The raw filename branch is kept as `SourceFileBranch`.
-- **Column meaning** (checked against a real file):
-  - `Manufacturer*` = JD's incoming price.
-  - `Dealer*` = our current system price.
-  - `CostDiff` = ManufacturerReplacePrice − DealerReplacePrice, per unit. `ListDiff` and `SellPrice1Diff` work the same way.
-  - Silver keeps today's column names so the report's measures carry over.
+- **Column meaning** (proven 2026-10-09 across 2.1M consecutive changes: a change's `DealerListPrice`/`DealerReplacePrice` equals JD's new list/cost from the part's previous change 99.6% of the time):
+
+  | | Old (before this update) | New |
+  |---|---|---|
+  | List | `DealerListPrice` | `ManufacturerListPrice` |
+  | Cost | `DealerReplacePrice` | `ManufacturerReplacePrice` |
+  | Sell | `SellPriceOld` | `DealerSellPrice1` |
+
+  - Every `*Diff` column is new − old.
+  - Silver keeps the source column names. Gold adds explicit `Old*`/`New*` columns and the margin math.
+  - **The first local report had cost backwards:** it treated `DealerReplacePrice` as the new cost and derived an "old" cost as `DealerReplacePrice − CostDiff`, which matches only 0.9% of the time. Its margin figures are wrong.
 
 **Change Report:**
 - Comma-delimited. Header cells are trimmed, because JD pads records to a fixed width.
@@ -105,6 +111,17 @@ Files older than the 35-day window stay in Silver untouched. Re-running a day, a
 |---|---|---|---|
 | `Fact_PartPriceChange` | PartNumber + EffectiveDate | 1.3M | JD list, cost (replace) and sell price; our prices at the time; change $ and %; `PriorEffectiveDate`, `DaysSincePriorChange` and prior JD list/cost (window function in Spark); `ChangeDirection` (Increase / Decrease / NoChange); `BranchCount`; `HasBranchPriceDisagreement`; `PartKey` for dim_Parts |
 | `Fact_PartPriceChange_Branch` | Branch + PartNumber + EffectiveDate | 5.09M | OnHandQty, BinLocation, our prices at that branch, CostDiff, **`InventoryCostImpact = OnHandQty × CostDiff`** (value change of stock on hand), `BranchKey` |
+
+Both price-change facts also carry the margin columns, so the report doesn't derive them in DAX:
+- `Old`/`New` × `ListPrice`/`Cost`/`SellPrice`;
+- `Old`/`NewMarginDollars`, `Old`/`NewMarginPct`, `MarginDollarsChange`, `MarginPctChange`;
+- `CostChangePct`, `SellPriceChangePct`;
+- the first report's flags, per Ben's rules:
+  - `IsTriggerEvent` (sell price moved ≥ 10%);
+  - `IsMaterialPrice` (both sell prices ≥ $1);
+  - `IsMarginDollarBaseValid` (old margin ≥ $1);
+  - `IsImplausibleCost`;
+  - `IsCleanForMarginAnalysis`.
 | `Fact_JDNationalPriceChange` | PartNumber + EffectiveDate | ~55K, growing about 1K/week | Current and new DNP/SLP, change $ and %, `IsStockedPart` (part exists in dim_Parts) |
 
 **Survivor rules** (decided, written into the notebook as comments):
