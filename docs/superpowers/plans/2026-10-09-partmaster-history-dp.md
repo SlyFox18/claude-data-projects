@@ -12,6 +12,20 @@
 
 **Spec:** `docs/superpowers/specs/2026-10-09-partmaster-history-dp-design.md`
 
+> **Progress (2026-10-09):**
+> - **Task 1 DONE.** The Prod archives match LH exactly: 337,085,794 + 48,151,989 rows, and 307 + 44 snapshots.
+> - **Task 2 DONE**, with these changes from the plan's code after a two-stage review:
+>   - all reads that feed writes are pinned with `versionAsOf`;
+>   - one staged MERGE;
+>   - refusal checks run before any write (Silver empty, duplicate or null keys, schema drift, shrink, backdating);
+>   - restore-on-failure;
+>   - orphan-closure healing;
+>   - a self-test path from the runtime context.
+>   - The self-test passed in Dev.
+> - **Task 3 DONE.** Dev seed: 1,115,769 Initial rows. Against the LH daily snapshot for 2026-10-09, every column is within 0.21% (timing: LH 02:00 vs DP Silver refreshed 13:00); 123 / 1 keys only on one side.
+>   - **The check script differs from the plan's block:** it compares timestamps raw in a UTC session. Casting to DATE in local time had falsely reported 23% of DateLastRequested as different.
+> - **Next:** Task 4 needs the next weekday (a second Dev day), Task 5 (docs) can go any time, and Task 6 needs Brian (PR/Deploy).
+
 **Deviation from the spec (decided while planning, 2026-10-09):**
 - The archives go to **Prod only, with no Dev shortcut.** Dev validation compares against the LH tables directly.
 - A Dev shortcut pointing at Prod would also be copied into Prod by `deploy/sync_shortcuts.py`, where it would collide with the real tables.
