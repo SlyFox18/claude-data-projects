@@ -30,7 +30,7 @@
 | LH - Service_Data_Prep / **Inspections_Data_Agent** | `Invoice` (which lakehouse not yet confirmed) | Check |
 | **Parts Availability** app | `df_InMaster_PartsLookup_Raw` output (hourly) | Own project; live and critical |
 | Non-JD Parts Order Tool | LH raw tables | Paused since 2026-08-04 (Brian's call) |
-| fabric-monitoring 6 AM scheduled task | Watches `Pipeline_Master_Orchestrator` | Retire or repoint with the orchestrator |
+| fabric-monitoring 6 AM scheduled task ("Post-Pipeline Monitoring") | Watched `Pipeline_Master_Orchestrator` | **Disabled 2026-10-09** with the orchestrator. The DP refresh sends its own summary email |
 
 ## Scheduled items (14 found 2026-10-09)
 
