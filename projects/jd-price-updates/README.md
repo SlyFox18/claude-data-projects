@@ -1,5 +1,14 @@
 # JD Price Updates
 
+> **Moved to the DP backend (2026-10-09). This folder is now reference only.**
+> - Data: share → `df_JDPriceFiles_Raw` → `Build_Silver_JDPriceFiles` → `Build_Gold_JDPriceChanges` (DP Staging/Presentation). Design: `docs/superpowers/specs/2026-10-08-jd-price-data-dp-design.md`; plan: `docs/superpowers/plans/2026-10-08-jd-price-data-dp.md`.
+> - Report: the live copy is `fabric-workspace-docs/workspaces/RP - Dev/JD Price Updates.*` (Git-controlled, reads DP Gold). The PBIP under `reports/` here is the frozen original, kept only to compare against. **Don't develop here.**
+> - Known problems with the frozen original:
+>   - It reads LH_Master_Data.
+>   - Its margin columns have cost backwards. `DealerReplacePrice` is the cost *before* the update and `ManufacturerReplacePrice` the cost after; the original used `DealerReplacePrice` as the new cost.
+>   - Its branch relationship joined the branch number to `dim_BranchLocation.BranchKey`.
+>   - Its data had duplicate loads and 807 split records (a quoted line break in bin location). The README's "row-shift defect" below was really that split.
+
 Two related, independently-built ingestion pipelines covering John Deere
 parts pricing data — see **Next Steps** at the bottom for how they and a
 planned third (analysis) piece fit together.
