@@ -24,7 +24,17 @@
 >   - The self-test passed in Dev.
 > - **Task 3 DONE.** Dev seed: 1,115,769 Initial rows. Against the LH daily snapshot for 2026-10-09, every column is within 0.21% (timing: LH 02:00 vs DP Silver refreshed 13:00); 123 / 1 keys only on one side.
 >   - **The check script differs from the plan's block:** it compares timestamps raw in a UTC session. Casting to DATE in local time had falsely reported 23% of DateLastRequested as different.
-> - **Next:** Task 4 needs the next weekday (a second Dev day), Task 5 (docs) can go any time, and Task 6 needs Brian (PR/Deploy).
+> - **Task 4 PARTIAL.**
+>   - A simulated day 2 (`run_date_override=2026-10-10`) after a fresh Silver refresh recorded 0 changes, because JD Bronze only refreshes early morning.
+>   - The real day-over-day check moves into Task 7 (first weekday Prod runs).
+> - **Task 5 DONE.** OPERATIONS-GUIDE "Part Master history" section, plus a no-concurrent-runs note.
+> - **Task 6 DONE 2026-10-09 (PR #28, bundled with the JD price backend):**
+>   - JD Silver one-off copied to Prod before the deploy.
+>   - Deploy OK; pipeline claimed; dev fast-forwarded; 2 shortcuts synced; Prod dataflow binding verified through the API.
+>   - Prod items run OK, and all 27 models refreshed.
+>   - **Prod history:** 1,115,769 Initial rows, the same results as Dev against LH (all columns ≤ 0.21%).
+>   - **compare_tiers:** `Fact_PartPriceChange` and `_Branch` are identical. `Fact_JDNationalPriceChange` differs in 3 rows, `IsStockedPart` only: Prod's dim_Parts is newer and has 115 more parts.
+> - **Next, Task 7:** from Monday 2026-10-12, a daily `partmaster_history_check.py prod <date>` (plus `weekly` for Sunday dates) for about 2 weeks, then retire the LH paths with Brian's OK.
 
 **Deviation from the spec (decided while planning, 2026-10-09):**
 - The archives go to **Prod only, with no Dev shortcut.** Dev validation compares against the LH tables directly.
