@@ -12,6 +12,23 @@
 
 **Spec:** `docs/superpowers/specs/2026-10-08-jd-price-data-dp-design.md`
 
+> **Progress (2026-10-09):**
+> - **Tasks 1–7 are DONE in Dev.**
+>   - Freshness checks are live in the config.
+>   - The dataflow commit has `LookbackDays = 35`.
+>   - Silver was verified against LH; Gold was verified and is deterministic.
+>   - The Dev pipeline run (`mode=items`) went OK.
+> - **Changes from the plan as written:**
+>   - The dataflow M is two self-contained queries.
+>   - Silver stitches records split by a quoted line break, which was the real "row-shift defect" (807 records).
+>   - Gold gained explicit Old/New + margin columns, because `Dealer*` list and cost are the OLD values (proven 99.6%). The first report had cost backwards.
+>   - Branch 4B rolls into 4 (Brian).
+> - **Task 8, done differently:** the report was copied to fabric-workspace-docs `workspaces/RP - Dev/JD Price Updates.*`, repointed there, committed and git-synced into RP - Dev. The data-projects copy is frozen as reference.
+>   - Still open: the service connection mapping, plus report work in a separate chat.
+> - **Tasks 9–10 are OPEN.**
+>   - Prod: run the one-off Silver copy before the first Prod run.
+>   - Retire the LH path.
+
 **Tech stack:**
 - Fabric Dataflow Gen2 (M), PySpark notebooks (Fabric runtime 1.3 / Spark 3.5);
 - `deploy/` Python with pytest;
