@@ -1040,4 +1040,32 @@ The crash notifier runs as the service principal, so it can't email if that prin
 
 ## Progress
 
-(Update after each task.)
+**2026-10-12: Tasks 1–5 done** (subagent-driven; each task passed spec + quality review, with fixes). fabric-workspace-docs `dev`, not pushed yet:
+
+| Commit | What |
+|---|---|
+| `911977bd`, `6debb0b0` | core helpers + review fixes |
+| `178a8d9b`, `2c2c2079`, `fc050ae7` | glue phases + review fixes |
+| `f6faf010`, `2e550337`, `754a1041` | pipeline render + review fixes |
+| `1ad7e7cd` | deploy swaps |
+| `9482a7b1` | final-review fix: crashed row sets start_utc |
+
+The suite is at 230 tests.
+
+**Changes beyond the plan text, all reviewed:**
+- `latest_since` rejects an empty or malformed cutoff.
+- `run_still_open` and `pipeline_start` are pure core functions; the pipeline start time is carried through every phase.
+- JD wait has a 600 s grace period.
+- `crash_drill_target`: `simulate_crash` takes `plan` / `silver` / `gold` / `finish`, and `true` means plan.
+- Notify writes a "crashed" closing run row.
+- Per-tier crash advice.
+- Model refresh `retry=0` with a 2 h timeout (not 1 retry).
+- `executeMashupQueriesOnly: true` on the Dataflow activity.
+- Reference-integrity tests on the pipeline.
+
+**Amendments from the final review (apply in Tasks 6 and 9):**
+- **Task 6 Step 6, model-failure drill:** removing the service principal's RP - Dev role makes the model *lookup* fail, so it never exercises Refresh_Model's Failed branch. Instead, make one Dev model's refresh itself fail (temporarily break its data-source credential), run, then restore it.
+- **Task 6:** also run a Silver crash drill (`simulate_crash = silver`). Check that Notify writes the `crashed` row and that an immediate rerun isn't refused by the already-running guard.
+- **Task 9:** the Dataflow activity has no connection. In a **scheduled** Prod run after a CI deploy, it might run as SPN-Fabric-CICD-Deploy (refused with `SPNBasedRefreshNotAllowed`) rather than the schedule owner.
+  - **Keep running `claim_prod_pipeline.py` after Prod deploys** until a scheduled Prod run with dataflows in its selection has succeeded without a re-claim. The next normal 06:15 run proves it. Only then do Task 10 Step 1.
+  - **If it fails:** dataflows need the re-claim, or their own schedule. Decide with Brian.
