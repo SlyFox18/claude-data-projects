@@ -128,7 +128,13 @@ Crash path         Notify_DP_Refresh (SPN) on Plan_Silver / Run_Silver / Run_Gol
 | SPN-Fabric-CICD-Deploy | User on both connections | — | so the Prod deploy can save a pipeline that references them (confirm during the build; fabric-cicd may need it) |
 | Brian (schedule owner) | Owns the Prod 06:15 schedule | — | **Remaining user dependency:** the staging dataflows run as him |
 
-**Secrets:** the connections hold a client secret created 2026-10-12 ("Fabric notebook connection"; Brian notes its expiry date). It's separate from the Graph email secret, which expires 10/5/2027. Both go in OPERATIONS-GUIDE with rotation dates.
+**Secrets:** SPN-Fabric-Refresh-Automation has three client secrets. Each is rotated separately; all three go in OPERATIONS-GUIDE.
+
+| Secret | Used by | Expires |
+|---|---|---|
+| Fabric notebook connection | the two Fabric connections above (the refresh identity) | **10/12/2027** |
+| dp-refresh-notify | Graph email (`Files/secrets/dp-refresh-notify.txt` in both DP_Presentation lakehouses) | 10/5/2027 |
+| SM - Refresh | the older LH-era model-refresh setup (August 2026); don't touch | 8/3/2027 |
 
 ### Open question to settle in the build
 
