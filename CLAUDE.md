@@ -45,7 +45,12 @@ Equip (SQL Anywhere)
 
 | Topic | Location |
 |---|---|
-| Day-to-day operations (releases, re-claim, shortcuts, one-offs, org apps, Part Master lookups) | `fabric-workspace-docs/OPERATIONS-GUIDE.md` |
+| Day-to-day operations (daily check, releases, re-claim, shortcuts, one-offs, org apps, Part Master lookups) | `fabric-workspace-docs/OPERATIONS-GUIDE.md` |
+| **Building or changing a report** | `fabric-workspace-docs/docs/REPORT-DEVELOPMENT.md` |
+| **Adding a table or data source** (Bronze shortcut / dataflow / Silver / Gold) | `fabric-workspace-docs/docs/NEW-DATA-SOURCE.md` |
+| **Error → cause → fix** (refresh, models, Git sync, deploys) | `fabric-workspace-docs/docs/TROUBLESHOOTING.md` |
+| Which item builds a table, which reports read it | `fabric-workspace-docs/docs/TABLE-LINEAGE.md` (generated) |
+| Business terms and source-data quirks | `fabric-workspace-docs/docs/BUSINESS-GLOSSARY.md` |
 | **Rules every DP notebook must follow** (JD keys, no arbitrary survivors, determinism) | `docs/architecture/dp-notebook-rules.md` |
 | DP workspaces, lakehouses, IDs, early build history | `docs/architecture/data-platform-workspaces.md` |
 | LH_Master_Data retirement status (what's still on and why) | `docs/architecture/lh-master-data-retirement.md` |
@@ -96,7 +101,9 @@ data-projects/
   - snapshot appends cast to the existing schema.
 - **Always run twice / compare tiers** (`deploy/compare_tiers.py`).
 - **Writing tables:** path-based `.save("Tables/Name")` (not `saveAsTable`, which lowercases names). After an overwrite, `VACUUM ... RETAIN 0 HOURS` (orphaned files confuse the SQL endpoint). History tables keep 7 days.
-- **Dates:** set `spark.sql.parquet.datetimeRebaseModeInRead/Write = CORRECTED` (the source has pre-1900 sentinel dates).
+- **Time zone and dates:**
+  - Gold notebooks set `spark.sql.session.timeZone` to `UTC`; `deploy/hygiene_audit.py` checks this, along with VACUUM and no `saveAsTable`.
+  - Where a table has pre-1900 sentinel dates, set `spark.sql.parquet.datetimeRebaseModeInRead/Write = CORRECTED`.
 - **Declaring outputs:** every item lists its outputs in `dp_refresh_dag.json`. `python deploy/dag_check.py` validates it against the code; the scanner needs literal `.save("Tables/X")`. Otherwise set `dynamicReviewed: true`.
 
 ### Power Query
