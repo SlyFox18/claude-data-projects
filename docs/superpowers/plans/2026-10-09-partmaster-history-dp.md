@@ -35,6 +35,13 @@
 >   - **Prod history:** 1,115,769 Initial rows, the same results as Dev against LH (all columns ≤ 0.21%).
 >   - **compare_tiers:** `Fact_PartPriceChange` and `_Branch` are identical. `Fact_JDNationalPriceChange` differs in 3 rows, `IsStockedPart` only: Prod's dim_Parts is newer and has 115 more parts.
 > - **Next, Task 7:** from Monday 2026-10-12, a daily `partmaster_history_check.py prod <date>` (plus `weekly` for Sunday dates) for about 2 weeks, then retire the LH paths with Brian's OK.
+>
+> **Task 7 log:**
+> - **2026-10-12 (first real day):** Prod history 9,935 Changed / 243 New / 28 Removed.
+>   - It caught the weekend **restore of branch 4 DealerGroupCodes from "COTTON"** (1,291 parts, old → new values).
+>   - **No LH comparison:** LH `df_JDIS_PART_INFORMATION_Raw` failed at 01:15 on Sat and Mon (about 3.5 minutes, generic error; it works in daytime), so LH snapshots 10/10–10/12 copied Friday's data.
+>   - Schedules moved (Brian OK): jdis **04:15** Mon–Sat, daily snapshot **05:00**, weekly **Sun 05:00**.
+>   - The comparison starts 2026-10-13.
 
 **Deviation from the spec (decided while planning, 2026-10-09):**
 - The archives go to **Prod only, with no Dev shortcut.** Dev validation compares against the LH tables directly.
