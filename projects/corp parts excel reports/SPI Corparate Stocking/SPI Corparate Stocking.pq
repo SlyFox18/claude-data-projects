@@ -26,6 +26,10 @@ NOTES:
   - Each user's refresh authenticates to SharePoint as themselves — don't
     restrict the Source Data folder's permissions or their refresh breaks.
   - Recorded from the live workbook 2026-10-07.
+UPDATED: 2026-10-13 — new "Locations with Demands" column (the branches
+  behind the location count, e.g. "11, 13, 93, 95"); TotalDemand renamed
+  "R18 Demands", LocationCount renamed "Count of Locations with Demands"
+  (per Ben). Demand is now invoices net of credits — see build_report.py.
 ============================================================================
 */
 
@@ -39,6 +43,13 @@ let
         {"PartNumber", type text}, {"Description", type text}, {"Cost", type number},
         {"Source", type text}, {"SLC", type text}, {"CommodityCode", type text},
         {"DealerGroupCode", type text}, {"OnOrder", Int64.Type}, {"OnHandQty", Int64.Type},
-        {"TotalDemand", Int64.Type}, {"LocationCount", Int64.Type}})
+        {"TotalDemand", Int64.Type}, {"LocationCount", Int64.Type},
+        {"DemandBranches", type text}}),
+    // Display names requested by Ben 2026-10-13. The source file keeps
+    // the script's column names; only the workbook headers change.
+    Renamed = Table.RenameColumns(ChangedType, {
+        {"TotalDemand",    "R18 Demands"},
+        {"LocationCount",  "Count of Locations with Demands"},
+        {"DemandBranches", "Locations with Demands"}})
 in
-    ChangedType
+    Renamed

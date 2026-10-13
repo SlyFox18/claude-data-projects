@@ -14,19 +14,25 @@ comparison columns — just each branch/part row's own demand, kept if it
 hits the demand filter below. Requested by Ben (Corp Parts Manager) via
 Brian, 2026-09-11, for the "MLPF Gaps" tab in Supplemental Stocking.xlsx.
 
-HOW DEMAND IS CALCULATED:
-  A "demand" = one InTrans row where:
-    - TYPE = 'I'   (customer invoice — excludes transfers, adjustments, returns)
-    - QTY  > 0     (outbound sale to customer)
+HOW DEMAND IS CALCULATED (revised 2026-10-13 — shared by all Corp Parts reports):
+  A "demand" = one customer INVOICE for the Branch + Part, where:
+    - TYPE = 'I', QTY > 0 (customer invoice line — transfers 'T', purchases
+      'P', adjustments 'A' and receipts 'R' never count)
     - Trans_Datetime between 7 days ago and 18 months ago (excludes the most
       recent week so very recent activity doesn't mask a true low-demand branch)
+    - Several lines for the part on the same invoice (REF_NO) count ONCE —
+      one line of qty 5 and two lines of qty 1 are both one demand
+    - Credits (TYPE = 'C', QTY < 0) are matched back to the invoice they
+      return via ORIGINAL_INVOICE_NO. An invoice whose credits bring its net
+      qty to 0 or below doesn't count; a partial return still counts as 1.
+      (99.6% of credits carry a matching invoice number, checked 2026-10-13.)
 
 CRITERIA (adjustable):
   - Franchise:              D            (change i.FRANCHISE = 'D' in WHERE)
   - Branch scope:           all branches except 12 (SPI's Combine Vault — not
                              a physical retail branch, per Ben 2026-09-11;
                              change i.BRANCH <> '12' in WHERE)
-  - Demand filter:          exactly 2    (change HAVING COUNT(*) = 2)
+  - Demand filter:          exactly 2    (change the final HAVING COUNT(*) = 2)
   - On-hand threshold:      < 1          (change p.pi_On_Hand_Qty < 1 in WHERE)
   - Superseded parts:       excluded     (only rows whose Super To is null or
                              blank — see NOTES; remove the pi_Super_To line
@@ -64,8 +70,18 @@ NOTES:
     (102 superseded branch/part rows removed).
   - Description comes from jdis_Part_Information (pi_Description), not the
     InTrans notation field.
-  - Single INNER JOIN + GROUP BY + HAVING, folded entirely to the source —
-    ~12s when tested 2026-10-07.
+  - PERFORMANCE (2026-10-13): the credit netting is done by grouping
+    invoice lines (REF_NO) and credits (ORIGINAL_INVOICE_NO) under one
+    invoice key in a SINGLE InTrans→jdis join — ~12s live, same as before.
+    A first draft computed demand in CTEs and then joined jdis to that
+    derived table; it hung on the live source (no index on a derived table,
+    same trap as 2 & 4 Cotton's 2026-09-15 note). Don't reintroduce that
+    shape. Counting invoices (not lines) also means a duplicate jdis row
+    for the same Branch + Part can't double the demand count any more.
+  - Live impact 2026-10-13: 11,220 → 10,067 rows (1,469 dropped, 316
+    added). Most changes are credit-then-rebill corrections (a sale credited
+    and rebilled minutes later used to count as 2 demands) and split invoice
+    lines.
   - CommodityGroup is pulled from the same CommodityCodeGroups.csv on
     SharePoint used by FranchiseD_LowDemand_Parts_CrossBranch.pq and the
     shared dim_CommodityCode Fabric dataflow — one source file, kept in
@@ -77,49 +93,83 @@ REQUESTED BY: Corp Parts Manager (Ben), via Brian — 2026-09-11
 UPDATED: 2026-10-07 — exclude superseded parts (pi_Super_To must be null or
   blank), per Ben; header notes rebuilt to match the current query
   (demand filter is HAVING COUNT(*) = 2)
+UPDATED: 2026-10-13 — demand = invoices net of credits (one per invoice,
+  fully-returned invoices dropped), per Ben/Brian; see HOW DEMAND IS
+  CALCULATED
 ============================================================================
 
 Power Query M — paste into Excel Advanced Editor:
 */
 
 let
+    // Inner query: one row per Branch + Part + INVOICE. Invoice lines are
+    // keyed on REF_NO and credits on ORIGINAL_INVOICE_NO (the invoice they
+    // return), so SUM(QTY) is the invoice's qty net of credits. Outer
+    // query: count invoices still net-positive. Kept as ONE InTrans→jdis
+    // join (no join to a derived table) — see NOTES / PERFORMANCE.
     SQL = "
         SELECT
-            i.BRANCH,
-            i.PART_NO                       AS PartNumber,
-            MAX(p.pi_Description)           AS Description,
-            MAX(p.pi_Cost)                  AS Cost,
-            MAX(p.pi_Source)                AS Source,
-            MAX(p.pi_SLC)                   AS SLC,
-            MAX(p.pi_Commodity_Code)        AS CommodityCode,
-            MAX(p.pi_Dealer_Group_Code)     AS DealerGroupCode,
-            MAX(COALESCE(p.pi_On_Order,0))  AS OnOrder,
-            MAX(p.pi_On_Hand_Qty)           AS OnHandQty,
-            COUNT(*)                        AS Demands
-        FROM InTrans i
-        INNER JOIN jdis_Part_Information p
-            ON  p.pi_Branch  = i.BRANCH
-            AND p.pi_Part_No = i.PART_NO
+            x.BRANCH,
+            x.PartNumber,
+            MAX(x.Description)      AS Description,
+            MAX(x.Cost)             AS Cost,
+            MAX(x.Source)           AS Source,
+            MAX(x.SLC)              AS SLC,
+            MAX(x.CommodityCode)    AS CommodityCode,
+            MAX(x.DealerGroupCode)  AS DealerGroupCode,
+            MAX(x.OnOrder)          AS OnOrder,
+            MAX(x.OnHandQty)        AS OnHandQty,
+            COUNT(*)                AS Demands
+        FROM (
+            SELECT
+                i.BRANCH,
+                i.PART_NO                       AS PartNumber,
+                CASE WHEN i.TYPE = 'I' THEN i.REF_NO ELSE i.ORIGINAL_INVOICE_NO END AS InvoiceNo,
+                MAX(p.pi_Description)           AS Description,
+                MAX(p.pi_Cost)                  AS Cost,
+                MAX(p.pi_Source)                AS Source,
+                MAX(p.pi_SLC)                   AS SLC,
+                MAX(p.pi_Commodity_Code)        AS CommodityCode,
+                MAX(p.pi_Dealer_Group_Code)     AS DealerGroupCode,
+                MAX(COALESCE(p.pi_On_Order,0))  AS OnOrder,
+                MAX(p.pi_On_Hand_Qty)           AS OnHandQty,
+                SUM(i.QTY)                      AS NetQty,
+                MAX(CASE WHEN i.TYPE = 'I' THEN 1 ELSE 0 END) AS HasInvoice
+            FROM InTrans i
+            INNER JOIN jdis_Part_Information p
+                ON  p.pi_Branch  = i.BRANCH
+                AND p.pi_Part_No = i.PART_NO
+            WHERE
+                i.FRANCHISE = 'D'
+                AND i.BRANCH <> '12'
+                AND i.Trans_Datetime >= DATEADD(month, -18, GETDATE())
+                AND (
+                    -- invoice lines: 7 days – 18 months back
+                    (i.TYPE = 'I' AND i.QTY > 0 AND i.Trans_Datetime <= DATEADD(day, -7, GETDATE()))
+                    -- credits: no 7-day cutoff, a recent credit still cancels an older sale
+                 OR (i.TYPE = 'C' AND i.QTY < 0)
+                )
+                AND COALESCE(p.pi_On_Order, 0) = 0
+                AND p.pi_Package_Qty = 1
+                AND p.pi_Return_Indicator = 'R'
+                AND p.pi_Source <> 'AN'
+                AND p.pi_SLC NOT LIKE '21%'
+                AND p.pi_SLC NOT LIKE '90%'
+                AND p.pi_SLC NOT LIKE '91%'
+                AND p.pi_SLC NOT LIKE '99%'
+                AND p.pi_On_Hand_Qty < 1
+                AND COALESCE(RTRIM(p.pi_Super_To), '') = ''
+            GROUP BY
+                i.BRANCH,
+                i.PART_NO,
+                CASE WHEN i.TYPE = 'I' THEN i.REF_NO ELSE i.ORIGINAL_INVOICE_NO END
+        ) x
         WHERE
-            i.FRANCHISE = 'D'
-            AND i.TYPE = 'I'
-            AND i.QTY > 0
-            AND i.BRANCH <> '12'
-            AND i.Trans_Datetime >= DATEADD(month, -18, GETDATE())
-            AND i.Trans_Datetime <= DATEADD(day, -7, GETDATE())
-            AND COALESCE(p.pi_On_Order, 0) = 0
-            AND p.pi_Package_Qty = 1
-            AND p.pi_Return_Indicator = 'R'
-            AND p.pi_Source <> 'AN'
-            AND p.pi_SLC NOT LIKE '21%'
-            AND p.pi_SLC NOT LIKE '90%'
-            AND p.pi_SLC NOT LIKE '91%'
-            AND p.pi_SLC NOT LIKE '99%'
-            AND p.pi_On_Hand_Qty < 1
-            AND COALESCE(RTRIM(p.pi_Super_To), '') = ''
+            x.NetQty > 0          -- not fully credited back
+            AND x.HasInvoice = 1  -- a credit whose invoice is outside the window counts for nothing
         GROUP BY
-            i.BRANCH,
-            i.PART_NO
+            x.BRANCH,
+            x.PartNumber
         HAVING COUNT(*) = 2
     ",
     Source = Odbc.Query("dsn=EquipRDB", SQL),

@@ -71,11 +71,15 @@ on pi_Part_No alone, so any in-SQL "does this part exist at another branch"
 lookup scans ~1M rows per candidate. Literal-list version: ~5s main query,
 ~7s total.
 
-HOW DEMAND IS CALCULATED (same as the production query):
-  A "demand" = one InTrans row where:
-    - TYPE = 'I'   (customer invoice — excludes transfers, adjustments, returns)
-    - QTY  > 0     (outbound sale to customer)
+HOW DEMAND IS CALCULATED (revised 2026-10-13 — shared by all Corp Parts reports):
+  A "demand" = one customer INVOICE for the Branch + Part, where:
+    - TYPE = 'I', QTY > 0 (customer invoice line — transfers 'T', purchases
+      'P', adjustments 'A' and receipts 'R' never count)
     - Trans_Datetime between 7 days ago and 18 months ago
+    - Several lines for the part on the same invoice (REF_NO) count ONCE
+    - Credits (TYPE = 'C', QTY < 0) are matched back to the invoice they
+      return via ORIGINAL_INVOICE_NO. An invoice whose credits bring its net
+      qty to 0 or below doesn't count; a partial return still counts as 1.
 
 CRITERIA (everything not listed here is unchanged from the production query):
   - Candidate branches:     2, 4 ONLY (was 7,14,95,91,96 in production)
@@ -94,6 +98,9 @@ CRITERIA (everything not listed here is unchanged from the production query):
 PART FILTERS (from jdis_Part_Information) — same as production, plus dealer group:
   - On Order = 0, Package Qty = 1, Return Indicator = 'R', Source <> 'AN',
     SLC NOT LIKE 21%/90%/91%/99%, dealer group rule above
+  - Super To blank (added 2026-10-13, same rule as MLPF Gaps / Border
+    Stores): superseded branch/part rows dropped, per row, in both parts —
+    so they also drop out of OtherBranchDemands / OtherLocationCount
 
 OUTPUT COLUMNS: same as production (Branch always 2 or 4; Demands,
 OtherBranchDemands, OtherLocationCount all included).
@@ -103,6 +110,12 @@ saved to the queries/ folder.
 UPDATED: 2026-09-29 — added PICKER + cotton-model codes (690/770/CS690/
   JDCS690) via cross-branch lookup; RTRIM fix for trailing-space codes; two-
   step model-part pull for performance. See DEALER GROUP FILTER.
+UPDATED: 2026-10-13 — demand = invoices net of credits (Part 1 groups
+  invoice lines (REF_NO) and credits (ORIGINAL_INVOICE_NO) under one invoice
+  key inside the existing single InTrans→jdis join — joining jdis to a
+  derived demand table hung on the live source; Part 2's NOT EXISTS checks
+  for a net-positive invoice); superseded rows excluded (Super To), per
+  Ben/Brian
 ============================================================================
 
 Power Query M — paste into Excel Advanced Editor:
@@ -138,40 +151,66 @@ let
     // anti-join — see PERFORMANCE NOTE (2026-09-15) above for why.
     SQL = "
         SELECT
-            i.BRANCH,
-            i.PART_NO                       AS PartNumber,
-            MAX(p.pi_Description)           AS Description,
-            MAX(p.pi_Cost)                  AS Cost,
-            MAX(p.pi_Source)                AS Source,
-            MAX(p.pi_SLC)                   AS SLC,
-            MAX(p.pi_Commodity_Code)        AS CommodityCode,
-            MAX(p.pi_Dealer_Group_Code)     AS DealerGroupCode,
-            MAX(COALESCE(p.pi_On_Order,0))  AS OnOrder,
-            MAX(p.pi_On_Hand_Qty)           AS OnHandQty,
-            COUNT(*)                        AS Demands
-        FROM InTrans i
-        INNER JOIN jdis_Part_Information p
-            ON  p.pi_Branch  = i.BRANCH
-            AND p.pi_Part_No = i.PART_NO
-        WHERE
-            i.FRANCHISE = 'D'
-            AND i.TYPE = 'I'
-            AND i.QTY > 0
-            AND i.BRANCH NOT IN ('2', '4')
-            AND i.Trans_Datetime >= DATEADD(month, -18, GETDATE())
-            AND i.Trans_Datetime <= DATEADD(day, -7, GETDATE())
-            AND COALESCE(p.pi_On_Order, 0) = 0
-            AND p.pi_Package_Qty = 1
-            AND p.pi_Return_Indicator = 'R'
-            AND " & DealerGroupFilter & "
-            AND p.pi_Source <> 'AN'
-            AND p.pi_SLC NOT LIKE '21%'
-            AND p.pi_SLC NOT LIKE '90%'
-            AND p.pi_SLC NOT LIKE '91%'
-            AND p.pi_SLC NOT LIKE '99%'
+            x.BRANCH,
+            x.PartNumber,
+            MAX(x.Description)      AS Description,
+            MAX(x.Cost)             AS Cost,
+            MAX(x.Source)           AS Source,
+            MAX(x.SLC)              AS SLC,
+            MAX(x.CommodityCode)    AS CommodityCode,
+            MAX(x.DealerGroupCode)  AS DealerGroupCode,
+            MAX(x.OnOrder)          AS OnOrder,
+            MAX(x.OnHandQty)        AS OnHandQty,
+            COUNT(*)                AS Demands
+        FROM (
+            -- One row per Branch + Part + INVOICE: invoice lines keyed on
+            -- REF_NO, credits on ORIGINAL_INVOICE_NO, so NetQty = invoice
+            -- qty net of credits.
+            SELECT
+                i.BRANCH,
+                i.PART_NO                       AS PartNumber,
+                CASE WHEN i.TYPE = 'I' THEN i.REF_NO ELSE i.ORIGINAL_INVOICE_NO END AS InvoiceNo,
+                MAX(p.pi_Description)           AS Description,
+                MAX(p.pi_Cost)                  AS Cost,
+                MAX(p.pi_Source)                AS Source,
+                MAX(p.pi_SLC)                   AS SLC,
+                MAX(p.pi_Commodity_Code)        AS CommodityCode,
+                MAX(p.pi_Dealer_Group_Code)     AS DealerGroupCode,
+                MAX(COALESCE(p.pi_On_Order,0))  AS OnOrder,
+                MAX(p.pi_On_Hand_Qty)           AS OnHandQty,
+                SUM(i.QTY)                      AS NetQty,
+                MAX(CASE WHEN i.TYPE = 'I' THEN 1 ELSE 0 END) AS HasInvoice
+            FROM InTrans i
+            INNER JOIN jdis_Part_Information p
+                ON  p.pi_Branch  = i.BRANCH
+                AND p.pi_Part_No = i.PART_NO
+            WHERE
+                i.FRANCHISE = 'D'
+                AND i.BRANCH NOT IN ('2', '4')
+                AND i.Trans_Datetime >= DATEADD(month, -18, GETDATE())
+                AND (
+                    (i.TYPE = 'I' AND i.QTY > 0 AND i.Trans_Datetime <= DATEADD(day, -7, GETDATE()))
+                 OR (i.TYPE = 'C' AND i.QTY < 0)
+                )
+                AND COALESCE(p.pi_On_Order, 0) = 0
+                AND p.pi_Package_Qty = 1
+                AND p.pi_Return_Indicator = 'R'
+                AND " & DealerGroupFilter & "
+                AND p.pi_Source <> 'AN'
+                AND p.pi_SLC NOT LIKE '21%'
+                AND p.pi_SLC NOT LIKE '90%'
+                AND p.pi_SLC NOT LIKE '91%'
+                AND p.pi_SLC NOT LIKE '99%'
+                AND COALESCE(RTRIM(p.pi_Super_To), '') = ''
+            GROUP BY
+                i.BRANCH,
+                i.PART_NO,
+                CASE WHEN i.TYPE = 'I' THEN i.REF_NO ELSE i.ORIGINAL_INVOICE_NO END
+        ) x
+        WHERE x.NetQty > 0 AND x.HasInvoice = 1
         GROUP BY
-            i.BRANCH,
-            i.PART_NO
+            x.BRANCH,
+            x.PartNumber
 
         UNION ALL
 
@@ -200,6 +239,10 @@ let
             AND p.pi_SLC NOT LIKE '90%'
             AND p.pi_SLC NOT LIKE '91%'
             AND p.pi_SLC NOT LIKE '99%'
+            AND COALESCE(RTRIM(p.pi_Super_To), '') = ''
+            -- Zero demand = no invoice in the window that is still
+            -- net-positive after its credits (same rule as Demand above,
+            -- as an indexed per-row lookup — see PERFORMANCE NOTES).
             AND NOT EXISTS (
                 SELECT 1 FROM InTrans i2
                 WHERE i2.BRANCH = p.pi_Branch
@@ -209,6 +252,18 @@ let
                   AND i2.QTY > 0
                   AND i2.Trans_Datetime >= DATEADD(month, -18, GETDATE())
                   AND i2.Trans_Datetime <= DATEADD(day, -7, GETDATE())
+                  AND (
+                      SELECT SUM(x.QTY) FROM InTrans x
+                      WHERE x.BRANCH = i2.BRANCH
+                        AND x.PART_NO = i2.PART_NO
+                        AND x.FRANCHISE = 'D'
+                        AND x.Trans_Datetime >= DATEADD(month, -18, GETDATE())
+                        AND (
+                            (x.TYPE = 'I' AND x.QTY > 0 AND x.REF_NO = i2.REF_NO
+                             AND x.Trans_Datetime <= DATEADD(day, -7, GETDATE()))
+                         OR (x.TYPE = 'C' AND x.QTY < 0 AND x.ORIGINAL_INVOICE_NO = i2.REF_NO)
+                        )
+                  ) > 0
             )
     ",
     Source = Odbc.Query("dsn=EquipRDB", SQL),

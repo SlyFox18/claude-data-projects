@@ -42,6 +42,18 @@ object inside the workbook.
    Copy the workbook to the scratchpad first with PowerShell `Copy-Item` — files
    open in Excel are locked, and git-bash file ops misbehave in the OneDrive folder.
 
+## Shared demand definition (since 2026-10-13, every report)
+
+A **demand** = one customer invoice per Branch + Part: InTrans `TYPE = 'I'`, `QTY > 0`,
+7 days–18 months back, split lines on one `REF_NO` summed. Credits (`TYPE = 'C'`, `QTY < 0`)
+net against the invoice they return via `ORIGINAL_INVOICE_NO` (DP Silver: `RONumber` /
+`OriginalInvoiceNo`); an invoice netting to ≤ 0 doesn't count. Transfers (`T`) never count.
+Pattern (copy from MLPF Gaps): inside the usual single InTrans→jdis join, filter
+`(TYPE='I' AND QTY>0 AND <window>) OR (TYPE='C' AND QTY<0)`, GROUP BY branch, part and
+`CASE WHEN TYPE='I' THEN REF_NO ELSE ORIGINAL_INVOICE_NO END`, keep groups with `SUM(QTY) > 0`
+and an I line, then count. Pieces In Set nets credits into invoice qty too (Match %, Sales Qty).
+99.6% of credits link to a real invoice. Stocking (DuckDB) does the same with a join — fine there.
+
 ## Gotchas (all hit for real)
 
 - **Workbook formula columns depend on query column names.** `SPI-Pieces In Set.xlsx`
@@ -62,12 +74,20 @@ object inside the workbook.
 - **Pieces_In_Set = 1 is the default** (53K parts) — "a set" means > 1.
 - **"Sub To" = `pi_Super_To`** (`SuperTo` in DP Silver; blank = empty string, never NULL; some
   spaces-only — always trim). Like Dealer Group Code it's **per branch**, often set at only
-  some branches: MLPF Gaps (branch grain) filters per row; SPI Corparate Stocking (part
-  grain) drops the part if any branch is superseded.
+  some branches: MLPF Gaps, Border Stores, 2 & 4 Cotton and SPI - Pieces In Set (branch
+  grain) filter per row; SPI Corparate Stocking (part grain) drops the part if any branch
+  is superseded. Deliberately NOT applied to the Pieces In Set Review tab or PartData.
 - **Join strategy is volume-dependent.** Zero-fill anti-joins: `NOT EXISTS` is fast for
   high-volume branches (2 & 4), `LEFT JOIN` was the fix for low-volume ones. Inlining
   a small key list as a literal `IN (...)` beat both subquery forms for the 2 & 4
   cross-branch model-code lookup (5s vs. 250s / 10+ min).
+- **Never join jdis (or anything big) to a derived/CTE table on this source.** 2026-10-13: demand
+  computed in CTEs and then joined to jdis hung MLPF Gaps (and the connection dropped); the
+  single-join + invoice-key GROUP BY above ran in ~12s. Small changes can flip the plan too:
+  adding one Super To line to Border Stores' zero-fill took it from 4s to > 2 min (left out
+  there, see that file). Test with a cancel timer (pyodbc `cursor.cancel()` on a
+  `threading.Timer`); the driver doesn't support `con.timeout`. Don't alias a computed
+  column with a real column's name (`... AS REF_NO`) — SQL Anywhere then rejects the GROUP BY.
 - **Run heavy queries off-peak** when possible — InTrans is large, ODBC degrades
   during business hours.
 

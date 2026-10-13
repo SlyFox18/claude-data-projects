@@ -12,12 +12,17 @@ meaningful demand across all other branches combined. Surfaces stocking
 opportunities — parts that are clearly moving in the system but are
 under-stocked or inactive at specific locations.
 
-HOW DEMAND IS CALCULATED:
-  A "demand" = one InTrans row where:
-    - TYPE = 'I'   (customer invoice — excludes transfers, adjustments, returns)
-    - QTY  > 0     (outbound sale to customer)
+HOW DEMAND IS CALCULATED (revised 2026-10-13 — shared by all Corp Parts reports):
+  A "demand" = one customer INVOICE for the Branch + Part, where:
+    - TYPE = 'I', QTY > 0 (customer invoice line — transfers 'T', purchases
+      'P', adjustments 'A' and receipts 'R' never count)
     - Trans_Datetime between 7 days ago and 18 months ago (excludes the most
       recent week so very recent activity doesn't mask a true low-demand branch)
+    - Several lines for the part on the same invoice (REF_NO) count ONCE —
+      one line of qty 5 and two lines of qty 1 are both one demand
+    - Credits (TYPE = 'C', QTY < 0) are matched back to the invoice they
+      return via ORIGINAL_INVOICE_NO. An invoice whose credits bring its net
+      qty to 0 or below doesn't count; a partial return still counts as 1.
   This counts actual transaction events, not pre-aggregated pi_sales_request_XX
   buckets (which are approximate).
 
@@ -53,6 +58,12 @@ PART FILTERS (from jdis_Part_Information):
   - Return Indicator = 'R'  Only returnable parts
   - Source <> 'AN'          Excludes Source code "AN"
   - SLC NOT LIKE 21%/90%/91%/99%  Excludes these SLC families (any sub-code)
+  - Super To blank          Excludes superseded branch/part rows (same rule as
+                            MLPF Gaps: COALESCE(RTRIM(pi_Super_To), '') = '').
+                            Per branch row, in the demand pull (Part 1) — so a
+                            row superseded at another branch also drops out of
+                            OtherBranchDemands / OtherLocationCount. Not in the
+                            zero-fill (Part 2) — see UPDATED 2026-10-13
 
 OUTPUT COLUMNS:
   Branch             — Branch where local demand is below threshold (always
@@ -147,6 +158,18 @@ UPDATED: 2026-08-27 (perf) — zero-fill rewritten from a correlated NOT EXISTS
   a small pre-aggregated InTrans scope; dropped the redundant "qualifying
   parts" pre-filter subquery. The NOT EXISTS version hung indefinitely where
   the original single-scan query ran in seconds.
+UPDATED: 2026-10-13 — demand = invoices net of credits; superseded rows
+  excluded (Super To), per Ben/Brian. Netting is done by grouping invoice
+  lines (REF_NO) and credits (ORIGINAL_INVOICE_NO) under one invoice key
+  inside the existing single InTrans→jdis join. Joining jdis to a derived
+  demand table instead hung on the live source — don't use that shape.
+  Part 2 (zero-fill) is left EXACTLY as before — no credit netting, no
+  Super To. Both versions were tried live and both blew Part 2 up from ~4s
+  to > 2 min (even the one-line Super To filter changes the server's plan).
+  Part 2 can't change the output anyway: Filtered requires Demands >= 1, so
+  zero-fill rows never reach the sheet, and they add 0 to TotalDemand /
+  BranchCount. If Filtered ever drops the Demands >= 1 condition, revisit.
+  Live 2026-10-13: Part 1 ~22s, Part 2 ~5s.
 ============================================================================
 
 Power Query M — paste into Excel Advanced Editor:
@@ -165,39 +188,65 @@ let
     // Set-based LEFT JOIN, not a per-row correlated lookup — see NOTES.
     SQL = "
         SELECT
-            i.BRANCH,
-            i.PART_NO                       AS PartNumber,
-            MAX(p.pi_Description)           AS Description,
-            MAX(p.pi_Cost)                  AS Cost,
-            MAX(p.pi_Source)                AS Source,
-            MAX(p.pi_SLC)                   AS SLC,
-            MAX(p.pi_Commodity_Code)        AS CommodityCode,
-            MAX(p.pi_Dealer_Group_Code)     AS DealerGroupCode,
-            MAX(COALESCE(p.pi_On_Order,0))  AS OnOrder,
-            MAX(p.pi_On_Hand_Qty)           AS OnHandQty,
-            COUNT(*)                        AS Demands
-        FROM InTrans i
-        INNER JOIN jdis_Part_Information p
-            ON  p.pi_Branch  = i.BRANCH
-            AND p.pi_Part_No = i.PART_NO
-        WHERE
-            i.FRANCHISE = 'D'
-            AND i.TYPE = 'I'
-            AND i.QTY > 0
-            AND i.BRANCH NOT IN ('2', '4')
-            AND i.Trans_Datetime >= DATEADD(month, -18, GETDATE())
-            AND i.Trans_Datetime <= DATEADD(day, -7, GETDATE())
-            AND COALESCE(p.pi_On_Order, 0) = 0
-            AND p.pi_Package_Qty = 1
-            AND p.pi_Return_Indicator = 'R'
-            AND p.pi_Source <> 'AN'
-            AND p.pi_SLC NOT LIKE '21%'
-            AND p.pi_SLC NOT LIKE '90%'
-            AND p.pi_SLC NOT LIKE '91%'
-            AND p.pi_SLC NOT LIKE '99%'
+            x.BRANCH,
+            x.PartNumber,
+            MAX(x.Description)      AS Description,
+            MAX(x.Cost)             AS Cost,
+            MAX(x.Source)           AS Source,
+            MAX(x.SLC)              AS SLC,
+            MAX(x.CommodityCode)    AS CommodityCode,
+            MAX(x.DealerGroupCode)  AS DealerGroupCode,
+            MAX(x.OnOrder)          AS OnOrder,
+            MAX(x.OnHandQty)        AS OnHandQty,
+            COUNT(*)                AS Demands
+        FROM (
+            -- One row per Branch + Part + INVOICE: invoice lines keyed on
+            -- REF_NO, credits on ORIGINAL_INVOICE_NO, so NetQty = invoice
+            -- qty net of credits.
+            SELECT
+                i.BRANCH,
+                i.PART_NO                       AS PartNumber,
+                CASE WHEN i.TYPE = 'I' THEN i.REF_NO ELSE i.ORIGINAL_INVOICE_NO END AS InvoiceNo,
+                MAX(p.pi_Description)           AS Description,
+                MAX(p.pi_Cost)                  AS Cost,
+                MAX(p.pi_Source)                AS Source,
+                MAX(p.pi_SLC)                   AS SLC,
+                MAX(p.pi_Commodity_Code)        AS CommodityCode,
+                MAX(p.pi_Dealer_Group_Code)     AS DealerGroupCode,
+                MAX(COALESCE(p.pi_On_Order,0))  AS OnOrder,
+                MAX(p.pi_On_Hand_Qty)           AS OnHandQty,
+                SUM(i.QTY)                      AS NetQty,
+                MAX(CASE WHEN i.TYPE = 'I' THEN 1 ELSE 0 END) AS HasInvoice
+            FROM InTrans i
+            INNER JOIN jdis_Part_Information p
+                ON  p.pi_Branch  = i.BRANCH
+                AND p.pi_Part_No = i.PART_NO
+            WHERE
+                i.FRANCHISE = 'D'
+                AND i.BRANCH NOT IN ('2', '4')
+                AND i.Trans_Datetime >= DATEADD(month, -18, GETDATE())
+                AND (
+                    (i.TYPE = 'I' AND i.QTY > 0 AND i.Trans_Datetime <= DATEADD(day, -7, GETDATE()))
+                 OR (i.TYPE = 'C' AND i.QTY < 0)
+                )
+                AND COALESCE(p.pi_On_Order, 0) = 0
+                AND p.pi_Package_Qty = 1
+                AND p.pi_Return_Indicator = 'R'
+                AND p.pi_Source <> 'AN'
+                AND p.pi_SLC NOT LIKE '21%'
+                AND p.pi_SLC NOT LIKE '90%'
+                AND p.pi_SLC NOT LIKE '91%'
+                AND p.pi_SLC NOT LIKE '99%'
+                AND COALESCE(RTRIM(p.pi_Super_To), '') = ''
+            GROUP BY
+                i.BRANCH,
+                i.PART_NO,
+                CASE WHEN i.TYPE = 'I' THEN i.REF_NO ELSE i.ORIGINAL_INVOICE_NO END
+        ) x
+        WHERE x.NetQty > 0 AND x.HasInvoice = 1
         GROUP BY
-            i.BRANCH,
-            i.PART_NO
+            x.BRANCH,
+            x.PartNumber
 
         UNION ALL
 

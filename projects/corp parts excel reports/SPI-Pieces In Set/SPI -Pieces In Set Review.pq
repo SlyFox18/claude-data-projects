@@ -20,7 +20,9 @@ sales history doesn't back up.
 
 HOW MATCH % IS CALCULATED (identical to the main query):
   1. Pull qualifying InTrans rows (see CRITERIA) for the last 18 months.
-  2. Collapse to one row per Branch + Part + Invoice (REF_NO), summing QTY.
+  2. Collapse to one row per Branch + Part + Invoice (REF_NO), summing QTY,
+     then net credits into the invoice they return (fully returned invoices
+     drop out) — added 2026-10-13, same as the main tab.
   3. Most Common Qty = the modal invoice quantity for that Branch + Part.
   4. Match % = (invoices at the Most Common Qty) / (total qualifying
      invoices) — how consistently the part sells in one exact quantity.
@@ -30,12 +32,10 @@ CRITERIA (adjustable):
   - Franchise:              D            (InTrans AND InMaster)
   - Branches:               all EXCEPT 2 & 4 (same as the main tab —
                              change BRANCH NOT IN ('2', '4'), appears in
-                             InvoiceQty, DemandCounts, and InMasterPis;
-                             keep all three in sync)
-  - Transaction type:       'I'          (customer invoice)
-  - Qty:                    > 0          (outbound sale)
-  - Time window:            last 18 months through today (InvoiceQty and
-                             DemandCounts — keep in sync)
+                             InvoiceQty and InMasterPis; keep both in sync)
+  - Transaction type:       'I' (customer invoice, Qty > 0), net of 'C'
+                             credits (Qty < 0)
+  - Time window:            last 18 months through today (InvoiceQty)
   - Pieces In Set:          > 1          (change HAVING MAX(Pieces_In_Set)
                              > 1 in InMasterPis) — see NOTES for why this
                              is > 1 and not > 0
@@ -65,8 +65,8 @@ OUTPUT COLUMNS:
                       all. A low value means sales don't line up with the
                       set size — the strongest "fix this" signal.
   Invoices          — Count of qualifying invoices (Match % denominator)
-  Demands           — Count of qualifying InTrans lines (same definition
-                      as the main tab)
+  Demands           — Invoices net of credits (same definition as the main
+                      tab since 2026-10-13, so equal to Invoices)
   Sales Qty         — Total units sold in the window
 
 NOTES:
@@ -96,13 +96,16 @@ NOTES:
     main tab (one winning row per Branch + Part, longest description) as a
     LEFT JOIN — a part missing from jdis still shows up (blank attributes)
     rather than silently disappearing from a cleanup list.
-  - Run off-peak if possible (before 7 AM / after 5 PM) — scans 18 months
-    of InTrans twice, same as the main tab. ~45s / 125 rows when tested
-    live 2026-10-07 (mid-day).
+  - Run off-peak if possible (before 7 AM / after 5 PM). Since 2026-10-13
+    it scans 18 months of InTrans once (InvoiceQty) — ~34s / 124 rows live.
 
 REQUESTED BY: Ben (Corp Parts Manager), via Brian — 2026-10-07. Companion
   tab to SPI -Pieces In Set.pq.
 CREATED: 2026-10-07
+UPDATED: 2026-10-13 — credits netted into invoice qty and Demands = invoices
+  net of credits, to stay the exact complement of the main tab. Super To is
+  deliberately NOT applied here (Brian: superseded parts stay on the PIS
+  cleanup list).
 ============================================================================
 
 Power Query M — paste into Excel Advanced Editor:
@@ -111,23 +114,31 @@ Power Query M — paste into Excel Advanced Editor:
 let
     SQL = "
         WITH InvoiceQty AS (
-            -- One row per Branch + Part + Invoice, summing QTY across any
-            -- split lines of the same part on the same invoice (same as
-            -- the main tab).
+            -- One row per Branch + Part + Invoice, QTY net of credits —
+            -- invoice lines keyed on REF_NO, credits on
+            -- ORIGINAL_INVOICE_NO, one scan, no join (same as the main tab).
             SELECT
                 BRANCH,
                 PART_NO,
-                REF_NO,
+                CASE WHEN TYPE = 'I' THEN REF_NO ELSE ORIGINAL_INVOICE_NO END AS InvoiceNo,
                 SUM(QTY) AS InvoiceQty
             FROM InTrans
             WHERE
                 FRANCHISE = 'D'
-                AND TYPE = 'I'
-                AND QTY > 0
+                AND BRANCH NOT IN ('2', '4')
                 AND Trans_Datetime >= DATEADD(month, -18, GETDATE())
                 AND Trans_Datetime <= GETDATE()
-                AND BRANCH NOT IN ('2', '4')
-            GROUP BY BRANCH, PART_NO, REF_NO
+                AND (
+                    (TYPE = 'I' AND QTY > 0)
+                 OR (TYPE = 'C' AND QTY < 0)
+                )
+            GROUP BY
+                BRANCH,
+                PART_NO,
+                CASE WHEN TYPE = 'I' THEN REF_NO ELSE ORIGINAL_INVOICE_NO END
+            HAVING
+                SUM(QTY) > 0
+                AND MAX(CASE WHEN TYPE = 'I' THEN 1 ELSE 0 END) = 1
         ),
         InMasterPis AS (
             -- Parts set up as a multi-piece set in InMaster. FRANCHISE = 'D'
@@ -170,23 +181,6 @@ let
                 ON  m.BRANCH  = iq.BRANCH
                 AND m.PART_NO = iq.PART_NO
             GROUP BY iq.BRANCH, iq.PART_NO
-        ),
-        DemandCounts AS (
-            -- Raw qualifying InTrans ROW count per Branch+Part (same
-            -- definition as the main tab's Demands).
-            SELECT
-                BRANCH,
-                PART_NO,
-                COUNT(*) AS Demands
-            FROM InTrans
-            WHERE
-                FRANCHISE = 'D'
-                AND TYPE = 'I'
-                AND QTY > 0
-                AND Trans_Datetime >= DATEADD(month, -18, GETDATE())
-                AND Trans_Datetime <= GETDATE()
-                AND BRANCH NOT IN ('2', '4')
-            GROUP BY BRANCH, PART_NO
         ),
         Ranked AS (
             -- rn = 1 is the modal (most common) quantity per Branch+Part.
@@ -241,15 +235,12 @@ let
                 ROUND(CAST(r.QtyCount AS FLOAT) / r.TotalInvoices * 100, 1)         AS MatchPercent,
                 ROUND(CAST(r.PisMultipleInvoices AS FLOAT) / r.TotalInvoices * 100, 1) AS PisMultiplePercent,
                 r.TotalInvoices                                                     AS Invoices,
-                d.Demands                                                           AS Demands,
+                r.TotalInvoices                                                     AS Demands,
                 r.TotalSalesQty                                                     AS SalesQty
             FROM Ranked r
             INNER JOIN InMasterPis m
                 ON  m.BRANCH  = r.BRANCH
                 AND m.PART_NO = r.PART_NO
-            INNER JOIN DemandCounts d
-                ON  d.BRANCH  = r.BRANCH
-                AND d.PART_NO = r.PART_NO
             LEFT JOIN JdisDedup p
                 ON  p.pi_Branch  = r.BRANCH
                 AND p.pi_Part_No = r.PART_NO

@@ -23,6 +23,9 @@ HOW SPI PIS IS CALCULATED:
   2. Collapse to one row per Branch + Part + Invoice (REF_NO), summing QTY —
      so a part split across two lines of the same invoice counts as one
      invoice with the combined quantity, not two separate data points.
+     Credits (TYPE = 'C', QTY < 0) are then netted into the invoice they
+     return (via ORIGINAL_INVOICE_NO): invoice qty = what the customer kept,
+     and a fully returned invoice drops out (added 2026-10-13).
   3. Per Branch + Part, count how many invoices had each distinct quantity.
   4. SPI PIS = the most common ("modal") quantity across those invoices.
   5. Match % = (invoices at the modal quantity) / (total qualifying
@@ -65,15 +68,12 @@ HOW THE REORDER RECOMMENDATION IS CALCULATED (added per Ben's request):
 CRITERIA (adjustable):
   - Franchise:              D            (change FRANCHISE = 'D' in WHERE)
   - Branches:               all EXCEPT 2 & 4 (change BRANCH NOT IN
-                             ('2', '4') — appears in both InvoiceQty and
-                             DemandCounts, keep in sync)
-  - Transaction type:       'I'          (customer invoice — excludes
-                             transfers, adjustments, returns)
-  - Qty:                    > 0          (outbound sale to customer;
-                             "Sales Qty" in the request)
+                             ('2', '4') in InvoiceQty)
+  - Transaction type:       'I' (customer invoice, Qty > 0), net of 'C'
+                             credits (Qty < 0) — transfers, adjustments
+                             and purchases never count
   - Time window:             last 18 months through today (change the
-                             DATEADD/GETDATE bounds in WHERE — appears in
-                             both InvoiceQty and DemandCounts, keep in sync)
+                             DATEADD/GETDATE bounds in InvoiceQty)
   - Min sample size:        >= 3 qualifying invoices per Branch + Part
                              (change TotalInvoices >= 3 in final WHERE) —
                              without this, a part sold only 1-2 times could
@@ -97,16 +97,14 @@ OUTPUT COLUMNS:
   Match %         — % of qualifying invoices that sold at exactly SPI PIS
   Invoices        — Count of qualifying INVOICES (distinct REF_NO, after
                     collapsing split lines) — the denominator behind Match %
-  Demands         — Count of qualifying InTrans TRANSACTION ROWS (lines),
-                    same definition as "Demands" in
-                    FranchiseD_LowDemand_Parts_CrossBranch.pq. NOT the same
-                    number as Invoices when a part is split across multiple
-                    lines of the same invoice — Demands counts every line,
-                    Invoices counts the invoice once. Added because Ben
-                    specifically asked for this familiar metric alongside
-                    the new ones.
+  Demands         — Same demand definition as the other Corp Parts reports
+                    (since 2026-10-13: one per invoice, net of credits). That
+                    makes it equal to Invoices here; kept because Ben asked
+                    for this familiar metric. (Before 2026-10-13 it counted
+                    raw invoice lines.)
   Sales Qty       — Total units sold across all qualifying invoices in the
-                    18-month window (SUM of quantity, not a count)
+                    18-month window, net of credits (SUM of quantity, not a
+                    count)
   Bin Qty         — Current primary-bin quantity (jdis pi_Bin_Qty) — NOT
                     the same as On Hand Qty (pi_On_Hand_Qty, which also
                     includes bulk bin); Ben asked for Bin Qty specifically
@@ -180,10 +178,13 @@ NOTES:
     Order Qty, as input to the reorder math) — none of them filter rows.
     To exclude e.g. Source 'AN' or SLC 21/90/91/99 like the Low Demand
     query does, filter in Excel or add conditions to FinalJoined's WHERE.
+  - Superseded parts excluded (added 2026-10-13, same rule as MLPF Gaps):
+    a Branch + Part drops out if ANY of its jdis rows has a Super To value
+    (JdisDedup's Superseded flag), so a reorder is never recommended for a
+    part that has been replaced.
   - Run during off-peak hours (before 7 AM or after 5 PM) — InTrans is
-    large and this scans the full 18-month window twice (once for
-    InvoiceQty, once for DemandCounts — see that CTE's comment for why it
-    isn't just derived from InvoiceQty instead).
+    large. Since 2026-10-13 the 18-month window is scanned once (invoices
+    and credits together in InvoiceQty; DemandCounts is gone) — ~39s live.
 
 LAST RUN: 2026-08-27
 REQUESTED BY: Brian (ad-hoc — parts reordering, SPI Pieces In Set concept);
@@ -202,6 +203,10 @@ UPDATED: 2026-09-29 — added Source, SLC, Commodity Code, and Dealer Group
 UPDATED: 2026-10-07 — excluded branches 2 & 4 (BRANCH NOT IN ('2', '4') in
   both InvoiceQty and DemandCounts, so their sales never enter the SPI PIS/
   Match %/Demands math and no Branch 2 or 4 rows appear in the output)
+UPDATED: 2026-10-13 — credits netted into invoice qty (fully returned
+  invoices drop out; affects SPI PIS, Match %, Invoices, Sales Qty and the
+  reorder math); Demands = invoices net of credits (DemandCounts CTE
+  removed); superseded parts excluded (Super To), per Ben/Brian
 ============================================================================
 
 Power Query M — paste into Excel Advanced Editor:
@@ -210,24 +215,35 @@ Power Query M — paste into Excel Advanced Editor:
 let
     SQL = "
         WITH InvoiceQty AS (
-            -- One row per Branch + Part + Invoice, summing QTY across any
-            -- split lines of the same part on the same invoice. Feeds both
-            -- the SPI PIS/Match % calc AND Sales Qty (SUM of InvoiceQty is
-            -- the same total as summing every raw qualifying QTY directly).
+            -- One row per Branch + Part + Invoice, with QTY NET of credits
+            -- (what the customer kept): invoice lines are keyed on REF_NO
+            -- (split lines of one invoice sum together) and credits on
+            -- ORIGINAL_INVOICE_NO (the invoice they return), in one scan
+            -- with no join. Fully returned invoices (net <= 0) and credits
+            -- whose invoice is outside the window drop out. Feeds the SPI
+            -- PIS/Match % calc, Sales Qty, Invoices and Demands.
             SELECT
                 BRANCH,
                 PART_NO,
-                REF_NO,
+                CASE WHEN TYPE = 'I' THEN REF_NO ELSE ORIGINAL_INVOICE_NO END AS InvoiceNo,
                 SUM(QTY) AS InvoiceQty
             FROM InTrans
             WHERE
                 FRANCHISE = 'D'
-                AND TYPE = 'I'
-                AND QTY > 0
+                AND BRANCH NOT IN ('2', '4')
                 AND Trans_Datetime >= DATEADD(month, -18, GETDATE())
                 AND Trans_Datetime <= GETDATE()
-                AND BRANCH NOT IN ('2', '4')
-            GROUP BY BRANCH, PART_NO, REF_NO
+                AND (
+                    (TYPE = 'I' AND QTY > 0)
+                 OR (TYPE = 'C' AND QTY < 0)
+                )
+            GROUP BY
+                BRANCH,
+                PART_NO,
+                CASE WHEN TYPE = 'I' THEN REF_NO ELSE ORIGINAL_INVOICE_NO END
+            HAVING
+                SUM(QTY) > 0
+                AND MAX(CASE WHEN TYPE = 'I' THEN 1 ELSE 0 END) = 1
         ),
         QtyCounts AS (
             -- How many invoices had each distinct quantity, per Branch+Part
@@ -248,29 +264,6 @@ let
                 COUNT(*)        AS TotalInvoices,
                 SUM(InvoiceQty) AS TotalSalesQty
             FROM InvoiceQty
-            GROUP BY BRANCH, PART_NO
-        ),
-        DemandCounts AS (
-            -- Raw qualifying InTrans ROW count per Branch+Part — same
-            -- definition as 'Demands' in
-            -- FranchiseD_LowDemand_Parts_CrossBranch.pq (COUNT(*) of
-            -- qualifying transaction lines). Computed separately from
-            -- InvoiceQty/PartTotals (rather than derived from them)
-            -- because it's a genuinely different grain: InvoiceQty already
-            -- collapsed split invoice lines together, so a raw line count
-            -- can't be recovered from it after the fact.
-            SELECT
-                BRANCH,
-                PART_NO,
-                COUNT(*) AS Demands
-            FROM InTrans
-            WHERE
-                FRANCHISE = 'D'
-                AND TYPE = 'I'
-                AND QTY > 0
-                AND Trans_Datetime >= DATEADD(month, -18, GETDATE())
-                AND Trans_Datetime <= GETDATE()
-                AND BRANCH NOT IN ('2', '4')
             GROUP BY BRANCH, PART_NO
         ),
         Ranked AS (
@@ -324,6 +317,11 @@ let
                 pi_Bin_Qty,
                 pi_On_Order,
                 pi_Cost,
+                -- 1 if ANY jdis row for this Branch + Part has a Super To
+                -- (superseded) — not just the winning row
+                MAX(CASE WHEN COALESCE(RTRIM(pi_Super_To), '') <> '' THEN 1 ELSE 0 END) OVER (
+                    PARTITION BY pi_Branch, pi_Part_No
+                ) AS Superseded,
                 ROW_NUMBER() OVER (
                     PARTITION BY pi_Branch, pi_Part_No
                     ORDER BY LEN(pi_Description) DESC, pi_Description ASC
@@ -342,7 +340,7 @@ let
                 r.Qty                                                       AS SpiPis,
                 ROUND(CAST(r.QtyCount AS FLOAT) / r.TotalInvoices * 100, 1)  AS MatchPercent,
                 r.TotalInvoices                                             AS Invoices,
-                d.Demands                                                   AS Demands,
+                r.TotalInvoices                                             AS Demands,
                 r.TotalSalesQty                                             AS SalesQty,
                 COALESCE(p.pi_Bin_Qty, 0)                                   AS BinQty,
                 COALESCE(p.pi_On_Order, 0)                                  AS OnOrderQty,
@@ -352,11 +350,9 @@ let
                 ON  p.pi_Branch  = r.BRANCH
                 AND p.pi_Part_No = r.PART_NO
                 AND p.jrn = 1
-            INNER JOIN DemandCounts d
-                ON  d.BRANCH  = r.BRANCH
-                AND d.PART_NO = r.PART_NO
             WHERE
                 r.rn = 1
+                AND p.Superseded = 0
                 AND r.TotalInvoices >= 3
                 AND r.Qty > 1
                 AND CAST(r.QtyCount AS FLOAT) / r.TotalInvoices >= 0.75

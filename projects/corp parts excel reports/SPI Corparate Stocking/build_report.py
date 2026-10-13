@@ -70,6 +70,17 @@ CONFIRMED WITH BEN (2026-08-27, via Brian)
      (39 of 44 affected parts on 2026-10-08), so "any branch" is used rather
      than dropping just the superseded branch rows - a part superseded at
      most branches isn't a company-wide stocking candidate.
+  7. Demand definition (revised 2026-10-13, per Ben via Brian - shared by
+     all Corp Parts reports): a demand is one customer INVOICE (Type I,
+     Qty > 0) per PartNumber + Branch. Several lines on one invoice count
+     once, and credits (Type C, Qty < 0) are matched back to the invoice
+     they return via OriginalInvoiceNo - an invoice credited down to net
+     qty <= 0 doesn't count. Transfers (T) never counted. (Was: every
+     Type I line counted.)
+  8. Output columns (2026-10-13, per Ben): DemandBranches lists the branches
+     behind LocationCount. The workbook query renames TotalDemand ->
+     "R18 Demands", LocationCount -> "Count of Locations with Demands",
+     DemandBranches -> "Locations with Demands".
 
 Output: "Franchise D - Zero Stock Company-Wide Demand.xlsx"
 - One row per qualifying part, sorted by LocationCount desc, then
@@ -155,11 +166,11 @@ result = con.execute(f"""
            -- part. TRIM because blanks are '' or spaces-only.
            AND SUM(CASE WHEN TRIM(COALESCE(SuperTo, '')) <> '' THEN 1 ELSE 0 END) = 0
     ),
-    demand AS (
-        -- Branches 2 & 4 excluded (CONFIRMED #3), fine-grained
-        -- PartNumber+Branch, same demand definition as the branch-level
-        -- report (customer invoice, Qty > 0, 7d-18mo window).
-        SELECT PartNumber, Branch, COUNT(*) AS Demands
+    inv AS (
+        -- Customer invoices (Type I, Qty > 0, 7d-18mo window), branches
+        -- 2 & 4 excluded (CONFIRMED #3). One row per invoice: split lines
+        -- of the same part on one invoice are summed (CONFIRMED #7).
+        SELECT PartNumber, Branch, RONumber, SUM(Qty) AS InvQty
         FROM delta_scan('{base}/Silver_InTrans')
         WHERE Franchise = 'D'
           AND Branch NOT IN ('2', '4')
@@ -167,7 +178,30 @@ result = con.execute(f"""
           AND Qty > 0
           AND TransDatetime >= CURRENT_DATE - INTERVAL 18 MONTH
           AND TransDatetime <= CURRENT_DATE - INTERVAL 7 DAY
-        GROUP BY PartNumber, Branch
+        GROUP BY PartNumber, Branch, RONumber
+    ),
+    cr AS (
+        -- Credits (returns), keyed back to the invoice they return
+        -- (CONFIRMED #7). No 7-day cutoff: a recent credit still cancels
+        -- an older sale.
+        SELECT PartNumber, Branch, OriginalInvoiceNo AS RONumber, SUM(Qty) AS CrQty
+        FROM delta_scan('{base}/Silver_InTrans')
+        WHERE Franchise = 'D'
+          AND Branch NOT IN ('2', '4')
+          AND Type = 'C'
+          AND Qty < 0
+          AND TransDatetime >= CURRENT_DATE - INTERVAL 18 MONTH
+        GROUP BY PartNumber, Branch, OriginalInvoiceNo
+    ),
+    demand AS (
+        -- Demands per PartNumber + Branch = invoices still net-positive
+        -- after credits.
+        SELECT i.PartNumber, i.Branch, COUNT(*) AS Demands
+        FROM inv i
+        LEFT JOIN cr c
+          ON c.PartNumber = i.PartNumber AND c.Branch = i.Branch AND c.RONumber = i.RONumber
+        WHERE i.InvQty + COALESCE(c.CrQty, 0) > 0
+        GROUP BY i.PartNumber, i.Branch
     )
     SELECT
         e.PartNumber,
@@ -180,7 +214,10 @@ result = con.execute(f"""
         0 AS OnOrder,
         0 AS OnHandQty,
         COALESCE(SUM(d.Demands), 0) AS TotalDemand,
-        COUNT(DISTINCT d.Branch)    AS LocationCount
+        COUNT(DISTINCT d.Branch)    AS LocationCount,
+        -- The branches behind LocationCount, e.g. '11, 13, 93, 95'
+        -- (demand is one row per branch, so no DISTINCT needed)
+        STRING_AGG(d.Branch, ', ' ORDER BY TRY_CAST(d.Branch AS INTEGER), d.Branch) AS DemandBranches
     FROM eligible e
     LEFT JOIN demand d ON d.PartNumber = e.PartNumber
     GROUP BY e.PartNumber, e.Description, e.Cost, e.Source, e.SLC, e.CommodityCode, e.DealerGroupCode
