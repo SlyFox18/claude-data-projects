@@ -1063,6 +1063,29 @@ The suite is at 230 tests.
 - `executeMashupQueriesOnly: true` on the Dataflow activity.
 - Reference-integrity tests on the pipeline.
 
+**2026-10-12/13: Task 6 (Dev) done; Task 7 not needed.**
+- **Sync:** pushed and synced (`9482a7b1`, then `43d216bb`).
+  - The first Presentation sync conflicted only on Fabric's own reformat of the old pipeline (notebook references stored as real IDs, content otherwise identical). Brian chose Accept incoming.
+  - After the sync, Fabric re-serialised the rendered pipeline (same content); Brian committed that once (`c402babc`).
+- **Dev runs:**
+
+  | Run | Result |
+  |---|---|
+  | dry run | ✅ |
+  | `items` run (1 dataflow, 1 Silver, 1 Gold, 28 models) | ✅ |
+  | Silver crash, then immediate rerun not refused (the crashed row closes the run) | ✅ |
+  | Bronze failure | ✅ |
+  | Gold `inject_failure` (models still refresh) | ✅ |
+  | `rerun_failed` (picked exactly the failed item) | ✅ |
+  | full `mode=all` (96 items, 28/28 models, ~42 min) | ✅ |
+
+- **JD question answered:** the full run's Plan started JD Incremental as the service principal (run 13:56Z, Completed in 4.5 min).
+- **Real findings, fixed in `2f671d59`:**
+  - Pin Capture's model refresh failed once from capacity memory governance (9.2 GB consumed vs a 2.9 GB limit, during parallel refreshes), so Refresh_Model is back to **retry 1, after 120 s**.
+  - A mistyped `mode` ("item") produced tracebacks in every phase, so Plan now checks `mode` up front with a plain message, and Gold skips selection after an upstream error.
+- **Follow-up, not urgent:** Pin Capture used about 9 GB to refresh a 138 MB model. Its Power Query is worth a look.
+- **Next:** Task 8 (failure alert), then Task 9 (Prod).
+
 **Amendments from the final review (apply in Tasks 6 and 9):**
 - **Task 6 Step 6, model-failure drill:** removing the service principal's RP - Dev role makes the model *lookup* fail, so it never exercises Refresh_Model's Failed branch. Instead, make one Dev model's refresh itself fail (temporarily break its data-source credential), run, then restore it.
 - **Task 6:** also run a Silver crash drill (`simulate_crash = silver`). Check that Notify writes the `crashed` row and that an immediate rerun isn't refused by the already-running guard.
