@@ -1084,7 +1084,8 @@ The suite is at 230 tests.
   - Pin Capture's model refresh failed once from capacity memory governance (9.2 GB consumed vs a 2.9 GB limit, during parallel refreshes), so Refresh_Model is back to **retry 1, after 120 s**.
   - A mistyped `mode` ("item") produced tracebacks in every phase, so Plan now checks `mode` up front with a plain message, and Gold skips selection after an upstream error.
 - **Follow-up, not urgent:** Pin Capture used about 9 GB to refresh a 138 MB model. Its Power Query is worth a look.
-- **Next:** Task 8 (failure alert), then Task 9 (Prod).
+- **Task 8 changed (2026-10-13):** the Monitor-hub "Set alert" is Activator-based (paid, needs workspace monitoring), so it isn't worth it here. Use the pipeline schedule's built-in, free **Failure notifications** instead (pipeline → Home → Schedule → Failure notifications → add Brian). Fabric sends it, independent of the service principal. It only covers scheduled runs, so it is set on the **Prod** 06:15 schedule during Task 9; Dev has no schedule.
+- **Next:** Task 9 (Prod).
 
 **Amendments from the final review (apply in Tasks 6 and 9):**
 - **Task 6 Step 6, model-failure drill:** removing the service principal's RP - Dev role makes the model *lookup* fail, so it never exercises Refresh_Model's Failed branch. Instead, make one Dev model's refresh itself fail (temporarily break its data-source credential), run, then restore it.
