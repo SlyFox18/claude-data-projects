@@ -8,31 +8,27 @@ at 3+ distinct branches. Different grain from Border Stores (`../Border
 Stores/`), which flags a low-demand *branch* against a candidate list; this
 one drops Branch entirely and looks at the whole company per part.
 
-## How it fits together
+## How it fits together (since 2026-10-13: live ODBC)
 
-```
-build_report.py  ──(DuckDB over OneLake)──►  SharePoint: Corp Parts Excel Reports/Source Data/
-   (run manually)                              Franchise D - Zero Stock Company-Wide Demand.xlsx
-                                                          │
-                                   SPI Corparate Stocking.pq (in the workbook) reads it
-                                                          ▼
-                                         SPI Corparate Stocking.xlsx  ← Ben / Barry / Curt refresh
-```
+`SPI Corparate Stocking.pq` queries Equip live over `dsn=EquipRDB`, like every
+other Corp Parts workbook. **Refresh = Equip as it is right now**; Ben, Barry
+and Curt refresh on demand, no script involved. It runs two plain queries
+(jdis eligibility ~11–16s, InTrans demand ~5–8s) and combines them in Power
+Query — see the `.pq` header for why the combine must stay out of SQL.
 
-**Refreshing the workbook only re-reads the source file.** New data only
-appears after `build_report.py` is run. The script writes into Brian's
-OneDrive-synced copy of the SharePoint library, so OneDrive uploads it
-automatically — no manual upload step.
+**Retired 2026-10-13, kept for reference only (don't delete without Brian):**
+`build_report.py` (DuckDB over DP Prod) and the SharePoint file it wrote,
+`Source Data/Franchise D - Zero Stock Company-Wide Demand.xlsx`. Nothing reads
+that file any more. The script/DP sections below are history.
 
-To update: run `python build_report.py` (needs an active `az login`; output
-path is fixed, run from anywhere), then anyone can Data > Refresh All.
+## Why this USED to be a script (superseded 2026-10-13)
 
-## Why this is a script, not a live Power Query
-
-The same SQL as a live ODBC query (`history/FranchiseD_ZeroStock_CompanyWide
+The 2026-08-27 live ODBC query (`history/FranchiseD_ZeroStock_CompanyWide
 (ODBC attempt - hung).pq`, kept for reference — don't use it) hung for 30+
-minutes, twice. Not a query-shape problem: Franchise D is ~80% of the whole
-parts catalog, so there's no way to narrow scope.
+minutes, twice. It was blamed on volume (below), but on 2026-10-13 the real
+cause turned out to be query **shape**: `pi_Part_No IN (subquery)` on jdis and
+a LEFT JOIN between two derived tables both crawl on SQL Anywhere. Two plain
+single-table GROUP BY queries combined in Power Query run in ~20s total.
 
 | Stage | Row count (2026-08-27) |
 |---|---|
@@ -114,3 +110,6 @@ to that lakehouse for Ben/Barry/Curt.
   "Count of Locations with Demands". Same-day data: 1,776 → 1,774 parts (2 fell
   below 3 locations), 176 parts' demand lowered (7,257 → 7,056 total).
   DE18732: 6 → 4 demands (one invoice had 2 lines; one sale fully credited).
+- 2026-10-13: switched the workbook to live ODBC (no script). Live: 1,785 parts
+  vs 1,774 in the same morning's DP file (1,768 in common, 1,758 with identical
+  demand; the rest is Equip changing since the 06:15 DP refresh).

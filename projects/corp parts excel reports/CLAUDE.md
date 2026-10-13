@@ -24,7 +24,7 @@ object inside the workbook.
 | COTTON 2026 TROUBLE PARTS.xlsx | `COTTON 2026 TROUBLE PARTS/` | `PartData` | live ODBC | Barry's sheet; company-wide part lookup (on order / R12 sales / bin qty) |
 | MLPF Gaps.xlsx | `MLPF Gaps/` | `MLPF Gaps` | live ODBC | exactly 2 demands, all branches except 12, superseded parts excluded |
 | SPI-Pieces In Set.xlsx | `SPI-Pieces In Set/` | `SPI - Pieces In Set`, `SPI - Pieces In Set - Filtered`, `SPI -Pieces In Set Review` | live ODBC (+ workbook table) | set-size detection + reorder rec; Review = InMaster PIS > 1 but Match % < 75% |
-| SPI Corparate Stocking.xlsx | `SPI Corparate Stocking/` | `SPI Corparate Stocking` | file written by `build_report.py` (reads DP Prod) | **refresh ≠ new data** — see its README; superseded parts excluded (any branch) |
+| SPI Corparate Stocking.xlsx | `SPI Corparate Stocking/` | `SPI Corparate Stocking` | live ODBC (since 2026-10-13) | part grain; two plain queries combined in M; superseded parts excluded (any branch). `build_report.py` + Source Data file retired, kept as reference |
 
 `_reference/` = business reference docs (commodity code groups PDF).
 `_archive/` = pre-split docs and old workbook copies (`*.xlsx` here is gitignored).
@@ -93,10 +93,8 @@ and an I line, then count. Pieces In Set nets credits into invoice qty too (Matc
 
 ## Open items
 
-- **SPI Corparate Stocking** — switched to DP Prod 2026-10-07 (LH_Master_Data over-counts
-  demand). DP Prod Silver is still refreshed manually, so run DP before the script if it
-  flags stale input. Proposed next step: DP Gold notebook + workbook on the SQL endpoint
-  (no script) — see `SPI Corparate Stocking/README.md`.
+- **SPI Corparate Stocking** — live ODBC since 2026-10-13 (no script, no Fabric). The
+  SharePoint `Source Data` folder only held the retired script's output; Brian may remove it.
 - **Order-upload export** (Curt/Barry) — blocked on the exact format spec from Ben.
 - **Barry / Curt DSN setup** — Barry's DSN needs renaming to `EquipRDB`; Curt's status unknown.
 - **SPI PIS box/bulk outliers + description truncation** — see notes in `SPI - Pieces In Set.pq`.

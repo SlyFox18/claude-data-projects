@@ -1,6 +1,11 @@
 """
 FRANCHISE D - ZERO STOCK, COMPANY-WIDE DEMAND (AD HOC)
 ============================================================================
+RETIRED 2026-10-13 - kept for reference only. The SPI Corparate Stocking
+workbook now queries Equip live over ODBC (SPI Corparate Stocking.pq in
+this folder) and no longer reads the file this script writes. Running it
+is harmless but nothing uses the output.
+============================================================================
 Request: Ben (Corp Parts Manager), via Brian, 2026-08-27. Company-wide
 reorder-candidate view of Franchise D parts: zero on-hand AND zero on-order
 at EVERY branch, but still generating demand at 3+ distinct branches over
