@@ -1085,7 +1085,15 @@ The suite is at 230 tests.
   - A mistyped `mode` ("item") produced tracebacks in every phase, so Plan now checks `mode` up front with a plain message, and Gold skips selection after an upstream error.
 - **Follow-up, not urgent:** Pin Capture used about 9 GB to refresh a 138 MB model. Its Power Query is worth a look.
 - **Task 8 changed (2026-10-13):** the Monitor-hub "Set alert" is Activator-based (paid, needs workspace monitoring), so it isn't worth it here. Use the pipeline schedule's built-in, free **Failure notifications** instead (pipeline → Home → Schedule → Failure notifications → add Brian). Fabric sends it, independent of the service principal. It only covers scheduled runs, so it is set on the **Prod** 06:15 schedule during Task 9; Dev has no schedule.
-- **Next:** Task 9 (Prod).
+- **2026-10-13, Task 9 in progress (Prod live):**
+  - **Access:** the refresh service principal is Contributor on DP Prod ×2 and the 3 report workspaces (Brian also asked to add RP - Sandbox, for models in validation). The deploy SPN is a user on both connections.
+  - **Release:** PR #32 merged; Deploy DP backend succeeded (run 38419778309). `claim_prod_pipeline.py` was run as a safety net, and dev was fast-forwarded (`0cd25e53`).
+  - **Prod pipeline verified:** all 8 notebook activities point at the Prod notebooks with the notebook connection, Refresh_Model has the model connection, Run_Dataflow points at Prod staging, and the schedule is kept.
+  - **First manual Prod run** (`items` = Build_Silver_BranchName,Build_Gold_BranchLocation): OK, 2 items, 27/27 models.
+  - **Why 27, not 28:** the 28th promoted report, Table-Column-Names-Search, is ODBC-only. It isn't in the DAG `reports`, so the DP run never refreshed it, before or after.
+  - **Next:**
+    - Brian adds Failure notifications on the Prod schedule.
+    - **The 2026-10-14 06:15 scheduled run (5 dataflows) is the proof** that the Dataflow activities run as the schedule owner after a CI deploy. If it's clean, do Task 10 (retire the re-claim step).
 
 **Amendments from the final review (apply in Tasks 6 and 9):**
 - **Task 6 Step 6, model-failure drill:** removing the service principal's RP - Dev role makes the model *lookup* fail, so it never exercises Refresh_Model's Failed branch. Instead, make one Dev model's refresh itself fail (temporarily break its data-source credential), run, then restore it.
