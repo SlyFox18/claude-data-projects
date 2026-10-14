@@ -3808,6 +3808,46 @@ table MeasuresTable
 		formatString: 0
 		lineageTag: 7260e267-be33-4c37-a699-f80834e627ea
 
+	measure 'Qty on Hand (By Location)' =
+			
+			IF(
+			    HASONEVALUE(dim_BranchLocation[Branch]),
+			    VAR CurrentBranchIDs = VALUES(dim_BranchLocation[BranchID])
+			    VAR CurrentPart = SELECTEDVALUE(dim_Branch12_Parts[PartNumber])
+			    RETURN
+			        SUMX(
+			            FILTER(
+			                dim_BranchPartInventory,
+			                dim_BranchPartInventory[PartNumber] = CurrentPart
+			                    && dim_BranchPartInventory[Branch] IN CurrentBranchIDs
+			            ),
+			            dim_BranchPartInventory[QuantityOnHand]
+			        ),
+			    BLANK()
+			)
+		formatString: 0
+		lineageTag: 20eff84b-f9fc-4fd4-b2b7-66ac3781b861
+
+	measure 'Bin Qty (By Location)' =
+			
+			IF(
+			    HASONEVALUE(dim_BranchLocation[Branch]),
+			    VAR CurrentBranchIDs = VALUES(dim_BranchLocation[BranchID])
+			    VAR CurrentPart = SELECTEDVALUE(dim_Branch12_Parts[PartNumber])
+			    RETURN
+			        SUMX(
+			            FILTER(
+			                dim_BranchPartInventory,
+			                dim_BranchPartInventory[PartNumber] = CurrentPart
+			                    && dim_BranchPartInventory[Branch] IN CurrentBranchIDs
+			            ),
+			            dim_BranchPartInventory[BinQty]
+			        ),
+			    BLANK()
+			)
+		formatString: 0
+		lineageTag: 74c1dd5d-3fbf-4a59-ba10-b30df4c25341
+
 	column Value
 		isHidden
 		formatString: 0

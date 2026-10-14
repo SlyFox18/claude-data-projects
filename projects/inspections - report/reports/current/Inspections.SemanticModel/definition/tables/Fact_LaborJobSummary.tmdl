@@ -314,13 +314,17 @@ table Fact_LaborJobSummary
 
 		annotation SummarizationSetBy = Automatic
 
-	column WorkOrderCreationDateKey =
+	column WorkOrderCreationDateKey = ```
 			
 			IF(
 			    ISBLANK(Fact_LaborJobSummary[WorkOrderCreationDate]),
 			    BLANK(),
-			    INT(FORMAT(Fact_LaborJobSummary[WorkOrderCreationDate], "YYYYMMDD"))
+			    YEAR(Fact_LaborJobSummary[WorkOrderCreationDate]) * 10000
+			        + MONTH(Fact_LaborJobSummary[WorkOrderCreationDate]) * 100
+			        + DAY(Fact_LaborJobSummary[WorkOrderCreationDate])
 			)
+			
+			```
 		formatString: 0
 		lineageTag: b20f1e7a-954c-4c4c-bc85-bddc49c28f42
 		summarizeBy: none

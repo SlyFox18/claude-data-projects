@@ -4,6 +4,8 @@
 **Production** ✅ — V2 live in RP-Service Reports. V1 archive in `reports/archive/` for reference only.
 97% performance improvement over V1 (120 min → 14.5 min total pipeline).
 
+**2026-08-13 CU/performance audit and fix (see `docs/superpowers/plans/2026-08-12-inspections-report-rebuild.md` for full detail):** the report had become the capacity's #2 CU consumer (~156K CU(s)/14 days). Two real bottlenecks found and fixed — `Fact_WorkOrderParts` had no incremental refresh (full re-import every time), and `ServiceRecommendations` was a DAX calculated table doing nested `GENERATE`/`CALCULATETABLE` work on every refresh (~8 min by itself). Fixed by adding incremental refresh to `Fact_WorkOrderParts` and replacing the `ServiceRecommendations` calculated table with a Dataflow Gen2/M query (`df_Fact_ServiceRecommendations`) that computes the same logic once, server-side. **Result: full semantic model refresh in the service dropped from ~7-8 min baseline (up to 14.5 min historically) to ~1 minute.** Same session, the measure library was fully cleaned up — 54 of 182 measures confirmed dead and deleted, 6 remaining measures had leftover version suffixes normalized, all 128 survivors organized into 11 display folders, and every one of the 128 now has a real description (visible as a field-list tooltip in Desktop, written from actually reading each measure's DAX). This closes out both halves of the original ask — CU/performance and "I can't keep up with what's what." Model itself is the authoritative reference now; `documentation/dax/dax-measures-library.md` is flagged stale at the top rather than kept in sync (redundant with the in-model tooltips).
+
 ## Business Purpose
 Complete inspection lifecycle tracking: Pending → In Progress → Completed. Branch-level goals management, predictive recommendations, real-time pending queue, work order drill-through. 15 branch locations.
 
@@ -13,15 +15,15 @@ Complete inspection lifecycle tracking: Pending → In Progress → Completed. B
 ### Fact Tables (3)
 | Table | Grain | Rows | Refresh | Source |
 |-------|-------|------|---------|--------|
-| Fact_LaborJobSummary | Job code × Work order | ~50K | 3 min | wkothsub + wkmechwk + wkrofile |
-| Fact_PendingInspections | Work order (pending only) | ~100 | 1.5 min | wkothsub + wkrofile |
-| Fact_WorkOrderParts | Part × Invoice line | ~150K | 10 min | InTrans + Invoice |
+| Fact_LaborJobSummary | Job code × Work order | ~380K (actual, not ~50K as previously documented) | fast | wkothsub + wkmechwk + wkrofile |
+| Fact_PendingInspections | Work order (pending only) | ~130 | fast | wkothsub + wkrofile |
+| Fact_WorkOrderParts | Part × Invoice line | ~150K | **15 sec** (incremental refresh added 2026-08-13, was 10-18 min) | InTrans + Invoice |
 
 ### Shared Dimensions (from Lakehouse)
 `dim_BranchLocation`, `dim_CustomerList`, `dim_DateTable`, `dim_Parts`
 
 ### Other Tables
-Goals (Excel-based, 15 branch targets), Recommendations (DAX calculated table, predictive)
+Goals (Excel-based, 15 branch targets); ServiceRecommendations (**Dataflow Gen2/M-sourced as of 2026-08-13, was a DAX calculated table** — same predictive co-occurrence logic, now computed once via `df_Fact_ServiceRecommendations` instead of recomputed on every model refresh; source query at `queries/fact-tables/Fact_ServiceRecommendations.pq`)
 
 ## Critical Bug History — Do Not Re-Introduce
 **Fact_WorkOrderParts join bug (FIXED):** Original query joined on work order number. Correct join is on **invoice number** (`InTrans.REF_NO = Invoice.InvoiceNumber`). Using work order produced only 186 rows instead of 150K. See `ARCHITECTURE.md` for full explanation.
@@ -47,7 +49,7 @@ Validation framework with 0-100 scores for completeness, accuracy, consistency, 
 
 ## Pipeline
 - Phase 4 of master orchestrator
-- Fact_WorkOrderParts is the **known bottleneck** at ~10-18 min (target for incremental refresh)
+- **Formerly Fact_WorkOrderParts was the known bottleneck at ~10-18 min — fixed 2026-08-13 via incremental refresh, now 15 sec.** Full semantic model refresh now ~1 min in the service (was ~7-8 min baseline, up to 14.5 min historically).
 - Full pipeline docs: `documentation/pipelines/`
 - Troubleshooting guide: `documentation/pipelines/troubleshooting-guide.md`
 

@@ -1,0 +1,21 @@
+model Model
+	culture: en-US
+	defaultPowerBIDataSourceVersion: powerBI_V3
+	sourceQueryCulture: en-US
+	dataAccessOptions
+		legacyRedirects
+		returnErrorValuesAsNull
+
+annotation __PBI_TimeIntelligenceEnabled = 0
+
+annotation PBI_QueryOrder = ["dim_BranchLocation","After_Market_Parts_Orders","Data Refresh"]
+
+annotation PBI_ProTooling = ["DevMode","MCP-PBIModeling"]
+
+ref table dim_BranchLocation
+ref table _Measures
+ref table After_Market_Parts_Orders
+ref table 'Data Refresh'
+
+ref cultureInfo en-US
+

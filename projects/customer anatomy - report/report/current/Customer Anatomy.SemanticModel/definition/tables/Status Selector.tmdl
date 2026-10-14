@@ -1,0 +1,42 @@
+table 'Status Selector'
+	lineageTag: 39ccdba5-8bae-4403-8520-f86898d92cb7
+
+	column Status
+		lineageTag: 880b7168-74de-45e2-a23a-6f6a51f81a77
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Status]
+		sortByColumn: 'Sort Order'
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Sort Order'
+		formatString: 0
+		lineageTag: 7ff53b37-6668-4f73-b489-4a71ba595cf8
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [Sort Order]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Status Selector' = calculated
+		mode: import
+		source = ```
+				
+				DATATABLE(
+				    "Status", STRING,
+				    "Sort Order", INTEGER,
+				    {
+				        {"Churned", 1},
+				        {"At Risk", 2},
+				        {"Declining", 3},
+				        {"Stable", 4},
+				        {"Growing", 5},
+				        {"New", 6}
+				    }
+				)
+				
+				```
+
+	annotation PBI_Id = 64bc5f986f7248a09ae2496725bb5eed
+

@@ -137,8 +137,58 @@ New report has ~150,889 rows in dim_Parts_LowMargin; old report had ~155,014 row
 
 ## Documentation Status
 - In-repo docs: ✅ CLAUDE.md | ✅ PROJECT-SUMMARY.md (at `docs/01-getting-started/PROJECT-SUMMARY.md`)
-- Full docs in: `docs/01-getting-started/`, `docs/02-implementation/`, `docs/03-fixes-applied/`, `docs/04-discoveries/`
+- Full docs in: `docs/01-getting-started/`, `docs/02-implementation/`, `docs/03-fixes-applied/`, `docs/04-discoveries/`, `docs/06-power-automate/`
 - Obsidian stakeholder docs: ✅ Complete — `Data Projects/Reports/Part Sales with Low Margin.md`
+
+## Power Automate Alerts
+**Low Margin Invoice Alert** (reworked 2026-07-27 per Ben's feedback) fires
+on **invoiced parts sales** (`Fact_InTrans`, Page 1) below 20% margin — not
+the inventory pricing snapshot (Page 2) it originally targeted. Store-level
+parts staff don't own pricing, so the alert now targets what's actually
+sold below margin, for corp-office parts managers. It's a single recurring
+alert (weekdays 8:30 AM CST, weekday-aware date window) — no weekly digest,
+since invoiced data doesn't fall off a list the way a snapshot does. No
+dollar floor: every qualifying invoice line alerts.
+
+Reuses the Parts Action Summary distribution pipeline (SPI-PARTS group +
+PartsBranchMapping) with red styling copied from the MD Freight alert.
+Email includes an inline HTML table plus a full CSV attachment, and states
+the trigger criteria explicitly per Ben's request. Turned live 2026-08-18
+after Ben's approval (Orchestrator `6427c9b7-b74c-455a-afbe-b0ce417a18b0`,
+weekdays 8:30 AM CST) — first live run pending confirmation.
+
+**2026-08-18 — Corp manager CC:** Ben Hill now CC'd on every branch's
+alert; Barry Sheets (Corporate North) and Curt Summers (Corporate South)
+CC'd only on their own 10/9 branches, via a conditional expression on the
+existing `HTTP_sendMail` action — no SharePoint/pipeline changes. See
+`docs/06-power-automate/POWER-AUTOMATE-SETUP.md`, "Corp Manager CC"
+section, for the branch lists and exact expression.
+
+**2026-07-28 update:** Ben's Seminole test run surfaced 3 low-margin parts
+all on the same invoice (an internal/employee-discount purchase, not a
+pricing problem) — easy to miss when parts are listed flat. Added a
+**Customer Name** column (via `dim_CustomerList[DisplayName]`) and
+restructured the HTML table to **group rows by Ref No + Customer Name**,
+with a bold invoice banner and its own repeated column-header row
+(Part Number, Description, Cost $, Actual Margin %) per group — no
+native `groupBy` in Power Automate, so this uses a manual group-break
+loop (track the last-seen group key, insert a new header whenever it
+changes). Also replaced the sendMail action's fragile hand-concatenated
+JSON string body with a native JSON object body after it broke on the
+restructured HTML — a strictly more robust pattern going forward.
+
+The original Page-2/inventory-snapshot design (weekly digest + daily
+tracking-list-diff alert) is superseded but not deleted — both old
+Orchestrators remain Stopped and unused. See
+`docs/06-power-automate/POWER-AUTOMATE-SETUP.md` for full detail: flow IDs,
+DAX, HTML/CSV column specs, the superseded design's detail, and several
+Power Automate gotchas discovered while building these (broken
+`copy_flow`/`edit_flow`, no native `select()`/`difference()` functions,
+inconsistent `update_flow` connection-reference validation, a mysterious
+JSON-parsing failure on flow save worked around by patching a known-good
+exported flow definition instead of hand-authoring JSON, `Set variable`
+rejecting a literal empty-string value, and a JSON key starting with `@`
+needing `@@` escaping).
 
 ## Key Reference Files
 | File | Contents |
@@ -149,4 +199,5 @@ New report has ~150,889 rows in dim_Parts_LowMargin; old report had ~155,014 row
 | `docs/03-fixes-applied/KPI-Measures-Fix.md` | The ADDCOLUMNS row context fix |
 | `docs/04-discoveries/Old-Report-Bug-Found.md` | Full story on the $5.31M → $2.09M correction |
 | `docs/04-discoveries/Cost-vs-StockOrderPrice.md` | Cost field explanation |
+| `docs/06-power-automate/POWER-AUTOMATE-SETUP.md` | Low margin alert flows — IDs, DAX, gotchas |
 | `queries/dimensions/FIX-APPLIED-dim_Parts-Duplicates.md` | dim_Parts duplicate fix |

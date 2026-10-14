@@ -1935,6 +1935,260 @@ table _Measures
 		displayFolder: Core Metrics
 		lineageTag: 8b10d283-299d-4fe3-be2e-d4c4d324bec5
 
+	measure 'Page 6 - Trends - Header' =
+			
+			// Get user name
+			VAR _User = USERPRINCIPALNAME()
+			VAR _Position = SEARCH("@", _User, 1)
+			VAR _Name = LEFT(_User, _Position - 1)
+			VAR _FirstLetter = UPPER(LEFT(_Name, 1))
+			VAR _LastName = MID(_Name, 2, LEN(_Name) - 1)
+			VAR _FormattedLastName =
+			    UPPER(LEFT(_LastName, 1)) & LOWER(MID(_LastName, 2, LEN(_LastName)))
+			VAR WelcomeName = _FirstLetter & "." & _FormattedLastName
+			
+			// Get current date/time info
+			VAR CurrentDate = TODAY()
+			VAR DateDisplay = FORMAT(CurrentDate, "MMM D, YYYY")
+			VAR CurrentHour = HOUR(NOW())
+			VAR TimeGreeting =
+			    IF(CurrentHour < 12, "Good Morning",
+			    IF(CurrentHour < 17, "Good Afternoon",
+			    "Good Evening"))
+			
+			VAR ViewMin = MIN(fact_parts_open_orders_snapshot[SnapshotDate])
+			VAR ViewMax = MAX(fact_parts_open_orders_snapshot[SnapshotDate])
+			VAR ViewLabel =
+			    IF(
+			        ISBLANK(ViewMin), "No Data",
+			        IF(ViewMin = ViewMax, FORMAT(ViewMax, "MMM YYYY"), FORMAT(ViewMin, "MMM YYYY") & " - " & FORMAT(ViewMax, "MMM YYYY"))
+			    )
+			VAR AgingLabel = SELECTEDVALUE(fact_parts_open_orders_snapshot[Aging], "All")
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    height: 85px;
+			    padding: 15px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 10px;
+			    color: white;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-between;
+			    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    box-sizing: border-box;
+			'>
+			    <!-- Left side: Dashboard Title -->
+			    <div style='display: flex; align-items: center; gap: 15px;'>
+			        <!-- Home icon -->
+			        <div style='
+			            width: 40px;
+			            height: 40px;
+			            background: rgba(255,255,255,0.15);
+			            border-radius: 8px;
+			            display: flex;
+			            align-items: center;
+			            justify-content: center;
+			            font-size: 20px;
+			        '>
+			            🏠
+			        </div>
+			
+			        <!-- Title -->
+			        <div>
+			            <div style='font-size: 12px; opacity: 0.85; margin-bottom: 4px; letter-spacing: 0.5px;'>
+			                REPORT
+			            </div>
+			            <div style='font-size: 26px; font-weight: 700; line-height: 1;'>
+			                Trends - Open Parts Tickets
+			            </div>
+			            <div style='font-size: 12px; opacity: 0.75; margin-top: 4px;'>
+			                Viewing " & ViewLabel & " &middot; Aging " & AgingLabel & "
+			            </div>
+			        </div>
+			    </div>
+			
+			    <!-- Right side: Welcome & Date -->
+			    <div style='text-align: right;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 6px;'>
+			            " & TimeGreeting & ", " & WelcomeName & "
+			        </div>
+			        <div style='font-size: 16px; font-weight: 600;'>
+			            📅 " & DateDisplay & "
+			        </div>
+			    </div>
+			</div>
+			"
+		displayFolder: UI & Navigation
+		lineageTag: 5c6a098c-cc3a-4827-9e66-295a603bee9e
+
+	measure 'Snapshot Order Count' = DISTINCTCOUNT(fact_parts_open_orders_snapshot[Order_No])
+		formatString: 0
+		displayFolder: Snapshot Trend
+		lineageTag: f2b3c4d5-3333-4ccc-9003-cccccccccc01
+
+	measure 'Snapshot Order Total $' = SUM(fact_parts_open_orders_snapshot[Order_Total_$$])
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		displayFolder: Snapshot Trend
+		lineageTag: f2b3c4d5-3333-4ccc-9003-cccccccccc02
+
+	measure 'Snapshot Backorder $' = SUM(fact_parts_open_orders_snapshot[$$_BackOrdered])
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		displayFolder: Snapshot Trend
+		lineageTag: f2b3c4d5-3333-4ccc-9003-cccccccccc03
+
+	measure 'Snapshot Backorder Count' = SUM(fact_parts_open_orders_snapshot[#_On_Back_Order])
+		formatString: 0
+		displayFolder: Snapshot Trend
+		lineageTag: f2b3c4d5-3333-4ccc-9003-cccccccccc04
+
+	measure 'HTML - Trend KPI Row' =
+			
+			VAR LatestSnapshot =
+			    CALCULATE(
+			        MAX(fact_parts_open_orders_snapshot[SnapshotDate]),
+			        REMOVEFILTERS(fact_parts_open_orders_snapshot[Aging])
+			    )
+			VAR PriorSnapshot =
+			    CALCULATE(
+			        MAX(fact_parts_open_orders_snapshot[SnapshotDate]),
+			        REMOVEFILTERS(fact_parts_open_orders_snapshot[Aging]),
+			        fact_parts_open_orders_snapshot[SnapshotDate] < LatestSnapshot
+			    )
+			VAR HasPrior = NOT ISBLANK(PriorSnapshot)
+			VAR PriorLabel = IF(HasPrior, "vs " & FORMAT(PriorSnapshot, "MMMM YYYY"), "no prior month")
+			
+			VAR InvoicesNow = CALCULATE([Snapshot Order Count], fact_parts_open_orders_snapshot[SnapshotDate] = LatestSnapshot)
+			VAR InvoicesPrior = CALCULATE([Snapshot Order Count], fact_parts_open_orders_snapshot[SnapshotDate] = PriorSnapshot)
+			VAR InvoicesChange = DIVIDE(InvoicesNow - InvoicesPrior, InvoicesPrior)
+			
+			VAR DollarsNow = CALCULATE([Snapshot Order Total $], fact_parts_open_orders_snapshot[SnapshotDate] = LatestSnapshot)
+			VAR DollarsPrior = CALCULATE([Snapshot Order Total $], fact_parts_open_orders_snapshot[SnapshotDate] = PriorSnapshot)
+			VAR DollarsChange = DIVIDE(DollarsNow - DollarsPrior, DollarsPrior)
+			
+			VAR BODollarsNow = CALCULATE([Snapshot Backorder $], fact_parts_open_orders_snapshot[SnapshotDate] = LatestSnapshot)
+			VAR BODollarsPrior = CALCULATE([Snapshot Backorder $], fact_parts_open_orders_snapshot[SnapshotDate] = PriorSnapshot)
+			VAR BODollarsChange = DIVIDE(BODollarsNow - BODollarsPrior, BODollarsPrior)
+			
+			VAR BOCountNow = CALCULATE([Snapshot Backorder Count], fact_parts_open_orders_snapshot[SnapshotDate] = LatestSnapshot)
+			VAR BOCountPrior = CALCULATE([Snapshot Backorder Count], fact_parts_open_orders_snapshot[SnapshotDate] = PriorSnapshot)
+			VAR BOCountChange = DIVIDE(BOCountNow - BOCountPrior, BOCountPrior)
+			
+			VAR NeutralClr = "rgba(255,255,255,0.75)"
+			VAR GoodClr = "#5CB85C"
+			VAR BadClr = "#FF6B6B"
+			
+			VAR Arrow1 = IF(InvoicesChange > 0, "▲", IF(InvoicesChange < 0, "▼", "→"))
+			VAR Arrow2 = IF(DollarsChange > 0, "▲", IF(DollarsChange < 0, "▼", "→"))
+			VAR Arrow3 = IF(BODollarsChange > 0, "▲", IF(BODollarsChange < 0, "▼", "→"))
+			VAR Arrow4 = IF(BOCountChange > 0, "▲", IF(BOCountChange < 0, "▼", "→"))
+			
+			VAR Clr1 = IF(InvoicesChange > 0, BadClr, IF(InvoicesChange < 0, GoodClr, NeutralClr))
+			VAR Clr2 = IF(DollarsChange > 0, BadClr, IF(DollarsChange < 0, GoodClr, NeutralClr))
+			VAR Clr3 = IF(BODollarsChange > 0, BadClr, IF(BODollarsChange < 0, GoodClr, NeutralClr))
+			VAR Clr4 = IF(BOCountChange > 0, BadClr, IF(BOCountChange < 0, GoodClr, NeutralClr))
+			
+			VAR CardCSS = "text-align: center; flex: 1;"
+			VAR LabelCSS = "font-size: 13px; opacity: 0.85; text-transform: uppercase; letter-spacing: 1px;"
+			VAR ValueCSS = "font-size: 32px; font-weight: 700; color: white; margin: 6px 0;"
+			VAR Divider = "<div style='width: 2px; height: 60px; background: rgba(255,255,255,0.3);'></div>"
+			
+			VAR Delta1 = IF(HasPrior, Arrow1 & " " & FORMAT(ABS(InvoicesChange), "0.0%") & " " & PriorLabel, PriorLabel)
+			VAR Delta2 = IF(HasPrior, Arrow2 & " " & FORMAT(ABS(DollarsChange), "0.0%") & " " & PriorLabel, PriorLabel)
+			VAR Delta3 = IF(HasPrior, Arrow3 & " " & FORMAT(ABS(BODollarsChange), "0.0%") & " " & PriorLabel, PriorLabel)
+			VAR Delta4 = IF(HasPrior, Arrow4 & " " & FORMAT(ABS(BOCountChange), "0.0%") & " " & PriorLabel, PriorLabel)
+			
+			VAR Card1 = "<div style='" & CardCSS & "'><div style='" & LabelCSS & "'># Invoices</div><div style='" & ValueCSS & "'>" & FORMAT(InvoicesNow, "#,##0") & "</div><div style='font-size: 13px; color: " & Clr1 & ";'>" & Delta1 & "</div></div>"
+			VAR Card2 = "<div style='" & CardCSS & "'><div style='" & LabelCSS & "'>Order Total $</div><div style='" & ValueCSS & "'>" & FORMAT(DollarsNow, "$#,##0") & "</div><div style='font-size: 13px; color: " & Clr2 & ";'>" & Delta2 & "</div></div>"
+			VAR Card3 = "<div style='" & CardCSS & "'><div style='" & LabelCSS & "'>Backorder $</div><div style='" & ValueCSS & "'>" & FORMAT(BODollarsNow, "$#,##0") & "</div><div style='font-size: 13px; color: " & Clr3 & ";'>" & Delta3 & "</div></div>"
+			VAR Card4 = "<div style='" & CardCSS & "'><div style='" & LabelCSS & "'># Back Orders</div><div style='" & ValueCSS & "'>" & FORMAT(BOCountNow, "#,##0") & "</div><div style='font-size: 13px; color: " & Clr4 & ";'>" & Delta4 & "</div></div>"
+			
+			RETURN
+			"<div style='font-family: Segoe UI, Arial, sans-serif; padding: 20px 24px; background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%); border-radius: 10px; color: white; height: 100%; box-sizing: border-box; display: flex; align-items: center; justify-content: space-around;'>" & Card1 & Divider & Card2 & Divider & Card3 & Divider & Card4 & "</div>"
+		displayFolder: Snapshot Trend
+		lineageTag: f2b3c4d5-3333-4ccc-9003-cccccccccc05
+
+	measure 'Snapshot Orders with Backorder' = CALCULATE(DISTINCTCOUNT(fact_parts_open_orders_snapshot[Order_No]), fact_parts_open_orders_snapshot[#_On_Back_Order] > 0)
+		formatString: 0
+		displayFolder: Snapshot Trend
+		lineageTag: f2b3c4d5-4444-4ddd-9004-dddddddddd01
+
+	measure 'HTML - Dollars Trend Timeline' =
+			
+			VAR RowCSS = "display:grid; grid-template-columns:58px 1fr; gap:10px; align-items:center; margin-bottom:11px;"
+			VAR MonthCSS = "font-size:11.5px; font-weight:700; color:#5B6B74; text-align:right;"
+			VAR EndLabelCSS = "display:flex; justify-content:space-between; font-size:10.5px; color:#5B6B74; margin-bottom:3px;"
+			VAR BarCSS = "display:flex; height:22px; border-radius:5px; overflow:hidden; box-shadow: inset 0 1px 2px rgba(0,0,0,0.15);"
+			VAR SegGoodCSS = "display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:#fff; background:linear-gradient(to bottom,#4A5B73,#3D4D5F);"
+			VAR SegBadCSS = "display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:#fff; background:linear-gradient(to bottom,#D45353,#B93F3F);"
+			
+			VAR MonthsWithAmounts =
+			    ADDCOLUMNS(
+			        VALUES(fact_parts_open_orders_snapshot[SnapshotDate]),
+			        "TotalAmt", CALCULATE([Snapshot Order Total $]),
+			        "BOAmt", CALCULATE([Snapshot Backorder $])
+			    )
+			VAR MonthsWithPct =
+			    ADDCOLUMNS(
+			        MonthsWithAmounts,
+			        "AvailAmt", [TotalAmt] - [BOAmt],
+			        "AvailPct", DIVIDE([TotalAmt] - [BOAmt], [TotalAmt], 0),
+			        "BOPct", DIVIDE([BOAmt], [TotalAmt], 0),
+			        "MonthLabel", FORMAT(fact_parts_open_orders_snapshot[SnapshotDate], "MMM YYYY")
+			    )
+			
+			VAR RowsHtml =
+			    CONCATENATEX(
+			        MonthsWithPct,
+			        "<div style='" & RowCSS & "'><div style='" & MonthCSS & "'>" & [MonthLabel] & "</div><div><div style='" & EndLabelCSS & "'><span>" & FORMAT([AvailAmt], "$#,##0") & "</span><span>" & FORMAT([BOAmt], "$#,##0") & "</span></div><div style='" & BarCSS & "'><div style='" & SegGoodCSS & " width:" & FORMAT([AvailPct] * 100, "0.0") & "%;'>" & FORMAT([AvailPct], "0%") & "</div><div style='" & SegBadCSS & " width:" & FORMAT([BOPct] * 100, "0.0") & "%;'>" & FORMAT([BOPct], "0%") & "</div></div></div></div>",
+			        "",
+			        fact_parts_open_orders_snapshot[SnapshotDate], ASC
+			    )
+			
+			RETURN
+			"<div style='font-family: Segoe UI, Arial, sans-serif;'>" & RowsHtml & "</div>"
+		displayFolder: Snapshot Trend
+		lineageTag: f2b3c4d5-4444-4ddd-9004-dddddddddd02
+
+	measure 'HTML - Orders Trend Timeline' =
+			
+			VAR RowCSS = "display:grid; grid-template-columns:58px 1fr; gap:10px; align-items:center; margin-bottom:11px;"
+			VAR MonthCSS = "font-size:11.5px; font-weight:700; color:#5B6B74; text-align:right;"
+			VAR EndLabelCSS = "display:flex; justify-content:space-between; font-size:10.5px; color:#5B6B74; margin-bottom:3px;"
+			VAR BarCSS = "display:flex; height:22px; border-radius:5px; overflow:hidden; box-shadow: inset 0 1px 2px rgba(0,0,0,0.15);"
+			VAR SegGoodCSS = "display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:#fff; background:linear-gradient(to bottom,#4A5B73,#3D4D5F);"
+			VAR SegBadCSS = "display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:#fff; background:linear-gradient(to bottom,#D45353,#B93F3F);"
+			
+			VAR MonthsWithCounts =
+			    ADDCOLUMNS(
+			        VALUES(fact_parts_open_orders_snapshot[SnapshotDate]),
+			        "TotalOrders", CALCULATE([Snapshot Order Count]),
+			        "WithBO", CALCULATE([Snapshot Orders with Backorder])
+			    )
+			VAR MonthsWithPct =
+			    ADDCOLUMNS(
+			        MonthsWithCounts,
+			        "WithoutBO", [TotalOrders] - [WithBO],
+			        "WithoutBOPct", DIVIDE([TotalOrders] - [WithBO], [TotalOrders], 0),
+			        "WithBOPct", DIVIDE([WithBO], [TotalOrders], 0),
+			        "MonthLabel", FORMAT(fact_parts_open_orders_snapshot[SnapshotDate], "MMM YYYY")
+			    )
+			
+			VAR RowsHtml =
+			    CONCATENATEX(
+			        MonthsWithPct,
+			        "<div style='" & RowCSS & "'><div style='" & MonthCSS & "'>" & [MonthLabel] & "</div><div><div style='" & EndLabelCSS & "'><span>" & FORMAT([WithoutBO], "#,##0") & " orders</span><span>" & FORMAT([WithBO], "#,##0") & " orders</span></div><div style='" & BarCSS & "'><div style='" & SegGoodCSS & " width:" & FORMAT([WithoutBOPct] * 100, "0.0") & "%;'>" & FORMAT([WithoutBOPct], "0%") & "</div><div style='" & SegBadCSS & " width:" & FORMAT([WithBOPct] * 100, "0.0") & "%;'>" & FORMAT([WithBOPct], "0%") & "</div></div></div></div>",
+			        "",
+			        fact_parts_open_orders_snapshot[SnapshotDate], ASC
+			    )
+			
+			RETURN
+			"<div style='font-family: Segoe UI, Arial, sans-serif;'>" & RowsHtml & "</div>"
+		displayFolder: Snapshot Trend
+		lineageTag: f2b3c4d5-4444-4ddd-9004-dddddddddd03
+
 	column Value
 		isHidden
 		lineageTag: da2dfa23-0c4c-4e9d-8014-3cc5710e756b

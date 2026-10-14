@@ -272,6 +272,25 @@ table Fact_MDInvoices_NoFreight
 
 		annotation SummarizationSetBy = User
 
+	column FreightBucket =
+			SWITCH(
+			    TRUE(),
+			    Fact_MDInvoices_NoFreight[FreightStatus] = "No Freight"
+			        || Fact_MDInvoices_NoFreight[FreightStatus] = "No Freight Charged",
+			        "No Freight",
+			    Fact_MDInvoices_NoFreight[FreightStatus] = "Has Freight"
+			        && NOT ISBLANK(Fact_MDInvoices_NoFreight[MissedFreightAmount])
+			        && Fact_MDInvoices_NoFreight[MissedFreightAmount] > 1,
+			        "Partial Freight",
+			    Fact_MDInvoices_NoFreight[FreightStatus] = "Has Freight",
+			        "Adequate Freight"
+			)
+		dataType: string
+		lineageTag: a0929b15-dd18-40a8-877c-48bd26a84937
+		summarizeBy: none
+
+		annotation SummarizationSetBy = User
+
 	partition Fact_MDInvoices_NoFreight = m
 		mode: import
 		source =

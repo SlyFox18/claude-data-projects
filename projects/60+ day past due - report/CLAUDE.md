@@ -3,9 +3,35 @@
 ## Report Overview
 - **Business purpose:** Tracks overdue accounts receivable by aging bucket (30/60/90/120+ days) and surfaces open parts orders for customers with outstanding balances — giving credit/collections staff a full picture of what each customer owes.
 - **Primary users:** Branch managers, credit/collections staff, finance team
-- **Workspace:** RP - Financial Reports (confirm — AR is financial, not parts-specific)
+- **Workspace:** RP - Financial Reports (confirmed — this is the only report in that workspace)
 - **Refresh tier:** Tier 1 — Daily by 5 AM
 - **Status:** Production
+
+## Migrated to the DP backend (2026-09-16)
+
+This report's semantic model now sources from `DP_Presentation` (the new JD Bronze /
+data platform backend), not `LH_Master_Data` — see `docs/architecture/report-migration-catalog.md`.
+`armaster` → `Silver_ArMaster`, `ArMaster_Customer` → `Silver_ArMasterCustomer`,
+`Fact_InSalOrd_InSalPar` unchanged (already a matching Gold fact table). `dim_DateTable`
+was removed entirely (zero fields used, zero relationships — it was never actually
+wired into this report despite being listed in the model).
+
+**Real bug found and fixed along the way:** `dim_CustomerList` was trimmed from 46 to
+the real 3 columns used (`CustomerKey`, `AccountNumber`, `DisplayName`), but the first
+attempt only removed the model's declared columns without restricting the underlying
+Power Query — so on the next Desktop refresh, Power Query auto-detected the other real,
+still-queryable columns and silently added all 43 of them back (plus an unwanted
+auto-detected relationship). Fixed by adding an explicit `Table.SelectColumns` step to
+the M query itself, not just trimming the model. The same defensive fix was
+retroactively added to `dim_BranchLocation` here and on `Bin Location Report`/
+`Physical Inventory`, and to `dim_Franchise` on `Bin Location Report` — a model-only
+column trim never really survives a refresh unless the query itself is restricted.
+
+**The working copy of this report is no longer here.** It now lives at
+`fabric-workspace-docs/workspaces/RP - Dev/60+ Days Past Due.pbip` — that's what
+Fabric's Git integration actually reads/writes, so all future edits should open from
+there, not from this repo. The copy under `report/archive/` in this project is
+retired — kept only for history.
 
 ## Semantic Model
 
@@ -19,10 +45,12 @@
 | Table | Source | Key Relationship |
 |-------|--------|-----------------|
 | `ArMaster_Customer` | `dbo.ArMaster_Customer` | `ContactID` → `armaster.ContactID` (bidirectional — see gotchas) |
-| `dim_CustomerList` | Shared Lakehouse dimension | `AccountNumber` → `armaster.AccountNumber` (bidirectional — see gotchas) |
-| `dim_BranchLocation` | Shared Lakehouse dimension | `ArMaster_Customer.Territory` → `BranchID` |
-| `dim_DateTable` | Shared Lakehouse dimension | Not directly related to armaster (no date column on armaster) |
+| `dim_CustomerList` | Shared Lakehouse dimension (trimmed to `CustomerKey`/`AccountNumber`/`DisplayName` only) | `AccountNumber` → `armaster.AccountNumber` (bidirectional — see gotchas) |
+| `dim_BranchLocation` | Shared Lakehouse dimension (trimmed to its real 9 columns) | `ArMaster_Customer.Territory` → `BranchID` |
 | `Data Refresh` | Calculated table | Refresh timestamp display |
+
+`dim_DateTable` was removed 2026-09-16 — zero fields used, zero relationships, never
+actually wired into this report.
 
 ### Relationships
 ```
@@ -61,14 +89,21 @@ EquipRDB (ODBC)
   └─ armaster (raw AR aging snapshot) ─────────────────────────────┐
   └─ ArMaster_Customer (customer master) ──────────────────────────┤
                                                                     ▼
-LH_Master_Data (Lakehouse)                              Semantic Model
+JD_EquipRDB_Production_Bronze (OneLake shortcuts)        Semantic Model
+  └─ Silver_ArMaster ──────────────────────────────────────────────►│
+  └─ Silver_ArMasterCustomer ──────────────────────────────────────►│
+                                                                    ▼
+DP_Presentation (Lakehouse) - the new DP backend
   └─ Fact_InSalOrd_InSalPar (open parts orders) ──────────────────►│
-  └─ dim_CustomerList (shared customer dimension) ────────────────►│
-  └─ dim_BranchLocation (shared branch dimension) ───────────────►│
-  └─ dim_DateTable (shared date dimension) ──────────────────────►│
+  └─ dim_CustomerList (shared, trimmed to 3 real columns) ────────►│
+  └─ dim_BranchLocation (shared, trimmed to its real 9 columns) ──►│
                                                                    ▼
                                                       60+ Days Past Due Report
 ```
+
+Still `DP - Presentation - Dev` (Dev tier), not yet promoted to the Prod-tier
+`DP - Presentation - Prod` — see `docs/architecture/report-migration-catalog.md` for the
+open Dev→Prod data promotion gap this report is part of proving out.
 
 **Non-standard pattern:** `armaster` uses a lowercase table name — it's loaded directly from the source system without the standard PascalCase normalization applied to most Lakehouse tables. This is an older pattern from before naming conventions were standardized.
 

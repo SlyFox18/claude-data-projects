@@ -1,5 +1,5 @@
 {
-  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.7.0/schema.json",
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.11.0/schema.json",
   "name": "03dc303b2bf81fc5e96e",
   "position": {
     "x": 66.015113350125944,
@@ -57,6 +57,20 @@
               "queryRef": "Fact_InTrans.PartNumber",
               "nativeQueryRef": "Part Number",
               "displayName": "Part Number"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "dim_Parts"
+                    }
+                  },
+                  "Property": "Description"
+                }
+              },
+              "queryRef": "dim_Parts.Description",
+              "nativeQueryRef": "Description1"
             },
             {
               "field": {
@@ -187,20 +201,6 @@
               "queryRef": "Fact_InTrans.CustomerNo",
               "nativeQueryRef": "Customer No",
               "displayName": "Customer No"
-            },
-            {
-              "field": {
-                "Column": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "Fact_InTrans"
-                    }
-                  },
-                  "Property": "Description"
-                }
-              },
-              "queryRef": "Fact_InTrans.Description",
-              "nativeQueryRef": "Description"
             }
           ]
         }
@@ -209,16 +209,16 @@
         "sort": [
           {
             "field": {
-              "Measure": {
+              "Column": {
                 "Expression": {
                   "SourceRef": {
-                    "Entity": "_Measures"
+                    "Entity": "Fact_InTrans"
                   }
                 },
-                "Property": "Margin Value %"
+                "Property": "TransDatetime"
               }
             },
-            "direction": "Ascending"
+            "direction": "Descending"
           }
         ]
       }
@@ -645,20 +645,6 @@
           "selector": {
             "metadata": "Fact_InTrans.PartNumber"
           }
-        },
-        {
-          "properties": {
-            "value": {
-              "expr": {
-                "Literal": {
-                  "Value": "362.20986136602073D"
-                }
-              }
-            }
-          },
-          "selector": {
-            "metadata": "Fact_InTrans.Description"
-          }
         }
       ]
     },
@@ -940,6 +926,208 @@
           ]
         },
         "howCreated": "User"
+      },
+      {
+        "name": "34a6162b0c76741e085a",
+        "field": {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "_Measures"
+              }
+            },
+            "Property": "Sale $"
+          }
+        },
+        "type": "Advanced",
+        "filter": {
+          "Version": 2,
+          "From": [
+            {
+              "Name": "_",
+              "Entity": "_Measures",
+              "Type": 0
+            }
+          ],
+          "Where": [
+            {
+              "Condition": {
+                "Comparison": {
+                  "ComparisonKind": 1,
+                  "Left": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Source": "_"
+                        }
+                      },
+                      "Property": "Sale $"
+                    }
+                  },
+                  "Right": {
+                    "Literal": {
+                      "Value": "0L"
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        }
+      },
+      {
+        "name": "a6165e1b7800e27a1895",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Fact_InTrans"
+              }
+            },
+            "Property": "Branch"
+          }
+        },
+        "type": "Categorical"
+      },
+      {
+        "name": "ddbeb636db301b2ab3c5",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Fact_InTrans"
+              }
+            },
+            "Property": "Franchise"
+          }
+        },
+        "type": "Categorical"
+      },
+      {
+        "name": "b9fd2ce84913d9d8060d",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Fact_InTrans"
+              }
+            },
+            "Property": "PartNumber"
+          }
+        },
+        "type": "Categorical"
+      },
+      {
+        "name": "3048bc70b0e370336592",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Fact_InTrans"
+              }
+            },
+            "Property": "TransDatetime"
+          }
+        },
+        "type": "Categorical"
+      },
+      {
+        "name": "00b4297d6766d42daeb3",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Fact_InTrans"
+              }
+            },
+            "Property": "RONumber"
+          }
+        },
+        "type": "Categorical"
+      },
+      {
+        "name": "58479e826925b7ab6b79",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Fact_InTrans"
+              }
+            },
+            "Property": "Salesman"
+          }
+        },
+        "type": "Categorical"
+      },
+      {
+        "name": "d7113b8c557eaba3b1c7",
+        "field": {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "_Measures"
+              }
+            },
+            "Property": "Cost $"
+          }
+        },
+        "type": "Advanced"
+      },
+      {
+        "name": "50962227077b9cdde368",
+        "field": {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "_Measures"
+              }
+            },
+            "Property": "Actual Margin $"
+          }
+        },
+        "type": "Advanced"
+      },
+      {
+        "name": "ddba13abd023b61ad98b",
+        "field": {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "_Measures"
+              }
+            },
+            "Property": "Margin Value %"
+          }
+        },
+        "type": "Advanced"
+      },
+      {
+        "name": "57c6696154ca957c5c97",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Fact_InTrans"
+              }
+            },
+            "Property": "CustomerNo"
+          }
+        },
+        "type": "Categorical"
+      },
+      {
+        "name": "135a13c2d0e36ce609b6",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "dim_Parts"
+              }
+            },
+            "Property": "Description"
+          }
+        },
+        "type": "Categorical"
       }
     ]
   }

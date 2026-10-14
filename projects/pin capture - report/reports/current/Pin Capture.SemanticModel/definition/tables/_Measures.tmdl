@@ -1740,15 +1740,36 @@ table _Measures
 			        )
 			    )
 			
-			// Comparison period text
-			VAR ComparisonPeriod = 
-			    IF(
+			// Comparison period — actual prior date range, mirrors the branch
+			// logic in [MoM Change] so the label always matches what's being
+			// compared instead of a vague "Prior Period"
+			VAR PriorStart =
+			    SWITCH(
+			        TRUE(),
 			        DayCount <= 31 && DAY(MinDate) = 1 && DAY(EOMONTH(MaxDate, 0)) = DAY(MaxDate),
-			        // Full month: show prior month name
-			        FORMAT(EDATE(MaxDate, -1), "MMMM"),
-			        // Everything else
-			        "Prior Period"
+			            EDATE(MinDate, -1),
+			        DayCount >= 89 && DayCount <= 92 && MONTH(MinDate) IN {1,4,7,10} && DAY(MinDate) = 1,
+			            EDATE(MinDate, -3),
+			        YEAR(MinDate) = YEAR(MaxDate) && MONTH(MinDate) = 1 && DAY(MinDate) = 1,
+			            DATE(YEAR(MinDate) - 1, 1, 1),
+			        DayCount > 100,
+			            DATE(YEAR(MinDate) - 1, MONTH(MinDate), DAY(MinDate)),
+			        EDATE(MinDate, -1)
 			    )
+			VAR PriorEnd =
+			    SWITCH(
+			        TRUE(),
+			        DayCount <= 31 && DAY(MinDate) = 1 && DAY(EOMONTH(MaxDate, 0)) = DAY(MaxDate),
+			            EOMONTH(MaxDate, -1),
+			        DayCount >= 89 && DayCount <= 92 && MONTH(MinDate) IN {1,4,7,10} && DAY(MinDate) = 1,
+			            MinDate - 1,
+			        YEAR(MinDate) = YEAR(MaxDate) && MONTH(MinDate) = 1 && DAY(MinDate) = 1,
+			            DATE(YEAR(MaxDate) - 1, MONTH(MaxDate), DAY(MaxDate)),
+			        DayCount > 100,
+			            DATE(YEAR(MaxDate) - 1, MONTH(MaxDate), DAY(MaxDate)),
+			        EDATE(MaxDate, -1)
+			    )
+			VAR PriorRangeText = FORMAT(PriorStart, "MMM DD") & "–" & FORMAT(PriorEnd, "MMM DD, YYYY")
 			
 			// Trend arrow and color
 			VAR ShowComparison = NOT(ISBLANK(MonthChange))
@@ -1805,10 +1826,10 @@ table _Measures
 			        <!-- Change vs Prior -->
 			        <div style='flex: 1; text-align: center; border-left: 1px solid rgba(255,255,255,0.2); padding-left: 20px;'>
 			            <div style='font-size: 42px; font-weight: 700; margin-bottom: 4px; color: " & TrendColor & ";'>" & TrendArrow & " " & ChangeText & "</div>
-			            <div style='font-size: 18px; opacity: 0.80;'>vs Prior Period</div>
+			            <div style='font-size: 18px; opacity: 0.80;'>vs " & PriorRangeText & "</div>
 			        </div>
 			    </div>
-			    
+			
 			    <!-- Context Row -->
 			    <div style='
 			        padding-top: 12px;
@@ -1817,9 +1838,9 @@ table _Measures
 			        opacity: 0.85;
 			        text-align: center;
 			    '>
-			        Selected: <strong>" & SelectedPeriod & "</strong> | 
-			        <strong>" & TotalBranches & "</strong> Branch Locations | 
-			        Comparison: vs <strong>" & ComparisonPeriod & "</strong>
+			        Selected: <strong>" & SelectedPeriod & "</strong> |
+			        <strong>" & TotalBranches & "</strong> Branch Locations |
+			        Comparison: vs <strong>" & PriorRangeText & "</strong>
 			    </div>
 			</div>"
 			```
@@ -2337,20 +2358,36 @@ table _Measures
 			        )
 			    )
 			
-			// Comparison period text
-			VAR ComparisonPeriodText = 
+			// Comparison period — actual prior date range, mirrors the branch
+			// logic in [MoM Change] so the label always matches what's being
+			// compared instead of a vague category name
+			VAR PriorStart =
 			    SWITCH(
 			        TRUE(),
 			        DayCount <= 31 && DAY(MinDate) = 1 && DAY(EOMONTH(MaxDate, 0)) = DAY(MaxDate),
-			            "vs " & FORMAT(EDATE(MaxDate, -1), "MMMM"),
+			            EDATE(MinDate, -1),
 			        DayCount >= 89 && DayCount <= 92 && MONTH(MinDate) IN {1,4,7,10} && DAY(MinDate) = 1,
-			            "vs Prior Quarter",
+			            EDATE(MinDate, -3),
 			        YEAR(MinDate) = YEAR(MaxDate) && MONTH(MinDate) = 1 && DAY(MinDate) = 1,
-			            "vs Prior YTD",
+			            DATE(YEAR(MinDate) - 1, 1, 1),
 			        DayCount > 100,
-			            "vs Same Period Last Year",
-			        "vs Prior Month"
+			            DATE(YEAR(MinDate) - 1, MONTH(MinDate), DAY(MinDate)),
+			        EDATE(MinDate, -1)
 			    )
+			VAR PriorEnd =
+			    SWITCH(
+			        TRUE(),
+			        DayCount <= 31 && DAY(MinDate) = 1 && DAY(EOMONTH(MaxDate, 0)) = DAY(MaxDate),
+			            EOMONTH(MaxDate, -1),
+			        DayCount >= 89 && DayCount <= 92 && MONTH(MinDate) IN {1,4,7,10} && DAY(MinDate) = 1,
+			            MinDate - 1,
+			        YEAR(MinDate) = YEAR(MaxDate) && MONTH(MinDate) = 1 && DAY(MinDate) = 1,
+			            DATE(YEAR(MaxDate) - 1, MONTH(MaxDate), DAY(MaxDate)),
+			        DayCount > 100,
+			            DATE(YEAR(MaxDate) - 1, MONTH(MaxDate), DAY(MaxDate)),
+			        EDATE(MaxDate, -1)
+			    )
+			VAR ComparisonPeriodText = "vs " & FORMAT(PriorStart, "MMM DD") & "–" & FORMAT(PriorEnd, "MMM DD, YYYY")
 			
 			// Trend details
 			VAR ShowTrend = NOT(ISBLANK(MonthChange))

@@ -1,0 +1,93 @@
+table dim_BranchLocation
+	lineageTag: f5e94c0a-5a13-48e8-bab1-f1fa73b75b39
+
+	column BranchKey
+		dataType: int64
+		formatString: 0
+		lineageTag: 38691dea-618e-4b2a-b29e-d2ec17f38163
+		summarizeBy: none
+		sourceColumn: BranchKey
+
+		annotation SummarizationSetBy = Automatic
+
+	column Branch
+		dataType: string
+		lineageTag: 465c81ae-de4a-49b9-811d-e36fd9b21f42
+		summarizeBy: none
+		sourceColumn: Branch
+		sortByColumn: LocationID
+
+		changedProperty = SortByColumn
+
+		annotation SummarizationSetBy = Automatic
+
+	column BranchType
+		dataType: string
+		lineageTag: 22920758-ce81-4cac-abe4-1bb72ba2c276
+		summarizeBy: none
+		sourceColumn: BranchType
+
+		annotation SummarizationSetBy = Automatic
+
+	column BranchID
+		dataType: string
+		lineageTag: 14d615a9-c1fd-4d5a-86d3-b691d62a6cd9
+		summarizeBy: none
+		sourceColumn: BranchID
+
+		annotation SummarizationSetBy = Automatic
+
+	column BranchName
+		dataType: string
+		lineageTag: afc52d4b-a90b-44b7-899c-5402f2f5c9c2
+		summarizeBy: none
+		sourceColumn: BranchName
+
+		annotation SummarizationSetBy = Automatic
+
+	column LocationID
+		dataType: string
+		lineageTag: 74b9a9c9-005c-4ab7-b6d5-f86e19ddf73b
+		summarizeBy: none
+		sourceColumn: LocationID
+
+		annotation SummarizationSetBy = Automatic
+
+	column State
+		dataType: string
+		lineageTag: f4407698-e92d-4ca9-9965-26fb69bd6e19
+		summarizeBy: none
+		sourceColumn: State
+
+		annotation SummarizationSetBy = Automatic
+
+	column City
+		dataType: string
+		lineageTag: 65716c81-4191-42df-8fed-c25779f9590e
+		summarizeBy: none
+		sourceColumn: City
+
+		annotation SummarizationSetBy = Automatic
+
+	column DataQualityScore
+		dataType: int64
+		formatString: 0
+		lineageTag: d1265e8a-9c03-4e05-b8fd-893dd7fc97ec
+		summarizeBy: none
+		sourceColumn: DataQualityScore
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dim_BranchLocation = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-inkp24yoeqfedgiktcbh6mwaq4.datawarehouse.fabric.microsoft.com", "DP_Presentation"),
+				    dbo_dim_BranchLocation = Source{[Schema="dbo",Item="dim_BranchLocation"]}[Data]
+				in
+				    dbo_dim_BranchLocation
+
+	annotation PBI_ResultType = Table
+
+	annotation PBI_NavigationStepName = Navigation
+

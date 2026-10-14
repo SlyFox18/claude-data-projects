@@ -28,6 +28,7 @@ This report focuses exclusively on Branch 12 — the "Combine Vault" — a speci
 | `dim_Parts` | Shared Dimension | Shared | Full parts catalog (linked through dim_Branch12_Parts) |
 | `dim_BranchLocation` | Shared Dimension | Shared | Branch reference (used for transfer destination) |
 | `dim_DateTable` | Shared Dimension | Shared | Date dimension |
+| `dim_BranchPartInventory` | Lookup (no relationship) | `jdis_Part_Information`, scoped to actual (TransferBranch, PartNumber) pairs from `Fact_Branch12_Transactions` | Branch + PartNumber on-hand/bin qty, restricted to branches the vault actually transferred each part to (not just any branch that stocks it) — powers "does this branch still have it?" on the Greater than Zero page |
 | `Stock Status Categories` | Reference | Local | Stock status classification categories |
 | `YTD Metrics` | Reference | Local | YTD comparison benchmarks |
 
@@ -49,6 +50,7 @@ This report focuses exclusively on Branch 12 — the "Combine Vault" — a speci
 | Margin % | Margin as a percentage of sales |
 | Previous Year Sales | Same period prior year for comparison |
 | Sales YTD Growth $ | Current YTD vs. same period last year |
+| Qty on Hand (By Location) / Bin Qty (By Location) | On-hand/bin qty at the selected destination branch for a part, via a filtered `SUMX` against `dim_BranchPartInventory` (which is itself scoped to only real transfer-destination branch+part pairs — see CLAUDE.md gotcha) |
 
 ## Source System Tables
 | ERP Source | Description |

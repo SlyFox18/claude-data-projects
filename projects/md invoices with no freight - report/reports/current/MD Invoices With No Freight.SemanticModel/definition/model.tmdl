@@ -8,16 +8,13 @@ model Model
 
 annotation __PBI_TimeIntelligenceEnabled = 0
 
-annotation PBI_QueryOrder = ["Data Refresh","dim_BranchLocation","dim_DateTable","dim_CustomerList","dim_Franchise","dim_Parts","Fact_MDInvoices_NoFreight","FreightCalculator","dim_Salesperson","Fact_MDInvoices_Closed"]
+annotation PBI_QueryOrder = ["Data Refresh","dim_BranchLocation","dim_DateTable","dim_CustomerList","dim_Franchise","dim_Parts","Fact_MDInvoices_NoFreight","FreightCalculator","dim_Salesperson","Fact_MDInvoices_Closed","Fact_MDInvoices_NoFreight_Snapshot"]
 
 annotation PBI_ProTooling = ["DevMode","MCP-PBIModeling"]
 
 ref table 'Data Refresh'
 ref table dim_BranchLocation
 ref table dim_DateTable
-ref table 'New Report Tables'
-ref table 'New Report Relationships'
-ref table 'New Report Columns'
 ref table _Measures
 ref table dim_CustomerList
 ref table dim_Franchise
@@ -28,6 +25,7 @@ ref table dim_FreightPerformanceGroup
 ref table dim_Salesperson
 ref table Fact_MDInvoices_Closed
 ref table '% Freight Difference Threshold'
+ref table Fact_MDInvoices_NoFreight_Snapshot
 
 ref cultureInfo en-US
 

@@ -1,0 +1,12 @@
+# Pinned to what's actually running the pipeline today (Brian's PC,
+# Python 3.13.14), so the Gateway PC gets identical versions rather than
+# "whatever's current" - added 2026-08-25 as part of migrating this
+# pipeline off Brian's PC. pyarrow isn't imported directly anywhere in
+# this pipeline's own .py files, but pandas' DataFrame.to_parquet() (used
+# by extract.py) requires it at runtime - easy to miss on a fresh install.
+duckdb==1.5.5
+pandas==3.0.3
+pyarrow==25.0.1
+python-dotenv==1.2.3
+msal==1.37.0
+requests==2.32.5

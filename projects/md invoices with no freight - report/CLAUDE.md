@@ -25,7 +25,7 @@
 | dim_Franchise | Shared Lakehouse | Franchise → Fact tables |
 | dim_Salesperson | Shared Lakehouse | Salesperson → Fact tables |
 | FreightCalculator | LH_Master_Data Delta table (no dataflow — manually maintained) | No model relationship — used only in DAX via FILTER/MAXX lookup |
-| dim_FreightPerformanceGroup | DAX DATATABLE (calculated) | Slicer: No Freight / Partial Freight / Adequate Freight (renamed 2026-06-29, was Needs Review / Good / Above Baseline) |
+| dim_FreightPerformanceGroup | DAX DATATABLE (calculated) | Slicer: No Freight / Partial Freight / Adequate Freight (renamed 2026-06-29, was Needs Review / Good / Above Baseline). **Now has a real relationship** (added 2026-07-06) to `Fact_MDInvoices_NoFreight[FreightBucket]` and `Fact_MDInvoices_Closed[FreightBucket]` — see "Freight Opportunity Fix" below. |
 
 ### Key Measures — Open Orders
 | Measure | What It Calculates |
@@ -38,11 +38,11 @@
 | Total Weight | SUM of TotalLineWeight across all open MD lines |
 | Actual Freight | SUM of TotalFreightCharged per order (from part 3750 lines) |
 | Calculated Freight | Estimated freight using FreightCalculator rate table |
-| Missed Freight | Calculated minus Actual (the opportunity gap) |
+| Missed Freight | Calculated minus Actual, net (can go negative) — used only for the per-invoice detail column, not for aggregate KPIs |
 | Freight Above Baseline | Orders where actual exceeded calculated |
-| Freight Opportunity | Orders where actual was below calculated |
+| Freight Opportunity | **The canonical Opportunity KPI.** = `No Freight Bucket - Missed Freight` + `Partial Freight Bucket - Missed Freight` (see "Freight Opportunity Fix" below). Always ≥ 0 — Adequate Freight invoices never add to or subtract from it. |
 
-Closed invoice equivalents exist for all measures above with a `Closed -` prefix.
+Closed invoice equivalents exist for all measures above with a `Closed -` prefix. `Closed - Freight Opportunity` is defined the identical way (sum of the two Closed bucket measures) — do not confuse with `Closed - Missed Freight`, which is the net per-invoice detail column only.
 
 ## Report Pages
 | Page | Purpose | Key Visuals |
@@ -101,6 +101,33 @@ Freight is stored as a **line item with PartNumber = 3750** on the invoice — i
 
 Multiple 3750 lines per order are valid (one per shipment). `TotalFreightCharged` = SUM of all.
 
+## Freight Opportunity Fix (2026-07-06)
+
+Ben (stakeholder) flagged that "Opportunity" didn't mean the same thing on the Open vs. Closed pages, and separately that the Partial Freight tab's Total row showed an impossible negative number. Both were real bugs, now fixed:
+
+**1. Inconsistent Opportunity definition.** Open's `Freight Opportunity` summed only positive per-invoice gaps (gross); Closed's Hero Card used `Closed - Missed Freight`, a net figure where over-charged invoices silently offset under-charged ones. Fixed by defining Opportunity identically on both sides: sum of the No Freight bucket's missed freight + the Partial Freight bucket's missed freight (Adequate Freight invoices never contribute). New measures: `No/Partial Freight Bucket - Missed Freight` (both sides), with `Freight Opportunity` / `Closed - Freight Opportunity` as their sum.
+
+**2. Tab Total row showed impossible numbers.** The No Freight / Partial Freight / Adequate Freight tabs filtered the invoice table via `Is In Selected Group`, a measure-based Advanced filter — a known Power BI weak spot where the visual's Total row doesn't reliably respect the same filter as the detail rows. Fixed by adding a real `FreightBucket` calculated column to both fact tables and a genuine relationship to `dim_FreightPerformanceGroup[Group]`, so the tab slicer now filters via a normal relationship instead of a measure comparison. `Is In Selected Group` / `Closed - Is In Selected Group` are no longer used for filtering (left in the model, unused, in case anything else still references them) — the row-level color/icon measures (`Freight Status Color`, `Missed Freight Icon`, etc.) are unaffected.
+- **Side effect to know about:** adding that relationship meant the tab slicer started cross-filtering *every* visual on the page connected to the fact table by default (including the Hero Card). Fixed via Edit Interactions (`visualInteractions` in `page.json`) — only the invoice table responds to the tab slicer now. If you add new card/chart visuals to the Open Orders or Closed Invoices pages, you'll likely need to add a `NoFilter` interaction entry for them too, or they'll start changing value when someone clicks a tab.
+- **Edit Interactions gotcha:** only add `visualInteractions` entries for genuinely data-bound visual types (card, htmlContent, slicer, chart, table). Including textboxes, images, shapes, page navigators, or visual-group containers crashes Desktop's renderer (`VisualRelationshipService.getRelationship` → undefined). Desktop's own Edit Interactions UI never generates entries for those types — don't hand-add them either.
+
+**3. The real underlying bug: `Actual Freight` overcounted.** `Actual Freight` and `Closed - Actual Freight` used `SUMX(VALUES(FileNumber), MAX(TotalFreightCharged))` — a **bare** aggregation function with no explicit `CALCULATE()` wrapper. This produced wildly inflated totals whenever summed across multiple invoices at once (confirmed via live DAX query: bare `MAX()` gave $11,020.80 for a 32-invoice bucket that should have totaled $1,898.50). This was a pre-existing bug, not something introduced by the tab-filter fix — it just never surfaced until per-bucket totals were scrutinized. Fixed by wrapping in `CALCULATE(MAX(...))`, matching the pattern `Calculated Freight` already used correctly. **This means historical screenshots/exports of "Freight Assigned"/"Freight Collected" Hero Card figures from before 2026-07-06 were likely overstated** — not just the bucket breakdowns.
+- **General DAX lesson:** any bare aggregation function (`MAX`, `SUM`, `MIN`, etc., not wrapped in `CALCULATE`) used inside `SUMX(VALUES(Table[Key]), ...)` to de-duplicate a line-grain table to header grain is unreliable under compounded filter contexts. Always wrap it explicitly: `CALCULATE(MAX(Table[Col]))`. Measure references (`[Measure Name]`) inside the same pattern are safe and don't need this — only bare column aggregation functions do. Worth checking other reports in this repo that use the same `SUMX(VALUES(...), MAX(...))` de-dup pattern.
+
+## Monthly Snapshot (added 2026-07-08)
+
+Point-in-time history for the open MD freight backlog — mirrors the Open Parts Tickets snapshot pattern (`nb_Snapshot_Parts_Open_Orders` / `Fact_Parts_Open_Orders_Snapshot`).
+
+- **Status:** notebook and pipeline created and confirmed working in Fabric, and the semantic model table refreshes cleanly in Desktop (as of 2026-07-08). **Not yet published** to RP-Dev/Sandbox/production — see `docs/superpowers/plans/2026-07-08-md-invoices-monthly-snapshot.md`, Task 8 Steps 5-6, for the remaining publish steps.
+- **Casing gotcha (hit during first Desktop refresh, 2026-07-08):** the notebook creates the Delta table via `saveAsTable()`, which — same as the `FreightCalculator` gotcha below — lowercases the table name in the Hive metastore regardless of the PascalCase string passed to it. The actual table is `fact_mdinvoices_nofreight_snapshot` (all lowercase), not `Fact_MDInvoices_NoFreight_Snapshot`. The semantic model's partition M-query must reference the lowercase name in `Item="..."` (exact-match lookup against the SQL Analytics Endpoint) even though the TMDL table/column names themselves stay PascalCase for readability. Same pattern already seen on the Open Parts Tickets snapshot table (`fact_parts_open_orders_snapshot`, all lowercase throughout, including its TMDL table name). If this table is ever recreated from scratch, expect the same casing behavior.
+- **Notebook:** `nb_Snapshot_MDInvoices_NoFreight` in `LH_Master_Data` — reference script at `queries/notebooks/nb_Snapshot_MDInvoices_NoFreight.py` in this project folder
+- **Target table:** `Fact_MDInvoices_NoFreight_Snapshot` (Delta, append mode)
+- **Pipeline:** `Pipeline_Monthly_MDInvoices_Snapshot` — 5:30 AM CST on the 1st of each month, after the 4:15 AM master orchestrator refreshes `Fact_MDInvoices_NoFreight`
+- **First snapshot:** whenever the notebook is first run manually in Fabric. History builds from there — no backfill possible, since the source only reflects currently-open orders.
+- **Semantic model table:** `Fact_MDInvoices_NoFreight_Snapshot`, wired to `dim_BranchLocation` (via `Branch`) and `dim_DateTable` (via `SnapshotDate`). `OrderDate` is present but not related, to avoid a second active relationship to `dim_DateTable`.
+- **Calculated columns are a third copy.** `MissedFreightAmount`, `PctFreightDifference`, and `FreightBucket` are recreated on this table identically to `Fact_MDInvoices_NoFreight` and `Fact_MDInvoices_Closed` — except `ALLEXCEPT` here also preserves `SnapshotDate` (not just `FileNumber`), since this table holds multiple snapshot dates for the same order number over time. **If the freight-bracket formula changes again, update all three tables.**
+- **No trend page yet.** Infrastructure only — revisit once 3+ months of snapshot history exist.
+
 ## Known Issues & Gotchas
 
 - **FreightCalculator has no dataflow.** It is a manually maintained Delta table. To update rates: upload new CSV to Lakehouse Files, then use a PySpark notebook with `.save("Tables/FreightCalculator")` — do NOT use `saveAsTable()` (Hive metastore casing causes `freightcalculator` vs `FreightCalculator` conflicts). See `Freight Calculator/` folder for the current CSV source files.
@@ -124,6 +151,46 @@ Multiple 3750 lines per order are valid (one per shipment). `TotalFreightCharged
 - **Updated CSV (use this):** `Freight Calculator/FREIGHT CALCULATOR 2026 - UPDATED.csv`
 - **Original reference:** `Freight Calculator/FREIGHT CALCULATOR 2026.csv`
 
+## Power Automate Alerts (added 2026-07-27, weekly cadence merged 2026-07-27)
+
+Alerts trigger on open MD invoices in `Fact_MDInvoices_NoFreight` where
+`FreightBucket = "No Freight"` or (`FreightBucket = "Partial Freight"` and
+`PctFreightDifference >= 10%`) — hardcoded 10%, independent of this
+report's own adjustable "Alert Threshold %" slider.
+
+- **Weekly view:** delivered as a new "MD Freight" section (Invoices
+  Flagged + Freight Opportunity $ KPI cards + `MD_Freight_Missed.csv`) inside
+  the existing **Parts Action Summary - Orchestrator** flow's Wednesday
+  8:00 AM email — Ben asked for this to avoid a separate weekly email on top
+  of the one branch managers already get. See
+  `projects/parts action dashboard - report/documentation/power-automate-setup.md`
+  for the live details. A standalone "MD Freight Weekly Digest" flow was
+  built and fully tested first, then superseded by this merge — it's kept
+  around Stopped as a fallback, not deleted.
+- **Daily alert:** still its own standalone flow, **MD Freight New Item
+  Alert** — only newly-crossed invoices, daily (weekdays 9:00 AM CST).
+  Turned live 2026-08-18 after Ben's go-ahead — first live run pending
+  confirmation.
+- **2026-08-18 — Corp manager CC:** Ben Hill now CC'd on every branch's
+  daily alert; Barry Sheets (Corporate North) and Curt Summers (Corporate
+  South) CC'd only on their own 10/9 branches, via a conditional
+  expression on `HTTP_sendMail` — same pattern applied to the Low Margin
+  alert the same day. Also converted this action's body from the old
+  string-concatenated JSON to a native JSON object (matching Low Margin's
+  2026-07-28 fix) while making the change. See
+  `docs/power-automate/POWER-AUTOMATE-SETUP.md`, "Corp Manager CC +
+  sendMail Body Rewrite" section.
+
+Both reuse the Parts Action Summary / Low Margin distribution pipeline
+(SPI-PARTS group + PartsBranchMapping) but with distinct turquoise (weekly,
+now retired)/amber (daily) styling so they're never confused with the
+Parts Action or Low Margin emails. See
+`docs/power-automate/POWER-AUTOMATE-SETUP.md` for full detail, flow IDs,
+the confirmed live DAX, and several gotchas found while building these
+(the line-grain `ALLEXCEPT` row-context bug on freight measures, a
+`FileNumber`/`RONumber` JSON-type mismatch, and a `pbi-cli` tool bug that
+silently drops DAX query results).
+
 ## Documentation Status
-- In-repo docs: ✅ CLAUDE.md | ✅ PROJECT-SUMMARY.md
+- In-repo docs: ✅ CLAUDE.md | ✅ PROJECT-SUMMARY.md | ✅ Power Automate setup doc
 - Obsidian stakeholder docs: ✅ Complete — `Data Projects/Reports/MD Invoices With No Freight.md`

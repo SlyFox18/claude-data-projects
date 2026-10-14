@@ -1,0 +1,50 @@
+table dim_CustomerList
+	lineageTag: d03a57b9-44a8-409e-9fc0-a402b75ad817
+
+	column CustomerKey
+		dataType: int64
+		formatString: 0
+		lineageTag: 1911dbdb-d6be-4c52-9bcd-21f2626c3073
+		summarizeBy: count
+		sourceColumn: CustomerKey
+
+		annotation SummarizationSetBy = Automatic
+
+	column AccountNumber
+		dataType: string
+		lineageTag: 31ab4375-d771-4531-a512-034d617db519
+		summarizeBy: none
+		sourceColumn: AccountNumber
+
+		annotation SummarizationSetBy = Automatic
+
+	column DisplayName
+		dataType: string
+		lineageTag: 901d9779-dd92-4a09-852f-c079e69159ce
+		summarizeBy: none
+		sourceColumn: DisplayName
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dim_CustomerList = m
+		mode: import
+		source =
+				let
+				    // Repointed 2026-09-16 from LH_Master_Data to DP_Presentation. Real field
+				    // usage in this report is only AccountNumber (relationship key) and
+				    // DisplayName (visualized) - explicitly restricted with Table.SelectColumns
+				    // so the query itself stays trimmed. A model-only column trim (without this
+				    // step) does not survive a Desktop refresh - Power Query auto-detects and
+				    // re-adds any column the query can return but the model doesn't declare,
+				    // which is what happened here the first time (46 columns came back after
+				    // refresh even though the model was trimmed to 3).
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-inkp24yoeqfedgiktcbh6mwaq4.datawarehouse.fabric.microsoft.com", "DP_Presentation"),
+				    dbo_dim_CustomerList = Source{[Schema="dbo",Item="dim_CustomerList"]}[Data],
+				    #"Removed Other Columns" = Table.SelectColumns(dbo_dim_CustomerList, {"CustomerKey", "AccountNumber", "DisplayName"})
+				in
+				    #"Removed Other Columns"
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

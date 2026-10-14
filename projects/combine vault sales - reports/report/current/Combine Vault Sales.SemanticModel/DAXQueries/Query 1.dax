@@ -1,0 +1,22 @@
+EVALUATE
+ROW(
+    "Grand Total WITHOUT By Location measure",
+    SUMX(
+        SUMMARIZECOLUMNS(
+            dim_Branch12_Parts[PartNumber],
+            dim_BranchLocation[Branch],
+            "V", [Qty on Hand (Vault Total)]
+        ),
+        [V]
+    ),
+    "Grand Total WITH By Location measure",
+    SUMX(
+        SUMMARIZECOLUMNS(
+            dim_Branch12_Parts[PartNumber],
+            dim_BranchLocation[Branch],
+            "V", [Qty on Hand (Vault Total)],
+            "L", [Qty on Hand (By Location)]
+        ),
+        [V]
+    )
+)

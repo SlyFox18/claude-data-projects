@@ -3,7 +3,7 @@
 ## Overview
 Tracks promotional parts discounts — which parts are being discounted, how much, and the net impact on sales and margin. Compares rolling 12 months of promo activity against the prior year rolling 12. Used by parts managers and sales leadership to understand the cost and scope of promotional pricing.
 
-**Status:** Sandbox (pending promotion to production)
+**Status:** Sandbox — Net Sales % page bar chart labels visually verified 2026-07-07, pending promotion to production
 **Workspace:** RP - Sandbox → RP - Parts Reports (after promotion)
 **Refreshed:** Daily (Tier 1 target — not yet in production pipeline)
 
@@ -43,6 +43,8 @@ Tracks promotional parts discounts — which parts are being discounted, how muc
 | `Orders with Promos` | Count of distinct orders that included a promo |
 | `Rolling 12M Discount` | Last 12 months of discount activity |
 | `Rolling 12M Net Sales` | Last 12 months net sales on promo orders |
+| `Net Sales %` | Promo net sales as % of total sales (Net Sales Value (Filtered) / Total Sales) — Net Sales % page |
+| `Net Sales Value (Filtered) - Branch Label` | Duplicate of `Net Sales Value (Filtered)` with a dynamic format string combining $ and % into one bar chart label |
 
 ## Source System Tables
 - `dbo.Fact_PartsPromo` — Promo discount transactions

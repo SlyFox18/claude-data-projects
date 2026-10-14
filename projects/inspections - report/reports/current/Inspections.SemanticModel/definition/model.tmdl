@@ -8,26 +8,22 @@ model Model
 
 annotation __PBI_TimeIntelligenceEnabled = 0
 
-annotation PBI_QueryOrder = ["Data Refresh","dim_BranchLocation","dim_DateTable","Fact_LaborJobSummary","Inspection Goals","Fact_WorkOrderParts","Fact_PendingInspections","dim_CustomerList","dim_Parts"]
+annotation PBI_QueryOrder = ["Data Refresh","dim_BranchLocation","dim_DateTable","Fact_LaborJobSummary","Inspection Goals","Fact_WorkOrderParts","Fact_PendingInspections","dim_CustomerList","dim_Parts","RangeStart","RangeEnd","ServiceRecommendations"]
 
-annotation PBI_ProTooling = ["DevMode","CopilotTooling"]
+annotation PBI_ProTooling = ["DevMode","CopilotTooling","DaxQueryView_Desktop"]
 
 ref table 'Data Refresh'
 ref table dim_BranchLocation
 ref table dim_DateTable
-ref table 'New Report Tables'
-ref table 'New Report Relationships'
-ref table 'New Report Columns'
 ref table _Measures
-ref table 'New Report Measures'
 ref table Fact_LaborJobSummary
 ref table 'Inspection Goals'
 ref table Fact_WorkOrderParts
 ref table ValidInvoiceNumbers
 ref table Fact_PendingInspections
 ref table dim_CustomerList
-ref table ServiceRecommendations
 ref table dim_Parts
+ref table ServiceRecommendations
 
 ref cultureInfo en-US
 

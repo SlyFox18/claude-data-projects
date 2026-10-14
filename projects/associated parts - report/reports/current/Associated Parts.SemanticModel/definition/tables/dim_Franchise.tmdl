@@ -1,0 +1,18 @@
+table dim_Franchise
+	lineageTag: d0cd6e34-c35f-4c85-890d-9296397a9f6c
+
+	column Franchise
+		dataType: string
+		lineageTag: 95db111b-581f-42b1-806a-70c213a6172e
+		sourceColumn: Franchise
+
+	partition dim_Franchise = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-gxnyznhdptpenfw724g3o5sjzm.datawarehouse.fabric.microsoft.com", "LH_Master_Data"),
+				    dbo_dim_Franchise = Source{[Schema="dbo",Item="dim_Franchise"]}[Data],
+				    Selected = Table.SelectColumns(dbo_dim_Franchise, {"Franchise"})
+				in
+				    Selected
+

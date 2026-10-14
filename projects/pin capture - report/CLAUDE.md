@@ -46,6 +46,8 @@
 | `Total Margin` | Sum of Margin |
 | `Sale with Pin` | Sales from invoices that have at least one PIN captured |
 | `Cost with Pin` | Costs from pin-captured invoices |
+| `MoM Change` | Capture-rate change vs. a comparison period that auto-switches based on the selected date range — see "Prior Period Comparison Logic" below. Drives both hero card KPI tiles. |
+| `Branch MoM Change` | Per-branch capture-rate change vs. **always the previous calendar month** (`PREVIOUSMONTH`), regardless of what date range is selected. Drives the Branch Summary table's "Chg vs Last Mo." column — intentionally a different basis than `MoM Change`. |
 
 ## Report Pages
 | Page | Display Name | Purpose | Visibility |
@@ -88,6 +90,27 @@ A "pin" can be captured in either the `PinNo` field or the `Notation` field. The
 
 ### Duplicate Removal in Partition
 The partition includes `Table.Distinct` deduplication on 7 columns. This may silently drop records if two line items have identical timestamp, RO, part, branch, qty, and values — a rare but possible condition.
+
+### Prior Period Comparison Logic (`[MoM Change]`)
+The `[MoM Change]` measure (used by both hero card KPI tiles — Overview and Branch Summary) auto-detects what kind of range is selected and picks the comparison period accordingly:
+
+| Selected range | Comparison period |
+|---|---|
+| Full single calendar month | Previous calendar month (`PREVIOUSMONTH`) |
+| Full calendar quarter | Previous quarter (`PREVIOUSQUARTER`) |
+| YTD (Jan 1 → any date, same year) | Same YTD range, one year earlier (`SAMEPERIODLASTYEAR`) |
+| Custom range > 100 days, not YTD | Same date range shifted back exactly 1 year (`DATEADD -1 YEAR`) |
+| Custom range ≤ 100 days | Same date range shifted back 1 month (`DATEADD -1 MONTH`) |
+
+Both hero card measures (`Branch Performance - Hero Card`, `Page 1 - Overview Hero Card`) independently compute a `PriorStart`/`PriorEnd` date pair that mirrors these same branches, and label the tile with the literal comparison dates (e.g. "vs Jan 01–Jul 07, 2025") instead of a category name. **If `[MoM Change]`'s branch logic changes, the `PriorStart`/`PriorEnd` SWITCH blocks in both hero card measures must be updated to match, or the label will silently show the wrong comparison dates.**
+
+Fixed 2026-07-07: previously the Branch Summary hero card only special-cased full-month selections and defaulted everything else (quarters, YTD, custom ranges) to the literal string "Prior Period" — never actually telling the user what it was comparing to. The Overview hero card had category labels ("vs Prior YTD", "vs Prior Quarter") that were more informative but still didn't show actual dates. Both now show literal comparison date ranges. See [[project_pin_capture_prior_period_wording]].
+
+### PIN Accuracy — Presence-Only, Not Validated (investigated 2026-07-22)
+
+The report only measures whether a PIN was *captured* (`Has Pin` = PinNo or Notation non-blank) — it has never validated whether the captured value is actually correct. A Parts team member raised this directly: does the report tell us capture *accuracy*, not just capture *rate*?
+
+Investigated feasibility ad hoc — see `.claude/queries/adhoc/pin-accuracy-check/README.md` for full methodology, branch-level results, and a concrete path to production if this gets built into the report. Headline finding: matching captured `PinNo` (normalized) against the combined pool of known equipment PINs (`WKVEHFL.VIN` + `vhstock.VIN`, both already in the Lakehouse — the "VIN" columns are legacy naming for genuine John Deere Product ID Numbers) is feasible with no new dataflow, using the existing `LOOKUPVALUE`-on-lookup-table pattern already used for `lookup_UniqueCustomers_Invoice`. End-to-end match rate across the network: ~52% (or ~83% if scored only against PINs that resolve to a known machine — the two framings tell different stories and need a deliberate choice, not a default). Branch-level accuracy varies widely (Big Spring 24%, Tahoka 73%). Status: findings delivered to Brian, pending Ben's decision on whether to build this into the report.
 
 ## Refresh Pipeline Position
 - **Phase:** Phase 5/6 — Tier 2, depends on `InTrans_Incremental` being fresh (Phase 2)

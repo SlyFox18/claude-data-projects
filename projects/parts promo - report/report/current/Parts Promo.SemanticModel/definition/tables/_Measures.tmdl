@@ -800,6 +800,23 @@ table _Measures
 
 		annotation PBI_FormatHint = {"isGeneralNumber":true}
 
+	/// Same value as 'Net Sales Value (Filtered)', duplicated so a dynamic format string (Net Sales $ + Net Sales % combined into one literal label) can be applied to the "Net Sales by Branch" bar chart's data label without changing the currency formatting of 'Net Sales Value (Filtered)' everywhere else it's used (Details page table/combo chart).
+	/// Dynamic format string (set via Desktop: Measure tools ribbon > Format > Dynamic) — paste this DAX as the format-string expression:
+	/// VAR _ValueText = "$" & FORMAT(SELECTEDMEASURE() / 1000, "#,##0.00") & "K"
+	/// VAR _PctText = FORMAT([Net Sales %], "0.00%")
+	/// RETURN
+	/// "'" & _ValueText & " (" & _PctText & ")'"
+	measure 'Net Sales Value (Filtered) - Branch Label' = [Net Sales Value (Filtered)]
+		lineageTag: 6d68fa35-686e-4986-8384-88f9fd31332d
+
+		formatStringDefinition = ```
+				VAR _ValueText = "$" & FORMAT(SELECTEDMEASURE() / 1000, "#,##0.00") & "K"
+				VAR _PctText = FORMAT([Net Sales %], "0.00%")
+				RETURN
+				    "'" & _ValueText & " (" & _PctText & ")'"
+				
+				```
+
 	column Value
 		isHidden
 		lineageTag: da2dfa23-0c4c-4e9d-8014-3cc5710e756b

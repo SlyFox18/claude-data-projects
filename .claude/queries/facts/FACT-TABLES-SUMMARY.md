@@ -191,6 +191,44 @@ Table/column search tool (metadata queries)
 
 ---
 
+### **Project: JD Price Updates — on the DP backend (live 2026-10-09)**
+**Code:** fabric-workspace-docs `workspaces/DP - Staging - Dev/` (`df_JDPriceFiles_Raw`, `Build_Silver_JDPriceFiles`) and `workspaces/DP - Presentation - Dev/Fact Tables/JD Price Updates/Build_Gold_JDPriceChanges.Notebook`. Spec: `docs/superpowers/specs/2026-10-08-jd-price-data-dp-design.md`.
+
+| Fact Table (DP_Presentation) | Built by | Rows (Prod, 2026-10-14) | Schedule | Grain / purpose |
+|------------|----------|------|----------|---------|
+| Fact_PartPriceChange | Build_Gold_JDPriceChanges | 1,293,523 | Daily (DP refresh) | Part + effective date: old/new list, cost and sell, margin, flags |
+| Fact_PartPriceChange_Branch | Build_Gold_JDPriceChanges | 5,092,952 | Daily (DP refresh) | Part + date + branch |
+| Fact_JDNationalPriceChange | Build_Gold_JDPriceChanges | 54,053 | Daily (DP refresh; source is weekly) | National change report per part |
+
+**Sources:** network share `Daily_Reports\Price_Update` (daily branch files) and `Daily_Reports\JD_Change_Report` (weekly, saved by Brian) → `df_JDPriceFiles_Raw` (gateway) → `Silver_PriceUpdate_History` / `Silver_JDChangeReport_History`. Freshness warnings in the DP email after 8 / 10 days.
+**Old vs new per update:** List DealerListPrice→ManufacturerListPrice; Cost DealerReplacePrice→ManufacturerReplacePrice; Sell SellPriceOld→DealerSellPrice1.
+
+### **Project: JD Price Updates (Sub-project 3) — LH_Master_Data version, RETIRED 2026-10-14**
+The schedule is off and the PC harvest task is disabled; the items and tables are kept until LH_Master_Data is retired. Superseded by the DP section above.
+
+**Location:** `projects/jd-price-updates/queries/fact-tables/`
+**Department:** Parts
+**Created:** 08/10/2026
+
+| Fact Table | Dataflow | Rows | Refresh Time | Schedule | Purpose |
+|------------|----------|------|--------------|----------|---------|
+| Fact_PriceUpdate_Enriched | df_Fact_PriceUpdate_Enriched | ~5.1M (unchanged grain from raw -- see note below) | TBD | Daily | dim_Parts-enriched price change history for parts sold locally |
+| Fact_JDNationalChangeReport_Enriched | df_Fact_JDNationalChangeReport_Enriched | ~48K+ (unchanged grain from raw) | TBD | Weekly | dim_Parts-enriched national Deere price change history (all parts, not just ones carried locally) |
+
+**Raw Tables:** Raw_PriceUpdate_History, Raw_JDNationalChangeReport_History
+
+**Dimensions:** dim_Parts
+
+**Business Context:** Foundational fact layer for JD parts pricing analysis (sub-project 3, phase 1). Both facts keep their raw source's grain unchanged and add `dim_Parts` classification columns (Source, SLC, DealerGroupCode, CommodityCode, VendorCode) and an `IsCarriedLocally` flag -- pure enrichment, no aggregation. `Fact_PriceUpdate_Enriched` originally collapsed branch-level rows to PartNumber+EffectiveDate with a computed `AffectedBranchCount` column, but that Table.Group ran 45+ minutes live in Fabric without completing (severe M-engine anti-pattern at 5.1M-row scale, same root cause as a separate dim_Parts.pq performance issue found the same night -- see project memory `project_dim_parts_perf_followup.md`). Redesigned 2026-08-11 to do the branch-collapse NOT AT ALL in this dataflow: the fact stays at raw (branch-level) grain, and `AffectedBranchCount` is planned as a DAX measure (`DISTINCTCOUNT(Branch)`) at the semantic-model layer instead -- faster, simpler, and more correct (a measure recalculates properly under report-level branch filters; a frozen ETL column couldn't). What specific margin/KPI analysis gets built on top of these facts is deferred to a later phase -- see `docs/superpowers/specs/2026-08-10-jd-pricing-fact-tables-design.md`.
+
+**Status:** 🚧 In Development
+
+**Recommended Schedule:** Daily for Fact_PriceUpdate_Enriched (matches Raw_PriceUpdate_History's daily harvest), Weekly for Fact_JDNationalChangeReport_Enriched (matches its source's weekly cadence)
+
+**Note:** building this fact layer also surfaced and fixed a real, separate deduplication bug in `dim_Parts` itself (majority-vote fix, PR #28, 2026-08-10) -- see `.claude/queries/dimensions/dim_Parts.pq`'s header comment.
+
+---
+
 ### **Project: Negative On Hand - On Hand No Bin**
 **Location:** `projects/negative-onhand-nobin/queries/fact-tables/`
 **Department:** Parts
@@ -494,7 +532,7 @@ Understanding which dimensions are used by which facts helps with impact analysi
 |-----------|----------------------|-------------------|------------------|
 | **dim_DateTable** | 14 | ~21 | Nearly all reports (universal time dimension) |
 | **dim_BranchLocation** | 14 | ~21 | Nearly all reports (location-based analysis) |
-| **dim_Parts** | 9 | ~13 | All parts-focused reports |
+| **dim_Parts** | 10 | ~15 | All parts-focused reports, JD Price Updates |
 | **dim_CustomerList** | 5 | ~7 | Customer-facing reports |
 | **dim_UniqueCustomers** | 1 | 2 | Unique Parts Customers (dual-fact) |
 | **dim_AdjustmentType** | 1 | 1 | Parts Adjustments |
@@ -512,7 +550,7 @@ Understanding which dimensions are used by which facts helps with impact analysi
 
 **Impact Analysis:**
 - Modifying **dim_DateTable** or **dim_BranchLocation** → Affects nearly ALL reports (14 projects)
-- Modifying **dim_Parts** → Affects 9 parts-focused reports
+- Modifying **dim_Parts** → Affects 10 parts-focused reports
 - Modifying **dim_UniqueCustomers** → Only affects 1 report (2 facts in dual-fact architecture)
 
 ---
@@ -847,6 +885,22 @@ See "Fact Tables by Project" section above
 
 ---
 
-*Last Updated: February 25, 2026*
+### **Project: Associated Parts - Report**
+**Location:** `projects/associated parts - report/queries/fact-tables/`
+**Department:** Parts
+**Created:** 08/27/2026
+
+| Fact Table | Dataflow | Rows | Refresh Time | Schedule | Purpose |
+|------------|----------|------|--------------|----------|---------|
+| Fact_PartAssociation | (Fabric Notebook / DuckDB+Spark) | 44,326 | TBD | Weekly | Market-basket analysis: Part×Part co-occurrence across all sales invoices |
+
+**Raw Tables:** InTrans_Incremental (24-month window, Type='I', Qty>0, basket-size capped at 25 distinct parts per invoice)
+**Dimensions:** dim_Parts (referenced for enrichment; facts table stores PartA/PartB as text keys)
+**Business Context:** For each Franchise × PartA × PartB, tracks how often invoices containing PartA also contain PartB — across all sales activity (counter sales and service work order parts). Identifies recommended parts for upsells and cross-sell opportunities. Raw counts stored (not pre-computed percentages) to enable both franchise-specific and company-wide rollup views from one table. See `.claude/queries/facts/Fact_PartAssociation.md` for full specification, `docs/superpowers/specs/2026-08-27-associated-parts-design.md` for design, and `docs/superpowers/plans/2026-08-27-associated-parts-recommended-parts.md` for validation and threshold profiling.
+**Status:** 🚧 In Development — Notebook built and committed at `projects/associated parts - report/notebooks/Fact_PartAssociation_Build.ipynb`; weekly refresh cadence not yet wired into pipeline (scheduled per Task 9).
+
+---
+
+*Last Updated: August 27, 2026*
 *Maintained by: Brian Fox / Claude Code Assistant*
 *Next Review: Weekly (as facts are documented)*

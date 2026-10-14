@@ -1,0 +1,122 @@
+table Raw_JDNationalChangeReport_History
+	lineageTag: 307ff019-82f1-4de3-b3d9-6936208414fa
+
+	column PartNumber
+		dataType: string
+		lineageTag: fe219d9f-232a-4722-91b2-869b0c77215e
+		summarizeBy: none
+		sourceColumn: PartNumber
+
+		annotation SummarizationSetBy = Automatic
+
+	column EffectiveDate
+		dataType: dateTime
+		formatString: Long Date
+		lineageTag: 856f031e-30dc-4bb7-94d8-094c467beae6
+		summarizeBy: none
+		sourceColumn: EffectiveDate
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column CurrentDNP
+		dataType: double
+		lineageTag: ba223c5d-4ee2-48b1-ab3b-fc212ac63934
+		summarizeBy: sum
+		sourceColumn: CurrentDNP
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column CurrentSLP
+		dataType: double
+		lineageTag: 3844ae3b-fb7a-432a-9459-c3aa46303c9b
+		summarizeBy: sum
+		sourceColumn: CurrentSLP
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column NewDNP
+		dataType: double
+		lineageTag: 09d909fc-8707-4f71-b92f-13e1b6eedbbf
+		summarizeBy: sum
+		sourceColumn: NewDNP
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column NewSLP
+		dataType: double
+		lineageTag: 2316f5bd-abaf-463a-8b7b-6f1810ef989c
+		summarizeBy: sum
+		sourceColumn: NewSLP
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column SourceFileName
+		dataType: string
+		lineageTag: 56036d11-957c-442a-ac44-781b191ca773
+		summarizeBy: none
+		sourceColumn: SourceFileName
+
+		annotation SummarizationSetBy = Automatic
+
+	column SourceFileDate
+		dataType: dateTime
+		formatString: Long Date
+		lineageTag: 6d454f4f-b4d6-4963-8012-6fa40f6ea82d
+		summarizeBy: none
+		sourceColumn: SourceFileDate
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column FileNameDateMismatchFlag
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 8dfda17b-760f-42a2-b151-1c2b8adf5a30
+		summarizeBy: none
+		sourceColumn: FileNameDateMismatchFlag
+
+		annotation SummarizationSetBy = Automatic
+
+	column HasTypeConversionIssue
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: efe8c8c0-1266-41a2-b0f7-4d30623fea48
+		summarizeBy: none
+		sourceColumn: HasTypeConversionIssue
+
+		annotation SummarizationSetBy = Automatic
+
+	column IngestedAt
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: 39696142-9c6b-42e0-b2ff-3e638614f711
+		summarizeBy: none
+		sourceColumn: IngestedAt
+
+		annotation SummarizationSetBy = Automatic
+
+	/// Normalized PartNumber (Trim+Upper) for joining to dim_Parts, which uses the same convention.
+	column PartNumberKey = TRIM(UPPER('Raw_JDNationalChangeReport_History'[PartNumber]))
+		dataType: string
+		lineageTag: 500e143f-a57e-49d9-b25d-c14fba5d2ea4
+
+	partition Raw_JDNationalChangeReport_History = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-gxnyznhdptpenfw724g3o5sjzm.datawarehouse.fabric.microsoft.com", "LH_Master_Data"),
+				    dbo_Raw_JDNationalChangeReport_History = Source{[Schema="dbo",Item="Raw_JDNationalChangeReport_History"]}[Data]
+				in
+				    dbo_Raw_JDNationalChangeReport_History
+

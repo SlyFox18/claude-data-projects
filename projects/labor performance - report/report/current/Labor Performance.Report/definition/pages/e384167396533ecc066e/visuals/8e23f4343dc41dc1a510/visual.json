@@ -1,5 +1,5 @@
 {
-  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.10.0/schema.json",
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "8e23f4343dc41dc1a510",
   "position": {
     "x": 219.72876516773732,
@@ -44,7 +44,7 @@
               },
               "queryRef": "dim_DateTable.MonthYear",
               "nativeQueryRef": "MonthYear",
-              "active": true
+              "active": false
             }
           ]
         },
@@ -210,18 +210,13 @@
         "sort": [
           {
             "field": {
-              "Aggregation": {
+              "Measure": {
                 "Expression": {
-                  "Column": {
-                    "Expression": {
-                      "SourceRef": {
-                        "Entity": "TechnicianEfficiency"
-                      }
-                    },
-                    "Property": "AvailableHours"
+                  "SourceRef": {
+                    "Entity": "_Measures"
                   }
                 },
-                "Function": 0
+                "Property": "Total Hours"
               }
             },
             "direction": "Descending"
@@ -262,20 +257,7 @@
             "isPinned": true
           }
         ],
-        "root": {
-          "children": [
-            {
-              "identityValues": [
-                {
-                  "Literal": {
-                    "Value": "'T1500 - Maverick Mcneese'"
-                  }
-                }
-              ],
-              "isToggled": true
-            }
-          ]
-        }
+        "root": {}
       }
     ],
     "objects": {

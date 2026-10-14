@@ -9,15 +9,17 @@
 ## Table of Contents
 
 1. [Version History](#version-history)
-2. [Version 2.0 (Current) - January 2026](#version-20-current---january-2026)
-3. [What's New](#whats-new)
-4. [What Changed](#what-changed)
-5. [What's Deprecated](#whats-deprecated)
-6. [Breaking Changes](#breaking-changes)
-7. [Bug Fixes](#bug-fixes)
-8. [Known Issues](#known-issues)
-9. [Upgrade Notes](#upgrade-notes)
-10. [Future Enhancements](#future-enhancements)
+2. [Version 2.2 — July 10, 2026](#version-22--july-10-2026)
+3. [Version 2.1 — March 5, 2026](#version-21--march-5-2026)
+4. [Version 2.0 (Current) - January 2026](#version-20-current---january-2026)
+5. [What's New](#whats-new)
+6. [What Changed](#what-changed)
+7. [What's Deprecated](#whats-deprecated)
+8. [Breaking Changes](#breaking-changes)
+9. [Bug Fixes](#bug-fixes)
+10. [Known Issues](#known-issues)
+11. [Upgrade Notes](#upgrade-notes)
+12. [Future Enhancements](#future-enhancements)
 
 ---
 
@@ -25,9 +27,46 @@
 
 | Version | Release Date | Status | Major Changes |
 |---------|-------------|--------|---------------|
-| **2.1** | **March 5, 2026** | **Current** | Monthly snapshot, Open Invoice Ratio feature, Charts page cleanup |
+| **2.2** | **July 10, 2026** | **Current** | Trends page (Page 6) built on the monthly snapshot — KPI hero, Count/$ toggle, Aging Mix focal chart |
+| 2.1 | March 5, 2026 | Production | Monthly snapshot, Open Invoice Ratio feature, Charts page cleanup |
 | 2.0 | January 8, 2026 | Production | Star schema migration, critical data fixes, new analysis features |
 | 1.0 | 2023-2024 | Deprecated | Old Lakehouse structure |
+
+---
+
+## Version 2.2 — July 10, 2026
+
+### 1. Trends Page (Page 6) — Monthly Snapshot Trend Analysis
+
+**What**: A new report page (`ac8bedf2271b0d172508`, hidden in view mode pending final stakeholder sign-off) that trends the monthly `fact_parts_open_orders_snapshot` table Ben asked for: Number of Invoices, Dollars, and Number of Back Orders, broken out by aging bucket.
+
+**Why**: The snapshot table (see Version 2.1 §1) had ~5 months of history by July 2026 — enough to actually show a trend rather than a single point in time.
+
+**Final layout** (after two rounds of iteration — see "Design history" below):
+- **Hero KPI row** — one dark gradient card (same visual style as the Overview/Details pages' existing Hero Card), 4 metrics with vertical dividers: # Invoices, Order Total $, Backorder $, # Back Orders. Each shows the latest snapshot month's value plus a delta vs. the prior month with the literal month name (e.g. "vs June 2026"), colored red for a worsening trend / green for improving — all 4 metrics use the same coloring rule since this table is *open* (unfulfilled) orders, so growth in any of the 4 is backlog growing, not neutral.
+- **Count / $ toggle** (bookmark-driven button pair, top right of header) switches the two charts below between order-count and dollar views.
+- **Top chart** — a small complementary line chart. In Count mode: "Orders with Backordered Parts" (order-grain, not part-quantity-grain — see the grain note below). In $ mode: "Backorder $ Trend."
+- **Bottom chart (the focal visual)** — "Aging Mix Over Time," a stacked column chart by aging bucket, one bar per month. Toggles between Order Count and Order $ values with the same Count/$ button.
+- **Header context line** — under the page title, a dynamic line reading "Viewing {month range} · Aging {bucket or All}" that reflects whatever date/aging filter is currently active (including native chart click cross-filtering — there's no longer a dedicated slicer panel on this page, see "Design history").
+
+**New measures** (display folder: "Snapshot Trend" in `_Measures.tmdl`):
+- `Snapshot Order Count` — `DISTINCTCOUNT(fact_parts_open_orders_snapshot[Order_No])`
+- `Snapshot Order Total $` — `SUM(fact_parts_open_orders_snapshot[Order_Total_$$])`
+- `Snapshot Backorder $` — `SUM(fact_parts_open_orders_snapshot[$$_BackOrdered])`
+- `Snapshot Backorder Count` — `SUM(fact_parts_open_orders_snapshot[#_On_Back_Order])` — **part-quantity grain, not order grain** (see note below)
+- `Snapshot Orders with Backorder` — `CALCULATE(DISTINCTCOUNT(fact_parts_open_orders_snapshot[Order_No]), fact_parts_open_orders_snapshot[#_On_Back_Order] > 0)` — order-grain count of orders with ≥1 backordered part, mirroring the live report's existing `Orders with Backordered Parts` measure at the snapshot table's grain
+- `HTML - Trend KPI Row` — the hero card HTML, computes latest-vs-prior-month deltas internally
+- `Page 6 - Trends - Header` — existing page header measure, extended with the dynamic filter-context line
+
+**Grain gotcha this page surfaces (worth remembering elsewhere)**: `Snapshot Backorder Count` (`SUM(#_On_Back_Order)`) counts individual backordered *part quantities* across all open orders — a single order can have 10 backordered parts on it. It is **not** a count of orders. Early builds of this page tried to plot it against `Snapshot Order Count` (order-grain) on one chart and the scales never made sense (thousands of parts vs. ~1,700-2,000 orders) — the fix wasn't a bigger axis, it was realizing these are different grains entirely. `Snapshot Orders with Backorder` is the order-grain equivalent when you need "how many orders are affected," not "how many parts are affected."
+
+**Design history — two directions were built, the second is what's live:**
+
+*Round 1 (not shipped as final)*: proportion-bar timelines borrowed from the Overview page's existing "Not Backordered vs. Backordered" bar component — one horizontal bar per month, plus always-visible Aging and Relative-Date slicer chips instead of the hidden filter panel. This is still a fully viable direction and the measures for it are **kept in the model, unused, for possible future use**: `HTML - Dollars Trend Timeline` and `HTML - Orders Trend Timeline` (both dynamic-row-count `CONCATENATEX`-based, respecting whatever Aging/date filter is active). Design spec: `docs/superpowers/specs/2026-07-09-open-parts-tickets-trend-page-v2-design.md`. Implementation plan: `docs/superpowers/plans/2026-07-09-open-parts-tickets-trend-page-v2.md`.
+
+*Round 2 (shipped)*: simplified to make Aging Mix Over Time the focal visual with one small complementary line chart above it, a Count/$ toggle instead of separate slicers, and the hidden filter panel removed entirely from this page's interaction model. Chosen because it told the trend story "at a glance" more directly than the proportion-bar version, with fewer visuals competing for attention.
+
+**Known DAX gotcha found while building this (documented for future measures)**: `ALLEXCEPT(FactTable, FactTable[SomeColumn])` only preserves filters placed *directly* on that exact column — it silently drops relationship-propagated filters arriving from a related dimension table (e.g. a chart bound to `dim_DateTable[MonthYear]` instead of the fact table's own date column), even though a plain unwrapped aggregation correctly sees the same filter. Symptom: a measure that's supposed to respect "whatever date range is currently filtered, regardless of source" silently ignores any filter driven through a related table and falls back to the unfiltered result. Fix: `REMOVEFILTERS(FactTable[ColumnToIgnore])` instead of `ALLEXCEPT` when the goal is "ignore this one column, respect everything else regardless of which table it comes from" — `REMOVEFILTERS` targets exactly the column you want cleared without disturbing any other filter context.
 
 ---
 

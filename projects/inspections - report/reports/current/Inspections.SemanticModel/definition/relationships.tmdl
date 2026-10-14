@@ -23,12 +23,6 @@ relationship AutoDetected_9565a982-6ef3-4dc5-bbb3-986acf25790c
 	fromColumn: Fact_WorkOrderParts.PartNumber
 	toColumn: dim_Parts.PartNumber
 
-relationship d6c7b4dd-d7c0-b3c0-3552-3edcd98e9b09
-	crossFilteringBehavior: bothDirections
-	toCardinality: many
-	fromColumn: Fact_PendingInspections.JobCode
-	toColumn: ServiceRecommendations.InspectionJobCode
-
 relationship 0d591a51-d601-ced9-50a6-5cdea18528f5
 	fromColumn: Fact_LaborJobSummary.WorkOrderCreationDateKey
 	toColumn: dim_DateTable.DateKey
@@ -36,4 +30,9 @@ relationship 0d591a51-d601-ced9-50a6-5cdea18528f5
 relationship c0b44511-cfbf-c07c-32e4-5717098846d3
 	fromColumn: Fact_WorkOrderParts.TransactionDateKey
 	toColumn: dim_DateTable.DateKey
+
+relationship 131f1394-5f2f-8537-b147-967aa3ffa3c1
+	toCardinality: many
+	fromColumn: Fact_PendingInspections.JobCode
+	toColumn: ServiceRecommendations.InspectionJobCode
 

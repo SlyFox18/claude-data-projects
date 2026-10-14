@@ -166,6 +166,87 @@ table Fact_MDInvoices_Closed
 
 		annotation SummarizationSetBy = Automatic
 
+	column MissedFreightAmount =
+			VAR InvTotalWeight =
+			    CALCULATE(
+			        SUM(Fact_MDInvoices_Closed[TotalLineWeight]),
+			        ALLEXCEPT(Fact_MDInvoices_Closed, Fact_MDInvoices_Closed[FileNumber])
+			    )
+			VAR ActualFreightAmt =
+			    CALCULATE(
+			        MAX(Fact_MDInvoices_Closed[TotalFreightCharged]),
+			        ALLEXCEPT(Fact_MDInvoices_Closed, Fact_MDInvoices_Closed[FileNumber])
+			    )
+			VAR Bracket =
+			    FILTER(
+			        FreightCalculator,
+			        FreightCalculator[PartWeightFrom] <= InvTotalWeight
+			            && (FreightCalculator[PartWeightTo] + 1) > InvTotalWeight
+			    )
+			VAR BaseRate = MAXX(Bracket, FreightCalculator[BaseRate])
+			VAR AdditiveRate = MAXX(Bracket, FreightCalculator[AdditiveRatePerPound])
+			VAR BaseRateFinal = IF(ISBLANK(BaseRate), 0, BaseRate)
+			VAR AdditiveRateFinal = IF(ISBLANK(AdditiveRate), 0.15, AdditiveRate)
+			VAR CalcFreight = BaseRateFinal + (AdditiveRateFinal * InvTotalWeight)
+			RETURN
+			    CalcFreight - ActualFreightAmt
+		formatString: $#,##0.00;($#,##0.00);$#,##0.00
+		lineageTag: d5b8b65a-82cd-42c1-b7d4-39bc2598c225
+		summarizeBy: none
+
+		annotation SummarizationSetBy = User
+
+	column PctFreightDifference =
+			VAR InvTotalWeight =
+			    CALCULATE(
+			        SUM(Fact_MDInvoices_Closed[TotalLineWeight]),
+			        ALLEXCEPT(Fact_MDInvoices_Closed, Fact_MDInvoices_Closed[FileNumber])
+			    )
+			VAR ActualFreightAmt =
+			    CALCULATE(
+			        MAX(Fact_MDInvoices_Closed[TotalFreightCharged]),
+			        ALLEXCEPT(Fact_MDInvoices_Closed, Fact_MDInvoices_Closed[FileNumber])
+			    )
+			VAR Bracket =
+			    FILTER(
+			        FreightCalculator,
+			        FreightCalculator[PartWeightFrom] <= InvTotalWeight
+			            && (FreightCalculator[PartWeightTo] + 1) > InvTotalWeight
+			    )
+			VAR BaseRate = MAXX(Bracket, FreightCalculator[BaseRate])
+			VAR AdditiveRate = MAXX(Bracket, FreightCalculator[AdditiveRatePerPound])
+			VAR BaseRateFinal = IF(ISBLANK(BaseRate), 0, BaseRate)
+			VAR AdditiveRateFinal = IF(ISBLANK(AdditiveRate), 0.15, AdditiveRate)
+			VAR CalcFreight = BaseRateFinal + (AdditiveRateFinal * InvTotalWeight)
+			VAR Diff = CalcFreight - ActualFreightAmt
+			VAR AvgFreight = DIVIDE(CalcFreight + ActualFreightAmt, 2)
+			RETURN
+			    DIVIDE(Diff, AvgFreight)
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 14a7934e-fcf4-4ad7-9ae4-6f42857aca9a
+		summarizeBy: none
+
+		annotation SummarizationSetBy = User
+
+	column FreightBucket =
+			SWITCH(
+			    TRUE(),
+			    Fact_MDInvoices_Closed[FreightStatus] = "No Freight"
+			        || Fact_MDInvoices_Closed[FreightStatus] = "No Freight Charged",
+			        "No Freight",
+			    Fact_MDInvoices_Closed[FreightStatus] = "Has Freight"
+			        && NOT ISBLANK(Fact_MDInvoices_Closed[MissedFreightAmount])
+			        && Fact_MDInvoices_Closed[MissedFreightAmount] > 1,
+			        "Partial Freight",
+			    Fact_MDInvoices_Closed[FreightStatus] = "Has Freight",
+			        "Adequate Freight"
+			)
+		dataType: string
+		lineageTag: 884d0599-0985-4104-8081-1f909e4d36e5
+		summarizeBy: none
+
+		annotation SummarizationSetBy = User
+
 	partition Fact_MDInvoices_Closed = m
 		mode: import
 		source =

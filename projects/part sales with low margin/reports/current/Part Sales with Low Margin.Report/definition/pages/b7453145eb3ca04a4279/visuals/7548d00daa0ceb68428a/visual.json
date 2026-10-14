@@ -1,5 +1,5 @@
 {
-  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.7.0/schema.json",
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.11.0/schema.json",
   "name": "7548d00daa0ceb68428a",
   "position": {
     "x": 55.405541561712845,
@@ -235,19 +235,6 @@
         "sort": [
           {
             "field": {
-              "Column": {
-                "Expression": {
-                  "SourceRef": {
-                    "Entity": "dim_Parts_LowMargin"
-                  }
-                },
-                "Property": "LowMarginFlag"
-              }
-            },
-            "direction": "Descending"
-          },
-          {
-            "field": {
               "Measure": {
                 "Expression": {
                   "SourceRef": {
@@ -255,6 +242,19 @@
                   }
                 },
                 "Property": "Margin $ Discrepancy"
+              }
+            },
+            "direction": "Ascending"
+          },
+          {
+            "field": {
+              "Column": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "dim_Parts_LowMargin"
+                  }
+                },
+                "Property": "LowMarginFlag"
               }
             },
             "direction": "Ascending"
@@ -1324,7 +1324,7 @@
             "value": {
               "expr": {
                 "Literal": {
-                  "Value": "160.68514710245177D"
+                  "Value": "131.15391669422635D"
                 }
               }
             }
@@ -1722,48 +1722,6 @@
         "howCreated": "User"
       },
       {
-        "name": "9cf82053443e5baf5196",
-        "field": {
-          "Column": {
-            "Expression": {
-              "SourceRef": {
-                "Entity": "dim_Parts_LowMargin"
-              }
-            },
-            "Property": "Branch"
-          }
-        },
-        "type": "Categorical"
-      },
-      {
-        "name": "79ef2f2541fd40eb4653",
-        "field": {
-          "Column": {
-            "Expression": {
-              "SourceRef": {
-                "Entity": "dim_Parts_LowMargin"
-              }
-            },
-            "Property": "PartNumber"
-          }
-        },
-        "type": "Categorical"
-      },
-      {
-        "name": "73ce1345f5280d0ec3ca",
-        "field": {
-          "Measure": {
-            "Expression": {
-              "SourceRef": {
-                "Entity": "_Measures"
-              }
-            },
-            "Property": "Part Description"
-          }
-        },
-        "type": "Advanced"
-      },
-      {
         "name": "d4d82119cdacf79cad74",
         "field": {
           "Measure": {
@@ -1810,132 +1768,6 @@
             }
           ]
         }
-      },
-      {
-        "name": "23cade87963c5fb27d64",
-        "field": {
-          "Measure": {
-            "Expression": {
-              "SourceRef": {
-                "Entity": "_Measures"
-              }
-            },
-            "Property": "MDP Value"
-          }
-        },
-        "type": "Advanced"
-      },
-      {
-        "name": "4460df426e24fe3e9ac1",
-        "field": {
-          "Measure": {
-            "Expression": {
-              "SourceRef": {
-                "Entity": "_Measures"
-              }
-            },
-            "Property": "Sell Value"
-          }
-        },
-        "type": "Advanced"
-      },
-      {
-        "name": "78771233f48bf9faddf6",
-        "field": {
-          "Measure": {
-            "Expression": {
-              "SourceRef": {
-                "Entity": "_Measures"
-              }
-            },
-            "Property": "Desired Margin %"
-          }
-        },
-        "type": "Advanced"
-      },
-      {
-        "name": "da2fb9f61fff927ea18f",
-        "field": {
-          "Measure": {
-            "Expression": {
-              "SourceRef": {
-                "Entity": "_Measures"
-              }
-            },
-            "Property": "Actual Margin % (INV)"
-          }
-        },
-        "type": "Advanced"
-      },
-      {
-        "name": "0afe91e79ae77614e3c4",
-        "field": {
-          "Measure": {
-            "Expression": {
-              "SourceRef": {
-                "Entity": "_Measures"
-              }
-            },
-            "Property": "Desired Margin $"
-          }
-        },
-        "type": "Advanced"
-      },
-      {
-        "name": "db64f8490f798930d290",
-        "field": {
-          "Measure": {
-            "Expression": {
-              "SourceRef": {
-                "Entity": "_Measures"
-              }
-            },
-            "Property": "Actual Margin $ (INV)"
-          }
-        },
-        "type": "Advanced"
-      },
-      {
-        "name": "a8a80ef1eff5d1b5a792",
-        "field": {
-          "Measure": {
-            "Expression": {
-              "SourceRef": {
-                "Entity": "_Measures"
-              }
-            },
-            "Property": "Margin $ Discrepancy"
-          }
-        },
-        "type": "Advanced"
-      },
-      {
-        "name": "ec74444bd72005bc5ca5",
-        "field": {
-          "Column": {
-            "Expression": {
-              "SourceRef": {
-                "Entity": "dim_Parts_LowMargin"
-              }
-            },
-            "Property": "LowMarginFlag"
-          }
-        },
-        "type": "Categorical"
-      },
-      {
-        "name": "c3e9701ff72e34f4bc01",
-        "field": {
-          "Measure": {
-            "Expression": {
-              "SourceRef": {
-                "Entity": "_Measures"
-              }
-            },
-            "Property": "New Sell Price"
-          }
-        },
-        "type": "Advanced"
       }
     ]
   }

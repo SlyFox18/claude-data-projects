@@ -1,0 +1,226 @@
+table _Measures
+	lineageTag: 22e4b9e3-99b6-4634-9836-9ade5a5ea5a5
+
+	measure 'Home - Header' = ```
+			
+			// Get user name
+			VAR _User = USERPRINCIPALNAME()
+			VAR _Position = SEARCH("@", _User, 1)
+			VAR _Name = LEFT(_User, _Position - 1)
+			VAR _FirstLetter = UPPER(LEFT(_Name, 1))
+			VAR _LastName = MID(_Name, 2, LEN(_Name) - 1)
+			VAR _FormattedLastName = 
+			    UPPER(LEFT(_LastName, 1)) & LOWER(MID(_LastName, 2, LEN(_LastName)))
+			VAR WelcomeName = _FirstLetter & "." & _FormattedLastName
+			
+			// Get current date/time info
+			VAR CurrentDate = TODAY()
+			VAR DateDisplay = FORMAT(CurrentDate, "MMM D, YYYY")
+			VAR CurrentHour = HOUR(NOW())
+			VAR TimeGreeting = 
+			    IF(CurrentHour < 12, "Good Morning",
+			    IF(CurrentHour < 17, "Good Afternoon",
+			    "Good Evening"))
+			
+			RETURN
+			"
+			<div style='
+			    font-family: Segoe UI, Arial, sans-serif;
+			    height: 85px;
+			    padding: 15px 25px;
+			    background: linear-gradient(135deg, #1D3C4E 0%, #2E5266 50%, #3A7CA5 100%);
+			    border-radius: 10px;
+			    color: white;
+			    display: flex;
+			    align-items: center;
+			    justify-content: space-between;
+			    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			    box-sizing: border-box;
+			'>
+			    <!-- Left side: Dashboard Title -->
+			    <div style='display: flex; align-items: center; gap: 15px;'>
+			        <!-- Home icon -->
+			        <div style='
+			            width: 40px;
+			            height: 40px;
+			            background: rgba(255,255,255,0.15);
+			            border-radius: 8px;
+			            display: flex;
+			            align-items: center;
+			            justify-content: center;
+			            font-size: 20px;
+			        '>
+			            🏠
+			        </div>
+			        
+			        <!-- Title -->
+			        <div>
+			            <div style='font-size: 12px; opacity: 0.85; margin-bottom: 4px; letter-spacing: 0.5px;'>
+			                REPORT
+			            </div>
+			            <div style='font-size: 26px; font-weight: 700; line-height: 1;'>
+			                Report Name Here
+			            </div>
+			        </div>
+			    </div>
+			    
+			    <!-- Right side: Welcome & Date -->
+			    <div style='text-align: right;'>
+			        <div style='font-size: 13px; opacity: 0.9; margin-bottom: 6px;'>
+			            " & TimeGreeting & ", " & WelcomeName & "
+			        </div>
+			        <div style='font-size: 16px; font-weight: 600;'>
+			            📅 " & DateDisplay & "
+			        </div>
+			    </div>
+			</div>
+			"
+			```
+		lineageTag: 49efea2a-3c06-4cab-8367-26b26caa141e
+
+	/// Distinct Part+EffectiveDate price-change events (branch-independent, since branch doesn't affect price -- only assortment).
+	measure 'Price Changes (Count)' = COUNTROWS(SUMMARIZE(Raw_PriceUpdate_History, Raw_PriceUpdate_History[PartNumber], Raw_PriceUpdate_History[EffectiveDate]))
+		formatString: #,##0
+		displayFolder: JD Pricing\Activity
+		lineageTag: 9384dcc8-2491-4f05-813e-f7fb0349a84e
+
+	/// Average signed list price change %, from JD's own cc_price_decrease field.
+	measure 'Avg List Price Change %' = AVERAGE(Raw_PriceUpdate_History[ListPriceChangePercent])
+		formatString: 0.0%;-0.0%
+		displayFolder: JD Pricing\Activity
+		lineageTag: c8ad1a36-1b76-4d6e-a627-05f70b508db2
+
+	/// Distinct rolled-up branches touched by price changes in the current filter context. At Part+EffectiveDate grain, this is 'how many branches carried this specific change.'
+	measure 'Affected Branch Count' = DISTINCTCOUNT(Raw_PriceUpdate_History[Branch])
+		formatString: #,##0
+		displayFolder: JD Pricing\Assortment
+		lineageTag: 3403ae36-624e-42cd-87f4-d5cdfe62e163
+
+	/// % of nationally-changed JD parts that are actually carried locally (matched to dim_Parts). Expected low (~6%) -- most national Deere parts aren't carried at South Plains.
+	measure 'National Carried Locally %' = DIVIDE(COUNTROWS(FILTER(Raw_JDNationalChangeReport_History, NOT ISBLANK(RELATED(dim_Parts[PartNumber])))), COUNTROWS(Raw_JDNationalChangeReport_History))
+		formatString: 0.0%
+		displayFolder: JD Pricing\Assortment
+		lineageTag: 1c1c5a53-207e-4993-9789-45ce8564bc77
+
+	/// Average margin % erosion/gain per price-change event. Negative = margin eroding on average.
+	measure 'Avg Margin % Change' = AVERAGE(Raw_PriceUpdate_History[MarginPctChange])
+		formatString: 0.0%;-0.0%
+		displayFolder: JD Pricing\Margin
+		lineageTag: 4f253773-6ef7-4f43-971b-9bceba869291
+
+	/// Average dollar-margin-per-unit change per price-change event.
+	measure 'Avg Margin $ Change' = AVERAGE(Raw_PriceUpdate_History[MarginDollarsChange])
+		formatString: $#,##0.00;-$#,##0.00
+		displayFolder: JD Pricing\Margin
+		lineageTag: d1e95f10-9f9c-476b-8319-2d3f26bf2d69
+
+	/// Distinct Part+EffectiveDate price-change events where margin % went down, regardless of what happened to dollar margin -- the 'looks fine on a gross-profit report but isn't' case. Same grain as [Price Changes (Count)].
+	measure 'Price Changes with Margin Erosion (Count)' = COUNTROWS(SUMMARIZE(FILTER(Raw_PriceUpdate_History, Raw_PriceUpdate_History[MarginPctChange] < 0), Raw_PriceUpdate_History[PartNumber], Raw_PriceUpdate_History[EffectiveDate]))
+		formatString: #,##0
+		displayFolder: JD Pricing\Margin
+		lineageTag: da68e635-f251-4fb6-b924-d0bbf15dcd7a
+
+	/// Old sell price, averaged across the branch rows behind a Part+EffectiveDate group. Averaging (not summing) is correct because branch doesn't affect price -- all branch rows for the same event should carry the same value; averaging is also a safe blend in the rare HasBranchPriceDisagreement case.
+	measure 'Avg Sell Price (Old)' = AVERAGE(Raw_PriceUpdate_History[SellPriceOld])
+		formatString: $#,##0.00
+		displayFolder: JD Pricing\Margin
+		lineageTag: 12edd277-5275-4168-a62e-74bb40d2420d
+
+	/// New (current) sell price, averaged across branch rows for the same reason as Avg Sell Price (Old).
+	measure 'Avg Sell Price (New)' = AVERAGE(Raw_PriceUpdate_History[DealerSellPrice1])
+		formatString: $#,##0.00
+		displayFolder: JD Pricing\Margin
+		lineageTag: 750b5cfa-ac76-46d9-a232-4fde9411eea3
+
+	/// Old cost, averaged across branch rows for the same reason as Avg Sell Price (Old).
+	measure 'Avg Cost (Old)' = AVERAGE(Raw_PriceUpdate_History[OldCost])
+		formatString: $#,##0.00
+		displayFolder: JD Pricing\Margin
+		lineageTag: a63b4ca9-0a77-4834-a027-8c8c917fb631
+
+	/// New (current) cost, averaged across branch rows for the same reason as Avg Sell Price (Old).
+	measure 'Avg Cost (New)' = AVERAGE(Raw_PriceUpdate_History[DealerReplacePrice])
+		formatString: $#,##0.00
+		displayFolder: JD Pricing\Margin
+		lineageTag: 4541c16f-3a5a-44a4-9635-c8ddcdd0e945
+
+	/// Margin % before the price change, computed from properly-aggregated (averaged, not summed) old sell price and old cost. Use this instead of summing the OldMarginPct column directly.
+	measure 'Margin % (Old)' = DIVIDE([Avg Sell Price (Old)] - [Avg Cost (Old)], [Avg Sell Price (Old)])
+		formatString: 0.0%;-0.0%
+		displayFolder: JD Pricing\Margin
+		lineageTag: ab751b40-8743-4f9f-8b19-0a1d1bb3ef4f
+
+	/// Margin % after the price change, computed from properly-aggregated (averaged, not summed) new sell price and new cost.
+	measure 'Margin % (New)' = DIVIDE([Avg Sell Price (New)] - [Avg Cost (New)], [Avg Sell Price (New)])
+		formatString: 0.0%;-0.0%
+		displayFolder: JD Pricing\Margin
+		lineageTag: 04cdb3c9-c5cf-47c1-bb86-c201d9ea50d3
+
+	/// Correct, grain-safe margin % change for use in visuals grouped above raw grain (e.g. by PartNumber+EffectiveDate). Prefer this over dragging the MarginPctChange column directly into a visual, which sums nonsensically across branch rows.
+	measure 'Margin % Change (grain-safe)' = [Margin % (New)] - [Margin % (Old)]
+		formatString: 0.0%;-0.0%
+		displayFolder: JD Pricing\Margin
+		lineageTag: 9fb7e783-960f-4193-9b54-e95f953e8a8d
+
+	/// Single source of truth for margin-change color bands, signed so background and font rules stay aligned. -3 = severe erosion (<-30pt), -2 = moderate erosion (-30 to -10pt), 0 = neutral (-10 to +10pt), 2 = moderate improvement (+10 to +30pt), 3 = severe improvement (>+30pt). Use this measure as the basis for BOTH rules: background -- 5 rules, one per exact band value, dark red/light red/neutral/light blue/dark blue; font -- white when value <= -3 OR value >= 3 (the two darkest background bands), default otherwise. Both rules reading the same measure guarantees a row's font color always matches its actual background darkness.
+	measure 'Margin Change Band' = SWITCH(TRUE(), [Margin % Change (grain-safe)] < -0.30, -3, [Margin % Change (grain-safe)] < -0.10, -2, [Margin % Change (grain-safe)] <= 0.10, 0, [Margin % Change (grain-safe)] <= 0.30, 2, 3)
+		formatString: 0
+		displayFolder: JD Pricing\Margin\Formatting
+		lineageTag: 5f2696dc-0f50-4ea5-a705-8384b8b1bf9d
+
+	/// Dollar margin per unit before the price change, from grain-safe averaged sell price and cost (same averaging approach as Margin % (Old), avoiding the branch-count summing bug).
+	measure 'Margin $ (Old)' = [Avg Sell Price (Old)] - [Avg Cost (Old)]
+		formatString: $#,##0.00
+		displayFolder: JD Pricing\Margin
+		lineageTag: dcdd7b52-c768-4467-91f1-d7205ad2f6fa
+
+	/// Dollar margin per unit after the price change, from grain-safe averaged sell price and cost.
+	measure 'Margin $ (New)' = [Avg Sell Price (New)] - [Avg Cost (New)]
+		formatString: $#,##0.00
+		displayFolder: JD Pricing\Margin
+		lineageTag: 9ab91021-4ba2-4155-bc7f-8fcee7620194
+
+	/// Relative % change in dollar margin per unit (NOT the same as Margin % Change, which is a percentage-POINT difference between two rates). Per Ben: answers 'did we make more or less money per unit', where Margin % Change answers 'did the margin rate improve'. These can disagree -- e.g. price/cost both rising proportionally can hold Margin % flat while Margin $ genuinely grows. Caution: unstable/sign-flipped when Margin $ (Old) is zero or negative (selling below cost before the change) -- not filtered, per Ben's instruction, but a real math property of this metric, not a bug.
+	measure 'Margin $ % Change' = DIVIDE([Margin $ (New)] - [Margin $ (Old)], [Margin $ (Old)])
+		formatString: 0.0%;-0.0%
+		displayFolder: JD Pricing\Margin
+		lineageTag: 0d281a32-6b60-45ff-86f3-94eeddea2fa4
+
+	/// Relative % change in cost alone (independent of price/margin) -- how much did what we pay for this part move. Pairs with Margin $ % Change to show whether margin dollars are keeping pace with cost inflation.
+	measure 'Cost $ % Change' = DIVIDE([Avg Cost (New)] - [Avg Cost (Old)], [Avg Cost (Old)])
+		formatString: 0.0%;-0.0%
+		displayFolder: JD Pricing\Margin
+		lineageTag: fa631e10-f1d8-4a45-97d4-4073756a659c
+
+	/// Plain dollar delta in margin per unit (New minus Old, no percentage math). Always well-behaved regardless of sign or magnitude of Margin $ (Old) -- use this as the safe default for sorting/coloring when Margin $ % Change would be unstable (near-zero or negative old base).
+	measure 'Margin $ Change' = [Margin $ (New)] - [Margin $ (Old)]
+		formatString: $#,##0.00;-$#,##0.00
+		displayFolder: JD Pricing\Margin
+		lineageTag: 183085a6-459c-4713-81e1-b1ec5f56eb70
+
+	/// True if the current filter context (e.g. one EffectiveDate, one selected PartNumber) contains at least one +/-10% trigger event. Drives Trigger Price Marker below.
+	measure 'Has Trigger Event' = CALCULATE(COUNTROWS(Raw_PriceUpdate_History), Raw_PriceUpdate_History[IsTriggerEvent]=TRUE) > 0
+		displayFolder: JD Pricing\Trend
+		lineageTag: bf5cd146-4780-42f5-8aaa-6303aa127358
+
+	/// Avg Sell Price (New) only on trigger dates, blank otherwise -- plot as a second series on a Sell Price line chart (markers only, no connecting line) to flag where a part crossed +/-10% so a reader can see the trajectory before/after at a glance.
+	measure 'Trigger Price Marker' = IF([Has Trigger Event], [Avg Sell Price (New)])
+		formatString: $#,##0.00
+		displayFolder: JD Pricing\Trend
+		lineageTag: 16233606-e851-400f-aa89-7eabfa29bdcc
+
+	column Value
+		isHidden
+		lineageTag: da2dfa23-0c4c-4e9d-8014-3cc5710e756b
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Value]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition _Measures = calculated
+		mode: import
+		source = { "This table holds all measures for the Parts Reorder Monitoring report" }
+
+	annotation PBI_Id = da82ad85df114f0dbe8c17ce73f079a8
+

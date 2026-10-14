@@ -9,7 +9,8 @@
       2. Refresh dataflow inventory (current IDs from Fabric API)
       3. Log refresh history from the Fabric API
       4. Monitor data freshness (flag stale tables)
-      5. Update CU usage tracking
+      5. Update CU usage tracking (dataflow duration estimate)
+      5b. Track real per-item CU from the Capacity Metrics semantic model + render dashboard
       6. Detect workspace changes
       7. Generate monitoring dashboard
       8. Commit and push updated docs to the 'dev' branch
@@ -133,6 +134,25 @@ Invoke-Step "Update CU usage tracking" {
         & $cuScript -Token $token -ErrorAction Stop
     } else {
         Write-Log "   Monitor-CUUsage.ps1 not found - skipping"
+    }
+}
+
+# ── Step 5b: Track real per-item CU (semantic model, not estimate) ─────────
+# Track-ItemCU.ps1 queries the Fabric Capacity Metrics semantic model directly
+# for a configured list of named items and logs a snapshot to Item-CU-Tracking.csv.
+# Render-CUTrackingDashboard.ps1 turns that log into CU-Tracking.html.
+Invoke-Step "Track per-item CU and render dashboard" {
+    $trackScript  = Join-Path $EnhancedDir "Track-ItemCU.ps1"
+    $renderScript = Join-Path $EnhancedDir "Render-CUTrackingDashboard.ps1"
+    if (Test-Path $trackScript) {
+        & $trackScript -Token $token -ErrorAction Stop
+    } else {
+        Write-Log "   Track-ItemCU.ps1 not found - skipping"
+    }
+    if (Test-Path $renderScript) {
+        & $renderScript -ErrorAction Stop
+    } else {
+        Write-Log "   Render-CUTrackingDashboard.ps1 not found - skipping"
     }
 }
 
