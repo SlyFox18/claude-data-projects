@@ -1,0 +1,27 @@
+model Model
+	culture: en-US
+	defaultPowerBIDataSourceVersion: powerBI_V3
+	sourceQueryCulture: en-US
+	dataAccessOptions
+		legacyRedirects
+		returnErrorValuesAsNull
+
+annotation __PBI_TimeIntelligenceEnabled = 0
+
+annotation PBI_QueryOrder = ["DirectQuery to AS - TopJobCode_Analysis_Model","TopN_Parameter","TopN_RangeStart","TopN_RangeEnd","PeriodType_Parameter"]
+
+annotation PBI_ProTooling = ["DevMode"]
+
+ref table Dim_JobType
+ref table dim_BranchLocation
+ref table dim_DateTable
+ref table dim_JobCode
+ref table Fact_Top_JobCode_Analysis
+ref table _Measures
+ref table TopN_Parameter
+ref table TopN_RangeStart
+ref table TopN_RangeEnd
+ref table PeriodType_Parameter
+
+ref cultureInfo en-US
+

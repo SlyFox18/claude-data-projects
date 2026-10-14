@@ -1,0 +1,136 @@
+table dim_JobCode
+	lineageTag: f885e1bd-84e6-42ac-b046-7e0f0f8f6833
+	sourceLineageTag: 400088c6-ae4c-42c3-917b-ca0e57d7f709
+
+	column JobCodeKey
+		dataType: int64
+		formatString: 0
+		lineageTag: ce255eb2-e912-485c-893b-17c62cca0cfd
+		sourceLineageTag: b70a3344-9d10-474b-bbb6-9d197c84a4e9
+		dataCategory: Uncategorized
+		summarizeBy: none
+		sourceColumn: JobCodeKey
+
+		annotation SummarizationSetBy = User
+
+	column JobCode
+		dataType: string
+		isNullable: false
+		lineageTag: 7f9e9714-45a0-41c8-b554-d7918c2e8c68
+		sourceLineageTag: 993b5438-acbd-471f-a2c0-b681fa056c34
+		dataCategory: Uncategorized
+		summarizeBy: none
+		sourceColumn: JobCode
+
+		annotation SummarizationSetBy = User
+
+	column JobCodeDisplayName
+		dataType: string
+		lineageTag: e7065a77-4097-4667-8bb1-61c44d06f376
+		sourceLineageTag: 8a763419-8f96-4bbd-a4b9-54d82221eb5f
+		dataCategory: Uncategorized
+		summarizeBy: none
+		sourceColumn: JobCodeDisplayName
+
+		annotation SummarizationSetBy = User
+
+	column JobCodeShortDesc
+		dataType: string
+		lineageTag: 3b3a1ac5-ed91-4fc2-9bb3-71cc2e517cc2
+		sourceLineageTag: 2575feed-0693-4ae6-9290-7d4706b25f56
+		dataCategory: Uncategorized
+		summarizeBy: none
+		sourceColumn: JobCodeShortDesc
+
+		annotation SummarizationSetBy = User
+
+	column JobCodeCategory
+		dataType: string
+		lineageTag: 2cb7e05d-0b17-465a-a562-7ac950e8b191
+		sourceLineageTag: 6df805bd-404a-498c-b53b-c399e5bdddd8
+		dataCategory: Uncategorized
+		summarizeBy: none
+		sourceColumn: JobCodeCategory
+
+		annotation SummarizationSetBy = User
+
+	column EquipmentType
+		dataType: string
+		lineageTag: 187f8275-97c1-4949-957c-e000ce228746
+		sourceLineageTag: 6ad80595-1839-4c32-ba38-093412371d1b
+		dataCategory: Uncategorized
+		summarizeBy: none
+		sourceColumn: EquipmentType
+
+		annotation SummarizationSetBy = User
+
+	column EquipmentCategory
+		dataType: string
+		lineageTag: ec5cf56b-72cb-4cf9-92bd-09409200c11e
+		sourceLineageTag: e1cc224c-e5ba-4f29-87e1-bd1a934f7fdc
+		dataCategory: Uncategorized
+		summarizeBy: none
+		sourceColumn: EquipmentCategory
+
+		annotation SummarizationSetBy = User
+
+	column ServiceComplexity
+		dataType: string
+		lineageTag: f759002f-e36a-4919-a4cc-518aad8e9220
+		sourceLineageTag: aa8c1e9d-e1ef-4ab7-9952-409539a8b507
+		dataCategory: Uncategorized
+		summarizeBy: none
+		sourceColumn: ServiceComplexity
+
+		annotation SummarizationSetBy = User
+
+	column IsInspection
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 283bd448-3713-4a37-9c7f-bc8392c35eaa
+		sourceLineageTag: a6d3b681-d32c-4a9b-8f03-d53d6371abf6
+		dataCategory: Uncategorized
+		summarizeBy: none
+		sourceColumn: IsInspection
+
+		annotation SummarizationSetBy = User
+
+	column IsWarrantyWork
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 982dd794-9587-44ab-8b8a-134d8b68c086
+		sourceLineageTag: 14500d1a-55af-4565-b9d1-693534f2d3e3
+		dataCategory: Uncategorized
+		summarizeBy: none
+		sourceColumn: IsWarrantyWork
+
+		annotation SummarizationSetBy = User
+
+	column IsSeasonalWork
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 30a8df81-d6f0-4f68-ac80-2370105ff87f
+		sourceLineageTag: ec7b1929-eab7-4c1c-868e-f10c4e5cde0b
+		dataCategory: Uncategorized
+		summarizeBy: none
+		sourceColumn: IsSeasonalWork
+
+		annotation SummarizationSetBy = User
+
+	column IsUrgentWork
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: c8797553-9412-4f3c-bc92-d9f78c860d47
+		sourceLineageTag: e898ab02-3587-480d-90ce-a4556ea95a57
+		dataCategory: Uncategorized
+		summarizeBy: none
+		sourceColumn: IsUrgentWork
+
+		annotation SummarizationSetBy = User
+
+	partition dim_JobCode = entity
+		mode: directQuery
+		source
+			entityName: dim_JobCode
+			expressionSource: 'DirectQuery to AS - TopJobCode_Analysis_Model'
+

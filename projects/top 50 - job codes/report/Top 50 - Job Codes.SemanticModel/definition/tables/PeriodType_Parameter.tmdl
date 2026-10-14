@@ -1,0 +1,36 @@
+table PeriodType_Parameter
+	lineageTag: 61e07820-8e9b-4913-9e58-46222146bc19
+
+	column 'Period Type'
+		dataType: string
+		lineageTag: a1e6a7da-5ea2-4691-bf09-9c18bfeddefb
+		summarizeBy: none
+		sourceColumn: Period Type
+
+		annotation SummarizationSetBy = Automatic
+
+	partition PeriodType_Parameter = m
+		mode: import
+		source = ```
+				let
+				    Source = {
+				        "Last Month",
+				        "Last Quarter", 
+				        "This Quarter",
+				        "Year to Date",
+				        "Last 30 Days",
+				        "Last 60 Days",
+				        "Last 90 Days",
+				        "Custom Month",
+				        "Custom Quarter",
+				        "Custom Date Range"
+				    },
+				    ToTable = Table.FromList(Source, Splitter.SplitByNothing(), {"Period Type"}, null, ExtraValues.Error)
+				in
+				    ToTable
+				```
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

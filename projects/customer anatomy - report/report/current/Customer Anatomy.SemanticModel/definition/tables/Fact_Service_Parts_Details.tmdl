@@ -1,0 +1,127 @@
+table Fact_Service_Parts_Details
+	lineageTag: bbe9d506-a810-49ee-a5e8-2539a904db98
+
+	column BranchCode
+		dataType: string
+		lineageTag: 9b00cdf9-7b96-4f2d-bd00-dea64ad8a200
+		summarizeBy: none
+		sourceColumn: BranchCode
+
+		annotation SummarizationSetBy = Automatic
+
+	column InvoiceNumber
+		dataType: string
+		lineageTag: cce5d738-1912-4ce3-87b5-688d1a68f65a
+		summarizeBy: none
+		sourceColumn: InvoiceNumber
+
+		annotation SummarizationSetBy = Automatic
+
+	column TransactionDate
+		dataType: dateTime
+		formatString: Long Date
+		lineageTag: a333217c-13de-4561-903b-70a0de0ae42b
+		summarizeBy: none
+		sourceColumn: TransactionDate
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column PartNumber
+		dataType: string
+		lineageTag: 0b46148c-df53-4a29-ae2e-553e9b47ae17
+		summarizeBy: none
+		sourceColumn: PartNumber
+
+		annotation SummarizationSetBy = Automatic
+
+	column Description
+		dataType: string
+		lineageTag: 7fd06811-69bf-4146-8878-4c0ae4149dc4
+		summarizeBy: none
+		sourceColumn: Description
+
+		annotation SummarizationSetBy = Automatic
+
+	column Franchise
+		dataType: string
+		lineageTag: e841c434-dfaf-4cff-98d2-703d732ebb20
+		summarizeBy: none
+		sourceColumn: Franchise
+
+		annotation SummarizationSetBy = Automatic
+
+	column Quantity
+		dataType: double
+		formatString: 0
+		lineageTag: 49c5fee5-188d-4961-97f4-85ccfac8aeff
+		summarizeBy: sum
+		sourceColumn: Quantity
+
+		annotation SummarizationSetBy = Automatic
+
+	column SaleValue
+		dataType: double
+		formatString: \$#,0;(\$#,0);\$#,0
+		lineageTag: 5fb10069-b321-4fa2-816e-30010615b658
+		summarizeBy: sum
+		sourceColumn: SaleValue
+
+		annotation SummarizationSetBy = Automatic
+
+	column CostValue
+		dataType: double
+		lineageTag: 7c45661e-c107-408c-902c-67aba50a5306
+		summarizeBy: sum
+		sourceColumn: CostValue
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column SellPrice
+		dataType: double
+		lineageTag: fb9d9a7d-9bcb-4d10-9e32-3e6a078fd9ba
+		summarizeBy: sum
+		sourceColumn: SellPrice
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column ListPrice
+		dataType: double
+		lineageTag: 580a9b92-b63f-4d85-bdc5-7311a126e4f6
+		summarizeBy: sum
+		sourceColumn: ListPrice
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column CustomerNumber
+		dataType: string
+		lineageTag: 8ff65d59-5a57-44bb-81bc-914b3582b07c
+		summarizeBy: none
+		sourceColumn: CustomerNumber
+
+		annotation SummarizationSetBy = Automatic
+
+	column TradeType
+		dataType: string
+		lineageTag: 74453eaf-64b6-46c9-a4a3-d5d9fd7ed9f7
+		summarizeBy: none
+		sourceColumn: TradeType
+
+		annotation SummarizationSetBy = Automatic
+
+	partition Fact_Service_Parts_Details = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("xcrafcusadsu3d3wi4anbgp6we-gxnyznhdptpenfw724g3o5sjzm.datawarehouse.fabric.microsoft.com", "LH_Master_Data"),
+				    dbo_Fact_Service_Parts_Details = Source{[Schema="dbo",Item="Fact_Service_Parts_Details"]}[Data]
+				in
+				    dbo_Fact_Service_Parts_Details
+

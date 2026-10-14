@@ -1,0 +1,111 @@
+relationship AutoDetected_b1dda710-3c7a-4e85-acf5-bb3175e01517
+	isActive: false
+	fromColumn: Fact_Parts_Detail.Branch
+	toColumn: dim_BranchLocation.BranchID
+
+relationship 5976e943-700e-7d6d-e61e-849dac14d6a2
+	isActive: false
+	fromColumn: Fact_Parts_Detail.TransDateKey
+	toColumn: dim_DateTable.DateKey
+
+relationship ac54abd3-1270-c30d-241e-2ee093aadb3b
+	fromColumn: Fact_Equipment_Sales.SaleDateKey
+	toColumn: dim_DateTable.DateKey
+
+relationship AutoDetected_7f474ea5-dbdd-4d91-83bd-a926e91b6b2a
+	fromColumn: Fact_Parts_Invoices.Branch
+	toColumn: dim_BranchLocation.BranchID
+
+relationship 50cfbce2-bc5c-5791-f496-98ea8d0a3a0b
+	fromColumn: Fact_Parts_Invoices.InvoiceDateKey
+	toColumn: dim_DateTable.DateKey
+
+relationship 77201ac1-1c12-d04d-7c44-b1e59423f96c
+	fromColumn: Fact_Service_Invoices.Branch
+	toColumn: dim_BranchLocation.BranchID
+
+relationship 6228f6a4-8ee5-1469-bcf5-5857e39c32ec
+	fromColumn: Fact_Service_Invoices.InvoiceDateKey
+	toColumn: dim_DateTable.DateKey
+
+relationship AutoDetected_f02ab45d-404b-4719-af33-70a5a3070f44
+	fromColumn: Fact_Equipment_Sales.CustomerKey
+	toColumn: dim_CustomerList.CustomerKey
+
+relationship AutoDetected_ae9b99f8-bc5a-4dbb-9033-cd140e05afec
+	isActive: false
+	fromColumn: Fact_Parts_Detail.CustomerKey
+	toColumn: dim_CustomerList.CustomerKey
+
+relationship AutoDetected_685165ff-a9b2-48dc-b4c4-1272a6b8b637
+	fromColumn: Fact_Parts_Invoices.CustomerKey
+	toColumn: dim_CustomerList.CustomerKey
+
+relationship AutoDetected_0a994764-bad3-4219-b228-a7c9a5414e5b
+	fromColumn: Fact_Service_Invoices.CustomerKey
+	toColumn: dim_CustomerList.CustomerKey
+
+relationship AutoDetected_80b37064-9cdb-4434-a721-4141eac2028f
+	fromColumn: Fact_Parts_Detail.PartNumber
+	toColumn: dim_Parts.PartNumber
+
+relationship AutoDetected_7cb65925-977b-4fa2-86d3-bbef1078d7b7
+	isActive: false
+	fromColumn: Fact_Service_Detail.CustomerKey
+	toColumn: dim_CustomerList.CustomerKey
+
+relationship 91c3c067-4fb8-5224-399f-28d2248a1b33
+	isActive: false
+	fromColumn: Fact_Service_Detail.Branch
+	toColumn: dim_BranchLocation.BranchID
+
+relationship AutoDetected_f2955399-8bfb-46f7-9d11-4962992b6f6c
+	fromColumn: Fact_CustomerPerformance.CustomerKey
+	toColumn: dim_CustomerList.CustomerKey
+
+relationship e0cde1a1-b5ce-8b04-624b-4608a4a94c70
+	fromColumn: Fact_CustomerPerformance.PeriodDateKey
+	toColumn: dim_DateTable.DateKey
+
+relationship fcb16aac-6b03-37ef-e966-b9b74a855f23
+	isActive: false
+	fromColumn: Fact_Service_Detail.InvoiceDateKey
+	toColumn: dim_DateTable.DateKey
+
+relationship a7131e2c-c8fe-0446-b1de-9e030e29357d
+	crossFilteringBehavior: bothDirections
+	fromColumn: Fact_Service_Detail.InvoiceNumber
+	toColumn: Fact_Service_Invoices.InvoiceNumber
+
+relationship 8aa55b0c-9641-9c37-57ee-ba4ebc483898
+	crossFilteringBehavior: bothDirections
+	fromColumn: Fact_Parts_Detail.InvoiceNumber
+	toColumn: Fact_Parts_Invoices.InvoiceNumber
+
+relationship 46270b8d-bf2c-6137-b99b-89b9339c6deb
+	fromColumn: Fact_Equipment_Sales.Territory
+	toColumn: dim_BranchLocation.BranchID
+
+relationship ccd8471b-3be5-c913-0f46-420587711f35
+	fromColumn: Fact_CustomerPerformance.Territory
+	toColumn: dim_BranchLocation.BranchID
+
+relationship AutoDetected_86056d58-6bab-41c8-966d-48436a0765fc
+	fromColumn: Fact_Service_Parts_Details.PartNumber
+	toColumn: dim_Parts.PartNumber
+
+relationship AutoDetected_97ef8360-c09f-4134-89bc-c451bd0881bb
+	crossFilteringBehavior: bothDirections
+	fromColumn: Fact_Service_Parts_Details.InvoiceNumber
+	toColumn: Fact_Service_Invoices.InvoiceNumber
+
+relationship 02890cff-53b9-8832-ac90-e98fa257b878
+	isActive: false
+	fromColumn: Fact_Service_Parts_Details.BranchCode
+	toColumn: dim_BranchLocation.BranchID
+
+relationship a372080c-aa90-97f7-7b8e-b39f7062792b
+	crossFilteringBehavior: bothDirections
+	fromColumn: dim_CustomerList.CustomerNumber
+	toColumn: dim_EngagedAcres.CustomerNumber
+

@@ -1,0 +1,11 @@
+expression 'DirectQuery to AS - TopJobCode_Analysis_Model' =
+		let
+		    Source = AnalysisServices.Database("powerbi://api.powerbi.com/v1.0/myorg/LH_Master_Data", "TopJobCode_Analysis_Model"),
+		    Cubes = Table.Combine(Source[Data]),
+		    Cube = Cubes{[Id="Model", Kind="Cube"]}[Data]
+		in
+		    Cube
+	lineageTag: 13bd2d36-aff5-41bf-83bd-7c89c3ca7482
+
+	annotation PBI_IncludeFutureArtifacts = True
+

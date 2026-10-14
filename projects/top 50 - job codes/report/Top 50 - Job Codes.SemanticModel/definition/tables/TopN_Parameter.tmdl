@@ -1,0 +1,32 @@
+table TopN_Parameter
+	lineageTag: 52a70ad7-cf4e-4442-8bc0-621d92ed62a2
+
+	column TopN_Value
+		dataType: int64
+		formatString: 0
+		lineageTag: cb387639-22b1-4f99-beea-274313e0bf48
+		summarizeBy: sum
+		sourceColumn: TopN_Value
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Display Label' = "Top " & FORMAT(TopN_Parameter[TopN_Value], "0")
+		lineageTag: bbc1e3f0-a986-430d-b1ce-879db71bb152
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	partition TopN_Parameter = m
+		mode: import
+		source =
+				let
+				    Source = {5, 10, 25, 50, 75, 100, 150, 200, 250, 300},
+				    ConvertToTable = Table.FromList(Source, Splitter.SplitByNothing(), {"TopN_Value"}, null, ExtraValues.Error),
+				    SetType = Table.TransformColumnTypes(ConvertToTable, {{"TopN_Value", Int64.Type}})
+				in
+				    SetType
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

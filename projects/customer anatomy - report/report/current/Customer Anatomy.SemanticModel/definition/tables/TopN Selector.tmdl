@@ -1,0 +1,42 @@
+table 'TopN Selector'
+	lineageTag: 213949a7-feb0-453c-974f-19c6e2444184
+
+	column 'TopN Value'
+		formatString: 0
+		lineageTag: 913bfa77-78ff-4562-941f-7b67a0acb804
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [TopN Value]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'TopN Label'
+		lineageTag: a6d970cb-1e2e-4604-92d6-0d9c5aa11221
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [TopN Label]
+		sortByColumn: 'TopN Value'
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'TopN Selector' = calculated
+		mode: import
+		source = ```
+				
+				DATATABLE(
+				    "TopN Value", INTEGER,
+				    "TopN Label", STRING,
+				    {
+				        {5, "Top 5"},
+				        {10, "Top 10"},
+				        {15, "Top 15"},
+				        {20, "Top 20"},
+				        {25, "Top 25"},
+				        {50, "Top 50"}
+				    }
+				)
+				
+				```
+
+	annotation PBI_Id = 9854e18e226d4e03a6be7009f809fced
+

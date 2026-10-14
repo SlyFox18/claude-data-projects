@@ -1,0 +1,82 @@
+table Dim_JobType
+	lineageTag: 9697f1ba-b3ce-412f-96c2-670d5c367335
+	sourceLineageTag: 5242c815-5fee-414e-b733-762677901a2c
+
+	column JobTypeKey
+		dataType: int64
+		formatString: 0
+		lineageTag: da37faf1-14da-42ad-912d-69d4bb4f5aad
+		sourceLineageTag: 13a65bc9-2cf1-4e20-ab61-a1630130d99c
+		dataCategory: Uncategorized
+		summarizeBy: none
+		sourceColumn: JobTypeKey
+
+		annotation SummarizationSetBy = User
+
+	column JobTypeCode
+		dataType: string
+		isNullable: false
+		lineageTag: b5cf12be-9940-402d-96ba-257cfe04813b
+		sourceLineageTag: a678ffc7-8f7e-4c28-af72-e34a6faf55a9
+		dataCategory: Uncategorized
+		summarizeBy: none
+		sourceColumn: JobTypeCode
+
+		annotation SummarizationSetBy = User
+
+	column JobTypeName
+		dataType: string
+		lineageTag: 30384998-942b-40ec-84ef-e2520c0d1714
+		sourceLineageTag: ff2ec14e-9939-4d8a-9336-86cc78fb2e22
+		dataCategory: Uncategorized
+		summarizeBy: none
+		sourceColumn: JobTypeName
+
+		annotation SummarizationSetBy = User
+
+	column JobTypeDisplayName
+		dataType: string
+		lineageTag: a54776d4-5fb9-4f83-bbfd-0429e9df92cc
+		sourceLineageTag: 514573ae-4564-4996-9abd-b499b7ac790f
+		dataCategory: Uncategorized
+		summarizeBy: none
+		sourceColumn: JobTypeDisplayName
+
+		annotation SummarizationSetBy = User
+
+	column JobTypeCategory
+		dataType: string
+		lineageTag: 5306749e-bd8a-4d6e-affc-3b20ce5a2545
+		sourceLineageTag: 3daf8a0d-e368-4ad6-b1d1-5ef0c0dc85f2
+		dataCategory: Uncategorized
+		summarizeBy: none
+		sourceColumn: JobTypeCategory
+
+		annotation SummarizationSetBy = User
+
+	column BillingType
+		dataType: string
+		lineageTag: 9280352f-0b97-4eeb-bcf0-6736cf51e83c
+		sourceLineageTag: f5a5b822-c938-4592-b9a1-5531045d05b0
+		dataCategory: Uncategorized
+		summarizeBy: none
+		sourceColumn: BillingType
+
+		annotation SummarizationSetBy = User
+
+	column JobTypeStatus
+		dataType: string
+		lineageTag: 39944b84-340d-4281-b427-cbe1fb9e580a
+		sourceLineageTag: 9d719866-0f82-40b9-937a-29fa9080ae6c
+		dataCategory: Uncategorized
+		summarizeBy: none
+		sourceColumn: JobTypeStatus
+
+		annotation SummarizationSetBy = User
+
+	partition Dim_JobType = entity
+		mode: directQuery
+		source
+			entityName: Dim_JobType
+			expressionSource: 'DirectQuery to AS - TopJobCode_Analysis_Model'
+

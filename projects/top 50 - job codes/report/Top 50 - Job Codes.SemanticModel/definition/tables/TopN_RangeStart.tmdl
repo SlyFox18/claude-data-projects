@@ -1,0 +1,27 @@
+table TopN_RangeStart
+	lineageTag: 6b5219d5-2c0d-4888-8341-5cc6f6ed8502
+
+	column RangeStart
+		dataType: int64
+		formatString: 0
+		lineageTag: 218ec897-0f49-4340-b2e9-43f6fa9d2bca
+		summarizeBy: sum
+		sourceColumn: RangeStart
+
+		annotation SummarizationSetBy = Automatic
+
+	partition TopN_RangeStart = m
+		mode: import
+		source =
+				let
+				    Source = {1, 11, 26, 51, 76, 101},
+				    #"Converted to Table" = Table.FromList(Source, Splitter.SplitByNothing(), null, null, ExtraValues.Error),
+				    #"Changed Type" = Table.TransformColumnTypes(#"Converted to Table",{{"Column1", Int64.Type}}),
+				    #"Renamed Columns" = Table.RenameColumns(#"Changed Type",{{"Column1", "RangeStart"}})
+				in
+				    #"Renamed Columns"
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+
