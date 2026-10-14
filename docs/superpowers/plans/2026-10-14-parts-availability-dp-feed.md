@@ -2,7 +2,19 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-> **Progress:** plan written 2026-10-14. No task started.
+> **Progress:**
+> - **Task 1 done 2026-10-14.**
+>   - Live library: **"Test - Part Availability"**, drive `b!tcqE3JbkKUmlmTEjy7gj4XI0tGXDKMdFnHT3pX8sg5ypBE-GVUXlR6x3boZKPrXj`. Confirmed by Brian's screenshot: written hourly by the pipeline's SPN.
+>   - Staging library: **"Parts Availability - Staging"**, drive `b!tcqE3JbkKUmlmTEjy7gj4XI0tGXDKMdFnHT3pX8sg5wFlfmiv7XBTq2VKzZHgJWh`.
+>   - `.env.test` written (staging drive, `PARTS_LOOKUP_SOURCE=dp-dev`, no Teams webhook).
+> - **Task 2 done 2026-10-14** (commits 070d0cfa, 1f965f4e, 0c8487c2). The code review tightened the plan's code:
+>   - per pair, at most 10 keys missing from one side and at most 200 differing keys (instead of 500 bad keys);
+>   - raw-key duplicates on either side fail;
+>   - `ExtractedAtUtc` must be exactly one non-null value;
+>   - unpaired LH loads fail on Prod;
+>   - `compare_pair(con, lh_files, dp_files)` has a real-parquet test;
+>   - usage exits 3, the default date is local, and compaction log files are skipped.
+> - **Next:** Task 3 (Brian creates the dataflow in the Dev UI).
 
 **Goal:** Feed the Parts Availability app from a DP_Staging ODBC dataflow (`df_PartsAvailability_Raw` → `PartsAvailability`), loaded hourly by a small pipeline with a custom failure email, instead of LH_Master_Data. Retire the last LH schedule.
 
