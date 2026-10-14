@@ -8,10 +8,12 @@ each LH load of the day is paired with the DP load committed within 10 minutes o
 are compared on the raw key Branch + Franchise + PartNumber. There is no trimming: trailing-space twin part
 numbers are real, separate rows.
 The date is matched against the UTC commit time (06:50-16:50 Central falls on one UTC calendar day).
-Pass: no key is missing from one side or different in two consecutive pairs (one pair alone can differ by
-a handful of rows, because the two queries run seconds apart); every pair has at most 10 one-sided keys
-and at most 200 differing keys; no raw-key duplicates on either side; ExtractedAtUtc holds exactly one
-non-null value per DP snapshot; and, for prod, every LH load of the day has a DP partner.
+Pass rules (the two queries run seconds apart, so a few rows may differ in any one pair):
+  - per pair, at most 10 one-sided keys (only LH + only DP) and at most 200 differing keys;
+  - no key is bad (one-sided or differing) in two consecutive pairs;
+  - no raw-key duplicates on either side;
+  - exactly one non-null ExtractedAtUtc value in each DP load;
+  - on prod, every LH load of the day has a DP partner.
 Exit 0 pass, 1 fail, 2 no pairs found, 3 usage.
 Spec: docs/superpowers/specs/2026-10-14-parts-availability-dp-feed-design.md
 """

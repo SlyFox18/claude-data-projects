@@ -109,11 +109,11 @@ def test_compare_pair_with_real_parquet(tmp_path):
         return path
 
     common = [("D", "X", 1), ("D", "X ", 1), (None, "N", 1)]
-    lh = write("lh.parquet", common + [("D", "LHONLY", 1), ("D", "DIFF", 5), ("D", "DUP", 1)])
-    dp = write("dp.parquet", common + [("D", "DIFF", 6), ("D", "DUP", 1), ("D", "DUP", 1)])
+    lh = write("lh.parquet", common + [("D", "Y ", 1), ("D", "LHONLY", 1), ("D", "DIFF", 5), ("D", "DUP", 1)])
+    dp = write("dp.parquet", common + [("D", "Y", 1), ("D", "DIFF", 6), ("D", "DUP", 1), ("D", "DUP", 1)])
     r = compare_pair(con, [lh], [dp])
-    assert r["only_lh"] == {("1", "D", "LHONLY")}
-    assert r["only_dp"] == set()
+    assert r["only_lh"] == {("1", "D", "LHONLY"), ("1", "D", "Y ")}
+    assert r["only_dp"] == {("1", "D", "Y")}
     assert r["diff"] == {("1", "D", "DIFF")}
     assert r["dp_dup_keys"] == 1
     assert r["lh_dup_keys"] == 0
