@@ -14,7 +14,38 @@
 >   - unpaired LH loads fail on Prod;
 >   - `compare_pair(con, lh_files, dp_files)` has a real-parquet test;
 >   - usage exits 3, the default date is local, and compaction log files are skipped.
-> - **Next:** Task 3 (Brian creates the dataflow in the Dev UI).
+> - **Task 3 done 2026-10-14** (Brian, fabric-workspace-docs d27b316b).
+>   - Bindings: ODBC `70ea8af2…`, Lakehouse `ec4b2ec8…`.
+>   - First Dev load: 1,069,316 rows, one `ExtractedAtUtc` (20:17:22 UTC), 0 duplicate keys, 14 trailing-space part numbers.
+>   - Table path: `Tables/PartsAvailability`.
+>   - Brian also committed 3 phantom "Modified" dataflows (218a78c5): the only change was the trailing newline.
+> - **Task 4 done** (0fa1ea91). Task 5 done (392102f7, 26da5d84).
+>   - Review additions: functions prefixed `parts_`; an overlapping-run cause; AADSTS/"not authorized" classified as credentials; the Teams post points to the email.
+>   - Plan Tasks 6 and 7 were updated to match: `parts_parse_trigger_time`, pipeline load timeout 20 min, `concurrency: 1`.
+> - **Task 6 done** (6542484b).
+>   - Dev IDs: `Notify_PartsAvailability` `db37de52-3bde-43ba-9330-a3f81a6a01f3`, `df_PartsAvailability_Raw` `6c7d76cf-2811-47a4-afb1-ceea562982ad`.
+>   - The test alert was approved by Brian as is.
+>   - DP - Presentation - Dev has 4 pre-existing workspace-only changes, not ours: Build_Gold_PartMasterHistory, Build_Gold_ServiceTimeSheets, DP_Presentation, Pipeline_DP_Refresh.
+> - **Task 7 done** (dafcf50b).
+>   - Dev pipeline `a5867491-fd58-4d58-b950-4755c48eaa35`.
+>   - First Dev run: Load Succeeded in about 2¾ min.
+> - **Task 8 done** (82d98a04, 48144dd9). The review added a guard: the deploy fails if a pipeline ID swap matches nothing (a stale Dev ID would point Prod at the Dev dataflow), plus an ordering test.
+> - **Task 9 done 2026-10-14.** Dev pipeline runs at 15:50 and 16:50 CDT were paired with LH's loads from the same minute: PASS.
+>
+>   | Pair (CDT) | Rows LH / DP | Missing on one side | Rows that differ | Duplicate keys |
+>   |---|---|---|---|---|
+>   | 15:50 | 1,069,325 / 1,069,325 | 0 / 0 | 10 (qty) | 0 |
+>   | 16:50 | 1,069,351 / 1,069,351 | 0 / 0 | **0** | 0 |
+>
+>   The Dev `Pipeline_DP_Refresh` items run for `df_PartsAvailability_Raw` finished `ok` (it also refreshes all Dev report models in `items` mode, ~14 min).
+> - **Task 10 done** (ab4e6955). Task 11 code done (58477ee7); its run steps wait for Brian's Dev access grant.
+> - **Task 12 done** (7b7bd08d, 57f02fca, 45070c57). The review added:
+>   - pytz pinned;
+>   - `last_published.json` records source and library, is read tolerantly and written atomically;
+>   - `run_pipeline` branch tests;
+>   - **threshold 120 min** (Brian).
+> - **Task 14 done** (app 495f153 on `dev`): threshold 120, window 8–18. **PR not opened:** app `dev` also carries Brian's docs-only commit b9e7065, so Brian decides.
+> - **Next:** Brian grants the SPN read on DP_Staging Dev, then the Task 11 run steps and Task 13.
 
 **Goal:** Feed the Parts Availability app from a DP_Staging ODBC dataflow (`df_PartsAvailability_Raw` → `PartsAvailability`), loaded hourly by a small pipeline with a custom failure email, instead of LH_Master_Data. Retire the last LH schedule.
 
@@ -898,7 +929,7 @@ except Exception:
     ENV = "unknown"
 
 now_local = datetime.now(PARTS_CENTRAL).replace(tzinfo=None)
-triggered = parse_trigger_time(triggered_at)
+triggered = parts_parse_trigger_time(triggered_at)
 failed_load_local = triggered.astimezone(PARTS_CENTRAL).replace(tzinfo=None) if triggered else now_local
 
 CONFIG = json.loads(notebookutils.fs.head("Files/config/dp_refresh_dag.json", 20_000_000))
@@ -1020,6 +1051,8 @@ def test_parts_pipeline_wiring():
     assert load["typeProperties"]["dataflowId"] == PARTS_DATAFLOW
     assert load["typeProperties"]["workspaceId"] == STAGING_WS
     assert load["policy"]["retry"] == 1 and load["policy"]["retryIntervalInSeconds"] == 120
+    assert load["policy"]["timeout"] == "0.00:20:00"
+    assert parts_pipeline()["properties"]["concurrency"] == 1
     n = a["Notify_Load_Failed"]
     assert n["typeProperties"]["notebookId"] == PARTS_NOTIFIER
     assert n["externalReferences"] == {"connection": NOTEBOOK_CONNECTION}
@@ -1064,8 +1097,9 @@ def parts_pipeline() -> dict:
     run ends Failed. Prod: deploy_backend.py swaps PARTS_DATAFLOW and PARTS_NOTIFIER for their Prod IDs.
     Spec: data-projects/docs/superpowers/specs/2026-10-14-parts-availability-dp-feed-design.md"""
     load = {"name": "Load_PartsAvailability", "type": "RefreshDataflow", "dependsOn": [],
-            # one retry after 2 min: the one LH failure in 31 runs (2026-10-08) was transient
-            "policy": _policy("0.00:30:00", retry=1, interval=120),
+            # one retry after 2 min: the one LH failure in 31 runs (2026-10-08) was transient. A load normally
+            # takes ~2 min; 20 min x 2 attempts + 2 min keeps a failing run inside its hour (no overlap).
+            "policy": _policy("0.00:20:00", retry=1, interval=120),
             "typeProperties": {"dataflowId": PARTS_DATAFLOW, "workspaceId": STAGING_WS,
                                "notifyOption": "NoNotification", "dataflowType": "DataflowFabric",
                                "executeMashupQueriesOnly": True}}
@@ -1077,7 +1111,8 @@ def parts_pipeline() -> dict:
     fail = {"name": "Fail_Load", "type": "Fail", "dependsOn": [_dep("Notify_Load_Failed", "Completed")],
             "typeProperties": {"message": _expr("@activity('Load_PartsAvailability').error.message"),
                                "errorCode": "PartsAvailabilityLoadFailed"}}
-    return {"properties": {"activities": [load, notify, fail]}}
+    # concurrency 1: a run that starts while the previous one is still going queues instead of overlapping
+    return {"properties": {"activities": [load, notify, fail], "concurrency": 1}}
 ```
 
 - [ ] **Step 3: Write the pipeline from `render_orchestrator.main()`.** Change the import line to:
@@ -1934,7 +1969,13 @@ git push origin dev
 Run: `cd c:/Users/bfox/Documents/Git-Projects/parts-lookup-app && npm test -- dataService`
 Expected: FAIL on `is never flagged stale from 6pm` (the window still runs to 20:00).
 
+  Also (Brian, 2026-10-14) the threshold goes from 90 to **120 minutes**, so update the threshold tests:
+  - In `'is stale when older than the threshold, during business hours'`, use 150 minutes instead of 120.
+  - Rename `'is not stale exactly at the threshold boundary (90 min)'` to `(120 min)` and use 120.
+  - Add `'is not stale at 100 minutes (a healthy hour peaks near 90)'`, expecting `false`.
+
 - [ ] **Step 3: Change `src/services/dataService.ts`**:
+  - `const STALE_THRESHOLD_MINUTES = 90;` → `const STALE_THRESHOLD_MINUTES = 120;`. Update its comment: generatedAt is the load start (hh:50) and a publish lands around (hh+1):20, so a healthy hour peaks near 90 minutes; it must match `check_staleness.py`.
   - `const BUSINESS_END_HOUR = 20;` → `const BUSINESS_END_HOUR = 18;`
   - In the `isDataStale` doc comment, replace "Deliberately never flags staleness outside Mon-Fri 8am-8pm local time -" with "Deliberately never flags staleness outside Mon-Fri 8am-6pm local time (since 2026-10 the data loads hourly 06:50-16:50 and `generatedAt` is the load time, so the last load passes 90 minutes around 18:20) -".
 

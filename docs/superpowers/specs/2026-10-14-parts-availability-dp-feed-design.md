@@ -141,6 +141,13 @@ Equip (ODBC dsn=EquipRDB64, gateway)
 - The last load is 16:50, published by about 17:20.
 - Runs with no new data skip.
 
+**Amended 2026-10-14 (code review; Brian chose the option): the stale threshold is 120 minutes, not 90, in both the app and `check_staleness.py`.**
+- **Why:** `generatedAt` is the load *start* (hh:50), and a publish lands around (hh+1):20. So a healthy hour peaks near 90 minutes, and a 90-minute threshold would flash the banner.
+- **What stays the same:**
+  - at 08:00 the data is about 70 minutes old;
+  - after the last load (16:50), the data crosses 120 minutes at 18:50, after the 18:00 cutoff.
+- **The trade-off:** a real failure shows about 30 minutes later.
+
 ### 4. App change (`parts-lookup-app`)
 
 - **Change:** `BUSINESS_END_HOUR` 20 → **18** in `src/services/dataService.ts`, with its test updated.
