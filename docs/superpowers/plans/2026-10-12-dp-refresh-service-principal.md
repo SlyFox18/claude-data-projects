@@ -1095,6 +1095,15 @@ The suite is at 230 tests.
     - Brian adds Failure notifications on the Prod schedule.
     - **The 2026-10-14 06:15 scheduled run (5 dataflows) is the proof** that the Dataflow activities run as the schedule owner after a CI deploy. If it's clean, do Task 10 (retire the re-claim step).
 
+**2026-10-14: Task 9 proven, Task 10 done.**
+- **The proof:** the 06:15 scheduled run ran all 5 staging dataflows OK after the CI deploy, so the Dataflow activities run as the schedule owner.
+- **Re-claim retired:** `claim_prod_pipeline.py` deleted (`347d3d44`, Brian's OK). OPERATIONS-GUIDE has a new "Identity" section; TROUBLESHOOTING, both CLAUDE.md files, NEW-DATA-SOURCE and git-integration-guide are updated.
+- **Probe cleanup:**
+  - `Utilities_SPN_Probe` and `Pipeline_SPN_Probe` removed from Git. The Dev sync needs Brian's Accept incoming, because the workspace re-saved the probe notebook.
+  - `SPN_Probe_Results` and `SPN_Probe_Write` deleted from the Dev lakehouse.
+- **The same morning's Bronze check blocked the refresh** over 2 unused rental tables. Fixed in PR #34: only failures on tables DP reads block now.
+- **JD gateway error:** a one-off (1 of 15 Full runs, 0 of 24 Incremental since 9/30). Look at SPI01SR2034W only if it repeats.
+
 **Amendments from the final review (apply in Tasks 6 and 9):**
 - **Task 6 Step 6, model-failure drill:** removing the service principal's RP - Dev role makes the model *lookup* fail, so it never exercises Refresh_Model's Failed branch. Instead, make one Dev model's refresh itself fail (temporarily break its data-source credential), run, then restore it.
 - **Task 6:** also run a Silver crash drill (`simulate_crash = silver`). Check that Notify writes the `crashed` row and that an immediate rerun isn't refused by the already-running guard.
