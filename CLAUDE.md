@@ -32,7 +32,8 @@ Equip (SQL Anywhere)
 - **What it runs:** JD incremental → staging dataflows → Silver DAG → Gold DAG → report model refresh → summary email (Graph).
 - **Generated code:** `Run_DP_Refresh` / `Notify_DP_Refresh` are generated from `deploy/orchestrator_core.py`, `orchestrator_glue.py` and `notify_*.py` by `deploy/render_orchestrator.py`. Don't hand-edit the notebooks.
 - **Config:** `fabric-workspace-docs/deploy/dp_refresh_dag.json`: items, cadences, dependencies, report→table map, `freshnessChecks`.
-- **Modes:** `scheduled`, `all`, `items` (with `items=a,b`), `rerun_failed`, `intraday` (built; no items use it yet), plus `dry_run`.
+- **Modes:** `scheduled`, `all`, `items` (with `items=a,b`), `rerun_failed`, `intraday` (runs JD Incremental + the items flagged `intraday`: Silver_InTrans, Silver_PartInformation, Gold_PartsNotReordered and the Parts Not Re-Ordered model; not scheduled yet), plus `dry_run`.
+- **Bronze check:** only a failed JD copy of a table DP_Staging reads blocks the refresh; other JD failures are email warnings. `items` mode skips the check, which is how to refresh on healthy Bronze when JD had a problem.
 - **After every Prod deploy**, run `python deploy/claim_prod_pipeline.py` (notebooks run as the pipeline's last modifier).
 
 **Users:** report workspaces are **authoring-only**. Users reach reports through one **org app** per workspace, granted via Entra groups `PBI - Parts Reports`, `PBI - Service Reports`, `PBI - Financial Reports`.
