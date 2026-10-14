@@ -42,6 +42,12 @@
 >   - **No LH comparison:** LH `df_JDIS_PART_INFORMATION_Raw` failed at 01:15 on Sat and Mon (about 3.5 minutes, generic error; it works in daytime), so LH snapshots 10/10–10/12 copied Friday's data.
 >   - Schedules moved (Brian OK): jdis **04:15** Mon–Sat, daily snapshot **05:00**, weekly **Sun 05:00**.
 >   - The comparison starts 2026-10-13.
+> - **Side-by-side log** (`partmaster_history_check.py prod <date>`):
+>
+>   | Date | Keys only in LH | Keys only in DP | Worst column diff | Notes |
+>   |---|---|---|---|---|
+>   | 2026-10-13 | 0 | (n/a) | 0.63% (InventoryCost) | qty/price timing only |
+>   | 2026-10-14 | 0 | 282 | 0.34% (InventoryCost) | DP history was built at ~10:00 in the recovery run (the 06:15 run was blocked by the Bronze check), so it holds parts created after LH's 05:00 snapshot; the column diffs are timing |
 
 **Deviation from the spec (decided while planning, 2026-10-09):**
 - The archives go to **Prod only, with no Dev shortcut.** Dev validation compares against the LH tables directly.
