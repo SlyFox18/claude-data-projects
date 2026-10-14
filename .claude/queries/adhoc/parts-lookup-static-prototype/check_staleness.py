@@ -34,7 +34,9 @@ import os
 import run_refresh
 
 META_PATH = os.path.join("output", "2char", "_meta.json")
-STALE_THRESHOLD_MINUTES = 90
+# generatedAt is the load START (hh:50) and the publish lands ~(hh+1):20, so a healthy hour peaks at ~90 min
+# old; 120 leaves a 30 min margin. The app's dataService.ts STALE_THRESHOLD_MINUTES must match.
+STALE_THRESHOLD_MINUTES = 120
 
 
 def check() -> None:
