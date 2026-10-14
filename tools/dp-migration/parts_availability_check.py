@@ -1,18 +1,22 @@
 """Read-only: compare DP's PartsAvailability loads with LH_Master_Data's InMaster_PartsLookup_Raw loads.
 
-Usage: python parts_availability_check.py <dev|prod> [YYYY-MM-DD]   (default: today; the date is UTC)
+Usage: python parts_availability_check.py <dev|prod> [YYYY-MM-DD]   (default: today)
 
 Both tables are whole-table Replace loads of the same ODBC query (LH weekdays 07:50-16:50 hourly; DP Prod
 06:50-16:50 via Pipeline_PartsAvailability; DP Dev by hand). Every Delta commit is one complete load, so
 each LH load of the day is paired with the DP load committed within 10 minutes of it, and the two snapshots
 are compared on the raw key Branch + Franchise + PartNumber. There is no trimming: trailing-space twin part
 numbers are real, separate rows.
+The date is matched against the UTC commit time (06:50-16:50 Central falls on one UTC calendar day).
 Pass: no key is missing from one side or different in two consecutive pairs (one pair alone can differ by
-a handful of rows, because the two queries run seconds apart), and no pair has more than 500 bad keys.
-Exit 0 pass, 1 fail, 2 no pairs found.
+a handful of rows, because the two queries run seconds apart); every pair has at most 10 one-sided keys
+and at most 200 differing keys; no raw-key duplicates on either side; ExtractedAtUtc holds exactly one
+non-null value per DP snapshot; and, for prod, every LH load of the day has a DP partner.
+Exit 0 pass, 1 fail, 2 no pairs found, 3 usage.
 Spec: docs/superpowers/specs/2026-10-14-parts-availability-dp-feed-design.md
 """
 import json
+import re
 import sys
 from datetime import date, datetime, timedelta, timezone
 
@@ -29,7 +33,8 @@ KEY = ["Branch", "Franchise", "PartNumber"]
 COLUMNS = ["Description", "Bin", "SuperFrom", "SuperTo", "VendorCode", "SellPrice1", "Comments",
            "OnHandQty", "PendingQty", "OnOrder", "BinQty"]
 MAX_GAP_MINUTES = 10
-MAX_BAD_KEYS_PER_PAIR = 500
+MAX_ONE_SIDED_PER_PAIR = 10
+MAX_DIFF_PER_PAIR = 200
 
 
 def full_loads(entries):
@@ -75,7 +80,7 @@ def persistent_keys(results):
     return out
 
 
-def verdict(results):
+def verdict(results, unpaired_lh=0, strict_unpaired=False):
     """(exit code, problems)."""
     if not results:
         return 2, ["no LH/DP load pairs found for that date"]
@@ -83,9 +88,18 @@ def verdict(results):
     stuck = persistent_keys(results)
     if stuck:
         problems.append(f"{len(stuck)} key(s) wrong in two consecutive pairs, e.g. {sorted(stuck)[:5]}")
-    for i, r in enumerate(results):
-        if len(r["bad_keys"]) > MAX_BAD_KEYS_PER_PAIR:
-            problems.append(f"pair {i + 1}: {len(r['bad_keys'])} bad keys (limit {MAX_BAD_KEYS_PER_PAIR})")
+    for i, r in enumerate(results, 1):
+        one_sided = len(r["only_lh"]) + len(r["only_dp"])
+        if one_sided > MAX_ONE_SIDED_PER_PAIR:
+            problems.append(f"pair {i}: {one_sided} one-sided keys (limit {MAX_ONE_SIDED_PER_PAIR})")
+        if len(r["diff"]) > MAX_DIFF_PER_PAIR:
+            problems.append(f"pair {i}: {len(r['diff'])} differing keys (limit {MAX_DIFF_PER_PAIR})")
+        if r["lh_dup_keys"] or r["dp_dup_keys"]:
+            problems.append(f"pair {i}: duplicate raw keys (LH {r['lh_dup_keys']}, DP {r['dp_dup_keys']})")
+        if len(r["extracted_at"]) != 1 or r["extracted_at"][0] is None:
+            problems.append(f"pair {i}: ExtractedAtUtc must hold exactly one non-null value, got {r['extracted_at']}")
+    if strict_unpaired and unpaired_lh > 0:
+        problems.append(f"{unpaired_lh} LH load(s) had no DP load within {MAX_GAP_MINUTES} minutes")
     return (1 if problems else 0), problems
 
 
@@ -102,12 +116,12 @@ def log_entries(con, table):
         f"SELECT filename, commitInfo, add FROM read_json('{table}/_delta_log/*.json', filename=true, "
         f"format='newline_delimited', columns={{commitInfo: 'JSON', add: 'JSON'}})").fetchall()
     return [(int(fn.rsplit("/", 1)[1].split(".")[0]), json.loads(ci) if ci else None, json.loads(a) if a else None)
-            for fn, ci, a in rows]
+            for fn, ci, a in rows if re.match(r"^\d{20}\.json$", fn.rsplit("/", 1)[1])]
 
 
-def compare_pair(con, lh_load, dp_load, dp_table):
-    con.execute(f"CREATE OR REPLACE TABLE l AS SELECT * FROM read_parquet({[f'{LH}/{p}' for p in lh_load['adds']]!r})")
-    con.execute(f"CREATE OR REPLACE TABLE d AS SELECT * FROM read_parquet({[f'{dp_table}/{p}' for p in dp_load['adds']]!r})")
+def compare_pair(con, lh_files, dp_files):
+    con.execute("CREATE OR REPLACE TABLE l AS SELECT * FROM read_parquet(?)", [lh_files])
+    con.execute("CREATE OR REPLACE TABLE d AS SELECT * FROM read_parquet(?)", [dp_files])
     on = " AND ".join(f"l.{k} IS NOT DISTINCT FROM d.{k}" for k in KEY)
     keys = ", ".join(f"l.{k}" for k in KEY)
     dkeys = ", ".join(f"d.{k}" for k in KEY)
@@ -118,11 +132,13 @@ def compare_pair(con, lh_load, dp_load, dp_table):
     counts = con.execute("SELECT " + ", ".join(f"count(*) FILTER (WHERE l.{c} IS DISTINCT FROM d.{c})" for c in COLUMNS)
                          + f" FROM l JOIN d ON {on}").fetchone()
     extracted = con.execute("SELECT DISTINCT ExtractedAtUtc FROM d").fetchall()
-    return {"lh_ts": lh_load["ts"], "dp_ts": dp_load["ts"],
-            "lh_rows": con.execute("SELECT count(*) FROM l").fetchone()[0],
+
+    def dups(t):
+        return con.execute(f"SELECT count(*) FROM (SELECT {', '.join(KEY)} FROM {t} GROUP BY ALL "
+                           "HAVING count(*) > 1)").fetchone()[0]
+    return {"lh_rows": con.execute("SELECT count(*) FROM l").fetchone()[0],
             "dp_rows": con.execute("SELECT count(*) FROM d").fetchone()[0],
-            "dp_dup_keys": con.execute(f"SELECT count(*) FROM (SELECT {', '.join(KEY)} FROM d GROUP BY ALL "
-                                       "HAVING count(*) > 1)").fetchone()[0],
+            "lh_dup_keys": dups("l"), "dp_dup_keys": dups("d"),
             "extracted_at": [e[0] for e in extracted],
             "only_lh": only_lh, "only_dp": only_dp, "diff": diff,
             "col_counts": {c: n for c, n in zip(COLUMNS, counts) if n},
@@ -136,13 +152,18 @@ def main(tier, day):
     dp = [x for x in full_loads(log_entries(con, DP[tier])) if x["ts"].date() == day]
     print(f"{day} (UTC): LH loads {len(lh)}, DP {tier} loads {len(dp)}")
     results = []
-    for a, b in pair_loads(lh, dp):
-        r = compare_pair(con, a, b, DP[tier])
+    pairs = pair_loads(lh, dp)
+    paired = {a["version"] for a, _ in pairs}
+    unpaired = [a for a in lh if a["version"] not in paired]
+    times = [f"{a['ts']:%H:%M}" for a in unpaired]
+    print(f"  LH loads without a DP partner: {len(unpaired)} {times}")
+    for a, b in pairs:
+        r = compare_pair(con, [f"{LH}/{p}" for p in a["adds"]], [f"{DP[tier]}/{p}" for p in b["adds"]])
         results.append(r)
         print(f"  LH {a['ts']:%H:%M} v{a['version']} vs DP {b['ts']:%H:%M} v{b['version']}: rows {r['lh_rows']:,} / "
               f"{r['dp_rows']:,}; only LH {len(r['only_lh'])}, only DP {len(r['only_dp'])}, differing {len(r['diff'])} "
-              f"{r['col_counts'] or ''}; DP dup keys {r['dp_dup_keys']}; ExtractedAtUtc {r['extracted_at']}")
-    code, problems = verdict(results)
+              f"{r['col_counts'] or ''}; dup keys LH {r['lh_dup_keys']} / DP {r['dp_dup_keys']}; ExtractedAtUtc {r['extracted_at']}")
+    code, problems = verdict(results, len(unpaired), strict_unpaired=(tier == "prod"))
     for p in problems:
         print("PROBLEM:", p)
     print("PASS" if code == 0 else "FAIL")
@@ -151,6 +172,7 @@ def main(tier, day):
 
 if __name__ == "__main__":
     if len(sys.argv) not in (2, 3) or sys.argv[1] not in DP:
-        sys.exit(__doc__)
-    d = date.fromisoformat(sys.argv[2]) if len(sys.argv) == 3 else datetime.now(timezone.utc).date()
+        print(__doc__, file=sys.stderr)
+        sys.exit(3)
+    d = date.fromisoformat(sys.argv[2]) if len(sys.argv) == 3 else date.today()
     sys.exit(main(sys.argv[1], d))
