@@ -31,6 +31,14 @@ object inside the workbook.
 
 ## Change workflow
 
+> **Keep the user guide in sync.** The plain-language guide for the parts team,
+> "Corp Parts Excel Reports — How Each Report Works", lives in Claude Docs
+> (https://claude.ai/code/artifact/17731868-3b03-43c2-9952-01103432583c) and is
+> exported to Word/PDF and uploaded to the Corp Parts Excel Reports library (2026-10-14).
+> **Any change to a query's filters, thresholds, branches or output columns also
+> updates that doc's section for the report** (and "Terms used in every report" if a
+> shared rule changes). Then remind Brian to re-export and replace the copy on SharePoint.
+
 1. Edit the `.pq` in this folder (header notes included — every file carries its
    own PURPOSE / CRITERIA / NOTES / UPDATED log).
 2. Test the SQL against the live source before handing it over (pull the SQL out
