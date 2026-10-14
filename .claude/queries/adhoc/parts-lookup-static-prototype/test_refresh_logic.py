@@ -38,11 +38,14 @@ def test_validate_extract_failures():
     assert len(validate_extract(10, [], 2, True)) == 3
 
 
-def test_should_skip_only_when_the_same_load_was_already_published():
-    assert should_skip("2026-10-14T11:50:03+00:00", "2026-10-14T11:50:03+00:00")
-    assert not should_skip("2026-10-14T12:50:03+00:00", "2026-10-14T11:50:03+00:00")
-    assert not should_skip("2026-10-14T11:50:03+00:00", None)
-    assert not should_skip(None, None)
+def test_should_skip_only_when_same_load_source_and_library_were_already_published():
+    cur = {"extractedAtUtc": "2026-10-14T11:50:03+00:00", "source": "dp", "driveId": "d1"}
+    assert should_skip(cur, dict(cur, publishedAt="x"))
+    assert not should_skip(cur, dict(cur, source="dp-dev"))
+    assert not should_skip(cur, dict(cur, driveId="d2"))
+    assert not should_skip(cur, dict(cur, extractedAtUtc="2026-10-14T10:50:03+00:00"))
+    assert not should_skip(cur, None)
+    assert not should_skip(dict(cur, extractedAtUtc=None), dict(cur, extractedAtUtc=None))
 
 
 def test_build_meta():

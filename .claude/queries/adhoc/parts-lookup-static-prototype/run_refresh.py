@@ -198,6 +198,22 @@ def read_json_key(path: str, key: str):
         return None
 
 
+def read_last_published():
+    """last_published.json as a dict, or None if missing or unreadable (None = republish, which is safe)."""
+    try:
+        with open(LAST_PUBLISHED_PATH, encoding="utf-8") as f:
+            data = json.load(f)
+    except FileNotFoundError:
+        return None
+    except (json.JSONDecodeError, OSError) as exc:
+        log(f"NOTE: {LAST_PUBLISHED_PATH} unreadable ({exc}) - treating as not published")
+        return None
+    if not isinstance(data, dict):
+        log(f"NOTE: {LAST_PUBLISHED_PATH} is not a JSON object - treating as not published")
+        return None
+    return data
+
+
 def write_meta_file(extracted_at: str) -> None:
     """Write output/2char/_meta.json: generatedAt = the data's load time (ExtractedAtUtc from the DP table,
     via extract_meta.json), publishedAt = now. upload.py uploads it last. The app's "Data as of" and stale
@@ -253,7 +269,8 @@ def run_pipeline() -> int:
         log_failure(f"FAILED: {EXTRACT_META_PATH} has no extractedAtUtc")
         log("=== refresh run FAILED ===")
         return 1
-    if should_skip(extracted_at, read_json_key(LAST_PUBLISHED_PATH, "extractedAtUtc")):
+    current = {"extractedAtUtc": extracted_at, "source": config.SOURCE, "driveId": config.DRIVE_ID}
+    if should_skip(current, read_last_published()):
         # No new load since the last publish (between loads, after 17:00, or the load failed - which
         # Pipeline_PartsAvailability alerts on, and check_staleness.py notices as the data ages).
         log(f"SKIPPED - source unchanged (data as of {extracted_at})")
@@ -276,8 +293,10 @@ def run_pipeline() -> int:
         return 1
 
     try:
-        with open(LAST_PUBLISHED_PATH, "w", encoding="utf-8") as f:
-            json.dump({"extractedAtUtc": extracted_at, "publishedAt": now_utc_iso()}, f)
+        tmp_path = LAST_PUBLISHED_PATH + ".tmp"
+        with open(tmp_path, "w", encoding="utf-8") as f:
+            json.dump(dict(current, publishedAt=now_utc_iso()), f)
+        os.replace(tmp_path, LAST_PUBLISHED_PATH)  # atomic: never leaves a half-written file
     except OSError as exc:
         # Published fine; only the skip bookkeeping failed, so the next run republishes the same data.
         log_failure(f"Published, but could not write {LAST_PUBLISHED_PATH} ({exc}) - the next run will "

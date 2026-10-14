@@ -71,8 +71,15 @@ def validate_extract(row_count: int, extracted_values: list, duplicate_keys: int
     return errors
 
 
-def should_skip(extracted_at, last_published) -> bool:
-    return extracted_at is not None and extracted_at == last_published
+SKIP_KEYS = ("extractedAtUtc", "source", "driveId")
+
+
+def should_skip(current: dict, last) -> bool:
+    """True only if this exact load was already published from the same source into the same library
+    (so a test publish to the staging library can never make a production run skip)."""
+    if not isinstance(last, dict):
+        return False
+    return all(current.get(k) is not None and current.get(k) == last.get(k) for k in SKIP_KEYS)
 
 
 def build_meta(extracted_at: str, published_at: str) -> dict:
