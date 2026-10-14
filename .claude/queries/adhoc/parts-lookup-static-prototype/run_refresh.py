@@ -1,9 +1,15 @@
 """
 PARTS LOOKUP REFRESH PIPELINE - ORCHESTRATOR
 ============================================================================
-Runs extract.py -> partition.py -> upload.py in sequence and logs one line
+Runs extract.py, then (unless the source hasn't changed since the last publish) partition.py and upload.py, and logs one line
 per run (timestamp, success/failure, timing, row count) to refresh.log in
 this folder. This is the script Windows Task Scheduler invokes directly.
+
+DP source (2026-10): extract.py reads config.SOURCE and writes
+extract_meta.json with the load's ExtractedAtUtc. A run whose
+ExtractedAtUtc equals last_published.json's is SKIPPED (logged, exit 0),
+so the 18-minute upload only happens when there is a new load.
+_meta.json's generatedAt is the load time, not this run's time.
 
 Security note: extract.py's CREATE SECRET call builds a SQL string with
 config.CLIENT_SECRET interpolated directly into it. If that call (or
@@ -66,7 +72,8 @@ import requests
 
 LOG_PATH = "refresh.log"
 LOCK_PATH = "refresh.lock"
-STEPS = ["extract.py", "partition.py", "upload.py"]
+EXTRACT_META_PATH = "extract_meta.json"     # written by extract.py: {"source", "extractedAtUtc", "rows"}
+LAST_PUBLISHED_PATH = "last_published.json"  # written here after a fully successful upload
 REDACTED_PLACEHOLDER = "***REDACTED***"
 STEP_TIMEOUT_SEC = 60 * 60  # generous ceiling per step; normal runs finish in minutes
 # A lock is considered abandoned (not a genuinely in-progress run) once it's
@@ -98,6 +105,8 @@ except Exception as exc:
     log(f"FAILED at config import: {exc}")
     log("=== refresh run FAILED ===")
     sys.exit(1)
+
+from refresh_logic import build_meta, should_skip
 
 
 def notify_teams_failure(message: str, title: str = "Parts Lookup Refresh") -> None:
@@ -177,72 +186,103 @@ def redact(text: str) -> str:
     return text.replace(secret, REDACTED_PLACEHOLDER)
 
 
-def write_meta_file() -> None:
-    """Write output/2char/_meta.json with the current UTC generation timestamp.
+def now_utc_iso() -> str:
+    return datetime.datetime.now(datetime.timezone.utc).isoformat()
 
-    Uploaded by upload.py alongside the partition files (it lives in the
-    same output/2char/ directory upload.py already reads), so the frontend
-    can fetch a single small file to display "Data as of ..." instead of
-    relying on a per-row timestamp that no longer exists in the static
-    files.
-    """
+
+def read_json_key(path: str, key: str):
+    try:
+        with open(path, encoding="utf-8") as f:
+            return json.load(f).get(key)
+    except FileNotFoundError:
+        return None
+
+
+def write_meta_file(extracted_at: str) -> None:
+    """Write output/2char/_meta.json: generatedAt = the data's load time (ExtractedAtUtc from the DP table,
+    via extract_meta.json), publishedAt = now. upload.py uploads it last. The app's "Data as of" and stale
+    banner, and check_staleness.py, all read generatedAt, so they measure how old the data really is -
+    not when this script last ran (until 2026-10 it was the run time, which made a failed upstream load
+    look fresh)."""
     meta_path = os.path.join("output", "2char", "_meta.json")
     with open(meta_path, "w", encoding="utf-8") as f:
-        json.dump(
-            {"generatedAt": datetime.datetime.now(datetime.timezone.utc).isoformat()},
-            f,
+        json.dump(build_meta(extracted_at, now_utc_iso()), f)
+
+
+def run_step(step: str) -> bool:
+    """Run one step script; log its output (upload.py: last line only). False (logged + alerted) on failure."""
+    try:
+        result = subprocess.run(
+            [sys.executable, step],
+            capture_output=True,
+            text=True,
+            timeout=STEP_TIMEOUT_SEC,
         )
+    except subprocess.TimeoutExpired as exc:
+        partial_stderr = redact((exc.stderr or "").strip())[-500:]
+        log_failure(
+            f"FAILED at {step}: exceeded {STEP_TIMEOUT_SEC}s timeout and was "
+            f"killed. Partial stderr: {partial_stderr}"
+        )
+        return False
+
+    if result.returncode != 0:
+        safe_stderr = redact(result.stderr.strip())[-500:]
+        log_failure(f"FAILED at {step}: {safe_stderr}")
+        return False
+
+    lines = redact(result.stdout.strip()).splitlines()
+    if step == "upload.py":
+        # Real-time per-file progress (~1,250 lines/run) is useful when upload.py is run standalone for live
+        # debugging, but copying all of it into refresh.log would bloat it unboundedly at hourly cadence -
+        # keep only the final summary line, matching extract.py/partition.py's already-concise output.
+        lines = lines[-1:] if lines else []
+    for line in lines:
+        log(f"  [{step}] {line}")
+    return True
 
 
 def run_pipeline() -> int:
     log("=== refresh run starting ===")
-    for step in STEPS:
-        if step == "upload.py":
-            # Write the fresh generation timestamp just before upload.py
-            # runs, so this cycle's own upload picks it up immediately -
-            # writing it after the whole loop (including upload.py) would
-            # leave it sitting locally until the *next* cycle's upload,
-            # making "Data as of" lag a full hour behind the real refresh.
-            try:
-                write_meta_file()
-            except OSError as exc:
-                log_failure(f"FAILED at write_meta_file: {exc}")
-                log("=== refresh run FAILED ===")
-                return 1
-        try:
-            result = subprocess.run(
-                [sys.executable, step],
-                capture_output=True,
-                text=True,
-                timeout=STEP_TIMEOUT_SEC,
-            )
-        except subprocess.TimeoutExpired as exc:
-            partial_stderr = redact((exc.stderr or "").strip())[-500:]
-            log_failure(
-                f"FAILED at {step}: exceeded {STEP_TIMEOUT_SEC}s timeout and was "
-                f"killed. Partial stderr: {partial_stderr}"
-            )
-            log("=== refresh run FAILED ===")
-            return 1
+    if not run_step("extract.py"):
+        log("=== refresh run FAILED ===")
+        return 1
 
-        if result.returncode != 0:
-            safe_stderr = redact(result.stderr.strip())[-500:]
-            log_failure(f"FAILED at {step}: {safe_stderr}")
-            log("=== refresh run FAILED ===")
-            return 1
+    extracted_at = read_json_key(EXTRACT_META_PATH, "extractedAtUtc")
+    if not extracted_at:
+        log_failure(f"FAILED: {EXTRACT_META_PATH} has no extractedAtUtc")
+        log("=== refresh run FAILED ===")
+        return 1
+    if should_skip(extracted_at, read_json_key(LAST_PUBLISHED_PATH, "extractedAtUtc")):
+        # No new load since the last publish (between loads, after 17:00, or the load failed - which
+        # Pipeline_PartsAvailability alerts on, and check_staleness.py notices as the data ages).
+        log(f"SKIPPED - source unchanged (data as of {extracted_at})")
+        log("=== refresh run completed: nothing new to publish ===")
+        return 0
 
-        safe_stdout = redact(result.stdout.strip())
-        lines = safe_stdout.splitlines()
-        if step == "upload.py":
-            # Real-time per-file progress (~1,250 lines/run) is useful when
-            # upload.py is run standalone for live debugging, but copying
-            # all of it into refresh.log would bloat it unboundedly at
-            # hourly cadence - keep only the final summary line, matching
-            # extract.py/partition.py's already-concise output.
-            lines = lines[-1:] if lines else []
-        for line in lines:
-            log(f"  [{step}] {line}")
-    log("=== refresh run completed successfully ===")
+    if not run_step("partition.py"):
+        log("=== refresh run FAILED ===")
+        return 1
+    try:
+        # After partition.py (which clears output/2char/) and before upload.py, so this cycle's upload
+        # carries it.
+        write_meta_file(extracted_at)
+    except OSError as exc:
+        log_failure(f"FAILED at write_meta_file: {exc}")
+        log("=== refresh run FAILED ===")
+        return 1
+    if not run_step("upload.py"):
+        log("=== refresh run FAILED ===")
+        return 1
+
+    try:
+        with open(LAST_PUBLISHED_PATH, "w", encoding="utf-8") as f:
+            json.dump({"extractedAtUtc": extracted_at, "publishedAt": now_utc_iso()}, f)
+    except OSError as exc:
+        # Published fine; only the skip bookkeeping failed, so the next run republishes the same data.
+        log_failure(f"Published, but could not write {LAST_PUBLISHED_PATH} ({exc}) - the next run will "
+                    "upload the same data again")
+    log(f"=== refresh run completed successfully (data as of {extracted_at}) ===")
     return 0
 
 
