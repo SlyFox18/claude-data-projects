@@ -191,7 +191,21 @@ Table/column search tool (metadata queries)
 
 ---
 
-### **Project: JD Price Updates (Sub-project 3)**
+### **Project: JD Price Updates — on the DP backend (live 2026-10-09)**
+**Code:** fabric-workspace-docs `workspaces/DP - Staging - Dev/` (`df_JDPriceFiles_Raw`, `Build_Silver_JDPriceFiles`) and `workspaces/DP - Presentation - Dev/Fact Tables/JD Price Updates/Build_Gold_JDPriceChanges.Notebook`. Spec: `docs/superpowers/specs/2026-10-08-jd-price-data-dp-design.md`.
+
+| Fact Table (DP_Presentation) | Built by | Rows (Prod, 2026-10-14) | Schedule | Grain / purpose |
+|------------|----------|------|----------|---------|
+| Fact_PartPriceChange | Build_Gold_JDPriceChanges | 1,293,523 | Daily (DP refresh) | Part + effective date: old/new list, cost and sell, margin, flags |
+| Fact_PartPriceChange_Branch | Build_Gold_JDPriceChanges | 5,092,952 | Daily (DP refresh) | Part + date + branch |
+| Fact_JDNationalPriceChange | Build_Gold_JDPriceChanges | 54,053 | Daily (DP refresh; source is weekly) | National change report per part |
+
+**Sources:** network share `Daily_Reports\Price_Update` (daily branch files) and `Daily_Reports\JD_Change_Report` (weekly, saved by Brian) → `df_JDPriceFiles_Raw` (gateway) → `Silver_PriceUpdate_History` / `Silver_JDChangeReport_History`. Freshness warnings in the DP email after 8 / 10 days.
+**Old vs new per update:** List DealerListPrice→ManufacturerListPrice; Cost DealerReplacePrice→ManufacturerReplacePrice; Sell SellPriceOld→DealerSellPrice1.
+
+### **Project: JD Price Updates (Sub-project 3) — LH_Master_Data version, RETIRED 2026-10-14**
+The schedule is off and the PC harvest task is disabled; the items and tables are kept until LH_Master_Data is retired. Superseded by the DP section above.
+
 **Location:** `projects/jd-price-updates/queries/fact-tables/`
 **Department:** Parts
 **Created:** 08/10/2026

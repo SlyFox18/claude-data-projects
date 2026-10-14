@@ -1,7 +1,9 @@
 <#
 .SYNOPSIS
     Sends a weekly reminder to download JD's Global Parts Pricing Change
-    Report before it rolls off the site's 4-report retention window.
+    Report before it rolls off the site's 4-report retention window, and save
+    it to the network share's JD_Change_Report folder (loaded by the DP
+    refresh since 2026-10; the old OneLake landing folder is retired).
 .DESCRIPTION
     Posts a reminder item to Reynard (the local todo/capture system at
     http://localhost:5151/capture) and sends a reminder email via Outlook
@@ -64,7 +66,7 @@ function Write-ReminderLog {
 }
 
 $reminderText = "Download this week's JD Global Parts Pricing Change Report"
-$reminderNotes = "Log in to pricednld.deere.com (2FA via SMS), download the latest weekly Change Report CSV, and place it in both New/ and Archive/ under OneLake Files/JDChangeReports_Landing/. Only the 4 most recent weeks are ever available -- don't let one roll off. IMPORTANT: the file must be named exactly US.UPDCOMP.UPDATE.V2-YYYY-MM-DD.csv (matching the report's effective date). If your browser saves it with a suffix like ' (1).csv' (common on a repeat download), rename it back to the exact pattern before copying it in -- a wrong filename gets silently dropped with no error and no way to tell it failed."
+$reminderNotes = "Log in to pricednld.deere.com (2FA via SMS), download the latest weekly Change Report CSV, and save it UNCHANGED into \\Eqsvc01-sp2010\equip\UWS\Poll\Daily_Reports\JD_Change_Report -- the next weekday DP refresh (06:15) loads it automatically. Only the 4 most recent weeks are ever available on JD's site -- don't let one roll off. IMPORTANT: the file must be named exactly US.UPDCOMP.UPDATE.V2-YYYY-MM-DD.csv (the report's effective date). If your browser adds a suffix like ' (1).csv', rename it back first -- any other name is skipped. (If no new report arrives for 10 days, the DP refresh email shows a freshness warning.)"
 
 $exitCode = 0
 

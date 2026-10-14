@@ -1,6 +1,7 @@
 # JD Price Updates
 
 > **Moved to the DP backend (2026-10-09). This folder is now reference only.**
+> - **Old LH path retired 2026-10-14:** the LH `pl_Raw_PriceUpdate_History` schedule is off and the PC task "JD Price Update Harvest" is disabled. The weekly reminder (`scripts/Send-JDChangeReportReminder.ps1`) now says to save the Change Report to `\\Eqsvc01-sp2010\equip\UWS\Poll\Daily_Reports\JD_Change_Report`. Everything below about the harvest, OneLake landing folders and LH tables is history.
 > - Data: share → `df_JDPriceFiles_Raw` → `Build_Silver_JDPriceFiles` → `Build_Gold_JDPriceChanges` (DP Staging/Presentation). Design: `docs/superpowers/specs/2026-10-08-jd-price-data-dp-design.md`; plan: `docs/superpowers/plans/2026-10-08-jd-price-data-dp.md`.
 > - Report: the live copy is `fabric-workspace-docs/workspaces/RP - Dev/JD Price Updates.*` (Git-controlled, reads DP Gold). The PBIP under `reports/` here is the frozen original, kept only to compare against. **Don't develop here.**
 > - Known problems with the frozen original:
