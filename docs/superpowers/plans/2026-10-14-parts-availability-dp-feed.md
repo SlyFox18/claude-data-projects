@@ -45,7 +45,15 @@
 >   - `run_pipeline` branch tests;
 >   - **threshold 120 min** (Brian).
 > - **Task 14 done** (app 495f153 on `dev`): threshold 120, window 8–18. **PR not opened:** app `dev` also carries Brian's docs-only commit b9e7065, so Brian decides.
-> - **Next:** Brian grants the SPN read on DP_Staging Dev, then the Task 11 run steps and Task 13.
+> - **Task 11 done 2026-10-15.**
+>   - Brian shared DP_Staging Dev with the SPN as **"Read all Apache Spark and subscribe to events"** (that dialog's name for ReadAll). Use the same level in Prod.
+>   - dp-dev extract: 1,069,352 rows. LH rollback extract: 1,069,398 rows.
+> - **Task 13 done 2026-10-15** (1780be51; data-projects `dev` pushed).
+>   - Staging publish: 1,382 files in 1,220 s; partition 143 s.
+>   - `verify_publish` PASS; the skip run SKIPPED; the guard drill refused.
+>   - Local state files cleaned up.
+> - **Task 15 Step 1 done:** fabric-workspace-docs PR #36 (`dev → main`). The merge preview showed only this work plus Brian's 2 Fabric commits.
+> - **Next:** Brian merges PR #36 and runs Deploy DP backend, then Task 15 Steps 2–6.
 
 **Goal:** Feed the Parts Availability app from a DP_Staging ODBC dataflow (`df_PartsAvailability_Raw` → `PartsAvailability`), loaded hourly by a small pipeline with a custom failure email, instead of LH_Master_Data. Retire the last LH schedule.
 
