@@ -40,7 +40,7 @@ function Write-WatchdogLog {
     param([string]$Level, [string]$Message)
     $line = "[$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')] [$Mode] [$Level] $Message"
     Write-Host $line
-    Add-Content -Path $logPath -Value $line
+    Add-Content -Path $logPath -Value $line -Encoding UTF8    # 5.1's default (ANSI) turns the emoji into ??
 }
 
 function Format-Html {
