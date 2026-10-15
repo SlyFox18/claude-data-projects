@@ -26,6 +26,12 @@ Trimmed to Casey's keep-list on 2026-10-15.
   - JobCodes, JobTypes.
   - JobDetail: every job as `JobCode (JobType): L labor + P parts = total`, joined by ` | `. Casey's side computes the alert-segment total from it. Job dollars are labor + parts only, because misc is billed per invoice, not per job.
 
+**How Casey links tickets to WOs (2026-10-15):** when a Service Center alert is sent to DBS, a job named `SC` + ticket number (e.g. `SC1595680`) is added to the WO. That job's dollars in JobDetail are the "alert segment $". Facts checked 2026-10-15:
+- **Format:** always `^SC\d{6,}$`. Don't loosen it to "starts with SC", because `SCH5026` / `SCH-5026` are unrelated codes.
+- **Volume:** only 52 SC jobs since 2024-08, the first in Oct 2025.
+- **Uniqueness:** no SC number appears on more than one WO, but 2 WOs carry two SC jobs.
+- **Fallbacks:** WO number, then serial within 30 days.
+
 **Row filters (Casey):**
 - John Deere machines only. Work orders have no 'D' franchise (their franchises are AG/CP/OT/CW), so the filter is the machine Make, matched loosely as `%DEER%` or `JD`, since Make is free text.
 - PIN present.
