@@ -8,7 +8,8 @@
 --           WO numbers are effectively unique company-wide (4 reuses in 720k WOs of history).
 -- Filters:  (Casey, 2026-10-15) John Deere machines only, machine PIN present, no stock units.
 --           Work orders carry no 'D' franchise (theirs are AG/CP/OT/CW), so "John Deere" is the
---           machine's Make, matched loosely because Make is free text ('JOHN DEER', 'JD', 'DEERE').
+--           machine's Make, matched loosely because Make is free text ('JOHN DEER', 'JD', 'DEERE'),
+--           plus HAGIE (a Deere brand). The REG join falls back to a case/space-insensitive match.
 -- Source:   DP_Presentation SQL endpoint (Prod), Silver shortcuts:
 --             Silver_WkRoFile  (WO header: dates, account, REG, stock flag)
 --             Silver_WkVehFl   (REG -> machine PIN/VIN, make; REG is unique)
@@ -22,15 +23,31 @@
 --           so the job totals add up to LaborInvoiced + PartsInvoiced.
 --           Run by the Power Automate flow "Closed Work Orders Export - Daily".
 
-WITH wo AS (
-    SELECT r.Branch, r.WorkOrder, r.CreatedOn, r.ClosedDate, r.AccountNumber, TRIM(v.VIN) AS MachinePIN
+WITH veh_ci AS (
+    -- Case/space-insensitive REG fallback (a WO can carry '410r' when the machine is '410R').
+    -- Only keys that are unique after UPPER/TRIM, so no arbitrary survivor (1 collision in 270k).
+    SELECT UPPER(TRIM(Registration)) AS RegKey, MIN(VIN) AS VIN, MIN(Make) AS Make
+    FROM dbo.Silver_WkVehFl
+    GROUP BY UPPER(TRIM(Registration))
+    HAVING COUNT(*) = 1
+),
+wo_veh AS (
+    SELECT r.Branch, r.WorkOrder, r.CreatedOn, r.ClosedDate, r.AccountNumber, r.CustomerVehicleFlag,
+           TRIM(COALESCE(ve.VIN, vc.VIN)) AS MachinePIN,
+           UPPER(TRIM(COALESCE(ve.Make, vc.Make))) AS Make
     FROM dbo.Silver_WkRoFile r
-    JOIN dbo.Silver_WkVehFl v ON v.Registration = r.Registration
+    LEFT JOIN dbo.Silver_WkVehFl ve ON ve.Registration = r.Registration
+    LEFT JOIN veh_ci vc ON ve.Registration IS NULL AND vc.RegKey = UPPER(TRIM(r.Registration))
     WHERE r.IsClosed = 'Y'
       AND r.ClosedDate >= '2024-08-01'
-      AND COALESCE(r.CustomerVehicleFlag, '') <> 'S'
-      AND COALESCE(TRIM(v.VIN), '') <> ''
-      AND (UPPER(v.Make) LIKE '%DEER%' OR UPPER(TRIM(v.Make)) = 'JD')
+),
+wo AS (
+    -- Hagie (1FA... PINs) is a John Deere brand, so it counts as Deere.
+    SELECT Branch, WorkOrder, CreatedOn, ClosedDate, AccountNumber, MachinePIN
+    FROM wo_veh
+    WHERE COALESCE(CustomerVehicleFlag, '') <> 'S'
+      AND COALESCE(MachinePIN, '') <> ''
+      AND (Make LIKE '%DEER%' OR Make IN ('JD', 'HAGIE'))
 ),
 lines AS (
     SELECT s.Branch, s.WorkOrder, TRIM(s.JobCode) AS JobCode, TRIM(s.JobType) AS JobType,
