@@ -2,8 +2,9 @@
 -- Purpose:  Daily CSV feed for Casey's tractor-alert dashboard, which matches alert tickets to
 --           work orders (by WO number, or by MachinePIN within 30 days of OpenedDate) and puts
 --           dollar figures on them.
--- Grain:    one row per closed work order, closed in the last 90 days. Written daily as a new
---           file wo-YYYY-MM-DD.csv; the dashboard reads every file and keeps the newest row per WO.
+-- Grain:    one row per work order closed since 2024-08-01 (Andrea's alert history starts Aug 2024),
+--           ~35k rows in Oct 2026. Overwrites ClosedWorkOrders.csv daily; the flow skips the write
+--           (and fails) if fewer than 30,000 rows come back, so a bad run never replaces a good file.
 --           WO numbers are effectively unique company-wide (4 reuses in 720k WOs of history).
 -- Filters:  (Casey, 2026-10-15) John Deere machines only, machine PIN present, no stock units.
 --           Work orders carry no 'D' franchise (theirs are AG/CP/OT/CW), so "John Deere" is the
@@ -26,7 +27,7 @@ WITH wo AS (
     FROM dbo.Silver_WkRoFile r
     JOIN dbo.Silver_WkVehFl v ON v.Registration = r.Registration
     WHERE r.IsClosed = 'Y'
-      AND r.ClosedDate >= DATEADD(day, -90, CAST(GETDATE() AS date))
+      AND r.ClosedDate >= '2024-08-01'
       AND COALESCE(r.CustomerVehicleFlag, '') <> 'S'
       AND COALESCE(TRIM(v.VIN), '') <> ''
       AND (UPPER(v.Make) LIKE '%DEER%' OR UPPER(TRIM(v.Make)) = 'JD')

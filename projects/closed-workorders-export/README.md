@@ -7,9 +7,10 @@ his PC) to match alert tickets to work orders by WO number and put dollar figure
 |---|---|
 | **Flow** | Power Automate "Closed Work Orders Export - Daily" (`76128aa1-c93c-48d1-b703-74371fe09774`, env `2cf47cce-…`), owner Brian, daily 07:30 Central (after the 06:15 DP refresh) |
 | **Query** | [ClosedWorkOrders.sql](ClosedWorkOrders.sql), run with the SQL Server connector ("PA-DataLoad", Entra auth) against the **Prod** DP_Presentation SQL endpoint |
-| **Output** | `wo-YYYY-MM-DD.csv` in SharePoint: South Plains Implement - Report Site → **Service Data Exports** library. A new dated file each day (Casey's request); his dashboard reads every file and keeps the newest row per WO |
-| **Grain** | One row per closed WO, closed in the last 90 days, on a John Deere machine with a PIN, not a stock unit (~3,500 rows, ~1 MB) |
-| **Consumer** | Casey: OneDrive-syncs the library to his PC; the dashboard refreshes at 5:35 PM |
+| **Output** | `ClosedWorkOrders.csv` in SharePoint: South Plains Implement - Report Site → **Service Data Exports** library, overwritten daily. SharePoint version history keeps earlier copies |
+| **Safety check** | The file is written only if the query returns at least 30,000 rows. Otherwise the run fails (failure email to Brian) and yesterday's file stays. Raise the threshold over time if needed; the count only grows (35k in Oct 2026) |
+| **Grain** | One row per WO closed since 2024-08-01 (Andrea's alert history starts Aug 2024), on a John Deere machine with a PIN, not a stock unit (~35k rows, ~10 MB) |
+| **Consumer** | Casey's dashboard reads every CSV in the synced folder `C:\Users\cashurst\spitractor\South Plains Implement - Report Site - Service Data Exports` at 5:35 PM. **Don't rename the file, folder or columns without telling Casey** |
 
 ## Columns
 
