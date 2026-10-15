@@ -1,46 +1,41 @@
 -- ClosedWorkOrders.sql
--- Purpose:  Daily CSV feed for Casey's tractor-alert program, so he can match alerts to the
---           service work that followed and put dollar figures on it.
--- Grain:    one row per closed work order (Branch + WorkOrder), closed in the last 90 days.
---           Written daily as a new file wo-YYYY-MM-DD.csv (Casey's dashboard reads every file
---           and keeps the newest row per WO). WO numbers are effectively unique company-wide
---           (4 reuses in 720k WOs of history; none within any 90-day window).
+-- Purpose:  Daily CSV feed for Casey's tractor-alert dashboard, which matches alert tickets to
+--           work orders (by WO number, or by MachinePIN within 30 days of OpenedDate) and puts
+--           dollar figures on them.
+-- Grain:    one row per closed work order, closed in the last 90 days. Written daily as a new
+--           file wo-YYYY-MM-DD.csv; the dashboard reads every file and keeps the newest row per WO.
+--           WO numbers are effectively unique company-wide (4 reuses in 720k WOs of history).
+-- Filters:  (Casey, 2026-10-15) John Deere machines only, machine PIN present, no stock units.
+--           Work orders carry no 'D' franchise (theirs are AG/CP/OT/CW), so "John Deere" is the
+--           machine's Make, matched loosely because Make is free text ('JOHN DEER', 'JD', 'DEERE').
 -- Source:   DP_Presentation SQL endpoint (Prod), Silver shortcuts:
---             Silver_WkRoFile  (WO header: dates, account, REG, pay method)
---             Silver_WkVehFl   (REG -> machine PIN/VIN, make, model, year; REG is unique)
+--             Silver_WkRoFile  (WO header: dates, account, REG, stock flag)
+--             Silver_WkVehFl   (REG -> machine PIN/VIN, make; REG is unique)
 --             Silver_WkInvReg  (invoice register: labor/parts/other/sublet/total per invoice, ROType)
---             Silver_WkOthSub  (job lines: job codes, job types, actual cost)
+--             Silver_WkOthSub  (job lines: job code, job type, invoiced labor + parts per job)
 --             CustomerLookup   (account -> display name; same lookup the Gold service facts use)
--- Notes:    Pay type (ROType/JobType): R = customer pay, W = warranty, I = internal, S/other.
---           MiscInvoiced = OtherChargesInvoiced + SubletInvoiced. WorkOrderTotal excludes tax.
---           ClaimNumber is blank in Silver, so warranty comes from the pay type.
---           MachinePIN is the full 17-char JD PIN for most Deere units; older and non-Deere
---           machines carry shorter serials. EquipRegistration is Equip's own unit key.
+-- Notes:    Pay type (ROType/JobType): R = customer pay, W = warranty, I = internal, S = other.
+--           MiscInvoiced = other charges + sublet. WorkOrderTotal = labor + parts + misc, no tax.
+--           JobDetail lists every job as "JobCode (JobType): L labor + P parts = total", separated
+--           by " | ". Job dollars are labor + parts only (misc is billed per invoice, not per job),
+--           so the job totals add up to LaborInvoiced + PartsInvoiced.
 --           Run by the Power Automate flow "Closed Work Orders Export - Daily".
 
 WITH wo AS (
-    SELECT Branch, WorkOrder, CreatedOn, ClosedDate, AccountNumber, Registration, Odometer,
-           CustomerVehicleFlag, IsFieldService, PaymentMethod
-    FROM dbo.Silver_WkRoFile
-    WHERE IsClosed = 'Y'
-      AND ClosedDate >= DATEADD(day, -90, CAST(GETDATE() AS date))
+    SELECT r.Branch, r.WorkOrder, r.CreatedOn, r.ClosedDate, r.AccountNumber, TRIM(v.VIN) AS MachinePIN
+    FROM dbo.Silver_WkRoFile r
+    JOIN dbo.Silver_WkVehFl v ON v.Registration = r.Registration
+    WHERE r.IsClosed = 'Y'
+      AND r.ClosedDate >= DATEADD(day, -90, CAST(GETDATE() AS date))
+      AND COALESCE(r.CustomerVehicleFlag, '') <> 'S'
+      AND COALESCE(TRIM(v.VIN), '') <> ''
+      AND (UPPER(v.Make) LIKE '%DEER%' OR UPPER(TRIM(v.Make)) = 'JD')
 ),
 lines AS (
     SELECT s.Branch, s.WorkOrder, TRIM(s.JobCode) AS JobCode, TRIM(s.JobType) AS JobType,
-           TRIM(s.WorkCategory) AS WorkCategory, TRIM(s.InvoiceNumber) AS InvoiceNumber,
-           s.IsMachineDown,
-           COALESCE(s.InvLabor, 0) AS InvLabor, COALESCE(s.InvParts, 0) AS InvParts,
-           COALESCE(s.ActLabor, 0) AS ActLabor, COALESCE(s.ActParts, 0) AS ActParts
+           COALESCE(s.InvLabor, 0) AS InvLabor, COALESCE(s.InvParts, 0) AS InvParts
     FROM dbo.Silver_WkOthSub s
     JOIN wo ON wo.Branch = s.Branch AND wo.WorkOrder = s.WorkOrder
-),
-jobs AS (
-    SELECT Branch, WorkOrder,
-        COUNT(*) AS JobCount,
-        MAX(CASE WHEN IsMachineDown = 'Y' THEN 1 ELSE 0 END) AS AnyMachineDown,
-        SUM(ActLabor) AS LaborCost,
-        SUM(ActParts) AS PartsCost
-    FROM lines GROUP BY Branch, WorkOrder
 ),
 totals AS (
     -- Invoice register: one row per invoice; a WO can have several (one per pay type).
@@ -50,13 +45,9 @@ totals AS (
         SUM(COALESCE(i.LabourCharged, 0)) AS LaborInvoiced,
         SUM(COALESCE(i.PartsValue, 0)) AS PartsInvoiced,
         SUM(COALESCE(i.OtherValue, 0) + COALESCE(i.SubletValue, 0)) AS MiscInvoiced,
-        SUM(COALESCE(i.SubletValue, 0)) AS SubletInvoiced,
-        SUM(COALESCE(i.OtherValue, 0)) AS OtherChargesInvoiced,
         SUM(COALESCE(i.InvoiceTotal, 0)) AS WorkOrderTotal,
         SUM(CASE WHEN i.ROType = 'R' THEN COALESCE(i.InvoiceTotal, 0) ELSE 0 END) AS CustomerPayTotal,
-        SUM(CASE WHEN i.ROType = 'W' THEN COALESCE(i.InvoiceTotal, 0) ELSE 0 END) AS WarrantyTotal,
-        SUM(CASE WHEN i.ROType = 'I' THEN COALESCE(i.InvoiceTotal, 0) ELSE 0 END) AS InternalTotal,
-        SUM(CASE WHEN i.ROType IN ('R', 'W', 'I') THEN 0 ELSE COALESCE(i.InvoiceTotal, 0) END) AS OtherPayTypeTotal
+        SUM(CASE WHEN i.ROType = 'W' THEN COALESCE(i.InvoiceTotal, 0) ELSE 0 END) AS WarrantyTotal
     FROM dbo.Silver_WkInvReg i
     JOIN wo ON wo.Branch = i.Branch AND wo.WorkOrder = i.WorkOrder
     GROUP BY i.Branch, i.WorkOrder
@@ -73,60 +64,37 @@ types AS (
     FROM (SELECT DISTINCT Branch, WorkOrder, JobType FROM lines WHERE JobType <> '') x
     GROUP BY Branch, WorkOrder
 ),
-cats AS (
+detail AS (
     SELECT Branch, WorkOrder,
-           STRING_AGG(WorkCategory, '; ') WITHIN GROUP (ORDER BY WorkCategory) AS WorkCategories
-    FROM (SELECT DISTINCT Branch, WorkOrder, WorkCategory FROM lines WHERE WorkCategory <> '') x
-    GROUP BY Branch, WorkOrder
-),
-invs AS (
-    SELECT Branch, WorkOrder,
-           STRING_AGG(InvoiceNumber, '; ') WITHIN GROUP (ORDER BY InvoiceNumber) AS InvoiceNumbers
-    FROM (SELECT DISTINCT Branch, WorkOrder, InvoiceNumber FROM lines WHERE InvoiceNumber <> '') x
+           STRING_AGG(CAST(
+               CONCAT(JobCode, ' (', JobType, '): L ', CAST(CAST(InvLabor AS decimal(12, 2)) AS varchar(20)),
+                      ' + P ', CAST(CAST(InvParts AS decimal(12, 2)) AS varchar(20)),
+                      ' = ', CAST(CAST(InvLabor + InvParts AS decimal(12, 2)) AS varchar(20)))
+               AS varchar(max)), ' | ') WITHIN GROUP (ORDER BY JobCode, JobType, InvLabor + InvParts DESC) AS JobDetail
+    FROM lines
     GROUP BY Branch, WorkOrder
 )
 SELECT
-    wo.Branch,
     wo.WorkOrder,
+    wo.Branch,
     CAST(wo.CreatedOn AS date) AS OpenedDate,
     CAST(wo.ClosedDate AS date) AS ClosedDate,
     wo.AccountNumber AS CustomerAccount,
     c.DisplayName AS CustomerName,
-    TRIM(v.VIN) AS MachinePIN,
-    TRIM(v.Make) AS Make,
-    TRIM(v.Model) AS Model,
-    v.[Year] AS ModelYear,
-    TRIM(wo.Registration) AS EquipRegistration,
-    wo.Odometer AS Hours,
-    CASE WHEN wo.CustomerVehicleFlag = 'S' THEN 'Y' ELSE 'N' END AS IsStockUnit,
-    wo.IsFieldService,
-    wo.PaymentMethod,
-    j.JobCount,
-    cd.JobCodes,
-    ty.JobTypes,
-    ct.WorkCategories,
-    j.AnyMachineDown,
+    wo.MachinePIN,
     CAST(ROUND(t.LaborInvoiced, 2) AS decimal(12, 2)) AS LaborInvoiced,
     CAST(ROUND(t.PartsInvoiced, 2) AS decimal(12, 2)) AS PartsInvoiced,
     CAST(ROUND(t.MiscInvoiced, 2) AS decimal(12, 2)) AS MiscInvoiced,
-    CAST(ROUND(t.SubletInvoiced, 2) AS decimal(12, 2)) AS SubletInvoiced,
-    CAST(ROUND(t.OtherChargesInvoiced, 2) AS decimal(12, 2)) AS OtherChargesInvoiced,
     CAST(ROUND(t.WorkOrderTotal, 2) AS decimal(12, 2)) AS WorkOrderTotal,
     CAST(ROUND(t.CustomerPayTotal, 2) AS decimal(12, 2)) AS CustomerPayTotal,
     CAST(ROUND(t.WarrantyTotal, 2) AS decimal(12, 2)) AS WarrantyTotal,
-    CAST(ROUND(t.InternalTotal, 2) AS decimal(12, 2)) AS InternalTotal,
-    CAST(ROUND(t.OtherPayTypeTotal, 2) AS decimal(12, 2)) AS OtherPayTypeTotal,
-    CAST(ROUND(j.LaborCost, 2) AS decimal(12, 2)) AS LaborCost,
-    CAST(ROUND(j.PartsCost, 2) AS decimal(12, 2)) AS PartsCost,
-    iv.InvoiceNumbers,
-    CONVERT(varchar(19), SYSUTCDATETIME(), 126) AS ExtractedAtUtc
+    cd.JobCodes,
+    ty.JobTypes,
+    dt.JobDetail
 FROM wo
-LEFT JOIN dbo.Silver_WkVehFl v ON v.Registration = wo.Registration
-LEFT JOIN jobs j ON j.Branch = wo.Branch AND j.WorkOrder = wo.WorkOrder
 LEFT JOIN totals t ON t.Branch = wo.Branch AND t.WorkOrder = wo.WorkOrder
 LEFT JOIN codes cd ON cd.Branch = wo.Branch AND cd.WorkOrder = wo.WorkOrder
 LEFT JOIN types ty ON ty.Branch = wo.Branch AND ty.WorkOrder = wo.WorkOrder
-LEFT JOIN cats ct ON ct.Branch = wo.Branch AND ct.WorkOrder = wo.WorkOrder
-LEFT JOIN invs iv ON iv.Branch = wo.Branch AND iv.WorkOrder = wo.WorkOrder
+LEFT JOIN detail dt ON dt.Branch = wo.Branch AND dt.WorkOrder = wo.WorkOrder
 LEFT JOIN dbo.CustomerLookup c ON c.MatchKey = UPPER(TRIM(CAST(wo.AccountNumber AS varchar(20))))
 ORDER BY wo.ClosedDate DESC, wo.Branch, wo.WorkOrder;

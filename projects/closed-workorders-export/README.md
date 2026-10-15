@@ -8,21 +8,27 @@ his PC) to match alert tickets to work orders by WO number and put dollar figure
 | **Flow** | Power Automate "Closed Work Orders Export - Daily" (`76128aa1-c93c-48d1-b703-74371fe09774`, env `2cf47cce-…`), owner Brian, daily 07:30 Central (after the 06:15 DP refresh) |
 | **Query** | [ClosedWorkOrders.sql](ClosedWorkOrders.sql), run with the SQL Server connector ("PA-DataLoad", Entra auth) against the **Prod** DP_Presentation SQL endpoint |
 | **Output** | `wo-YYYY-MM-DD.csv` in SharePoint: South Plains Implement - Report Site → **Service Data Exports** library. A new dated file each day (Casey's request); his dashboard reads every file and keeps the newest row per WO |
-| **Grain** | One row per closed WO, closed in the last 90 days (~5,000 rows, ~1.3 MB) |
+| **Grain** | One row per closed WO, closed in the last 90 days, on a John Deere machine with a PIN, not a stock unit (~3,500 rows, ~1 MB) |
 | **Consumer** | Casey: OneDrive-syncs the library to his PC; the dashboard refreshes at 5:35 PM |
 
 ## Columns
 
-- **IDs:** Branch, WorkOrder, OpenedDate, ClosedDate.
+Trimmed to Casey's keep-list on 2026-10-15.
+
+- **IDs and dates:** WorkOrder, Branch, OpenedDate, ClosedDate.
 - **Customer:** CustomerAccount, CustomerName.
-- **Machine:** MachinePIN, Make, Model, ModelYear, EquipRegistration, Hours.
-- **Flags:** IsStockUnit, IsFieldService, PaymentMethod.
-- **Jobs:** JobCount, JobCodes, JobTypes, WorkCategories, AnyMachineDown.
+- **Machine:** MachinePIN.
 - **Dollars:**
-  - LaborInvoiced, PartsInvoiced, MiscInvoiced (= SubletInvoiced + OtherChargesInvoiced), WorkOrderTotal.
-  - By pay type: CustomerPayTotal, WarrantyTotal, InternalTotal, OtherPayTypeTotal.
-  - Cost: LaborCost, PartsCost.
-- **Other:** InvoiceNumbers, ExtractedAtUtc.
+  - LaborInvoiced, PartsInvoiced, MiscInvoiced (other + sublet), WorkOrderTotal.
+  - By pay type: CustomerPayTotal, WarrantyTotal.
+- **Jobs:**
+  - JobCodes, JobTypes.
+  - JobDetail: every job as `JobCode (JobType): L labor + P parts = total`, joined by ` | `. Casey's side computes the alert-segment total from it. Job dollars are labor + parts only, because misc is billed per invoice, not per job.
+
+**Row filters (Casey):**
+- John Deere machines only. Work orders have no 'D' franchise (their franchises are AG/CP/OT/CW), so the filter is the machine Make, matched loosely as `%DEER%` or `JD`, since Make is free text.
+- PIN present.
+- Not a stock unit.
 
 ## Data notes (verified 2026-10-15)
 
