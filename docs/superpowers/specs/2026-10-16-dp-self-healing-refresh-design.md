@@ -9,6 +9,10 @@
 >   - **Fixer:** a scheduled task on Brian's PC (his choice), not a Power Automate flow.
 >   - **Phase 2 plan:** `docs/superpowers/plans/2026-10-16-dp-self-healing-phase2.md` (marker, skip unchanged
 >     pipelines, claim task, Finish warning).
+>   - **Phase 2 code done 2026-10-16:** fabric-workspace-docs PR #40 (331 tests, reviewed, Dev dry run OK).
+>     - The pending marker goes in the staged `.platform`: fabric-cicd 1.3.0 rewrites the description from it.
+>     - The claim task runs 05:10–20:55 every 15 min, with a pending.json rerun window (deploy..claim + 2 min).
+>     - Release = merge, deploy, then Brian installs the task.
 >   - **Phase 3:** catchup + watchdog trigger (2b), 2c, 2d.
 > - Later phases get their own plans once phase 1 ships and 0c is answered.
 
