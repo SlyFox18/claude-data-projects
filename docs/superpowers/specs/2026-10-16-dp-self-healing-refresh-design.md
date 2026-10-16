@@ -1,8 +1,10 @@
 # DP refresh: fix known failures automatically
 
-> **Progress:** approved by Brian 2026-10-16. Phase 1 (rollout steps 1–2: Workspace Identity test, Layer 1,
-> Parts retry) plan: `docs/superpowers/plans/2026-10-16-dp-self-healing-phase1.md`. Later phases get their own
-> plans once phase 1 ships and the Workspace Identity test is answered.
+> **Progress:** approved by Brian 2026-10-16. Phase 1 plan: `docs/superpowers/plans/2026-10-16-dp-self-healing-phase1.md`.
+> - **Code done 2026-10-16:** Layer 1 + Parts retry, on fabric-workspace-docs `dev` (`9b7423a8..90345e73`, 280
+>   tests pass, reviewed). Not yet released.
+> - **Still open:** the Dev test, the release (+ claim), and the Workspace Identity test (0c, Brian in the UI).
+> - Later phases get their own plans once phase 1 ships and 0c is answered.
 
 ## Goal
 
@@ -82,6 +84,18 @@ or code the orchestrator and `parts_alert` already capture.
 
 Classification is a pure function in a new `deploy/failure_types.py`, with tests, shared by `notify_core`,
 `parts_alert` and the catch-up logic. `parts_alert`'s existing cause buckets move into it, so there is only one copy.
+
+**As built in phase 1** (fabric-workspace-docs `9b7423a8..90345e73`):
+- **Kinds:** `failure_kind()` returns `unclaimed`, `overlap`, `credentials`, `timeout`, `capacity`, `gateway` or
+  `unknown`.
+- **Which gateway:** decided by context. Bronze problems → JD; DP dataflows and the Parts load → SPI.
+- **Dataflows only:** `orchestrator_core.dp_failure_kind()` gives `gateway`/`unclaimed` only for dataflow items.
+  Spark tracebacks contain `py4j/java_gateway.py`, so a notebook's "gateway" is noise.
+- **`transient` = `AUTO_RETRY_KINDS = {"capacity"}`,** matched on throttling text only. A bare "capacity" matched
+  column names such as `ServiceCapacity`. `timeout` is **not** auto-retried yet: DP's own waits time out while the
+  job may still be running, and a cell timeout is often slow code. 2c decides which timeouts are safe.
+- **Prod failure history (checked 2026-10-16):** every real failure was gateway, claim or a code/data bug. No
+  temporary failures yet.
 
 ### Layer 0: prevention
 
@@ -233,11 +247,11 @@ planning). At most once per run. Two in a row are reported as `unknown`.
 When maintenance ends, the first healthy check fires the catch-up trigger as after any outage, so anything that
 failed during the window re-runs.
 
-**Small related change:** `Pipeline_PartsAvailability`'s retry interval goes from 120 s to **1,200 s (20 min)**.
-A gateway failure fails fast, so the retry starts about 20 minutes after the failure, after the watchdog's ~20-min
-heal; on 10/16 it would have succeeded. The worst case (20-min timeout + 20 min + 20-min timeout = 60 min) still
-fits inside the hour. The catch-up trigger makes this mostly redundant, but it's one line and doesn't depend on
-Layer 2.
+**Small related change (done in phase 1):** `Pipeline_PartsAvailability`'s load now has a 15-min timeout (a
+load normally takes ~2 min) and retries once after **1,500 s (25 min)** instead of 120 s. A gateway failure fails
+fast, so the retry lands after the watchdog's ~20–25-min heal; on 10/16 it would have succeeded. Worst case
+15 + 25 + 15 = 55 min keeps the load inside its hour (the notifier adds a few minutes; `concurrency: 1` queues the
+next run). The catch-up trigger makes this mostly redundant, but it doesn't depend on Layer 2.
 
 ### Layer 3: diagnosis agent (read-only, last)
 
