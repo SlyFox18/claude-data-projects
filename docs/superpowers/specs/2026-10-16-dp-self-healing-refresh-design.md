@@ -5,7 +5,11 @@
 >   - Dev-tested: the Parts alert and an injected Gold failure.
 >   - Deployed 13:21 CT; claimed afterwards.
 >   - Prod Parts load verified: timeout 15 min, retry after 1,500 s.
-> - **Still open:** the Workspace Identity test (0c, Brian in the UI).
+> - **0c answered 2026-10-16:** Workspace Identity is **not available** on the Dataflow activity, so 2a is built.
+>   - **Fixer:** a scheduled task on Brian's PC (his choice), not a Power Automate flow.
+>   - **Phase 2 plan:** `docs/superpowers/plans/2026-10-16-dp-self-healing-phase2.md` (marker, skip unchanged
+>     pipelines, claim task, Finish warning).
+>   - **Phase 3:** catchup + watchdog trigger (2b), 2c, 2d.
 > - Later phases get their own plans once phase 1 ships and 0c is answered.
 
 ## Goal
