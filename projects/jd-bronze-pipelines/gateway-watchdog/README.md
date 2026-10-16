@@ -6,11 +6,13 @@ service when it's down and emails what it did. The same code is installed on two
 | `-Gateway` | Gateway | Machine | Install folder | Task names (`\SPI\`) | Status |
 |---|---|---|---|---|---|
 | `JD` (default) | JD's `049694-Gateway` (JD Bronze pipelines) | SPI01SR2034W | `C:\ProgramData\JDGatewayWatchdog` | `JD Gateway Watchdog - …` | **live** since 2026-10-16 |
-| `SPI` | `SPI-Data-Gateway` (DP staging dataflows, hourly Parts Availability load, ODBC models) | SPI00T4022W11 | `C:\ProgramData\SPIDataGatewayWatchdog` | `SPI Data Gateway Watchdog - …` | being installed 2026-10-16 |
+| `SPI` | `SPI-Data-Gateway` (DP staging dataflows, hourly Parts Availability load, ODBC models) | SPI00T4022W11 | `C:\ProgramData\SPIDataGatewayWatchdog` | `SPI Data Gateway Watchdog - …` | installed 2026-10-16, **live** the same day (code already proven on the JD gateway) |
 
 Background: on 2026-10-14 a JD gateway blip made one midnight copy fail, and on 2026-10-15 that gateway was
 offline from before midnight until someone restarted it at about 07:30. Both mornings the DP refresh was blocked.
 SPI-Data-Gateway got the same watchdog so a failure there heals before the 06:15 dataflows or an hourly load miss.
+SPI00T4022W11's Windows Update active hours are 05:00–21:00 (2026-10-16), so update restarts stay clear of the
+06:16 dataflows, the 06:50–16:50 Parts loads and the hourly ODBC models.
 
 ## What it does
 
@@ -55,7 +57,9 @@ Availability alert (SPI) still catch the outcome.
 - Per gateway, **Admin** on the gateway (Manage connections and gateways → On-premises data gateways → Manage
   users) and **User** on the test connection (Connections tab → the connection → Manage users):
   - JD: gateway `049694-Gateway`, connection `049694-Gateway` (`b062a489`). Granted 2026-10-15.
-  - SPI: gateway `SPI-Data-Gateway`, connection `dsn=EquipRDB64` (`70ea8af2`).
+  - SPI: gateway `SPI-Data-Gateway`, connection `dsn=EquipRDB64` (`70ea8af2`). Granted 2026-10-16.
+Secrets expire **10/15/2027** (gateway-watchdog) and **10/16/2027** (gateway-watchdog-spi); rotate with
+`-NewSecret` about two weeks before (fabric-workspace-docs OPERATIONS-GUIDE secrets table).
 - Mail.Send through the existing DP-refresh mail setup.
 
 The secret is in `secret.bin`, DPAPI-encrypted with the machine key. The install folder is locked to SYSTEM and
