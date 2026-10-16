@@ -1,9 +1,11 @@
 # DP refresh: fix known failures automatically
 
 > **Progress:** approved by Brian 2026-10-16. Phase 1 plan: `docs/superpowers/plans/2026-10-16-dp-self-healing-phase1.md`.
-> - **Code done 2026-10-16:** Layer 1 + Parts retry, on fabric-workspace-docs `dev` (`9b7423a8..90345e73`, 280
->   tests pass, reviewed). Not yet released.
-> - **Still open:** the Dev test, the release (+ claim), and the Workspace Identity test (0c, Brian in the UI).
+> - **Phase 1 live in Prod 2026-10-16:** Layer 1 + Parts retry (fabric-workspace-docs PR #38, merge `b387fe00`).
+>   - Dev-tested: the Parts alert and an injected Gold failure.
+>   - Deployed 13:21 CT; claimed afterwards.
+>   - Prod Parts load verified: timeout 15 min, retry after 1,500 s.
+> - **Still open:** the Workspace Identity test (0c, Brian in the UI).
 > - Later phases get their own plans once phase 1 ships and 0c is answered.
 
 ## Goal
