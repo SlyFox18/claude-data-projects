@@ -1,11 +1,11 @@
 <#
 .SYNOPSIS
-    Decision logic and I/O helpers for the JD gateway watchdog (Invoke-GatewayWatchdog.ps1).
+    Decision logic and I/O helpers for the gateway watchdog (Invoke-GatewayWatchdog.ps1).
 .DESCRIPTION
     Get-WatchdogDecision is pure (no I/O) and is what GatewayWatchdog.Tests.ps1 covers. Everything
     else talks to Windows, Entra, the Power BI REST API or Microsoft Graph.
 
-    Windows PowerShell 5.1 compatible on purpose: the gateway host (SPI01SR2034W) has no PowerShell 7.
+    Windows PowerShell 5.1 compatible on purpose: the gateway hosts (SPI01SR2034W, SPI00T4022W11) have no PowerShell 7.
     No ?? / ?: operators, no -AsHashtable.
 #>
 
@@ -81,7 +81,7 @@ function Get-WatchdogDecision {
         elseif ($capReached) {
             $problem = 'gave-up'
             $summary = "Gateway service is $($o.Service) and the watchdog already restarted it $($new.Restarts.Count) times in $($Config.RestartWindowHours) h; giving up"
-            $detail = 'Needs a person: RDP to the server, check Event Viewer and the gateway app. Runbook: data-projects/projects/jd-bronze-pipelines/README.md'
+            $detail = "Needs a person: RDP to the server, check Event Viewer and the gateway app. Runbook: $($Config.Runbook)"
         }
         else {
             $action = 'StartService'
@@ -93,8 +93,8 @@ function Get-WatchdogDecision {
         $new.ConsecutiveFailures = 0
         if ($o.Source -eq 'Failed') {
             $problem = 'source-failed'
-            $summary = 'Gateway is online, but it cannot reach Equip through the EquipRDB ODBC connection'
-            $detail = "Restarting the gateway will not fix this; check the Equip server, the EquipRDB DSN and the connection credentials. Error: $($o.SourceError)"
+            $summary = 'Gateway is online, but it cannot reach Equip through its ODBC connection'
+            $detail = "Restarting the gateway will not fix this; check the Equip server, the ODBC DSN on this machine and the connection credentials. Error: $($o.SourceError)"
         }
     }
     elseif ($o.Gateway -eq 'Unknown') {
@@ -117,7 +117,7 @@ function Get-WatchdogDecision {
         elseif ($capReached) {
             $problem = 'gave-up'
             $summary = "Fabric reports the gateway as '$($o.Gateway)' and the watchdog already restarted it $($new.Restarts.Count) times in $($Config.RestartWindowHours) h; giving up"
-            $detail = 'Needs a person: RDP to the server, open the On-premises data gateway app, run Diagnostics. Runbook: data-projects/projects/jd-bronze-pipelines/README.md'
+            $detail = "Needs a person: RDP to the server, open the On-premises data gateway app, run Diagnostics. Runbook: $($Config.Runbook)"
         }
         else {
             $action = 'RestartService'
@@ -244,7 +244,7 @@ function Test-TcpPort {
 
 function Get-GatewayObservation {
     <# Service state, Fabric's view of the gateway, and (only when the gateway is Live) a live test of the
-       EquipRDB connection through it. #>
+       Equip ODBC connection (config DatasourceId) through it. #>
     param([hashtable]$Config, [string]$Secret)
     $o = @{ Service = 'Missing'; Gateway = 'Unknown'; GatewayError = $null; Source = 'NotChecked'; SourceError = $null; Network = $null
             Installing = [bool](Get-Process -Name 'GatewayInstall' -ErrorAction SilentlyContinue) }

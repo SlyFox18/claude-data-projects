@@ -3,7 +3,7 @@
 Import-Module (Join-Path $PSScriptRoot 'GatewayWatchdog.psm1') -Force
 
 $config = @{ ServiceName = 'PBIEgwService'; ProbeHost = 'ncu.frontend.clouddatahub.net'; FailuresBeforeRestart = 2
-             MaxRestarts = 3; RestartWindowHours = 6; AlertRepeatHours = 4 }
+             MaxRestarts = 3; RestartWindowHours = 6; AlertRepeatHours = 4; Runbook = 'the-runbook.md' }
 $now = [datetime]::new(2026, 10, 15, 12, 0, 0, [DateTimeKind]::Utc)
 
 function Obs {
@@ -153,6 +153,14 @@ Describe 'Get-WatchdogDecision' {
         $d = Decide (Obs -Service 'Missing' -Gateway 'Unknown' -Installing)
         $d.Problem | Should Be $null
         $d.Alert | Should Be $false
+    }
+
+    It 'points the gave-up alert at the configured runbook' {
+        $state = New-WatchdogState
+        $state.Restarts = @($now.AddMinutes(-10).ToString('o'), $now.AddMinutes(-20).ToString('o'), $now.AddMinutes(-30).ToString('o'))
+        $state.ConsecutiveFailures = 1
+        $d = Decide (Obs -Gateway 'Offline') -State $state
+        $d.Detail | Should Match 'the-runbook\.md'
     }
 
     It 'cannot fix a missing service' {

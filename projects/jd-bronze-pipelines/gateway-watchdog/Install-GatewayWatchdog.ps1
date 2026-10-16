@@ -1,16 +1,20 @@
 <#
 .SYNOPSIS
-    Installs (or updates) the JD gateway watchdog on the gateway host. Run on SPI01SR2034W in an
-    ELEVATED Windows PowerShell, from a copy of this folder.
+    Installs (or updates) the gateway watchdog on a gateway host. Run in an ELEVATED Windows PowerShell, from
+    a copy of this folder, on the machine that runs the gateway:
+      -Gateway JD   (default) JD's 049694-Gateway on SPI01SR2034W
+      -Gateway SPI  SPI-Data-Gateway on SPI00T4022W11
 .DESCRIPTION
-    1. Copies GatewayWatchdog.psm1 and Invoke-GatewayWatchdog.ps1 to $InstallDir.
+    1. Copies GatewayWatchdog.psm1 and Invoke-GatewayWatchdog.ps1 to the gateway's install folder
+       (C:\ProgramData\JDGatewayWatchdog or C:\ProgramData\SPIDataGatewayWatchdog).
     2. Writes config.json (first install, or with -ResetConfig). Starts in log-only mode.
-    3. Prompts for the service principal secret ("gateway-watchdog" on SPN-Fabric-Refresh-Automation) and
+    3. Prompts for the service principal secret ("gateway-watchdog" for JD, "gateway-watchdog-spi" for SPI, both on
+       SPN-Fabric-Refresh-Automation) and
        stores it DPAPI-encrypted (LocalMachine) in secret.bin (first install, or with -NewSecret).
     4. Locks the folder to SYSTEM + Administrators.
     5. Registers two tasks running as SYSTEM:
-         "JD Gateway Watchdog - Check"           every 10 minutes
-         "JD Gateway Watchdog - Nightly restart" daily at 23:30
+         "<Gateway> Watchdog - Check"           every 10 minutes
+         "<Gateway> Watchdog - Nightly restart" daily at 23:30
     6. Runs one Test pass (changes nothing).
 
     Re-running it updates the scripts and tasks and keeps config.json, secret.bin, state.json and logs.
@@ -18,19 +22,40 @@
     Write LogOnly=false into config.json (lets the watchdog restart the service). Without it, an existing
     config keeps its LogOnly value and a new one starts as log-only.
 .EXAMPLE
-    .\Install-GatewayWatchdog.ps1
-    .\Install-GatewayWatchdog.ps1 -Live          # after a day or two of clean log-only runs
-    .\Install-GatewayWatchdog.ps1 -NewSecret     # secret rotation
+    .\Install-GatewayWatchdog.ps1                       # JD gateway, SPI01SR2034W
+    .\Install-GatewayWatchdog.ps1 -Gateway SPI          # SPI-Data-Gateway, SPI00T4022W11
+    .\Install-GatewayWatchdog.ps1 -Gateway SPI -Live    # after a day or two of clean log-only runs
+    .\Install-GatewayWatchdog.ps1 -NewSecret            # secret rotation
 #>
 [CmdletBinding()]
 param(
-    [string]$InstallDir = 'C:\ProgramData\JDGatewayWatchdog',
+    [ValidateSet('JD', 'SPI')]
+    [string]$Gateway = 'JD',
     [switch]$NewSecret,
     [switch]$ResetConfig,
-    [switch]$Live
+    [switch]$Live,
+    [switch]$AnyHost    # install even though this isn't the gateway's usual machine
 )
 
 $ErrorActionPreference = 'Stop'
+
+$presets = @{
+    JD  = @{ GatewayName = 'JD gateway'; Host = 'SPI01SR2034W'; Dir = 'C:\ProgramData\JDGatewayWatchdog'
+             Tasks = 'JD Gateway Watchdog'; Secret = 'gateway-watchdog'
+             GatewayId = 'e896ed96-9c3a-43b8-82da-dcb99af18260'      # 049694-Gateway
+             DatasourceId = 'b062a489-87a3-4c63-9bfe-fdfe2c4732fb'   # 049694-Gateway connection, dsn=EquipRDB
+             Runbook = 'data-projects/projects/jd-bronze-pipelines/README.md' }
+    SPI = @{ GatewayName = 'SPI-Data-Gateway'; Host = 'SPI00T4022W11'; Dir = 'C:\ProgramData\SPIDataGatewayWatchdog'
+             Tasks = 'SPI Data Gateway Watchdog'; Secret = 'gateway-watchdog-spi'
+             GatewayId = 'd98a8d2c-d0df-4a42-a281-aab18e49dbd7'      # SPI-Data-Gateway
+             DatasourceId = '70ea8af2-b529-4843-aee6-28297801fe71'   # dsn=EquipRDB64 (Parts Availability's connection)
+             Runbook = 'data-projects/projects/jd-bronze-pipelines/gateway-watchdog/README.md' }
+}
+$p = $presets[$Gateway]
+$InstallDir = $p.Dir
+if ($env:COMPUTERNAME -ne $p.Host -and -not $AnyHost) {
+    throw "$($p.GatewayName) runs on $($p.Host), but this is $env:COMPUTERNAME. Wrong -Gateway? (-AnyHost to install anyway.)"
+}
 
 $me = [Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()
 if (-not $me.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
@@ -51,8 +76,10 @@ if ($ResetConfig -or -not (Test-Path $configPath)) {
     $config = [ordered]@{
         TenantId              = '8a02a2b8-0092-4de5-8f76-4700d099feb1'
         ClientId              = '9adca971-f328-4d79-9b48-713c298a238c'   # SPN-Fabric-Refresh-Automation
-        GatewayId             = 'e896ed96-9c3a-43b8-82da-dcb99af18260'   # 049694-Gateway
-        DatasourceId          = 'b062a489-87a3-4c63-9bfe-fdfe2c4732fb'   # EquipRDB ODBC connection
+        GatewayName           = $p.GatewayName
+        GatewayId             = $p.GatewayId
+        DatasourceId          = $p.DatasourceId
+        Runbook               = $p.Runbook
         ServiceName           = 'PBIEgwService'
         ProbeHost             = 'ncu.frontend.clouddatahub.net'
         Sender                = 'dp-refresh@spitractor.com'
@@ -78,7 +105,7 @@ if ($Live) {
 # --- secret.bin --------------------------------------------------------------------------------
 $secretPath = Join-Path $InstallDir 'secret.bin'
 if ($NewSecret -or -not (Test-Path $secretPath)) {
-    $s = Read-Host -AsSecureString 'Client secret "gateway-watchdog" for SPN-Fabric-Refresh-Automation (Value, not ID)'
+    $s = Read-Host -AsSecureString "Client secret `"$($p.Secret)`" for SPN-Fabric-Refresh-Automation (Value, not ID)"
     Protect-WatchdogSecret -Secret $s -Path $secretPath
     Write-Host 'Stored the secret (DPAPI, LocalMachine)'
 }
@@ -111,11 +138,11 @@ function Register-WatchdogTask {
 
 $every10 = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(2) `
     -RepetitionInterval (New-TimeSpan -Minutes 10) -RepetitionDuration (New-TimeSpan -Days 3650)
-Register-WatchdogTask -Name 'JD Gateway Watchdog - Check' -Mode 'Check' -Trigger $every10 `
-    -Description 'Checks JD gateway 049694 every 10 min; starts/restarts PBIEgwService and emails. data-projects/projects/jd-bronze-pipelines/gateway-watchdog'
-Register-WatchdogTask -Name 'JD Gateway Watchdog - Nightly restart' -Mode 'NightlyRestart' `
+Register-WatchdogTask -Name "$($p.Tasks) - Check" -Mode 'Check' -Trigger $every10 `
+    -Description "Checks $($p.GatewayName) every 10 min; starts/restarts PBIEgwService and emails. data-projects/projects/jd-bronze-pipelines/gateway-watchdog"
+Register-WatchdogTask -Name "$($p.Tasks) - Nightly restart" -Mode 'NightlyRestart' `
     -Trigger (New-ScheduledTaskTrigger -Daily -At '23:30') `
-    -Description 'Planned restart of PBIEgwService before JD''s midnight Full load. data-projects/projects/jd-bronze-pipelines/gateway-watchdog'
+    -Description "Planned nightly restart of PBIEgwService ($($p.GatewayName)). data-projects/projects/jd-bronze-pipelines/gateway-watchdog"
 
 # --- one test pass -----------------------------------------------------------------------------
 Write-Host ''

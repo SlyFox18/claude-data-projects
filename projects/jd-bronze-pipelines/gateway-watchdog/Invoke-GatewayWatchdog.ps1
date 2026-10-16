@@ -1,16 +1,16 @@
 <#
 .SYNOPSIS
-    Watchdog for JD's on-premises data gateway (049694-Gateway on SPI01SR2034W). Run by two scheduled
-    tasks as SYSTEM; see README.md in this folder.
+    Watchdog for an on-premises data gateway: JD's 049694-Gateway on SPI01SR2034W, or SPI-Data-Gateway on
+    SPI00T4022W11 (which one is in config.json). Run by two scheduled tasks as SYSTEM; see README.md in this folder.
 .DESCRIPTION
     -Mode Check (every 10 minutes):
         0. Gateway installer (GatewayInstall.exe) running?   Yes -> hands off (also skips the 23:30 restart).
         1. Is the PBIEgwService service running?            Stopped twice in a row -> start it.
         2. Does Fabric see the gateway as Live?              Not Live twice in a row -> restart the service.
-        3. Gateway Live: can it reach Equip (EquipRDB DSN)?   Failed -> alert only (a restart won't fix Equip).
+        3. Gateway Live: can it reach Equip (config DatasourceId)?   Failed -> alert only (a restart won't fix Equip).
         4. Couldn't ask Fabric: can this server reach Fabric on 443?  No -> alert only.
         At most MaxRestarts restarts per RestartWindowHours, then it alerts "giving up" and leaves it to a person.
-    -Mode NightlyRestart (23:30, before JD's midnight Full load): restart, wait for Live, alert if it doesn't come back.
+    -Mode NightlyRestart (23:30): restart, wait for Live, alert if it doesn't come back.
     -Mode Test: run the checks, print what it sees and what it would do; changes nothing.
         Add -SendTestEmail to also send a test email.
 
@@ -33,6 +33,10 @@ Import-Module (Join-Path $PSScriptRoot 'GatewayWatchdog.psm1') -Force
 
 $root = $PSScriptRoot
 $config = ConvertTo-Hashtable (Get-Content (Join-Path $root 'config.json') -Raw | ConvertFrom-Json)
+# Configs written before the SPI-Data-Gateway install (2026-10-16) have neither key: they are JD's.
+if (-not $config.GatewayName) { $config.GatewayName = 'JD gateway' }
+if (-not $config.Runbook) { $config.Runbook = 'data-projects/projects/jd-bronze-pipelines/README.md' }
+$name = $config.GatewayName
 $logDir = Join-Path $root 'logs'
 if (-not (Test-Path $logDir)) { New-Item -ItemType Directory -Path $logDir -Force | Out-Null }
 $logPath = Join-Path $logDir "watchdog-$(Get-Date -Format 'yyyy-MM-dd').log"
@@ -51,8 +55,9 @@ function Format-Html {
     "<p><b>$(& $e $Summary)</b></p>" +
     $(if ($Detail) { "<p>$(& $e $Detail)</p>" } else { '' }) +
     "<p>Server: $(& $e $env:COMPUTERNAME) &middot; $(Get-Date -Format 'yyyy-MM-dd HH:mm') local</p>" +
+    "<p>What the check found (before acting):</p>" +
     "<table border='1' cellpadding='4' style='border-collapse:collapse'>$rows</table>" +
-    "<p>Log: $(& $e $logPath)<br>Runbook: data-projects/projects/jd-bronze-pipelines/README.md</p>"
+    "<p>Log: $(& $e $logPath)<br>Runbook: $(& $e $config.Runbook)</p>"
 }
 
 function Send-Safely {
@@ -68,7 +73,7 @@ function Send-Safely {
 # nothing, so it doesn't take the lock.
 $mutex = $null
 if ($Mode -ne 'Test') {
-    $mutex = New-Object Threading.Mutex($false, 'Global\JDGatewayWatchdog')
+    $mutex = New-Object Threading.Mutex($false, "Global\GatewayWatchdog-$($config.GatewayId)")
     if (-not $mutex.WaitOne(0)) { Write-WatchdogLog 'INFO' 'Another watchdog run is in progress; exiting'; exit 0 }
 }
 
@@ -93,8 +98,8 @@ try {
             $status = Wait-GatewayLive -Config $config -Secret $secret -TimeoutSeconds $config.VerifyWaitSeconds
             Write-WatchdogLog 'INFO' "Planned restart: $how; gateway status afterwards: $status"
             if ($status -ne 'Live') {
-                Send-Safely -Subject "$red JD gateway did not come back after the nightly restart ($status)" `
-                    -Html (Format-Html -Summary "The planned 23:30 restart finished ($how) but Fabric reports the gateway as '$status' after $($config.VerifyWaitSeconds) s. The 10-minute check will keep trying; JD's midnight Full load is at risk." -Obs @{ Status = $status })
+                Send-Safely -Subject "$red $name did not come back after the nightly restart ($status)" `
+                    -Html (Format-Html -Summary "The planned 23:30 restart finished ($how) but Fabric reports the gateway as '$status' after $($config.VerifyWaitSeconds) s. The 10-minute check will keep trying." -Obs @{ Status = $status })
             }
         }
         return
@@ -112,7 +117,7 @@ try {
         Write-WatchdogLog 'INFO' "Test: $obsText"
         Write-WatchdogLog 'INFO' "Test: decision=$($d.Action); $($d.Summary)"
         if ($SendTestEmail) {
-            Send-Safely -Normal -Subject 'JD gateway watchdog: test email' `
+            Send-Safely -Normal -Subject "$name watchdog: test email" `
                 -Html (Format-Html -Summary "Test from the watchdog. Decision right now: $($d.Action) - $($d.Summary)" -Obs $obs)
         }
         return
@@ -155,11 +160,11 @@ try {
 
     if ($d.Alert) {
         $icon = if ($d.Action -ne 'None' -and $result -match 'Live\.$') { $yellow } else { $red }
-        Send-Safely -Subject "$icon JD gateway$($tag): $($d.Summary)" `
+        Send-Safely -Subject "$icon $name$($tag): $($d.Summary)" `
             -Html (Format-Html -Summary $d.Summary -Detail (($d.Detail, $result) -join ' ').Trim() -Obs $obs)
     }
     elseif ($d.Recovered) {
-        Send-Safely -Normal -Subject "$green JD gateway$($tag): $($d.Summary)" -Html (Format-Html -Summary $d.Summary -Obs $obs)
+        Send-Safely -Normal -Subject "$green $name$($tag): $($d.Summary)" -Html (Format-Html -Summary $d.Summary -Obs $obs)
     }
 }
 catch {
