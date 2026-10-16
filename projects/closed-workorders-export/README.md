@@ -1,4 +1,11 @@
-# Closed Work Orders Export (for Casey's alert dashboard)
+# Closed / Open Work Orders Exports (for Casey's alert dashboard)
+
+> **2026-10-16:**
+> - **Open file:** added `OpenWorkOrders.csv` ([OpenWorkOrders.sql](OpenWorkOrders.sql)), via flow "Open Work Orders Export - Daily" (`f3077a5b-65a3-4624-b3f0-9366fda25c54`). It runs daily at 07:30 and writes only if there are at least 300 rows (~880 open JD WOs).
+> - **Closed file:** now includes stock units (`IsStockUnit`).
+> - **Both files:** gained time-punch columns from Silver_TechnicianPunchedDetail, and its hours match WkMechWk within 0.2%. Closed is now ~41k rows / 25 MB.
+> - **Field guide:** [CASEY-HANDOFF.md](CASEY-HANDOFF.md) is the guide for Casey's side. Update it whenever columns change.
+> - **Open file sources:** "open" = RepairOrderDetail.StatusDisplay <> 'Invoiced', quotes excluded (same as the Open Work Orders report). Job $ and status come from RepairOrderDetail (06:15 ODBC pull); machine, jobs and punches come from midnight Bronze.
 
 Daily CSV of closed service work orders, used by Casey's tractor-alert dashboard (a program on
 his PC) to match alert tickets to work orders by WO number and put dollar figures on them.
