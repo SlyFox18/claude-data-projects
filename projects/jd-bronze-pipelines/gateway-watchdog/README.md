@@ -13,7 +13,10 @@ before midnight until someone restarted it at about 07:30. Both mornings the DP 
 
 Each check:
 
-1. **Service** `PBIEgwService` not running → **start it** right away.
+0. **Gateway installer** (`GatewayInstall.exe`) running → **hands off** (an upgrade stops the service), and the
+   failure count starts over. The 23:30 restart is skipped too.
+1. **Service** `PBIEgwService` not running on **two checks in a row** (about 20 min) → **start it**. A clean stop is
+   usually deliberate, and Windows' recovery options already restart the service after a crash.
 2. **Fabric's view** (Power BI REST `GET /gateways/{id}` → `gatewayStatus`). Not `Live` on **two checks in a row**
    (about 20 min) while the service runs → **restart the service** (it kills the process if the stop hangs).
 3. **Equip through the gateway** (`GET /gateways/{id}/datasources/{EquipRDB}/status`, a live ODBC test), only
@@ -80,11 +83,17 @@ It starts in **log-only** mode: it checks, logs and emails, but never touches th
 .\Install-GatewayWatchdog.ps1 -Live
 ```
 
-Then run a drill: `Stop-Service PBIEgwService`. Within 10 minutes the service should be started again, with a
+Then run a drill: `Stop-Service PBIEgwService`. Within 10–20 minutes the service should be started again, with a
 🟡 email.
 
 Re-running the installer updates the scripts and tasks and keeps config, secret, state and logs. Other
 switches: `-NewSecret` (rotation), `-ResetConfig`.
+
+## Stopping the gateway on purpose
+
+Anyone who stops the gateway deliberately for more than ~20 minutes (maintenance, troubleshooting, JD
+support) must **disable the Check task first** and re-enable it afterwards, or the watchdog will start the service
+again. Gateway upgrades are detected automatically.
 
 ## Turning it off
 

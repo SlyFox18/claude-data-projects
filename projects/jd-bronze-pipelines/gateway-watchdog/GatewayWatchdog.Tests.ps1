@@ -7,8 +7,10 @@ $config = @{ ServiceName = 'PBIEgwService'; ProbeHost = 'ncu.frontend.clouddatah
 $now = [datetime]::new(2026, 10, 15, 12, 0, 0, [DateTimeKind]::Utc)
 
 function Obs {
-    param([string]$Service = 'Running', [string]$Gateway = 'Live', [string]$Source = 'Ok', $Network = $null)
-    @{ Service = $Service; Gateway = $Gateway; GatewayError = 'err'; Source = $Source; SourceError = 'src err'; Network = $Network }
+    param([string]$Service = 'Running', [string]$Gateway = 'Live', [string]$Source = 'Ok', $Network = $null,
+          [switch]$Installing)
+    @{ Service = $Service; Gateway = $Gateway; GatewayError = 'err'; Source = $Source; SourceError = 'src err'; Network = $Network
+       Installing = [bool]$Installing }
 }
 function Decide {
     param([hashtable]$Obs, [hashtable]$State = (New-WatchdogState), [datetime]$At = $now)
@@ -25,8 +27,13 @@ Describe 'Get-WatchdogDecision' {
         $d.Recovered | Should Be $false
     }
 
-    It 'starts a stopped service at once and alerts' {
-        $d = Decide (Obs -Service 'Stopped' -Gateway 'Unknown')
+    It 'waits one check, then starts a stopped service and alerts' {
+        $first = Decide (Obs -Service 'Stopped' -Gateway 'Unknown')
+        $first.Action | Should Be 'None'
+        $first.Alert | Should Be $false
+        $first.State.ConsecutiveFailures | Should Be 1
+
+        $d = Decide (Obs -Service 'Stopped' -Gateway 'Unknown') -State $first.State
         $d.Action | Should Be 'StartService'
         $d.Problem | Should Be 'service-stopped'
         $d.Alert | Should Be $true
@@ -67,6 +74,7 @@ Describe 'Get-WatchdogDecision' {
     It 'gives up on a stopped service too once the cap is reached' {
         $state = New-WatchdogState
         $state.Restarts = @($now.AddMinutes(-10).ToString('o'), $now.AddMinutes(-20).ToString('o'), $now.AddMinutes(-30).ToString('o'))
+        $state.ConsecutiveFailures = 1
         $d = Decide (Obs -Service 'Stopped') -State $state
         $d.Action | Should Be 'None'
         $d.Problem | Should Be 'gave-up'
@@ -100,6 +108,7 @@ Describe 'Get-WatchdogDecision' {
         $state = New-WatchdogState
         $state.LastAlertKey = 'service-stopped'; $state.LastAlertUtc = $now.AddMinutes(-10).ToString('o')
         $state.OpenProblem = 'service-stopped'
+        $state.ConsecutiveFailures = 1
         $d = Decide (Obs -Service 'Stopped') -State $state
         $d.Action | Should Be 'StartService'
         $d.Alert | Should Be $true
@@ -129,6 +138,23 @@ Describe 'Get-WatchdogDecision' {
         $d.State.ConsecutiveFailures | Should Be 1
     }
 
+    It 'leaves the service alone while the gateway installer runs, and starts counting afresh after' {
+        $state = New-WatchdogState; $state.ConsecutiveFailures = 1
+        $d = Decide (Obs -Service 'Stopped' -Gateway 'Unknown' -Installing) -State $state
+        $d.Action | Should Be 'None'
+        $d.Problem | Should Be $null
+        $d.Alert | Should Be $false
+        $d.State.ConsecutiveFailures | Should Be 0
+        $after = Decide (Obs -Service 'Stopped' -Gateway 'Unknown') -State $d.State
+        $after.Action | Should Be 'None'
+    }
+
+    It 'does not call a service missing while the installer has it removed' {
+        $d = Decide (Obs -Service 'Missing' -Gateway 'Unknown' -Installing)
+        $d.Problem | Should Be $null
+        $d.Alert | Should Be $false
+    }
+
     It 'cannot fix a missing service' {
         $d = Decide (Obs -Service 'Missing' -Gateway 'Unknown')
         $d.Action | Should Be 'None'
@@ -141,12 +167,14 @@ Describe 'Read-WatchdogState / Save-WatchdogState' {
 
     It 'round-trips the state, including a single restart and alert time' {
         $path = Join-Path $TestDrive 'state.json'
-        $d = Decide (Obs -Service 'Stopped')
+        $first = Decide (Obs -Service 'Stopped')
+        $d = Decide (Obs -Service 'Stopped') -State $first.State
         Save-WatchdogState -Path $path -State $d.State
         $back = Read-WatchdogState -Path $path
         @($back.Restarts).Count | Should Be 1
         $back.LastAlertKey | Should Be 'service-stopped'
-        $next = Decide (Obs -Service 'Stopped') -State $back -At $now.AddMinutes(10)
+        $again = Decide (Obs -Service 'Stopped') -State $back -At $now.AddMinutes(10)
+        $next = Decide (Obs -Service 'Stopped') -State $again.State -At $now.AddMinutes(20)
         $next.State.Restarts.Count | Should Be 2
     }
 

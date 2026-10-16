@@ -42,6 +42,7 @@ function Get-WatchdogDecision {
         GatewayError, SourceError  error text or $null
         Source   'Ok' | 'Failed' | 'Unknown' | 'NotChecked'
         Network  $true / $false / $null (only probed when Gateway is 'Unknown')
+        Installing  $true while the gateway installer (GatewayInstall.exe) runs: hands off, counters reset
     #>
     param(
         [Parameter(Mandatory)] [hashtable]$Observation,
@@ -60,13 +61,24 @@ function Get-WatchdogDecision {
     $capReached = $new.Restarts.Count -ge $Config.MaxRestarts
     $action = 'None'; $problem = $null; $summary = 'Healthy'; $detail = ''
 
-    if ($o.Service -eq 'Missing') {
+    if ($o.Installing) {
+        # An upgrade stops (and can briefly remove) the service. Starting it mid-install could break the upgrade.
+        $new.ConsecutiveFailures = 0
+        $summary = 'Gateway installer is running; leaving the service alone'
+    }
+    elseif ($o.Service -eq 'Missing') {
         $problem = 'service-missing'
         $summary = "Gateway service $($Config.ServiceName) is not installed on this server"
         $detail = 'The watchdog cannot fix this. Was the gateway uninstalled or renamed?'
     }
     elseif ($o.Service -ne 'Running') {
-        if ($capReached) {
+        # A stopped service is waited out like an offline gateway: a clean stop is usually deliberate (maintenance,
+        # upgrade), and Windows' own recovery options already restart it after a crash.
+        $new.ConsecutiveFailures++
+        if ($new.ConsecutiveFailures -lt $Config.FailuresBeforeRestart) {
+            $summary = "Gateway service is $($o.Service) (check $($new.ConsecutiveFailures) of $($Config.FailuresBeforeRestart) before starting it)"
+        }
+        elseif ($capReached) {
             $problem = 'gave-up'
             $summary = "Gateway service is $($o.Service) and the watchdog already restarted it $($new.Restarts.Count) times in $($Config.RestartWindowHours) h; giving up"
             $detail = 'Needs a person: RDP to the server, check Event Viewer and the gateway app. Runbook: data-projects/projects/jd-bronze-pipelines/README.md'
@@ -74,7 +86,7 @@ function Get-WatchdogDecision {
         else {
             $action = 'StartService'
             $problem = 'service-stopped'
-            $summary = "Gateway service was $($o.Service); starting it"
+            $summary = "Gateway service has been $($o.Service) for $($new.ConsecutiveFailures) checks; starting it"
         }
     }
     elseif ($o.Gateway -eq 'Live') {
@@ -234,7 +246,8 @@ function Get-GatewayObservation {
     <# Service state, Fabric's view of the gateway, and (only when the gateway is Live) a live test of the
        EquipRDB connection through it. #>
     param([hashtable]$Config, [string]$Secret)
-    $o = @{ Service = 'Missing'; Gateway = 'Unknown'; GatewayError = $null; Source = 'NotChecked'; SourceError = $null; Network = $null }
+    $o = @{ Service = 'Missing'; Gateway = 'Unknown'; GatewayError = $null; Source = 'NotChecked'; SourceError = $null; Network = $null
+            Installing = [bool](Get-Process -Name 'GatewayInstall' -ErrorAction SilentlyContinue) }
 
     $svc = Get-Service -Name $Config.ServiceName -ErrorAction SilentlyContinue
     if ($svc) { $o.Service = $svc.Status.ToString() }

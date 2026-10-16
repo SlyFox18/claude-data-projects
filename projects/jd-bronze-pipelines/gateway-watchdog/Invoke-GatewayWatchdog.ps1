@@ -4,7 +4,8 @@
     tasks as SYSTEM; see README.md in this folder.
 .DESCRIPTION
     -Mode Check (every 10 minutes):
-        1. Is the PBIEgwService service running?            Stopped -> start it.
+        0. Gateway installer (GatewayInstall.exe) running?   Yes -> hands off (also skips the 23:30 restart).
+        1. Is the PBIEgwService service running?            Stopped twice in a row -> start it.
         2. Does Fabric see the gateway as Live?              Not Live twice in a row -> restart the service.
         3. Gateway Live: can it reach Equip (EquipRDB DSN)?   Failed -> alert only (a restart won't fix Equip).
         4. Couldn't ask Fabric: can this server reach Fabric on 443?  No -> alert only.
@@ -81,7 +82,10 @@ try {
     $tag = if ($logOnly) { ' [log-only]' } else { '' }
 
     if ($Mode -eq 'NightlyRestart') {
-        if ($logOnly) {
+        if (Get-Process -Name 'GatewayInstall' -ErrorAction SilentlyContinue) {
+            Write-WatchdogLog 'INFO' 'Gateway installer is running; skipping the planned restart'
+        }
+        elseif ($logOnly) {
             Write-WatchdogLog 'INFO' 'Log-only: would restart the gateway service now'
         }
         else {
