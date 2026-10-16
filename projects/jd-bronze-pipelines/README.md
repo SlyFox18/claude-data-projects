@@ -125,6 +125,9 @@ as the **schedule's owner** — editing/re-enabling a schedule makes you the own
   refresh blocked. Brian restarted the service about 07:30; manual Full (98/98) and DP rerun (finished 09:09).
   Gateway updated 3000.318.11 → 3000.334.9. **Gateway watchdog** built (scheduled task on SPI01SR2034W);
   SPN-Fabric-Refresh-Automation made gateway Admin + connection User for it.
+- **2026-10-16** — watchdog switched to **live** after a day of clean log-only checks (it rode out a 10-minute
+  `NotReachable` blip at 00:18 without restarting). Drill: `Stop-Service PBIEgwService` → started after 2 checks,
+  gateway Live again, 🟡 email at 10:37.
 
 ## Files
 
