@@ -34,7 +34,7 @@ Equip (SQL Anywhere)
 - **Config:** `fabric-workspace-docs/deploy/dp_refresh_dag.json`: items, cadences, dependencies, report→table map, `freshnessChecks`.
 - **Modes:** `scheduled`, `all`, `items` (with `items=a,b`), `rerun_failed`, `intraday` (runs JD Incremental + the items flagged `intraday`: Silver_InTrans, Silver_PartInformation, Gold_PartsNotReordered and the Parts Not Re-Ordered model; not scheduled yet), plus `dry_run`.
 - **Bronze check:** only a failed JD copy of a table DP_Staging reads blocks the refresh; other JD failures are email warnings. `items` mode skips the check, which is how to refresh on healthy Bronze when JD had a problem.
-- **Identity:** notebooks run as SPN-Fabric-Refresh-Automation through the pipeline's notebook connection, and models refresh via pipeline activities; staging dataflows run as the schedule owner. No re-claim after deploys (retired 2026-10-14). See OPERATIONS-GUIDE "Identity".
+- **Identity:** notebooks run as SPN-Fabric-Refresh-Automation through the pipeline's notebook connection, and models refresh via pipeline activities; staging dataflows run as the pipeline's **last modifier**, so after every Prod backend deploy run `python deploy/claim_prod_pipeline.py` as Brian (restored 2026-10-16; otherwise every dataflow fails `SPNBasedRefreshNotAllowed`). See OPERATIONS-GUIDE "Identity".
 
 **Users:** report workspaces are **authoring-only**. Users reach reports through one **org app** per workspace, granted via Entra groups `PBI - Parts Reports`, `PBI - Service Reports`, `PBI - Financial Reports`.
 - **When a report goes live:** add it to that workspace's org app and audience.
@@ -129,7 +129,7 @@ data-projects/
 1. Work on `dev` in fabric-workspace-docs. Run `python deploy/dag_check.py` and `python -m pytest deploy -q`. Push, then git sync the Dev workspace(s) and test in Dev.
 2. `python deploy/merge_preview.py`, then open a PR `dev → main` (template `.github/PULL_REQUEST_TEMPLATE/dev_to_main.md`). **Brian merges with "Create a merge commit"**, never squash.
 3. **Brian runs** GitHub Actions "Deploy DP backend" (backend) and/or "Deploy reports" (`sandbox`, or `production` + workspace).
-4. After a backend deploy: fast-forward dev (`git fetch origin && git merge --ff-only origin/main && git push origin dev`), and `python deploy/sync_shortcuts.py --apply` if shortcuts were added.
+4. After a backend deploy: `python deploy/claim_prod_pipeline.py` (as Brian, before the next scheduled run), fast-forward dev (`git fetch origin && git merge --ff-only origin/main && git push origin dev`), and `python deploy/sync_shortcuts.py --apply` if shortcuts were added.
 5. **Reports:** Dev → Sandbox (validate; a newly deployed model needs a refresh before it shows data) → set `"live": true` in `report_promotion.json` → production deploy → add to the org app.
 
 **Rules for Claude:**

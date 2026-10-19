@@ -28,6 +28,8 @@ Spark has no fixed row order. Each of these can return a different row on every 
 | `monotonically_increasing_id()` to mean "first row" | An explicit order, as above. |
 | `Window.orderBy(x)` when `x` can tie | Add more columns until the order is unique: `orderBy("Branch", "BranchID")`. |
 
+> **Exception:** rows identical in **every** column may be collapsed with `distinct()` - nothing is chosen. Report it with `notebookutils.notebook.exit("WARN: …")` so the summary email shows it. Rows that share a key but differ must still fail (2026-10-19: JD's Full copy returned an InMaster row twice).
+
 When the rule is a business choice (which branch's price, sum or keep one), ask Brian and write his decision in a comment next to the code. Examples:
 - **dim_Parts:** quantities and values are company-wide sums; other attributes take the most common value.
 - **Parts Not Re-Ordered:** quantities of lines that share a key are added.

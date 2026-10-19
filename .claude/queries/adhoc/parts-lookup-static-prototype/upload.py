@@ -40,6 +40,7 @@ import msal
 import requests
 
 import config
+from refresh_logic import upload_order
 
 GRAPH_BASE = "https://graph.microsoft.com/v1.0"
 SIMPLE_UPLOAD_LIMIT = 4 * 1024 * 1024  # Graph API's simple-upload ceiling
@@ -169,7 +170,9 @@ def main() -> None:
     # Partition files are now gzip-compressed (*.json.gz, added 2026-08-25 -
     # see partition.py's header comment). _meta.json stays plain - it's a
     # few bytes, not worth compressing, and matches *.json on its own.
-    files = sorted(
+    # _meta.json is uploaded last (refresh_logic.upload_order), so the app's "Data as of" never moves
+    # ahead of the partition files.
+    files = upload_order(
         glob.glob(os.path.join(SOURCE_DIR, "*.json"))
         + glob.glob(os.path.join(SOURCE_DIR, "*.json.gz"))
     )

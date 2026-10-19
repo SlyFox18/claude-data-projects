@@ -12,7 +12,7 @@ has Owner access to everything needed to run and repair them without JD.
 | Full pipeline | `PL_EquipRDB_To_Fabric_Full` `e2094bc4-2b08-4510-83db-bd0d19ec754f` — table list `watermarktable_full` (137 rows, 98 copied) — **daily 00:00 CST**, runs as the SPN |
 | Incremental pipeline | `PL_EquipRDB_To_Fabric_Incremental` `c310aa3b-3143-49aa-b77c-a3ae13e5660b` — table list `watermarktable_incremental` (17) — **daily 6:30 AM CST** (Brian, 2026-09-28; the 30-min schedule stays off) |
 | ODBC connection | `049694-Gateway` `b062a489-87a3-4c63-9bfe-fdfe2c4732fb` — `dsn=EquipRDB`, **Basic** auth. Owners: Brian, Deere CE Support, JDIS Support, the SPN, SPITractor_Fabric_Integration_Admin_Group |
-| **Gateway** | **`049694-Gateway`** `e896ed96-9c3a-43b8-82da-dcb99af18260` — installed on **SPI01SR2034W** (Brian can RDP). Windows service **On-premises data gateway service** (`PBIEgwService`), startup **Automatic** |
+| **Gateway** | **`049694-Gateway`** `e896ed96-9c3a-43b8-82da-dcb99af18260` — installed on **SPI01SR2034W** (Brian can RDP, local admin). Windows service **On-premises data gateway service** (`PBIEgwService`), startup **Automatic**. One member only (no failover). Version 3000.334.9 (updated 2026-10-15). Watched by the **gateway watchdog** (`gateway-watchdog/`) |
 | Service principal | `SPITractor_Fabric_Integration_Admin` — appId `2ce2664f-d2e7-4efb-aae9-f2244125de9b`, object `cfcc21e5-82a4-4532-93ab-ec1e41d9f8c2`, in SPI's Entra tenant. Brian is an app owner and holds his own client secret (password manager; note its expiry) |
 
 The 17 incremental tables: Invoice, ArMaster, contact, WkInvReg, GlTrans, VhSalman, ArTrans,
@@ -69,7 +69,9 @@ when every copy fails.
 ### Symptom: "…ensure your on-premises data gateway can access ncu.frontend.clouddatahub.net…"
 (or the connection shows **Offline** in Settings → Manage connections and gateways)
 
-The gateway on SPI01SR2034W is down.
+The gateway on SPI01SR2034W is down. Once the **gateway watchdog** (`gateway-watchdog/README.md`) is live, it
+restarts the service itself within about 20 minutes and emails; check its log
+(`C:\ProgramData\JDGatewayWatchdog\logs`) first. If it gave up or isn't running:
 
 1. RDP to **SPI01SR2034W**.
 2. `services.msc` → **On-premises data gateway service** → **Start**. Or, in an admin PowerShell:
@@ -116,7 +118,19 @@ as the **schedule's owner** — editing/re-enabling a schedule makes you the own
 - **2026-09-28** — Brian granted Owner on the connection via the SPN; restarted the gateway;
   manual catch-up runs verified (Full 98/98, Incremental 16/16 + Parts_Pricing_Admin unchanged).
   A temporary `_SPI` pipeline copy was created and deleted (definition in Git history).
+- **2026-10-14** — gateway blip at midnight ("FabricPipelineWorker … unable to establish a connection with the
+  Fabric Pipelines services"); the copies finished, but the Bronze check blocked the 06:15 DP run over two rental
+  tables DP doesn't read. Bronze check changed so only tables DP reads block. Manual DP rerun at 09:15.
+- **2026-10-15** — gateway offline from before midnight: Full 0/98 at 00:00, Incremental failed at 06:16, DP
+  refresh blocked. Brian restarted the service about 07:30; manual Full (98/98) and DP rerun (finished 09:09).
+  Gateway updated 3000.318.11 → 3000.334.9. **Gateway watchdog** built (scheduled task on SPI01SR2034W);
+  SPN-Fabric-Refresh-Automation made gateway Admin + connection User for it.
+- **2026-10-16** — watchdog switched to **live** after a day of clean log-only checks (it rode out a 10-minute
+  `NotReachable` blip at 00:18 without restarting). Drill: `Stop-Service PBIEgwService` → started after 2 checks,
+  gateway Live again, 🟡 email at 10:37.
 
 ## Files
+
+- `gateway-watchdog/` — scheduled-task watchdog for the gateway (install, config, tests); see its README
 
 - `backup-2026-09-28/` — JD's original definitions, schedules and `.platform` for both pipelines
