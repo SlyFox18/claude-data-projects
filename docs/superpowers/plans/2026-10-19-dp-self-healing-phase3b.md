@@ -127,9 +127,11 @@ Tests: Failed in hours → True; Failed at 17:05 → False; Completed → False;
 - [ ] **`pipeline_render.py`:** add a pipeline parameter `reason` (string, default "") and pass it to every
   `Run_DP_Refresh` activity like `mode`. Re-render and update `test_pipeline_render.py`. This changes the pipeline
   JSON, so the next deploy re-publishes it and the claim task claims it.
-- [ ] **Dev test.** Push, Git sync, then run Dev `Pipeline_DP_Refresh` with `mode=catchup, reason=dev test`:
-  - expect a quiet no-op ("scheduled run hasn't run yet": Dev has no scheduled runs);
-  - then, temporarily via `dry_run=true`, confirm the decision path logs a `catchup:none` row.
+- [ ] **Dev test.** Push, Git sync, then run Dev `Pipeline_DP_Refresh` with `mode=catchup, reason=dev test`.
+  - **Expect a quiet no-op:** "scheduled run hasn't run yet" (Dev has no scheduled runs). That means no email and
+    **no** log rows: after the review, quiet catch-ups write nothing.
+  - **Then run `dry_run=true`:** a dry-run catch-up is never quiet and emails its decision. Dry runs write no log
+    rows, so the decision shows in that email, not in the log.
 - [ ] Commit: "Run_DP_Refresh: mode=catchup resolves to what today still needs (quiet when nothing)".
 
 ### Task 3: Watchdog trigger
