@@ -16,7 +16,7 @@ Set-StrictMode -Version 2.0
 # ---------------------------------------------------------------------------------------------
 
 function New-WatchdogState {
-    @{ ConsecutiveFailures = 0; Restarts = @(); OpenProblem = $null; LastAlertKey = $null; LastAlertUtc = $null }
+    @{ ConsecutiveFailures = 0; SourceFailures = 0; Restarts = @(); OpenProblem = $null; LastAlertKey = $null; LastAlertUtc = $null }
 }
 
 function Get-RestartsInWindow {
@@ -53,7 +53,8 @@ function Get-WatchdogDecision {
     $o = $Observation
     $new = @{
         ConsecutiveFailures = [int]$State.ConsecutiveFailures
-        Restarts            = @(Get-RestartsInWindow -Restarts $State.Restarts -NowUtc $NowUtc -WindowHours $Config.RestartWindowHours)
+        SourceFailures      = $(if ($State.ContainsKey('SourceFailures')) { [int]$State.SourceFailures } else { 0 })   # state.json from before this key existed (a missing key throws under StrictMode 2)
+        Restarts           = @(Get-RestartsInWindow -Restarts $State.Restarts -NowUtc $NowUtc -WindowHours $Config.RestartWindowHours)
         OpenProblem         = $State.OpenProblem
         LastAlertKey        = $State.LastAlertKey
         LastAlertUtc        = $State.LastAlertUtc
@@ -64,9 +65,11 @@ function Get-WatchdogDecision {
     if ($o.Installing) {
         # An upgrade stops (and can briefly remove) the service. Starting it mid-install could break the upgrade.
         $new.ConsecutiveFailures = 0
+        $new.SourceFailures = 0
         $summary = 'Gateway installer is running; leaving the service alone'
     }
     elseif ($o.Service -eq 'Missing') {
+        $new.SourceFailures = 0
         $problem = 'service-missing'
         $summary = "Gateway service $($Config.ServiceName) is not installed on this server"
         $detail = 'The watchdog cannot fix this. Was the gateway uninstalled or renamed?'
@@ -74,6 +77,7 @@ function Get-WatchdogDecision {
     elseif ($o.Service -ne 'Running') {
         # A stopped service is waited out like an offline gateway: a clean stop is usually deliberate (maintenance,
         # upgrade), and Windows' own recovery options already restart it after a crash.
+        $new.SourceFailures = 0
         $new.ConsecutiveFailures++
         if ($new.ConsecutiveFailures -lt $Config.FailuresBeforeRestart) {
             $summary = "Gateway service is $($o.Service) (check $($new.ConsecutiveFailures) of $($Config.FailuresBeforeRestart) before starting it)"
@@ -92,12 +96,23 @@ function Get-WatchdogDecision {
     elseif ($o.Gateway -eq 'Live') {
         $new.ConsecutiveFailures = 0
         if ($o.Source -eq 'Failed') {
-            $problem = 'source-failed'
-            $summary = 'Gateway is online, but it cannot reach Equip through its ODBC connection'
-            $detail = "Restarting the gateway will not fix this; check the Equip server, the ODBC DSN on this machine and the connection credentials. Error: $($o.SourceError)"
+            # One failed test is noise (Equip busy overnight, 2026-10-19 00:37); alert only when it repeats.
+            $new.SourceFailures++
+            if ($new.SourceFailures -lt $Config.FailuresBeforeRestart) {
+                $summary = "Equip test through the gateway failed (check $($new.SourceFailures) of $($Config.FailuresBeforeRestart) before alerting)"
+            }
+            else {
+                $problem = 'source-failed'
+                $summary = 'Gateway is online, but it cannot reach Equip through its ODBC connection'
+                $detail = "Restarting the gateway will not fix this; check the Equip server, the ODBC DSN on this machine and the connection credentials. Error: $($o.SourceError)"
+            }
+        }
+        else {
+            $new.SourceFailures = 0
         }
     }
     elseif ($o.Gateway -eq 'Unknown') {
+        $new.SourceFailures = 0
         if ($o.Network -eq $false) {
             $problem = 'network'
             $summary = "This server cannot reach $($Config.ProbeHost):443; the gateway cannot work until its network or firewall is fixed"
@@ -110,6 +125,7 @@ function Get-WatchdogDecision {
         }
     }
     else {
+        $new.SourceFailures = 0
         $new.ConsecutiveFailures++
         if ($new.ConsecutiveFailures -lt $Config.FailuresBeforeRestart) {
             $summary = "Fabric reports the gateway as '$($o.Gateway)' (check $($new.ConsecutiveFailures) of $($Config.FailuresBeforeRestart) before restarting)"

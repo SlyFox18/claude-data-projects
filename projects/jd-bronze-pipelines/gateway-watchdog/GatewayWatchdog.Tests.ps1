@@ -89,18 +89,67 @@ Describe 'Get-WatchdogDecision' {
         $d.State.Restarts.Count | Should Be 1
     }
 
-    It 'alerts but never restarts when Equip is unreachable through a Live gateway' {
+    It 'does not alert on the first failed Equip test through a Live gateway' {
         $d = Decide (Obs -Source 'Failed')
+        $d.Action | Should Be 'None'
+        $d.Problem | Should Be $null
+        $d.Alert | Should Be $false
+        $d.State.SourceFailures | Should Be 1
+        $d.Summary | Should Be 'Equip test through the gateway failed (check 1 of 2 before alerting)'
+    }
+
+    It 'alerts but never restarts on the second failed Equip test in a row' {
+        $first = Decide (Obs -Source 'Failed')
+        $d = Decide (Obs -Source 'Failed') -State $first.State -At $now.AddMinutes(10)
         $d.Action | Should Be 'None'
         $d.Problem | Should Be 'source-failed'
         $d.Alert | Should Be $true
+        $d.State.SourceFailures | Should Be 2
+    }
+
+    It 'resets the Equip failure count after one failure followed by an Ok test, with no Recovered email' {
+        $first = Decide (Obs -Source 'Failed')
+        $d = Decide (Obs) -State $first.State -At $now.AddMinutes(10)
+        $d.State.SourceFailures | Should Be 0
+        $d.Problem | Should Be $null
+        $d.Alert | Should Be $false
+        $d.Recovered | Should Be $false
+    }
+
+    It 'treats a state without SourceFailures (older state.json) as zero' {
+        $state = New-WatchdogState
+        $state.Remove('SourceFailures')
+        $d = Decide (Obs -Source 'Failed') -State $state
+        $d.State.SourceFailures | Should Be 1
+        $d.Problem | Should Be $null
+        $ok = Decide (Obs) -State $state
+        $ok.State.SourceFailures | Should Be 0
+    }
+
+    It 'resets the Equip failure count when the check is not a Live-gateway check' {
+        $first = Decide (Obs -Source 'Failed')
+        $off = Decide (Obs -Gateway 'Offline') -State $first.State -At $now.AddMinutes(10)
+        $off.State.SourceFailures | Should Be 0
+        $stopped = Decide (Obs -Service 'Stopped' -Gateway 'Unknown') -State $first.State -At $now.AddMinutes(10)
+        $stopped.State.SourceFailures | Should Be 0
+        $unknown = Decide (Obs -Gateway 'Unknown' -Network $true) -State $first.State -At $now.AddMinutes(10)
+        $unknown.State.SourceFailures | Should Be 0
+        $installing = Decide (Obs -Source 'Failed' -Installing) -State $first.State -At $now.AddMinutes(10)
+        $installing.State.SourceFailures | Should Be 0
+        $missing = Decide (Obs -Service 'Missing' -Gateway 'Unknown') -State $first.State -At $now.AddMinutes(10)
+        $missing.State.SourceFailures | Should Be 0
+        # so a failure after the interruption starts counting from 1 again
+        $again = Decide (Obs -Source 'Failed') -State $off.State -At $now.AddMinutes(20)
+        $again.Problem | Should Be $null
     }
 
     It 'does not repeat the same alert until AlertRepeatHours have passed' {
-        $first = Decide (Obs -Source 'Failed')
-        $again = Decide (Obs -Source 'Failed') -State $first.State -At $now.AddMinutes(10)
+        $f1 = Decide (Obs -Source 'Failed')
+        $first = Decide (Obs -Source 'Failed') -State $f1.State -At $now.AddMinutes(5)
+        $first.Alert | Should Be $true
+        $again = Decide (Obs -Source 'Failed') -State $first.State -At $now.AddMinutes(15)
         $again.Alert | Should Be $false
-        $later = Decide (Obs -Source 'Failed') -State $again.State -At $now.AddHours(4)
+        $later = Decide (Obs -Source 'Failed') -State $again.State -At $now.AddMinutes(5).AddHours(4)
         $later.Alert | Should Be $true
     }
 
@@ -115,7 +164,9 @@ Describe 'Get-WatchdogDecision' {
     }
 
     It 'reports recovery once and clears the open problem' {
-        $bad = Decide (Obs -Source 'Failed')
+        $bad1 = Decide (Obs -Source 'Failed')
+        $bad = Decide (Obs -Source 'Failed') -State $bad1.State -At $now.AddMinutes(5)
+        $bad.Alert | Should Be $true
         $good = Decide (Obs) -State $bad.State -At $now.AddMinutes(10)
         $good.Recovered | Should Be $true
         $good.Alert | Should Be $false
@@ -184,6 +235,14 @@ Describe 'Read-WatchdogState / Save-WatchdogState' {
         $again = Decide (Obs -Service 'Stopped') -State $back -At $now.AddMinutes(10)
         $next = Decide (Obs -Service 'Stopped') -State $again.State -At $now.AddMinutes(20)
         $next.State.Restarts.Count | Should Be 2
+    }
+
+    It 'reads an older state.json that has no SourceFailures and decides from it' {
+        $path = Join-Path $TestDrive 'old.json'
+        Set-Content -Path $path -Value '{"ConsecutiveFailures":0,"Restarts":[],"OpenProblem":null,"LastAlertKey":null,"LastAlertUtc":null}'
+        $back = Read-WatchdogState -Path $path
+        $back.SourceFailures | Should Be 0
+        (Decide (Obs -Source 'Failed') -State $back).State.SourceFailures | Should Be 1
     }
 
     It 'starts fresh from a missing or corrupt file' {
