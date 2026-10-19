@@ -17,7 +17,16 @@
 >     - The pending marker goes in the staged `.platform`: fabric-cicd 1.3.0 rewrites the description from it.
 >     - The claim task runs 05:10–20:55 every 15 min, with a pending.json rerun window (deploy..claim + 2 min).
 >     - Release = merge, deploy, then Brian installs the task.
->   - **Phase 3:** catchup + watchdog trigger (2b), 2c, 2d.
+>   - **Phase 3a, 2026-10-19 (from that morning's emails):**
+>     - **Notebook warning channel:** a `WARN:` exit value shows in the summary.
+>     - **InMaster exact-duplicate guard** in both Silver InMaster readers. JD's Full copy had returned
+>       8/D/E63245 twice.
+>     - **Dev-tested on the real duplicate.** Both builds succeeded with a warning. fabric-workspace-docs PR #41.
+>     - **Watchdog:** the Equip-test alert fires after 2 failures in a row, or 3 in 2 h, and stays one open
+>       problem while flapping (data-projects `53ba40c9..f385e088`). Brian re-installs it on both machines.
+>     - **2c (capacity retry) deferred:** no Prod occurrences yet.
+>   - **Phase 3b plan:** `docs/superpowers/plans/2026-10-19-dp-self-healing-phase3b.md` (catch-up mode triggered by
+>     the watchdogs, with backup times). Phase 3c: maintenance helper.
 > - Later phases get their own plans once phase 1 ships and 0c is answered.
 
 ## Goal
