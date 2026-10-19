@@ -25,8 +25,15 @@
 >     - **Watchdog:** the Equip-test alert fires after 2 failures in a row, or 3 in 2 h, and stays one open
 >       problem while flapping (data-projects `53ba40c9..f385e088`). Brian re-installs it on both machines.
 >     - **2c (capacity retry) deferred:** no Prod occurrences yet.
->   - **Phase 3b plan:** `docs/superpowers/plans/2026-10-19-dp-self-healing-phase3b.md` (catch-up mode triggered by
->     the watchdogs, with backup times). Phase 3c: maintenance helper.
+>   - **Phase 3b code done 2026-10-19:** fabric-workspace-docs PR #42, plus the watchdog trigger in data-projects
+>     (`6af7e0a3`, `4f94f348`). Plan: `docs/superpowers/plans/2026-10-19-dp-self-healing-phase3b.md`.
+>     - `mode=catchup`. Quiet runs write no log rows. Only `gateway` failures are re-run; `unclaimed` is left to
+>       the claim task.
+>     - A failed JD Full re-run doesn't use up the day's catch-up.
+>     - `Pipeline_DP_Refresh` gets `concurrency: 1`.
+>     - Dev-tested: quiet, plus a dry run.
+>     - **Rollout:** deploy, then re-install both watchdogs (log-only), one week, then `CatchupEnabled`.
+>   - **Phase 3c:** maintenance helper. **Layer 3:** diagnosis agent.
 > - Later phases get their own plans once phase 1 ships and 0c is answered.
 
 ## Goal
