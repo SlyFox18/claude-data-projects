@@ -20,6 +20,7 @@ Spec: docs/superpowers/specs/2026-10-14-parts-availability-dp-feed-design.md
 import json
 import re
 import sys
+import time
 from datetime import date, datetime, timedelta, timezone
 
 import duckdb
@@ -114,9 +115,20 @@ def connect():
 
 
 def log_entries(con, table):
-    rows = con.execute(
-        f"SELECT filename, commitInfo, add FROM read_json('{table}/_delta_log/*.json', filename=true, "
-        f"format='newline_delimited', columns={{commitInfo: 'JSON', add: 'JSON'}})").fetchall()
+    # Reading the log glob over OneLake sometimes fails transiently (a listed log file gone, or a token hiccup);
+    # a rerun succeeds, so retry up to 3 attempts (5 s, 10 s apart) before giving up.
+    sql = (f"SELECT filename, commitInfo, add FROM read_json('{table}/_delta_log/*.json', filename=true, "
+           f"format='newline_delimited', columns={{commitInfo: 'JSON', add: 'JSON'}})")
+    for attempt in range(3):
+        try:
+            rows = con.execute(sql).fetchall()
+            break
+        except duckdb.Error as e:
+            transient = isinstance(e, duckdb.IOException) or "could not open file" in str(e) \
+                or "Failed to get token" in str(e)
+            if not transient or attempt == 2:
+                raise
+            time.sleep(5 * (attempt + 1))
     return [(int(fn.rsplit("/", 1)[1].split(".")[0]), json.loads(ci) if ci else None, json.loads(a) if a else None)
             for fn, ci, a in rows if re.match(r"^\d{20}\.json$", fn.rsplit("/", 1)[1])]
 

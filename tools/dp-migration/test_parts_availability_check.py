@@ -4,7 +4,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 import duckdb  # noqa: E402
-from parts_availability_check import compare_pair, full_loads, pair_loads, persistent_keys, verdict  # noqa: E402
+import parts_availability_check as pac  # noqa: E402
+from parts_availability_check import compare_pair, log_entries, full_loads, pair_loads, persistent_keys, verdict  # noqa: E402
 
 
 def ms(h, m):
@@ -118,3 +119,41 @@ def test_compare_pair_with_real_parquet(tmp_path):
     assert r["dp_dup_keys"] == 1
     assert r["lh_dup_keys"] == 0
     assert len(r["extracted_at"]) == 1
+
+def test_log_entries_retries_transient_onelake_errors(monkeypatch):
+    rows = [("abfss://x/_delta_log/00000000000000000001.json", None, None)]
+
+    class FakeResult:
+        def fetchall(self):
+            return rows
+
+    class FakeCon:
+        calls = 0
+
+        def execute(self, sql):
+            FakeCon.calls += 1
+            if FakeCon.calls < 3:
+                raise duckdb.IOException("IO Error: AzureStorageFileSystem could not open file: Failed to get token")
+            return FakeResult()
+
+    sleeps = []
+    monkeypatch.setattr(pac.time, "sleep", sleeps.append)
+    assert log_entries(FakeCon(), "t") == [(1, None, None)]
+    assert FakeCon.calls == 3 and sleeps == [5, 10]
+
+
+def test_log_entries_reraises_after_last_attempt(monkeypatch):
+    class FakeCon:
+        calls = 0
+
+        def execute(self, sql):
+            FakeCon.calls += 1
+            raise duckdb.IOException("could not open file")
+
+    monkeypatch.setattr(pac.time, "sleep", lambda s: None)
+    try:
+        log_entries(FakeCon(), "t")
+        assert False, "should raise"
+    except duckdb.IOException:
+        pass
+    assert FakeCon.calls == 3
