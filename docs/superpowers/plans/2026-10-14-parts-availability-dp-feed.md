@@ -53,7 +53,27 @@
 >   - `verify_publish` PASS; the skip run SKIPPED; the guard drill refused.
 >   - Local state files cleaned up.
 > - **Task 15 Step 1 done:** fabric-workspace-docs PR #36 (`dev → main`). The merge preview showed only this work plus Brian's 2 Fabric commits.
-> - **Next:** Brian merges PR #36 and runs Deploy DP backend, then Task 15 Steps 2–6.
+> - **Task 15 done 2026-10-15.**
+>   - PR #36 merged and deployed ("5 item ID swaps"); swapped Prod IDs verified.
+>   - **Lessons from the first deploy:**
+>     - The deploy *created* the Prod dataflow owned by SPN-Fabric-CICD-Deploy, so Brian had to **Take over** `df_PartsAvailability_Raw`.
+>     - The dataflow activity runs as the pipeline's **last modifier**, not the schedule owner (my assumption was wrong). The 10/15 deploy therefore also broke the 10/16 06:15 `Pipeline_DP_Refresh` dataflows.
+>     - Brian restored `deploy/claim_prod_pipeline.py` (it covers `Pipeline_PartsAvailability`; `claim_task.py` runs it automatically) and added `failure_types.py`.
+>     - **After every Prod deploy: run `python deploy/claim_prod_pipeline.py`.**
+>   - Schedules (owner Brian, end 9999-12-31):
+>     - **schedule 1:** 06:50–15:50, 10 times — Fabric allows at most 10 per schedule;
+>     - **schedule 2:** 16:50.
+>   - SPN access on Prod DP_Staging granted.
+> - **Task 16 (parallel run): 21 pairs so far.**
+>   - Thu 10/15 (8), Fri 10/16 (9), Mon 10/19 (4, part day).
+>   - Every pair: 0 keys missing on either side, 0 duplicates, one `ExtractedAtUtc`, 0–34 differing quantity rows, no persistent keys.
+>   - Fri 11:50: DP and LH both failed together (gateway upgrade timing). The alert email arrived.
+>   - The Gateway PC got the new code in LH mode on 10/15. pytz was missing there and is now installed; the first LH-mode run extracted fine.
+>   - The app (PR #10, 120 min / 8–18) was deployed on SPI01SR2029W on 10/15.
+> - **Follow-ups done 10/19:**
+>   - `deploy.ps1` stops on a failed pull/ci/build (app 7964a0d, `dev`);
+>   - the check tool retries OneLake reads (28887fc9).
+> - **Next:** the dress-rehearsal publish (Prod DP → staging library); the Tue 10/20 day-3 check; cutover on Tue 10/20 evening.
 
 **Goal:** Feed the Parts Availability app from a DP_Staging ODBC dataflow (`df_PartsAvailability_Raw` → `PartsAvailability`), loaded hourly by a small pipeline with a custom failure email, instead of LH_Master_Data. Retire the last LH schedule.
 
@@ -2032,6 +2052,8 @@ git fetch origin && git merge --ff-only origin/main && git push origin dev
 ```
 
 Expected: the deploy log says `(5 item ID swaps for the pipelines)`.
+
+Then run `python deploy/claim_prod_pipeline.py` (fabric-workspace-docs). The pipelines' dataflow activities run as the pipeline's last modifier, and a deploy makes that the CI service principal. A **newly created** Prod dataflow must also be taken over once by Brian (Settings → About → Take over).
 
 - [ ] **Step 3: Check the Prod items, and that the pipeline's IDs were swapped.** Write `<scratchpad>/prod_items.py`:
 
