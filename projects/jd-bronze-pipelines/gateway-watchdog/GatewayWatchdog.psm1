@@ -51,10 +51,19 @@ function Get-WatchdogDecision {
         [Parameter(Mandatory)] [datetime]$NowUtc
     )
     $o = $Observation
+    # Keys added after the first release may be missing from an old state.json or config.json; a missing hashtable
+    # key throws under StrictMode 2, so ask first.
+    $srcFailures = 0; $srcTimes = @()
+    if ($State.ContainsKey('SourceFailures')) { $srcFailures = [int]$State.SourceFailures }
+    if ($State.ContainsKey('SourceFailureTimes')) { $srcTimes = @($State.SourceFailureTimes) }
+    $srcWindowHours = 2.0; $srcInWindow = 3
+    if ($Config.ContainsKey('SourceFailureWindowHours')) { $srcWindowHours = [double]$Config.SourceFailureWindowHours }
+    if ($Config.ContainsKey('SourceFailuresInWindow')) { $srcInWindow = [int]$Config.SourceFailuresInWindow }
     $new = @{
         ConsecutiveFailures = [int]$State.ConsecutiveFailures
-        SourceFailures      = $(if ($State.ContainsKey('SourceFailures')) { [int]$State.SourceFailures } else { 0 })   # state.json from before this key existed (a missing key throws under StrictMode 2)
-        Restarts           = @(Get-RestartsInWindow -Restarts $State.Restarts -NowUtc $NowUtc -WindowHours $Config.RestartWindowHours)
+        SourceFailures      = $srcFailures
+        SourceFailureTimes  = @(Get-RestartsInWindow -Restarts $srcTimes -NowUtc $NowUtc -WindowHours $srcWindowHours)
+        Restarts            = @(Get-RestartsInWindow -Restarts $State.Restarts -NowUtc $NowUtc -WindowHours $Config.RestartWindowHours)
         OpenProblem         = $State.OpenProblem
         LastAlertKey        = $State.LastAlertKey
         LastAlertUtc        = $State.LastAlertUtc
@@ -97,9 +106,17 @@ function Get-WatchdogDecision {
         $new.ConsecutiveFailures = 0
         if ($o.Source -eq 'Failed') {
             # One failed test is noise (Equip busy overnight, 2026-10-19 00:37); alert only when it repeats.
+            # Also alert when it keeps failing every other check (fail, ok, fail, ok, fail).
             $new.SourceFailures++
-            if ($new.SourceFailures -lt $Config.FailuresBeforeRestart) {
+            $new.SourceFailureTimes = @($new.SourceFailureTimes) + @($NowUtc.ToString('o'))
+            $inWindow = $new.SourceFailureTimes.Count
+            if ($new.SourceFailures -lt $Config.FailuresBeforeRestart -and $inWindow -lt $srcInWindow) {
                 $summary = "Equip test through the gateway failed (check $($new.SourceFailures) of $($Config.FailuresBeforeRestart) before alerting)"
+            }
+            elseif ($new.SourceFailures -lt $Config.FailuresBeforeRestart) {
+                $problem = 'source-failed'
+                $summary = "Equip test through the gateway keeps failing ($inWindow times in the last $srcWindowHours h)"
+                $detail = "Restarting the gateway will not fix this; check the Equip server, the ODBC DSN on this machine and the connection credentials. Error: $($o.SourceError)"
             }
             else {
                 $problem = 'source-failed'

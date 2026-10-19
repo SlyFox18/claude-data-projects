@@ -31,7 +31,8 @@ Each check:
    (about 20 min) while the service runs → **restart the service** (it kills the process if the stop hangs).
 3. **Equip through the gateway** (`GET /gateways/{id}/datasources/{DatasourceId}/status`, a live ODBC test), only
    when the gateway is Live. A failure must happen on **two checks in a row** (about 20 min) before it alerts; a
-   single failed test (e.g. Equip busy overnight, 2026-10-19 00:37) is logged, not emailed. Then → **alert only**; restarting the gateway doesn't fix Equip, the DSN or the
+   single failed test (e.g. Equip busy overnight, 2026-10-19 00:37) is logged, not emailed. It also alerts when the test fails **3 times within 2 hours** even if Ok checks come
+   in between (config `SourceFailuresInWindow` / `SourceFailureWindowHours`, optional). Then → **alert only**; restarting the gateway doesn't fix Equip, the DSN or the
    credentials. JD: the `049694-Gateway` connection (`dsn=EquipRDB`). SPI: `dsn=EquipRDB64` (`70ea8af2`, the one
    Parts Availability uses).
 4. If it **couldn't ask Fabric**, it tests TCP 443 to `ncu.frontend.clouddatahub.net`. Unreachable → alert

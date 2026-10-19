@@ -126,6 +126,55 @@ Describe 'Get-WatchdogDecision' {
         $ok.State.SourceFailures | Should Be 0
     }
 
+    It 'alerts on the third Equip failure within 2 hours even when Ok checks come between them' {
+        $a = Decide (Obs -Source 'Failed')
+        $b = Decide (Obs) -State $a.State -At $now.AddMinutes(10)
+        $c = Decide (Obs -Source 'Failed') -State $b.State -At $now.AddMinutes(20)
+        $c.Problem | Should Be $null
+        $d = Decide (Obs) -State $c.State -At $now.AddMinutes(30)
+        $e = Decide (Obs -Source 'Failed') -State $d.State -At $now.AddMinutes(40)
+        $e.Problem | Should Be 'source-failed'
+        $e.Alert | Should Be $true
+        $e.Summary | Should Be 'Equip test through the gateway keeps failing (3 times in the last 2 h)'
+    }
+
+    It 'does not count Equip failures older than the window' {
+        $a = Decide (Obs -Source 'Failed')
+        $b = Decide (Obs -Source 'Failed') -State $a.State -At $now.AddMinutes(5)   # alerts (two in a row)
+        $ok = Decide (Obs) -State $b.State -At $now.AddMinutes(10)
+        $c = Decide (Obs -Source 'Failed') -State $ok.State -At $now.AddHours(3)
+        $c.Problem | Should Be $null
+        $c.State.SourceFailureTimes.Count | Should Be 1
+    }
+
+    It 'honours SourceFailuresInWindow and SourceFailureWindowHours from the config' {
+        $cfg = $config.Clone(); $cfg.SourceFailuresInWindow = 2; $cfg.SourceFailureWindowHours = 1
+        $a = Get-WatchdogDecision -Observation (Obs -Source 'Failed') -State (New-WatchdogState) -Config $cfg -NowUtc $now
+        $b = Get-WatchdogDecision -Observation (Obs) -State $a.State -Config $cfg -NowUtc $now.AddMinutes(10)
+        $c = Get-WatchdogDecision -Observation (Obs -Source 'Failed') -State $b.State -Config $cfg -NowUtc $now.AddMinutes(20)
+        $c.Problem | Should Be 'source-failed'
+    }
+
+    It 'treats a state without SourceFailureTimes as empty' {
+        $state = New-WatchdogState
+        $state.Remove('SourceFailureTimes')
+        $d = Decide (Obs -Source 'Failed') -State $state
+        $d.State.SourceFailureTimes.Count | Should Be 1
+        $d.Problem | Should Be $null
+    }
+
+    It 'after a gateway restart: reports Recovered on the first Equip failure, alerts source-failed on the second' {
+        $state = New-WatchdogState
+        $state.OpenProblem = 'gateway-offline'; $state.LastAlertKey = 'gateway-offline'
+        $state.LastAlertUtc = $now.AddMinutes(-10).ToString('o')
+        $first = Decide (Obs -Source 'Failed') -State $state
+        $first.Recovered | Should Be $true
+        $first.Problem | Should Be $null
+        $second = Decide (Obs -Source 'Failed') -State $first.State -At $now.AddMinutes(10)
+        $second.Problem | Should Be 'source-failed'
+        $second.Alert | Should Be $true
+    }
+
     It 'resets the Equip failure count when the check is not a Live-gateway check' {
         $first = Decide (Obs -Source 'Failed')
         $off = Decide (Obs -Gateway 'Offline') -State $first.State -At $now.AddMinutes(10)
