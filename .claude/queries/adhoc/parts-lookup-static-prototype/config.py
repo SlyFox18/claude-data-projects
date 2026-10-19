@@ -29,6 +29,7 @@ LIBRARY_BASE = os.environ["LIBRARY_BASE"]
 # this pipeline to have Teams alerting set up.
 TEAMS_WEBHOOK_URL = os.environ.get("TEAMS_WEBHOOK_URL")
 
-# Which table extract.py reads (see refresh_logic.SOURCES): "lh" until the DP cutover, then "dp".
-# An env file can override it per machine or per test run (PARTS_LOOKUP_SOURCE=dp-dev).
-SOURCE = os.environ.get("PARTS_LOOKUP_SOURCE", "lh")
+# Which table extract.py reads (see refresh_logic.SOURCES): "dp" since the cutover on 2026-10-19; "lh" to roll
+# back (only while LH's df_InMaster_PartsLookup_Raw schedule is still on). An env file can override it per
+# machine or per test run (PARTS_LOOKUP_SOURCE=dp-dev).
+SOURCE = os.environ.get("PARTS_LOOKUP_SOURCE", "dp")
