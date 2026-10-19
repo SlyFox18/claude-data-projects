@@ -161,26 +161,32 @@ try {
     # Catch-up trigger: ask the DP pipeline to check for work after a recovery, and at the JD backup times.
     # The pipeline decides whether anything needs doing; this only starts it.
     $catchupNote = ''
-    $t = Get-CatchupTrigger -Decision $d -AfterActionLive $afterLive -State $d.State -Config $config -NowLocal (Get-Date)
-    $d.State = $t.State
-    Save-WatchdogState -Path $statePath -State $d.State
-    if ($t.Start) {
-        $enabled = $config.ContainsKey('CatchupEnabled') -and [bool]$config.CatchupEnabled
-        if ($enabled) {
-            $r = Start-CatchupRun -Config $config -Secret $secret -Reason $t.Reason
-            if ($r.Ok) {
-                Write-WatchdogLog 'INFO' "Started catch-up ($($t.Reason)): HTTP $($r.Status)"
-                $catchupNote = 'A catch-up run was started.'
+    Save-WatchdogState -Path $statePath -State $d.State    # the decision's state is safe before anything below can fail
+    try {
+        $t = Get-CatchupTrigger -Decision $d -AfterActionLive $afterLive -State $d.State -Config $config -NowLocal (Get-Date)
+        $d.State = $t.State
+        Save-WatchdogState -Path $statePath -State $d.State    # now with LastCatchupSlot
+        if ($t.Start) {
+            $enabled = $config.ContainsKey('CatchupEnabled') -and ($config.CatchupEnabled -is [bool]) -and $config.CatchupEnabled
+            if ($enabled) {
+                $r = Start-CatchupRun -Config $config -Secret $secret -Reason $t.Reason
+                if ($r.Ok) {
+                    Write-WatchdogLog 'INFO' "Started catch-up ($($t.Reason)): HTTP $($r.Status)"
+                    $catchupNote = 'A catch-up run was started.'
+                }
+                else {
+                    Write-WatchdogLog 'ERROR' "Catch-up start FAILED ($($t.Reason)): $($r.Status)"
+                    $catchupNote = "Catch-up start failed: $($r.Status)"
+                }
             }
             else {
-                Write-WatchdogLog 'ERROR' "Catch-up start FAILED ($($t.Reason)): $($r.Status)"
-                $catchupNote = "Catch-up start failed: $($r.Status)"
+                Write-WatchdogLog 'INFO' "[log-only] would start catch-up ($($t.Reason))"
+                $catchupNote = 'Catch-up would be started (log-only).'
             }
         }
-        else {
-            Write-WatchdogLog 'INFO' "[log-only] would start catch-up ($($t.Reason))"
-            $catchupNote = 'Catch-up would be started (log-only).'
-        }
+    }
+    catch {
+        Write-WatchdogLog 'ERROR' "Catch-up trigger failed: $($_.Exception.Message)"
     }
 
     if ($d.Alert) {

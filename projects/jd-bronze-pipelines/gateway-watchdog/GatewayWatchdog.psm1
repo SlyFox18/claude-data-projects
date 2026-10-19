@@ -200,7 +200,7 @@ function Get-CatchupTrigger {
     .SYNOPSIS
         Should this check start a catch-up run of Pipeline_DP_Refresh? Pure. Returns @{ Start; Reason; State }.
         Recovery (decision Recovered, or an action taken and the gateway is Live afterwards) always starts.
-        Backup: a weekday, within 10 minutes after one of Config.CatchupTimes, once per slot (State.LastCatchupSlot).
+        Backup: a weekday, within 20 minutes after one of Config.CatchupTimes, once per slot (State.LastCatchupSlot).
         At most one Start per call; the slot is recorded even when a recovery start wins.
     #>
     param(
@@ -212,12 +212,12 @@ function Get-CatchupTrigger {
     )
     $new = $State.Clone()
     $start = $false; $reason = ''
-    $gwName = 'gateway'
+    $gwName = 'Gateway'
     if ($Config.ContainsKey('GatewayName') -and $Config.GatewayName) { $gwName = [string]$Config.GatewayName }
 
     if ($Decision.Recovered -or ($Decision.Action -ne 'None' -and $AfterActionLive)) {
         $start = $true
-        $reason = "$gwName gateway recovered $($NowLocal.ToString('HH:mm'))"
+        $reason = "$gwName recovered $($NowLocal.ToString('HH:mm'))"
     }
 
     $times = @()
@@ -228,7 +228,7 @@ function Get-CatchupTrigger {
         foreach ($t in $times) {
             $slotStart = $NowLocal.Date + [TimeSpan]::Parse([string]$t)
             $key = "$($NowLocal.ToString('yyyy-MM-dd')) $t"
-            if ($NowLocal -ge $slotStart -and $NowLocal -lt $slotStart.AddMinutes(10) -and $last -ne $key) {
+            if ($NowLocal -ge $slotStart -and $NowLocal -lt $slotStart.AddMinutes(20) -and $last -ne $key) {
                 $new.LastCatchupSlot = $key
                 if (-not $start) { $start = $true; $reason = "backup $t" }
                 break

@@ -353,7 +353,7 @@ Describe 'Get-CatchupTrigger' {
     It 'starts on recovery with the gateway name and time' {
         $t = Trig -Recovered $true -At ([datetime]'2026-10-19 05:40')
         $t.Start | Should Be $true
-        $t.Reason | Should Be 'JD gateway gateway recovered 05:40'
+        $t.Reason | Should Be 'JD gateway recovered 05:40'
     }
     It 'starts after a restart that left the gateway Live' {
         (Trig -Action 'RestartService' -Live $true).Start | Should Be $true
@@ -367,9 +367,10 @@ Describe 'Get-CatchupTrigger' {
         $t.Reason | Should Be 'backup 08:30'
         $t.State.LastCatchupSlot | Should Be '2026-10-19 08:30'
     }
-    It 'does not start before the slot or after the 10 minute window' {
+    It 'does not start before the slot or after the 20 minute window' {
         (Trig -At ([datetime]'2026-10-19 08:29')).Start | Should Be $false
-        (Trig -At ([datetime]'2026-10-19 08:40')).Start | Should Be $false
+        (Trig -At ([datetime]'2026-10-19 08:50')).Start | Should Be $false
+        (Trig -At ([datetime]'2026-10-19 08:49')).Start | Should Be $true
     }
     It 'does not repeat in the same slot' {
         $t = Trig -At ([datetime]'2026-10-19 08:31')
@@ -398,5 +399,25 @@ Describe 'Get-CatchupTrigger' {
     It 'keeps LastCatchupSlot through Get-WatchdogDecision' {
         $s = New-WatchdogState; $s.LastCatchupSlot = '2026-10-19 08:30'
         (Decide (Obs) -State $s).State.LastCatchupSlot | Should Be '2026-10-19 08:30'
+    }
+}
+Describe 'Start-CatchupRun' {
+    $cfg = @{ TenantId = 't'; ClientId = 'c' }
+    InModuleScope GatewayWatchdog {
+        It 'returns Ok and the status code on success' {
+            Mock Get-AccessToken { 'tok' }
+            Mock Invoke-WebRequest { [pscustomobject]@{ StatusCode = 202 } }
+            $r = Start-CatchupRun -Config @{ TenantId = 't'; ClientId = 'c' } -Secret 's' -Reason 'backup 08:30'
+            $r.Ok | Should Be $true
+            $r.Status | Should Be 202
+            Assert-MockCalled Invoke-WebRequest -ParameterFilter { $Uri -like '*7836042d-adb1-4846-b70d-bd42980054c5/items/1fa19eb8-7d5f-465e-b7e7-b31e02e56a2c/jobs/instances?jobType=Pipeline' }
+        }
+        It 'never throws; returns Ok false with the error text' {
+            Mock Get-AccessToken { 'tok' }
+            Mock Invoke-WebRequest { throw 'boom' }
+            $r = Start-CatchupRun -Config @{ TenantId = 't'; ClientId = 'c' } -Secret 's' -Reason 'x'
+            $r.Ok | Should Be $false
+            $r.Status | Should Match 'boom'
+        }
     }
 }

@@ -58,8 +58,8 @@ DP - Presentation - Prod with `mode=catchup` and `reason=<text>` (Fabric REST `P
 as SPN-Fabric-Refresh-Automation, which already has Contributor on that workspace). It starts on:
 
 - **Recovery**: the check that sends 🟢 Recovered, or a 🟡 start/restart after which Fabric reports the gateway Live.
-  Reason: `<GatewayName> gateway recovered HH:mm`.
-- **Backup times** (JD only, weekdays): the first check within 10 minutes after each of `CatchupTimes` (default 08:30 and
+  Reason: `<GatewayName> recovered HH:mm`.
+- **Backup times** (JD only, weekdays): the first check within 20 minutes after each of `CatchupTimes` (default 08:30 and
   10:30 local), once per slot (`LastCatchupSlot` in `state.json`). Fabric pipeline schedules can't pass parameters, so these live here.
   Reason: `backup HH:mm`.
 
@@ -76,6 +76,7 @@ catch-up run was started, would be started (log-only) or failed to start.
 
 Missing keys are treated as these defaults. Re-running the installer adds missing keys to an existing `config.json`
 without changing values already there. To enable, set `"CatchupEnabled": true` in `config.json` (no re-install needed).
+
 ## Identity and permissions
 
 - Service principal **SPN-Fabric-Refresh-Automation** (app `9adca971-f328-4d79-9b48-713c298a238c`), with **one
