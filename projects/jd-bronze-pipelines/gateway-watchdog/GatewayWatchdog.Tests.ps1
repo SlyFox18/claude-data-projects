@@ -341,3 +341,62 @@ Describe 'Read-WatchdogState / Save-WatchdogState' {
         (Read-WatchdogState -Path (Join-Path $TestDrive 'none.json')).ConsecutiveFailures | Should Be 0
     }
 }
+
+Describe 'Get-CatchupTrigger' {
+    $cc = @{ GatewayName = 'JD gateway'; CatchupTimes = @('08:30', '10:30') }
+    function Trig {
+        param([string]$Action = 'None', [bool]$Recovered = $false, [bool]$Live = $false, [hashtable]$State = @{}, [hashtable]$Cfg = $cc,
+              [datetime]$At = [datetime]'2026-10-19 12:00')   # a Monday
+        Get-CatchupTrigger -Decision @{ Action = $Action; Recovered = $Recovered } -AfterActionLive $Live -State $State -Config $Cfg -NowLocal $At
+    }
+
+    It 'starts on recovery with the gateway name and time' {
+        $t = Trig -Recovered $true -At ([datetime]'2026-10-19 05:40')
+        $t.Start | Should Be $true
+        $t.Reason | Should Be 'JD gateway gateway recovered 05:40'
+    }
+    It 'starts after a restart that left the gateway Live' {
+        (Trig -Action 'RestartService' -Live $true).Start | Should Be $true
+    }
+    It 'does not start after a restart that did not come back' {
+        (Trig -Action 'RestartService' -Live $false).Start | Should Be $false
+    }
+    It 'starts in the backup window and records the slot' {
+        $t = Trig -At ([datetime]'2026-10-19 08:34')
+        $t.Start | Should Be $true
+        $t.Reason | Should Be 'backup 08:30'
+        $t.State.LastCatchupSlot | Should Be '2026-10-19 08:30'
+    }
+    It 'does not start before the slot or after the 10 minute window' {
+        (Trig -At ([datetime]'2026-10-19 08:29')).Start | Should Be $false
+        (Trig -At ([datetime]'2026-10-19 08:40')).Start | Should Be $false
+    }
+    It 'does not repeat in the same slot' {
+        $t = Trig -At ([datetime]'2026-10-19 08:31')
+        (Trig -At ([datetime]'2026-10-19 08:38') -State $t.State).Start | Should Be $false
+    }
+    It 'starts again for the next slot' {
+        $t = Trig -At ([datetime]'2026-10-19 08:31')
+        $n = Trig -At ([datetime]'2026-10-19 10:35') -State $t.State
+        $n.Start | Should Be $true
+        $n.State.LastCatchupSlot | Should Be '2026-10-19 10:30'
+    }
+    It 'has no backup on weekends' {
+        (Trig -At ([datetime]'2026-10-17 08:31')).Start | Should Be $false   # Saturday
+        (Trig -At ([datetime]'2026-10-18 10:31')).Start | Should Be $false   # Sunday
+    }
+    It 'has no backup with empty or missing CatchupTimes' {
+        (Trig -At ([datetime]'2026-10-19 08:31') -Cfg @{ CatchupTimes = @() }).Start | Should Be $false
+        (Trig -At ([datetime]'2026-10-19 08:31') -Cfg @{}).Start | Should Be $false
+    }
+    It 'works from a state without LastCatchupSlot, and recovery wins but still records the slot' {
+        $t = Trig -Recovered $true -At ([datetime]'2026-10-19 10:32') -State @{ ConsecutiveFailures = 0 }
+        $t.Start | Should Be $true
+        $t.Reason | Should Match 'recovered 10:32'
+        $t.State.LastCatchupSlot | Should Be '2026-10-19 10:30'
+    }
+    It 'keeps LastCatchupSlot through Get-WatchdogDecision' {
+        $s = New-WatchdogState; $s.LastCatchupSlot = '2026-10-19 08:30'
+        (Decide (Obs) -State $s).State.LastCatchupSlot | Should Be '2026-10-19 08:30'
+    }
+}

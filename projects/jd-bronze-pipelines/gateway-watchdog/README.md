@@ -51,6 +51,31 @@ in the email is what the check found **before** acting.
 nothing runs or nothing can be sent. The DP refresh's Bronze check (JD) and its failed-items list and the Parts
 Availability alert (SPI) still catch the outcome.
 
+## Catch-up trigger
+
+When a gateway comes back, the watchdog asks the DP backend to catch up: it starts `Pipeline_DP_Refresh` in
+DP - Presentation - Prod with `mode=catchup` and `reason=<text>` (Fabric REST `POST /workspaces/{id}/items/{id}/jobs/instances?jobType=Pipeline`,
+as SPN-Fabric-Refresh-Automation, which already has Contributor on that workspace). It starts on:
+
+- **Recovery**: the check that sends 🟢 Recovered, or a 🟡 start/restart after which Fabric reports the gateway Live.
+  Reason: `<GatewayName> gateway recovered HH:mm`.
+- **Backup times** (JD only, weekdays): the first check within 10 minutes after each of `CatchupTimes` (default 08:30 and
+  10:30 local), once per slot (`LastCatchupSlot` in `state.json`). Fabric pipeline schedules can't pass parameters, so these live here.
+  Reason: `backup HH:mm`.
+
+The pipeline itself decides whether anything needs doing and stays quiet when it doesn't; the watchdog only triggers.
+At most one start per check. Not done in `-Mode Test` or `NightlyRestart`. The Recovered / restarted email says whether a
+catch-up run was started, would be started (log-only) or failed to start.
+
+| `config.json` key | Default |
+|---|---|
+| `CatchupEnabled` | `false` (**log-only**: logs `[log-only] would start catch-up (...)` and starts nothing) |
+| `CatchupWorkspaceId` | `7836042d-adb1-4846-b70d-bd42980054c5` (DP - Presentation - Prod) |
+| `CatchupPipelineId` | `1fa19eb8-7d5f-465e-b7e7-b31e02e56a2c` (`Pipeline_DP_Refresh`) |
+| `CatchupTimes` | `["08:30","10:30"]` for JD, `[]` for SPI |
+
+Missing keys are treated as these defaults. Re-running the installer adds missing keys to an existing `config.json`
+without changing values already there. To enable, set `"CatchupEnabled": true` in `config.json` (no re-install needed).
 ## Identity and permissions
 
 - Service principal **SPN-Fabric-Refresh-Automation** (app `9adca971-f328-4d79-9b48-713c298a238c`), with **one

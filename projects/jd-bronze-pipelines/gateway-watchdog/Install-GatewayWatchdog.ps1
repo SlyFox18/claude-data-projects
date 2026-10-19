@@ -72,6 +72,15 @@ Import-Module (Join-Path $InstallDir 'GatewayWatchdog.psm1') -Force
 
 # --- config.json -------------------------------------------------------------------------------
 $configPath = Join-Path $InstallDir 'config.json'
+# Catch-up trigger (Pipeline_DP_Refresh in DP - Presentation - Prod, mode=catchup). Backup times are JD only.
+$catchupTimes = @()
+if ($Gateway -eq 'JD') { $catchupTimes = @('08:30', '10:30') }
+$catchupDefaults = [ordered]@{
+    CatchupEnabled     = $false
+    CatchupWorkspaceId = '7836042d-adb1-4846-b70d-bd42980054c5'
+    CatchupPipelineId  = '1fa19eb8-7d5f-465e-b7e7-b31e02e56a2c'
+    CatchupTimes       = $catchupTimes
+}
 if ($ResetConfig -or -not (Test-Path $configPath)) {
     $config = [ordered]@{
         TenantId              = '8a02a2b8-0092-4de5-8f76-4700d099feb1'
@@ -92,8 +101,24 @@ if ($ResetConfig -or -not (Test-Path $configPath)) {
         AlertRepeatHours      = 4
         VerifyWaitSeconds     = 300
     }
+    foreach ($k in $catchupDefaults.Keys) { $config[$k] = $catchupDefaults[$k] }
     $config | ConvertTo-Json | Set-Content -Path $configPath -Encoding UTF8
     Write-Host 'Wrote config.json (log-only)'
+}
+else {
+    # Existing config: add any catch-up keys it lacks, never overwrite a value that is there.
+    $c = Get-Content $configPath -Raw | ConvertFrom-Json
+    $added = @()
+    foreach ($k in $catchupDefaults.Keys) {
+        if (-not ($c.PSObject.Properties.Name -contains $k)) {
+            $c | Add-Member -NotePropertyName $k -NotePropertyValue $catchupDefaults[$k]
+            $added += $k
+        }
+    }
+    if ($added.Count -gt 0) {
+        $c | ConvertTo-Json | Set-Content -Path $configPath -Encoding UTF8
+        Write-Host "config.json: added $($added -join ', ') (catch-up is log-only until CatchupEnabled is true)"
+    }
 }
 if ($Live) {
     $c = Get-Content $configPath -Raw | ConvertFrom-Json

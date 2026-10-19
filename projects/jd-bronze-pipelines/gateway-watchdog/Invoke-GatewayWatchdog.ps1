@@ -127,6 +127,7 @@ try {
     Write-WatchdogLog $level "$($d.Summary) | $obsText"
 
     $result = ''
+    $afterLive = $false
     if ($d.Action -ne 'None') {
         if ($logOnly) {
             $result = "Log-only mode: did NOT $($d.Action)."
@@ -145,6 +146,7 @@ try {
                 $status = Wait-GatewayLive -Config $config -Secret $secret -TimeoutSeconds $config.VerifyWaitSeconds
                 $result = "Service $how; Fabric status afterwards: $status."
                 if ($status -eq 'Live') {
+                    $afterLive = $true
                     $d.State.OpenProblem = $null; $d.State.LastAlertKey = $null; $d.State.LastAlertUtc = $null
                 }
             }
@@ -156,15 +158,40 @@ try {
         Write-WatchdogLog 'WARN' $result
     }
 
+    # Catch-up trigger: ask the DP pipeline to check for work after a recovery, and at the JD backup times.
+    # The pipeline decides whether anything needs doing; this only starts it.
+    $catchupNote = ''
+    $t = Get-CatchupTrigger -Decision $d -AfterActionLive $afterLive -State $d.State -Config $config -NowLocal (Get-Date)
+    $d.State = $t.State
     Save-WatchdogState -Path $statePath -State $d.State
+    if ($t.Start) {
+        $enabled = $config.ContainsKey('CatchupEnabled') -and [bool]$config.CatchupEnabled
+        if ($enabled) {
+            $r = Start-CatchupRun -Config $config -Secret $secret -Reason $t.Reason
+            if ($r.Ok) {
+                Write-WatchdogLog 'INFO' "Started catch-up ($($t.Reason)): HTTP $($r.Status)"
+                $catchupNote = 'A catch-up run was started.'
+            }
+            else {
+                Write-WatchdogLog 'ERROR' "Catch-up start FAILED ($($t.Reason)): $($r.Status)"
+                $catchupNote = "Catch-up start failed: $($r.Status)"
+            }
+        }
+        else {
+            Write-WatchdogLog 'INFO' "[log-only] would start catch-up ($($t.Reason))"
+            $catchupNote = 'Catch-up would be started (log-only).'
+        }
+    }
 
     if ($d.Alert) {
         $icon = if ($d.Action -ne 'None' -and $result -match 'Live\.$') { $yellow } else { $red }
+        $det = (($d.Detail, $result) -join ' ').Trim()
+        if ($catchupNote -and $afterLive) { $det = "$det $catchupNote".Trim() }
         Send-Safely -Subject "$icon $name$($tag): $($d.Summary)" `
-            -Html (Format-Html -Summary $d.Summary -Detail (($d.Detail, $result) -join ' ').Trim() -Obs $obs)
+            -Html (Format-Html -Summary $d.Summary -Detail $det -Obs $obs)
     }
     elseif ($d.Recovered) {
-        Send-Safely -Normal -Subject "$green $name$($tag): $($d.Summary)" -Html (Format-Html -Summary $d.Summary -Obs $obs)
+        Send-Safely -Normal -Subject "$green $name$($tag): $($d.Summary)" -Html (Format-Html -Summary $d.Summary -Detail $catchupNote -Obs $obs)
     }
 }
 catch {

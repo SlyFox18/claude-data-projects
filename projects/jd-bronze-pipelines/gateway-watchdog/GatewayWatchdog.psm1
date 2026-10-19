@@ -68,6 +68,7 @@ function Get-WatchdogDecision {
         LastAlertKey        = $State.LastAlertKey
         LastAlertUtc        = $State.LastAlertUtc
     }
+    if ($State.ContainsKey('LastCatchupSlot')) { $new.LastCatchupSlot = $State.LastCatchupSlot }   # owned by Get-CatchupTrigger
     $capReached = $new.Restarts.Count -ge $Config.MaxRestarts
     $action = 'None'; $problem = $null; $summary = 'Healthy'; $detail = ''
 
@@ -192,6 +193,49 @@ function Get-WatchdogDecision {
 
     @{ Action = $action; Problem = $problem; Summary = $summary; Detail = $detail
        Alert = $alert; Recovered = $recovered; State = $new }
+}
+
+function Get-CatchupTrigger {
+    <#
+    .SYNOPSIS
+        Should this check start a catch-up run of Pipeline_DP_Refresh? Pure. Returns @{ Start; Reason; State }.
+        Recovery (decision Recovered, or an action taken and the gateway is Live afterwards) always starts.
+        Backup: a weekday, within 10 minutes after one of Config.CatchupTimes, once per slot (State.LastCatchupSlot).
+        At most one Start per call; the slot is recorded even when a recovery start wins.
+    #>
+    param(
+        [Parameter(Mandatory)] [hashtable]$Decision,
+        [bool]$AfterActionLive = $false,
+        [Parameter(Mandatory)] [hashtable]$State,
+        [Parameter(Mandatory)] [hashtable]$Config,
+        [Parameter(Mandatory)] [datetime]$NowLocal
+    )
+    $new = $State.Clone()
+    $start = $false; $reason = ''
+    $gwName = 'gateway'
+    if ($Config.ContainsKey('GatewayName') -and $Config.GatewayName) { $gwName = [string]$Config.GatewayName }
+
+    if ($Decision.Recovered -or ($Decision.Action -ne 'None' -and $AfterActionLive)) {
+        $start = $true
+        $reason = "$gwName gateway recovered $($NowLocal.ToString('HH:mm'))"
+    }
+
+    $times = @()
+    if ($Config.ContainsKey('CatchupTimes') -and $Config.CatchupTimes) { $times = @($Config.CatchupTimes) }
+    $last = ''
+    if ($State.ContainsKey('LastCatchupSlot') -and $State.LastCatchupSlot) { $last = [string]$State.LastCatchupSlot }
+    if ($NowLocal.DayOfWeek -ne [DayOfWeek]::Saturday -and $NowLocal.DayOfWeek -ne [DayOfWeek]::Sunday) {
+        foreach ($t in $times) {
+            $slotStart = $NowLocal.Date + [TimeSpan]::Parse([string]$t)
+            $key = "$($NowLocal.ToString('yyyy-MM-dd')) $t"
+            if ($NowLocal -ge $slotStart -and $NowLocal -lt $slotStart.AddMinutes(10) -and $last -ne $key) {
+                $new.LastCatchupSlot = $key
+                if (-not $start) { $start = $true; $reason = "backup $t" }
+                break
+            }
+        }
+    }
+    @{ Start = $start; Reason = $reason; State = $new }
 }
 
 # ---------------------------------------------------------------------------------------------
@@ -369,6 +413,28 @@ function Wait-GatewayLive {
     $status
 }
 
+function Start-CatchupRun {
+    <# POST a Pipeline_DP_Refresh run with mode=catchup. Never throws. Ok=$true when Fabric accepted it (202). #>
+    param([hashtable]$Config, [string]$Secret, [string]$Reason)
+    $wsId = '7836042d-adb1-4846-b70d-bd42980054c5'; $plId = '1fa19eb8-7d5f-465e-b7e7-b31e02e56a2c'
+    if ($Config.ContainsKey('CatchupWorkspaceId') -and $Config.CatchupWorkspaceId) { $wsId = [string]$Config.CatchupWorkspaceId }
+    if ($Config.ContainsKey('CatchupPipelineId') -and $Config.CatchupPipelineId) { $plId = [string]$Config.CatchupPipelineId }
+    try {
+        $token = Get-AccessToken -Config $Config -Secret $Secret -Scope 'https://api.fabric.microsoft.com/.default'
+        $body = @{ executionData = @{ parameters = @{ mode = 'catchup'; reason = $Reason } } } | ConvertTo-Json -Depth 5
+        $r = Invoke-WebRequest -Method Post -UseBasicParsing -TimeoutSec 60 `
+            -Uri "https://api.fabric.microsoft.com/v1/workspaces/$wsId/items/$plId/jobs/instances?jobType=Pipeline" `
+            -Headers @{ Authorization = "Bearer $token" } -ContentType 'application/json; charset=utf-8' `
+            -Body ([Text.Encoding]::UTF8.GetBytes($body))
+        @{ Ok = $true; Status = [int]$r.StatusCode }
+    }
+    catch {
+        $code = Get-HttpStatusCode $_
+        if ($code -gt 0) { $st = $code } else { $st = Get-HttpErrorText $_ }
+        @{ Ok = $false; Status = $st }
+    }
+}
+
 function Send-WatchdogMail {
     <# Same route as the DP refresh notifications: Graph sendMail as the shared sender mailbox. Alert list
        gets a high-importance email; the Teams channel address gets a copy. #>
@@ -394,4 +460,4 @@ function Send-WatchdogMail {
 
 Export-ModuleMember -Function New-WatchdogState, Get-RestartsInWindow, Get-WatchdogDecision, ConvertTo-Hashtable,
     Read-WatchdogState, Save-WatchdogState, Protect-WatchdogSecret, Unprotect-WatchdogSecret, Get-GatewayObservation,
-    Restart-GatewayService, Wait-GatewayLive, Send-WatchdogMail, Test-TcpPort
+    Restart-GatewayService, Wait-GatewayLive, Send-WatchdogMail, Test-TcpPort, Get-CatchupTrigger, Start-CatchupRun
