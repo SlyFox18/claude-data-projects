@@ -176,6 +176,12 @@ function Get-WatchdogDecision {
         }
         $new.OpenProblem = $problem
     }
+    elseif ($new.OpenProblem -eq 'source-failed' -and $o.Service -eq 'Running' -and $o.Gateway -eq 'Live' -and
+            $new.SourceFailureTimes.Count -ge $srcInWindow) {
+        # A flapping Equip test stays one open problem until the failures in the window drop below the threshold:
+        # no Recovered email now, and no new alert when it fails again (AlertRepeatHours still applies).
+        $summary = "Equip test through the gateway is Ok again, but it failed $($new.SourceFailureTimes.Count) times in the last $srcWindowHours h; staying open until that drops below $srcInWindow"
+    }
     elseif ($new.OpenProblem -and $o.Service -eq 'Running' -and $o.Gateway -eq 'Live') {
         $recovered = $true
         $summary = "Recovered: gateway is Live again (was: $($new.OpenProblem))"

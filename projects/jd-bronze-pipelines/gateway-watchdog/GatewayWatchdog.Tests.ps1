@@ -155,6 +155,46 @@ Describe 'Get-WatchdogDecision' {
         $c.Problem | Should Be 'source-failed'
     }
 
+    It 'keeps a flapping Equip test as one open problem: one alert, then one Recovered once the window drains' {
+        $state = New-WatchdogState; $alerts = 0; $recoveries = 0
+        foreach ($m in (0, 20, 40, 60)) {
+            $f = Decide (Obs -Source 'Failed') -State $state -At $now.AddMinutes($m)
+            if ($f.Alert) { $alerts++ }
+            if ($f.Recovered) { $recoveries++ }
+            $state = $f.State
+            $ok = Decide (Obs) -State $state -At $now.AddMinutes($m + 10)
+            if ($ok.Alert) { $alerts++ }
+            if ($ok.Recovered) { $recoveries++ }
+            $state = $ok.State
+        }
+        $alerts | Should Be 1
+        $recoveries | Should Be 0
+        $state.OpenProblem | Should Be 'source-failed'
+        foreach ($m in (80, 90, 100, 110, 120, 130, 140, 150, 160)) {
+            $ok = Decide (Obs) -State $state -At $now.AddMinutes($m)
+            if ($ok.Alert) { $alerts++ }
+            if ($ok.Recovered) { $recoveries++ }
+            $state = $ok.State
+        }
+        $alerts | Should Be 1
+        $recoveries | Should Be 1
+        $state.OpenProblem | Should Be $null
+    }
+
+    It 'recovers on the first Ok after a 2-failure outage, but only after the window drains after 3 or more' {
+        $a = Decide (Obs -Source 'Failed')
+        $b = Decide (Obs -Source 'Failed') -State $a.State -At $now.AddMinutes(10)
+        $b.Alert | Should Be $true
+        (Decide (Obs) -State $b.State -At $now.AddMinutes(20)).Recovered | Should Be $true
+
+        $c = Decide (Obs -Source 'Failed') -State $b.State -At $now.AddMinutes(20)
+        $held = Decide (Obs) -State $c.State -At $now.AddMinutes(30)
+        $held.Recovered | Should Be $false
+        $held.State.OpenProblem | Should Be 'source-failed'
+        $late = Decide (Obs) -State $held.State -At $now.AddMinutes(150)
+        $late.Recovered | Should Be $true
+    }
+
     It 'treats a state without SourceFailureTimes as empty' {
         $state = New-WatchdogState
         $state.Remove('SourceFailureTimes')
