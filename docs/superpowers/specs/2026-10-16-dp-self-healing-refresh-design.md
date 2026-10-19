@@ -9,6 +9,10 @@
 >   - **Fixer:** a scheduled task on Brian's PC (his choice), not a Power Automate flow.
 >   - **Phase 2 plan:** `docs/superpowers/plans/2026-10-16-dp-self-healing-phase2.md` (marker, skip unchanged
 >     pipelines, claim task, Finish warning).
+>   - **Phase 2 LIVE 2026-10-19.** Claim task installed on Brian's PC. Prod deploy run 39257305075 (13:07Z)
+>     re-published both pipelines (`claimed:no`), and the task claimed both at 08:10 CT, about 3 min later. Nothing
+>     needed a re-run.
+>     Still to prove: a deploy with no pipeline change reports "unchanged → still claimed".
 >   - **Phase 2 code done 2026-10-16:** fabric-workspace-docs PR #40 (331 tests, reviewed, Dev dry run OK).
 >     - The pending marker goes in the staged `.platform`: fabric-cicd 1.3.0 rewrites the description from it.
 >     - The claim task runs 05:10–20:55 every 15 min, with a pending.json rerun window (deploy..claim + 2 min).
