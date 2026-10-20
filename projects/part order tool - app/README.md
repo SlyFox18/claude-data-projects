@@ -36,7 +36,7 @@ The original design used ODBC, a SharePoint list and CSV uploads on LH_Master_Da
 | Source | Table / file | Purpose |
 |---|---|---|
 | DP_Staging Silver | Silver_PartInformation | Part master |
-| DP_Staging Silver | Silver_InMaster | Stocking months, margin flag (user_field_3) |
+| DP_Staging Silver | Silver_InMaster | Product group, margin flag (user_field_3) |
 | DP_Staging Silver | Silver_PartStockingRules | Stocking rules |
 | DP_Staging Silver | Silver_PartSalesHistory | Sales/request history (from JD Bronze InHistMQT) |
 | SharePoint list | NonJD_PartSettings (via df_NonJD_PartSettings_Raw) | User-managed per-part overrides and masks |
