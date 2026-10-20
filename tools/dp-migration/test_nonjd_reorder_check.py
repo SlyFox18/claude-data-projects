@@ -51,10 +51,19 @@ def _minimum(con, pn, qty, branch="1", franchise="MC"):
     con.execute("INSERT INTO rules VALUES (?, ?, ?, ?)", [branch, franchise, pn, qty])
 
 
+def K(pn, branch="1", franchise="MC"):
+    """Key of one output row."""
+    return (branch, franchise, pn)
+
+
 def _run(con, cur=CUR, today=TODAY):
+    """Expected rows keyed by (Branch, Franchise, PartNumber); fails on a duplicate key."""
     cur_ = chk.expected_reorder(con, cur, today)
     cols = [d[0] for d in cur_.description]
-    return {r[2]: dict(zip(cols, r)) for r in cur_.fetchall()}
+    rows = [dict(zip(cols, r)) for r in cur_.fetchall()]
+    out = {(r["Branch"], r["Franchise"], r["PartNumber"]): r for r in rows}
+    assert len(out) == len(rows), "duplicate keys in the expected output"
+    return out
 
 
 def _simple_rule(con, **kw):
@@ -80,7 +89,7 @@ def test_scope_excludes_jd_test_franchises_and_zero_cost():
     for pn, fr, cost in [("JD1", "D", 5), ("T1", "TD", 5), ("U1", "UM", 5), ("Z1", "ZP", 5), ("S1", "S", 5),
                          ("N95", "95", 5), ("FREE", "MC", 0), ("OK1", "MC", 5), ("DA1", "DA", 5)]:
         _part(con, pn, franchise=fr, cost=cost)
-    assert sorted(_run(con)) == ["DA1", "OK1"]
+    assert sorted(_run(con)) == [K("DA1", franchise="DA"), K("OK1")]
 
 
 # ---------------------------------------------------------------------------------------------------------
@@ -89,7 +98,7 @@ def test_scope_excludes_jd_test_franchises_and_zero_cost():
 def test_builtin_default_when_no_rules():
     con = _con()
     _part(con, "P1")
-    r = _run(con)["P1"]
+    r = _run(con)[K("P1")]
     assert r["RuleId"] is None and r["RuleName"] == "Built-in default"
     assert (r["HistoryMonths"], r["MinActiveMonths"], r["WeeksOfCover"], r["DemandBasis"]) == (12, 3, 6, "UnitsSold")
 
@@ -100,7 +109,7 @@ def test_builtin_default_when_no_rule_matches():
     _rule(con, 1, franchise="XX")
     _rule(con, 2, dgc="COTTON")
     _rule(con, 3, branch="2")
-    r = _run(con)["P1"]
+    r = _run(con)[K("P1")]
     assert r["RuleId"] is None and r["RuleName"] == "Built-in default"
 
 
@@ -110,7 +119,7 @@ def test_highest_priority_wins():
     _rule(con, 1, "Low", priority=0)
     _rule(con, 2, "High", priority=10, dgc="COTTON", woc=10)
     _rule(con, 3, "Mid", priority=5)
-    r = _run(con)["P1"]
+    r = _run(con)[K("P1")]
     assert (r["RuleId"], r["RuleName"], r["WeeksOfCover"]) == (2, "High", 10)
 
 
@@ -119,7 +128,7 @@ def test_negative_and_fractional_priority_order():
     _part(con, "P1")
     _rule(con, 1, priority=-1)
     _rule(con, 2, priority=0.5)
-    assert _run(con)["P1"]["RuleId"] == 2
+    assert _run(con)[K("P1")]["RuleId"] == 2
 
 
 def test_priority_tie_goes_to_more_criteria_then_lowest_id():
@@ -131,8 +140,8 @@ def test_priority_tie_goes_to_more_criteria_then_lowest_id():
     _rule(con, 9, priority=5)
     _rule(con, 4, priority=5, branch="1")
     r = _run(con)
-    assert r["P1"]["RuleId"] == 3          # two criteria beats one
-    assert r["P2"]["RuleId"] == 4          # rules 7 and 4 both have one criterion: lowest Id
+    assert r[K("P1")]["RuleId"] == 3          # two criteria beats one
+    assert r[K("P2")]["RuleId"] == 4          # rules 7 and 4 both have one criterion: lowest Id
 
 
 def test_season_does_not_count_as_a_criterion():
@@ -140,14 +149,14 @@ def test_season_does_not_count_as_a_criterion():
     _part(con, "P1")
     _rule(con, 2, priority=5, start=1, end=12)
     _rule(con, 5, priority=5, franchise="MC")
-    assert _run(con)["P1"]["RuleId"] == 5
+    assert _run(con)[K("P1")]["RuleId"] == 5
 
 
 def test_blank_criteria_mean_any():
     con = _con()
     _part(con, "P1", dgc=None)
     _rule(con, 1, franchise="  ", dgc="", branch=" ")
-    assert _run(con)["P1"]["RuleId"] == 1
+    assert _run(con)[K("P1")]["RuleId"] == 1
 
 
 def test_inactive_rule_ignored():
@@ -156,7 +165,7 @@ def test_inactive_rule_ignored():
     _rule(con, 1, priority=0)
     _rule(con, 2, priority=10, active=False)
     _rule(con, 3, priority=20, active=None)
-    assert _run(con)["P1"]["RuleId"] == 1
+    assert _run(con)[K("P1")]["RuleId"] == 1
 
 
 def test_criteria_trimmed_and_case_insensitive():
@@ -164,7 +173,7 @@ def test_criteria_trimmed_and_case_insensitive():
     _part(con, "P1", franchise="m", dgc="COTTON", branch="1 ")
     _rule(con, 1, priority=0)
     _rule(con, 2, priority=10, franchise="M", dgc=" cotton ", branch=" 1")
-    assert _run(con)["P1"]["RuleId"] == 2
+    assert _run(con)[K("P1", branch="1 ", franchise="m")]["RuleId"] == 2
 
 
 def test_part_without_dealer_group_does_not_match_dealer_group_rule():
@@ -174,7 +183,7 @@ def test_part_without_dealer_group_does_not_match_dealer_group_rule():
     _rule(con, 1, priority=0)
     _rule(con, 2, priority=10, dgc="COTTON")
     r = _run(con)
-    assert r["P1"]["RuleId"] == 1 and r["P2"]["RuleId"] == 1
+    assert r[K("P1")]["RuleId"] == 1 and r[K("P2")]["RuleId"] == 1
 
 
 def test_dealer_group_is_per_branch():
@@ -183,9 +192,8 @@ def test_dealer_group_is_per_branch():
     _part(con, "P1", branch="2", dgc="PEANUT")
     _rule(con, 1, priority=0)
     _rule(con, 2, priority=10, dgc="COTTON")
-    rows = chk.expected_reorder(con, CUR, TODAY).fetchall()
-    by_branch = {r[0]: r[3] for r in rows}
-    assert by_branch == {"1": 2, "2": 1}
+    r = _run(con)
+    assert r[K("P1", "1")]["RuleId"] == 2 and r[K("P1", "2")]["RuleId"] == 1
 
 
 @pytest.mark.parametrize("start,end,cur,applies", [
@@ -206,44 +214,84 @@ def test_season(start, end, cur, applies):
     _part(con, "P1")
     _rule(con, 1, priority=0)
     _rule(con, 2, priority=10, start=start, end=end)
-    assert _run(con, cur=cur, today=cur)["P1"]["RuleId"] == (2 if applies else 1)
+    assert _run(con, cur=cur, today=cur)[K("P1")]["RuleId"] == (2 if applies else 1)
+
+
+@pytest.mark.parametrize("cur,dgc,expected", [
+    (date(2026, 7, 1), "COTTON", 2),      # in season and matching group
+    (date(2026, 12, 1), "COTTON", 3),     # off season: the wrapping off-season rule applies
+    (date(2026, 7, 1), "PEANUT", 1),      # in season but another group
+])
+def test_season_plus_criteria(cur, dgc, expected):
+    con = _con()
+    _part(con, "P1", dgc=dgc)
+    _rule(con, 1, "Default", priority=0)
+    _rule(con, 2, "Cotton - in season", priority=10, dgc="COTTON", start=6, end=10)
+    _rule(con, 3, "Cotton - off season", priority=10, dgc="COTTON", start=11, end=5)
+    assert _run(con, cur=cur, today=cur)[K("P1")]["RuleId"] == expected
 
 
 # ---------------------------------------------------------------------------------------------------------
 # invalid rules
 # ---------------------------------------------------------------------------------------------------------
+MONTHS_BOTH = "StartMonth and EndMonth must both be set or both blank"
+START_1_12 = "StartMonth must be a whole number 1-12"
+WOC = "WeeksOfCover must be 0-104"
+HM = "HistoryMonths must be a whole number 1-59"
+MAM = "MinActiveMonths must be a whole number 0-59"
+BASIS = "DemandBasis must be UnitsSold or Requests"
 INVALID = {
-    "start month only": dict(start=6),
-    "end month only": dict(end=10),
-    "month 13": dict(start=6, end=13),
-    "month 0": dict(start=0, end=5),
-    "fractional month": dict(start=2.5, end=5),
-    "missing WeeksOfCover": dict(woc=None),
-    "negative WeeksOfCover": dict(woc=-1),
-    "missing HistoryMonths": dict(hm=None),
-    "HistoryMonths 0": dict(hm=0),
-    "HistoryMonths 60": dict(hm=60),
-    "fractional HistoryMonths": dict(hm=6.5),
-    "missing MinActiveMonths": dict(mam=None),
-    "negative MinActiveMonths": dict(mam=-1),
-    "MinActiveMonths 60": dict(mam=60),
-    "fractional MinActiveMonths": dict(mam=1.5),
-    "missing Priority": dict(priority=None),
-    "unknown basis": dict(basis="Dollars"),
-    "missing basis": dict(basis=None),
+    "start month only": (dict(start=6), MONTHS_BOTH),
+    "end month only": (dict(end=10), MONTHS_BOTH),
+    "month 13": (dict(start=6, end=13), "EndMonth must be a whole number 1-12"),
+    "month 0": (dict(start=0, end=5), START_1_12),
+    "fractional month": (dict(start=2.5, end=5), START_1_12),
+    "missing WeeksOfCover": (dict(woc=None), WOC),
+    "negative WeeksOfCover": (dict(woc=-1), WOC),
+    "WeeksOfCover 105": (dict(woc=105), WOC),
+    "infinite WeeksOfCover": (dict(woc=float("inf")), WOC),
+    "NaN WeeksOfCover": (dict(woc=float("nan")), WOC),
+    "missing HistoryMonths": (dict(hm=None), "HistoryMonths is missing"),
+    "HistoryMonths 0": (dict(hm=0), HM),
+    "HistoryMonths 60": (dict(hm=60), HM),
+    "fractional HistoryMonths": (dict(hm=6.5), HM),
+    "NaN HistoryMonths": (dict(hm=float("nan")), HM),
+    "missing MinActiveMonths": (dict(mam=None), "MinActiveMonths is missing"),
+    "negative MinActiveMonths": (dict(mam=-1), MAM),
+    "MinActiveMonths 60": (dict(mam=60), MAM),
+    "fractional MinActiveMonths": (dict(mam=1.5), MAM),
+    "missing Priority": (dict(priority=None), "Priority is missing"),
+    "unknown basis": (dict(basis="Dollars"), BASIS),
+    "missing basis": (dict(basis=None), BASIS),
 }
 
 
-@pytest.mark.parametrize("kw", INVALID.values(), ids=INVALID.keys())
-def test_invalid_rule_skipped_and_reported(kw):
+@pytest.mark.parametrize("kw,reason", INVALID.values(), ids=INVALID.keys())
+def test_invalid_rule_skipped_and_reported(kw, reason):
     con = _con()
     _part(con, "P1")
     _rule(con, 1, "Good", priority=0)
     _rule(con, 2, "Bad", **{"priority": 10, **kw})
-    assert _run(con)["P1"]["RuleId"] == 1
-    bad = chk.invalid_rules(con)
-    assert [(i, n) for i, n, _ in bad] == [(2, "Bad")]
-    assert bad[0][2]
+    assert _run(con)[K("P1")]["RuleId"] == 1
+    assert chk.invalid_rules(con) == [(2, "Bad", reason)]
+
+
+def test_weeks_of_cover_bounds_are_valid():
+    con = _con()
+    _rule(con, 1, woc=0)
+    _rule(con, 2, woc=104)
+    assert chk.invalid_rules(con) == []
+
+
+@pytest.mark.parametrize("name", [None, "", "   "])
+def test_missing_rule_name_falls_back_to_rule_id(name):
+    con = _con()
+    _part(con, "P1")
+    _rule(con, 7)
+    _rule(con, 8, active=True, basis="X")
+    con.execute("UPDATE order_rules SET RuleName = ?", [name])
+    assert _run(con)[K("P1")]["RuleName"] == "Rule 7"
+    assert chk.invalid_rules(con) == [(8, "Rule 8", BASIS)]
 
 
 def test_invalid_rules_lists_every_problem_and_ignores_valid_and_inactive_rules():
@@ -261,7 +309,7 @@ def test_demand_basis_trimmed_and_case_insensitive():
     con = _con()
     _part(con, "P1")
     _rule(con, 1, basis=" requests ")
-    r = _run(con)["P1"]
+    r = _run(con)[K("P1")]
     assert r["RuleId"] == 1 and r["DemandBasis"] == "Requests"
 
 
@@ -277,7 +325,7 @@ def test_window_is_full_months_only():
                       "2025-09-01": (400, 0),     # current - 13: excluded
                       "2026-11-01": (800, 0)})    # future: excluded
     _simple_rule(con)
-    r = _run(con)["W1"]
+    r = _run(con)[K("W1")]
     assert r["WindowDemand"] == pytest.approx(3.0) and r["ActiveMonths"] == 2
 
 
@@ -286,7 +334,7 @@ def test_window_follows_rule_history_months():
     _part(con, "W3")
     _hist(con, "W3", {"2026-09-01": (1, 0), "2026-07-01": (2, 0), "2026-06-01": (4, 0)})
     _simple_rule(con, hm=3)
-    r = _run(con)["W3"]
+    r = _run(con)[K("W3")]
     assert r["HistoryMonths"] == 3
     assert r["WindowDemand"] == pytest.approx(3.0) and r["ActiveMonths"] == 2
     assert r["MonthlyRate"] == pytest.approx(1.0)
@@ -297,7 +345,7 @@ def test_negative_window_demand_is_zero_and_only_positive_months_are_active():
     _part(con, "NEG")
     _hist(con, "NEG", {"2026-09-01": (2, 0), "2026-08-01": (-5, 0), "2026-07-01": (0, 3)})
     _simple_rule(con)
-    r = _run(con)["NEG"]
+    r = _run(con)[K("NEG")]
     assert r["WindowDemand"] == 0 and r["ActiveMonths"] == 1
     assert r["MonthlyRate"] == 0 and r["CalcTarget"] == 0
     assert r["Status"] == "NotStocked"
@@ -308,7 +356,7 @@ def test_null_demand_counts_as_zero():
     _part(con, "NUL")
     _hist(con, "NUL", {"2026-09-01": (None, None), "2026-08-01": (3, None)})
     _simple_rule(con)
-    r = _run(con)["NUL"]
+    r = _run(con)[K("NUL")]
     assert r["WindowDemand"] == pytest.approx(3.0) and r["ActiveMonths"] == 1
 
 
@@ -317,7 +365,7 @@ def test_monthly_rate_uses_history_months_not_active_months():
     _part(con, "ONE")
     _hist(con, "ONE", {"2026-05-01": (6, 1)})
     _rule(con, 1, mam=1, woc=6)
-    r = _run(con)["ONE"]
+    r = _run(con)[K("ONE")]
     assert r["MonthlyRate"] == pytest.approx(0.5)          # 6 / 12, not 6 / 1
     assert r["CalcTarget"] == 1                             # ceil(0.5 * 6 * 12 / 52 = 0.69)
 
@@ -327,7 +375,7 @@ def test_requests_basis_uses_request_count():
     _part(con, "RQ")
     _hist(con, "RQ", {"2026-09-01": (1, 12), "2026-08-01": (0, 12)})
     _simple_rule(con, basis="Requests")
-    r = _run(con)["RQ"]
+    r = _run(con)[K("RQ")]
     assert r["DemandBasis"] == "Requests"
     assert r["WindowDemand"] == pytest.approx(24.0) and r["ActiveMonths"] == 2
 
@@ -337,7 +385,7 @@ def test_units_sold_basis_ignores_requests():
     _part(con, "US")
     _hist(con, "US", {"2026-09-01": (1, 12), "2026-08-01": (0, 12)})
     _simple_rule(con)
-    r = _run(con)["US"]
+    r = _run(con)[K("US")]
     assert r["WindowDemand"] == pytest.approx(1.0) and r["ActiveMonths"] == 1
 
 
@@ -347,7 +395,7 @@ def test_calc_target_formula_and_order():
     _part(con, "COT", oh=1, dgc="COTTON")
     _hist(con, "COT", {"2026-09-01": (6, 0), "2026-08-01": (6, 0), "2026-07-01": (6, 0)})
     _rule(con, 1, "Cotton - in season", dgc="COTTON", start=6, end=10, hm=12, mam=2, woc=10)
-    r = _run(con)["COT"]
+    r = _run(con)[K("COT")]
     assert r["RuleName"] == "Cotton - in season"
     assert r["MonthlyRate"] == pytest.approx(1.5)
     assert r["CalcTarget"] == 4                             # ceil(1.5 * 10 * 12 / 52 = 3.46)
@@ -361,7 +409,7 @@ def test_calc_target_rounds_away_floating_point_noise():
     _part(con, "FP")
     _hist(con, "FP", {"2026-09-01": (5, 0)})
     _rule(con, 1, hm=3, mam=1, woc=5.2)
-    assert _run(con)["FP"]["CalcTarget"] == 2
+    assert _run(con)[K("FP")]["CalcTarget"] == 2
 
 
 def test_default_rule_calculation():
@@ -369,7 +417,7 @@ def test_default_rule_calculation():
     _part(con, "D1")
     # 26 units in 3 active months over 12 -> 26/12 a month x 6 weeks -> exactly 3
     _hist(con, "D1", {"2026-09-01": (10, 0), "2026-04-01": (10, 0), "2025-11-01": (6, 0)})
-    r = _run(con)["D1"]
+    r = _run(con)[K("D1")]
     assert r["ActiveMonths"] == 3 and r["CalcTarget"] == 3 and r["StockingTarget"] == 3
     assert r["Status"] == "OutOfStock"
 
@@ -379,7 +427,7 @@ def test_below_min_active_months_calc_zero_but_minimum_sets_target():
     _part(con, "BM", oh=1)
     _minimum(con, "BM", 4)
     _hist(con, "BM", {"2026-09-01": (50, 0), "2026-08-01": (50, 0)})
-    r = _run(con)["BM"]                                     # built-in default needs 3 active months
+    r = _run(con)[K("BM")]                                     # built-in default needs 3 active months
     assert r["ActiveMonths"] == 2 and r["CalcTarget"] == 0
     assert r["EffectiveMin"] == pytest.approx(4.0) and r["StockingTarget"] == 4
     assert r["RecommendedOrderQty"] == 3 and r["Status"] == "Reorder"
@@ -395,15 +443,15 @@ def test_target_is_larger_of_calc_and_minimum():
         _hist(con, pn, {"2026-09-01": (5, 0)})
     _simple_rule(con)
     r = _run(con)
-    assert (r["BIG"]["CalcTarget"], r["BIG"]["StockingTarget"]) == (5, 5)
-    assert (r["SMALL"]["CalcTarget"], r["SMALL"]["StockingTarget"]) == (5, 9)
+    assert (r[K("BIG")]["CalcTarget"], r[K("BIG")]["StockingTarget"]) == (5, 5)
+    assert (r[K("SMALL")]["CalcTarget"], r[K("SMALL")]["StockingTarget"]) == (5, 9)
 
 
 def test_fractional_minimum_rounds_up():
     con = _con()
     _part(con, "FM")
     _minimum(con, "FM", 2.5)
-    r = _run(con)["FM"]
+    r = _run(con)[K("FM")]
     assert r["EffectiveMin"] == pytest.approx(2.5) and r["StockingTarget"] == 3
 
 
@@ -413,7 +461,7 @@ def test_min_override_beats_equip_minimum_latest_settings_row_wins():
     _minimum(con, "P3", 4)
     con.execute("""INSERT INTO settings VALUES
         (1,'1','MC','P3',2,false,NULL,'2026-10-01 10:00'), (2,'1','MC','P3',7,false,NULL,'2026-10-05 10:00')""")
-    r = _run(con)["P3"]
+    r = _run(con)[K("P3")]
     assert r["EffectiveMin"] == pytest.approx(7.0) and r["StockingTarget"] == 7
 
 
@@ -422,7 +470,7 @@ def test_settings_tie_on_modified_breaks_by_id_desc():
     _part(con, "S1")
     con.execute("""INSERT INTO settings VALUES (9,'1','MC','S1',6,false,NULL,'2026-10-05 10:00'),
                    (3,'1','MC','S1',2,false,NULL,'2026-10-05 10:00')""")
-    assert _run(con)["S1"]["StockingTarget"] == 6
+    assert _run(con)[K("S1")]["StockingTarget"] == 6
 
 
 # ---------------------------------------------------------------------------------------------------------
@@ -433,7 +481,7 @@ def test_masked_part_orders_nothing():
     _part(con, "P4")
     _minimum(con, "P4", 3)
     con.execute("INSERT INTO settings VALUES (3,'1','MC','P4',NULL,true,'2026-12-31','2026-10-01 10:00')")
-    r = _run(con)["P4"]
+    r = _run(con)[K("P4")]
     assert r["StockingTarget"] == 3
     assert r["RecommendedOrderQty"] == 0 and r["Status"] == "Masked"
 
@@ -442,7 +490,7 @@ def test_masked_wins_over_no_recent_activity():
     con = _con()
     _part(con, "P4")
     con.execute("INSERT INTO settings VALUES (3,'1','MC','P4',NULL,true,NULL,'2026-10-01 10:00')")
-    assert _run(con)["P4"]["Status"] == "Masked"
+    assert _run(con)[K("P4")]["Status"] == "Masked"
 
 
 def test_expired_mask_is_ignored():
@@ -450,7 +498,7 @@ def test_expired_mask_is_ignored():
     _part(con, "P5")
     _minimum(con, "P5", 1)
     con.execute("INSERT INTO settings VALUES (1,'1','MC','P5',NULL,true,'2026-10-19','2026-10-01 10:00')")
-    assert _run(con)["P5"]["Status"] == "OutOfStock"
+    assert _run(con)[K("P5")]["Status"] == "OutOfStock"
 
 
 def test_mask_expiring_today_still_masks():
@@ -458,7 +506,7 @@ def test_mask_expiring_today_still_masks():
     _part(con, "M1")
     _minimum(con, "M1", 1)
     con.execute("INSERT INTO settings VALUES (1,'1','MC','M1',NULL,true,'2026-10-20','2026-10-01 10:00')")
-    assert _run(con)["M1"]["Status"] == "Masked"
+    assert _run(con)[K("M1")]["Status"] == "Masked"
 
 
 def test_not_stocked_vs_no_recent_activity():
@@ -467,16 +515,26 @@ def test_not_stocked_vs_no_recent_activity():
     _part(con, "NS", oh=2)
     _hist(con, "NS", {"2026-09-01": (1, 0)})                # 1 active month < 3 needed by the default
     r = _run(con)
-    assert (r["NRA"]["ActiveMonths"], r["NRA"]["StockingTarget"], r["NRA"]["Status"]) == (0, 0, "NoRecentActivity")
-    assert (r["NS"]["ActiveMonths"], r["NS"]["StockingTarget"], r["NS"]["Status"]) == (1, 0, "NotStocked")
-    assert r["NRA"]["RecommendedOrderQty"] == 0 and r["NS"]["RecommendedOrderQty"] == 0
+    nra, ns = r[K("NRA")], r[K("NS")]
+    assert (nra["ActiveMonths"], nra["StockingTarget"], nra["Status"]) == (0, 0, "NoRecentActivity")
+    assert (ns["ActiveMonths"], ns["StockingTarget"], ns["Status"]) == (1, 0, "NotStocked")
+    assert nra["RecommendedOrderQty"] == 0 and ns["RecommendedOrderQty"] == 0
+
+
+def test_zero_weeks_of_cover_with_activity_is_not_stocked():
+    con = _con()
+    _part(con, "Z0")
+    _hist(con, "Z0", {"2026-09-01": (5, 0)})
+    _simple_rule(con, woc=0)
+    r = _run(con)[K("Z0")]
+    assert (r["ActiveMonths"], r["CalcTarget"], r["StockingTarget"], r["Status"]) == (1, 0, 0, "NotStocked")
 
 
 def test_ok_status_when_stock_covers_target():
     con = _con()
     _part(con, "OK", oh=3, oo=1)
     _minimum(con, "OK", 4)
-    r = _run(con)["OK"]
+    r = _run(con)[K("OK")]
     assert r["RecommendedOrderQty"] == 0 and r["Status"] == "OK"
 
 
@@ -486,17 +544,17 @@ def test_surplus_and_truncated_quantities():
     _part(con, "P7", oh=9.9, branch="92")
     _minimum(con, "P7", 4, branch="92")
     r = _run(con)
-    assert r["P6"]["Status"] == "NoRecentActivity"
-    assert r["P6"]["StockingTarget"] == 0 and r["P6"]["SurplusQty"] == 10
-    assert r["P7"]["SurplusQty"] == 5                       # trunc(9.9) = 9 minus target 4
-    assert r["P7"]["Status"] == "OK"
+    assert r[K("P6", "92")]["Status"] == "NoRecentActivity"
+    assert r[K("P6", "92")]["StockingTarget"] == 0 and r[K("P6", "92")]["SurplusQty"] == 10
+    assert r[K("P7", "92")]["SurplusQty"] == 5                       # trunc(9.9) = 9 minus target 4
+    assert r[K("P7", "92")]["Status"] == "OK"
 
 
 def test_null_on_hand_counts_as_out_of_stock():
     con = _con()
     _part(con, "P8", oh=None)
     _minimum(con, "P8", 1)
-    r = _run(con)["P8"]
+    r = _run(con)[K("P8")]
     assert r["RecommendedOrderQty"] == 1 and r["Status"] == "OutOfStock"
 
 
@@ -507,8 +565,8 @@ def test_fractional_on_hand_is_in_stock_and_on_order_subtracted():
     _minimum(con, "F1", 3)
     _minimum(con, "F2", 3)
     r = _run(con)
-    assert r["F1"]["RecommendedOrderQty"] == 3 and r["F1"]["Status"] == "Reorder"
-    assert r["F2"]["RecommendedOrderQty"] == 2 and r["F2"]["Status"] == "OutOfStock"
+    assert r[K("F1")]["RecommendedOrderQty"] == 3 and r[K("F1")]["Status"] == "Reorder"
+    assert r[K("F2")]["RecommendedOrderQty"] == 2 and r[K("F2")]["Status"] == "OutOfStock"
 
 
 def test_negative_on_hand_truncates_toward_zero():
@@ -518,35 +576,45 @@ def test_negative_on_hand_truncates_toward_zero():
     _minimum(con, "N1", 1)
     _minimum(con, "N2", 1)
     r = _run(con)
-    assert r["N1"]["RecommendedOrderQty"] == 2
-    assert r["N2"]["RecommendedOrderQty"] == 1
-    assert r["N1"]["SurplusQty"] == 0
+    assert r[K("N1")]["RecommendedOrderQty"] == 2
+    assert r[K("N2")]["RecommendedOrderQty"] == 1
+    assert r[K("N1")]["SurplusQty"] == 0
 
 
 def test_inbound_transfers_match_trimmed_upper_part_number():
     con = _con()
     _part(con, "ab-1 ")
-    con.execute("INSERT INTO transfers VALUES ('1','AB-1',4), ('1 ','AB-1',2), ('5','AB-1',9)")
+    con.execute("""INSERT INTO transfers VALUES ('1','AB-1',4), ('1 ','AB-1',2), ('1',' ab-1 ',1),
+                   ('5','AB-1',9)""")
     r = _run(con)
-    assert r["ab-1 "]["InboundTransferQty"] == pytest.approx(6.0)
+    assert r[K("ab-1 ")]["InboundTransferQty"] == pytest.approx(7.0)    # both sides trimmed and upper-cased
 
 
 def test_no_transfers_is_zero_inbound():
     con = _con()
     _part(con, "X1")
-    assert _run(con)["X1"]["InboundTransferQty"] == 0
+    assert _run(con)[K("X1")]["InboundTransferQty"] == 0
 
 
 # ---------------------------------------------------------------------------------------------------------
 # compare()
 # ---------------------------------------------------------------------------------------------------------
-CMP_COLS = [("Branch", "VARCHAR"), ("Franchise", "VARCHAR"), ("PartNumber", "VARCHAR"), ("RuleName", "VARCHAR"),
-            ("WindowDemand", "DOUBLE"), ("ActiveMonths", "INTEGER"), ("MonthlyRate", "DOUBLE"),
-            ("CalcTarget", "INTEGER"), ("StockingTarget", "INTEGER"), ("RecommendedOrderQty", "INTEGER"),
+CMP_COLS = [("Branch", "VARCHAR"), ("Franchise", "VARCHAR"), ("PartNumber", "VARCHAR"), ("RuleId", "BIGINT"),
+            ("RuleName", "VARCHAR"), ("DemandBasis", "VARCHAR"), ("HistoryMonths", "INTEGER"),
+            ("MinActiveMonths", "INTEGER"), ("WeeksOfCover", "DOUBLE"), ("WindowDemand", "DOUBLE"),
+            ("ActiveMonths", "INTEGER"), ("MonthlyRate", "DOUBLE"), ("CalcTarget", "INTEGER"),
+            ("EffectiveMin", "DOUBLE"), ("StockingTarget", "INTEGER"), ("RecommendedOrderQty", "INTEGER"),
             ("SurplusQty", "INTEGER"), ("InboundTransferQty", "DOUBLE"), ("Status", "VARCHAR")]
-BASE = dict(Branch="1", Franchise="MC", PartNumber="A", RuleName="Default", WindowDemand=3.0, ActiveMonths=2,
-            MonthlyRate=0.25, CalcTarget=1, StockingTarget=2, RecommendedOrderQty=1, SurplusQty=0,
+BASE = dict(Branch="1", Franchise="MC", PartNumber="A", RuleId=1, RuleName="Default", DemandBasis="UnitsSold",
+            HistoryMonths=12, MinActiveMonths=3, WeeksOfCover=6.0, WindowDemand=3.0, ActiveMonths=2,
+            MonthlyRate=0.25, CalcTarget=1, EffectiveMin=0.0, StockingTarget=2, RecommendedOrderQty=1, SurplusQty=0,
             InboundTransferQty=0.0, Status="Reorder")
+
+
+def test_compare_covers_every_output_column():
+    assert {c for c, _ in CMP_COLS} == set(chk.OUTPUT_COLS)
+    assert set(chk.COMPARE_COLS) | set(chk.TOLERANCE_COLS) == set(chk.OUTPUT_COLS) - {"Branch", "Franchise",
+                                                                                       "PartNumber"}
 
 
 def _cmp(gold_rows, exp_rows):
@@ -575,11 +643,13 @@ def test_compare_flags_duplicate_keys():
 
 
 @pytest.mark.parametrize("col,value", [
-    ("RuleName", "Cotton"), ("RuleName", None),
+    ("RuleId", 2), ("RuleId", None), ("RuleName", "Cotton"), ("RuleName", None),
+    ("DemandBasis", "Requests"), ("HistoryMonths", 6), ("MinActiveMonths", 0),
     ("ActiveMonths", 3), ("CalcTarget", 2), ("CalcTarget", None),
     ("StockingTarget", 3), ("StockingTarget", None), ("RecommendedOrderQty", 0), ("SurplusQty", 1),
     ("Status", "OK"),
-    ("WindowDemand", 3.01), ("WindowDemand", None), ("MonthlyRate", 0.2501), ("MonthlyRate", None),
+    ("WeeksOfCover", 6.5), ("WeeksOfCover", None), ("WindowDemand", 3.01), ("WindowDemand", None),
+    ("MonthlyRate", 0.2501), ("MonthlyRate", None), ("EffectiveMin", 1.0), ("EffectiveMin", None),
     ("InboundTransferQty", 0.5), ("InboundTransferQty", None),
 ])
 def test_compare_flags_each_compared_column(col, value):
@@ -587,7 +657,8 @@ def test_compare_flags_each_compared_column(col, value):
     assert (r["only_gold"], r["only_expected"], r["different"]) == (0, 0, 1)
 
 
-@pytest.mark.parametrize("col", ["WindowDemand", "MonthlyRate", "InboundTransferQty"])
+@pytest.mark.parametrize("col", ["WeeksOfCover", "WindowDemand", "MonthlyRate", "EffectiveMin",
+                                 "InboundTransferQty"])
 def test_compare_tolerates_tiny_float_differences(col):
     r = _cmp([{}], [{col: BASE[col] + 1e-9}])
     assert r["different"] == 0

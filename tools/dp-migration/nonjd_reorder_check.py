@@ -35,14 +35,16 @@ TIERS = {
 BUILTIN_DEFAULT = {"RuleName": "Built-in default", "HistoryMonths": 12, "MinActiveMonths": 3, "WeeksOfCover": 6,
                    "DemandBasis": "UnitsSold"}
 HIST_MONTHS = 60          # Silver_PartSalesHistory depth; HistoryMonths is at most 59
-# Compared exactly (null-safe); the float columns are compared with a tolerance (see _diff_where).
-COMPARE_COLS = ["RuleName", "ActiveMonths", "CalcTarget", "StockingTarget", "RecommendedOrderQty", "SurplusQty",
-                "Status"]
-TOLERANCE_COLS = ["WindowDemand", "MonthlyRate", "InboundTransferQty"]
+# Every output column except the key is compared: these exactly (null-safe), the float ones with a tolerance
+# (NULL against a value is still a mismatch; see _diff_where).
+COMPARE_COLS = ["RuleId", "RuleName", "DemandBasis", "HistoryMonths", "MinActiveMonths", "ActiveMonths",
+                "CalcTarget", "StockingTarget", "RecommendedOrderQty", "SurplusQty", "Status"]
+TOLERANCE_COLS = ["WeeksOfCover", "WindowDemand", "MonthlyRate", "EffectiveMin", "InboundTransferQty"]
 TOLERANCE = 1e-6
 OUTPUT_COLS = ["Branch", "Franchise", "PartNumber", "RuleId", "RuleName", "DemandBasis", "HistoryMonths",
                "MinActiveMonths", "WeeksOfCover", "WindowDemand", "ActiveMonths", "MonthlyRate", "CalcTarget",
                "EffectiveMin", "StockingTarget", "RecommendedOrderQty", "SurplusQty", "InboundTransferQty", "Status"]
+KEYS = "Branch, Franchise, PartNumber"
 
 
 def add_months(d: date, n: int) -> date:
@@ -51,15 +53,18 @@ def add_months(d: date, n: int) -> date:
 
 
 def _whole_between(col: str, lo: int, hi: int) -> str:
+    # NaN and +-inf fail (DuckDB sorts NaN above every number, so BETWEEN is false)
     return f"({col} = floor({col}) AND {col} BETWEEN {lo} AND {hi})"
 
 
-# Active rules of NonJD_OrderRules with their problems ('' = valid). SharePoint numbers arrive as doubles, so
-# "whole number" is checked explicitly. Inactive rules (Active false or NULL) are ignored entirely: neither matched
-# nor reported. concat_ws skips NULLs, so every problem of a rule is listed.
+# Active rules of NonJD_OrderRules with a display name and their problems ('' = valid). SharePoint numbers arrive
+# as doubles, so "whole number" is checked explicitly. Inactive rules (Active false or NULL) are ignored entirely:
+# neither matched nor reported. A blank or missing name shows as "Rule <Id>". concat_ws skips NULLs, so every
+# problem of a rule is listed.
 RULE_CHECK_CTE = f"""
     rule_check AS (
         SELECT *,
+               coalesce(nullif(trim(RuleName), ''), 'Rule ' || CAST(CAST(Id AS BIGINT) AS VARCHAR)) AS RuleLabel,
                concat_ws('; ',
                  CASE WHEN Priority IS NULL THEN 'Priority is missing' END,
                  CASE WHEN HistoryMonths IS NULL THEN 'HistoryMonths is missing'
@@ -68,8 +73,8 @@ RULE_CHECK_CTE = f"""
                  CASE WHEN MinActiveMonths IS NULL THEN 'MinActiveMonths is missing'
                       WHEN NOT {_whole_between('MinActiveMonths', 0, 59)}
                       THEN 'MinActiveMonths must be a whole number 0-59' END,
-                 CASE WHEN WeeksOfCover IS NULL THEN 'WeeksOfCover is missing'
-                      WHEN WeeksOfCover < 0 THEN 'WeeksOfCover must not be negative' END,
+                 CASE WHEN WeeksOfCover IS NULL OR NOT (WeeksOfCover BETWEEN 0 AND 104)
+                      THEN 'WeeksOfCover must be 0-104' END,
                  CASE WHEN (StartMonth IS NULL) <> (EndMonth IS NULL)
                       THEN 'StartMonth and EndMonth must both be set or both blank' END,
                  CASE WHEN StartMonth IS NOT NULL AND NOT {_whole_between('StartMonth', 1, 12)}
@@ -85,25 +90,25 @@ RULE_CHECK_CTE = f"""
 
 INVALID_RULES_SQL = f"""
     WITH {RULE_CHECK_CTE}
-    SELECT Id, RuleName, problems FROM rule_check WHERE problems <> '' ORDER BY Id
+    SELECT Id, RuleLabel, problems FROM rule_check WHERE problems <> '' ORDER BY Id
 """
 
-# Parameters: $cur = first day of the run's Central-time month, $m = its month number, $today = the run's date.
-# Rule pick: highest Priority, then more non-blank criteria (Franchise / DealerGroupCode / Branch; the season does
-# not count), then lowest Id. Window: the rule's HistoryMonths full months before $cur.
+# Parameters: $cur = first day of the run's Central-time month, $today = the run's Central date.
 # CalcTarget: MonthlyRate * WeeksOfCover * 12 / 52 is rounded to 9 decimals before ceil, so double noise such as
 # (5 / 3) * 5.2 * 12 / 52 = 2.0000000000000004 gives 2, not 3. Build_Gold_NonJD_Reorder does the same.
 EXPECTED_SQL = f"""
     WITH {RULE_CHECK_CTE},
-    scope AS (
+    -- franchise scope: non-JD parts with a cost (unchanged from Part 1)
+    in_scope_parts AS (
         SELECT * FROM parts
         WHERE Cost > 0
           AND upper(trim(Franchise)) NOT IN ('D', 'ZP', 'S', '95')
           AND NOT starts_with(upper(trim(Franchise)), 'T')
           AND NOT starts_with(upper(trim(Franchise)), 'U')
     ),
-    valid AS (
-        SELECT Id, RuleName, Priority,
+    -- step 1: valid active rules in season this month (wrapping ranges such as 11-2 included)
+    usable_rules AS (
+        SELECT Id, RuleLabel, Priority,
                nullif(upper(trim(Franchise)), '') AS c_franchise,
                nullif(upper(trim(DealerGroupCode)), '') AS c_dgc,
                nullif(upper(trim(Branch)), '') AS c_branch,
@@ -113,88 +118,101 @@ EXPECTED_SQL = f"""
         FROM rule_check
         WHERE problems = ''
           AND (StartMonth IS NULL
-               OR (StartMonth <= EndMonth AND $m BETWEEN StartMonth AND EndMonth)
-               OR (StartMonth > EndMonth AND ($m >= StartMonth OR $m <= EndMonth)))
+               OR (StartMonth <= EndMonth AND month($cur) BETWEEN StartMonth AND EndMonth)
+               OR (StartMonth > EndMonth AND (month($cur) >= StartMonth OR month($cur) <= EndMonth)))
     ),
-    pick AS (
+    -- step 1: each part's rule: highest Priority, then more non-blank criteria (season doesn't count), lowest Id
+    part_rule AS (
         SELECT * EXCLUDE (rn) FROM (
-            SELECT sc.Branch, sc.Franchise, sc.PartNumber, v.*,
+            SELECT sc.Branch, sc.Franchise, sc.PartNumber, u.*,
                    row_number() OVER (PARTITION BY sc.Branch, sc.Franchise, sc.PartNumber
-                                      ORDER BY v.Priority DESC,
-                                               CAST(v.c_franchise IS NOT NULL AS INTEGER)
-                                                 + CAST(v.c_dgc IS NOT NULL AS INTEGER)
-                                                 + CAST(v.c_branch IS NOT NULL AS INTEGER) DESC,
-                                               v.Id ASC) AS rn
-            FROM scope sc JOIN valid v
-              ON (v.c_franchise IS NULL OR v.c_franchise = upper(trim(sc.Franchise)))
-             AND (v.c_dgc IS NULL OR v.c_dgc = upper(trim(sc.DealerGroupCode)))
-             AND (v.c_branch IS NULL OR v.c_branch = upper(trim(sc.Branch))))
+                                      ORDER BY u.Priority DESC,
+                                               CAST(u.c_franchise IS NOT NULL AS INTEGER)
+                                                 + CAST(u.c_dgc IS NOT NULL AS INTEGER)
+                                                 + CAST(u.c_branch IS NOT NULL AS INTEGER) DESC,
+                                               u.Id ASC) AS rn
+            FROM in_scope_parts sc JOIN usable_rules u
+              ON (u.c_franchise IS NULL OR u.c_franchise = upper(trim(sc.Franchise)))
+             AND (u.c_dgc IS NULL OR u.c_dgc = upper(trim(sc.DealerGroupCode)))
+             AND (u.c_branch IS NULL OR u.c_branch = upper(trim(sc.Branch))))
         WHERE rn = 1
     ),
-    s AS (
+    -- step 6 / 7: the app's settings, latest row per part
+    part_settings AS (
         SELECT * EXCLUDE (rn) FROM (
             SELECT *, row_number() OVER (PARTITION BY Branch, Franchise, PartNumber
                                          ORDER BY Modified DESC, Id DESC) AS rn
             FROM settings) WHERE rn = 1
     ),
-    t AS (
-        SELECT trim(RequestingBranch) AS b, PartNumber AS pn, sum(coalesce(OpenQty, 0)) AS q
+    -- display only: open transfers into the branch, by trimmed upper-case part number
+    inbound_transfers AS (
+        SELECT trim(RequestingBranch) AS b, upper(trim(PartNumber)) AS pn, sum(coalesce(OpenQty, 0)) AS q
         FROM transfers GROUP BY ALL
     ),
-    base AS (
+    -- one row per in-scope part with its rule (or the built-in default), minimum, mask and stock
+    part_inputs AS (
         SELECT sc.Branch, sc.Franchise, sc.PartNumber, sc.QuantityOnHand,
                CAST(trunc(coalesce(sc.QuantityOnHand, 0)) AS INTEGER) AS oh,
                CAST(trunc(coalesce(sc.OnOrder, 0)) AS INTEGER) AS oo,
                p.Id AS RuleId,
-               CASE WHEN p.Id IS NULL THEN '{BUILTIN_DEFAULT["RuleName"]}' ELSE p.RuleName END AS RuleName,
+               CASE WHEN p.Id IS NULL THEN '{BUILTIN_DEFAULT["RuleName"]}' ELSE p.RuleLabel END AS RuleName,
                coalesce(p.basis, '{BUILTIN_DEFAULT["DemandBasis"]}') AS DemandBasis,
                coalesce(p.hm, {BUILTIN_DEFAULT["HistoryMonths"]}) AS HistoryMonths,
                coalesce(p.mam, {BUILTIN_DEFAULT["MinActiveMonths"]}) AS MinActiveMonths,
                coalesce(p.woc, CAST({BUILTIN_DEFAULT["WeeksOfCover"]} AS DOUBLE)) AS WeeksOfCover,
-               CAST(coalesce(s.MinOverride, r.MinimumQty, 0) AS DOUBLE) AS EffectiveMin,
-               coalesce(s.Masked, false) AND (s.MaskExpires IS NULL OR s.MaskExpires >= $today) AS masked,
+               CAST(coalesce(ps.MinOverride, r.MinimumQty, 0) AS DOUBLE) AS EffectiveMin,
+               coalesce(ps.Masked, false) AND (ps.MaskExpires IS NULL OR ps.MaskExpires >= $today) AS masked,
                CAST(coalesce(t.q, 0.0) AS DOUBLE) AS InboundTransferQty
-        FROM scope sc
-        LEFT JOIN pick p USING (Branch, Franchise, PartNumber)
+        FROM in_scope_parts sc
+        LEFT JOIN part_rule p USING (Branch, Franchise, PartNumber)
         LEFT JOIN rules r USING (Branch, Franchise, PartNumber)
-        LEFT JOIN s USING (Branch, Franchise, PartNumber)
-        LEFT JOIN t ON t.b = trim(sc.Branch) AND t.pn = upper(trim(sc.PartNumber))
+        LEFT JOIN part_settings ps USING (Branch, Franchise, PartNumber)
+        LEFT JOIN inbound_transfers t ON t.b = trim(sc.Branch) AND t.pn = upper(trim(sc.PartNumber))
     ),
-    monthly AS (
+    -- step 2: full months only (the current partial month is left out); NULL counts as 0
+    monthly_demand AS (
         SELECT Branch, Franchise, PartNumber, MonthStart,
                sum(coalesce(SalesQty, 0)) AS units, sum(coalesce(RequestCount, 0)) AS requests
         FROM hist WHERE MonthStart < $cur
         GROUP BY ALL
     ),
-    win AS (
-        SELECT b.Branch, b.Franchise, b.PartNumber,
-               sum(CASE b.DemandBasis WHEN 'UnitsSold' THEN m.units ELSE m.requests END) AS raw_demand,
-               count(*) FILTER (WHERE (CASE b.DemandBasis WHEN 'UnitsSold' THEN m.units ELSE m.requests END) > 0)
+    -- steps 2-3: the rule's last HistoryMonths full months, on the rule's basis. part_inputs is one row per key
+    -- (a duplicate part key would show up as dup_expected anyway), so no DISTINCT is needed.
+    window_demand AS (
+        SELECT pi.Branch, pi.Franchise, pi.PartNumber,
+               sum(CASE pi.DemandBasis WHEN 'UnitsSold' THEN m.units ELSE m.requests END) AS raw_demand,
+               count(*) FILTER (WHERE (CASE pi.DemandBasis WHEN 'UnitsSold' THEN m.units ELSE m.requests END) > 0)
                  AS active
-        FROM (SELECT DISTINCT Branch, Franchise, PartNumber, DemandBasis, HistoryMonths FROM base) b
-        JOIN monthly m USING (Branch, Franchise, PartNumber)
-        WHERE m.MonthStart >= CAST($cur - to_months(b.HistoryMonths) AS DATE)
+        FROM part_inputs pi
+        JOIN monthly_demand m USING (Branch, Franchise, PartNumber)
+        WHERE m.MonthStart >= CAST($cur - to_months(pi.HistoryMonths) AS DATE)
         GROUP BY ALL
     ),
+    -- steps 3-4: WindowDemand (negative -> 0), ActiveMonths, MonthlyRate over calendar months
     demand AS (
-        SELECT b.*,
+        SELECT pi.*,
                greatest(0.0, CAST(coalesce(w.raw_demand, 0) AS DOUBLE)) AS WindowDemand,
                CAST(coalesce(w.active, 0) AS INTEGER) AS ActiveMonths
-        FROM base b LEFT JOIN win w USING (Branch, Franchise, PartNumber)
+        FROM part_inputs pi LEFT JOIN window_demand w USING (Branch, Franchise, PartNumber)
     ),
-    calc AS (
+    -- step 5: CalcTarget, 0 below MinActiveMonths
+    calc_target AS (
         SELECT *, CASE WHEN ActiveMonths >= MinActiveMonths
                        THEN CAST(ceil(round(MonthlyRate * WeeksOfCover * 12 / 52, 9)) AS INTEGER)
                        ELSE 0 END AS CalcTarget
         FROM (SELECT *, WindowDemand / HistoryMonths AS MonthlyRate FROM demand)
     ),
-    tgt AS (
-        SELECT *, CAST(greatest(CalcTarget, ceil(EffectiveMin)) AS INTEGER) AS StockingTarget FROM calc
+    -- step 6: StockingTarget = max(CalcTarget, EffectiveMin rounded up)
+    stocking_target AS (
+        SELECT *, CAST(greatest(CalcTarget, ceil(EffectiveMin)) AS INTEGER) AS StockingTarget FROM calc_target
     ),
-    rec AS (
+    -- step 7: order quantity, 0 when masked; stock truncated toward zero
+    order_qty AS (
         SELECT *, CASE WHEN masked THEN 0 ELSE greatest(0, StockingTarget - oh - oo) END AS RecommendedOrderQty
-        FROM tgt
+        FROM stocking_target
     ),
+    -- steps 8-9: surplus and status. Target 0: NoRecentActivity = no demand in the window; NotStocked = had demand
+    -- in the window but the target came out 0 (below MinActiveMonths, WeeksOfCover 0, or net demand <= 0).
     final AS (
         SELECT *, greatest(0, oh - StockingTarget) AS SurplusQty,
                CASE WHEN masked THEN 'Masked'
@@ -202,14 +220,14 @@ EXPECTED_SQL = f"""
                     THEN CASE WHEN ActiveMonths = 0 THEN 'NoRecentActivity' ELSE 'NotStocked' END
                     WHEN RecommendedOrderQty > 0 AND coalesce(QuantityOnHand, 0) <= 0 THEN 'OutOfStock'
                     WHEN RecommendedOrderQty > 0 THEN 'Reorder' ELSE 'OK' END AS Status
-        FROM rec
+        FROM order_qty
     )
     SELECT {", ".join(OUTPUT_COLS)} FROM final
 """
 
 
 def _params(current_month: date, today: date) -> dict:
-    return {"cur": current_month, "m": current_month.month, "today": today}
+    return {"cur": current_month, "today": today}
 
 
 def expected_reorder(con, current_month: date, today: date):
@@ -230,17 +248,25 @@ def _diff_where() -> str:
 
 
 def compare(con, gold: str, expected: str) -> dict:
-    keys = "Branch, Franchise, PartNumber"
-    only_gold = con.execute(f"SELECT count(*) FROM (SELECT {keys} FROM {gold} EXCEPT SELECT {keys} FROM {expected})").fetchone()[0]
-    only_exp = con.execute(f"SELECT count(*) FROM (SELECT {keys} FROM {expected} EXCEPT SELECT {keys} FROM {gold})").fetchone()[0]
+    only_gold = con.execute(f"SELECT count(*) FROM (SELECT {KEYS} FROM {gold} EXCEPT SELECT {KEYS} FROM {expected})").fetchone()[0]
+    only_exp = con.execute(f"SELECT count(*) FROM (SELECT {KEYS} FROM {expected} EXCEPT SELECT {KEYS} FROM {gold})").fetchone()[0]
     different = con.execute(f"""
-        SELECT count(*) FROM {gold} g JOIN {expected} e USING ({keys})
+        SELECT count(*) FROM {gold} g JOIN {expected} e USING ({KEYS})
         WHERE {_diff_where()}
     """).fetchone()[0]
-    dup_gold = con.execute(f"SELECT count(*) - count(DISTINCT ({keys})) FROM {gold}").fetchone()[0]
-    dup_exp = con.execute(f"SELECT count(*) - count(DISTINCT ({keys})) FROM {expected}").fetchone()[0]
+    dup_gold = con.execute(f"SELECT count(*) - count(DISTINCT ({KEYS})) FROM {gold}").fetchone()[0]
+    dup_exp = con.execute(f"SELECT count(*) - count(DISTINCT ({KEYS})) FROM {expected}").fetchone()[0]
     return {"only_gold": only_gold, "only_expected": only_exp, "different": different,
             "dup_gold": dup_gold, "dup_expected": dup_exp}
+
+
+def _print_labeled(con, sql: str, title: str) -> None:
+    cur = con.execute(sql)
+    cols = [d[0] for d in cur.description]
+    rows = cur.fetchall()
+    print(f"{title} ({len(rows)} shown):")
+    for row in rows:
+        print("  " + ", ".join(f"{c}={v!r}" for c, v in zip(cols, row)))
 
 
 def _path(tier: str, layer: str, table: str) -> str:
@@ -294,7 +320,7 @@ def main() -> int:
                     -- only speeds the read; each rule's window is applied in EXPECTED_SQL
                     WHERE MonthStart >= DATE '{hist_start}'""")
     con.execute(f"""CREATE TABLE order_rules AS SELECT Id, RuleName, Priority, Active, Franchise, DealerGroupCode,
-                    Branch, StartMonth, EndMonth, HistoryMonths, MinActiveMonths, WeeksOfCover, DemandBasis, Modified
+                    Branch, StartMonth, EndMonth, HistoryMonths, MinActiveMonths, WeeksOfCover, DemandBasis
                     FROM delta_scan('{_path(a.tier, 'staging', 'NonJD_OrderRules')}')""")
     con.execute(f"""CREATE TABLE settings AS SELECT Id, Branch, Franchise, PartNumber, MinOverride, Masked,
                     MaskExpires, Modified FROM delta_scan('{_path(a.tier, 'staging', 'NonJD_PartSettings')}')""")
@@ -310,19 +336,16 @@ def main() -> int:
         print("All active rules are valid")
 
     con.execute("CREATE TABLE expected AS " + EXPECTED_SQL, _params(current_month, today))
-    cmp_cols = ", ".join(COMPARE_COLS + TOLERANCE_COLS)
-    con.execute(f"""CREATE TABLE gold AS SELECT Branch, Franchise, PartNumber, {cmp_cols}
-                    FROM delta_scan('{gold_p}')""")
+    con.execute(f"CREATE TABLE gold AS SELECT {', '.join(OUTPUT_COLS)} FROM delta_scan('{gold_p}')")
     result = compare(con, "gold", "expected")
     print(result)
     if any(result.values()):
         e_cols = ", ".join(f"e.{c} AS e_{c}" for c in OUTPUT_COLS[3:])
-        print(con.execute(f"""SELECT g.*, {e_cols}
-                              FROM gold g JOIN expected e USING (Branch, Franchise, PartNumber)
-                              WHERE {_diff_where()} LIMIT 10""").fetchall())
-        keys = "Branch, Franchise, PartNumber"
-        print("only in gold:", con.execute(f"SELECT {keys} FROM gold EXCEPT SELECT {keys} FROM expected LIMIT 10").fetchall())
-        print("only in expected:", con.execute(f"SELECT {keys} FROM expected EXCEPT SELECT {keys} FROM gold LIMIT 10").fetchall())
+        _print_labeled(con, f"""SELECT g.*, {e_cols}
+                                FROM gold g JOIN expected e USING ({KEYS})
+                                WHERE {_diff_where()} LIMIT 10""", "different (gold columns, then e_ = expected)")
+        _print_labeled(con, f"SELECT {KEYS} FROM gold EXCEPT SELECT {KEYS} FROM expected LIMIT 10", "only in gold")
+        _print_labeled(con, f"SELECT {KEYS} FROM expected EXCEPT SELECT {KEYS} FROM gold LIMIT 10", "only in expected")
         return 1
     print("PASS: Gold matches the reference rules")
     return 0
