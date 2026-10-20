@@ -8,6 +8,7 @@
 > - Task 4 DONE 2026-10-20 (fabric-workspace-docs `5a9adc3a`, `5a896731`): after review, single-pass validation and a WARN when the current month is missing after day 3 (stale Bronze).
 > - Task 5 DONE 2026-10-20 (`07ff6562`, `fc985ddb`): after review, redundant scans dropped, Bronze type assert, cache released. Committed notebooks are the reference.
 > - Task 6 DONE 2026-10-20 (`aab0d995`, `e6f9ac64`): after review, a typed empty table when the list has no rows, explicit Modified/MaskExpires conversion. First-run checks added to Task 8.
+> - Task 7 DONE 2026-10-20 (`903467ed`, `9ce6d1e6`): matches the reference rules; after review, the checked result is persisted so the joins run once, the ROP matrix is validated (missing/unparseable file fails), EstOrderValue decimal(18,2), MonthCount int.
 > - Task 1 (SharePoint site, lists, permissions) is Brian's; Task 8 needs it.
 >
 > Plan written 2026-10-20. The Python in Tasks 3 and 10 was extracted from this plan and its 19 tests pass (2026-10-20); the fingerprint query was checked in DuckDB. The notebooks and dataflow are untested until Task 8.
