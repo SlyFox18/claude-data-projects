@@ -1,6 +1,8 @@
 """DuckDB reads of DP Gold for the publish script. Returns plain Python rows (dicts)."""
 from datetime import datetime, timedelta, timezone
 
+import os
+
 import duckdb
 
 import config
@@ -21,13 +23,18 @@ ORDER BY branch, franchise, partNumber
 """
 
 
+def _q(s: str) -> str:
+    return s.replace("'", "''")
+
+
 def connect():
     con = duckdb.connect()
-    con.execute("SET memory_limit='3GB'; SET temp_directory='.duckdb_spill'; SET preserve_insertion_order=false;")
+    spill = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".duckdb_spill").replace("\\", "/")
+    con.execute(f"SET memory_limit='3GB'; SET temp_directory='{_q(spill)}'; SET preserve_insertion_order=false;")
     con.execute("INSTALL delta; LOAD delta; INSTALL azure; LOAD azure; SET TimeZone='UTC';")
     if config.CLIENT_SECRET:
-        con.execute(f"""CREATE SECRET (TYPE azure, PROVIDER service_principal, TENANT_ID '{config.TENANT_ID}',
-                        CLIENT_ID '{config.CLIENT_ID}', CLIENT_SECRET '{config.CLIENT_SECRET}');""")
+        con.execute(f"""CREATE SECRET (TYPE azure, PROVIDER service_principal, TENANT_ID '{_q(config.TENANT_ID)}',
+                        CLIENT_ID '{_q(config.CLIENT_ID)}', CLIENT_SECRET '{_q(config.CLIENT_SECRET)}');""")
     else:
         con.execute("CREATE SECRET (TYPE azure, PROVIDER credential_chain, CHAIN 'cli');")
     return con
@@ -56,11 +63,17 @@ def reorder(con) -> list:
     return _dicts(con.execute(REORDER_SQL.format(path=config.table_path("Fact_NonJD_Reorder"))))
 
 
-def history(con) -> list:
-    return _dicts(con.execute(f"""
-        SELECT Branch AS branch, Franchise AS franchise, PartNumber AS partNumber, MonthOffset AS monthOffset,
+def stage_history(con) -> int:
+    """Copy the history table into a DuckDB temp table once; returns its row count."""
+    con.execute(f"""CREATE OR REPLACE TEMP TABLE hist AS
+        SELECT trim(Branch) AS branch, Franchise AS franchise, PartNumber AS partNumber, MonthOffset AS monthOffset,
                SalesQty AS salesQty, RequestCount AS requestCount
-        FROM delta_scan('{config.table_path('Fact_NonJD_SalesHistory')}')"""))
+        FROM delta_scan('{config.table_path('Fact_NonJD_SalesHistory')}')""")
+    return con.execute("SELECT count(*) FROM hist").fetchone()[0]
+
+
+def history_for(con, branch: str) -> list:
+    return _dicts(con.execute("SELECT * FROM hist WHERE branch = ?", [branch]))
 
 
 def transfers(con) -> list:
@@ -72,7 +85,7 @@ def transfers(con) -> list:
         FROM delta_scan('{config.table_path('Fact_OutstandingTransfers')}') t
         WHERE t.PartNumber IN (SELECT DISTINCT upper(trim(PartNumber))
                                FROM delta_scan('{config.table_path('Fact_NonJD_Reorder')}'))
-        ORDER BY toBranch, partNumber, ticket, line"""))
+        ORDER BY toBranch, partNumber, ticket, line, fromBranch, date"""))
 
 
 def branch_names(con) -> dict:

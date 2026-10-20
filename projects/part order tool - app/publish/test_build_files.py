@@ -39,8 +39,12 @@ def _read(out, name):
     return json.loads(gzip.decompress((out / name).read_bytes()))
 
 
-def _build():
-    return build_files.build(REORDER, HISTORY, TRANSFERS, NAMES, AS_OF, MONTH)
+def _hist(b):
+    return [h for h in HISTORY if h["branch"].strip() == b]
+
+
+def _build(reorder=None):
+    return build_files.build(REORDER if reorder is None else reorder, _hist, TRANSFERS, NAMES, AS_OF, MONTH)
 
 
 def test_files_and_branches(out):
@@ -107,3 +111,30 @@ def test_write_meta_plain_json(out):
 def test_nan_rejected():
     with pytest.raises(ValueError):
         build_files._bytes({"x": float("nan")})
+
+
+def test_stale_files_cleared(out):
+    _build()
+    hashes, _ = _build([r for r in REORDER if r["branch"] == "1"])
+    assert sorted(os.listdir(out)) == sorted(hashes)
+    assert "reorder_92.json.gz" not in hashes
+
+
+def test_branch_without_history_gives_empty_parts(out):
+    _build([_row("7", "P9", 0)])
+    assert _read(out, "history_7.json.gz")["parts"] == []
+
+
+def test_numeric_branch_order(out):
+    _, branches = _build([_row("10", "A", 0), _row("2", "B", 0)])
+    assert [b["branch"] for b in branches] == ["2", "10"]
+
+
+def test_branch_key_collision_raises(out):
+    with pytest.raises(ValueError, match="1"):
+        _build([_row("1", "A", 0), _row("1 ", "B", 0)])
+
+
+def test_unsafe_branch_raises(out):
+    with pytest.raises(ValueError):
+        _build([_row("../x", "A", 0)])

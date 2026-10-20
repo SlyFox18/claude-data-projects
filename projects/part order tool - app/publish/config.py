@@ -3,7 +3,9 @@ import os
 
 from dotenv import load_dotenv
 
-load_dotenv(os.environ.get("NONJD_ENV_FILE", ".env"))
+_HERE = os.path.dirname(os.path.abspath(__file__))
+# override=True: a machine-level env var must not silently win over the .env file
+load_dotenv(os.environ.get("NONJD_ENV_FILE", os.path.join(_HERE, ".env")), override=True)
 
 TENANT_ID = os.environ["TENANT_ID"]
 CLIENT_ID = os.environ["CLIENT_ID"]
