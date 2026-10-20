@@ -10,6 +10,7 @@ Usage: python run_publish.py [--force]
 """
 import argparse
 import json
+import msvcrt
 import os
 import sys
 import traceback
@@ -24,20 +25,61 @@ import upload
 STATE_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "publish_state.json")
 
 
+LOCK_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "publish.lock")
+
+
+def _ts() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+def _lock():
+    """Single-instance lock; the OS releases it when the process dies. Returns the open handle, or None if held."""
+    fh = open(LOCK_FILE, "a+")
+    try:
+        msvcrt.locking(fh.fileno(), msvcrt.LK_NBLCK, 1)
+    except OSError:
+        fh.close()
+        return None
+    return fh   # keep open for the life of the process
+
+
 def load_state() -> dict:
-    if not os.path.exists(STATE_FILE):
+    try:
+        with open(STATE_FILE, encoding="utf-8") as f:
+            return json.load(f)
+    except FileNotFoundError:
         return {}
-    with open(STATE_FILE, encoding="utf-8") as f:
-        return json.load(f)
+    except (OSError, ValueError) as ex:
+        print(f"[{_ts()}] WARNING: cannot read {STATE_FILE} ({ex}); treating this as a first publish", flush=True)
+        return {}
+
+
+def save_state(state: dict) -> None:
+    tmp = STATE_FILE + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(state, f, indent=1)
+        f.flush()
+        os.fsync(f.fileno())
+    os.replace(tmp, STATE_FILE)
 
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--force", action="store_true",
-                    help="publish even if this run was already published (never publishes a failed run)")
+                    help="re-publish this run and re-send every file (never publishes a failed run)")
     args = ap.parse_args(argv)
-    stamp = datetime.now(timezone.utc).isoformat()
-    print(f"[{stamp}] publish start, source={config.SOURCE}")
+    lock = _lock()
+    if lock is None:
+        print(f"[{_ts()}] another publish is running; exiting", flush=True)
+        return 0
+    try:
+        return _publish(args)
+    finally:
+        lock.close()
+
+
+def _publish(args) -> int:
+    print(f"[{_ts()}] publish start, source={config.SOURCE}", flush=True)
 
     con = extract.connect()
     rows = extract.log_rows(con)
@@ -68,22 +110,25 @@ def main(argv=None) -> int:
     meta_path = build_files.write_meta(data_as_of, datetime.now(timezone.utc).isoformat(), config.SOURCE,
                                        branches, counts)
 
-    previous = state.get("hashes", {}) if state.get("source") == config.SOURCE else {}
+    previous = {} if args.force else (state.get("hashes", {}) if state.get("source") == config.SOURCE else {})
     to_send = [os.path.join(build_files.OUT_DIR, n) for n in pl.changed_files(hashes, previous)]
     access = upload.token()
+    print(f"[{_ts()}] uploading {len(to_send) + 1} file(s)", flush=True)
     for path in pl.upload_order(to_send + [meta_path]):
         upload.put_file(path, access)
         print(f"  uploaded {os.path.basename(path)}")
 
-    with open(STATE_FILE, "w", encoding="utf-8") as f:
-        json.dump({"source": config.SOURCE, "dataAsOf": data_as_of, "hashes": hashes}, f, indent=1)
-    print(f"published {len(to_send)} changed file(s) + _meta.json; data as of {data_as_of}; {counts}")
+    save_state({"source": config.SOURCE, "dataAsOf": data_as_of, "hashes": hashes})
+    print(f"[{_ts()}] done: published {len(to_send)} file(s) + _meta.json; data as of {data_as_of}; {counts}",
+          flush=True)
     return 0
 
 
 if __name__ == "__main__":
+    sys.stdout.reconfigure(line_buffering=True)
     try:
         sys.exit(main())
     except Exception:
         traceback.print_exc()
+        print(f"[{_ts()}] publish FAILED", flush=True)
         sys.exit(1)

@@ -9,7 +9,7 @@ import config
 
 GRAPH = "https://graph.microsoft.com/v1.0"
 SIMPLE_LIMIT = 4 * 1024 * 1024
-RETRY_STATUS = {409, 423, 429, 503, 504}
+RETRY_STATUS = {409, 423, 429, 500, 502, 503, 504}
 TIMEOUT = (10, 60)
 
 
@@ -42,16 +42,21 @@ def put_file(path: str, access_token: str, attempts: int = 5) -> None:
     url = f"{GRAPH}/sites/{config.SITE_ID}/drives/{config.DRIVE_ID}/root:/{name}:/content"
     with open(path, "rb") as f:
         data = f.read()
-    last = None
+    last, wait = None, 0
     for i in range(1, attempts + 1):
         try:
             r = requests.put(url, headers={"Authorization": f"Bearer {access_token}"}, data=data, timeout=TIMEOUT)
-            if r.status_code not in RETRY_STATUS:
-                r.raise_for_status()
+        except requests.exceptions.RequestException as ex:      # network-level only
+            last, wait = ex, 3 * i
+        else:
+            if r.ok:
                 return
-            last = RuntimeError(f"HTTP {r.status_code} uploading {name} (attempt {i}/{attempts})")
-        except requests.exceptions.RequestException as ex:
-            last = ex
+            detail = f"HTTP {r.status_code} uploading {name} (attempt {i}/{attempts}): {r.text[:300]}"
+            if r.status_code not in RETRY_STATUS:
+                raise RuntimeError(detail)
+            last = RuntimeError(detail)
+            ra = r.headers.get("Retry-After", "")
+            wait = min(int(ra), 120) if ra.isdigit() else 3 * i
         if i < attempts:
-            time.sleep(3 * i)
+            time.sleep(wait)
     raise last

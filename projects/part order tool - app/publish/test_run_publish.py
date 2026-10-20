@@ -22,6 +22,9 @@ class Env:
         self.uploaded = []
         self.status = "Succeeded"
         self.built = [BUILT]  # successive built_at results; the last one repeats
+        self.end = END
+        self.on_hand_02 = 0
+        self.fail_on = None   # upload call number (1-based) that raises
 
 
 @pytest.fixture
@@ -29,11 +32,12 @@ def env(tmp_path, monkeypatch):
     e = Env()
     monkeypatch.setattr(build_files, "OUT_DIR", str(tmp_path / "out"))
     monkeypatch.setattr(run_publish, "STATE_FILE", str(tmp_path / "state.json"))
+    monkeypatch.setattr(run_publish, "LOCK_FILE", str(tmp_path / "publish.lock"))
     monkeypatch.setattr(extract, "connect", lambda: object())
     monkeypatch.setattr(extract, "log_rows", lambda con: [
-        {"run_id": "r1", "name": "run", "row_type": "run", "status": "Succeeded", "start_utc": START, "end_utc": END},
+        {"run_id": "r1", "name": "run", "row_type": "run", "status": "Succeeded", "start_utc": START, "end_utc": e.end},
         {"run_id": "r1", "name": "Build_Gold_NonJD_Reorder", "row_type": "item", "status": e.status,
-         "start_utc": None, "end_utc": END}])
+         "start_utc": None, "end_utc": e.end}])
 
     def built_at(con):
         return e.built.pop(0) if len(e.built) > 1 else e.built[0]
@@ -41,7 +45,7 @@ def env(tmp_path, monkeypatch):
     monkeypatch.setattr(extract, "reorder", lambda con: [
         {"branch": "01", "franchise": "A", "partNumber": "P1", "onHand": 5, "target": 2, "surplusQty": 3,
          "status": "ok"},
-        {"branch": "02", "franchise": "A", "partNumber": "P2", "onHand": 0, "target": 2, "surplusQty": 0,
+        {"branch": "02", "franchise": "A", "partNumber": "P2", "onHand": e.on_hand_02, "target": 2, "surplusQty": 0,
          "status": "low"}])
     monkeypatch.setattr(extract, "stage_history", lambda con: 1)
     monkeypatch.setattr(extract, "history_for", lambda con, b: [
@@ -49,7 +53,11 @@ def env(tmp_path, monkeypatch):
     monkeypatch.setattr(extract, "transfers", lambda con: [])
     monkeypatch.setattr(extract, "branch_names", lambda con: {"01": "One", "02": "Two"})
     monkeypatch.setattr(upload, "token", lambda: "tok")
-    monkeypatch.setattr(upload, "put_file", lambda path, access: e.uploaded.append(os.path.basename(path)))
+    def put_file(path, access):
+        if e.fail_on is not None and len(e.uploaded) + 1 == e.fail_on:
+            raise RuntimeError("HTTP 500 simulated")
+        e.uploaded.append(os.path.basename(path))
+    monkeypatch.setattr(upload, "put_file", put_file)
     e.state_file = tmp_path / "state.json"
     return e
 
@@ -71,11 +79,60 @@ def test_second_run_is_skipped(env):
     assert env.uploaded == []
 
 
-def test_force_uploads_only_meta_when_unchanged(env):
+def test_force_resends_everything(env):
     run_publish.main([])
     env.uploaded.clear()
     assert run_publish.main(["--force"]) == 0
-    assert env.uploaded == ["_meta.json"]
+    assert set(env.uploaded[:-1]) == DATA_FILES
+    assert env.uploaded[-1] == "_meta.json"
+
+
+def test_upload_failure_keeps_state_and_next_run_resends_all(env):
+    env.fail_on = 3
+    with pytest.raises(RuntimeError, match="simulated"):
+        run_publish.main([])
+    assert len(env.uploaded) == 2
+    assert "_meta.json" not in env.uploaded
+    assert not env.state_file.exists()
+    env.fail_on = None
+    env.uploaded.clear()
+    assert run_publish.main([]) == 0
+    assert set(env.uploaded[:-1]) == DATA_FILES
+    assert env.uploaded[-1] == "_meta.json"
+
+
+def test_data_change_uploads_only_changed_files(env):
+    run_publish.main([])
+    env.uploaded.clear()
+    env.end = datetime(2026, 10, 21, 10, 30, 0)
+    env.built = [datetime(2026, 10, 21, 10, 20, 0)]
+    env.on_hand_02 = 7
+    assert run_publish.main([]) == 0
+    # reorder/surplus/transfers embed dataAsOf so they change with every run; history files do not
+    assert set(env.uploaded[:-1]) == {"reorder_01.json.gz", "reorder_02.json.gz", "surplus.json.gz",
+                                      "transfers.json.gz"}
+    assert env.uploaded[-1] == "_meta.json"
+
+
+def test_source_switch_uploads_everything(env):
+    env.state_file.write_text(json.dumps({"source": "prod", "dataAsOf": "2026-10-20T10:30:00+00:00",
+                                          "hashes": {n: "x" for n in DATA_FILES}}))
+    assert run_publish.main([]) == 0
+    assert set(env.uploaded[:-1]) == DATA_FILES
+
+
+def test_corrupt_state_is_first_publish(env, capsys):
+    env.state_file.write_text("{not json")
+    assert run_publish.main([]) == 0
+    assert "WARNING" in capsys.readouterr().out
+    assert set(env.uploaded[:-1]) == DATA_FILES
+    assert json.loads(env.state_file.read_text())["source"] == "dev"
+
+
+def test_lock_held_exits_quietly(env, monkeypatch):
+    monkeypatch.setattr(run_publish, "_lock", lambda: None)
+    assert run_publish.main([]) == 0
+    assert env.uploaded == []
 
 
 def test_failed_latest_run_publishes_nothing(env):
