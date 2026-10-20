@@ -10,11 +10,16 @@ Usage:
     python nonjd_reorder_check.py --tier dev            # compare, exit 1 on any mismatch
     python nonjd_reorder_check.py --tier dev --fingerprint-only
 
+Run straight after the DP refresh: Silver inputs are read live, so an intraday refresh between the Gold build
+and this check causes false mismatches.
+
 Auth: Azure CLI (az login as Brian), read-only.
 """
 import argparse
+import os
 import sys
-from datetime import date, datetime
+import tempfile
+from datetime import date, timezone
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
@@ -29,6 +34,7 @@ TIERS = {
 MATRIX_CSV = (Path(__file__).resolve().parents[2] / "projects" / "part order tool - app" / "params"
               / "rop_matrix.csv")
 WINDOW_MONTHS = 12
+# InboundTransferQty is compared separately, with a tolerance (see _diff_where).
 COMPARE_COLS = ["MonthCount", "StockingTarget", "RecommendedOrderQty", "SurplusQty", "Status"]
 
 
@@ -71,6 +77,7 @@ EXPECTED_SQL = """
                coalesce(w.MonthCount, 0) AS mc,
                CASE WHEN coalesce(w.MonthCount, 0) > 0 THEN w.WindowRequests / w.MonthCount ELSE 0.0 END AS avg_d,
                CASE WHEN coalesce(w.MonthCount, 0) > 0 THEN w.WindowSales / w.MonthCount ELSE 0.0 END AS avg_s,
+               -- the cap only mirrors plan rule 3; with a 12-month window MonthCount never exceeds 12
                CASE WHEN coalesce(w.MonthCount, 0) = 0 THEN 1
                     WHEN w.MonthCount > 19 THEN 19 ELSE w.MonthCount END AS mcc,
                CAST(coalesce(s.MinOverride, r.MinimumQty, 0) AS DOUBLE) AS eff_min,
@@ -117,16 +124,23 @@ def expected_reorder(con, current_month: date, today: date):
     return con.execute(EXPECTED_SQL, _params(current_month, today))
 
 
+def _diff_where() -> str:
+    cond = " OR ".join(f"g.{c} IS DISTINCT FROM e.{c}" for c in COMPARE_COLS)
+    return f"{cond} OR abs(coalesce(g.InboundTransferQty, 0) - coalesce(e.InboundTransferQty, 0)) > 1e-6"
+
+
 def compare(con, gold: str, expected: str) -> dict:
     keys = "Branch, Franchise, PartNumber"
     only_gold = con.execute(f"SELECT count(*) FROM (SELECT {keys} FROM {gold} EXCEPT SELECT {keys} FROM {expected})").fetchone()[0]
     only_exp = con.execute(f"SELECT count(*) FROM (SELECT {keys} FROM {expected} EXCEPT SELECT {keys} FROM {gold})").fetchone()[0]
-    diff_cond = " OR ".join(f"g.{c} IS DISTINCT FROM e.{c}" for c in COMPARE_COLS)
     different = con.execute(f"""
         SELECT count(*) FROM {gold} g JOIN {expected} e USING ({keys})
-        WHERE {diff_cond} OR abs(coalesce(g.InboundTransferQty, 0) - coalesce(e.InboundTransferQty, 0)) > 1e-6
+        WHERE {_diff_where()}
     """).fetchone()[0]
-    return {"only_gold": only_gold, "only_expected": only_exp, "different": different}
+    dup_gold = con.execute(f"SELECT count(*) - count(DISTINCT ({keys})) FROM {gold}").fetchone()[0]
+    dup_exp = con.execute(f"SELECT count(*) - count(DISTINCT ({keys})) FROM {expected}").fetchone()[0]
+    return {"only_gold": only_gold, "only_expected": only_exp, "different": different,
+            "dup_gold": dup_gold, "dup_expected": dup_exp}
 
 
 def _path(tier: str, layer: str, table: str) -> str:
@@ -134,9 +148,10 @@ def _path(tier: str, layer: str, table: str) -> str:
     return f"abfss://{ws}@onelake.dfs.fabric.microsoft.com/{lh}/Tables/{table}"
 
 
-def _connect(tier: str):
+def _connect():
     con = duckdb.connect()
-    con.execute("SET memory_limit='3GB'; SET temp_directory='.duckdb_spill'; SET preserve_insertion_order=false;")
+    spill = os.path.join(tempfile.gettempdir(), 'nonjd_check_spill').replace("\\", "/")
+    con.execute(f"SET memory_limit='3GB'; SET temp_directory='{spill}'; SET preserve_insertion_order=false;")
     con.execute("INSTALL delta; LOAD delta; INSTALL azure; LOAD azure; SET TimeZone='UTC';")
     con.execute("CREATE SECRET (TYPE azure, PROVIDER credential_chain, CHAIN 'cli');")
     return con
@@ -144,7 +159,7 @@ def _connect(tier: str):
 
 def fingerprint(con, tier: str) -> tuple:
     p = _path(tier, "presentation", "Fact_NonJD_Reorder")
-    return con.execute(f"""SELECT count(*), bit_xor(hash(t))
+    return con.execute(f"""SELECT count(*), sum(hash(t)::HUGEINT)
                            FROM (SELECT * EXCLUDE (BuiltAtUtc) FROM delta_scan('{p}')) t""").fetchone()
 
 
@@ -153,7 +168,7 @@ def main() -> int:
     ap.add_argument("--tier", choices=sorted(TIERS), required=True)
     ap.add_argument("--fingerprint-only", action="store_true")
     a = ap.parse_args()
-    con = _connect(a.tier)
+    con = _connect()
     rows, fp = fingerprint(con, a.tier)
     print(f"Fact_NonJD_Reorder ({a.tier}): {rows:,} rows, fingerprint {fp}")
     if a.fingerprint_only:
@@ -161,6 +176,10 @@ def main() -> int:
 
     gold_p = _path(a.tier, "presentation", "Fact_NonJD_Reorder")
     built = con.execute(f"SELECT max(BuiltAtUtc) FROM delta_scan('{gold_p}')").fetchone()[0]
+    if built is None:
+        sys.exit("Fact_NonJD_Reorder is empty; nothing to check")
+    if built.tzinfo is None:
+        built = built.replace(tzinfo=timezone.utc)
     today = built.astimezone(ZoneInfo("America/Chicago")).date()
     current_month = date(today.year, today.month, 1)
     print(f"Gold built {built}; checking as of {today} (month {current_month})")
@@ -172,6 +191,7 @@ def main() -> int:
     window_start = add_months(current_month, -(WINDOW_MONTHS - 1))
     con.execute(f"""CREATE TABLE hist AS SELECT Branch, Franchise, PartNumber, MonthStart, SalesQty, RequestCount
                     FROM delta_scan('{_path(a.tier, 'staging', 'Silver_PartSalesHistory')}')
+                    -- only speeds the read; the rule's window is applied in EXPECTED_SQL
                     WHERE MonthStart >= DATE '{window_start}'""")
     con.execute(f"""CREATE TABLE matrix AS SELECT CAST(MonthCount AS INTEGER) MonthCount, CAST(DemandL AS DOUBLE) DemandL,
                     CAST(DemandH AS DOUBLE) DemandH, CAST(SalesL AS DOUBLE) SalesL, CAST(SalesH AS DOUBLE) SalesH,
@@ -187,10 +207,13 @@ def main() -> int:
     result = compare(con, "gold", "expected")
     print(result)
     if any(result.values()):
-        print(con.execute("""SELECT g.*, e.StockingTarget e_target, e.RecommendedOrderQty e_rec, e.Status e_status
-                             FROM gold g JOIN expected e USING (Branch, Franchise, PartNumber)
-                             WHERE g.RecommendedOrderQty IS DISTINCT FROM e.RecommendedOrderQty
-                                OR g.Status IS DISTINCT FROM e.Status LIMIT 10""").fetchall())
+        print(con.execute(f"""SELECT g.*, e.MonthCount e_mc, e.StockingTarget e_target, e.RecommendedOrderQty e_rec,
+                                     e.SurplusQty e_surplus, e.InboundTransferQty e_inbound, e.Status e_status
+                              FROM gold g JOIN expected e USING (Branch, Franchise, PartNumber)
+                              WHERE {_diff_where()} LIMIT 10""").fetchall())
+        keys = "Branch, Franchise, PartNumber"
+        print("only in gold:", con.execute(f"SELECT {keys} FROM gold EXCEPT SELECT {keys} FROM expected LIMIT 10").fetchall())
+        print("only in expected:", con.execute(f"SELECT {keys} FROM expected EXCEPT SELECT {keys} FROM gold LIMIT 10").fetchall())
         return 1
     print("PASS: Gold matches the reference rules")
     return 0

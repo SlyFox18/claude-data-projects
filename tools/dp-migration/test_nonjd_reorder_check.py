@@ -121,4 +121,87 @@ def test_compare_counts_mismatches():
     con.execute("ALTER TABLE gold ADD COLUMN StockingTarget INTEGER")
     con.execute("ALTER TABLE expected ADD COLUMN StockingTarget INTEGER")
     result = chk.compare(con, "gold", "expected")
-    assert result == {"only_gold": 1, "only_expected": 1, "different": 0}
+    assert result == {"only_gold": 1, "only_expected": 1, "different": 0, "dup_gold": 0, "dup_expected": 0}
+
+
+def test_compare_flags_duplicate_keys():
+    cols = ("Branch,Franchise,PartNumber,MonthCount,StockingTarget,RecommendedOrderQty,"
+            "SurplusQty,InboundTransferQty,Status")
+    con = duckdb.connect()
+    con.execute(f"""CREATE TABLE gold AS SELECT * FROM (VALUES ('1','MC','A',1,2,1,0,0.0,'Reorder'),
+                    ('1','MC','A',1,2,1,0,0.0,'Reorder')) t({cols})""")
+    con.execute(f"CREATE TABLE expected AS SELECT * FROM (VALUES ('1','MC','A',1,2,1,0,0.0,'Reorder')) t({cols})")
+    r = chk.compare(con, "gold", "expected")
+    assert r["dup_gold"] == 1 and r["dup_expected"] == 0
+
+
+@pytest.mark.parametrize("col,row", [
+    ("MonthCount",          "'1','MC','A',2,2,1,0,0.0,'Reorder'"),
+    ("StockingTarget",      "'1','MC','A',1,NULL,1,0,0.0,'Reorder'"),
+    ("RecommendedOrderQty", "'1','MC','A',1,2,0,0,0.0,'Reorder'"),
+    ("SurplusQty",          "'1','MC','A',1,2,1,1,0.0,'Reorder'"),
+    ("InboundTransferQty",  "'1','MC','A',1,2,1,0,0.5,'Reorder'"),
+    ("Status",              "'1','MC','A',1,2,1,0,0.0,'OK'"),
+])
+def test_compare_flags_each_compared_column(col, row):
+    cols = ("Branch,Franchise,PartNumber,MonthCount,StockingTarget,RecommendedOrderQty,"
+            "SurplusQty,InboundTransferQty,Status")
+    con = duckdb.connect()
+    con.execute(f"CREATE TABLE gold AS SELECT * FROM (VALUES ('1','MC','A',1,2,1,0,0.0,'Reorder')) t({cols})")
+    con.execute(f"CREATE TABLE expected AS SELECT * FROM (VALUES ({row})) t({cols})")
+    r = chk.compare(con, "gold", "expected")
+    assert (r["only_gold"], r["only_expected"], r["different"]) == (0, 0, 1)
+
+
+def test_window_edges():
+    con = _con()
+    con.execute("INSERT INTO parts VALUES ('1','MC','W1',0,0,10)")
+    con.execute("""INSERT INTO hist VALUES ('1','MC','W1','2025-11-01',1,0), ('1','MC','W1','2025-10-01',1,0),
+                   ('1','MC','W1','2026-11-01',1,0)""")
+    assert _run(con)["W1"]["MonthCount"] == 1
+
+
+def test_matrix_lower_bound_inclusive_upper_exclusive():
+    con = _con()
+    con.execute("INSERT INTO parts VALUES ('1','MC','LO',0,0,10), ('1','MC','HI',0,0,10)")
+    con.execute("INSERT INTO hist VALUES ('1','MC','LO','2026-10-01',0,2), ('1','MC','HI','2026-10-01',0,3)")
+    con.execute("INSERT INTO matrix VALUES (1, 2, 3, 0, 999999, 5.0, 1)")
+    r = _run(con)
+    assert r["LO"]["StockingTarget"] == 10
+    assert r["HI"]["StockingTarget"] == 3
+
+
+def test_mask_expiring_today_still_masks():
+    con = _con()
+    con.execute("INSERT INTO parts VALUES ('1','MC','M1',0,0,10)")
+    con.execute("INSERT INTO hist VALUES ('1','MC','M1','2026-10-01',1,1)")
+    con.execute("INSERT INTO settings VALUES (1,'1','MC','M1',NULL,true,'2026-10-20','2026-10-01 10:00')")
+    assert _run(con)["M1"]["Status"] == "Masked"
+
+
+def test_settings_tie_on_modified_breaks_by_id_desc():
+    con = _con()
+    con.execute("INSERT INTO parts VALUES ('1','MC','S1',0,0,10)")
+    con.execute("INSERT INTO hist VALUES ('1','MC','S1','2026-10-01',1,1)")
+    con.execute("""INSERT INTO settings VALUES (9,'1','MC','S1',6,false,NULL,'2026-10-05 10:00'),
+                   (3,'1','MC','S1',2,false,NULL,'2026-10-05 10:00')""")
+    assert _run(con)["S1"]["StockingTarget"] == 6
+
+
+def test_fractional_on_hand_is_in_stock_and_on_order_subtracted():
+    con = _con()
+    con.execute("INSERT INTO parts VALUES ('1','MC','F1',0.5,0,10), ('1','MC','F2',0,1.9,10)")
+    con.execute("INSERT INTO rules VALUES ('1','MC','F1',3), ('1','MC','F2',3)")
+    con.execute("INSERT INTO hist VALUES ('1','MC','F1','2026-10-01',1,1), ('1','MC','F2','2026-10-01',1,1)")
+    r = _run(con)
+    assert r["F1"]["RecommendedOrderQty"] == 3 and r["F1"]["Status"] == "Reorder"
+    assert r["F2"]["RecommendedOrderQty"] == 2 and r["F2"]["Status"] == "OutOfStock"
+
+
+def test_negative_on_hand_truncates_toward_zero():
+    con = _con()
+    con.execute("INSERT INTO parts VALUES ('1','MC','N1',-1.5,0,10), ('1','MC','N2',-0.5,0,10)")
+    con.execute("INSERT INTO hist VALUES ('1','MC','N1','2026-10-01',1,1), ('1','MC','N2','2026-10-01',1,1)")
+    r = _run(con)
+    assert r["N1"]["RecommendedOrderQty"] == 2
+    assert r["N2"]["RecommendedOrderQty"] == 1
