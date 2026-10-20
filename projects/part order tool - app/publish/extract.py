@@ -14,8 +14,11 @@ SELECT Branch AS branch, Franchise AS franchise, PartNumber AS partNumber, Descr
        SellPrice1 AS sellPrice, ListPrice AS listPrice, MinimumQty AS minimumQty, MaximumQty AS maximumQty,
        ReorderCode AS reorderCode, ActivityCode AS activityCode, MinOverride AS minOverride, IsMasked AS isMasked,
        MaskExpires AS maskExpires, IsLowMargin AS isLowMargin, Current12MoSales AS sales12,
-       Previous12MoSales AS salesPrev12, DateLastRequested AS lastRequested, MonthCount AS monthCount,
-       AvgMonthlyDemand AS avgDemand, AvgMonthlySales AS avgSales, StockingTarget AS target,
+       Previous12MoSales AS salesPrev12, DateLastRequested AS lastRequested, DealerGroupCode AS dealerGroupCode,
+       RuleName AS ruleName, DemandBasis AS demandBasis, HistoryMonths AS historyMonths,
+       MinActiveMonths AS minActiveMonths, WeeksOfCover AS weeksOfCover, WindowDemand AS windowDemand,
+       ActiveMonths AS activeMonths, MonthlyRate AS monthlyRate, CalcTarget AS calcTarget,
+       EffectiveMin AS effectiveMin, StockingTarget AS target,
        RecommendedOrderQty AS recommendedQty, EstOrderValue AS estValue, SurplusQty AS surplusQty,
        InboundTransferQty AS inboundQty, Status AS status
 FROM delta_scan('{path}')

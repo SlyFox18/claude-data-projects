@@ -64,8 +64,9 @@ unsorted for reading); `.json.gz` files are gzip-compressed, `_meta.json` is pla
 
 - Numbers are plain JSON numbers (whole values are integers). `NaN` / `Infinity` never appear (they become `null`;
   the writer refuses to emit them).
-- Nulls: the `sales` / `requests` arrays never contain null (they use 0). `isMasked`, `status`, `monthCount` and
-  `inboundQty` are never null. Any other field may be null.
+- Nulls: the `sales` / `requests` arrays never contain null (they use 0). `isMasked`, `status`, `inboundQty`, `activeMonths`,
+  `ruleName`, `demandBasis`, `historyMonths`, `minActiveMonths`, `weeksOfCover`, `windowDemand`, `monthlyRate`,
+  `calcTarget` and `effectiveMin` are never null (Gold fills the built-in default rule when no rule matches). Any other field may be null.
 - Dates are ISO strings (`2026-10-20`). Datetimes are ISO UTC with `+00:00` and may include fractional seconds.
 - Branch codes are Equip's text codes (e.g. `"1"`, `"92"`), **trimmed**. The `branch` value inside every file is that
   trimmed key, and it is the key in the file names. A code must match `^[A-Za-z0-9_-]+$`, and two raw codes that trim
@@ -84,9 +85,9 @@ publish time. `branches` is sorted numerically, then alphabetically; `name` fall
 not in `dim_BranchLocation`. `counts.parts` is the total reorder rows, `historyRows` the rows read from the history table.
 
 ### `reorder_<branch>.json.gz`
-`{"branch", "dataAsOf", "parts": [ ... ]}`, one object per part in scope at that branch. Each part has the 34 fields
-below: `extract.REORDER_SQL` selects 35 columns, and `branch` is the file-level key rather than a per-part field. They
-are renamed as shown. Gold's DealerGroupCode, Modifier, WarehouseMin, EffectiveMin, CalcROP and BuiltAtUtc are not published.
+`{"branch", "dataAsOf", "parts": [ ... ]}`, one object per part in scope at that branch. Each part has the 42 fields
+below: `extract.REORDER_SQL` selects 43 columns, and `branch` is the file-level key rather than a per-part field. They
+are renamed as shown. Gold's `RuleId` and `BuiltAtUtc` are not published (users see the rule name, not its list id).
 
 | Field | Meaning |
 |---|---|
@@ -100,14 +101,48 @@ are renamed as shown. Gold's DealerGroupCode, Modifier, WarehouseMin, EffectiveM
 | isLowMargin | InMaster user_field_3 = LOW |
 | sales12, salesPrev12 | Quantities (units, not dollars) for the current and previous 12 months |
 | lastRequested | Equip last-demand date as a datetime string at 00:00+00:00. Use the date part only; don't convert time zones. `1900-01-01` means never requested |
-| monthCount | Months (of the last 12, including the current partial month) with sales or requests |
-| avgDemand, avgSales | Per active month; both 0 when `monthCount` is 0 |
-| target | Stocking target; null when no recent activity |
+| dealerGroupCode | Equip dealer group code for this part at this branch (what the rules match on); may be null |
+| ruleName | Name of the rule that set this part's settings (`Built-in default` when no rule matched) |
+| demandBasis | `UnitsSold` or `Requests`: what `windowDemand` counts |
+| historyMonths | Full months of history measured (the current partial month is left out) |
+| minActiveMonths | Months with demand needed before the part is stocked at all |
+| weeksOfCover | Weeks of demand to keep on hand |
+| windowDemand | Total units sold (or requests) in the window; 0 if negative |
+| activeMonths | Months in the window with demand > 0 |
+| monthlyRate | windowDemand / historyMonths (calendar months, not active months) |
+| calcTarget | ceil(monthlyRate x weeksOfCover x 12 / 52) when activeMonths >= minActiveMonths, else 0 |
+| effectiveMin | The app's min override, else Equip's minimum, else 0 |
+| target | Stocking target = max(calcTarget, ceil(effectiveMin)); null when no recent activity |
 | recommendedQty | max(0, target - onHand - onOrder); back orders are not subtracted. 0 when masked or no recent activity |
 | estValue | recommendedQty at cost, rounded to 2 decimals |
 | surplusQty | Stock above target (all on-hand stock when no recent activity) |
 | inboundQty | Open quantity on outstanding transfers into this branch; 0 (not null) when none |
-| status | `Masked`, `NoRecentActivity`, `OutOfStock` (recommendedQty > 0 and onHand <= 0), `Reorder`, `OK`. Checked in that order |
+| status | `Masked`, `NoRecentActivity` (target 0 and no demand in the window), `NotStocked` (had demand in the window but the target came out 0, usually below `minActiveMonths`), `OutOfStock` (recommendedQty > 0 and onHand <= 0), `Reorder`, `OK`. Checked in that order |
+
+### Explaining a suggestion (for the app)
+
+Every input to the target is in the part object, so the app can build the sentence without guessing. Rules guide for
+Ben: `projects/part order tool - app/REORDER-RULES.md` (written in Task 21).
+
+Template (status `Reorder` / `OutOfStock` / `OK`, basis `UnitsSold`):
+
+> `<ruleName>`: sold `<windowDemand>` in `<historyMonths>` months (`<monthlyRate>` a month) x `<weeksOfCover>` weeks of
+> cover gives a target of `<calcTarget>`. On hand `<onHand>`, on order `<onOrder>`, so order `<recommendedQty>`.
+
+Worked example: "Cotton - in season: sold 18 in 12 months (1.5 a month) x 10 weeks of cover gives a target of 4. On
+hand 1, on order 0, so order 3."
+
+Variants:
+- `demandBasis` = `Requests`: say "requested `<windowDemand>` times" instead of "sold `<windowDemand>`".
+- `NotStocked`: "`<ruleName>`: only `<activeMonths>` of `<historyMonths>` months had demand; this rule stocks parts with
+  at least `<minActiveMonths>`." (If `activeMonths` >= `minActiveMonths`, the cause is `weeksOfCover` 0 or net demand <= 0.)
+- `NoRecentActivity`: "No demand in the last `<historyMonths>` months, so nothing is stocked." (A min still applies if
+  `effectiveMin` > 0, in which case the status is not `NoRecentActivity`.)
+- A minimum wins (`effectiveMin` rounded up > `calcTarget`): "Minimum `<effectiveMin>` sets the target (the rule's
+  `<calcTarget>` is lower)." Then the on hand / on order / order tail as above.
+- `Masked`: "Masked, so no order is suggested" (add "until `<maskExpires>`" when set). The target and rule still show.
+
+Show `<monthlyRate>` rounded to 2 decimals.
 
 ### `history_<branch>.json.gz`
 `{"branch", "months": [60 labels like "2026-10", "2026-09", ...], "parts": [{"franchise", "partNumber",
