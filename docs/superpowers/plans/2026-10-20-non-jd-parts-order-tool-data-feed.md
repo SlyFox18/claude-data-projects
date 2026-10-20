@@ -89,7 +89,7 @@ Shell notes: in Bash run `export PATH="$HOME/.local/bin:$PATH"` before `fab`. If
 
 **Files:** none (SharePoint setup). Record the values you get in `publish/.env` in Task 11.
 
-- [ ] **Step 1: Create the site.** SharePoint → Create site → Team site (no Microsoft 365 group needed, a communication site also works). Name **Parts Order Tool**, URL `https://spitractor.sharepoint.com/sites/PartsOrderTool`. Members: Ben, Shannon, Barry, Curt, Brian. If you choose a different URL, use it everywhere this plan says `/sites/PartsOrderTool`.
+- [ ] **Step 1: Use the existing Report Site** (Brian, 2026-10-20): `https://spitractor.sharepoint.com/sites/SouthPlainsImplement-ReportSite`. Its access is already limited to a handful of people, including Ben, Shannon, Barry and Curt, so no permission changes are needed. Everything below is created new on that site. The old, empty `config_PartSettings` list from the Power Apps attempt is left alone.
 
 - [ ] **Step 2: Create the document library** `NonJD Order Data`. Leave versioning at the default.
 
@@ -115,7 +115,7 @@ Shell notes: in Bash run `export PATH="$HOME/.local/bin:$PATH"` before `fab`. If
 
 - [ ] **Step 6: Add one test row** to `NonJD_PartSettings` for a real non-JD part you know (for example Branch `1`, a franchise like `MC`, its part number) with `MinOverride = 5`. Task 8 uses it.
 
-- [ ] **Step 7: Grant the publish SPN write access to the site.** The publish script reuses the Parts Availability service principal (`CLIENT_ID` in the Gateway PC's `parts-lookup-static-prototype/.env`). Grant it `Sites.Selected` **write** on the new site, the same way it was granted on the Parts Availability site. Write down the SPN's client ID for Task 11.
+- [ ] **Step 7: Grant the publish SPN write access to the site.** The publish script reuses the Parts Availability service principal (`CLIENT_ID` in the Gateway PC's `parts-lookup-static-prototype/.env`). Grant it `Sites.Selected` **write** on the Report Site (skip if it already has it), the same way it was granted on the Parts Availability site. Write down the SPN's client ID for Task 11.
 
 - [ ] **Step 8: Grant the same SPN read access to DP_Presentation** in both tiers, so DuckDB can read Gold and `dp_refresh_log`: Fabric → `DP - Presentation - Dev` → Manage access → add the SPN as **Viewer**; repeat for `DP - Presentation - Prod`. (It already reads `DP_Staging` Prod for Parts Availability.)
 
@@ -985,7 +985,7 @@ Build_Gold_NonJD_Reorder applies MinOverride and Masked/MaskExpires; the
 other columns are stored for later rules.
 
 SOURCE: SharePoint list NonJD_PartSettings,
-https://spitractor.sharepoint.com/sites/PartsOrderTool. The list is the
+https://spitractor.sharepoint.com/sites/SouthPlainsImplement-ReportSite. The list is the
 system of record; the app writes it under each user's own sign-in.
 
 REFRESH: daily, by Pipeline_DP_Refresh, before Build_Gold_NonJD_Reorder.
@@ -999,7 +999,7 @@ setting on one of the trailing-space twin part numbers may not match.
 ============================================================================
 */
 let
-  Source = SharePoint.Tables("https://spitractor.sharepoint.com/sites/PartsOrderTool", [Implementation = "2.0", ViewMode = "All"]),
+  Source = SharePoint.Tables("https://spitractor.sharepoint.com/sites/SouthPlainsImplement-ReportSite", [Implementation = "2.0", ViewMode = "All"]),
   Items = Source{[Title = "NonJD_PartSettings"]}[Items],
   IdColumn = if List.Contains(Table.ColumnNames(Items), "ID") then "ID" else "Id",
   WithId = Table.RenameColumns(Items, {{IdColumn, "ItemId"}}),
@@ -1691,7 +1691,7 @@ publish.log
 - [ ] **Step 4: Fill in your local `.env`.** Get SITE_ID and DRIVE_ID with your own login:
 
 ```bash
-az rest --method get --url "https://graph.microsoft.com/v1.0/sites/spitractor.sharepoint.com:/sites/PartsOrderTool" --query id -o tsv
+az rest --method get --url "https://graph.microsoft.com/v1.0/sites/spitractor.sharepoint.com:/sites/SouthPlainsImplement-ReportSite" --query id -o tsv
 az rest --method get --url "https://graph.microsoft.com/v1.0/sites/<SITE_ID>/drives" --query "value[?name=='NonJD Order Data'].id" -o tsv
 ```
 
@@ -2130,7 +2130,7 @@ py -3.13 -m venv .venv
 
 Reads DP Gold (`Fact_NonJD_Reorder`, `Fact_NonJD_SalesHistory`, `Fact_OutstandingTransfers`, `dim_BranchLocation`)
 after the morning DP run and uploads the web app's data files to the SharePoint library **NonJD Order Data**
-on https://spitractor.sharepoint.com/sites/PartsOrderTool.
+on https://spitractor.sharepoint.com/sites/SouthPlainsImplement-ReportSite.
 
 - Plan: `docs/superpowers/plans/2026-10-20-non-jd-parts-order-tool-data-feed.md`
 - Runs on the Gateway PC, Task Scheduler `\SPI\Non-JD Order Tool Publish`, weekdays 07:15 + every 30 min for 3 h.

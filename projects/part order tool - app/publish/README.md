@@ -2,7 +2,7 @@
 
 Reads DP Gold (`Fact_NonJD_Reorder`, `Fact_NonJD_SalesHistory`, `Fact_OutstandingTransfers`, `dim_BranchLocation`)
 after the morning DP run and uploads the web app's data files to the SharePoint library **NonJD Order Data**
-on https://spitractor.sharepoint.com/sites/PartsOrderTool.
+on https://spitractor.sharepoint.com/sites/SouthPlainsImplement-ReportSite.
 
 - Plan: `docs/superpowers/plans/2026-10-20-non-jd-parts-order-tool-data-feed.md`
 - Spec: `docs/superpowers/specs/2026-10-20-non-jd-parts-order-tool-redesign-design.md`
