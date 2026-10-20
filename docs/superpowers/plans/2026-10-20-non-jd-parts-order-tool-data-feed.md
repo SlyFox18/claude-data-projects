@@ -15,7 +15,11 @@
 > - Task 14 DONE 2026-10-20 (`6fef4d70`, `b8cbaa68`): `publish/README.md` holds the **verified** file contract for Plan B (checked field by field against the code and notebooks).
 > - Checked 2026-10-20: Dev Fact_OutstandingTransfers has 0 duplicate (ticket, line) pairs; its notebook joins lines on PartTicket only, a latent risk if a ticket ever has two supplying branches (existing notebook, not this project's).
 > - **Remaining:** Task 1 (Brian: SharePoint site, lists, SPN grants) → Task 8 (register, push, sync, run in Dev, dataflow first-run checks) → Task 9 (verify Gold) → Task 11 Steps 4 and 8, Task 12 Steps 3-6 → Task 13 (Gateway PC) → Task 15 (Prod, Brian decides). Then a final whole-implementation review.
-> - Task 1 (SharePoint site, lists, permissions) is Brian's; Task 8 needs it.
+> - Task 1 in progress 2026-10-20, on the **Report Site** (Brian's choice):
+>   - Site ID `spitractor.sharepoint.com,dc84cab5-e496-4929-a599-3123cbb823e1,65b43472-28c3-45c7-9c74-f7a57f2c839c`.
+>   - Step 2 DONE: library `NonJD Order Data`, drive ID `b!tcqE3JbkKUmlmTEjy7gj4XI0tGXDKMdFnHT3pX8sg5zaEz5s8TLPQp8PXM6Qhndu`. The Parts Availability SPN (client id …b30a23) wrote and read back `_write_test.txt` there (201/200).
+>   - Steps 7-8 already satisfied: that SPN reads DP_Presentation Dev and Prod (dim_BranchLocation, dp_refresh_log) with DuckDB.
+>   - Remaining: users' permission check, the three lists (Steps 3-5), the test row (Step 6).
 >
 > Plan written 2026-10-20. The Python in Tasks 3 and 10 was extracted from this plan and its 19 tests pass (2026-10-20); the fingerprint query was checked in DuckDB. The notebooks and dataflow are untested until Task 8.
 >
