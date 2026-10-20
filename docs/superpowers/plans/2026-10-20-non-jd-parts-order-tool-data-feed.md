@@ -2238,6 +2238,48 @@ fab cp "projects/part order tool - app/params/rop_matrix.csv" "DP - Presentation
 
 ---
 
+## Part 2: Tunable reorder rules (added 2026-10-20)
+
+Replaces the JD ROP matrix with the rules list in spec section 5.5. **The spec's section 5.5 is the definition of the rules; every task below implements exactly that.** Order: 16 (Brian, SharePoint, verified step by step) → 17 → 18 → 19 → 20 → 21. Tasks 18-19 are test-first: the reference check changes before the notebook, and Task 21 proves they agree.
+
+### Task 16: Rules list `NonJD_OrderRules` (Brian, verified step by step)
+
+On the Report Site, a new list `NonJD_OrderRules`, inheriting permissions. Columns (exact names; Title = rule name):
+
+| Column | Type | Settings |
+|---|---|---|
+| Priority | Number, 0 decimals | Required |
+| Active | Yes/No | Default Yes |
+| Franchise, DealerGroupCode, Branch | Single line of text | Optional |
+| StartMonth, EndMonth | Number, 0 decimals | Optional, min 1, max 12 |
+| HistoryMonths | Number, 0 decimals | Required, default 12, min 1, max 59 |
+| MinActiveMonths | Number, 0 decimals | Required, default 3, min 0, max 59 |
+| WeeksOfCover | Number, 1 decimal | Required, default 6, min 0 |
+| DemandBasis | Choice: UnitsSold, Requests | Required, default UnitsSold |
+| Notes | Multiple lines of text | Optional |
+
+Seed rows: `Default` (Priority 0, Active Yes, criteria blank, 12 / 3 / 6 / UnitsSold); `Cotton – in season` (Priority 10, **Active No**, DealerGroupCode COTTON, months 6-10, 12 / 2 / 10 / UnitsSold); `Cotton – off season` (Priority 10, **Active No**, DealerGroupCode COTTON, months 11-5, 12 / 3 / 3 / UnitsSold). Verification: Graph read of the columns and rows; record the list GUID.
+
+### Task 17: Dataflow `df_NonJD_OrderRules_Raw`
+
+Same pattern as `df_NonJD_PartSettings_Raw` (navigate by list GUID, typed empty table when the list is empty, explicit Modified handling, header comment). Output table `NonJD_OrderRules` in DP_Staging with columns: Id (Int64), RuleName (from Title), Priority, Active, Franchise, DealerGroupCode, Branch, StartMonth, EndMonth, HistoryMonths, MinActiveMonths (numbers), WeeksOfCover (number), DemandBasis (text), Modified (datetime). Choice columns arrive as text in SharePoint.Tables 2.0; check on the first run. Register in the DAG (daily, staging), add the DP_Presentation shortcut.
+
+### Task 18: Reference rules (test first)
+
+Rewrite `EXPECTED_SQL` in `tools/dp-migration/nonjd_reorder_check.py` to spec 5.5 and replace the matrix tests. The check loads `NonJD_OrderRules` (staging) and the dealer group code (Silver_PartInformation.DealerGroupCode); drop the matrix load. Tests (DuckDB fixtures) must cover at least: default rule when no rule matches; Priority wins; tie → more criteria → lowest Id; inactive rule ignored; criteria trimmed and case-insensitive (`' cotton '` matches `COTTON`, franchise `m` matches rule `M`); season inside, outside, and wrapping (11-2 in January and in June); invalid rules skipped (one month only, month 13, missing WeeksOfCover, unknown basis) and reported; window = full months only (current month excluded; month current-N included, current-N-1 excluded); negative window demand → 0; MonthlyRate uses HistoryMonths not active months; Requests basis; CalcTarget formula incl. ceil; below MinActiveMonths → CalcTarget 0 but EffectiveMin still sets the target; MinOverride beats Equip minimum; masked; NotStocked vs NoRecentActivity; surplus; inbound unchanged; compare() covers the new columns (RuleName, CalcTarget, ActiveMonths, MonthlyRate with tolerance).
+
+### Task 19: Gold notebook to the rules
+
+`Build_Gold_NonJD_Reorder`: read `NonJD_OrderRules` (new shortcut) and DealerGroupCode; validate rules (skip invalid ones, collect names for a WARN exit); match each part to its rule (broadcast join on the small rules table, then a window ordered by Priority desc, criteria count desc, Id asc, row_number = 1 — unique ordering); per-part history window by its rule's HistoryMonths; spec 5.5 steps 2-9. Remove the matrix read and its columns (Modifier, WarehouseMin, CalcROP, MonthCountCapped). New output columns: RuleId, RuleName, DemandBasis, HistoryMonths, MinActiveMonths, WeeksOfCover, WindowDemand, ActiveMonths, MonthlyRate, CalcTarget (keep EffectiveMin, StockingTarget, RecommendedOrderQty, EstOrderValue, SurplusQty, InboundTransferQty, Status, BuiltAtUtc; MonthCount and the two averages are replaced by ActiveMonths and MonthlyRate). Update DAG dependsOn (add df_NonJD_OrderRules_Raw). Keep persist/validate-before-write and the row guards.
+
+### Task 20: Publish contract
+
+`extract.REORDER_SQL` and `publish/README.md`: add ruleName, demandBasis, historyMonths, minActiveMonths, weeksOfCover, windowDemand, activeMonths, monthlyRate, calcTarget, effectiveMin; drop monthCount, avgDemand, avgSales; add `NotStocked` to the status list; document the explanation sentence the app builds. Tests updated.
+
+### Task 21: Run in Dev and verify
+
+Push, CI, sync both Dev workspaces (Brian accepts incoming in the UI if DP_Presentation conflicts again), run the rules dataflow, then Gold. `nonjd_reorder_check.py --tier dev` must PASS; run twice for the same fingerprint; record the new totals by status and the top order lines, and check the test part (MinOverride 5). Write the one-page rules explanation for Ben (`projects/part order tool - app/REORDER-RULES.md`) with two or three worked examples from real parts.
+
 ## Self-review notes
 
 - **Spec coverage:** history (Tasks 4, 7), stocking fields (5), settings read-back (1, 6, 7), transfers display and surplus hints (7, 11), freshness date = DP run end (10, 12), franchise scope (3, 7), lists for the app (1), per-branch files and surplus file (11), Dev-first then Prod (8, 15), cost measurement (9). The web app, its sign-in and hosting are Plan B.

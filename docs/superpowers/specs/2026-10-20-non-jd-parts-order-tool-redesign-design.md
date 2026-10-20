@@ -1,6 +1,6 @@
 # Non-JD Parts Order Tool: redesign on the DP backend
 
-> **Progress:** design agreed with Brian 2026-10-20 (options discussion in the same session). No plan yet; next step is `writing-plans`.
+> **Progress:** design agreed with Brian 2026-10-20. Plan A (data feed) built and verified in Dev the same day. **Amended 2026-10-20 (section 5.5):** the JD ROP matrix is replaced by a rules list Ben edits in SharePoint; the matrix's meaning is unknown and its results weren't usable.
 >
 > Supersedes the platform choice in `2026-05-28-non-jd-parts-order-tool-design.md` (Power Apps V1, then a React web app as V2) and the LH_Master_Data backend in `2026-05-28-non-jd-parts-order-tool-fabric-foundation.md`. The ROP calculation, franchise scope and screen list from those documents still apply unless this spec says otherwise.
 
@@ -86,6 +86,46 @@ DP Dev has no refresh schedule. Users testing on stale on-hand numbers would giv
 
 Brian decides when step 2 happens. Until then the publish script can read Dev after a manual Dev run.
 
+### 5.5 Reorder rules Ben can tune (replaces the JD ROP matrix, 2026-10-20)
+
+**Why.** The first Dev run reproduced the old LH reading of JD's ROP matrix exactly, and it suggested about $9.8M of orders: one-request parts got a target of 4 and Modifiers reach 48. Nobody knows what the matrix columns mean. Brian and Ben want something that makes sense for the first look, that anyone can read, and that Ben can change himself. The data stays as it is; only the rules and their settings change. The matrix CSV stays in the repo, unused.
+
+**Rules list.** SharePoint list `NonJD_OrderRules` on the Report Site, read daily by a dataflow like the settings list. One row per rule:
+
+| Column | Meaning |
+|---|---|
+| Title | Rule name, shown in the app next to each suggestion |
+| Priority | Number. Of the rules that match a part, the highest wins |
+| Active | Yes/No. Inactive rules are ignored |
+| Franchise, DealerGroupCode, Branch | Which parts it applies to. Blank = any. Compared trimmed and case-insensitive |
+| StartMonth, EndMonth | Season, 1-12, both blank = all year. A range may wrap the year (11 to 2 = Nov-Feb). Uses the Central-time month of the DP run |
+| HistoryMonths | How many full months of history measure demand (1-59) |
+| MinActiveMonths | Months with demand needed before the part is stocked at all |
+| WeeksOfCover | How many weeks of demand to keep on hand |
+| DemandBasis | `UnitsSold` or `Requests` |
+| Notes | Ben's notes |
+
+Dealer group code is the useful classifier for non-JD parts: it's on 63% of active parts and holds vendor or part-type names (BECKNELL, PEANUT, COTTON, STRIPPER, COTTONWRAP). Commodity code is almost always empty for non-JD parts. Dealer group code is assigned per branch, so each branch's own code decides.
+
+**Calculation per part (Branch + Franchise + PartNumber):**
+1. Pick the rule: active rules whose criteria and season match; highest Priority; ties go to the rule with more non-blank criteria, then the lowest list item Id. If none match, a built-in default applies: 12 months, 3 active months, 6 weeks, UnitsSold, named "Built-in default".
+2. Window = the last `HistoryMonths` **full** months (the current partial month is left out).
+3. WindowDemand = total units sold (or requests) in the window, treated as 0 if negative. ActiveMonths = months in the window with demand > 0.
+4. MonthlyRate = WindowDemand ÷ HistoryMonths (calendar months, not active months; this is what fixes the one-request-gets-4 problem).
+5. CalcTarget = ceil(MonthlyRate × WeeksOfCover × 12 ÷ 52) when ActiveMonths ≥ MinActiveMonths, else 0.
+6. StockingTarget = max(CalcTarget, EffectiveMin), where EffectiveMin = the app's MinOverride, else Equip's minimum, else 0.
+7. RecommendedOrderQty = 0 when masked, else max(0, StockingTarget − on hand − on order) (quantities truncated toward zero, as before).
+8. SurplusQty = max(0, on hand − StockingTarget).
+9. Status: Masked; else when StockingTarget = 0, NoRecentActivity (ActiveMonths = 0) or NotStocked (below MinActiveMonths); else OutOfStock (order > 0 and on hand ≤ 0), Reorder (order > 0) or OK.
+
+**Bad rule rows** (missing settings, months outside 1-12, one season month without the other, unknown DemandBasis) are skipped, and the Gold run ends with a WARN naming them, so one typo never stops the daily refresh.
+
+**Explainability.** Gold and the published files carry the rule name and every input (basis, history months, window demand, active months, monthly rate, weeks of cover, calc target, effective min), so the app can say, for example: "Cotton – in season: sold 18 in 12 months (1.5 a month) × 10 weeks of cover gives a target of 4. On hand 1, so order 3." A one-page explanation with worked examples sits next to the list for Ben.
+
+**Starting rules:** one active `Default` rule (Priority 0, all blank, 12 / 3 / 6 / UnitsSold). Ben adds the rest. Two inactive cotton examples (in season June-October, off season) show him the pattern.
+
+**Later (not in the prototype):** a "same months last year" demand basis for seasonal parts; the 60 months of history already support it.
+
 ## 6. Publish script and files
 
 - Lives in this repo at `projects/part order tool - app/publish/`. Runs on the Gateway PC (which already runs a clone of `dev` for Parts Availability) from Task Scheduler, weekdays after the DP run.
@@ -169,7 +209,7 @@ No company data lives on the host. Moving hosts means copying the built files an
 
 The prototype starts on the current calculation and exposes these as settings where possible, so the answers can come from trying it. Rewritten from `projects/part order tool - app/CORP-PARTS-MANAGER-QUESTIONS.md` (June 2026), which neither has reviewed.
 
-0. **What the ROP matrix's columns mean (most important; found 2026-10-20 on the first Dev run).** The tool reads JD's ROP matrix export (dealer 048757, 2023-09-22) the way the old LH notebook did: stocking target = average demand per active month × "Modifier". That can't be right: the Modifier reaches 48 for parts with steady demand, and parts requested once in 12 months get a target of 4 (one $42,000 axle drive). Across all branches the suggested orders total about $9.8M. We need JD's PRISM definition of Modifier, Trending Cap, Stocking Weeks and the Spiking columns (Ben may have it, or JD's PRISM documentation) before anyone acts on the numbers.
+0. **What the ROP matrix's columns mean (most important; found 2026-10-20 on the first Dev run).** The tool reads JD's ROP matrix export (dealer 048757, 2023-09-22) the way the old LH notebook did: stocking target = average demand per active month × "Modifier". That can't be right: the Modifier reaches 48 for parts with steady demand, and parts requested once in 12 months get a target of 4 (one $42,000 axle drive). Across all branches the suggested orders total about $9.8M. We need JD's PRISM definition of Modifier, Trending Cap, Stocking Weeks and the Spiking columns (Ben may have it, or JD's PRISM documentation) before anyone acts on the numbers. **Resolved for the prototype (Brian, 2026-10-20):** the matrix is replaced by the rules list in section 5.5; Ben tunes the settings there. Questions 2-4 below now become "which rule settings work?".
 1. **Ordering unit.** Do you place orders by franchise, by vendor, or something else? What does each vendor's order form look like? (Please share two or three real examples.)
 2. **Stale parts.** How long without any sales or requests before a part should stop being recommended?
 3. **History window.** Should recommendations use 60 months, or a shorter window so old high-volume parts don't inflate them?
