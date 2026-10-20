@@ -10,6 +10,7 @@
 > - Task 6 DONE 2026-10-20 (`aab0d995`, `e6f9ac64`): after review, a typed empty table when the list has no rows, explicit Modified/MaskExpires conversion. First-run checks added to Task 8.
 > - Task 7 DONE 2026-10-20 (`903467ed`, `9ce6d1e6`): matches the reference rules; after review, the checked result is persisted so the joins run once, the ROP matrix is validated (missing/unparseable file fails), EstOrderValue decimal(18,2), MonthCount int.
 > - Task 10 DONE 2026-10-20 (`1833928a`, `f14de60c`, 27 tests): review found dp_refresh_log **item rows have no start_utc** (only run rows do), so `run_start()` was added and Tasks 11-12 below were corrected; Skipped rows don't block publishing; `central_month_start()`; non-finite values → null. **The committed publish_logic.py/tests are the reference, not the Task 10 code below.** `.gitignore` exception for the publish folder (`1fb786ef`).
+> - Task 11 code DONE 2026-10-20 (`c89ba3c3`, `f6cdb976`, 40 tests incl. new test_build_files.py): after review, script-relative .env/output/spill paths, safe collision-checked branch keys, history staged in DuckDB and built per branch, secret escaping. **Committed files are the reference, not the Task 11 code below.** Steps 4 (.env) and 8 (dry build) wait for Task 1 and Task 8; Step 8's script below is current. Also record peak memory in that dry run.
 > - Task 1 (SharePoint site, lists, permissions) is Brian's; Task 8 needs it.
 >
 > Plan written 2026-10-20. The Python in Tasks 3 and 10 was extracted from this plan and its 19 tests pass (2026-10-20); the fingerprint query was checked in DuckDB. The notebooks and dataflow are untested until Task 8.
@@ -1884,14 +1885,16 @@ def write_meta(data_as_of: str, published_at: str, source: str, branches: list, 
 
 ```python
 import sys; sys.path.insert(0, r"C:\Users\bfox\Documents\Git-Projects\data-projects\projects\part order tool - app\publish")
-import os; os.chdir(sys.path[0])
+import os
 from datetime import date
 import extract, build_files
 con = extract.connect()
-r, h, t, n = extract.reorder(con), extract.history(con), extract.transfers(con), extract.branch_names(con)
-hashes, branches = build_files.build(r, h, t, n, "2026-10-20T11:40:00+00:00", date.today().replace(day=1))
+r = extract.reorder(con); extract.stage_history(con)
+t, n = extract.transfers(con), extract.branch_names(con)
+hashes, branches = build_files.build(r, lambda b: extract.history_for(con, b), t, n,
+                                     "2026-10-20T11:40:00+00:00", date.today().replace(day=1))
 print(len(hashes), "files;", branches[:3])
-for f in sorted(os.listdir("output")): print(f, os.path.getsize(os.path.join("output", f)))
+for f in sorted(os.listdir(build_files.OUT_DIR)): print(f, os.path.getsize(os.path.join(build_files.OUT_DIR, f)))
 ```
 Run it with `NONJD_SOURCE=dev` and an empty `CLIENT_SECRET` (uses your az login). Expected: 2 files per branch plus `surplus.json.gz` and `transfers.json.gz`; every file under 4 MB (the upload limit without a chunked session). If any file is over 4 MB, copy the chunked `upload_file` from `.claude/queries/adhoc/parts-lookup-static-prototype/upload.py` into Task 12's upload.py.
 
