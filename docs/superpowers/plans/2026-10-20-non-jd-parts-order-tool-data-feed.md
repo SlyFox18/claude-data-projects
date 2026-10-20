@@ -1763,10 +1763,13 @@ def _dicts(cur) -> list:
 
 
 def log_rows(con, days: int = 14) -> list:
-    since = (datetime.now(timezone.utc) - timedelta(days=days)).replace(tzinfo=None)
+    """The Gold item's rows plus every run-level row: item rows carry only end_utc, so the run's start time
+    (publish_logic.run_start) comes from its row_type='run' rows (the InProgress row has no end_utc)."""
+    since = datetime.now(timezone.utc) - timedelta(days=days)
     return _dicts(con.execute(f"""
         SELECT run_id, name, row_type, status, start_utc, end_utc FROM delta_scan('{config.table_path("dp_refresh_log")}')
-        WHERE name = 'Build_Gold_NonJD_Reorder' AND row_type = 'item' AND end_utc >= ?""", [since]))
+        WHERE ((name = 'Build_Gold_NonJD_Reorder' AND row_type = 'item') OR row_type = 'run')
+          AND coalesce(end_utc, start_utc) >= ?""", [since]))
 
 
 def built_at(con) -> datetime:
@@ -1976,8 +1979,7 @@ import json
 import os
 import sys
 import traceback
-from datetime import date, datetime, timezone
-from zoneinfo import ZoneInfo
+from datetime import datetime, timezone
 
 import build_files
 import config
@@ -1997,14 +1999,16 @@ def load_state() -> dict:
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--force", action="store_true", help="publish even if this run was already published")
+    ap.add_argument("--force", action="store_true",
+                    help="publish even if this run was already published (never publishes a failed run)")
     args = ap.parse_args()
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
     stamp = datetime.now(timezone.utc).isoformat()
     print(f"[{stamp}] publish start, source={config.SOURCE}")
 
     con = extract.connect()
-    latest = pl.latest_item_run(extract.log_rows(con))
+    rows = extract.log_rows(con)
+    latest = pl.latest_item_run(rows)
     state = load_state()
     go, why = pl.decide_publish(latest, state, config.SOURCE, args.force)
     print(f"decision: {go} ({why})")
@@ -2012,16 +2016,18 @@ def main() -> int:
         return 0
 
     built = extract.built_at(con)
-    if not pl.built_in_run(built, latest["start_utc"], latest["end_utc"]):
+    start = pl.run_start(rows, latest["run_id"])
+    if not pl.built_in_run(built, start, latest["end_utc"]):
         raise RuntimeError(f"Fact_NonJD_Reorder BuiltAtUtc {built} is outside run {latest['run_id']} "
-                           f"({latest['start_utc']} .. {latest['end_utc']}); refusing to publish mismatched data")
+                           f"({start} .. {latest['end_utc']}); refusing to publish mismatched data")
 
     data_as_of = pl.iso_utc(latest["end_utc"])
-    built_central = pl._naive_utc(built).replace(tzinfo=timezone.utc).astimezone(ZoneInfo("America/Chicago")).date()
-    current_month = date(built_central.year, built_central.month, 1)
+    current_month = pl.central_month_start(built)
 
     reorder, history = extract.reorder(con), extract.history(con)
     transfers, names = extract.transfers(con), extract.branch_names(con)
+    if extract.built_at(con) != built:
+        raise RuntimeError("Fact_NonJD_Reorder was rewritten while extracting; rerun the publish")
     hashes, branches = build_files.build(reorder, history, transfers, names, data_as_of, current_month)
     counts = {"parts": len(reorder), "historyRows": len(history), "transferLines": len(transfers)}
     meta_path = build_files.write_meta(data_as_of, datetime.now(timezone.utc).isoformat(), config.SOURCE,
