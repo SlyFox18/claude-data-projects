@@ -2025,12 +2025,14 @@ def main() -> int:
     data_as_of = pl.iso_utc(latest["end_utc"])
     current_month = pl.central_month_start(built)
 
-    reorder, history = extract.reorder(con), extract.history(con)
+    reorder = extract.reorder(con)
+    history_rows = extract.stage_history(con)     # copied into a DuckDB temp table; built one branch at a time
     transfers, names = extract.transfers(con), extract.branch_names(con)
     if extract.built_at(con) != built:
         raise RuntimeError("Fact_NonJD_Reorder was rewritten while extracting; rerun the publish")
-    hashes, branches = build_files.build(reorder, history, transfers, names, data_as_of, current_month)
-    counts = {"parts": len(reorder), "historyRows": len(history), "transferLines": len(transfers)}
+    hashes, branches = build_files.build(reorder, lambda b: extract.history_for(con, b), transfers, names,
+                                         data_as_of, current_month)
+    counts = {"parts": len(reorder), "historyRows": history_rows, "transferLines": len(transfers)}
     meta_path = build_files.write_meta(data_as_of, datetime.now(timezone.utc).isoformat(), config.SOURCE,
                                        branches, counts)
 
