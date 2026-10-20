@@ -64,6 +64,15 @@ def test_no_matrix_match_uses_defaults_and_min_qty():
     assert r["Status"] == "OutOfStock"
 
 
+def test_null_on_hand_counts_as_out_of_stock():
+    con = _con()
+    con.execute("INSERT INTO parts VALUES ('1','MC','P8',NULL,0,10)")
+    con.execute("INSERT INTO hist VALUES ('1','MC','P8','2026-10-01',1,1)")
+    r = _run(con)["P8"]
+    assert r["RecommendedOrderQty"] == 1
+    assert r["Status"] == "OutOfStock"
+
+
 def test_settings_override_latest_row_wins_and_masking():
     con = _con()
     con.execute("INSERT INTO parts VALUES ('1','MC','P3',0,0,10), ('1','MC','P4',0,0,10)")

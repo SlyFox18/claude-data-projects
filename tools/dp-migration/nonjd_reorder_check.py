@@ -102,7 +102,7 @@ EXPECTED_SQL = """
            CASE WHEN mc = 0 THEN greatest(0, oh) ELSE greatest(0, oh - target) END AS SurplusQty,
            inbound AS InboundTransferQty,
            CASE WHEN masked THEN 'Masked' WHEN mc = 0 THEN 'NoRecentActivity'
-                WHEN rec_qty > 0 AND QuantityOnHand <= 0 THEN 'OutOfStock'
+                WHEN rec_qty > 0 AND coalesce(QuantityOnHand, 0) <= 0 THEN 'OutOfStock'
                 WHEN rec_qty > 0 THEN 'Reorder' ELSE 'OK' END AS Status
     FROM rec
 """
