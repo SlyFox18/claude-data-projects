@@ -5,6 +5,9 @@
 > **Progress:**
 > - Task 2 DONE 2026-10-20 (`b259bb58`; rop_matrix.csv uploaded to Dev Files/config/nonjd).
 > - Task 3 DONE 2026-10-20 (`441ac2d9`, `b66ea215`, `4d23310d`). After review the committed script gained duplicate-key counts, a fuller mismatch printout and 22 tests; **the committed files are the reference, not the code copied below.**
+> - Task 4 DONE 2026-10-20 (fabric-workspace-docs `5a9adc3a`, `5a896731`): after review, single-pass validation and a WARN when the current month is missing after day 3 (stale Bronze).
+> - Task 5 DONE 2026-10-20 (`07ff6562`, `fc985ddb`): after review, redundant scans dropped, Bronze type assert, cache released. Committed notebooks are the reference.
+> - Task 1 (SharePoint site, lists, permissions) is Brian's; Task 8 needs it.
 >
 > Plan written 2026-10-20. The Python in Tasks 3 and 10 was extracted from this plan and its 19 tests pass (2026-10-20); the fingerprint query was checked in DuckDB. The notebooks and dataflow are untested until Task 8.
 >
