@@ -7,6 +7,7 @@
 > - Task 3 DONE 2026-10-20 (`441ac2d9`, `b66ea215`, `4d23310d`). After review the committed script gained duplicate-key counts, a fuller mismatch printout and 22 tests; **the committed files are the reference, not the code copied below.**
 > - Task 4 DONE 2026-10-20 (fabric-workspace-docs `5a9adc3a`, `5a896731`): after review, single-pass validation and a WARN when the current month is missing after day 3 (stale Bronze).
 > - Task 5 DONE 2026-10-20 (`07ff6562`, `fc985ddb`): after review, redundant scans dropped, Bronze type assert, cache released. Committed notebooks are the reference.
+> - Task 6 DONE 2026-10-20 (`aab0d995`, `e6f9ac64`): after review, a typed empty table when the list has no rows, explicit Modified/MaskExpires conversion. First-run checks added to Task 8.
 > - Task 1 (SharePoint site, lists, permissions) is Brian's; Task 8 needs it.
 >
 > Plan written 2026-10-20. The Python in Tasks 3 and 10 was extracted from this plan and its 19 tests pass (2026-10-20); the fingerprint query was checked in DuckDB. The notebooks and dataflow are untested until Task 8.
@@ -1359,7 +1360,15 @@ python tools/dp-migration/run_item.py $S $H RunNotebook 1800
 python tools/dp-migration/run_item.py $S $R RunNotebook 1800
 python tools/dp-migration/run_item.py $P $G RunNotebook 1800
 ```
-Expected: each exits 0 (Completed). If the dataflow fails on the SharePoint connection, open it once in the Dev UI, confirm the connection and rerun; don't edit it there, because Git sync is the only writer. For a notebook error, open the run in the Fabric Monitor hub, fix the code in the repo, push, sync and rerun.
+Expected: each exits 0 (Completed).
+
+**Dataflow first-run checks** (from the Task 6 review; only possible once the list exists):
+- Read `NonJD_PartSettings` with DuckDB: the test row from Task 1 Step 6 is there, `Id` is populated, and `MaskExpires` shows the same date the SharePoint UI shows.
+- Note whether `Modified` arrived with a zone (UTC) or as site-local time, and record it in the dataflow's header comment.
+- Get the list's GUID (List settings → URL `List=%7B...%7D`) and switch `mashup.pq` navigation to `Source{[Id = "<guid>"]}[Items]`, then commit, push, sync and rerun the dataflow.
+- With the list emptied (or before adding the test row), the dataflow still succeeds and the table keeps its 11 typed columns.
+
+If the dataflow fails on the SharePoint connection, open it once in the Dev UI, confirm the connection and rerun; don't edit it there, because Git sync is the only writer. For a notebook error, open the run in the Fabric Monitor hub, fix the code in the repo, push, sync and rerun.
 
 ---
 
