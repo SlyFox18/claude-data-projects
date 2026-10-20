@@ -29,15 +29,20 @@ using spreadsheets.
 
 `projects/part order tool - app/DATA-INVESTIGATION.md` — Task 1 discovery findings
 
-## Key Data Sources
+## Key Data Sources (DP)
 
-| Source | Table | Purpose |
+The original design used ODBC, a SharePoint list and CSV uploads on LH_Master_Data; that is superseded. Current sources:
+
+| Source | Table / file | Purpose |
 |---|---|---|
-| ODBC (EquipRDB64) | jdis_Part_Information | Part master + 60-month history (new raw table — do not modify existing) |
-| ODBC (EquipRDB64) | InMaster | Stocking months, margin flag (user_field_3) |
-| SharePoint list | config_PartSettings | User-managed per-part overrides (Phase 1 storage) |
-| CSV upload | param_ROP_Matrix | 1,993-row ROP calculation parameter matrix |
-| Manual CSV | param_FranchiseScope | Franchise include/exclude list |
+| DP_Staging Silver | Silver_PartInformation | Part master |
+| DP_Staging Silver | Silver_InMaster | Stocking months, margin flag (user_field_3) |
+| DP_Staging Silver | Silver_PartStockingRules | Stocking rules |
+| DP_Staging Silver | Silver_PartSalesHistory | Sales/request history (from JD Bronze InHistMQT) |
+| SharePoint list | NonJD_PartSettings (via df_NonJD_PartSettings_Raw) | User-managed per-part overrides and masks |
+| CSV | Files/config/nonjd/rop_matrix.csv (1,990 rows) | ROP calculation parameter matrix |
+
+All of these feed Gold `Build_Gold_NonJD_Reorder`.
 
 ## Franchise Scope
 
