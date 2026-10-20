@@ -94,14 +94,14 @@ Brian decides when step 2 happens. Until then the publish script can read Dev af
 
 | Column | Meaning |
 |---|---|
-| Title | Rule name, shown in the app next to each suggestion |
+| Title | Rule name, shown in the app next to each suggestion. A rule saved without a name shows as `Rule <Id>` |
 | Priority | Number. Of the rules that match a part, the highest wins |
 | Active | Yes/No. Inactive rules are ignored |
 | Franchise, DealerGroupCode, Branch | Which parts it applies to. Blank = any. Compared trimmed and case-insensitive |
 | StartMonth, EndMonth | Season, 1-12, both blank = all year. A range may wrap the year (11 to 2 = Nov-Feb). Uses the Central-time month of the DP run |
 | HistoryMonths | How many full months of history measure demand (1-59) |
 | MinActiveMonths | Months with demand needed before the part is stocked at all |
-| WeeksOfCover | How many weeks of demand to keep on hand |
+| WeeksOfCover | How many weeks of demand to keep on hand (0-104) |
 | DemandBasis | `UnitsSold` or `Requests` |
 | Notes | Ben's notes |
 
@@ -116,9 +116,11 @@ Dealer group code is the useful classifier for non-JD parts: it's on 63% of acti
 6. StockingTarget = max(CalcTarget, EffectiveMin), where EffectiveMin = the app's MinOverride, else Equip's minimum, else 0.
 7. RecommendedOrderQty = 0 when masked, else max(0, StockingTarget − on hand − on order) (quantities truncated toward zero, as before).
 8. SurplusQty = max(0, on hand − StockingTarget).
-9. Status: Masked; else when StockingTarget = 0, NoRecentActivity (ActiveMonths = 0) or NotStocked (below MinActiveMonths); else OutOfStock (order > 0 and on hand ≤ 0), Reorder (order > 0) or OK.
+9. Status: Masked; else when StockingTarget = 0, NoRecentActivity (ActiveMonths = 0) or NotStocked (had demand in the window but the target came out 0: usually below MinActiveMonths, also WeeksOfCover 0 or net demand ≤ 0); else OutOfStock (order > 0 and on hand ≤ 0), Reorder (order > 0) or OK.
 
-**Bad rule rows** (missing settings, months outside 1-12, one season month without the other, unknown DemandBasis) are skipped, and the Gold run ends with a WARN naming them, so one typo never stops the daily refresh.
+Transfers match on trimmed branch and on upper-cased, trimmed part numbers on both sides (unchanged from before; transfers carry no franchise).
+
+**Bad rule rows** (missing settings, months outside 1-12, one season month without the other, WeeksOfCover outside 0-104, unknown DemandBasis) are skipped, and the Gold run ends with a WARN naming them, so one typo never stops the daily refresh.
 
 **Explainability.** Gold and the published files carry the rule name and every input (basis, history months, window demand, active months, monthly rate, weeks of cover, calc target, effective min), so the app can say, for example: "Cotton – in season: sold 18 in 12 months (1.5 a month) × 10 weeks of cover gives a target of 4. On hand 1, so order 3." A one-page explanation with worked examples sits next to the list for Ben.
 
