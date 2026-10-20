@@ -59,14 +59,18 @@ Task Scheduler setup:
 
 ## File contract (schemaVersion 1)
 
+schemaVersion 1 = this rules-list contract (2026-10-20); the earlier matrix-era shape was never consumed.
+
 All files sit flat in the library (no sub-folders). They are UTF-8 JSON with sorted keys (the examples below are
 unsorted for reading); `.json.gz` files are gzip-compressed, `_meta.json` is plain.
 
 - Numbers are plain JSON numbers (whole values are integers). `NaN` / `Infinity` never appear (they become `null`;
   the writer refuses to emit them).
-- Nulls: the `sales` / `requests` arrays never contain null (they use 0). `isMasked`, `status`, `inboundQty`, `activeMonths`,
-  `ruleName`, `demandBasis`, `historyMonths`, `minActiveMonths`, `weeksOfCover`, `windowDemand`, `monthlyRate`,
-  `calcTarget` and `effectiveMin` are never null (Gold fills the built-in default rule when no rule matches). Any other field may be null.
+- Nulls: the `sales` / `requests` arrays never contain null (they use 0). In a reorder part, only these fields can be
+  null: `description`, `productGroup`, `minimumQty`, `maximumQty`, `reorderCode`, `activityCode`, `minOverride` and
+  `maskExpires`. Every other reorder field is never null: blank text arrives as `""` (`bin`, `superTo`, `superFrom`,
+  `dealerGroupCode`), quantities and prices are 0 when missing, and `target`, `ruleName` and the other rule fields are
+  always filled (Gold fills the built-in default rule when no rule matches). In the other files, any field may be null.
 - Dates are ISO strings (`2026-10-20`). Datetimes are ISO UTC with `+00:00` and may include fractional seconds.
 - Branch codes are Equip's text codes (e.g. `"1"`, `"92"`), **trimmed**. The `branch` value inside every file is that
   trimmed key, and it is the key in the file names. A code must match `^[A-Za-z0-9_-]+$`, and two raw codes that trim
@@ -101,21 +105,21 @@ are renamed as shown. Gold's `RuleId` and `BuiltAtUtc` are not published (users 
 | isLowMargin | InMaster user_field_3 = LOW |
 | sales12, salesPrev12 | Quantities (units, not dollars) for the current and previous 12 months |
 | lastRequested | Equip last-demand date as a datetime string at 00:00+00:00. Use the date part only; don't convert time zones. `1900-01-01` means never requested |
-| dealerGroupCode | Equip dealer group code for this part at this branch (what the rules match on); may be null |
-| ruleName | Name of the rule that set this part's settings (`Built-in default` when no rule matched) |
+| dealerGroupCode | Equip dealer group code for this part at this branch (what the rules match on); `""` when blank (matches only rules with a blank DealerGroupCode) |
+| ruleName | Name of the rule that set this part's settings: `Rule <Id>` for a rule saved without a name, `Built-in default` when no rule matched (also when the matching rule was invalid and skipped; the DP run's WARN names those) |
 | demandBasis | `UnitsSold` or `Requests`: what `windowDemand` counts |
 | historyMonths | Full months of history measured (the current partial month is left out) |
-| minActiveMonths | Months with demand needed before the part is stocked at all |
-| weeksOfCover | Weeks of demand to keep on hand |
+| minActiveMonths | Months with demand needed before the rule's calculation stocks the part (a minimum still applies) |
+| weeksOfCover | Weeks of demand to keep on hand; a number from 0 to 104, can be fractional |
 | windowDemand | Total units sold (or requests) in the window; 0 if negative |
 | activeMonths | Months in the window with demand > 0 |
 | monthlyRate | windowDemand / historyMonths (calendar months, not active months) |
-| calcTarget | ceil(monthlyRate x weeksOfCover x 12 / 52) when activeMonths >= minActiveMonths, else 0 |
+| calcTarget | ceil(round(monthlyRate x weeksOfCover x 12 / 52, 9)) when activeMonths >= minActiveMonths, else 0; the rounding only removes floating-point noise. Display it; don't recompute it in the app |
 | effectiveMin | The app's min override, else Equip's minimum, else 0 |
-| target | Stocking target = max(calcTarget, ceil(effectiveMin)); null when no recent activity |
-| recommendedQty | max(0, target - onHand - onOrder); back orders are not subtracted. 0 when masked or no recent activity |
+| target | Stocking target = max(calcTarget, effectiveMin rounded up). Never null; 0 when the part isn't stocked |
+| recommendedQty | 0 when masked; otherwise max(0, target - onHand - onOrder) with onHand and onOrder truncated toward zero; back orders are not subtracted. Can be > 0 with status `NoRecentActivity` / `NotStocked` when onHand + onOrder is negative (it orders back up to 0) |
 | estValue | recommendedQty at cost, rounded to 2 decimals |
-| surplusQty | Stock above target (all on-hand stock when no recent activity) |
+| surplusQty | max(0, truncated onHand - target) (all on-hand stock when the target is 0) |
 | inboundQty | Open quantity on outstanding transfers into this branch; 0 (not null) when none |
 | status | `Masked`, `NoRecentActivity` (target 0 and no demand in the window), `NotStocked` (had demand in the window but the target came out 0, usually below `minActiveMonths`), `OutOfStock` (recommendedQty > 0 and onHand <= 0), `Reorder`, `OK`. Checked in that order |
 
@@ -124,25 +128,34 @@ are renamed as shown. Gold's `RuleId` and `BuiltAtUtc` are not published (users 
 Every input to the target is in the part object, so the app can build the sentence without guessing. Rules guide for
 Ben: `projects/part order tool - app/REORDER-RULES.md` (written in Task 21).
 
-Template (status `Reorder` / `OutOfStock` / `OK`, basis `UnitsSold`):
+Decide in this order, first match wins:
 
-> `<ruleName>`: sold `<windowDemand>` in `<historyMonths>` months (`<monthlyRate>` a month) x `<weeksOfCover>` weeks of
-> cover gives a target of `<calcTarget>`. On hand `<onHand>`, on order `<onOrder>`, so order `<recommendedQty>`.
+1. `status` = `Masked`: "Masked, so no order is suggested" (add "until `<maskExpires>`" when set).
+2. `status` = `NoRecentActivity`: "No demand in the last `<historyMonths>` months, so nothing is stocked."
+3. `status` = `NotStocked` (demand in the window, target 0):
+   - `activeMonths` < `minActiveMonths`: "`<ruleName>`: only `<activeMonths>` of `<historyMonths>` months had demand; this rule needs `<minActiveMonths>`, so nothing is stocked."
+   - else `weeksOfCover` = 0: "`<ruleName>` keeps 0 weeks of cover, so nothing is stocked."
+   - else `windowDemand` = 0: "Returns cancelled out sales in the last `<historyMonths>` months, so nothing is stocked."
+   - If `recommendedQty` > 0 (negative stock), add: "On hand `<onHand>`, so order `<recommendedQty>` to bring it back to 0."
+4. Otherwise (`Reorder`, `OutOfStock`, `OK`) the sentence is first clause + minimum clause + tail:
+   - First clause: if `activeMonths` < `minActiveMonths`: "Only `<activeMonths>` of `<historyMonths>` months had demand (this rule needs `<minActiveMonths>`), so the rule gives 0". Otherwise "`<ruleName>`: sold `<windowDemand>` in `<historyMonths>` months (`<monthlyRate>` a month) x `<weeksOfCover>` weeks of cover gives a target of `<calcTarget>`". For `demandBasis` = `Requests`, say "requested `<windowDemand>` times" instead of "sold `<windowDemand>`".
+   - Minimum clause, only if `target` > `calcTarget`: "; a minimum of `<target>` sets the target" (use `target`, not `effectiveMin`, so a fractional minimum reads right).
+   - Tail: "On hand `<onHand>`, on order `<onOrder>`, so order `<recommendedQty>`." For `OK`: "On hand `<onHand>`, on order `<onOrder>`, which covers the target; nothing to order."
 
-Worked example: "Cotton - in season: sold 18 in 12 months (1.5 a month) x 10 weeks of cover gives a target of 4. On
-hand 1, on order 0, so order 3."
+Worked examples (arithmetic: calcTarget = ceil(monthlyRate x weeksOfCover x 12 / 52)):
+- Units: "Cotton - in season: sold 18 in 12 months (1.5 a month) x 10 weeks of cover gives a target of 4. On hand 1, on
+  order 0, so order 3." (1.5 x 10 x 12 / 52 = 3.46, rounds up to 4; 4 - 1 - 0 = 3.)
+- Requests: "Default: requested 6 times in 12 months (0.5 a month) x 6 weeks of cover gives a target of 1. On hand 0, on
+  order 0, so order 1." (0.5 x 6 x 12 / 52 = 0.69, rounds up to 1.)
+- Minimum wins: "Default: sold 2 in 12 months (0.17 a month) x 6 weeks of cover gives a target of 1; a minimum of 3 sets the
+  target. On hand 1, on order 0, so order 2." (calcTarget 1; target 3; 3 - 1 = 2.)
+- NotStocked: "Default: only 2 of 12 months had demand; this rule needs 3, so nothing is stocked."
 
-Variants:
-- `demandBasis` = `Requests`: say "requested `<windowDemand>` times" instead of "sold `<windowDemand>`".
-- `NotStocked`: "`<ruleName>`: only `<activeMonths>` of `<historyMonths>` months had demand; this rule stocks parts with
-  at least `<minActiveMonths>`." (If `activeMonths` >= `minActiveMonths`, the cause is `weeksOfCover` 0 or net demand <= 0.)
-- `NoRecentActivity`: "No demand in the last `<historyMonths>` months, so nothing is stocked." (A min still applies if
-  `effectiveMin` > 0, in which case the status is not `NoRecentActivity`.)
-- A minimum wins (`effectiveMin` rounded up > `calcTarget`): "Minimum `<effectiveMin>` sets the target (the rule's
-  `<calcTarget>` is lower)." Then the on hand / on order / order tail as above.
-- `Masked`: "Masked, so no order is suggested" (add "until `<maskExpires>`" when set). The target and rule still show.
-
-Show `<monthlyRate>` rounded to 2 decimals.
+Number display:
+- `monthlyRate`: at most 2 decimals, trailing zeros dropped; below 0.005 show "< 0.01".
+- `weeksOfCover` and `windowDemand`: up to 1 decimal, dropping ".0".
+- Whole values arrive as JSON integers.
+- Handle plurals: "1 month", "requested 1 time".
 
 ### `history_<branch>.json.gz`
 `{"branch", "months": [60 labels like "2026-10", "2026-09", ...], "parts": [{"franchise", "partNumber",
