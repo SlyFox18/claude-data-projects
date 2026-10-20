@@ -2280,6 +2280,8 @@ Rewrite `EXPECTED_SQL` in `tools/dp-migration/nonjd_reorder_check.py` to spec 5.
 
 ### Task 21: Run in Dev and verify
 
+> DONE 2026-10-20. Pushed fabric-workspace-docs to 8f79c31b (CI green). Presentation sync needed two tries: the new shortcut failed until Staging `NonJD_OrderRules` existed (ran df_NonJD_OrderRules_Raw first), then Brian accepted incoming. Rules table: 3 rows, DemandBasis arrives as text. Gold 165 s; `nonjd_reorder_check.py --tier dev` **PASS** (207,010 rows, 0 differences, all active rules valid); second run same fingerprint. Totals: OutOfStock 4,265 rows / $4.54M, Reorder 423 / $168K, NotStocked 23,018, NoRecentActivity 174,976, OK 4,328; total $4.73M, of which ~$3.8M is six parts whose stale **Equip minimums** (e.g. 50,241 units, no sales since 2020) set the target. Test part: CalcTarget 0 (1 active month), MinOverride 5 → order 5. Rules guide written: `projects/part order tool - app/REORDER-RULES.md`. TROUBLESHOOTING.md gained the two DP_Presentation sync lessons. **Open decision for Brian/Ben: how to treat Equip minimums on parts with no demand.**
+
 Push, CI, sync both Dev workspaces (Brian accepts incoming in the UI if DP_Presentation conflicts again), run the rules dataflow, then Gold. `nonjd_reorder_check.py --tier dev` must PASS; run twice for the same fingerprint; record the new totals by status and the top order lines, and check the test part (MinOverride 5). Write the one-page rules explanation for Ben (`projects/part order tool - app/REORDER-RULES.md`) with two or three worked examples from real parts.
 
 ## Self-review notes
