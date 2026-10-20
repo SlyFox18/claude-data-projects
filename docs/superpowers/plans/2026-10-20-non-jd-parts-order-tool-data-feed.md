@@ -2244,6 +2244,8 @@ Replaces the JD ROP matrix with the rules list in spec section 5.5. **The spec's
 
 ### Task 16: Rules list `NonJD_OrderRules` (Brian, verified step by step)
 
+> DONE 2026-10-20: list GUID `6938ff15-48e0-4773-9ce7-e8a37187bf80`; all columns verified through Graph (HistoryMonths, MinActiveMonths and DemandBasis fixed on the second pass); rows Id 1 Default (active, valid), Id 2 and 3 cotton examples (inactive).
+
 On the Report Site, a new list `NonJD_OrderRules`, inheriting permissions. Columns (exact names; Title = rule name):
 
 | Column | Type | Settings |
