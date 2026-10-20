@@ -169,6 +169,7 @@ No company data lives on the host. Moving hosts means copying the built files an
 
 The prototype starts on the current calculation and exposes these as settings where possible, so the answers can come from trying it. Rewritten from `projects/part order tool - app/CORP-PARTS-MANAGER-QUESTIONS.md` (June 2026), which neither has reviewed.
 
+0. **What the ROP matrix's columns mean (most important; found 2026-10-20 on the first Dev run).** The tool reads JD's ROP matrix export (dealer 048757, 2023-09-22) the way the old LH notebook did: stocking target = average demand per active month × "Modifier". That can't be right: the Modifier reaches 48 for parts with steady demand, and parts requested once in 12 months get a target of 4 (one $42,000 axle drive). Across all branches the suggested orders total about $9.8M. We need JD's PRISM definition of Modifier, Trending Cap, Stocking Weeks and the Spiking columns (Ben may have it, or JD's PRISM documentation) before anyone acts on the numbers.
 1. **Ordering unit.** Do you place orders by franchise, by vendor, or something else? What does each vendor's order form look like? (Please share two or three real examples.)
 2. **Stale parts.** How long without any sales or requests before a part should stop being recommended?
 3. **History window.** Should recommendations use 60 months, or a shorter window so old high-volume parts don't inflate them?
