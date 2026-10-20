@@ -2,7 +2,11 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-> **Progress:** plan written 2026-10-20. Nothing built yet. The Python in Tasks 3 and 10 was extracted from this plan and its 19 tests pass (2026-10-20); the fingerprint query was checked in DuckDB. The notebooks and dataflow are untested until Task 8.
+> **Progress:**
+> - Task 2 DONE 2026-10-20 (`b259bb58`; rop_matrix.csv uploaded to Dev Files/config/nonjd).
+> - Task 3 DONE 2026-10-20 (`441ac2d9`, `b66ea215`, `4d23310d`). After review the committed script gained duplicate-key counts, a fuller mismatch printout and 22 tests; **the committed files are the reference, not the code copied below.**
+>
+> Plan written 2026-10-20. The Python in Tasks 3 and 10 was extracted from this plan and its 19 tests pass (2026-10-20); the fingerprint query was checked in DuckDB. The notebooks and dataflow are untested until Task 8.
 >
 > Pre-plan checks already done (2026-10-20, read-only DuckDB on DP Dev):
 > - Bronze `InHistMQT` (shortcut in DP_Staging) is the history source. JD primary key `BRANCH,FRANCHISE,PART_NO,MM_YYYY`; 0 duplicate keys in the last 61 months. `MM_YYYY` is the 1st of the month at 00:00 UTC and includes the current month.
