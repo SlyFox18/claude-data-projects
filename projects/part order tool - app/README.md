@@ -1,6 +1,6 @@
 # Non-JD Parts Order Tool
 
-**Status:** In development — Fabric Foundation phase (Plan 1)
+**Status:** Redesign in progress (2026-10-20): React web app on the DP backend, replacing the Power Apps plan.
 **Owner:** Brian Fox
 **Stakeholder:** Parts Manager / Corp Parts Manager
 
@@ -18,17 +18,12 @@ using spreadsheets.
 3. **Part Information** — part lookup with 60-month history and per-part settings
 4. **Home / Navigation** — wrapper connecting all three tools
 
-## Delivery Plan
-
-| Plan | Scope | Status |
-|---|---|---|
-| Plan 1 (current) | Fabric data layer — raw tables, parameters, fact tables | In progress |
-| Plan 2 | Power Apps V1 — 4-screen Canvas App (production tool) | Not started |
-| Plan 3 | Web App V2 — React app on same Fabric backend (learning project) | Future |
-
-## Design Spec
-
-`docs/superpowers/specs/2026-05-28-non-jd-parts-order-tool-design.md`
+## Current design and plans
+- Spec: `docs/superpowers/specs/2026-10-20-non-jd-parts-order-tool-redesign-design.md`
+- Plan A (data feed): `docs/superpowers/plans/2026-10-20-non-jd-parts-order-tool-data-feed.md`
+- Plan B (web app): to be written against the file contract in `publish/README.md`
+- Superseded: the 2026-05-28 spec and plans (LH_Master_Data + Power Apps). `ARCHITECTURE.md`, `POWERAPPS-GUIDE.md`
+  and `canvas-sync/` describe that old design.
 
 ## Investigation Results
 
