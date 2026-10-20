@@ -131,12 +131,16 @@ Ben: `projects/part order tool - app/REORDER-RULES.md` (written in Task 21).
 Decide in this order, first match wins:
 
 1. `status` = `Masked`: "Masked, so no order is suggested" (add "until `<maskExpires>`" when set).
-2. `status` = `NoRecentActivity`: "No demand in the last `<historyMonths>` months, so nothing is stocked."
+2. `status` = `NoRecentActivity`: "No demand in the last `<historyMonths>` months, so nothing is stocked." Then the
+   negative-stock sentence below, if it applies.
 3. `status` = `NotStocked` (demand in the window, target 0):
    - `activeMonths` < `minActiveMonths`: "`<ruleName>`: only `<activeMonths>` of `<historyMonths>` months had demand; this rule needs `<minActiveMonths>`, so nothing is stocked."
    - else `weeksOfCover` = 0: "`<ruleName>` keeps 0 weeks of cover, so nothing is stocked."
    - else `windowDemand` = 0: "Returns cancelled out sales in the last `<historyMonths>` months, so nothing is stocked."
-   - If `recommendedQty` > 0 (negative stock), add: "On hand `<onHand>`, so order `<recommendedQty>` to bring it back to 0."
+   - Then the negative-stock sentence below, if it applies.
+
+   Negative-stock sentence (under both `NoRecentActivity` and `NotStocked`), if `recommendedQty` > 0 (on hand + on
+   order is negative): "On hand `<onHand>`, on order `<onOrder>`, so order `<recommendedQty>` to bring it back to 0."
 4. Otherwise (`Reorder`, `OutOfStock`, `OK`) the sentence is first clause + minimum clause + tail:
    - First clause: if `activeMonths` < `minActiveMonths`: "Only `<activeMonths>` of `<historyMonths>` months had demand (this rule needs `<minActiveMonths>`), so the rule gives 0". Otherwise "`<ruleName>`: sold `<windowDemand>` in `<historyMonths>` months (`<monthlyRate>` a month) x `<weeksOfCover>` weeks of cover gives a target of `<calcTarget>`". For `demandBasis` = `Requests`, say "requested `<windowDemand>` times" instead of "sold `<windowDemand>`".
    - Minimum clause, only if `target` > `calcTarget`: "; a minimum of `<target>` sets the target" (use `target`, not `effectiveMin`, so a fractional minimum reads right).
@@ -145,14 +149,18 @@ Decide in this order, first match wins:
 Worked examples (arithmetic: calcTarget = ceil(monthlyRate x weeksOfCover x 12 / 52)):
 - Units: "Cotton - in season: sold 18 in 12 months (1.5 a month) x 10 weeks of cover gives a target of 4. On hand 1, on
   order 0, so order 3." (1.5 x 10 x 12 / 52 = 3.46, rounds up to 4; 4 - 1 - 0 = 3.)
-- Requests: "Default: requested 6 times in 12 months (0.5 a month) x 6 weeks of cover gives a target of 1. On hand 0, on
-  order 0, so order 1." (0.5 x 6 x 12 / 52 = 0.69, rounds up to 1.)
-- Minimum wins: "Default: sold 2 in 12 months (0.17 a month) x 6 weeks of cover gives a target of 1; a minimum of 3 sets the
-  target. On hand 1, on order 0, so order 2." (calcTarget 1; target 3; 3 - 1 = 2.)
+- Requests (a made-up rule needing 3 active months, with `activeMonths` 4): "Stripper belts: requested 6 times in 12
+  months (0.5 a month) x 6 weeks of cover gives a target of 1. On hand 0, on order 0, so order 1." (0.5 x 6 x 12 / 52
+  = 0.69, rounds up to 1.)
+- Minimum wins, rule gives a target (`activeMonths` 4, rule needs 3): "Default: sold 4 in 12 months (0.33 a month) x 6
+  weeks of cover gives a target of 1; a minimum of 3 sets the target. On hand 1, on order 0, so order 2." (0.33 x 6 x
+  12 / 52 = 0.46, rounds up to 1; target 3; 3 - 1 = 2.)
+- Minimum wins, rule gives 0 (`activeMonths` 2, rule needs 3): "Only 2 of 12 months had demand (this rule needs 3), so
+  the rule gives 0; a minimum of 3 sets the target. On hand 1, on order 0, so order 2."
 - NotStocked: "Default: only 2 of 12 months had demand; this rule needs 3, so nothing is stocked."
 
 Number display:
-- `monthlyRate`: at most 2 decimals, trailing zeros dropped; below 0.005 show "< 0.01".
+- `monthlyRate`: at most 2 decimals, trailing zeros dropped; above 0 and below 0.005 shows "< 0.01"; 0 shows 0.
 - `weeksOfCover` and `windowDemand`: up to 1 decimal, dropping ".0".
 - Whole values arrive as JSON integers.
 - Handle plurals: "1 month", "requested 1 time".
