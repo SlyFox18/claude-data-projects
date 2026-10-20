@@ -1,5 +1,7 @@
 # Architecture — Non-JD Parts Order Tool
 
+> **Superseded (2026-10-20).** This describes the 2026-05 LH_Master_Data + Power Apps design and the JD ROP matrix. The current design is `docs/superpowers/specs/2026-10-20-non-jd-parts-order-tool-redesign-design.md` (DP backend, rules list in section 5.5) and the publish README `publish/README.md`.
+
 ## Fabric Table Dependency Order
 
 ```

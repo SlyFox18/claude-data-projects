@@ -54,6 +54,8 @@ User activity touches only SharePoint. Fabric is used once a day, by the DP refr
 
 ### 5.1 What exists and what's new
 
+> The ROP matrix row below and the matrix-based calculation in 5.2 are **superseded by 5.5** (rules list, 2026-10-20). They're kept for history.
+
 | Need | Source today | Plan |
 |---|---|---|
 | Part master, on hand, on order, cost, bin | `Silver_InMaster`, `Silver_PartInformation` | Reuse |
@@ -112,10 +114,10 @@ Dealer group code is the useful classifier for non-JD parts: it's on 63% of acti
 2. Window = the last `HistoryMonths` **full** months (the current partial month is left out).
 3. WindowDemand = total units sold (or requests) in the window, treated as 0 if negative. ActiveMonths = months in the window with demand > 0.
 4. MonthlyRate = WindowDemand ÷ HistoryMonths (calendar months, not active months; this is what fixes the one-request-gets-4 problem).
-5. CalcTarget = ceil(MonthlyRate × WeeksOfCover × 12 ÷ 52) when ActiveMonths ≥ MinActiveMonths, else 0.
-6. StockingTarget = max(CalcTarget, EffectiveMin), where EffectiveMin = the app's MinOverride, else Equip's minimum, else 0.
-7. RecommendedOrderQty = 0 when masked, else max(0, StockingTarget − on hand − on order) (quantities truncated toward zero, as before).
-8. SurplusQty = max(0, on hand − StockingTarget).
+5. CalcTarget = ceil(round(MonthlyRate × WeeksOfCover × 12 ÷ 52, 9)) when ActiveMonths ≥ MinActiveMonths, else 0 (the 9-decimal rounding only removes floating-point noise, so 2.0000000001 stays 2).
+6. StockingTarget = max(CalcTarget, ceil(EffectiveMin)), where EffectiveMin = the app's MinOverride, else Equip's minimum, else 0.
+7. RecommendedOrderQty = 0 when masked, else max(0, StockingTarget − on hand − on order), with on hand and on order truncated toward zero, as before. A not-stocked part with negative on hand (sold but not on the shelf) still gets an order back up to 0; Ben may want to revisit this when tuning.
+8. SurplusQty = max(0, truncated on hand − StockingTarget).
 9. Status: Masked; else when StockingTarget = 0, NoRecentActivity (ActiveMonths = 0) or NotStocked (had demand in the window but the target came out 0: usually below MinActiveMonths, also WeeksOfCover 0 or net demand ≤ 0); else OutOfStock (order > 0 and on hand ≤ 0), Reorder (order > 0) or OK.
 
 Transfers match on trimmed branch and on upper-cased, trimmed part numbers on both sides (unchanged from before; transfers carry no franchise).
