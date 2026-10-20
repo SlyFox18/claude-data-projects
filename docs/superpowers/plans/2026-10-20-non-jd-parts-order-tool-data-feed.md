@@ -9,6 +9,7 @@
 > - Task 5 DONE 2026-10-20 (`07ff6562`, `fc985ddb`): after review, redundant scans dropped, Bronze type assert, cache released. Committed notebooks are the reference.
 > - Task 6 DONE 2026-10-20 (`aab0d995`, `e6f9ac64`): after review, a typed empty table when the list has no rows, explicit Modified/MaskExpires conversion. First-run checks added to Task 8.
 > - Task 7 DONE 2026-10-20 (`903467ed`, `9ce6d1e6`): matches the reference rules; after review, the checked result is persisted so the joins run once, the ROP matrix is validated (missing/unparseable file fails), EstOrderValue decimal(18,2), MonthCount int.
+> - Task 10 DONE 2026-10-20 (`1833928a`, `f14de60c`, 27 tests): review found dp_refresh_log **item rows have no start_utc** (only run rows do), so `run_start()` was added and Tasks 11-12 below were corrected; Skipped rows don't block publishing; `central_month_start()`; non-finite values → null. **The committed publish_logic.py/tests are the reference, not the Task 10 code below.** `.gitignore` exception for the publish folder (`1fb786ef`).
 > - Task 1 (SharePoint site, lists, permissions) is Brian's; Task 8 needs it.
 >
 > Plan written 2026-10-20. The Python in Tasks 3 and 10 was extracted from this plan and its 19 tests pass (2026-10-20); the fingerprint query was checked in DuckDB. The notebooks and dataflow are untested until Task 8.
