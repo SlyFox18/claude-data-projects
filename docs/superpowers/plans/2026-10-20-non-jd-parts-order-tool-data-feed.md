@@ -2107,7 +2107,7 @@ py -3.13 -m venv .venv
   - Run whether user is logged on or not, as the same account the Parts Availability task uses.
   - Triggers: weekdays 07:15, repeat every 30 minutes for 3 hours (covers late or retried DP runs; repeats after a publish just say "already published").
   - Action: program `cmd.exe`, arguments `/c ".venv\Scripts\python.exe run_publish.py >> publish.log 2>&1"`, and "Start in" set to the publish folder in the Gateway PC's clone.
-  - Settings: stop the task if it runs longer than 30 minutes.
+  - Settings: "If the task is already running: Do not start a new instance", and "Stop the task if it runs longer than: 25 minutes" (DuckDB reads have no wall-clock timeout; a hung run would otherwise block the day's later triggers). The script also takes its own `publish.lock`, so a hand run can't overlap a scheduled one.
 
 - [ ] **Step 6: Next weekday morning, check** `publish.log` and the library's `_meta.json`.
 
@@ -2133,7 +2133,9 @@ on https://spitractor.sharepoint.com/sites/PartsOrderTool.
 - Publishes only when `Build_Gold_NonJD_Reorder` succeeded in `dp_refresh_log` and that run hasn't been published.
 - `NONJD_SOURCE` in `.env` picks the DP tier (`dev` or `prod`).
 
-Run by hand: `python run_publish.py` (`--force` to rebuild and upload changed files anyway). Tests: `python -m pytest -q`.
+Run by hand: `python run_publish.py`. `--force` re-publishes the latest successful run and re-sends every file (use it to repair a file damaged or deleted in SharePoint; it never publishes a failed run). Deleting `publish_state.json` has the same effect on the next run. Tests: `python -m pytest -q` (run from this folder; the folder has its own conftest.py).
+
+**For the app (Plan B):** fetch only the branches listed in `_meta.json`; files of branches that dropped out stay in the library. A crash mid-upload can briefly leave some branch files newer than `_meta.json` until the next run heals it; if `reorder_<b>.dataAsOf` differs from `_meta.dataAsOf`, show the file's own date.
 
 ## File contract (schemaVersion 1)
 
