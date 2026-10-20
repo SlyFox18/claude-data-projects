@@ -215,7 +215,7 @@ This is the independent check for Task 7. It encodes the business rules once in 
 7. Quantities truncate toward zero (`OnHandInt`, `OnOrderInt`). `RecommendedOrderQty = 0` when masked or `MonthCount = 0`, else `max(0, target - OnHandInt - OnOrderInt)`.
 8. `SurplusQty = max(0, OnHandInt)` when `MonthCount = 0`, else `max(0, OnHandInt - target)`.
 9. `InboundTransferQty` = sum of `OpenQty` on outstanding transfers where `trim(RequestingBranch) = trim(Branch)` and transfer `PartNumber = upper(trim(PartNumber))`.
-10. `Status`: `Masked`, else `NoRecentActivity` (MonthCount 0), else `OutOfStock` (rec > 0 and on hand <= 0), else `Reorder` (rec > 0), else `OK`.
+10. `Status`: `Masked`, else `NoRecentActivity` (MonthCount 0), else `OutOfStock` (rec > 0 and raw on hand, NULL as 0, <= 0; fractional stock such as 0.5 counts as in stock), else `Reorder` (rec > 0), else `OK`.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -283,6 +283,15 @@ def test_no_matrix_match_uses_defaults_and_min_qty():
     r = _run(con)["P2"]
     assert r["StockingTarget"] == 4          # max(WarehouseMin 1, MinimumQty 4, 1.0 * 1.0)
     assert r["RecommendedOrderQty"] == 4
+    assert r["Status"] == "OutOfStock"
+
+
+def test_null_on_hand_counts_as_out_of_stock():
+    con = _con()
+    con.execute("INSERT INTO parts VALUES ('1','MC','P8',NULL,0,10)")
+    con.execute("INSERT INTO hist VALUES ('1','MC','P8','2026-10-01',1,1)")
+    r = _run(con)["P8"]
+    assert r["RecommendedOrderQty"] == 1
     assert r["Status"] == "OutOfStock"
 
 
@@ -449,7 +458,7 @@ EXPECTED_SQL = """
            CASE WHEN mc = 0 THEN greatest(0, oh) ELSE greatest(0, oh - target) END AS SurplusQty,
            inbound AS InboundTransferQty,
            CASE WHEN masked THEN 'Masked' WHEN mc = 0 THEN 'NoRecentActivity'
-                WHEN rec_qty > 0 AND QuantityOnHand <= 0 THEN 'OutOfStock'
+                WHEN rec_qty > 0 AND coalesce(QuantityOnHand, 0) <= 0 THEN 'OutOfStock'
                 WHEN rec_qty > 0 THEN 'Reorder' ELSE 'OK' END AS Status
     FROM rec
 """
@@ -550,7 +559,7 @@ if __name__ == "__main__":
 - [ ] **Step 4: Run tests to verify they pass**
 
 Run: `cd tools/dp-migration && python -m pytest test_nonjd_reorder_check.py -q`
-Expected: `8 passed`
+Expected: `9 passed`
 
 - [ ] **Step 5: Commit (data-projects)**
 
@@ -1193,7 +1202,7 @@ calc = (with_rop
         .withColumn("IsLowMargin", F.upper(F.trim(F.coalesce(F.col("LowMarginFlag"), F.lit("")))) == "LOW")
         .withColumn("Status", F.when(F.col("IsMasked"), "Masked")
                     .when(F.col("MonthCount") == 0, "NoRecentActivity")
-                    .when((F.col("RecommendedOrderQty") > 0) & (F.col("QuantityOnHand") <= 0), "OutOfStock")
+                    .when((F.col("RecommendedOrderQty") > 0) & (F.coalesce(F.col("QuantityOnHand"), F.lit(0)) <= 0), "OutOfStock")
                     .when(F.col("RecommendedOrderQty") > 0, "Reorder")
                     .otherwise("OK"))
         .withColumn("BuiltAtUtc", F.lit(built_at).cast("timestamp")))
