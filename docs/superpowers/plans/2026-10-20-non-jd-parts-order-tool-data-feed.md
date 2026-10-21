@@ -2098,6 +2098,8 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 
 ### Task 13: Gateway PC schedule
 
+> DONE 2026-10-21 with Brian, verified step by step. `C:\data-projects` pulled to deb06b0c; venv at `projects\part order tool - app\publish\.venv` (57 tests pass); `.env` built by copying TENANT_ID/CLIENT_ID/CLIENT_SECRET from the Parts Availability `.env` on the same machine (secret never shown) plus SITE_ID, DRIVE_ID, NONJD_SOURCE=dev. Manual run published 51 files (data as of 2026-10-21T15:16:53Z), repeat run skipped. Task `\SPI\Non-JD Order Tool Publish` registered via PowerShell as SPI\bfox (run whether logged on or not): weekdays 7:15 + every 30 min for 3 h, IgnoreNew, 25-min limit, StartWhenAvailable, `cmd /c ".venv\Scripts\python.exe run_publish.py >> publish.log 2>&1"` in the publish folder. Triggered once by hand: LastTaskResult 0, log shows "already published", next run 2026-10-22 7:15.
+
 **Files:** none in the repo (machine setup). Document in Task 14's README.
 
 - [ ] **Step 1: Pull on the Gateway PC.** The Gateway PC (`SPI00T4022W11`) already has a clone of data-projects `dev` for Parts Availability. `git pull` there.
