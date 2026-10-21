@@ -30,7 +30,7 @@ left off.
 
 **W3. One-Time Order, masked parts** (relates to question 11 below). Chosen: masked parts
 are listed and marked "Masked", but start **unticked**, so they're only ordered if someone
-ticks them.
+ticks them. "Select all" skips masked parts too; each one has to be ticked by hand.
 - Option B: leave masked parts off entirely.
 - Option C: list them ticked like any other part.
 
