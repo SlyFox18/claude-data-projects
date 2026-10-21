@@ -11,7 +11,7 @@ For each part at each branch:
 3. **Monthly rate.** Total demand ÷ HistoryMonths. A part that sold 12 in 12 months has a rate of 1 a month, whether those sales came in one month or twelve.
 4. **Is it worth stocking?** If fewer than **MinActiveMonths** months had any demand, the rule doesn't stock the part. It's treated as a special-order part.
 5. **Stocking target.** Monthly rate × **WeeksOfCover**, converted from weeks to months and rounded up.
-6. **Minimum.** If the part has a minimum (set in this tool, or Equip's minimum quantity), the target is never below it.
+6. **Minimum.** A minimum set in this tool always applies: the target is never below it. Equip's minimum quantity applies only if the part had some demand in the rule's history window. When a part has an Equip minimum but no demand, the minimum is ignored and the part is flagged ("Equip minimum ignored"), so those minimums can be reviewed and cleaned up in Equip.
 7. **Suggested order.** Target − on hand − on order. Never below 0.
 
 ## Three real examples (branch data from 2026-10-20, rule "Default": 12 months, 3 active months, 6 weeks)
@@ -52,6 +52,6 @@ Dealer group codes are set per branch in Equip, so a part coded COTTON at one br
 
 ## Things we already know to look at
 
-- **Old Equip minimums.** Equip's minimum quantity always sets a floor. A handful of parts with no sales for years carry large minimums (one part has a minimum of 50,241), and they make up most of the suggested order value. These need cleaning up in Equip, or a decision on how the tool should treat them.
+- **Old Equip minimums.** Some parts with no sales for years carry large Equip minimums (one part has a minimum of 50,241). Before 2026-10-21 they made up most of the suggested order value. Now Equip's minimum is used only when the part has had demand, and the rest are flagged as "Equip minimum ignored". That flagged list is worth cleaning up in Equip; if you want a part stocked anyway, set a minimum for it in the tool.
 - **Negative on hand.** A part with negative on hand gets an order that brings it back to 0, even if it isn't otherwise stocked.
 - **Seasonal demand.** A 12-month average flattens a seasonal spike. A later option is to measure demand from the same months last year.
