@@ -51,6 +51,13 @@ def _minimum(con, pn, qty, branch="1", franchise="MC"):
     con.execute("INSERT INTO rules VALUES (?, ?, ?, ?)", [branch, franchise, pn, qty])
 
 
+def _minimum_with_demand(con, pn, qty, branch="1", franchise="MC"):
+    """Equip minimum plus one month with 1 unit sold, so the minimum applies (spec 5.5 step 6: only with demand).
+    Under the built-in default (3 active months needed) CalcTarget stays 0, so the minimum decides the target."""
+    _minimum(con, pn, qty, branch, franchise)
+    _hist(con, pn, {"2026-09-01": (1, 0)}, branch, franchise)
+
+
 def K(pn, branch="1", franchise="MC"):
     """Key of one output row."""
     return (branch, franchise, pn)
@@ -81,7 +88,8 @@ def test_output_columns():
     assert [d[0] for d in cur_.description] == [
         "Branch", "Franchise", "PartNumber", "RuleId", "RuleName", "DemandBasis", "HistoryMonths",
         "MinActiveMonths", "WeeksOfCover", "WindowDemand", "ActiveMonths", "MonthlyRate", "CalcTarget",
-        "EffectiveMin", "StockingTarget", "RecommendedOrderQty", "SurplusQty", "InboundTransferQty", "Status"]
+        "EffectiveMin", "MinimumIgnored", "StockingTarget", "RecommendedOrderQty", "SurplusQty",
+        "InboundTransferQty", "Status"]
 
 
 def test_scope_excludes_jd_test_franchises_and_zero_cost():
@@ -450,7 +458,7 @@ def test_target_is_larger_of_calc_and_minimum():
 def test_fractional_minimum_rounds_up():
     con = _con()
     _part(con, "FM")
-    _minimum(con, "FM", 2.5)
+    _minimum_with_demand(con, "FM", 2.5)
     r = _run(con)[K("FM")]
     assert r["EffectiveMin"] == pytest.approx(2.5) and r["StockingTarget"] == 3
 
@@ -463,6 +471,59 @@ def test_min_override_beats_equip_minimum_latest_settings_row_wins():
         (1,'1','MC','P3',2,false,NULL,'2026-10-01 10:00'), (2,'1','MC','P3',7,false,NULL,'2026-10-05 10:00')""")
     r = _run(con)[K("P3")]
     assert r["EffectiveMin"] == pytest.approx(7.0) and r["StockingTarget"] == 7
+
+
+def test_equip_minimum_ignored_without_demand():
+    con = _con()
+    _part(con, "STALE", oh=0)
+    _minimum(con, "STALE", 4)
+    r = _run(con)[K("STALE")]
+    assert r["ActiveMonths"] == 0 and r["MinimumIgnored"] is True
+    assert (r["EffectiveMin"], r["StockingTarget"], r["RecommendedOrderQty"]) == (0, 0, 0)
+    assert r["Status"] == "NoRecentActivity"
+
+
+def test_equip_minimum_applies_with_demand_below_min_active_months():
+    con = _con()
+    _part(con, "LIVE", oh=0)
+    _minimum(con, "LIVE", 4)
+    _hist(con, "LIVE", {"2026-09-01": (1, 0)})            # 1 active month < 3: CalcTarget 0
+    r = _run(con)[K("LIVE")]
+    assert (r["ActiveMonths"], r["CalcTarget"], r["MinimumIgnored"]) == (1, 0, False)
+    assert r["EffectiveMin"] == pytest.approx(4.0) and r["StockingTarget"] == 4
+    assert r["RecommendedOrderQty"] == 4 and r["Status"] == "OutOfStock"
+
+
+def test_demand_only_outside_the_rule_window_counts_as_no_demand():
+    con = _con()
+    _part(con, "OLD")
+    _minimum(con, "OLD", 4)
+    _hist(con, "OLD", {"2026-10-01": (5, 0),              # current partial month
+                       "2025-09-01": (5, 0)})             # current - 13, outside the default 12 months
+    r = _run(con)[K("OLD")]
+    assert r["ActiveMonths"] == 0 and r["MinimumIgnored"] is True
+    assert r["EffectiveMin"] == 0 and r["StockingTarget"] == 0
+
+
+def test_min_override_applies_without_demand():
+    con = _con()
+    _part(con, "OVR")
+    _minimum(con, "OVR", 4)
+    con.execute("INSERT INTO settings VALUES (1,'1','MC','OVR',2,false,NULL,'2026-10-01 10:00')")
+    r = _run(con)[K("OVR")]
+    assert r["ActiveMonths"] == 0 and r["MinimumIgnored"] is False
+    assert r["EffectiveMin"] == pytest.approx(2.0) and r["StockingTarget"] == 2
+    assert r["RecommendedOrderQty"] == 2 and r["Status"] == "OutOfStock"
+
+
+@pytest.mark.parametrize("qty", [0, None])
+def test_zero_or_missing_equip_minimum_is_not_flagged(qty):
+    con = _con()
+    _part(con, "Z")
+    _part(con, "NOROW")
+    _minimum(con, "Z", qty)
+    r = _run(con)
+    assert r[K("Z")]["MinimumIgnored"] is False and r[K("NOROW")]["MinimumIgnored"] is False
 
 
 def test_settings_tie_on_modified_breaks_by_id_desc():
@@ -479,7 +540,7 @@ def test_settings_tie_on_modified_breaks_by_id_desc():
 def test_masked_part_orders_nothing():
     con = _con()
     _part(con, "P4")
-    _minimum(con, "P4", 3)
+    _minimum_with_demand(con, "P4", 3)
     con.execute("INSERT INTO settings VALUES (3,'1','MC','P4',NULL,true,'2026-12-31','2026-10-01 10:00')")
     r = _run(con)[K("P4")]
     assert r["StockingTarget"] == 3
@@ -496,7 +557,7 @@ def test_masked_wins_over_no_recent_activity():
 def test_expired_mask_is_ignored():
     con = _con()
     _part(con, "P5")
-    _minimum(con, "P5", 1)
+    _minimum_with_demand(con, "P5", 1)
     con.execute("INSERT INTO settings VALUES (1,'1','MC','P5',NULL,true,'2026-10-19','2026-10-01 10:00')")
     assert _run(con)[K("P5")]["Status"] == "OutOfStock"
 
@@ -504,7 +565,7 @@ def test_expired_mask_is_ignored():
 def test_mask_expiring_today_still_masks():
     con = _con()
     _part(con, "M1")
-    _minimum(con, "M1", 1)
+    _minimum_with_demand(con, "M1", 1)
     con.execute("INSERT INTO settings VALUES (1,'1','MC','M1',NULL,true,'2026-10-20','2026-10-01 10:00')")
     assert _run(con)[K("M1")]["Status"] == "Masked"
 
@@ -533,7 +594,7 @@ def test_zero_weeks_of_cover_with_activity_is_not_stocked():
 def test_ok_status_when_stock_covers_target():
     con = _con()
     _part(con, "OK", oh=3, oo=1)
-    _minimum(con, "OK", 4)
+    _minimum_with_demand(con, "OK", 4)
     r = _run(con)[K("OK")]
     assert r["RecommendedOrderQty"] == 0 and r["Status"] == "OK"
 
@@ -542,7 +603,7 @@ def test_surplus_and_truncated_quantities():
     con = _con()
     _part(con, "P6", oh=10.7, branch="92")
     _part(con, "P7", oh=9.9, branch="92")
-    _minimum(con, "P7", 4, branch="92")
+    _minimum_with_demand(con, "P7", 4, branch="92")
     r = _run(con)
     assert r[K("P6", "92")]["Status"] == "NoRecentActivity"
     assert r[K("P6", "92")]["StockingTarget"] == 0 and r[K("P6", "92")]["SurplusQty"] == 10
@@ -553,7 +614,7 @@ def test_surplus_and_truncated_quantities():
 def test_null_on_hand_counts_as_out_of_stock():
     con = _con()
     _part(con, "P8", oh=None)
-    _minimum(con, "P8", 1)
+    _minimum_with_demand(con, "P8", 1)
     r = _run(con)[K("P8")]
     assert r["RecommendedOrderQty"] == 1 and r["Status"] == "OutOfStock"
 
@@ -562,8 +623,8 @@ def test_fractional_on_hand_is_in_stock_and_on_order_subtracted():
     con = _con()
     _part(con, "F1", oh=0.5)
     _part(con, "F2", oo=1.9)
-    _minimum(con, "F1", 3)
-    _minimum(con, "F2", 3)
+    _minimum_with_demand(con, "F1", 3)
+    _minimum_with_demand(con, "F2", 3)
     r = _run(con)
     assert r[K("F1")]["RecommendedOrderQty"] == 3 and r[K("F1")]["Status"] == "Reorder"
     assert r[K("F2")]["RecommendedOrderQty"] == 2 and r[K("F2")]["Status"] == "OutOfStock"
@@ -573,8 +634,8 @@ def test_negative_on_hand_truncates_toward_zero():
     con = _con()
     _part(con, "N1", oh=-1.5)
     _part(con, "N2", oh=-0.5)
-    _minimum(con, "N1", 1)
-    _minimum(con, "N2", 1)
+    _minimum_with_demand(con, "N1", 1)
+    _minimum_with_demand(con, "N2", 1)
     r = _run(con)
     assert r[K("N1")]["RecommendedOrderQty"] == 2
     assert r[K("N2")]["RecommendedOrderQty"] == 1
@@ -603,11 +664,11 @@ CMP_COLS = [("Branch", "VARCHAR"), ("Franchise", "VARCHAR"), ("PartNumber", "VAR
             ("RuleName", "VARCHAR"), ("DemandBasis", "VARCHAR"), ("HistoryMonths", "INTEGER"),
             ("MinActiveMonths", "INTEGER"), ("WeeksOfCover", "DOUBLE"), ("WindowDemand", "DOUBLE"),
             ("ActiveMonths", "INTEGER"), ("MonthlyRate", "DOUBLE"), ("CalcTarget", "INTEGER"),
-            ("EffectiveMin", "DOUBLE"), ("StockingTarget", "INTEGER"), ("RecommendedOrderQty", "INTEGER"),
+            ("EffectiveMin", "DOUBLE"), ("MinimumIgnored", "BOOLEAN"), ("StockingTarget", "INTEGER"), ("RecommendedOrderQty", "INTEGER"),
             ("SurplusQty", "INTEGER"), ("InboundTransferQty", "DOUBLE"), ("Status", "VARCHAR")]
 BASE = dict(Branch="1", Franchise="MC", PartNumber="A", RuleId=1, RuleName="Default", DemandBasis="UnitsSold",
             HistoryMonths=12, MinActiveMonths=3, WeeksOfCover=6.0, WindowDemand=3.0, ActiveMonths=2,
-            MonthlyRate=0.25, CalcTarget=1, EffectiveMin=0.0, StockingTarget=2, RecommendedOrderQty=1, SurplusQty=0,
+            MonthlyRate=0.25, CalcTarget=1, EffectiveMin=0.0, MinimumIgnored=False, StockingTarget=2, RecommendedOrderQty=1, SurplusQty=0,
             InboundTransferQty=0.0, Status="Reorder")
 
 
@@ -650,6 +711,7 @@ def test_compare_flags_duplicate_keys():
     ("Status", "OK"),
     ("WeeksOfCover", 6.5), ("WeeksOfCover", None), ("WindowDemand", 3.01), ("WindowDemand", None),
     ("MonthlyRate", 0.2501), ("MonthlyRate", None), ("EffectiveMin", 1.0), ("EffectiveMin", None),
+    ("MinimumIgnored", True), ("MinimumIgnored", None),
     ("InboundTransferQty", 0.5), ("InboundTransferQty", None),
 ])
 def test_compare_flags_each_compared_column(col, value):

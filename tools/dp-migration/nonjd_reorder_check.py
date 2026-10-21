@@ -38,12 +38,13 @@ HIST_MONTHS = 60          # Silver_PartSalesHistory depth; HistoryMonths is at m
 # Every output column except the key is compared: these exactly (null-safe), the float ones with a tolerance
 # (NULL against a value is still a mismatch; see _diff_where).
 COMPARE_COLS = ["RuleId", "RuleName", "DemandBasis", "HistoryMonths", "MinActiveMonths", "ActiveMonths",
-                "CalcTarget", "StockingTarget", "RecommendedOrderQty", "SurplusQty", "Status"]
+                "CalcTarget", "MinimumIgnored", "StockingTarget", "RecommendedOrderQty", "SurplusQty", "Status"]
 TOLERANCE_COLS = ["WeeksOfCover", "WindowDemand", "MonthlyRate", "EffectiveMin", "InboundTransferQty"]
 TOLERANCE = 1e-6
 OUTPUT_COLS = ["Branch", "Franchise", "PartNumber", "RuleId", "RuleName", "DemandBasis", "HistoryMonths",
                "MinActiveMonths", "WeeksOfCover", "WindowDemand", "ActiveMonths", "MonthlyRate", "CalcTarget",
-               "EffectiveMin", "StockingTarget", "RecommendedOrderQty", "SurplusQty", "InboundTransferQty", "Status"]
+               "EffectiveMin", "MinimumIgnored", "StockingTarget", "RecommendedOrderQty", "SurplusQty",
+               "InboundTransferQty", "Status"]
 KEYS = "Branch, Franchise, PartNumber"
 
 
@@ -160,7 +161,7 @@ EXPECTED_SQL = f"""
                coalesce(p.hm, {BUILTIN_DEFAULT["HistoryMonths"]}) AS HistoryMonths,
                coalesce(p.mam, {BUILTIN_DEFAULT["MinActiveMonths"]}) AS MinActiveMonths,
                coalesce(p.woc, CAST({BUILTIN_DEFAULT["WeeksOfCover"]} AS DOUBLE)) AS WeeksOfCover,
-               CAST(coalesce(ps.MinOverride, r.MinimumQty, 0) AS DOUBLE) AS EffectiveMin,
+               CAST(ps.MinOverride AS DOUBLE) AS min_override, CAST(r.MinimumQty AS DOUBLE) AS equip_min,
                coalesce(ps.Masked, false) AND (ps.MaskExpires IS NULL OR ps.MaskExpires >= $today) AS masked,
                CAST(coalesce(t.q, 0.0) AS DOUBLE) AS InboundTransferQty
         FROM in_scope_parts sc
@@ -195,12 +196,20 @@ EXPECTED_SQL = f"""
                CAST(coalesce(w.active, 0) AS INTEGER) AS ActiveMonths
         FROM part_inputs pi LEFT JOIN window_demand w USING (Branch, Franchise, PartNumber)
     ),
+    -- step 6: EffectiveMin = MinOverride, else Equip's minimum only when the part had demand in its rule window,
+    -- else 0. MinimumIgnored flags the stale Equip minimums this drops (never NULL).
+    effective_min AS (
+        SELECT *,
+               coalesce(min_override, CASE WHEN ActiveMonths > 0 THEN equip_min END, 0.0) AS EffectiveMin,
+               min_override IS NULL AND coalesce(equip_min, 0) > 0 AND ActiveMonths = 0 AS MinimumIgnored
+        FROM demand
+    ),
     -- step 5: CalcTarget, 0 below MinActiveMonths
     calc_target AS (
         SELECT *, CASE WHEN ActiveMonths >= MinActiveMonths
                        THEN CAST(ceil(round(MonthlyRate * WeeksOfCover * 12 / 52, 9)) AS INTEGER)
                        ELSE 0 END AS CalcTarget
-        FROM (SELECT *, WindowDemand / HistoryMonths AS MonthlyRate FROM demand)
+        FROM (SELECT *, WindowDemand / HistoryMonths AS MonthlyRate FROM effective_min)
     ),
     -- step 6: StockingTarget = max(CalcTarget, EffectiveMin rounded up)
     stocking_target AS (
