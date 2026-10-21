@@ -115,7 +115,7 @@ Dealer group code is the useful classifier for non-JD parts: it's on 63% of acti
 3. WindowDemand = total units sold (or requests) in the window, treated as 0 if negative. ActiveMonths = months in the window with demand > 0.
 4. MonthlyRate = WindowDemand ÷ HistoryMonths (calendar months, not active months; this is what fixes the one-request-gets-4 problem).
 5. CalcTarget = ceil(round(MonthlyRate × WeeksOfCover × 12 ÷ 52, 9)) when ActiveMonths ≥ MinActiveMonths, else 0 (the 9-decimal rounding only removes floating-point noise, so 2.0000000001 stays 2).
-6. StockingTarget = max(CalcTarget, ceil(EffectiveMin)), where EffectiveMin = the app's MinOverride, else Equip's minimum, else 0.
+6. StockingTarget = max(CalcTarget, ceil(EffectiveMin)), where EffectiveMin = the app's MinOverride; else Equip's minimum **only when ActiveMonths > 0**; else 0. (Brian, 2026-10-21: stale Equip minimums on parts with no demand drove ~$3.8M of the first $4.73M total.) `MinimumIgnored` = true when there's no MinOverride, Equip's minimum is > 0, and ActiveMonths = 0; the app shows these as a cleanup list ("Equip minimum N ignored: no demand in the last HistoryMonths months").
 7. RecommendedOrderQty = 0 when masked, else max(0, StockingTarget − on hand − on order), with on hand and on order truncated toward zero, as before. A not-stocked part with negative on hand (sold but not on the shelf) still gets an order back up to 0; Ben may want to revisit this when tuning.
 8. SurplusQty = max(0, truncated on hand − StockingTarget).
 9. Status: Masked; else when StockingTarget = 0, NoRecentActivity (ActiveMonths = 0) or NotStocked (had demand in the window but the target came out 0: usually below MinActiveMonths, also WeeksOfCover 0 or net demand ≤ 0); else OutOfStock (order > 0 and on hand ≤ 0), Reorder (order > 0) or OK.
@@ -191,6 +191,16 @@ The "Transfers" nav item in the mockup belongs to the separate driver Transfer A
 
 - New Entra app registration (SPA), separate from Parts Availability's, with assignment required. Assigned to a group holding the four users plus Brian.
 - Delegated Graph permissions: read the files library, read and write the three lists.
+
+### 8.5 Live rules and a "try it" panel (Brian, 2026-10-21)
+
+Ben expects to change the rules inside the app and see the effect right away; scenarios change across too many factors to define up front. So:
+
+1. **Live rules.** On load, the app reads `NonJD_OrderRules` and `NonJD_PartSettings` from SharePoint (Graph, the user's own sign-in) and computes the suggestions in the browser from the published files (the history file holds the 60 months; the reorder file holds stock, minimums, dealer group code, franchise). Rule and minimum-override changes apply on the next load, not the next morning. Stock levels stay at the morning snapshot.
+2. **"Try it" panel.** Ben adjusts a rule's settings and sees the branch's suggestions and totals change immediately without saving; **Save** writes the rule to the list.
+3. **Gold stays the checked baseline.** The morning Gold run is still verified daily against the reference check and feeds anything outside the app. Where the app's live result differs from the morning figure, the app shows a marker so it's clear a rule changed since then.
+4. **One calculation, three copies, kept honest.** The browser calculation is tested against the same cases as `nonjd_reorder_check.py` (shared JSON fixtures), and the app compares its live result to Gold's published figures for the same rules; a disagreement is flagged, not hidden.
+5. **Who edits rules.** Anyone with Edit on the list can change rules for everyone. If only Ben should, restrict `NonJD_OrderRules` to him; the other lists stay open to all four.
 
 ## 9. Hosting
 
