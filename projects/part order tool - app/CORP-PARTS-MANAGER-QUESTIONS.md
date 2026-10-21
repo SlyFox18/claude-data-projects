@@ -14,7 +14,10 @@ each one, the alternatives are listed so Ben can pick.
 **W1. One-Time Order, "Avg / mo".** Chosen: the method changes the order quantity.
 "Total" orders the whole period's units sold; "Avg / mo" orders one month's worth (the
 monthly average). Both are multiplied by the loading factor, then on hand and on order are
-subtracted.
+subtracted. With "Avg / mo" the factor is labelled "Months of cover" (3 = three months'
+worth), like PRISM's "Use Monthly Average".
+- **The one question for Ben:** with "Avg / mo", should the factor mean months of cover? If
+  not, Option B applies.
 - Option B: "Avg / mo" is only a display column, and the quantity always uses the total.
   This is how the old Power App worked.
 
