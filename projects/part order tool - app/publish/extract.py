@@ -18,7 +18,8 @@ SELECT Branch AS branch, Franchise AS franchise, PartNumber AS partNumber, Descr
        RuleName AS ruleName, DemandBasis AS demandBasis, HistoryMonths AS historyMonths,
        MinActiveMonths AS minActiveMonths, WeeksOfCover AS weeksOfCover, WindowDemand AS windowDemand,
        ActiveMonths AS activeMonths, MonthlyRate AS monthlyRate, CalcTarget AS calcTarget,
-       EffectiveMin AS effectiveMin, StockingTarget AS target,
+       EffectiveMin AS effectiveMin, MinimumIgnored AS minimumIgnored,
+StockingTarget AS target,
        RecommendedOrderQty AS recommendedQty, EstOrderValue AS estValue, SurplusQty AS surplusQty,
        InboundTransferQty AS inboundQty, Status AS status
 FROM delta_scan('{path}')

@@ -69,7 +69,7 @@ unsorted for reading); `.json.gz` files are gzip-compressed, `_meta.json` is pla
 - Nulls: the `sales` / `requests` arrays never contain null (they use 0). In a reorder part, only these fields can be
   null: `description`, `productGroup`, `minimumQty`, `maximumQty`, `reorderCode`, `activityCode`, `minOverride` and
   `maskExpires`. Every other reorder field is never null: blank text arrives as `""` (`bin`, `superTo`, `superFrom`,
-  `dealerGroupCode`), quantities and prices are 0 when missing, and `target`, `ruleName` and the other rule fields are
+  `dealerGroupCode`), quantities and prices are 0 when missing, and `target`, `minimumIgnored`, `ruleName` and the other rule fields are
   always filled (Gold fills the built-in default rule when no rule matches). In the other files, any field may be null.
 - Dates are ISO strings (`2026-10-20`). Datetimes are ISO UTC with `+00:00` and may include fractional seconds.
 - Branch codes are Equip's text codes (e.g. `"1"`, `"92"`), **trimmed**. The `branch` value inside every file is that
@@ -89,8 +89,8 @@ publish time. `branches` is sorted numerically, then alphabetically; `name` fall
 not in `dim_BranchLocation`. `counts.parts` is the total reorder rows, `historyRows` the rows read from the history table.
 
 ### `reorder_<branch>.json.gz`
-`{"branch", "dataAsOf", "parts": [ ... ]}`, one object per part in scope at that branch. Each part has the 42 fields
-below: `extract.REORDER_SQL` selects 43 columns, and `branch` is the file-level key rather than a per-part field. They
+`{"branch", "dataAsOf", "parts": [ ... ]}`, one object per part in scope at that branch. Each part has the 43 fields
+below: `extract.REORDER_SQL` selects 44 columns, and `branch` is the file-level key rather than a per-part field. They
 are renamed as shown. Gold's `RuleId` and `BuiltAtUtc` are not published (users see the rule name, not its list id).
 
 | Field | Meaning |
@@ -115,7 +115,8 @@ are renamed as shown. Gold's `RuleId` and `BuiltAtUtc` are not published (users 
 | activeMonths | Months in the window with demand > 0 |
 | monthlyRate | windowDemand / historyMonths (calendar months, not active months) |
 | calcTarget | ceil(round(monthlyRate x weeksOfCover x 12 / 52, 9)) when activeMonths >= minActiveMonths, else 0; the rounding only removes floating-point noise. Display it; don't recompute it in the app |
-| effectiveMin | The app's min override, else Equip's minimum, else 0 |
+| effectiveMin | The app's min override (always applies); else Equip's minimum only when activeMonths > 0; else 0 |
+| minimumIgnored | Boolean, never null: true when there is no min override, Equip's minimum is > 0 and activeMonths = 0 (a stale minimum that no longer drives an order) |
 | target | Stocking target = max(calcTarget, effectiveMin rounded up). Never null; 0 when the part isn't stocked |
 | recommendedQty | 0 when masked; otherwise max(0, target - onHand - onOrder) with onHand and onOrder truncated toward zero; back orders are not subtracted. Can be > 0 with status `NoRecentActivity` / `NotStocked` when onHand + onOrder is negative (it orders back up to 0) |
 | estValue | recommendedQty at cost, rounded to 2 decimals |
@@ -131,8 +132,10 @@ Ben: `projects/part order tool - app/REORDER-RULES.md` (written in Task 21).
 Decide in this order, first match wins:
 
 1. `status` = `Masked`: "Masked, so no order is suggested" (add "until `<maskExpires>`" when set).
-2. `status` = `NoRecentActivity`: "No demand in the last `<historyMonths>` months, so nothing is stocked." Then the
-   negative-stock sentence below, if it applies.
+2. `status` = `NoRecentActivity`: "No demand in the last `<historyMonths>` months, so nothing is stocked." If
+   `minimumIgnored` is true, add "Equip minimum `<minimumQty>` ignored: no demand in the last `<historyMonths>`
+   months." Then the negative-stock sentence below, if it applies. The app can also list every part with
+   `minimumIgnored` true as a cleanup list for Ben (stale Equip minimums).
 3. `status` = `NotStocked` (demand in the window, target 0):
    - `activeMonths` < `minActiveMonths`: "`<ruleName>`: only `<activeMonths>` of `<historyMonths>` months had demand; this rule needs `<minActiveMonths>`, so nothing is stocked."
    - else `weeksOfCover` = 0: "`<ruleName>` keeps 0 weeks of cover, so nothing is stocked."
@@ -152,10 +155,10 @@ Worked examples (arithmetic: calcTarget = ceil(monthlyRate x weeksOfCover x 12 /
 - Requests (a made-up rule needing 3 active months, with `activeMonths` 4): "Stripper belts: requested 6 times in 12
   months (0.5 a month) x 6 weeks of cover gives a target of 1. On hand 0, on order 0, so order 1." (0.5 x 6 x 12 / 52
   = 0.69, rounds up to 1.)
-- Minimum wins, rule gives a target (`activeMonths` 4, rule needs 3): "Default: sold 4 in 12 months (0.33 a month) x 6
+- Minimum wins, rule gives a target (a minimum applies because the part had demand; `activeMonths` 4, rule needs 3): "Default: sold 4 in 12 months (0.33 a month) x 6
   weeks of cover gives a target of 1; a minimum of 3 sets the target. On hand 1, on order 0, so order 2." (0.33 x 6 x
   12 / 52 = 0.46, rounds up to 1; target 3; 3 - 1 = 2.)
-- Minimum wins, rule gives 0 (`activeMonths` 2, rule needs 3): "Only 2 of 12 months had demand (this rule needs 3), so
+- Minimum wins, rule gives 0 (`activeMonths` 2, so the part had demand and the minimum applies, rule needs 3): "Only 2 of 12 months had demand (this rule needs 3), so
   the rule gives 0; a minimum of 3 sets the target. On hand 1, on order 0, so order 2."
 - NotStocked: "Default: only 2 of 12 months had demand; this rule needs 3, so nothing is stocked."
 
