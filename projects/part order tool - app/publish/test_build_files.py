@@ -172,3 +172,9 @@ def test_rules_empty_still_written_and_deterministic(out):
     assert _read(out, "rules.json.gz")["rules"] == []
     h2, _ = _build(rules=[])
     assert h1["rules.json.gz"] == h2["rules.json.gz"]
+
+
+def test_rules_row_missing_key_raises(out):
+    bad = [{k: v for k, v in RULES[0].items() if k != "weeksOfCover"}]
+    with pytest.raises(ValueError, match="weeksOfCover"):
+        _build(rules=bad)

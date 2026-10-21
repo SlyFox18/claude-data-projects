@@ -74,6 +74,10 @@ def build(reorder: list, history_for, transfers: list, names: dict, data_as_of: 
     _write("surplus.json.gz", _bytes({"dataAsOf": data_as_of, "parts": surplus}), hashes)
     _write("transfers.json.gz", _bytes({"dataAsOf": data_as_of, "lines": [_clean(t) for t in transfers]}), hashes)
 
+    for r in rules:
+        missing = [k for k in RULE_KEYS if k not in r]
+        if missing:
+            raise ValueError(f"rules row {r.get('id')!r} is missing key(s) {', '.join(missing)}")
     _write("rules.json.gz", _bytes({"dataAsOf": data_as_of,
                                     "rules": [_clean({k: r[k] for k in RULE_KEYS})
                                               for r in sorted(rules, key=lambda r: r["id"])]}), hashes)

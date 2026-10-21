@@ -175,3 +175,15 @@ def test_empty_rules_still_published(env, tmp_path):
     import gzip
     d = json.loads(gzip.decompress((tmp_path / "out" / "rules.json.gz").read_bytes()))
     assert d["rules"] == []
+
+
+def test_missing_rules_table_is_clear_error(env, monkeypatch):
+    def boom(con):
+        raise IOError("no such table\nsecond line")
+    monkeypatch.setattr(extract, "rules", boom)
+    with pytest.raises(RuntimeError, match="NonJD_OrderRules") as ei:
+        run_publish.main([])
+    assert "second line" not in str(ei.value)
+    assert isinstance(ei.value.__cause__, IOError)
+    assert env.uploaded == []
+    assert not env.state_file.exists()

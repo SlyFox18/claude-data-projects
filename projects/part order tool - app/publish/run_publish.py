@@ -102,7 +102,13 @@ def _publish(args) -> int:
     reorder = extract.reorder(con)
     history_rows = extract.stage_history(con)     # copied into a DuckDB temp table; built one branch at a time
     transfers, names = extract.transfers(con), extract.branch_names(con)
-    rules = extract.rules(con)
+    try:
+        rules = extract.rules(con)
+    except Exception as ex:
+        first = (str(ex).splitlines() or [""])[0]
+        raise RuntimeError(f"NonJD_OrderRules not found or unreadable in the {config.SOURCE} DP_Presentation "
+                           f"lakehouse ({type(ex).__name__}: {first}); deploy the rules dataflow and shortcut "
+                           f"before publishing") from ex
     if extract.built_at(con) != built:
         raise RuntimeError("Fact_NonJD_Reorder was rewritten while extracting; rerun the publish")
     hashes, branches = build_files.build(reorder, lambda b: extract.history_for(con, b), transfers, names,
