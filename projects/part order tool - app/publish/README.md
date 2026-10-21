@@ -31,7 +31,7 @@ What decides whether to publish:
 - It refuses (exit 1) if `Fact_NonJD_Reorder.BuiltAtUtc` is outside that run, or if the table changes during extraction.
 
 What gets uploaded:
-- The reorder, surplus and transfers files are re-uploaded on every new DP run (they embed `dataAsOf`, so their
+- The reorder, surplus, transfers and rules files are re-uploaded on every new DP run (they embed `dataAsOf`, so their
   content always changes). History files are uploaded only when their content changed. `_meta.json` goes last.
 - If `NONJD_SOURCE` changes, every file is re-sent.
 - Files over 4 MB fail the upload (there is no chunked upload yet).
@@ -177,6 +177,14 @@ months with no activity are `0`. Only parts that have history rows appear; parts
 ### `surplus.json.gz`
 `{"dataAsOf", "parts": [{"branch", "franchise", "partNumber", "onHand", "target", "surplusQty", "status"}]}`, every
 branch, only parts with surplusQty > 0. Used for "store N has extra" hints.
+
+### `rules.json.gz`
+`{"dataAsOf", "rules": [{"id", "ruleName", "priority", "active", "franchise", "dealerGroupCode", "branch",
+"startMonth", "endMonth", "historyMonths", "minActiveMonths", "weeksOfCover", "demandBasis"}]}`, ordered by `id`
+(`Modified` is left out). This is the rules list as the DP run read it at publish time; the app uses it only to check
+its own engine against Gold. If the rules dataflow is re-run between Gold and the publish, it can differ from what
+Gold used, so the app reports rather than blocks. An empty list is written as `"rules": []`. Each publish uploads
+it (it embeds `dataAsOf`), before `_meta.json`, like the other per-run files.
 
 ### `transfers.json.gz`
 `{"dataAsOf", "lines": [{"toBranch", "fromBranch", "partNumber", "ticket", "line", "orderQty", "shippedQty",

@@ -10,6 +10,8 @@ from datetime import date
 import publish_logic as pl
 
 OUT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "output")
+RULE_KEYS = ("id", "ruleName", "priority", "active", "franchise", "dealerGroupCode", "branch", "startMonth",
+             "endMonth", "historyMonths", "minActiveMonths", "weeksOfCover", "demandBasis")
 _SAFE = re.compile(r"^[A-Za-z0-9_-]+$")
 
 
@@ -37,9 +39,10 @@ def _clean(row: dict) -> dict:
 
 
 def build(reorder: list, history_for, transfers: list, names: dict, data_as_of: str,
-          current_month: date) -> tuple:
+          current_month: date, rules: list) -> tuple:
     """Write all data files into OUT_DIR (not _meta.json; see write_meta).
     history_for(branch_key) -> that branch's history rows (called once per branch).
+    rules: NonJD_OrderRules rows (camelCase keys), written as rules.json.gz for the app's engine check.
     Returns ({file name: sha256}, [{"branch", "name", "parts"}] for _meta.json)."""
     os.makedirs(OUT_DIR, exist_ok=True)
     for f in os.listdir(OUT_DIR):
@@ -70,6 +73,10 @@ def build(reorder: list, history_for, transfers: list, names: dict, data_as_of: 
 
     _write("surplus.json.gz", _bytes({"dataAsOf": data_as_of, "parts": surplus}), hashes)
     _write("transfers.json.gz", _bytes({"dataAsOf": data_as_of, "lines": [_clean(t) for t in transfers]}), hashes)
+
+    _write("rules.json.gz", _bytes({"dataAsOf": data_as_of,
+                                    "rules": [_clean({k: r[k] for k in RULE_KEYS})
+                                              for r in sorted(rules, key=lambda r: r["id"])]}), hashes)
 
     branches = [{"branch": b, "name": names.get(b, b), "parts": len(by_branch[b])} for b in keys]
     return hashes, branches

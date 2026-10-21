@@ -14,7 +14,7 @@ END = datetime(2026, 10, 20, 10, 30, 0)
 BUILT = datetime(2026, 10, 20, 10, 20, 0)
 
 DATA_FILES = {"reorder_01.json.gz", "history_01.json.gz", "reorder_02.json.gz", "history_02.json.gz",
-              "surplus.json.gz", "transfers.json.gz"}
+              "surplus.json.gz", "transfers.json.gz", "rules.json.gz"}
 
 
 class Env:
@@ -24,6 +24,9 @@ class Env:
         self.built = [BUILT]  # successive built_at results; the last one repeats
         self.end = END
         self.on_hand_02 = 0
+        self.rules = [{"id": 1, "ruleName": "Default", "priority": 99.0, "active": True, "franchise": None,
+                       "dealerGroupCode": None, "branch": None, "startMonth": None, "endMonth": None,
+                       "historyMonths": 12, "minActiveMonths": 3, "weeksOfCover": 4.0, "demandBasis": "Sales"}]
         self.fail_on = None   # upload call number (1-based) that raises
 
 
@@ -50,6 +53,7 @@ def env(tmp_path, monkeypatch):
     monkeypatch.setattr(extract, "stage_history", lambda con: 1)
     monkeypatch.setattr(extract, "history_for", lambda con, b: [
         {"franchise": "A", "partNumber": "P1", "monthOffset": 1, "salesQty": 1, "requestCount": 1}])
+    monkeypatch.setattr(extract, "rules", lambda con: e.rules)
     monkeypatch.setattr(extract, "transfers", lambda con: [])
     monkeypatch.setattr(extract, "branch_names", lambda con: {"01": "One", "02": "Two"})
     monkeypatch.setattr(upload, "token", lambda: "tok")
@@ -110,7 +114,7 @@ def test_data_change_uploads_only_changed_files(env):
     assert run_publish.main([]) == 0
     # reorder/surplus/transfers embed dataAsOf so they change with every run; history files do not
     assert set(env.uploaded[:-1]) == {"reorder_01.json.gz", "reorder_02.json.gz", "surplus.json.gz",
-                                      "transfers.json.gz"}
+                                      "transfers.json.gz", "rules.json.gz"}
     assert env.uploaded[-1] == "_meta.json"
 
 
@@ -156,3 +160,18 @@ def test_table_rewritten_mid_extract_raises(env):
         run_publish.main([])
     assert env.uploaded == []
     assert not env.state_file.exists()
+
+
+def test_rules_uploaded_before_meta(env):
+    run_publish.main([])
+    assert env.uploaded.index("rules.json.gz") < env.uploaded.index("_meta.json")
+    assert len(env.uploaded) == len(DATA_FILES) + 1
+
+
+def test_empty_rules_still_published(env, tmp_path):
+    env.rules = []
+    assert run_publish.main([]) == 0
+    assert "rules.json.gz" in env.uploaded
+    import gzip
+    d = json.loads(gzip.decompress((tmp_path / "out" / "rules.json.gz").read_bytes()))
+    assert d["rules"] == []

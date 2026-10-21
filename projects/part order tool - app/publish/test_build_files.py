@@ -43,14 +43,25 @@ def _hist(b):
     return [h for h in HISTORY if h["branch"].strip() == b]
 
 
-def _build(reorder=None):
-    return build_files.build(REORDER if reorder is None else reorder, _hist, TRANSFERS, NAMES, AS_OF, MONTH)
+RULES = [
+    {"id": 2, "ruleName": "B", "priority": 2.0, "active": True, "franchise": None, "dealerGroupCode": "770",
+     "branch": "1", "startMonth": float("nan"), "endMonth": None, "historyMonths": 12, "minActiveMonths": Decimal("3"),
+     "weeksOfCover": 6.5, "demandBasis": "Sales", "extra": "dropped"},
+    {"id": 1, "ruleName": "A", "priority": 1.0, "active": False, "franchise": "A", "dealerGroupCode": None,
+     "branch": None, "startMonth": None, "endMonth": None, "historyMonths": 6, "minActiveMonths": 2,
+     "weeksOfCover": 4.0, "demandBasis": "Requests"},
+]
+
+
+def _build(reorder=None, rules=None):
+    return build_files.build(REORDER if reorder is None else reorder, _hist, TRANSFERS, NAMES, AS_OF, MONTH,
+                             RULES if rules is None else rules)
 
 
 def test_files_and_branches(out):
     hashes, branches = _build()
     assert set(hashes) == {"reorder_1.json.gz", "history_1.json.gz", "reorder_92.json.gz",
-                           "history_92.json.gz", "surplus.json.gz", "transfers.json.gz"}
+                           "history_92.json.gz", "surplus.json.gz", "transfers.json.gz", "rules.json.gz"}
     assert sorted(os.listdir(out)) == sorted(hashes)
     assert [b["branch"] for b in branches] == ["1", "92"]
     assert branches[0]["name"] == "Lubbock"
@@ -138,3 +149,26 @@ def test_branch_key_collision_raises(out):
 def test_unsafe_branch_raises(out):
     with pytest.raises(ValueError):
         _build([_row("../x", "A", 0)])
+
+
+def test_rules_file(out):
+    hashes, _ = _build()
+    assert "rules.json.gz" in hashes
+    d = _read(out, "rules.json.gz")
+    assert d["dataAsOf"] == AS_OF
+    assert [r["id"] for r in d["rules"]] == [1, 2]
+    keys = {"id", "ruleName", "priority", "active", "franchise", "dealerGroupCode", "branch", "startMonth",
+            "endMonth", "historyMonths", "minActiveMonths", "weeksOfCover", "demandBasis"}
+    assert all(set(r) == keys for r in d["rules"])
+    r2 = d["rules"][1]
+    assert r2["priority"] == 2 and isinstance(r2["priority"], int)
+    assert r2["minActiveMonths"] == 3 and isinstance(r2["minActiveMonths"], int)
+    assert r2["weeksOfCover"] == 6.5
+    assert r2["startMonth"] is None and r2["active"] is True
+
+
+def test_rules_empty_still_written_and_deterministic(out):
+    h1, _ = _build(rules=[])
+    assert _read(out, "rules.json.gz")["rules"] == []
+    h2, _ = _build(rules=[])
+    assert h1["rules.json.gz"] == h2["rules.json.gz"]

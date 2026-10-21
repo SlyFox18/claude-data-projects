@@ -67,6 +67,15 @@ def reorder(con) -> list:
     return _dicts(con.execute(REORDER_SQL.format(path=config.table_path("Fact_NonJD_Reorder"))))
 
 
+def rules(con) -> list:
+    return _dicts(con.execute(f"""
+        SELECT Id AS id, RuleName AS ruleName, Priority AS priority, Active AS active, Franchise AS franchise,
+               DealerGroupCode AS dealerGroupCode, Branch AS branch, StartMonth AS startMonth, EndMonth AS endMonth,
+               HistoryMonths AS historyMonths, MinActiveMonths AS minActiveMonths, WeeksOfCover AS weeksOfCover,
+               DemandBasis AS demandBasis
+        FROM delta_scan('{config.table_path('NonJD_OrderRules')}') ORDER BY Id"""))
+
+
 def stage_history(con) -> int:
     """Copy the history table into a DuckDB temp table once; returns its row count."""
     con.execute(f"""CREATE OR REPLACE TEMP TABLE hist AS
