@@ -5,7 +5,10 @@
 > **Progress:**
 > - B1 DONE 2026-10-21 (Brian, verified): app registration "Non-JD Order Tool", client ID `c855335b-f38e-4b23-b642-5d930d602b0e`, tenant `8a02a2b8-0092-4de5-8f76-4700d099feb1`, SPA redirect URIs `http://localhost:5173` and `https://10.110.100.13:8443`; Graph **delegated** User.Read + Sites.ReadWrite.All with admin consent for all users (no application permissions); assignment required, assigned Ben Hill, Shannon Brooks, Barry Sheets, Curt Summers, Brian Fox.
 > - B2 DONE (data-projects `774e318b`, `ee9b63b3`, 63 publish tests): rules.json.gz snapshot; clear error if NonJD_OrderRules is missing. Gateway PC needs a `git pull` to start publishing it.
-> - B3 scaffold pushed (`a14ba2b`); review fixes in progress (no fake user in production builds, strict TS).
+> - B3 DONE (`a14ba2b`, `7f51591`): no fake user possible in a production build (graph default in PROD, mock blocked off-localhost, mock code compiled out of graph builds), strict TS.
+> - B4 engine (`8a5dfb4`, `b1a3f04`): 0 mismatches vs the DuckDB reference over 22,532 fuzzed parts; summation noise snapped; re-review pending.
+> - B5 DONE (`af5c5e3`, `b59e526`): field names and Graph URLs confirmed live; data calls throw AuthRequiredError, UI calls `reauthenticate()` from a button.
+> - **Carry-overs:** B7 shows a friendly "can't reach SharePoint" for network failures and a "Sign in again" button for AuthRequiredError. B8 saves one MaskExpires and reads it back (raw Graph value and the Dev dataflow's value) to confirm the noon-UTC write. B9's rule form requires Priority, HistoryMonths, MinActiveMonths, WeeksOfCover and DemandBasis on every rule (create omits empties, so SharePoint defaults would apply). If the orders list grows, filter by the indexed Branch.
 >
 > Plan written 2026-10-21. Repo created: https://github.com/SlyFox18/nonjd-order-app (private, branches `main` and `dev`), local clone `C:\Users\bfox\Documents\Git-Projects\nonjd-order-app`.
 
