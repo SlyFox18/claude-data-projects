@@ -6,6 +6,42 @@ and refinements to the One Time Order wizard and recommendation logic.
 
 ---
 
+## Web app: choices made for now (2026-10-21)
+
+Ben was out, so these were decided to keep the build moving. Each is easy to change. For
+each one, the alternatives are listed so Ben can pick.
+
+**W1. One-Time Order, "Avg / mo".** Chosen: the method changes the order quantity.
+"Total" orders the whole period's units sold; "Avg / mo" orders one month's worth (the
+monthly average). Both are multiplied by the loading factor, then on hand and on order are
+subtracted.
+- Option B: "Avg / mo" is only a display column, and the quantity always uses the total.
+  This is how the old Power App worked.
+
+**W2. One-Time Order, minimum sales and minimum demands.** Chosen: both compare the plain
+totals over the chosen months, before the loading factor. A part below either minimum is
+left off.
+- Option B: apply the loading factor to the totals before comparing them. The old app did
+  this for sales but not for demands.
+- Option C: compare against the monthly average instead of the total.
+
+**W3. One-Time Order, masked parts** (relates to question 11 below). Chosen: masked parts
+are listed and marked "Masked", but start **unticked**, so they're only ordered if someone
+ticks them.
+- Option B: leave masked parts off entirely.
+- Option C: list them ticked like any other part.
+
+**W4. Settings stored but not used yet.** EOQ, Force Non-Spiking and Pre-Approved Rule can
+be saved on a part, but the calculation ignores them. Pre-Approved Rule is free text until
+Ben gives the real choices (question 12 below).
+
+**W5. Order export (Shannon).** Each order exports as a CSV file. The file starts with an
+invisible marker so Excel shows special characters correctly. Some vendor import tools
+can't read that marker, and it can be switched off. Part numbers are written exactly as
+stored. Excel drops leading zeros only when it opens a CSV directly.
+
+---
+
 ## Stale Parts & Activity Thresholds
 
 1. Parts with no activity for several years are still showing up in reorder recommendations
@@ -89,4 +125,4 @@ and refinements to the One Time Order wizard and recommendation logic.
 
 ---
 
-*Last updated: 2026-06-03*
+*Last updated: 2026-10-21 (web app choices W1–W5 added)*
