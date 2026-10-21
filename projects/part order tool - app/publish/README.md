@@ -95,7 +95,8 @@ are renamed as shown. Gold's `RuleId` and `BuiltAtUtc` are not published (users 
 
 | Field | Meaning |
 |---|---|
-| franchise, partNumber, description, bin, vendorCode, productGroup, superTo, superFrom | Part identity |
+| franchise, partNumber, description, bin, productGroup, superTo, superFrom | Part identity (text) |
+| vendorCode | Equip vendor number (integer; 0 when missing) |
 | onHand, onOrder, backOrder | Equip quantities |
 | cost, sellPrice, listPrice | Prices |
 | minimumQty, maximumQty, reorderCode, activityCode | Equip stocking fields |
