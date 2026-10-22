@@ -46,6 +46,30 @@ always means order 0, and the part shows as no recent activity or not stocked, a
 now. Not changed yet; waiting for Ben.
 - Option B: keep it as is (negative stock is "owed" and gets replaced).
 
+**W7. Which branches belong in the tool?** Today every branch with non-JD parts is
+included. Brian's suggestions:
+- Leave off Branch 12, the combine vault, which isn't a physical store.
+- Probably leave off Branches 5 and 97.
+- 4B and 93C are sub-branches. Should they be shown on their own or rolled into 4 and 93?
+
+**W8. Several branches at once.** Today you work on one branch at a time, and an order is
+one branch and one franchise. Is it useful to see or order across several branches
+together (e.g. all of a region)? If so, how should the order be split?
+
+**W9. Transfers.**
+- (a) A "Suggested transfers" page. Example: TY15949OZ needs reordering at one branch
+  while another branch has surplus. The tool could suggest moving it instead of buying it.
+- (b) Show pending transfers into the selected branch on Home.
+
+Today inbound transfers are shown on each part but don't reduce the suggested quantity.
+
+**W10. Deleting rules.** Today a rule can only be switched off (Active), not deleted, so
+the history of what was tried stays visible. Should users be able to delete rules?
+
+**W11. Equip minimums.** The Cleanup page lists Equip minimums the tool ignores because the
+part had no demand. Are those minimums used in Equip/PRISM today, who sets them, and should
+they be cleaned up in Equip?
+
 **W5. Order export (Shannon).** Each order exports as a CSV file. The file starts with an
 invisible marker so Excel shows special characters correctly. Some vendor import tools
 can't read that marker, and it can be switched off. Part numbers are written exactly as
