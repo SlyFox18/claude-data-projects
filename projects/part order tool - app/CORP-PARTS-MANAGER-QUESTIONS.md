@@ -38,6 +38,14 @@ ticks them. "Select all" skips masked parts too; each one has to be ticked by ha
 be saved on a part, but the calculation ignores them. Pre-Approved Rule is free text until
 Ben gives the real choices (question 12 below).
 
+**W6. Parts with no target but negative stock (found in testing 2026-10-22).** Today a part
+whose target is 0 (no recent activity, or not stocked) still gets an order if Equip shows
+negative on hand or negative on order. Example: Branch 1, AM 9446, on order −1, so the tool
+suggests ordering 1 ($472.75) for a part with no recent demand. Proposed: a target of 0
+always means order 0, and the part shows as no recent activity or not stocked, as it does
+now. Not changed yet; waiting for Ben.
+- Option B: keep it as is (negative stock is "owed" and gets replaced).
+
 **W5. Order export (Shannon).** Each order exports as a CSV file. The file starts with an
 invisible marker so Excel shows special characters correctly. Some vendor import tools
 can't read that marker, and it can be switched off. Part numbers are written exactly as
