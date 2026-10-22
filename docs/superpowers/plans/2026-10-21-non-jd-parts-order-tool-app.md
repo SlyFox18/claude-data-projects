@@ -20,7 +20,17 @@
 > - **Found in testing:**
 >   - Gold, the reference and the app order a part whose target is 0 when Equip shows negative stock or on-order (Branch 1 AM 9446: on order −1 → order 1, $472.75, status NoRecentActivity). Proposed: target 0 means order 0. The change must go into all three together (question W6 for Ben).
 >   - The Reorder banners repeat the "1 part differs… marked Changed" sentence when "can't double-check" and "settings changed" both show.
->   - The Gateway PC still needs `git pull` to publish `rules.json.gz`.
+>   - The Gateway PC still needs `git pull` to publish `rules.json.gz`. (Done 2026-10-22.)
+> - 2026-10-22, before the walkthrough:
+>   - **Data:** Dev refreshed (mode all, 101 items OK) and published by hand from the Gateway PC (now publishing `rules.json.gz`). The parity check runs with no banners.
+>   - **Brian's UX test:** results are in app `docs/UX-TEST-PLAN.md`. The fixes are deployed to Fedora at `786fb58` and Brian retested them.
+>     - Shared sign-in across tabs, using localStorage (single-user PCs, confirmed by Brian).
+>     - Deep links survive sign-in; unknown addresses show Page not found.
+>     - Prompts before clearing a selection and before leaving an unsaved Rules draft (data router + useBlocker).
+>     - Rolling toggles off; Surplus is explained.
+>     - Signing out in one tab signs out every tab.
+>   - **Still open:** Esc on an order line quantity still doesn't undo in the real browser. Brian isn't concerned; look at it in the round after Ben's feedback.
+>   - New questions W7–W11 added for Ben.
 > - **Carry-overs:** B7 shows a friendly "can't reach SharePoint" for network failures and a "Sign in again" button for AuthRequiredError. B9's rule form requires Priority, HistoryMonths, MinActiveMonths, WeeksOfCover and DemandBasis on every rule (create omits empties, so SharePoint defaults would apply). If the orders list grows, filter by the indexed Branch. B10's Create order lists or confirms exactly the parts it will save, including selected parts hidden by the current filter. Once Ben has real rules active (and a mask and an override exist in Dev), rerun the Gold notebook, `make_engine_fixture.py` and `scripts/parity-full.ts` so parity covers rule choice and masking against Gold.
 >
 > Plan written 2026-10-21. Repo created: https://github.com/SlyFox18/nonjd-order-app (private, branches `main` and `dev`), local clone `C:\Users\bfox\Documents\Git-Projects\nonjd-order-app`.
