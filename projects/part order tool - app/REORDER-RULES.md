@@ -1,6 +1,6 @@
 # How the order tool suggests quantities
 
-This page explains how the Non-JD Parts Order Tool decides what to order, and how to change it. The settings live in the SharePoint list **NonJD_OrderRules** on the Report Site. Changes take effect the next morning.
+This page explains how the Non-JD Parts Order Tool decides what to order, and how to change it. The settings live in the SharePoint list **NonJD_OrderRules** on the Report Site, and can be changed on the app's Rules page. Changes apply in the app straight away; the morning refresh picks them up the next day.
 
 ## The calculation, step by step
 
@@ -48,7 +48,7 @@ Dealer group codes are set per branch in Equip, so a part coded COTTON at one br
 - Change values freely; don't rename or delete the columns themselves (the daily feed reads them by name).
 - A rule with a missing or out-of-range setting is skipped, and the morning refresh email names it.
 - Give each rule a name (Title). It shows next to every suggestion in the tool.
-- Changes apply after the next morning refresh.
+- Changes apply in the app straight away and in the morning refresh the next day.
 
 ## Things we already know to look at
 
