@@ -1,0 +1,847 @@
+<style>
+.jp { display: flex; flex-direction: column; gap: var(--cds-gap-lg); font-family: var(--font-anthropic-sans); font-variant-numeric: tabular-nums; }
+.jp-head { display: flex; flex-direction: column; gap: var(--cds-gap-sm); }
+.jp-title { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: var(--cds-font-size-title); margin: 0; text-wrap: balance; }
+.jp-lede { margin: 0; color: var(--color-fg-muted); max-width: 70ch; line-height: 1.5; }
+.jp-lede b, .jp-take b { font-weight: 600; color: var(--color-fg); }
+.jp-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr)); gap: var(--cds-gap-md); }
+.jp-tile { background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: var(--cds-pad-md) var(--cds-pad-lg); display: flex; flex-direction: column; gap: var(--cds-gap-xs); }
+.jp-tile .lbl { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+.jp-tile .big { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: var(--cds-font-size-title); line-height: 1.1; }
+.jp-tabs { display: flex; flex-wrap: wrap; gap: var(--cds-gap-xs); border-bottom: 1px solid var(--color-border-line); }
+.jp-tab { appearance: none; background: none; border: 0; border-bottom: 2px solid transparent; padding: var(--cds-pad-sm) var(--cds-pad-md); font: inherit; font-size: var(--cds-font-size-body); color: var(--color-fg-muted); cursor: pointer; margin-bottom: -1px; }
+.jp-tab:hover { color: var(--color-fg); }
+.jp-tab[aria-selected="true"] { color: var(--color-fg); border-bottom-color: var(--color-fg); font-weight: var(--cds-font-weight-medium); }
+.jp-tab:focus-visible, .jp-seg button:focus-visible, .jp select:focus-visible { outline: 2px solid var(--color-fg); outline-offset: 2px; }
+.jp-page { display: flex; flex-direction: column; gap: var(--cds-gap-lg); }
+.jp-take { margin: 0; font-size: var(--cds-font-size-heading); line-height: 1.45; max-width: 75ch; text-wrap: pretty; }
+.jp-controls { display: flex; flex-wrap: wrap; gap: var(--cds-gap-md); align-items: end; }
+.jp-ctl { display: flex; flex-direction: column; gap: var(--cds-gap-xs); font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+.jp select { font: inherit; font-size: var(--cds-font-size-body); color: var(--color-fg); background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: var(--cds-pad-xs) var(--cds-pad-sm); max-width: 100%; }
+.jp-seg { display: inline-flex; border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); overflow: hidden; }
+.jp-seg button { appearance: none; border: 0; background: var(--color-panel); color: var(--color-fg-muted); font: inherit; font-size: var(--cds-font-size-body); padding: var(--cds-pad-xs) var(--cds-pad-md); cursor: pointer; }
+.jp-seg button + button { border-left: 1px solid var(--color-border-line); }
+.jp-seg button[aria-pressed="true"] { background: var(--color-fg); color: var(--color-bg); }
+.jp-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr)); gap: var(--cds-gap-md); }
+.jp-card { background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: var(--cds-pad-lg); display: flex; flex-direction: column; gap: var(--cds-gap-sm); min-width: 0; }
+.jp-card h3 { margin: 0; font-size: var(--cds-font-size-heading); font-weight: var(--cds-font-weight-medium); }
+.jp-note { margin: 0; font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); line-height: 1.45; }
+.jp-bigline { display: flex; align-items: baseline; gap: var(--cds-gap-sm); flex-wrap: wrap; }
+.jp-bigline .big { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: var(--cds-font-size-title); line-height: 1; }
+.jp-split { display: flex; height: 10px; border-radius: 5px; overflow: hidden; background: var(--cds-chart-grid); }
+.jp-split > div { height: 100%; }
+.jp-legend { display: flex; flex-wrap: wrap; gap: var(--cds-gap-md); font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+.jp-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+.jp-kv { display: grid; grid-template-columns: 1fr auto; gap: var(--cds-gap-xs) var(--cds-gap-md); margin: 0; font-size: var(--cds-font-size-body); }
+.jp-kv dt { color: var(--color-fg-muted); }
+.jp-kv dd { margin: 0; text-align: right; }
+.jp-chart { position: relative; min-height: 180px; }
+.jp-chart.tall { min-height: 260px; }
+.jp-scroll { overflow-x: auto; }
+.jp-tip { position: absolute; z-index: 5; background: var(--cds-surface-popover); border: 1px solid var(--cds-border); border-radius: var(--cds-radius); box-shadow: var(--cds-shadow-popover); padding: var(--cds-pad-xs) var(--cds-pad-sm); font-size: var(--cds-font-size-caption); pointer-events: none; white-space: nowrap; }
+.jp-tip .t { color: var(--cds-text-secondary); margin-bottom: 2px; }
+.jp-tbl { overflow: auto; max-height: 26rem; }
+.jp table { border-collapse: collapse; width: 100%; font-size: var(--cds-font-size-body); }
+.jp th { position: sticky; top: 0; background: var(--color-panel); text-align: right; font-weight: var(--cds-font-weight-medium); font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); padding: var(--cds-pad-xs) var(--cds-pad-sm); border-bottom: 1px solid var(--color-border-line); white-space: nowrap; }
+.jp td { text-align: right; padding: var(--cds-pad-xs) var(--cds-pad-sm); border-bottom: 1px solid var(--cds-chart-grid); white-space: nowrap; }
+.jp th:first-child, .jp td:first-child { text-align: left; }
+.jp td.neg { color: var(--color-bad); }
+.jp td.pos { color: var(--color-ok); }
+.jp-cellbar { display: inline-flex; align-items: center; gap: 6px; justify-content: flex-end; }
+.jp-cellbar span.b { display: inline-block; height: 8px; border-radius: 4px; background: var(--cds-chart-muted); }
+.jp-prose { margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: var(--cds-gap-sm); line-height: 1.5; max-width: 75ch; }
+.jp-prose li::marker { color: var(--color-fg-muted); }
+.jp-findings { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 24rem), 1fr)); gap: var(--cds-gap-md); }
+.jp-find p { margin: 0; line-height: 1.5; }
+.jp-find .jp-do { padding-top: var(--cds-gap-xs); border-top: 1px solid var(--cds-chart-grid); }
+.jp-find .jp-file { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+.jp-chip { align-self: flex-start; font-size: var(--cds-font-size-caption); font-weight: var(--cds-font-weight-medium); letter-spacing: .02em; padding: 2px 8px; border-radius: 999px; border: 1px solid currentColor; }
+.jp-chip.ok { color: var(--color-ok); }
+.jp-chip.act { color: var(--color-bad); }
+.jp-chip.warn { color: var(--color-warn); }
+.jp-chip.opt { color: var(--color-fg-muted); }
+.jp-fail { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: inherit; color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); }
+.jp-fail::before { content: ""; width: .375rem; height: .375rem; border-radius: 50%; background: var(--color-bad); }
+[data-dash-source-state=empty] { color: transparent; }
+[data-dash-source-state=refreshing] { opacity: .5; transition: opacity var(--cds-dur-slow); }
+.jp svg text { fill: var(--color-fg-muted); font-size: var(--cds-font-size-caption); font-family: var(--font-anthropic-sans); }
+.jp svg text.strong { fill: var(--color-fg); font-weight: 600; }
+</style>
+
+<div class="jp">
+  <header class="jp-head" id="top">
+    <h1 class="jp-title">JD price triggers</h1>
+    <p class="jp-lede">Every JD list-price change on our stocked parts since August 2017, from the daily price-update files. After a part's price moves 10%, what does it do next, and how long until it moves again? Read-only snapshot of DP Prod through <span id="snap-date" data-source="headline" data-field="last_date" data-row="0">—</span>.</p>
+  </header>
+
+  <div class="jp-tiles">
+    <div class="jp-tile"><span class="lbl">Price changes analysed</span><span class="big dash-skeleton" data-source="headline" data-field="price_changes" data-row="0">—</span></div>
+    <div class="jp-tile"><span class="lbl">Parts</span><span class="big dash-skeleton" data-source="headline" data-field="parts" data-row="0">—</span></div>
+    <div class="jp-tile"><span class="lbl">Changes that were increases</span><span class="big dash-skeleton" data-source="headline" data-field="pct_increases" data-row="0">—</span></div>
+    <div class="jp-tile"><span class="lbl">Price index today (end of 2017 = 100)</span><span class="big dash-skeleton" data-source="price_index" data-field="index" data-where="group=All&amp;year=2026">—</span></div>
+  </div>
+
+  <nav class="jp-tabs" role="tablist" aria-label="Sections">
+    <button class="jp-tab" role="tab" data-tab="summary" aria-selected="true">Summary</button>
+    <button class="jp-tab" role="tab" data-tab="triggers" aria-selected="false">After a 10% trigger</button>
+    <button class="jp-tab" role="tab" data-tab="calendar" aria-selected="false">JD's calendar</button>
+    <button class="jp-tab" role="tab" data-tab="groups" aria-selected="false">Groups &amp; price buckets</button>
+    <button class="jp-tab" role="tab" data-tab="margin" aria-selected="false">Margin</button>
+    <button class="jp-tab" role="tab" data-tab="buyahead" aria-selected="false">Buy-ahead math</button>
+    <button class="jp-tab" role="tab" data-tab="predict" aria-selected="false">Can we predict it?</button>
+  </nav>
+
+  <!-- ===== Summary ===== -->
+  <section class="jp-page" id="summary" data-page="summary">
+    <p class="jp-take">The short version: JD's price changes rarely hurt our margin, and the dollars we do lose come from a short list of parts. Each finding below names the Excel file to dig into.</p>
+    <div class="jp-findings">
+      <article class="jp-card jp-find" id="find-margin">
+        <span class="jp-chip ok">Good news</span>
+        <h3>Price changes rarely hurt our margin</h3>
+        <div class="jp-bigline"><span class="big sm" data-source="summary" data-field="value" data-where="metric=wave_pct_held" data-fmt="pct0">—</span><span class="jp-note">of parts kept their margin % at the <span class="sm" data-source="summary" data-field="value" data-where="metric=last_wave" data-fmt="date">—</span> wave</span></div>
+        <p>Only <b class="sm" data-source="summary" data-field="value" data-where="metric=wave_pct_down" data-fmt="pct1">—</b> went down. On the parts we sell, the wave added about <b class="sm" data-source="summary" data-field="value" data-where="metric=wave_added" data-fmt="moneyC">—</b> a year in margin dollars, against <b class="sm" data-source="summary" data-field="value" data-where="metric=wave_lost" data-fmt="moneyC">—</b> given up by the <b class="sm" data-source="summary" data-field="value" data-where="metric=wave_sold_down" data-fmt="int">—</b> parts whose margin % slipped.</p>
+        <p class="jp-do"><b>What to do:</b> nothing across the board. The Price Matrix passes JD's increases through.</p>
+        <p class="jp-file">Excel: Margin Changes by Wave</p>
+      </article>
+      <article class="jp-card jp-find" id="find-cuts">
+        <span class="jp-chip act">Act</span>
+        <h3>JD discount cuts are the real leak</h3>
+        <div class="jp-bigline"><span class="big sm" data-source="summary" data-field="value" data-where="metric=cuts_lost" data-fmt="moneyC">—</span><span class="jp-note">a year in margin</span></div>
+        <p><b class="sm" data-source="summary" data-field="value" data-where="metric=cuts_parts" data-fmt="int">—</b> parts we sell are still priced after a JD discount cut made since 2024: JD raised our cost faster than list, and our sell price follows list. The top 25 carry <b class="sm" data-source="summary" data-field="value" data-where="metric=cuts_top25_lost" data-fmt="moneyC">—</b>; the top 50 carry <b class="sm" data-source="summary" data-field="value" data-where="metric=cuts_top50_share" data-fmt="pct0">—</b> of the dollars.</p>
+        <p class="jp-do"><b>What to do:</b> review the sell price on the top 25 to 50 parts, and repeat after each wave.</p>
+        <p class="jp-file">Excel: JD Discount Cuts (filter Still Current Price = Yes, Oil / Lube = No)</p>
+      </article>
+      <article class="jp-card jp-find" id="find-oil">
+        <span class="jp-chip warn">Check</span>
+        <h3>Oil and lube costs need a look</h3>
+        <div class="jp-bigline"><span class="big sm" data-source="summary" data-field="value" data-where="metric=oil_lost" data-fmt="moneyC">—</span><span class="jp-note">a year, on paper</span></div>
+        <p>On <b class="sm" data-source="summary" data-field="value" data-where="metric=oil_parts" data-fmt="int">—</b> oil, lube, grease and coolant parts we sell, JD's price file shows our cost jumping to about 87% of list, then something resets it to about 67% before the next update. That points to an oil program or another cost source, not a real loss. These are left out of the number above.</p>
+        <p class="jp-do"><b>What to do:</b> confirm what we actually pay for oil before acting on these.</p>
+        <p class="jp-file">Excel: JD Discount Cuts (filter Oil / Lube = Yes)</p>
+      </article>
+      <article class="jp-card jp-find" id="find-matrix">
+        <span class="jp-chip opt">Optional</span>
+        <h3>Price Matrix boundaries cost a little</h3>
+        <div class="jp-bigline"><span class="big sm" data-source="summary" data-field="value" data-where="metric=bnd_risk" data-fmt="moneyC">—</span><span class="jp-note">a year at risk at the next wave</span></div>
+        <p>If the next wave is <b class="sm" data-source="summary" data-field="value" data-where="metric=bnd_inc" data-fmt="pct0">—</b>, <b class="sm" data-source="summary" data-field="value" data-where="metric=bnd_parts" data-fmt="int">—</b> parts we sell move into a bucket with a smaller markup, so our sell price rises less than list. The $41–49.99, $450–499.99 and $900–999.99 boundaries carry the most.</p>
+        <p class="jp-do"><b>What to do:</b> consider smoothing those boundaries in the Price Matrix.</p>
+        <p class="jp-file">Excel: Price Matrix Boundary Watch (change the expected increase on Inputs)</p>
+      </article>
+      <article class="jp-card jp-find" id="find-buy">
+        <span class="jp-chip opt">Optional</span>
+        <h3>Buying ahead of the June wave pays modestly</h3>
+        <div class="jp-bigline"><span class="big sm" data-source="summary" data-field="value" data-where="metric=buy_net" data-fmt="moneyC">—</span><span class="jp-note">net, for one wave</span></div>
+        <p>The main JD wave landed on <span class="sm" data-source="summary" data-field="value" data-where="metric=waves_june" data-fmt="text">—</span>. Buying <b class="sm" data-source="summary" data-field="value" data-where="metric=buy_months" data-fmt="int">—</b> months of the top <b class="sm" data-source="summary" data-field="value" data-where="metric=buy_top_n" data-fmt="int">—</b> parts by cost volume ahead of a 3% wave ties up <b class="sm" data-source="summary" data-field="value" data-where="metric=buy_cost" data-fmt="moneyC">—</b> and saves about <b class="sm" data-source="summary" data-field="value" data-where="metric=buy_saving" data-fmt="moneyC">—</b>, less <b class="sm" data-source="summary" data-field="value" data-where="metric=buy_holding" data-fmt="moneyC">—</b> to hold it.</p>
+        <p class="jp-do"><b>What to do:</b> only worth doing if JD tells us the date and size of a wave ahead of time. Ask JD whether they do.</p>
+        <p class="jp-file">Excel: Buy-Ahead Candidates (set months, holding cost and expected increase on Inputs)</p>
+      </article>
+      <article class="jp-card jp-find" id="find-files">
+        <span class="jp-chip opt">Files</span>
+        <h3>The Excel files</h3>
+        <ul class="jp-prose">
+          <li><b>JD Discount Cuts</b>: every discount cut on parts we sell, sorted by yearly margin lost.</li>
+          <li><b>Margin Changes by Wave</b>: held, down and up counts per wave, and every part whose margin % went down.</li>
+          <li><b>Price Matrix Boundary Watch</b>: parts close to a bucket boundary, with an editable expected increase and matrix.</li>
+          <li><b>Buy-Ahead Candidates</b>: the top 1,000 parts by cost volume, with editable buy-ahead inputs.</li>
+          <li><b>JD Price Changes Since 2024 - Parts We Sell</b>: every update, for your own filters and pivots.</li>
+        </ul>
+      </article>
+    </div>
+  </section>
+
+  <!-- ===== Triggers ===== -->
+  <section class="jp-page" id="triggers" data-page="triggers" hidden>
+    <p class="jp-take" id="trig-take">After a part's price moves <b>10% up</b>, its next 10% move is also up <b class="jp-m" data-source="transitions" data-field="pct_next_up">—</b> of the time, typically <b class="jp-m" data-source="transitions" data-field="median_months">—</b> months later. After a <b>10% drop</b>, the next move is back up <b class="jp-m" data-source="transitions" data-field="pct_next_up">—</b> of the time.</p>
+    <div class="jp-controls">
+      <div class="jp-ctl"><span id="def-lbl">Trigger definition</span>
+        <div class="jp-seg" role="group" aria-labelledby="def-lbl">
+          <button type="button" id="def-B" data-def="B" aria-pressed="true">Drift from last trigger</button>
+          <button type="button" id="def-A" data-def="A" aria-pressed="false">Single 10% jump</button>
+        </div>
+      </div>
+      <label class="jp-ctl" for="seg-sel">Which parts
+        <select id="seg-sel" data-source="transitions"></select>
+      </label>
+    </div>
+    <p class="jp-note" id="def-note"></p>
+    <div class="jp-grid">
+      <div class="jp-card" id="card-up" data-dir="up">
+        <h3>After a 10%+ increase</h3>
+        <p class="jp-note">Of the triggers that have had a next trigger, which way the next one went.</p>
+        <div class="jp-bigline"><span class="big jp-m" data-source="transitions" data-field="pct_next_up">—</span><span class="jp-note">next trigger was another increase</span></div>
+        <div class="jp-split"><div class="s-up" style="background: var(--cds-chart-muted)"></div><div class="s-down"></div></div>
+        <div class="jp-legend"><span><i class="sw-up"></i>Up next: <span class="jp-m" data-source="transitions" data-field="next_up">—</span></span><span><i class="sw-down"></i>Down next: <span class="jp-m" data-source="transitions" data-field="next_down">—</span></span></div>
+        <dl class="jp-kv">
+          <dt>Triggers counted</dt><dd class="jp-m" data-source="transitions" data-field="triggers">—</dd>
+          <dt>Median wait to next trigger (months)</dt><dd class="jp-m" data-source="transitions" data-field="median_months">—</dd>
+          <dt>Middle half of waits (months)</dt><dd><span class="jp-m" data-source="transitions" data-field="p25_months">—</span> to <span class="jp-m" data-source="transitions" data-field="p75_months">—</span></dd>
+          <dt>Triggered again within 12 months</dt><dd class="jp-m" data-source="transitions" data-field="within12">—</dd>
+          <dt>Triggered again within 24 months</dt><dd class="jp-m" data-source="transitions" data-field="within24">—</dd>
+          <dt>Typical size of this trigger</dt><dd class="jp-m" data-source="transitions" data-field="median_size">—</dd>
+          <dt>Typical size of the next one</dt><dd class="jp-m" data-source="transitions" data-field="median_next_size">—</dd>
+        </dl>
+        <h3 style="margin-top: var(--cds-gap-sm)">How long until the next trigger</h3>
+        <div class="jp-chart jp-hist" data-source="wait_hist"></div>
+      </div>
+      <div class="jp-card" id="card-down" data-dir="down">
+        <h3>After a 10%+ decrease</h3>
+        <p class="jp-note">Of the triggers that have had a next trigger, which way the next one went.</p>
+        <div class="jp-bigline"><span class="big jp-m" data-source="transitions" data-field="pct_next_up">—</span><span class="jp-note">next trigger was an increase</span></div>
+        <div class="jp-split"><div class="s-up"></div><div class="s-down"></div></div>
+        <div class="jp-legend"><span><i class="sw-up"></i>Up next: <span class="jp-m" data-source="transitions" data-field="next_up">—</span></span><span><i class="sw-down"></i>Down next: <span class="jp-m" data-source="transitions" data-field="next_down">—</span></span></div>
+        <dl class="jp-kv">
+          <dt>Triggers counted</dt><dd class="jp-m" data-source="transitions" data-field="triggers">—</dd>
+          <dt>Median wait to next trigger (months)</dt><dd class="jp-m" data-source="transitions" data-field="median_months">—</dd>
+          <dt>Middle half of waits (months)</dt><dd><span class="jp-m" data-source="transitions" data-field="p25_months">—</span> to <span class="jp-m" data-source="transitions" data-field="p75_months">—</span></dd>
+          <dt>Triggered again within 12 months</dt><dd class="jp-m" data-source="transitions" data-field="within12">—</dd>
+          <dt>Triggered again within 24 months</dt><dd class="jp-m" data-source="transitions" data-field="within24">—</dd>
+          <dt>Typical size of this trigger</dt><dd class="jp-m" data-source="transitions" data-field="median_size">—</dd>
+          <dt>Typical size of the next one</dt><dd class="jp-m" data-source="transitions" data-field="median_next_size">—</dd>
+        </dl>
+        <h3 style="margin-top: var(--cds-gap-sm)">How long until the next trigger</h3>
+        <div class="jp-chart jp-hist" data-source="wait_hist"></div>
+      </div>
+    </div>
+    <div class="jp-card">
+      <h3>How to read this</h3>
+      <ul class="jp-prose">
+        <li><b>Drift from last trigger</b> (a rolling trigger point): the price at the last trigger is the anchor. The next trigger is the first change that leaves the price 10% or more above or below the anchor, whether in one jump or several small ones. Then the anchor resets.</li>
+        <li><b>Single 10% jump</b>: only one update of 10% or more counts. Gradual creep (4% + 3% + 4%) never triggers.</li>
+        <li>"Triggered again within 12 months" only counts triggers we have watched for at least 12 months, so recent triggers don't drag it down. Parts with no next trigger yet are left out of the up/down split.</li>
+        <li>Price is JD list price. Our sell price is list plus the Price Matrix markup for its bucket, so it moves with list. Parts under $1 and 753 unit-of-measure jumps (5x or more) are left out.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ===== Calendar ===== -->
+  <section class="jp-page" id="calendar" data-page="calendar" hidden>
+    <p class="jp-take">JD doesn't change prices at random. Most changes land on a handful of <b>wave dates</b> each year: late March, late May or June, and late August. In 2024 the main wave moved from August to June, and 2023 had no broad wave at all.</p>
+    <div class="jp-card">
+      <h3>Parts with a price change, by month</h3>
+      <p class="jp-note">Hover a bar for the median change that month. Tall bars are JD's repricing waves.</p>
+      <div class="jp-chart tall" id="cal-chart" data-source="monthly"></div>
+    </div>
+    <div class="jp-grid">
+      <div class="jp-card">
+        <h3>The waves</h3>
+        <p class="jp-note">Dates when 5,000 or more parts changed at once.</p>
+        <div class="jp-tbl">
+          <table id="waves-tbl" data-source="waves" data-row-key="wave_date">
+            <thead><tr><th data-field="wave_date">Date</th><th data-field="parts_changed">Parts</th><th data-field="median_change">Median change</th><th data-field="pct_increases">Increases</th><th data-field="pct_moved_10">Moved 10%+</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="jp-card">
+        <h3>10% moves reversed within 30 days</h3>
+        <p class="jp-note">Share of 10%+ jumps that JD undid within a month, by year. These look like JD correcting its own pricing errors. They're rare, but more common since 2024.</p>
+        <div class="jp-chart" id="rev-chart" data-source="reversals"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Groups ===== -->
+  <section class="jp-page" id="groups" data-page="groups" hidden>
+    <p class="jp-take">Every product group and price bucket rides the same JD waves. They differ in <b>how much</b> they rise, not <b>when</b>. Since the end of 2017, <b class="jp-gname">—</b> parts are at <b id="grp-idx" data-source="price_index" data-field="index">—</b> against <b data-source="price_index" data-field="index" data-where="group=All&amp;year=2026">—</b> for all parts (end of 2017 = 100).</p>
+    <div class="jp-controls">
+      <div class="jp-ctl"><span id="dim-lbl">Rows</span>
+        <div class="jp-seg" role="group" aria-labelledby="dim-lbl" id="dim-seg">
+          <button type="button" data-dim="Product group" aria-pressed="true">Product group</button><button type="button" data-dim="Price bucket" aria-pressed="false">Price bucket</button>
+        </div>
+      </div>
+      <label class="jp-ctl" for="grp-sel">Highlight
+        <select id="grp-sel" data-source="price_index"></select>
+      </label>
+    </div>
+    <div class="jp-card">
+      <h3 id="idx-title">Price index by group</h3>
+      <p class="jp-note">Median list price relative to the end of 2017, for parts already priced by August 2018. The last point is the snapshot date. Group is the dealer group code on the part; price bucket is the Price Matrix list-price range the part was in at the end of 2017.</p>
+      <div class="jp-chart tall" id="idx-chart" data-source="price_index"></div>
+    </div>
+    <div class="jp-card">
+      <h3 id="heat-title">Median change at each wave</h3>
+      <div class="jp-controls">
+        <label class="jp-ctl" for="metric-sel">Color by
+          <select id="metric-sel">
+            <option value="list_chg">JD list price % change</option>
+            <option value="cost_chg">Our cost % change</option>
+            <option value="sell_chg">Our sell price % change</option>
+            <option value="margin_chg">Margin $ % change</option>
+            <option value="margin_gap">Margin $ change minus cost change</option>
+          </select>
+        </label>
+      </div>
+      <p class="jp-note" id="heat-note"></p>
+      <div class="jp-scroll"><div class="jp-chart tall" id="heat-chart" data-source="wave_heat" style="min-width: 640px"></div></div>
+    </div>
+  </section>
+
+  <!-- ===== Margin ===== -->
+  <section class="jp-page" id="margin" data-page="margin" hidden>
+    <p class="jp-take">On most parts the Price Matrix passes JD's increases straight through: our cost, our sell price and our margin dollars rise by the same percentage, and margin % holds. Margin slips in two places: parts that <b>cross into a higher Price Matrix bucket</b> get a smaller markup, and parts where <b>JD cuts our discount</b> see cost rise faster than list.</p>
+    <div class="jp-card">
+      <h3>How margin is measured here</h3>
+      <ul class="jp-prose">
+        <li><b>Margin $</b> = our sell price minus JD dealer cost, per unit, before and after each price update.</li>
+        <li><b>Margin $ % change</b> = (new margin $ − old margin $) ÷ old margin $. Counted only where the old margin was above zero.</li>
+        <li><b>Cost % change</b> = how much JD changed our dealer cost on that update.</li>
+        <li><b>Margin lagged</b> = margin $ grew at least 1 point less than cost. If margin $ grows at the same rate as cost, margin % is unchanged.</li>
+        <li><b>Held / down / up</b> = whether a part's margin % (sell − cost ÷ sell) moved by more than half a point at that update. "Parts we sell" = parts with sales in the last 12 months.</li>
+        <li><b>Yearly margin $ lost</b> = for parts whose margin % went down: what keeping the old margin % would have made at last year's unit sales, minus what the new prices make.</li>
+        <li><b>Yearly margin $ added</b> = for every part we sell that changed: (new margin $ − old margin $) per unit × last-12-month units, summed. It answers "if we sell the same quantities as last year, how much more gross margin a year do the new prices give us?" It is an estimate at today's volume, not money booked.</li>
+      </ul>
+    </div>
+    <div class="jp-grid">
+      <div class="jp-card">
+        <h3>Cost vs. margin $ at each wave</h3>
+        <p class="jp-note">Median % change per part. Bars of equal height mean margin % held.</p>
+        <div class="jp-legend"><span><i class="sw-c0"></i>Our cost</span><span><i class="sw-c1"></i>Margin $</span></div>
+        <div class="jp-chart" id="mw-chart" data-source="margin_waves"></div>
+      </div>
+      <div class="jp-card">
+        <h3>Yearly margin $ added by each wave</h3>
+        <p class="jp-note">At today's 12-month unit sales. Hover for the cost and sales side.</p>
+        <div class="jp-chart" id="mi-chart" data-source="margin_waves"></div>
+      </div>
+    </div>
+    <div class="jp-card">
+      <h3>Wave by wave</h3>
+      <div class="jp-tbl">
+        <table id="mw-tbl" data-source="margin_waves" data-row-key="wave_date">
+          <thead><tr><th data-field="wave_date">Wave</th><th data-field="parts">Parts changed</th><th data-field="parts_held">Margin % held</th><th data-field="parts_down">Went down</th><th data-field="parts_up">Went up</th><th data-field="pct_down">% down</th><th data-field="sold_down">We sell: down</th><th data-field="sold_pct_down">We sell: % down</th><th data-field="yearly_margin_lost_down">Yearly margin $ lost</th><th data-field="discount_cut_lost">…discount cuts</th><th data-field="oil_lost">…oil/lube</th><th data-field="bucket_lost">…bucket moves</th><th data-field="yearly_margin_impact">Yearly margin $ added</th><th data-field="note">Note</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <p class="jp-note">"Yearly margin $ lost" covers only the parts we sell whose margin % went down; the three columns after it split it by cause. Discount cut = JD raised our cost by at least 1 point more of list price than before. Oil/lube = the same on oil, lube, grease and coolant parts, whose cost is reset outside JD's price file, so probably not a real loss. August 2017 is the one-time reset when our sell price came down to list plus the matrix markup.</p>
+    </div>
+    <div class="jp-card">
+      <h3>By Price Matrix bucket</h3>
+      <p class="jp-note" id="mb-take">Bucket is the part's list price at the time of each change. "When crossing up" compares JD's list increase with our sell increase on increases that moved a part into the next bucket. Rows where margin $ grew more than 1 point slower than cost are flagged.</p>
+      <div class="jp-tbl" style="max-height: 34rem">
+        <table id="mb-tbl" data-source="margin_buckets" data-row-key="bucket">
+          <thead><tr><th data-field="bucket">Bucket</th><th data-field="matrix_markup">Matrix markup</th><th data-field="changes">Changes</th><th data-field="cost_chg">Cost</th><th data-field="margin_chg">Margin $</th><th data-field="pct_margin_lagged">Margin lagged</th><th data-field="pct_crossed_up">Increases that crossed up</th><th data-field="list_chg_crossed">List, when crossing up</th><th data-field="sell_chg_crossed">Sell, when crossing up</th><th data-field="margin_pct_now">Margin % now</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Buy-ahead ===== -->
+  <section class="jp-page" id="buyahead" data-page="buyahead" hidden>
+    <p class="jp-take">If we had bought extra stock just before each wave, what would we have saved after paying to hold it? This is a rough sizing that uses today's 12-month sales as the demand for every wave. Treat it as an order of magnitude, not a forecast.</p>
+    <div class="jp-controls">
+      <div class="jp-ctl"><span id="mo-lbl">Months of demand bought early</span>
+        <div class="jp-seg" role="group" aria-labelledby="mo-lbl" id="mo-seg">
+          <button type="button" data-mo="1" aria-pressed="false">1</button><button type="button" data-mo="2" aria-pressed="true">2</button><button type="button" data-mo="3" aria-pressed="false">3</button><button type="button" data-mo="4" aria-pressed="false">4</button>
+        </div>
+      </div>
+      <div class="jp-ctl"><span id="rate-lbl">Yearly cost to hold stock</span>
+        <div class="jp-seg" role="group" aria-labelledby="rate-lbl" id="rate-seg">
+          <button type="button" data-rate="0.06" aria-pressed="false">6%</button><button type="button" data-rate="0.1" aria-pressed="true">10%</button><button type="button" data-rate="0.15" aria-pressed="false">15%</button><button type="button" data-rate="0.2" aria-pressed="false">20%</button>
+        </div>
+      </div>
+    </div>
+    <div class="jp-card">
+      <h3>Net saving per wave</h3>
+      <p class="jp-note">Price saving on stock bought early, minus the cost of holding it longer. Covers every JD part with sales in the last 12 months, at JD dealer cost.</p>
+      <div class="jp-chart tall" id="ba-chart" data-source="buyahead"></div>
+    </div>
+    <div class="jp-grid">
+      <div class="jp-card">
+        <h3>Buy-ahead detail</h3>
+        <div class="jp-tbl">
+          <table id="ba-tbl" data-source="buyahead" data-row-key="wave_date,months_ahead,carry_rate">
+            <thead><tr><th data-field="wave_date">Wave</th><th data-field="bought_ahead">Bought early</th><th data-field="price_saving">Price saving</th><th data-field="carrying_cost">Holding cost</th><th data-field="net">Net</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="jp-card">
+        <h3>What the shelf gained at each wave</h3>
+        <p class="jp-note">On-hand stock at the old cost, and how much its replacement cost rose on the wave date. This is inventory we already held, by branch.</p>
+        <div class="jp-tbl">
+          <table id="oh-tbl" data-source="waves" data-row-key="wave_date">
+            <thead><tr><th data-field="wave_date">Wave</th><th data-field="onhand_cost_before">On hand at old cost</th><th data-field="onhand_value_gain">Cost rise on it</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="jp-card">
+      <h3>What this leaves out</h3>
+      <ul class="jp-prose">
+        <li>It assumes we knew the wave date in advance. JD's calendar has been regular, but we need to confirm whether JD tells dealers about increases ahead of time. The weekly JD Change Report lists changes on their effective date, so it gives no warning.</li>
+        <li>It buys every part with sales. Buying only the parts likely to rise most would do better. That's what a prediction model would pick.</li>
+        <li>No obsolescence, storage space or cash-flow limits are included.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ===== Predict ===== -->
+  <section class="jp-page" id="predict" data-page="predict" hidden>
+    <p class="jp-take">The size of a part's last change says little about its next one. What drives prices is <b>JD's wave calendar</b>, not each part's own history. A useful model would predict <b>which parts rise most at the next wave</b>, rather than when.</p>
+    <div class="jp-card">
+      <h3>Last change vs. next change</h3>
+      <p class="jp-note">Every pair of back-to-back price changes on the same part, grouped by the size of the first change.</p>
+      <div class="jp-tbl">
+        <table id="mom-tbl" data-source="momentum" data-row-key="previous_change">
+          <thead><tr><th data-field="previous_change">Last change</th><th data-field="pairs">Pairs</th><th data-field="median_next_change">Median next change</th><th data-field="pct_next_up">Next was up</th><th data-field="pct_next_up10">Next was up 10%+</th><th data-field="pct_next_down10">Next was down 10%+</th><th data-field="median_months_to_next">Months to next</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="jp-card">
+      <h3>Where machine learning could fit</h3>
+      <ul class="jp-prose">
+        <li><b>The question for a model:</b> for each part, how likely is a 10%+ increase at the next wave? That ranks which parts to buy ahead of a wave.</li>
+        <li><b>Inputs we already have:</b> product group and commodity code, price band, size and date of the last few changes, time since the last trigger, sales and on-hand from the part master, and how the same part moved at past waves.</li>
+        <li><b>How we'd test it:</b> train on waves up to 2024, then check whether it would have picked the parts that jumped in June 2025 and June 2026. If it can't beat "buy everything with sales", it isn't worth running.</li>
+        <li><b>The bigger win may need no model:</b> if JD tells dealers about a wave a few weeks ahead, a buy-ahead list built from that notice and our sales history is close to risk-free.</li>
+      </ul>
+    </div>
+  </section>
+</div>
+
+<script>
+(() => {
+  const root = document.querySelector('.jp');
+  const pct0 = d3.format('.0%'), pct1 = d3.format('.1%'), int = d3.format(','), spct = d3.format('+.1%');
+  const compact = (v) => Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 }).format(v);
+  const money = (v) => (v < 0 ? '-$' : '$') + d3.format(',.0f')(Math.abs(v));
+  const moneyC = (v) => (v < 0 ? '-$' : '$') + compact(Math.abs(v));
+  const dateFmt = d3.utcFormat('%b %-d, %Y'), monFmt = d3.utcFormat("%b '%y");
+  const enc = (s) => String(s).replace(/%/g, '%25').replace(/&/g, '%26').replace(/=/g, '%3D');
+  const where = (o) => Object.entries(o).map(([k, v]) => k + '=' + enc(v)).join('&');
+  const C = () => dash.colors;
+  const state = { tab: 'summary', def: 'B', seg: 'All', dim: 'Product group', pick: { 'Product group': 'COTTON', 'Price bucket': '$9-9.99' }, metric: 'list_chg', mo: 2, rate: 0.1 };
+  const DEF_NOTE = {
+    B: "Drift from last trigger: the next trigger is the first time the price ends up 10% or more away from where it was at the last trigger, in one jump or several.",
+    A: "Single 10% jump: only one update of 10% or more counts as a trigger.",
+  };
+
+  const rowsOf = (id) => { const d = dash.data(id); return d.status === 'ok' ? d.data : null; };
+  const fail = (el, id) => {
+    const s = dash.data(id).status;
+    if (s === 'error' || s === 'connect') { el.replaceChildren(); const f = document.createElement('div'); f.className = 'jp-fail'; f.textContent = 'Failed to load'; el.append(f); }
+  };
+  const unskel = (el) => el.classList.remove('dash-skeleton');
+
+  function tip(box) {
+    let t = box.querySelector(':scope > .jp-tip');
+    if (!t) { t = document.createElement('div'); t.className = 'jp-tip'; t.hidden = true; box.append(t); }
+    return {
+      show(ev, title, lines) {
+        t.replaceChildren();
+        const h = document.createElement('div'); h.className = 't'; h.textContent = title; t.append(h);
+        for (const [label, val, color] of lines) {
+          const l = document.createElement('div');
+          if (color) { const i = document.createElement('i'); i.style.cssText = `display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:6px;background:${color}`; l.append(i); }
+          l.append(document.createTextNode(label + ': ' + val)); t.append(l);
+        }
+        t.hidden = false;
+        const r = box.getBoundingClientRect();
+        let x = ev.clientX - r.left + 12, y = ev.clientY - r.top + 12;
+        const tw = t.offsetWidth, th = t.offsetHeight;
+        if (x + tw > box.clientWidth) x = Math.max(0, ev.clientX - r.left - tw - 12);
+        if (y + th > box.clientHeight + 40) y = Math.max(0, ev.clientY - r.top - th - 12);
+        t.style.left = x + 'px'; t.style.top = y + 'px';
+      },
+      hide() { t.hidden = true; },
+    };
+  }
+  function svgIn(box, h) {
+    box.querySelectorAll(':scope > svg').forEach((s) => s.remove());
+    const w = Math.max(280, box.clientWidth);
+    const svg = d3.select(box).insert('svg', ':first-child').attr('width', '100%').attr('viewBox', `0 0 ${w} ${h}`).attr('height', h);
+    return { svg, w };
+  }
+  const styleAxis = (g) => { g.attr('font-size', null).attr('font-family', null); g.selectAll('.domain').attr('stroke', 'var(--cds-chart-axis)'); g.selectAll('.tick line').attr('stroke', 'var(--cds-chart-grid)'); };
+
+  // ---------- header ----------
+  function drawHeader() {
+    const h = rowsOf('headline');
+    const map = { price_changes: (v) => compact(v), parts: (v) => compact(v), pct_increases: pct0 };
+    root.querySelectorAll('.jp-tile [data-source="headline"]').forEach((el) => {
+      if (!h) return fail(el, 'headline'); unskel(el); el.textContent = map[el.dataset.field](h[0][el.dataset.field]);
+    });
+    const sd = document.getElementById('snap-date');
+    sd.textContent = h ? dateFmt(new Date(h[0].last_date + 'T00:00:00Z')) : '—';
+    const idx = rowsOf('price_index');
+    root.querySelectorAll('[data-source="price_index"][data-where="group=All&year=2026"]').forEach((el) => {
+      if (!idx) return; unskel(el); const r = idx.find((x) => x.group === 'All' && x.year === 2026); el.textContent = r ? d3.format('.0f')(r.index) : '—';
+    });
+  }
+
+  // ---------- summary ----------
+  const SFMT = { pct0, pct1, int: (v) => int(Math.round(v)), moneyC, text: (v) => String(v), date: (v) => dateFmt(new Date(v + 'T00:00:00Z')) };
+  function drawSummary() {
+    const rows = rowsOf('summary');
+    document.querySelectorAll('#summary .sm').forEach((el) => {
+      if (!rows) { el.textContent = '—'; return; }
+      const r = rows.find((x) => 'metric=' + x.metric === el.dataset.where);
+      el.textContent = r ? SFMT[el.dataset.fmt](r.value) : '—';
+    });
+  }
+
+  // ---------- triggers ----------
+  const FMT = { pct_next_up: pct0, next_up: int, next_down: int, triggers: int, median_months: (v) => d3.format('.0f')(v), p25_months: (v) => d3.format('.0f')(v), p75_months: (v) => d3.format('.0f')(v), within12: pct0, within24: pct0, median_size: spct, median_next_size: spct };
+  function fillMark(el, row, wh) {
+    el.dataset.where = wh;
+    const v = row ? row[el.dataset.field] : null;
+    el.textContent = v == null ? '—' : FMT[el.dataset.field](v);
+  }
+  function drawTriggers() {
+    const tr = rowsOf('transitions');
+    if (!tr) return;
+    const sel = document.getElementById('seg-sel');
+    const segs = [...new Set(tr.filter((r) => r.definition === state.def).map((r) => r.segment))];
+    if (!segs.includes(state.seg)) state.seg = 'All';
+    const groups = d3.group(segs, (s) => (s === 'All' ? 'All' : s.split(':')[0]));
+    sel.replaceChildren();
+    for (const [g, items] of groups) {
+      if (g === 'All') { sel.append(new Option('All parts', 'All')); continue; }
+      const og = document.createElement('optgroup'); og.label = g;
+      items.forEach((s) => og.append(new Option(s.split(': ')[1], s)));
+      sel.append(og);
+    }
+    sel.value = state.seg;
+    document.querySelectorAll('[data-def]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.def === state.def)));
+    document.getElementById('def-note').textContent = DEF_NOTE[state.def];
+
+    const pick = (seg, dir) => tr.find((r) => r.definition === state.def && r.segment === seg && r.from_dir === dir);
+    // takeaway always on All for the chosen definition
+    const take = document.getElementById('trig-take').querySelectorAll('.jp-m');
+    const allUp = pick('All', 'up'), allDown = pick('All', 'down');
+    fillMark(take[0], allUp, where({ definition: state.def, segment: 'All', from_dir: 'up' }));
+    fillMark(take[1], allUp, where({ definition: state.def, segment: 'All', from_dir: 'up' }));
+    fillMark(take[2], allDown, where({ definition: state.def, segment: 'All', from_dir: 'down' }));
+
+    const hist = rowsOf('wait_hist');
+    for (const dir of ['up', 'down']) {
+      const card = document.getElementById('card-' + dir);
+      const row = pick(state.seg, dir);
+      const wh = where({ definition: state.def, segment: state.seg, from_dir: dir });
+      card.querySelectorAll('.jp-m').forEach((el) => fillMark(el, row, wh));
+      const tot = row ? row.next_up + row.next_down : 0;
+      card.querySelector('.s-up').style.cssText = `width:${tot ? (100 * row.next_up) / tot : 0}%;background:${C()[0]}`;
+      card.querySelector('.s-down').style.cssText = `width:${tot ? (100 * row.next_down) / tot : 0}%;background:${C()[1]}`;
+      card.querySelector('.sw-up').style.background = C()[0];
+      card.querySelector('.sw-down').style.background = C()[1];
+      const box = card.querySelector('.jp-hist');
+      if (!hist) { fail(box, 'wait_hist'); continue; }
+      drawHist(box, hist.filter((r) => r.definition === state.def && r.segment === state.seg && r.from_dir === dir));
+    }
+  }
+  function drawHist(box, rows) {
+    const H = 180, m = { t: 8, r: 8, b: 26, l: 40 };
+    const { svg, w } = svgIn(box, H);
+    if (!rows.length) return;
+    const x = d3.scaleBand(rows.map((r) => r.months_from), [m.l, w - m.r]).padding(0.15);
+    const ymax = d3.max(rows, (r) => r.next_up + r.next_down) || 1;
+    const y = d3.scaleLinear([0, ymax], [H - m.b, m.t]).nice();
+    svg.append('g').attr('transform', `translate(${m.l},0)`).call(d3.axisLeft(y).ticks(4).tickFormat(compact).tickSize(-(w - m.l - m.r))).call(styleAxis).call((g) => g.select('.domain').remove());
+    const xt = rows.filter((r, i) => i % 4 === 0).map((r) => r.months_from);
+    svg.append('g').attr('transform', `translate(0,${H - m.b})`).call(d3.axisBottom(x).tickValues(xt).tickFormat((v) => (rows.findIndex((r) => r.months_from === v) / 4) + 'y').tickSize(0).tickPadding(8)).call(styleAxis);
+    const t = tip(box);
+    const g = svg.append('g');
+    rows.forEach((r, i) => {
+      const x0 = x(r.months_from), bw = x.bandwidth();
+      g.append('rect').attr('x', x0).attr('width', bw).attr('y', y(r.next_up)).attr('height', y(0) - y(r.next_up)).attr('fill', C()[0]);
+      g.append('rect').attr('x', x0).attr('width', bw).attr('y', y(r.next_up + r.next_down)).attr('height', y(0) - y(r.next_down)).attr('fill', C()[1]);
+      const last = i === rows.length - 1;
+      g.append('rect').attr('x', x0).attr('width', bw).attr('y', m.t).attr('height', H - m.b - m.t).attr('fill', 'transparent')
+        .on('mousemove', (ev) => t.show(ev, last ? `${d3.format('.0f')(r.months_from)}+ months` : `${d3.format('.0f')(r.months_from)}–${d3.format('.0f')(r.months_from + 3)} months`, [['Next was up', int(r.next_up), C()[0]], ['Next was down', int(r.next_down), C()[1]]]))
+        .on('mouseleave', t.hide);
+    });
+  }
+
+  // ---------- calendar ----------
+  function drawCalendar() {
+    const box = document.getElementById('cal-chart');
+    const mo = rowsOf('monthly');
+    if (!mo) fail(box, 'monthly');
+    else {
+      const H = 260, m = { t: 10, r: 8, b: 26, l: 44 };
+      const { svg, w } = svgIn(box, H);
+      const x = d3.scaleBand(mo.map((r) => r.month), [m.l, w - m.r]).padding(0.15);
+      const y = d3.scaleLinear([0, d3.max(mo, (r) => r.parts_changed)], [H - m.b, m.t]).nice();
+      svg.append('g').attr('transform', `translate(${m.l},0)`).call(d3.axisLeft(y).ticks(5).tickFormat(compact).tickSize(-(w - m.l - m.r))).call(styleAxis).call((g) => g.select('.domain').remove());
+      const jan = mo.filter((r) => r.month.endsWith('-01')).map((r) => r.month);
+      const step = w < 520 ? 2 : 1;
+      svg.append('g').attr('transform', `translate(0,${H - m.b})`).call(d3.axisBottom(x).tickValues(jan.filter((_, i) => i % step === 0)).tickFormat((v) => v.slice(0, 4)).tickSize(0).tickPadding(8)).call(styleAxis);
+      const t = tip(box);
+      svg.append('g').selectAll('rect').data(mo).join('rect')
+        .attr('x', (r) => x(r.month)).attr('width', x.bandwidth()).attr('y', (r) => y(r.parts_changed)).attr('height', (r) => y(0) - y(r.parts_changed))
+        .attr('rx', Math.min(3, x.bandwidth() / 2)).attr('fill', (r) => (r.parts_changed >= 40000 ? C()[0] : 'var(--cds-chart-muted)'))
+        .on('mousemove', (ev, r) => t.show(ev, d3.utcFormat('%B %Y')(new Date(r.month + '-01T00:00:00Z')), [['Parts changed', int(r.parts_changed)], ['Median change', spct(r.median_change)], ['Moves of 10%+', int(r.moves_10pct)]]))
+        .on('mouseleave', t.hide);
+    }
+    const wv = rowsOf('waves');
+    const tb = document.querySelector('#waves-tbl tbody');
+    tb.replaceChildren();
+    if (wv) for (const r of wv) {
+      const tr = document.createElement('tr');
+      [r.wave_date, int(r.parts_changed), spct(r.median_change), pct0(r.pct_increases), pct0(r.pct_moved_10)].forEach((v) => { const td = document.createElement('td'); td.textContent = v; tr.append(td); });
+      tb.append(tr);
+    }
+    const rbox = document.getElementById('rev-chart');
+    const rv = rowsOf('reversals');
+    if (!rv) return fail(rbox, 'reversals');
+    const H = 180, m = { t: 18, r: 8, b: 26, l: 40 };
+    const { svg, w } = svgIn(rbox, H);
+    const x = d3.scaleBand(rv.map((r) => String(r.year)), [m.l, w - m.r]).padding(0.25);
+    const y = d3.scaleLinear([0, d3.max(rv, (r) => r.pct_reversed)], [H - m.b, m.t]).nice();
+    svg.append('g').attr('transform', `translate(${m.l},0)`).call(d3.axisLeft(y).ticks(4).tickFormat(d3.format('.1%')).tickSize(-(w - m.l - m.r))).call(styleAxis).call((g) => g.select('.domain').remove());
+    svg.append('g').attr('transform', `translate(0,${H - m.b})`).call(d3.axisBottom(x).tickValues(x.domain().filter((_, i) => w > 420 || i % 2 === 0)).tickSize(0).tickPadding(8)).call(styleAxis);
+    const t = tip(rbox);
+    svg.append('g').selectAll('rect').data(rv).join('rect')
+      .attr('x', (r) => x(String(r.year))).attr('width', x.bandwidth()).attr('y', (r) => y(r.pct_reversed)).attr('height', (r) => y(0) - y(r.pct_reversed)).attr('rx', 4)
+      .attr('fill', (r) => (r.year >= 2024 ? C()[0] : 'var(--cds-chart-muted)'))
+      .on('mousemove', (ev, r) => t.show(ev, String(r.year), [['10%+ jumps', int(r.triggers)], ['Reversed in 30 days', int(r.reversed_30d)], ['Share', pct1(r.pct_reversed)]]))
+      .on('mouseleave', t.hide);
+  }
+
+  // ---------- groups & price buckets ----------
+  const METRIC = {
+    list_chg: ['JD list price % change', 'Median change in JD list price.'],
+    cost_chg: ['Our cost % change', 'Median change in our JD dealer cost.'],
+    sell_chg: ['Our sell price % change', 'Median change in our sell price (list plus the Price Matrix markup).'],
+    margin_chg: ['Margin $ % change', 'Median (new margin $ − old margin $) ÷ old margin $, per part.'],
+    margin_gap: ['Margin $ change minus cost change', 'Below zero means margin $ grew slower than cost, so margin % slipped. Zero means margin % held.'],
+  };
+  const snapLabel = () => { const h = rowsOf('headline'); return h ? monFmt(new Date(h[0].last_date + 'T00:00:00Z')) : 'Latest'; };
+  function drawGroups() {
+    document.querySelectorAll('#dim-seg button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.dim === state.dim)));
+    const isB = state.dim === 'Price bucket';
+    document.getElementById('idx-title').textContent = isB ? 'Price index by price bucket' : 'Price index by group';
+    const all = rowsOf('price_index');
+    const box = document.getElementById('idx-chart');
+    if (!all) { fail(box, 'price_index'); return; }
+    const idx = all.filter((r) => r.dim === state.dim || r.dim === 'All');
+    const members = [...new Map(idx.filter((r) => r.dim === state.dim).map((r) => [r.group, r.member_sort])).entries()].sort((a, b) => a[1] - b[1]).map((e) => e[0]);
+    if (!members.includes(state.pick[state.dim])) state.pick[state.dim] = members[0];
+    const pick = state.pick[state.dim];
+    const sel = document.getElementById('grp-sel');
+    sel.replaceChildren(...members.map((g) => new Option(g, g)));
+    sel.value = pick;
+    root.querySelectorAll('.jp-gname').forEach((el) => (el.textContent = isB ? `${pick} bucket` : pick));
+    const lastYear = d3.max(idx, (r) => r.year);
+    const gi = document.getElementById('grp-idx');
+    gi.dataset.where = where({ group: pick, year: lastYear });
+    const gr = idx.find((r) => r.group === pick && r.year === lastYear);
+    gi.textContent = gr ? d3.format('.0f')(gr.index) : '—';
+
+    const H = 280, m = { t: 12, r: 128, b: 26, l: 40 };
+    const { svg, w } = svgIn(box, H);
+    const years = [...new Set(idx.map((r) => r.year))];
+    const x = d3.scaleLinear(d3.extent(years), [m.l, w - m.r]);
+    const y = d3.scaleLinear([Math.min(95, d3.min(idx, (r) => r.index) - 5), d3.max(idx, (r) => r.index) + 5], [H - m.b, m.t]).nice();
+    svg.append('g').attr('transform', `translate(${m.l},0)`).call(d3.axisLeft(y).ticks(5).tickSize(-(w - m.l - m.r))).call(styleAxis).call((g) => g.select('.domain').remove());
+    svg.append('g').attr('transform', `translate(0,${H - m.b})`).call(d3.axisBottom(x).tickValues(years.filter((v, i) => w > 480 || i % 2 === 0)).tickFormat((v) => (v === lastYear ? snapLabel() : String(v))).tickSize(0).tickPadding(8)).call(styleAxis);
+    svg.append('line').attr('x1', m.l).attr('x2', w - m.r).attr('y1', y(100)).attr('y2', y(100)).attr('stroke', 'var(--cds-chart-reference)').attr('stroke-dasharray', '4 4');
+    const line = d3.line().x((r) => x(r.year)).y((r) => y(r.index));
+    const byG = d3.group(idx, (r) => r.group);
+    for (const g of [...members.filter((g) => g !== pick), 'All', pick]) {
+      const rs = byG.get(g); if (!rs) continue;
+      const hi = g === pick, a = g === 'All';
+      svg.append('path').datum(rs).attr('d', line).attr('fill', 'none').attr('stroke-linecap', 'round').attr('stroke-linejoin', 'round')
+        .attr('stroke', hi ? C()[0] : a ? 'var(--color-fg)' : 'var(--cds-chart-muted)').attr('stroke-width', hi || a ? 2.5 : 1).attr('opacity', hi || a ? 1 : 0.5);
+    }
+    const ends = [['All', 'All parts', 'var(--color-fg)'], [pick, pick, C()[0]]].map(([g, label, color]) => {
+      const r = byG.get(g).at(-1); return { label: `${label} ${d3.format('.0f')(r.index)}`, y: y(r.index), color };
+    });
+    if (Math.abs(ends[0].y - ends[1].y) < 14) { const mid = (ends[0].y + ends[1].y) / 2, up = ends[0].y < ends[1].y ? 0 : 1; ends[up].y = mid - 7; ends[1 - up].y = mid + 7; }
+    ends.forEach((e) => svg.append('text').attr('class', 'strong').attr('x', w - m.r + 6).attr('y', e.y).attr('dy', '0.35em').style('fill', e.color).text(e.label));
+    const t = tip(box);
+    svg.append('rect').attr('x', m.l).attr('y', m.t).attr('width', w - m.l - m.r).attr('height', H - m.t - m.b).attr('fill', 'transparent')
+      .on('mousemove', (ev) => {
+        const [px] = d3.pointer(ev); const yr = Math.round(x.invert(px));
+        const a = byG.get('All').find((r) => r.year === yr), s = byG.get(pick).find((r) => r.year === yr);
+        if (!a || !s) return;
+        t.show(ev, yr === lastYear ? snapLabel() : 'End of ' + yr, [['All parts', d3.format('.1f')(a.index), 'var(--color-fg)'], [pick, `${d3.format('.1f')(s.index)} (${int(s.parts)} parts)`, C()[0]]]);
+      }).on('mouseleave', t.hide);
+
+    // heatmap
+    const metric = state.metric;
+    document.getElementById('metric-sel').value = metric;
+    document.getElementById('heat-title').textContent = `${METRIC[metric][0]} at each wave, by ${isB ? 'price bucket' : 'product group'}`;
+    document.getElementById('heat-note').textContent = METRIC[metric][1] + (isB ? ' Bucket is the part\'s list price just before the wave.' : '') + ' Darker is bigger; the second color marks decreases. Hover a cell for every measure.';
+    const hb = document.getElementById('heat-chart');
+    const wh = rowsOf('wave_heat');
+    if (!wh) { fail(hb, 'wave_heat'); return; }
+    const rows = wh.filter((r) => r.dim === state.dim);
+    const dates = [...new Set(rows.map((r) => r.wave_date))].sort();
+    const gs = [...new Map(rows.map((r) => [r.member, r.member_sort])).entries()].sort((a, b) => a[1] - b[1]).map((e) => e[0]);
+    const cell = isB ? 22 : 26, mh = { t: 34, l: isB ? 112 : 90, r: 4 };
+    const HH = mh.t + gs.length * cell + 4;
+    const { svg: hs, w: hw } = svgIn(hb, HH);
+    const hx = d3.scaleBand(dates, [mh.l, hw - mh.r]).padding(0.06);
+    const hy = d3.scaleBand(gs, [mh.t, HH - 4]).padding(0.06);
+    const vals = rows.map((r) => Math.abs(r[metric])).filter((v) => v != null && isFinite(v)).sort(d3.ascending);
+    const vmax = d3.quantile(vals, 0.95) || 0.05;
+    const fmt = metric === 'margin_gap' ? d3.format('+.1%') : d3.format('+.0%');
+    hs.append('g').selectAll('text').data(dates).join('text').attr('x', (d) => hx(d) + hx.bandwidth() / 2).attr('y', mh.t - 8).attr('text-anchor', 'middle').text((d) => monFmt(new Date(d + 'T00:00:00Z')));
+    hs.append('g').selectAll('text').data(gs).join('text').attr('x', mh.l - 8).attr('y', (g) => hy(g) + hy.bandwidth() / 2).attr('dy', '0.35em').attr('text-anchor', 'end')
+      .attr('class', (g) => (g === pick ? 'strong' : null)).text((g) => g);
+    const ht = tip(hb);
+    const cells = hs.append('g').selectAll('g').data(rows).join('g').attr('transform', (r) => `translate(${hx(r.wave_date)},${hy(r.member)})`);
+    cells.append('rect').attr('width', hx.bandwidth()).attr('height', hy.bandwidth()).attr('rx', 3).attr('fill', 'var(--cds-chart-grid)');
+    const has = (r) => r[metric] != null && isFinite(r[metric]);
+    cells.filter(has).append('rect').attr('width', hx.bandwidth()).attr('height', hy.bandwidth()).attr('rx', 3)
+      .attr('fill', (r) => (r[metric] < 0 ? C()[1] : C()[0])).attr('fill-opacity', (r) => 0.1 + 0.9 * Math.min(1, Math.abs(r[metric]) / vmax));
+    cells.filter(has).append('text').attr('x', hx.bandwidth() / 2).attr('y', hy.bandwidth() / 2).attr('dy', '0.35em').attr('text-anchor', 'middle')
+      .style('fill', (r) => (Math.abs(r[metric]) / vmax > 0.55 ? 'var(--color-bg)' : 'var(--color-fg)')).style('font-size', '10px')
+      .text((r) => (hx.bandwidth() > 34 ? fmt(r[metric]) : ''));
+    const p = (v) => (v == null ? '—' : spct(v));
+    cells.on('mousemove', (ev, r) => ht.show(ev, `${r.member} · ${dateFmt(new Date(r.wave_date + 'T00:00:00Z'))}`, [
+      ['Parts changed', int(r.parts)], ['List', p(r.list_chg)], ['Our cost', p(r.cost_chg)], ['Our sell', p(r.sell_chg)], ['Margin $', p(r.margin_chg)], ['Margin $ minus cost', p(r.margin_gap)]]))
+      .on('mouseleave', ht.hide);
+  }
+
+  // ---------- margin ----------
+  function drawMargin() {
+    document.querySelectorAll('#margin .sw-c0').forEach((el) => (el.style.background = C()[0]));
+    document.querySelectorAll('#margin .sw-c1').forEach((el) => (el.style.background = C()[1]));
+    const mw = rowsOf('margin_waves');
+    const b1 = document.getElementById('mw-chart'), b2 = document.getElementById('mi-chart');
+    if (!mw) { fail(b1, 'margin_waves'); fail(b2, 'margin_waves'); }
+    else {
+      const wd = (d) => monFmt(new Date(d + 'T00:00:00Z'));
+      const every = (w) => (w < 520 ? 3 : w < 760 ? 2 : 1);
+      // grouped bars: cost vs margin $
+      {
+        const H = 220, m = { t: 10, r: 8, b: 26, l: 40 };
+        const { svg, w } = svgIn(b1, H);
+        const x = d3.scaleBand(mw.map((r) => r.wave_date), [m.l, w - m.r]).padding(0.2);
+        const xi = d3.scaleBand(['cost_chg', 'margin_chg'], [0, x.bandwidth()]).padding(0.08);
+        const y = d3.scaleLinear([Math.min(0, d3.min(mw, (r) => Math.min(r.cost_chg, r.margin_chg))), d3.max(mw, (r) => Math.max(r.cost_chg, r.margin_chg))], [H - m.b, m.t]).nice();
+        svg.append('g').attr('transform', `translate(${m.l},0)`).call(d3.axisLeft(y).ticks(5).tickFormat(d3.format('.0%')).tickSize(-(w - m.l - m.r))).call(styleAxis).call((g) => g.select('.domain').remove());
+        svg.append('line').attr('x1', m.l).attr('x2', w - m.r).attr('y1', y(0)).attr('y2', y(0)).attr('stroke', 'var(--cds-chart-axis)');
+        svg.append('g').attr('transform', `translate(0,${H - m.b})`).call(d3.axisBottom(x).tickValues(x.domain().filter((_, i) => i % every(w) === 0)).tickFormat(wd).tickSize(0).tickPadding(8)).call(styleAxis).call((g) => g.select('.domain').remove());
+        const t = tip(b1);
+        const g = svg.append('g').selectAll('g').data(mw).join('g').attr('transform', (r) => `translate(${x(r.wave_date)},0)`);
+        ['cost_chg', 'margin_chg'].forEach((k, i) => g.append('rect').attr('x', xi(k)).attr('width', xi.bandwidth()).attr('y', (r) => y(Math.max(0, r[k]))).attr('height', (r) => Math.abs(y(r[k]) - y(0))).attr('rx', 2).attr('fill', C()[i]));
+        g.append('rect').attr('width', x.bandwidth()).attr('y', m.t).attr('height', H - m.t - m.b).attr('fill', 'transparent')
+          .on('mousemove', (ev, r) => t.show(ev, dateFmt(new Date(r.wave_date + 'T00:00:00Z')), [['Our cost', spct(r.cost_chg), C()[0]], ['Margin $', spct(r.margin_chg), C()[1]], ['Our sell', spct(r.sell_chg)]]))
+          .on('mouseleave', t.hide);
+      }
+      // yearly margin impact
+      {
+        const H = 220, m = { t: 10, r: 8, b: 26, l: 52 };
+        const { svg, w } = svgIn(b2, H);
+        const x = d3.scaleBand(mw.map((r) => r.wave_date), [m.l, w - m.r]).padding(0.25);
+        const y = d3.scaleLinear(d3.extent([0, ...mw.map((r) => r.yearly_margin_impact)]), [H - m.b, m.t]).nice();
+        svg.append('g').attr('transform', `translate(${m.l},0)`).call(d3.axisLeft(y).ticks(5).tickFormat(moneyC).tickSize(-(w - m.l - m.r))).call(styleAxis).call((g) => g.select('.domain').remove());
+        svg.append('line').attr('x1', m.l).attr('x2', w - m.r).attr('y1', y(0)).attr('y2', y(0)).attr('stroke', 'var(--cds-chart-axis)');
+        svg.append('g').attr('transform', `translate(0,${H - m.b})`).call(d3.axisBottom(x).tickValues(x.domain().filter((_, i) => i % every(w) === 0)).tickFormat(wd).tickSize(0).tickPadding(8)).call(styleAxis).call((g) => g.select('.domain').remove());
+        const t = tip(b2);
+        svg.append('g').selectAll('rect').data(mw).join('rect')
+          .attr('x', (r) => x(r.wave_date)).attr('width', x.bandwidth()).attr('y', (r) => y(Math.max(0, r.yearly_margin_impact))).attr('height', (r) => Math.abs(y(r.yearly_margin_impact) - y(0))).attr('rx', 4)
+          .attr('fill', (r) => (r.yearly_margin_impact < 0 ? 'var(--cds-chart-status-critical)' : C()[0]))
+          .on('mousemove', (ev, r) => t.show(ev, dateFmt(new Date(r.wave_date + 'T00:00:00Z')), [['Yearly cost', money(r.yearly_cost_impact)], ['Yearly sales', money(r.yearly_sales_impact)], ['Yearly margin $', money(r.yearly_margin_impact)]]))
+          .on('mouseleave', t.hide);
+      }
+    }
+    const fillTable = (sel, rows, cols) => {
+      const tb = document.querySelector(sel + ' tbody'); tb.replaceChildren();
+      if (!rows) return;
+      for (const r of rows) {
+        const tr = document.createElement('tr');
+        cols.forEach(([f, fmt, bad]) => { const td = document.createElement('td'); td.textContent = r[f] == null ? '—' : fmt(r[f]); if (bad && bad(r)) td.className = 'neg'; tr.append(td); });
+        tb.append(tr);
+      }
+    };
+    const id = (v) => v, p = (v) => spct(v);
+    fillTable('#mw-tbl', mw, [['wave_date', id], ['parts', int], ['parts_held', int], ['parts_down', int], ['parts_up', int], ['pct_down', pct1],
+      ['sold_down', int], ['sold_pct_down', pct1], ['yearly_margin_lost_down', money, (r) => r.yearly_margin_lost_down > 0], ['discount_cut_lost', money],
+      ['oil_lost', money], ['bucket_lost', money], ['yearly_margin_impact', money, (r) => r.yearly_margin_impact < 0], ['note', id]]);
+    fillTable('#mb-tbl', rowsOf('margin_buckets'), [['bucket', id], ['matrix_markup', d3.format('.2%')], ['changes', int], ['cost_chg', p], ['margin_chg', p, (r) => r.margin_chg < r.cost_chg - 0.01],
+      ['pct_margin_lagged', pct0], ['pct_crossed_up', pct0], ['list_chg_crossed', p], ['sell_chg_crossed', p, (r) => r.sell_chg_crossed < r.list_chg_crossed - 0.01], ['margin_pct_now', pct1]]);
+  }
+
+  // ---------- buy-ahead ----------
+  function drawBuyahead() {
+    document.querySelectorAll('#mo-seg button').forEach((b) => b.setAttribute('aria-pressed', String(+b.dataset.mo === state.mo)));
+    document.querySelectorAll('#rate-seg button').forEach((b) => b.setAttribute('aria-pressed', String(+b.dataset.rate === state.rate)));
+    const ba = rowsOf('buyahead');
+    const box = document.getElementById('ba-chart');
+    if (!ba) { fail(box, 'buyahead'); return; }
+    const rows = ba.filter((r) => r.months_ahead === state.mo && Math.abs(r.carry_rate - state.rate) < 1e-9);
+    const H = 260, m = { t: 12, r: 8, b: 26, l: 52 };
+    const { svg, w } = svgIn(box, H);
+    const x = d3.scaleBand(rows.map((r) => r.wave_date), [m.l, w - m.r]).padding(0.25);
+    const ext = d3.extent([0, ...rows.map((r) => r.net)]);
+    const y = d3.scaleLinear(ext, [H - m.b, m.t]).nice();
+    svg.append('g').attr('transform', `translate(${m.l},0)`).call(d3.axisLeft(y).ticks(5).tickFormat(moneyC).tickSize(-(w - m.l - m.r))).call(styleAxis).call((g) => g.select('.domain').remove());
+    svg.append('line').attr('x1', m.l).attr('x2', w - m.r).attr('y1', y(0)).attr('y2', y(0)).attr('stroke', 'var(--cds-chart-axis)');
+    const every = w < 520 ? 3 : w < 760 ? 2 : 1;
+    svg.append('g').attr('transform', `translate(0,${H - m.b})`).call(d3.axisBottom(x).tickValues(x.domain().filter((_, i) => i % every === 0)).tickFormat((d) => monFmt(new Date(d + 'T00:00:00Z'))).tickSize(0).tickPadding(8)).call(styleAxis).call((g) => g.select('.domain').remove());
+    const t = tip(box);
+    svg.append('g').selectAll('rect').data(rows).join('rect')
+      .attr('x', (r) => x(r.wave_date)).attr('width', x.bandwidth()).attr('y', (r) => y(Math.max(0, r.net))).attr('height', (r) => Math.abs(y(r.net) - y(0))).attr('rx', 4)
+      .attr('fill', (r) => (r.net < 0 ? 'var(--cds-chart-status-critical)' : C()[0]))
+      .on('mousemove', (ev, r) => t.show(ev, dateFmt(new Date(r.wave_date + 'T00:00:00Z')), [['Bought early', money(r.bought_ahead)], ['Price saving', money(r.price_saving)], ['Holding cost', money(r.carrying_cost)], ['Net', money(r.net)]]))
+      .on('mouseleave', t.hide);
+    const tb = document.querySelector('#ba-tbl tbody'); tb.replaceChildren();
+    for (const r of rows) {
+      const tr = document.createElement('tr'); tr.dataset.key = [r.wave_date, r.months_ahead, r.carry_rate].map(enc).join(',');
+      [[r.wave_date], [money(r.bought_ahead)], [money(r.price_saving)], [money(r.carrying_cost)], [money(r.net), r.net < 0 ? 'neg' : 'pos']].forEach(([v, c]) => { const td = document.createElement('td'); td.textContent = v; if (c) td.className = c; tr.append(td); });
+      tb.append(tr);
+    }
+    const wv = rowsOf('waves');
+    const ob = document.querySelector('#oh-tbl tbody'); ob.replaceChildren();
+    if (wv) for (const r of wv.filter((r) => r.parts_changed >= 40000)) {
+      const tr = document.createElement('tr');
+      [r.wave_date, money(r.onhand_cost_before), money(r.onhand_value_gain)].forEach((v) => { const td = document.createElement('td'); td.textContent = v; tr.append(td); });
+      ob.append(tr);
+    }
+  }
+
+  // ---------- predict ----------
+  function drawPredict() {
+    const mo = rowsOf('momentum');
+    const tb = document.querySelector('#mom-tbl tbody'); tb.replaceChildren();
+    if (!mo) return;
+    const mx = d3.max(mo, (r) => r.pct_next_up10);
+    for (const r of mo) {
+      const tr = document.createElement('tr');
+      const cells = [r.previous_change, int(r.pairs), spct(r.median_next_change), pct0(r.pct_next_up), null, pct0(r.pct_next_down10), d3.format('.0f')(r.median_months_to_next)];
+      cells.forEach((v, i) => {
+        const td = document.createElement('td');
+        if (i === 4) {
+          const s = document.createElement('span'); s.className = 'jp-cellbar';
+          const b = document.createElement('span'); b.className = 'b'; b.style.width = `${(48 * r.pct_next_up10) / mx}px`; b.style.background = C()[0];
+          s.append(b, document.createTextNode(pct0(r.pct_next_up10))); td.append(s);
+        } else td.textContent = v;
+        tr.append(td);
+      });
+      tb.append(tr);
+    }
+  }
+
+  const DRAW = { summary: drawSummary, triggers: drawTriggers, calendar: drawCalendar, groups: drawGroups, margin: drawMargin, buyahead: drawBuyahead, predict: drawPredict };
+  function show(tab, push) {
+    if (!DRAW[tab]) tab = 'summary';
+    state.tab = tab;
+    document.querySelectorAll('.jp-tab').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.tab === tab)));
+    document.querySelectorAll('.jp-page').forEach((p) => (p.hidden = p.dataset.page !== tab));
+    DRAW[tab]();
+    if (push) dash.setLink(tab);
+  }
+  document.querySelectorAll('.jp-tab').forEach((b) => b.addEventListener('click', () => show(b.dataset.tab, true)));
+  document.querySelectorAll('[data-def]').forEach((b) => b.addEventListener('click', () => { state.def = b.dataset.def; drawTriggers(); }));
+  document.getElementById('seg-sel').addEventListener('change', (e) => { state.seg = e.target.value; drawTriggers(); });
+  document.getElementById('grp-sel').addEventListener('change', (e) => { state.pick[state.dim] = e.target.value; drawGroups(); });
+  document.querySelectorAll('#dim-seg button').forEach((b) => b.addEventListener('click', () => { state.dim = b.dataset.dim; drawGroups(); }));
+  document.getElementById('metric-sel').addEventListener('change', (e) => { state.metric = e.target.value; drawGroups(); });
+  document.querySelectorAll('#mo-seg button').forEach((b) => b.addEventListener('click', () => { state.mo = +b.dataset.mo; drawBuyahead(); }));
+  document.querySelectorAll('#rate-seg button').forEach((b) => b.addEventListener('click', () => { state.rate = +b.dataset.rate; drawBuyahead(); }));
+
+  let first = true;
+  dash.onData(() => {
+    drawHeader();
+    if (first) { first = false; const h = location.hash.slice(1); show(DRAW[h] ? h : 'summary', false); }
+    else DRAW[state.tab]();
+  });
+})();
+</script>
