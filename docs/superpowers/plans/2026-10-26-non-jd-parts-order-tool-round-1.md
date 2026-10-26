@@ -184,10 +184,10 @@ Tests first. Then:
 
 ### Task C10 (Brian + Claude): switch over in Dev
 
-1. Git-sync Dev (C2, C3).
-2. Brian sets Default to Supply 12, SupplyUnit Weeks, MinDemands 3, in the app.
-3. Dev refresh (mode all), then the publish (Gateway PC `git pull` + run).
-4. Build and deploy the app to Fedora.
+1. Git-sync Dev (C2, C3). Both are already done.
+2. **Build and deploy the app to Fedora first.** The new app shows "The data was published in an older format; it will update after the next publish" until step 4. The old app has no version check, so the publish must never run ahead of the app.
+3. Brian sets Default to Supply 12, SupplyUnit Weeks, MinDemands 3, in the app.
+4. Dev refresh (mode all), then the publish: Gateway PC `git pull` + `run_publish.py --force`.
 5. Retest list:
    - parity banner absent;
    - a mask set then requested;
