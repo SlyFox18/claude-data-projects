@@ -48,7 +48,9 @@
 >     - **To do:**
 >       - Brian sets `NONJD_SOURCE=prod` in his own PC's publish `.env`, or never publishes from there.
 >       - Check the first automatic morning.
->       - Deploy app 0.3.0 to Fedora.
+>       - ~~Deploy app 0.3.0 to Fedora.~~ Done 2026-10-26 by Brian.
+>         - All 19 branches load in about 10–12 s, sequentially; acceptable. Possible tweak: load 3–4 at once.
+>         - Test order "TEST multi-branch" saved as two orders, 1-KM and 3-KM, with one shared saveId and branches and franchises in Parameters.
 >       - Orchestrator follow-up: derive the environment name from the workspace ID when Fabric doesn't supply it.
 >   - **Prod release runbook** written: `2026-10-26-non-jd-parts-order-tool-prod-release.md` (`e1434df8`). Plan: first run same day (option A); publish only from the Gateway PC.
 >   - **0.3.0 in progress:** multi-branch One-Time Order, one order per branch + franchise (Ben's Q2, partly). Combined orders are a question for Ben (round 2, with transfers).
