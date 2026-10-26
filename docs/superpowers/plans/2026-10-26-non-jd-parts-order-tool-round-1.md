@@ -6,7 +6,12 @@
 > - C0 DONE 2026-10-26 (Brian, verified via Graph):
 >   - **NonJD_OrderRules:** MinDemands (Number, 0 dp), SupplyUnit (Choice Weeks/Months, default Weeks), MinLineValue / MaxLineValue (Number, 2 dp) and Archived (Yes/No, default No) are added. MinDemands is set on the existing rows: Default 3, Cotton in 2, Cotton off 3, Test 3. On existing rows SupplyUnit and Archived are blank, read as Weeks / No.
 >   - **NonJD_PartSettings:** ManualOrder (Yes/No, default No) and MaskedOn (date only) are added. The test row is unchanged.
-> - C1 (`93fbd8f4`): the reference has the new calculation (242 tests); the impact report is written. Review approved; D13/D14 and minor fixes are in progress.
+> - C1 DONE (`93fbd8f4`, `df45ccfe`, 273 tests): reference on the round 1 calculation incl. D13/D14; impact report `feedback/2026-10-26-round1-impact.md` (checks: step 1 = Dev Gold part by part, step 6 = reference part by part).
+> - C3 DONE (fabric-workspace-docs `25bb5fc9`): Gold on round 1, synced to Dev with no conflict (the commit didn't touch the lakehouse).
+>   - Compare: PASS, 0 differences on 199,473 rows.
+>   - Determinism: identical fingerprint on two runs.
+>   - Live list (Default 3 demands / 6 weeks) = impact step 5 exactly: 5,309 lines, $4.86M.
+>   - **Until C4 lands and the Gateway PC pulls it,** the scheduled publish fails at extract (old columns gone) and uploads nothing, so the app stays on the Oct 23 files.
 > - C2 DONE (fabric-workspace-docs `e37cbf3e`, `fd351114`): both dataflows read the new columns, synced to DP - Staging - Dev and run.
 >   - MinDemands, MinLineValue and MaxLineValue are `number` (DOUBLE), so a bad value reaches validation and isn't silently rounded. C3 casts them after validating.
 >   - Blank SupplyUnit is null (SharePoint sends ""). Archived and ManualOrder are null when blank.
