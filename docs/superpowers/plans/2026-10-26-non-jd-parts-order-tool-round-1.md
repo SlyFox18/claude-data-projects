@@ -12,6 +12,14 @@
 >   - Determinism: identical fingerprint on two runs.
 >   - Live list (Default 3 demands / 6 weeks) = impact step 5 exactly: 5,309 lines, $4.86M.
 >   - **Until C4 lands and the Gateway PC pulls it,** the scheduled publish fails at extract (old columns gone) and uploads nothing, so the app stays on the Oct 23 files.
+> - C5 DONE (app `6c27884`, `d26a255`, 803 tests):
+>   - The engine and data layer are on round 1 and contract v2 (`src/data/contract.ts` refuses unknown versions).
+>   - Full parity: 0 mismatches over 199,473 parts and 25 fields.
+>   - Fuzz against the reference: 24,189 parts, 0 mismatches (two planted bugs were caught).
+>   - The validation messages are identical.
+>   - The live-only cases (manual, masked, value limits, months, mask ended) have hand-made tests ported from the reference.
+>   - No separate review: parity and fuzz are the check; the save logic is reviewed with C6–C9.
+> - C6–C9 in progress (one agent, one commit per task).
 > - C4 DONE (`68fcf9b2`, `96d2e613`, 137 tests; review approved, then fixed: explanation wording, a contractVersion bump rule with newer/older messages, the rules column check before extract, non-finite rule numbers fail the publish): contract v2 (`contractVersion` 2 in `_meta.json`), 53 reorder fields, column check before extract, transfers exclude the excluded branches. The dry build from Dev matches Gold: 42 files, Branch 1 has 164 lines / $39,746.33.
 >   - **Do NOT `git pull` on the Gateway PC until the app (C5–C9) is deployed to Fedora (C10).** A v2 publish would break the old app.
 >   - Prod Gold is still old, so the Prod release must deploy round 1 Gold and this publish together.
