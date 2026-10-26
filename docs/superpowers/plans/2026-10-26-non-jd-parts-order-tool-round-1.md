@@ -28,7 +28,11 @@
 >   - Brian's hand checks passed. SharePoint shows the quick actions and archive changed only their columns, and the test part and test rule are back to their start.
 >   - The 10 stale files for the excluded branches and `_write_test.txt` were deleted with Brian's OK.
 >   - App version bumped to 0.2.0 (`6f904ee`); it shows on the next deploy.
-> - Next: C11 (documents).
+> - C11 DONE (`803a113d`): user guide (generator; Brian's Word edit folded in, .docx not yet regenerated in the repo), new "Round 1 changes" doc for Ben, REORDER-RULES and the questions doc. App 0.2.0 deployed to Fedora by Brian.
+> - 2026-10-26, after round 1:
+>   - **Real-data check running** (Brian approved the SharePoint writes): the Test rule, the test part and up to 3 temporary settings rows, all restored afterwards.
+>   - **Prod release runbook** written: `2026-10-26-non-jd-parts-order-tool-prod-release.md` (`e1434df8`). Plan: first run same day (option A); publish only from the Gateway PC.
+>   - **0.3.0 in progress:** multi-branch One-Time Order, one order per branch + franchise (Ben's Q2, partly). Combined orders are a question for Ben (round 2, with transfers).
 > - C4 DONE (`68fcf9b2`, `96d2e613`, 137 tests; review approved, then fixed: explanation wording, a contractVersion bump rule with newer/older messages, the rules column check before extract, non-finite rule numbers fail the publish): contract v2 (`contractVersion` 2 in `_meta.json`), 53 reorder fields, column check before extract, transfers exclude the excluded branches. The dry build from Dev matches Gold: 42 files, Branch 1 has 164 lines / $39,746.33.
 >   - **Do NOT `git pull` on the Gateway PC until the app (C5–C9) is deployed to Fedora (C10).** A v2 publish would break the old app.
 >   - Prod Gold is still old, so the Prod release must deploy round 1 Gold and this publish together.
