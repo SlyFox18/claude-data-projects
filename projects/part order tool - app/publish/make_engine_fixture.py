@@ -2,11 +2,13 @@
 Build the app's engine parity fixture (Plan B Task B6) from a publish output folder.
 
 Reads reorder_<b>.json.gz, history_<b>.json.gz, rules.json.gz and _meta.json, samples ~400 parts across every
-branch with stratification (every status, every rule, minimumIgnored true/false, masked, min override, negative
-on hand, fractional values, with and without history) and writes
+branch with stratification (every status, every rule, minimumNoDemand true/false, masked, min override, negative
+on hand, fractional values, with and without history; round 1: the demand-count boundary, units sold with no
+demands (D14), value capped, months of supply, manual order and a mask ended by a request) and writes
     {"month": "<months[0]>", "rules": [...], "parts": [{"branch", "gold": <reorder row>,
                                                           "history": {"sales", "requests"} | null}]}
-to the app repo's src/engine/__fixtures__/gold-sample.json. Deterministic: fixed seed, stable sort.
+to the app repo's src/engine/__fixtures__/gold-sample.json (or --dest). Deterministic: fixed seed, stable sort.
+Expected strata with no part in the data at all (e.g. no Months rule or Manual Order row yet) are printed.
 
 Usage: python make_engine_fixture.py [--output DIR] [--dest FILE] [--size N] [--seed N]
 """
@@ -20,8 +22,16 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_OUTPUT = os.path.join(_HERE, "output")
 DEFAULT_DEST = os.path.join(os.path.expanduser("~"), "Documents", "Git-Projects", "nonjd-order-app", "src", "engine",
                             "__fixtures__", "gold-sample.json")
-STATUSES = ("Masked", "NoRecentActivity", "NotStocked", "OutOfStock", "Reorder", "OK")
-FRACTION_FIELDS = ("onHand", "onOrder", "minimumQty", "minOverride", "windowDemand", "effectiveMin")
+STATUSES = ("ManualOrder", "Masked", "NoRecentActivity", "NotStocked", "BelowMinValue", "AboveMaxValue",
+            "OutOfStock", "Reorder", "OK")
+FRACTION_FIELDS = ("onHand", "onOrder", "minimumQty", "minOverride", "windowDemand", "unitsSoldWindow",
+                   "effectiveMin", "supply")
+# Strata the fixture should cover; any with no part in the whole data is reported (it can't be sampled).
+EXPECTED_STRATA = tuple(f"status={s}" for s in STATUSES) + (
+    "minimumNoDemand=true", "minimumNoDemand=false", "unit=Weeks", "unit=Months", "demandsAtMin",
+    "demandsOneBelowMin", "belowMinDemands", "unitsNoDemands", "valueCapped", "belowMinValue", "manualOrder",
+    "maskedOn", "maskEnded", "masked", "minOverride", "minimumWins", "negativeOnHand", "fractional", "history",
+    "noHistory")
 
 
 def _load(path: str):
@@ -65,10 +75,17 @@ def _fractional(v) -> bool:
 def tags(c: dict) -> list:
     """The strata a candidate belongs to."""
     g = c["gold"]
-    t = [f"status={g['status']}", f"rule={g['ruleName']}", f"minimumIgnored={str(g['minimumIgnored']).lower()}",
-         f"branch={c['branch']}", f"basis={g['demandBasis']}", "history" if c["history"] else "noHistory"]
+    t = [f"status={g['status']}", f"rule={g['ruleName']}", f"minimumNoDemand={str(g['minimumNoDemand']).lower()}",
+         f"branch={c['branch']}", f"basis={g['demandBasis']}", f"unit={g['supplyUnit']}",
+         "history" if c["history"] else "noHistory"]
     if g["isMasked"]:
         t.append("masked")
+    if g.get("maskedOn") is not None:
+        t.append("maskedOn")
+        if not g["isMasked"]:
+            t.append("maskEnded")   # masked, then requested after MaskedOn (or expired)
+    if g.get("manualOrder"):
+        t.append("manualOrder")
     if g["minOverride"] is not None:
         t.append("minOverride")
     if (g["minimumQty"] or 0) > 0:
@@ -81,11 +98,31 @@ def tags(c: dict) -> list:
         t.append("edgeSpace")
     if g["activeMonths"] > 0 and g["windowDemand"] == 0:
         t.append("cancelledOut")
-    if 0 < g["activeMonths"] < g["minActiveMonths"]:
-        t.append("belowMinActive")
+    # The MinDemands boundary (stocking uses demands, D1).
+    if g["demandCount"] > 0 and g["demandCount"] == g["minDemands"]:
+        t.append("demandsAtMin")
+    if g["minDemands"] > 0 and g["demandCount"] == g["minDemands"] - 1:
+        t.append("demandsOneBelowMin")
+    if 0 < g["demandCount"] < g["minDemands"]:
+        t.append("belowMinDemands")
+    # D14: units sold with no recorded demands (activity, but not stocked on demands).
+    if g["demandCount"] == 0 and g["unitsSoldWindow"] > 0:
+        t.append("unitsNoDemands")
+    if g.get("valueCapped"):
+        t.append("valueCapped")
+    if g.get("belowMinValue"):
+        t.append("belowMinValue")
     if g["effectiveMin"] > g["calcTarget"]:
         t.append("minimumWins")
     return t
+
+
+def absent_strata(candidates: list) -> list:
+    """EXPECTED_STRATA with no part in the whole data (so the fixture can't cover them)."""
+    seen = set()
+    for c in candidates:
+        seen.update(tags(c))
+    return [t for t in EXPECTED_STRATA if t not in seen]
 
 
 def sample(candidates: list, size: int = 400, per_tag: int = 12, seed: int = 20261021) -> list:
@@ -148,6 +185,9 @@ def main(argv=None) -> int:
     missing = sorted(set(all_counts) - set(stratum_counts(parts)))
     if missing:
         print("  strata with no sampled part:", missing)
+    absent = absent_strata(data["candidates"])
+    if absent:
+        print("  expected strata with no part in the data (none in live data, so not covered):", absent)
     return 0
 
 

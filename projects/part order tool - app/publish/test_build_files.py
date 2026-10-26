@@ -44,13 +44,18 @@ def _hist(b):
 
 
 RULES = [
-    {"id": 2, "ruleName": "B", "priority": 2.0, "active": True, "franchise": None, "dealerGroupCode": "770",
-     "branch": "1", "startMonth": float("nan"), "endMonth": None, "historyMonths": 12, "minActiveMonths": Decimal("3"),
-     "weeksOfCover": 6.5, "demandBasis": "Sales", "extra": "dropped"},
-    {"id": 1, "ruleName": "A", "priority": 1.0, "active": False, "franchise": "A", "dealerGroupCode": None,
-     "branch": None, "startMonth": None, "endMonth": None, "historyMonths": 6, "minActiveMonths": 2,
-     "weeksOfCover": 4.0, "demandBasis": "Requests"},
+    {"id": 2, "ruleName": "B", "priority": 2.0, "active": True, "archived": None, "franchise": None,
+     "dealerGroupCode": "770", "branch": "1", "startMonth": float("nan"), "endMonth": None, "historyMonths": 12,
+     "minDemands": Decimal("3"), "weeksOfCover": 6.5, "supplyUnit": None, "minLineValue": 25.0,
+     "maxLineValue": Decimal("500.50"), "demandBasis": "Sales", "minActiveMonths": 3, "extra": "dropped"},
+    {"id": 1, "ruleName": "A", "priority": 1.0, "active": False, "archived": True, "franchise": "A",
+     "dealerGroupCode": None, "branch": None, "startMonth": None, "endMonth": None, "historyMonths": 6,
+     "minDemands": 2, "weeksOfCover": 4.0, "supplyUnit": "Months", "minLineValue": None, "maxLineValue": None,
+     "demandBasis": "Requests"},
 ]
+RULE_KEYS = {"id", "ruleName", "priority", "active", "archived", "franchise", "dealerGroupCode", "branch",
+             "startMonth", "endMonth", "historyMonths", "minDemands", "weeksOfCover", "supplyUnit", "minLineValue",
+             "maxLineValue", "demandBasis"}
 
 
 def _build(reorder=None, rules=None):
@@ -116,7 +121,7 @@ def test_write_meta_plain_json(out):
     assert raw[:2] != b"\x1f\x8b"
     meta = json.loads(raw)
     assert meta == {"dataAsOf": AS_OF, "publishedAt": "2026-10-20T12:00:00+00:00", "source": "dev",
-                    "branches": branches, "counts": counts, "schemaVersion": 1}
+                    "branches": branches, "counts": counts, "schemaVersion": 1, "contractVersion": 2}
 
 
 def test_nan_rejected():
@@ -157,14 +162,19 @@ def test_rules_file(out):
     d = _read(out, "rules.json.gz")
     assert d["dataAsOf"] == AS_OF
     assert [r["id"] for r in d["rules"]] == [1, 2]
-    keys = {"id", "ruleName", "priority", "active", "franchise", "dealerGroupCode", "branch", "startMonth",
-            "endMonth", "historyMonths", "minActiveMonths", "weeksOfCover", "demandBasis"}
-    assert all(set(r) == keys for r in d["rules"])
-    r2 = d["rules"][1]
+    assert all(set(r) == RULE_KEYS for r in d["rules"])
+    r1, r2 = d["rules"]
     assert r2["priority"] == 2 and isinstance(r2["priority"], int)
-    assert r2["minActiveMonths"] == 3 and isinstance(r2["minActiveMonths"], int)
+    assert r2["minDemands"] == 3 and isinstance(r2["minDemands"], int)
     assert r2["weeksOfCover"] == 6.5
     assert r2["startMonth"] is None and r2["active"] is True
+    # blank SupplyUnit / Archived stay null (the engine reads them as Weeks / No, as Gold does)
+    assert r2["supplyUnit"] is None and r2["archived"] is None
+    assert r2["minLineValue"] == 25 and r2["maxLineValue"] == 500.5
+    assert r1["supplyUnit"] == "Months" and r1["archived"] is True
+    assert r1["minLineValue"] is None and r1["maxLineValue"] is None
+    # MinActiveMonths is left in the list unused (D1) and is not published
+    assert "minActiveMonths" not in r2
 
 
 def test_rules_empty_still_written_and_deterministic(out):
@@ -178,3 +188,34 @@ def test_rules_row_missing_key_raises(out):
     bad = [{k: v for k, v in RULES[0].items() if k != "weeksOfCover"}]
     with pytest.raises(ValueError, match="weeksOfCover"):
         _build(rules=bad)
+
+
+@pytest.mark.parametrize("key", ["minDemands", "supplyUnit", "minLineValue", "maxLineValue", "archived"])
+def test_rules_row_missing_new_key_raises(out, key):
+    bad = [{k: v for k, v in RULES[0].items() if k != key}]
+    with pytest.raises(ValueError, match=key):
+        _build(rules=bad)
+
+
+# ---- Round 1: excluded branches (D6) ----
+
+def test_transfers_to_or_from_excluded_branches_are_dropped(out):
+    lines = [dict(TRANSFERS[0], toBranch=to, fromBranch=fr, ticket=f"T{i}")
+             for i, (to, fr) in enumerate([("1", "92"), ("12", "1"), ("1", "93C "), ("4b", "92"), ("92", "5"),
+                                           (" 97", "1"), ("", "1"), ("1", None)])]
+    build_files.build(REORDER, _hist, lines, NAMES, AS_OF, MONTH, RULES)
+    got = [t["ticket"] for t in _read(out, "transfers.json.gz")["lines"]]
+    assert got == ["T0", "T6", "T7"]
+
+
+@pytest.mark.parametrize("branch", ["12", "93C", "4b", "5 "])
+def test_reorder_row_at_excluded_branch_raises(out, branch):
+    with pytest.raises(ValueError, match="excluded"):
+        _build([_row("1", "P1", 0), _row(branch, "P2", 3)])
+    assert not (out / f"reorder_{branch.strip()}.json.gz").exists()
+
+
+def test_meta_has_contract_version(out):
+    _, branches = _build()
+    path = build_files.write_meta(AS_OF, AS_OF, "dev", branches, {})
+    assert json.loads(open(path, "rb").read())["contractVersion"] == 2

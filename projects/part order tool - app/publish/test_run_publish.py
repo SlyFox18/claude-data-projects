@@ -6,6 +6,7 @@ import pytest
 
 import build_files
 import extract
+import publish_logic
 import run_publish
 import upload
 
@@ -24,9 +25,11 @@ class Env:
         self.built = [BUILT]  # successive built_at results; the last one repeats
         self.end = END
         self.on_hand_02 = 0
-        self.rules = [{"id": 1, "ruleName": "Default", "priority": 99.0, "active": True, "franchise": None,
-                       "dealerGroupCode": None, "branch": None, "startMonth": None, "endMonth": None,
-                       "historyMonths": 12, "minActiveMonths": 3, "weeksOfCover": 4.0, "demandBasis": "Sales"}]
+        self.rules = [{"id": 1, "ruleName": "Default", "priority": 99.0, "active": True, "archived": None,
+                       "franchise": None, "dealerGroupCode": None, "branch": None, "startMonth": None,
+                       "endMonth": None, "historyMonths": 12, "minDemands": 3, "weeksOfCover": 4.0,
+                       "supplyUnit": None, "minLineValue": None, "maxLineValue": None, "demandBasis": "Sales"}]
+        self.checked = 0
         self.fail_on = None   # upload call number (1-based) that raises
 
 
@@ -45,6 +48,10 @@ def env(tmp_path, monkeypatch):
     def built_at(con):
         return e.built.pop(0) if len(e.built) > 1 else e.built[0]
     monkeypatch.setattr(extract, "built_at", built_at)
+
+    def check_columns(con):
+        e.checked += 1
+    monkeypatch.setattr(extract, "check_columns", check_columns)
     monkeypatch.setattr(extract, "reorder", lambda con: [
         {"branch": "01", "franchise": "A", "partNumber": "P1", "onHand": 5, "target": 2, "surplusQty": 3,
          "status": "ok"},
@@ -187,3 +194,37 @@ def test_missing_rules_table_is_clear_error(env, monkeypatch):
     assert isinstance(ei.value.__cause__, IOError)
     assert env.uploaded == []
     assert not env.state_file.exists()
+
+
+# ---- Round 1 (Plan C4): Gold/publish mismatch fails clearly ----
+
+def test_columns_are_checked_before_extracting(env):
+    assert run_publish.main([]) == 0
+    assert env.checked == 1
+
+
+def test_missing_gold_columns_fail_naming_them(env, monkeypatch):
+    def check(con):
+        raise publish_logic.MissingColumnsError("Fact_NonJD_Reorder is missing column(s) MinDemands, SupplyUnit")
+    monkeypatch.setattr(extract, "check_columns", check)
+    monkeypatch.setattr(extract, "reorder", lambda con: pytest.fail("read the reorder table after a failed check"))
+    with pytest.raises(publish_logic.MissingColumnsError, match="MinDemands, SupplyUnit"):
+        run_publish.main([])
+    assert env.uploaded == []
+    assert not env.state_file.exists()
+
+
+def test_missing_rules_columns_are_not_reworded(env, monkeypatch):
+    def rules(con):
+        raise publish_logic.MissingColumnsError("NonJD_OrderRules is missing column(s) Archived")
+    monkeypatch.setattr(extract, "rules", rules)
+    with pytest.raises(publish_logic.MissingColumnsError, match="Archived") as ei:
+        run_publish.main([])
+    assert "not found or unreadable" not in str(ei.value)
+    assert env.uploaded == []
+
+
+def test_meta_carries_contract_version(env, tmp_path):
+    run_publish.main([])
+    meta = json.loads((tmp_path / "out" / "_meta.json").read_bytes())
+    assert meta["contractVersion"] == 2 and meta["schemaVersion"] == 1

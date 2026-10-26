@@ -90,6 +90,8 @@ def _publish(args) -> int:
     if not go:
         return 0
 
+    # Gold and the publish must agree on the columns; a mismatch fails here naming them (MissingColumnsError).
+    extract.check_columns(con)
     built = extract.built_at(con)
     start = pl.run_start(rows, latest["run_id"])
     if not pl.built_in_run(built, start, latest["end_utc"]):
@@ -104,6 +106,8 @@ def _publish(args) -> int:
     transfers, names = extract.transfers(con), extract.branch_names(con)
     try:
         rules = extract.rules(con)
+    except pl.MissingColumnsError:
+        raise   # already names the missing columns
     except Exception as ex:
         first = (str(ex).splitlines() or [""])[0]
         raise RuntimeError(f"NonJD_OrderRules not found or unreadable in the {config.SOURCE} DP_Presentation "

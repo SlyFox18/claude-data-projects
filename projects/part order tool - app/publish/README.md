@@ -4,7 +4,8 @@ Reads DP Gold (`Fact_NonJD_Reorder`, `Fact_NonJD_SalesHistory`, `Fact_Outstandin
 after the morning DP run and uploads the web app's data files to the SharePoint library **NonJD Order Data**
 on https://spitractor.sharepoint.com/sites/SouthPlainsImplement-ReportSite.
 
-- Plan: `docs/superpowers/plans/2026-10-20-non-jd-parts-order-tool-data-feed.md`
+- Plan: `docs/superpowers/plans/2026-10-20-non-jd-parts-order-tool-data-feed.md`; round 1 (contractVersion 2):
+  `docs/superpowers/plans/2026-10-26-non-jd-parts-order-tool-round-1.md`
 - Spec: `docs/superpowers/specs/2026-10-20-non-jd-parts-order-tool-redesign-design.md`
 - Where the business rules live: the Gold notebook (fabric-workspace-docs
   `workspaces/DP - Presentation - Dev/Fact Tables/Parts Order Tool/Build_Gold_NonJD_Reorder.Notebook`) and its
@@ -29,6 +30,9 @@ What decides whether to publish:
 - It looks back 14 days in `dp_refresh_log` for the latest `Build_Gold_NonJD_Reorder` item row. Skipped rows are
   ignored. It publishes only if that latest run succeeded and hasn't been published yet.
 - It refuses (exit 1) if `Fact_NonJD_Reorder.BuiltAtUtc` is outside that run, or if the table changes during extraction.
+- It refuses (exit 1) before extracting if a Gold table (`Fact_NonJD_Reorder`, `Fact_NonJD_SalesHistory`,
+  `Fact_OutstandingTransfers`, `NonJD_OrderRules`) lacks a column the contract needs, naming the missing columns. Gold
+  and the publish code must be deployed together (e.g. round 1 Gold with contractVersion 2 publish code).
 
 What gets uploaded:
 - The reorder, surplus, transfers and rules files are re-uploaded on every new DP run (they embed `dataAsOf`, so their
@@ -56,10 +60,18 @@ Task Scheduler setup:
 - History files have no `dataAsOf`, so a stale history file after a mid-upload crash can't be detected from the file
   itself (it heals on the next run).
 - Show `dataAsOf` and flag data older than one business day.
+- Check `_meta.json`'s `contractVersion` first (missing = 1) and refuse a version the app doesn't know.
 
-## File contract (schemaVersion 1)
+## File contract (schemaVersion 1, contractVersion 2)
 
-schemaVersion 1 = this rules-list contract (2026-10-20); the earlier matrix-era shape was never consumed.
+- `schemaVersion` 1 = the rules-list file layout (2026-10-20); the earlier matrix-era shape was never consumed. It
+  is unchanged in round 1.
+- `contractVersion` = the fields inside the files. 1 = Plan A/B (`_meta.json` had no `contractVersion`; treat a
+  missing one as 1). **2 = round 1** (Plan C, 2026-10-26): demand counts, weeks or months of supply, line value
+  limits, Manual Order, masks that end at a request, the new statuses and the excluded branches.
+- **The app must refuse a `contractVersion` it doesn't know** (show "The app needs updating" and load nothing),
+  rather than reading fields that have changed meaning. The publish fails, naming the columns, if Gold lacks a column
+  this contract needs, so a half-deployed Gold never reaches the app.
 
 All files sit flat in the library (no sub-folders). They are UTF-8 JSON with sorted keys (the examples below are
 unsorted for reading); `.json.gz` files are gzip-compressed, `_meta.json` is plain.
@@ -67,31 +79,42 @@ unsorted for reading); `.json.gz` files are gzip-compressed, `_meta.json` is pla
 - Numbers are plain JSON numbers (whole values are integers). `NaN` / `Infinity` never appear (they become `null`;
   the writer refuses to emit them).
 - Nulls: the `sales` / `requests` arrays never contain null (they use 0). In a reorder part, only these fields can be
-  null: `description`, `productGroup`, `minimumQty`, `maximumQty`, `reorderCode`, `activityCode`, `minOverride` and
-  `maskExpires`. Every other reorder field is never null: blank text arrives as `""` (`bin`, `superTo`, `superFrom`,
-  `dealerGroupCode`), quantities and prices are 0 when missing, and `target`, `minimumIgnored`, `ruleName` and the other rule fields are
-  always filled (Gold fills the built-in default rule when no rule matches). In the other files, any field may be null.
+  null: `description`, `productGroup`, `minimumQty`, `maximumQty`, `reorderCode`, `activityCode`, `minOverride`,
+  `maskExpires`, `maskedOn`, `minLineValue` and `maxLineValue`. Every other reorder field is never null: blank text
+  arrives as `""` (`bin`, `superTo`, `superFrom`, `dealerGroupCode`), quantities and prices are 0 when missing, and
+  `target`, `minimumNoDemand`, `manualOrder`, `ruleName`, `supplyUnit` and the other rule fields are always filled
+  (Gold fills the built-in default rule when no rule matches). In the other files, any field may be null.
 - Dates are ISO strings (`2026-10-20`). Datetimes are ISO UTC with `+00:00` and may include fractional seconds.
 - Branch codes are Equip's text codes (e.g. `"1"`, `"92"`), **trimmed**. The `branch` value inside every file is that
   trimmed key, and it is the key in the file names. A code must match `^[A-Za-z0-9_-]+$`, and two raw codes that trim
   to the same key (a trailing-space duplicate) are an error; either makes the publish fail rather than write bad files.
+- **Excluded branches (D6): 12, 5, 97, 4B and 93C** (compared trimmed, case-insensitive) appear in no file: no
+  reorder, history or surplus rows, no `_meta.json` entry, and no transfer line to or from them. Gold leaves them out
+  of the reorder and history tables; a reorder row at one fails the publish (Gold and the publish are out of step).
+  Transfer lines are filtered in the publish, because `Fact_OutstandingTransfers` still holds them.
 - Part numbers are raw as stored in Gold (a trailing space is significant). Match on `franchise` + `partNumber`.
 
 ### `_meta.json` (uploaded last)
 ```json
-{"schemaVersion": 1, "dataAsOf": "2026-10-20T11:41:07+00:00", "publishedAt": "2026-10-20T12:20:03.482915+00:00",
- "source": "prod",
+{"schemaVersion": 1, "contractVersion": 2, "dataAsOf": "2026-10-20T11:41:07+00:00",
+ "publishedAt": "2026-10-20T12:20:03.482915+00:00", "source": "prod",
  "branches": [{"branch": "1", "name": "Lubbock", "parts": 18234}],
  "counts": {"parts": 412345, "historyRows": 3456789, "transferLines": 210}}
 ```
 `dataAsOf` is when `Build_Gold_NonJD_Reorder` finished in the DP run (its `end_utc` in `dp_refresh_log`), not the
 publish time. `branches` is sorted numerically, then alphabetically; `name` falls back to the code if the branch is
-not in `dim_BranchLocation`. `counts.parts` is the total reorder rows, `historyRows` the rows read from the history table.
+not in `dim_BranchLocation`. `counts.parts` is the total reorder rows, `historyRows` the rows read from the history
+table. `contractVersion` is described above (missing = 1).
 
 ### `reorder_<branch>.json.gz`
-`{"branch", "dataAsOf", "parts": [ ... ]}`, one object per part in scope at that branch. Each part has the 43 fields
-below: `extract.REORDER_SQL` selects 44 columns, and `branch` is the file-level key rather than a per-part field. They
-are renamed as shown. Gold's `RuleId` and `BuiltAtUtc` are not published (users see the rule name, not its list id).
+`{"branch", "dataAsOf", "parts": [ ... ]}`, one object per part in scope at that branch. Each part has the 53 fields
+below: `extract.REORDER_COLUMNS` selects 54 columns, and `branch` is the file-level key rather than a per-part field.
+They are renamed as shown (the camelCase of the Gold column unless noted). Gold's `RuleId` and `BuiltAtUtc` are not
+published (users see the rule name, not its list id).
+
+Changed in contractVersion 2: `minimumIgnored` is replaced by `minimumNoDemand`, `minActiveMonths` by `minDemands`,
+and `weeksOfCover` by `supply` + `supplyUnit` + `supplyMonths`. New: `demandCount`, `unitsSoldWindow`,
+`minLineValue`, `maxLineValue`, `valueCapped`, `belowMinValue`, `manualOrder` and `maskedOn`.
 
 | Field | Meaning |
 |---|---|
@@ -101,73 +124,121 @@ are renamed as shown. Gold's `RuleId` and `BuiltAtUtc` are not published (users 
 | cost, sellPrice, listPrice | Prices |
 | minimumQty, maximumQty, reorderCode, activityCode | Equip stocking fields |
 | minOverride | From the app's settings list (as of the DP run) |
-| isMasked | Non-null boolean that already accounts for expiry: Masked AND (maskExpires null OR maskExpires >= the Central date of the build) |
-| maskExpires | Date string. Can be set while `isMasked` is false (the mask expired) |
+| manualOrder | Non-null boolean, from the settings list (as of the DP run): the part is never suggested until the setting is turned off |
+| isMasked | Non-null boolean, the live mask as of the build: Masked AND (maskExpires null OR maskExpires >= the Central date of the build) AND NOT (maskedOn set AND the date of lastRequested > maskedOn) |
+| maskExpires | Date string. Can be set while `isMasked` is false (the mask expired, or ended at a request) |
+| maskedOn | Date string: the Central date the mask was saved. Null on older rows (such a mask never ends at a request). Can be set while `isMasked` is false |
 | isLowMargin | InMaster user_field_3 = LOW |
 | sales12, salesPrev12 | Quantities (units, not dollars) for the current and previous 12 months |
 | lastRequested | Equip last-demand date as a datetime string at 00:00+00:00. Use the date part only; don't convert time zones. `1900-01-01` means never requested |
 | dealerGroupCode | Equip dealer group code for this part at this branch (what the rules match on); `""` when blank (matches only rules with a blank DealerGroupCode) |
-| ruleName | Name of the rule that set this part's settings: `Rule <Id>` for a rule saved without a name, `Built-in default` when no rule matched (also when the matching rule was invalid and skipped; the DP run's WARN names those) |
+| ruleName | Name of the rule that set this part's settings: `Rule <Id>` for a rule saved without a name, `Built-in default` when no rule matched (also when the matching rule was invalid and skipped; the DP run's WARN names those). Archived and inactive rules are never used |
 | demandBasis | `UnitsSold` or `Requests`: what `windowDemand` counts |
 | historyMonths | Full months of history measured (the current partial month is left out) |
-| minActiveMonths | Months with demand needed before the rule's calculation stocks the part (a minimum still applies) |
-| weeksOfCover | Weeks of demand to keep on hand; a number from 0 to 104, can be fractional |
-| windowDemand | Total units sold (or requests) in the window; 0 if negative |
-| activeMonths | Months in the window with demand > 0 |
+| minDemands | Demands (transactions) in the window needed before the rule's calculation stocks the part (a minimum still applies). Integer 0-9999 |
+| supplyUnit | `Weeks` or `Months` (a blank unit in the rules list arrives as `Weeks`) |
+| supply | Amount of supply to keep, in `supplyUnit`: 0-104 weeks or 0-24 months, can be fractional (the rules list's WeeksOfCover column) |
+| supplyMonths | `supply` in months: supply x 12 / 52 for Weeks, supply for Months. Display it; don't recompute it |
+| minLineValue | Rule's minimum line value in dollars; a line worth less isn't suggested. Null = no limit |
+| maxLineValue | Rule's maximum line value in dollars; the quantity is cut back to stay at or under it. Null = no limit |
+| windowDemand | Total units sold (or requests) in the window, on the rule's basis; 0 if negative |
+| unitsSoldWindow | Units sold in the window whatever the basis: max(0, round(sum, 9)) |
+| demandCount | Demands (transactions, the sum of RequestCount) in the window; integer, 0 if negative. Stocking uses this |
+| activeMonths | Months in the window with demand > 0 on the rule's basis (display only since round 1) |
 | monthlyRate | windowDemand / historyMonths (calendar months, not active months) |
-| calcTarget | ceil(round(monthlyRate x weeksOfCover x 12 / 52, 9)) when activeMonths >= minActiveMonths, else 0; the rounding only removes floating-point noise. Display it; don't recompute it in the app |
-| effectiveMin | The app's min override (always applies); else Equip's minimum only when activeMonths > 0; else 0 |
-| minimumIgnored | Boolean, never null: true when there is no min override, Equip's minimum is > 0 and activeMonths = 0 (a stale minimum that no longer drives an order) |
+| calcTarget | ceil(round(monthlyRate x supplyMonths, 9)) when demandCount >= minDemands, else 0; the rounding only removes floating-point noise. Display it; don't recompute it in the app |
+| effectiveMin | The app's min override if set, else Equip's minimum (it always applies, even with no demand), else 0 |
+| minimumNoDemand | Boolean, never null: true when there is no min override, Equip's minimum is > 0 and the part had no activity in the window (demandCount 0 and unitsSoldWindow 0). The minimum still sets the target; this flags it for the "Min, no demand" tag and Ben's cleanup list |
 | target | Stocking target = max(calcTarget, effectiveMin rounded up). Never null; 0 when the part isn't stocked |
-| recommendedQty | 0 when masked; otherwise max(0, target - onHand - onOrder) with onHand and onOrder truncated toward zero; back orders are not subtracted. Can be > 0 with status `NoRecentActivity` / `NotStocked` when onHand + onOrder is negative (it orders back up to 0) |
+| valueCapped | Boolean, never null: the maximum line value cut the quantity back (to floor(maxLineValue / cost)). With status `AboveMaxValue` it was cut to 0 |
+| belowMinValue | Boolean, never null: the line (after any cap) was above 0 but worth less than minLineValue, so it is not suggested |
+| recommendedQty | 0 when manualOrder, isMasked, belowMinValue or target = 0 (a target of 0 orders 0 whatever negative stock shows). Otherwise max(0, target - onHand - onOrder) with onHand and onOrder truncated toward zero (back orders not subtracted), then cut back by maxLineValue if needed (only when cost > 0) |
 | estValue | recommendedQty at cost, rounded to 2 decimals |
-| surplusQty | max(0, truncated onHand - target) (all on-hand stock when the target is 0) |
+| surplusQty | max(0, truncated onHand - target) (all on-hand stock when the target is 0). Shown as "Excess" |
 | inboundQty | Open quantity on outstanding transfers into this branch; 0 (not null) when none |
-| status | `Masked`, `NoRecentActivity` (target 0 and no demand in the window), `NotStocked` (had demand in the window but the target came out 0, usually below `minActiveMonths`), `OutOfStock` (recommendedQty > 0 and onHand <= 0), `Reorder`, `OK`. Checked in that order |
+| status | First match: `ManualOrder`, `Masked`, `NoRecentActivity` (target 0 and no activity in the window: no demands and no units sold), `NotStocked` (some activity, but the target came out 0: below `minDemands`, 0 supply, or net demand <= 0), `BelowMinValue`, `AboveMaxValue` (the maximum line value cut the line to 0: one unit costs more than it), `OutOfStock` (recommendedQty > 0 and onHand <= 0), `Reorder` (recommendedQty > 0), `OK`. A partial cap keeps `OutOfStock` / `Reorder` with `valueCapped` true |
+
+### Settings the app reads live (`NonJD_PartSettings`)
+
+The reorder file carries the settings as of the DP run. The app re-reads the list and recalculates with these
+fields live: `MinOverride`, `Masked`, `MaskExpires`, **`MaskedOn`** and **`ManualOrder`** (new in contractVersion 2).
+- Live mask = Masked AND (MaskExpires blank or >= the Central date today) AND NOT (MaskedOn set AND the date of the
+  part's `lastRequested` > MaskedOn). `lastRequested` comes from the reorder file (as of the DP run), so a request
+  made today ends the mask from the next DP run.
+- ManualOrder true: status `ManualOrder`, order 0.
+- Saving a mask writes MaskedOn = the Central date today; unmasking clears it. Blank ManualOrder = No.
 
 ### Explaining a suggestion (for the app)
 
 Every input to the target is in the part object, so the app can build the sentence without guessing. Rules guide for
-Ben: `projects/part order tool - app/REORDER-RULES.md` (written in Task 21).
+Ben: `projects/part order tool - app/REORDER-RULES.md`. `<supply unit>` below is "weeks" or "months" from
+`supplyUnit` ("week" / "month" for 1), always followed by "of supply". "No activity" = `demandCount` 0 and
+`unitsSoldWindow` 0.
+
+Mask ended by a request (a prefix, before any sentence below except `Masked` / `ManualOrder`): when the setting is
+Masked, `maskedOn` is set, `isMasked` is false, `maskExpires` is blank or not yet passed, and the date of
+`lastRequested` is after `maskedOn`: "The mask set on `<maskedOn>` ended when the part was requested on
+`<lastRequested date>`."
 
 Decide in this order, first match wins:
 
-1. `status` = `Masked`: "Masked, so no order is suggested" (add "until `<maskExpires>`" when set).
-2. `status` = `NoRecentActivity`: "No demand in the last `<historyMonths>` months, so nothing is stocked." If
-   `minimumIgnored` is true, add "Equip minimum `<minimumQty>` ignored: no demand in the last `<historyMonths>`
-   months." Then the negative-stock sentence below, if it applies. The app can also list every part with
-   `minimumIgnored` true as a cleanup list for Ben (stale Equip minimums).
-3. `status` = `NotStocked` (demand in the window, target 0):
-   - `activeMonths` < `minActiveMonths`: "`<ruleName>`: only `<activeMonths>` of `<historyMonths>` months had demand; this rule needs `<minActiveMonths>`, so nothing is stocked."
-   - else `weeksOfCover` = 0: "`<ruleName>` keeps 0 weeks of cover, so nothing is stocked."
-   - else `windowDemand` = 0: "Returns cancelled out sales in the last `<historyMonths>` months, so nothing is stocked."
-   - Then the negative-stock sentence below, if it applies.
+1. `status` = `ManualOrder`: "Manual order, so no order is suggested; it is ordered by hand until Manual order is turned off."
+2. `status` = `Masked`: "Masked, so no order is suggested" (add "until `<maskExpires>`" when set; add "or until it is
+   next requested" when `maskedOn` is set).
+3. `status` = `NoRecentActivity`: "No demand in the last `<historyMonths>` months, so nothing is stocked." (A target
+   of 0 orders 0, so there is no negative-stock sentence any more.)
+4. `status` = `NotStocked` (some activity in the window, target 0):
+   - `demandCount` = 0 (so `unitsSoldWindow` > 0): "`<ruleName>`: sold `<unitsSoldWindow>` in `<historyMonths>` months but no demands were recorded; this rule needs `<minDemands>` demands, so nothing is stocked."
+   - else `demandCount` < `minDemands`: "`<ruleName>`: only `<demandCount>` demands in `<historyMonths>` months; this rule needs `<minDemands>`, so nothing is stocked."
+   - else `supply` = 0: "`<ruleName>` keeps 0 `<supply unit>` of supply, so nothing is stocked."
+   - else `windowDemand` = 0: "Returns cancelled out sales in the last `<historyMonths>` months, so nothing is stocked." (With `demandBasis` = `Requests`: "No requests on this rule's basis in the last `<historyMonths>` months, so nothing is stocked.")
+   - else (only with near-zero demand or supply, where the target rounds to 0): "`<ruleName>` gives a target of 0, so nothing is stocked."
+5. Otherwise the sentence is first clause + minimum clause + tail:
+   - First clause:
+     - no activity: "No demand in the last `<historyMonths>` months, so the rule gives 0".
+     - else `demandCount` < `minDemands`: "Only `<demandCount>` demands in `<historyMonths>` months (this rule needs `<minDemands>`), so the rule gives 0".
+     - else "`<ruleName>`: sold `<windowDemand>` in `<historyMonths>` months (`<monthlyRate>` a month) x `<supply>` `<supply unit>` of supply gives a target of `<calcTarget>`". For `demandBasis` = `Requests`, say "requested `<windowDemand>` times" instead of "sold `<windowDemand>`".
+   - Minimum clause, only if `target` > `calcTarget`: "; a minimum of `<target>` sets the target" (use `target`, not `effectiveMin`, so a fractional minimum reads right). When `minimumNoDemand` is true: "; Equip's minimum of `<target>` applies even with no demand and sets the target".
+   - Tail, by status. "Base qty" = max(0, `target` - trunc(`onHand`) - trunc(`onOrder`)), the quantity before the line value limits.
+     - `BelowMinValue`: "On hand `<onHand>`, on order `<onOrder>`, so the line would be `<base qty, after any cap>` at `<value>`, below this rule's minimum line value of `<minLineValue>`; nothing is suggested." (value = qty x cost.)
+     - `AboveMaxValue`: "On hand `<onHand>`, on order `<onOrder>`; one costs `<cost>`, more than this rule's maximum line value of `<maxLineValue>`, so nothing is suggested."
+     - `Reorder` / `OutOfStock` with `valueCapped`: "On hand `<onHand>`, on order `<onOrder>`, so order `<recommendedQty>`, cut back from `<base qty>` to stay at or under this rule's maximum line value of `<maxLineValue>`."
+     - `Reorder` / `OutOfStock`: "On hand `<onHand>`, on order `<onOrder>`, so order `<recommendedQty>`."
+     - `OK`: "On hand `<onHand>`, on order `<onOrder>`, which covers the target; nothing to order."
 
-   Negative-stock sentence (under both `NoRecentActivity` and `NotStocked`), if `recommendedQty` > 0 (on hand + on
-   order is negative): "On hand `<onHand>`, on order `<onOrder>`, so order `<recommendedQty>` to bring it back to 0."
-4. Otherwise (`Reorder`, `OutOfStock`, `OK`) the sentence is first clause + minimum clause + tail:
-   - First clause: if `activeMonths` < `minActiveMonths`: "Only `<activeMonths>` of `<historyMonths>` months had demand (this rule needs `<minActiveMonths>`), so the rule gives 0". Otherwise "`<ruleName>`: sold `<windowDemand>` in `<historyMonths>` months (`<monthlyRate>` a month) x `<weeksOfCover>` weeks of cover gives a target of `<calcTarget>`". For `demandBasis` = `Requests`, say "requested `<windowDemand>` times" instead of "sold `<windowDemand>`".
-   - Minimum clause, only if `target` > `calcTarget`: "; a minimum of `<target>` sets the target" (use `target`, not `effectiveMin`, so a fractional minimum reads right).
-   - Tail: "On hand `<onHand>`, on order `<onOrder>`, so order `<recommendedQty>`." For `OK`: "On hand `<onHand>`, on order `<onOrder>`, which covers the target; nothing to order."
-
-Worked examples (arithmetic: calcTarget = ceil(monthlyRate x weeksOfCover x 12 / 52)):
-- Units: "Cotton - in season: sold 18 in 12 months (1.5 a month) x 10 weeks of cover gives a target of 4. On hand 1, on
-  order 0, so order 3." (1.5 x 10 x 12 / 52 = 3.46, rounds up to 4; 4 - 1 - 0 = 3.)
-- Requests (a made-up rule needing 3 active months, with `activeMonths` 4): "Stripper belts: requested 6 times in 12
-  months (0.5 a month) x 6 weeks of cover gives a target of 1. On hand 0, on order 0, so order 1." (0.5 x 6 x 12 / 52
-  = 0.69, rounds up to 1.)
-- Minimum wins, rule gives a target (a minimum applies because the part had demand; `activeMonths` 4, rule needs 3): "Default: sold 4 in 12 months (0.33 a month) x 6
-  weeks of cover gives a target of 1; a minimum of 3 sets the target. On hand 1, on order 0, so order 2." (0.33 x 6 x
-  12 / 52 = 0.46, rounds up to 1; target 3; 3 - 1 = 2.)
-- Minimum wins, rule gives 0 (`activeMonths` 2, so the part had demand and the minimum applies, rule needs 3): "Only 2 of 12 months had demand (this rule needs 3), so
+Worked examples (arithmetic: calcTarget = ceil(monthlyRate x supplyMonths); supplyMonths = weeks x 12 / 52):
+- Units: "Cotton - in season: sold 18 in 12 months (1.5 a month) x 10 weeks of supply gives a target of 4. On hand 1,
+  on order 0, so order 3." (1.5 x 10 x 12 / 52 = 3.46, rounds up to 4; 4 - 1 - 0 = 3.)
+- Months (a made-up rule with Supply 2, SupplyUnit Months): "Hydraulics: sold 30 in 12 months (2.5 a month) x 2 months
+  of supply gives a target of 5. On hand 2, on order 0, so order 3."
+- Requests (a made-up rule needing 3 demands, with `demandCount` 6): "Stripper belts: requested 6 times in 12 months
+  (0.5 a month) x 6 weeks of supply gives a target of 1. On hand 0, on order 0, so order 1." (0.5 x 6 x 12 / 52 =
+  0.69, rounds up to 1.)
+- Minimum wins, rule gives a target (`demandCount` 4, rule needs 3): "Default: sold 4 in 12 months (0.33 a month) x 6
+  weeks of supply gives a target of 1; a minimum of 3 sets the target. On hand 1, on order 0, so order 2."
+- Minimum wins, rule gives 0 (`demandCount` 2, rule needs 3): "Only 2 demands in 12 months (this rule needs 3), so
   the rule gives 0; a minimum of 3 sets the target. On hand 1, on order 0, so order 2."
-- NotStocked: "Default: only 2 of 12 months had demand; this rule needs 3, so nothing is stocked."
+- Minimum with no demand (`minimumNoDemand` true): "No demand in the last 12 months, so the rule gives 0; Equip's
+  minimum of 2 applies even with no demand and sets the target. On hand 0, on order 0, so order 2."
+- Value capped (cost $25, MaxLineValue 500): "Default: sold 120 in 12 months (10 a month) x 12 weeks of supply gives a
+  target of 28. On hand 0, on order 0, so order 20, cut back from 28 to stay at or under this rule's maximum line
+  value of $500." (28 x 25 = 700 > 500; floor(500 / 25) = 20.)
+- Below min value (cost $4.50, MinLineValue 10): "Default: sold 5 in 12 months (0.42 a month) x 12 weeks of supply
+  gives a target of 2. On hand 1, on order 0, so the line would be 1 at $4.50, below this rule's minimum line value of
+  $10; nothing is suggested."
+- Above max value (cost $650, MaxLineValue 500): "Default: sold 6 in 12 months (0.5 a month) x 12 weeks of supply
+  gives a target of 2. On hand 0, on order 0; one costs $650, more than this rule's maximum line value of $500, so
+  nothing is suggested."
+- NotStocked: "Default: only 2 demands in 12 months; this rule needs 3, so nothing is stocked."
+- NotStocked, units with no demands (D14): "Default: sold 4 in 12 months but no demands were recorded; this rule
+  needs 3 demands, so nothing is stocked."
 
 Number display:
 - `monthlyRate`: at most 2 decimals, trailing zeros dropped; above 0 and below 0.005 shows "< 0.01"; 0 shows 0.
-- `weeksOfCover` and `windowDemand`: up to 1 decimal, dropping ".0".
+- `supply`, `windowDemand` and `unitsSoldWindow`: up to 1 decimal, dropping ".0".
+- Money (`cost`, line values, `minLineValue`, `maxLineValue`): "$" with 2 decimals, dropping ".00" for whole dollars.
 - Whole values arrive as JSON integers.
-- Handle plurals: "1 month", "requested 1 time".
+- Handle plurals: "1 month", "1 demand", "requested 1 time", "1 week of supply".
 
 ### `history_<branch>.json.gz`
 `{"branch", "months": [60 labels like "2026-10", "2026-09", ...], "parts": [{"franchise", "partNumber",
@@ -177,20 +248,32 @@ months with no activity are `0`. Only parts that have history rows appear; parts
 
 ### `surplus.json.gz`
 `{"dataAsOf", "parts": [{"branch", "franchise", "partNumber", "onHand", "target", "surplusQty", "status"}]}`, every
-branch, only parts with surplusQty > 0. Used for "store N has extra" hints.
+included branch, only parts with surplusQty > 0. Used for "store N has extra" hints (shown as "Excess").
 
 ### `rules.json.gz`
-`{"dataAsOf", "rules": [{"id", "ruleName", "priority", "active", "franchise", "dealerGroupCode", "branch",
-"startMonth", "endMonth", "historyMonths", "minActiveMonths", "weeksOfCover", "demandBasis"}]}`, ordered by `id`
-(`Modified` is left out). This is the rules list as the DP run read it at publish time; the app uses it only to check
-its own engine against Gold. If the rules dataflow is re-run between Gold and the publish, it can differ from what
-Gold used, so the app reports rather than blocks. An empty list is written as `"rules": []`. Each publish uploads
-it (it embeds `dataAsOf`), before `_meta.json`, like the other per-run files.
+`{"dataAsOf", "rules": [{"id", "ruleName", "priority", "active", "archived", "franchise", "dealerGroupCode",
+"branch", "startMonth", "endMonth", "historyMonths", "minDemands", "weeksOfCover", "supplyUnit", "minLineValue",
+"maxLineValue", "demandBasis"}]}`, ordered by `id`. These are exactly the `NonJD_OrderRules` columns Gold reads, raw
+as the staging table holds them (Gold and the app's engine validate and normalise them the same way): numbers are
+JSON numbers (whole values as integers); a blank `supplyUnit` is `null` and means `Weeks`; a blank `archived` or
+`active` is `null` and means No; blank text may be `""` or `null`. `weeksOfCover` is the Supply amount, in
+`supplyUnit` (the column kept its name). `MinActiveMonths` is still in the list but unused (D1) and `Modified` is left
+out; neither is published.
+
+Changed in contractVersion 2: `minActiveMonths` is gone; `minDemands`, `supplyUnit`, `minLineValue`, `maxLineValue`
+and `archived` are new. Archived rules are in the file (the Rules page shows them under "Show archived"); like
+inactive rules, the engine ignores them: they are neither matched nor validated.
+
+This is the rules list as the DP run read it at publish time; the app uses it to check its own engine against Gold.
+If the rules dataflow is re-run between Gold and the publish, it can differ from what Gold used, so the app reports
+rather than blocks. An empty list is written as `"rules": []`. Each publish uploads it (it embeds `dataAsOf`),
+before `_meta.json`, like the other per-run files.
 
 ### `transfers.json.gz`
 `{"dataAsOf", "lines": [{"toBranch", "fromBranch", "partNumber", "ticket", "line", "orderQty", "shippedQty",
-"openQty", "status", "subType", "ageDays", "date"}]}`. Outstanding transfer lines for part numbers in scope
-(branch-12 transfers are excluded in Gold).
+"openQty", "status", "subType", "ageDays", "date"}]}`. Outstanding transfer lines for part numbers in scope.
+No line to or from an excluded branch (12, 5, 97, 4B, 93C) is published; the publish filters them (trimmed,
+case-insensitive), since `Fact_OutstandingTransfers` still has them.
 
 - `partNumber` is upper-cased and trimmed in Gold. Compare `part.partNumber.trim().toUpperCase()` to it.
 - Transfer lines carry no franchise, so trailing-space twin parts and same-number parts in two franchises share the

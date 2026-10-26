@@ -197,3 +197,41 @@ def test_history_arrays_duplicate_slot_raises():
     r = {"franchise": "MC", "partNumber": "A", "monthOffset": 1, "salesQty": 1, "requestCount": 1}
     with pytest.raises(ValueError):
         pl.history_arrays([r, dict(r)], months=2)
+
+
+# ---- Round 1 (Plan C4): contract version, required columns, excluded branches ----
+
+def test_contract_version_is_2():
+    assert pl.CONTRACT_VERSION == 2
+
+
+def test_require_columns_passes_when_all_present():
+    pl.require_columns("T", ["A", "B", "C"], ["A", "C"])
+
+
+def test_require_columns_names_every_missing_column():
+    with pytest.raises(pl.MissingColumnsError) as ei:
+        pl.require_columns("Fact_NonJD_Reorder", ["A", "MinimumIgnored"], ["A", "MinDemands", "SupplyUnit"])
+    msg = str(ei.value)
+    assert "Fact_NonJD_Reorder" in msg and "MinDemands" in msg and "SupplyUnit" in msg
+    assert "MinimumIgnored" not in msg
+    assert isinstance(ei.value, RuntimeError)
+
+
+def test_require_columns_is_case_sensitive():
+    with pytest.raises(pl.MissingColumnsError, match="MinDemands"):
+        pl.require_columns("T", ["mindemands"], ["MinDemands"])
+
+
+@pytest.mark.parametrize("raw", ["12", "5", "97", "4B", "4b", "93C", " 93c ", "12 "])
+def test_excluded_branches(raw):
+    assert pl.is_excluded_branch(raw)
+
+
+@pytest.mark.parametrize("raw", ["1", "92", "93", "4", "125", "", None])
+def test_not_excluded_branches(raw):
+    assert not pl.is_excluded_branch(raw)
+
+
+def test_excluded_branch_list_matches_gold():
+    assert pl.EXCLUDED_BRANCHES == ("12", "5", "97", "4B", "93C")

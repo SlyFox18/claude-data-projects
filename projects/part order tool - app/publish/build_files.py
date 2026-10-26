@@ -10,8 +10,10 @@ from datetime import date
 import publish_logic as pl
 
 OUT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "output")
-RULE_KEYS = ("id", "ruleName", "priority", "active", "franchise", "dealerGroupCode", "branch", "startMonth",
-             "endMonth", "historyMonths", "minActiveMonths", "weeksOfCover", "demandBasis")
+# rules.json fields: the NonJD_OrderRules columns Gold reads (extract.RULE_COLUMNS), raw as the list holds them.
+RULE_KEYS = ("id", "ruleName", "priority", "active", "archived", "franchise", "dealerGroupCode", "branch",
+             "startMonth", "endMonth", "historyMonths", "minDemands", "weeksOfCover", "supplyUnit", "minLineValue",
+             "maxLineValue", "demandBasis")
 _SAFE = re.compile(r"^[A-Za-z0-9_-]+$")
 
 
@@ -43,6 +45,8 @@ def build(reorder: list, history_for, transfers: list, names: dict, data_as_of: 
     """Write all data files into OUT_DIR (not _meta.json; see write_meta).
     history_for(branch_key) -> that branch's history rows (called once per branch).
     rules: NonJD_OrderRules rows (camelCase keys), written as rules.json.gz for the app's engine check.
+    Excluded branches (D6): a reorder row at one is an error (Gold leaves them out, so it means Gold and the publish
+    are out of step); transfer lines to or from one are dropped (Fact_OutstandingTransfers still has them).
     Returns ({file name: sha256}, [{"branch", "name", "parts"}] for _meta.json)."""
     os.makedirs(OUT_DIR, exist_ok=True)
     for f in os.listdir(OUT_DIR):
@@ -52,6 +56,9 @@ def build(reorder: list, history_for, transfers: list, names: dict, data_as_of: 
     surplus = []
     by_branch, raw_of = defaultdict(list), {}
     for r in reorder:
+        if pl.is_excluded_branch(r["branch"]):
+            raise ValueError(f"reorder row at excluded branch {r['branch']!r} ({r.get('franchise')!r} "
+                             f"{r.get('partNumber')!r}); Gold should have left it out")
         key = branch_key(r["branch"])
         if raw_of.setdefault(key, r["branch"]) != r["branch"]:
             raise ValueError(f"branch codes {raw_of[key]!r} and {r['branch']!r} both map to file key {key!r}")
@@ -72,7 +79,9 @@ def build(reorder: list, history_for, transfers: list, names: dict, data_as_of: 
         del hist
 
     _write("surplus.json.gz", _bytes({"dataAsOf": data_as_of, "parts": surplus}), hashes)
-    _write("transfers.json.gz", _bytes({"dataAsOf": data_as_of, "lines": [_clean(t) for t in transfers]}), hashes)
+    lines = [_clean(t) for t in transfers
+             if not pl.is_excluded_branch(t.get("toBranch")) and not pl.is_excluded_branch(t.get("fromBranch"))]
+    _write("transfers.json.gz", _bytes({"dataAsOf": data_as_of, "lines": lines}), hashes)
 
     for r in rules:
         missing = [k for k in RULE_KEYS if k not in r]
@@ -90,5 +99,6 @@ def write_meta(data_as_of: str, published_at: str, source: str, branches: list, 
     path = os.path.join(OUT_DIR, pl.META_FILE)
     with open(path, "wb") as f:
         f.write(_bytes({"dataAsOf": data_as_of, "publishedAt": published_at, "source": source,
-                        "branches": branches, "counts": counts, "schemaVersion": 1}, compress=False))
+                        "branches": branches, "counts": counts, "schemaVersion": 1,
+                        "contractVersion": pl.CONTRACT_VERSION}, compress=False))
     return path

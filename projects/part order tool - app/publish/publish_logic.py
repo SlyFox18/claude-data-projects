@@ -9,6 +9,9 @@ NON-JD ORDER TOOL PUBLISH - PURE HELPERS (no network, no config; tested in test_
 - clean_value: JSON-safe values (Decimal -> int/float, datetimes -> ISO UTC, NaN -> None).
 - upload_order: _meta.json goes last so the app never sees a date ahead of its files.
 - changed_files: only upload files whose content hash changed.
+- CONTRACT_VERSION / require_columns: the field contract the files follow, and a clear failure when Gold and the
+  publish code are out of step (a Gold column the publish needs is missing).
+- EXCLUDED_BRANCHES / is_excluded_branch: branches left out of every output (Plan C D6; same list as Gold).
 """
 import math
 import os
@@ -19,6 +22,29 @@ from zoneinfo import ZoneInfo
 ITEM = "Build_Gold_NonJD_Reorder"
 META_FILE = "_meta.json"
 CENTRAL = ZoneInfo("America/Chicago")
+# The field contract of the files (README "File contract"). 1 = Plan A/B fields (no contractVersion in _meta.json);
+# 2 = round 1 (Plan C). The app refuses a version it doesn't know.
+CONTRACT_VERSION = 2
+# Same list as Build_Gold_NonJD_Reorder's EXCLUDED_BRANCHES; compared trimmed and upper-cased.
+EXCLUDED_BRANCHES = ("12", "5", "97", "4B", "93C")
+
+
+class MissingColumnsError(RuntimeError):
+    """A table lacks columns the publish needs: Gold and the publish code are out of step."""
+
+
+def require_columns(table: str, available, required) -> None:
+    have = set(available)
+    missing = [c for c in required if c not in have]
+    if missing:
+        raise MissingColumnsError(
+            f"{table} is missing column(s) {', '.join(missing)} that the publish (contract version "
+            f"{CONTRACT_VERSION}) needs; Gold and the publish code are out of step. Deploy the matching "
+            f"Build_Gold_NonJD_Reorder / dataflow, or update the publish, before publishing")
+
+
+def is_excluded_branch(raw) -> bool:
+    return raw is not None and str(raw).strip().upper() in EXCLUDED_BRANCHES
 
 
 def iso_utc(value: datetime) -> str:
