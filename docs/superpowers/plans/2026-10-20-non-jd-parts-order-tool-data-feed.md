@@ -2223,6 +2223,8 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 
 ### Task 15: Release the backend to Prod and switch the feed (Brian decides when)
 
+> **DONE 2026-10-26.** Done with the round 1 runbook `2026-10-26-non-jd-parts-order-tool-prod-release.md`, which replaces the steps below; Step 3 is obsolete. PR #44. Prod Gold PASS. The publish now reads Prod.
+
 Do this once Dev has run cleanly for a few days and the app prototype is ready for testers.
 
 - [ ] **Step 1:** fabric-workspace-docs: `python deploy/merge_preview.py`, open PR `dev → main` with the template. Brian merges with **Create a merge commit**.

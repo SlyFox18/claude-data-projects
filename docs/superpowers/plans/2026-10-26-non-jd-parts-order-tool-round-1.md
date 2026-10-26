@@ -39,7 +39,17 @@
 >     - Dev Gold for Branch 1 equals the pre-test copy.
 >   - One Dev orchestrator run crashed at startup: Fabric context `currentWorkspaceName` was None. The retry was OK. Follow-up: derive ENV from the workspace ID when the name is missing, and add a TROUBLESHOOTING row.
 >   - **0.3.0 DONE** (app `df8ef34`, `d4a4ee3`, `051dd28`, review fixes `a33000c`, 934 tests). Multi-branch One-Time Order, one order per branch + franchise. It also fixed a review-screen regression where Save got stuck. Not yet deployed to Fedora.
->   - **Prod release started:** PR #44 (fabric-workspace-docs dev → main).
+>   - **PROD RELEASE DONE 2026-10-26** (runbook `2026-10-26-non-jd-parts-order-tool-prod-release.md`, option A):
+>     - **Code and deploy:** PR #44 merged by Brian (`ec43d479`); "Deploy DP backend" succeeded with both pipelines unchanged and still claimed; dev fast-forwarded.
+>     - **First Prod runs** (items mode): staging items OK (tables equal Dev: 3,786,272 / 1,118,093 / 4 rules / 1 setting); 4 shortcuts created (37/37); Gold OK.
+>     - **Prod Gold:** `nonjd_reorder_check.py --tier prod` PASS, 199,524 parts.
+>     - **Publish:** the publish guard passed dry against Prod as the SPN. The Gateway PC `.env` is now `NONJD_SOURCE=prod`; the first publish sent 41 files + `_meta`, data as of 21:01 UTC, and the repeat run said "already published".
+>     - **From 2026-10-27:** the 06:15 Prod run builds it and the 07:15 Gateway task publishes it, with no manual steps.
+>     - **To do:**
+>       - Brian sets `NONJD_SOURCE=prod` in his own PC's publish `.env`, or never publishes from there.
+>       - Check the first automatic morning.
+>       - Deploy app 0.3.0 to Fedora.
+>       - Orchestrator follow-up: derive the environment name from the workspace ID when Fabric doesn't supply it.
 >   - **Prod release runbook** written: `2026-10-26-non-jd-parts-order-tool-prod-release.md` (`e1434df8`). Plan: first run same day (option A); publish only from the Gateway PC.
 >   - **0.3.0 in progress:** multi-branch One-Time Order, one order per branch + franchise (Ben's Q2, partly). Combined orders are a question for Ben (round 2, with transfers).
 > - C4 DONE (`68fcf9b2`, `96d2e613`, 137 tests; review approved, then fixed: explanation wording, a contractVersion bump rule with newer/older messages, the rules column check before extract, non-finite rule numbers fail the publish): contract v2 (`contractVersion` 2 in `_meta.json`), 53 reorder fields, column check before extract, transfers exclude the excluded branches. The dry build from Dev matches Gold: 42 files, Branch 1 has 164 lines / $39,746.33.

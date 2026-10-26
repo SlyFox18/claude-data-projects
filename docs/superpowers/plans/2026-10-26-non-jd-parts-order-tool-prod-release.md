@@ -1,6 +1,15 @@
 # Non-JD Parts Order Tool: Prod release runbook (Plan A Task 15, with round 1)
 
-> **Status:** written 2026-10-26, nothing run yet. This replaces the steps in Plan A Task 15. Plan A's Step 3 (copy `rop_matrix.csv` to Prod) is **obsolete**: Gold reads Ben's rules list now, not the matrix, and doesn't read `Files/`. Plan A's Step 4 also left out `df_NonJD_OrderRules_Raw`.
+> **Status: DONE 2026-10-26 (option A).** Steps 1–13 completed as written.
+> - Release: PR #44, merged as `ec43d479`; the deploy succeeded with both pipelines still claimed.
+> - First Prod runs: staging items OK, 4 shortcuts created, Gold OK.
+> - Gold check: `nonjd_reorder_check.py --tier prod` PASS on 199,524 parts.
+> - Publish: the dry decision passed against Prod; the Gateway PC was switched to `NONJD_SOURCE=prod` (41 files + `_meta`, then "already published").
+> - Step 15 (compare_tiers) skipped by decision.
+> - Still to do from Step 14: check the first automatic morning (2026-10-27), and Brian's own PC `.env`.
+> - Seen on the day: one Dev orchestrator run crashed at startup because Fabric's `currentWorkspaceName` was None. The retry was OK. Follow-up: fall back to the workspace ID.
+>
+> Originally: This replaces the steps in Plan A Task 15. Plan A's Step 3 (copy `rop_matrix.csv` to Prod) is **obsolete**: Gold reads Ben's rules list now, not the matrix, and doesn't read `Files/`. Plan A's Step 4 also left out `df_NonJD_OrderRules_Raw`.
 >
 > **Who does what:** Brian does the merge, the GitHub Actions deploy, the Gateway PC and anything run as Brian. Claude does the read-only checks, the PR text, the shortcut sync (as Brian's `fab` login, with Brian's OK), the pipeline starts, and the verification.
 
