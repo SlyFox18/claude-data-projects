@@ -2,17 +2,22 @@
 """
 Non-JD Parts Order Tool: independent check of Fact_NonJD_Reorder.
 
-Re-implements the reorder rules (spec 2026-10-20-non-jd-parts-order-tool-redesign-design.md, section 5.5: the
-NonJD_OrderRules list Ben tunes) in DuckDB SQL over the same inputs, then compares row by row with the Gold table
-Build_Gold_NonJD_Reorder wrote. Also prints a fingerprint of the Gold table (excluding BuiltAtUtc) for run-twice
-determinism checks, and lists the rules that are skipped as invalid.
+Re-implements the reorder rules in DuckDB SQL over the same inputs, then compares row by row with the Gold table
+Build_Gold_NonJD_Reorder wrote. The rules are Plan C round 1 (docs/superpowers/plans/2026-10-26-non-jd-parts-order-
+tool-round-1.md, "The calculation" and "Validation"), built on spec 2026-10-20 section 5.5: demand-count stocking
+(MinDemands), supply in weeks or months, the Equip minimum always applying, a target of 0 meaning order 0, excluded
+branches, line value limits, a mask that ends at the next demand, Manual Order and archived rules. Also prints a
+fingerprint of the Gold table (excluding BuiltAtUtc) for run-twice determinism checks, and lists the rules that are
+skipped as invalid.
 
 Usage:
     python nonjd_reorder_check.py --tier dev            # compare, exit 1 on any mismatch
     python nonjd_reorder_check.py --tier dev --fingerprint-only
 
 Run straight after the DP refresh: Silver inputs are read live, so an intraday refresh between the Gold build
-and this check causes false mismatches.
+and this check causes false mismatches. The round 1 list columns (MinDemands, SupplyUnit, MinLineValue,
+MaxLineValue, Archived, ManualOrder, MaskedOn) are read when the staging tables have them and are NULL otherwise;
+with no MinDemands every list rule is invalid and the built-in default applies.
 
 Auth: Azure CLI (az login as Brian), read-only.
 """
@@ -31,21 +36,36 @@ TIERS = {
     "prod": {"staging": ("189e5c0a-548a-4feb-93d6-dda9ebbe96c1", "6713bd45-a4ad-47e6-8bff-1bb0415e9784"),
              "presentation": ("7836042d-adb1-4846-b70d-bd42980054c5", "29d9df80-a383-4d40-9807-1e2e6cbff88f")},
 }
-# Applies when no valid active rule matches a part (spec 5.5 step 1).
-BUILTIN_DEFAULT = {"RuleName": "Built-in default", "HistoryMonths": 12, "MinActiveMonths": 3, "WeeksOfCover": 6,
-                   "DemandBasis": "UnitsSold"}
+# Applies when no valid active rule matches a part (step 1). No line value limits.
+BUILTIN_DEFAULT = {"RuleName": "Built-in default", "HistoryMonths": 12, "MinDemands": 3, "Supply": 12.0,
+                   "SupplyUnit": "Weeks", "DemandBasis": "UnitsSold"}
+# Left out of every output (D6); compared trimmed and upper-case.
+EXCLUDED_BRANCHES = ["12", "5", "97", "4B", "93C"]
 HIST_MONTHS = 60          # Silver_PartSalesHistory depth; HistoryMonths is at most 59
+WEEKS_MAX, MONTHS_MAX = 104, 24
 # Every output column except the key is compared: these exactly (null-safe), the float ones with a tolerance
 # (NULL against a value is still a mismatch; see _diff_where).
-COMPARE_COLS = ["RuleId", "RuleName", "DemandBasis", "HistoryMonths", "MinActiveMonths", "ActiveMonths",
-                "CalcTarget", "MinimumIgnored", "StockingTarget", "RecommendedOrderQty", "SurplusQty", "Status"]
-TOLERANCE_COLS = ["WeeksOfCover", "WindowDemand", "MonthlyRate", "EffectiveMin", "InboundTransferQty"]
+COMPARE_COLS = ["RuleId", "RuleName", "DemandBasis", "HistoryMonths", "MinDemands", "SupplyUnit", "DemandCount",
+                "ActiveMonths", "CalcTarget", "MinimumNoDemand", "StockingTarget", "ValueCapped", "BelowMinValue",
+                "ManualOrder", "MaskedOn", "IsMasked", "RecommendedOrderQty", "SurplusQty", "Status"]
+TOLERANCE_COLS = ["Supply", "SupplyMonths", "MinLineValue", "MaxLineValue", "WindowDemand", "MonthlyRate",
+                  "EffectiveMin", "InboundTransferQty"]
 TOLERANCE = 1e-6
 OUTPUT_COLS = ["Branch", "Franchise", "PartNumber", "RuleId", "RuleName", "DemandBasis", "HistoryMonths",
-               "MinActiveMonths", "WeeksOfCover", "WindowDemand", "ActiveMonths", "MonthlyRate", "CalcTarget",
-               "EffectiveMin", "MinimumIgnored", "StockingTarget", "RecommendedOrderQty", "SurplusQty",
-               "InboundTransferQty", "Status"]
+               "MinDemands", "SupplyUnit", "Supply", "SupplyMonths", "MinLineValue", "MaxLineValue",
+               "WindowDemand", "DemandCount", "ActiveMonths", "MonthlyRate", "CalcTarget", "EffectiveMin",
+               "MinimumNoDemand", "StockingTarget", "ValueCapped", "BelowMinValue", "ManualOrder", "MaskedOn",
+               "IsMasked", "RecommendedOrderQty", "SurplusQty", "InboundTransferQty", "Status"]
 KEYS = "Branch, Franchise, PartNumber"
+
+# Staging columns read by main(): (required, optional {name: type}). Optional ones are the round 1 additions,
+# NULL until the dataflows carry them (Plan C Task C2).
+RULE_COLS = (["Id", "RuleName", "Priority", "Active", "Franchise", "DealerGroupCode", "Branch", "StartMonth",
+              "EndMonth", "HistoryMonths", "WeeksOfCover", "DemandBasis"],
+             {"MinDemands": "DOUBLE", "SupplyUnit": "VARCHAR", "MinLineValue": "DOUBLE", "MaxLineValue": "DOUBLE",
+              "Archived": "BOOLEAN"})
+SETTINGS_COLS = (["Id", "Branch", "Franchise", "PartNumber", "MinOverride", "Masked", "MaskExpires", "Modified"],
+                 {"ManualOrder": "BOOLEAN", "MaskedOn": "DATE"})
 
 
 def add_months(d: date, n: int) -> date:
@@ -53,15 +73,38 @@ def add_months(d: date, n: int) -> date:
     return date(y, m + 1, 1)
 
 
+def columns(con, source: str) -> set:
+    """Column names of `source` (a table name or a delta_scan(...) call)."""
+    return {r[0] for r in con.execute(f"DESCRIBE SELECT * FROM {source}").fetchall()}
+
+
+def select_list(con, source: str, required: list, optional: dict) -> str:
+    """SELECT list over `source` (a table name or a delta_scan(...) call): the required columns (ValueError if
+    one is missing), then each optional column, or a typed NULL under its name when the source lacks it."""
+    have = columns(con, source)
+    missing = [c for c in required if c not in have]
+    if missing:
+        raise ValueError(f"{source} is missing column(s): {', '.join(missing)}")
+    return ", ".join(required + [c if c in have else f"CAST(NULL AS {t}) AS {c}" for c, t in optional.items()])
+
+
 def _whole_between(col: str, lo: int, hi: int) -> str:
     # NaN and +-inf fail (DuckDB sorts NaN above every number, so BETWEEN is false)
     return f"({col} = floor({col}) AND {col} BETWEEN {lo} AND {hi})"
 
 
-# Active rules of NonJD_OrderRules with a display name and their problems ('' = valid). SharePoint numbers arrive
-# as doubles, so "whole number" is checked explicitly. Inactive rules (Active false or NULL) are ignored entirely:
-# neither matched nor reported. A blank or missing name shows as "Rule <Id>". concat_ws skips NULLs, so every
-# problem of a rule is listed.
+def _non_negative(col: str) -> str:
+    # isfinite: DuckDB sorts NaN above every number, so NaN >= 0 would pass on its own
+    return f"(isfinite({col}) AND {col} >= 0)"
+
+
+# Active, not archived rules of NonJD_OrderRules with a display name and their problems ('' = valid). SharePoint
+# numbers arrive as doubles, so "whole number" is checked explicitly. Inactive (Active false or NULL) and archived
+# (Archived true) rules are ignored entirely: neither matched nor reported. A blank or missing name shows as
+# "Rule <Id>". concat_ws skips NULLs, so every problem of a rule is listed. MinActiveMonths is left in the list
+# unused (D1) and is not checked. The Supply amount lives in the WeeksOfCover column; its range follows SupplyUnit
+# (blank = Weeks) and is only checked when the unit itself is valid. MinLineValue <= MaxLineValue is only checked
+# when both are valid.
 RULE_CHECK_CTE = f"""
     rule_check AS (
         SELECT *,
@@ -71,11 +114,24 @@ RULE_CHECK_CTE = f"""
                  CASE WHEN HistoryMonths IS NULL THEN 'HistoryMonths is missing'
                       WHEN NOT {_whole_between('HistoryMonths', 1, 59)}
                       THEN 'HistoryMonths must be a whole number 1-59' END,
-                 CASE WHEN MinActiveMonths IS NULL THEN 'MinActiveMonths is missing'
-                      WHEN NOT {_whole_between('MinActiveMonths', 0, 59)}
-                      THEN 'MinActiveMonths must be a whole number 0-59' END,
-                 CASE WHEN WeeksOfCover IS NULL OR NOT (WeeksOfCover BETWEEN 0 AND 104)
-                      THEN 'WeeksOfCover must be 0-104' END,
+                 CASE WHEN MinDemands IS NULL THEN 'MinDemands is missing'
+                      WHEN NOT {_whole_between('MinDemands', 0, 9999)}
+                      THEN 'MinDemands must be a whole number 0-9999' END,
+                 CASE WHEN coalesce(upper(trim(SupplyUnit)), '') NOT IN ('', 'WEEKS', 'MONTHS')
+                      THEN 'SupplyUnit must be Weeks or Months'
+                      WHEN WeeksOfCover IS NULL THEN 'Supply is missing'
+                      WHEN upper(trim(SupplyUnit)) = 'MONTHS' AND NOT (WeeksOfCover BETWEEN 0 AND {MONTHS_MAX})
+                      THEN 'Supply must be 0-{MONTHS_MAX} months'
+                      WHEN coalesce(upper(trim(SupplyUnit)), '') <> 'MONTHS'
+                           AND NOT (WeeksOfCover BETWEEN 0 AND {WEEKS_MAX})
+                      THEN 'Supply must be 0-{WEEKS_MAX} weeks' END,
+                 CASE WHEN MinLineValue IS NOT NULL AND NOT {_non_negative('MinLineValue')}
+                      THEN 'MinLineValue must be 0 or more' END,
+                 CASE WHEN MaxLineValue IS NOT NULL AND NOT {_non_negative('MaxLineValue')}
+                      THEN 'MaxLineValue must be 0 or more' END,
+                 CASE WHEN {_non_negative('MinLineValue')} AND {_non_negative('MaxLineValue')}
+                           AND MinLineValue > MaxLineValue
+                      THEN 'MinLineValue must not be more than MaxLineValue' END,
                  CASE WHEN (StartMonth IS NULL) <> (EndMonth IS NULL)
                       THEN 'StartMonth and EndMonth must both be set or both blank' END,
                  CASE WHEN StartMonth IS NOT NULL AND NOT {_whole_between('StartMonth', 1, 12)}
@@ -86,7 +142,7 @@ RULE_CHECK_CTE = f"""
                       THEN 'DemandBasis must be UnitsSold or Requests' END
                ) AS problems
         FROM order_rules
-        WHERE coalesce(Active, false)
+        WHERE coalesce(Active, false) AND NOT coalesce(Archived, false)
     )"""
 
 INVALID_RULES_SQL = f"""
@@ -94,18 +150,22 @@ INVALID_RULES_SQL = f"""
     SELECT Id, RuleLabel, problems FROM rule_check WHERE problems <> '' ORDER BY Id
 """
 
+_EXCLUDED_SQL = ", ".join(f"'{b}'" for b in EXCLUDED_BRANCHES)
+
 # Parameters: $cur = first day of the run's Central-time month, $today = the run's Central date.
-# CalcTarget: MonthlyRate * WeeksOfCover * 12 / 52 is rounded to 9 decimals before ceil, so double noise such as
-# (5 / 3) * 5.2 * 12 / 52 = 2.0000000000000004 gives 2, not 3. Build_Gold_NonJD_Reorder does the same.
+# Every value that is ceil'd or floor'd is first rounded to 9 decimals (round9), so double noise such as
+# (5 / 3) * 5.2 * 12 / 52 = 2.0000000000000004 gives 2, not 3. Line values (qty x cost) are compared rounded to
+# 9 decimals too, so 3 x 0.1 is not "more than 0.3". Build_Gold_NonJD_Reorder and the app engine do the same.
 EXPECTED_SQL = f"""
     WITH {RULE_CHECK_CTE},
-    -- franchise scope: non-JD parts with a cost (unchanged from Part 1)
+    -- scope: non-JD parts with a cost, at the included branches (D6). NULL franchise or branch drops out.
     in_scope_parts AS (
         SELECT * FROM parts
         WHERE Cost > 0
           AND upper(trim(Franchise)) NOT IN ('D', 'ZP', 'S', '95')
           AND NOT starts_with(upper(trim(Franchise)), 'T')
           AND NOT starts_with(upper(trim(Franchise)), 'U')
+          AND upper(trim(Branch)) NOT IN ({_EXCLUDED_SQL})
     ),
     -- step 1: valid active rules in season this month (wrapping ranges such as 11-2 included)
     usable_rules AS (
@@ -113,8 +173,10 @@ EXPECTED_SQL = f"""
                nullif(upper(trim(Franchise)), '') AS c_franchise,
                nullif(upper(trim(DealerGroupCode)), '') AS c_dgc,
                nullif(upper(trim(Branch)), '') AS c_branch,
-               CAST(HistoryMonths AS INTEGER) AS hm, CAST(MinActiveMonths AS INTEGER) AS mam,
-               WeeksOfCover AS woc,
+               CAST(HistoryMonths AS INTEGER) AS hm, CAST(MinDemands AS INTEGER) AS md,
+               WeeksOfCover AS supply,
+               CASE WHEN upper(trim(SupplyUnit)) = 'MONTHS' THEN 'Months' ELSE 'Weeks' END AS unit,
+               MinLineValue AS minlv, MaxLineValue AS maxlv,
                CASE upper(trim(DemandBasis)) WHEN 'UNITSSOLD' THEN 'UnitsSold' ELSE 'Requests' END AS basis
         FROM rule_check
         WHERE problems = ''
@@ -138,7 +200,7 @@ EXPECTED_SQL = f"""
              AND (u.c_branch IS NULL OR u.c_branch = upper(trim(sc.Branch))))
         WHERE rn = 1
     ),
-    -- step 6 / 7: the app's settings, latest row per part
+    -- steps 7, 11, 12: the app's settings, latest row per part
     part_settings AS (
         SELECT * EXCLUDE (rn) FROM (
             SELECT *, row_number() OVER (PARTITION BY Branch, Franchise, PartNumber
@@ -150,19 +212,27 @@ EXPECTED_SQL = f"""
         SELECT trim(RequestingBranch) AS b, upper(trim(PartNumber)) AS pn, sum(coalesce(OpenQty, 0)) AS q
         FROM transfers GROUP BY ALL
     ),
-    -- one row per in-scope part with its rule (or the built-in default), minimum, mask and stock
+    -- one row per in-scope part with its rule (or the built-in default), minimum, settings and stock.
+    -- Step 11 (live mask): Masked, not expired (MaskExpires >= Central today), and not requested after the day it
+    -- was masked (dates compared; a blank MaskedOn or DateLastRequested never ends the mask).
     part_inputs AS (
-        SELECT sc.Branch, sc.Franchise, sc.PartNumber, sc.QuantityOnHand,
+        SELECT sc.Branch, sc.Franchise, sc.PartNumber, sc.QuantityOnHand, CAST(sc.Cost AS DOUBLE) AS cost,
                CAST(trunc(coalesce(sc.QuantityOnHand, 0)) AS INTEGER) AS oh,
                CAST(trunc(coalesce(sc.OnOrder, 0)) AS INTEGER) AS oo,
                p.Id AS RuleId,
                CASE WHEN p.Id IS NULL THEN '{BUILTIN_DEFAULT["RuleName"]}' ELSE p.RuleLabel END AS RuleName,
                coalesce(p.basis, '{BUILTIN_DEFAULT["DemandBasis"]}') AS DemandBasis,
                coalesce(p.hm, {BUILTIN_DEFAULT["HistoryMonths"]}) AS HistoryMonths,
-               coalesce(p.mam, {BUILTIN_DEFAULT["MinActiveMonths"]}) AS MinActiveMonths,
-               coalesce(p.woc, CAST({BUILTIN_DEFAULT["WeeksOfCover"]} AS DOUBLE)) AS WeeksOfCover,
+               coalesce(p.md, {BUILTIN_DEFAULT["MinDemands"]}) AS MinDemands,
+               coalesce(p.unit, '{BUILTIN_DEFAULT["SupplyUnit"]}') AS SupplyUnit,
+               coalesce(p.supply, CAST({BUILTIN_DEFAULT["Supply"]} AS DOUBLE)) AS Supply,
+               CAST(p.minlv AS DOUBLE) AS MinLineValue, CAST(p.maxlv AS DOUBLE) AS MaxLineValue,
                CAST(ps.MinOverride AS DOUBLE) AS min_override, CAST(r.MinimumQty AS DOUBLE) AS equip_min,
-               coalesce(ps.Masked, false) AND (ps.MaskExpires IS NULL OR ps.MaskExpires >= $today) AS masked,
+               coalesce(ps.ManualOrder, false) AS ManualOrder, ps.MaskedOn,
+               coalesce(ps.Masked, false)
+                 AND (ps.MaskExpires IS NULL OR ps.MaskExpires >= $today)
+                 AND NOT coalesce(ps.MaskedOn IS NOT NULL AND CAST(sc.DateLastRequested AS DATE) > ps.MaskedOn,
+                                  false) AS IsMasked,
                CAST(coalesce(t.q, 0.0) AS DOUBLE) AS InboundTransferQty
         FROM in_scope_parts sc
         LEFT JOIN part_rule p USING (Branch, Franchise, PartNumber)
@@ -177,11 +247,13 @@ EXPECTED_SQL = f"""
         FROM hist WHERE MonthStart < $cur
         GROUP BY ALL
     ),
-    -- steps 2-3: the rule's last HistoryMonths full months, on the rule's basis. part_inputs is one row per key
-    -- (a duplicate part key would show up as dup_expected anyway), so no DISTINCT is needed.
+    -- steps 2-3: the rule's last HistoryMonths full months: demand on the rule's basis, demands (transactions)
+    -- whatever the basis. part_inputs is one row per key (a duplicate part key would show up as dup_expected
+    -- anyway), so no DISTINCT is needed.
     window_demand AS (
         SELECT pi.Branch, pi.Franchise, pi.PartNumber,
                sum(CASE pi.DemandBasis WHEN 'UnitsSold' THEN m.units ELSE m.requests END) AS raw_demand,
+               sum(m.requests) AS raw_requests,
                count(*) FILTER (WHERE (CASE pi.DemandBasis WHEN 'UnitsSold' THEN m.units ELSE m.requests END) > 0)
                  AS active
         FROM part_inputs pi
@@ -189,44 +261,63 @@ EXPECTED_SQL = f"""
         WHERE m.MonthStart >= CAST($cur - to_months(pi.HistoryMonths) AS DATE)
         GROUP BY ALL
     ),
-    -- steps 3-4: WindowDemand (negative -> 0), ActiveMonths, MonthlyRate over calendar months
+    -- steps 3-5: WindowDemand (round9, negative -> 0), DemandCount (negative -> 0), ActiveMonths (display only),
+    -- MonthlyRate over calendar months, SupplyMonths
     demand AS (
-        SELECT pi.*,
-               greatest(0.0, CAST(coalesce(w.raw_demand, 0) AS DOUBLE)) AS WindowDemand,
-               CAST(coalesce(w.active, 0) AS INTEGER) AS ActiveMonths
-        FROM part_inputs pi LEFT JOIN window_demand w USING (Branch, Franchise, PartNumber)
+        SELECT *, WindowDemand / HistoryMonths AS MonthlyRate,
+               CASE SupplyUnit WHEN 'Months' THEN Supply ELSE Supply * 12 / 52 END AS SupplyMonths
+        FROM (SELECT pi.*,
+                     greatest(0.0, round(CAST(coalesce(w.raw_demand, 0) AS DOUBLE), 9)) AS WindowDemand,
+                     CAST(greatest(0, coalesce(w.raw_requests, 0)) AS INTEGER) AS DemandCount,
+                     CAST(coalesce(w.active, 0) AS INTEGER) AS ActiveMonths
+              FROM part_inputs pi LEFT JOIN window_demand w USING (Branch, Franchise, PartNumber))
     ),
-    -- step 6: EffectiveMin = MinOverride, else Equip's minimum only when the part had demand in its rule window,
-    -- else 0. MinimumIgnored flags the stale Equip minimums this drops (never NULL).
-    effective_min AS (
+    -- steps 6-8: CalcTarget (0 below MinDemands); EffectiveMin = MinOverride, else the Equip minimum, even with no
+    -- demand (D4); MinimumNoDemand flags Equip minimums on parts with no demands in the window (Cleanup);
+    -- StockingTarget = max(CalcTarget, EffectiveMin rounded up)
+    target AS (
+        SELECT *, CAST(greatest(CalcTarget, ceil(EffectiveMin)) AS INTEGER) AS StockingTarget
+        FROM (SELECT *,
+                     CASE WHEN DemandCount >= MinDemands
+                          THEN CAST(ceil(round(MonthlyRate * SupplyMonths, 9)) AS INTEGER) ELSE 0 END AS CalcTarget,
+                     coalesce(min_override, equip_min, 0.0) AS EffectiveMin,
+                     min_override IS NULL AND coalesce(equip_min, 0) > 0 AND DemandCount = 0 AS MinimumNoDemand
+              FROM demand)
+    ),
+    -- step 9: base quantity, 0 when the target is 0 (D5); stock truncated toward zero
+    base_qty AS (
+        SELECT *, CASE WHEN StockingTarget = 0 THEN 0 ELSE greatest(0, StockingTarget - oh - oo) END AS bq
+        FROM target
+    ),
+    -- step 10a: MaxLineValue cuts the quantity back to stay at or under it (only with something to order)
+    capped AS (
         SELECT *,
-               coalesce(min_override, CASE WHEN ActiveMonths > 0 THEN equip_min END, 0.0) AS EffectiveMin,
-               min_override IS NULL AND coalesce(equip_min, 0) > 0 AND ActiveMonths = 0 AS MinimumIgnored
-        FROM demand
+               bq > 0 AND cost > 0 AND MaxLineValue IS NOT NULL AND round(bq * cost, 9) > MaxLineValue AS ValueCapped,
+               CASE WHEN bq > 0 AND cost > 0 AND MaxLineValue IS NOT NULL AND round(bq * cost, 9) > MaxLineValue
+                    THEN CAST(floor(round(MaxLineValue / cost, 9)) AS INTEGER) ELSE bq END AS cq
+        FROM base_qty
     ),
-    -- step 5: CalcTarget, 0 below MinActiveMonths
-    calc_target AS (
-        SELECT *, CASE WHEN ActiveMonths >= MinActiveMonths
-                       THEN CAST(ceil(round(MonthlyRate * WeeksOfCover * 12 / 52, 9)) AS INTEGER)
-                       ELSE 0 END AS CalcTarget
-        FROM (SELECT *, WindowDemand / HistoryMonths AS MonthlyRate FROM effective_min)
+    -- step 10b: then a line below MinLineValue is not suggested (quantity 0)
+    valued AS (
+        SELECT *, CASE WHEN BelowMinValue THEN 0 ELSE cq END AS vq
+        FROM (SELECT *, bq > 0 AND cost > 0 AND MinLineValue IS NOT NULL
+                        AND round(cq * cost, 9) < MinLineValue AS BelowMinValue
+              FROM capped)
     ),
-    -- step 6: StockingTarget = max(CalcTarget, EffectiveMin rounded up)
-    stocking_target AS (
-        SELECT *, CAST(greatest(CalcTarget, ceil(EffectiveMin)) AS INTEGER) AS StockingTarget FROM calc_target
-    ),
-    -- step 7: order quantity, 0 when masked; stock truncated toward zero
+    -- step 12: order 0 when Manual Order or masked
     order_qty AS (
-        SELECT *, CASE WHEN masked THEN 0 ELSE greatest(0, StockingTarget - oh - oo) END AS RecommendedOrderQty
-        FROM stocking_target
+        SELECT *, CASE WHEN ManualOrder OR IsMasked THEN 0 ELSE vq END AS RecommendedOrderQty
+        FROM valued
     ),
-    -- steps 8-9: surplus and status. Target 0: NoRecentActivity = no demand in the window; NotStocked = had demand
-    -- in the window but the target came out 0 (below MinActiveMonths, WeeksOfCover 0, or net demand <= 0).
+    -- steps 13-14: surplus and status (first match). Target 0: NoRecentActivity = no demands in the window;
+    -- NotStocked = demands, but the target came out 0 (below MinDemands, supply 0, or net demand <= 0).
     final AS (
         SELECT *, greatest(0, oh - StockingTarget) AS SurplusQty,
-               CASE WHEN masked THEN 'Masked'
+               CASE WHEN ManualOrder THEN 'ManualOrder'
+                    WHEN IsMasked THEN 'Masked'
                     WHEN StockingTarget = 0
-                    THEN CASE WHEN ActiveMonths = 0 THEN 'NoRecentActivity' ELSE 'NotStocked' END
+                    THEN CASE WHEN DemandCount = 0 THEN 'NoRecentActivity' ELSE 'NotStocked' END
+                    WHEN BelowMinValue THEN 'BelowMinValue'
                     WHEN RecommendedOrderQty > 0 AND coalesce(QuantityOnHand, 0) <= 0 THEN 'OutOfStock'
                     WHEN RecommendedOrderQty > 0 THEN 'Reorder' ELSE 'OK' END AS Status
         FROM order_qty
@@ -246,7 +337,7 @@ def expected_reorder(con, current_month: date, today: date):
 
 
 def invalid_rules(con) -> list:
-    """Active rows of order_rules that are skipped as invalid, as (Id, RuleName, reason), by Id."""
+    """Active, not archived rows of order_rules that are skipped as invalid, as (Id, RuleName, reason), by Id."""
     return con.execute(INVALID_RULES_SQL).fetchall()
 
 
@@ -292,6 +383,32 @@ def _connect():
     return con
 
 
+def load_inputs(con, tier: str, current_month: date) -> list:
+    """Create the input tables EXPECTED_SQL reads (parts, rules, hist, order_rules, settings, transfers) from the
+    tier's lakehouses; returns the optional (round 1) columns the staging tables don't have yet, read as NULL.
+    The session is UTC, so DateLastRequested becomes the timestamp as stored (Equip's wall clock) and its date is
+    the date Equip shows."""
+    absent = []
+    con.execute(f"""CREATE TABLE parts AS SELECT Branch, Franchise, PartNumber, QuantityOnHand, OnOrder, Cost,
+                    DealerGroupCode, CAST(DateLastRequested AS TIMESTAMP) AS DateLastRequested
+                    FROM delta_scan('{_path(tier, 'staging', 'Silver_PartInformation')}')""")
+    con.execute(f"""CREATE TABLE rules AS SELECT Branch, Franchise, PartNumber, MinimumQty
+                    FROM delta_scan('{_path(tier, 'staging', 'Silver_PartStockingRules')}')""")
+    hist_start = add_months(current_month, -HIST_MONTHS)
+    con.execute(f"""CREATE TABLE hist AS SELECT Branch, Franchise, PartNumber, MonthStart, SalesQty, RequestCount
+                    FROM delta_scan('{_path(tier, 'staging', 'Silver_PartSalesHistory')}')
+                    -- only speeds the read; each rule's window is applied in EXPECTED_SQL
+                    WHERE MonthStart >= DATE '{hist_start}'""")
+    for name, table, cols in (("order_rules", "NonJD_OrderRules", RULE_COLS),
+                              ("settings", "NonJD_PartSettings", SETTINGS_COLS)):
+        src = f"delta_scan('{_path(tier, 'staging', table)}')"
+        absent += [f"{table}.{c}" for c in cols[1] if c not in columns(con, src)]
+        con.execute(f"CREATE TABLE {name} AS SELECT {select_list(con, src, *cols)} FROM {src}")
+    con.execute(f"""CREATE TABLE transfers AS SELECT RequestingBranch, PartNumber, OpenQty
+                    FROM delta_scan('{_path(tier, 'presentation', 'Fact_OutstandingTransfers')}')""")
+    return absent
+
+
 def fingerprint(con, tier: str) -> tuple:
     p = _path(tier, "presentation", "Fact_NonJD_Reorder")
     return con.execute(f"""SELECT count(*), sum(hash(t)::HUGEINT)
@@ -319,23 +436,9 @@ def main() -> int:
     current_month = date(today.year, today.month, 1)
     print(f"Gold built {built}; checking as of {today} (month {current_month})")
 
-    con.execute(f"""CREATE TABLE parts AS SELECT Branch, Franchise, PartNumber, QuantityOnHand, OnOrder, Cost,
-                    DealerGroupCode FROM delta_scan('{_path(a.tier, 'staging', 'Silver_PartInformation')}')""")
-    con.execute(f"""CREATE TABLE rules AS SELECT Branch, Franchise, PartNumber, MinimumQty
-                    FROM delta_scan('{_path(a.tier, 'staging', 'Silver_PartStockingRules')}')""")
-    hist_start = add_months(current_month, -HIST_MONTHS)
-    con.execute(f"""CREATE TABLE hist AS SELECT Branch, Franchise, PartNumber, MonthStart, SalesQty, RequestCount
-                    FROM delta_scan('{_path(a.tier, 'staging', 'Silver_PartSalesHistory')}')
-                    -- only speeds the read; each rule's window is applied in EXPECTED_SQL
-                    WHERE MonthStart >= DATE '{hist_start}'""")
-    con.execute(f"""CREATE TABLE order_rules AS SELECT Id, RuleName, Priority, Active, Franchise, DealerGroupCode,
-                    Branch, StartMonth, EndMonth, HistoryMonths, MinActiveMonths, WeeksOfCover, DemandBasis
-                    FROM delta_scan('{_path(a.tier, 'staging', 'NonJD_OrderRules')}')""")
-    con.execute(f"""CREATE TABLE settings AS SELECT Id, Branch, Franchise, PartNumber, MinOverride, Masked,
-                    MaskExpires, Modified FROM delta_scan('{_path(a.tier, 'staging', 'NonJD_PartSettings')}')""")
-    con.execute(f"""CREATE TABLE transfers AS SELECT RequestingBranch, PartNumber, OpenQty
-                    FROM delta_scan('{_path(a.tier, 'presentation', 'Fact_OutstandingTransfers')}')""")
-
+    absent = load_inputs(con, a.tier, current_month)
+    if absent:
+        print(f"NOTE: read as NULL (not in staging yet): {', '.join(absent)}")
     bad = invalid_rules(con)
     if bad:
         print(f"WARN: {len(bad)} rule(s) skipped as invalid:")
@@ -345,6 +448,11 @@ def main() -> int:
         print("All active rules are valid")
 
     con.execute("CREATE TABLE expected AS " + EXPECTED_SQL, _params(current_month, today))
+    gold_cols = {r[0] for r in con.execute(f"DESCRIBE SELECT * FROM delta_scan('{gold_p}')").fetchall()}
+    missing = [c for c in OUTPUT_COLS if c not in gold_cols]
+    if missing:
+        print(f"FAIL: Fact_NonJD_Reorder has no {', '.join(missing)} (Gold not on the round 1 rules yet?)")
+        return 1
     con.execute(f"CREATE TABLE gold AS SELECT {', '.join(OUTPUT_COLS)} FROM delta_scan('{gold_p}')")
     result = compare(con, "gold", "expected")
     print(result)
