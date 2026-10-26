@@ -24,7 +24,9 @@ Ben, this is the suggested order for every branch, recalculated on the same day'
 | 5. Equip minimum always applies | 5,309 (+3,138) | $4,860,660 (+$4,272,737) | 10,422 (+3,607) |
 | 6. Default at 12 weeks of supply | 5,775 (+466) | $5,355,625 (+$494,965) | 10,422 (no change) |
 
-Step 1 includes the five branches that step 2 leaves out. They hold 7,710 in-scope parts but none is stocked (0) or suggested (0) today, so step 2 changes nothing now; it keeps the 15 Equip minimums there on parts with no demand out of step 5.
+Step 1 includes the five branches that step 2 leaves out. They hold 7,710 in-scope parts, but today none is stocked (0) or suggested (0), so step 2 changes nothing yet. Without step 2, step 5 would add 15 Equip minimums at those branches ($5,376).
+
+**Question for Ben:** other sub-branches stay in scope: 11S, 13I, 13S, 14S, 15I, 15S, 16S, 1I, 1S, 2C, 3C, 3S, 4C, 4I, 4S, 6C, 6I, 7C, 8C, 8I, 8S, 91I, 95I. Today none of them has a non-JD part with a cost, so they add nothing to these numbers, but they would show up if parts were added there. Should any of them be left out too?
 
 ## Branches 1, 8 and 92
 
@@ -39,18 +41,18 @@ Step 1 includes the five branches that step 2 leaves out. They hold 7,710 in-sco
 
 Stocked parts: Branch 1 419 at step 1, 574 at step 6; Branch 8 573 at step 1, 1,178 at step 6; Branch 92 168 at step 1, 327 at step 6.
 
-## Equip minimums on parts with no demand
+## Equip minimums on parts with no activity
 
-From step 5 the Equip minimum counts even when the part had no demand in the 12 months. These are the parts the Cleanup list will show (minimum set, no demand, no Min override in the app). What they add to the order:
+From step 5 the Equip minimum counts even when the part had no activity in the 12 months (no demands and no units sold). These are the parts the Cleanup list will show (minimum set, no activity, no Min override in the app). **Step 5 adds about 3,100 lines like this to work through.** What they add to the order:
 
 | Step | Lines | $ |
 |---|---:|---:|
-| 5. Equip minimum always applies | 3,126 | $4,268,922 |
-| 6. Default at 12 weeks of supply | 3,126 | $4,268,922 |
+| 5. Equip minimum always applies | 3,120 | $4,267,865 |
+| 6. Default at 12 weeks of supply | 3,120 | $4,267,865 |
 
-By branch at step 6 (largest first): 95 135 lines / $2,142,627; 8 484 lines / $878,861; 4 26 lines / $710,402; 16 9 lines / $136,316; 3 14 lines / $118,222; 91 645 lines / $117,292; 6 1,003 lines / $70,158; 93 58 lines / $27,368; others smaller.
+By branch at step 6 (largest first): 95 135 lines / $2,142,627; 8 483 lines / $878,853; 4 25 lines / $709,521; 16 9 lines / $136,316; 3 13 lines / $118,195; 91 643 lines / $117,170; 6 1,002 lines / $70,139; 93 58 lines / $27,368; others smaller.
 
-The three largest lines below are $3,521,090 of the $4,268,922 (82%); without them these minimums add $747,832. Several of the largest minimums look like data-entry errors in Equip (a minimum far above anything the branch sells, or the price typed into the minimum field), which is what Cleanup is for. A Min override of 0 in the app, or fixing the minimum in Equip, takes a line off.
+The three largest lines below are $3,521,090 of the $4,267,865 (83%); without them these minimums add $746,774. Several of the largest minimums look like data-entry errors in Equip, which is what Cleanup is for: a minimum far above anything the branch sells, or the price typed into the minimum field (WR-AR82561 (777 at $777.75), CTV-0505B (336 at $336.00), VAWISO32 (726 at $72.60)). A Min override of 0 in the app, or fixing the minimum in Equip, takes a line off.
 
 Top 10 of these lines by $ at step 6:
 
@@ -70,4 +72,4 @@ Top 10 of these lines by $ at step 6:
 ## Checks
 
 - Step 1 against the current Dev Gold table, part by part: 0 parts only in Gold, 0 only in step 1, 0 with a different target, order or cost. Gold totals: 1,775 lines, $491,167, 5,394 stocked; Branch 1 93 lines / $32,838.
-- Step 6 against the round 1 reference rules (`nonjd_reorder_check.py`) with one Default rule of 12 months / 3 demands / 12 weeks: identical totals.
+- Step 6 against the round 1 reference rules (`nonjd_reorder_check.py`) with one Default rule of 12 months / 3 demands / 12 weeks, part by part: 0 parts only in the reference, 0 only in step 6, 0 with a different target, order or MinimumNoDemand.

@@ -1,6 +1,6 @@
 # tools/dp-migration/test_nonjd_reorder_check.py
 """Tests for the reference reorder rules (Plan C round 1: docs/superpowers/plans/2026-10-26-non-jd-parts-order-tool-
-round-1.md, "The calculation" and "Validation") and compare()."""
+round-1.md, "The calculation", "Validation" and decisions D13/D14) and compare()."""
 from datetime import date
 
 import duckdb
@@ -106,7 +106,7 @@ def test_output_columns():
     assert [d[0] for d in cur_.description] == [
         "Branch", "Franchise", "PartNumber", "RuleId", "RuleName", "DemandBasis", "HistoryMonths",
         "MinDemands", "SupplyUnit", "Supply", "SupplyMonths", "MinLineValue", "MaxLineValue",
-        "WindowDemand", "DemandCount", "ActiveMonths", "MonthlyRate", "CalcTarget", "EffectiveMin",
+        "WindowDemand", "UnitsSoldWindow", "DemandCount", "ActiveMonths", "MonthlyRate", "CalcTarget", "EffectiveMin",
         "MinimumNoDemand", "StockingTarget", "ValueCapped", "BelowMinValue", "ManualOrder", "MaskedOn",
         "IsMasked", "RecommendedOrderQty", "SurplusQty", "InboundTransferQty", "Status"]
 
@@ -560,7 +560,8 @@ def test_many_active_months_without_requests_not_stocked():
     _hist(con, "NOREQ", {"2026-09-01": (5, 0), "2026-08-01": (5, 0), "2026-07-01": (5, 0), "2026-06-01": (5, 0)})
     r = _run(con)[K("NOREQ")]
     assert (r["ActiveMonths"], r["DemandCount"], r["CalcTarget"], r["StockingTarget"]) == (4, 0, 0, 0)
-    assert r["Status"] == "NoRecentActivity"
+    assert r["UnitsSoldWindow"] == pytest.approx(20.0)
+    assert r["Status"] == "NotStocked"                     # units sold count as activity (D14)
 
 
 def test_min_demands_zero_with_no_demand_gives_zero():
@@ -691,15 +692,77 @@ def test_equip_minimum_with_demand_below_min_demands_is_not_flagged():
     assert r["RecommendedOrderQty"] == 4 and r["Status"] == "OutOfStock"
 
 
-def test_minimum_no_demand_reads_demand_count_not_units():
-    # units sold but no transactions counted: no demands, so the minimum is flagged for cleanup
+def test_units_sold_without_requests_is_activity():
+    # units sold but RequestCount 0: not "no activity", so the minimum is not flagged for cleanup (D14)
     con = _con()
     _part(con, "U", oh=5)
     _minimum(con, "U", 4)
     _hist(con, "U", {"2026-09-01": (3, 0)})
     r = _run(con)[K("U")]
-    assert (r["ActiveMonths"], r["DemandCount"], r["MinimumNoDemand"]) == (1, 0, True)
+    assert (r["ActiveMonths"], r["DemandCount"], r["UnitsSoldWindow"], r["MinimumNoDemand"]) == (1, 0, 3, False)
     assert r["StockingTarget"] == 4 and r["Status"] == "OK"
+
+
+def test_units_sold_without_requests_and_no_minimum_is_not_stocked():
+    con = _con()
+    _part(con, "U2")
+    _hist(con, "U2", {"2026-09-01": (3, 0)})
+    r = _run(con)[K("U2")]
+    assert (r["DemandCount"], r["UnitsSoldWindow"], r["CalcTarget"], r["Status"]) == (0, 3, 0, "NotStocked")
+
+
+def test_requests_without_units_is_activity():
+    con = _con()
+    _part(con, "R0")
+    _minimum(con, "R0", 2)
+    _part(con, "R1")
+    for pn in ("R0", "R1"):
+        _hist(con, pn, {"2026-09-01": (0, 1)})
+    r = _run(con)
+    assert (r[K("R0")]["UnitsSoldWindow"], r[K("R0")]["DemandCount"], r[K("R0")]["MinimumNoDemand"]) == (0, 1, False)
+    assert r[K("R1")]["Status"] == "NotStocked"
+
+
+@pytest.mark.parametrize("units,no_activity", [
+    ({"2026-09-01": (5, 0), "2026-08-01": (-5, 0)}, True),     # nets to 0 units, no requests: no activity
+    ({"2026-09-01": (2, 0), "2026-08-01": (-5, 0)}, True),     # negative net counts as 0
+    ({"2026-09-01": (0, 0)}, True),
+    ({"2026-09-01": (0.5, 0)}, False),
+])
+def test_no_activity_uses_net_units_sold(units, no_activity):
+    con = _con()
+    _part(con, "NA")
+    _minimum(con, "NA", 1)
+    _hist(con, "NA", units)
+    r = _run(con)[K("NA")]
+    assert r["MinimumNoDemand"] is no_activity
+    assert (r["UnitsSoldWindow"] == 0) is no_activity
+
+
+def test_no_activity_status_with_target_zero():
+    con = _con()
+    _part(con, "NAS")
+    _hist(con, "NAS", {"2026-09-01": (5, 0), "2026-08-01": (-5, 0)})
+    assert _run(con)[K("NAS")]["Status"] == "NoRecentActivity"
+
+
+def test_units_sold_window_ignores_basis_and_months_outside_the_window():
+    con = _con()
+    _part(con, "RQB")
+    _hist(con, "RQB", {"2026-10-01": (100, 100),              # current partial month: excluded
+                       "2026-09-01": (2, 7), "2026-08-01": (1.5, 1),
+                       "2025-09-01": (400, 400)})             # outside 12 months
+    _rule(con, 1, basis="Requests", md=0, woc=52)
+    r = _run(con)[K("RQB")]
+    assert (r["WindowDemand"], r["UnitsSoldWindow"], r["DemandCount"]) == (8, 3.5, 8)
+
+
+def test_units_sold_window_follows_history_months():
+    con = _con()
+    _part(con, "HM3")
+    _hist(con, "HM3", {"2026-09-01": (2, 0), "2026-05-01": (9, 0)})
+    _rule(con, 1, hm=3)
+    assert _run(con)[K("HM3")]["UnitsSoldWindow"] == 2
 
 
 def test_demand_only_outside_the_rule_window_counts_as_no_demand():
@@ -882,7 +945,7 @@ def test_max_line_value_product_compared_without_noise():
 def test_max_line_value_below_cost_cuts_to_zero():
     r = _line(_con(), maxlv=5)                             # one unit costs $10
     assert (r["RecommendedOrderQty"], r["ValueCapped"], r["BelowMinValue"]) == (0, True, False)
-    assert r["Status"] == "OK"                             # target > 0, nothing to order, not below a minimum
+    assert r["Status"] == "AboveMaxValue"                  # D13
 
 
 def test_min_line_value_zeroes_small_line():
@@ -909,8 +972,55 @@ def test_cap_then_minimum_both_satisfied():
 
 
 def test_cap_to_zero_then_minimum():
+    # a cap to 0 is AboveMaxValue, not BelowMinValue (D13)
     r = _line(_con(), minlv=1, maxlv=5)
-    assert (r["RecommendedOrderQty"], r["ValueCapped"], r["BelowMinValue"]) == (0, True, True)
+    assert (r["RecommendedOrderQty"], r["ValueCapped"], r["BelowMinValue"]) == (0, True, False)
+    assert r["Status"] == "AboveMaxValue"
+
+
+# D13: every combination of the two limits -> (order, ValueCapped, BelowMinValue, Status); 10 wanted at $10, on hand 0
+LIMIT_COMBOS = {
+    "none": (None, None, (10, False, False, "OutOfStock")),
+    "max not hit": (None, 100, (10, False, False, "OutOfStock")),
+    "max partial cap": (None, 55, (5, True, False, "OutOfStock")),
+    "max cap to 0": (None, 9.99, (0, True, False, "AboveMaxValue")),
+    "max 0": (None, 0, (0, True, False, "AboveMaxValue")),
+    "min met": (100, None, (10, False, False, "OutOfStock")),
+    "min not met": (100.01, None, (0, False, True, "BelowMinValue")),
+    "min 0": (0, None, (10, False, False, "OutOfStock")),
+    "both, neither hit": (50, 200, (10, False, False, "OutOfStock")),
+    "both, partial cap, min met": (50, 55, (5, True, False, "OutOfStock")),
+    "both, partial cap, min not met": (52, 55, (0, True, True, "BelowMinValue")),
+    "both, cap to 0": (1, 5, (0, True, False, "AboveMaxValue")),
+    "both 0": (0, 0, (0, True, False, "AboveMaxValue")),
+    "both, uncapped, min not met": (150, 150, (0, False, True, "BelowMinValue")),
+}
+
+
+@pytest.mark.parametrize("minlv,maxlv,expected", LIMIT_COMBOS.values(), ids=LIMIT_COMBOS.keys())
+def test_line_limit_combinations(minlv, maxlv, expected):
+    r = _line(_con(), minlv=minlv, maxlv=maxlv)
+    assert (r["RecommendedOrderQty"], r["ValueCapped"], r["BelowMinValue"], r["Status"]) == expected
+
+
+def test_partial_cap_in_stock_is_reorder():
+    r = _line(_con(), target=10, oh=2, maxlv=55)           # wants 8 = $80, capped to 5
+    assert (r["RecommendedOrderQty"], r["ValueCapped"], r["Status"]) == (5, True, "Reorder")
+
+
+def test_min_value_comparison_rounds_away_noise():
+    # 3 x 0.7 = 2.0999999999999996 in doubles; rounded it equals the 2.10 minimum
+    r = _line(_con(), target=3, cost=0.7, minlv=2.1)
+    assert (r["RecommendedOrderQty"], r["BelowMinValue"]) == (3, False)
+
+
+@pytest.mark.parametrize("setting,status", [(dict(manual=True), "ManualOrder"), (dict(masked=True), "Masked")])
+def test_cap_to_zero_under_manual_order_or_mask(setting, status):
+    con = _con()
+    _stocked(con, "C0", 10, maxlv=5)
+    _setting(con, "C0", **setting)
+    r = _run(con)[K("C0")]
+    assert (r["ValueCapped"], r["RecommendedOrderQty"], r["Status"]) == (True, 0, status)
 
 
 def test_line_limits_skipped_when_nothing_to_order():
@@ -1132,6 +1242,14 @@ def test_select_list_fills_missing_optional_columns_with_typed_nulls():
     assert types["SupplyUnit"] == "VARCHAR" and types["Archived"] == "BOOLEAN"
 
 
+def test_select_list_casts_present_optional_columns():
+    con = duckdb.connect()
+    con.execute("CREATE TABLE src (Id BIGINT, MaskedOn TIMESTAMP)")
+    con.execute("INSERT INTO src VALUES (1, TIMESTAMP '2026-10-05 00:00')")
+    sel = chk.select_list(con, "src", ["Id"], {"MaskedOn": "DATE"})
+    assert con.execute(f"SELECT {sel} FROM src").fetchall() == [(1, date(2026, 10, 5))]
+
+
 def test_select_list_missing_required_column_fails():
     con = duckdb.connect()
     con.execute("CREATE TABLE src (Id BIGINT)")
@@ -1172,7 +1290,7 @@ CMP_COLS = [("Branch", "VARCHAR"), ("Franchise", "VARCHAR"), ("PartNumber", "VAR
             ("RuleName", "VARCHAR"), ("DemandBasis", "VARCHAR"), ("HistoryMonths", "INTEGER"),
             ("MinDemands", "INTEGER"), ("SupplyUnit", "VARCHAR"), ("Supply", "DOUBLE"), ("SupplyMonths", "DOUBLE"),
             ("MinLineValue", "DOUBLE"), ("MaxLineValue", "DOUBLE"), ("WindowDemand", "DOUBLE"),
-            ("DemandCount", "INTEGER"), ("ActiveMonths", "INTEGER"), ("MonthlyRate", "DOUBLE"),
+            ("UnitsSoldWindow", "DOUBLE"), ("DemandCount", "INTEGER"), ("ActiveMonths", "INTEGER"), ("MonthlyRate", "DOUBLE"),
             ("CalcTarget", "INTEGER"), ("EffectiveMin", "DOUBLE"), ("MinimumNoDemand", "BOOLEAN"),
             ("StockingTarget", "INTEGER"), ("ValueCapped", "BOOLEAN"), ("BelowMinValue", "BOOLEAN"),
             ("ManualOrder", "BOOLEAN"), ("MaskedOn", "DATE"), ("IsMasked", "BOOLEAN"),
@@ -1180,7 +1298,7 @@ CMP_COLS = [("Branch", "VARCHAR"), ("Franchise", "VARCHAR"), ("PartNumber", "VAR
             ("Status", "VARCHAR")]
 BASE = dict(Branch="1", Franchise="MC", PartNumber="A", RuleId=1, RuleName="Default", DemandBasis="UnitsSold",
             HistoryMonths=12, MinDemands=3, SupplyUnit="Weeks", Supply=12.0, SupplyMonths=12 * 12 / 52,
-            MinLineValue=10.0, MaxLineValue=500.0, WindowDemand=3.0, DemandCount=4, ActiveMonths=2,
+            MinLineValue=10.0, MaxLineValue=500.0, WindowDemand=3.0, UnitsSoldWindow=3.0, DemandCount=4, ActiveMonths=2,
             MonthlyRate=0.25, CalcTarget=1, EffectiveMin=0.0, MinimumNoDemand=False, StockingTarget=2,
             ValueCapped=False, BelowMinValue=False, ManualOrder=False, MaskedOn=date(2026, 10, 5), IsMasked=False,
             RecommendedOrderQty=1, SurplusQty=0, InboundTransferQty=0.0, Status="Reorder")
@@ -1230,7 +1348,7 @@ def test_compare_flags_duplicate_keys():
     ("RecommendedOrderQty", 0), ("SurplusQty", 1), ("Status", "OK"),
     ("Supply", 6.5), ("Supply", None), ("SupplyMonths", 2.0), ("SupplyMonths", None),
     ("MinLineValue", 10.5), ("MinLineValue", None), ("MaxLineValue", 499.0), ("MaxLineValue", None),
-    ("WindowDemand", 3.01), ("WindowDemand", None),
+    ("WindowDemand", 3.01), ("WindowDemand", None), ("UnitsSoldWindow", 2.0), ("UnitsSoldWindow", None),
     ("MonthlyRate", 0.2501), ("MonthlyRate", None), ("EffectiveMin", 1.0), ("EffectiveMin", None),
     ("InboundTransferQty", 0.5), ("InboundTransferQty", None),
 ])
@@ -1240,7 +1358,7 @@ def test_compare_flags_each_compared_column(col, value):
 
 
 @pytest.mark.parametrize("col", ["Supply", "SupplyMonths", "MinLineValue", "MaxLineValue", "WindowDemand",
-                                 "MonthlyRate", "EffectiveMin", "InboundTransferQty"])
+                                 "UnitsSoldWindow", "MonthlyRate", "EffectiveMin", "InboundTransferQty"])
 def test_compare_tolerates_tiny_float_differences(col):
     r = _cmp([{}], [{col: BASE[col] + 1e-9}])
     assert r["different"] == 0

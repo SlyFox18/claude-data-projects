@@ -14,10 +14,11 @@ scenarios and writes a short markdown report for Ben:
 The rule values are parameters here (SCENARIOS), not read from the list, so the report doesn't depend on the new
 list columns (Task C0). Masks and Min overrides come from NonJD_PartSettings as Gold uses them.
 
-Checks before writing:
-  - scenario 1 is compared part by part with the current Fact_NonJD_Reorder (target and order quantity);
-  - scenario 6 is compared with the round 1 reference (nonjd_reorder_check.EXPECTED_SQL) run with a single
-    Default rule of 12 months / 3 demands / 12 weeks; totals must be identical.
+Checks, part by part (the report is written only when both pass; otherwise it goes to <name>.failed.md):
+  - scenario 1 against the current Fact_NonJD_Reorder (target, order quantity, cost);
+  - scenario 6 against the round 1 reference (nonjd_reorder_check.EXPECTED_SQL) run with a single Default rule of
+    12 months / 3 demands / 12 weeks (target, order quantity, MinimumNoDemand).
+MinimumNoDemand follows D14: no Min override, Equip minimum > 0, and no activity (no demands and no units sold).
 
 Usage:
     python nonjd_round1_impact.py [--out <markdown path>]
@@ -101,7 +102,10 @@ BASE_SQL = f"""
            coalesce(ps.Masked, false) AND (ps.MaskExpires IS NULL OR ps.MaskExpires >= $today) AS masked,
            greatest(0.0, round(CAST(coalesce(w.units, 0) AS DOUBLE), 9)) AS window_demand,
            CAST(coalesce(w.active, 0) AS INTEGER) AS active_months,
-           CAST(greatest(0, coalesce(w.requests, 0)) AS INTEGER) AS demand_count
+           CAST(greatest(0, coalesce(w.requests, 0)) AS INTEGER) AS demand_count,
+           -- D14: no demands and no units sold (window_demand is the UnitsSold basis, so it is UnitsSoldWindow)
+           coalesce(w.requests, 0) <= 0 AND greatest(0.0, round(CAST(coalesce(w.units, 0) AS DOUBLE), 9)) = 0
+             AS no_activity
     FROM sc
     LEFT JOIN rules r USING (Branch, Franchise, PartNumber)
     LEFT JOIN ps USING (Branch, Franchise, PartNumber)
@@ -127,7 +131,7 @@ def scenario_sql(s: dict) -> str:
                                                 AS INTEGER)
                                       ELSE 0 END AS calc_target,
                                  {eff_min} AS eff_min,
-                                 min_override IS NULL AND coalesce(equip_min, 0) > 0 AND demand_count = 0
+                                 min_override IS NULL AND coalesce(equip_min, 0) > 0 AND no_activity
                                    AS minimum_no_demand
                           FROM base {where})))
     """
@@ -160,6 +164,9 @@ def main() -> int:
     con = chk._connect()
     gold_p = chk._path(TIER, "presentation", "Fact_NonJD_Reorder")
     built = con.execute(f"SELECT max(BuiltAtUtc) FROM delta_scan('{gold_p}')").fetchone()[0]
+    if built is None:
+        print("Fact_NonJD_Reorder (dev) is empty; nothing to compare scenario 1 with. Run the Dev refresh first.")
+        return 1
     if built.tzinfo is None:
         built = built.replace(tzinfo=timezone.utc)
     # The date the current Dev Gold was built on, so scenario 1 can be checked against it.
@@ -213,10 +220,19 @@ def main() -> int:
               + "; ".join(f"B{b} {v[0]} / {_money(v[1])}" for b, v in by_branch.items())
               + (f"; MinimumNoDemand {mnd[0]:,} lines {_money(mnd[1])}" if mnd else ""))
 
-    # the excluded branches at step 1 (to explain step 2)
-    excl = con.execute(f"""SELECT count(*), count(*) FILTER (WHERE target > 0), count(*) FILTER (WHERE order_qty > 0),
-                                  count(*) FILTER (WHERE minimum_no_demand)
+    # the excluded branches: today (step 1), and what step 5 would add there without step 2
+    excl = con.execute(f"""SELECT count(*), count(*) FILTER (WHERE target > 0), count(*) FILTER (WHERE order_qty > 0)
                            FROM ({scenario_sql(SCENARIOS[0])}) WHERE excluded""").fetchone()
+    excl5 = con.execute(f"""SELECT count(*) FILTER (WHERE order_qty > 0), coalesce(sum(order_value), 0)
+                            FROM ({scenario_sql({**SCENARIOS[4], 'exclude': False})}) WHERE excluded""").fetchone()
+    # sub-branches (a letter suffix) that stay in scope
+    subs = con.execute(f"""SELECT trim(Branch) b, count(*) total,
+                                  count(*) FILTER (WHERE (Branch, Franchise, PartNumber) IN
+                                                   (SELECT (Branch, Franchise, PartNumber) FROM base)) in_scope
+                           FROM parts
+                           WHERE regexp_matches(trim(Branch), '^[0-9]+[A-Za-z]+$')
+                             AND upper(trim(Branch)) NOT IN ({chk._EXCLUDED_SQL})
+                           GROUP BY 1 ORDER BY 1""").fetchall()
 
     s6_sql = scenario_sql(SCENARIOS[-1])
     top = con.execute(f"""SELECT Branch, Franchise, PartNumber, equip_min, oh, oo, order_qty, cost, order_value
@@ -241,23 +257,38 @@ def main() -> int:
                    3.0 AS MinDemands, 'Weeks' AS SupplyUnit, NULL::DOUBLE AS MinLineValue,
                    NULL::DOUBLE AS MaxLineValue, false AS Archived""")
     con.execute("CREATE TABLE ref AS " + chk.EXPECTED_SQL, {"cur": cur, "today": today})
-    ref = con.execute("""SELECT count(*) FILTER (WHERE r.RecommendedOrderQty > 0),
-                                coalesce(sum(r.RecommendedOrderQty * CAST(p.Cost AS DOUBLE)), 0),
-                                count(*) FILTER (WHERE r.StockingTarget > 0)
-                         FROM ref r JOIN parts p USING (Branch, Franchise, PartNumber)""").fetchone()
-    s6 = results[-1][1]
-    ref_ok = ref[0] == s6[0] and ref[2] == s6[2] and abs(ref[1] - s6[1]) < 0.005
-    print(f"scenario 6 vs round 1 reference: {'match' if ref_ok else 'MISMATCH'} {ref} vs {s6}")
+    con.execute(f"CREATE TABLE s6 AS {scenario_sql(SCENARIOS[-1])}")
+    r_only, s6_only, r_diff = con.execute("""
+        SELECT (SELECT count(*) FROM (SELECT Branch, Franchise, PartNumber FROM ref
+                                      EXCEPT SELECT Branch, Franchise, PartNumber FROM s6)),
+               (SELECT count(*) FROM (SELECT Branch, Franchise, PartNumber FROM s6
+                                      EXCEPT SELECT Branch, Franchise, PartNumber FROM ref)),
+               (SELECT count(*) FROM ref r JOIN s6 s USING (Branch, Franchise, PartNumber)
+                WHERE r.StockingTarget IS DISTINCT FROM s.target OR r.RecommendedOrderQty IS DISTINCT FROM s.order_qty
+                   OR r.MinimumNoDemand IS DISTINCT FROM s.minimum_no_demand)""").fetchone()
+    print(f"scenario 6 vs round 1 reference: only in reference {r_only}, only in scenario 6 {s6_only}, "
+          f"different {r_diff}")
+    if r_only or s6_only or r_diff:
+        for row in con.execute("""SELECT r.Branch, r.Franchise, r.PartNumber, r.StockingTarget, r.RecommendedOrderQty,
+                                         r.MinimumNoDemand, s.Branch, s.PartNumber, s.target, s.order_qty,
+                                         s.minimum_no_demand
+                                  FROM ref r FULL JOIN s6 s USING (Branch, Franchise, PartNumber)
+                                  WHERE r.StockingTarget IS DISTINCT FROM s.target
+                                     OR r.RecommendedOrderQty IS DISTINCT FROM s.order_qty
+                                     OR r.MinimumNoDemand IS DISTINCT FROM s.minimum_no_demand LIMIT 10""").fetchall():
+            print("  ", row)
 
-    md = render(results, top, desc, mnd_by_branch, excl, today, built, last_req, cur, win_start,
-                (g_only, s_only, diff), gold_tot, gold_b1, ref_ok)
-    Path(a.out).write_text(md, encoding="utf-8", newline="\n")
-    print(f"wrote {a.out}")
-    return 0 if ref_ok and not (g_only or s_only or diff) else 1
+    ok = not (g_only or s_only or diff or r_only or s6_only or r_diff)
+    md = render(results, top, desc, mnd_by_branch, excl, excl5, subs, today, built, last_req, cur, win_start,
+                (g_only, s_only, diff), gold_tot, gold_b1, (r_only, s6_only, r_diff))
+    out = Path(a.out) if ok else Path(a.out).with_suffix(".failed.md")
+    out.write_text(md, encoding="utf-8", newline="\n")
+    print(f"{'wrote' if ok else 'CHECKS FAILED; wrote'} {out}")
+    return 0 if ok else 1
 
 
-def render(results, top, desc, mnd_by_branch, excl, today, built, last_req, cur, win_start, gold_cmp, gold_tot,
-           gold_b1, ref_ok) -> str:
+def render(results, top, desc, mnd_by_branch, excl, excl5, subs, today, built, last_req, cur, win_start, gold_cmp,
+           gold_tot, gold_b1, ref_cmp) -> str:
     last_full = chk.add_months(cur, -1)
     L = []
     L.append("# Round 1 changes: what they do to the suggested order")
@@ -288,10 +319,21 @@ def render(results, top, desc, mnd_by_branch, excl, today, built, last_req, cur,
                  f"{allb[2]:,}{_delta(allb[2], prev and prev[2])} |")
         prev = allb
     L.append("")
-    L.append(f"Step 1 includes the five branches that step 2 leaves out. They hold {excl[0]:,} in-scope parts but "
-             f"none is stocked ({excl[1]:,}) or suggested ({excl[2]:,}) today, so step 2 changes nothing now; it "
-             f"keeps the {excl[3]:,} Equip minimums there on parts with no demand out of step 5.")
+    L.append(f"Step 1 includes the five branches that step 2 leaves out. They hold {excl[0]:,} in-scope parts, but "
+             f"today none is stocked ({excl[1]:,}) or suggested ({excl[2]:,}), so step 2 changes nothing yet. "
+             f"Without step 2, step 5 would add {excl5[0]:,} Equip minimums at those branches "
+             f"({_money(excl5[1])}).")
     L.append("")
+    if subs:
+        with_parts = [f"{b} ({n:,})" for b, _, n in subs if n]
+        L.append("**Question for Ben:** other sub-branches stay in scope: "
+                 + ", ".join(b for b, _, _ in subs) + ". "
+                 + (f"These have in-scope non-JD parts with a cost today: {', '.join(with_parts)}. "
+                    if with_parts else
+                    "Today none of them has a non-JD part with a cost, so they add nothing to these numbers, "
+                    "but they would show up if parts were added there. ")
+                 + "Should any of them be left out too?")
+        L.append("")
     L.append("## Branches 1, 8 and 92")
     L.append("")
     L.append("| Step | " + " | ".join(f"Branch {b} lines | Branch {b} $" for b in FOCUS_BRANCHES) + " |")
@@ -304,11 +346,13 @@ def render(results, top, desc, mnd_by_branch, excl, today, built, last_req, cur,
         f"Branch {b} {results[0][2][b][2]:,} at step 1, {results[-1][2][b][2]:,} at step 6" for b in FOCUS_BRANCHES)
         + ".")
     L.append("")
-    L.append("## Equip minimums on parts with no demand")
+    L.append("## Equip minimums on parts with no activity")
     L.append("")
-    L.append("From step 5 the Equip minimum counts even when the part had no demand in the 12 months. These are "
-             "the parts the Cleanup list will show (minimum set, no demand, no Min override in the app). What they "
-             "add to the order:")
+    mnd5 = results[4][3]
+    L.append("From step 5 the Equip minimum counts even when the part had no activity in the 12 months (no demands "
+             "and no units sold). These are the parts the Cleanup list will show (minimum set, no activity, no Min "
+             f"override in the app). **Step 5 adds about {round(mnd5[0], -2):,.0f} lines like this to work "
+             "through.** What they add to the order:")
     L.append("")
     L.append("| Step | Lines | $ |")
     L.append("|---|---:|---:|")
@@ -323,12 +367,16 @@ def render(results, top, desc, mnd_by_branch, excl, today, built, last_req, cur,
         L.append("")
     mnd6 = results[-1][3]
     top3 = sum(r[8] for r in top[:3])
+    # a minimum that reads like the price: the cost in whole dollars, or the cost x 10 / x 100
+    price_like = [f"{p.strip()} ({emin:g} at ${cost:,.2f})" for _, _, p, emin, _, _, _, cost, _ in top
+                  if emin >= 10 and emin in {round(cost), int(cost), round(cost * 10), round(cost * 100)}]
     if mnd6 and mnd6[1]:
         L.append(f"The three largest lines below are {_money(top3)} of the {_money(mnd6[1])} "
                  f"({top3 / mnd6[1]:.0%}); without them these minimums add {_money(mnd6[1] - top3)}. Several of "
-                 "the largest minimums look like data-entry errors in Equip (a minimum far above anything the "
-                 "branch sells, or the price typed into the minimum field), which is what Cleanup is for. A Min "
-                 "override of 0 in the app, or fixing the minimum in Equip, takes a line off.")
+                 "the largest minimums look like data-entry errors in Equip, which is what Cleanup is for: a "
+                 "minimum far above anything the branch sells"
+                 + (f", or the price typed into the minimum field ({', '.join(price_like)})" if price_like else "")
+                 + ". A Min override of 0 in the app, or fixing the minimum in Equip, takes a line off.")
         L.append("")
     L.append("Top 10 of these lines by $ at step 6:")
     L.append("")
@@ -344,8 +392,10 @@ def render(results, top, desc, mnd_by_branch, excl, today, built, last_req, cur,
     L.append(f"- Step 1 against the current Dev Gold table, part by part: {g_only} parts only in Gold, {s_only} only "
              f"in step 1, {diff} with a different target, order or cost. Gold totals: {gold_tot[0]:,} lines, "
              f"{_money(gold_tot[1])}, {gold_tot[2]:,} stocked; Branch 1 {gold_b1[0]:,} lines / {_money(gold_b1[1])}.")
+    r_only, s6_only, r_diff = ref_cmp
     L.append(f"- Step 6 against the round 1 reference rules (`nonjd_reorder_check.py`) with one Default rule of "
-             f"12 months / 3 demands / 12 weeks: {'identical totals' if ref_ok else 'MISMATCH, see the script output'}.")
+             f"12 months / 3 demands / 12 weeks, part by part: {r_only} parts only in the reference, {s6_only} only "
+             f"in step 6, {r_diff} with a different target, order or MinimumNoDemand.")
     L.append("")
     return "\n".join(L)
 

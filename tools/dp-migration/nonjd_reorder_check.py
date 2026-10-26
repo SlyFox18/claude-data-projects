@@ -4,7 +4,7 @@ Non-JD Parts Order Tool: independent check of Fact_NonJD_Reorder.
 
 Re-implements the reorder rules in DuckDB SQL over the same inputs, then compares row by row with the Gold table
 Build_Gold_NonJD_Reorder wrote. The rules are Plan C round 1 (docs/superpowers/plans/2026-10-26-non-jd-parts-order-
-tool-round-1.md, "The calculation" and "Validation"), built on spec 2026-10-20 section 5.5: demand-count stocking
+tool-round-1.md, "The calculation", "Validation" and decisions D13/D14), built on spec 2026-10-20 section 5.5: demand-count stocking
 (MinDemands), supply in weeks or months, the Equip minimum always applying, a target of 0 meaning order 0, excluded
 branches, line value limits, a mask that ends at the next demand, Manual Order and archived rules. Also prints a
 fingerprint of the Gold table (excluding BuiltAtUtc) for run-twice determinism checks, and lists the rules that are
@@ -48,12 +48,13 @@ WEEKS_MAX, MONTHS_MAX = 104, 24
 COMPARE_COLS = ["RuleId", "RuleName", "DemandBasis", "HistoryMonths", "MinDemands", "SupplyUnit", "DemandCount",
                 "ActiveMonths", "CalcTarget", "MinimumNoDemand", "StockingTarget", "ValueCapped", "BelowMinValue",
                 "ManualOrder", "MaskedOn", "IsMasked", "RecommendedOrderQty", "SurplusQty", "Status"]
-TOLERANCE_COLS = ["Supply", "SupplyMonths", "MinLineValue", "MaxLineValue", "WindowDemand", "MonthlyRate",
+TOLERANCE_COLS = ["Supply", "SupplyMonths", "MinLineValue", "MaxLineValue", "WindowDemand", "UnitsSoldWindow",
+                  "MonthlyRate",
                   "EffectiveMin", "InboundTransferQty"]
 TOLERANCE = 1e-6
 OUTPUT_COLS = ["Branch", "Franchise", "PartNumber", "RuleId", "RuleName", "DemandBasis", "HistoryMonths",
                "MinDemands", "SupplyUnit", "Supply", "SupplyMonths", "MinLineValue", "MaxLineValue",
-               "WindowDemand", "DemandCount", "ActiveMonths", "MonthlyRate", "CalcTarget", "EffectiveMin",
+               "WindowDemand", "UnitsSoldWindow", "DemandCount", "ActiveMonths", "MonthlyRate", "CalcTarget", "EffectiveMin",
                "MinimumNoDemand", "StockingTarget", "ValueCapped", "BelowMinValue", "ManualOrder", "MaskedOn",
                "IsMasked", "RecommendedOrderQty", "SurplusQty", "InboundTransferQty", "Status"]
 KEYS = "Branch, Franchise, PartNumber"
@@ -78,14 +79,15 @@ def columns(con, source: str) -> set:
     return {r[0] for r in con.execute(f"DESCRIBE SELECT * FROM {source}").fetchall()}
 
 
-def select_list(con, source: str, required: list, optional: dict) -> str:
+def select_list(con, source: str, required: list, optional: dict, have: set = None) -> str:
     """SELECT list over `source` (a table name or a delta_scan(...) call): the required columns (ValueError if
-    one is missing), then each optional column, or a typed NULL under its name when the source lacks it."""
-    have = columns(con, source)
+    one is missing), then each optional column cast to its declared type (MaskedOn may arrive as a timestamp), or
+    a typed NULL under its name when the source lacks it. `have` = the source's columns, if already known."""
+    have = columns(con, source) if have is None else have
     missing = [c for c in required if c not in have]
     if missing:
         raise ValueError(f"{source} is missing column(s): {', '.join(missing)}")
-    return ", ".join(required + [c if c in have else f"CAST(NULL AS {t}) AS {c}" for c, t in optional.items()])
+    return ", ".join(required + [f"CAST({c if c in have else 'NULL'} AS {t}) AS {c}" for c, t in optional.items()])
 
 
 def _whole_between(col: str, lo: int, hi: int) -> str:
@@ -253,7 +255,7 @@ EXPECTED_SQL = f"""
     window_demand AS (
         SELECT pi.Branch, pi.Franchise, pi.PartNumber,
                sum(CASE pi.DemandBasis WHEN 'UnitsSold' THEN m.units ELSE m.requests END) AS raw_demand,
-               sum(m.requests) AS raw_requests,
+               sum(m.requests) AS raw_requests, sum(m.units) AS raw_units,
                count(*) FILTER (WHERE (CASE pi.DemandBasis WHEN 'UnitsSold' THEN m.units ELSE m.requests END) > 0)
                  AS active
         FROM part_inputs pi
@@ -261,19 +263,21 @@ EXPECTED_SQL = f"""
         WHERE m.MonthStart >= CAST($cur - to_months(pi.HistoryMonths) AS DATE)
         GROUP BY ALL
     ),
-    -- steps 3-5: WindowDemand (round9, negative -> 0), DemandCount (negative -> 0), ActiveMonths (display only),
-    -- MonthlyRate over calendar months, SupplyMonths
+    -- steps 3-5: WindowDemand (round9, negative -> 0), DemandCount (negative -> 0), UnitsSoldWindow (round9,
+    -- negative -> 0, whatever the basis; D14), ActiveMonths (display only), MonthlyRate over calendar months,
+    -- SupplyMonths. No activity (D14) = DemandCount 0 and UnitsSoldWindow 0.
     demand AS (
-        SELECT *, WindowDemand / HistoryMonths AS MonthlyRate,
+        SELECT *, WindowDemand / HistoryMonths AS MonthlyRate, DemandCount = 0 AND UnitsSoldWindow = 0 AS no_activity,
                CASE SupplyUnit WHEN 'Months' THEN Supply ELSE Supply * 12 / 52 END AS SupplyMonths
         FROM (SELECT pi.*,
                      greatest(0.0, round(CAST(coalesce(w.raw_demand, 0) AS DOUBLE), 9)) AS WindowDemand,
                      CAST(greatest(0, coalesce(w.raw_requests, 0)) AS INTEGER) AS DemandCount,
+                     greatest(0.0, round(CAST(coalesce(w.raw_units, 0) AS DOUBLE), 9)) AS UnitsSoldWindow,
                      CAST(coalesce(w.active, 0) AS INTEGER) AS ActiveMonths
               FROM part_inputs pi LEFT JOIN window_demand w USING (Branch, Franchise, PartNumber))
     ),
     -- steps 6-8: CalcTarget (0 below MinDemands); EffectiveMin = MinOverride, else the Equip minimum, even with no
-    -- demand (D4); MinimumNoDemand flags Equip minimums on parts with no demands in the window (Cleanup);
+    -- demand (D4); MinimumNoDemand flags Equip minimums on parts with no activity in the window (Cleanup; D14);
     -- StockingTarget = max(CalcTarget, EffectiveMin rounded up)
     target AS (
         SELECT *, CAST(greatest(CalcTarget, ceil(EffectiveMin)) AS INTEGER) AS StockingTarget
@@ -281,7 +285,7 @@ EXPECTED_SQL = f"""
                      CASE WHEN DemandCount >= MinDemands
                           THEN CAST(ceil(round(MonthlyRate * SupplyMonths, 9)) AS INTEGER) ELSE 0 END AS CalcTarget,
                      coalesce(min_override, equip_min, 0.0) AS EffectiveMin,
-                     min_override IS NULL AND coalesce(equip_min, 0) > 0 AND DemandCount = 0 AS MinimumNoDemand
+                     min_override IS NULL AND coalesce(equip_min, 0) > 0 AND no_activity AS MinimumNoDemand
               FROM demand)
     ),
     -- step 9: base quantity, 0 when the target is 0 (D5); stock truncated toward zero
@@ -297,10 +301,11 @@ EXPECTED_SQL = f"""
                     THEN CAST(floor(round(MaxLineValue / cost, 9)) AS INTEGER) ELSE bq END AS cq
         FROM base_qty
     ),
-    -- step 10b: then a line below MinLineValue is not suggested (quantity 0)
+    -- step 10b: then a line still above 0 but below MinLineValue is not suggested (quantity 0). A line the cap
+    -- cut to 0 is not BelowMinValue: its status is AboveMaxValue (D13).
     valued AS (
         SELECT *, CASE WHEN BelowMinValue THEN 0 ELSE cq END AS vq
-        FROM (SELECT *, bq > 0 AND cost > 0 AND MinLineValue IS NOT NULL
+        FROM (SELECT *, cq > 0 AND cost > 0 AND MinLineValue IS NOT NULL
                         AND round(cq * cost, 9) < MinLineValue AS BelowMinValue
               FROM capped)
     ),
@@ -309,15 +314,17 @@ EXPECTED_SQL = f"""
         SELECT *, CASE WHEN ManualOrder OR IsMasked THEN 0 ELSE vq END AS RecommendedOrderQty
         FROM valued
     ),
-    -- steps 13-14: surplus and status (first match). Target 0: NoRecentActivity = no demands in the window;
-    -- NotStocked = demands, but the target came out 0 (below MinDemands, supply 0, or net demand <= 0).
+    -- steps 13-14: surplus and status (first match). Target 0: NoRecentActivity = no activity (no demands and no
+    -- units sold) in the window; NotStocked = some activity, but the target came out 0 (below MinDemands, supply 0,
+    -- or net demand <= 0). AboveMaxValue (D13) = the value cap cut the line to 0.
     final AS (
         SELECT *, greatest(0, oh - StockingTarget) AS SurplusQty,
                CASE WHEN ManualOrder THEN 'ManualOrder'
                     WHEN IsMasked THEN 'Masked'
                     WHEN StockingTarget = 0
-                    THEN CASE WHEN DemandCount = 0 THEN 'NoRecentActivity' ELSE 'NotStocked' END
+                    THEN CASE WHEN no_activity THEN 'NoRecentActivity' ELSE 'NotStocked' END
                     WHEN BelowMinValue THEN 'BelowMinValue'
+                    WHEN ValueCapped AND cq = 0 THEN 'AboveMaxValue'
                     WHEN RecommendedOrderQty > 0 AND coalesce(QuantityOnHand, 0) <= 0 THEN 'OutOfStock'
                     WHEN RecommendedOrderQty > 0 THEN 'Reorder' ELSE 'OK' END AS Status
         FROM order_qty
@@ -402,8 +409,9 @@ def load_inputs(con, tier: str, current_month: date) -> list:
     for name, table, cols in (("order_rules", "NonJD_OrderRules", RULE_COLS),
                               ("settings", "NonJD_PartSettings", SETTINGS_COLS)):
         src = f"delta_scan('{_path(tier, 'staging', table)}')"
-        absent += [f"{table}.{c}" for c in cols[1] if c not in columns(con, src)]
-        con.execute(f"CREATE TABLE {name} AS SELECT {select_list(con, src, *cols)} FROM {src}")
+        have = columns(con, src)
+        absent += [f"{table}.{c}" for c in cols[1] if c not in have]
+        con.execute(f"CREATE TABLE {name} AS SELECT {select_list(con, src, *cols, have=have)} FROM {src}")
     con.execute(f"""CREATE TABLE transfers AS SELECT RequestingBranch, PartNumber, OpenQty
                     FROM delta_scan('{_path(tier, 'presentation', 'Fact_OutstandingTransfers')}')""")
     return absent
