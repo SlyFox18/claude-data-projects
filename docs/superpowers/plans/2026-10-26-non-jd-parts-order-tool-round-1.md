@@ -3,7 +3,10 @@
 > **For agentic workers:** use superpowers:subagent-driven-development, one task at a time with a review after each (Brian's standing choice). SharePoint, Entra, Gateway PC and Fabric UI steps are Brian's, one at a time, verified.
 
 > **Progress:**
-> - (none yet)
+> - C0 DONE 2026-10-26 (Brian, verified via Graph):
+>   - **NonJD_OrderRules:** MinDemands (Number, 0 dp), SupplyUnit (Choice Weeks/Months, default Weeks), MinLineValue / MaxLineValue (Number, 2 dp) and Archived (Yes/No, default No) are added. MinDemands is set on the existing rows: Default 3, Cotton in 2, Cotton off 3, Test 3. On existing rows SupplyUnit and Archived are blank, read as Weeks / No.
+>   - **NonJD_PartSettings:** ManualOrder (Yes/No, default No) and MaskedOn (date only) are added. The test row is unchanged.
+> - C1 in progress.
 
 **Goal:** apply round 1 of Ben's answers (`projects/part order tool - app/feedback/2026-10-23-ben-answers.md`). That means demand-count stocking, weeks/months of supply, Equip minimums always applying, a target of 0 meaning order 0, branch exclusions, line value limits, masking and Manual Order, a special-status page, archived rules, and the wording Ben asked for.
 
