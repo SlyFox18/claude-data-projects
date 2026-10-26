@@ -6,7 +6,11 @@
 > - C0 DONE 2026-10-26 (Brian, verified via Graph):
 >   - **NonJD_OrderRules:** MinDemands (Number, 0 dp), SupplyUnit (Choice Weeks/Months, default Weeks), MinLineValue / MaxLineValue (Number, 2 dp) and Archived (Yes/No, default No) are added. MinDemands is set on the existing rows: Default 3, Cotton in 2, Cotton off 3, Test 3. On existing rows SupplyUnit and Archived are blank, read as Weeks / No.
 >   - **NonJD_PartSettings:** ManualOrder (Yes/No, default No) and MaskedOn (date only) are added. The test row is unchanged.
-> - C1 in progress.
+> - C1 (`93fbd8f4`): the reference has the new calculation (242 tests); the impact report is written. Review approved; D13/D14 and minor fixes are in progress.
+> - C2 DONE (fabric-workspace-docs `e37cbf3e`, `fd351114`): both dataflows read the new columns, synced to DP - Staging - Dev and run.
+>   - MinDemands, MinLineValue and MaxLineValue are `number` (DOUBLE), so a bad value reaches validation and isn't silently rounded. C3 casts them after validating.
+>   - Blank SupplyUnit is null (SharePoint sends ""). Archived and ManualOrder are null when blank.
+>   - MaskedOn is typed like MaskExpires (the date shown in SharePoint).
 
 **Goal:** apply round 1 of Ben's answers (`projects/part order tool - app/feedback/2026-10-23-ben-answers.md`). That means demand-count stocking, weeks/months of supply, Equip minimums always applying, a target of 0 meaning order 0, branch exclusions, line value limits, masking and Manual Order, a special-status page, archived rules, and the wording Ben asked for.
 
