@@ -31,6 +31,8 @@
 | D9 | C6 | One-Time Order leaves masked and Manual Order parts off. |
 | D10 | Q4 | Rules can be **archived** (new setting Archived). Archived rules are ignored and hidden unless "Show archived" is on. |
 | D12 | Q5 (after C1 impact) | Equip minimums apply exactly as Ben asked. In the app, lines with MinimumNoDemand get a "Min, no demand" tag. Recommended Reorder gets a "Show minimums with no demand" switch, **off by default**, so those lines are visible on request but never added to an order unless chosen. The Home banner and the selection counts follow the switch. Brian emailed Ben the impact and the six largest suspect Equip minimums (2026-10-26). |
+| D13 | C1 review | A line the value cap cuts to 0 gets status **AboveMaxValue** ("Above max value"), right after BelowMinValue. A partial cap keeps OutOfStock / Reorder with ValueCapped set. |
+| D14 | C1 review | **UnitsSoldWindow** = max(0, round9(sum SalesQty)) over the window, whatever the basis. "No activity" = DemandCount 0 **and** UnitsSoldWindow 0. NoRecentActivity and MinimumNoDemand use no activity; stocking still uses DemandCount. (973 parts sold units with 0 recorded demands; question for Ben: why Equip records sales with no request.) |
 | D11 | Q12 | "Surplus" is shown as **Excess**. Other branches loads every branch by default with a totals line. The contract field stays `surplusQty`. |
 
 ## The calculation (must match in Gold, reference and app)
