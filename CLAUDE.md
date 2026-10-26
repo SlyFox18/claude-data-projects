@@ -140,7 +140,7 @@ data-projects/
 - **LH schedules:** switch off only after verifying no live reader.
 
 ### Session Start Orientation (automated)
-A `SessionStart` hook (`~/.claude/scripts/git-status-check.sh`) prints both repos' git status and open High/Medium todos from `C:/Users/bfox/todo.md`. If its output is missing, the hook is broken (check for a stray `"async": true`). `todo.html` is generated from `todo.md` by hooks; edit `todo.md` only.
+Two `SessionStart` hooks print both repos' git status (`~/.claude/scripts/git-status-check.sh`) and Brian's open High/Medium tasks and Inbox count from **Reynard** (`personal-dashboard/scripts/session_summary.py`, reading its `dashboard.db`). If either output is missing, the hook is broken (check for a stray `"async": true`). There is no `todo.md` any more; follow-ups go into Reynard (quick-add at http://localhost:5151/quick-add).
 
 ## Known Issues & Gotchas (current)
 
@@ -172,22 +172,21 @@ In Bash use `export PATH="$HOME/.local/bin:$PATH"`; in PowerShell `$env:Path += 
   - always pass `-f` on overwrite/destructive commands;
   - **don't use `fab import` for Dev**.
 - **Python + DuckDB `delta_scan` over OneLake** (`azure` + `delta` extensions, `credential_chain` with `cli`) is the standard read-only check tool. Compare timestamps in a UTC session.
+  - Tables made of many small appended files are slow to scan (minutes; `dp_refresh_log` is ~1,300 files), and heavy reads can exhaust `az` token lookups ("Failed to get token from ChainedTokenCredential"). For refresh status use `tools/dp-migration/dp_refresh_status.py` instead.
 
 ## Skills Available
 
-| Skill | Command | Use When |
-|---|---|---|
-| Check refresh status | `/check-refresh` | Morning check (written for the LH era; for DP read `dp_refresh_log` / the summary email) |
-| New report scaffold | `/new-report "Name"` | Starting a brand new report project |
-| Promote to production | `/promote-sandbox "Name"` | LH-era flow; current promotion is `report_promotion.json` + "Deploy reports" |
-| Add DAX measure | `/add-measure "report" "description"` | Adding a measure |
-| Debug pipeline failure | `/debug-pipeline "problem"` | Pipeline failed or data is stale |
-| Sync query library | `/sync-query` | After modifying a .pq dataflow query |
-| Document report | `/document-report "report"` | Stakeholder Obsidian docs |
-| Wrap up session | `/wrap-up` | End of a work session |
+Project skills are `.claude/skills/<name>/SKILL.md` (a `.json` file is not loaded; the LH-era ones are in `.claude/skills-archive/`).
+
+| Command | Use When |
+|---|---|
+| `/check-refresh [prod\|dev] [problem]` | Morning check or a failed/stale refresh. Runs `tools/dp-migration/dp_refresh_status.py` (the refresh email's summary, ~10 s) |
+| `/add-measure "report" "description"` | Adding a measure to a model in fabric-workspace-docs `RP - Dev` |
+| `/document-report "report"` | In-repo docs + Obsidian stakeholder note |
+| `/wrap-up` | End of a session: checks, commits to dev in both repos, release steps owed |
 
 ## Related Repositories & Knowledge Bases
 
 - **fabric-workspace-docs:** `C:\Users\bfox\Documents\Git-Projects\fabric-workspace-docs`. All Fabric item definitions (`workspaces/`), deploy tooling (`deploy/`), `parameter.yml`, the operations guide.
-- **Fabric monitoring:** `projects/fabric-monitoring/` (in this repo). LH-era post-pipeline scripts; the "Post-Pipeline Monitoring" scheduled task was disabled 2026-10-09 with the LH orchestrator. The DP refresh sends its own summary email.
+- **Fabric monitoring:** `projects/fabric-monitoring/` (in this repo) is LH-era and off since 2026-10-09. DP status: the refresh summary email or `/check-refresh`.
 - **Obsidian vault:** `C:\Users\bfox\Documents\Obsidian Vault` (query library history, the Inspections KB). Update it when Brian asks.

@@ -1,23 +1,12 @@
 #!/bin/bash
 # Claude Code Hook: Block git commit when on the main branch
 # Runs as PreToolUse on Bash tool calls
-# Reads tool input JSON from stdin
+# Reads tool input JSON from stdin (grep instead of python: ~5x faster on Windows)
 
 INPUT=$(cat)
 
-# Extract the bash command being run
-COMMAND=$(echo "$INPUT" | python3 -c "
-import sys, json
-try:
-    d = json.load(sys.stdin)
-    print(d.get('tool_input', {}).get('command', ''))
-except Exception:
-    print('')
-" 2>/dev/null)
-
 # Only intercept git commit commands
-if echo "$COMMAND" | grep -qE "git.*commit"; then
-    # Get current branch (works from project root working directory)
+if echo "$INPUT" | grep -qE '"command"[^}]*git[^"]*commit'; then
     BRANCH=$(git branch --show-current 2>/dev/null)
 
     if [ "$BRANCH" = "main" ]; then

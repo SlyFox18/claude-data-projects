@@ -2,6 +2,7 @@
 
 Helpers for DP-backend report migrations (Inspections, Customer Anatomy, ...).
 
+- `dp_refresh_status.py [prod|dev] [--runs N]`: read-only; recent Pipeline_DP_Refresh runs plus the latest run's summary (the Finish notebook's exit value, same as the email): failed/skipped items, warnings, Bronze problems. Exit 0 ok, 1 problems, 2 in progress/no summary. Used by `/check-refresh`.
 - `run_item.py <wsId> <itemId> <RunNotebook|Refresh> [timeout]`: run a notebook or Dataflow Gen2 and wait; exit 0 only on Completed.
 - `wait_ci.py [repoPath]`: wait for the GitHub Actions run of fabric-workspace-docs HEAD; exit 0 only on success.
 - `git_sync.py <wsId> [timeout]`: Fabric updateFromGit for a Git-connected workspace (how notebook code reaches Dev); refuses if any item changed on both sides; exit 0 synced/current.
