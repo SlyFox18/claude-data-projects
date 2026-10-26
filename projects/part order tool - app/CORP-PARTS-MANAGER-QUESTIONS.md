@@ -1,115 +1,106 @@
 # Non-JD Parts Order Tool: questions for Ben (and Shannon)
 
-The new web app is ready for you to try. While building it we had to make some choices, and
-some questions only you can answer. Each item says what the app does today and the
-alternatives. Most are quick to change, so "change it to B" is a fine answer.
+**Updated 2026-10-26 after Ben's answers (round 1, app version 0.2.0).** Ben answered Parts 1 and 2 on
+2026-10-23 (his words: `feedback/2026-10-23-ben-answers.md`). Each answered item below gives his answer in one
+line and what we did. Part 3 (Shannon) is still open, and Part 4 holds the new questions that came out of
+round 1. The short summary for Ben is the **Round 1 changes** document (`for-users/round1.js`).
 
-How the numbers are worked out is explained step by step in **How the order tool suggests
-quantities** (REORDER-RULES.md) and the user guide.
-
----
-
-## Part 1: confirm or change (the app already works this way)
-
-**C1. The Default rule's numbers.** Every part uses the Default rule unless another rule
-fits it. Default looks at the last **12 full months** of units sold. A part needs sales in
-at least **3 of those months** for the rule to stock it. The rule then aims to keep about
-**6 weeks of cover**: the average monthly sales turned into 6 weeks' worth, rounded up. Are 12 / 3 / 6 the right starting
-numbers? You can change them yourself on the Rules page. Its **Try it** panel shows what a
-change would do to a branch before you save it.
-
-**C2. Parts with little or no recent demand.**
-- **Sales in fewer than 3 of the last 12 months:** the rule itself suggests nothing. If
-  Equip has a minimum on the part, the minimum still applies.
-- **No sales at all in the 12 months:** the Equip minimum is ignored too, so long-inactive
-  parts drop out of the suggestions. The minimums ignored this way are listed on the
-  **Cleanup** page.
-
-This replaces the old 60-month average and "no activity" cutoff questions.
-- Change the number of months or active months per rule (Rules page), or set a part's own
-  minimum on its Settings tab.
-
-**C3. Masking.** A masked part gets no suggested order. With an expiry date, the mask lasts
-until the end of that day. With no date, it lasts until someone unmasks it.
-
-**C4. One-Time Order, "Avg / mo"** (old question 8). "Total" orders the whole period's
-units sold. "Avg / mo" orders one month's worth, multiplied by the factor, which is then
-labelled **Months of cover** (3 = three months' worth), like PRISM's "Use Monthly
-Average". On hand and on order are subtracted in both cases.
-- Option B: "Avg / mo" is only a display column, and the quantity always uses the total.
-  This is how the old Power App worked.
-
-**C5. One-Time Order, minimum sales and minimum demands** (old question 7). Both compare
-the plain totals over the chosen months, before the factor. A part below either minimum is
-left off. Both start at 0 (no filter). What defaults would you like?
-- Option B: apply the factor before comparing.
-- Option C: compare against the monthly average.
-
-**C6. One-Time Order, masked parts** (old question 11). Masked parts are listed and marked
-"Masked", but start **unticked**. "Select all" skips them, so each one has to be ticked by hand.
-- Option B: leave them off entirely.
-- Option C: list them ticked like any other part.
-
-**C7. A target of 0 but negative stock** (found in testing). Today a part with a target of 0
-still gets an order if Equip shows negative on hand or negative on order. Example: Branch 1,
-AM 9446, on order −1, so the tool suggests ordering 1 ($472.75) for a part with no recent
-demand. Proposed: a target of 0 always means order 0. Not changed yet.
-- Option B: keep it (negative stock is "owed" and gets replaced).
-
-**C8. Orders.** You tick parts on Recommended Reorder (or build a One-Time Order). The app
-saves **one order per franchise** and exports each one as a CSV file to use with that
-vendor's ordering system. Direct submission can come later. Inbound transfers are shown on
-each part but don't reduce the suggested quantity.
+How the numbers are worked out is explained step by step in **How the order tool suggests quantities**
+(REORDER-RULES.md) and the user guide.
 
 ---
 
-## Part 2: open questions
+## Part 1: confirm or change (answered)
 
-**Q1. Which branches belong in the tool?** Today every branch with non-JD parts is included.
-- Leave off Branch 12, the combine vault, which isn't a physical store?
-- Leave off Branches 5 and 97?
-- 4B and 93C are sub-branches. Show them on their own, or roll them into 4 and 93?
+**C1. The Default rule's numbers.** *Answered.*
+- Ben: stock on demands (transactions), not active months; Default 3 demands in 12 months; say "weeks of
+  supply"; Default 12 weeks.
+- Done: rules have **Min demands**; Default is 12 months / 3 demands / 12 weeks of supply; "cover" is now
+  "supply" everywhere.
 
-**Q2. Several branches at once.** Today you work on one branch at a time, and an order is
-one branch and one franchise. Is it useful to see or order across several branches together
-(e.g. a region)? If so, how should orders be split?
+**C2. Parts with little or no recent demand.** *Answered.*
+- Ben: see C1.
+- Done: fewer demands than the rule needs means the rule doesn't stock the part; an Equip minimum still
+  applies (Q5).
 
-**Q3. Transfers.**
-- A "Suggested transfers" page. Example: TY15949OZ needs reordering at one branch while
-  another branch has surplus, so the tool could suggest moving it instead of buying it.
-- Show pending transfers into the selected branch on Home.
+**C3. Masking.** *Answered.*
+- Ben: mask from the order; a mask ends at the next demand; add Manual Order; a page of special statuses.
+- Done: Mask… and Manual order on each Recommended Reorder line and in the order review; a mask ends at its
+  expiry or the next demand, whichever is first; new **Special statuses** page. Phase-in joins it in round 2.
 
-**Q4. Deleting rules.** Today a rule can only be switched off, so what was tried stays
-visible. Should users be able to delete rules?
+**C4. One-Time Order, "Avg / mo".** *Answered.*
+- Ben: keep it, and put months of supply in the rules too.
+- Done: the factor is labelled **Months of supply**; each rule's supply can be in weeks or months.
 
-**Q5. Equip minimums.** The Cleanup page lists Equip minimums the tool ignores because the
-part had no demand. Are those minimums used in Equip or PRISM today? Who sets them, and
-should they be cleaned up in Equip?
+**C5. One-Time Order, minimum sales and minimum demands.** *Answered.*
+- Ben: working correctly.
+- No change.
 
-**Q6. Trend and spiking** (old questions 5, 6 and 9). The app doesn't adjust for trends or
-spikes yet. A part's Settings tab has a "Force non-spiking" switch, which is saved but not
-used. How should a spiking part be recognised, and what should change for it? Is a trend
-adjustment (growing or shrinking sales) wanted?
+**C6. One-Time Order, masked parts.** *Answered.*
+- Ben: leave them off altogether.
+- Done: masked and Manual order parts are left off One-Time Orders.
 
-**Q7. Pre-approved rule** (old question 12). A part's Settings tab can store a
-"Pre-approved rule", as free text for now. The calculation doesn't use it, and the same goes
-for EOQ. What are the real choices, and what should each one do?
+**C7. A target of 0 but negative stock.** *Answered.*
+- Ben: go with the proposed.
+- Done: a target of 0 always means order 0.
 
-**Q8. Phase-in** (old question 10). PRISM's One-Time Order has "Include Phase-In". Is it
-relevant to non-JD ordering?
+**C8. Orders.** *Answered.*
+- Ben: good.
+- No change.
 
-**Q9. Reorder code filter** (old question 14). Should Recommended Reorder have a filter
-for reorder code (e.g. stocked "A" parts only)?
+---
 
-**Q10. Minimum order value** (old question 15). Should small suggestions be hidden, e.g.
-lines under $5?
+## Part 2: open questions (answered)
 
-**Q11. Low margin** (old question 16). Should non-JD parts get a low-margin flag, and what
-margin counts as low?
+**Q1. Which branches belong in the tool?** *Answered.*
+- Ben: leave off 12, 5, 97, 4B and 93C; John Deere parts later.
+- Done: those five are left out of every page. John Deere parts: later.
 
-**Q12. History across branches** (old question 18). A part's page shows stock at every
-branch (Other branches), but its sales history is for one branch only. Would a
-combined history across branches help?
+**Q2. Several branches at once.** *Answered.*
+- Ben: a checkbox to pick several branches and franchises.
+- Not yet: planned for round 2.
+
+**Q3. Transfers.** *Answered.*
+- Ben: a transfer step before working the order, with its own rules page; two kinds, stock order transfers
+  and redistribution.
+- Not yet: planned for round 2 (questions in Part 4).
+
+**Q4. Deleting rules.** *Answered.*
+- Ben: archive instead, with a toggle to see archived rules.
+- Done: Archive / Unarchive and a **Show archived** switch on the Rules page.
+
+**Q5. Equip minimums.** *Answered.*
+- Ben: the Equip minimum overrides the demand minimum; we will clean them up ourselves.
+- Done: the Equip minimum always applies. Lines with no demand are tagged **Min, no demand** and hidden
+  behind a switch, off by default (Part 4, N2). Cleanup lists them.
+
+**Q6. Trend and spiking.** *Answered.*
+- Ben: spiking applies to Deere parts; criteria to come.
+- Later: with John Deere parts.
+
+**Q7. Pre-approved rule and EOQ.** *Answered.*
+- Ben: neither is used until Deere parts join.
+- Later: with John Deere parts.
+
+**Q8. Phase-in.** *Answered.*
+- Ben: useful; the reverse of masking, with an end date (default 12 months) and a quantity.
+- Not yet: planned for round 2.
+
+**Q9. Reorder code filter.** *Answered.*
+- Ben: no.
+- No change.
+
+**Q10. Minimum order value.** *Answered.*
+- Ben: min and max value in the rules and in One-Time Order setup.
+- Done: **Min line value** and **Max line value**, per line (quantity × cost), in rules and One-Time Order.
+
+**Q11. Low margin.** *Answered.*
+- Ben: not needed here; the Low Margin report will cover it.
+- No change.
+
+**Q12. History across branches.** *Answered.*
+- Ben: show all branches by default with a totals line; say "Excess", not "Surplus".
+- Done: Other branches loads every branch, this one included, with a Total row; "Excess" everywhere.
 
 ---
 
@@ -127,6 +118,27 @@ combined history across branches help?
 
 ---
 
-*Rewritten 2026-10-22 for the web app walkthrough. The original June questions (1–18) for the
-Power App are folded in above; question 4 ("Rule Level Minimum") is replaced by the rules list
-and each part's own minimum.*
+## Part 4: new questions after round 1
+
+**N1. Units sold with no demand recorded.** 973 parts show units sold in the last 12 months but no demands
+recorded in Equip. Example: Branch 1, part 11234 (single tine bearing) sold 6 with 0 demands, so the Default
+rule (3 demands) doesn't stock it. Why would Equip record a sale with no demand? Should those sales count as
+demands?
+
+**N2. The "Show minimums with no demand" switch.** It is off when Recommended Reorder opens, so lines that are
+there only because of an Equip minimum on a part with no activity are hidden, and Home doesn't count them
+(Branch 1 on 2026-10-26: 220 parts to order, plus 21 hidden). Is off the right starting point?
+
+**N3. Sub-branches.** 11S, 13I, 13S, 14S, 15I, 15S, 16S, 1I, 1S, 2C, 3C, 3S, 4C, 4I, 4S, 6C, 6I, 7C, 8C, 8I, 8S,
+91I and 95I stay in the tool. None has a non-JD part with a cost today. Should any be left out like 4B and 93C?
+
+**N4. For round 2.**
+- Transfers: is "excess = more than 12 months of supply at the sending branch" the right default? For
+  redistribution, what should a receiving branch's default limit be (months of supply)?
+- Several branches: when several branches are picked, is the order still one per branch and franchise?
+- Phase-in: set on the part's Settings tab with a quantity and an end date (default 12 months from today)?
+
+---
+
+*Rewritten 2026-10-22 for the web app walkthrough; updated 2026-10-26 with Ben's round 1 answers. The
+original June questions (1–18) for the Power App are folded in above.*

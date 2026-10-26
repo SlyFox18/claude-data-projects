@@ -31,7 +31,7 @@ function block(b) {
   if (b.h3) return [new Paragraph({ heading: HeadingLevel.HEADING_3, children: runs(b.h3) })];
   if (b.p !== undefined) return [new Paragraph({ spacing: { after: 120 }, keepNext: !!b.keepNext, children: runs(b.p) })];
   if (b.note) return [new Paragraph({
-    spacing: { before: 60, after: 160 }, indent: { left: 360 },
+    spacing: { before: 60, after: 160 }, indent: { left: 360 }, keepNext: !!b.keepNext,
     border: { left: { style: BorderStyle.SINGLE, size: 12, color: ACCENT, space: 8 } },
     children: runs(b.note, { italics: true, color: '404040' }),
   })];
@@ -72,7 +72,8 @@ function block(b) {
           width: { size: cols[ci], type: WidthType.DXA }, borders,
           shading: ri === 0 ? { type: ShadingType.CLEAR, color: 'auto', fill: 'DEEAF6' } : undefined,
           margins: { top: 60, bottom: 60, left: 100, right: 100 },
-          children: [new Paragraph({ children: runs(cell, ri === 0 ? { bold: true } : {}) })],
+          // keep: true holds the whole table on one page (each row kept with the next).
+          children: [new Paragraph({ keepNext: !!b.keep && ri < b.table.length - 1, children: runs(cell, ri === 0 ? { bold: true } : {}) })],
         })),
       })),
     }), new Paragraph({ spacing: { after: 120 }, children: [] })];
