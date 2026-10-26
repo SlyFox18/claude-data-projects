@@ -45,6 +45,11 @@ Each one is what we will build unless Ben says otherwise. "Alternative" is the o
 
 ## Decisions for Brian
 
+> **Answered 2026-10-26 by Brian:**
+> - **1:** the order of work is approved, and phase 1 (app 0.4.0, multi-branch Reorder) is started.
+> - **3:** PendingQty is confirmed as stock committed to open tickets that on hand still counts, so A2 stands.
+> - **2 and 4:** due at phase 2.
+
 Only these need Brian:
 1. **Order of work** (see "Phasing"): multi-branch Reorder first (app only, no data change), then the data, phase-in and contract v3, then the live transfer step. The alternative is to wait for Ben's answers before phase 3, the expensive part. Recommendation: send Ben the assumption table now and build phases 1–2 while he reads it.
 2. **SharePoint (Brian's steps, verified through Graph as in Plan C C0):** create `NonJD_TransferRules`, `NonJD_Transfers` and `NonJD_TransferLines`, and add columns to `NonJD_PartSettings` and `NonJD_OrderRules` (listed under "The lists").
