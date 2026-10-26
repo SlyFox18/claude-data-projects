@@ -30,7 +30,16 @@
 >   - App version bumped to 0.2.0 (`6f904ee`); it shows on the next deploy.
 > - C11 DONE (`803a113d`): user guide (generator; Brian's Word edit folded in, .docx not yet regenerated in the repo), new "Round 1 changes" doc for Ben, REORDER-RULES and the questions doc. App 0.2.0 deployed to Fedora by Brian.
 > - 2026-10-26, after round 1:
->   - **Real-data check running** (Brian approved the SharePoint writes): the Test rule, the test part and up to 3 temporary settings rows, all restored afterwards.
+>   - **Real-data check PASSED** (Brian approved the SharePoint writes). The Test rule was narrowed to Branch 1 ML with Months 2, Max $100 and Min $30; 09-1785273 was set to ManualOrder; two temporary masks were added (124184 ended by a request, MULTISEAL masked the same day). Results:
+>     - Gold showed partial cap, AboveMaxValue, BelowMinValue, ManualOrder, Masked and mask-ended as expected.
+>     - The reference check PASSED.
+>     - App parity: 0 mismatches over 199,555 parts.
+>     - The live mask matched.
+>     - All values were restored and verified field by field. The temporary rows were deleted.
+>     - Dev Gold for Branch 1 equals the pre-test copy.
+>   - One Dev orchestrator run crashed at startup: Fabric context `currentWorkspaceName` was None. The retry was OK. Follow-up: derive ENV from the workspace ID when the name is missing, and add a TROUBLESHOOTING row.
+>   - **0.3.0 DONE** (app `df8ef34`, `d4a4ee3`, `051dd28`, review fixes `a33000c`, 934 tests). Multi-branch One-Time Order, one order per branch + franchise. It also fixed a review-screen regression where Save got stuck. Not yet deployed to Fedora.
+>   - **Prod release started:** PR #44 (fabric-workspace-docs dev → main).
 >   - **Prod release runbook** written: `2026-10-26-non-jd-parts-order-tool-prod-release.md` (`e1434df8`). Plan: first run same day (option A); publish only from the Gateway PC.
 >   - **0.3.0 in progress:** multi-branch One-Time Order, one order per branch + franchise (Ben's Q2, partly). Combined orders are a question for Ben (round 2, with transfers).
 > - C4 DONE (`68fcf9b2`, `96d2e613`, 137 tests; review approved, then fixed: explanation wording, a contractVersion bump rule with newer/older messages, the rules column check before extract, non-finite rule numbers fail the publish): contract v2 (`contractVersion` 2 in `_meta.json`), 53 reorder fields, column check before extract, transfers exclude the excluded branches. The dry build from Dev matches Gold: 42 files, Branch 1 has 164 lines / $39,746.33.
