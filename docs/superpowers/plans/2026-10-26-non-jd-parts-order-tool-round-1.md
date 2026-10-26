@@ -19,7 +19,8 @@
 >   - The validation messages are identical.
 >   - The live-only cases (manual, masked, value limits, months, mask ended) have hand-made tests ported from the reference.
 >   - No separate review: parity and fuzz are the check; the save logic is reviewed with C6–C9.
-> - C6–C9 in progress (one agent, one commit per task).
+> - C6–C9 DONE (app `c0bcab5`, `f585e44`, `72152a8`, `49a89ef`; review fixes `5794c93`; 894 tests): rules (MinDemands, supply unit, line values, archive with "Show archived"), wording (supply, Excess), D12 tag and switch (Home matches Reorder via `view.ts`), quick Mask / Manual order actions, the Special statuses page, One-Time exclusions and line limits, and Other branches (all branches auto-loaded, this branch included, totals). Updates PATCH only the changed columns (no lost updates).
+> - C10 in progress: switch-over to minimise downtime. Refresh Dev first, while the old app keeps working; then deploy the app and publish straight after.
 > - C4 DONE (`68fcf9b2`, `96d2e613`, 137 tests; review approved, then fixed: explanation wording, a contractVersion bump rule with newer/older messages, the rules column check before extract, non-finite rule numbers fail the publish): contract v2 (`contractVersion` 2 in `_meta.json`), 53 reorder fields, column check before extract, transfers exclude the excluded branches. The dry build from Dev matches Gold: 42 files, Branch 1 has 164 lines / $39,746.33.
 >   - **Do NOT `git pull` on the Gateway PC until the app (C5–C9) is deployed to Fedora (C10).** A v2 publish would break the old app.
 >   - Prod Gold is still old, so the Prod release must deploy round 1 Gold and this publish together.
