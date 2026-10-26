@@ -12,6 +12,9 @@
 >   - Determinism: identical fingerprint on two runs.
 >   - Live list (Default 3 demands / 6 weeks) = impact step 5 exactly: 5,309 lines, $4.86M.
 >   - **Until C4 lands and the Gateway PC pulls it,** the scheduled publish fails at extract (old columns gone) and uploads nothing, so the app stays on the Oct 23 files.
+> - C4 (`68fcf9b2`, 116 tests; review running): contract v2 (`contractVersion` 2 in `_meta.json`), 53 reorder fields, column check before extract, transfers exclude the excluded branches. The dry build from Dev matches Gold: 42 files, Branch 1 has 164 lines / $39,746.33.
+>   - **Do NOT `git pull` on the Gateway PC until the app (C5–C9) is deployed to Fedora (C10).** A v2 publish would break the old app.
+>   - Prod Gold is still old, so the Prod release must deploy round 1 Gold and this publish together.
 > - C2 DONE (fabric-workspace-docs `e37cbf3e`, `fd351114`): both dataflows read the new columns, synced to DP - Staging - Dev and run.
 >   - MinDemands, MinLineValue and MaxLineValue are `number` (DOUBLE), so a bad value reaches validation and isn't silently rounded. C3 casts them after validating.
 >   - Blank SupplyUnit is null (SharePoint sends ""). Archived and ManualOrder are null when blank.
