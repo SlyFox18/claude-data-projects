@@ -9,6 +9,8 @@ demands (D14), value capped, months of supply, manual order and a mask ended by 
                                                           "history": {"sales", "requests"} | null}]}
 to the app repo's src/engine/__fixtures__/gold-sample.json (or --dest). Deterministic: fixed seed, stable sort.
 Expected strata with no part in the data at all (e.g. no Months rule or Manual Order row yet) are printed.
+The live-mask logic (expiry, a mask ending at a request, today's date) is covered by the app engine's unit tests
+(Plan C5), not by this fixture: the fixture only checks the app against Gold's own isMasked.
 
 Usage: python make_engine_fixture.py [--output DIR] [--dest FILE] [--size N] [--seed N]
 """
@@ -28,7 +30,8 @@ FRACTION_FIELDS = ("onHand", "onOrder", "minimumQty", "minOverride", "windowDema
                    "effectiveMin", "supply")
 # Strata the fixture should cover; any with no part in the whole data is reported (it can't be sampled).
 EXPECTED_STRATA = tuple(f"status={s}" for s in STATUSES) + (
-    "minimumNoDemand=true", "minimumNoDemand=false", "unit=Weeks", "unit=Months", "demandsAtMin",
+    "minimumNoDemand=true", "minimumNoDemand=false", "unit=Weeks", "unit=Months", "basis=UnitsSold",
+    "basis=Requests", "minDemands=0", "bothCaps", "demandsAtMin",
     "demandsOneBelowMin", "belowMinDemands", "unitsNoDemands", "valueCapped", "belowMinValue", "manualOrder",
     "maskedOn", "maskEnded", "masked", "minOverride", "minimumWins", "negativeOnHand", "fractional", "history",
     "noHistory")
@@ -82,8 +85,8 @@ def tags(c: dict) -> list:
         t.append("masked")
     if g.get("maskedOn") is not None:
         t.append("maskedOn")
-        if not g["isMasked"]:
-            t.append("maskEnded")   # masked, then requested after MaskedOn (or expired)
+        if (g.get("lastRequested") or "")[:10] > g["maskedOn"]:
+            t.append("maskEnded")   # requested after the day it was masked (the mask ends at that request)
     if g.get("manualOrder"):
         t.append("manualOrder")
     if g["minOverride"] is not None:
@@ -108,6 +111,10 @@ def tags(c: dict) -> list:
     # D14: units sold with no recorded demands (activity, but not stocked on demands).
     if g["demandCount"] == 0 and g["unitsSoldWindow"] > 0:
         t.append("unitsNoDemands")
+    if g["minDemands"] == 0:
+        t.append("minDemands=0")
+    if g.get("minLineValue") is not None and g.get("maxLineValue") is not None:
+        t.append("bothCaps")
     if g.get("valueCapped"):
         t.append("valueCapped")
     if g.get("belowMinValue"):

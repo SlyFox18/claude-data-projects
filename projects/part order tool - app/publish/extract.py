@@ -75,11 +75,19 @@ def columns(con, table: str) -> list:
 
 def check_columns(con) -> None:
     """Fail before extracting, naming every missing column, if a Gold table lacks a column the publish reads
-    (e.g. the publish is newer or older than the Gold notebook). The rules table is checked in rules()."""
+    (e.g. the publish is newer or older than the Gold notebook), including NonJD_OrderRules."""
     pl.require_columns("Fact_NonJD_Reorder", columns(con, "Fact_NonJD_Reorder"),
                        [g for g, _ in REORDER_COLUMNS] + ["BuiltAtUtc"])
     pl.require_columns("Fact_NonJD_SalesHistory", columns(con, "Fact_NonJD_SalesHistory"), HISTORY_COLUMNS)
     pl.require_columns("Fact_OutstandingTransfers", columns(con, "Fact_OutstandingTransfers"), TRANSFER_COLUMNS)
+    try:
+        rule_cols = columns(con, "NonJD_OrderRules")
+    except Exception as ex:
+        first = (str(ex).splitlines() or [""])[0]
+        raise RuntimeError(f"NonJD_OrderRules not found or unreadable in the {config.SOURCE} DP_Presentation "
+                           f"lakehouse ({type(ex).__name__}: {first}); deploy the rules dataflow and shortcut "
+                           f"before publishing") from ex
+    pl.require_columns("NonJD_OrderRules", rule_cols, [g for g, _ in RULE_COLUMNS])
 
 
 def _dicts(cur) -> list:
@@ -106,7 +114,7 @@ def reorder(con) -> list:
 
 
 def rules(con) -> list:
-    pl.require_columns("NonJD_OrderRules", columns(con, "NonJD_OrderRules"), [g for g, _ in RULE_COLUMNS])
+    """Its columns are checked in check_columns()."""
     sel = ", ".join(f"{g} AS {f}" for g, f in RULE_COLUMNS)
     return _dicts(con.execute(f"SELECT {sel} FROM {_src('NonJD_OrderRules')} ORDER BY Id"))
 

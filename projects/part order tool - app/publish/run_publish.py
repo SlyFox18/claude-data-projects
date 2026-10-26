@@ -90,7 +90,8 @@ def _publish(args) -> int:
     if not go:
         return 0
 
-    # Gold and the publish must agree on the columns; a mismatch fails here naming them (MissingColumnsError).
+    # Gold and the publish must agree on the columns (rules list included); a mismatch fails here, before any
+    # extract, naming them (MissingColumnsError).
     extract.check_columns(con)
     built = extract.built_at(con)
     start = pl.run_start(rows, latest["run_id"])

@@ -214,10 +214,12 @@ def test_missing_gold_columns_fail_naming_them(env, monkeypatch):
     assert not env.state_file.exists()
 
 
-def test_missing_rules_columns_are_not_reworded(env, monkeypatch):
-    def rules(con):
+def test_missing_rules_columns_fail_before_extracting(env, monkeypatch):
+    def check(con):
         raise publish_logic.MissingColumnsError("NonJD_OrderRules is missing column(s) Archived")
-    monkeypatch.setattr(extract, "rules", rules)
+    monkeypatch.setattr(extract, "check_columns", check)
+    monkeypatch.setattr(extract, "reorder", lambda con: pytest.fail("extracted after a failed check"))
+    monkeypatch.setattr(extract, "rules", lambda con: pytest.fail("extracted after a failed check"))
     with pytest.raises(publish_logic.MissingColumnsError, match="Archived") as ei:
         run_publish.main([])
     assert "not found or unreadable" not in str(ei.value)

@@ -1,4 +1,5 @@
 # projects/part order tool - app/publish/test_publish_logic.py
+import os
 from datetime import date, datetime, timezone
 from decimal import Decimal
 from zoneinfo import ZoneInfo
@@ -233,5 +234,12 @@ def test_not_excluded_branches(raw):
     assert not pl.is_excluded_branch(raw)
 
 
-def test_excluded_branch_list_matches_gold():
-    assert pl.EXCLUDED_BRANCHES == ("12", "5", "97", "4B", "93C")
+def test_excluded_branch_list_matches_reference():
+    """Same list as the reference check (tools/dp-migration/nonjd_reorder_check.py), which Gold is compared to."""
+    import importlib.util
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "tools", "dp-migration",
+                        "nonjd_reorder_check.py")
+    spec = importlib.util.spec_from_file_location("nonjd_reorder_check", path)
+    ref = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(ref)
+    assert pl.EXCLUDED_BRANCHES == tuple(ref.EXCLUDED_BRANCHES)

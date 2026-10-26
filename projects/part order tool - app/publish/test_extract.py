@@ -108,11 +108,19 @@ def test_rules_read_new_fields(con):
     assert rules[0]["minDemands"] == "3" and rules[0]["archived"] is None
 
 
-def test_rules_missing_new_columns_fail_naming_them(con):
+def test_check_columns_names_missing_rules_columns(con):
     _gold_tables(con, rule_cols=[c for c in RULE_COLS if c not in ("Archived", "MinDemands")])
     with pytest.raises(pl.MissingColumnsError) as ei:
-        extract.rules(con)
+        extract.check_columns(con)
     assert "NonJD_OrderRules" in str(ei.value) and "Archived" in str(ei.value) and "MinDemands" in str(ei.value)
+
+
+def test_check_columns_missing_rules_table_is_clear_error(con):
+    _gold_tables(con)
+    con.execute('DROP TABLE "NonJD_OrderRules"')
+    with pytest.raises(RuntimeError, match="NonJD_OrderRules not found or unreadable") as ei:
+        extract.check_columns(con)
+    assert not isinstance(ei.value, pl.MissingColumnsError)
 
 
 def test_transfers_drop_excluded_branches_both_ways(con):

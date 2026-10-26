@@ -30,9 +30,11 @@ What decides whether to publish:
 - It looks back 14 days in `dp_refresh_log` for the latest `Build_Gold_NonJD_Reorder` item row. Skipped rows are
   ignored. It publishes only if that latest run succeeded and hasn't been published yet.
 - It refuses (exit 1) if `Fact_NonJD_Reorder.BuiltAtUtc` is outside that run, or if the table changes during extraction.
-- It refuses (exit 1) before extracting if a Gold table (`Fact_NonJD_Reorder`, `Fact_NonJD_SalesHistory`,
-  `Fact_OutstandingTransfers`, `NonJD_OrderRules`) lacks a column the contract needs, naming the missing columns. Gold
-  and the publish code must be deployed together (e.g. round 1 Gold with contractVersion 2 publish code).
+- It refuses (exit 1) before extracting anything if a table (`Fact_NonJD_Reorder`, `Fact_NonJD_SalesHistory`,
+  `Fact_OutstandingTransfers` or `NonJD_OrderRules`) lacks a column the contract needs, naming the missing columns
+  (`extract.check_columns`). Gold and the publish code must be deployed together (e.g. round 1 Gold with
+  contractVersion 2 publish code).
+- It refuses (exit 1) if a rule in `NonJD_OrderRules` has a NaN or infinite number, naming the rule and the field.
 
 What gets uploaded:
 - The reorder, surplus, transfers and rules files are re-uploaded on every new DP run (they embed `dataAsOf`, so their
@@ -60,7 +62,8 @@ Task Scheduler setup:
 - History files have no `dataAsOf`, so a stale history file after a mid-upload crash can't be detected from the file
   itself (it heals on the next run).
 - Show `dataAsOf` and flag data older than one business day.
-- Check `_meta.json`'s `contractVersion` first (missing = 1) and refuse a version the app doesn't know.
+- Check `_meta.json`'s `contractVersion` first (missing = 1) and load nothing unless it is the version the app knows
+  (messages under "File contract").
 
 ## File contract (schemaVersion 1, contractVersion 2)
 
@@ -69,9 +72,14 @@ Task Scheduler setup:
 - `contractVersion` = the fields inside the files. 1 = Plan A/B (`_meta.json` had no `contractVersion`; treat a
   missing one as 1). **2 = round 1** (Plan C, 2026-10-26): demand counts, weeks or months of supply, line value
   limits, Manual Order, masks that end at a request, the new statuses and the excluded branches.
-- **The app must refuse a `contractVersion` it doesn't know** (show "The app needs updating" and load nothing),
-  rather than reading fields that have changed meaning. The publish fails, naming the columns, if Gold lacks a column
-  this contract needs, so a half-deployed Gold never reaches the app.
+- **Bump `contractVersion`** on any removed or renamed field, any change in a field's meaning, or any new `status`
+  value. Don't bump for a new optional field: the app ignores fields it doesn't know.
+- **The app must refuse a `contractVersion` it doesn't know** and load nothing, rather than reading fields that have
+  changed meaning:
+  - newer than the app knows: "The app needs updating: the data was published in a newer format."
+  - older than the app knows: "The data was published in an older format; it will update after the next publish."
+- The publish fails before extracting anything, naming the columns, if a Gold table or `NonJD_OrderRules` lacks a
+  column this contract needs, so a half-deployed Gold never reaches the app.
 
 All files sit flat in the library (no sub-folders). They are UTF-8 JSON with sorted keys (the examples below are
 unsorted for reading); `.json.gz` files are gzip-compressed, `_meta.json` is plain.
@@ -150,9 +158,9 @@ and `weeksOfCover` by `supply` + `supplyUnit` + `supplyMonths`. New: `demandCoun
 | effectiveMin | The app's min override if set, else Equip's minimum (it always applies, even with no demand), else 0 |
 | minimumNoDemand | Boolean, never null: true when there is no min override, Equip's minimum is > 0 and the part had no activity in the window (demandCount 0 and unitsSoldWindow 0). The minimum still sets the target; this flags it for the "Min, no demand" tag and Ben's cleanup list |
 | target | Stocking target = max(calcTarget, effectiveMin rounded up). Never null; 0 when the part isn't stocked |
-| valueCapped | Boolean, never null: the maximum line value cut the quantity back (to floor(maxLineValue / cost)). With status `AboveMaxValue` it was cut to 0 |
-| belowMinValue | Boolean, never null: the line (after any cap) was above 0 but worth less than minLineValue, so it is not suggested |
-| recommendedQty | 0 when manualOrder, isMasked, belowMinValue or target = 0 (a target of 0 orders 0 whatever negative stock shows). Otherwise max(0, target - onHand - onOrder) with onHand and onOrder truncated toward zero (back orders not subtracted), then cut back by maxLineValue if needed (only when cost > 0) |
+| valueCapped | Boolean, never null: the maximum line value cut the quantity back (to floor(maxLineValue / cost)). With status `AboveMaxValue` it was cut to 0. Computed before the Manual Order / mask step, so it can be true on a `ManualOrder` or `Masked` part, and together with `belowMinValue` (the cut line fell below the minimum). Show the cap badge only when the status is `Reorder`, `OutOfStock` or `AboveMaxValue` |
+| belowMinValue | Boolean, never null: the line (after any cap) was above 0 but worth less than minLineValue, so it is not suggested. Computed before the Manual Order / mask step, so it can be true on a `ManualOrder` or `Masked` part. Show the min badge only when the status is `BelowMinValue` |
+| recommendedQty | In this order: base qty = 0 if target = 0 (a target of 0 orders 0 whatever negative stock shows), else max(0, target - onHand - onOrder) with onHand and onOrder truncated toward zero (back orders not subtracted); then, only when base qty > 0 and cost > 0, cut back to floor(maxLineValue / cost) if over maxLineValue (`valueCapped`), then 0 if the line is still above 0 but under minLineValue (`belowMinValue`); finally 0 when manualOrder or isMasked |
 | estValue | recommendedQty at cost, rounded to 2 decimals |
 | surplusQty | max(0, truncated onHand - target) (all on-hand stock when the target is 0). Shown as "Excess" |
 | inboundQty | Open quantity on outstanding transfers into this branch; 0 (not null) when none |
@@ -188,17 +196,25 @@ Decide in this order, first match wins:
 3. `status` = `NoRecentActivity`: "No demand in the last `<historyMonths>` months, so nothing is stocked." (A target
    of 0 orders 0, so there is no negative-stock sentence any more.)
 4. `status` = `NotStocked` (some activity in the window, target 0):
-   - `demandCount` = 0 (so `unitsSoldWindow` > 0): "`<ruleName>`: sold `<unitsSoldWindow>` in `<historyMonths>` months but no demands were recorded; this rule needs `<minDemands>` demands, so nothing is stocked."
-   - else `demandCount` < `minDemands`: "`<ruleName>`: only `<demandCount>` demands in `<historyMonths>` months; this rule needs `<minDemands>`, so nothing is stocked."
+   - `demandCount` < `minDemands`:
+     - `demandCount` = 0 (so `unitsSoldWindow` > 0): "`<ruleName>`: sold `<unitsSoldWindow>` in `<historyMonths>` months but no demands were recorded; this rule needs `<minDemands>` demands, so nothing is stocked."
+     - else: "`<ruleName>`: only `<demandCount>` demands in `<historyMonths>` months; this rule needs `<minDemands>`, so nothing is stocked."
    - else `supply` = 0: "`<ruleName>` keeps 0 `<supply unit>` of supply, so nothing is stocked."
-   - else `windowDemand` = 0: "Returns cancelled out sales in the last `<historyMonths>` months, so nothing is stocked." (With `demandBasis` = `Requests`: "No requests on this rule's basis in the last `<historyMonths>` months, so nothing is stocked.")
+   - else `windowDemand` = 0:
+     - `demandBasis` = `Requests`: "No requests on this rule's basis in the last `<historyMonths>` months, so nothing is stocked." (Only with `minDemands` 0: demandCount is then 0 and the activity is units sold.)
+     - else `activeMonths` > 0: "Returns cancelled out sales in the last `<historyMonths>` months, so nothing is stocked."
+     - else: "`<demandCount>` demands but no units sold in the last `<historyMonths>` months, so nothing is stocked."
    - else (only with near-zero demand or supply, where the target rounds to 0): "`<ruleName>` gives a target of 0, so nothing is stocked."
 5. Otherwise the sentence is first clause + minimum clause + tail:
    - First clause:
      - no activity: "No demand in the last `<historyMonths>` months, so the rule gives 0".
+     - else `demandCount` < `minDemands` and `demandCount` = 0 (units sold, no demands): "No demands recorded (sold `<unitsSoldWindow>`; this rule needs `<minDemands>`), so the rule gives 0".
      - else `demandCount` < `minDemands`: "Only `<demandCount>` demands in `<historyMonths>` months (this rule needs `<minDemands>`), so the rule gives 0".
      - else "`<ruleName>`: sold `<windowDemand>` in `<historyMonths>` months (`<monthlyRate>` a month) x `<supply>` `<supply unit>` of supply gives a target of `<calcTarget>`". For `demandBasis` = `Requests`, say "requested `<windowDemand>` times" instead of "sold `<windowDemand>`".
-   - Minimum clause, only if `target` > `calcTarget`: "; a minimum of `<target>` sets the target" (use `target`, not `effectiveMin`, so a fractional minimum reads right). When `minimumNoDemand` is true: "; Equip's minimum of `<target>` applies even with no demand and sets the target".
+   - Minimum clause, only if `target` > `calcTarget` (use `target`, not `effectiveMin`, so a fractional minimum reads right):
+     - `minOverride` set: "; your min override of `<target>` sets the target".
+     - else `minimumNoDemand` true: "; the Equip minimum of `<target>` applies even with no demand and sets the target".
+     - else: "; the Equip minimum of `<target>` sets the target".
    - Tail, by status. "Base qty" = max(0, `target` - trunc(`onHand`) - trunc(`onOrder`)), the quantity before the line value limits.
      - `BelowMinValue`: "On hand `<onHand>`, on order `<onOrder>`, so the line would be `<base qty, after any cap>` at `<value>`, below this rule's minimum line value of `<minLineValue>`; nothing is suggested." (value = qty x cost.)
      - `AboveMaxValue`: "On hand `<onHand>`, on order `<onOrder>`; one costs `<cost>`, more than this rule's maximum line value of `<maxLineValue>`, so nothing is suggested."
@@ -215,11 +231,14 @@ Worked examples (arithmetic: calcTarget = ceil(monthlyRate x supplyMonths); supp
   (0.5 a month) x 6 weeks of supply gives a target of 1. On hand 0, on order 0, so order 1." (0.5 x 6 x 12 / 52 =
   0.69, rounds up to 1.)
 - Minimum wins, rule gives a target (`demandCount` 4, rule needs 3): "Default: sold 4 in 12 months (0.33 a month) x 6
-  weeks of supply gives a target of 1; a minimum of 3 sets the target. On hand 1, on order 0, so order 2."
+  weeks of supply gives a target of 1; the Equip minimum of 3 sets the target. On hand 1, on order 0, so order 2."
 - Minimum wins, rule gives 0 (`demandCount` 2, rule needs 3): "Only 2 demands in 12 months (this rule needs 3), so
-  the rule gives 0; a minimum of 3 sets the target. On hand 1, on order 0, so order 2."
-- Minimum with no demand (`minimumNoDemand` true): "No demand in the last 12 months, so the rule gives 0; Equip's
+  the rule gives 0; your min override of 3 sets the target. On hand 1, on order 0, so order 2." (with a min
+  override of 3)
+- Minimum with no demand (`minimumNoDemand` true): "No demand in the last 12 months, so the rule gives 0; the Equip
   minimum of 2 applies even with no demand and sets the target. On hand 0, on order 0, so order 2."
+- Units but no demands, minimum wins: "No demands recorded (sold 4; this rule needs 3), so the rule gives 0; the Equip
+  minimum of 2 sets the target. On hand 1, on order 0, so order 1."
 - Value capped (cost $25, MaxLineValue 500): "Default: sold 120 in 12 months (10 a month) x 12 weeks of supply gives a
   target of 28. On hand 0, on order 0, so order 20, cut back from 28 to stay at or under this rule's maximum line
   value of $500." (28 x 25 = 700 > 500; floor(500 / 25) = 20.)

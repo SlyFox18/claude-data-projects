@@ -45,7 +45,7 @@ def _hist(b):
 
 RULES = [
     {"id": 2, "ruleName": "B", "priority": 2.0, "active": True, "archived": None, "franchise": None,
-     "dealerGroupCode": "770", "branch": "1", "startMonth": float("nan"), "endMonth": None, "historyMonths": 12,
+     "dealerGroupCode": "770", "branch": "1", "startMonth": None, "endMonth": None, "historyMonths": 12,
      "minDemands": Decimal("3"), "weeksOfCover": 6.5, "supplyUnit": None, "minLineValue": 25.0,
      "maxLineValue": Decimal("500.50"), "demandBasis": "Sales", "minActiveMonths": 3, "extra": "dropped"},
     {"id": 1, "ruleName": "A", "priority": 1.0, "active": False, "archived": True, "franchise": "A",
@@ -219,3 +219,12 @@ def test_meta_has_contract_version(out):
     _, branches = _build()
     path = build_files.write_meta(AS_OF, AS_OF, "dev", branches, {})
     assert json.loads(open(path, "rb").read())["contractVersion"] == 2
+
+
+@pytest.mark.parametrize("bad", [float("nan"), float("inf"), float("-inf"), Decimal("NaN")])
+@pytest.mark.parametrize("key", ["startMonth", "weeksOfCover", "minLineValue", "maxLineValue", "minDemands"])
+def test_rules_non_finite_number_fails(out, key, bad):
+    rules = [dict(RULES[0], **{key: bad}), RULES[1]]
+    with pytest.raises(ValueError, match=f"rule 2.*{key}.*not a finite number"):
+        _build(rules=rules)
+    assert not (out / "rules.json.gz").exists()

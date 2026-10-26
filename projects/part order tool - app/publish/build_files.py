@@ -2,10 +2,12 @@
 import gzip
 import hashlib
 import json
+import math
 import os
 import re
 from collections import defaultdict
 from datetime import date
+from decimal import Decimal
 
 import publish_logic as pl
 
@@ -87,6 +89,12 @@ def build(reorder: list, history_for, transfers: list, names: dict, data_as_of: 
         missing = [k for k in RULE_KEYS if k not in r]
         if missing:
             raise ValueError(f"rules row {r.get('id')!r} is missing key(s) {', '.join(missing)}")
+        # A NaN / infinite number would be written as null, which reads as "blank" (a different rule); fail instead.
+        for k in RULE_KEYS:
+            v = r[k]
+            if (isinstance(v, float) and not math.isfinite(v)) or (isinstance(v, Decimal) and not v.is_finite()):
+                raise ValueError(f"NonJD_OrderRules rule {r.get('id')!r}: {k} is {v}, not a finite number; "
+                                 f"fix the rule in the list before publishing")
     _write("rules.json.gz", _bytes({"dataAsOf": data_as_of,
                                     "rules": [_clean({k: r[k] for k in RULE_KEYS})
                                               for r in sorted(rules, key=lambda r: r["id"])]}), hashes)

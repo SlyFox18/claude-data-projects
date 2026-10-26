@@ -17,7 +17,8 @@ def _gold(pn, status="OK", **kw):
          "onHand": 1, "onOrder": 0, "windowDemand": 0, "effectiveMin": 0, "calcTarget": 0, "activeMonths": 0,
          "demandCount": 0, "minDemands": 3, "unitsSoldWindow": 0, "supplyUnit": "Weeks", "supply": 12,
          "valueCapped": status == "AboveMaxValue", "belowMinValue": status == "BelowMinValue",
-         "manualOrder": status == "ManualOrder", "maskedOn": None}
+         "manualOrder": status == "ManualOrder", "maskedOn": None, "lastRequested": "1900-01-01T00:00:00+00:00",
+         "minLineValue": None, "maxLineValue": None}
     g.update(kw)
     return g
 
@@ -54,6 +55,9 @@ def output(tmp_path):
         rows[21].update(valueCapped=True, status="Reorder")
         rows[23].update(supplyUnit="Months", supply=2)
         rows[25].update(maskedOn="2026-09-01", isMasked=False, lastRequested="2026-09-15T00:00:00+00:00")
+        rows[27].update(demandBasis="Requests")
+        rows[29].update(minDemands=0, demandCount=0, unitsSoldWindow=1)
+        rows[31].update(minLineValue=10, maxLineValue=500)
         rows[9].update(onHand=-3)
         rows[11].update(onHand=1.5)
         rows[13].update(minOverride=4, effectiveMin=4)
@@ -132,10 +136,21 @@ def test_round1_tags():
     assert "unit=Months" in t
     t = mef.tags({"branch": "1", "history": None, "gold": _gold("X", "ManualOrder")})
     assert "manualOrder" in t and "status=ManualOrder" in t
-    t = mef.tags({"branch": "1", "history": None, "gold": _gold("X", maskedOn="2026-09-01", isMasked=False)})
+    t = mef.tags({"branch": "1", "history": None, "gold": _gold("X", maskedOn="2026-09-01", isMasked=False,
+                                                                 lastRequested="2026-09-02T00:00:00+00:00")})
     assert "maskEnded" in t and "maskedOn" in t
+    # requested on the day it was masked, or earlier: the mask did not end at a request (it may have expired)
+    t = mef.tags({"branch": "1", "history": None, "gold": _gold("X", maskedOn="2026-09-01", isMasked=False,
+                                                                 lastRequested="2026-09-01T00:00:00+00:00")})
+    assert "maskedOn" in t and "maskEnded" not in t
     t = mef.tags({"branch": "1", "history": None, "gold": _gold("X", "Masked", maskedOn="2026-09-01")})
     assert "maskedOn" in t and "maskEnded" not in t
+    t = mef.tags({"branch": "1", "history": None, "gold": _gold("X", minDemands=0)})
+    assert "minDemands=0" in t
+    t = mef.tags({"branch": "1", "history": None, "gold": _gold("X", minLineValue=10, maxLineValue=500)})
+    assert "bothCaps" in t
+    t = mef.tags({"branch": "1", "history": None, "gold": _gold("X", maxLineValue=500)})
+    assert "bothCaps" not in t
 
 
 def test_round1_strata_are_sampled(output):
@@ -151,7 +166,7 @@ def test_absent_strata_names_expected_strata_missing_from_the_data():
              {"branch": "1", "history": None, "gold": _gold("B", "Reorder", demandCount=3, minDemands=3)}]
     missing = mef.absent_strata(cands)
     for t in ("unit=Months", "manualOrder", "maskEnded", "valueCapped", "status=ManualOrder",
-              "status=AboveMaxValue", "status=BelowMinValue"):
+              "status=AboveMaxValue", "status=BelowMinValue", "basis=Requests", "minDemands=0", "bothCaps"):
         assert t in missing
     assert "status=OK" not in missing and "status=Reorder" not in missing and "demandsAtMin" not in missing
 
