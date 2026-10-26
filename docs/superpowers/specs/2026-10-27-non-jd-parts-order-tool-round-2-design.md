@@ -49,6 +49,7 @@ Each one is what we will build unless Ben says otherwise. "Alternative" is the o
 > - **1:** the order of work is approved, and phase 1 (app 0.4.0, multi-branch Reorder) is started.
 > - **3:** PendingQty is confirmed as stock committed to open tickets that on hand still counts, so A2 stands.
 > - **2 and 4:** due at phase 2.
+> - **Phase 1 deviation (accepted):** Part Lookup keeps its own slim cache, not the engine loader, because it reads only the reorder files. One-Time and Reorder use `engineBranches.ts`. App 0.4.0 commits: `4d54ca9`, `d878da0`, `f60c7a9`.
 
 Only these need Brian:
 1. **Order of work** (see "Phasing"): multi-branch Reorder first (app only, no data change), then the data, phase-in and contract v3, then the live transfer step. The alternative is to wait for Ben's answers before phase 3, the expensive part. Recommendation: send Ben the assumption table now and build phases 1–2 while he reads it.
