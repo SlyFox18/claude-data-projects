@@ -39,6 +39,12 @@
 >   - **Live wiring:** live committed lines and transfer rules feed the engine, and One-Time subtracts appInboundQty.
 >   - **Not yet exercised on real data:** transfer rules and committed lines (Dev has none), so E15 must add test rows.
 > - **E10 done 2026-10-27** (app `2010130`, 1,343 tests). Phase-in: a Settings tab section (quantity; end date defaulting to Central today + 12 months; blank = no end; Clear), a **Phase in…** quick action on Reorder, the order review and Part Lookup, and Special statuses **Phase-in** / **Phase-in ended** with a column and CSV fields. Masked and Manual order win in Special statuses. The slim all-branch cache gained demandCount and minDemands.
+> - **E11 done 2026-10-27** (app `54b95c5`, 1,360 tests).
+>   - **Other branches** columns: Above target, Excess (units + months), Months of supply.
+>   - **Part page** gets a "Suggested transfers" line, from the morning file until every branch loads, then live.
+>   - **Rules editor:** the five criteria, with a VendorCode leading-zero/decimal warning. Try it picks them up.
+>   - **Wording test** enforces the new Excess meaning.
+>   - **Trade-off:** the Part page's Other branches panel now uses the shared all-branch loader (reorder + history, then a one-off engine + allocation run, about 4 s + 1.2 s by the spec), no longer the reorder-only cache. Check the feel in E15.
 > - **Ben's answers 2026-10-27** (`feedback/2026-10-27-ben-transfer-answers.md`). They change E3, E5 and E9 (allocation order by months of supply), the built-in RedistMinValue (0, was 25), E12 (both kinds ticked, kind badge, franchise filter) and the SharePoint default (**Brian: set `NonJD_TransferRules.RedistMinValue` default to 0**). The spec's A6, A9, A12 and Part 3 are updated, and they win over any older wording below.
 > - **E11b done 2026-10-27** (app `cd8f0dc` + review fixes `6e2418d`; 999 tests, lint clean): dealer group checklist on One-Time Order and Recommended Reorder (`?dgc=`), a "(none)" choice for parts with no group (36% of parts; `-` in the URL, `""` in Parameters), ticking every group = All, requested groups kept while branches load. Known quirk to show in the walkthrough: Select all on the group list reads as All (boxes unticked), because nothing ticked already means every group. Not deployed; ships with 0.5.0.
 >
