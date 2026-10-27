@@ -53,9 +53,11 @@ def test_cases_are_valid_groups(sample):
                 assert set(t) == set(chk.TRANSFER_RULE_COLS)
             for r in g["rows"]:
                 assert isinstance(r["oh"], int) and isinstance(r["oo"], int)
+                assert isinstance(r["PhaseInActive"], bool)
         else:
             for r in g["rows"]:
                 assert not r["RedistEligible"] or r["MonthlyRate"] > 0
+                assert r["pend"] >= 0 and r["AppOutboundQty"] >= 0
     assert len(rule_ids) == len(set(rule_ids))
 
 
@@ -88,7 +90,7 @@ def test_expected_lines_are_consistent(sample):
         kinds = [l["Kind"] for l in lines]
         assert kinds == sorted(kinds)                         # conventional first
         for l in lines:
-            assert l["Value"] == round(l["Qty"] * l["ToCost"], 2)
+            assert l["Value"] == chk.round_half_up(l["Qty"] * l["ToCost"], 2)
         out = {}
         for l in lines:
             out[l["FromBranch"]] = out.get(l["FromBranch"], 0) + l["Qty"]
@@ -107,7 +109,7 @@ def test_expected_lines_are_consistent(sample):
 
 def _case(rows, rules=(), committed=(), today="2026-10-20"):
     base = {"oh": 0, "oo": 0, "PendingQty": None, "MonthlyRate": 0.0, "StockingTarget": 0, "ManualOrder": False,
-            "IsMasked": False, "MinimumNoDemand": False, "Cost": 10.0, "DealerGroupCode": None, "SLC": None,
+            "IsMasked": False, "MinimumNoDemand": False, "PhaseInActive": False, "Cost": 10.0, "DealerGroupCode": None, "SLC": None,
             "Source": None, "VendorCode": 0, "ProductGroup": None, "CommodityCode": None}
     return {"id": 1, "kind": "full", "today": today, "franchise": "F1", "partNumber": "P1",
             "rows": [{**base, **r} for r in rows], "transferRules": list(rules), "committed": list(committed)}
@@ -155,3 +157,35 @@ def test_allocation_case_matches_allocate_group(sample):
     rows = [{**r, "Franchise": g["franchise"], "PartNumber": g["partNumber"], "cost": r["Cost"]} for r in g["rows"]]
     want = next(e for e in expected["groups"] if e["id"] == g["id"])["lines"]
     assert chk.allocate_group(list(reversed(rows)), chk.branch_order_key) == want
+
+
+def test_branch_pool_has_tricky_codes():
+    assert {"02", "b", " 3"} <= set(fz.BRANCH_POOL)
+    assert len({b.strip().upper() for b in fz.BRANCH_POOL}) == len(fz.BRANCH_POOL)
+    assert not {b.strip().upper() for b in fz.BRANCH_POOL} & set(chk.EXCLUDED_BRANCHES)
+
+
+def _round9_ties(rows, stock):
+    """Pairs of rows (rate > 0) whose covers differ in float64 but are equal after round9."""
+    covers = [stock(r) / r["MonthlyRate"] for r in rows if r["MonthlyRate"] > 0]
+    return sum(1 for i, a in enumerate(covers) for b in covers[i + 1:] if a != b and chk.round9(a) == chk.round9(b))
+
+
+def test_planted_round9_ties_half_cents_and_got_cases(sample):
+    cases, expected = sample
+    alloc = [g for g in cases["groups"] if g["kind"] == "allocation"]
+    full = [g for g in cases["groups"] if g["kind"] == "full"]
+    assert {g["mode"] for g in alloc} == {"random", "sender_tie", "receiver_tie", "got"}
+    sender_ties = sum(_round9_ties([r for r in g["rows"] if r["FreeExcess"] > 0],
+                                   lambda r: r["oh"] - r["pend"] - r["AppOutboundQty"]) for g in alloc)
+    receiver_ties = sum(_round9_ties([r for r in g["rows"] if r["ConvNeed"] > 0],
+                                     lambda r: r["oh"] + r["oo"] + r["AppInboundQty"]) for g in alloc)
+    full_ties = sum(_round9_ties(g["rows"], lambda r: r["oh"]) for g in full)
+    assert sender_ties > 10 and receiver_ties > 10 and full_ties > 10
+    lines = [l for g in expected["groups"] for l in g["lines"]]
+    half_cents = [l for l in lines if (l["Qty"] * l["ToCost"] * 100) % 1 == 0.5]
+    assert len(half_cents) > 10
+    assert any(l["Value"] != round(l["Qty"] * l["ToCost"], 2) for l in half_cents)     # half up, not half even
+    got = [g for g in alloc if g["mode"] == "got"]
+    exp = {g["id"]: g for g in expected["groups"]}
+    assert sum(1 for g in got if any(l["Kind"] == "Redistribution" for l in exp[g["id"]]["lines"])) > 10

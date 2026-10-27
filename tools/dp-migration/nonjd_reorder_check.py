@@ -272,6 +272,12 @@ def _months(x: str, unit: str) -> str:
     return f"(CASE {unit} WHEN 'Weeks' THEN {x} * 12 / 52 ELSE {x} END)"
 
 
+def _ceil9_sql(x: str) -> str:
+    """Part 2's ceil9 in SQL with the allocation's round9 (round half up): ceil(floor(x * 1e9 + 0.5) / 1e9) in
+    DOUBLE, not DuckDB round."""
+    return f"ceil(floor(CAST({x} AS DOUBLE) * CAST(1e9 AS DOUBLE) + 0.5) / CAST(1e9 AS DOUBLE))"
+
+
 # Active, not archived rows of NonJD_TransferRules with their problems ('' = valid), as RULE_CHECK_CTE does for order
 # rules: inactive (Active false or NULL) and archived rules are neither matched nor reported, and a blank name shows
 # as "Rule <Id>". Messages from the spec's "Validation"; the wording of the "missing" and unit messages and the order
@@ -340,7 +346,8 @@ def transfer_ctes(p1: str) -> str:
     """The CTEs of Part 2 (spec "Part 2: transfer inputs per part"), ending in `part2`. They read `part_crit` (one row
     per part key with the p_* criteria values; a duplicate collapses in the pick), `transfer_rules`, $cur, and the
     relation `p1` with the Part 1 columns Branch, Franchise, PartNumber, oh, oo, PendingQty, MonthlyRate,
-    StockingTarget, bq (step 9's base qty), ManualOrder, IsMasked, MinimumNoDemand, AppInboundQty, AppOutboundQty."""
+    StockingTarget, bq (step 9's base qty), ManualOrder, IsMasked, MinimumNoDemand, PhaseInActive, AppInboundQty,
+    AppOutboundQty."""
     return f"""
     {TRANSFER_RULE_CHECK_CTE},
     -- Part 2 item 1: valid active transfer rules in season, with their values after the blank defaults: a unit is
@@ -389,14 +396,19 @@ def transfer_ctes(p1: str) -> str:
         FROM {p1} f LEFT JOIN part_transfer_rule tr USING (Branch, Franchise, PartNumber)
     ),
     -- items 2 and 5: ExcessKeep = max(Target, ceil9(rate x months(ExcessSupply))), the target at rate 0 (A3);
-    -- RedistCap = ceil9(rate x months(RedistMax))
-    part2_keep AS (
+    -- RedistCap = min(ceil9(rate x months(RedistMax)), ExcessKeep), so redistribution never fills a receiver above
+    -- what it would itself call excess. ceil9 rounds half up (floor(x * 1e9 + 0.5) / 1e9), as the allocation's
+    -- round9 does (spec "Decisions after the E3 review" 1-2); Part 1 keeps DuckDB round.
+    part2_keep0 AS (
         SELECT *,
                CAST(greatest(StockingTarget,
-                             ceil(round(MonthlyRate * {_months('ExcessSupply', 'ExcessUnit')}, 9))) AS INTEGER)
+                             {_ceil9_sql(f"MonthlyRate * {_months('ExcessSupply', 'ExcessUnit')}")}) AS INTEGER)
                  AS ExcessKeep,
-               CAST(ceil(round(MonthlyRate * {_months('RedistMax', 'RedistUnit')}, 9)) AS INTEGER) AS RedistCap
+               CAST({_ceil9_sql(f"MonthlyRate * {_months('RedistMax', 'RedistUnit')}")} AS INTEGER) AS cap_raw
         FROM part2_rule
+    ),
+    part2_keep AS (
+        SELECT * EXCLUDE (cap_raw), CAST(least(cap_raw, ExcessKeep) AS INTEGER) AS RedistCap FROM part2_keep0
     ),
     -- item 3: free stock above what the branch keeps, less pending (A2) and committed app transfers out (A14)
     part2_free AS (
@@ -405,11 +417,12 @@ def transfer_ctes(p1: str) -> str:
         FROM part2_keep
     ),
     -- item 4: ConvNeed = the step 9 base qty, before the line value limits (A4), but 0 for a branch that doesn't
-    -- receive, Manual order, masked, a minimum with no demand (A5) or a branch with excess itself.
-    -- Item 5: RedistEligible (A8).
+    -- receive, Manual order, masked, a minimum with no demand (A5; an active phase-in lifts it) or a branch with
+    -- excess itself. Item 5: RedistEligible (A8).
     part2 AS (
         SELECT *,
-               CAST(CASE WHEN NOT AllowReceive OR ManualOrder OR IsMasked OR MinimumNoDemand OR FreeExcess > 0
+               CAST(CASE WHEN NOT AllowReceive OR ManualOrder OR IsMasked
+                              OR (MinimumNoDemand AND NOT PhaseInActive) OR FreeExcess > 0
                          THEN 0 ELSE bq END AS INTEGER) AS ConvNeed,
                AllowReceive AND StockingTarget > 0 AND MonthlyRate > 0 AND NOT ManualOrder AND NOT IsMasked
                  AND FreeExcess = 0 AS RedistEligible
@@ -418,7 +431,7 @@ def transfer_ctes(p1: str) -> str:
 
 
 # The part2 table: the reorder output without Part 3's suggested quantities, plus the columns allocate_group reads
-PART2_COLS = [c for c in OUTPUT_COLS if c not in SUGGESTED_COLS] + ["oh", "oo", "cost"]
+PART2_COLS = [c for c in OUTPUT_COLS if c not in SUGGESTED_COLS] + ["oh", "oo", "pend", "cost"]
 
 # Parameters: $cur = first day of the run's Central-time month, $today = the run's Central date.
 # Every value that is ceil'd or floor'd is first rounded to 9 decimals (round9), so double noise such as
@@ -638,10 +651,16 @@ def branch_order_key(branch) -> tuple:
     return (1, 0, b, raw)
 
 
+def round_half_up(x: float, digits: int) -> float:
+    """Parts 2-3 rounding (spec "Decisions after the E3 review" 1): floor(x * 10^digits + 0.5) / 10^digits in
+    float64, the same as the app's Math.round(x * 1e9) / 1e9 (ties go up, toward +inf)."""
+    scale = float(10 ** digits)
+    return math.floor(x * scale + 0.5) / scale
+
+
 def round9(x: float) -> float:
-    """round9 for the allocation's comparisons: Python's round(x, 9) (correctly rounded, half to even on the exact
-    binary value). It only decides covers that differ by less than about 1e-9."""
-    return round(x, 9)
+    """round9 for the allocation's comparisons (covers, q x cost): round_half_up(x, 9)."""
+    return round_half_up(x, 9)
 
 
 def _receiver_cover(stock: int, rate: float) -> float:
@@ -653,20 +672,21 @@ def _receiver_cover(stock: int, rate: float) -> float:
 
 def allocate_group(rows: list, branch_order_key=branch_order_key) -> list:
     """Part 3 of the spec for one Franchise + PartNumber group: `rows` are the group's branch rows with Branch,
-    Franchise, PartNumber, oh, oo, AppInboundQty, MonthlyRate, StockingTarget, ExcessKeep, FreeExcess, ConvNeed,
-    RedistEligible, RedistCap, cost and RedistMinValue (the sender's transfer rule). Returns the suggestion lines
-    (SUGGESTION_COLS, as dicts) in emission order.
+    Franchise, PartNumber, oh, oo, AppInboundQty, pend, AppOutboundQty, MonthlyRate, StockingTarget, ExcessKeep,
+    FreeExcess, ConvNeed, RedistEligible, RedistCap, cost and RedistMinValue (the sender's transfer rule). Returns the
+    suggestion lines (SUGGESTION_COLS, as dicts) in emission order.
 
     - Nothing unless some branch has FreeExcess > 0 and some other branch has ConvNeed > 0 or is RedistEligible.
-    - Conventional: receivers with ConvNeed > 0, in a fixed order (receiver cover ascending, ConvNeed descending,
-      branch order); each takes from the sender s != r with the greatest sender cover round9((oh - sent) / rate)
-      (+inf at rate 0), ties to the largest free, then branch order, re-picked after every line.
+    - Conventional: receivers with ConvNeed > 0, in a fixed order (receiver cover of the order's own stock
+      oh + oo + AppInboundQty ascending, ConvNeed descending, branch order); each takes from the sender s != r with
+      the greatest sender cover round9((oh - pend - AppOutboundQty - sent) / rate) (+inf at rate <= 0), ties to the
+      largest free, then branch order, re-picked after every line.
     - Redistribution, on what is left: RedistEligible receivers with room = RedistCap - oh - oo - AppInboundQty -
       got > 0, in a fixed order (cover of oh + oo + AppInboundQty + got ascending, then branch order); senders picked
       as above for every line; a sender whose round9(q x its cost) is below its RedistMinValue is skipped for this
       receiver.
     - Seq numbers the lines of the group from 1, conventional then redistribution (choice: one sequence for both
-      kinds). Value = round(Qty x ToCost, 2).
+      kinds). Value = round_half_up(Qty x ToCost, 2).
     Choices: a RedistEligible row with rate <= 0 (Part 2 never makes one) uses the conventional rate-0 cover rule;
     a row can't send to itself even when it has both FreeExcess and a need (also impossible from Part 2)."""
     rows = sorted(rows, key=lambda r: branch_order_key(r["Branch"]))
@@ -674,6 +694,7 @@ def allocate_group(rows: list, branch_order_key=branch_order_key) -> list:
     oh = [int(r["oh"]) for r in rows]
     oo = [int(r["oo"]) for r in rows]
     inbound = [int(r["AppInboundQty"]) for r in rows]
+    avail = [int(r["oh"]) - int(r["pend"]) - int(r["AppOutboundQty"]) for r in rows]     # the sender's basis
     rate = [float(r["MonthlyRate"]) for r in rows]
     cost = [float(r["cost"]) for r in rows]
     minval = [float(r["RedistMinValue"]) for r in rows]
@@ -686,7 +707,7 @@ def allocate_group(rows: list, branch_order_key=branch_order_key) -> list:
     got, sent, lines = [0] * n, [0] * n, []
 
     def sender_key(s):
-        cover = math.inf if rate[s] <= 0 else round9((oh[s] - sent[s]) / rate[s])
+        cover = math.inf if rate[s] <= 0 else round9((avail[s] - sent[s]) / rate[s])
         return (-cover, -free[s], s)            # the index is the branch order (rows are sorted by it)
 
     def pick_sender(r, skipped=()):
@@ -696,7 +717,7 @@ def allocate_group(rows: list, branch_order_key=branch_order_key) -> list:
     def emit(kind, s, r, q, to_need):
         lines.append({"Kind": kind, "Franchise": rows[r]["Franchise"], "PartNumber": rows[r]["PartNumber"],
                       "FromBranch": rows[s]["Branch"], "ToBranch": rows[r]["Branch"], "Seq": len(lines) + 1,
-                      "Qty": q, "FromCost": cost[s], "ToCost": cost[r], "Value": round(q * cost[r], 2),
+                      "Qty": q, "FromCost": cost[s], "ToCost": cost[r], "Value": round_half_up(q * cost[r], 2),
                       "FromOnHand": oh[s], "FromExcessKeep": int(rows[s]["ExcessKeep"]),
                       "FromFreeExcess": int(rows[s]["FreeExcess"]), "ToOnHand": oh[r], "ToOnOrder": oo[r],
                       "ToTarget": int(rows[r]["StockingTarget"]), "ToNeed": to_need, "ToRate": rate[r]})
@@ -736,27 +757,37 @@ def allocate_group(rows: list, branch_order_key=branch_order_key) -> list:
     return lines
 
 
-ALLOCATION_COLS = ["Branch", "Franchise", "PartNumber", "oh", "oo", "AppInboundQty", "MonthlyRate", "StockingTarget",
-                   "ExcessKeep", "FreeExcess", "ConvNeed", "RedistEligible", "RedistCap", "cost", "RedistMinValue"]
+ALLOCATION_COLS = ["Branch", "Franchise", "PartNumber", "oh", "oo", "AppInboundQty", "pend", "AppOutboundQty",
+                   "MonthlyRate", "StockingTarget", "ExcessKeep", "FreeExcess", "ConvNeed", "RedistEligible",
+                   "RedistCap", "cost", "RedistMinValue"]
 # Candidate groups (spec Part 3): some branch with FreeExcess > 0 and some branch that receives (another one: a
-# branch with excess has ConvNeed 0 and isn't RedistEligible).
+# branch with excess has ConvNeed 0 and isn't RedistEligible). GROUP BY keeps a NULL Franchise or PartNumber as one
+# group (as Spark's groupBy does), so the join back is null-safe.
 CANDIDATE_GROUPS_SQL = """
     SELECT Franchise, PartNumber FROM part2 GROUP BY ALL
     HAVING max(FreeExcess) > 0 AND bool_or(ConvNeed > 0 OR RedistEligible)
 """
 
 
+def _group_sort_key(key: tuple) -> tuple:
+    """Franchise, then PartNumber, with NULL after every value (sorted() can't compare None with text)."""
+    return tuple((v is None, "" if v is None else v) for v in key)
+
+
 def expected_suggestions(con) -> list:
     """Allocate every candidate group of table part2 (the Part 1-2 result); the suggestion lines, by Franchise,
-    PartNumber, then Seq."""
+    PartNumber (NULL last), then Seq."""
     cur_ = con.execute(f"""SELECT {", ".join("p." + c for c in ALLOCATION_COLS)}
-                           FROM part2 p JOIN ({CANDIDATE_GROUPS_SQL}) g USING (Franchise, PartNumber)""")
+                           FROM part2 p JOIN ({CANDIDATE_GROUPS_SQL}) g
+                             ON p.Franchise IS NOT DISTINCT FROM g.Franchise
+                            AND p.PartNumber IS NOT DISTINCT FROM g.PartNumber""")
     cols = [d[0] for d in cur_.description]
     groups = {}
     for row in cur_.fetchall():
         r = dict(zip(cols, row))
         groups.setdefault((r["Franchise"], r["PartNumber"]), []).append(r)
-    return [line for key in sorted(groups) for line in allocate_group(groups[key], branch_order_key)]
+    return [line for key in sorted(groups, key=_group_sort_key)
+            for line in allocate_group(groups[key], branch_order_key)]
 
 
 def create_suggestion_table(con, name: str, lines: list) -> None:
@@ -780,11 +811,13 @@ EXPECTED_FROM_PART2_SQL = f"""
     ),
     sums AS (SELECT Branch, Franchise, PartNumber, sum(q_in) AS q_in, sum(q_conv) AS q_conv, sum(q_out) AS q_out
              FROM moves GROUP BY ALL)
-    SELECT {", ".join(c for c in OUTPUT_COLS if c not in SUGGESTED_COLS)},
+    SELECT {", ".join("p." + c for c in OUTPUT_COLS if c not in SUGGESTED_COLS)},
            CAST(coalesce(s.q_in, 0) AS INTEGER) AS SuggestedInQty,
            CAST(coalesce(s.q_conv, 0) AS INTEGER) AS SuggestedConvInQty,
            CAST(coalesce(s.q_out, 0) AS INTEGER) AS SuggestedOutQty
-    FROM part2 p LEFT JOIN sums s USING (Branch, Franchise, PartNumber)
+    FROM part2 p LEFT JOIN sums s
+      ON p.Branch IS NOT DISTINCT FROM s.Branch AND p.Franchise IS NOT DISTINCT FROM s.Franchise
+     AND p.PartNumber IS NOT DISTINCT FROM s.PartNumber
 """
 
 
@@ -942,10 +975,14 @@ def load_inputs(con, tier: str, current_month: date) -> list:
     return absent
 
 
-def fingerprint(con, tier: str) -> tuple:
-    p = _path(tier, "presentation", "Fact_NonJD_Reorder")
+def fingerprint(con, tier: str, table: str = "Fact_NonJD_Reorder") -> tuple:
+    return fingerprint_of(con, f"delta_scan('{_path(tier, 'presentation', table)}')")
+
+
+def fingerprint_of(con, source: str) -> tuple:
+    """(rows, order-independent hash of every column except BuiltAtUtc) of `source` (a table or delta_scan)."""
     return con.execute(f"""SELECT count(*), sum(hash(t)::HUGEINT)
-                           FROM (SELECT * EXCLUDE (BuiltAtUtc) FROM delta_scan('{p}')) t""").fetchone()
+                           FROM (SELECT * EXCLUDE (BuiltAtUtc) FROM {source}) t""").fetchone()
 
 
 def main() -> int:
@@ -956,6 +993,11 @@ def main() -> int:
     con = _connect()
     rows, fp = fingerprint(con, a.tier)
     print(f"Fact_NonJD_Reorder ({a.tier}): {rows:,} rows, fingerprint {fp}")
+    try:
+        rows, fp = fingerprint(con, a.tier, "Fact_NonJD_TransferSuggestion")
+        print(f"Fact_NonJD_TransferSuggestion ({a.tier}): {rows:,} rows, fingerprint {fp}")
+    except duckdb.Error as e:
+        print(f"Fact_NonJD_TransferSuggestion ({a.tier}): no fingerprint ({str(e).splitlines()[0][:120]})")
     if a.fingerprint_only:
         return 0
 

@@ -2082,7 +2082,8 @@ def test_conv_need_with_rate_zero_minimum_override():
 @pytest.mark.parametrize("redist,unit,units,cap", [
     (6, "Months", 6, 3), (6, "Months", 5, 3),      # 5/12 * 6 = 2.5 -> 3
     (26, "Weeks", 12, 6),                          # 1 * 26*12/52 = 6
-    (0, "Months", 12, 0), (24, "Months", 1, 2), (6, "Months", 0, 0),
+    (0, "Months", 12, 0), (6, "Months", 0, 0),
+    (24, "Months", 1, 1),                          # ceil(1/12 * 24) = 2, but capped at ExcessKeep 1
 ])
 def test_redist_cap(redist, unit, units, cap):
     con = _con()
@@ -2219,10 +2220,10 @@ def test_one_receiver_from_two_senders_gives_seq_1_2():
 
 
 def _arow(branch, free=0, need=0, eligible=False, cap=0, oh=0, oo=0, inbound=0, rate=1.0, cost=10.0, minval=0.0,
-          target=1, keep=0, pn="P1", franchise="MC"):
+          target=1, keep=0, pn="P1", franchise="MC", pend=0, outbound=0):
     """One allocate_group input row (the Part 1-2 columns it reads)."""
     return {"Branch": branch, "Franchise": franchise, "PartNumber": pn, "oh": oh, "oo": oo, "AppInboundQty": inbound,
-            "MonthlyRate": rate, "StockingTarget": target, "ExcessKeep": keep, "FreeExcess": free, "ConvNeed": need,
+            "pend": pend, "AppOutboundQty": outbound, "MonthlyRate": rate, "StockingTarget": target, "ExcessKeep": keep, "FreeExcess": free, "ConvNeed": need,
             "RedistEligible": eligible, "RedistCap": cap, "cost": cost, "RedistMinValue": minval}
 
 
@@ -2292,8 +2293,8 @@ def test_redistribution_room_counts_conventional_got():
     con = _con()
     _simple_rule(con)                              # target = units
     _br(con, "9", oh=40)
-    _br(con, "1", oh=0, units=12)                  # need 12; cap 24 (rule): room 24 - 12 = 12, not 24
-    _trule(con, 1, redist=24)
+    _br(con, "1", oh=0, units=12)                  # need 12; cap 24 (rule; keep 24): room 24 - 12 = 12, not 24
+    _trule(con, 1, redist=24, excess=24)
     assert _lines(con) == [("C", "9", "1", 12, 1), ("R", "9", "1", 12, 2)]
 
 
@@ -2444,6 +2445,143 @@ def test_insert_order_does_not_change_the_result():
         order = list(range(6))
         rng.shuffle(order)
         assert build(order) == want
+
+
+# ---------------------------------------------------------------------------------------------------------
+# round 2: decisions after the E3 review (spec "Parts 2-3 clarifications")
+# ---------------------------------------------------------------------------------------------------------
+@pytest.mark.parametrize("x,digits,want", [
+    (0.125, 2, 0.13), (0.375, 2, 0.38), (-0.125, 2, -0.12), (12.5, 0, 13.0), (2.5, 0, 3.0), (1.004, 2, 1.0),
+    (59.99999999999999, 9, 60.0), (0.1 * 3, 9, 0.3),
+])
+def test_round_half_up(x, digits, want):
+    assert chk.round_half_up(x, digits) == want
+
+
+def test_round9_is_half_up():
+    assert chk.round9(2.5e-9 + 0) == chk.round_half_up(2.5e-9, 9)
+    assert chk.round9(59.99999999999999) == 60.0
+
+
+def test_value_rounds_half_cents_up():
+    rows = [_arow("1", free=5, rate=0.0, oh=5), _arow("2", need=3, cost=0.125, oh=0)]
+    lines = chk.allocate_group(rows, chk.branch_order_key)
+    assert [(l["Qty"], l["Value"]) for l in lines] == [(3, 0.38)]      # 0.375 -> 0.38 (half to even gives 0.38 too)
+    rows = [_arow("1", free=5, rate=0.0, oh=5), _arow("2", need=1, cost=0.125, oh=0)]
+    assert chk.allocate_group(rows, chk.branch_order_key)[0]["Value"] == 0.13   # half to even would give 0.12
+
+
+def test_sender_cover_tie_decided_by_round9_then_larger_free():
+    # 30 / 0.5 = 60.0; 35 / (7/12) = 59.99999999999999 -> round9 60: a tie, so branch 2 (free 28) sends
+    rows = [_arow("1", free=24, oh=30, rate=0.5), _arow("2", free=28, oh=35, rate=7 / 12),
+            _arow("3", need=5, oh=0, rate=1.0)]
+    lines = chk.allocate_group(rows, chk.branch_order_key)
+    assert [(l["FromBranch"], l["ToBranch"], l["Qty"]) for l in lines] == [("2", "3", 5)]
+
+
+def test_receiver_cover_tie_decided_by_round9_then_larger_need():
+    # receiver covers 60.0 and 59.99999999999999 tie at 60: branch 2's larger need goes first
+    rows = [_arow("9", free=4, oh=4, rate=0.0), _arow("1", need=3, oh=30, rate=0.5),
+            _arow("2", need=4, oh=35, rate=7 / 12)]
+    lines = chk.allocate_group(rows, chk.branch_order_key)
+    assert [(l["ToBranch"], l["Qty"]) for l in lines] == [("2", 4)]
+
+
+def test_sender_cover_counts_pending_and_app_outbound():
+    con = _con()
+    _simple_rule(con)
+    _br(con, "1", oh=30, units=12)                 # free 18, cover 30
+    _br(con, "2", oh=32, units=12, pending=4)      # free 16, cover (32 - 4) / 1 = 28 (32 on on hand alone)
+    _br(con, "3", oh=33, units=12)                 # 4 out by a saved transfer: free 17, cover 29
+    _app_line(con, "Draft", 4, from_b="3", to_b="5X")
+    _br(con, "4", oh=0, units=5)                   # need 5
+    assert _lines(con) == [("C", "1", "4", 5, 1)]
+
+
+def test_allocate_group_sender_cover_uses_pend_and_outbound():
+    rows = [_arow("1", free=10, oh=30, rate=1.0, pend=5), _arow("2", free=10, oh=27, rate=1.0),
+            _arow("3", free=10, oh=40, rate=1.0, outbound=14), _arow("4", need=3)]
+    lines = chk.allocate_group(rows, chk.branch_order_key)
+    assert [l["FromBranch"] for l in lines] == ["2"]          # covers 25, 27, 26
+
+
+def test_redist_cap_is_capped_at_excess_keep():
+    con = _con()
+    _simple_rule(con, woc=4)
+    _br(con, "9", oh=40)
+    _br(con, "1", oh=1, units=12)                  # rate 1: keep ceil(1 * 6) = 6 (rule), RedistMax 24 -> cap 6
+    _trule(con, 1, branch="1", excess=6, redist=24)
+    r = _run(con)[K("P1", "1")]
+    assert (r["ExcessKeep"], r["RedistCap"]) == (6, 6)
+    assert _lines(con) == [("R", "9", "1", 5, 1)]
+
+
+def test_part2_ceil9_is_half_up_in_sql():
+    con = _con()
+    _simple_rule(con, hm=3, woc=0)
+    _br(con, "1", oh=200, units=221)               # 221/3 * (7*12/52) = 119.00000000000001 -> 119
+    _trule(con, 1, excess=7, excess_unit="Weeks", redist=7, redist_unit="Weeks")
+    r = _run(con)[K("P1")]
+    assert (r["ExcessKeep"], r["RedistCap"]) == (119, 119)
+
+
+def test_active_phase_in_lifts_the_no_demand_minimum_exclusion():
+    con = _con()
+    _part(con, "P1", oh=0)
+    _minimum(con, "P1", 3)                         # an Equip minimum with no demand (A5) ...
+    _setting(con, "P1", phase_qty=5)               # ... but an active phase-in
+    _part(con, "P1", branch="9", oh=10)
+    r = _run(con)
+    p = r[K("P1")]
+    assert (p["MinimumNoDemand"], p["PhaseInActive"], p["StockingTarget"], p["ConvNeed"]) == (True, True, 5, 5)
+    assert _lines(con) == [("C", "9", "1", 5, 1)]
+
+
+def test_ended_phase_in_keeps_the_no_demand_minimum_exclusion():
+    con = _con()
+    _part(con, "P1", oh=0)
+    _minimum(con, "P1", 3)
+    _setting(con, "P1", phase_qty=5, phase_ends="2026-10-19")      # expired
+    r = _run(con)[K("P1")]
+    assert (r["PhaseInActive"], r["MinimumNoDemand"], r["ConvNeed"]) == (False, True, 0)
+
+
+def test_receivers_use_the_orders_stock_not_pending():
+    con = _con()
+    _simple_rule(con)
+    _br(con, "9", oh=6)                            # free 6
+    _br(con, "1", oh=4, units=12, pending=3)       # pending not subtracted: need 8, cover 4 (not 11 and 1)
+    _br(con, "2", oh=3, units=12)                  # need 9, cover 3: first
+    r = _run(con)
+    assert (r[K("P1", "1")]["ConvNeed"], r[K("P1", "2")]["ConvNeed"]) == (8, 9)
+    assert _lines(con) == [("C", "9", "2", 6, 1)]
+
+
+def test_null_part_number_group_is_allocated_and_sorted():
+    # Part 1 never gives a NULL part number a need (its joins drop it), so the groups are built by hand: a NULL
+    # PartNumber is one group (as Spark's groupBy makes it), sorted after the others, and doesn't break the sort.
+    con = duckdb.connect()
+    rows = [_arow("9", free=5, oh=5, rate=0.0, pn=None), _arow("1", need=4, pn=None),
+            _arow("9", free=5, oh=5, rate=0.0, pn="A"), _arow("1", need=3, pn="A"),
+            _arow("9", free=5, oh=5, rate=0.0, pn="A", franchise=None), _arow("1", need=2, pn="A", franchise=None)]
+    cols = chk.ALLOCATION_COLS
+    con.execute("CREATE TABLE part2 AS SELECT * FROM (VALUES " + ", ".join(
+        "(" + ", ".join("?" for _ in cols) + ")" for _ in rows) + ") t(" + ", ".join(cols) + ")",
+        [r[c] for r in rows for c in cols])
+    lines = chk.expected_suggestions(con)
+    assert [(l["Franchise"], l["PartNumber"], l["Qty"]) for l in lines] == [("MC", "A", 3), ("MC", None, 4),
+                                                                           (None, "A", 2)]
+
+
+def test_fingerprint_of_excludes_built_at():
+    con = duckdb.connect()
+    con.execute("CREATE TABLE t (A INTEGER, B VARCHAR, BuiltAtUtc TIMESTAMP)")
+    con.execute("INSERT INTO t VALUES (1, 'x', TIMESTAMP '2026-10-27 01:00'), (2, NULL, TIMESTAMP '2026-10-27 01:00')")
+    before = chk.fingerprint_of(con, "t")
+    con.execute("UPDATE t SET BuiltAtUtc = TIMESTAMP '2026-10-28 01:00'")
+    assert chk.fingerprint_of(con, "t") == before and before[0] == 2
+    con.execute("UPDATE t SET B = 'y' WHERE A = 2")
+    assert chk.fingerprint_of(con, "t") != before
 
 
 def test_excluded_branches_never_send_or_receive():

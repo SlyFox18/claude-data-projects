@@ -18,7 +18,8 @@ cases.json = {"version": 1, "seed": N, "groups": [case, ...]}, two kinds of case
      "franchise", "partNumber",
      "rows": [{"Branch", "oh", "oo" (trunc(QuantityOnHand), trunc(OnOrder)), "PendingQty" (raw, may be null,
                fractional or negative), "MonthlyRate" (WindowDemand / HistoryMonths, as Part 1 computes it),
-               "StockingTarget", "ManualOrder", "IsMasked", "MinimumNoDemand", "Cost", and the criteria values as
+               "StockingTarget", "ManualOrder", "IsMasked", "MinimumNoDemand", "PhaseInActive", "Cost", and the
+               criteria values as
                stored: "DealerGroupCode", "SLC", "Source", "VendorCode" (integer), "ProductGroup", "CommodityCode"}],
      "transferRules": [NonJD_TransferRules rows: "Id", "RuleName", "Priority", "Active", "Archived", "Franchise",
                "DealerGroupCode", "Branch", "SLC", "Source", "VendorCode", "ProductGroup", "CommodityCode",
@@ -32,10 +33,16 @@ cases.json = {"version": 1, "seed": N, "groups": [case, ...]}, two kinds of case
   never count.
 
 - "allocation": Part 3 alone. "rows" carry allocate_group's inputs directly: "Branch", "oh", "oo", "AppInboundQty",
-  "MonthlyRate", "StockingTarget", "ExcessKeep", "FreeExcess", "ConvNeed", "RedistEligible", "RedistCap", "Cost",
-  "RedistMinValue" (the row's own rule, used when it sends). They are drawn independently, so a branch can have both
-  FreeExcess and a need, which Part 2 never produces: that is what exercises the never-send-to-itself guard.
-  RedistEligible is only true with MonthlyRate > 0, as in Part 2.
+  "pend" (max(0, trunc(PendingQty))), "AppOutboundQty", "MonthlyRate", "StockingTarget", "ExcessKeep", "FreeExcess",
+  "ConvNeed", "RedistEligible", "RedistCap", "Cost", "RedistMinValue" (the row's own rule, used when it sends). They
+  are drawn independently, so a branch can have both FreeExcess and a need, which Part 2 never produces: that is what
+  exercises the never-send-to-itself guard. RedistEligible is only true with MonthlyRate > 0, as in Part 2. "mode"
+  (random, sender_tie, receiver_tie, got) only says how the case was drawn.
+
+Planted cases (review S1): some groups have senders or receivers whose covers are equal in exact arithmetic but not
+in float64 (e.g. 30 / 0.5 and 35 / (7/12)), so round9 decides the tie; costs with three or more decimals give
+half-cent Values (0.125 x 1 = 0.125); and "got" allocation cases have conventional receivers that are also
+RedistEligible next to other redistribution receivers, so the redistribution order depends on got.
 
 expected.json = {"version": 1, "seed": N, "groups": [{"id", "kind",
     "invalidTransferRules": [[Id, RuleName, reason], ...] (full only),
@@ -47,6 +54,7 @@ expected.json = {"version": 1, "seed": N, "groups": [{"id", "kind",
 """
 import argparse
 import json
+import math
 import os
 import random
 import sys
@@ -58,9 +66,18 @@ import pyarrow as pa
 import nonjd_reorder_check as chk
 
 VERSION = 1
-# 19 included branch codes, unique when trimmed and upper-cased, none of them excluded (D6)
-BRANCH_POOL = ["1", "2", "3", "4", "6", "7", "8", "9", "10", "11", "20", "92", "93", "95", "98", "120", "4A", "7X",
-               "BR"]
+# 21 included branch codes, unique when trimmed and upper-cased, none of them excluded (D6). "02" and "2" share a
+# number, "b" is lower case, " 3" has a leading space (branch order ties and trimming; review S2).
+BRANCH_POOL = ["1", "2", " 3", "4", "6", "7", "8", "9", "10", "11", "20", "92", "93", "95", "98", "120", "4A", "7X",
+               "BR", "02", "b"]
+# Costs whose Value can be a half cent (exact in binary: k/8), and two that are not exact
+TIE_COSTS = [0.125, 0.375, 0.625, 1.875, 2.125, 4.375, 1.005, 2.675]
+# Cover ties: for a cover C (a multiple of 12) and a rate a/b with b dividing C, stock = C * a / b is whole and
+# stock / (a / b) is C in exact arithmetic, but for some (C, a, b) it is C +- 1 ulp in float64 ("noisy"). A planted
+# tie group takes one noisy rate and the rest from every rate valid for C, so only round9 makes them equal.
+TIE_FRACTIONS = {c: [(a, b) for b in range(1, 13) if c % b == 0 for a in range(1, 25) if math.gcd(a, b) == 1]
+                 for c in range(12, 241, 12)}
+NOISY = [(c, a, b) for c, fr in TIE_FRACTIONS.items() for a, b in fr if (c * a // b) / (a / b) != c]
 # build dates: several months for the seasons, both sides of the DST change for the Placed rule
 DATES = ["2026-01-15", "2026-03-08", "2026-06-30", "2026-10-20", "2026-11-01", "2026-12-15"]
 ALLOCATION_SHARE = 0.2
@@ -71,7 +88,7 @@ EXPECTED_ROW_COLS = ["Branch", "AppInboundQty", "AppOutboundQty", "BaseQty", "Tr
 ROW_TYPES = {"CaseId": "INTEGER", "Branch": "VARCHAR", "Franchise": "VARCHAR", "PartNumber": "VARCHAR",
              "oh": "INTEGER", "oo": "INTEGER", "PendingQty": "DOUBLE", "MonthlyRate": "DOUBLE",
              "StockingTarget": "INTEGER", "ManualOrder": "BOOLEAN", "IsMasked": "BOOLEAN",
-             "MinimumNoDemand": "BOOLEAN", "cost": "DOUBLE", "DealerGroupCode": "VARCHAR", "SLC": "VARCHAR",
+             "MinimumNoDemand": "BOOLEAN", "PhaseInActive": "BOOLEAN", "cost": "DOUBLE", "DealerGroupCode": "VARCHAR", "SLC": "VARCHAR",
              "Source": "VARCHAR", "VendorCode": "INTEGER", "ProductGroup": "VARCHAR", "CommodityCode": "VARCHAR"}
 CRITERIA_POOLS = {"DealerGroupCode": [None, "", "COTTON", "cotton ", "PEANUT"], "SLC": [None, "00", " 00", "50E"],
                   "Source": [None, "500", "AL"], "VendorCode": [0, 1234, 77], "ProductGroup": [None, "PG1", "pg1"],
@@ -111,6 +128,7 @@ def _full_row(rng, branch, cost):
         "ManualOrder": rng.random() < 0.05,
         "IsMasked": rng.random() < 0.05,
         "MinimumNoDemand": rate == 0 and target > 0 and rng.random() < 0.2,
+        "PhaseInActive": False,
         "Cost": cost if rng.random() < 0.85 else round(rng.uniform(0.01, 200), 2),
         **{c: rng.choice(pool) for c, pool in CRITERIA_POOLS.items()},
     }
@@ -168,8 +186,13 @@ def _full_case(rng, cid):
     franchise = f"F{cid}"
     pn = rng.choice([f"P{cid}", f"0{cid}", f"X{cid} ", f"p{cid}"])
     branches = rng.sample(BRANCH_POOL, rng.randint(2, 19))
-    cost = rng.choice([round(rng.uniform(0.01, 5), 2), round(rng.uniform(5, 300), 2), 0.1, 3.35, 12.5])
+    cost = rng.choice([round(rng.uniform(0.01, 5), 2), round(rng.uniform(5, 300), 2), 0.1, 3.35, 12.5,
+                       rng.choice(TIE_COSTS)])
     rows = [_full_row(rng, b, cost) for b in branches]
+    for r in rows:              # an active phase-in, often on a minimum with no demand (it lifts A5)
+        r["PhaseInActive"] = rng.random() < (0.4 if r["MinimumNoDemand"] else 0.05)
+    if rng.random() < 0.3:
+        _plant_full_tie(rng, rows)
     n_rules = _pick(rng, [(0, 3), (1, 3), (2, 2), (3, 1), (4, 1)])
     rules = [_rule(rng, cid * 10 + k, franchise, branches) for k in sorted(rng.sample(range(1, 10), n_rules))]
     n_lines = _pick(rng, [(0, 4), (1, 3), (2, 2), (4, 1)])
@@ -178,19 +201,80 @@ def _full_case(rng, cid):
             "rows": rows, "transferRules": rules, "committed": lines}
 
 
+def _tie_rates(rng, k):
+    """k (rate, stock) pairs with stock / rate equal in exact arithmetic; the first is noisy in float64."""
+    cover, a, b = rng.choice(NOISY)
+    pairs = [(a, b)] + [rng.choice(TIE_FRACTIONS[cover]) for _ in range(k - 1)]
+    rng.shuffle(pairs)
+    return [(a / b, cover * a // b) for a, b in pairs]
+
+
+def _plant_full_tie(rng, rows):
+    """Turn 2-4 rows into senders (or receivers) with equal exact covers, plus a plain receiver (or sender), so that
+    round9 decides who goes first."""
+    if len(rows) < 3:
+        return
+    k = rng.randint(2, min(4, len(rows) - 1))
+    picked = rng.sample(range(len(rows)), k + 1)
+    tied, other = picked[:k], picked[k]
+    plain = {"PendingQty": 0, "ManualOrder": False, "IsMasked": False, "MinimumNoDemand": False,
+             "PhaseInActive": False}
+    senders = rng.random() < 0.5
+    for i, (rate, stock) in zip(tied, _tie_rates(rng, k)):
+        if senders:              # free > 0: the 12-month default keeps ceil(rate x 12) <= stock / 2
+            rows[i].update(plain, MonthlyRate=rate, oh=stock, oo=0, StockingTarget=rng.randint(0, 2))
+        else:                    # a need above the stock: target = stock + 1..10
+            oo = rng.randint(0, min(3, stock))
+            rows[i].update(plain, MonthlyRate=rate, oh=stock - oo, oo=oo, StockingTarget=stock + rng.randint(1, 10))
+    if senders:
+        rows[other].update(plain, MonthlyRate=1.0, oh=0, oo=0, StockingTarget=rng.randint(3, 10))
+    else:
+        rows[other].update(plain, MonthlyRate=0.0, oh=rng.randint(1, 8), oo=0, StockingTarget=0)
+
+
+def _alloc_row(rng, b, cost):
+    rate = rng.choice([0.0, 0.0, 0.25, 1 / 3, 1.0, 2.5, 7 / 12])
+    return {"Branch": b, "oh": rng.randint(-2, 40), "oo": _pick(rng, [(0, 6), (rng.randint(1, 5), 2), (-1, 1)]),
+            "AppInboundQty": _pick(rng, [(0, 6), (rng.randint(1, 4), 2)]),
+            "pend": _pick(rng, [(0, 6), (rng.randint(1, 5), 2)]),
+            "AppOutboundQty": _pick(rng, [(0, 6), (rng.randint(1, 5), 2)]), "MonthlyRate": rate,
+            "StockingTarget": rng.randint(0, 20), "ExcessKeep": rng.randint(0, 20),
+            "FreeExcess": _pick(rng, [(0, 5), (rng.randint(1, 15), 4)]),
+            "ConvNeed": _pick(rng, [(0, 5), (rng.randint(1, 15), 4)]),
+            "RedistEligible": rate > 0 and rng.random() < 0.4, "RedistCap": rng.randint(0, 25),
+            "Cost": cost(), "RedistMinValue": _pick(rng, [(0.0, 5), (25.0, 2), (5.0, 1)])}
+
+
 def _allocation_case(rng, cid):
-    rows = []
-    for b in rng.sample(BRANCH_POOL, rng.randint(2, 19)):
-        rate = rng.choice([0.0, 0.0, 0.25, 1 / 3, 1.0, 2.5, 7 / 12])
-        rows.append({"Branch": b, "oh": rng.randint(-2, 40), "oo": _pick(rng, [(0, 6), (rng.randint(1, 5), 2), (-1, 1)]),
-                     "AppInboundQty": _pick(rng, [(0, 6), (rng.randint(1, 4), 2)]), "MonthlyRate": rate,
-                     "StockingTarget": rng.randint(0, 20), "ExcessKeep": rng.randint(0, 20),
-                     "FreeExcess": _pick(rng, [(0, 5), (rng.randint(1, 15), 4)]),
-                     "ConvNeed": _pick(rng, [(0, 5), (rng.randint(1, 15), 4)]),
-                     "RedistEligible": rate > 0 and rng.random() < 0.4, "RedistCap": rng.randint(0, 25),
-                     "Cost": rng.choice([0.1, 1.0, 3.35, 12.5, round(rng.uniform(0.01, 100), 2)]),
-                     "RedistMinValue": _pick(rng, [(0.0, 5), (25.0, 2), (5.0, 1)])})
-    return {"id": cid, "kind": "allocation", "franchise": f"F{cid}", "partNumber": f"P{cid}", "rows": rows}
+    def cost():
+        return rng.choice([0.1, 1.0, 3.35, 12.5, round(rng.uniform(0.01, 100), 2), rng.choice(TIE_COSTS)])
+    mode = _pick(rng, [("random", 4), ("sender_tie", 2), ("receiver_tie", 2), ("got", 2)])
+    branches = rng.sample(BRANCH_POOL, rng.randint(2, 19) if mode == "random" else rng.randint(3, 8))
+    rows = [_alloc_row(rng, b, cost) for b in branches]
+    quiet = {"FreeExcess": 0, "ConvNeed": 0, "RedistEligible": False}
+    if mode == "sender_tie":     # senders with equal exact covers (on oh - pend - out), one receiver
+        for r, (rate, stock) in zip(rows[:-1], _tie_rates(rng, len(rows) - 1)):
+            pend, out = rng.randint(0, 3), rng.randint(0, 3)
+            r.update(quiet, MonthlyRate=rate, oh=stock + pend + out, pend=pend, AppOutboundQty=out,
+                     FreeExcess=rng.randint(1, max(1, stock)))
+        rows[-1].update(quiet, ConvNeed=rng.randint(1, 10), oh=0, oo=0, AppInboundQty=0, MonthlyRate=1.0)
+    elif mode == "receiver_tie":     # receivers with equal exact covers, one sender with little free
+        for r, (rate, stock) in zip(rows[:-1], _tie_rates(rng, len(rows) - 1)):
+            oo = rng.randint(0, min(2, stock))
+            inbound = rng.randint(0, min(2, stock - oo))
+            r.update(quiet, MonthlyRate=rate, oh=stock - oo - inbound, oo=oo, AppInboundQty=inbound,
+                     ConvNeed=rng.randint(1, 10), RedistEligible=rng.random() < 0.5,
+                     RedistCap=stock + rng.randint(0, 20))
+        rows[-1].update(quiet, MonthlyRate=0.0, oh=20, FreeExcess=rng.randint(1, 12))
+    elif mode == "got":      # conventional receivers that are also RedistEligible, beside redistribution-only ones
+        for r in rows[:-1]:
+            rate = rng.choice([0.5, 1.0, 2.0, 7 / 12, 1 / 3])
+            stock = rng.randint(0, 8)
+            r.update(quiet, MonthlyRate=rate, oh=stock, oo=0, AppInboundQty=0, ConvNeed=rng.randint(0, 8),
+                     RedistEligible=True, RedistCap=stock + rng.randint(1, 20))
+        rows[-1].update(quiet, MonthlyRate=0.0, oh=60, FreeExcess=rng.randint(10, 60))
+    return {"id": cid, "kind": "allocation", "mode": mode, "franchise": f"F{cid}", "partNumber": f"P{cid}",
+            "rows": rows}
 
 
 def generate(seed: int, groups: int) -> dict:
@@ -281,7 +365,7 @@ def _expected_full(cases: list) -> dict:
         _insert(con, "fuzz_rows", list(ROW_TYPES),
                 [[c["id"], r["Branch"], c["franchise"], c["partNumber"], r["oh"], r["oo"], r["PendingQty"],
                   r["MonthlyRate"], r["StockingTarget"], r["ManualOrder"], r["IsMasked"], r["MinimumNoDemand"],
-                  r["Cost"]] + [r[k] for k in CRITERIA_POOLS] for c in batch for r in c["rows"]])
+                  r["PhaseInActive"], r["Cost"]] + [r[k] for k in CRITERIA_POOLS] for c in batch for r in c["rows"]])
         _insert(con, "transfer_rules", list(chk.TRANSFER_RULE_COLS),
                 [[t[k] for k in chk.TRANSFER_RULE_COLS] for c in batch for t in c["transferRules"]])
         line_cols = ["TransferId", "LineId", "Status", "PlacedAt", "FromBranch", "ToBranch", "Franchise",
