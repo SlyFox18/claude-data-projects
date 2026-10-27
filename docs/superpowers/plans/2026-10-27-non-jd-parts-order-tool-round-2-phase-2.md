@@ -11,6 +11,8 @@
 > - **E1 done 2026-10-27** (fabric-workspace-docs `39a0538d` dataflows + DAG, `60e7e867` shortcuts). Dev staging synced; all four dataflows ran (no connection binding needed). `NonJD_PartSettings` 1 row with PhaseInQty/PhaseInEnds/PhaseInOn (null); `NonJD_OrderRules` 5 rows with the five criteria (null); `NonJD_TransferRules` and `NonJD_Transfers` 0 rows with the planned schemas. DP_Presentation Dev: lakehouse conflict → Brian accepted incoming; both shortcuts resolve.
 >   - **Deviation:** `Fact_NonJD_TransferSuggestion` is **not** yet in Gold's `produces`, because `dag_check` fails on a declared-but-unsaved table and the dev push runs it in CI. **E5 adds it** in the same commit as the notebook's `.save(...)`, then regenerates TABLE-LINEAGE.
 >   - **To check in phase 3:** `df_NonJD_Transfers_Raw` converts PlacedAt/Created to UTC, treating zone-less values as Pacific (site-local) time. Confirm with the first real saved transfer.
+> - **E2 done 2026-10-27** (`f17adfbb`; 395 tests). Review: nothing critical. The follow-up fix clamps line Qty (spec "Part 1 clarifications"). Dev check: 0 differences on the 28 round-1 columns; the new columns await E4.
+> - **Ben's answers 2026-10-27** (`feedback/2026-10-27-ben-transfer-answers.md`). They change E3, E5 and E9 (allocation order by months of supply), the built-in RedistMinValue (0, was 25), E12 (both kinds ticked, kind badge, franchise filter) and the SharePoint default (**Brian: set `NonJD_TransferRules.RedistMinValue` default to 0**). The spec's A6, A9, A12 and Part 3 are updated, and they win over any older wording below.
 > - **E11b done 2026-10-27** (app `cd8f0dc` + review fixes `6e2418d`; 999 tests, lint clean): dealer group checklist on One-Time Order and Recommended Reorder (`?dgc=`), a "(none)" choice for parts with no group (36% of parts; `-` in the URL, `""` in Parameters), ticking every group = All, requested groups kept while branches load. Known quirk to show in the walkthrough: Select all on the group list reads as All (boxes unticked), because nothing ticked already means every group. Not deployed; ships with 0.5.0.
 >
 > **Brian, 2026-10-27: the test users can live with the app being down or changing for a while, so build once and test on the real thing.** This overrules **X1**:
@@ -293,7 +295,7 @@ git commit -m "Non-JD reference: round 2 criteria, phase-in and committed transf
 
 - [ ] **Step 1: failing tests:**
   - **Transfer rule pick:**
-    - no rows → the built-in default (12 Months, send/receive Yes, 6 Months, $25);
+    - no rows → the built-in default (12 Months, send/receive Yes, 6 Months, $0 minimum);
     - priority, then criteria count, then lowest Id;
     - season;
     - Archived / inactive ignored.
@@ -313,16 +315,16 @@ git commit -m "Non-JD reference: round 2 criteria, phase-in and committed transf
     - RedistCap uses Weeks → months conversion;
     - RedistEligible needs rate > 0 and Target > 0.
   - **Part 3, conventional:**
-    - out-of-stock (raw on hand ≤ 0) first;
+    - the lowest receiver cover first (rate 0: cover 0 with no stock, +∞ otherwise; Ben A6);
     - then the largest need;
     - then branch order (`"2"` before `"10"` before `"4B"`);
-    - the largest-free sender re-picked each iteration;
+    - the sender with the greatest cover ((oh − sent) / rate, +∞ at rate 0; ties by the largest free) re-picked each iteration;
     - one receiver filled from two senders gives two lines with Seq 1, 2;
     - a sender never sends to itself.
   - **Part 3, redistribution:**
     - runs on what conventional left;
     - lowest cover first;
-    - the $25 minimum skips a sender and tries the next;
+    - a rule's RedistMinValue (set to $25 in the test) skips a sender and tries the next; the default 0 skips nothing;
     - room counts got[r] from conventional;
     - RedistMax 0 → no room.
   - **Determinism:** shuffling input rows gives an identical output.
@@ -414,7 +416,7 @@ git commit -m "Non-JD reference: transfer inputs, allocation, suggestions compar
   - a committed inbound and outbound;
   - a group with a conventional line from two senders;
   - a redistribution group;
-  - a group where the $25 minimum skips a sender;
+  - a group where a rule's RedistMinValue ($25 in the fixture) skips a sender;
   - a group with AllowSend false.
 
   The fixture includes the suggestions and committed lines of its groups.
@@ -577,6 +579,8 @@ App only: no Gold, reference, publish or contract change. One-Time is worked out
     - it starts the all-branch load (`engineBranches`, 4 at a time, with the existing progress component);
     - when the load finishes, it switches to the live result, with an info banner naming how many groups are **Changed** since the morning (per-group parity) and, in a details list, why.
   - **Filters:** Kind, From, To, Franchise; the URL keeps them (`?kind=Redistribution&from=92`).
+  - **Kind badge** on every line (Conventional / Redistribution; Ben A12). The **Franchise** filter is at the top of the page, so one franchise can be worked at a time (Ben A13).
+  - **Excess in months:** the sender columns show its excess in units and in months of supply (Ben, A16).
   - **Columns:** Kind, To, part, description, need, From, qty, sender on hand and months of supply before → after, receiver months of supply before → after, value. Default sort: Kind, then To in branch order, then part.
   - **Footer:** "N suggestions, M order lines covered, $X you wouldn't buy" (conventional), plus redistribution lines and value.
   - **CSV:**
@@ -585,7 +589,7 @@ App only: no Gold, reference, publish or contract change. One-Time is worked out
   - **No tick boxes, no save button.** A muted line says "Saving transfers comes in the next version; key these into Equip by hand for now."
   - **Transfer rules in use:**
     - a collapsed section listing the live transfer rules read-only;
-    - "Built-in default: excess above 12 months, receive up to 6 months, $25 minimum for redistribution" when there are none;
+    - "Built-in default: excess above 12 months, receive up to 6 months, no minimum for redistribution" when there are none;
     - invalid rules named with their messages.
 - [ ] **Step 2:** run the tests. Expected: FAIL. Then implement, and run `npm test`, lint and build.
 - [ ] **Step 3:** commit.

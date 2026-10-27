@@ -15,6 +15,14 @@ The architecture doesn't change: Gold (`Build_Gold_NonJD_Reorder`), the DuckDB r
 
 ## Assumptions for Ben
 
+> **Ben answered 2026-10-27** (`projects/part order tool - app/feedback/2026-10-27-ben-transfer-answers.md`).
+> - **Confirmed:** A2, A3, A4, A5, A7, A8, A13, A16, A18.
+> - **Changed:** A6 (order by months of supply), A9 (no minimum by default), A12 (both kinds start ticked, with a kind badge).
+> - **Added:** a franchise filter on transfers (A13).
+> - Unticking a transfer puts the order back to the full quantity, which Part 4 already does.
+>
+> The rows below are updated.
+
 Each one is what we will build unless Ben says otherwise. "Alternative" is the other reasonable reading.
 
 | # | Assumption | Why | Alternative |
@@ -24,13 +32,13 @@ Each one is what we will build unless Ben says otherwise. "Alternative" is the o
 | A3 | **A part with no sales in the window (monthly rate 0):** everything above its target is excess. Its target still protects an Equip minimum, a min override or a phase-in. | Stock that doesn't sell is exactly what should move. It is 77% of all excess dollars ($2.69M of $3.47M). | Treat rate-0 stock as not transferable, or protect parts created in the last N months. |
 | A4 | **Conventional receivers** are lines that would be ordered: target > 0, not Manual order, not masked, and the receiving branch's rule allows receiving. The **need** is the base quantity before the line value limits (target − on hand − on order − transfers already saved in the app). | A transfer replaces a purchase. Line value limits are about purchase lines, so a line too small to buy (Below min value) or cut back by the cap can still be filled by transfer. | Fill only the quantity that would actually be ordered (after the limits). |
 | A5 | **Minimums with no demand (D12) are never conventional receivers.** | They are hidden from the order by default and are on Ben's cleanup list. Moving stock to satisfy a suspect minimum is the wrong default. | Treat them like any other need. |
-| A6 | **Allocation:** each part (franchise + part number) is allocated on its own across all branches. Receivers go in this order: out of stock first, then the largest need, then branch order. Each receiver takes from the sender with the **most free excess** first (ties: branch order), then the next, until its need is filled or nothing is left. | Taking from the largest pile first gives the fewest transfer lines (90% of covered lines need one sender) and drains the most overstocked branch first. Everything is deterministic. | Branch priority, distance or truck route (we have no data for these), or sharing the excess in proportion to need. |
+| A6 | **Allocation (changed by Ben 2026-10-27):** each part (franchise + part number) is allocated on its own across all branches. **Receivers with the lowest months of supply go first** (ties: the largest need, then branch order). Each receiver takes from the sender with the **greatest months of supply** first (ties: the most free excess, then branch order), re-picked after every line, until its need is filled or nothing is left. | Ben: "the branch with the greatest months of supply sends first and with lowest months of supply receives first". Deterministic. | (Was: out of stock first, then the largest need; the sender with the most free excess.) |
 | A7 | **All branch pairs are equal.** No transfer cost, distance or route is used. | There is no such data in Equip or DP. | Ben supplies a list of preferred or blocked branch pairs; it slots into the sender order in A6. |
 | A8 | **Redistribution** runs after conventional, on the excess that is left. A receiver must already stock the part (target > 0), have sales (monthly rate > 0), not be masked or on Manual order, and not itself have excess. It can take stock up to its rule's **receive maximum** (default **6 months of supply**), counting on hand, on order and transfers in. The emptiest receivers (fewest months of supply) go first. | This is Ben's description: started by the over-stocked sender, going to a branch that sells the part and has room above its normal supply. | Let branches that don't stock the part receive, or start from the receivers' side. |
-| A9 | **Redistribution lines below a minimum value are not suggested;** the default is **$25** at the sender's cost. Conventional transfers have no minimum. | With no minimum there are 1,129 lines for $124K. At $25 there are 552 lines for $119K: half the work for 96% of the value. | No minimum, or a minimum quantity. |
+| A9 | **No minimum value for redistribution lines by default (changed by Ben 2026-10-27).** RedistMinValue stays a transfer rule field (default 0), so a minimum can be set per rule later. Conventional transfers have no minimum. | Ben: "There does not need to be a minimum dollar amount. This also needs to be a field that we can change the rules for." | (Was $25: 552 lines for $119K instead of 1,129 lines for $124K.) |
 | A10 | **Transfer rules use the same pick order as order rules** (highest priority, then most criteria, then lowest Id; seasons; Active; Archived). The sender's rule decides its excess and whether it may send. The receiver's rule decides whether it may receive and its receive maximum. | One way of thinking about rules for Ben. Each branch's own part record decides, because group code, SLC and source vary by branch. | One rule per branch pair, or rules that match the sender and receiver together. |
 | A11 | **Rule criteria:** Franchise, Dealer group code, Branch, **SLC**, **Source**, **Vendor code**, **Product group** and **Commodity code**, on transfer rules **and on order rules**. | Ben asked for these on transfer rules and said rules should "still" have them. Adding them to both costs little once Gold reads the fields. Commodity code is empty for non-JD parts today (26 parts) but matters for JD parts later. | Transfer rules only; order rules keep Franchise / Group code / Branch. |
-| A12 | **Conventional suggestions start ticked; redistribution suggestions start unticked.** | Conventional replaces buying. Redistribution is optional housekeeping. | Both unticked (opt in), or both ticked. |
+| A12 | **Conventional and redistribution suggestions both start ticked (changed by Ben 2026-10-27).** Each line carries a **kind badge** (Conventional / Redistribution), and lists can be filtered by kind. | Ben: "Plain and Redistribution should both start ticked", with "an indicator of some kind that differentiated which of the two kinds". | (Was: redistribution unticked.) |
 | A13 | **A ticked transfer becomes a saved "transfer order"** (one per sending + receiving branch, all franchises together) with a CSV export. Someone keys it into Equip and marks it **Entered in Equip**. The app never writes to Equip. | Equip transfers are made by people today. One ticket per branch pair is how Equip groups a transfer (`InSalOrd` type T, lines can mix franchises). | One per branch pair and franchise, like orders. |
 | A14 | **Saved transfers count straight away:** they reduce the sender's free excess and add to the receiver's inbound (so its order drops) while **Draft** or **Exported**, and after **Entered in Equip** until the next morning's data, which then carries them in Equip's own on order and pending. **Cancelled** never counts. | Without this, the next person or the next morning would be shown the same transfer again. | Count only until Exported, or never (rely on Equip only). |
 | A15 | **Transfers already in Equip are not subtracted again.** Equip puts an open transfer into the receiving branch's on order (true for 531 of 534 open transfer lines), so the order already accounts for it. `inboundQty` stays display only. | Subtracting it again would count it twice. | — (it's a data fact, but Ben should know why "inbound" doesn't change the order). |
@@ -153,13 +161,28 @@ Steps 1–7 are unchanged, except that step 1's rule matching knows the new crit
 - Steps 10–14 are unchanged. Status values are unchanged; a line covered by a saved transfer simply comes out OK or with a smaller quantity.
 - **SurplusQty** (step 13) is unchanged; it is shown as **Above target** (A16).
 
+### Part 1 clarifications (E2 review, 2026-10-27)
+
+Gold, the reference and the engine all follow these rules.
+
+- **Committed line quantity:** each line counts as max(0, trunc(Qty)). A null, NaN or infinite Qty counts as 0. Lines are then summed into AppInboundQty and AppOutboundQty.
+- **Lines that never count:**
+  - a Placed line with no PlacedAt;
+  - a line with a blank or null FromBranch or ToBranch (the whole line is dropped);
+  - any Status other than exactly Draft, Exported or Placed.
+
+  A Placed line dated in the future counts.
+- **Invalid PhaseInQty:** only that field is ignored. It is output as null, so there is no phase-in. The row's mask, MinOverride and Manual order still apply. MinOverride itself is not validated by the calculation; the app's form validates it.
+- **VendorCode criterion:** compared as the integer's text. "1234" matches; "01234" and "1234.0" don't. Silver maps a missing vendor code to 0, so a criterion "0" matches parts with no vendor code. The rule editors warn about a leading zero.
+- **Status precedence:** Masked and Manual order show as those statuses even with an active phase-in. PhaseInActive is still reported as true, and the target still includes the phase-in.
+
 ### Part 2: transfer inputs per part (new)
 
 1. **Transfer rule:** pick one rule from `NonJD_TransferRules` exactly as step 1 picks an order rule:
    - Only Active, not Archived, valid and in-season rules count.
    - Order: highest Priority, then most non-blank criteria, then lowest Id.
    - Criteria are compared trimmed and upper-case. A blank criterion matches anything; a blank part value matches only a blank criterion. VendorCode is compared as its integer's text.
-   - No match: the built-in default, `{RuleName "Built-in default", ExcessSupply 12, ExcessUnit Months, AllowSend true, AllowReceive true, RedistMax 6, RedistUnit Months, RedistMinValue 25}`.
+   - No match: the built-in default, `{RuleName "Built-in default", ExcessSupply 12, ExcessUnit Months, AllowSend true, AllowReceive true, RedistMax 6, RedistUnit Months, RedistMinValue 0}`.
 2. **ExcessKeep** = max(Target, ceil9(rate × months(ExcessSupply, ExcessUnit))). With rate 0 this is Target (A3).
 3. **FreeExcess** = AllowSend ? max(0, oh − pend − ExcessKeep − AppOutboundQty) : 0.
 4. **ConvNeed** (A4, A5) = the step 9 base qty, but 0 when any of these holds: AllowReceive is false, ManualOrder, IsMasked, MinimumNoDemand, or FreeExcess > 0.
@@ -170,26 +193,33 @@ Steps 1–7 are unchanged, except that step 1's rule matching knows the new crit
 
 A group is allocated only when some branch has FreeExcess > 0 and some other branch has ConvNeed > 0 or is RedistEligible. Every other group has no suggestions.
 
-**State:** `free[b]` = FreeExcess, `got[b]` = 0 (units suggested into b in this run).
+**State:**
+- `free[b]` = FreeExcess;
+- `got[b]` = 0: units suggested into b in this run;
+- `sent[b]` = 0: units suggested out of b in this run.
+
+`oh` is the truncated on hand used in step 9. **Sender cover** = round9((oh[s] − sent[s]) / rate[s]), or +∞ when rate[s] = 0 (Ben, A6).
 
 **Conventional:**
-1. Receivers = branches with ConvNeed > 0, sorted by:
-   - QuantityOnHand ≤ 0 first (the raw value, as the OutOfStock status uses it);
+1. Receivers = branches with ConvNeed > 0, sorted by (Ben 2026-10-27: lowest months of supply receives first):
+   - **receiver cover** = round9((oh + oo + AppInboundQty) / rate), ascending. With rate 0 the cover is 0 when oh + oo + AppInboundQty ≤ 0, and +∞ otherwise (that receiver's need comes from a minimum or a phase-in);
    - then ConvNeed descending;
    - then branch order.
+
+   The receiver order is fixed before any line is emitted.
 2. For each receiver r, in order, with `want = ConvNeed[r]`: while want > 0 and some sender s ≠ r has free[s] > 0:
-   - Pick s = the largest free[s], ties by branch order. Re-pick on every iteration, because free changes.
-   - q = min(want, free[s]). Emit a line (Conventional, s → r, q). Then free[s] −= q, want −= q, got[r] += q.
+   - Pick s = the greatest sender cover. Ties go to the largest free[s], then branch order. Re-pick on every iteration, because sent and free change.
+   - q = min(want, free[s]). Emit a line (Conventional, s → r, q). Then free[s] −= q, sent[s] += q, want −= q, got[r] += q.
 
 **Redistribution:**
 1. Receivers = RedistEligible branches with room = RedistCap − oh − oo − AppInboundQty − got[r] > 0.
 2. Sort them by:
    - cover = round9((oh + oo + AppInboundQty + got[r]) / rate), ascending;
    - then branch order.
-3. For each receiver r, in order, with `room` as above: go through the senders s ≠ r with free[s] > 0, sorted by free[s] descending (ties by branch order) and re-sorted after each line:
+3. For each receiver r, in order, with `room` as above: go through the senders s ≠ r with free[s] > 0, sorted by sender cover descending (ties: free[s] descending, then branch order) and re-sorted after each line:
    - q = min(room, free[s]).
    - If q × Cost[s] (rounded to 9 decimals) < the sender's RedistMinValue, skip this sender for this receiver and try the next.
-   - Else emit (Redistribution, s → r, q), then free[s] −= q, room −= q.
+   - Else emit (Redistribution, s → r, q), then free[s] −= q, sent[s] += q, room −= q.
    - Stop when room = 0 or no sender is left.
 
 **Output:**
@@ -304,7 +334,7 @@ On the Report Site, created by Brian and verified through Graph.
 | AllowReceive | Yes/No | Yes |
 | RedistMax | Number (1 dp) | 6 |
 | RedistUnit | Choice Weeks / Months | Months |
-| RedistMinValue | Number (2 dp) | 25 |
+| RedistMinValue | Number (2 dp) | 0 (was 25; Ben 2026-10-27) |
 | Notes | Multiple lines | |
 
 Ben starts with **no rows**: the built-in default applies everywhere, and the app shows it as a read-only row. Typical first rules: "Cotton, off season: AllowSend No at branches 2 and 4"; "Branch 92: RedistMax 0".
@@ -388,7 +418,8 @@ Nullable: slc, source, commodityCode, phaseInQty, phaseInEnds, phaseInOn and pha
 - **The transfer step** (Q3): a stepper at the top, **1 Transfers → 2 Order**.
   - **Step 1** opens first when any suggestion goes into the selected branches; otherwise it shows "No transfers suggested" and step 2 is open.
   - It starts loading every branch in the background as soon as the page opens, 4 at a time, with progress. Until every branch is loaded it shows the morning's suggestions from the file, marked "as of this morning".
-  - Two sections: **Conventional** (ticked; A12) and **Redistribution into these branches** (unticked).
+  - Two sections: **Conventional** and **Redistribution into these branches**. Both start ticked (A12), and each line has a kind badge.
+  - A **franchise filter** at the top lets someone work one franchise at a time (Ben, A13).
   - Columns: To (when several branches are selected), part, description, need, From, qty (editable 0..suggested), sender on hand and months of supply before → after, receiver months of supply before → after, value, kind.
   - Footer: "N transfers cover M order lines and $X you won't buy". Ticking previews the effect on step 2's quantities straight away (Part 4).
   - **Save transfers** writes the ticked lines as transfer orders, one per From + To. The app then re-reads the transfer lists and recalculates; the transfers show as "Saved" with links.
