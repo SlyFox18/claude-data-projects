@@ -50,6 +50,7 @@ Each one is what we will build unless Ben says otherwise. "Alternative" is the o
 > - **3:** PendingQty is confirmed as stock committed to open tickets that on hand still counts, so A2 stands.
 > - **2 and 4:** due at phase 2.
 > - **Phase 1 deviation (accepted):** Part Lookup keeps its own slim cache, not the engine loader, because it reads only the reorder files. One-Time and Reorder use `engineBranches.ts`. App 0.4.0 commits: `4d54ca9`, `d878da0`, `f60c7a9`.
+> - **Phase 1 done 2026-10-27:** app 0.4.0 (`3ca2dec`, after review fixes `8940fa9`, `3ca2dec`) is deployed on Fedora. 984 tests pass. Brian's check on Prod data: all 19 branches load in about the 4 s target (was 10–12 s), and nothing looks or feels off. Prod Gold that morning: Barry's six Equip minimum fixes are in (all six show MinimumQty 0, no order); minimums with no demand now total 3,115 lines / $463,388 (were $4.27M on Dev 10-23), and the rest of the suggested order is 2,699 lines / $1,128,063.
 
 Only these need Brian:
 1. **Order of work** (see "Phasing"): multi-branch Reorder first (app only, no data change), then the data, phase-in and contract v3, then the live transfer step. The alternative is to wait for Ben's answers before phase 3, the expensive part. Recommendation: send Ben the assumption table now and build phases 1–2 while he reads it.
@@ -480,3 +481,4 @@ Nullable: slc, source, commodityCode, phaseInQty, phaseInEnds, phaseInOn and pha
 - Combined orders shipped to one branch and transferred on.
 - Creating Equip transfer tickets from the app (only possible if JD's `EquipTransfers` connection is ever shared).
 - Branch-pair costs or routes (A7).
+- **Price change history (Brian, 2026-10-27; a later round, with JD parts).** Show a part's price changes in the app, reusing the separate JD price project's data (`Fact_PartPriceChange` / `_Branch`, `Fact_JDNationalPriceChange`). That data covers JD parts only, so it fits when JD parts join the app; for non-JD parts it depends on how their prices change (question N5 for Ben).

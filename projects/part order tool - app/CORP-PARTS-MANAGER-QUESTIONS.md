@@ -138,6 +138,11 @@ there only because of an Equip minimum on a part with no activity are hidden, an
 - Several branches: when several branches are picked, is the order still one per branch and franchise?
 - Phase-in: set on the part's Settings tab with a quantity and an end date (default 12 months from today)?
 
+**N5. Non-JD price changes (for a later round).** How do non-JD part prices change today? Who updates cost and
+sell price in Equip, how often, and does each vendor send a price file? When JD parts join the tool, we'd like to
+show a part's price change history (we already keep it for JD parts). Would the same be useful for non-JD parts,
+and is there a source we could read it from?
+
 ---
 
 *Rewritten 2026-10-22 for the web app walkthrough; updated 2026-10-26 with Ben's round 1 answers. The
