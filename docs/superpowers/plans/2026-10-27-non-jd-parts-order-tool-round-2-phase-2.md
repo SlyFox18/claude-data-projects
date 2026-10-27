@@ -50,6 +50,10 @@
 >   - From excess in units and months; before → after on hand and months of supply.
 >   - Morning file first, then live with a Changed banner and reasons. CSV export (`Transfer-suggestions-<yyyymmdd>.csv`). Rules-in-use section.
 >   - The 7-day old-draft flag (A23) is left to phase 3.
+> - **E14 done 2026-10-27** (app `c4b3bbe` review fixes, `36bdea0` version 0.5.0; 1,402 tests, lint and build clean). Dist check: real list IDs present, no mock strings. Assets `index-BzOMwydc.js`, `index-C85vtsQN.css`, `msal-Carq_Qhb.js`, `react-CgN2k6j-.js`.
+>   - **Review (whole phase 2 app):** nothing critical. Fixed: Transfers and Part page Sign in again, parity-file errors (only a 404 means missing), untouched phase-in no longer rewritten by a notes save, Transfers paging on back/forward, aria-live.
+>   - **Open (decide before phase 3):** no Refresh re-reads committed lines or transfer rules on a page left open. A failure reading any of the three new lists fails every page, so Brian is confirming the list permissions inherit.
+> - **E13 (mock walkthrough):** not run in a browser by Claude, which has no browser here. Covered by page tests and by Brian clicking through `npm run dev` (mock mode) in E15.
 > - **Ben's answers 2026-10-27** (`feedback/2026-10-27-ben-transfer-answers.md`). They change E3, E5 and E9 (allocation order by months of supply), the built-in RedistMinValue (0, was 25), E12 (both kinds ticked, kind badge, franchise filter) and the SharePoint default (**Brian: set `NonJD_TransferRules.RedistMinValue` default to 0**). The spec's A6, A9, A12 and Part 3 are updated, and they win over any older wording below.
 > - **E11b done 2026-10-27** (app `cd8f0dc` + review fixes `6e2418d`; 999 tests, lint clean): dealer group checklist on One-Time Order and Recommended Reorder (`?dgc=`), a "(none)" choice for parts with no group (36% of parts; `-` in the URL, `""` in Parameters), ticking every group = All, requested groups kept while branches load. Known quirk to show in the walkthrough: Select all on the group list reads as All (boxes unticked), because nothing ticked already means every group. Not deployed; ships with 0.5.0.
 >
