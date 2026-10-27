@@ -19,7 +19,9 @@ def _con():
     con = duckdb.connect()
     con.execute("""CREATE TABLE parts (Branch VARCHAR, Franchise VARCHAR, PartNumber VARCHAR,
                    QuantityOnHand DECIMAL(12,2), OnOrder DECIMAL(12,2), Cost DECIMAL(12,2), DealerGroupCode VARCHAR,
-                   DateLastRequested TIMESTAMP)""")
+                   DateLastRequested TIMESTAMP, PendingQty DECIMAL(12,2), SLC VARCHAR, Source VARCHAR,
+                   CommodityCode VARCHAR, VendorCode INTEGER)""")
+    con.execute("CREATE TABLE inmaster (Branch VARCHAR, Franchise VARCHAR, PartNumber VARCHAR, ProductGroup VARCHAR)")
     con.execute("CREATE TABLE rules (Branch VARCHAR, Franchise VARCHAR, PartNumber VARCHAR, MinimumQty DECIMAL(10,2))")
     con.execute("""CREATE TABLE hist (Branch VARCHAR, Franchise VARCHAR, PartNumber VARCHAR, MonthStart DATE,
                    SalesQty DECIMAL(12,2), RequestCount INTEGER)""")
@@ -27,17 +29,26 @@ def _con():
                    Franchise VARCHAR, DealerGroupCode VARCHAR, Branch VARCHAR, StartMonth DOUBLE, EndMonth DOUBLE,
                    HistoryMonths DOUBLE, MinActiveMonths DOUBLE, WeeksOfCover DOUBLE, DemandBasis VARCHAR,
                    MinDemands DOUBLE, SupplyUnit VARCHAR, MinLineValue DOUBLE, MaxLineValue DOUBLE, Archived BOOLEAN,
+                   SLC VARCHAR, Source VARCHAR, VendorCode VARCHAR, ProductGroup VARCHAR, CommodityCode VARCHAR,
                    Modified TIMESTAMP)""")
     con.execute("""CREATE TABLE settings (Id INTEGER, Branch VARCHAR, Franchise VARCHAR, PartNumber VARCHAR,
                    MinOverride DOUBLE, Masked BOOLEAN, MaskExpires DATE, ManualOrder BOOLEAN, MaskedOn DATE,
-                   Modified TIMESTAMP)""")
+                   PhaseInQty DOUBLE, PhaseInEnds DATE, PhaseInOn DATE, Modified TIMESTAMP)""")
     con.execute("CREATE TABLE transfers (RequestingBranch VARCHAR, PartNumber VARCHAR, OpenQty DOUBLE)")
+    con.execute("""CREATE TABLE app_transfers (TransferId BIGINT, Status VARCHAR, PlacedAt TIMESTAMPTZ,
+                   FromBranch VARCHAR, ToBranch VARCHAR, LineId BIGINT, Franchise VARCHAR, PartNumber VARCHAR,
+                   Qty DOUBLE, Kind VARCHAR, Created TIMESTAMPTZ)""")
     return con
 
 
-def _part(con, pn, oh=0, oo=0, cost=10, branch="1", franchise="MC", dgc=None, last_req=None):
-    con.execute("INSERT INTO parts VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-                [branch, franchise, pn, oh, oo, cost, dgc, last_req])
+def _part(con, pn, oh=0, oo=0, cost=10, branch="1", franchise="MC", dgc=None, last_req=None, pending=None,
+          slc=None, source=None, commodity=None, vendor=None, product_group=None):
+    con.execute("""INSERT INTO parts (Branch, Franchise, PartNumber, QuantityOnHand, OnOrder, Cost, DealerGroupCode,
+                       DateLastRequested, PendingQty, SLC, Source, CommodityCode, VendorCode)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                [branch, franchise, pn, oh, oo, cost, dgc, last_req, pending, slc, source, commodity, vendor])
+    if product_group is not None:
+        con.execute("INSERT INTO inmaster VALUES (?, ?, ?, ?)", [branch, franchise, pn, product_group])
 
 
 def _hist(con, pn, months, branch="1", franchise="MC"):
@@ -48,19 +59,35 @@ def _hist(con, pn, months, branch="1", franchise="MC"):
 
 def _rule(con, rid, name=None, priority=0, active=True, franchise=None, dgc=None, branch=None, start=None,
           end=None, hm=12, md=3, woc=6, basis="UnitsSold", unit=None, minlv=None, maxlv=None, archived=None,
-          mam=None):
+          mam=None, slc=None, source=None, vendor=None, product_group=None, commodity=None):
     con.execute("""INSERT INTO order_rules (Id, RuleName, Priority, Active, Franchise, DealerGroupCode, Branch,
                        StartMonth, EndMonth, HistoryMonths, MinActiveMonths, WeeksOfCover, DemandBasis, MinDemands,
-                       SupplyUnit, MinLineValue, MaxLineValue, Archived, Modified)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, TIMESTAMP '2026-10-01')""",
+                       SupplyUnit, MinLineValue, MaxLineValue, Archived, SLC, Source, VendorCode, ProductGroup,
+                       CommodityCode, Modified)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                           TIMESTAMP '2026-10-01')""",
                 [rid, name or f"R{rid}", priority, active, franchise, dgc, branch, start, end, hm, mam, woc, basis,
-                 md, unit, minlv, maxlv, archived])
+                 md, unit, minlv, maxlv, archived, slc, source, vendor, product_group, commodity])
 
 
 def _setting(con, pn, sid=1, min_override=None, masked=False, expires=None, manual=None, masked_on=None,
-             modified="2026-10-01 10:00", branch="1", franchise="MC"):
-    con.execute("INSERT INTO settings VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                [sid, branch, franchise, pn, min_override, masked, expires, manual, masked_on, modified])
+             modified="2026-10-01 10:00", branch="1", franchise="MC", phase_qty=None, phase_ends=None,
+             phase_on=None):
+    con.execute("""INSERT INTO settings (Id, Branch, Franchise, PartNumber, MinOverride, Masked, MaskExpires,
+                       ManualOrder, MaskedOn, PhaseInQty, PhaseInEnds, PhaseInOn, Modified)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                [sid, branch, franchise, pn, min_override, masked, expires, manual, masked_on, phase_qty,
+                 phase_ends, phase_on, modified])
+
+
+def _app_line(con, status, qty, from_b="92", to_b="1", pn="P1", franchise="MC", placed_at=None, tid=1, lid=None,
+              kind="Conventional"):
+    """One NonJD_Transfers row (a transfer line joined to its header). placed_at is a UTC timestamp text."""
+    lid = lid if lid is not None else con.execute("SELECT count(*) + 1 FROM app_transfers").fetchone()[0]
+    con.execute("""INSERT INTO app_transfers VALUES (?, ?, CAST(? AS TIMESTAMPTZ), ?, ?, ?, ?, ?, ?, ?,
+                   TIMESTAMPTZ '2026-10-19 15:00:00+00')""",
+                [tid, status, placed_at + ":00+00" if placed_at else None, from_b, to_b, lid, franchise, pn, qty,
+                 kind])
 
 
 def _minimum(con, pn, qty, branch="1", franchise="MC"):
@@ -108,7 +135,9 @@ def test_output_columns():
         "MinDemands", "SupplyUnit", "Supply", "SupplyMonths", "MinLineValue", "MaxLineValue",
         "WindowDemand", "UnitsSoldWindow", "DemandCount", "ActiveMonths", "MonthlyRate", "CalcTarget", "EffectiveMin",
         "MinimumNoDemand", "StockingTarget", "ValueCapped", "BelowMinValue", "ManualOrder", "MaskedOn",
-        "IsMasked", "RecommendedOrderQty", "SurplusQty", "InboundTransferQty", "Status"]
+        "IsMasked", "RecommendedOrderQty", "SurplusQty", "InboundTransferQty", "Status",
+        "PendingQty", "SLC", "Source", "CommodityCode", "PhaseInQty", "PhaseInEnds", "PhaseInOn", "PhaseInActive",
+        "PhaseInEndReason", "AppInboundQty", "AppOutboundQty"]
 
 
 def test_scope_excludes_jd_test_franchises_and_zero_cost():
@@ -1227,6 +1256,404 @@ def test_no_transfers_is_zero_inbound():
 
 
 # ---------------------------------------------------------------------------------------------------------
+# round 2 (spec 2026-10-27): A11 rule criteria SLC, Source, VendorCode, ProductGroup, CommodityCode
+# ---------------------------------------------------------------------------------------------------------
+def test_slc_criterion_matches_trimmed_upper_part_value():
+    con = _con()
+    _part(con, "P1", slc=" 00 ")
+    _part(con, "P2", slc="50e")
+    _rule(con, 1, priority=0)
+    _rule(con, 2, priority=10, slc="00")
+    _rule(con, 3, priority=10, slc=" 50E ")
+    r = _run(con)
+    assert r[K("P1")]["RuleId"] == 2 and r[K("P2")]["RuleId"] == 3
+
+
+@pytest.mark.parametrize("criterion", [None, "", "   "])
+def test_blank_slc_criterion_matches_null_slc(criterion):
+    con = _con()
+    _part(con, "P1", slc=None)
+    _rule(con, 1, priority=10, slc=criterion)
+    assert _run(con)[K("P1")]["RuleId"] == 1
+
+
+@pytest.mark.parametrize("part_slc", [None, "", "  "])
+def test_slc_criterion_does_not_match_blank_slc(part_slc):
+    con = _con()
+    _part(con, "P1", slc=part_slc)
+    _rule(con, 1, priority=0)
+    _rule(con, 2, priority=10, slc="00")
+    assert _run(con)[K("P1")]["RuleId"] == 1
+
+
+@pytest.mark.parametrize("crit,part_kw", [
+    (dict(source="al"), dict(source=" AL")),
+    (dict(product_group=" pg1 "), dict(product_group="PG1")),
+    (dict(commodity="ab"), dict(commodity="AB ")),
+])
+def test_other_text_criteria_match_trimmed_upper(crit, part_kw):
+    con = _con()
+    _part(con, "P1", **part_kw)
+    _part(con, "P2")                                   # no value: only blank criteria match
+    _rule(con, 1, priority=0)
+    _rule(con, 2, priority=10, **crit)
+    r = _run(con)
+    assert r[K("P1")]["RuleId"] == 2 and r[K("P2")]["RuleId"] == 1
+
+
+def test_product_group_comes_from_inmaster_per_branch():
+    con = _con()
+    _part(con, "P1", branch="1", product_group="PG1")
+    _part(con, "P1", branch="2", product_group="PG2")
+    _part(con, "P1", branch="3")                       # no InMaster row
+    _rule(con, 1, priority=0)
+    _rule(con, 2, priority=10, product_group="PG1")
+    r = _run(con)
+    assert [r[K("P1", b)]["RuleId"] for b in ("1", "2", "3")] == [2, 1, 1]
+
+
+@pytest.mark.parametrize("criterion,matches", [("1234", True), (" 1234 ", True), ("01234", False),
+                                               ("1234.0", False), ("123", False)])
+def test_vendor_code_criterion_compared_as_the_integers_text(criterion, matches):
+    con = _con()
+    _part(con, "P1", vendor=1234)
+    _rule(con, 1, priority=0)
+    _rule(con, 2, priority=10, vendor=criterion)
+    assert _run(con)[K("P1")]["RuleId"] == (2 if matches else 1)
+
+
+def test_vendor_code_zero_matches_criterion_zero():
+    con = _con()
+    _part(con, "P1", vendor=0)
+    _rule(con, 2, priority=10, vendor="0")
+    assert _run(con)[K("P1")]["RuleId"] == 2
+
+
+def test_four_criteria_beat_three_at_equal_priority():
+    con = _con()
+    _part(con, "P1", dgc="COTTON", slc="00", source="500", vendor=77, product_group="PG", commodity="CC")
+    _rule(con, 3, priority=5, franchise="MC", dgc="COTTON", branch="1")
+    _rule(con, 8, priority=5, slc="00", source="500", vendor="77", commodity="CC")
+    _rule(con, 9, priority=5, slc="00", source="500", vendor="77", product_group="PG", commodity="CC")
+    assert _run(con)[K("P1")]["RuleId"] == 9                # 5 criteria beats 4 beats 3
+
+
+def test_eight_criteria_counted():
+    con = _con()
+    _part(con, "P1", dgc="G", slc="S", source="O", vendor=1, product_group="P", commodity="C")
+    _rule(con, 1, priority=5, franchise="MC", dgc="G", branch="1", slc="S", source="O", vendor="1",
+          product_group="P")                                                    # 7
+    _rule(con, 2, priority=5, franchise="MC", dgc="G", branch="1", slc="S", source="O", vendor="1",
+          product_group="P", commodity="C")                                     # 8
+    assert _run(con)[K("P1")]["RuleId"] == 2
+
+
+def test_new_criteria_values_are_output_raw():
+    con = _con()
+    _part(con, "P1", pending=2.5, slc=" 00 ", source="al", commodity=None)
+    r = _run(con)[K("P1")]
+    assert (r["PendingQty"], r["SLC"], r["Source"], r["CommodityCode"]) == (2.5, " 00 ", "al", None)
+
+
+# ---------------------------------------------------------------------------------------------------------
+# round 2: step 7b (phase-in) and step 8 (target with phase-in); A18, A19
+# ---------------------------------------------------------------------------------------------------------
+def _phase(con, pn="P1", qty=5, ends="2026-10-21", on="2026-10-01", md=None, demands=0, **setting_kw):
+    """A part with `demands` requests last month (0 = no history) and a phase-in setting; md = a catch-all rule's
+    MinDemands (None = the built-in default, MinDemands 3)."""
+    _part(con, pn)
+    if demands:
+        _hist(con, pn, {"2026-09-01": (demands, demands)})
+    if md is not None:
+        _rule(con, 1, md=md, woc=52)
+    _setting(con, pn, phase_qty=qty, phase_ends=ends, phase_on=on, **setting_kw)
+    return _run(con)[K(pn)]
+
+
+def test_phase_in_active_sets_target():
+    r = _phase(_con(), qty=5, ends="2026-10-21")          # ends tomorrow, 0 demands, MinDemands 3
+    assert (r["PhaseInActive"], r["PhaseInEndReason"]) == (True, None)
+    assert (r["PhaseInQty"], r["PhaseInEnds"], r["PhaseInOn"]) == (5, date(2026, 10, 21), date(2026, 10, 1))
+    assert (r["CalcTarget"], r["StockingTarget"], r["RecommendedOrderQty"], r["Status"]) == (0, 5, 5, "OutOfStock")
+
+
+@pytest.mark.parametrize("ends", ["2026-10-20", None])
+def test_phase_in_ending_today_or_open_ended_is_active(ends):
+    r = _phase(_con(), ends=ends)
+    assert r["PhaseInActive"] is True and r["StockingTarget"] == 5
+
+
+def test_phase_in_expired_yesterday():
+    r = _phase(_con(), ends="2026-10-19")
+    assert (r["PhaseInActive"], r["PhaseInEndReason"], r["StockingTarget"]) == (False, "Expired", 0)
+    assert r["PhaseInQty"] == 5                            # still shown
+
+
+def test_phase_in_met_criteria():
+    r = _phase(_con(), md=3, demands=3)
+    assert (r["PhaseInActive"], r["PhaseInEndReason"]) == (False, "MetCriteria")
+    assert r["StockingTarget"] == r["CalcTarget"] == 3
+
+
+def test_phase_in_below_min_demands_stays_active():
+    r = _phase(_con(), qty=8, md=3, demands=2)
+    assert (r["PhaseInActive"], r["CalcTarget"], r["StockingTarget"]) == (True, 0, 8)
+
+
+def test_phase_in_expired_wins_over_met_criteria():
+    r = _phase(_con(), ends="2026-10-01", md=3, demands=3)
+    assert (r["PhaseInActive"], r["PhaseInEndReason"]) == (False, "Expired")
+
+
+def test_phase_in_min_demands_zero_needs_one_demand():
+    r = _phase(_con(), md=0)                               # max(MinDemands, 1) = 1; 0 demands -> still active
+    assert (r["PhaseInActive"], r["PhaseInEndReason"], r["StockingTarget"]) == (True, None, 5)
+    r = _phase(_con(), md=0, demands=1)
+    assert (r["PhaseInActive"], r["PhaseInEndReason"]) == (False, "MetCriteria")
+
+
+@pytest.mark.parametrize("qty", [None, 0])
+def test_phase_in_qty_blank_or_zero_has_no_reason(qty):
+    r = _phase(_con(), qty=qty, ends="2026-10-01", md=3, demands=3)
+    assert (r["PhaseInActive"], r["PhaseInEndReason"], r["PhaseInQty"]) == (False, None, None)
+
+
+def test_phase_in_without_settings_row():
+    con = _con()
+    _part(con, "P1")
+    r = _run(con)[K("P1")]
+    assert (r["PhaseInQty"], r["PhaseInEnds"], r["PhaseInOn"], r["PhaseInActive"], r["PhaseInEndReason"]) == \
+        (None, None, None, False, None)
+
+
+@pytest.mark.parametrize("kw,status", [(dict(masked=True), "Masked"), (dict(manual=True), "ManualOrder")])
+def test_mask_and_manual_order_beat_phase_in(kw, status):
+    r = _phase(_con(), **kw)
+    assert (r["PhaseInActive"], r["StockingTarget"], r["RecommendedOrderQty"], r["Status"]) == (True, 5, 0, status)
+
+
+def test_phase_in_uses_latest_settings_row():
+    con = _con()
+    _part(con, "P1")
+    _setting(con, "P1", sid=1, phase_qty=5, modified="2026-10-01 10:00")
+    _setting(con, "P1", sid=2, phase_qty=None, modified="2026-10-02 10:00")      # cleared
+    r = _run(con)[K("P1")]
+    assert (r["PhaseInQty"], r["PhaseInActive"], r["StockingTarget"]) == (None, False, 0)
+
+
+@pytest.mark.parametrize("qty,cal_units,minimum,target", [
+    (4, 10, None, 10),       # CalcTarget above the phase-in
+    (15, 10, None, 15),      # phase-in above CalcTarget
+    (4, 0, 6.5, 7),          # minimum (rounded up) above the phase-in
+    (9, 0, 6.5, 9),          # phase-in above the minimum
+])
+def test_target_is_largest_of_calc_minimum_and_phase_in(qty, cal_units, minimum, target):
+    # MinDemands 0 with units sold but no requests: CalcTarget > 0 while DemandCount 0 < 1 keeps the phase-in on
+    con = _con()
+    _part(con, "P1")
+    if cal_units:
+        _hist(con, "P1", {"2026-09-01": (cal_units, 0)})
+    if minimum is not None:
+        _minimum(con, "P1", minimum)
+    _rule(con, 1, md=0, woc=52)
+    _setting(con, "P1", phase_qty=qty)
+    r = _run(con)[K("P1")]
+    assert r["PhaseInActive"] is True and r["CalcTarget"] == cal_units and r["StockingTarget"] == target
+
+
+def test_phase_in_changes_surplus():
+    con = _con()
+    _part(con, "P1", oh=7)
+    _setting(con, "P1", phase_qty=5)
+    r = _run(con)[K("P1")]
+    assert (r["StockingTarget"], r["SurplusQty"], r["Status"]) == (5, 2, "OK")
+
+
+# ---------------------------------------------------------------------------------------------------------
+# round 2: validation of part settings (PhaseInQty)
+# ---------------------------------------------------------------------------------------------------------
+PHASE_QTY = "PhaseInQty must be a whole number 1-99999"
+
+
+@pytest.mark.parametrize("qty", [0, 1.5, 100000, -1, float("nan"), float("inf")])
+def test_invalid_phase_in_qty_is_ignored_and_reported(qty):
+    con = _con()
+    _part(con, "P1")
+    _setting(con, "P1", sid=7, phase_qty=qty)
+    r = _run(con)[K("P1")]
+    assert (r["PhaseInQty"], r["PhaseInActive"], r["PhaseInEndReason"], r["StockingTarget"]) == (None, False, None, 0)
+    assert chk.invalid_settings(con) == [(7, "1", "MC", "P1", PHASE_QTY)]
+
+
+@pytest.mark.parametrize("qty", [None, 1, 99999])
+def test_valid_phase_in_qty_not_reported(qty):
+    con = _con()
+    _setting(con, "P1", phase_qty=qty)
+    assert chk.invalid_settings(con) == []
+
+
+def test_invalid_settings_checks_only_the_latest_row_per_part():
+    con = _con()
+    _setting(con, "P1", sid=1, phase_qty=1.5, modified="2026-10-01 10:00")      # superseded
+    _setting(con, "P1", sid=2, phase_qty=3, modified="2026-10-02 10:00")
+    _setting(con, "P2", sid=3, phase_qty=0, modified="2026-10-01 10:00")
+    _setting(con, "P2", sid=4, phase_qty=0, branch="2")
+    assert chk.invalid_settings(con) == [(3, "1", "MC", "P2", PHASE_QTY), (4, "2", "MC", "P2", PHASE_QTY)]
+
+
+# ---------------------------------------------------------------------------------------------------------
+# round 2: step 8b (committed app transfers, A14) and step 9
+# ---------------------------------------------------------------------------------------------------------
+def _committed(con, oh=0, oo=0):
+    """Part P1 at branch 1 with target 10 under _simple_rule; returns a function giving its output row, to call
+    once the lines are added."""
+    _stocked(con, "P1", 10, oh=oh, oo=oo)
+    return lambda: _run(con)[K("P1")]
+
+
+def test_draft_and_exported_lines_count_and_sum():
+    con = _con()
+    row = _committed(con)
+    _app_line(con, "Draft", 2)
+    _app_line(con, "Exported", 3, tid=2)
+    _app_line(con, "Draft", 1, kind="Redistribution", tid=3)
+    r = row()
+    assert (r["AppInboundQty"], r["AppOutboundQty"]) == (6, 0)
+    assert (r["StockingTarget"], r["RecommendedOrderQty"]) == (10, 4)
+
+
+@pytest.mark.parametrize("placed_at,counts", [
+    ("2026-10-20 06:00", True),     # 01:00 CDT on the build's Central date
+    ("2026-10-20 05:00", True),     # 00:00 CDT: the first moment of the Central day
+    ("2026-10-20 04:59", False),    # 23:59 CDT the day before, although the UTC date is the build date
+    ("2026-10-21 03:00", True),     # 22:00 CDT on the build date, although the UTC date is the next day
+    ("2026-10-19 12:00", False),    # the day before
+    (None, False),                  # Placed without a PlacedAt
+])
+def test_placed_counts_only_from_the_builds_central_date(placed_at, counts):
+    con = _con()
+    row = _committed(con)
+    _app_line(con, "Placed", 4, placed_at=placed_at)
+    assert row()["AppInboundQty"] == (4 if counts else 0)
+
+
+def test_placed_central_date_in_winter_time():
+    con = _con()
+    row = _committed(con)
+    _app_line(con, "Placed", 4, placed_at="2026-12-15 05:30")         # 23:30 CST on 12-14
+    _app_line(con, "Placed", 2, placed_at="2026-12-15 06:30", tid=2)  # 00:30 CST on 12-15
+    assert _run(con, cur=date(2026, 12, 1), today=date(2026, 12, 15))[K("P1")]["AppInboundQty"] == 2
+
+
+@pytest.mark.parametrize("status", ["Cancelled", "draft", "", None, "Entered in Equip"])
+def test_other_statuses_never_count(status):
+    con = _con()
+    row = _committed(con)
+    _app_line(con, status, 4, placed_at="2026-10-20 12:00")
+    assert row()["AppInboundQty"] == 0
+
+
+def test_branch_compared_trimmed_and_case_insensitive():
+    con = _con()
+    _part(con, "P1", branch="7X")
+    _part(con, "P1", branch="2")
+    _app_line(con, "Draft", 3, from_b=" 2 ", to_b="7x ")
+    _app_line(con, "Draft", 1, from_b="7x", to_b="2", tid=2)
+    r = _run(con)
+    assert (r[K("P1", "7X")]["AppInboundQty"], r[K("P1", "7X")]["AppOutboundQty"]) == (3, 1)
+    assert (r[K("P1", "2")]["AppInboundQty"], r[K("P1", "2")]["AppOutboundQty"]) == (1, 3)
+
+
+def test_franchise_and_part_number_compared_exactly():
+    con = _con()
+    _part(con, "X")
+    _part(con, "X ")
+    _app_line(con, "Draft", 1, pn="X")
+    _app_line(con, "Draft", 2, pn="X ", tid=2)
+    _app_line(con, "Draft", 4, pn="x", tid=3)
+    _app_line(con, "Draft", 8, pn="X", franchise="mc", tid=4)
+    _app_line(con, "Draft", 16, pn=" X", tid=5)
+    r = _run(con)
+    assert r[K("X")]["AppInboundQty"] == 1 and r[K("X ")]["AppInboundQty"] == 2
+
+
+@pytest.mark.parametrize("other", ["12", " 4b ", "93C", "5", "97"])
+def test_lines_to_or_from_excluded_branches_are_ignored(other):
+    con = _con()
+    _part(con, "P1")
+    _app_line(con, "Draft", 3, from_b=other, to_b="1")
+    _app_line(con, "Draft", 2, from_b="1", to_b=other, tid=2)
+    r = _run(con)[K("P1")]
+    assert (r["AppInboundQty"], r["AppOutboundQty"]) == (0, 0)
+
+
+def test_outbound_sums_lines_to_several_branches():
+    con = _con()
+    _part(con, "P1", oh=20)
+    _app_line(con, "Draft", 3, from_b="1", to_b="2")
+    _app_line(con, "Exported", 4, from_b="1", to_b="3", tid=2)
+    _app_line(con, "Placed", 5, from_b="1", to_b="2", placed_at="2026-10-20 15:00", tid=3)
+    _app_line(con, "Placed", 6, from_b="1", to_b="2", placed_at="2026-10-18 15:00", tid=4)
+    r = _run(con)[K("P1")]
+    assert (r["AppInboundQty"], r["AppOutboundQty"]) == (0, 12)
+
+
+def test_null_qty_line_counts_zero():
+    con = _con()
+    row = _committed(con)
+    _app_line(con, "Draft", None)
+    _app_line(con, "Draft", 2, tid=2)
+    assert row()["AppInboundQty"] == 2
+
+
+def test_no_lines_is_zero():
+    con = _con()
+    r = _committed(con)()
+    assert (r["AppInboundQty"], r["AppOutboundQty"]) == (0, 0)
+
+
+@pytest.mark.parametrize("oh,oo,inbound,qty,status", [
+    (2, 1, 3, 4, "Reorder"),       # 10 - 2 - 1 - 3
+    (0, 0, 3, 7, "OutOfStock"),
+    (2, 1, 7, 0, "OK"),            # exactly covered
+    (2, 1, 20, 0, "OK"),           # never negative
+])
+def test_base_qty_subtracts_app_inbound(oh, oo, inbound, qty, status):
+    con = _con()
+    row = _committed(con, oh=oh, oo=oo)
+    _app_line(con, "Draft", inbound)
+    r = row()
+    assert (r["RecommendedOrderQty"], r["Status"]) == (qty, status)
+    assert r["SurplusQty"] == max(0, oh - 10)                 # unchanged by transfers
+
+
+def test_target_zero_ignores_app_inbound():
+    con = _con()
+    _part(con, "P1")
+    _app_line(con, "Draft", 3)
+    r = _run(con)[K("P1")]
+    assert (r["AppInboundQty"], r["StockingTarget"], r["RecommendedOrderQty"], r["Status"]) == \
+        (3, 0, 0, "NoRecentActivity")
+
+
+def test_app_inbound_applies_before_line_value_limits():
+    con = _con()
+    _stocked(con, "P1", 10, minlv=50)                  # 10 x $10 = $100 alone; 4 x $10 = $40 < $50 after inbound
+    _app_line(con, "Draft", 6)
+    r = _run(con)[K("P1")]
+    assert (r["RecommendedOrderQty"], r["BelowMinValue"], r["Status"]) == (0, True, "BelowMinValue")
+
+
+def test_phase_in_with_app_inbound():
+    con = _con()
+    _part(con, "P1", oh=1)
+    _setting(con, "P1", phase_qty=5)
+    _app_line(con, "Draft", 2)
+    r = _run(con)[K("P1")]
+    assert (r["StockingTarget"], r["RecommendedOrderQty"], r["Status"]) == (5, 2, "Reorder")
+
+
+# ---------------------------------------------------------------------------------------------------------
 # reading staging tables that don't have the round 1 columns yet
 # ---------------------------------------------------------------------------------------------------------
 def test_select_list_fills_missing_optional_columns_with_typed_nulls():
@@ -1265,8 +1692,10 @@ def test_reference_runs_on_todays_columns():
     con.execute("ALTER TABLE order_rules_src DROP COLUMN MinDemands")
     for col in ("SupplyUnit", "MinLineValue", "MaxLineValue", "Archived"):
         con.execute(f"ALTER TABLE order_rules_src DROP COLUMN {col}")
-    con.execute("ALTER TABLE settings_src DROP COLUMN ManualOrder")
-    con.execute("ALTER TABLE settings_src DROP COLUMN MaskedOn")
+    for col in ("SLC", "Source", "VendorCode", "ProductGroup", "CommodityCode"):
+        con.execute(f"ALTER TABLE order_rules_src DROP COLUMN {col}")
+    for col in ("ManualOrder", "MaskedOn", "PhaseInQty", "PhaseInEnds", "PhaseInOn"):
+        con.execute(f"ALTER TABLE settings_src DROP COLUMN {col}")
     con.execute("""INSERT INTO order_rules_src (Id, RuleName, Priority, Active, HistoryMonths, MinActiveMonths,
                    WeeksOfCover, DemandBasis) VALUES (1, 'Default', 0, true, 12, 3, 6, 'UnitsSold')""")
     con.execute("INSERT INTO settings_src (Id, Branch, Franchise, PartNumber, Masked) VALUES (1,'1','MC','P1',true)")
@@ -1281,6 +1710,16 @@ def test_reference_runs_on_todays_columns():
     assert r[K("P1")]["Status"] == "Masked"
     assert r[K("P2")]["RuleName"] == "Built-in default" and r[K("P2")]["CalcTarget"] == 3
     assert chk.invalid_rules(con) == [(1, "Default", "MinDemands is missing")]
+    assert r[K("P1")]["PhaseInQty"] is None and r[K("P1")]["PhaseInActive"] is False
+
+
+def test_rule_and_settings_columns_include_round_2():
+    assert chk.RULE_COLS[1] == {"MinDemands": "DOUBLE", "SupplyUnit": "VARCHAR", "MinLineValue": "DOUBLE",
+                                "MaxLineValue": "DOUBLE", "Archived": "BOOLEAN", "SLC": "VARCHAR",
+                                "Source": "VARCHAR", "VendorCode": "VARCHAR", "ProductGroup": "VARCHAR",
+                                "CommodityCode": "VARCHAR"}
+    assert chk.SETTINGS_COLS[1] == {"ManualOrder": "BOOLEAN", "MaskedOn": "DATE", "PhaseInQty": "DOUBLE",
+                                    "PhaseInEnds": "DATE", "PhaseInOn": "DATE"}
 
 
 # ---------------------------------------------------------------------------------------------------------
@@ -1295,13 +1734,19 @@ CMP_COLS = [("Branch", "VARCHAR"), ("Franchise", "VARCHAR"), ("PartNumber", "VAR
             ("StockingTarget", "INTEGER"), ("ValueCapped", "BOOLEAN"), ("BelowMinValue", "BOOLEAN"),
             ("ManualOrder", "BOOLEAN"), ("MaskedOn", "DATE"), ("IsMasked", "BOOLEAN"),
             ("RecommendedOrderQty", "INTEGER"), ("SurplusQty", "INTEGER"), ("InboundTransferQty", "DOUBLE"),
-            ("Status", "VARCHAR")]
+            ("Status", "VARCHAR"), ("PendingQty", "DOUBLE"), ("SLC", "VARCHAR"), ("Source", "VARCHAR"),
+            ("CommodityCode", "VARCHAR"), ("PhaseInQty", "INTEGER"), ("PhaseInEnds", "DATE"), ("PhaseInOn", "DATE"),
+            ("PhaseInActive", "BOOLEAN"), ("PhaseInEndReason", "VARCHAR"), ("AppInboundQty", "INTEGER"),
+            ("AppOutboundQty", "INTEGER")]
 BASE = dict(Branch="1", Franchise="MC", PartNumber="A", RuleId=1, RuleName="Default", DemandBasis="UnitsSold",
             HistoryMonths=12, MinDemands=3, SupplyUnit="Weeks", Supply=12.0, SupplyMonths=12 * 12 / 52,
             MinLineValue=10.0, MaxLineValue=500.0, WindowDemand=3.0, UnitsSoldWindow=3.0, DemandCount=4, ActiveMonths=2,
             MonthlyRate=0.25, CalcTarget=1, EffectiveMin=0.0, MinimumNoDemand=False, StockingTarget=2,
             ValueCapped=False, BelowMinValue=False, ManualOrder=False, MaskedOn=date(2026, 10, 5), IsMasked=False,
-            RecommendedOrderQty=1, SurplusQty=0, InboundTransferQty=0.0, Status="Reorder")
+            RecommendedOrderQty=1, SurplusQty=0, InboundTransferQty=0.0, Status="Reorder",
+            PendingQty=1.0, SLC="00", Source="500", CommodityCode=None, PhaseInQty=5,
+            PhaseInEnds=date(2027, 10, 1), PhaseInOn=date(2026, 10, 1), PhaseInActive=True, PhaseInEndReason=None,
+            AppInboundQty=2, AppOutboundQty=0)
 
 
 def test_compare_covers_every_output_column():
@@ -1351,6 +1796,11 @@ def test_compare_flags_duplicate_keys():
     ("WindowDemand", 3.01), ("WindowDemand", None), ("UnitsSoldWindow", 2.0), ("UnitsSoldWindow", None),
     ("MonthlyRate", 0.2501), ("MonthlyRate", None), ("EffectiveMin", 1.0), ("EffectiveMin", None),
     ("InboundTransferQty", 0.5), ("InboundTransferQty", None),
+    ("PendingQty", 2.0), ("PendingQty", None), ("SLC", "00 "), ("SLC", None), ("Source", "AL"), ("Source", None),
+    ("CommodityCode", "X"), ("PhaseInQty", 6), ("PhaseInQty", None), ("PhaseInEnds", date(2027, 10, 2)),
+    ("PhaseInEnds", None), ("PhaseInOn", date(2026, 10, 2)), ("PhaseInOn", None), ("PhaseInActive", False),
+    ("PhaseInActive", None), ("PhaseInEndReason", "Expired"), ("AppInboundQty", 3), ("AppInboundQty", None),
+    ("AppOutboundQty", 1), ("AppOutboundQty", None),
 ])
 def test_compare_flags_each_compared_column(col, value):
     r = _cmp([{}], [{col: value}])
@@ -1358,7 +1808,21 @@ def test_compare_flags_each_compared_column(col, value):
 
 
 @pytest.mark.parametrize("col", ["Supply", "SupplyMonths", "MinLineValue", "MaxLineValue", "WindowDemand",
-                                 "UnitsSoldWindow", "MonthlyRate", "EffectiveMin", "InboundTransferQty"])
+                                 "UnitsSoldWindow", "MonthlyRate", "EffectiveMin", "InboundTransferQty",
+                                 "PendingQty"])
 def test_compare_tolerates_tiny_float_differences(col):
     r = _cmp([{}], [{col: BASE[col] + 1e-9}])
     assert r["different"] == 0
+
+
+def test_compare_limited_to_columns_ignores_the_others():
+    con = duckdb.connect()
+    ddl = ", ".join(f"{c} {t}" for c, t in CMP_COLS)
+    marks = ", ".join("?" for _ in CMP_COLS)
+    for name, row in (("gold", {}), ("expected", {"PhaseInQty": 9, "PendingQty": 7.0})):
+        con.execute(f"CREATE TABLE {name} ({ddl})")
+        con.execute(f"INSERT INTO {name} VALUES ({marks})", [{**BASE, **row}[c] for c, _ in CMP_COLS])
+    shared = [c for c, _ in CMP_COLS if c not in ("PhaseInQty", "PendingQty")]
+    assert chk.compare(con, "gold", "expected", shared)["different"] == 0
+    assert chk.compare(con, "gold", "expected")["different"] == 1
+    assert chk.compare(con, "gold", "expected", ["Branch", "Franchise", "PartNumber"])["different"] == 0

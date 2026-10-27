@@ -6,18 +6,24 @@ Re-implements the reorder rules in DuckDB SQL over the same inputs, then compare
 Build_Gold_NonJD_Reorder wrote. The rules are Plan C round 1 (docs/superpowers/plans/2026-10-26-non-jd-parts-order-
 tool-round-1.md, "The calculation", "Validation" and decisions D13/D14), built on spec 2026-10-20 section 5.5: demand-count stocking
 (MinDemands), supply in weeks or months, the Equip minimum always applying, a target of 0 meaning order 0, excluded
-branches, line value limits, a mask that ends at the next demand, Manual Order and archived rules. Also prints a
-fingerprint of the Gold table (excluding BuiltAtUtc) for run-twice determinism checks, and lists the rules that are
-skipped as invalid.
+branches, line value limits, a mask that ends at the next demand, Manual Order and archived rules. Round 2 Part 1
+(spec docs/superpowers/specs/2026-10-27-non-jd-parts-order-tool-round-2-design.md, "The calculation" Part 1 and
+"Validation"; plan 2026-10-27-...-round-2-phase-2.md Task E2) adds the A11 rule criteria (SLC, Source, VendorCode,
+ProductGroup, CommodityCode), phase-in (step 7b, A18/A19), the phase-in target (step 8), committed app transfers
+(step 8b, A14) and their subtraction from the base quantity (step 9). Also prints a fingerprint of the Gold table
+(excluding BuiltAtUtc) for run-twice determinism checks, and lists the rules and part settings that are skipped as
+invalid.
 
 Usage:
     python nonjd_reorder_check.py --tier dev            # compare, exit 1 on any mismatch
     python nonjd_reorder_check.py --tier dev --fingerprint-only
 
 Run straight after the DP refresh: Silver inputs are read live, so an intraday refresh between the Gold build
-and this check causes false mismatches. The round 1 list columns (MinDemands, SupplyUnit, MinLineValue,
-MaxLineValue, Archived, ManualOrder, MaskedOn) are read when the staging tables have them and are NULL otherwise;
-with no MinDemands every list rule is invalid and the built-in default applies.
+and this check causes false mismatches. The round 1 and round 2 list columns (MinDemands, SupplyUnit, MinLineValue,
+MaxLineValue, Archived, ManualOrder, MaskedOn; the five criteria; PhaseInQty, PhaseInEnds, PhaseInOn) are read when
+the staging tables have them and are NULL otherwise; with no MinDemands every list rule is invalid and the built-in
+default applies. A missing NonJD_Transfers table reads as no committed transfers. When Gold lacks some output
+columns the check still compares the ones it has, then FAILs.
 
 Auth: Azure CLI (az login as Brian), read-only.
 """
@@ -47,26 +53,40 @@ WEEKS_MAX, MONTHS_MAX = 104, 24
 # (NULL against a value is still a mismatch; see _diff_where).
 COMPARE_COLS = ["RuleId", "RuleName", "DemandBasis", "HistoryMonths", "MinDemands", "SupplyUnit", "DemandCount",
                 "ActiveMonths", "CalcTarget", "MinimumNoDemand", "StockingTarget", "ValueCapped", "BelowMinValue",
-                "ManualOrder", "MaskedOn", "IsMasked", "RecommendedOrderQty", "SurplusQty", "Status"]
+                "ManualOrder", "MaskedOn", "IsMasked", "RecommendedOrderQty", "SurplusQty", "Status",
+                "SLC", "Source", "CommodityCode", "PhaseInQty", "PhaseInEnds", "PhaseInOn", "PhaseInActive",
+                "PhaseInEndReason", "AppInboundQty", "AppOutboundQty"]
 TOLERANCE_COLS = ["Supply", "SupplyMonths", "MinLineValue", "MaxLineValue", "WindowDemand", "UnitsSoldWindow",
                   "MonthlyRate",
-                  "EffectiveMin", "InboundTransferQty"]
+                  "EffectiveMin", "InboundTransferQty", "PendingQty"]
 TOLERANCE = 1e-6
 OUTPUT_COLS = ["Branch", "Franchise", "PartNumber", "RuleId", "RuleName", "DemandBasis", "HistoryMonths",
                "MinDemands", "SupplyUnit", "Supply", "SupplyMonths", "MinLineValue", "MaxLineValue",
                "WindowDemand", "UnitsSoldWindow", "DemandCount", "ActiveMonths", "MonthlyRate", "CalcTarget", "EffectiveMin",
                "MinimumNoDemand", "StockingTarget", "ValueCapped", "BelowMinValue", "ManualOrder", "MaskedOn",
-               "IsMasked", "RecommendedOrderQty", "SurplusQty", "InboundTransferQty", "Status"]
+               "IsMasked", "RecommendedOrderQty", "SurplusQty", "InboundTransferQty", "Status",
+               # round 2 Part 1
+               "PendingQty", "SLC", "Source", "CommodityCode", "PhaseInQty", "PhaseInEnds", "PhaseInOn",
+               "PhaseInActive", "PhaseInEndReason", "AppInboundQty", "AppOutboundQty"]
 KEYS = "Branch, Franchise, PartNumber"
 
-# Staging columns read by main(): (required, optional {name: type}). Optional ones are the round 1 additions,
-# NULL until the dataflows carry them (Plan C Task C2).
+# Staging columns read by main(): (required, optional {name: type}). Optional ones are the round 1 and round 2
+# additions, NULL until the dataflows carry them (Plan C Task C2, Plan E Task E1).
 RULE_COLS = (["Id", "RuleName", "Priority", "Active", "Franchise", "DealerGroupCode", "Branch", "StartMonth",
               "EndMonth", "HistoryMonths", "WeeksOfCover", "DemandBasis"],
              {"MinDemands": "DOUBLE", "SupplyUnit": "VARCHAR", "MinLineValue": "DOUBLE", "MaxLineValue": "DOUBLE",
-              "Archived": "BOOLEAN"})
+              "Archived": "BOOLEAN", "SLC": "VARCHAR", "Source": "VARCHAR", "VendorCode": "VARCHAR",
+              "ProductGroup": "VARCHAR", "CommodityCode": "VARCHAR"})
 SETTINGS_COLS = (["Id", "Branch", "Franchise", "PartNumber", "MinOverride", "Masked", "MaskExpires", "Modified"],
-                 {"ManualOrder": "BOOLEAN", "MaskedOn": "DATE"})
+                 {"ManualOrder": "BOOLEAN", "MaskedOn": "DATE", "PhaseInQty": "DOUBLE", "PhaseInEnds": "DATE",
+                  "PhaseInOn": "DATE"})
+# NonJD_Transfers (df_NonJD_Transfers_Raw: one row per transfer line joined to its header; Cancelled and Placed
+# more than 30 days ago already filtered out). Created empty with this schema when the table doesn't exist yet.
+APP_TRANSFER_COLS = {"TransferId": "BIGINT", "Status": "VARCHAR", "PlacedAt": "TIMESTAMPTZ", "FromBranch": "VARCHAR",
+                     "ToBranch": "VARCHAR", "LineId": "BIGINT", "Franchise": "VARCHAR", "PartNumber": "VARCHAR",
+                     "Qty": "DOUBLE", "Kind": "VARCHAR", "Created": "TIMESTAMPTZ"}
+CENTRAL = "America/Chicago"
+PHASE_IN_MAX = 99999
 
 
 def add_months(d: date, n: int) -> date:
@@ -152,6 +172,30 @@ INVALID_RULES_SQL = f"""
     SELECT Id, RuleLabel, problems FROM rule_check WHERE problems <> '' ORDER BY Id
 """
 
+# The app's settings, latest row per part (Modified desc, then Id desc), with its problems ('' = valid). Only the
+# row in use is checked. An invalid PhaseInQty (not a whole number 1-99999; NaN and +-inf fail too) is ignored:
+# the reference reads it as NULL (phase_qty), while PhaseInEnds and PhaseInOn are still output as stored.
+SETTINGS_CHECK_CTE = f"""
+    part_settings AS (
+        SELECT * EXCLUDE (rn),
+               CASE WHEN {_whole_between('PhaseInQty', 1, PHASE_IN_MAX)} THEN CAST(PhaseInQty AS INTEGER) END
+                 AS phase_qty,
+               concat_ws('; ',
+                 CASE WHEN PhaseInQty IS NOT NULL AND NOT {_whole_between('PhaseInQty', 1, PHASE_IN_MAX)}
+                      THEN 'PhaseInQty must be a whole number 1-{PHASE_IN_MAX}' END
+               ) AS problems
+        FROM (SELECT *, row_number() OVER (PARTITION BY Branch, Franchise, PartNumber
+                                           ORDER BY Modified DESC, Id DESC) AS rn
+              FROM settings)
+        WHERE rn = 1
+    )"""
+
+INVALID_SETTINGS_SQL = f"""
+    WITH {SETTINGS_CHECK_CTE}
+    SELECT Id, Branch, Franchise, PartNumber, problems FROM part_settings WHERE problems <> ''
+    ORDER BY Id, Branch, Franchise, PartNumber
+"""
+
 _EXCLUDED_SQL = ", ".join(f"'{b}'" for b in EXCLUDED_BRANCHES)
 
 # Parameters: $cur = first day of the run's Central-time month, $today = the run's Central date.
@@ -160,6 +204,7 @@ _EXCLUDED_SQL = ", ".join(f"'{b}'" for b in EXCLUDED_BRANCHES)
 # 9 decimals too, so 3 x 0.1 is not "more than 0.3". Build_Gold_NonJD_Reorder and the app engine do the same.
 EXPECTED_SQL = f"""
     WITH {RULE_CHECK_CTE},
+    {SETTINGS_CHECK_CTE},
     -- scope: non-JD parts with a cost, at the included branches (D6). NULL franchise or branch drops out.
     in_scope_parts AS (
         SELECT * FROM parts
@@ -175,6 +220,11 @@ EXPECTED_SQL = f"""
                nullif(upper(trim(Franchise)), '') AS c_franchise,
                nullif(upper(trim(DealerGroupCode)), '') AS c_dgc,
                nullif(upper(trim(Branch)), '') AS c_branch,
+               nullif(upper(trim(SLC)), '') AS c_slc,
+               nullif(upper(trim(Source)), '') AS c_source,
+               nullif(upper(trim(VendorCode)), '') AS c_vendor,
+               nullif(upper(trim(ProductGroup)), '') AS c_pg,
+               nullif(upper(trim(CommodityCode)), '') AS c_cc,
                CAST(HistoryMonths AS INTEGER) AS hm, CAST(MinDemands AS INTEGER) AS md,
                WeeksOfCover AS supply,
                CASE WHEN upper(trim(SupplyUnit)) = 'MONTHS' THEN 'Months' ELSE 'Weeks' END AS unit,
@@ -186,29 +236,61 @@ EXPECTED_SQL = f"""
                OR (StartMonth <= EndMonth AND month($cur) BETWEEN StartMonth AND EndMonth)
                OR (StartMonth > EndMonth AND (month($cur) >= StartMonth OR month($cur) <= EndMonth)))
     ),
-    -- step 1: each part's rule: highest Priority, then more non-blank criteria (season doesn't count), lowest Id
+    -- A11: each part's values for the eight criteria, trimmed and upper-case (blank -> NULL, which matches only a
+    -- blank criterion). ProductGroup comes from Silver_InMaster (per branch; no row = blank). VendorCode is an
+    -- integer, compared as its integer's text ("1234"; a criterion "01234" or "1234.0" does not match).
+    part_crit AS (
+        SELECT sc.Branch, sc.Franchise, sc.PartNumber,
+               upper(trim(sc.Franchise)) AS p_franchise, upper(trim(sc.DealerGroupCode)) AS p_dgc,
+               upper(trim(sc.Branch)) AS p_branch, upper(trim(sc.SLC)) AS p_slc, upper(trim(sc.Source)) AS p_source,
+               CAST(CAST(sc.VendorCode AS BIGINT) AS VARCHAR) AS p_vendor, upper(trim(im.ProductGroup)) AS p_pg,
+               upper(trim(sc.CommodityCode)) AS p_cc
+        FROM in_scope_parts sc LEFT JOIN inmaster im USING (Branch, Franchise, PartNumber)
+    ),
+    -- step 1: each part's rule: highest Priority, then more non-blank criteria (all eight count; season doesn't),
+    -- lowest Id
     part_rule AS (
         SELECT * EXCLUDE (rn) FROM (
-            SELECT sc.Branch, sc.Franchise, sc.PartNumber, u.*,
-                   row_number() OVER (PARTITION BY sc.Branch, sc.Franchise, sc.PartNumber
+            SELECT pc.Branch, pc.Franchise, pc.PartNumber, u.*,
+                   row_number() OVER (PARTITION BY pc.Branch, pc.Franchise, pc.PartNumber
                                       ORDER BY u.Priority DESC,
                                                CAST(u.c_franchise IS NOT NULL AS INTEGER)
                                                  + CAST(u.c_dgc IS NOT NULL AS INTEGER)
-                                                 + CAST(u.c_branch IS NOT NULL AS INTEGER) DESC,
+                                                 + CAST(u.c_branch IS NOT NULL AS INTEGER)
+                                                 + CAST(u.c_slc IS NOT NULL AS INTEGER)
+                                                 + CAST(u.c_source IS NOT NULL AS INTEGER)
+                                                 + CAST(u.c_vendor IS NOT NULL AS INTEGER)
+                                                 + CAST(u.c_pg IS NOT NULL AS INTEGER)
+                                                 + CAST(u.c_cc IS NOT NULL AS INTEGER) DESC,
                                                u.Id ASC) AS rn
-            FROM in_scope_parts sc JOIN usable_rules u
-              ON (u.c_franchise IS NULL OR u.c_franchise = upper(trim(sc.Franchise)))
-             AND (u.c_dgc IS NULL OR u.c_dgc = upper(trim(sc.DealerGroupCode)))
-             AND (u.c_branch IS NULL OR u.c_branch = upper(trim(sc.Branch))))
+            FROM part_crit pc JOIN usable_rules u
+              ON (u.c_franchise IS NULL OR u.c_franchise = pc.p_franchise)
+             AND (u.c_dgc IS NULL OR u.c_dgc = pc.p_dgc)
+             AND (u.c_branch IS NULL OR u.c_branch = pc.p_branch)
+             AND (u.c_slc IS NULL OR u.c_slc = pc.p_slc)
+             AND (u.c_source IS NULL OR u.c_source = pc.p_source)
+             AND (u.c_vendor IS NULL OR u.c_vendor = pc.p_vendor)
+             AND (u.c_pg IS NULL OR u.c_pg = pc.p_pg)
+             AND (u.c_cc IS NULL OR u.c_cc = pc.p_cc))
         WHERE rn = 1
     ),
-    -- steps 7, 11, 12: the app's settings, latest row per part
-    part_settings AS (
-        SELECT * EXCLUDE (rn) FROM (
-            SELECT *, row_number() OVER (PARTITION BY Branch, Franchise, PartNumber
-                                         ORDER BY Modified DESC, Id DESC) AS rn
-            FROM settings) WHERE rn = 1
+    -- step 8b (A14): committed app transfer lines. Draft and Exported count; Placed counts while the Central date
+    -- of PlacedAt (a UTC instant) is on or after the build's Central date; any other status (Cancelled, NULL, a
+    -- different spelling) never counts, and neither does Placed without a PlacedAt. Lines to or from an excluded
+    -- branch (D6) are ignored. Branches are compared trimmed and upper-case; franchise and part number exactly, as
+    -- stored in the line. Qty: NULL = 0, truncated toward zero per line.
+    committed_lines AS (
+        SELECT upper(trim(FromBranch)) AS fb, upper(trim(ToBranch)) AS tb, Franchise, PartNumber,
+               CAST(trunc(coalesce(Qty, 0)) AS BIGINT) AS q
+        FROM app_transfers
+        WHERE (Status IN ('Draft', 'Exported')
+               OR (Status = 'Placed'
+                   AND CAST(timezone('{CENTRAL}', CAST(PlacedAt AS TIMESTAMPTZ)) AS DATE) >= $today))
+          AND upper(trim(FromBranch)) NOT IN ({_EXCLUDED_SQL})
+          AND upper(trim(ToBranch)) NOT IN ({_EXCLUDED_SQL})
     ),
+    app_inbound AS (SELECT tb, Franchise, PartNumber, sum(q) AS q FROM committed_lines GROUP BY ALL),
+    app_outbound AS (SELECT fb, Franchise, PartNumber, sum(q) AS q FROM committed_lines GROUP BY ALL),
     -- display only: open transfers into the branch, by trimmed upper-case part number
     inbound_transfers AS (
         SELECT trim(RequestingBranch) AS b, upper(trim(PartNumber)) AS pn, sum(coalesce(OpenQty, 0)) AS q
@@ -235,12 +317,22 @@ EXPECTED_SQL = f"""
                  AND (ps.MaskExpires IS NULL OR ps.MaskExpires >= $today)
                  AND NOT coalesce(ps.MaskedOn IS NOT NULL AND CAST(sc.DateLastRequested AS DATE) > ps.MaskedOn,
                                   false) AS IsMasked,
-               CAST(coalesce(t.q, 0.0) AS DOUBLE) AS InboundTransferQty
+               CAST(coalesce(t.q, 0.0) AS DOUBLE) AS InboundTransferQty,
+               -- round 2: Silver_PartInformation values as stored (display; PendingQty is used by Part 2)
+               CAST(sc.PendingQty AS DOUBLE) AS PendingQty, sc.SLC, sc.Source, sc.CommodityCode,
+               -- step 7b inputs: PhaseInQty validated (invalid -> NULL), the dates as stored
+               ps.phase_qty AS PhaseInQty, ps.PhaseInEnds, ps.PhaseInOn,
+               CAST(coalesce(ai.q, 0) AS INTEGER) AS AppInboundQty,
+               CAST(coalesce(ao.q, 0) AS INTEGER) AS AppOutboundQty
         FROM in_scope_parts sc
         LEFT JOIN part_rule p USING (Branch, Franchise, PartNumber)
         LEFT JOIN rules r USING (Branch, Franchise, PartNumber)
         LEFT JOIN part_settings ps USING (Branch, Franchise, PartNumber)
         LEFT JOIN inbound_transfers t ON t.b = trim(sc.Branch) AND t.pn = upper(trim(sc.PartNumber))
+        LEFT JOIN app_inbound ai
+          ON ai.tb = upper(trim(sc.Branch)) AND ai.Franchise = sc.Franchise AND ai.PartNumber = sc.PartNumber
+        LEFT JOIN app_outbound ao
+          ON ao.fb = upper(trim(sc.Branch)) AND ao.Franchise = sc.Franchise AND ao.PartNumber = sc.PartNumber
     ),
     -- step 2: full months only (the current partial month is left out); NULL counts as 0
     monthly_demand AS (
@@ -278,19 +370,32 @@ EXPECTED_SQL = f"""
     ),
     -- steps 6-8: CalcTarget (0 below MinDemands); EffectiveMin = MinOverride, else the Equip minimum, even with no
     -- demand (D4); MinimumNoDemand flags Equip minimums on parts with no activity in the window (Cleanup; D14);
-    -- StockingTarget = max(CalcTarget, EffectiveMin rounded up)
+    -- step 7b (A18): phase-in is active while PhaseInQty > 0, PhaseInEnds is blank or on/after the build's Central
+    -- date, and the part has fewer demands than max(MinDemands, 1). Worked out fresh every day. PhaseInEndReason
+    -- (display only): Expired (end date passed) wins over MetCriteria (enough demands); NULL without a phase-in.
+    -- Step 8: StockingTarget = max(CalcTarget, EffectiveMin rounded up, PhaseInQty rounded up while active).
+    -- Masked and Manual order still order 0 (A19, step 12).
     target AS (
-        SELECT *, CAST(greatest(CalcTarget, ceil(EffectiveMin)) AS INTEGER) AS StockingTarget
+        SELECT *, CAST(greatest(CalcTarget, ceil(EffectiveMin),
+                                CASE WHEN PhaseInActive THEN ceil(PhaseInQty) ELSE 0 END) AS INTEGER) AS StockingTarget
         FROM (SELECT *,
                      CASE WHEN DemandCount >= MinDemands
                           THEN CAST(ceil(round(MonthlyRate * SupplyMonths, 9)) AS INTEGER) ELSE 0 END AS CalcTarget,
                      coalesce(min_override, equip_min, 0.0) AS EffectiveMin,
-                     min_override IS NULL AND coalesce(equip_min, 0) > 0 AND no_activity AS MinimumNoDemand
+                     min_override IS NULL AND coalesce(equip_min, 0) > 0 AND no_activity AS MinimumNoDemand,
+                     coalesce(PhaseInQty > 0, false)
+                       AND (PhaseInEnds IS NULL OR PhaseInEnds >= $today)
+                       AND DemandCount < greatest(MinDemands, 1) AS PhaseInActive,
+                     CASE WHEN PhaseInQty > 0 AND PhaseInEnds < $today THEN 'Expired'
+                          WHEN PhaseInQty > 0 AND DemandCount >= greatest(MinDemands, 1) THEN 'MetCriteria'
+                     END AS PhaseInEndReason
               FROM demand)
     ),
-    -- step 9: base quantity, 0 when the target is 0 (D5); stock truncated toward zero
+    -- step 9: base quantity, 0 when the target is 0 (D5); stock truncated toward zero; committed app transfers
+    -- into the part (step 8b) are subtracted like stock on order
     base_qty AS (
-        SELECT *, CASE WHEN StockingTarget = 0 THEN 0 ELSE greatest(0, StockingTarget - oh - oo) END AS bq
+        SELECT *, CASE WHEN StockingTarget = 0 THEN 0
+                       ELSE greatest(0, StockingTarget - oh - oo - AppInboundQty) END AS bq
         FROM target
     ),
     -- step 10a: MaxLineValue cuts the quantity back to stay at or under it (only with something to order)
@@ -338,8 +443,9 @@ def _params(current_month: date, today: date) -> dict:
 
 
 def expected_reorder(con, current_month: date, today: date):
-    """Run the reference rules over tables parts, rules, hist, order_rules, settings, transfers.
-    current_month = first day of the run's Central-time month; today = the run's Central date."""
+    """Run the reference rules over tables parts, inmaster, rules, hist, order_rules, settings, transfers and
+    app_transfers. current_month = first day of the run's Central-time month; today = the run's Central date (the
+    build's, for the mask, phase-in and committed Placed transfers)."""
     return con.execute(EXPECTED_SQL, _params(current_month, today))
 
 
@@ -348,18 +454,28 @@ def invalid_rules(con) -> list:
     return con.execute(INVALID_RULES_SQL).fetchall()
 
 
-def _diff_where() -> str:
-    exact = [f"g.{c} IS DISTINCT FROM e.{c}" for c in COMPARE_COLS]
-    approx = [f"((g.{c} IS NULL) <> (e.{c} IS NULL) OR abs(g.{c} - e.{c}) > {TOLERANCE})" for c in TOLERANCE_COLS]
-    return " OR ".join(exact + approx)
+def invalid_settings(con) -> list:
+    """Settings rows in use (latest per part) with an invalid value that is ignored, as
+    (Id, Branch, Franchise, PartNumber, reason), by Id."""
+    return con.execute(INVALID_SETTINGS_SQL).fetchall()
 
 
-def compare(con, gold: str, expected: str) -> dict:
+def _diff_where(cols: list = None) -> str:
+    """Mismatch condition over `cols` (output column names; default every compared column)."""
+    cols = set(COMPARE_COLS + TOLERANCE_COLS) if cols is None else set(cols)
+    exact = [f"g.{c} IS DISTINCT FROM e.{c}" for c in COMPARE_COLS if c in cols]
+    approx = [f"((g.{c} IS NULL) <> (e.{c} IS NULL) OR abs(g.{c} - e.{c}) > {TOLERANCE})"
+              for c in TOLERANCE_COLS if c in cols]
+    return " OR ".join(exact + approx) or "false"
+
+
+def compare(con, gold: str, expected: str, cols: list = None) -> dict:
+    """Row-by-row compare on the key; `cols` limits the compared columns (default all)."""
     only_gold = con.execute(f"SELECT count(*) FROM (SELECT {KEYS} FROM {gold} EXCEPT SELECT {KEYS} FROM {expected})").fetchone()[0]
     only_exp = con.execute(f"SELECT count(*) FROM (SELECT {KEYS} FROM {expected} EXCEPT SELECT {KEYS} FROM {gold})").fetchone()[0]
     different = con.execute(f"""
         SELECT count(*) FROM {gold} g JOIN {expected} e USING ({KEYS})
-        WHERE {_diff_where()}
+        WHERE {_diff_where(cols)}
     """).fetchone()[0]
     dup_gold = con.execute(f"SELECT count(*) - count(DISTINCT ({KEYS})) FROM {gold}").fetchone()[0]
     dup_exp = con.execute(f"SELECT count(*) - count(DISTINCT ({KEYS})) FROM {expected}").fetchone()[0]
@@ -391,14 +507,18 @@ def _connect():
 
 
 def load_inputs(con, tier: str, current_month: date) -> list:
-    """Create the input tables EXPECTED_SQL reads (parts, rules, hist, order_rules, settings, transfers) from the
-    tier's lakehouses; returns the optional (round 1) columns the staging tables don't have yet, read as NULL.
+    """Create the input tables EXPECTED_SQL reads (parts, inmaster, rules, hist, order_rules, settings, transfers,
+    app_transfers) from the tier's lakehouses; returns the optional (round 1 and 2) columns and tables the staging
+    lakehouse doesn't have yet, read as NULL / empty.
     The session is UTC, so DateLastRequested becomes the timestamp as stored (Equip's wall clock) and its date is
-    the date Equip shows."""
+    the date Equip shows; PlacedAt is a UTC instant and EXPECTED_SQL converts it to the Central date."""
     absent = []
     con.execute(f"""CREATE TABLE parts AS SELECT Branch, Franchise, PartNumber, QuantityOnHand, OnOrder, Cost,
-                    DealerGroupCode, CAST(DateLastRequested AS TIMESTAMP) AS DateLastRequested
+                    DealerGroupCode, CAST(DateLastRequested AS TIMESTAMP) AS DateLastRequested,
+                    PendingQty, SLC, Source, CommodityCode, VendorCode
                     FROM delta_scan('{_path(tier, 'staging', 'Silver_PartInformation')}')""")
+    con.execute(f"""CREATE TABLE inmaster AS SELECT Branch, Franchise, PartNumber, ProductGroup
+                    FROM delta_scan('{_path(tier, 'staging', 'Silver_InMaster')}')""")
     con.execute(f"""CREATE TABLE rules AS SELECT Branch, Franchise, PartNumber, MinimumQty
                     FROM delta_scan('{_path(tier, 'staging', 'Silver_PartStockingRules')}')""")
     hist_start = add_months(current_month, -HIST_MONTHS)
@@ -414,6 +534,17 @@ def load_inputs(con, tier: str, current_month: date) -> list:
         con.execute(f"CREATE TABLE {name} AS SELECT {select_list(con, src, *cols, have=have)} FROM {src}")
     con.execute(f"""CREATE TABLE transfers AS SELECT RequestingBranch, PartNumber, OpenQty
                     FROM delta_scan('{_path(tier, 'presentation', 'Fact_OutstandingTransfers')}')""")
+    # Committed app transfers (step 8b); the table only exists once df_NonJD_Transfers_Raw has run on the tier.
+    src = f"delta_scan('{_path(tier, 'staging', 'NonJD_Transfers')}')"
+    typed = ", ".join(f"CAST({c} AS {t}) AS {c}" for c, t in APP_TRANSFER_COLS.items())
+    try:
+        columns(con, src)
+    except duckdb.Error as e:
+        absent.append(f"NonJD_Transfers (table: {str(e).splitlines()[0][:120]})")
+        con.execute("CREATE TABLE app_transfers ("
+                    + ", ".join(f"{c} {t}" for c, t in APP_TRANSFER_COLS.items()) + ")")
+    else:
+        con.execute(f"CREATE TABLE app_transfers AS SELECT {typed} FROM {src}")
     return absent
 
 
@@ -454,23 +585,33 @@ def main() -> int:
             print(f"  {rid} {name!r}: {reason}")
     else:
         print("All active rules are valid")
+    bad = invalid_settings(con)
+    if bad:
+        print(f"WARN: {len(bad)} part setting(s) with an invalid value (ignored):")
+        for sid, branch, franchise, pn, reason in bad:
+            print(f"  {sid} {branch}|{franchise}|{pn}: {reason}")
 
     con.execute("CREATE TABLE expected AS " + EXPECTED_SQL, _params(current_month, today))
     gold_cols = {r[0] for r in con.execute(f"DESCRIBE SELECT * FROM delta_scan('{gold_p}')").fetchall()}
     missing = [c for c in OUTPUT_COLS if c not in gold_cols]
+    present = [c for c in OUTPUT_COLS if c in gold_cols]
     if missing:
-        print(f"FAIL: Fact_NonJD_Reorder has no {', '.join(missing)} (Gold not on the round 1 rules yet?)")
-        return 1
-    con.execute(f"CREATE TABLE gold AS SELECT {', '.join(OUTPUT_COLS)} FROM delta_scan('{gold_p}')")
-    result = compare(con, "gold", "expected")
+        print(f"FAIL: Fact_NonJD_Reorder has no {', '.join(missing)} (Gold not on the latest rules yet?); "
+              f"comparing the other {len(present) - 3} columns")
+    con.execute(f"CREATE TABLE gold AS SELECT {', '.join(present)} FROM delta_scan('{gold_p}')")
+    result = compare(con, "gold", "expected", present)
     print(result)
     if any(result.values()):
-        e_cols = ", ".join(f"e.{c} AS e_{c}" for c in OUTPUT_COLS[3:])
+        e_cols = ", ".join(f"e.{c} AS e_{c}" for c in present[3:])
         _print_labeled(con, f"""SELECT g.*, {e_cols}
                                 FROM gold g JOIN expected e USING ({KEYS})
-                                WHERE {_diff_where()} LIMIT 10""", "different (gold columns, then e_ = expected)")
+                                WHERE {_diff_where(present)} LIMIT 10""",
+                       "different (gold columns, then e_ = expected)")
         _print_labeled(con, f"SELECT {KEYS} FROM gold EXCEPT SELECT {KEYS} FROM expected LIMIT 10", "only in gold")
         _print_labeled(con, f"SELECT {KEYS} FROM expected EXCEPT SELECT {KEYS} FROM gold LIMIT 10", "only in expected")
+        return 1
+    if missing:
+        print("The columns Gold has match the reference; FAIL because of the missing columns")
         return 1
     print("PASS: Gold matches the reference rules")
     return 0
