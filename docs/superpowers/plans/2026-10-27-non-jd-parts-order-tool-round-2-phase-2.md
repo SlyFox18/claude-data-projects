@@ -2,7 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: use superpowers:subagent-driven-development, one task at a time with a review after each (Brian's standing choice). Steps use checkbox (`- [ ]`) syntax. SharePoint, Entra, Gateway PC and Fabric UI steps are Brian's, one at a time, verified. Live SharePoint writes by Claude need Brian's explicit OK.
 
-> **Progress:** plan written 2026-10-27 (Claude, for Brian). Nothing is built yet.
+> **Progress:** plan written 2026-10-27 (Claude, for Brian).
+> - **E0a done 2026-10-27:** `PhaseInQty` (Number, decimals none), `PhaseInEnds` and `PhaseInOn` (dateOnly) on `NonJD_PartSettings` (`a4b26767-…`), internal names equal display names (verified through Graph). A failed save had created a duplicate `PhaseInEnds0`; it was deleted and the column recreated. **For later list steps:** if SharePoint shows an error on save, refresh before saving again.
+> - E11b (several dealer group codes) in progress.
 >
 > **Brian, 2026-10-27: the test users can live with the app being down or changing for a while, so build once and test on the real thing.** This overrules **X1**:
 > - no `test-v3` folder, no `NONJD_FOLDER` / `VITE_GRAPH_DATA_FOLDER` settings, no localhost redirect URI;
