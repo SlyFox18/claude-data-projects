@@ -5,6 +5,7 @@
 > **Progress:** plan written 2026-10-27 (Claude, for Brian).
 > - **E0a done 2026-10-27:** `PhaseInQty` (Number, decimals none), `PhaseInEnds` and `PhaseInOn` (dateOnly) on `NonJD_PartSettings` (`a4b26767-…`), internal names equal display names (verified through Graph). A failed save had created a duplicate `PhaseInEnds0`; it was deleted and the column recreated. **For later list steps:** if SharePoint shows an error on save, refresh before saving again.
 > - **E0b done 2026-10-27:** `SLC`, `Source`, `VendorCode`, `ProductGroup`, `CommodityCode` (single line of text, not required, no default) on `NonJD_OrderRules` (`6938ff15-…`); internal names equal display names. The 5 rules are unchanged (Default: 12 months, 3 demands, 12 Weeks, modified 2026-10-26) and blank in the new columns. Note: the rules list's supply column is internally `WeeksOfCover`.
+> - **E0c done 2026-10-27:** `NonJD_TransferRules` list ID **`3b3fc526-f73a-4d2a-b15e-0fbaeb01175f`**. All 21 columns verified through Graph (internal names = display names; types, decimals, defaults Active/AllowSend/AllowReceive Yes, Archived No, ExcessSupply 12 (1 dp), RedistMax 6 (1 dp), RedistMinValue 25 (2 dp), ExcessUnit/RedistUnit Weeks/Months default Months, Priority required 0 dp, Notes plain multi-line); no extra columns; 0 items.
 > - E11b (several dealer group codes) in progress.
 >
 > **Brian, 2026-10-27: the test users can live with the app being down or changing for a while, so build once and test on the real thing.** This overrules **X1**:
