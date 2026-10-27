@@ -232,6 +232,60 @@ A group is allocated only when some branch has FreeExcess > 0 and some other bra
 - Every comparison of money or rate is on round9 values; every quantity is an integer.
 - The result depends only on the inputs, not on the order of rows or on which branches the user is viewing.
 
+### Parts 2–3 clarifications (E3 reference, 2026-10-27)
+
+The reference (`tools/dp-migration/nonjd_reorder_check.py`, E3) settled these points the text above leaves open. Gold and the app engine follow them exactly.
+
+**Rules and inputs**
+- **Transfer rule validation messages.** The reference's own wording:
+  - "ExcessSupply is missing";
+  - "ExcessUnit must be Weeks or Months";
+  - "RedistUnit must be Weeks or Months".
+
+  Several problems are joined with "; " in this order: Priority, ExcessUnit/ExcessSupply, RedistUnit/RedistMax, RedistMinValue, then the season messages (worded as for order rules). A range is checked only when its unit is valid, so a bad unit hides the range or missing message.
+- **Blank RedistMax** means 6 Months, whatever RedistUnit says, and is output that way. RedistUnit is still validated.
+- **Normalised rule outputs:**
+  - units come out as "Weeks" or "Months";
+  - a blank AllowSend or AllowReceive is true;
+  - a blank RedistMinValue is 0;
+  - TransferRuleId is null for the built-in default;
+  - a blank rule name shows as "Rule <Id>";
+  - a null Active means inactive.
+- **The transfer rule pick** uses the same part criteria values as order rules: ProductGroup from Silver_InMaster per branch, and VendorCode as its integer's text.
+- **pend** = max(0, trunc(PendingQty)). A null, NaN or infinite PendingQty counts as 0.
+
+**Branch order**
+- Branches sort by number, then by letters; "digits" means ASCII 0–9.
+- Codes with the same number ("02" and "2") sort by the trimmed code, then by the raw value. Trimming removes spaces only.
+
+**Rounding**
+- round9 rounds half to even on the binary value (Python `round(x, 9)`). It only matters when two covers are within about 1e-9 of each other.
+- Value = round(Qty × ToCost, 2), half to even. The compares allow a 1e-6 tolerance on money and rate.
+
+**Allocation**
+- **Seq** runs once per group: all conventional lines first, then redistribution continues the numbering.
+- **Redistribution doesn't add to `got[r]`.** A receiver's room and cover are fixed before its redistribution loop, so this changes no output.
+- **A sender skipped under RedistMinValue** stays skipped for that receiver. That's equivalent to re-checking, because its q can only shrink.
+- **Defensive rules** (unreachable from Part 2, but defined so the fuzz can test the loop on its own):
+  - a RedistEligible row with rate ≤ 0 uses the conventional rate-0 receiver cover;
+  - a sender with rate ≤ 0 has cover +∞;
+  - "some other branch" in the candidate test is literal.
+
+**Suggestion columns** (`Fact_NonJD_TransferSuggestion`)
+- **ToNeed** is ConvNeed for conventional lines. For redistribution it is the receiver's room at the start of its redistribution loop, so every redistribution line into a receiver carries the same value.
+- **Sender values:** FromOnHand is the truncated `oh`. FromExcessKeep and FromFreeExcess are the sender's values before allocation.
+- **Receiver values:** ToOnHand and ToOnOrder are the truncated `oh` and `oo`, ToTarget is StockingTarget, and ToRate is MonthlyRate.
+- **Branches:** FromBranch and ToBranch are the stored Branch values, not trimmed. The per-part Suggested* quantities join back on the stored Branch.
+- **Not compared:** FromBin, ToBin, Description and BuiltAtUtc.
+- **Compared exactly:** Seq, Qty and the integer columns.
+- **Compared within the tolerance:** FromCost, ToCost, Value and ToRate.
+
+**Reference figures on Dev data (2026-10-27, built-in default rule, Ben's ordering, no minimum)**
+- **Free excess:** 1,183,219 units, $3.29M ($2.54M of it at rate 0).
+- **Conventional:** 1,219 lines, 10,293 units, **$150,433**. They fill 1,023 order lines (835 fully). 882 of those order lines need one sender, 107 need two and 34 need three or more.
+- **Redistribution:** 1,095 lines, 9,403 units, **$115,879**. 574 of them ($5.4K) are under $25, and the median line is $23.25.
+- Sender and receiver cost differ on 984 of 2,314 lines.
+
 ### Part 4: what ticking does (the app only)
 
 - **Ticked, not yet saved:** the receiver's view recomputes steps 9–14 with AppInboundQty + the ticked quantity into that part (a preview). The allocation is **not** re-run when ticks change: unticking a suggestion doesn't offer that stock to anyone else in this session.
