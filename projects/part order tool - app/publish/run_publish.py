@@ -3,10 +3,14 @@ Non-JD Parts Order Tool - daily publish.
 
 1. Read dp_refresh_log; publish only if Build_Gold_NonJD_Reorder's latest run succeeded and wasn't published yet.
 2. Check the Gold table was written by that run (BuiltAtUtc within the run).
-3. Build files, upload the changed ones, then _meta.json last. Save publish_state.json.
+3. Build files, upload the changed ones (and transfer_suggestions.json.gz every run), then _meta.json last.
+   Save publish_state.json.
+
+--out DIR builds the same files plus _meta.json into DIR and stops there: no upload, no publish_state.json, no
+lock (a local build for the app's parity checks; the checks of steps 1-2 still apply, publish_state is ignored).
 
 Exit 0 = published or nothing to do; 1 = error (Task Scheduler shows "last run result" 0x1).
-Usage: python run_publish.py [--force]
+Usage: python run_publish.py [--force] [--out DIR]
 """
 import argparse
 import json
@@ -67,7 +71,11 @@ def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--force", action="store_true",
                     help="re-publish this run and re-send every file (never publishes a failed run)")
+    ap.add_argument("--out", metavar="DIR",
+                    help="build the files and _meta.json into DIR only: no upload, no publish_state.json, no lock")
     args = ap.parse_args(argv)
+    if args.out:
+        return _publish(args)
     lock = _lock()
     if lock is None:
         print(f"[{_ts()}] another publish is running; exiting", flush=True)
@@ -79,12 +87,14 @@ def main(argv=None) -> int:
 
 
 def _publish(args) -> int:
-    print(f"[{_ts()}] publish start, source={config.SOURCE}", flush=True)
+    out_dir = os.path.abspath(args.out) if args.out else build_files.OUT_DIR
+    print(f"[{_ts()}] publish start, source={config.SOURCE}" + (f", local build into {out_dir}" if args.out else ""),
+          flush=True)
 
     con = extract.connect()
     rows = extract.log_rows(con)
     latest = pl.latest_item_run(rows)
-    state = load_state()
+    state = {} if args.out else load_state()
     go, why = pl.decide_publish(latest, state, config.SOURCE, args.force)
     print(f"decision: {go} ({why})")
     if not go:
@@ -105,6 +115,8 @@ def _publish(args) -> int:
     reorder = extract.reorder(con)
     history_rows = extract.stage_history(con)     # copied into a DuckDB temp table; built one branch at a time
     transfers, names = extract.transfers(con), extract.branch_names(con)
+    transfer_rules, suggestions = extract.transfer_rules(con), extract.suggestions(con)
+    committed = extract.committed(con, pl.central_date(built))
     try:
         rules = extract.rules(con)
     except pl.MissingColumnsError:
@@ -117,13 +129,19 @@ def _publish(args) -> int:
     if extract.built_at(con) != built:
         raise RuntimeError("Fact_NonJD_Reorder was rewritten while extracting; rerun the publish")
     hashes, branches = build_files.build(reorder, lambda b: extract.history_for(con, b), transfers, names,
-                                         data_as_of, current_month, rules)
-    counts = {"parts": len(reorder), "historyRows": history_rows, "transferLines": len(transfers)}
+                                         data_as_of, current_month, rules, transfer_rules=transfer_rules,
+                                         suggestions=suggestions, committed=committed, out_dir=out_dir)
+    counts = {"parts": len(reorder), "historyRows": history_rows, "transferLines": len(transfers),
+              "transferSuggestions": len(suggestions)}
     meta_path = build_files.write_meta(data_as_of, datetime.now(timezone.utc).isoformat(), config.SOURCE,
-                                       branches, counts)
+                                       branches, counts, out_dir=out_dir)
+    if args.out:
+        print(f"[{_ts()}] done: built {len(hashes)} file(s) + _meta.json into {out_dir} (nothing uploaded); "
+              f"data as of {data_as_of}; {counts}", flush=True)
+        return 0
 
     previous = {} if args.force else (state.get("hashes", {}) if state.get("source") == config.SOURCE else {})
-    to_send = [os.path.join(build_files.OUT_DIR, n) for n in pl.changed_files(hashes, previous)]
+    to_send = [os.path.join(out_dir, n) for n in pl.changed_files(hashes, previous)]
     access = upload.token()
     print(f"[{_ts()}] uploading {len(to_send) + 1} file(s)", flush=True)
     for path in pl.upload_order(to_send + [meta_path]):

@@ -9,7 +9,8 @@ import config
 import publish_logic as pl
 
 # Gold column -> published field (README "reorder_<branch>.json.gz"), in file order. Gold's RuleId and BuiltAtUtc
-# are not published. check_columns() fails, naming them, if Gold lacks any of these.
+# are not published (TransferRuleId is, per plan E decision X6). check_columns() fails, naming them, if Gold lacks
+# any of these.
 REORDER_COLUMNS = [
     ("Branch", "branch"), ("Franchise", "franchise"), ("PartNumber", "partNumber"), ("Description", "description"),
     ("Bin", "bin"), ("VendorCode", "vendorCode"), ("ProductGroup", "productGroup"), ("SuperTo", "superTo"),
@@ -28,8 +29,19 @@ REORDER_COLUMNS = [
     ("StockingTarget", "target"), ("ValueCapped", "valueCapped"), ("BelowMinValue", "belowMinValue"),
     ("RecommendedOrderQty", "recommendedQty"), ("EstOrderValue", "estValue"), ("SurplusQty", "surplusQty"),
     ("InboundTransferQty", "inboundQty"), ("Status", "status"),
+    # round 2 (contract v3): Part 1 (phase-in, committed app transfers), Part 2 (transfer rule and inputs), Part 3
+    ("PendingQty", "pendingQty"), ("SLC", "slc"), ("Source", "source"), ("CommodityCode", "commodityCode"),
+    ("PhaseInQty", "phaseInQty"), ("PhaseInEnds", "phaseInEnds"), ("PhaseInOn", "phaseInOn"),
+    ("PhaseInActive", "phaseInActive"), ("PhaseInEndReason", "phaseInEndReason"),
+    ("AppInboundQty", "appInboundQty"), ("AppOutboundQty", "appOutboundQty"),
+    ("TransferRuleId", "transferRuleId"), ("TransferRuleName", "transferRuleName"), ("ExcessSupply", "excessSupply"),
+    ("ExcessUnit", "excessUnit"), ("AllowSend", "allowSend"), ("AllowReceive", "allowReceive"),
+    ("RedistMax", "redistMax"), ("RedistUnit", "redistUnit"), ("RedistMinValue", "redistMinValue"),
+    ("ExcessKeep", "excessKeep"), ("FreeExcess", "freeExcess"), ("ConvNeed", "convNeed"), ("RedistCap", "redistCap"),
+    ("RedistEligible", "redistEligible"), ("SuggestedInQty", "suggestedInQty"),
+    ("SuggestedConvInQty", "suggestedConvInQty"), ("SuggestedOutQty", "suggestedOutQty"),
 ]
-REORDER_SQL = ("SELECT " + ", ".join(f"{g} AS {f}" for g, f in REORDER_COLUMNS)
+REORDER_SQL = ("SELECT " + ", ".join(f'{g} AS "{f}"' for g, f in REORDER_COLUMNS)
                + "\nFROM {src}\nORDER BY branch, franchise, partNumber")
 
 # NonJD_OrderRules column -> rules.json field: exactly the columns Gold reads (MinActiveMonths is left in the list
@@ -37,9 +49,34 @@ REORDER_SQL = ("SELECT " + ", ".join(f"{g} AS {f}" for g, f in REORDER_COLUMNS)
 RULE_COLUMNS = [
     ("Id", "id"), ("RuleName", "ruleName"), ("Priority", "priority"), ("Active", "active"), ("Archived", "archived"),
     ("Franchise", "franchise"), ("DealerGroupCode", "dealerGroupCode"), ("Branch", "branch"),
+    ("SLC", "slc"), ("Source", "source"), ("VendorCode", "vendorCode"), ("ProductGroup", "productGroup"),
+    ("CommodityCode", "commodityCode"),
     ("StartMonth", "startMonth"), ("EndMonth", "endMonth"), ("HistoryMonths", "historyMonths"),
     ("MinDemands", "minDemands"), ("WeeksOfCover", "weeksOfCover"), ("SupplyUnit", "supplyUnit"),
     ("MinLineValue", "minLineValue"), ("MaxLineValue", "maxLineValue"), ("DemandBasis", "demandBasis"),
+]
+# NonJD_TransferRules column -> transfer_rules.json field: every column Gold reads (Modified and Notes are not).
+TRANSFER_RULE_COLUMNS = [
+    ("Id", "id"), ("RuleName", "ruleName"), ("Priority", "priority"), ("Active", "active"), ("Archived", "archived"),
+    ("Franchise", "franchise"), ("DealerGroupCode", "dealerGroupCode"), ("Branch", "branch"), ("SLC", "slc"),
+    ("Source", "source"), ("VendorCode", "vendorCode"), ("ProductGroup", "productGroup"),
+    ("CommodityCode", "commodityCode"), ("StartMonth", "startMonth"), ("EndMonth", "endMonth"),
+    ("ExcessSupply", "excessSupply"), ("ExcessUnit", "excessUnit"), ("AllowSend", "allowSend"),
+    ("AllowReceive", "allowReceive"), ("RedistMax", "redistMax"), ("RedistUnit", "redistUnit"),
+    ("RedistMinValue", "redistMinValue"),
+]
+# Fact_NonJD_TransferSuggestion column -> transfer_suggestions.json "lines" field (the analysis columns, e.g.
+# FromFreeExcess and ToNeed, stay in Gold).
+SUGGESTION_COLUMNS = [
+    ("Kind", "kind"), ("Franchise", "franchise"), ("PartNumber", "partNumber"), ("FromBranch", "fromBranch"),
+    ("ToBranch", "toBranch"), ("Seq", "seq"), ("Qty", "qty"), ("FromCost", "fromCost"), ("ToCost", "toCost"),
+    ("Value", "value"), ("Description", "description"), ("FromBin", "fromBin"), ("ToBin", "toBin"),
+]
+# NonJD_Transfers column -> transfer_suggestions.json "committed" field (the lines Gold counted in step 8b).
+COMMITTED_COLUMNS = [
+    ("TransferId", "transferId"), ("LineId", "lineId"), ("Status", "status"), ("PlacedAt", "placedAt"),
+    ("FromBranch", "fromBranch"), ("ToBranch", "toBranch"), ("Franchise", "franchise"), ("PartNumber", "partNumber"),
+    ("Qty", "qty"),
 ]
 HISTORY_COLUMNS = ["Branch", "Franchise", "PartNumber", "MonthOffset", "SalesQty", "RequestCount"]
 TRANSFER_COLUMNS = ["RequestingBranch", "SupplyingBranch", "PartNumber", "PartTicket", "LineNumber", "OrderQty",
@@ -73,21 +110,29 @@ def columns(con, table: str) -> list:
     return [r[0] for r in con.execute(f"DESCRIBE SELECT * FROM {_src(table)}").fetchall()]
 
 
+def _readable_columns(con, table: str, deploy: str) -> list:
+    """columns(), with a clear error naming what to deploy when the table is missing or unreadable."""
+    try:
+        return columns(con, table)
+    except Exception as ex:
+        first = (str(ex).splitlines() or [""])[0]
+        raise RuntimeError(f"{table} not found or unreadable in the {config.SOURCE} DP_Presentation "
+                           f"lakehouse ({type(ex).__name__}: {first}); deploy {deploy} before publishing") from ex
+
+
 def check_columns(con) -> None:
     """Fail before extracting, naming every missing column, if a Gold table lacks a column the publish reads
-    (e.g. the publish is newer or older than the Gold notebook), including NonJD_OrderRules."""
+    (e.g. the publish is newer or older than the Gold notebook), including the list tables Gold reads."""
     pl.require_columns("Fact_NonJD_Reorder", columns(con, "Fact_NonJD_Reorder"),
                        [g for g, _ in REORDER_COLUMNS] + ["BuiltAtUtc"])
     pl.require_columns("Fact_NonJD_SalesHistory", columns(con, "Fact_NonJD_SalesHistory"), HISTORY_COLUMNS)
     pl.require_columns("Fact_OutstandingTransfers", columns(con, "Fact_OutstandingTransfers"), TRANSFER_COLUMNS)
-    try:
-        rule_cols = columns(con, "NonJD_OrderRules")
-    except Exception as ex:
-        first = (str(ex).splitlines() or [""])[0]
-        raise RuntimeError(f"NonJD_OrderRules not found or unreadable in the {config.SOURCE} DP_Presentation "
-                           f"lakehouse ({type(ex).__name__}: {first}); deploy the rules dataflow and shortcut "
-                           f"before publishing") from ex
-    pl.require_columns("NonJD_OrderRules", rule_cols, [g for g, _ in RULE_COLUMNS])
+    for table, cols, deploy in [
+            ("NonJD_OrderRules", RULE_COLUMNS, "the rules dataflow and shortcut"),
+            ("NonJD_TransferRules", TRANSFER_RULE_COLUMNS, "df_NonJD_TransferRules_Raw and its shortcut"),
+            ("NonJD_Transfers", COMMITTED_COLUMNS, "df_NonJD_Transfers_Raw and its shortcut"),
+            ("Fact_NonJD_TransferSuggestion", SUGGESTION_COLUMNS, "the round 2 Build_Gold_NonJD_Reorder")]:
+        pl.require_columns(table, _readable_columns(con, table, deploy), [g for g, _ in cols])
 
 
 def _dicts(cur) -> list:
@@ -113,10 +158,32 @@ def reorder(con) -> list:
     return _dicts(con.execute(REORDER_SQL.format(src=_src("Fact_NonJD_Reorder"))))
 
 
+def _select(cols) -> str:
+    return ", ".join(f'{g} AS "{f}"' for g, f in cols)
+
+
 def rules(con) -> list:
     """Its columns are checked in check_columns()."""
-    sel = ", ".join(f"{g} AS {f}" for g, f in RULE_COLUMNS)
-    return _dicts(con.execute(f"SELECT {sel} FROM {_src('NonJD_OrderRules')} ORDER BY Id"))
+    return _dicts(con.execute(f"SELECT {_select(RULE_COLUMNS)} FROM {_src('NonJD_OrderRules')} ORDER BY Id"))
+
+
+def transfer_rules(con) -> list:
+    """NonJD_TransferRules raw, as Gold reads it, ordered by Id."""
+    return _dicts(con.execute(f"SELECT {_select(TRANSFER_RULE_COLUMNS)} FROM {_src('NonJD_TransferRules')} "
+                              "ORDER BY Id"))
+
+
+def suggestions(con) -> list:
+    """Gold's transfer suggestion lines, by group (Franchise, PartNumber; NULLs last) then emission order."""
+    return _dicts(con.execute(f"SELECT {_select(SUGGESTION_COLUMNS)} FROM {_src('Fact_NonJD_TransferSuggestion')} "
+                              "ORDER BY Franchise, PartNumber, Seq, Kind, FromBranch, ToBranch"))
+
+
+def committed(con, build_date) -> list:
+    """The NonJD_Transfers lines Gold counted as committed (step 8b) on the build's Central date. The table is small
+    (the dataflow drops Cancelled and old Placed transfers), so the exact rule is applied in Python."""
+    rows = _dicts(con.execute(f"SELECT {_select(COMMITTED_COLUMNS)} FROM {_src('NonJD_Transfers')}"))
+    return pl.committed_lines(rows, build_date)
 
 
 def stage_history(con) -> int:

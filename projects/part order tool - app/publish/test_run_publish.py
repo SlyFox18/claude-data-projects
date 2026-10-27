@@ -15,7 +15,15 @@ END = datetime(2026, 10, 20, 10, 30, 0)
 BUILT = datetime(2026, 10, 20, 10, 20, 0)
 
 DATA_FILES = {"reorder_01.json.gz", "history_01.json.gz", "reorder_02.json.gz", "history_02.json.gz",
-              "surplus.json.gz", "transfers.json.gz", "rules.json.gz"}
+              "surplus.json.gz", "transfers.json.gz", "rules.json.gz", "transfer_rules.json.gz",
+              "transfer_suggestions.json.gz"}
+ROUND2 = {"pendingQty": 0.0, "slc": None, "source": None, "commodityCode": None, "phaseInQty": None,
+          "phaseInEnds": None, "phaseInOn": None, "phaseInActive": False, "phaseInEndReason": None,
+          "appInboundQty": 0, "appOutboundQty": 0, "transferRuleId": None, "transferRuleName": "Built-in default",
+          "excessSupply": 12.0, "excessUnit": "Months", "allowSend": True, "allowReceive": True, "redistMax": 6.0,
+          "redistUnit": "Months", "redistMinValue": 0.0, "excessKeep": 2, "freeExcess": 0, "convNeed": 0,
+          "redistCap": 0, "redistEligible": False, "suggestedInQty": 0, "suggestedConvInQty": 0,
+          "suggestedOutQty": 0}
 
 
 class Env:
@@ -28,7 +36,14 @@ class Env:
         self.rules = [{"id": 1, "ruleName": "Default", "priority": 99.0, "active": True, "archived": None,
                        "franchise": None, "dealerGroupCode": None, "branch": None, "startMonth": None,
                        "endMonth": None, "historyMonths": 12, "minDemands": 3, "weeksOfCover": 4.0,
-                       "supplyUnit": None, "minLineValue": None, "maxLineValue": None, "demandBasis": "Sales"}]
+                       "supplyUnit": None, "minLineValue": None, "maxLineValue": None, "demandBasis": "Sales",
+                       "slc": None, "source": None, "vendorCode": None, "productGroup": None,
+                       "commodityCode": None}]
+        self.trules = []
+        self.suggestions = [{"kind": "Conventional", "franchise": "A", "partNumber": "P2", "fromBranch": "01",
+                             "toBranch": "02", "seq": 1, "qty": 2, "fromCost": 1.5, "toCost": 1.5, "value": 3.0,
+                             "description": "x", "fromBin": None, "toBin": None}]
+        self.committed_on = []   # build dates extract.committed was called with
         self.checked = 0
         self.fail_on = None   # upload call number (1-based) that raises
 
@@ -54,14 +69,21 @@ def env(tmp_path, monkeypatch):
     monkeypatch.setattr(extract, "check_columns", check_columns)
     monkeypatch.setattr(extract, "reorder", lambda con: [
         {"branch": "01", "franchise": "A", "partNumber": "P1", "onHand": 5, "target": 2, "surplusQty": 3,
-         "status": "ok"},
+         "status": "ok", **ROUND2},
         {"branch": "02", "franchise": "A", "partNumber": "P2", "onHand": e.on_hand_02, "target": 2, "surplusQty": 0,
-         "status": "low"}])
+         "status": "low", **ROUND2}])
     monkeypatch.setattr(extract, "stage_history", lambda con: 1)
     monkeypatch.setattr(extract, "history_for", lambda con, b: [
         {"franchise": "A", "partNumber": "P1", "monthOffset": 1, "salesQty": 1, "requestCount": 1}])
     monkeypatch.setattr(extract, "rules", lambda con: e.rules)
     monkeypatch.setattr(extract, "transfers", lambda con: [])
+    monkeypatch.setattr(extract, "transfer_rules", lambda con: e.trules)
+    monkeypatch.setattr(extract, "suggestions", lambda con: e.suggestions)
+
+    def committed(con, build_date):
+        e.committed_on.append(build_date)
+        return []
+    monkeypatch.setattr(extract, "committed", committed)
     monkeypatch.setattr(extract, "branch_names", lambda con: {"01": "One", "02": "Two"})
     monkeypatch.setattr(upload, "token", lambda: "tok")
     def put_file(path, access):
@@ -121,7 +143,8 @@ def test_data_change_uploads_only_changed_files(env):
     assert run_publish.main([]) == 0
     # reorder/surplus/transfers embed dataAsOf so they change with every run; history files do not
     assert set(env.uploaded[:-1]) == {"reorder_01.json.gz", "reorder_02.json.gz", "surplus.json.gz",
-                                      "transfers.json.gz", "rules.json.gz"}
+                                      "transfers.json.gz", "rules.json.gz", "transfer_rules.json.gz",
+                                      "transfer_suggestions.json.gz"}
     assert env.uploaded[-1] == "_meta.json"
 
 
@@ -229,4 +252,55 @@ def test_missing_rules_columns_fail_before_extracting(env, monkeypatch):
 def test_meta_carries_contract_version(env, tmp_path):
     run_publish.main([])
     meta = json.loads((tmp_path / "out" / "_meta.json").read_bytes())
-    assert meta["contractVersion"] == 2 and meta["schemaVersion"] == 1
+    assert meta["contractVersion"] == 3 and meta["schemaVersion"] == 1
+
+
+
+# ---- Round 2 (Plan E6): contract v3 files, --out local build ----
+
+def test_meta_counts_transfer_suggestions(env, tmp_path):
+    run_publish.main([])
+    meta = json.loads((tmp_path / "out" / "_meta.json").read_bytes())
+    assert meta["counts"]["transferSuggestions"] == 1
+
+
+def test_suggestions_uploaded_before_meta(env):
+    run_publish.main([])
+    assert env.uploaded.index("transfer_suggestions.json.gz") < env.uploaded.index("_meta.json")
+    assert env.uploaded.index("transfer_rules.json.gz") < env.uploaded.index("_meta.json")
+
+
+def test_committed_lines_use_the_central_date_of_the_build(env):
+    from datetime import date
+    env.built = [datetime(2026, 10, 21, 4, 30, 0)]          # 2026-10-20 23:30 Central
+    env.end = datetime(2026, 10, 21, 4, 40, 0)
+    run_publish.main([])
+    assert env.committed_on == [date(2026, 10, 20)]
+
+
+def test_out_builds_locally_without_upload_state_or_lock(env, tmp_path, monkeypatch):
+    monkeypatch.setattr(run_publish, "_lock", lambda: pytest.fail("took the lock"))
+    monkeypatch.setattr(upload, "token", lambda: pytest.fail("asked for a token"))
+    dest = tmp_path / "local" / "v3"
+    assert run_publish.main(["--out", str(dest)]) == 0
+    assert env.uploaded == []
+    assert not env.state_file.exists()
+    assert set(os.listdir(dest)) == DATA_FILES | {"_meta.json"}
+    assert not (tmp_path / "out").exists()      # the publish's own output folder is untouched
+    assert json.loads((dest / "_meta.json").read_bytes())["contractVersion"] == 3
+
+
+def test_out_ignores_publish_state(env, tmp_path):
+    run_publish.main([])
+    env.uploaded.clear()
+    state = env.state_file.read_text()
+    dest = tmp_path / "v3"
+    assert run_publish.main(["--out", str(dest), "--force"]) == 0
+    assert env.uploaded == [] and env.state_file.read_text() == state
+    assert set(os.listdir(dest)) == DATA_FILES | {"_meta.json"}
+
+
+def test_out_still_refuses_a_failed_run(env, tmp_path):
+    env.status = "Failed"
+    assert run_publish.main(["--out", str(tmp_path / "v3")]) == 0
+    assert not (tmp_path / "v3").exists()

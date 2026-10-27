@@ -2,7 +2,7 @@
 import gzip
 import json
 import os
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal
 
 import pytest
@@ -14,9 +14,23 @@ MONTH = date(2026, 10, 1)
 NAMES = {"1": "Lubbock"}
 
 
-def _row(branch, part, surplus, cost="12.50"):
-    return {"branch": branch, "franchise": "A", "partNumber": part, "onHand": 5, "target": 3,
-            "surplusQty": surplus, "status": "OK", "cost": Decimal(cost)}
+# Round 2 reorder fields as Gold writes them for a part on the built-in transfer rule (contract v3).
+ROUND2 = {"pendingQty": 0.0, "slc": None, "source": None, "commodityCode": None, "phaseInQty": None,
+          "phaseInEnds": None, "phaseInOn": None, "phaseInActive": False, "phaseInEndReason": None,
+          "appInboundQty": 0, "appOutboundQty": 0, "transferRuleId": None, "transferRuleName": "Built-in default",
+          "excessSupply": 12.0, "excessUnit": "Months", "allowSend": True, "allowReceive": True, "redistMax": 6.0,
+          "redistUnit": "Months", "redistMinValue": 0.0, "excessKeep": 3, "freeExcess": 2, "convNeed": 0,
+          "redistCap": 0, "redistEligible": False, "suggestedInQty": 0, "suggestedConvInQty": 0,
+          "suggestedOutQty": 0}
+NULLABLE = {"slc", "source", "commodityCode", "phaseInQty", "phaseInEnds", "phaseInOn", "phaseInEndReason",
+            "transferRuleId"}
+
+
+def _row(branch, part, surplus, cost="12.50", **kw):
+    r = {"branch": branch, "franchise": "A", "partNumber": part, "onHand": 5, "target": 3,
+         "surplusQty": surplus, "status": "OK", "cost": Decimal(cost), **ROUND2}
+    r.update(kw)
+    return r
 
 
 REORDER = [_row("92", "P2", 0), _row("1", "P1", 4), _row("1", "P3", 0), _row("92", "P4", 2)]
@@ -54,19 +68,50 @@ RULES = [
      "demandBasis": "Requests"},
 ]
 RULE_KEYS = {"id", "ruleName", "priority", "active", "archived", "franchise", "dealerGroupCode", "branch",
+             "slc", "source", "vendorCode", "productGroup", "commodityCode",
              "startMonth", "endMonth", "historyMonths", "minDemands", "weeksOfCover", "supplyUnit", "minLineValue",
              "maxLineValue", "demandBasis"}
+for _r in RULES:
+    _r.update({"slc": None, "source": None, "vendorCode": None, "productGroup": None, "commodityCode": None})
+RULES[1].update(slc="X1", vendorCode="1234", productGroup="PG", commodityCode="C1", source="S")
+
+TRULE_KEYS = {"id", "ruleName", "priority", "active", "archived", "franchise", "dealerGroupCode", "branch", "slc",
+              "source", "vendorCode", "productGroup", "commodityCode", "startMonth", "endMonth", "excessSupply",
+              "excessUnit", "allowSend", "allowReceive", "redistMax", "redistUnit", "redistMinValue"}
 
 
-def _build(reorder=None, rules=None):
+def _trule(i, **kw):
+    r = {k: None for k in TRULE_KEYS}
+    r.update(id=i, ruleName=f"T{i}", priority=1.0, active=True, excessSupply=12.0, excessUnit="Months")
+    r.update(kw)
+    return r
+
+
+TRULES = [_trule(5, redistMinValue=Decimal("25.00"), allowSend=False), _trule(2, extra="dropped")]
+SUGGESTIONS = [
+    {"kind": "Conventional", "franchise": "A", "partNumber": "P1", "fromBranch": "92", "toBranch": "1", "seq": 1,
+     "qty": 2, "fromCost": 12.5, "toCost": Decimal("12.40"), "value": 24.8, "description": "Bolt", "fromBin": "A1",
+     "toBin": None},
+    {"kind": "Redistribution", "franchise": "A", "partNumber": "P1", "fromBranch": "92", "toBranch": "7", "seq": 2,
+     "qty": 1, "fromCost": 12.5, "toCost": 12.5, "value": 12.5, "description": "Bolt", "fromBin": "A1",
+     "toBin": "B2"}]
+COMMITTED = [{"transferId": 3, "lineId": 9, "status": "Placed", "placedAt": datetime(2026, 10, 20, 15, 0),
+              "fromBranch": "1", "toBranch": "92 ", "franchise": "A", "partNumber": "P3", "qty": 2.0}]
+
+
+def _build(reorder=None, rules=None, trules=None, suggestions=None, committed=None):
     return build_files.build(REORDER if reorder is None else reorder, _hist, TRANSFERS, NAMES, AS_OF, MONTH,
-                             RULES if rules is None else rules)
+                             RULES if rules is None else rules,
+                             transfer_rules=TRULES if trules is None else trules,
+                             suggestions=SUGGESTIONS if suggestions is None else suggestions,
+                             committed=COMMITTED if committed is None else committed)
 
 
 def test_files_and_branches(out):
     hashes, branches = _build()
     assert set(hashes) == {"reorder_1.json.gz", "history_1.json.gz", "reorder_92.json.gz",
-                           "history_92.json.gz", "surplus.json.gz", "transfers.json.gz", "rules.json.gz"}
+                           "history_92.json.gz", "surplus.json.gz", "transfers.json.gz", "rules.json.gz",
+                           "transfer_rules.json.gz", "transfer_suggestions.json.gz"}
     assert sorted(os.listdir(out)) == sorted(hashes)
     assert [b["branch"] for b in branches] == ["1", "92"]
     assert branches[0]["name"] == "Lubbock"
@@ -121,7 +166,7 @@ def test_write_meta_plain_json(out):
     assert raw[:2] != b"\x1f\x8b"
     meta = json.loads(raw)
     assert meta == {"dataAsOf": AS_OF, "publishedAt": "2026-10-20T12:00:00+00:00", "source": "dev",
-                    "branches": branches, "counts": counts, "schemaVersion": 1, "contractVersion": 2}
+                    "branches": branches, "counts": counts, "schemaVersion": 1, "contractVersion": 3}
 
 
 def test_nan_rejected():
@@ -203,7 +248,8 @@ def test_transfers_to_or_from_excluded_branches_are_dropped(out):
     lines = [dict(TRANSFERS[0], toBranch=to, fromBranch=fr, ticket=f"T{i}")
              for i, (to, fr) in enumerate([("1", "92"), ("12", "1"), ("1", "93C "), ("4b", "92"), ("92", "5"),
                                            (" 97", "1"), ("", "1"), ("1", None)])]
-    build_files.build(REORDER, _hist, lines, NAMES, AS_OF, MONTH, RULES)
+    build_files.build(REORDER, _hist, lines, NAMES, AS_OF, MONTH, RULES, transfer_rules=TRULES,
+                      suggestions=SUGGESTIONS, committed=COMMITTED)
     got = [t["ticket"] for t in _read(out, "transfers.json.gz")["lines"]]
     assert got == ["T0", "T6", "T7"]
 
@@ -218,7 +264,7 @@ def test_reorder_row_at_excluded_branch_raises(out, branch):
 def test_meta_has_contract_version(out):
     _, branches = _build()
     path = build_files.write_meta(AS_OF, AS_OF, "dev", branches, {})
-    assert json.loads(open(path, "rb").read())["contractVersion"] == 2
+    assert json.loads(open(path, "rb").read())["contractVersion"] == 3
 
 
 @pytest.mark.parametrize("bad", [float("nan"), float("inf"), float("-inf"), Decimal("NaN")])
@@ -228,3 +274,126 @@ def test_rules_non_finite_number_fails(out, key, bad):
     with pytest.raises(ValueError, match=f"rule 2.*{key}.*not a finite number"):
         _build(rules=rules)
     assert not (out / "rules.json.gz").exists()
+
+
+
+# ---- Round 2 (Plan E6): contract v3 ----
+
+def test_reorder_round2_fields(out):
+    _build([_row("1", "P1", 0, slc="X1", phaseInQty=4, phaseInEnds=date(2026, 12, 31), transferRuleId=7,
+                 transferRuleName="Cotton", allowSend=False)])
+    p = _read(out, "reorder_1.json.gz")["parts"][0]
+    assert set(ROUND2) <= set(p)
+    assert (p["slc"], p["phaseInQty"], p["phaseInEnds"]) == ("X1", 4, "2026-12-31")
+    assert (p["transferRuleId"], p["transferRuleName"], p["allowSend"]) == (7, "Cotton", False)
+    assert p["excessSupply"] == 12 and p["redistMinValue"] == 0 and p["pendingQty"] == 0
+
+
+def test_reorder_nullable_round2_fields_stay_null(out):
+    _build([_row("1", "P1", 0)])
+    p = _read(out, "reorder_1.json.gz")["parts"][0]
+    assert {k for k in ROUND2 if p[k] is None} == NULLABLE
+
+
+@pytest.mark.parametrize("key", ["transferRuleName", "excessUnit", "redistUnit"])
+def test_reorder_blank_text_is_empty_string(out, key):
+    _build([_row("1", "P1", 0, **{key: None})])
+    assert _read(out, "reorder_1.json.gz")["parts"][0][key] == ""
+
+
+def test_reorder_null_pending_qty_is_zero(out):
+    _build([_row("1", "P1", 0, pendingQty=None)])
+    assert _read(out, "reorder_1.json.gz")["parts"][0]["pendingQty"] == 0
+
+
+@pytest.mark.parametrize("key", ["phaseInActive", "appInboundQty", "excessSupply", "allowSend", "freeExcess",
+                                 "convNeed", "redistEligible", "suggestedInQty", "suggestedConvInQty"])
+def test_reorder_null_never_null_field_fails(out, key):
+    with pytest.raises(ValueError, match=f"{key}.*null"):
+        _build([_row("1", "P1", 0, **{key: None})])
+
+
+def test_reorder_row_missing_round2_field_fails(out):
+    row = _row("1", "P1", 0)
+    del row["suggestedOutQty"]
+    with pytest.raises(ValueError, match="suggestedOutQty"):
+        _build([row])
+
+
+def test_rules_file_has_the_five_criteria(out):
+    _build()
+    r1 = _read(out, "rules.json.gz")["rules"][0]
+    assert (r1["slc"], r1["source"], r1["vendorCode"], r1["productGroup"], r1["commodityCode"]) == \
+        ("X1", "S", "1234", "PG", "C1")
+
+
+def test_transfer_rules_file_ordered_by_id(out):
+    hashes, _ = _build()
+    d = _read(out, "transfer_rules.json.gz")
+    assert set(d) == {"dataAsOf", "rules"} and d["dataAsOf"] == AS_OF
+    assert [r["id"] for r in d["rules"]] == [2, 5]
+    assert all(set(r) == TRULE_KEYS for r in d["rules"])
+    assert d["rules"][1]["redistMinValue"] == 25 and d["rules"][1]["allowSend"] is False
+    assert d["rules"][0]["redistMinValue"] is None   # raw: blank stays null (Gold reads it as 0)
+
+
+def test_transfer_rules_empty_still_written(out):
+    _build(trules=[])
+    assert _read(out, "transfer_rules.json.gz")["rules"] == []
+
+
+def test_transfer_rules_row_missing_key_raises(out):
+    bad = {k: v for k, v in _trule(1).items() if k != "redistUnit"}
+    with pytest.raises(ValueError, match="redistUnit"):
+        _build(trules=[bad])
+
+
+@pytest.mark.parametrize("bad", [float("nan"), float("inf"), Decimal("-Infinity")])
+@pytest.mark.parametrize("key", ["priority", "excessSupply", "redistMax", "redistMinValue", "endMonth"])
+def test_transfer_rules_non_finite_number_fails(out, key, bad):
+    with pytest.raises(ValueError, match=f"NonJD_TransferRules rule 3.*{key}.*not a finite number"):
+        _build(trules=[_trule(3, **{key: bad})])
+    assert not (out / "transfer_rules.json.gz").exists()
+
+
+def test_transfer_suggestions_file(out):
+    _build()
+    d = _read(out, "transfer_suggestions.json.gz")
+    assert set(d) == {"dataAsOf", "lines", "committed"} and d["dataAsOf"] == AS_OF
+    assert [l["seq"] for l in d["lines"]] == [1, 2]
+    assert set(d["lines"][0]) == {"kind", "franchise", "partNumber", "fromBranch", "toBranch", "seq", "qty",
+                                  "fromCost", "toCost", "value", "description", "fromBin", "toBin"}
+    assert d["lines"][0]["toCost"] == 12.4 and d["lines"][0]["toBin"] is None
+    c = d["committed"][0]
+    assert set(c) == {"transferId", "lineId", "status", "placedAt", "fromBranch", "toBranch", "franchise",
+                      "partNumber", "qty"}
+    assert c["placedAt"] == "2026-10-20T15:00:00+00:00" and c["toBranch"] == "92 " and c["qty"] == 2
+
+
+def test_transfer_suggestions_empty_still_written(out):
+    _build(suggestions=[], committed=[])
+    assert _read(out, "transfer_suggestions.json.gz") == {"dataAsOf": AS_OF, "lines": [], "committed": []}
+
+
+def test_transfer_suggestions_line_missing_key_raises(out):
+    bad = {k: v for k, v in SUGGESTIONS[0].items() if k != "toBin"}
+    with pytest.raises(ValueError, match="toBin"):
+        _build(suggestions=[bad])
+
+
+def test_transfer_suggestions_deterministic_whatever_the_input_order(out):
+    h1, _ = _build()
+    h2, _ = _build(suggestions=list(reversed(SUGGESTIONS)))
+    assert h1["transfer_suggestions.json.gz"] == h2["transfer_suggestions.json.gz"]
+
+
+def test_build_into_another_folder(out, tmp_path):
+    other = tmp_path / "local"
+    other.mkdir()
+    (other / "keep.txt").write_text("not ours")
+    hashes, branches = build_files.build(REORDER, _hist, TRANSFERS, NAMES, AS_OF, MONTH, RULES, transfer_rules=TRULES,
+                                         suggestions=SUGGESTIONS, committed=COMMITTED, out_dir=str(other))
+    meta = build_files.write_meta(AS_OF, AS_OF, "dev", branches, {}, out_dir=str(other))
+    assert sorted(os.listdir(other)) == sorted(list(hashes) + ["_meta.json", "keep.txt"])
+    assert os.path.dirname(meta) == str(other)
+    assert not out.exists()

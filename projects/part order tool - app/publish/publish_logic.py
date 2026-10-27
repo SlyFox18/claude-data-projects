@@ -8,13 +8,16 @@ NON-JD ORDER TOOL PUBLISH - PURE HELPERS (no network, no config; tested in test_
 - month_labels / history_arrays: 60-month arrays per part, index 0 = current month (MonthOffset 1).
 - clean_value: JSON-safe values (Decimal -> int/float, datetimes -> ISO UTC, NaN -> None).
 - upload_order: _meta.json goes last so the app never sees a date ahead of its files.
-- changed_files: only upload files whose content hash changed.
+- changed_files: only upload files whose content hash changed (plus ALWAYS_UPLOAD, sent every run).
+- central_date / is_committed / committed_lines: the committed app transfer lines Gold counts (round 2 step 8b),
+  published in transfer_suggestions.json.gz for the app's per-group parity check.
 - CONTRACT_VERSION / require_columns: the field contract the files follow, and a clear failure when Gold and the
   publish code are out of step (a Gold column the publish needs is missing).
 - EXCLUDED_BRANCHES / is_excluded_branch: branches left out of every output (Plan C D6; same list as Gold).
 """
 import math
 import os
+import unicodedata
 from datetime import date, datetime, timezone
 from decimal import Decimal
 from zoneinfo import ZoneInfo
@@ -23,8 +26,13 @@ ITEM = "Build_Gold_NonJD_Reorder"
 META_FILE = "_meta.json"
 CENTRAL = ZoneInfo("America/Chicago")
 # The field contract of the files (README "File contract"). 1 = Plan A/B fields (no contractVersion in _meta.json);
-# 2 = round 1 (Plan C). The app refuses a version it doesn't know.
-CONTRACT_VERSION = 2
+# 2 = round 1 (Plan C); 3 = round 2 (Plan E: phase-in, transfer rules and suggestions). The app refuses a version
+# it doesn't know.
+CONTRACT_VERSION = 3
+# Uploaded every run, changed or not (round 2 spec "The publish": the suggestions file embeds dataAsOf).
+ALWAYS_UPLOAD = ("transfer_suggestions.json.gz",)
+# Committed transfer statuses (spec step 8b, exact spelling); Placed counts only while recent.
+OPEN_TRANSFER_STATUSES = ("Draft", "Exported")
 # Same list as Build_Gold_NonJD_Reorder's EXCLUDED_BRANCHES; compared trimmed and upper-cased.
 EXCLUDED_BRANCHES = ("12", "5", "97", "4B", "93C")
 
@@ -146,4 +154,45 @@ def upload_order(paths: list) -> list:
 
 
 def changed_files(current: dict, previous: dict) -> list:
-    return sorted(name for name, digest in current.items() if previous.get(name) != digest)
+    return sorted(name for name, digest in current.items()
+                  if previous.get(name) != digest or name in ALWAYS_UPLOAD)
+
+
+def central_date(value: datetime) -> date:
+    """The Central-time date of an instant (naive = UTC)."""
+    if value.tzinfo is None:
+        value = value.replace(tzinfo=timezone.utc)
+    return value.astimezone(CENTRAL).date()
+
+
+def zs_trim(value) -> str:
+    """Strip Unicode space separators (Zs, incl. NBSP) from both ends, as Gold's ztrim; None -> ""."""
+    s = "" if value is None else str(value)
+    a, b = 0, len(s)
+    while a < b and unicodedata.category(s[a]) == "Zs":
+        a += 1
+    while b > a and unicodedata.category(s[b - 1]) == "Zs":
+        b -= 1
+    return s[a:b]
+
+
+def is_committed(line: dict, build_date: date) -> bool:
+    """A NonJD_Transfers line Gold counts in AppInboundQty / AppOutboundQty (spec step 8b + Part 1 clarifications):
+    Draft or Exported, or Placed with the Central date of PlacedAt on or after the build's Central date (no PlacedAt
+    never counts); both branches non-blank and not excluded (D6)."""
+    status = line.get("status")
+    if status not in OPEN_TRANSFER_STATUSES:
+        if status != "Placed" or line.get("placedAt") is None or central_date(line["placedAt"]) < build_date:
+            return False
+    for k in ("fromBranch", "toBranch"):
+        b = zs_trim(line.get(k))
+        if b == "" or b.upper() in EXCLUDED_BRANCHES:
+            return False
+    return True
+
+
+def committed_lines(rows: list, build_date: date) -> list:
+    """The committed lines, ordered by transferId, lineId."""
+    keep = [r for r in rows if is_committed(r, build_date)]
+    return sorted(keep, key=lambda r: (r.get("transferId") is None, r.get("transferId") or 0,
+                                       r.get("lineId") is None, r.get("lineId") or 0))

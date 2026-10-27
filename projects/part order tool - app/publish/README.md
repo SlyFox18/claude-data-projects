@@ -1,12 +1,15 @@
 # Non-JD Parts Order Tool - data publish
 
-Reads DP Gold (`Fact_NonJD_Reorder`, `Fact_NonJD_SalesHistory`, `Fact_OutstandingTransfers`, `dim_BranchLocation`)
-after the morning DP run and uploads the web app's data files to the SharePoint library **NonJD Order Data**
+Reads DP Gold (`Fact_NonJD_Reorder`, `Fact_NonJD_SalesHistory`, `Fact_NonJD_TransferSuggestion`,
+`Fact_OutstandingTransfers`, `dim_BranchLocation`) and the list tables Gold read (`NonJD_OrderRules`,
+`NonJD_TransferRules`, `NonJD_Transfers`) after the morning DP run and uploads the web app's data files to the SharePoint library **NonJD Order Data**
 on https://spitractor.sharepoint.com/sites/SouthPlainsImplement-ReportSite.
 
 - Plan: `docs/superpowers/plans/2026-10-20-non-jd-parts-order-tool-data-feed.md`; round 1 (contractVersion 2):
-  `docs/superpowers/plans/2026-10-26-non-jd-parts-order-tool-round-1.md`
-- Spec: `docs/superpowers/specs/2026-10-20-non-jd-parts-order-tool-redesign-design.md`
+  `docs/superpowers/plans/2026-10-26-non-jd-parts-order-tool-round-1.md`; round 2 (contractVersion 3):
+  `docs/superpowers/plans/2026-10-27-non-jd-parts-order-tool-round-2-phase-2.md` (task E6)
+- Spec: `docs/superpowers/specs/2026-10-20-non-jd-parts-order-tool-redesign-design.md`; round 2 (transfers,
+  phase-in): `docs/superpowers/specs/2026-10-27-non-jd-parts-order-tool-round-2-design.md` ("The contract (v3)")
 - Where the business rules live: the Gold notebook (fabric-workspace-docs
   `workspaces/DP - Presentation - Dev/Fact Tables/Parts Order Tool/Build_Gold_NonJD_Reorder.Notebook`) and its
   independent check, `tools/dp-migration/nonjd_reorder_check.py`.
@@ -26,19 +29,31 @@ on https://spitractor.sharepoint.com/sites/SouthPlainsImplement-ReportSite.
 
 By hand: `python run_publish.py`. Tests: `python -m pytest -q` (run from this folder; it has its own conftest.py).
 
+Local build, no upload: `python run_publish.py --out <dir>` builds every file plus `_meta.json` into `<dir>` and
+stops. It uploads nothing, writes no `publish_state.json` and takes no lock, so it can run beside the scheduled
+publish. The run checks below still apply (a failed latest run builds nothing); `publish_state.json` is ignored, so
+it builds even when the run was already published. Only earlier output files (`*.json.gz`, `_meta.json`) in `<dir>`
+are replaced. The app's parity checks and `make_engine_fixture.py --output <dir>` read such a build. With no
+`CLIENT_SECRET` in the settings file, OneLake is read with your `az` login, and no other secret is needed:
+`TENANT_ID`, `CLIENT_ID`, `SITE_ID` and `DRIVE_ID` must be set but aren't used (any placeholder will do).
+
 What decides whether to publish:
 - It looks back 14 days in `dp_refresh_log` for the latest `Build_Gold_NonJD_Reorder` item row. Skipped rows are
   ignored. It publishes only if that latest run succeeded and hasn't been published yet.
 - It refuses (exit 1) if `Fact_NonJD_Reorder.BuiltAtUtc` is outside that run, or if the table changes during extraction.
 - It refuses (exit 1) before extracting anything if a table (`Fact_NonJD_Reorder`, `Fact_NonJD_SalesHistory`,
-  `Fact_OutstandingTransfers` or `NonJD_OrderRules`) lacks a column the contract needs, naming the missing columns
-  (`extract.check_columns`). Gold and the publish code must be deployed together (e.g. round 1 Gold with
-  contractVersion 2 publish code).
-- It refuses (exit 1) if a rule in `NonJD_OrderRules` has a NaN or infinite number, naming the rule and the field.
+  `Fact_OutstandingTransfers`, `Fact_NonJD_TransferSuggestion`, `NonJD_OrderRules`, `NonJD_TransferRules` or
+  `NonJD_Transfers`) lacks a column the contract needs, naming the missing columns (`extract.check_columns`); a
+  missing list or suggestion table is named with what to deploy. Gold and the publish code must be deployed together
+  (round 2 Gold with contractVersion 3 publish code).
+- It refuses (exit 1) if a rule in `NonJD_OrderRules` or `NonJD_TransferRules` has a NaN or infinite number, naming
+  the rule and the field, or if Gold left a never-null round 2 reorder field null (see "Nulls").
 
 What gets uploaded:
-- The reorder, surplus, transfers and rules files are re-uploaded on every new DP run (they embed `dataAsOf`, so their
-  content always changes). History files are uploaded only when their content changed. `_meta.json` goes last.
+- The reorder, surplus, transfers, rules, transfer rules and transfer suggestions files are re-uploaded on every new
+  DP run (they embed `dataAsOf`, so their content always changes); `transfer_suggestions.json.gz` is sent on every
+  upload even if its hash is unchanged (`publish_logic.ALWAYS_UPLOAD`). History files are uploaded only when their
+  content changed. `_meta.json` goes last.
 - If `NONJD_SOURCE` changes, every file is re-sent.
 - Files over 4 MB fail the upload (there is no chunked upload yet).
 
@@ -65,13 +80,17 @@ Task Scheduler setup:
 - Check `_meta.json`'s `contractVersion` first (missing = 1) and load nothing unless it is the version the app knows
   (messages under "File contract").
 
-## File contract (schemaVersion 1, contractVersion 2)
+## File contract (schemaVersion 1, contractVersion 3)
 
 - `schemaVersion` 1 = the rules-list file layout (2026-10-20); the earlier matrix-era shape was never consumed. It
   is unchanged in round 1.
 - `contractVersion` = the fields inside the files. 1 = Plan A/B (`_meta.json` had no `contractVersion`; treat a
   missing one as 1). **2 = round 1** (Plan C, 2026-10-26): demand counts, weeks or months of supply, line value
-  limits, Manual Order, masks that end at a request, the new statuses and the excluded branches.
+  limits, Manual Order, masks that end at a request, the new statuses and the excluded branches. **3 = round 2**
+  (Plan E, 2026-10-27): `target` includes an active phase-in (step 8), `recommendedQty` subtracts committed app
+  transfers (step 9), order rules match on five more criteria, 28 new reorder fields, two new files
+  (`transfer_rules.json.gz`, `transfer_suggestions.json.gz`) and `counts.transferSuggestions`. Deploy the v3 app
+  first, then publish v3 (a v2 app refuses v3 data).
 - **Bump `contractVersion`** on any removed or renamed field, any change in a field's meaning, or any new `status`
   value. Don't bump for a new optional field: the app ignores fields it doesn't know.
 - **The app must refuse a `contractVersion` it doesn't know** and load nothing, rather than reading fields that have
@@ -91,7 +110,12 @@ unsorted for reading); `.json.gz` files are gzip-compressed, `_meta.json` is pla
   `maskExpires`, `maskedOn`, `minLineValue` and `maxLineValue`. Every other reorder field is never null: blank text
   arrives as `""` (`bin`, `superTo`, `superFrom`, `dealerGroupCode`), quantities and prices are 0 when missing, and
   `target`, `minimumNoDemand`, `manualOrder`, `ruleName`, `supplyUnit` and the other rule fields are always filled
-  (Gold fills the built-in default rule when no rule matches). In the other files, any field may be null.
+  (Gold fills the built-in default rule when no rule matches). Of the round 2 fields (contractVersion 3), only
+  `slc`, `source`, `commodityCode`, `phaseInQty`, `phaseInEnds`, `phaseInOn`, `phaseInEndReason` and
+  `transferRuleId` can be null (`transferRuleId` is null exactly when the built-in default transfer rule applied).
+  The others are never null: blank `transferRuleName` / `excessUnit` / `redistUnit` would arrive as `""` (Gold
+  always fills them), a null `pendingQty` arrives as 0 (Part 2 counts it as 0), and any other null fails the publish.
+  In the other files, any field may be null.
 - Dates are ISO strings (`2026-10-20`). Datetimes are ISO UTC with `+00:00` and may include fractional seconds.
 - Branch codes are Equip's text codes (e.g. `"1"`, `"92"`), **trimmed**. The `branch` value inside every file is that
   trimmed key, and it is the key in the file names. A code must match `^[A-Za-z0-9_-]+$`, and two raw codes that trim
@@ -104,21 +128,27 @@ unsorted for reading); `.json.gz` files are gzip-compressed, `_meta.json` is pla
 
 ### `_meta.json` (uploaded last)
 ```json
-{"schemaVersion": 1, "contractVersion": 2, "dataAsOf": "2026-10-20T11:41:07+00:00",
+{"schemaVersion": 1, "contractVersion": 3, "dataAsOf": "2026-10-20T11:41:07+00:00",
  "publishedAt": "2026-10-20T12:20:03.482915+00:00", "source": "prod",
  "branches": [{"branch": "1", "name": "Lubbock", "parts": 18234}],
- "counts": {"parts": 412345, "historyRows": 3456789, "transferLines": 210}}
+ "counts": {"parts": 412345, "historyRows": 3456789, "transferLines": 210, "transferSuggestions": 2312}}
 ```
 `dataAsOf` is when `Build_Gold_NonJD_Reorder` finished in the DP run (its `end_utc` in `dp_refresh_log`), not the
 publish time. `branches` is sorted numerically, then alphabetically; `name` falls back to the code if the branch is
 not in `dim_BranchLocation`. `counts.parts` is the total reorder rows, `historyRows` the rows read from the history
-table. `contractVersion` is described above (missing = 1).
+table, `transferLines` the Equip outstanding transfer lines read, `transferSuggestions` the lines in
+`transfer_suggestions.json.gz`. `contractVersion` is described above (missing = 1).
 
 ### `reorder_<branch>.json.gz`
-`{"branch", "dataAsOf", "parts": [ ... ]}`, one object per part in scope at that branch. Each part has the 53 fields
-below: `extract.REORDER_COLUMNS` selects 54 columns, and `branch` is the file-level key rather than a per-part field.
-They are renamed as shown (the camelCase of the Gold column unless noted). Gold's `RuleId` and `BuiltAtUtc` are not
-published (users see the rule name, not its list id).
+`{"branch", "dataAsOf", "parts": [ ... ]}`, one object per part in scope at that branch. Each part has the 81 fields
+below (53 + 28 round 2 fields): `extract.REORDER_COLUMNS` selects 82 columns, and `branch` is the file-level key
+rather than a per-part field. They are renamed as shown (the camelCase of the Gold column unless noted). Gold's
+`RuleId` and `BuiltAtUtc` are not published (users see the rule name, not its list id); `TransferRuleId` is (plan E
+decision X6), for showing which transfer rule applied and for the parity check.
+
+Changed in contractVersion 3: `target` includes an active phase-in (step 8) and `recommendedQty` subtracts
+`appInboundQty` (step 9). `surplusQty` is unchanged (shown as "Above target"). The 28 new fields are in the second
+table below.
 
 Changed in contractVersion 2: `minimumIgnored` is replaced by `minimumNoDemand`, `minActiveMonths` by `minDemands`,
 and `weeksOfCover` by `supply` + `supplyUnit` + `supplyMonths`. New: `demandCount`, `unitsSoldWindow`,
@@ -166,10 +196,39 @@ and `weeksOfCover` by `supply` + `supplyUnit` + `supplyMonths`. New: `demandCoun
 | inboundQty | Open quantity on outstanding transfers into this branch; 0 (not null) when none |
 | status | First match: `ManualOrder`, `Masked`, `NoRecentActivity` (target 0 and no activity in the window: no demands and no units sold), `NotStocked` (some activity, but the target came out 0: below `minDemands`, 0 supply, or net demand <= 0), `BelowMinValue`, `AboveMaxValue` (the maximum line value cut the line to 0: one unit costs more than it), `OutOfStock` (recommendedQty > 0 and onHand <= 0), `Reorder` (recommendedQty > 0), `OK`. A partial cap keeps `OutOfStock` / `Reorder` with `valueCapped` true |
 
+Round 2 fields (contractVersion 3; the round 2 spec's "The calculation" defines each one, and its clarifications
+sections settle the edge cases). Display them; don't recompute them, except where the app's live engine recalculates
+the whole part.
+
+| Field | Meaning |
+|---|---|
+| pendingQty | Silver_PartInformation PendingQty as stored (stock committed to tickets); Part 2 uses max(0, trunc(pendingQty)). Never null (0 when Gold has none) |
+| slc, source, commodityCode | Part criteria from Silver_PartInformation, as stored; nullable. Order and transfer rules match on them (with `vendorCode`, `productGroup`) |
+| phaseInQty | The part setting's PhaseInQty (whole number 1-99999); null when blank or invalid |
+| phaseInEnds | Date string; null = no end date |
+| phaseInOn | Date string the phase-in was saved (display only); nullable |
+| phaseInActive | Boolean: phaseInQty > 0, phaseInEnds blank or >= the Central date of the build, and demandCount < max(minDemands, 1). Can be true on a Masked / ManualOrder part |
+| phaseInEndReason | `Expired`, `MetCriteria` or null (display only) |
+| appInboundQty, appOutboundQty | Units on committed app transfer lines into / out of this branch + franchise + part (step 8b); the lines are in `transfer_suggestions.json.gz` `committed` |
+| transferRuleId | `NonJD_TransferRules` Id of the transfer rule that applied; null = the built-in default |
+| transferRuleName | That rule's name (`Rule <Id>` when unnamed), or `Built-in default` |
+| excessSupply, excessUnit | The rule's excess threshold and its unit (`Weeks` / `Months`) |
+| allowSend, allowReceive | Booleans: whether this branch may send / receive this part |
+| redistMax, redistUnit | Redistribution cap and its unit (a blank RedistMax arrives as 6 Months) |
+| redistMinValue | Smallest redistribution line value the sender ships (blank = 0) |
+| excessKeep | max(target, ceil9(monthlyRate x months(excessSupply, excessUnit))): what the branch keeps before calling stock excess |
+| freeExcess | Units this branch can send: allowSend ? max(0, trunc(onHand) - pend - excessKeep - appOutboundQty) : 0 |
+| convNeed | Conventional need: the step 9 base qty, 0 when it can't receive, is ManualOrder / masked / a minimum with no demand (unless phasing in) or has free excess |
+| redistCap | min(ceil9(monthlyRate x months(redistMax, redistUnit)), excessKeep) |
+| redistEligible | Boolean: may take redistribution (allowReceive, target > 0, rate > 0, not ManualOrder / masked, no free excess) |
+| suggestedInQty, suggestedConvInQty, suggestedOutQty | Units suggested into this part (all kinds / conventional only) and out of it, from Gold's allocation; 0 when none |
+
 ### Settings the app reads live (`NonJD_PartSettings`)
 
 The reorder file carries the settings as of the DP run. The app re-reads the list and recalculates with these
-fields live: `MinOverride`, `Masked`, `MaskExpires`, **`MaskedOn`** and **`ManualOrder`** (new in contractVersion 2).
+fields live: `MinOverride`, `Masked`, `MaskExpires`, **`MaskedOn`** and **`ManualOrder`** (new in contractVersion 2),
+and **`PhaseInQty`**, **`PhaseInEnds`** and **`PhaseInOn`** (new in contractVersion 3). It also reads
+`NonJD_Transfers` + `NonJD_TransferLines` live (open and recently placed) for step 8b, and `NonJD_TransferRules`.
 - Live mask = Masked AND (MaskExpires blank or >= the Central date today) AND NOT (MaskedOn set AND the date of the
   part's `lastRequested` > MaskedOn). `lastRequested` comes from the reorder file (as of the DP run), so a request
   made today ends the mask from the next DP run.
@@ -271,22 +330,49 @@ included branch, only parts with surplusQty > 0. Used for "store N has extra" hi
 
 ### `rules.json.gz`
 `{"dataAsOf", "rules": [{"id", "ruleName", "priority", "active", "archived", "franchise", "dealerGroupCode",
-"branch", "startMonth", "endMonth", "historyMonths", "minDemands", "weeksOfCover", "supplyUnit", "minLineValue",
-"maxLineValue", "demandBasis"}]}`, ordered by `id`. These are exactly the `NonJD_OrderRules` columns Gold reads, raw
+"branch", "slc", "source", "vendorCode", "productGroup", "commodityCode", "startMonth", "endMonth", "historyMonths",
+"minDemands", "weeksOfCover", "supplyUnit", "minLineValue", "maxLineValue", "demandBasis"}]}`, ordered by `id`. These are exactly the `NonJD_OrderRules` columns Gold reads, raw
 as the staging table holds them (Gold and the app's engine validate and normalise them the same way): numbers are
 JSON numbers (whole values as integers); a blank `supplyUnit` is `null` and means `Weeks`; a blank `archived` or
 `active` is `null` and means No; blank text may be `""` or `null`. `weeksOfCover` is the Supply amount, in
 `supplyUnit` (the column kept its name). `MinActiveMonths` is still in the list but unused (D1) and `Modified` is left
 out; neither is published.
 
-Changed in contractVersion 2: `minActiveMonths` is gone; `minDemands`, `supplyUnit`, `minLineValue`, `maxLineValue`
-and `archived` are new. Archived rules are in the file (the Rules page shows them under "Show archived"); like
+Changed in contractVersion 3: the five criteria `slc`, `source`, `vendorCode`, `productGroup` and `commodityCode`
+(text; blank = any) are new. Changed in contractVersion 2: `minActiveMonths` is gone; `minDemands`, `supplyUnit`,
+`minLineValue`, `maxLineValue` and `archived` are new. Archived rules are in the file (the Rules page shows them under "Show archived"); like
 inactive rules, the engine ignores them: they are neither matched nor validated.
 
 This is the rules list as the DP run read it at publish time; the app uses it to check its own engine against Gold.
 If the rules dataflow is re-run between Gold and the publish, it can differ from what Gold used, so the app reports
 rather than blocks. An empty list is written as `"rules": []`. Each publish uploads it (it embeds `dataAsOf`),
 before `_meta.json`, like the other per-run files.
+
+### `transfer_rules.json.gz` (new in contractVersion 3)
+`{"dataAsOf", "rules": [{"id", "ruleName", "priority", "active", "archived", "franchise", "dealerGroupCode",
+"branch", "slc", "source", "vendorCode", "productGroup", "commodityCode", "startMonth", "endMonth", "excessSupply",
+"excessUnit", "allowSend", "allowReceive", "redistMax", "redistUnit", "redistMinValue"}]}`, ordered by `id`: every
+`NonJD_TransferRules` column Gold reads, raw, handled like `rules.json.gz` (a NaN or infinite number fails the
+publish; `Modified` and `Notes` are not published). Blank values are `null` and Gold and the engine read them as
+the spec says (units Months, AllowSend / AllowReceive Yes, RedistMax 6 Months, RedistMinValue 0; a null `active`
+means inactive). An empty list (Ben starts with none) is `"rules": []`, and the built-in default applies everywhere.
+
+### `transfer_suggestions.json.gz` (new in contractVersion 3)
+`{"dataAsOf", "lines": [{"kind", "franchise", "partNumber", "fromBranch", "toBranch", "seq", "qty", "fromCost",
+"toCost", "value", "description", "fromBin", "toBin"}], "committed": [{"transferId", "lineId", "status",
+"placedAt", "fromBranch", "toBranch", "franchise", "partNumber", "qty"}]}`. All branches in one file (about 2-3K
+lines a day, well under the 4 MB upload limit). Uploaded every run, before `_meta.json`.
+
+- `lines`: `Fact_NonJD_TransferSuggestion`, one per Kind + Franchise + PartNumber + FromBranch + ToBranch, sorted by
+  franchise, part number (nulls last), then `seq`. `kind` is `Conventional` or `Redistribution`; `seq` is the
+  emission order within the group (conventional first). `qty` is whole; `value` = qty x toCost to the cent.
+  `fromBranch` / `toBranch` are the stored branch values (not trimmed); trim before comparing to a branch key.
+  `description`, `fromBin` and `toBin` are for the screens and the CSV and may be null. The analysis columns
+  (FromFreeExcess, ToNeed and so on) stay in Gold.
+- `committed`: the `NonJD_Transfers` lines Gold counted in step 8b (the app's per-group parity needs exactly these),
+  sorted by `transferId`, `lineId`: Status Draft or Exported, or Placed with the Central date of `placedAt` on or
+  after the Central date of the build; both branches non-blank and not excluded. Values are raw: `placedAt` an ISO
+  UTC datetime or null, `qty` as stored (Gold counts max(0, trunc(qty))), `fromBranch` / `toBranch` untrimmed.
 
 ### `transfers.json.gz`
 `{"dataAsOf", "lines": [{"toBranch", "fromBranch", "partNumber", "ticket", "line", "orderQty", "shippedQty",

@@ -202,8 +202,8 @@ def test_history_arrays_duplicate_slot_raises():
 
 # ---- Round 1 (Plan C4): contract version, required columns, excluded branches ----
 
-def test_contract_version_is_2():
-    assert pl.CONTRACT_VERSION == 2
+def test_contract_version_is_3():
+    assert pl.CONTRACT_VERSION == 3
 
 
 def test_require_columns_passes_when_all_present():
@@ -243,3 +243,64 @@ def test_excluded_branch_list_matches_reference():
     ref = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(ref)
     assert pl.EXCLUDED_BRANCHES == tuple(ref.EXCLUDED_BRANCHES)
+
+
+# ---- Round 2 (Plan E6): suggestions always uploaded, committed transfer lines ----
+
+def test_upload_order_suggestions_before_meta():
+    order = pl.upload_order(["out/_meta.json", "out/transfer_suggestions.json.gz", "out/reorder_1.json.gz"])
+    assert order[-1] == "out/_meta.json"
+    assert order.index("out/transfer_suggestions.json.gz") < order.index("out/_meta.json")
+
+
+def test_changed_files_always_includes_suggestions():
+    same = {"transfer_suggestions.json.gz": "1", "a": "2"}
+    assert pl.changed_files(same, dict(same)) == ["transfer_suggestions.json.gz"]
+    assert pl.changed_files({"a": "2"}, {"a": "2"}) == []
+
+
+def _line(status="Draft", placed=None, fb="1", tb="92", **kw):
+    r = {"transferId": 1, "lineId": 1, "status": status, "placedAt": placed, "fromBranch": fb, "toBranch": tb,
+         "franchise": "MC", "partNumber": "P1", "qty": 2.0}
+    r.update(kw)
+    return r
+
+
+BUILD_DAY = date(2026, 10, 27)
+
+
+@pytest.mark.parametrize("status", ["Draft", "Exported"])
+def test_committed_open_statuses_count(status):
+    assert pl.is_committed(_line(status), BUILD_DAY)
+
+
+@pytest.mark.parametrize("status", ["Cancelled", "draft", "Draft ", "", None, "Other"])
+def test_committed_other_statuses_never_count(status):
+    assert not pl.is_committed(_line(status), BUILD_DAY)
+
+
+def test_committed_placed_by_central_date():
+    # 2026-10-27 04:59 UTC is still 10-26 in Central (CDT, UTC-5): too old
+    assert not pl.is_committed(_line("Placed", datetime(2026, 10, 27, 4, 59, tzinfo=timezone.utc)), BUILD_DAY)
+    assert pl.is_committed(_line("Placed", datetime(2026, 10, 27, 5, 0, tzinfo=timezone.utc)), BUILD_DAY)
+    assert pl.is_committed(_line("Placed", datetime(2026, 10, 27, 5, 0)), BUILD_DAY)   # naive = UTC
+    assert pl.is_committed(_line("Placed", datetime(2026, 11, 3, 12, 0)), BUILD_DAY)   # future counts
+    assert not pl.is_committed(_line("Placed", None), BUILD_DAY)
+
+
+@pytest.mark.parametrize("fb,tb", [("", "92"), ("1", None), ("  ", "92"), ("1", "12"), (" 93c", "1"),
+                                   ("4B", "92")])
+def test_committed_blank_or_excluded_branch_dropped(fb, tb):
+    assert not pl.is_committed(_line(fb=fb, tb=tb), BUILD_DAY)
+
+
+def test_committed_lines_filters_and_orders():
+    rows = [_line(transferId=2, lineId=1), _line("Cancelled", transferId=1, lineId=9),
+            _line(transferId=1, lineId=3), _line(transferId=1, lineId=2, fb=" ")]
+    got = pl.committed_lines(rows, BUILD_DAY)
+    assert [(r["transferId"], r["lineId"]) for r in got] == [(1, 3), (2, 1)]
+
+
+def test_central_date():
+    assert pl.central_date(datetime(2026, 10, 27, 4, 0)) == date(2026, 10, 26)
+    assert pl.central_date(datetime(2026, 10, 27, 4, 0, tzinfo=CHI)) == date(2026, 10, 27)
