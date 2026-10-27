@@ -1606,6 +1606,34 @@ def test_null_qty_line_counts_zero():
     assert row()["AppInboundQty"] == 2
 
 
+@pytest.mark.parametrize("bad_qty", [-3, -0.5, float("nan"), float("inf"), float("-inf")])
+def test_negative_nan_and_infinite_qty_count_zero(bad_qty):
+    con = _con()
+    row = _committed(con)
+    _app_line(con, "Draft", bad_qty)                          # into P1 at branch 1
+    _app_line(con, "Draft", bad_qty, from_b="1", to_b="2", tid=2)  # out of P1 at branch 1
+    _app_line(con, "Draft", 2, tid=3)
+    _app_line(con, "Draft", 2.9, from_b="1", to_b="3", tid=4)  # truncated to 2
+    r = row()
+    assert (r["AppInboundQty"], r["AppOutboundQty"], r["RecommendedOrderQty"]) == (2, 2, 8)
+
+
+@pytest.mark.parametrize("from_b,to_b", [(None, "1"), ("1", None), ("", "1"), ("1", "  ")])
+def test_line_with_blank_or_null_branch_is_dropped(from_b, to_b):
+    con = _con()
+    row = _committed(con)
+    _app_line(con, "Draft", 4, from_b=from_b, to_b=to_b)
+    r = row()
+    assert (r["AppInboundQty"], r["AppOutboundQty"]) == (0, 0)
+
+
+def test_placed_in_the_future_counts():
+    con = _con()
+    row = _committed(con)
+    _app_line(con, "Placed", 3, placed_at="2026-11-05 15:00")
+    assert row()["AppInboundQty"] == 3
+
+
 def test_no_lines_is_zero():
     con = _con()
     r = _committed(con)()

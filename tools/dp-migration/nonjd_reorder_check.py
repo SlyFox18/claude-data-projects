@@ -236,9 +236,11 @@ EXPECTED_SQL = f"""
                OR (StartMonth <= EndMonth AND month($cur) BETWEEN StartMonth AND EndMonth)
                OR (StartMonth > EndMonth AND (month($cur) >= StartMonth OR month($cur) <= EndMonth)))
     ),
-    -- A11: each part's values for the eight criteria, trimmed and upper-case (blank -> NULL, which matches only a
-    -- blank criterion). ProductGroup comes from Silver_InMaster (per branch; no row = blank). VendorCode is an
-    -- integer, compared as its integer's text ("1234"; a criterion "01234" or "1234.0" does not match).
+    -- A11: each part's values for the eight criteria, trimmed and upper-case. A blank value stays '' and a missing
+    -- one NULL; neither equals a non-blank criterion (criteria are nullif'd to NULL = any), so a blank part value
+    -- matches only a blank criterion. ProductGroup comes from Silver_InMaster (per branch; no row = NULL).
+    -- VendorCode is an integer, compared as its integer's text ("1234"; a criterion "01234" or "1234.0" does not
+    -- match; Silver maps a missing vendor code to 0).
     part_crit AS (
         SELECT sc.Branch, sc.Franchise, sc.PartNumber,
                upper(trim(sc.Franchise)) AS p_franchise, upper(trim(sc.DealerGroupCode)) AS p_dgc,
@@ -276,16 +278,18 @@ EXPECTED_SQL = f"""
     ),
     -- step 8b (A14): committed app transfer lines. Draft and Exported count; Placed counts while the Central date
     -- of PlacedAt (a UTC instant) is on or after the build's Central date; any other status (Cancelled, NULL, a
-    -- different spelling) never counts, and neither does Placed without a PlacedAt. Lines to or from an excluded
-    -- branch (D6) are ignored. Branches are compared trimmed and upper-case; franchise and part number exactly, as
-    -- stored in the line. Qty: NULL = 0, truncated toward zero per line.
+    -- different spelling) never counts, and neither does Placed without a PlacedAt (a future PlacedAt counts). A
+    -- line with a blank or NULL FromBranch or ToBranch, or to or from an excluded branch (D6), is dropped whole.
+    -- Branches are compared trimmed and upper-case; franchise and part number exactly, as stored in the line.
+    -- Qty (spec "Part 1 clarifications"): each line counts max(0, trunc(Qty)); NULL, NaN and +-inf count 0.
     committed_lines AS (
         SELECT upper(trim(FromBranch)) AS fb, upper(trim(ToBranch)) AS tb, Franchise, PartNumber,
-               CAST(trunc(coalesce(Qty, 0)) AS BIGINT) AS q
+               CASE WHEN isfinite(Qty) THEN CAST(greatest(0, trunc(Qty)) AS BIGINT) ELSE 0 END AS q
         FROM app_transfers
         WHERE (Status IN ('Draft', 'Exported')
                OR (Status = 'Placed'
                    AND CAST(timezone('{CENTRAL}', CAST(PlacedAt AS TIMESTAMPTZ)) AS DATE) >= $today))
+          AND coalesce(trim(FromBranch), '') <> '' AND coalesce(trim(ToBranch), '') <> ''
           AND upper(trim(FromBranch)) NOT IN ({_EXCLUDED_SQL})
           AND upper(trim(ToBranch)) NOT IN ({_EXCLUDED_SQL})
     ),
