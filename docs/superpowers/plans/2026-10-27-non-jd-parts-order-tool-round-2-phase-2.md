@@ -27,6 +27,17 @@
 >   - **Build date:** phase-in end and committed Placed are judged against the Central date of `dataAsOf`.
 >   - **Live wiring:** live phase-in settings feed the engine. The committed totals still come from the file until E9 wires the live transfer lists into `engineBranches`, and One-Time doesn't pass `appInboundQty` yet (E9).
 >   - **Known flake:** one PartPage "Load the rest" timing test; watch it in E14.
+> - **E9 done 2026-10-27** (app `1e2fbc6`, 1,319 tests). Written blind from the spec.
+>   - **Parity:** `parity-full` on the Dev v3 build gives 0 mismatches over 199,555 parts (Parts 1–3) and all 2,312 suggestion lines ($150,433.11 conventional, $115,878.99 redistribution).
+>   - **Fuzz:** seeds 1, 2 and 3 (5,000 groups each) give 0 mismatched groups.
+>   - **Planted bugs**, all caught on every seed (mismatched groups, seeds 1/2/3):
+>     - redistribution sort descending: 1532/1509/1533;
+>     - no self-send guard: 176/156/161;
+>     - no round9 on sender cover: 335/345/320;
+>     - half-even Value: 399/385/444.
+>   - **Speed:** `allocateAll` takes about 9 ms; all of Parts 2–3 about 215 ms, run only when the inputs change.
+>   - **Live wiring:** live committed lines and transfer rules feed the engine, and One-Time subtracts appInboundQty.
+>   - **Not yet exercised on real data:** transfer rules and committed lines (Dev has none), so E15 must add test rows.
 > - **Ben's answers 2026-10-27** (`feedback/2026-10-27-ben-transfer-answers.md`). They change E3, E5 and E9 (allocation order by months of supply), the built-in RedistMinValue (0, was 25), E12 (both kinds ticked, kind badge, franchise filter) and the SharePoint default (**Brian: set `NonJD_TransferRules.RedistMinValue` default to 0**). The spec's A6, A9, A12 and Part 3 are updated, and they win over any older wording below.
 > - **E11b done 2026-10-27** (app `cd8f0dc` + review fixes `6e2418d`; 999 tests, lint clean): dealer group checklist on One-Time Order and Recommended Reorder (`?dgc=`), a "(none)" choice for parts with no group (36% of parts; `-` in the URL, `""` in Parameters), ticking every group = All, requested groups kept while branches load. Known quirk to show in the walkthrough: Select all on the group list reads as All (boxes unticked), because nothing ticked already means every group. Not deployed; ships with 0.5.0.
 >
