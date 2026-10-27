@@ -280,6 +280,21 @@ The reference (`tools/dp-migration/nonjd_reorder_check.py`, E3) settled these po
 - **Compared exactly:** Seq, Qty and the integer columns.
 - **Compared within the tolerance:** FromCost, ToCost, Value and ToRate.
 
+**Decisions after the E3 review (Claude, 2026-10-27)**
+
+These replace any wording above that disagrees with them.
+
+1. **Rounding in Parts 2–3 is round half up, the same in all three implementations.**
+   - round9(x) = floor(x × 1e9 + 0.5) / 1e9 in float64. That is exactly what the app's existing `round9` (`Math.round(x * 1e9) / 1e9`) computes.
+   - Value = floor(Qty × ToCost × 100 + 0.5) / 100.
+   - Months from weeks = x × 12 / 52, worked out first, then multiplied by the rate.
+   - The reference's Python allocation and Gold's allocation (inside the Python `applyInPandas` function, not Spark columns) use the same helper.
+   - Part 1's existing rounding is unchanged; it matched on every part in round 1.
+2. **RedistCap = min(RedistCap, ExcessKeep).** Redistribution never fills a receiver above what it would itself call excess, so stock can't bounce back the next morning when a rule's RedistMax is above its ExcessSupply.
+3. **Sender cover counts available stock:** round9((oh − pend − AppOutboundQty − sent) / rate), or +∞ at rate 0. This is the same basis as FreeExcess, so a branch with stock committed to tickets or to saved transfers doesn't look fuller than it is (Ben, A6).
+4. **An active phase-in lifts the A5 exclusion.** A part with PhaseInActive is never treated as a "minimum with no demand" for ConvNeed, so its phase-in target can be filled by transfer (A22: phase-in is the tool for "we want this stocked here").
+5. **Receivers use the order's own stock figures** (oh, oo, AppInboundQty, as in step 9). Pending stock at a receiver is not subtracted, the same as the order quantity in round 1.
+
 **Reference figures on Dev data (2026-10-27, built-in default rule, Ben's ordering, no minimum)**
 - **Free excess:** 1,183,219 units, $3.29M ($2.54M of it at rate 0).
 - **Conventional:** 1,219 lines, 10,293 units, **$150,433**. They fill 1,023 order lines (835 fully). 882 of those order lines need one sender, 107 need two and 34 need three or more.
