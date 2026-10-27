@@ -259,8 +259,8 @@ The reference (`tools/dp-migration/nonjd_reorder_check.py`, E3) settled these po
 - Codes with the same number ("02" and "2") sort by the trimmed code, then by the raw value. Trimming removes spaces only.
 
 **Rounding**
-- round9 rounds half to even on the binary value (Python `round(x, 9)`). It only matters when two covers are within about 1e-9 of each other.
-- Value = round(Qty × ToCost, 2), half to even. The compares allow a 1e-6 tolerance on money and rate.
+- Rounding in Parts 2–3 is half up: round9(x) = floor(x × 1e9 + 0.5) / 1e9 and Value = floor(Qty × ToCost × 100 + 0.5) / 100, in float64. ExcessKeep and RedistCap use ceil(round9(…)). See decision 1 below.
+- The compares allow a 1e-6 tolerance on money and rate.
 
 **Allocation**
 - **Seq** runs once per group: all conventional lines first, then redistribution continues the numbering.
@@ -293,13 +293,14 @@ These replace any wording above that disagrees with them.
 2. **RedistCap = min(RedistCap, ExcessKeep).** Redistribution never fills a receiver above what it would itself call excess, so stock can't bounce back the next morning when a rule's RedistMax is above its ExcessSupply.
 3. **Sender cover counts available stock:** round9((oh − pend − AppOutboundQty − sent) / rate), or +∞ at rate 0. This is the same basis as FreeExcess, so a branch with stock committed to tickets or to saved transfers doesn't look fuller than it is (Ben, A6).
 4. **An active phase-in lifts the A5 exclusion.** A part with PhaseInActive is never treated as a "minimum with no demand" for ConvNeed, so its phase-in target can be filled by transfer (A22: phase-in is the tool for "we want this stocked here").
+6. **A null PartNumber groups like a value** (Spark `groupBy` semantics). Groups sort with null after every value, and joins back onto parts are null-safe. Part 1 never gives such a part a need, so this can't produce lines on real data.
 5. **Receivers use the order's own stock figures** (oh, oo, AppInboundQty, as in step 9). Pending stock at a receiver is not subtracted, the same as the order quantity in round 1.
 
-**Reference figures on Dev data (2026-10-27, built-in default rule, Ben's ordering, no minimum)**
+**Reference figures on Dev data** (2026-10-27, after the decisions above; built-in default rule, Ben's ordering, no minimum):
 - **Free excess:** 1,183,219 units, $3.29M ($2.54M of it at rate 0).
-- **Conventional:** 1,219 lines, 10,293 units, **$150,433**. They fill 1,023 order lines (835 fully). 882 of those order lines need one sender, 107 need two and 34 need three or more.
-- **Redistribution:** 1,095 lines, 9,403 units, **$115,879**. 574 of them ($5.4K) are under $25, and the median line is $23.25.
-- Sender and receiver cost differ on 984 of 2,314 lines.
+- **Conventional:** 1,219 lines, 10,293 units, **$150,433**. They fill 1,023 order lines (835 fully). Of those order lines, 883 need one sender, 105 need two and 35 need three or more.
+- **Redistribution:** 1,093 lines, 9,403 units, **$115,879**. 571 of the lines ($5.4K) are under $25, and the median line is $23.26.
+- **Costs:** sender and receiver cost differ on 984 of the 2,312 lines.
 
 ### Part 4: what ticking does (the app only)
 
