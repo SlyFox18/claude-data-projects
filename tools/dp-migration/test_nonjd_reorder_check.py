@@ -1,6 +1,8 @@
 # tools/dp-migration/test_nonjd_reorder_check.py
 """Tests for the reference reorder rules (Plan C round 1: docs/superpowers/plans/2026-10-26-non-jd-parts-order-tool-
-round-1.md, "The calculation", "Validation" and decisions D13/D14) and compare()."""
+round-1.md, "The calculation", "Validation" and decisions D13/D14), round 2 Parts 1-3 (spec 2026-10-27-non-jd-parts-
+order-tool-round-2-design.md) and the compares."""
+import random
 from datetime import date
 
 import duckdb
@@ -38,6 +40,12 @@ def _con():
     con.execute("""CREATE TABLE app_transfers (TransferId BIGINT, Status VARCHAR, PlacedAt TIMESTAMPTZ,
                    FromBranch VARCHAR, ToBranch VARCHAR, LineId BIGINT, Franchise VARCHAR, PartNumber VARCHAR,
                    Qty DOUBLE, Kind VARCHAR, Created TIMESTAMPTZ)""")
+    con.execute("""CREATE TABLE transfer_rules (Id BIGINT, RuleName VARCHAR, Priority DOUBLE, Active BOOLEAN,
+                   Archived BOOLEAN, Franchise VARCHAR, DealerGroupCode VARCHAR, Branch VARCHAR, SLC VARCHAR,
+                   Source VARCHAR, VendorCode VARCHAR, ProductGroup VARCHAR, CommodityCode VARCHAR,
+                   StartMonth DOUBLE, EndMonth DOUBLE, ExcessSupply DOUBLE, ExcessUnit VARCHAR, AllowSend BOOLEAN,
+                   AllowReceive BOOLEAN, RedistMax DOUBLE, RedistUnit VARCHAR, RedistMinValue DOUBLE,
+                   Modified TIMESTAMPTZ)""")
     return con
 
 
@@ -137,7 +145,10 @@ def test_output_columns():
         "MinimumNoDemand", "StockingTarget", "ValueCapped", "BelowMinValue", "ManualOrder", "MaskedOn",
         "IsMasked", "RecommendedOrderQty", "SurplusQty", "InboundTransferQty", "Status",
         "PendingQty", "SLC", "Source", "CommodityCode", "PhaseInQty", "PhaseInEnds", "PhaseInOn", "PhaseInActive",
-        "PhaseInEndReason", "AppInboundQty", "AppOutboundQty"]
+        "PhaseInEndReason", "AppInboundQty", "AppOutboundQty",
+        "TransferRuleId", "TransferRuleName", "ExcessSupply", "ExcessUnit", "AllowSend", "AllowReceive",
+        "RedistMax", "RedistUnit", "RedistMinValue", "ExcessKeep", "FreeExcess", "ConvNeed", "RedistCap",
+        "RedistEligible", "SuggestedInQty", "SuggestedConvInQty", "SuggestedOutQty"]
 
 
 def test_scope_excludes_jd_test_franchises_and_zero_cost():
@@ -1682,6 +1693,769 @@ def test_phase_in_with_app_inbound():
 
 
 # ---------------------------------------------------------------------------------------------------------
+# round 2 Part 2: transfer rule pick (spec "Part 2" item 1; A10, A11)
+# ---------------------------------------------------------------------------------------------------------
+def _trule(con, rid, name=None, priority=0, active=True, archived=None, franchise=None, dgc=None, branch=None,
+           slc=None, source=None, vendor=None, product_group=None, commodity=None, start=None, end=None,
+           excess=12, excess_unit="Months", send=True, receive=True, redist=6, redist_unit="Months", minval=0):
+    con.execute("""INSERT INTO transfer_rules VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                       ?, TIMESTAMPTZ '2026-10-01 00:00:00+00')""",
+                [rid, name or f"T{rid}", priority, active, archived, franchise, dgc, branch, slc, source, vendor,
+                 product_group, commodity, start, end, excess, excess_unit, send, receive, redist, redist_unit,
+                 minval])
+
+
+def _br(con, branch, oh=0, oo=0, units=0, cost=10, pending=None, pn="P1", franchise="MC", **part_kw):
+    """Part `pn` at `branch` with `units` sold last month in one request. Under _simple_rule (52 weeks, MinDemands
+    0) and the built-in transfer default (12 months): StockingTarget = units, MonthlyRate = units / 12,
+    ExcessKeep = units, FreeExcess = max(0, oh - pending - units), ConvNeed = max(0, units - oh - oo) when units
+    > 0, RedistCap = ceil(units / 2)."""
+    _part(con, pn, oh=oh, oo=oo, cost=cost, branch=branch, franchise=franchise, pending=pending, **part_kw)
+    if units:
+        _hist(con, pn, {"2026-09-01": (units, 1)}, branch=branch, franchise=franchise)
+
+
+def _lines(con, cur=CUR, today=TODAY):
+    """The expected suggestion lines as (Kind initial, FromBranch, ToBranch, Qty, Seq), in Franchise, PartNumber,
+    Seq order."""
+    chk.build_expected(con, cur, today)
+    return [(k[0], f, t, q, s) for k, f, t, q, s in con.execute(
+        "SELECT Kind, FromBranch, ToBranch, Qty, Seq FROM expected_suggestion ORDER BY Franchise, PartNumber, Seq"
+    ).fetchall()]
+
+
+def _line_rows(con, cur=CUR, today=TODAY):
+    chk.build_expected(con, cur, today)
+    cur_ = con.execute("SELECT * FROM expected_suggestion ORDER BY Franchise, PartNumber, Seq")
+    cols = [d[0] for d in cur_.description]
+    return [dict(zip(cols, r)) for r in cur_.fetchall()]
+
+
+TRULE_FIELDS = ("TransferRuleId", "TransferRuleName", "ExcessSupply", "ExcessUnit", "AllowSend", "AllowReceive",
+                "RedistMax", "RedistUnit", "RedistMinValue")
+
+
+def test_transfer_builtin_default_when_no_rules():
+    con = _con()
+    _part(con, "P1")
+    r = _run(con)[K("P1")]
+    assert tuple(r[c] for c in TRULE_FIELDS) == (None, "Built-in default", 12, "Months", True, True, 6, "Months", 0)
+
+
+def test_transfer_builtin_default_constant():
+    assert chk.TRANSFER_DEFAULT == {"RuleName": "Built-in default", "ExcessSupply": 12.0, "ExcessUnit": "Months",
+                                    "AllowSend": True, "AllowReceive": True, "RedistMax": 6.0,
+                                    "RedistUnit": "Months", "RedistMinValue": 0.0}
+
+
+def test_transfer_rule_priority_then_criteria_then_lowest_id():
+    con = _con()
+    _part(con, "P1", dgc="COTTON")
+    _part(con, "P2", dgc="PEANUT")
+    _part(con, "P3", dgc="PEANUT", slc="00")
+    _trule(con, 1, "Low", priority=0)
+    _trule(con, 2, "High", priority=10, dgc="COTTON", excess=24)
+    _trule(con, 7, priority=5, franchise="MC")
+    _trule(con, 4, priority=5, branch="1")
+    _trule(con, 9, priority=5, franchise="MC", slc="00")
+    r = _run(con)
+    assert (r[K("P1")]["TransferRuleId"], r[K("P1")]["TransferRuleName"], r[K("P1")]["ExcessSupply"]) == \
+        (2, "High", 24)
+    assert r[K("P2")]["TransferRuleId"] == 4          # 7 and 4 have one criterion each: lowest Id
+    assert r[K("P3")]["TransferRuleId"] == 9          # two criteria (one of them SLC) beat one
+
+
+def test_transfer_rule_eight_criteria_counted():
+    con = _con()
+    _part(con, "P1", dgc="G", slc="S", source="SO", vendor=12, commodity="CC", product_group="PG")
+    _trule(con, 1, priority=1, franchise="MC", dgc="G", branch="1", slc="S", source="SO", vendor="12",
+           product_group="PG")                                   # 7 criteria
+    _trule(con, 2, priority=1, franchise="MC", dgc="G", branch="1", slc="S", source="SO", vendor="12",
+           product_group="PG", commodity="CC")                   # 8 criteria
+    assert _run(con)[K("P1")]["TransferRuleId"] == 2
+
+
+def test_transfer_rule_criteria_trimmed_upper_and_blank_part_value():
+    con = _con()
+    _part(con, "P1", slc=" 00 ", vendor=1234)
+    _part(con, "P2", slc=None, vendor=1234)
+    _trule(con, 1, priority=5, slc=" 00", vendor=" 1234 ")
+    _trule(con, 2, priority=0, slc="  ")                         # blank criterion = any
+    r = _run(con)
+    assert r[K("P1")]["TransferRuleId"] == 1
+    assert r[K("P2")]["TransferRuleId"] == 2                     # a NULL SLC never matches "00"
+
+
+@pytest.mark.parametrize("criterion,matches", [("1234", True), ("01234", False), ("1234.0", False)])
+def test_transfer_rule_vendor_code_compared_as_integer_text(criterion, matches):
+    con = _con()
+    _part(con, "P1", vendor=1234)
+    _trule(con, 1, vendor=criterion)
+    assert (_run(con)[K("P1")]["TransferRuleId"] == 1) is matches
+
+
+@pytest.mark.parametrize("start,end,cur,applies", [
+    (None, None, date(2026, 10, 1), True), (10, 10, date(2026, 10, 1), True), (11, 2, date(2026, 12, 1), True),
+    (11, 2, date(2026, 1, 1), True), (11, 2, date(2026, 10, 1), False), (3, 9, date(2026, 10, 1), False),
+])
+def test_transfer_rule_season(start, end, cur, applies):
+    con = _con()
+    _part(con, "P1")
+    _trule(con, 1, start=start, end=end)
+    r = _run(con, cur=cur, today=cur)[K("P1")]
+    assert (r["TransferRuleId"] == 1) is applies
+
+
+def test_transfer_rule_inactive_and_archived_ignored_and_not_reported():
+    con = _con()
+    _part(con, "P1")
+    _trule(con, 1, priority=0, archived=None)
+    _trule(con, 2, priority=10, active=False)
+    _trule(con, 3, priority=20, active=None)
+    _trule(con, 4, priority=30, archived=True)
+    _trule(con, 5, priority=40, archived=True, excess=None)      # invalid but archived: not reported
+    _trule(con, 6, priority=50, active=False, excess=None)       # invalid but inactive: not reported
+    assert _run(con)[K("P1")]["TransferRuleId"] == 1
+    assert chk.invalid_transfer_rules(con) == []
+
+
+def test_invalid_transfer_rule_skipped_falls_back_to_next():
+    con = _con()
+    _part(con, "P1")
+    _trule(con, 1, "Good", priority=0)
+    _trule(con, 2, "Bad", priority=10, excess=None)
+    assert _run(con)[K("P1")]["TransferRuleId"] == 1
+    assert chk.invalid_transfer_rules(con) == [(2, "Bad", "ExcessSupply is missing")]
+
+
+def test_each_branch_uses_its_own_transfer_rule():
+    con = _con()
+    _part(con, "P1", branch="1")
+    _part(con, "P1", branch="92")
+    _trule(con, 1, branch="92", send=False, excess_unit="Weeks", excess=26)
+    r = _run(con)
+    assert (r[K("P1", "92")]["TransferRuleId"], r[K("P1", "92")]["AllowSend"],
+            r[K("P1", "92")]["ExcessUnit"]) == (1, False, "Weeks")
+    assert r[K("P1", "1")]["TransferRuleName"] == "Built-in default"
+
+
+@pytest.mark.parametrize("kw,expected", [
+    (dict(excess_unit=" weeks "), dict(ExcessUnit="Weeks")),
+    (dict(excess_unit=None), dict(ExcessUnit="Months")),
+    (dict(excess_unit=""), dict(ExcessUnit="Months")),
+    (dict(send=None, receive=None), dict(AllowSend=True, AllowReceive=True)),
+    (dict(send=False, receive=False), dict(AllowSend=False, AllowReceive=False)),
+    (dict(redist=None, redist_unit=None), dict(RedistMax=6, RedistUnit="Months")),
+    (dict(redist=None, redist_unit="Weeks"), dict(RedistMax=6, RedistUnit="Months")),   # blank = 6 months
+    (dict(redist=10, redist_unit="WEEKS"), dict(RedistMax=10, RedistUnit="Weeks")),
+    (dict(redist=0), dict(RedistMax=0, RedistUnit="Months")),
+    (dict(minval=None), dict(RedistMinValue=0)),
+    (dict(minval=25), dict(RedistMinValue=25)),
+])
+def test_transfer_rule_values_output_with_blank_defaults(kw, expected):
+    con = _con()
+    _part(con, "P1")
+    _trule(con, 1, **kw)
+    r = _run(con)[K("P1")]
+    assert r["TransferRuleId"] == 1
+    assert {c: r[c] for c in expected} == expected
+
+
+@pytest.mark.parametrize("name", [None, "", "  "])
+def test_transfer_rule_name_falls_back_to_rule_id(name):
+    con = _con()
+    _part(con, "P1")
+    _trule(con, 7)
+    _trule(con, 8, excess=None)
+    con.execute("UPDATE transfer_rules SET RuleName = ?", [name])
+    assert _run(con)[K("P1")]["TransferRuleName"] == "Rule 7"
+    assert chk.invalid_transfer_rules(con) == [(8, "Rule 8", "ExcessSupply is missing")]
+
+
+# ---------------------------------------------------------------------------------------------------------
+# round 2: transfer rule validation (spec "Validation", transfer rules)
+# ---------------------------------------------------------------------------------------------------------
+EX_MONTHS = "ExcessSupply must be 0-60 months"
+EX_WEEKS = "ExcessSupply must be 0-260 weeks"
+RD_MONTHS = "RedistMax must be 0-24 months"
+RD_WEEKS = "RedistMax must be 0-104 weeks"
+MINVAL = "RedistMinValue must be 0 or more"
+T_INVALID = {
+    "missing Priority": (dict(priority=None), "Priority is missing"),
+    "missing ExcessSupply": (dict(excess=None), "ExcessSupply is missing"),
+    "61 months": (dict(excess=61), EX_MONTHS),
+    "61 months, unit blank": (dict(excess=61, excess_unit=" "), EX_MONTHS),
+    "negative months": (dict(excess=-0.5), EX_MONTHS),
+    "NaN months": (dict(excess=float("nan")), EX_MONTHS),
+    "infinite months": (dict(excess=float("inf")), EX_MONTHS),
+    "261 weeks": (dict(excess=261, excess_unit="Weeks"), EX_WEEKS),
+    "negative weeks": (dict(excess=-1, excess_unit="weeks"), EX_WEEKS),
+    "bad ExcessUnit": (dict(excess_unit="Days"), "ExcessUnit must be Weeks or Months"),
+    "bad ExcessUnit, supply missing": (dict(excess_unit="Days", excess=None), "ExcessUnit must be Weeks or Months"),
+    "RedistMax 25 months": (dict(redist=25), RD_MONTHS),
+    "RedistMax 25, unit blank": (dict(redist=25, redist_unit=None), RD_MONTHS),
+    "RedistMax negative": (dict(redist=-1), RD_MONTHS),
+    "RedistMax NaN": (dict(redist=float("nan")), RD_MONTHS),
+    "RedistMax 105 weeks": (dict(redist=105, redist_unit="Weeks"), RD_WEEKS),
+    "bad RedistUnit": (dict(redist_unit="Years"), "RedistUnit must be Weeks or Months"),
+    "bad RedistUnit, RedistMax blank": (dict(redist_unit="Years", redist=None), "RedistUnit must be Weeks or Months"),
+    "RedistMinValue -1": (dict(minval=-1), MINVAL),
+    "RedistMinValue NaN": (dict(minval=float("nan")), MINVAL),
+    "RedistMinValue infinite": (dict(minval=float("inf")), MINVAL),
+    "start month only": (dict(start=6), MONTHS_BOTH),
+    "end month only": (dict(end=6), MONTHS_BOTH),
+    "month 13": (dict(start=6, end=13), "EndMonth must be a whole number 1-12"),
+    "month 0": (dict(start=0, end=5), START_1_12),
+    "fractional month": (dict(start=2.5, end=5), START_1_12),
+}
+
+
+@pytest.mark.parametrize("kw,reason", T_INVALID.values(), ids=T_INVALID.keys())
+def test_invalid_transfer_rule_skipped_and_reported(kw, reason):
+    con = _con()
+    _part(con, "P1")
+    _trule(con, 1, "Good", priority=0)
+    _trule(con, 2, "Bad", **{"priority": 10, **kw})
+    assert _run(con)[K("P1")]["TransferRuleId"] == 1
+    assert chk.invalid_transfer_rules(con) == [(2, "Bad", reason)]
+
+
+T_VALID = {
+    "0 months": dict(excess=0), "60 months": dict(excess=60), "12.5 months": dict(excess=12.5),
+    "260 weeks": dict(excess=260, excess_unit="Weeks"), "unit any case": dict(excess=260, excess_unit=" wEEks "),
+    "unit blank": dict(excess_unit=None), "RedistMax 0": dict(redist=0), "RedistMax 24": dict(redist=24),
+    "RedistMax 104 weeks": dict(redist=104, redist_unit="Weeks"), "RedistMax blank": dict(redist=None),
+    "RedistUnit blank": dict(redist_unit=""), "RedistMinValue 0": dict(minval=0),
+    "RedistMinValue blank": dict(minval=None), "RedistMinValue 25": dict(minval=25),
+    "send/receive blank": dict(send=None, receive=None), "season": dict(start=11, end=2),
+}
+
+
+@pytest.mark.parametrize("kw", T_VALID.values(), ids=T_VALID.keys())
+def test_valid_transfer_rule(kw):
+    con = _con()
+    _trule(con, 1, **kw)
+    assert chk.invalid_transfer_rules(con) == []
+
+
+def test_invalid_transfer_rules_lists_every_problem_in_order():
+    con = _con()
+    _trule(con, 3, "Many", priority=None, excess=61, redist=-1, minval=-1, start=6)
+    _trule(con, 1, "Units", excess_unit="Days", redist_unit="Days")
+    assert chk.invalid_transfer_rules(con) == [
+        (1, "Units", "ExcessUnit must be Weeks or Months; RedistUnit must be Weeks or Months"),
+        (3, "Many", "; ".join(["Priority is missing", EX_MONTHS, RD_MONTHS, MINVAL, MONTHS_BOTH]))]
+
+
+# ---------------------------------------------------------------------------------------------------------
+# round 2 Part 2: transfer inputs per part (ExcessKeep, FreeExcess, ConvNeed, RedistCap, RedistEligible)
+# ---------------------------------------------------------------------------------------------------------
+P2 = ("ExcessKeep", "FreeExcess", "ConvNeed", "RedistCap", "RedistEligible")
+
+
+def _p2(row):
+    return tuple(row[c] for c in P2)
+
+
+def test_part2_with_sales_under_the_default():
+    con = _con()
+    _simple_rule(con)
+    _br(con, "1", oh=20, units=6, pending=2)       # keep 6, free 20 - 2 - 6 = 12
+    _br(con, "2", oh=1, oo=1, units=6)             # need 4, cap ceil(6/12 * 6) = 3
+    r = _run(con)
+    assert _p2(r[K("P1", "1")]) == (6, 12, 0, 3, False)
+    assert _p2(r[K("P1", "2")]) == (6, 0, 4, 3, True)
+
+
+def test_excess_keep_with_rate_zero_is_the_target():
+    con = _con()
+    _part(con, "P1", oh=10)
+    _setting(con, "P1", min_override=4)
+    r = _run(con)[K("P1")]
+    assert (r["MonthlyRate"], r["StockingTarget"], r["ExcessKeep"], r["FreeExcess"]) == (0, 4, 4, 6)
+
+
+def test_excess_keep_is_the_larger_of_target_and_excess_supply():
+    con = _con()
+    _simple_rule(con, woc=4)                       # target = ceil(12/12 * 4*12/52) = 1
+    _br(con, "1", oh=30, units=12)                 # rate 1
+    _trule(con, 1, excess=26, excess_unit="Weeks")  # 1 * 26*12/52 = 6
+    r = _run(con)[K("P1")]
+    assert (r["StockingTarget"], r["ExcessKeep"], r["FreeExcess"]) == (1, 6, 24)
+
+
+def test_excess_keep_rounds_up_after_round9():
+    con = _con()
+    _simple_rule(con, hm=3, woc=0)                 # target 0
+    _br(con, "1", oh=200, units=221)               # rate 221/3
+    _trule(con, 1, excess=7, excess_unit="Weeks")  # 221/3 * (7*12/52) = 119.00000000000001 -> 119, not 120
+    r = _run(con)[K("P1")]
+    assert (r["StockingTarget"], r["ExcessKeep"], r["FreeExcess"]) == (0, 119, 81)
+
+
+def test_excess_keep_target_wins_over_excess_supply():
+    con = _con()
+    _simple_rule(con)
+    _br(con, "1", oh=30, units=6)
+    _setting(con, "P1", min_override=20)
+    r = _run(con)[K("P1")]
+    assert (r["StockingTarget"], r["ExcessKeep"], r["FreeExcess"]) == (20, 20, 10)
+
+
+@pytest.mark.parametrize("pending,free", [(None, 10), (3, 7), (2.9, 8), (-4, 10), (20, 0)])
+def test_free_excess_subtracts_truncated_pending(pending, free):
+    con = _con()
+    _part(con, "P1", oh=10, pending=pending)
+    assert _run(con)[K("P1")]["FreeExcess"] == free
+
+
+def test_free_excess_subtracts_app_outbound():
+    con = _con()
+    _part(con, "P1", oh=20, pending=3)
+    _app_line(con, "Draft", 4, from_b="1", to_b="2")
+    _app_line(con, "Exported", 1, from_b="1", to_b="3", tid=2)
+    assert _run(con)[K("P1")]["FreeExcess"] == 12
+
+
+def test_free_excess_truncates_on_hand():
+    con = _con()
+    _part(con, "P1", oh=5.9)
+    assert _run(con)[K("P1")]["FreeExcess"] == 5
+
+
+def test_allow_send_false_gives_no_free_excess():
+    con = _con()
+    _part(con, "P1", oh=20)
+    _trule(con, 1, send=False)
+    assert _run(con)[K("P1")]["FreeExcess"] == 0
+
+
+def test_conv_need_is_the_base_qty_before_line_value_limits():
+    con = _con()
+    _simple_rule(con, maxlv=20, minlv=5)            # the order is capped to 2 ($20); ConvNeed is the base qty
+    _br(con, "1", oh=2, oo=1, units=10)
+    _app_line(con, "Draft", 3)                      # into 1: base 10 - 2 - 1 - 3 = 4
+    r = _run(con)[K("P1")]
+    assert (r["RecommendedOrderQty"], r["ConvNeed"]) == (2, 4)
+
+
+@pytest.mark.parametrize("case", ["no receive", "manual", "masked", "no demand minimum", "free excess"])
+def test_conv_need_zero(case):
+    con = _con()
+    _simple_rule(con)
+    if case == "no receive":
+        _br(con, "1", oh=0, units=6)
+        _trule(con, 1, receive=False)
+    elif case == "manual":
+        _br(con, "1", oh=0, units=6)
+        _setting(con, "P1", manual=True)
+    elif case == "masked":
+        _br(con, "1", oh=0, units=6)
+        _setting(con, "P1", masked=True)
+    elif case == "no demand minimum":
+        _br(con, "1", oh=0)
+        _minimum(con, "P1", 3)
+    else:                                            # oh 10, oo -8: base 6 - 10 + 8 = 4, but free 10 - 6 = 4
+        _br(con, "1", oh=10, oo=-8, units=6)
+    r = _run(con)[K("P1")]
+    if case == "no demand minimum":
+        assert r["MinimumNoDemand"] is True
+    if case == "free excess":
+        assert r["FreeExcess"] == 4
+    assert r["StockingTarget"] > 0 and r["ConvNeed"] == 0
+
+
+def test_conv_need_zero_when_target_zero():
+    con = _con()
+    _part(con, "P1", oh=-3)
+    assert _run(con)[K("P1")]["ConvNeed"] == 0
+
+
+def test_conv_need_with_rate_zero_minimum_override():
+    con = _con()
+    _part(con, "P1", oh=1)
+    _setting(con, "P1", min_override=4)
+    r = _run(con)[K("P1")]
+    assert (r["ConvNeed"], r["RedistEligible"]) == (3, False)       # rate 0: not RedistEligible
+
+
+@pytest.mark.parametrize("redist,unit,units,cap", [
+    (6, "Months", 6, 3), (6, "Months", 5, 3),      # 5/12 * 6 = 2.5 -> 3
+    (26, "Weeks", 12, 6),                          # 1 * 26*12/52 = 6
+    (0, "Months", 12, 0), (24, "Months", 1, 2), (6, "Months", 0, 0),
+])
+def test_redist_cap(redist, unit, units, cap):
+    con = _con()
+    _simple_rule(con)
+    _br(con, "1", units=units)
+    _trule(con, 1, redist=redist, redist_unit=unit)
+    assert _run(con)[K("P1")]["RedistCap"] == cap
+
+
+@pytest.mark.parametrize("case,eligible", [
+    ("plain", True), ("no receive", False), ("manual", False), ("masked", False), ("free excess", False),
+    ("target zero", False), ("rate zero", False),
+])
+def test_redist_eligible(case, eligible):
+    con = _con()
+    _simple_rule(con, md=3 if case == "target zero" else 0)    # 1 request < 3 demands: target 0, rate > 0
+    _br(con, "1", oh=30 if case == "free excess" else 2, units=0 if case == "rate zero" else 6)
+    if case == "rate zero":
+        _setting(con, "P1", min_override=4)
+    if case == "no receive":
+        _trule(con, 1, receive=False)
+    if case == "manual":
+        _setting(con, "P1", manual=True)
+    if case == "masked":
+        _setting(con, "P1", masked=True)
+    assert _run(con)[K("P1")]["RedistEligible"] is eligible
+
+
+# ---------------------------------------------------------------------------------------------------------
+# round 2 Part 3: conventional allocation
+# ---------------------------------------------------------------------------------------------------------
+def test_conventional_lowest_receiver_cover_first():
+    con = _con()
+    _simple_rule(con)
+    _br(con, "9", oh=10)                           # rate 0, no target: free 10
+    _br(con, "1", oh=2, units=12)                  # cover 2, need 10
+    _br(con, "2", oh=9, units=36)                  # cover 3, need 27 (bigger need, but more cover)
+    assert _lines(con) == [("C", "9", "1", 10, 1)]
+
+
+def test_conventional_rate_zero_receivers():
+    con = _con()
+    _simple_rule(con)
+    _br(con, "9", oh=4)                            # free 4
+    _br(con, "1", oh=1, units=24)                  # rate 2: cover 0.5, need 23
+    _br(con, "2", oh=0)                            # rate 0, no stock: cover 0
+    _setting(con, "P1", branch="2", min_override=2)
+    _br(con, "3", oh=1)                            # rate 0 with stock: cover +inf
+    _setting(con, "P1", sid=2, branch="3", min_override=3)
+    assert _lines(con) == [("C", "9", "2", 2, 1), ("C", "9", "1", 2, 2)]
+
+
+def test_conventional_rate_zero_negative_stock_is_cover_zero():
+    con = _con()
+    _simple_rule(con)
+    _br(con, "9", oh=3)
+    _br(con, "1", oh=1, units=12)                  # cover 1
+    _br(con, "2", oh=-2)                           # rate 0, stock -2 <= 0: cover 0
+    _setting(con, "P1", branch="2", min_override=1)
+    assert _lines(con) == [("C", "9", "2", 3, 1)]
+
+
+def test_conventional_cover_tie_goes_to_larger_need():
+    con = _con()
+    _simple_rule(con)
+    _br(con, "9", oh=30)
+    _br(con, "1", oh=0, units=12)                  # cover 0, need 12
+    _br(con, "2", oh=0, units=24)                  # cover 0, need 24
+    assert _lines(con) == [("C", "9", "2", 24, 1), ("C", "9", "1", 6, 2)]
+
+
+def test_conventional_then_branch_order():
+    con = _con()
+    _simple_rule(con)
+    _br(con, "92", oh=24)
+    for b in ("7X", "10", "2"):
+        _br(con, b, oh=0, units=12)
+    assert _lines(con) == [("C", "92", "2", 12, 1), ("C", "92", "10", 12, 2)]
+
+
+def test_branch_order_key():
+    codes = ["4B", "10", "2", "A", "02", " 3 ", "10A", "b", "B"]
+    assert sorted(codes, key=chk.branch_order_key) == ["02", "2", " 3 ", "10", "10A", "4B", "A", "B", "b"]
+
+
+def test_sender_with_greatest_cover_first():
+    con = _con()
+    _simple_rule(con)
+    _br(con, "1", oh=30, units=12)                 # rate 1: keep 12, free 18, cover 30
+    _br(con, "2", oh=5, units=1)                   # rate 1/12: keep 1, free 4, cover 60
+    _br(con, "3", oh=0, units=6)                   # need 6
+    assert _lines(con) == [("C", "2", "3", 4, 1), ("C", "1", "3", 2, 2)]
+
+
+def test_rate_zero_sender_first_then_largest_free_then_branch_order():
+    con = _con()
+    _simple_rule(con)
+    _br(con, "1", oh=100, units=12)                # cover 100, free 88
+    _br(con, "4", oh=3)                            # rate 0: cover +inf, free 3
+    _br(con, "3", oh=5)                            # rate 0: cover +inf, free 5
+    _br(con, "2", oh=5)                            # rate 0: cover +inf, free 5 (branch 2 before 3)
+    _br(con, "7", oh=0, units=20)                  # need 20
+    assert _lines(con) == [("C", "2", "7", 5, 1), ("C", "3", "7", 5, 2), ("C", "4", "7", 3, 3),
+                           ("C", "1", "7", 7, 4)]
+
+
+def test_sender_repicked_after_every_line():
+    con = _con()
+    _simple_rule(con)
+    _br(con, "1", oh=30, units=12)                 # cover 30, free 18
+    _br(con, "2", oh=28, units=12)                 # cover 28, free 16
+    _br(con, "3", oh=0, units=5)                   # cover 0, need 5: first
+    _br(con, "4", oh=1, units=5)                   # cover 2.4, need 4
+    # after 5 from branch 1 its cover is 25 < 28, so branch 4 is filled from branch 2
+    assert _lines(con) == [("C", "1", "3", 5, 1), ("C", "2", "4", 4, 2)]
+
+
+def test_sender_cover_tie_goes_to_larger_free():
+    con = _con()
+    _simple_rule(con)
+    _br(con, "1", oh=24, units=12, pending=4)      # cover 24, free 8
+    _br(con, "2", oh=24, units=12)                 # cover 24, free 12
+    _br(con, "3", oh=0, units=6)
+    assert _lines(con) == [("C", "2", "3", 6, 1)]
+
+
+def test_one_receiver_from_two_senders_gives_seq_1_2():
+    con = _con()
+    _simple_rule(con)
+    _br(con, "1", oh=3)
+    _br(con, "2", oh=4)
+    _br(con, "3", oh=0, units=6)
+    assert _lines(con) == [("C", "2", "3", 4, 1), ("C", "1", "3", 2, 2)]
+
+
+def _arow(branch, free=0, need=0, eligible=False, cap=0, oh=0, oo=0, inbound=0, rate=1.0, cost=10.0, minval=0.0,
+          target=1, keep=0, pn="P1", franchise="MC"):
+    """One allocate_group input row (the Part 1-2 columns it reads)."""
+    return {"Branch": branch, "Franchise": franchise, "PartNumber": pn, "oh": oh, "oo": oo, "AppInboundQty": inbound,
+            "MonthlyRate": rate, "StockingTarget": target, "ExcessKeep": keep, "FreeExcess": free, "ConvNeed": need,
+            "RedistEligible": eligible, "RedistCap": cap, "cost": cost, "RedistMinValue": minval}
+
+
+def test_allocate_group_never_sends_to_itself():
+    # A branch with both FreeExcess and a need can't come out of Part 2, but allocate_group must still guard it
+    rows = [_arow("1", free=5, need=3, oh=8, rate=0.0), _arow("2", free=2, oh=2, rate=0.0)]
+    lines = chk.allocate_group(rows, chk.branch_order_key)
+    assert [(l["FromBranch"], l["ToBranch"], l["Qty"]) for l in lines] == [("2", "1", 2)]
+
+
+def test_allocate_group_redistribution_never_to_itself():
+    rows = [_arow("1", free=5, eligible=True, cap=10, oh=1), _arow("2", free=0, need=1, oh=0)]
+    lines = chk.allocate_group(rows, chk.branch_order_key)
+    assert [(l["Kind"], l["FromBranch"], l["ToBranch"], l["Qty"]) for l in lines] == [("Conventional", "1", "2", 1)]
+
+
+def test_allocate_group_needs_a_sender_and_another_receiver():
+    assert chk.allocate_group([_arow("1", free=5), _arow("2", free=3)], chk.branch_order_key) == []
+    assert chk.allocate_group([_arow("1", need=5), _arow("2", eligible=True, cap=9)], chk.branch_order_key) == []
+    assert chk.allocate_group([_arow("1", free=5, need=2)], chk.branch_order_key) == []
+
+
+def test_allocate_group_is_independent_of_row_order():
+    rng = random.Random(7)
+    rows = [_arow(str(b), free=rng.choice([0, 0, 3, 8]), need=rng.choice([0, 0, 2, 5]), eligible=rng.random() < .4,
+                  cap=rng.randint(0, 9), oh=rng.randint(0, 6), rate=rng.choice([0.25, 0.5, 1.0, 2.0]),
+                  minval=rng.choice([0.0, 25.0])) for b in [1, 2, 3, 10, 20, 92, 93, 95]]
+    want = chk.allocate_group(rows, chk.branch_order_key)
+    assert want
+    for _ in range(10):
+        rng.shuffle(rows)
+        assert chk.allocate_group(list(rows), chk.branch_order_key) == want
+
+
+# ---------------------------------------------------------------------------------------------------------
+# round 2 Part 3: redistribution
+# ---------------------------------------------------------------------------------------------------------
+def test_redistribution_runs_on_what_conventional_left():
+    con = _con()
+    _simple_rule(con, woc=4)                       # target = ceil(units * 4 / 52)
+    _br(con, "9", oh=10)                           # free 10
+    _br(con, "1", oh=0, units=26)                  # target 2, need 2; rate 26/12, cap ceil(13) = 13: room 11
+    _br(con, "2", oh=2, units=12)                  # target 1, no need; rate 1, cap 6: room 4
+    assert _lines(con) == [("C", "9", "1", 2, 1), ("R", "9", "1", 8, 2)]
+
+
+def test_redistribution_lowest_cover_first():
+    con = _con()
+    _simple_rule(con, woc=4)
+    _br(con, "9", oh=5)
+    _br(con, "1", oh=3, units=12)                  # cover 3, room 3
+    _br(con, "2", oh=2, units=12)                  # cover 2, room 4: first
+    assert _lines(con) == [("R", "9", "2", 4, 1), ("R", "9", "1", 1, 2)]
+
+
+def test_redistribution_cover_counts_conventional_got():
+    con = _con()
+    _simple_rule(con, woc=4)
+    _br(con, "9", oh=9)
+    _br(con, "1", oh=0, units=12)                  # rate 1, min override 3: need 3; cap 6, room 3; cover 0 -> 3
+    _setting(con, "P1", branch="1", min_override=3)
+    _br(con, "2", oh=2, units=12)                  # target 1, no need; cap 6, room 4; cover 2: first
+    assert _lines(con) == [("C", "9", "1", 3, 1), ("R", "9", "2", 4, 2), ("R", "9", "1", 2, 3)]
+
+
+def test_redistribution_room_counts_conventional_got():
+    con = _con()
+    _simple_rule(con)                              # target = units
+    _br(con, "9", oh=40)
+    _br(con, "1", oh=0, units=12)                  # need 12; cap 24 (rule): room 24 - 12 = 12, not 24
+    _trule(con, 1, redist=24)
+    assert _lines(con) == [("C", "9", "1", 12, 1), ("R", "9", "1", 12, 2)]
+
+
+def test_redistribution_room_counts_on_order_and_app_inbound():
+    con = _con()
+    _simple_rule(con, woc=4)
+    _br(con, "9", oh=40)
+    _br(con, "1", oh=1, oo=1, units=12)            # cap 6, room 6 - 1 - 1 - 2 = 2
+    _app_line(con, "Draft", 2, from_b="5X", to_b="1")
+    assert _lines(con) == [("R", "9", "1", 2, 1)]
+
+
+def test_redist_max_zero_takes_no_redistribution():
+    con = _con()
+    _simple_rule(con, woc=4)
+    _br(con, "9", oh=40)
+    _br(con, "1", oh=1, units=12)
+    _trule(con, 1, branch="1", redist=0)
+    assert _lines(con) == []
+
+
+def test_redist_min_value_skips_a_sender_and_tries_the_next():
+    con = _con()
+    _simple_rule(con, woc=4)
+    _br(con, "9", oh=2, cost=10)                   # cover +inf, free 2: 2 x $10 = $20 < $25, skipped
+    _br(con, "8", oh=12, units=1, cost=10)         # rate 1/12, keep 1, free 11, cover 144
+    _br(con, "1", oh=1, units=12, cost=10)         # room 5
+    _trule(con, 1, branch="9", minval=25)
+    assert _lines(con) == [("R", "8", "1", 5, 1)]
+
+
+def test_redist_min_value_is_the_senders_rule_and_compared_on_round9():
+    con = _con()
+    _simple_rule(con, woc=4)
+    _br(con, "9", oh=3, cost=0.1)                  # 3 x 0.1 = 0.30000000000000004, round9 = 0.3: not below 0.3
+    _br(con, "1", oh=1, units=12, cost=50)         # room 5; the receiver's own minimum doesn't matter
+    _trule(con, 1, branch="9", minval=0.3)
+    _trule(con, 2, branch="1", minval=1000)
+    assert _lines(con) == [("R", "9", "1", 3, 1)]
+
+
+def test_redist_default_minimum_skips_nothing():
+    con = _con()
+    _simple_rule(con, woc=4)
+    _br(con, "9", oh=1, cost=0.01)
+    _br(con, "1", oh=1, units=12)
+    assert _lines(con) == [("R", "9", "1", 1, 1)]
+
+
+def test_redistribution_senders_greatest_cover_first_and_resorted():
+    con = _con()
+    _simple_rule(con, woc=4)
+    _br(con, "8", oh=22, units=12)                 # rate 1: keep 12, free 10, cover 22
+    _br(con, "9", oh=21, units=12)                 # cover 21, free 9
+    _br(con, "1", oh=0, units=12)                  # target 1, need 1 (conventional); cap 6
+    _br(con, "2", oh=1, units=12)                  # cap 6, room 5
+    # conventional: 1 from 8 (cover 22 -> 21, free 9). Redistribution: 1 and 2 both cover 1, branch order. Into 1:
+    # 8 and 9 tie on cover 21 and free 9, so branch 8 sends 5 (cover 16). Into 2: branch 9 now has more cover.
+    assert _lines(con) == [("C", "8", "1", 1, 1), ("R", "8", "1", 5, 2), ("R", "9", "2", 5, 3)]
+
+
+def test_no_receivers_or_no_senders_no_lines():
+    con = _con()
+    _simple_rule(con)
+    _br(con, "1", oh=30, units=6)                  # excess, no receiver anywhere
+    _br(con, "2", oh=6, units=6)                   # RedistEligible, but no room (cap 3)
+    _br(con, "1", pn="P2", oh=0, units=6)          # a receiver of another part, with no sender
+    r = _run(con)
+    assert r[K("P1", "1")]["FreeExcess"] == 24 and r[K("P2", "1")]["ConvNeed"] == 6
+    assert _lines(con) == []
+
+
+def test_groups_are_franchise_and_exact_part_number():
+    con = _con()
+    _simple_rule(con)
+    _br(con, "1", oh=30, pn="X")
+    _br(con, "2", oh=0, units=6, pn="X ")         # different group: nothing from branch 1's "X"
+    _br(con, "3", oh=0, units=6, pn="X", franchise="KU")
+    assert _lines(con) == []
+
+
+# ---------------------------------------------------------------------------------------------------------
+# round 2 Part 3: output and determinism
+# ---------------------------------------------------------------------------------------------------------
+def test_suggestion_line_columns():
+    con = _con()
+    _simple_rule(con)
+    _br(con, "9", oh=10, cost=12.5)
+    _br(con, "1", oh=1, oo=1, units=6, cost=3.35)
+    rows = _line_rows(con)
+    assert rows == [{"Kind": "Conventional", "Franchise": "MC", "PartNumber": "P1", "FromBranch": "9", "ToBranch": "1",
+                     "Seq": 1, "Qty": 4, "FromCost": 12.5, "ToCost": 3.35, "Value": 13.4, "FromOnHand": 10,
+                     "FromExcessKeep": 0, "FromFreeExcess": 10, "ToOnHand": 1, "ToOnOrder": 1, "ToTarget": 6,
+                     "ToNeed": 4, "ToRate": 0.5}]
+    assert [c for c, _ in chk.SUGGESTION_COLS] == list(rows[0])
+
+
+def test_value_is_qty_times_receiver_cost_to_cents():
+    con = _con()
+    _simple_rule(con)
+    _br(con, "9", oh=10, cost=1)
+    _br(con, "1", oh=0, units=3, cost=3.35)        # 3 x 3.35 = 10.049999999999999 -> 10.05
+    assert _line_rows(con)[0]["Value"] == 10.05
+
+
+def test_redistribution_to_need_is_the_room():
+    con = _con()
+    _simple_rule(con, woc=4)
+    _br(con, "8", oh=2)
+    _br(con, "9", oh=1)
+    _br(con, "1", oh=2, units=12)                  # room 4
+    rows = _line_rows(con)
+    assert [(r["FromBranch"], r["Qty"], r["ToNeed"]) for r in rows] == [("8", 2, 4), ("9", 1, 4)]
+
+
+def test_suggested_quantities_per_part():
+    con = _con()
+    _simple_rule(con, woc=4)
+    _br(con, "9", oh=10)
+    _br(con, "1", oh=0, units=26)                  # 2 conventional + 8 redistribution
+    _br(con, "2", oh=2, units=12)
+    r = _run(con)
+    got = {b: (r[K("P1", b)]["SuggestedInQty"], r[K("P1", b)]["SuggestedConvInQty"], r[K("P1", b)]["SuggestedOutQty"])
+           for b in ("9", "1", "2")}
+    assert got == {"9": (0, 0, 10), "1": (10, 2, 0), "2": (0, 0, 0)}
+
+
+def test_parts_without_suggestions_have_zero_suggested():
+    con = _con()
+    _part(con, "P1")
+    r = _run(con)[K("P1")]
+    assert (r["SuggestedInQty"], r["SuggestedConvInQty"], r["SuggestedOutQty"]) == (0, 0, 0)
+
+
+def test_insert_order_does_not_change_the_result():
+    def build(order):
+        con = _con()
+        _simple_rule(con, woc=4)
+        specs = [("9", dict(oh=10)), ("8", dict(oh=7, units=1)), ("1", dict(oh=0, units=26)),
+                 ("2", dict(oh=2, units=12)), ("10", dict(oh=1, units=12)), ("3", dict(oh=0, units=12))]
+        for i in order:
+            _br(con, specs[i][0], **specs[i][1])
+        return _line_rows(con)
+    want = build(range(6))
+    assert len(want) >= 4
+    rng = random.Random(3)
+    for _ in range(5):
+        order = list(range(6))
+        rng.shuffle(order)
+        assert build(order) == want
+
+
+def test_excluded_branches_never_send_or_receive():
+    con = _con()
+    _simple_rule(con)
+    _br(con, "12", oh=50)
+    _br(con, "4B", oh=0, units=6)
+    _br(con, "1", oh=0, units=6)
+    assert _lines(con) == []
+
+
+# ---------------------------------------------------------------------------------------------------------
 # reading staging tables that don't have the round 1 columns yet
 # ---------------------------------------------------------------------------------------------------------
 def test_select_list_fills_missing_optional_columns_with_typed_nulls():
@@ -1765,7 +2539,12 @@ CMP_COLS = [("Branch", "VARCHAR"), ("Franchise", "VARCHAR"), ("PartNumber", "VAR
             ("Status", "VARCHAR"), ("PendingQty", "DOUBLE"), ("SLC", "VARCHAR"), ("Source", "VARCHAR"),
             ("CommodityCode", "VARCHAR"), ("PhaseInQty", "INTEGER"), ("PhaseInEnds", "DATE"), ("PhaseInOn", "DATE"),
             ("PhaseInActive", "BOOLEAN"), ("PhaseInEndReason", "VARCHAR"), ("AppInboundQty", "INTEGER"),
-            ("AppOutboundQty", "INTEGER")]
+            ("AppOutboundQty", "INTEGER"), ("TransferRuleId", "BIGINT"), ("TransferRuleName", "VARCHAR"),
+            ("ExcessSupply", "DOUBLE"), ("ExcessUnit", "VARCHAR"), ("AllowSend", "BOOLEAN"),
+            ("AllowReceive", "BOOLEAN"), ("RedistMax", "DOUBLE"), ("RedistUnit", "VARCHAR"),
+            ("RedistMinValue", "DOUBLE"), ("ExcessKeep", "INTEGER"), ("FreeExcess", "INTEGER"),
+            ("ConvNeed", "INTEGER"), ("RedistCap", "INTEGER"), ("RedistEligible", "BOOLEAN"),
+            ("SuggestedInQty", "INTEGER"), ("SuggestedConvInQty", "INTEGER"), ("SuggestedOutQty", "INTEGER")]
 BASE = dict(Branch="1", Franchise="MC", PartNumber="A", RuleId=1, RuleName="Default", DemandBasis="UnitsSold",
             HistoryMonths=12, MinDemands=3, SupplyUnit="Weeks", Supply=12.0, SupplyMonths=12 * 12 / 52,
             MinLineValue=10.0, MaxLineValue=500.0, WindowDemand=3.0, UnitsSoldWindow=3.0, DemandCount=4, ActiveMonths=2,
@@ -1774,7 +2553,10 @@ BASE = dict(Branch="1", Franchise="MC", PartNumber="A", RuleId=1, RuleName="Defa
             RecommendedOrderQty=1, SurplusQty=0, InboundTransferQty=0.0, Status="Reorder",
             PendingQty=1.0, SLC="00", Source="500", CommodityCode=None, PhaseInQty=5,
             PhaseInEnds=date(2027, 10, 1), PhaseInOn=date(2026, 10, 1), PhaseInActive=True, PhaseInEndReason=None,
-            AppInboundQty=2, AppOutboundQty=0)
+            AppInboundQty=2, AppOutboundQty=0, TransferRuleId=None, TransferRuleName="Built-in default",
+            ExcessSupply=12.0, ExcessUnit="Months", AllowSend=True, AllowReceive=True, RedistMax=6.0,
+            RedistUnit="Months", RedistMinValue=0.0, ExcessKeep=2, FreeExcess=0, ConvNeed=1, RedistCap=1,
+            RedistEligible=True, SuggestedInQty=1, SuggestedConvInQty=1, SuggestedOutQty=0)
 
 
 def test_compare_covers_every_output_column():
@@ -1829,6 +2611,11 @@ def test_compare_flags_duplicate_keys():
     ("PhaseInEnds", None), ("PhaseInOn", date(2026, 10, 2)), ("PhaseInOn", None), ("PhaseInActive", False),
     ("PhaseInActive", None), ("PhaseInEndReason", "Expired"), ("AppInboundQty", 3), ("AppInboundQty", None),
     ("AppOutboundQty", 1), ("AppOutboundQty", None),
+    ("TransferRuleId", 3), ("TransferRuleName", "Cotton"), ("ExcessSupply", 24.0), ("ExcessSupply", None),
+    ("ExcessUnit", "Weeks"), ("AllowSend", False), ("AllowReceive", None), ("RedistMax", 0.0),
+    ("RedistUnit", "Weeks"), ("RedistMinValue", 25.0), ("ExcessKeep", 3), ("FreeExcess", 1), ("ConvNeed", 0),
+    ("RedistCap", None), ("RedistEligible", False), ("SuggestedInQty", 0), ("SuggestedConvInQty", 0),
+    ("SuggestedOutQty", 2),
 ])
 def test_compare_flags_each_compared_column(col, value):
     r = _cmp([{}], [{col: value}])
@@ -1837,7 +2624,7 @@ def test_compare_flags_each_compared_column(col, value):
 
 @pytest.mark.parametrize("col", ["Supply", "SupplyMonths", "MinLineValue", "MaxLineValue", "WindowDemand",
                                  "UnitsSoldWindow", "MonthlyRate", "EffectiveMin", "InboundTransferQty",
-                                 "PendingQty"])
+                                 "PendingQty", "ExcessSupply", "RedistMax", "RedistMinValue"])
 def test_compare_tolerates_tiny_float_differences(col):
     r = _cmp([{}], [{col: BASE[col] + 1e-9}])
     assert r["different"] == 0
@@ -1854,3 +2641,72 @@ def test_compare_limited_to_columns_ignores_the_others():
     assert chk.compare(con, "gold", "expected", shared)["different"] == 0
     assert chk.compare(con, "gold", "expected")["different"] == 1
     assert chk.compare(con, "gold", "expected", ["Branch", "Franchise", "PartNumber"])["different"] == 0
+
+
+# ---------------------------------------------------------------------------------------------------------
+# compare_suggestions()
+# ---------------------------------------------------------------------------------------------------------
+S_BASE = dict(Kind="Conventional", Franchise="MC", PartNumber="A", FromBranch="92", ToBranch="1", Seq=1, Qty=4,
+              FromCost=12.5, ToCost=12.5, Value=50.0, FromOnHand=30, FromExcessKeep=12, FromFreeExcess=18,
+              ToOnHand=0, ToOnOrder=0, ToTarget=6, ToNeed=6, ToRate=0.5)
+
+
+def _scmp(gold_rows, exp_rows, gold_cols=None):
+    con = duckdb.connect()
+    for name, rows in (("gold_s", gold_rows), ("exp_s", exp_rows)):
+        cols = [(c, t) for c, t in chk.SUGGESTION_COLS if name == "exp_s" or gold_cols is None or c in gold_cols]
+        con.execute(f"CREATE TABLE {name} (" + ", ".join(f"{c} {t}" for c, t in cols) + ")")
+        for row in rows:
+            con.execute(f"INSERT INTO {name} VALUES ({', '.join('?' for _ in cols)})",
+                        [{**S_BASE, **row}[c] for c, _ in cols])
+    return chk.compare_suggestions(con, "gold_s", "exp_s",
+                                   None if gold_cols is None else [c for c, _ in chk.SUGGESTION_COLS if c in gold_cols])
+
+
+def test_suggestion_compare_covers_every_column():
+    keys = ["Kind", "Franchise", "PartNumber", "FromBranch", "ToBranch"]
+    assert [c for c, _ in chk.SUGGESTION_COLS][:5] == keys
+    assert set(chk.SUGGESTION_EXACT) | set(chk.SUGGESTION_TOLERANCE) == {c for c, _ in chk.SUGGESTION_COLS} - set(keys)
+    assert not set(chk.SUGGESTION_EXACT) & set(chk.SUGGESTION_TOLERANCE)
+    assert set(chk.SUGGESTION_TOLERANCE) == {"FromCost", "ToCost", "Value", "ToRate"}
+
+
+def test_suggestion_compare_identical_and_empty():
+    zero = {"only_gold": 0, "only_expected": 0, "different": 0, "dup_gold": 0, "dup_expected": 0}
+    assert _scmp([{}], [{}]) == zero
+    assert _scmp([], []) == zero
+
+
+def test_suggestion_compare_counts_missing_keys_and_duplicates():
+    r = _scmp([{}, {"Kind": "Redistribution"}], [{}, {"ToBranch": "2"}])
+    assert (r["only_gold"], r["only_expected"], r["different"]) == (1, 1, 0)
+    assert _scmp([{}, {}], [{}])["dup_gold"] == 1
+
+
+@pytest.mark.parametrize("col,value", [
+    ("Seq", 2), ("Qty", 5), ("FromOnHand", 31), ("FromExcessKeep", 11), ("FromFreeExcess", None), ("ToOnHand", 1),
+    ("ToOnOrder", 2), ("ToTarget", 7), ("ToNeed", 5), ("FromCost", 12.51), ("ToCost", None), ("Value", 50.01),
+    ("ToRate", 0.6),
+])
+def test_suggestion_compare_flags_each_column(col, value):
+    assert _scmp([{}], [{col: value}])["different"] == 1
+
+
+@pytest.mark.parametrize("col", ["FromCost", "ToCost", "Value", "ToRate"])
+def test_suggestion_compare_tolerates_tiny_float_differences(col):
+    assert _scmp([{}], [{col: S_BASE[col] + 1e-9}])["different"] == 0
+
+
+def test_suggestion_compare_limited_to_gold_columns():
+    gold_cols = [c for c, _ in chk.SUGGESTION_COLS if c not in ("ToRate", "ToNeed")]
+    assert _scmp([{}], [{"ToRate": 9.0, "ToNeed": 9}], gold_cols=gold_cols)["different"] == 0
+
+
+def test_transfer_rule_columns():
+    assert chk.TRANSFER_RULE_COLS == {
+        "Id": "BIGINT", "RuleName": "VARCHAR", "Priority": "DOUBLE", "Active": "BOOLEAN", "Archived": "BOOLEAN",
+        "Franchise": "VARCHAR", "DealerGroupCode": "VARCHAR", "Branch": "VARCHAR", "SLC": "VARCHAR",
+        "Source": "VARCHAR", "VendorCode": "VARCHAR", "ProductGroup": "VARCHAR", "CommodityCode": "VARCHAR",
+        "StartMonth": "DOUBLE", "EndMonth": "DOUBLE", "ExcessSupply": "DOUBLE", "ExcessUnit": "VARCHAR",
+        "AllowSend": "BOOLEAN", "AllowReceive": "BOOLEAN", "RedistMax": "DOUBLE", "RedistUnit": "VARCHAR",
+        "RedistMinValue": "DOUBLE"}

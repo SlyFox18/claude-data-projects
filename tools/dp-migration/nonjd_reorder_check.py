@@ -10,9 +10,14 @@ branches, line value limits, a mask that ends at the next demand, Manual Order a
 (spec docs/superpowers/specs/2026-10-27-non-jd-parts-order-tool-round-2-design.md, "The calculation" Part 1 and
 "Validation"; plan 2026-10-27-...-round-2-phase-2.md Task E2) adds the A11 rule criteria (SLC, Source, VendorCode,
 ProductGroup, CommodityCode), phase-in (step 7b, A18/A19), the phase-in target (step 8), committed app transfers
-(step 8b, A14) and their subtraction from the base quantity (step 9). Also prints a fingerprint of the Gold table
-(excluding BuiltAtUtc) for run-twice determinism checks, and lists the rules and part settings that are skipped as
-invalid.
+(step 8b, A14) and their subtraction from the base quantity (step 9). Round 2 Parts 2-3 (Task E3): the transfer rule
+pick and validation and the transfer inputs per part (ExcessKeep, FreeExcess, ConvNeed, RedistCap, RedistEligible) in
+SQL, then the allocation as a separate plain Python loop (allocate_group, written from the spec's Part 3 only),
+compared with Fact_NonJD_TransferSuggestion row by row. Also prints a fingerprint of the Gold table (excluding
+BuiltAtUtc) for run-twice determinism checks, and lists the rules, transfer rules and part settings that are skipped
+as invalid.
+
+Choices the spec leaves open are marked "(choice)" in the comments; Gold and the app engine must make the same ones.
 
 Usage:
     python nonjd_reorder_check.py --tier dev            # compare, exit 1 on any mismatch
@@ -22,12 +27,14 @@ Run straight after the DP refresh: Silver inputs are read live, so an intraday r
 and this check causes false mismatches. The round 1 and round 2 list columns (MinDemands, SupplyUnit, MinLineValue,
 MaxLineValue, Archived, ManualOrder, MaskedOn; the five criteria; PhaseInQty, PhaseInEnds, PhaseInOn) are read when
 the staging tables have them and are NULL otherwise; with no MinDemands every list rule is invalid and the built-in
-default applies. A missing NonJD_Transfers table reads as no committed transfers. When Gold lacks some output
-columns the check still compares the ones it has, then FAILs.
+default applies. A missing NonJD_Transfers table reads as no committed transfers, and a missing NonJD_TransferRules
+table as no transfer rules (the built-in default everywhere). When Gold lacks some output columns, or
+Fact_NonJD_TransferSuggestion doesn't exist yet, the check still compares what it can, then FAILs.
 
 Auth: Azure CLI (az login as Brian), read-only.
 """
 import argparse
+import math
 import os
 import sys
 import tempfile
@@ -45,6 +52,11 @@ TIERS = {
 # Applies when no valid active rule matches a part (step 1). No line value limits.
 BUILTIN_DEFAULT = {"RuleName": "Built-in default", "HistoryMonths": 12, "MinDemands": 3, "Supply": 12.0,
                    "SupplyUnit": "Weeks", "DemandBasis": "UnitsSold"}
+# Part 2 item 1: applies when no valid, active, in-season transfer rule matches a part (Ben 2026-10-27: no minimum).
+TRANSFER_DEFAULT = {"RuleName": "Built-in default", "ExcessSupply": 12.0, "ExcessUnit": "Months", "AllowSend": True,
+                    "AllowReceive": True, "RedistMax": 6.0, "RedistUnit": "Months", "RedistMinValue": 0.0}
+EXCESS_WEEKS_MAX, EXCESS_MONTHS_MAX = 260, 60
+REDIST_WEEKS_MAX, REDIST_MONTHS_MAX = 104, 24
 # Left out of every output (D6); compared trimmed and upper-case.
 EXCLUDED_BRANCHES = ["12", "5", "97", "4B", "93C"]
 HIST_MONTHS = 60          # Silver_PartSalesHistory depth; HistoryMonths is at most 59
@@ -55,10 +67,13 @@ COMPARE_COLS = ["RuleId", "RuleName", "DemandBasis", "HistoryMonths", "MinDemand
                 "ActiveMonths", "CalcTarget", "MinimumNoDemand", "StockingTarget", "ValueCapped", "BelowMinValue",
                 "ManualOrder", "MaskedOn", "IsMasked", "RecommendedOrderQty", "SurplusQty", "Status",
                 "SLC", "Source", "CommodityCode", "PhaseInQty", "PhaseInEnds", "PhaseInOn", "PhaseInActive",
-                "PhaseInEndReason", "AppInboundQty", "AppOutboundQty"]
+                "PhaseInEndReason", "AppInboundQty", "AppOutboundQty",
+                "TransferRuleId", "TransferRuleName", "ExcessUnit", "AllowSend", "AllowReceive", "RedistUnit",
+                "ExcessKeep", "FreeExcess", "ConvNeed", "RedistCap", "RedistEligible", "SuggestedInQty",
+                "SuggestedConvInQty", "SuggestedOutQty"]
 TOLERANCE_COLS = ["Supply", "SupplyMonths", "MinLineValue", "MaxLineValue", "WindowDemand", "UnitsSoldWindow",
                   "MonthlyRate",
-                  "EffectiveMin", "InboundTransferQty", "PendingQty"]
+                  "EffectiveMin", "InboundTransferQty", "PendingQty", "ExcessSupply", "RedistMax", "RedistMinValue"]
 TOLERANCE = 1e-6
 OUTPUT_COLS = ["Branch", "Franchise", "PartNumber", "RuleId", "RuleName", "DemandBasis", "HistoryMonths",
                "MinDemands", "SupplyUnit", "Supply", "SupplyMonths", "MinLineValue", "MaxLineValue",
@@ -67,8 +82,28 @@ OUTPUT_COLS = ["Branch", "Franchise", "PartNumber", "RuleId", "RuleName", "Deman
                "IsMasked", "RecommendedOrderQty", "SurplusQty", "InboundTransferQty", "Status",
                # round 2 Part 1
                "PendingQty", "SLC", "Source", "CommodityCode", "PhaseInQty", "PhaseInEnds", "PhaseInOn",
-               "PhaseInActive", "PhaseInEndReason", "AppInboundQty", "AppOutboundQty"]
+               "PhaseInActive", "PhaseInEndReason", "AppInboundQty", "AppOutboundQty",
+               # round 2 Part 2 (the part's transfer rule and transfer inputs) and Part 3 (its suggested quantities)
+               "TransferRuleId", "TransferRuleName", "ExcessSupply", "ExcessUnit", "AllowSend", "AllowReceive",
+               "RedistMax", "RedistUnit", "RedistMinValue", "ExcessKeep", "FreeExcess", "ConvNeed", "RedistCap",
+               "RedistEligible", "SuggestedInQty", "SuggestedConvInQty", "SuggestedOutQty"]
+SUGGESTED_COLS = ["SuggestedInQty", "SuggestedConvInQty", "SuggestedOutQty"]
 KEYS = "Branch, Franchise, PartNumber"
+# Fact_NonJD_TransferSuggestion as the reference builds it (spec "The data model"). FromBin, ToBin, Description and
+# BuiltAtUtc are display columns and not compared. The key is the first five. FromBranch / ToBranch are the Branch
+# values as in Fact_NonJD_Reorder (not trimmed). FromOnHand / ToOnHand / ToOnOrder are the truncated oh / oo of step 9;
+# FromExcessKeep and FromFreeExcess are the sender's Part 2 values (before allocation); ToTarget is StockingTarget;
+# ToNeed is ConvNeed (conventional) or the room at the start of that receiver's redistribution (redistribution);
+# ToRate is MonthlyRate (choices).
+SUGGESTION_COLS = [("Kind", "VARCHAR"), ("Franchise", "VARCHAR"), ("PartNumber", "VARCHAR"), ("FromBranch", "VARCHAR"),
+                   ("ToBranch", "VARCHAR"), ("Seq", "INTEGER"), ("Qty", "INTEGER"), ("FromCost", "DOUBLE"),
+                   ("ToCost", "DOUBLE"), ("Value", "DOUBLE"), ("FromOnHand", "INTEGER"), ("FromExcessKeep", "INTEGER"),
+                   ("FromFreeExcess", "INTEGER"), ("ToOnHand", "INTEGER"), ("ToOnOrder", "INTEGER"),
+                   ("ToTarget", "INTEGER"), ("ToNeed", "INTEGER"), ("ToRate", "DOUBLE")]
+SUGGESTION_KEYS = "Kind, Franchise, PartNumber, FromBranch, ToBranch"
+SUGGESTION_EXACT = ["Seq", "Qty", "FromOnHand", "FromExcessKeep", "FromFreeExcess", "ToOnHand", "ToOnOrder", "ToTarget",
+                    "ToNeed"]
+SUGGESTION_TOLERANCE = ["FromCost", "ToCost", "Value", "ToRate"]
 
 # Staging columns read by main(): (required, optional {name: type}). Optional ones are the round 1 and round 2
 # additions, NULL until the dataflows carry them (Plan C Task C2, Plan E Task E1).
@@ -85,6 +120,14 @@ SETTINGS_COLS = (["Id", "Branch", "Franchise", "PartNumber", "MinOverride", "Mas
 APP_TRANSFER_COLS = {"TransferId": "BIGINT", "Status": "VARCHAR", "PlacedAt": "TIMESTAMPTZ", "FromBranch": "VARCHAR",
                      "ToBranch": "VARCHAR", "LineId": "BIGINT", "Franchise": "VARCHAR", "PartNumber": "VARCHAR",
                      "Qty": "DOUBLE", "Kind": "VARCHAR", "Created": "TIMESTAMPTZ"}
+# NonJD_TransferRules (df_NonJD_TransferRules_Raw), read as these types; a missing column or table reads as NULL / empty.
+TRANSFER_RULE_COLS = {"Id": "BIGINT", "RuleName": "VARCHAR", "Priority": "DOUBLE", "Active": "BOOLEAN",
+                      "Archived": "BOOLEAN", "Franchise": "VARCHAR", "DealerGroupCode": "VARCHAR", "Branch": "VARCHAR",
+                      "SLC": "VARCHAR", "Source": "VARCHAR", "VendorCode": "VARCHAR", "ProductGroup": "VARCHAR",
+                      "CommodityCode": "VARCHAR", "StartMonth": "DOUBLE", "EndMonth": "DOUBLE",
+                      "ExcessSupply": "DOUBLE", "ExcessUnit": "VARCHAR", "AllowSend": "BOOLEAN",
+                      "AllowReceive": "BOOLEAN", "RedistMax": "DOUBLE", "RedistUnit": "VARCHAR",
+                      "RedistMinValue": "DOUBLE"}
 CENTRAL = "America/Chicago"
 PHASE_IN_MAX = 99999
 
@@ -198,6 +241,185 @@ INVALID_SETTINGS_SQL = f"""
 
 _EXCLUDED_SQL = ", ".join(f"'{b}'" for b in EXCLUDED_BRANCHES)
 
+# A11 rule criteria, shared by order rules (step 1) and transfer rules (Part 2 item 1): the rule's eight criteria
+# trimmed, upper-case and blank -> NULL (= any); a rule (u) matches a part_crit row (pc) when every non-blank
+# criterion equals the part's value; "more criteria" counts the non-blank ones (the season doesn't count).
+_CRITERIA = [("Franchise", "c_franchise", "p_franchise"), ("DealerGroupCode", "c_dgc", "p_dgc"),
+             ("Branch", "c_branch", "p_branch"), ("SLC", "c_slc", "p_slc"), ("Source", "c_source", "p_source"),
+             ("VendorCode", "c_vendor", "p_vendor"), ("ProductGroup", "c_pg", "p_pg"),
+             ("CommodityCode", "c_cc", "p_cc")]
+_CRITERIA_SELECT = ",\n               ".join(f"nullif(upper(trim({col})), '') AS {c}" for col, c, _ in _CRITERIA)
+_CRITERIA_COUNT = "\n                                                 + ".join(
+    f"CAST(u.{c} IS NOT NULL AS INTEGER)" for _, c, _ in _CRITERIA)
+_CRITERIA_MATCH = "\n             AND ".join(f"(u.{c} IS NULL OR u.{c} = pc.{p})" for _, c, p in _CRITERIA)
+# in season this month ($cur), wrapping ranges such as 11-2 included
+_IN_SEASON = """(StartMonth IS NULL
+               OR (StartMonth <= EndMonth AND month($cur) BETWEEN StartMonth AND EndMonth)
+               OR (StartMonth > EndMonth AND (month($cur) >= StartMonth OR month($cur) <= EndMonth)))"""
+
+
+def _unit_ok(col: str) -> str:
+    """Blank, Weeks or Months, trimmed and any case."""
+    return f"coalesce(upper(trim({col})), '') IN ('', 'WEEKS', 'MONTHS')"
+
+
+def _is_weeks(col: str) -> str:
+    return f"coalesce(upper(trim({col})), '') = 'WEEKS'"
+
+
+def _months(x: str, unit: str) -> str:
+    """months(x, unit) over a normalized unit: x * 12 / 52 for Weeks, else x, evaluated in that order."""
+    return f"(CASE {unit} WHEN 'Weeks' THEN {x} * 12 / 52 ELSE {x} END)"
+
+
+# Active, not archived rows of NonJD_TransferRules with their problems ('' = valid), as RULE_CHECK_CTE does for order
+# rules: inactive (Active false or NULL) and archived rules are neither matched nor reported, and a blank name shows
+# as "Rule <Id>". Messages from the spec's "Validation"; the wording of the "missing" and unit messages and the order
+# problems are listed in are choices. A range is only checked when its unit is valid; a blank unit is Months. A blank
+# RedistMax is the default (not range-checked), but its RedistUnit must still be valid. Fractional supplies are
+# allowed (1 dp in the list); NaN and +-inf fail every range (DuckDB sorts NaN above every number).
+TRANSFER_RULE_CHECK_CTE = f"""
+    transfer_rule_check AS (
+        SELECT *,
+               coalesce(nullif(trim(RuleName), ''), 'Rule ' || CAST(CAST(Id AS BIGINT) AS VARCHAR)) AS RuleLabel,
+               concat_ws('; ',
+                 CASE WHEN Priority IS NULL THEN 'Priority is missing' END,
+                 CASE WHEN NOT {_unit_ok('ExcessUnit')} THEN 'ExcessUnit must be Weeks or Months'
+                      WHEN ExcessSupply IS NULL THEN 'ExcessSupply is missing'
+                      WHEN {_is_weeks('ExcessUnit')} AND NOT (ExcessSupply BETWEEN 0 AND {EXCESS_WEEKS_MAX})
+                      THEN 'ExcessSupply must be 0-{EXCESS_WEEKS_MAX} weeks'
+                      WHEN NOT {_is_weeks('ExcessUnit')} AND NOT (ExcessSupply BETWEEN 0 AND {EXCESS_MONTHS_MAX})
+                      THEN 'ExcessSupply must be 0-{EXCESS_MONTHS_MAX} months' END,
+                 CASE WHEN NOT {_unit_ok('RedistUnit')} THEN 'RedistUnit must be Weeks or Months'
+                      WHEN RedistMax IS NULL THEN NULL
+                      WHEN {_is_weeks('RedistUnit')} AND NOT (RedistMax BETWEEN 0 AND {REDIST_WEEKS_MAX})
+                      THEN 'RedistMax must be 0-{REDIST_WEEKS_MAX} weeks'
+                      WHEN NOT {_is_weeks('RedistUnit')} AND NOT (RedistMax BETWEEN 0 AND {REDIST_MONTHS_MAX})
+                      THEN 'RedistMax must be 0-{REDIST_MONTHS_MAX} months' END,
+                 CASE WHEN RedistMinValue IS NOT NULL AND NOT {_non_negative('RedistMinValue')}
+                      THEN 'RedistMinValue must be 0 or more' END,
+                 CASE WHEN (StartMonth IS NULL) <> (EndMonth IS NULL)
+                      THEN 'StartMonth and EndMonth must both be set or both blank' END,
+                 CASE WHEN StartMonth IS NOT NULL AND NOT {_whole_between('StartMonth', 1, 12)}
+                      THEN 'StartMonth must be a whole number 1-12' END,
+                 CASE WHEN EndMonth IS NOT NULL AND NOT {_whole_between('EndMonth', 1, 12)}
+                      THEN 'EndMonth must be a whole number 1-12' END
+               ) AS problems
+        FROM transfer_rules
+        WHERE coalesce(Active, false) AND NOT coalesce(Archived, false)
+    )"""
+
+INVALID_TRANSFER_RULES_SQL = f"""
+    WITH {TRANSFER_RULE_CHECK_CTE}
+    SELECT Id, RuleLabel, problems FROM transfer_rule_check WHERE problems <> '' ORDER BY Id
+"""
+
+# step 8b (A14): committed app transfer lines. Draft and Exported count; Placed counts while the Central date
+# of PlacedAt (a UTC instant) is on or after the build's Central date; any other status (Cancelled, NULL, a
+# different spelling) never counts, and neither does Placed without a PlacedAt (a future PlacedAt counts). A
+# line with a blank or NULL FromBranch or ToBranch, or to or from an excluded branch (D6), is dropped whole.
+# Branches are compared trimmed and upper-case; franchise and part number exactly, as stored in the line.
+# Qty (spec "Part 1 clarifications"): each line counts max(0, trunc(Qty)); NULL, NaN and +-inf count 0.
+COMMITTED_CTES = f"""
+    committed_lines AS (
+        SELECT upper(trim(FromBranch)) AS fb, upper(trim(ToBranch)) AS tb, Franchise, PartNumber,
+               CASE WHEN isfinite(Qty) THEN CAST(greatest(0, trunc(Qty)) AS BIGINT) ELSE 0 END AS q
+        FROM app_transfers
+        WHERE (Status IN ('Draft', 'Exported')
+               OR (Status = 'Placed'
+                   AND CAST(timezone('{CENTRAL}', CAST(PlacedAt AS TIMESTAMPTZ)) AS DATE) >= $today))
+          AND coalesce(trim(FromBranch), '') <> '' AND coalesce(trim(ToBranch), '') <> ''
+          AND upper(trim(FromBranch)) NOT IN ({_EXCLUDED_SQL})
+          AND upper(trim(ToBranch)) NOT IN ({_EXCLUDED_SQL})
+    ),
+    app_inbound AS (SELECT tb, Franchise, PartNumber, sum(q) AS q FROM committed_lines GROUP BY ALL),
+    app_outbound AS (SELECT fb, Franchise, PartNumber, sum(q) AS q FROM committed_lines GROUP BY ALL)"""
+
+
+def transfer_ctes(p1: str) -> str:
+    """The CTEs of Part 2 (spec "Part 2: transfer inputs per part"), ending in `part2`. They read `part_crit` (one row
+    per part key with the p_* criteria values; a duplicate collapses in the pick), `transfer_rules`, $cur, and the
+    relation `p1` with the Part 1 columns Branch, Franchise, PartNumber, oh, oo, PendingQty, MonthlyRate,
+    StockingTarget, bq (step 9's base qty), ManualOrder, IsMasked, MinimumNoDemand, AppInboundQty, AppOutboundQty."""
+    return f"""
+    {TRANSFER_RULE_CHECK_CTE},
+    -- Part 2 item 1: valid active transfer rules in season, with their values after the blank defaults: a unit is
+    -- output as Weeks or Months (blank = Months); AllowSend / AllowReceive blank = Yes; RedistMinValue blank = 0;
+    -- RedistMax blank = 6 Months, the default's amount and unit whatever RedistUnit says (choice).
+    usable_transfer_rules AS (
+        SELECT Id, RuleLabel, Priority,
+               {_CRITERIA_SELECT},
+               ExcessSupply AS t_excess,
+               CASE WHEN {_is_weeks('ExcessUnit')} THEN 'Weeks' ELSE 'Months' END AS t_excess_unit,
+               coalesce(AllowSend, true) AS t_send, coalesce(AllowReceive, true) AS t_receive,
+               CAST(coalesce(RedistMax, {TRANSFER_DEFAULT['RedistMax']}) AS DOUBLE) AS t_redist,
+               CASE WHEN RedistMax IS NOT NULL AND {_is_weeks('RedistUnit')} THEN 'Weeks' ELSE 'Months' END
+                 AS t_redist_unit,
+               CAST(coalesce(RedistMinValue, {TRANSFER_DEFAULT['RedistMinValue']}) AS DOUBLE) AS t_minval
+        FROM transfer_rule_check
+        WHERE problems = '' AND {_IN_SEASON}
+    ),
+    -- each part's transfer rule, picked as step 1 picks an order rule: highest Priority, then more non-blank
+    -- criteria, then lowest Id
+    part_transfer_rule AS (
+        SELECT * EXCLUDE (rn) FROM (
+            SELECT pc.Branch, pc.Franchise, pc.PartNumber, u.*,
+                   row_number() OVER (PARTITION BY pc.Branch, pc.Franchise, pc.PartNumber
+                                      ORDER BY u.Priority DESC,
+                                               {_CRITERIA_COUNT} DESC,
+                                               u.Id ASC) AS rn
+            FROM part_crit pc JOIN usable_transfer_rules u
+              ON {_CRITERIA_MATCH})
+        WHERE rn = 1
+    ),
+    -- the part's rule (or the built-in default); pend = max(0, trunc(PendingQty)), with NULL, NaN and +-inf
+    -- counting 0 (choice)
+    part2_rule AS (
+        SELECT f.*, tr.Id AS TransferRuleId,
+               CASE WHEN tr.Id IS NULL THEN '{TRANSFER_DEFAULT["RuleName"]}' ELSE tr.RuleLabel END
+                 AS TransferRuleName,
+               CAST(coalesce(tr.t_excess, {TRANSFER_DEFAULT["ExcessSupply"]}) AS DOUBLE) AS ExcessSupply,
+               coalesce(tr.t_excess_unit, '{TRANSFER_DEFAULT["ExcessUnit"]}') AS ExcessUnit,
+               coalesce(tr.t_send, true) AS AllowSend, coalesce(tr.t_receive, true) AS AllowReceive,
+               CAST(coalesce(tr.t_redist, {TRANSFER_DEFAULT["RedistMax"]}) AS DOUBLE) AS RedistMax,
+               coalesce(tr.t_redist_unit, '{TRANSFER_DEFAULT["RedistUnit"]}') AS RedistUnit,
+               CAST(coalesce(tr.t_minval, {TRANSFER_DEFAULT["RedistMinValue"]}) AS DOUBLE) AS RedistMinValue,
+               CASE WHEN isfinite(f.PendingQty) THEN CAST(greatest(0, trunc(f.PendingQty)) AS INTEGER) ELSE 0 END
+                 AS pend
+        FROM {p1} f LEFT JOIN part_transfer_rule tr USING (Branch, Franchise, PartNumber)
+    ),
+    -- items 2 and 5: ExcessKeep = max(Target, ceil9(rate x months(ExcessSupply))), the target at rate 0 (A3);
+    -- RedistCap = ceil9(rate x months(RedistMax))
+    part2_keep AS (
+        SELECT *,
+               CAST(greatest(StockingTarget,
+                             ceil(round(MonthlyRate * {_months('ExcessSupply', 'ExcessUnit')}, 9))) AS INTEGER)
+                 AS ExcessKeep,
+               CAST(ceil(round(MonthlyRate * {_months('RedistMax', 'RedistUnit')}, 9)) AS INTEGER) AS RedistCap
+        FROM part2_rule
+    ),
+    -- item 3: free stock above what the branch keeps, less pending (A2) and committed app transfers out (A14)
+    part2_free AS (
+        SELECT *, CAST(CASE WHEN AllowSend THEN greatest(0, oh - pend - ExcessKeep - AppOutboundQty) ELSE 0 END
+                       AS INTEGER) AS FreeExcess
+        FROM part2_keep
+    ),
+    -- item 4: ConvNeed = the step 9 base qty, before the line value limits (A4), but 0 for a branch that doesn't
+    -- receive, Manual order, masked, a minimum with no demand (A5) or a branch with excess itself.
+    -- Item 5: RedistEligible (A8).
+    part2 AS (
+        SELECT *,
+               CAST(CASE WHEN NOT AllowReceive OR ManualOrder OR IsMasked OR MinimumNoDemand OR FreeExcess > 0
+                         THEN 0 ELSE bq END AS INTEGER) AS ConvNeed,
+               AllowReceive AND StockingTarget > 0 AND MonthlyRate > 0 AND NOT ManualOrder AND NOT IsMasked
+                 AND FreeExcess = 0 AS RedistEligible
+        FROM part2_free
+    )"""
+
+
+# The part2 table: the reorder output without Part 3's suggested quantities, plus the columns allocate_group reads
+PART2_COLS = [c for c in OUTPUT_COLS if c not in SUGGESTED_COLS] + ["oh", "oo", "cost"]
+
 # Parameters: $cur = first day of the run's Central-time month, $today = the run's Central date.
 # Every value that is ceil'd or floor'd is first rounded to 9 decimals (round9), so double noise such as
 # (5 / 3) * 5.2 * 12 / 52 = 2.0000000000000004 gives 2, not 3. Line values (qty x cost) are compared rounded to
@@ -217,24 +439,14 @@ EXPECTED_SQL = f"""
     -- step 1: valid active rules in season this month (wrapping ranges such as 11-2 included)
     usable_rules AS (
         SELECT Id, RuleLabel, Priority,
-               nullif(upper(trim(Franchise)), '') AS c_franchise,
-               nullif(upper(trim(DealerGroupCode)), '') AS c_dgc,
-               nullif(upper(trim(Branch)), '') AS c_branch,
-               nullif(upper(trim(SLC)), '') AS c_slc,
-               nullif(upper(trim(Source)), '') AS c_source,
-               nullif(upper(trim(VendorCode)), '') AS c_vendor,
-               nullif(upper(trim(ProductGroup)), '') AS c_pg,
-               nullif(upper(trim(CommodityCode)), '') AS c_cc,
+               {_CRITERIA_SELECT},
                CAST(HistoryMonths AS INTEGER) AS hm, CAST(MinDemands AS INTEGER) AS md,
                WeeksOfCover AS supply,
                CASE WHEN upper(trim(SupplyUnit)) = 'MONTHS' THEN 'Months' ELSE 'Weeks' END AS unit,
                MinLineValue AS minlv, MaxLineValue AS maxlv,
                CASE upper(trim(DemandBasis)) WHEN 'UNITSSOLD' THEN 'UnitsSold' ELSE 'Requests' END AS basis
         FROM rule_check
-        WHERE problems = ''
-          AND (StartMonth IS NULL
-               OR (StartMonth <= EndMonth AND month($cur) BETWEEN StartMonth AND EndMonth)
-               OR (StartMonth > EndMonth AND (month($cur) >= StartMonth OR month($cur) <= EndMonth)))
+        WHERE problems = '' AND {_IN_SEASON}
     ),
     -- A11: each part's values for the eight criteria, trimmed and upper-case. A blank value stays '' and a missing
     -- one NULL; neither equals a non-blank criterion (criteria are nullif'd to NULL = any), so a blank part value
@@ -256,45 +468,13 @@ EXPECTED_SQL = f"""
             SELECT pc.Branch, pc.Franchise, pc.PartNumber, u.*,
                    row_number() OVER (PARTITION BY pc.Branch, pc.Franchise, pc.PartNumber
                                       ORDER BY u.Priority DESC,
-                                               CAST(u.c_franchise IS NOT NULL AS INTEGER)
-                                                 + CAST(u.c_dgc IS NOT NULL AS INTEGER)
-                                                 + CAST(u.c_branch IS NOT NULL AS INTEGER)
-                                                 + CAST(u.c_slc IS NOT NULL AS INTEGER)
-                                                 + CAST(u.c_source IS NOT NULL AS INTEGER)
-                                                 + CAST(u.c_vendor IS NOT NULL AS INTEGER)
-                                                 + CAST(u.c_pg IS NOT NULL AS INTEGER)
-                                                 + CAST(u.c_cc IS NOT NULL AS INTEGER) DESC,
+                                               {_CRITERIA_COUNT} DESC,
                                                u.Id ASC) AS rn
             FROM part_crit pc JOIN usable_rules u
-              ON (u.c_franchise IS NULL OR u.c_franchise = pc.p_franchise)
-             AND (u.c_dgc IS NULL OR u.c_dgc = pc.p_dgc)
-             AND (u.c_branch IS NULL OR u.c_branch = pc.p_branch)
-             AND (u.c_slc IS NULL OR u.c_slc = pc.p_slc)
-             AND (u.c_source IS NULL OR u.c_source = pc.p_source)
-             AND (u.c_vendor IS NULL OR u.c_vendor = pc.p_vendor)
-             AND (u.c_pg IS NULL OR u.c_pg = pc.p_pg)
-             AND (u.c_cc IS NULL OR u.c_cc = pc.p_cc))
+              ON {_CRITERIA_MATCH})
         WHERE rn = 1
     ),
-    -- step 8b (A14): committed app transfer lines. Draft and Exported count; Placed counts while the Central date
-    -- of PlacedAt (a UTC instant) is on or after the build's Central date; any other status (Cancelled, NULL, a
-    -- different spelling) never counts, and neither does Placed without a PlacedAt (a future PlacedAt counts). A
-    -- line with a blank or NULL FromBranch or ToBranch, or to or from an excluded branch (D6), is dropped whole.
-    -- Branches are compared trimmed and upper-case; franchise and part number exactly, as stored in the line.
-    -- Qty (spec "Part 1 clarifications"): each line counts max(0, trunc(Qty)); NULL, NaN and +-inf count 0.
-    committed_lines AS (
-        SELECT upper(trim(FromBranch)) AS fb, upper(trim(ToBranch)) AS tb, Franchise, PartNumber,
-               CASE WHEN isfinite(Qty) THEN CAST(greatest(0, trunc(Qty)) AS BIGINT) ELSE 0 END AS q
-        FROM app_transfers
-        WHERE (Status IN ('Draft', 'Exported')
-               OR (Status = 'Placed'
-                   AND CAST(timezone('{CENTRAL}', CAST(PlacedAt AS TIMESTAMPTZ)) AS DATE) >= $today))
-          AND coalesce(trim(FromBranch), '') <> '' AND coalesce(trim(ToBranch), '') <> ''
-          AND upper(trim(FromBranch)) NOT IN ({_EXCLUDED_SQL})
-          AND upper(trim(ToBranch)) NOT IN ({_EXCLUDED_SQL})
-    ),
-    app_inbound AS (SELECT tb, Franchise, PartNumber, sum(q) AS q FROM committed_lines GROUP BY ALL),
-    app_outbound AS (SELECT fb, Franchise, PartNumber, sum(q) AS q FROM committed_lines GROUP BY ALL),
+    {COMMITTED_CTES},
     -- display only: open transfers into the branch, by trimmed upper-case part number
     inbound_transfers AS (
         SELECT trim(RequestingBranch) AS b, upper(trim(PartNumber)) AS pn, sum(coalesce(OpenQty, 0)) AS q
@@ -437,8 +617,9 @@ EXPECTED_SQL = f"""
                     WHEN RecommendedOrderQty > 0 AND coalesce(QuantityOnHand, 0) <= 0 THEN 'OutOfStock'
                     WHEN RecommendedOrderQty > 0 THEN 'Reorder' ELSE 'OK' END AS Status
         FROM order_qty
-    )
-    SELECT {", ".join(OUTPUT_COLS)} FROM final
+    ),
+    {transfer_ctes("final")}
+    SELECT {", ".join(PART2_COLS)} FROM part2
 """
 
 
@@ -446,11 +627,190 @@ def _params(current_month: date, today: date) -> dict:
     return {"cur": current_month, "today": today}
 
 
+def branch_order_key(branch) -> tuple:
+    """Branch order (spec "Notation"): the trimmed code; codes made only of the digits 0-9 come first in number
+    order, then the others by ordinal string comparison. Codes with the same number ("02" and "2") then sort by the
+    trimmed code, then by the raw value (choice), so the order is total."""
+    raw = "" if branch is None else str(branch)
+    b = raw.strip(" ")
+    if b and all("0" <= ch <= "9" for ch in b):
+        return (0, int(b), b, raw)
+    return (1, 0, b, raw)
+
+
+def round9(x: float) -> float:
+    """round9 for the allocation's comparisons: Python's round(x, 9) (correctly rounded, half to even on the exact
+    binary value). It only decides covers that differ by less than about 1e-9."""
+    return round(x, 9)
+
+
+def _receiver_cover(stock: int, rate: float) -> float:
+    """A receiver's months of supply: round9(stock / rate); with rate 0, 0 when stock <= 0, else +inf."""
+    if rate > 0:
+        return round9(stock / rate)
+    return 0.0 if stock <= 0 else math.inf
+
+
+def allocate_group(rows: list, branch_order_key=branch_order_key) -> list:
+    """Part 3 of the spec for one Franchise + PartNumber group: `rows` are the group's branch rows with Branch,
+    Franchise, PartNumber, oh, oo, AppInboundQty, MonthlyRate, StockingTarget, ExcessKeep, FreeExcess, ConvNeed,
+    RedistEligible, RedistCap, cost and RedistMinValue (the sender's transfer rule). Returns the suggestion lines
+    (SUGGESTION_COLS, as dicts) in emission order.
+
+    - Nothing unless some branch has FreeExcess > 0 and some other branch has ConvNeed > 0 or is RedistEligible.
+    - Conventional: receivers with ConvNeed > 0, in a fixed order (receiver cover ascending, ConvNeed descending,
+      branch order); each takes from the sender s != r with the greatest sender cover round9((oh - sent) / rate)
+      (+inf at rate 0), ties to the largest free, then branch order, re-picked after every line.
+    - Redistribution, on what is left: RedistEligible receivers with room = RedistCap - oh - oo - AppInboundQty -
+      got > 0, in a fixed order (cover of oh + oo + AppInboundQty + got ascending, then branch order); senders picked
+      as above for every line; a sender whose round9(q x its cost) is below its RedistMinValue is skipped for this
+      receiver.
+    - Seq numbers the lines of the group from 1, conventional then redistribution (choice: one sequence for both
+      kinds). Value = round(Qty x ToCost, 2).
+    Choices: a RedistEligible row with rate <= 0 (Part 2 never makes one) uses the conventional rate-0 cover rule;
+    a row can't send to itself even when it has both FreeExcess and a need (also impossible from Part 2)."""
+    rows = sorted(rows, key=lambda r: branch_order_key(r["Branch"]))
+    n = len(rows)
+    oh = [int(r["oh"]) for r in rows]
+    oo = [int(r["oo"]) for r in rows]
+    inbound = [int(r["AppInboundQty"]) for r in rows]
+    rate = [float(r["MonthlyRate"]) for r in rows]
+    cost = [float(r["cost"]) for r in rows]
+    minval = [float(r["RedistMinValue"]) for r in rows]
+    need = [int(r["ConvNeed"]) for r in rows]
+    eligible = [bool(r["RedistEligible"]) for r in rows]
+    cap = [int(r["RedistCap"]) for r in rows]
+    free = [int(r["FreeExcess"]) for r in rows]
+    if not any(free[s] > 0 and any(t != s and (need[t] > 0 or eligible[t]) for t in range(n)) for s in range(n)):
+        return []
+    got, sent, lines = [0] * n, [0] * n, []
+
+    def sender_key(s):
+        cover = math.inf if rate[s] <= 0 else round9((oh[s] - sent[s]) / rate[s])
+        return (-cover, -free[s], s)            # the index is the branch order (rows are sorted by it)
+
+    def pick_sender(r, skipped=()):
+        senders = [s for s in range(n) if s != r and free[s] > 0 and s not in skipped]
+        return min(senders, key=sender_key) if senders else None
+
+    def emit(kind, s, r, q, to_need):
+        lines.append({"Kind": kind, "Franchise": rows[r]["Franchise"], "PartNumber": rows[r]["PartNumber"],
+                      "FromBranch": rows[s]["Branch"], "ToBranch": rows[r]["Branch"], "Seq": len(lines) + 1,
+                      "Qty": q, "FromCost": cost[s], "ToCost": cost[r], "Value": round(q * cost[r], 2),
+                      "FromOnHand": oh[s], "FromExcessKeep": int(rows[s]["ExcessKeep"]),
+                      "FromFreeExcess": int(rows[s]["FreeExcess"]), "ToOnHand": oh[r], "ToOnOrder": oo[r],
+                      "ToTarget": int(rows[r]["StockingTarget"]), "ToNeed": to_need, "ToRate": rate[r]})
+        free[s] -= q
+        sent[s] += q
+
+    # conventional
+    receivers = sorted((r for r in range(n) if need[r] > 0),
+                       key=lambda r: (_receiver_cover(oh[r] + oo[r] + inbound[r], rate[r]), -need[r], r))
+    for r in receivers:
+        want = need[r]
+        while want > 0:
+            s = pick_sender(r)
+            if s is None:
+                break
+            q = min(want, free[s])
+            emit("Conventional", s, r, q, need[r])
+            want -= q
+            got[r] += q
+
+    # redistribution
+    room0 = {r: cap[r] - oh[r] - oo[r] - inbound[r] - got[r] for r in range(n) if eligible[r]}
+    receivers = sorted((r for r, room in room0.items() if room > 0),
+                       key=lambda r: (_receiver_cover(oh[r] + oo[r] + inbound[r] + got[r], rate[r]), r))
+    for r in receivers:
+        room, skipped = room0[r], set()
+        while room > 0:
+            s = pick_sender(r, skipped)
+            if s is None:
+                break
+            q = min(room, free[s])
+            if round9(q * cost[s]) < minval[s]:
+                skipped.add(s)
+                continue
+            emit("Redistribution", s, r, q, room0[r])
+            room -= q
+    return lines
+
+
+ALLOCATION_COLS = ["Branch", "Franchise", "PartNumber", "oh", "oo", "AppInboundQty", "MonthlyRate", "StockingTarget",
+                   "ExcessKeep", "FreeExcess", "ConvNeed", "RedistEligible", "RedistCap", "cost", "RedistMinValue"]
+# Candidate groups (spec Part 3): some branch with FreeExcess > 0 and some branch that receives (another one: a
+# branch with excess has ConvNeed 0 and isn't RedistEligible).
+CANDIDATE_GROUPS_SQL = """
+    SELECT Franchise, PartNumber FROM part2 GROUP BY ALL
+    HAVING max(FreeExcess) > 0 AND bool_or(ConvNeed > 0 OR RedistEligible)
+"""
+
+
+def expected_suggestions(con) -> list:
+    """Allocate every candidate group of table part2 (the Part 1-2 result); the suggestion lines, by Franchise,
+    PartNumber, then Seq."""
+    cur_ = con.execute(f"""SELECT {", ".join("p." + c for c in ALLOCATION_COLS)}
+                           FROM part2 p JOIN ({CANDIDATE_GROUPS_SQL}) g USING (Franchise, PartNumber)""")
+    cols = [d[0] for d in cur_.description]
+    groups = {}
+    for row in cur_.fetchall():
+        r = dict(zip(cols, row))
+        groups.setdefault((r["Franchise"], r["PartNumber"]), []).append(r)
+    return [line for key in sorted(groups) for line in allocate_group(groups[key], branch_order_key)]
+
+
+def create_suggestion_table(con, name: str, lines: list) -> None:
+    """Table `name` with SUGGESTION_COLS (typed, also when there are no lines)."""
+    con.execute(f"CREATE OR REPLACE TABLE {name} (" + ", ".join(f"{c} {t}" for c, t in SUGGESTION_COLS) + ")")
+    if lines:
+        con.executemany(f"INSERT INTO {name} VALUES ({', '.join('?' for _ in SUGGESTION_COLS)})",
+                        [[line[c] for c, _ in SUGGESTION_COLS] for line in lines])
+
+
+# The reorder output: part2 plus each part's suggested quantities (0 where none). Lines join back on the Branch
+# values as stored (FromBranch / ToBranch are copied from the rows).
+EXPECTED_FROM_PART2_SQL = f"""
+    CREATE OR REPLACE TABLE expected AS
+    WITH moves AS (
+        SELECT ToBranch AS Branch, Franchise, PartNumber, Qty AS q_in,
+               CASE WHEN Kind = 'Conventional' THEN Qty ELSE 0 END AS q_conv, 0 AS q_out
+        FROM expected_suggestion
+        UNION ALL
+        SELECT FromBranch, Franchise, PartNumber, 0, 0, Qty FROM expected_suggestion
+    ),
+    sums AS (SELECT Branch, Franchise, PartNumber, sum(q_in) AS q_in, sum(q_conv) AS q_conv, sum(q_out) AS q_out
+             FROM moves GROUP BY ALL)
+    SELECT {", ".join(c for c in OUTPUT_COLS if c not in SUGGESTED_COLS)},
+           CAST(coalesce(s.q_in, 0) AS INTEGER) AS SuggestedInQty,
+           CAST(coalesce(s.q_conv, 0) AS INTEGER) AS SuggestedConvInQty,
+           CAST(coalesce(s.q_out, 0) AS INTEGER) AS SuggestedOutQty
+    FROM part2 p LEFT JOIN sums s USING (Branch, Franchise, PartNumber)
+"""
+
+
+def build_expected(con, current_month: date, today: date) -> dict:
+    """Run the reference over tables parts, inmaster, rules, hist, order_rules, settings, transfers, app_transfers
+    and transfer_rules, creating tables part2 (Parts 1-2), expected_suggestion (Part 3) and expected (the reorder
+    output, OUTPUT_COLS). current_month = first day of the run's Central-time month; today = the run's Central date
+    (the build's, for the mask, phase-in and committed Placed transfers). Returns {"groups": candidate groups,
+    "lines": suggestion lines}."""
+    con.execute("CREATE OR REPLACE TABLE part2 AS " + EXPECTED_SQL, _params(current_month, today))
+    lines = expected_suggestions(con)
+    create_suggestion_table(con, "expected_suggestion", lines)
+    con.execute(EXPECTED_FROM_PART2_SQL)
+    groups = con.execute(f"SELECT count(*) FROM ({CANDIDATE_GROUPS_SQL})").fetchone()[0]
+    return {"groups": groups, "lines": len(lines)}
+
+
 def expected_reorder(con, current_month: date, today: date):
-    """Run the reference rules over tables parts, inmaster, rules, hist, order_rules, settings, transfers and
-    app_transfers. current_month = first day of the run's Central-time month; today = the run's Central date (the
-    build's, for the mask, phase-in and committed Placed transfers)."""
-    return con.execute(EXPECTED_SQL, _params(current_month, today))
+    """build_expected, then a cursor over the expected reorder rows (OUTPUT_COLS)."""
+    build_expected(con, current_month, today)
+    return con.execute("SELECT * FROM expected")
+
+
+def invalid_transfer_rules(con) -> list:
+    """Active, not archived rows of transfer_rules that are skipped as invalid, as (Id, RuleName, reason), by Id."""
+    return con.execute(INVALID_TRANSFER_RULES_SQL).fetchall()
 
 
 def invalid_rules(con) -> list:
@@ -464,27 +824,45 @@ def invalid_settings(con) -> list:
     return con.execute(INVALID_SETTINGS_SQL).fetchall()
 
 
+def _diff_cond(exact: list, approx: list) -> str:
+    e = [f"g.{c} IS DISTINCT FROM e.{c}" for c in exact]
+    a = [f"((g.{c} IS NULL) <> (e.{c} IS NULL) OR abs(g.{c} - e.{c}) > {TOLERANCE})" for c in approx]
+    return " OR ".join(e + a) or "false"
+
+
 def _diff_where(cols: list = None) -> str:
     """Mismatch condition over `cols` (output column names; default every compared column)."""
     cols = set(COMPARE_COLS + TOLERANCE_COLS) if cols is None else set(cols)
-    exact = [f"g.{c} IS DISTINCT FROM e.{c}" for c in COMPARE_COLS if c in cols]
-    approx = [f"((g.{c} IS NULL) <> (e.{c} IS NULL) OR abs(g.{c} - e.{c}) > {TOLERANCE})"
-              for c in TOLERANCE_COLS if c in cols]
-    return " OR ".join(exact + approx) or "false"
+    return _diff_cond([c for c in COMPARE_COLS if c in cols], [c for c in TOLERANCE_COLS if c in cols])
+
+
+def _suggestion_diff_where(cols: list = None) -> str:
+    cols = set(SUGGESTION_EXACT + SUGGESTION_TOLERANCE) if cols is None else set(cols)
+    return _diff_cond([c for c in SUGGESTION_EXACT if c in cols], [c for c in SUGGESTION_TOLERANCE if c in cols])
+
+
+def _compare(con, gold: str, expected: str, keys: str, where: str) -> dict:
+    only_gold = con.execute(f"SELECT count(*) FROM (SELECT {keys} FROM {gold} EXCEPT SELECT {keys} FROM {expected})").fetchone()[0]
+    only_exp = con.execute(f"SELECT count(*) FROM (SELECT {keys} FROM {expected} EXCEPT SELECT {keys} FROM {gold})").fetchone()[0]
+    different = con.execute(f"""
+        SELECT count(*) FROM {gold} g JOIN {expected} e USING ({keys})
+        WHERE {where}
+    """).fetchone()[0]
+    dup_gold = con.execute(f"SELECT count(*) - count(DISTINCT ({keys})) FROM {gold}").fetchone()[0]
+    dup_exp = con.execute(f"SELECT count(*) - count(DISTINCT ({keys})) FROM {expected}").fetchone()[0]
+    return {"only_gold": only_gold, "only_expected": only_exp, "different": different,
+            "dup_gold": dup_gold, "dup_expected": dup_exp}
 
 
 def compare(con, gold: str, expected: str, cols: list = None) -> dict:
     """Row-by-row compare on the key; `cols` limits the compared columns (default all)."""
-    only_gold = con.execute(f"SELECT count(*) FROM (SELECT {KEYS} FROM {gold} EXCEPT SELECT {KEYS} FROM {expected})").fetchone()[0]
-    only_exp = con.execute(f"SELECT count(*) FROM (SELECT {KEYS} FROM {expected} EXCEPT SELECT {KEYS} FROM {gold})").fetchone()[0]
-    different = con.execute(f"""
-        SELECT count(*) FROM {gold} g JOIN {expected} e USING ({KEYS})
-        WHERE {_diff_where(cols)}
-    """).fetchone()[0]
-    dup_gold = con.execute(f"SELECT count(*) - count(DISTINCT ({KEYS})) FROM {gold}").fetchone()[0]
-    dup_exp = con.execute(f"SELECT count(*) - count(DISTINCT ({KEYS})) FROM {expected}").fetchone()[0]
-    return {"only_gold": only_gold, "only_expected": only_exp, "different": different,
-            "dup_gold": dup_gold, "dup_expected": dup_exp}
+    return _compare(con, gold, expected, KEYS, _diff_where(cols))
+
+
+def compare_suggestions(con, gold: str, expected: str, cols: list = None) -> dict:
+    """Row-by-row compare of suggestion lines on Kind + Franchise + PartNumber + FromBranch + ToBranch: Qty, Seq and
+    the integer columns exactly, costs, Value and ToRate within TOLERANCE; `cols` limits the compared columns."""
+    return _compare(con, gold, expected, SUGGESTION_KEYS, _suggestion_diff_where(cols))
 
 
 def _print_labeled(con, sql: str, title: str) -> None:
@@ -512,7 +890,7 @@ def _connect():
 
 def load_inputs(con, tier: str, current_month: date) -> list:
     """Create the input tables EXPECTED_SQL reads (parts, inmaster, rules, hist, order_rules, settings, transfers,
-    app_transfers) from the tier's lakehouses; returns the optional (round 1 and 2) columns and tables the staging
+    app_transfers, transfer_rules) from the tier's lakehouses; returns the optional (round 1 and 2) columns and tables the staging
     lakehouse doesn't have yet, read as NULL / empty.
     The session is UTC, so DateLastRequested becomes the timestamp as stored (Equip's wall clock) and its date is
     the date Equip shows; PlacedAt is a UTC instant and EXPECTED_SQL converts it to the Central date."""
@@ -549,6 +927,18 @@ def load_inputs(con, tier: str, current_month: date) -> list:
                     + ", ".join(f"{c} {t}" for c, t in APP_TRANSFER_COLS.items()) + ")")
     else:
         con.execute(f"CREATE TABLE app_transfers AS SELECT {typed} FROM {src}")
+    # Transfer rules (Part 2); the table only exists once df_NonJD_TransferRules_Raw has run on the tier.
+    src = f"delta_scan('{_path(tier, 'staging', 'NonJD_TransferRules')}')"
+    try:
+        have = columns(con, src)
+    except duckdb.Error as e:
+        absent.append(f"NonJD_TransferRules (table: {str(e).splitlines()[0][:120]})")
+        con.execute("CREATE TABLE transfer_rules ("
+                    + ", ".join(f"{c} {t}" for c, t in TRANSFER_RULE_COLS.items()) + ")")
+    else:
+        absent += [f"NonJD_TransferRules.{c}" for c in TRANSFER_RULE_COLS if c not in have]
+        con.execute(f"CREATE TABLE transfer_rules AS SELECT {select_list(con, src, [], TRANSFER_RULE_COLS, have)} "
+                    f"FROM {src}")
     return absent
 
 
@@ -594,8 +984,23 @@ def main() -> int:
         print(f"WARN: {len(bad)} part setting(s) with an invalid value (ignored):")
         for sid, branch, franchise, pn, reason in bad:
             print(f"  {sid} {branch}|{franchise}|{pn}: {reason}")
+    bad = invalid_transfer_rules(con)
+    if bad:
+        print(f"WARN: {len(bad)} transfer rule(s) skipped as invalid:")
+        for rid, name, reason in bad:
+            print(f"  {rid} {name!r}: {reason}")
+    else:
+        print("All active transfer rules are valid")
 
-    con.execute("CREATE TABLE expected AS " + EXPECTED_SQL, _params(current_month, today))
+    built_counts = build_expected(con, current_month, today)
+    print(f"Reference suggestions: {built_counts['groups']:,} candidate groups, {built_counts['lines']:,} lines")
+    _print_labeled(con, """SELECT Kind, count(*) AS lines, sum(Qty) AS units, round(sum(Value), 2) AS value,
+                                  count(DISTINCT (ToBranch, Franchise, PartNumber)) AS receiving_parts,
+                                  count(DISTINCT FromBranch) AS senders, count(DISTINCT ToBranch) AS receivers
+                           FROM expected_suggestion GROUP BY Kind ORDER BY Kind""", "by kind")
+
+    # Fact_NonJD_Reorder
+    failed = False
     gold_cols = {r[0] for r in con.execute(f"DESCRIBE SELECT * FROM delta_scan('{gold_p}')").fetchall()}
     missing = [c for c in OUTPUT_COLS if c not in gold_cols]
     present = [c for c in OUTPUT_COLS if c in gold_cols]
@@ -604,8 +1009,9 @@ def main() -> int:
               f"comparing the other {len(present) - 3} columns")
     con.execute(f"CREATE TABLE gold AS SELECT {', '.join(present)} FROM delta_scan('{gold_p}')")
     result = compare(con, "gold", "expected", present)
-    print(result)
+    print(f"Fact_NonJD_Reorder: {result}")
     if any(result.values()):
+        failed = True
         e_cols = ", ".join(f"e.{c} AS e_{c}" for c in present[3:])
         _print_labeled(con, f"""SELECT g.*, {e_cols}
                                 FROM gold g JOIN expected e USING ({KEYS})
@@ -613,11 +1019,46 @@ def main() -> int:
                        "different (gold columns, then e_ = expected)")
         _print_labeled(con, f"SELECT {KEYS} FROM gold EXCEPT SELECT {KEYS} FROM expected LIMIT 10", "only in gold")
         _print_labeled(con, f"SELECT {KEYS} FROM expected EXCEPT SELECT {KEYS} FROM gold LIMIT 10", "only in expected")
-        return 1
-    if missing:
+    elif missing:
+        failed = True
         print("The columns Gold has match the reference; FAIL because of the missing columns")
+
+    # Fact_NonJD_TransferSuggestion
+    sugg_p = _path(a.tier, "presentation", "Fact_NonJD_TransferSuggestion")
+    names = [c for c, _ in SUGGESTION_COLS]
+    try:
+        sugg_cols = columns(con, f"delta_scan('{sugg_p}')")
+    except duckdb.Error as e:
+        failed = True
+        print(f"FAIL: Fact_NonJD_TransferSuggestion can't be read ({str(e).splitlines()[0][:120]})")
+    else:
+        s_present = [c for c in names if c in sugg_cols]
+        s_missing = [c for c in names if c not in sugg_cols]
+        if s_missing:
+            failed = True
+            print(f"FAIL: Fact_NonJD_TransferSuggestion has no {', '.join(s_missing)}")
+        if any(k not in sugg_cols for k in names[:5]):
+            print("FAIL: the suggestion key columns are missing; suggestions not compared")
+        else:
+            con.execute(f"CREATE TABLE gold_s AS SELECT {', '.join(s_present)} FROM delta_scan('{sugg_p}')")
+            s_result = compare_suggestions(con, "gold_s", "expected_suggestion", s_present)
+            print(f"Fact_NonJD_TransferSuggestion: {s_result}")
+            if any(s_result.values()):
+                failed = True
+                e_cols = ", ".join(f"e.{c} AS e_{c}" for c in s_present[5:])
+                _print_labeled(con, f"""SELECT g.*, {e_cols}
+                                        FROM gold_s g JOIN expected_suggestion e USING ({SUGGESTION_KEYS})
+                                        WHERE {_suggestion_diff_where(s_present)} LIMIT 10""",
+                               "different suggestions (gold columns, then e_ = expected)")
+                _print_labeled(con, f"""SELECT {SUGGESTION_KEYS} FROM gold_s
+                                        EXCEPT SELECT {SUGGESTION_KEYS} FROM expected_suggestion LIMIT 10""",
+                               "suggestions only in gold")
+                _print_labeled(con, f"""SELECT {SUGGESTION_KEYS} FROM expected_suggestion
+                                        EXCEPT SELECT {SUGGESTION_KEYS} FROM gold_s LIMIT 10""",
+                               "suggestions only in expected")
+    if failed:
         return 1
-    print("PASS: Gold matches the reference rules")
+    print("PASS: Gold matches the reference rules (reorder and transfer suggestions)")
     return 0
 
 
