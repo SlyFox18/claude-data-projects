@@ -13,6 +13,7 @@
 >   - **To check in phase 3:** `df_NonJD_Transfers_Raw` converts PlacedAt/Created to UTC, treating zone-less values as Pacific (site-local) time. Confirm with the first real saved transfer.
 > - **E2 done 2026-10-27** (`f17adfbb`; 395 tests). Review: nothing critical. The follow-up fix clamps line Qty (spec "Part 1 clarifications"). Dev check: 0 differences on the 28 round-1 columns; the new columns await E4.
 > - **E3 built 2026-10-27** (`653b7f16`, 599 tests; fuzz generator `nonjd_transfer_fuzz.py`, seed-deterministic). Its choices are in the spec's "Parts 2–3 clarifications". Dev check: Fact_NonJD_Reorder 0 differences on the existing columns; the round 2 columns and the suggestion table await E4/E5. Review: no bugs. The follow-up `4effcd43` (622 tests) applies the spec's "Decisions after the E3 review" and strengthens the fuzz with planted rounding ties, half-cent costs, odd branch codes, and a suggestion-table fingerprint. **E3 done.**
+> - **E4 done 2026-10-27** (fabric-workspace-docs `587f4b6f`). Two logged Dev runs (pipeline mode=items; Gold about 2 min each). The reference check found 0 differences on all 39 Gold columns, 199,555 rows, with the same fingerprint `1840290705395584381174756` on both runs. hygiene, dag_check and pytest pass. Note: Gold reads `NonJD_Transfers` normally, so **Prod needs the shortcut before Gold runs** (E18 order).
 > - **Ben's answers 2026-10-27** (`feedback/2026-10-27-ben-transfer-answers.md`). They change E3, E5 and E9 (allocation order by months of supply), the built-in RedistMinValue (0, was 25), E12 (both kinds ticked, kind badge, franchise filter) and the SharePoint default (**Brian: set `NonJD_TransferRules.RedistMinValue` default to 0**). The spec's A6, A9, A12 and Part 3 are updated, and they win over any older wording below.
 > - **E11b done 2026-10-27** (app `cd8f0dc` + review fixes `6e2418d`; 999 tests, lint clean): dealer group checklist on One-Time Order and Recommended Reorder (`?dgc=`), a "(none)" choice for parts with no group (36% of parts; `-` in the URL, `""` in Parameters), ticking every group = All, requested groups kept while branches load. Known quirk to show in the walkthrough: Select all on the group list reads as All (boxes unticked), because nothing ticked already means every group. Not deployed; ships with 0.5.0.
 >
@@ -388,7 +389,7 @@ git commit -m "Non-JD reference: transfer inputs, allocation, suggestions compar
   - the write must still produce the table when there are 0 suggestions, with an explicit schema.
 - [ ] **Step 5:** commit, sync, run twice through `mode=items`, then run `nonjd_reorder_check.py --tier dev`.
   - **Expected:** both compares PASS with 0 differences, and the fingerprint is identical on both runs.
-  - Sanity: about 1,000–1,200 conventional and 500–600 redistribution lines (the spec's opportunity table, on the 12 Weeks Default).
+  - Sanity (the reference on Dev, 2026-10-27): 1,435 candidate groups, 2,312 lines. Conventional: 1,219 lines, 10,293 units, $150,433.11. Redistribution: 1,093 lines, 9,403 units, $115,878.99.
   - Run `dag_check.py`, `hygiene_audit.py` and pytest.
 - [ ] **Step 6:** record the counts and the run time added in Progress. The spec estimates under a minute.
 
