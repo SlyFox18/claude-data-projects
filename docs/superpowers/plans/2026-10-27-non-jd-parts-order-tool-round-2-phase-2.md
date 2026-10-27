@@ -538,6 +538,20 @@ Written from the spec's Part 2 and Part 3 (X10), not ported from Python.
 - [ ] **Step 2:** run the tests. Expected: FAIL. Then implement, and run `npm test`, lint and build.
 - [ ] **Step 3:** commit.
 
+### Task E11b: Several dealer group codes (One-Time Order and Recommended Reorder; Barry, 2026-10-27)
+
+App only: no Gold, reference, publish or contract change. One-Time is worked out in the app, and on Recommended Reorder this is a filter on rows already computed.
+
+**Files:** `src/pages/OneTimeOrderPage.tsx`, `src/pages/oneTime/*` (`dealerGroupsOf`, `oneTimeLines`), `src/pages/ReorderPage.tsx`, `src/pages/reorder/selection.ts`, `src/orders/draft.ts` (Parameters), the multi-check list component used for One-Time's branches and franchises (0.3.0), and their tests.
+
+- [ ] **Step 1: tests first.**
+  - One-Time: ticking groups A and B lists only parts in A or B. Nothing ticked lists every group (as blank does today). Each order's Parameters carry `dealerGroupCodes: ["A","B"]`. An order saved before 0.5.0 with `dealerGroupCode: "A"` still reads (shown as one group).
+  - Reorder: the same checklist filters the list, the totals, Totals by branch and Select all. The URL keeps it (`?dgc=A,B`; old URLs without it mean all). Ticked parts in a group that gets unticked are deselected, with the same notice as the branch picker ("N selected parts in dealer group X were deselected").
+- [ ] **Step 2:** One-Time: replace the dealer group `<select>` with the multi-check list (Select all / Clear). The groups offered are those of the ticked franchises across the loaded branches, sorted. `oneTimeLines` takes `dealerGroupCodes: string[] | null` (null or empty = all). The review summary shows "Dealer groups: A, B".
+- [ ] **Step 3:** Recommended Reorder: a **Dealer group** control beside Franchise. It is a button that opens the checklist (like **Several branches…**) and shows "All" or the ticked codes. The offered groups come from the rows of the branch and franchise picked.
+- [ ] **Step 4:** run `npm test`, `npm run lint` and `npm run build`. Commit.
+- [ ] **Step 5:** walkthrough (E16): add steps for both pages to the 0.5.0 section.
+
 ### Task E12: Read-only Transfers page
 
 **Files:**
