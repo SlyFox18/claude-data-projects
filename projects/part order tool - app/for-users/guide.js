@@ -1,5 +1,5 @@
 // Builds "Non-JD Order Tool - User Guide.docx" for Ben, Shannon, Barry and Curt.
-// Facts come from the app (nonjd-order-app 0.5.0, c8cb5fa: src/engine, src/pages, README) and ../REORDER-RULES.md.
+// Facts come from the app (nonjd-order-app 0.5.1, 36e4c96: src/engine, src/pages, README) and ../REORDER-RULES.md.
 // Worked examples: Dev Gold Fact_NonJD_Reorder built 2026-10-26 (window Oct 2025 - Sep 2026); the transfer example
 // is the app's mock data (round numbers), as in REORDER-RULES.md.
 // Run: npm install, then node guide.js [output file]
@@ -9,11 +9,11 @@ const w = (...fr) => fr.map((f) => Math.round(CONTENT_W * f));
 
 build(process.argv[2] || 'Non-JD Order Tool - User Guide.docx', {
   title: 'Non-JD Parts Order Tool: user guide',
-  subtitle: 'For Ben, Shannon, Barry and Curt · Version 0.5.0 · October 28, 2026 (test version) · https://10.110.100.13:8443',
-  footer: 'Non-JD Parts Order Tool: user guide (version 0.5.0)',
+  subtitle: 'For Ben, Shannon, Barry and Curt · Version 0.5.1 · October 28, 2026 (test version) · https://10.110.100.13:8443',
+  footer: 'Non-JD Parts Order Tool: user guide (version 0.5.1)',
   blocks: [
     { p: '**In one sentence:** the tool shows each branch which non-John Deere parts to reorder and why, suggests stock other branches could send instead, lets you tune the rules behind those suggestions, and turns the parts you pick into an order file for each vendor.' },
-    { p: 'This guide covers getting in, what each page does, and exactly how every number is worked out. Version 0.5.0 includes Ben’s round 1 answers, several branches and dealer groups at once, **phase-in**, and **transfer suggestions** (round 2, from Ben’s answers of October 27). What changed in each version is in the **walkthrough**, Part 2.' },
+    { p: 'This guide covers getting in, what each page does, and exactly how every number is worked out. Version 0.5.1 includes Ben’s round 1 answers, several branches and dealer groups at once, **phase-in**, and **transfer suggestions** (round 2, from Ben’s answers of October 27). What changed in each version is in the **walkthrough**, Part 2.' },
 
     { h1: '1. Getting started' },
     { steps: [
@@ -126,6 +126,12 @@ build(process.argv[2] || 'Non-JD Order Tool - User Guide.docx', {
       ['Placed', '**Mark placed** once the order is with the vendor. The order is then read-only.'],
     ], widths: w(0.18, 0.82) },
     { p: 'The CSV file has one line per part: `PartNumber, Description, OrderQty, Cost, LineValue, Bin`. Description and bin are saved with the order, so a file exported later still matches what was ordered. Tip: open it in Notepad to see it exactly; Excel drops leading zeros from part numbers on screen.' },
+    { p: '**Export together (0.5.1).** Tick several orders (Draft or Exported; a placed order can’t be ticked) and a panel offers one CSV instead of one per order. After you create orders for several branches, the new orders open already ticked, with **Download one CSV for all**. Two choices, remembered in your browser:' },
+    { bullets: [
+      '**Lines:** **One line per branch** (a Branch column first; every order line as it is) or **Total per part** (one line per franchise and part number, quantities and values added up, with a **Branches** column such as “1 (4); 92 (2)”). When the branches’ costs differ, Cost is the quantity-weighted average. A part number in two franchises stays two lines.',
+      '**Files:** **One file per franchise** (each goes to its own vendor) or **One file for everything** (a Franchise column).',
+    ] },
+    { p: 'Every order in the file counts as exported, exactly as if you had exported it on its own (Exported, export count + 1). The orders themselves stay saved one per branch and franchise.' },
 
     { h2: 'One-Time Order' },
     { p: 'For a one-off order based on sales over months you choose, e.g. stocking up before a season.' },
