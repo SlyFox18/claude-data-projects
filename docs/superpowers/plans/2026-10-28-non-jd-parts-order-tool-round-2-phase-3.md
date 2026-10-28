@@ -3,6 +3,7 @@
 > **For agentic workers:** REQUIRED SUB-SKILL: use superpowers:subagent-driven-development, one task at a time with a review after each (Brian's standing choice). Steps use checkbox (`- [ ]`) syntax. SharePoint, Entra, Gateway PC and Fabric UI steps are Brian's, one at a time, verified. Live SharePoint writes by Claude need Brian's explicit OK.
 
 > **Progress:** plan written 2026-10-28 (Claude, for Brian).
+> - **F2a added 2026-10-28** (Brian: archive orders instead of deleting test orders; Archived columns added on NonJD_Orders and NonJD_Transfers, verified). Runs after F2; can ship early as 0.5.2.
 > - **F0 done 2026-10-28 (Brian):** the app's users are Ben, Shannon, Barry and Curt only, and all four edit order rules, so all four edit transfer rules and save transfers (Shannon mainly non-JD, Barry and Curt mainly JD, but any of them may). The three new lists inherit the site permissions like the other NonJD lists. No per-person restriction in the app; Y10's read-only view on a 403 stays as a safety net.
 > - **F1 done 2026-10-28** (app `eb38c3a`, on 0.5.1 `36e4c96`; 1,461 tests, lint and build clean). Transfer order reads/writes (`loadTransferOrders` with FromBranch/ToBranch filtered server-side on the indexed columns and Status in the browser, `loadTransferOrder`, `createTransferOrder`, `updateTransferOrder`, `loadTransferOrderLines`, `createTransferOrderLines`, `updateTransferOrderLine`), `transferRuleToFields` / `saveTransferRule` / `patchTransferRule`; DataSource + mock in-memory writes (a mock save counts in `loadOpenTransfers` at once). No delete for any transfer list (Y6). Deviations from the task text: `TransferRuleInput` also omits `id` (it is the item id, as `RuleInput` omits Rule's id); the mock tests went into the existing `src/data/__tests__/mock.test.ts` (there is no `mockSource.test.ts`); `CreateOrderLinesError` takes an optional `what` so its message says "transfer line(s)"; units are normalised to "Weeks"/"Months" case-insensitively, other text passed through for the form/engine to reject. Review: self-review only (the fork that built it could not dispatch a reviewer agent); no findings. Run the typescript-reviewer on F1 together with F2, which builds on it.
 > - **Starting point:** app 0.5.0 (`88c7d59`) is live on Fedora on Prod data since 2026-10-28 (Plan E E18). Prod Gold already reads saved transfers (step 8b, `NonJD_Transfers` + lines, shortcut on Prod). Contract v3 is unchanged by this plan.
@@ -310,6 +311,30 @@ export function matchExistingTransferLines(
 
 - [ ] **Step 7: CSV.** Failing test in `src/export/__tests__/csv.test.ts`: `transferOrderCsv(lines)` writes header `PartNumber,Franchise,Description,Qty,FromBin,ToBin,Cost,LineValue`, skips Qty 0 lines (Y6), keeps leading zeros and neutralises formulas with the existing `textCell` / `quoteField`. Implement `TRANSFER_ORDER_CSV_HEADER` and `transferOrderCsv` next to `orderCsv`; `csvBlob` adds the BOM as for orders.
 - [ ] **Step 8:** run `npm test`, `npm run lint`, `npm run build`. Commit: `Transfer drafts, saver, status rules and CSV (Plan F F2)`.
+
+### Task F2a: Archive orders and transfer orders (Brian 2026-10-28)
+
+**Why:** test orders and placed orders clutter the Orders list. Archiving keeps every order as a record (nothing is deleted) but hides it, the same idea as Rules' Archive / Show archived. Transfer orders get the same so both lists work alike.
+
+**Lists (done by Brian 2026-10-28, verified through Graph):** `Archived` (Yes/No, default No) on `NonJD_Orders` (`88a77417-729b-4ba3-b096-51ca7f351385`) and `NonJD_Transfers` (`7236d483-71cb-486f-9c6c-1fa5abe9749f`).
+
+**Rules:**
+- Archived is a display flag only. It never changes Status, ExportCount, PlacedAt or lines, and nothing reads it in Gold, the dataflows or the publish. A missing/null Archived reads as No.
+- **Orders:** any status can be archived.
+- **Transfer orders:** only **Placed** (Entered in Equip) or **Cancelled** can be archived, so archiving can never hide a transfer that still counts as committed (step 8b counts Draft, Exported and Placed-on-the-build-date). The action is disabled with the tooltip "Only a transfer that is entered in Equip or cancelled can be archived." `committedLines` ignores Archived either way.
+- An archived order or transfer is read-only (no edit, export, mark or cancel) until it is unarchived.
+
+**Files:**
+- `src/data/types.ts`, `src/data/lists.ts`: `archived` on Order and Transfer (read; null → false); `patchOrderArchived(itemId, archived)` and `patchTransferArchived(itemId, archived)` sending only `Archived` (checkOrderId first; no empty patches).
+- `src/data/source.ts`, `src/data/mock/index.ts`: the same methods; mock in memory; one archived mock order and one archived Cancelled mock transfer so the Show archived view has rows.
+- `src/pages/OrdersPage.tsx`: archived orders hidden by default; a **Show archived** switch (remembered per browser like other switches); archived rows greyed with an "Archived" pill; **Archive (N)** / **Unarchive (N)** next to Export together for the ticked orders (Archive only when every ticked order is unarchived, and vice versa), asking first: "Archive N orders? They stay saved and can be shown again with Show archived."; the Export together panel ignores archived orders.
+- The order page: **Archive** / **Unarchive** button; archived banner "This order is archived. Unarchive it to edit or export."
+- The transfer order list and page from F6/F7: the same switch, pill and buttons, with the Placed/Cancelled rule. (If F2a lands before F6/F7, add the data methods and tests now and the transfer UI inside F6/F7; note it in their steps.)
+- Tests: data mapping (null → false), patch sends only Archived, list filtering and the switch, bulk archive with a partial failure (say which failed, Try again), the read-only state, the transfer Placed/Cancelled rule, `committedLines` unaffected by Archived.
+
+**Checks:** npm test / lint / build; dist check. Walkthrough: a short "Archive" check in the next version's section; User Guide: an "Archiving orders" bullet.
+
+**Release:** F1, F2 and F2a touch no existing page's behaviour except the Orders page's archive, so they can ship early as **0.5.2** (Fedora deploy only, no backend change) if Brian wants the test orders tidied before 0.6.0. Otherwise it ships with 0.6.0.
 
 ### Task F3: Ticks, preview and the stale check (pure)
 
