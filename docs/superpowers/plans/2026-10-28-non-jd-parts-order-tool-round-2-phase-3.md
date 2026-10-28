@@ -3,6 +3,7 @@
 > **For agentic workers:** REQUIRED SUB-SKILL: use superpowers:subagent-driven-development, one task at a time with a review after each (Brian's standing choice). Steps use checkbox (`- [ ]`) syntax. SharePoint, Entra, Gateway PC and Fabric UI steps are Brian's, one at a time, verified. Live SharePoint writes by Claude need Brian's explicit OK.
 
 > **Progress:** plan written 2026-10-28 (Claude, for Brian). Nothing built yet.
+> - **F0 done 2026-10-28 (Brian):** the app's users are Ben, Shannon, Barry and Curt only, and all four edit order rules, so all four edit transfer rules and save transfers (Shannon mainly non-JD, Barry and Curt mainly JD, but any of them may). The three new lists inherit the site permissions like the other NonJD lists. No per-person restriction in the app; Y10's read-only view on a 403 stays as a safety net.
 > - **Starting point:** app 0.5.0 (`88c7d59`) is live on Fedora on Prod data since 2026-10-28 (Plan E E18). Prod Gold already reads saved transfers (step 8b, `NonJD_Transfers` + lines, shortcut on Prod). Contract v3 is unchanged by this plan.
 > - **Open from Plan E, settled here:** "no Refresh re-reads committed lines on a page left open" (Brian's decision 2 below); "PlacedAt / Created treated as Pacific in `df_NonJD_Transfers_Raw`" (F13 step 3, checked with the first real saved transfer).
 
