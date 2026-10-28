@@ -13,7 +13,7 @@ next round.
 | F4 | Inventory management (the Corp Parts Excel Reports) | Medium-large | **Yes** |
 | F5 | Scheduled reminders | Medium | Yes (with F3) |
 | F6 | One-Time returns and scrap | Medium | Light |
-| F7 | Warn before losing ticked parts on Recommended Reorder | Small | No |
+| F7 | Warn before losing ticked parts on Recommended Reorder | **Done in 0.5.0** | No |
 | F8 | One-Time order templates | Small-medium | Light |
 | F9 | Price change history (was N5) | Medium | Yes, later |
 
@@ -97,15 +97,15 @@ its Parameters JSON. Mostly a new mode of an existing page.
 
 ## F7. Warn before losing ticked parts on Recommended Reorder
 
+**Done in 0.5.0** (app `88c7d59`, 2026-10-28, before the 0.5.0 release).
+
 **Found by Brian in the 0.5.0 click-through.** Tick a few parts on Recommended Reorder, go to another page, and
-the ticks are lost without a warning.
+the ticks were lost without a warning. The Create order review screen and the Rules editor already asked;
+leaving Reorder (or One-Time's review step) with ticks did not.
 
-**Today.** The Create order review screen and the Rules editor already ask before leaving (Stay / Leave, and the
-browser's own question on close or reload). Changing branch or franchise on Reorder already asks. Leaving
-Reorder with ticked parts does not. One-Time likely has the same gap.
-
-**Fix.** Ask "Leave and lose N ticked parts?" when leaving with ticks (the same useBlocker pattern), or keep the
-ticks for the session. Small; could go into any release.
+**Built.** Recommended Reorder and One-Time Order's review step ask "Leave this page? N ticked parts will be
+lost." with Stay / Leave, and the browser asks on close or reload. A switch, filter or branch change on the page,
+Create order and a finished save never ask. Keeping ticks for the session instead was not built.
 
 ## F8. One-Time order templates
 
