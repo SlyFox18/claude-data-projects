@@ -40,7 +40,7 @@ Equip (SQL Anywhere)
 - **When a report goes live:** add it to that workspace's org app and audience.
 - See fabric-workspace-docs `OPERATIONS-GUIDE.md` → "Report Org Apps".
 
-**LH_Master_Data is retiring.** Its Master Orchestrator was switched off 2026-10-09. A few schedules stay on until their DP replacements are proven: PartMaster snapshots + `df_JDIS_PART_INFORMATION_Raw` (04:15), `pl_Raw_PriceUpdate_History` + the PC harvest task, and `df_InMaster_PartsLookup_Raw` (Parts Availability app). The tracker is `docs/architecture/lh-master-data-retirement.md`. **Don't build anything new on LH_Master_Data.**
+**LH_Master_Data is retiring.** Its Master Orchestrator was switched off 2026-10-09. All its schedules are off since 2026-10-28 (the last was `df_InMaster_PartsLookup_Raw`; the Parts Availability app reads DP since 2026-10-19). The tracker is `docs/architecture/lh-master-data-retirement.md`. **Don't build anything new on LH_Master_Data.**
 
 ## Where things are documented
 

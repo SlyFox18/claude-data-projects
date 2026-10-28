@@ -13,7 +13,7 @@ Helpers for DP-backend report migrations (Inspections, Customer Anatomy, ...).
 - `dax_query.py <wsId> <datasetId> <file.dax>`: run a DAX query against a published model.
 - `customer_anatomy_parity.py`: Customer Anatomy DP-vs-production parity (Customer Anatomy plan, Task 8).
 - `edit_customer_anatomy_tmdl.py`: Customer Anatomy repoint/trim script (Customer Anatomy plan, Task 9).
-- `parts_availability_check.py <dev|prod> [YYYY-MM-DD]`: read-only; pairs each LH `InMaster_PartsLookup_Raw` load with DP's `PartsAvailability` load from the same minute and compares them on the raw key (Parts Availability plan, Task 2). Exit 0 pass, 1 fail, 2 no pairs.
+- `parts_availability_check.py <dev|prod> [YYYY-MM-DD]`: read-only; pairs each LH `InMaster_PartsLookup_Raw` load with DP's `PartsAvailability` load from the same minute and compares them on the raw key (Parts Availability plan, Task 2). Exit 0 pass, 1 fail, 2 no pairs. The LH feed is off since 2026-10-28, so this only works for dates up to then.
 
 All need `fab` (authenticated) and, for DuckDB scripts, `az login`.
 
