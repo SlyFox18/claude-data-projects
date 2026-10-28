@@ -3,7 +3,7 @@
 **Updated 2026-10-28 for round 2 (app version 0.5.0).** Ben answered Parts 1 and 2 on 2026-10-23 (his
 words: `feedback/2026-10-23-ben-answers.md`) and the transfer questions (Part 5) on 2026-10-27
 (`feedback/2026-10-27-ben-transfer-answers.md`). Each answered item below gives his answer in one line and what
-we did. Still open: Part 3 (Shannon), N1–N3 and N5. The short summary of round 1 is the **Round 1 changes**
+we did. Still open: N2. S1 (Shannon) and N5 are parked for later. The short summary of round 1 is the **Round 1 changes**
 document (`for-users/round1.js`); what's new since is in the walkthrough's "What's new" part.
 
 How the numbers are worked out is explained step by step in **How the order tool suggests quantities**
@@ -112,7 +112,9 @@ How the numbers are worked out is explained step by step in **How the order tool
 
 ## Part 3: for Shannon (order export)
 
-**S1. The CSV file.** Each order exports as a CSV with the columns
+**S1. The CSV file.** *Parked (Brian, 2026-10-28): keep open, not a priority. Each vendor may want a
+different layout and gathering them takes work; the CSV is fine for now and gets fine-tuned later.*
+Each order exports as a CSV with the columns
 `PartNumber, Description, OrderQty, Cost, LineValue, Bin`, one file per order (per franchise).
 - Does each vendor's ordering system accept a file like this, or does any need a different
   layout?
@@ -126,27 +128,30 @@ How the numbers are worked out is explained step by step in **How the order tool
 
 ## Part 4: new questions after round 1
 
-**N1. Units sold with no demand recorded.** 973 parts show units sold in the last 12 months but no demands
-recorded in Equip. Example: Branch 1, part 11234 (single tine bearing) sold 6 with 0 demands, so the Default
-rule (3 demands) doesn't stock it. Why would Equip record a sale with no demand? Should those sales count as
-demands?
+**N1. Units sold with no demand recorded.** *Answered (Brian, 2026-10-28): leave it as today for now.* Only
+recorded demands count. 973 parts show units sold in the last 12 months but no demands recorded in Equip
+(example: Branch 1, part 11234, sold 6 with 0 demands, so the Default rule doesn't stock it).
 
 **N2. The "Show minimums with no demand" switch.** It is off when Recommended Reorder opens, so lines that are
 there only because of an Equip minimum on a part with no activity are hidden, and Home doesn't count them
 (Branch 1 on 2026-10-26: 220 parts to order, plus 21 hidden). Is off the right starting point?
 
-**N3. Sub-branches.** 11S, 13I, 13S, 14S, 15I, 15S, 16S, 1I, 1S, 2C, 3C, 3S, 4C, 4I, 4S, 6C, 6I, 7C, 8C, 8I, 8S,
-91I and 95I stay in the tool. None has a non-JD part with a cost today. Should any be left out like 4B and 93C?
+**N3. Sub-branches.** *Answered (2026-10-28).* Ben: it shouldn't happen often; do whatever is easiest.
+Brian: roll them into the main branch, as dim_BranchLocation does in the Power BI reports (1S and 1I count as
+branch 1). The sub-branches are 11S, 13I, 13S, 14S, 15I, 15S, 16S, 1I, 1S, 2C, 3C, 3S, 4C, 4I, 4S, 6C, 6I, 7C, 8C,
+8I, 8S, 91I and 95I. None has a non-JD part with a cost today, so nothing changes yet; build the roll-up (in Gold,
+mapped through dim_BranchLocation) when one appears. 4B and 93C stay left out.
 
 **N4. For round 2.** *Answered.*
 - Transfers: Ben confirmed 12 months and 6 months (Part 5, T1 and T4).
 - Several branches: built as one order per branch and franchise (0.4.0). Tell us if that's wrong.
 - Phase-in: Ben confirmed (T7); built as asked.
 
-**N5. Non-JD price changes (for a later round).** How do non-JD part prices change today? Who updates cost and
-sell price in Equip, how often, and does each vendor send a price file? When JD parts join the tool, we'd like to
-show a part's price change history (we already keep it for JD parts). Would the same be useful for non-JD parts,
-and is there a source we could read it from?
+**N5. Non-JD price changes (for a later round).** *Parked (2026-10-28).* Ben: interesting but not a priority;
+there is no standard way non-JD price changes are entered, it differs by vendor. Brian wants to explore it later
+without taking focus from other features. Kept in `FUTURE-IDEAS.md`. Original question: who updates non-JD cost
+and sell price in Equip, how often, does each vendor send a price file, and would a price change history (as for
+JD parts) be useful?
 
 ---
 

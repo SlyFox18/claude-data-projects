@@ -1,5 +1,5 @@
 // Builds "Non-JD Order Tool - Questions.docx". Source text: ../CORP-PARTS-MANAGER-QUESTIONS.md
-// (keep the two in step). Updated 2026-10-26 with Ben's round 1 answers, 2026-10-28 with his transfer answers.
+// (keep the two in step). Updated 2026-10-26 with Ben's round 1 answers, 2026-10-28 with his transfer answers and the S1, N1, N3 and N5 decisions.
 // Run: npm install, then node questions.js [output file]
 const { build } = require('./lib');
 
@@ -16,7 +16,7 @@ build(process.argv[2] || 'Non-JD Order Tool - Questions.docx', {
   subtitle: 'For Ben, with a section for Shannon · Updated October 28, 2026 (version 0.5.0) · App: https://10.110.100.13:8443',
   footer: 'Non-JD Parts Order Tool: questions',
   blocks: [
-    { p: 'Ben answered Parts 1 and 2 on October 23 and the transfer questions (**Part 5**) on October 27. Each answered item gives his answer in one line and what we did. Still open: **Part 3** (for Shannon), **N1 to N3** and **N5**. Write your answers in the spaces, or reply by email with the item numbers.' },
+    { p: 'Ben answered Parts 1 and 2 on October 23 and the transfer questions (**Part 5**) on October 27. Each answered item gives his answer in one line and what we did. Still open: **N2**. **S1** (for Shannon) and **N5** are parked for later. Write your answers in the spaces, or reply by email with the item numbers.' },
     { p: 'The **walkthrough**’s “What’s new” part sums up what changed in each version, and the **user guide** explains how every number is worked out.' },
 
     { h1: 'Part 1: confirm or change' },
@@ -84,27 +84,22 @@ build(process.argv[2] || 'Non-JD Order Tool - Questions.docx', {
       '**Done.** Other branches loads every branch, this one included, with a Total row. "Excess" everywhere.'),
 
     { h1: 'Part 3: for Shannon (order export)' },
-    { h2: 'S1. The CSV file' },
-    { p: 'Each order exports as a CSV file with the columns `PartNumber, Description, OrderQty, Cost, LineValue, Bin`, one file per order (per franchise).' },
-    { bullets: [
-      'Does each vendor’s ordering system accept a file like this, or does any need a different layout?',
-      'The file starts with an invisible marker so Excel shows special characters correctly. Some import tools can’t read it, and it can be switched off.',
-      'Part numbers are written exactly as stored. **Excel drops leading zeros** (00724214 shows as 724214) when it opens a CSV directly; the file itself keeps them. If that matters, the app could export an Excel file (.xlsx) instead.',
-    ] },
-    A,
+    { h2: 'S1. The CSV file (parked)' },
+    { note: 'Brian, October 28: keep it open but not a priority. Each vendor may want a different layout, and gathering them takes time. The CSV works well for now; we fine-tune it later.', keepNext: true },
+    { p: 'Each order exports as a CSV file with the columns `PartNumber, Description, OrderQty, Cost, LineValue, Bin`, one file per order (per franchise). When there is time, note any vendor whose ordering system needs a different layout. Two things to watch for: some import tools can’t read the invisible marker at the start of the file (it can be switched off), and **Excel drops leading zeros** (00724214 shows as 724214) when it opens a CSV directly, though the file itself keeps them.' },
 
     { h1: 'Part 4: new questions after round 1' },
-    { h2: 'N1. Units sold with no demand recorded' },
-    { p: '973 parts show units sold in the last 12 months but **no demands** recorded in Equip. Example: Branch 1, part 11234 (single tine bearing) sold 6 with 0 demands, so the Default rule (3 demands) doesn’t stock it. Why would Equip record a sale with no demand? Should those sales count as demands?' },
-    A,
+    { h2: 'N1. Units sold with no demand recorded (answered)' },
+    { note: 'Brian, October 28: leave it as it is today for now.', keepNext: true },
+    { p: '**No change.** Only demands recorded in Equip count toward a rule’s demand minimum. The 973 parts that sold units with no demand recorded (for example Branch 1, part 11234) are not stocked by the rules; a min override or a phase-in still stocks one.' },
 
     { h2: 'N2. The "Show minimums with no demand" switch' },
     { p: 'It is **off** when Recommended Reorder opens, so lines that are there only because of an Equip minimum on a part with no activity are hidden, and Home doesn’t count them (Branch 1 on October 26: 220 parts to order, plus 21 hidden). Is off the right starting point, or should they show every time?' },
     A,
 
-    { h2: 'N3. Sub-branches' },
-    { p: 'These sub-branches stay in the tool: 11S, 13I, 13S, 14S, 15I, 15S, 16S, 1I, 1S, 2C, 3C, 3S, 4C, 4I, 4S, 6C, 6I, 7C, 8C, 8I, 8S, 91I and 95I. None has a non-JD part with a cost today, so they add nothing yet. Should any be left out like 4B and 93C?' },
-    A,
+    { h2: 'N3. Sub-branches (answered)' },
+    { note: 'Ben (through Brian), October 28: it shouldn’t happen often; do whatever is easiest. Brian: roll them into the main branch, as the Power BI reports do (1S and 1I count as branch 1).', keepNext: true },
+    { p: '**Decided:** if a sub-branch (11S, 13I, 1S, 1I, 4C, 95I and the others) ever has non-JD stock or sales, it is counted as its main branch. None has a non-JD part with a cost today, so nothing changes yet; we will build the roll-up when one appears.' },
 
     { h2: 'N4. For round 2 (answered)' },
     { bullets: [
@@ -113,9 +108,9 @@ build(process.argv[2] || 'Non-JD Order Tool - Questions.docx', {
       '**Phase-in:** you confirmed it (T7), and it is built that way.',
     ] },
 
-    { h2: 'N5. Non-JD price changes (for a later round)' },
-    { p: 'How do non-JD part prices change today? Who updates cost and sell price in Equip, how often, and does each vendor send a price file? When John Deere parts join the tool, we’d like to show a part’s price change history (we already keep it for JD parts). Would the same be useful for non-JD parts, and is there a source we could read it from?' },
-    A,
+    { h2: 'N5. Non-JD price changes (parked for later)' },
+    { note: 'Ben (through Brian), October 28: an interesting idea but not a priority. There is no standard way non-JD price changes are entered; it differs by vendor.', keepNext: true },
+    { p: 'Kept on the ideas list to explore later, after John Deere parts join the tool (they already have a price history). It won’t take time away from other features.' },
 
     { h1: 'Part 5: transfers and phase-in' },
     { p: 'You answered these on October 27. They are built in 0.5.0: the suggestions are shown, and saving transfers comes next.' },
