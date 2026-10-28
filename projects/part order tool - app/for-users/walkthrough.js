@@ -2,8 +2,10 @@
 // you should see. Brian works through it to test each release; it doubles as training for Ben, Shannon, Barry and
 // Curt. It grows with each version: part 1 is the standing tour, part 2 has a section per version for what's new,
 // part 3 holds release checks for Brian only.
-// Examples are from Prod data of 2026-10-27 (Fact_NonJD_Reorder built 11:40 UTC); refresh them when a section is
-// added. Labels follow nonjd-order-app 0.4.0 (3ca2dec) and the user guide (guide.js).
+// Examples are from Prod data of 2026-10-27 (Fact_NonJD_Reorder built 11:40 UTC); the 0.5.0 section's transfer and
+// phase-in examples are from Dev data of 2026-10-28 (Gold built 14:12 UTC), because Prod has no round 2 data until the
+// release. Re-check them against Prod after the first 0.5.0 publish. Refresh examples when a section is added.
+// Labels follow nonjd-order-app 0.5.0 (c8cb5fa) and the user guide (guide.js).
 // Run: npm install, then node walkthrough.js [output file]
 const { build, CONTENT_W } = require('./lib');
 
@@ -18,8 +20,8 @@ const notes = { answer: 'Notes (anything different, slow or confusing):' };
 
 build(process.argv[2] || 'Non-JD Order Tool - Walkthrough.docx', {
   title: 'Non-JD Parts Order Tool: walkthrough',
-  subtitle: 'Hands-on steps through every page · Version 0.4.0 · October 27, 2026 · App: https://10.110.100.13:8443',
-  footer: 'Non-JD Parts Order Tool: walkthrough (0.4.0)',
+  subtitle: 'Hands-on steps through every page · Version 0.5.0 · October 28, 2026 · App: https://10.110.100.13:8443',
+  footer: 'Non-JD Parts Order Tool: walkthrough (0.5.0)',
   blocks: [
     { p: 'This is a hands-on tour of the tool. Each step says what to do and what you should see. Tick **OK** when it matches. When it doesn’t, or something is slow or confusing, write it in the notes box under that section and send it to Brian.' },
     { bullets: [
@@ -27,7 +29,7 @@ build(process.argv[2] || 'Non-JD Order Tool - Walkthrough.docx', {
       '**Part 2, what’s new,** has a short section for each version. When a new version comes out, only its section needs doing.',
       '**Part 3, release checks,** is for Brian when he puts a new version on the test server.',
     ] },
-    { note: 'The examples use the data of October 27, 2026. The data is refreshed every morning, so your quantities and dollars will be a little different. Close is fine; what matters is that the steps behave as described.' },
+    { note: 'The examples use the data of October 27 and 28, 2026. The data is refreshed every morning, so your quantities and dollars will be a little different. Close is fine; what matters is that the steps behave as described.' },
     { note: 'Practising is safe if you follow the steps: anything you change is undone in the next step. Practice orders stay as **drafts** named **TEST**. Don’t export or mark them placed. Orders can’t be deleted in the app yet; Brian clears the TEST ones.' },
 
     { h1: 'Part 1: the tour' },
@@ -37,7 +39,7 @@ build(process.argv[2] || 'Non-JD Order Tool - Walkthrough.docx', {
       ['Open **https://10.110.100.13:8443** in Edge or Chrome. If the browser warns "Your connection isn’t private", click **Advanced**, then **Continue to 10.110.100.13**.', 'The sign-in page, or Home if you are already signed in.'],
       ['Sign in with your work Microsoft account.', '**Home**, with a greeting, your branch, and how many parts need ordering there and their cost.'],
       ['Look at the top right.', 'The date and time of the morning data. It is **amber** if the data is more than one business day old.'],
-      ['In the greeting line, change the branch to **1**.', 'Branch 1 needs about **220** parts ordered (about $93,000), with a small line like "(21 more with minimums but no demand)".'],
+      ['In the greeting line, change the branch to **1**.', 'Branch 1 needs about **220** parts ordered (about $93,000), with a small line like "(21 more with minimums but no demand)". Below it, a purple **transfers** card (Part 2, 0.5.0).'],
       ['Click **Review now**.', 'Recommended Reorder opens on branch 1.'],
     ]),
     notes,
@@ -58,7 +60,7 @@ build(process.argv[2] || 'Non-JD Order Tool - Walkthrough.docx', {
     { p: 'Every suggestion can explain itself. This uses part 124184 (Mobil 1 0W20 motor oil) at branch 1, the worked example in the user guide.' },
     steps([
       ['Search `124184`. Click the **arrow** at the left of its line.', 'The details open: "why" in plain English, the rule used (**Default**), 22 demands, 170 sold in 12 months, a target of 40, and an order of **39** (40 − 1 on hand − 0 on order).'],
-      ['In the same details, look for **Excess at other branches** and **Inbound transfers**.', 'Other branches with stock above their target, if any, and any transfers on their way (they don’t reduce the order).'],
+      ['In the same details, look for **Above target at other branches** and **Inbound transfers in Equip**.', 'Other branches with stock above their own target, if any, and any Equip transfers on their way (they don’t reduce the order: Equip already counts them in on order). A part another branch could send shows a purple **Suggested transfers** box instead (Part 2, 0.5.0).'],
       ['Click the **part number** 124184.', 'The Part page opens on its **Detail** tab (next section).'],
     ]),
     notes,
@@ -67,9 +69,9 @@ build(process.argv[2] || 'Non-JD Order Tool - Walkthrough.docx', {
     steps([
       ['Click **Part Lookup** in the menu. Choose **All branches** and search `PW-193NT`.', 'The Posi-Close Schlagel wheel at every branch that has it (about 12 of them need ordering today).'],
       ['Click the branch 1 result.', 'The Part page, **Detail** tab: stock, prices, the suggested order (about 14) and "Why this number".'],
-      ['Scroll to **Other branches**.', 'Every branch with this part, this branch first and marked "(this branch)": On hand, Target, Excess and Sold 12 mo, with a **Total** row.'],
+      ['Scroll to **Other branches**.', 'Every branch with this part, this branch first and marked "(this branch)": On hand, Target, Above target, Excess, Months of supply and Sold 12 mo, with a **Total** row.'],
       ['Click the **History** tab. Switch between units sold and requests.', 'A chart of the last 12 full months, a 60-month table and totals.'],
-      ['Click the **Settings** tab. Don’t change anything yet.', 'Min override, Manual order, Masked (with an expiry date), Notes, and the not-yet-used EOQ / pre-approved fields.'],
+      ['Click the **Settings** tab. Don’t change anything yet.', 'Min override, Manual order, Masked (with an expiry date), Phase in (quantity and end date), Notes, and the not-yet-used EOQ / pre-approved fields.'],
     ]),
     notes,
 
@@ -115,12 +117,100 @@ build(process.argv[2] || 'Non-JD Order Tool - Walkthrough.docx', {
     { h2: '9. Cleanup and App Settings' },
     steps([
       ['Click **Cleanup**. Pick branch **6**.', 'The Equip minimums on parts with no demand and no sales; branch 6 has about 1,000. The largest is about $21,000 (part 145019, module rim, minimum 65).'],
-      ['Click **App Settings**.', 'Your default branch and franchise, and **About** with the version (**0.4.0**).'],
+      ['Click **App Settings**.', 'Your default branch and franchise, and **About** with the version (**0.5.0**).'],
       ['Set your default branch, then open Recommended Reorder.', 'It opens on your default branch.'],
     ]),
     notes,
 
     { h1: 'Part 2: what’s new' },
+
+    { h2: 'Version 0.5.0 (October 28, 2026): transfer suggestions and phase-in' },
+    { p: 'New since 0.4.0:' },
+    { bullets: [
+      '**Transfer suggestions** (Ben’s answers of October 27). Every morning the tool suggests stock another branch could send: **Conventional** (instead of buying) and **Redistribution** (extra stock to a branch that sells the part). They show in **purple** on Home and Recommended Reorder, and on a new **Transfers** page. In this version you key them into Equip by hand; ticking and saving transfers in the app comes next.',
+      '**"Excess" now means stock a branch could send:** free stock above the larger of its target and 12 months of supply, as John Deere uses it. Round 1’s figure (on hand above target) is now called **Above target**. **Months of supply** is shown next to them.',
+      '**Phase-in:** stock a new part before it has the demands its rule needs, with a quantity and an end date.',
+      '**More rule criteria:** SLC, Source, Vendor code, Product group and Commodity code, as well as franchise, dealer group and branch.',
+      '**Several dealer groups** at once on Recommended Reorder and One-Time Order (Barry’s request).',
+    ] },
+    { note: 'The examples below are from the test data of October 28. Transfer suggestions change every morning, so expect different quantities; if a part has no suggestion on your day, pick any purple row instead.' },
+
+    { h3: 'Transfers on Home and Recommended Reorder' },
+    steps([
+      ['Go to **Home** and set the branch to **1**.', 'A purple card under the order count: "Branch 1: about **67** parts could come by transfer instead of being bought", and under it about 2,300 lines for all branches (about $266,000): about 1,200 could replace a purchase (about $150,000) and about 1,100 are redistribution (about $116,000).'],
+      ['Click **Review transfers**.', 'The Transfers page, with **To** set to branch 1. (More on this page below.)'],
+      ['Open **Recommended Reorder**, branch 1, franchise **All**.', 'A purple banner above the list: "About 67 parts here could come by transfer instead of being bought", "about 34 more parts could take extra stock (redistribution)", and **See Transfers**. Some rows have a purple left edge.'],
+      ['Search `MULTISEAL`.', 'One line (8oz pump of Bulk Multi Seal): order about **44**, with a purple pill **Transfer 44 from 6** before it.'],
+      ['Open its details (the arrow).', 'A purple **Suggested transfers** box at the top: "Branch 6 can send 44 instead of buying (Conventional), and 61 more (Redistribution)", then "Until transfers can be saved here, key them into Equip and lower this order."'],
+      ['Look at the order: it still says about 44.', 'Right for this version: the order doesn’t drop by itself yet. You would key the transfer into Equip and not buy these 44.'],
+      ['Clear the search. Turn **Transfer suggested only** on.', 'Only the purple rows: about 67.'],
+      ['Leave it on, and turn **Reorder needed only** off.', 'About 100 rows: the redistribution-only parts join, with an order of 0. Search `R134A`: freon refrigerant with **Redistribution 40 from 13**.'],
+      ['Turn **Reorder needed only** back on and **Transfer suggested only** off. Clear the search.', 'Back to about 220 lines.'],
+      ['Click **Dealer group** and tick two groups (any two in the list). Then tick **(none)** as well.', 'Only parts in those groups; **(none)** adds parts with no dealer group code. Click **Clear** (or untick them all) to see every group again.'],
+    ]),
+    { p: '**Your opinion:** do the purple marks make the transfers easy to spot? Is there anything else you’d want to see on a row before keying a transfer into Equip?' },
+    notes,
+
+    { h3: 'Above target, Excess and Months of supply' },
+    steps([
+      ['On Recommended Reorder, branch 1, search `MULTISEAL` and click the **part number**.', 'The Part page. Under **Other branches**, a **Suggested transfers** line once every branch has loaded: "Suggested: 44 from branch 6 (conventional); 61 from branch 6 (redistribution)".'],
+      ['Find **branch 6** in the Other branches table.', 'On hand about 730, Above target about 659, **Excess about 426**, Months of supply about 28.8. Branch 6 keeps 12 months of supply (about 304), so only the rest is excess.'],
+      ['Find **branch 93**.', 'About 1,150 **Above target**, but **Excess 0**: it has about 11 months of supply, less than the 12 it keeps.'],
+      ['Hover over the **Above target**, **Excess** and **Months of supply** headings.', 'A short definition of each.'],
+    ]),
+    notes,
+
+    { h3: 'The Transfers page' },
+    steps([
+      ['Click **Transfers** in the menu.', 'A grey **As of this morning** tag and a progress line while every branch loads (a few seconds), then a green **Live** tag: about **2,312 suggestions**, with the banner "Showing live suggestions. No part has changed since this morning."'],
+      ['Set **Kind** to **Conventional**, then **Redistribution**, then **All**.', 'About 1,219, then about 1,093. Every line has a **Conventional** or **Redistribution** badge. The line under the table totals each kind.'],
+      ['Set **Franchise** to **M** and **To** to **1**.', 'Branch 1’s franchise M suggestions, including MULTISEAL (44 and 61 from 6). The From columns show "before → after", for example on hand 730 → 686.'],
+      ['Set **From** to **13**, then everything back to **All**.', 'Only lines sent by branch 13 (lots of R134A), then the full list.'],
+      ['Click **Export CSV** and open the file in Excel.', 'One row per suggestion: Kind, FromBranch, ToBranch, PartNumber, Franchise, Description, Qty, FromBin, ToBin, FromCost, Value. Only the filtered lines are in it.'],
+      ['Open **Transfer rules in use** at the bottom.', '"0 active" and the built-in default: excess above 12 months, receive up to 6 months, no minimum for redistribution.'],
+    ]),
+    { p: '**Your opinion:** what would you need on this page to key a transfer into Equip quickly (columns, order, grouping by branch pair)?' },
+    notes,
+
+    { h3: 'Phase-in (practice, then clear it)' },
+    { note: 'A phase-in is saved for everyone straight away. Clear it again at the end of these steps.' },
+    steps([
+      ['**Part Lookup**, branch **1**, search `GG100`, and open it.', 'BS **GG100**, 100PSI liquid fill gauge: none on hand, no sales, so no order (**No recent activity**).'],
+      ['Click the **Settings** tab. Under **Phase in**, type a quantity of **2**.', 'The end date fills in 12 months from today.'],
+      ['Change the end date to **yesterday**.', 'The message "That date has passed, so the phase-in would not apply. Pick today or later." Put the 12-months-from-today date back.'],
+      ['Click **Save settings**.', '"Saved." A green badge next to **Phase in**: **Active until** that date, and a line saying it ends early once the part has 3 demands.'],
+      ['Click the **Detail** tab.', 'Target **2**, order **2**. "Why this number" says the phase-in of 2 sets the target.'],
+      ['Click **Special statuses**.', 'GG100 at branch 1 listed as **Phase-in**, "2 until" the date, with your name.'],
+      ['**Recommended Reorder**, branch 1, search `GG100`.', 'Order 2, with a small green **Phase-in** tag by the part number.'],
+      ['Open **Transfers** and wait for **Live**.', 'The banner now says "1 part has changed since this morning". Click **Why**: a part setting (… phase-in) changed. With franchise **BS** and To **1** you may also see a new GG100 line from a branch with a spare one (on the test data: 2 from branch 94). Phase-in parts can be filled by transfer.'],
+      ['Back on GG100’s **Settings** tab, click **Clear phase-in**, then **Save settings**.', 'The badge is gone. The order is back to 0, and GG100 is off Special statuses.'],
+    ]),
+    notes,
+
+    { h3: 'A phase-in that has ended (practice, then clear it)' },
+    { p: 'A phase-in ends at its end date, or as soon as the part has the demands its rule needs. This shows the second case on a part that already sells well.' },
+    steps([
+      ['Open part **124184** (Mobil 1 oil) at branch 1, **Settings** tab. Set a phase-in quantity of **1** and **Save settings**.', 'An amber badge **Ended: reached 3 demands**: the part already has about 22 demands, so its rule stocks it and the phase-in has nothing to do.'],
+      ['Click the **Detail** tab.', 'Target and order are unchanged (about 40 and 39). "Why this number" starts with "The phase-in ended because the part reached 3 demands."'],
+      ['Open **Special statuses**.', '124184 listed as **Phase-in ended**, so someone can tidy it.'],
+      ['Back on **Settings**, click **Clear phase-in** and **Save settings**.', 'The badge and the Special statuses entry are gone.'],
+    ]),
+    notes,
+
+    { h3: 'New rule criteria and Try it (don’t save)' },
+    steps([
+      ['Click **Rules**, then **New rule**.', 'An empty rule with the new fields: **SLC**, **Source**, **Vendor code**, **Product group** and **Commodity code**, as well as Franchise, Dealer group code and Branch.'],
+      ['Type **01058** in **Vendor code**.', 'A warning: the leading zero means it matches no part; use 1058.'],
+      ['Change it to **1058**. Give the rule a name (**TEST**), priority **5**, supply **16 weeks**, and switch it **Active**.', 'The **Try it** panel on branch 1: more order lines and a higher total, and only vendor 1058’s parts among the parts that change.'],
+      ['Click **Close**, then **Discard**.', 'Nothing is saved; the rules list is unchanged.'],
+    ]),
+    notes,
+
+    { h3: 'About' },
+    steps([
+      ['**App Settings** → **About**.', 'Version **0.5.0**.'],
+    ]),
+    notes,
 
     { h2: 'Version 0.4.0 (October 27, 2026): several branches in Recommended Reorder' },
     { p: 'Recommended Reorder can now show several branches at once, so you can work several stores in one pass. One-Time Order got the same in 0.3.0, and both now load faster (all 19 branches in about 4 seconds instead of 10 to 12).' },
@@ -143,6 +233,14 @@ build(process.argv[2] || 'Non-JD Order Tool - Walkthrough.docx', {
 
     { h1: 'Part 3: release checks (Brian)' },
     { p: 'Run these when a new version is deployed to the test server, after **Ctrl+F5** to load it.' },
+    { h3: '0.5.0' },
+    steps([
+      ['App Settings → **About**.', '**0.5.0** and the deployed commit.'],
+      ['The first morning after the 0.5.0 publish: re-check the Part 2 examples (MULTISEAL at 1 with 44 from 6; branch 6 and 93 on Other branches; R134A redistribution from 13; GG100 with no stock or sales at 1; 124184 at about 22 demands) against Prod.', 'Each still behaves as described; update the walkthrough where Prod differs before sending it out.'],
+      ['Home, Recommended Reorder and Transfers with the Prod data.', 'Purple card, banner and pills show; Transfers goes **Live** with no red "disagree" banner.'],
+      ['Open an old address with dealer groups: `/reorder?branch=1&dgc=COTTON`.', 'Recommended Reorder with COTTON ticked.'],
+      ['Special statuses with all branches loaded.', 'Masks, Manual order, min overrides and any phase-ins; no errors.'],
+    ]),
     { h3: '0.4.0' },
     steps([
       ['App Settings → **About**.', '**0.4.0 · 3ca2dec**.'],

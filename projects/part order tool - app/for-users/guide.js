@@ -1,6 +1,7 @@
 // Builds "Non-JD Order Tool - User Guide.docx" for Ben, Shannon, Barry and Curt.
-// Facts come from the app (nonjd-order-app 0.2.0: src/engine, README) and ../REORDER-RULES.md.
-// Worked examples: Dev Gold Fact_NonJD_Reorder built 2026-10-26 (window Oct 2025 - Sep 2026).
+// Facts come from the app (nonjd-order-app 0.5.0, c8cb5fa: src/engine, src/pages, README) and ../REORDER-RULES.md.
+// Worked examples: Dev Gold Fact_NonJD_Reorder built 2026-10-26 (window Oct 2025 - Sep 2026); the transfer example
+// is the app's mock data (round numbers), as in REORDER-RULES.md.
 // Run: npm install, then node guide.js [output file]
 const { build, CONTENT_W } = require('./lib');
 
@@ -8,11 +9,11 @@ const w = (...fr) => fr.map((f) => Math.round(CONTENT_W * f));
 
 build(process.argv[2] || 'Non-JD Order Tool - User Guide.docx', {
   title: 'Non-JD Parts Order Tool: user guide',
-  subtitle: 'For Ben, Shannon, Barry and Curt · Version 0.2.0 (round 1) · October 2026 (test version) · https://10.110.100.13:8443',
-  footer: 'Non-JD Parts Order Tool: user guide (version 0.2.0)',
+  subtitle: 'For Ben, Shannon, Barry and Curt · Version 0.5.0 · October 28, 2026 (test version) · https://10.110.100.13:8443',
+  footer: 'Non-JD Parts Order Tool: user guide (version 0.5.0)',
   blocks: [
-    { p: '**In one sentence:** the tool shows each branch which non-John Deere parts to reorder and why, lets you tune the rules behind those suggestions, and turns the parts you pick into an order file for each vendor.' },
-    { p: 'This guide covers getting in, what each page does, and exactly how every number is worked out. Version 0.2.0 includes the changes from Ben’s answers (round 1). They are listed in the separate **Round 1 changes** document.' },
+    { p: '**In one sentence:** the tool shows each branch which non-John Deere parts to reorder and why, suggests stock other branches could send instead, lets you tune the rules behind those suggestions, and turns the parts you pick into an order file for each vendor.' },
+    { p: 'This guide covers getting in, what each page does, and exactly how every number is worked out. Version 0.5.0 includes Ben’s round 1 answers, several branches and dealer groups at once, **phase-in**, and **transfer suggestions** (round 2, from Ben’s answers of October 27). What changed in each version is in the **walkthrough**, Part 2.' },
 
     { h1: '1. Getting started' },
     { steps: [
@@ -32,23 +33,38 @@ build(process.argv[2] || 'Non-JD Order Tool - User Guide.docx', {
     { h2: 'Home' },
     { p: 'Shows how many parts need ordering at your branch and what they would cost, with a **Review now** link straight to that list, plus a card for each page. Pick a different branch in the greeting line to look at another branch.' },
     { p: 'The count leaves out lines that are only there because of an Equip minimum on a part with no demand (see "Min, no demand" below). A small line says how many were left out, for example "(21 more with minimums but no demand)".' },
+    { p: 'Below it, a **purple transfers card** sums up this morning’s transfer suggestions, for example "Branch 1: 12 parts could come by transfer instead of being bought", with the totals for every branch underneath. **Review transfers** opens the Transfers page on the parts coming into your branch. The card is hidden on a morning with no suggestions.' },
 
     { h2: 'Recommended Reorder' },
     { p: 'The main page: every part at the branch with the suggested order quantity.' },
     { bullets: [
-      '**Branch and Franchise** pickers at the top. The page remembers them in the address, so a bookmark or a refresh keeps your view.',
+      '**Branch and Franchise** pickers at the top. The page remembers them in the address, so a bookmark or a refresh keeps your view. **Several branches…** shows more than one branch at once (below).',
+      '**Dealer group:** tick one or more dealer groups to list only their parts. None ticked means every group; **(none)** is the parts with no dealer group code.',
       '**Reorder needed only** (on by default) shows just the parts to order (Out of stock and Reorder). Turn it off to see every part.',
       '**Show minimums with no demand** (off by default): see "Min, no demand" below.',
+      '**Transfer suggested only** lists just the parts another branch could send (below). It only shows when there are suggestions.',
       '**Search** by part number or description.',
       '**Sort** by clicking a column heading; click again to reverse.',
-      'Click the **arrow** at the left of a row to see **why** that quantity was suggested, in plain English. It also shows the rule used, any inbound transfers, other branches with excess stock, and the **Part actions** (below).',
+      'Click the **arrow** at the left of a row to see **why** that quantity was suggested, in plain English. It also shows any suggested transfers, the rule used, inbound transfers, other branches with stock above their target, and the **Part actions** (below).',
+      '**Inbound** counts transfers on their way: the ones open in Equip plus the ones saved in this app (a small **app** tag; hover over the number to see the split).',
       'Click a **part number** to open its Part page.',
     ] },
     { h3: 'Min, no demand' },
     { p: 'An Equip minimum always applies, even on a part nobody has asked for in the rule’s history months. Those lines carry a **Min, no demand** tag. They are hidden until you turn on **Show minimums with no demand**, and even then they are only ordered if you tick them. Many of these minimums are old or mistyped in Equip, so check them before ordering.' },
     { p: 'Example: Branch 1, part **408DU** (4x8 cross hydraulic cylinder). No demand in the last 12 months, Equip minimum 2, none on hand, cost $245.02. The tool suggests 2 ($490.04), tagged Min, no demand, and hidden until you turn the switch on.' },
-    { h3: 'Part actions: Mask and Manual order' },
-    { p: 'In the row detail, **Mask…** stops the tool suggesting the part, with an optional expiry date. **Manual order** stops it until someone turns it off. On a part that is already masked or on Manual order, the buttons are **Unmask** and **Clear manual**. Each one asks before saving, and the row updates straight away. The same buttons are on each line of the order review, and masking a line there takes it out of the order.' },
+    { h3: 'Transfers on Recommended Reorder' },
+    { p: 'Parts another branch could send are marked in **purple**, so they stand out while you scan the list:' },
+    { bullets: [
+      'A purple banner above the list: for example "3 parts here could come by transfer instead of being bought", with **See Transfers**, which opens the Transfers page on this branch.',
+      'Each such row has a purple edge and a pill before the order: **Transfer 1 from 92**, or **Transfer 3 from 2 branches** when several branches could send. **Redistribution 9 from 92** means extra stock is on offer, not a replacement for buying (section 5).',
+      'In the row detail, a purple **Suggested transfers** box comes first: for example "Branch 92 can send 1 instead of buying (Conventional), and 9 more (Redistribution)."',
+    ] },
+    { note: 'In this version the suggested **order doesn’t drop** when a transfer is suggested. Key the transfer into Equip yourself and lower the order before you save it. Ticking and saving transfers in the app comes in the next version, and the order will then be recalculated.' },
+    { p: 'These marks are from **this morning’s** suggestions. The Transfers page works them out again live.' },
+    { h3: 'Several branches at once' },
+    { p: 'Click **Several branches…** and tick the branches you want (or **Select all**). Each loads by itself, with a progress line. The list then has a **Branch** column, a **Totals by branch** table, and a **Show** picker to look at one branch at a time. Search, ticks and sorting work across every loaded branch. **Create orders** makes one order per **branch and franchise**. Unticking a branch unticks its parts, and says how many. **Clear** and tick one branch to go back to the single-branch view.' },
+    { h3: 'Part actions: Mask, Manual order and Phase in' },
+    { p: 'In the row detail, **Mask…** stops the tool suggesting the part, with an optional expiry date. **Manual order** stops it until someone turns it off. **Phase in…** sets a phase-in (see Part settings). On a part that is already masked or on Manual order, the buttons are **Unmask** and **Clear manual**. Each one asks before saving, and the row updates straight away. The same buttons are on each line of the order review, and masking a line there takes it out of the order. A part with a phase-in has a small green **Phase-in** tag by its part number (amber **Phase-in ended** once it has ended).' },
     { h3: 'Making an order from the suggestions' },
     { steps: [
       'Tick the parts you want (the box in the heading ticks every part listed by the current filter, on every page).',
@@ -63,24 +79,42 @@ build(process.argv[2] || 'Non-JD Order Tool - User Guide.docx', {
     { bullets: [
       '**Detail:** stock, prices, the suggested order and "Why this number", plus **Other branches** (below).',
       '**History:** a chart of the last 12 full months (switch between units sold and requests), a 60-month table and totals.',
-      '**Settings:** this part’s own minimum, Manual order, a mask, and notes (below). Saving applies straight away for everyone.',
+      '**Settings:** this part’s own minimum, Manual order, a mask, a phase-in and notes (below). Saving applies straight away for everyone.',
     ] },
     { h3: 'Other branches' },
-    { p: 'Every branch loads by itself when the page opens. This branch is listed first, marked "(this branch)". The columns are **On hand**, **Target**, **Excess** and **Sold 12 mo**, and a **Total** row at the bottom adds up every branch, this one included. While branches are still loading, the totals end with "+".' },
-    { p: '**Excess** = on hand above that branch’s target. Example: a branch with 10 on hand and a target of 4 has an excess of 6. A branch whose target is 0 counts all its stock as excess.' },
+    { p: 'Every branch loads by itself when the page opens. This branch is listed first, marked "(this branch)". The columns are **On hand**, **Target**, **Above target**, **Excess**, **Months of supply** and **Sold 12 mo**, and a **Total** row at the bottom adds up every branch, this one included. While branches are still loading, the totals end with "+". Hover over a column heading for its meaning.' },
+    { bullets: [
+      '**Above target** = on hand above that branch’s target (round 1 called this "Excess"). Example: 10 on hand and a target of 4 is 6 above target.',
+      '**Excess** = stock that branch could **send**: free stock above what it keeps, which is the larger of its target and 12 months of supply. Stock committed to open tickets doesn’t count. This is John Deere’s meaning of excess (section 5).',
+      '**Months of supply** = on hand ÷ the monthly rate. "—" means the part has no sales there.',
+    ] },
+    { p: 'Above the table, **Suggested transfers** lists this part’s transfers into or out of this branch once every branch has loaded, for example "Suggested: 4 from branch 92 (conventional)".' },
     { h3: 'Part settings' },
     { table: [
       ['Setting', 'What it does'],
       ['Min override', 'This part’s own minimum. The target is never below it, and it replaces the Equip minimum. Whole numbers only; blank means none. A min override of 0 switches off an Equip minimum you don’t trust.'],
       ['Manual order', 'The tool never suggests this part until someone turns it off. For parts you always order by hand.'],
       ['Masked', 'Stops the tool suggesting this part (order 0). The mask ends at the **first** of: the end of the expiry date, if you give one; or the next time the part is asked for (a demand after the day it was masked). A mask with no expiry date lasts until the part is asked for again or someone unmasks it.'],
+      ['Phase-in', 'Stocks a new part before it has the demands its rule needs. Give a **quantity** and an **end date** (it fills in 12 months from today; blank means no end date; it can’t be in the past). While it is active, the target is at least that quantity. It ends at the end date (it still applies on its last day), or as soon as the part has the demands its rule needs, because the rule then stocks it on its own. A badge next to the heading says **Active until …**, **Ended …** or **Ignored** (a quantity that isn’t a whole number from 1 to 99,999). **Clear phase-in** removes it. Masked and Manual order still win.'],
       ['Notes', 'Free text for anyone looking at the part.'],
       ['EOQ, Force non-spiking, Pre-approved rule', 'Saved, but not used by the calculation yet (planned for when John Deere parts join).'],
     ], widths: w(0.24, 0.76) },
     { p: 'Example of a mask ending: a part masked on October 5 with no expiry is asked for on October 9. From the next morning’s snapshot the mask has ended and the part is suggested again if it needs ordering. Its Settings tab then reads "the mask ended when the part was requested on 2026-10-09".' },
 
     { h2: 'Special statuses' },
-    { p: 'One list of every part with a special setting: **Masked**, **Manual order**, a **Min override**, or a **mask that has ended** (so someone can tidy it). It shows the branch, part, description, on hand, status, who set it and when, the expiry and the notes. Filter by status and branch, click a part to open it, and **Export CSV** for a spreadsheet. Phase-in will join this page in round 2.' },
+    { p: 'One list of every part with a special setting: **Masked**, **Manual order**, a **Min override**, a **Phase-in**, or a **mask or phase-in that has ended** (so someone can tidy it). It shows the branch, part, description, on hand, status, who set it and when, the expiry or phase-in and the notes. Filter by status and branch, click a part to open it, and **Export CSV** for a spreadsheet.' },
+
+    { h2: 'Transfers' },
+    { p: 'Every suggested transfer between branches, all branches and franchises together. Read only in this version: **key them into Equip by hand**. Saving transfers comes next.' },
+    { bullets: [
+      'It opens on this morning’s suggestions (**As of this morning**) and loads every branch in the background, with a progress line. Once all have loaded it switches to **Live**: worked out again with the current rules, part settings and saved transfers.',
+      'A banner then says whether anything changed since this morning, for example "1 part has changed since this morning", and **Why** (a rule or a part setting changed). A red banner saying the app disagrees with this morning’s run is a bug: tell Brian.',
+      '**Filters** at the top: **Franchise**, **Kind** (Conventional or Redistribution), **From** and **To** branch.',
+      'Each line has a **kind badge**: **Conventional** (another branch sends what this branch would otherwise buy) or **Redistribution** (extra stock to a branch that sells the part and has room).',
+      'The columns show the receiving branch’s need, the quantity, and the sending branch’s on hand, months of supply and excess as "before → after" this transfer, plus the receiving branch’s months of supply before → after and the value.',
+      'The line under the table totals each kind. **Export CSV** downloads the filtered list: `Kind, FromBranch, ToBranch, PartNumber, Franchise, Description, Qty, FromBin, ToBin, FromCost, Value`.',
+      '**Transfer rules in use** (at the bottom, closed to start with) lists the transfer rules, or the built-in default: excess above 12 months, receive up to 6 months, no minimum.',
+    ] },
 
     { h2: 'Orders' },
     { p: 'Every saved order, newest first, with filters for branch and status. An order is for **one branch and one franchise**.' },
@@ -95,11 +129,11 @@ build(process.argv[2] || 'Non-JD Order Tool - User Guide.docx', {
     { h2: 'One-Time Order' },
     { p: 'For a one-off order based on sales over months you choose, e.g. stocking up before a season.' },
     { steps: [
-      '**Setup:** name the order, pick the branch, franchise and (optionally) a dealer group, and choose the months: Rolling 12/24/36, a full calendar year, or tick any months. Click a highlighted range again to clear it. Optionally set a **Min line value** and **Max line value** in dollars (section 5).',
+      '**Setup:** name the order, tick one or more **branches** and **franchises**, optionally tick **dealer groups** (none ticked = every group), and choose the months: Rolling 12/24/36, a full calendar year, or tick any months. Click a highlighted range again to clear it. Optionally set a **Min line value** and **Max line value** in dollars (section 6). One order is made for each branch and franchise that has parts to order.',
       '**Review:** choose **Total** or **Avg / mo**, the factor (called **Months of supply** with Avg / mo), and optional minimum sales / minimum demands. The list updates as you change them. Untick anything you don’t want.',
       '**Create order:** the same review and save as above; the order is marked One-Time.',
     ], ref: 'steps2' },
-    { p: 'Masked and Manual order parts are left off One-Time Orders completely. The review says how many were left off.' },
+    { p: 'Masked and Manual order parts are left off One-Time Orders completely. The review says how many were left off. A phase-in doesn’t affect One-Time Orders.' },
 
     { h2: 'Rules' },
     { p: 'The rules that drive every suggestion (how much history to look at, how much to stock). Anyone in the test group can change them, and the page shows who last changed each rule and when. Section 4 explains them.' },
@@ -122,10 +156,11 @@ build(process.argv[2] || 'Non-JD Order Tool - User Guide.docx', {
       '**Supply in months.** The rule’s supply is in weeks or months. Weeks are turned into months: **weeks × 12 ÷ 52**. So 12 weeks = 2.77 months.',
       '**Rule target.** If the part had at least the rule’s **min demands**, the rule target is **monthly rate × months of supply, rounded up**. Otherwise the rule target is 0 (the rule doesn’t stock it).',
       '**Minimum.** The part’s own **min override** (Part page) applies if set. If not, the **Equip minimum** applies, always, even with no demand.',
-      '**Target** = the larger of the rule target and the minimum (rounded up).',
-      '**Order** = target − on hand − on order, never below 0. On hand and on order count whole units. **A target of 0 always means order 0**, even when Equip shows negative stock.',
+      '**Phase-in.** A phase-in is **active** while it has a quantity, its end date hasn’t passed, and the part has fewer demands than its rule needs (at least 1). It is checked fresh every morning.',
+      '**Target** = the largest of the rule target, the minimum (rounded up) and an active phase-in quantity.',
+      '**Order** = target − on hand − on order − **transfers in** (transfers saved in this app, coming next version), never below 0. On hand and on order count whole units. **A target of 0 always means order 0**, even when Equip shows negative stock.',
       '**Line value limits** (only if the rule has them): if the line is worth more than the **max line value**, the quantity is cut back to fit under it. Then, if the line is worth less than the **min line value**, nothing is suggested.',
-      '**Manual order or masked:** the order is 0.',
+      '**Manual order or masked:** the order is 0, even with a phase-in.',
     ], ref: 'steps3' },
 
     { h3: 'Worked example' },
@@ -168,18 +203,19 @@ build(process.argv[2] || 'Non-JD Order Tool - User Guide.docx', {
     { p: 'Two badges can appear next to the status: **Max value** (the quantity was cut back to fit the max line value) and **Min value** (the line was under the min line value). The **Min, no demand** tag marks a line that is there only because of an Equip minimum on a part with no activity.' },
     { h3: 'Other numbers you’ll see' },
     { bullets: [
-      '**Excess** = on hand above that branch’s target. Shown under "Other branches" and in the row detail, so you can ask for a transfer instead of buying.',
-      '**Inbound** = transfers on their way to this branch. Shown for information; they do **not** reduce the suggested order.',
+      '**Above target** = on hand above that branch’s target. **Excess** = stock a branch could send (section 5). **Months of supply** = on hand ÷ monthly rate.',
+      '**Inbound** = transfers on their way to this branch. Transfers open in **Equip** are already in Equip’s on order, so they don’t reduce the order a second time. Transfers **saved in this app** (tagged **app**) do reduce it.',
       '**Est. value** = suggested order × cost. Example: 39 × $11.90 = $464.10.',
       '**"Changed"** marks a part whose number differs from this morning’s because someone changed a rule or a part setting since.',
     ] },
 
     { h1: '4. Rules' },
-    { p: 'Each rule says how to work out the target for the parts it covers. A rule can be narrowed to a **franchise**, a **dealer group code** and/or a **branch** (blank means any), and limited to a **season** (start and end month; 11 to 2 means November to February). Only **active** rules that aren’t **archived** are used.' },
+    { p: 'Each rule says how to work out the target for the parts it covers. A rule can be narrowed by **franchise**, **dealer group code**, **branch**, **SLC**, **source**, **vendor code**, **product group** and **commodity code** (blank means any; case and spaces at either end don’t matter), and limited to a **season** (start and end month; 11 to 2 means November to February). Only **active** rules that aren’t **archived** are used.' },
+    { p: 'Each branch’s own part record decides, so a part can match at one branch and not another. **Vendor code** is the whole number without leading zeros (1234, not 01234); 0 means parts with no vendor code. **Commodity code** is empty for most non-JD parts today.' },
     { h3: 'Which rule a part uses' },
     { steps: [
       'Of the active, in-season rules that fit the part, the **highest priority** wins.',
-      'On a tie, the **more specific** rule wins (more of franchise, dealer group and branch filled in).',
+      'On a tie, the **more specific** rule wins (more of the eight criteria filled in).',
       'Then the lowest rule number.',
       'If none fits, the built-in default applies: 12 months, 3 demands, 12 weeks of supply, units sold, no line value limits.',
     ], ref: 'steps4' },
@@ -195,7 +231,22 @@ build(process.argv[2] || 'Non-JD Order Tool - User Guide.docx', {
     { p: '**Example: cotton.** Two example rules exist for dealer group COTTON, switched off: "Cotton - in season" (June–October, 10 weeks of supply, 2 demands) and "Cotton - off season" (November–May, 3 weeks of supply, 3 demands). Both have priority 10, so they beat Default for cotton parts. Try them in **Try it** before switching them on. Dealer group codes are set per branch in Equip, so a part may be COTTON at one branch and not another.' },
     { p: 'A rule with a missing or out-of-range setting is shown as **Skipped** with the reason, and isn’t used. A rule that is active but out of season shows **Not used this month**.' },
 
-    { h1: '5. One-Time Order: the calculation' },
+    { h1: '5. Transfers: how the suggestions are worked out' },
+    { p: 'Every morning, and live on the Transfers page, each part is worked out on its own across all branches:' },
+    { steps: [
+      '**What a branch keeps** = the larger of its target and its **excess supply** (12 months of supply by default, rounded up).',
+      '**Excess** = on hand − stock committed to open tickets − transfers out saved in this app − what it keeps, never below 0. A part with no sales has everything above its target as excess.',
+      '**Conventional (instead of buying):** a branch whose line would be ordered, and that has no excess of its own, can receive its **need** = target − on hand − on order − transfers in. A **Min, no demand** line never pulls a transfer, unless the part has an active phase-in.',
+      '**Who goes first:** the branch with the **lowest months of supply receives first**. It takes from the branch with the **greatest months of supply** first, choosing again after every line, until its need is filled or no excess is left.',
+      '**Redistribution:** leftover excess can go to a branch that already stocks and sells the part, up to **6 months of supply** (never above what it would itself keep), in the same order. There is no minimum line value by default.',
+      '**Value** = quantity × the receiving branch’s cost. The sending branch’s own order never changes.',
+    ], ref: 'steps6' },
+    { p: '**Example** (round numbers). Branch 92 has 40 of a chain, sells 1 a month and its target is 2, so it keeps 12 (12 months of supply) and has 40 − 12 = **28** excess. Branch 1 sells 2 a month, has none on hand and a target of 3. Branch 1 has the lowest months of supply, so it receives first: **Transfer 3 from 92** (conventional), leaving 92 with 25 excess. Branch 1 can then take up to 6 months of supply = 12 in all, so 9 more come as **redistribution**. If 2 of the 40 were already on a saved transfer to branch 1, 92’s excess would be 26 and the conventional transfer 1.' },
+    { h3: 'Transfer rules' },
+    { p: 'Transfer rules use the same criteria, priority and seasons as order rules. **The sending branch’s rule** sets its excess supply (**ExcessSupply**, weeks or months), whether it may send (**AllowSend**), and a minimum line value for redistribution (**RedistMinValue**). **The receiving branch’s rule** sets whether it may receive (**AllowReceive**) and its redistribution maximum (**RedistMax**; 0 = no redistribution into that branch). With no rule, the built-in default applies: 12 months, both allowed, 6 months, no minimum.' },
+    { p: 'In this version transfer rules are edited by Brian or Ben in the SharePoint list **NonJD_TransferRules**; a page in the app comes with saving transfers. A rule with a missing or out-of-range setting is skipped: the Transfers page shows it as **Skipped** with the reason, and Brian’s morning email names it.' },
+
+    { h1: '6. One-Time Order: the calculation' },
     { steps: [
       '**Units sold** are added up over the months you picked (a net total below 0 counts as 0).',
       '**Total:** anticipated = units sold × loading factor. **Avg / mo:** anticipated = (units sold ÷ number of months) × **months of supply**.',
@@ -211,7 +262,7 @@ build(process.argv[2] || 'Non-JD Order Tool - User Guide.docx', {
       ['Total, factor 1.5, max line value $100, cost $8', 'The order of 20 is worth $160, over $100. $100 ÷ $8 = 12.5, rounded down', '**12** ($96)'],
     ], widths: w(0.28, 0.54, 0.18), keep: true },
 
-    { h1: '6. Cleanup: the numbers' },
+    { h1: '7. Cleanup: the numbers' },
     { bullets: [
       '**Listed:** parts with an Equip minimum above 0, no min override, and **no demands and no units sold** in the rule’s history months, as of this morning’s snapshot.',
       '**Minimum value** = Equip minimum × cost: the stock value that minimum commits. Example: 408DU, minimum 2 × $245.02 = $490.04.',
@@ -219,7 +270,7 @@ build(process.argv[2] || 'Non-JD Order Tool - User Guide.docx', {
     ] },
     { p: 'To take a listed part off the order, fix the minimum in Equip, or set a min override of 0 on its Part page. To keep it stocked, leave it, or set the min override you want.' },
 
-    { h1: '7. During the test' },
+    { h1: '8. During the test' },
     { bullets: [
       'This is a test copy on a test server; the address and the certificate warning will change for the real version.',
       'Orders and settings you save are real (they go into the SharePoint lists), but nothing is sent to a vendor; you download the CSV and use it yourself.',

@@ -1,5 +1,5 @@
 // Builds "Non-JD Order Tool - Questions.docx". Source text: ../CORP-PARTS-MANAGER-QUESTIONS.md
-// (keep the two in step). Updated 2026-10-26 with Ben's round 1 answers.
+// (keep the two in step). Updated 2026-10-26 with Ben's round 1 answers, 2026-10-28 with his transfer answers.
 // Run: npm install, then node questions.js [output file]
 const { build } = require('./lib');
 
@@ -13,11 +13,11 @@ const done = (h2, ben, did) => [
 
 build(process.argv[2] || 'Non-JD Order Tool - Questions.docx', {
   title: 'Non-JD Parts Order Tool: questions',
-  subtitle: 'For Ben, with a section for Shannon · Updated October 26, 2026 after Ben’s answers (version 0.2.0) · App: https://10.110.100.13:8443',
+  subtitle: 'For Ben, with a section for Shannon · Updated October 28, 2026 (version 0.5.0) · App: https://10.110.100.13:8443',
   footer: 'Non-JD Parts Order Tool: questions',
   blocks: [
-    { p: 'Ben answered Parts 1 and 2 on October 23. Each answered item now gives his answer in one line and what we did. **Part 3** (for Shannon) is still open, and **Part 4** has the new questions that came out of round 1. Write your answers in the spaces, or reply by email with the item numbers.' },
-    { p: 'The **Round 1 changes** document sums up what changed, and the **user guide** explains how every number is worked out.' },
+    { p: 'Ben answered Parts 1 and 2 on October 23 and the transfer questions (**Part 5**) on October 27. Each answered item gives his answer in one line and what we did. Still open: **Part 3** (for Shannon), **N1 to N3** and **N5**. Write your answers in the spaces, or reply by email with the item numbers.' },
+    { p: 'The **walkthrough**’s “What’s new” part sums up what changed in each version, and the **user guide** explains how every number is worked out.' },
 
     { h1: 'Part 1: confirm or change' },
     ...done('C1. The Default rule’s numbers',
@@ -28,7 +28,7 @@ build(process.argv[2] || 'Non-JD Order Tool - Questions.docx', {
       '**Done.** Fewer demands than the rule needs means the rule doesn’t stock the part. An Equip minimum still applies (Q5).'),
     ...done('C3. Masking',
       'mask from the order; a mask ends at the next demand; add Manual Order; a page of special statuses.',
-      '**Done.** Mask… and Manual order on each Recommended Reorder line and in the order review. A mask ends at its expiry or the next demand, whichever comes first. New **Special statuses** page; Phase-in joins it in round 2.'),
+      '**Done.** Mask… and Manual order on each Recommended Reorder line and in the order review. A mask ends at its expiry or the next demand, whichever comes first. New **Special statuses** page; phase-in joined it in 0.5.0.'),
     ...done('C4. One-Time Order: "Avg / mo"',
       'keep it, and put months of supply in the rules too.',
       '**Done.** The factor is labelled **Months of supply**, and each rule’s supply can be in weeks or months.'),
@@ -51,10 +51,10 @@ build(process.argv[2] || 'Non-JD Order Tool - Questions.docx', {
       '**Done.** Those five branches are left out of every page. John Deere parts: later.'),
     ...done('Q2. Several branches at once',
       'a checkbox to pick several branches and franchises.',
-      '**Not yet: planned for round 2.**'),
+      '**Done.** One-Time Order (0.3.0) and Recommended Reorder (0.4.0) take several branches and franchises, and 0.5.0 adds several dealer groups. One order per branch and franchise.'),
     ...done('Q3. Transfers',
       'a transfer step before working the order, with its own rules page; stock order transfers and redistribution.',
-      '**Not yet: planned for round 2.** Questions for it are in Part 4.'),
+      '**Partly done (0.5.0).** Both kinds are suggested every morning and shown on Home, Recommended Reorder and a new **Transfers** page, to key into Equip by hand. Ticking and saving transfers, and a transfer rules page, come next. Your answers are in Part 5.'),
     ...done('Q4. Deleting rules',
       'archive instead, with a toggle to see archived rules.',
       '**Done.** Archive / Unarchive and a **Show archived** switch on the Rules page.'),
@@ -69,7 +69,7 @@ build(process.argv[2] || 'Non-JD Order Tool - Questions.docx', {
       '**Later: with John Deere parts.**'),
     ...done('Q8. Phase-in',
       'useful; the reverse of masking, with an end date (default 12 months) and a quantity.',
-      '**Not yet: planned for round 2.**'),
+      '**Done (0.5.0).** **Phase in…** on the Settings tab and in the Recommended Reorder row detail. The target is at least the quantity until the end date, or until the part has the demands its rule needs. Listed on Special statuses.'),
     ...done('Q9. Reorder code filter',
       'no.',
       '**No change.**'),
@@ -106,13 +106,40 @@ build(process.argv[2] || 'Non-JD Order Tool - Questions.docx', {
     { p: 'These sub-branches stay in the tool: 11S, 13I, 13S, 14S, 15I, 15S, 16S, 1I, 1S, 2C, 3C, 3S, 4C, 4I, 4S, 6C, 6I, 7C, 8C, 8I, 8S, 91I and 95I. None has a non-JD part with a cost today, so they add nothing yet. Should any be left out like 4B and 93C?' },
     A,
 
-    { h2: 'N4. For round 2' },
+    { h2: 'N4. For round 2 (answered)' },
     { bullets: [
-      '**Transfers:** is "excess = more than 12 months of supply at the sending branch" the right default? For redistribution, what should a receiving branch’s default limit be, in months of supply?',
-      '**Several branches:** when several branches are picked, is the order still one per branch and franchise?',
-      '**Phase-in:** set on the part’s Settings tab with a quantity and an end date (default 12 months from today)?',
+      '**Transfers:** you confirmed 12 months and 6 months (Part 5, T1 and T4).',
+      '**Several branches:** built as one order per branch and franchise (0.4.0). Tell us if that’s wrong.',
+      '**Phase-in:** you confirmed it (T7), and it is built that way.',
     ] },
+
+    { h2: 'N5. Non-JD price changes (for a later round)' },
+    { p: 'How do non-JD part prices change today? Who updates cost and sell price in Equip, how often, and does each vendor send a price file? When John Deere parts join the tool, we’d like to show a part’s price change history (we already keep it for JD parts). Would the same be useful for non-JD parts, and is there a source we could read it from?' },
     A,
+
+    { h1: 'Part 5: transfers and phase-in' },
+    { p: 'You answered these on October 27. They are built in 0.5.0: the suggestions are shown, and saving transfers comes next.' },
+    ...done('T1. Extra stock',
+      'correct, and it must be a field the rules can change.',
+      '**Done.** **ExcessSupply** on each transfer rule, default 12 months of supply.'),
+    ...done('T2. Transfer before buying',
+      'correct; if we decide not to transfer, the order goes back to the recommended quantity.',
+      '**Done.** Minimums with no demand never pull a transfer (unless the part has an active phase-in). Unticking a transfer putting the order back comes with saving transfers.'),
+    ...done('T3. Order of filling',
+      'the branch with the greatest months of supply sends first; the lowest receives first. No branch-pair rules.',
+      '**Done.** That order, chosen again after every line. No branch-pair rules.'),
+    ...done('T4. Redistribution',
+      '6 months is good for now; no minimum dollar amount, but it must be a field the rules can change.',
+      '**Done.** Receive up to 6 months (**RedistMax**). **RedistMinValue** defaults to $0.'),
+    ...done('T5. Saving',
+      'keep branch pairs together; all franchises together with a franchise filter; key into Equip by hand; both kinds ticked, with an indicator of the kind.',
+      '**Done in 0.5.0:** the Transfers page with a franchise filter, a **Conventional / Redistribution** badge on every line and a CSV export. **Next version:** one saved transfer per branch pair, both kinds ticked.'),
+    ...done('T6. Wording',
+      'keep “Excess”, meaning months of supply over the threshold in T1, to match John Deere.',
+      '**Done.** **Excess** has that meaning; round 1’s figure is now **Above target**. Excess shows in units and months.'),
+    ...done('T7. Phase-in',
+      'correct.',
+      '**Done.** See Q8.'),
 
     { h1: 'Anything else' },
     { p: 'Anything you expected to find and didn’t, wording that was confusing, or things that got in your way:', keepNext: true },

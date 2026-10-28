@@ -1,9 +1,10 @@
 # Non-JD Parts Order Tool: questions for Ben (and Shannon)
 
-**Updated 2026-10-26 after Ben's answers (round 1, app version 0.2.0).** Ben answered Parts 1 and 2 on
-2026-10-23 (his words: `feedback/2026-10-23-ben-answers.md`). Each answered item below gives his answer in one
-line and what we did. Part 3 (Shannon) is still open, and Part 4 holds the new questions that came out of
-round 1. The short summary for Ben is the **Round 1 changes** document (`for-users/round1.js`).
+**Updated 2026-10-28 for round 2 (app version 0.5.0).** Ben answered Parts 1 and 2 on 2026-10-23 (his
+words: `feedback/2026-10-23-ben-answers.md`) and the transfer questions (Part 5) on 2026-10-27
+(`feedback/2026-10-27-ben-transfer-answers.md`). Each answered item below gives his answer in one line and what
+we did. Still open: Part 3 (Shannon), N1–N3 and N5. The short summary of round 1 is the **Round 1 changes**
+document (`for-users/round1.js`); what's new since is in the walkthrough's "What's new" part.
 
 How the numbers are worked out is explained step by step in **How the order tool suggests quantities**
 (REORDER-RULES.md) and the user guide.
@@ -26,7 +27,7 @@ How the numbers are worked out is explained step by step in **How the order tool
 **C3. Masking.** *Answered.*
 - Ben: mask from the order; a mask ends at the next demand; add Manual Order; a page of special statuses.
 - Done: Mask… and Manual order on each Recommended Reorder line and in the order review; a mask ends at its
-  expiry or the next demand, whichever is first; new **Special statuses** page. Phase-in joins it in round 2.
+  expiry or the next demand, whichever is first; new **Special statuses** page. Phase-in joined it in 0.5.0.
 
 **C4. One-Time Order, "Avg / mo".** *Answered.*
 - Ben: keep it, and put months of supply in the rules too.
@@ -58,12 +59,15 @@ How the numbers are worked out is explained step by step in **How the order tool
 
 **Q2. Several branches at once.** *Answered.*
 - Ben: a checkbox to pick several branches and franchises.
-- Not yet: planned for round 2.
+- Done: One-Time Order (0.3.0) and Recommended Reorder (0.4.0) take several branches and franchises; 0.5.0 adds
+  several dealer groups. One order per branch and franchise.
 
 **Q3. Transfers.** *Answered.*
 - Ben: a transfer step before working the order, with its own rules page; two kinds, stock order transfers
   and redistribution.
-- Not yet: planned for round 2 (questions in Part 4).
+- Partly done (0.5.0): both kinds are suggested every morning and shown on Home, Recommended Reorder and a new
+  **Transfers** page, keyed into Equip by hand. Ticking and saving transfers, and a transfer rules page, come
+  next. Ben's answers are in Part 5.
 
 **Q4. Deleting rules.** *Answered.*
 - Ben: archive instead, with a toggle to see archived rules.
@@ -84,7 +88,9 @@ How the numbers are worked out is explained step by step in **How the order tool
 
 **Q8. Phase-in.** *Answered.*
 - Ben: useful; the reverse of masking, with an end date (default 12 months) and a quantity.
-- Not yet: planned for round 2.
+- Done (0.5.0): **Phase in…** on the Settings tab and in the Recommended Reorder row detail. The target is at
+  least the quantity until the end date, or until the part has the demands its rule needs. Listed on Special
+  statuses.
 
 **Q9. Reorder code filter.** *Answered.*
 - Ben: no.
@@ -132,11 +138,10 @@ there only because of an Equip minimum on a part with no activity are hidden, an
 **N3. Sub-branches.** 11S, 13I, 13S, 14S, 15I, 15S, 16S, 1I, 1S, 2C, 3C, 3S, 4C, 4I, 4S, 6C, 6I, 7C, 8C, 8I, 8S,
 91I and 95I stay in the tool. None has a non-JD part with a cost today. Should any be left out like 4B and 93C?
 
-**N4. For round 2.**
-- Transfers: is "excess = more than 12 months of supply at the sending branch" the right default? For
-  redistribution, what should a receiving branch's default limit be (months of supply)?
-- Several branches: when several branches are picked, is the order still one per branch and franchise?
-- Phase-in: set on the part's Settings tab with a quantity and an end date (default 12 months from today)?
+**N4. For round 2.** *Answered.*
+- Transfers: Ben confirmed 12 months and 6 months (Part 5, T1 and T4).
+- Several branches: built as one order per branch and franchise (0.4.0). Tell us if that's wrong.
+- Phase-in: Ben confirmed (T7); built as asked.
 
 **N5. Non-JD price changes (for a later round).** How do non-JD part prices change today? Who updates cost and
 sell price in Equip, how often, and does each vendor send a price file? When JD parts join the tool, we'd like to
@@ -145,5 +150,46 @@ and is there a source we could read it from?
 
 ---
 
-*Rewritten 2026-10-22 for the web app walkthrough; updated 2026-10-26 with Ben's round 1 answers. The
+## Part 5: transfers and phase-in (answered)
+
+Brian emailed Ben seven questions on 2026-10-27, each with the default we planned to build. Ben's words are in
+`feedback/2026-10-27-ben-transfer-answers.md`. Built in 0.5.0 (suggestions shown; saving transfers comes next).
+
+**T1. Extra stock.** *Answered.*
+- Ben: correct (above 12 months of supply is extra; stock with no sales is all extra unless it has a minimum;
+  committed stock never moves), and it must be a field the rules can change.
+- Done: **ExcessSupply** on each transfer rule, default 12 months.
+
+**T2. Transfer before buying.** *Answered.*
+- Ben: correct (minimums with no sales don't pull transfers); if we decide not to transfer, the order goes back
+  to the recommended quantity.
+- Done: Min, no demand lines never pull a transfer (unless the part has an active phase-in). Unticking a
+  transfer putting the order back comes with saving transfers.
+
+**T3. Order of filling.** *Answered.*
+- Ben: the branch with the greatest months of supply sends first; the one with the lowest receives first. No
+  branch-pair rules; special cases are done by hand.
+- Done: that order, re-picked after every line; no branch-pair rules.
+
+**T4. Redistribution.** *Answered.*
+- Ben: 6 months is good for now; no minimum dollar amount, but it must be a field the rules can change.
+- Done: receive up to 6 months (**RedistMax**); **RedistMinValue** defaults to $0.
+
+**T5. Saving.** *Answered.*
+- Ben: keep sending and receiving branch pairs together; all franchises together with a franchise filter at
+  the top; export and key into Equip by hand; both kinds start ticked, with an indicator of the kind.
+- Done in 0.5.0: the Transfers page with a franchise filter and a **Conventional / Redistribution** badge on
+  every line, CSV export. Next version: one saved transfer per branch pair, both kinds ticked.
+
+**T6. Wording.** *Answered.*
+- Ben: keep "Excess", meaning months of supply over the threshold in T1, to match John Deere.
+- Done: **Excess** has that meaning; round 1's figure is now **Above target**. Excess shows in units and months.
+
+**T7. Phase-in.** *Answered.*
+- Ben: correct.
+- Done: see Q8.
+
+---
+
+*Rewritten 2026-10-22 for the web app walkthrough; updated 2026-10-26 with Ben's round 1 answers and 2026-10-28 with his transfer answers. The
 original June questions (1–18) for the Power App are folded in above.*
