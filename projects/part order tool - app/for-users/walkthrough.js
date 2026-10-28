@@ -5,7 +5,7 @@
 // Examples are from Prod data of 2026-10-27 (Fact_NonJD_Reorder built 11:40 UTC); the 0.5.0 section's transfer and
 // phase-in examples are from Dev data of 2026-10-28 (Gold built 14:12 UTC), because Prod has no round 2 data until the
 // release. Re-check them against Prod after the first 0.5.0 publish. Refresh examples when a section is added.
-// Labels follow nonjd-order-app 0.5.1 (36e4c96) and the user guide (guide.js).
+// Labels follow nonjd-order-app 0.5.2 and the user guide (guide.js).
 // Run: npm install, then node walkthrough.js [output file]
 const { build, CONTENT_W } = require('./lib');
 
@@ -20,8 +20,8 @@ const notes = { answer: 'Notes (anything different, slow or confusing):' };
 
 build(process.argv[2] || 'Non-JD Order Tool - Walkthrough.docx', {
   title: 'Non-JD Parts Order Tool: walkthrough',
-  subtitle: 'Hands-on steps through every page · Version 0.5.1 · October 28, 2026 · App: https://10.110.100.13:8443',
-  footer: 'Non-JD Parts Order Tool: walkthrough (0.5.1)',
+  subtitle: 'Hands-on steps through every page · Version 0.5.2 · October 28, 2026 · App: https://10.110.100.13:8443',
+  footer: 'Non-JD Parts Order Tool: walkthrough (0.5.2)',
   blocks: [
     { p: 'This is a hands-on tour of the tool. Each step says what to do and what you should see. Tick **OK** when it matches. When it doesn’t, or something is slow or confusing, write it in the notes box under that section and send it to Brian.' },
     { bullets: [
@@ -117,12 +117,23 @@ build(process.argv[2] || 'Non-JD Order Tool - Walkthrough.docx', {
     { h2: '9. Cleanup and App Settings' },
     steps([
       ['Click **Cleanup**. Pick branch **6**.', 'The Equip minimums on parts with no demand and no sales; branch 6 has about 1,000. The largest is about $21,000 (part 145019, module rim, minimum 65).'],
-      ['Click **App Settings**.', 'Your default branch and franchise, and **About** with the version (**0.5.1**).'],
+      ['Click **App Settings**.', 'Your default branch and franchise, and **About** with the version (**0.5.2**).'],
       ['Set your default branch, then open Recommended Reorder.', 'It opens on your default branch.'],
     ]),
     notes,
 
     { h1: 'Part 2: what’s new' },
+
+    { h2: 'Version 0.5.2 (October 28, 2026): archive orders' },
+    { p: 'New since 0.5.1: **Archive** orders you no longer need to see, such as test orders or orders long since placed. Nothing is deleted: an archived order is hidden from the Orders list unless **Show archived** is on, and is read-only until you unarchive it. Archiving never changes an order’s status, export count or lines.' },
+    steps([
+      ['On **Orders**, tick the **TEST** orders you made. Click **Archive (N)**.', 'A question: “Archive N orders? They stay saved and can be shown again with Show archived.” Click **Archive**: “Archived N orders.” and the orders leave the list.'],
+      ['Turn on **Show archived (N)**.', 'The archived orders come back, greyed, each with an **Archived** tag. The switch stays on next time you open Orders on this computer.'],
+      ['Open one of the archived orders.', 'A banner: “This order is archived. Unarchive it to edit or export.” There is no Export, Mark placed or quantity editing.'],
+      ['Click **Unarchive**. Go back to Orders.', 'The order is back to normal, with the same status and export count as before. Archive it again if it was a test.'],
+    ]),
+    { p: '**Your opinion:** would a quick way to archive every placed order older than a month be useful?' },
+    notes,
 
     { h2: 'Version 0.5.1 (October 28, 2026): export several orders as one CSV' },
     { p: 'New since 0.5.0: **Export together** (Barry’s request). Orders are still saved one per branch and franchise, but you can download several of them as one CSV, either one line per branch or a total per part, and one file per franchise or one for everything.' },
@@ -131,7 +142,7 @@ build(process.argv[2] || 'Non-JD Order Tool - Walkthrough.docx', {
       ['On Recommended Reorder, click **Several branches…** and tick **1** and **92**. Tick `220018` at both branches (or any part both need) and one part from another franchise. Click **Create orders**, name it **TEST** and save.', 'You land on Orders, showing only the orders just made, all **ticked**. A panel above the list has **LINES** (One line per branch / Total per part), **FILES** (One file per franchise / One file for everything) and a button **Download one CSV for all (3 orders)**.'],
       ['Leave **One line per branch** and **One file per franchise**. Click **Download one CSV for all**.', 'One file per franchise, named like `Combined-RM-20261028-1530.csv`. Each starts with a **Branch** column and has every line of both branches. “Downloaded 2 files for 3 orders; each order is marked exported.” Every order now shows **Exported**.'],
       ['Click **Total per part** and **One file for everything**, then the button again.', 'One file, `Combined-All-….csv`, with a **Franchise** column first. `220018` is one line with both branches’ quantities added up, and the **Branches** column says how many each one ordered, e.g. “1 (2); 92 (3)”.'],
-      ['Click **Show all orders**. Tick two older orders. Look at a **Placed** order’s box.', '**Export together (2 orders)** appears above the list. A placed order’s box can’t be ticked. Your LINES and FILES choices are as you left them.'],
+      ['Click **Show all orders**. Tick two older orders, then a **Placed** one.', '**Export together (2 orders)** appears above the list, with “2 of 3 ticked orders can be exported (placed and archived orders are left out).” Since 0.5.2 a placed order can be ticked so it can be archived, but it is never exported again. Your LINES and FILES choices are as you left them.'],
     ]),
     { p: '**Your opinion:** which layout does each vendor want, one line per branch or a total per part?' },
     notes,
@@ -248,6 +259,13 @@ build(process.argv[2] || 'Non-JD Order Tool - Walkthrough.docx', {
 
     { h1: 'Part 3: release checks (Brian)' },
     { p: 'Run these when a new version is deployed to the test server, after **Ctrl+F5** to load it.' },
+    { h3: '0.5.2' },
+    steps([
+      ['App Settings → **About**.', '**0.5.2** and the deployed commit.'],
+      ['Orders: tick the TEST orders, **Archive (N)**, confirm. Turn on **Show archived**.', 'They leave the list, then come back greyed with an **Archived** tag; in SharePoint `NonJD_Orders` only **Archived** changed (Status and ExportCount as before).'],
+      ['Open an archived order.', 'The archived banner; no Export or Mark placed.'],
+    ]),
+    notes,
     { h3: '0.5.1' },
     steps([
       ['App Settings → **About**.', '**0.5.1** and the deployed commit.'],
