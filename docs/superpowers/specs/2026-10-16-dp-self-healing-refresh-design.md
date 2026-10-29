@@ -41,9 +41,11 @@
 >         nothing: `decide_catchup` waits for the day's scheduled run.
 >       - Fixed the same day: watchdog `SourceQuietHours` (SPI `22:45-04:30`, data-projects `f0d18922`),
 >         installed on SPI00T4022W11. This also stops the three emails a night.
->       - Still open before `CatchupEnabled`: open question 3. Does an SPN-started run's dataflow activity still
->         run as the last modifier? Test: start Dev `Pipeline_DP_Refresh` as SPN-Fabric-Refresh-Automation with
->         `mode=items`, `items=df_InSalPar_Audit_Raw`.
+>       - **Open question 3 answered 2026-10-29: yes.** SPN-Fabric-Refresh-Automation started Dev
+>         `Pipeline_DP_Refresh` through the API (`mode=items`, `items=df_InSalPar_Audit_Raw`, the watchdog's
+>         request shape). The pipeline completed. The Equip ODBC dataflow ran through SPI-Data-Gateway
+>         (14:45–14:46Z) and completed, with no `SPNBasedRefreshNotAllowed`.
+>       - Next: Brian sets `CatchupEnabled: true` on both gateway machines.
 >   - **Phase 3c:** maintenance helper. **Layer 3:** diagnosis agent.
 > - Later phases get their own plans once phase 1 ships and 0c is answered.
 
@@ -330,7 +332,7 @@ failure-type table becomes a section), the watchdog README, this spec's Progress
 1. Does the Dataflow activity's Workspace Identity option exist and work for us (0c)?
 2. Which Power Automate connector can call the Fabric REST API as Brian (2a)?
 3. When an SPN starts `Pipeline_DP_Refresh` through the API, do its dataflow activities still run as the last
-   modifier (2b)?
+   modifier (2b)? **Yes (Dev test 2026-10-29, see Progress).**
 4. The exact error strings for `transient` (from `dp_refresh_log` history).
 5. Which gateway each dataflow uses (the `gateway` field).
 6. What a no-op `catchup` run costs in CU, to decide between a notebook and a Lookup pre-check.
