@@ -1,5 +1,31 @@
 # Closed / Open Work Orders Exports (for Casey's alert dashboard)
 
+> **2026-10-27: all parts sales** (Casey's parts-vs-inspections analysis). Everything lands in `Service Data Exports/Parts/`; the field guide is [CASEY-HANDOFF.md](CASEY-HANDOFF.md) → "Parts sales files".
+> - **Frozen years:** `PartsSales_2024.csv` (Aug–Dec 2024) and `PartsSales_2025.csv` were built locally by [build_parts_sales_history.py](build_parts_sales_history.py), a DuckDB port of the line query. Brian uploads them to SharePoint by hand. Never rebuild them unless the columns change.
+> - **Live files:** flow "Parts Sales Export - Biweekly" (`2cd9fdb6-d469-4a69-9635-187d44fffc7e`) runs every other Monday at 08:00 from 2026-11-02. It writes:
+>   - `PartsSales_yyyy-MM.csv` for every month of the current year, from [PartsSalesLines.sql](PartsSalesLines.sql), one query per month. In January it starts from last January, so December gets finished.
+>   - `PartsSalesSummary.csv` ([PartsSalesSummary.sql](PartsSalesSummary.sql)).
+>   - `PartsCustomers.csv` ([PartsCustomers.sql](PartsCustomers.sql)).
+>
+>   Floors: 20,000 lines for a finished month, more than 0 for the current month, 100,000 summary rows, 10,000 customers. A file below its floor isn't written, and the run ends Failed with a list of what was skipped.
+> - **Why monthly files:** a whole year as one CSV string is ~70+ MB, against Power Automate's 100 MB message limit and the 2-minute query limit. A month is 5–8 MB and takes about 5 s.
+> - **Matching:** the header is the Silver_Invoice row with the same number, type I/C/S and the same date (exactly one per line). Invoice numbers alone repeat, because type E records reuse them. The channel comes from the header's ModuleType (W service, I counter, S equipment). The work order comes from WkInvReg by invoice number.
+> - **Flow copy of the SQL:** the queries in the flow have their header comments stripped. The `.sql` files are the documented source. To change a query, edit the file and regenerate the flow definition.
+> - **Port check (2026-10-27):** the DuckDB port matched the flow's Jan–May 2026 files line for line (282k lines), apart from two things:
+>   - **UnitPrice rounding:** DuckDB divides decimals in floating point. Fixed by rounding in integer cents.
+>   - **SQL endpoint ghost rows:** 0–2 lines a month. For a few recently renumbered gauge parts (`PG2-1/2-300LFR` / `PG212-300LFR`), the endpoint returned both the old and new part-number rows, plus old part-master descriptions. `delta_scan` showed only the current rows. Refreshing the SQL endpoint metadata should clear it (TROUBLESHOOTING.md, "orphaned Parquet files" row).
+
+> **2026-10-27: parts file.**
+> - **What it is:** `Parts/ClosedWorkOrderParts.csv` ([ClosedWorkOrderParts.sql](ClosedWorkOrderParts.sql)), one row per part line on the closed file's work orders (~358k rows, 31 MB).
+> - **Flow:** "Closed Work Order Parts Export - Biweekly" (`d356cd5e-7799-4e8f-9f52-0bf91c6b36ff`), every other Monday at 07:45 starting 2026-11-02. It writes only if there are at least 300,000 lines.
+> - **Subfolder on purpose:** the file sits in a `Parts` subfolder so Casey's dashboard, which reads every CSV at the top level, doesn't pick it up.
+> - **CSV built in SQL:** the query builds the CSV text itself and returns one row (`LineCount`, `Csv`). As JSON rows it would be ~70 MB, close to Power Automate's 100 MB message limit. The query took 37–60 s in testing, inside the connector's 2-minute limit, but it grows with history.
+> - **Matching:**
+>   - Part lines are matched on invoice number alone (WkInvReg → InTrans.RONumber). Some shops draw stock from another store (91 → 8, 6 → 92), so a branch match would drop them.
+>   - Lines must be dated on or after the work order's open date, as a guard against reused invoice numbers.
+>   - All 41,070 work orders tie to PartsInvoiced to the penny.
+> - **Description:** comes from dim_Parts, because InTrans.Description is a transaction note.
+
 > **2026-10-16:**
 > - **Open file:** added `OpenWorkOrders.csv` ([OpenWorkOrders.sql](OpenWorkOrders.sql)), via flow "Open Work Orders Export - Daily" (`f3077a5b-65a3-4624-b3f0-9366fda25c54`). It runs daily at 07:30 and writes only if there are at least 300 rows (~880 open JD WOs).
 > - **Closed file:** now includes stock units (`IsStockUnit`).
