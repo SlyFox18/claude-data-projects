@@ -45,7 +45,7 @@
 >         `Pipeline_DP_Refresh` through the API (`mode=items`, `items=df_InSalPar_Audit_Raw`, the watchdog's
 >         request shape). The pipeline completed. The Equip ODBC dataflow ran through SPI-Data-Gateway
 >         (14:45–14:46Z) and completed, with no `SPNBasedRefreshNotAllowed`.
->       - Next: Brian sets `CatchupEnabled: true` on both gateway machines.
+>       - **`CatchupEnabled: true` on both gateway machines 2026-10-29 (~10:15 CT). Phase 3b is fully live.**
 >   - **Phase 3c:** maintenance helper. **Layer 3:** diagnosis agent.
 > - Later phases get their own plans once phase 1 ships and 0c is answered.
 

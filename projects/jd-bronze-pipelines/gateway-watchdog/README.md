@@ -86,6 +86,10 @@ catch-up run was started, would be started (log-only) or failed to start.
 Missing keys are treated as these defaults. Re-running the installer adds missing keys to an existing `config.json`
 without changing values already there. To enable, set `"CatchupEnabled": true` in `config.json` (no re-install needed).
 
+**Status: enabled on both machines since 2026-10-29.** That followed 10 days of log-only (10-19..10-29) and a Dev
+test showing that a run the SPN starts still runs its dataflows as the last modifier (self-healing spec, open
+question 3). To pause it, set `"CatchupEnabled": false` again.
+
 ## Identity and permissions
 
 - Service principal **SPN-Fabric-Refresh-Automation** (app `9adca971-f328-4d79-9b48-713c298a238c`), with **one
