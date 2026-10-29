@@ -3,7 +3,8 @@
 This page explains how the Non-JD Parts Order Tool decides what to order, and how to change it. It is the
 reference version of sections 3 to 5 of the user guide, updated for **round 2** (app version 0.5.0,
 2026-10-28: phase-in, transfer suggestions and the new rule criteria, with Ben's answers of 2026-10-27).
-Round 1 (0.2.0, 2026-10-26) followed Ben's answers of 2026-10-23.
+Round 1 (0.2.0, 2026-10-26) followed Ben's answers of 2026-10-23. Saved transfers came in 0.6.0 and transfers on
+One-Time Orders in 0.7.0 (2026-10-29).
 
 The settings live in the SharePoint list **NonJD_OrderRules** on the Report Site, and can be changed on the
 app's Rules page. Changes apply in the app straight away; the morning refresh picks them up the next day.
@@ -224,6 +225,33 @@ Each line counts its whole quantity (never below 0). A line's quantity can be ch
 sender's stock than the calculation offered; start a new transfer to send more. Before saving, the app re-checks
 each sender's live excess and refuses lines whose stock someone else has taken meanwhile.
 
+## One-Time Order transfers (0.7.0)
+
+One-Time Order has three steps: **Set up order → Transfers → Review & calculate**. The Transfers step suggests
+stock other branches can spare for the order's lines, before the order is reviewed. It is worked out live in the
+app (there is no morning version of it).
+
+1. **Conventional only.** Transfers instead of buying; no redistribution. A one-time buy is a single purchase, and
+   redistribution belongs with the daily order.
+2. **The receivers** are the order's listed lines at the ticked branches. Each one's **need** is its one-time
+   quantity **before the line value limits**, less the transfers already saved into it. Masked and Manual order
+   parts are left out, as on the rest of One-Time Order.
+3. **The senders** are every branch's **excess** from the live run (Excess above), so **each sending branch's own
+   transfer rule** decides what it can spare, and transfers out already saved are off.
+4. **A branch buying the part in this order never sends it.** It can still send a part it isn't buying here.
+5. **A branch whose transfer rule doesn't allow receiving** (AllowReceive = No) gets no transfers.
+6. **Who goes first** is as for the daily suggestions: the lowest months of supply receives first and takes from
+   the greatest months of supply first, choosing again after every line.
+7. **This morning's daily suggestions aren't held back.** They are suggestions, not commitments; only saved
+   transfers (Draft, Exported, Entered) count, as everywhere else.
+8. **Saved transfers come off the quantity.** Review counts **saved** transfers only (a **Transfer in** column and
+   "Includes N coming by transfer from branch X"). A line the saved transfers cover fully stays on Review with 0
+   and **Covered by transfers**; it can't be ticked, isn't in the totals and is never ordered.
+
+Ticks, quantities (never above the suggestion), the save, "Save the N ticked transfers first?", the re-check of
+each sender's stock and the transfer orders are the same as on Recommended Reorder. A transfer saved here records
+the order's name: its page says **From One-Time Order "<name>"**.
+
 ## Transfer rules (list NonJD_TransferRules)
 
 Transfer rules work like order rules: the same criteria, priority, season, Active and Archived, and the same way
@@ -239,6 +267,8 @@ receiving allowed, receive up to **6 months**, no minimum.
 | **AllowReceive** | Yes / No: may this branch receive it | Yes |
 | **RedistMax** with **RedistUnit** | The receive maximum for redistribution: 0-104 weeks or 0-24 months of supply. 0 = this branch takes no redistribution | 6 months |
 | **RedistMinValue** ($) | Redistribution lines worth less than this aren't suggested | 0 (no minimum) |
+
+The field-by-field guide for Ben, with a worked example, is **TRANSFER-RULES.md**.
 
 Edit them on the app's **Transfer rules** page (0.6.0), next to Rules; anyone in the test group can. It works
 like Rules: a list with each rule's state, an editor that validates as you type, **Archive** instead of delete,

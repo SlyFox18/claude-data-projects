@@ -5,8 +5,10 @@
 // Examples are from Prod data of 2026-10-27 (Fact_NonJD_Reorder built 11:40 UTC); the 0.5.0 section's transfer and
 // phase-in examples are from Dev data of 2026-10-28 (Gold built 14:12 UTC), because Prod has no round 2 data until the
 // release. Re-check them against Prod after the first 0.5.0 publish. Refresh examples when a section is added.
-// Labels follow nonjd-order-app 0.6.2 and the user guide (guide.js). The 0.6.0 section's examples are Prod data of
+// Labels follow nonjd-order-app 0.7.0 and the user guide (guide.js). The 0.6.0 section's examples are Prod data of
 // 2026-10-28 (Gold built 18:08 UTC): MULTISEAL at 1 "Transfer 44 from 6", R134A "Redistribution 52 from 13".
+// The 0.7.0 section's example is Brian's Prod TEST of 2026-10-29 (Plan G task G7): One-Time Order "TEST 0.7.0",
+// branch 1, ET-3912-J (MM) 1 from branch 3, $32.00, saved then cancelled.
 // Run: npm install, then node walkthrough.js [output file]
 const { build, CONTENT_W } = require('./lib');
 
@@ -21,8 +23,8 @@ const notes = { answer: 'Notes (anything different, slow or confusing):' };
 
 build(process.argv[2] || 'Non-JD Order Tool - Walkthrough.docx', {
   title: 'Non-JD Parts Order Tool: walkthrough',
-  subtitle: 'Hands-on steps through every page · Version 0.6.2 · October 29, 2026 · App: https://10.110.100.13:8443',
-  footer: 'Non-JD Parts Order Tool: walkthrough (0.6.2)',
+  subtitle: 'Hands-on steps through every page · Version 0.7.0 · October 29, 2026 · App: https://10.110.100.13:8443',
+  footer: 'Non-JD Parts Order Tool: walkthrough (0.7.0)',
   blocks: [
     { p: 'This is a hands-on tour of the tool. Each step says what to do and what you should see. Tick **OK** when it matches. When it doesn’t, or something is slow or confusing, write it in the notes box under that section and send it to Brian.' },
     { bullets: [
@@ -30,7 +32,7 @@ build(process.argv[2] || 'Non-JD Order Tool - Walkthrough.docx', {
       '**Part 2, what’s new,** has a short section for each version. When a new version comes out, only its section needs doing.',
       '**Part 3, release checks,** is for Brian when he puts a new version on the test server.',
     ] },
-    { note: 'The examples use the data of October 27 and 28, 2026. The data is refreshed every morning, so your quantities and dollars will be a little different. Close is fine; what matters is that the steps behave as described.' },
+    { note: 'The examples use the data of October 27 to 29, 2026. The data is refreshed every morning, so your quantities and dollars will be a little different. Close is fine; what matters is that the steps behave as described.' },
     { note: 'Practising is safe if you follow the steps: anything you change is undone in the next step. Practice orders stay as **drafts** named **TEST**. Don’t export or mark them placed. Orders are never deleted: archive the TEST ones when you are done (0.5.2). A practice **transfer** is different: while it is saved it holds the sending branch’s stock for everyone, so **cancel it** straight after the step that made it.' },
 
     { h1: 'Part 1: the tour' },
@@ -100,7 +102,9 @@ build(process.argv[2] || 'Non-JD Order Tool - Walkthrough.docx', {
     { h2: '7. One-Time Order (practice)' },
     { p: 'For a one-off order based on months you choose, for example stocking up before a season.' },
     steps([
-      ['Click **One-Time Order**. Name it **TEST**, tick branch **1**, franchise **BW**, and choose **Rolling 12**.', 'Setup accepts it and moves to the review.'],
+      ['Click **One-Time Order**. Name it **TEST**, tick branch **1**, franchise **BW**, and choose **Rolling 12**.', 'The steps across the top read **Set up order → Transfers → Review & calculate**.'],
+      ['Click **Continue to transfers**.', 'Every branch loads first (a few seconds the first time). Then either **Transfers into branch 1** (stock other branches can spare; Part 2, 0.7.0), or straight to the review with “No transfers suggested for this order.”'],
+      ['If it shows transfers, don’t save any. Click **Continue to review ›**, and if it asks “Save the N ticked transfers first?”, click **Continue without them**.', 'The review, with the parts to order.'],
       ['Switch between **Total** and **Avg / mo**, and change the factor.', 'The list and its total update as you change them.'],
       ['Set a minimum demands of **3**.', 'Parts with fewer than 3 demands drop off.'],
       ['Leave without saving (or save it as a TEST draft).', 'If you leave with ticked parts, the app asks first.'],
@@ -118,12 +122,41 @@ build(process.argv[2] || 'Non-JD Order Tool - Walkthrough.docx', {
     { h2: '9. Cleanup and App Settings' },
     steps([
       ['Click **Cleanup**. Pick branch **6**.', 'The Equip minimums on parts with no demand and no sales; branch 6 has about 1,000. The largest is about $21,000 (part 145019, module rim, minimum 65).'],
-      ['Click **App Settings**.', 'Your default branch and franchise, and **About** with the version (**0.6.2**).'],
+      ['Click **App Settings**.', 'Your default branch and franchise, and **About** with the version (**0.7.0**).'],
       ['Set your default branch, then open Recommended Reorder.', 'It opens on your default branch.'],
     ]),
     notes,
 
     { h1: 'Part 2: what’s new' },
+
+    { h2: 'Version 0.7.0 (October 29, 2026): transfers on One-Time Orders' },
+    { p: 'New since 0.6.2, from Ben’s question “do the transfers apply to the One-Time Orders as well?”:' },
+    { bullets: [
+      '**One-Time Order has three steps:** **Set up order → Transfers → Review & calculate**. **Continue to transfers** loads every branch (a few seconds the first time), then lists stock other branches can spare for the order’s lines.',
+      '**Instead of buying only.** These are **Conventional** transfers from other branches’ excess, and each sending branch’s own transfer rule decides what it can spare. There is no redistribution here. A branch that is buying the part in this order never sends it.',
+      '**The same tick and save as Recommended Reorder step 1:** lines start ticked, a quantity is never above the suggestion, there is a search box, and the footer keeps its own **Save**. The **Order** column shows the line’s one-time quantity before → after, for example **1 → 0**.',
+      '**Continue to review ›** with unsaved ticks asks “Save the N ticked transfers first?”. Review counts **saved** transfers only: a **Transfer in** column and “Includes 1 coming by transfer from branch 3”. A line saved transfers cover fully stays on the list with **0** and **Covered by transfers**. It can’t be ticked and is never ordered.',
+      '**Nothing to transfer:** the Transfers step is skipped, and Review says “No transfers suggested for this order.”',
+      '**Where a transfer came from:** a transfer order saved here says **From One-Time Order "<name>"** on its page.',
+    ] },
+    { note: 'Saving a transfer is real: until it is cancelled it holds the sending branch’s stock. Save **one practice transfer of quantity 1**, then **cancel and archive it** in the same sitting, as below. Don’t create the One-Time order itself. The example is from Brian’s test on October 29; if ET-3912-J isn’t offered on your day, use any one line.' },
+    { h3: 'One-Time Order: the Transfers step' },
+    steps([
+      ['Click **One-Time Order**. Name it **TEST 0.7.0**, tick branch **1** and franchise **MM**, and choose **Rolling 12**.', 'Across the top: **Set up order → Transfers → Review & calculate**.'],
+      ['Click **Continue to transfers**.', 'A progress bar while every branch loads, with “Every branch loads first, to find the stock other branches can spare.” and **Cancel** / **Load the rest**.'],
+      ['Wait for it to finish.', '**Transfers into branch 1**: “Stock other branches can spare for this order. Tick the transfers to make instead of buying; Review counts the saved ones.” Every line is ticked, with a **Conventional** badge. On October 29 one was **ET-3912-J** (110 LUMEN FLASHLIGHT - RECHARGEABLE), **1 from branch 3**, $32.00, with the **Order** column at **1 → 0**.'],
+      ['Type `ET-3912` in the **Search parts** box, then clear it.', 'Only that line, and the footer says how many ticked lines are shown (“1 of N ticked lines shown”). Clearing brings every line back, still ticked.'],
+      ['Untick ET-3912-J.', 'Its Order is the same before and after (**1 → 1** on October 29): without the transfer, the order buys it.'],
+      ['Untick every other line and tick ET-3912-J again (quantity 1). Click **Continue to review ›**.', '“Save the 1 ticked transfer first?” (“The order on Review counts only saved transfers.”) with **Stay**, **Continue without them** and **Save and continue**. Click **Stay**.'],
+      ['Click **Save 1 transfer (1 transfer order)**.', '“Saved 1 transfer order.” and **Saved transfers**: “3 → 1 · 1 line · Draft · saved … by <your name>”.'],
+      ['Click **Continue to review ›**.', 'No question this time. ET-3912-J stays on the list with **0**, **Covered by transfers** and a greyed-out tick box, **Transfer in** 1 and “Includes 1 coming by transfer from branch 3”. The subtitle adds “1 part covered by transfers”, and the totals don’t count it. (If a transfer covers only part of a line, its quantity is that much lower instead.)'],
+      ['Click **Back to transfers** and open the transfer order from **Saved transfers**. (You leave the One-Time Order; that’s fine.)', 'The transfer order page: **From One-Time Order "TEST 0.7.0"** · data as of …, with ET-3912-J × 1.'],
+      ['Click **Cancel**, then **Cancel transfer**, then **Archive**.', '**Cancelled** (a grey pill), then **Archived**. Its stock is released.'],
+      ['Start the One-Time Order again (TEST, branch 1, MM, Rolling 12) and click **Continue to transfers**.', 'ET-3912-J is offered again: a cancelled transfer no longer counts.'],
+      ['Click **Back to setup**, untick **MM** and tick a small franchise. Click **Continue to transfers** (answer **Continue anyway** if it asks).', 'If no other branch can spare anything for it: straight to Review with “No transfers suggested for this order.” and no **Back to transfers** button. Leave without creating the order.'],
+    ]),
+    { p: '**Your opinion:** is a Transfers step on One-Time Orders useful, and does a covered line on Review (0, “Covered by transfers”) read clearly?' },
+    notes,
 
     { h2: 'Versions 0.6.0 to 0.6.2 (October 28 and 29, 2026): save transfers in the app' },
     { p: 'New since 0.5.3:' },
@@ -305,6 +338,14 @@ build(process.argv[2] || 'Non-JD Order Tool - Walkthrough.docx', {
 
     { h1: 'Part 3: release checks (Brian)' },
     { p: 'Run these when a new version is deployed to the test server, after **Ctrl+F5** to load it.' },
+    { h3: '0.7.0' },
+    steps([
+      ['App Settings → **About**.', '**0.7.0** and the deployed commit (`ff52dc3`).'],
+      ['With Claude, after 10:15: a One-Time Order for one branch and franchise Claude names from that morning’s Prod data. On step 2 save one line, then cancel that transfer order from its page.', 'Claude confirms through Graph: Status Cancelled, Parameters `source: "One-Time"` and `orderName`. After Refresh the line is offered again. No order is created. (Done October 29: “TEST 0.7.0”, ET-3912-J 1 from 3 → 1, $32.00.)'],
+      ['Recommended Reorder step 1 and the Transfers page.', 'As in 0.6.2: ticks, search, Save and the Transfer orders tab unchanged.'],
+      ['The next morning: `/check-refresh prod` and the reference check, then delete the TEST transfer rows only with Brian’s OK.', 'The refresh and the check pass; the cancelled TEST transfer never counted.'],
+    ]),
+    notes,
     { h3: '0.6.1 and 0.6.2' },
     steps([
       ['App Settings → **About**.', '**0.6.2** and the deployed commit.'],

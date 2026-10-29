@@ -1,5 +1,5 @@
 // Builds "Non-JD Order Tool - Questions.docx". Source text: ../CORP-PARTS-MANAGER-QUESTIONS.md
-// (keep the two in step). Updated 2026-10-26 with Ben's round 1 answers, 2026-10-28 with his transfer answers and the S1, N1, N3 and N5 decisions.
+// (keep the two in step). Updated 2026-10-26 with Ben's round 1 answers, 2026-10-28 with his transfer answers and the S1, N1, N3 and N5 decisions, 2026-10-29 with N2 (Brian: keep it off).
 // Run: npm install, then node questions.js [output file]
 const { build } = require('./lib');
 
@@ -13,10 +13,10 @@ const done = (h2, ben, did) => [
 
 build(process.argv[2] || 'Non-JD Order Tool - Questions.docx', {
   title: 'Non-JD Parts Order Tool: questions',
-  subtitle: 'For Ben, with a section for Shannon · Updated October 28, 2026 (version 0.5.0) · App: https://10.110.100.13:8443',
+  subtitle: 'For Ben, with a section for Shannon · Updated October 29, 2026 (version 0.7.0) · App: https://10.110.100.13:8443',
   footer: 'Non-JD Parts Order Tool: questions',
   blocks: [
-    { p: 'Ben answered Parts 1 and 2 on October 23 and the transfer questions (**Part 5**) on October 27. Each answered item gives his answer in one line and what we did. Still open: **N2**. **S1** (for Shannon) and **N5** are parked for later. Write your answers in the spaces, or reply by email with the item numbers.' },
+    { p: 'Ben answered Parts 1 and 2 on October 23 and the transfer questions (**Part 5**) on October 27. Each answered item gives his answer in one line and what we did. Nothing is open now: **N2** was answered on October 29. **S1** (for Shannon) and **N5** are parked for later. Write your answers in the spaces, or reply by email with the item numbers.' },
     { p: 'The **walkthrough**’s “What’s new” part sums up what changed in each version, and the **user guide** explains how every number is worked out.' },
 
     { h1: 'Part 1: confirm or change' },
@@ -93,9 +93,9 @@ build(process.argv[2] || 'Non-JD Order Tool - Questions.docx', {
     { note: 'Brian, October 28: leave it as it is today for now.', keepNext: true },
     { p: '**No change.** Only demands recorded in Equip count toward a rule’s demand minimum. The 973 parts that sold units with no demand recorded (for example Branch 1, part 11234) are not stocked by the rules; a min override or a phase-in still stocks one.' },
 
-    { h2: 'N2. The "Show minimums with no demand" switch' },
-    { p: 'It is **off** when Recommended Reorder opens, so lines that are there only because of an Equip minimum on a part with no activity are hidden, and Home doesn’t count them (Branch 1 on October 26: 220 parts to order, plus 21 hidden). Is off the right starting point, or should they show every time?' },
-    A,
+    { h2: 'N2. The "Show minimums with no demand" switch (answered)' },
+    { note: 'Brian, October 29: keep it off for now.', keepNext: true },
+    { p: '**No change.** The switch stays **off** when Recommended Reorder opens, so lines that are there only because of an Equip minimum on a part with no activity are hidden, and Home doesn’t count them (Branch 1 on October 26: 220 parts to order, plus 21 hidden). Turn it on to see them; Cleanup lists them to fix in Equip.' },
 
     { h2: 'N3. Sub-branches (answered)' },
     { note: 'Ben (through Brian), October 28: it shouldn’t happen often; do whatever is easiest. Brian: roll them into the main branch, as the Power BI reports do (1S and 1I count as branch 1).', keepNext: true },

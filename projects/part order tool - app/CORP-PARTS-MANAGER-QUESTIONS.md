@@ -1,9 +1,9 @@
 # Non-JD Parts Order Tool: questions for Ben (and Shannon)
 
-**Updated 2026-10-28 for round 2 (app version 0.5.0).** Ben answered Parts 1 and 2 on 2026-10-23 (his
+**Updated 2026-10-29 (app version 0.7.0); round 2 questions from 2026-10-28 (0.5.0).** Ben answered Parts 1 and 2 on 2026-10-23 (his
 words: `feedback/2026-10-23-ben-answers.md`) and the transfer questions (Part 5) on 2026-10-27
 (`feedback/2026-10-27-ben-transfer-answers.md`). Each answered item below gives his answer in one line and what
-we did. Still open: N2. S1 (Shannon) and N5 are parked for later. The short summary of round 1 is the **Round 1 changes**
+we did. Nothing is open (N2 answered 2026-10-29); S1 (Shannon) and N5 are parked for later. The short summary of round 1 is the **Round 1 changes**
 document (`for-users/round1.js`); what's new since is in the walkthrough's "What's new" part.
 
 How the numbers are worked out is explained step by step in **How the order tool suggests quantities**
@@ -132,7 +132,7 @@ Each order exports as a CSV with the columns
 recorded demands count. 973 parts show units sold in the last 12 months but no demands recorded in Equip
 (example: Branch 1, part 11234, sold 6 with 0 demands, so the Default rule doesn't stock it).
 
-**N2. The "Show minimums with no demand" switch.** It is off when Recommended Reorder opens, so lines that are
+**N2. The "Show minimums with no demand" switch.** *Answered (Brian, 2026-10-29): keep it off for now.* It is off when Recommended Reorder opens, so lines that are
 there only because of an Equip minimum on a part with no activity are hidden, and Home doesn't count them
 (Branch 1 on 2026-10-26: 220 parts to order, plus 21 hidden). Is off the right starting point?
 

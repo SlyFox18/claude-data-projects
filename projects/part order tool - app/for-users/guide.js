@@ -1,5 +1,5 @@
 // Builds "Non-JD Order Tool - User Guide.docx" for Ben, Shannon, Barry and Curt.
-// Facts come from the app (nonjd-order-app 0.6.2: src/engine, src/pages, README) and ../REORDER-RULES.md.
+// Facts come from the app (nonjd-order-app 0.7.0: src/engine, src/pages, README) and ../REORDER-RULES.md.
 // Worked examples: Dev Gold Fact_NonJD_Reorder built 2026-10-26 (window Oct 2025 - Sep 2026); the transfer example
 // is the app's mock data (round numbers), as in REORDER-RULES.md.
 // Run: npm install, then node guide.js [output file]
@@ -9,11 +9,11 @@ const w = (...fr) => fr.map((f) => Math.round(CONTENT_W * f));
 
 build(process.argv[2] || 'Non-JD Order Tool - User Guide.docx', {
   title: 'Non-JD Parts Order Tool: user guide',
-  subtitle: 'For Ben, Shannon, Barry and Curt · Version 0.6.2 · October 29, 2026 (test version) · https://10.110.100.13:8443',
-  footer: 'Non-JD Parts Order Tool: user guide (version 0.6.2)',
+  subtitle: 'For Ben, Shannon, Barry and Curt · Version 0.7.0 · October 29, 2026 (test version) · https://10.110.100.13:8443',
+  footer: 'Non-JD Parts Order Tool: user guide (version 0.7.0)',
   blocks: [
     { p: '**In one sentence:** the tool shows each branch which non-John Deere parts to reorder and why, suggests stock other branches could send instead, lets you tune the rules behind those suggestions, and turns the parts you pick into an order file for each vendor.' },
-    { p: 'This guide covers getting in, what each page does, and exactly how every number is worked out. Version 0.6.2 includes Ben’s round 1 answers, several branches and dealer groups at once, **phase-in**, **transfer suggestions** and **saving transfers** in the app, with transfer orders and transfer rules (round 2, from Ben’s answers of October 27). What changed in each version is in the **walkthrough**, Part 2.' },
+    { p: 'This guide covers getting in, what each page does, and exactly how every number is worked out. Version 0.7.0 includes Ben’s round 1 answers, several branches and dealer groups at once, **phase-in**, **transfer suggestions** and **saving transfers** in the app, with transfer orders and transfer rules, and **transfers on One-Time Orders** (round 2, from Ben’s answers of October 27). What changed in each version is in the **walkthrough**, Part 2.' },
 
     { h1: '1. Getting started' },
     { steps: [
@@ -43,7 +43,7 @@ build(process.argv[2] || 'Non-JD Order Tool - User Guide.docx', {
       '**Reorder needed only** (on by default) shows just the parts to order (Out of stock and Reorder). Turn it off to see every part.',
       '**Show minimums with no demand** (off by default): see "Min, no demand" below.',
       '**Transfer suggested only** lists every part another branch could send (below), ordered or not, so redistribution-only parts with an order of 0 show too. While it is on, **Reorder needed only** is greyed out. It only shows when there are suggestions.',
-      '**Leaving with ticked parts:** if you go to another page while parts are ticked, the app asks first ("Leave this page? 2 ticked parts will be lost."). **Stay** keeps them. One-Time Order asks the same on its review step.',
+      '**Leaving with ticked parts:** if you go to another page while parts are ticked, the app asks first ("Leave this page? 2 ticked parts will be lost."). **Stay** keeps them. One-Time Order asks the same on its Transfers and review steps.',
       '**Search** by part number or description.',
       '**Sort** by clicking a column heading; click again to reverse.',
       'Click the **arrow** at the left of a row to see **why** that quantity was suggested, in plain English. It also shows any suggested transfers, the rule used, inbound transfers, other branches with stock above their target, and the **Part actions** (below).',
@@ -163,11 +163,23 @@ build(process.argv[2] || 'Non-JD Order Tool - User Guide.docx', {
     { h2: 'One-Time Order' },
     { p: 'For a one-off order based on sales over months you choose, e.g. stocking up before a season.' },
     { steps: [
-      '**Setup:** name the order, tick one or more **branches** and **franchises**, optionally tick **dealer groups** (none ticked = every group), and choose the months: Rolling 12/24/36, a full calendar year, or tick any months. Click a highlighted range again to clear it. Optionally set a **Min line value** and **Max line value** in dollars (section 6). One order is made for each branch and franchise that has parts to order.',
-      '**Review:** choose **Total** or **Avg / mo**, the factor (called **Months of supply** with Avg / mo), and optional minimum sales / minimum demands. The list updates as you change them. Untick anything you don’t want.',
+      '**Set up order:** name the order, tick one or more **branches** and **franchises**, optionally tick **dealer groups** (none ticked = every group), and choose the months: Rolling 12/24/36, a full calendar year, or tick any months. Click a highlighted range again to clear it. Optionally set a **Min line value** and **Max line value** in dollars (section 6). One order is made for each branch and franchise that has parts to order. Click **Continue to transfers**.',
+      '**Transfers** (0.7.0): every branch loads first (a few seconds the first time), then the page lists stock other branches can spare for this order’s lines (below). Tick and save them, then click **Continue to review ›**. When nothing can come by transfer, this step is skipped and Review says “No transfers suggested for this order.”',
+      '**Review & calculate:** choose **Total** or **Avg / mo**, the factor (called **Months of supply** with Avg / mo), and optional minimum sales / minimum demands. The list updates as you change them. Untick anything you don’t want.',
       '**Create order:** the same review and save as above; the order is marked One-Time.',
     ], ref: 'steps2' },
     { p: 'Masked and Manual order parts are left off One-Time Orders completely. The review says how many were left off. A phase-in doesn’t affect One-Time Orders.' },
+    { h3: 'The Transfers step' },
+    { p: 'It works like Recommended Reorder step 1: “Transfers into branch 1”, every line ticked to start with, a quantity never above the suggestion, a **Search parts** box, and a footer with its own **Save**. The **Order** column shows the line’s one-time quantity before → after the ticked transfer, for example **22 → 0**. What it suggests:' },
+    { bullets: [
+      '**Conventional only:** transfers instead of buying. No redistribution: a one-time buy is a single purchase.',
+      'The stock comes from **other branches’ excess**, and **each sending branch’s own transfer rule** decides what it can spare (section 5), exactly as for the daily suggestions.',
+      'A branch that is **buying the part in this order never sends it**. It can still send a part it isn’t buying here.',
+      'A branch whose transfer rule doesn’t allow receiving gets no transfers.',
+      '**This morning’s daily suggestions aren’t held back** for the daily order. Only **saved** transfers count, as everywhere else.',
+    ] },
+    { p: '**Continue to review ›** with unsaved ticks asks “Save the N ticked transfers first?” (**Stay**, **Continue without them**, **Save and continue**). Review counts **saved** transfers only. They come off the quantity: a **Transfer in** column shows them, with “Includes 12 coming by transfer from branch 92” on the line. A line saved transfers cover fully stays on Review with **0** and **Covered by transfers**: it can’t be ticked, isn’t in the totals and is never ordered.' },
+    { p: 'Changing the order’s settings after editing the ticks asks first (“Your transfer changes will be lost.”), because the transfers are worked out again. A transfer order saved here says **From One-Time Order "<name>"** on its page.' },
 
     { h2: 'Rules' },
     { p: 'The rules that drive every suggestion (how much history to look at, how much to stock). Anyone in the test group can change them, and the page shows who last changed each rule and when. Section 4 explains them.' },
@@ -287,6 +299,8 @@ build(process.argv[2] || 'Non-JD Order Tool - User Guide.docx', {
     { h3: 'Transfer rules' },
     { p: 'Transfer rules use the same criteria, priority and seasons as order rules. **The sending branch’s rule** sets its excess supply (**ExcessSupply**, weeks or months), whether it may send (**AllowSend**), and a minimum line value for redistribution (**RedistMinValue**). **The receiving branch’s rule** sets whether it may receive (**AllowReceive**) and its redistribution maximum (**RedistMax**; 0 = no redistribution into that branch). With no rule, the built-in default applies: 12 months, both allowed, 6 months, no minimum.' },
     { p: 'Transfer rules are edited on the **Transfer rules** page (section 2). A rule with a missing or out-of-range setting is skipped: the page shows it as **Invalid** with the reason, and Brian’s morning email names it.' },
+    { h3: 'Transfers on a One-Time Order (0.7.0)' },
+    { p: 'The One-Time Order’s Transfers step runs only the **conventional** half of the above. The receivers are the order’s lines at the ticked branches, and each one’s **need** is its one-time quantity before the line value limits, less transfers already saved into it. The senders are every other branch’s **excess**, worked out with that branch’s own transfer rule. Then, as above, the lowest months of supply receives first and takes from the greatest months of supply first. A branch buying the part in this order never sends it, a branch that doesn’t allow receiving gets nothing, and this morning’s daily suggestions aren’t subtracted from the senders.' },
     { h3: 'Saved transfers' },
     { p: 'A saved transfer counts as stock on its way: it lowers the receiving branch’s order (transfers in) and the sending branch’s excess (transfers out), straight away in the app and in the next morning’s run. A **Draft** or **Exported** transfer counts until it is entered or cancelled. One **entered in Equip** counts until the next morning’s run, when Equip itself shows it. A **cancelled** transfer never counts. Archiving changes nothing.' },
 
@@ -294,7 +308,7 @@ build(process.argv[2] || 'Non-JD Order Tool - User Guide.docx', {
     { steps: [
       '**Units sold** are added up over the months you picked (a net total below 0 counts as 0).',
       '**Total:** anticipated = units sold × loading factor. **Avg / mo:** anticipated = (units sold ÷ number of months) × **months of supply**.',
-      '**Order** = anticipated, rounded up, − on hand − on order, never below 0.',
+      '**Order** = anticipated, rounded up, − on hand − on order − **transfers in** (transfers saved in this app), never below 0. A line the saved transfers cover fully shows **Covered by transfers** and is never ordered.',
       '**Line value limits**, if you set them: a line worth more than the max is cut back to fit under it, then a line worth less than the min is dropped. The same as in a rule.',
       'Parts below **minimum sales** (units sold) or **minimum demands** (requests), both over the chosen months, are left off. 0 means no filter.',
       'Only parts with an order above 0 are listed. Masked and Manual order parts are never listed.',
