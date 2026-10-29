@@ -35,6 +35,15 @@ Each check:
    in between (config `SourceFailuresInWindow` / `SourceFailureWindowHours`, optional); such a flapping test stays one open problem and "Recovered" is sent only once fewer than 3 failures remain in the window. Then → **alert only**; restarting the gateway doesn't fix Equip, the DSN or the
    credentials. JD: the `049694-Gateway` connection (`dsn=EquipRDB`). SPI: `dsn=EquipRDB64` (`70ea8af2`, the one
    Parts Availability uses).
+   **Quiet hours (SPI only):** IT blocks Equip ODBC from SPI00T4022W11 every night by design. The watchdog logs
+   showed it every night from 2026-10-16 to 10-29: the block starts between 22:51 and 23:01 and ends between 03:51
+   and 04:01. The JD gateway isn't blocked. Before this change it sent three emails a night (alert, 4 h repeat,
+   Recovered). Inside config `SourceQuietHours` (`"22:45-04:30"` on SPI, empty on JD) a failed Equip test is
+   logged (`... failed inside the quiet hours ... (expected; not counted)`) but not counted and not emailed. The
+   service and gateway-online checks are unaffected. From 04:30 the normal rules apply, so if Equip is still down
+   an alert goes out at about 04:40. An Equip problem alerted before 22:45 stays open through the quiet hours, with
+   no repeat and no Recovered email. If IT moves the block, change `SourceQuietHours` in `config.json`; no
+   re-install is needed.
 4. If it **couldn't ask Fabric**, it tests TCP 443 to `ncu.frontend.clouddatahub.net`. Unreachable → alert
    "network/firewall"; reachable → alert "watchdog can't check" (expired secret, removed permission).
 

@@ -311,6 +311,90 @@ Describe 'Get-WatchdogDecision' {
     }
 }
 
+Describe 'Get-WatchdogDecision with SourceQuietHours' {
+    # SPI-Data-Gateway: IT blocks Equip ODBC from SPI00T4022W11 every night, 22:51-23:01 until 03:51-04:01 (logs 2026-10-16..29).
+    $qc = $config.Clone(); $qc.SourceQuietHours = '22:45-04:30'
+    $night = [datetime]'2026-10-28 23:01'
+    function QDecide {
+        param([hashtable]$Obs, [hashtable]$State = (New-WatchdogState), [datetime]$Local = $night, [hashtable]$Cfg = $qc)
+        Get-WatchdogDecision -Observation $Obs -State $State -Config $Cfg -NowUtc $Local.AddHours(5) -NowLocal $Local
+    }
+
+    It 'logs a failed Equip test inside the quiet hours without counting or alerting' {
+        $d = QDecide (Obs -Source 'Failed')
+        $d.Problem | Should Be $null
+        $d.Alert | Should Be $false
+        $d.Recovered | Should Be $false
+        $d.State.SourceFailures | Should Be 0
+        $d.State.SourceFailureTimes.Count | Should Be 0
+        $d.Summary | Should Match 'quiet hours 22:45-04:30'
+    }
+
+    It 'sends nothing for a whole night of the IT block' {
+        $state = New-WatchdogState; $mails = 0
+        for ($t = [datetime]'2026-10-28 22:41'; $t -lt [datetime]'2026-10-29 06:00'; $t = $t.AddMinutes(10)) {
+            $blocked = $t -ge [datetime]'2026-10-28 23:00' -and $t -lt [datetime]'2026-10-29 04:00'
+            $src = if ($blocked) { 'Failed' } else { 'Ok' }
+            $d = QDecide (Obs -Source $src) -State $state -Local $t
+            if ($d.Alert -or $d.Recovered) { $mails++ }
+            $state = $d.State
+        }
+        $mails | Should Be 0
+        $state.OpenProblem | Should Be $null
+    }
+
+    It 'counts failures again after the quiet hours end and alerts on the second' {
+        $a = QDecide (Obs -Source 'Failed') -Local ([datetime]'2026-10-29 04:21')
+        $a.State.SourceFailures | Should Be 0
+        $b = QDecide (Obs -Source 'Failed') -State $a.State -Local ([datetime]'2026-10-29 04:31')
+        $b.State.SourceFailures | Should Be 1
+        $b.Alert | Should Be $false
+        $c = QDecide (Obs -Source 'Failed') -State $b.State -Local ([datetime]'2026-10-29 04:41')
+        $c.Problem | Should Be 'source-failed'
+        $c.Alert | Should Be $true
+    }
+
+    It 'counts failures before the quiet hours start as usual' {
+        $a = QDecide (Obs -Source 'Failed') -Local ([datetime]'2026-10-28 22:31')
+        $b = QDecide (Obs -Source 'Failed') -State $a.State -Local ([datetime]'2026-10-28 22:41')
+        $b.Alert | Should Be $true
+    }
+
+    It 'keeps an Equip problem alerted before the quiet hours open, with no repeat and no Recovered inside them' {
+        $a = QDecide (Obs -Source 'Failed') -Local ([datetime]'2026-10-28 22:31')
+        $b = QDecide (Obs -Source 'Failed') -State $a.State -Local ([datetime]'2026-10-28 22:41')
+        $state = $b.State
+        for ($t = [datetime]'2026-10-28 22:51'; $t -lt [datetime]'2026-10-29 04:30'; $t = $t.AddMinutes(10)) {
+            $d = QDecide (Obs -Source 'Failed') -State $state -Local $t
+            $d.Alert | Should Be $false
+            $d.Recovered | Should Be $false
+            $state = $d.State
+        }
+        $state.OpenProblem | Should Be 'source-failed'
+        (QDecide (Obs) -State $state -Local ([datetime]'2026-10-29 04:31')).Recovered | Should Be $true
+    }
+
+    It 'still restarts an offline gateway inside the quiet hours' {
+        $a = QDecide (Obs -Gateway 'Offline')
+        $b = QDecide (Obs -Gateway 'Offline') -State $a.State -Local $night.AddMinutes(10)
+        $b.Action | Should Be 'RestartService'
+        $b.Alert | Should Be $true
+    }
+
+    It 'handles a window that does not cross midnight' {
+        $cfg = $config.Clone(); $cfg.SourceQuietHours = '01:00-03:00'
+        (QDecide (Obs -Source 'Failed') -Cfg $cfg -Local ([datetime]'2026-10-29 02:00')).State.SourceFailures | Should Be 0
+        (QDecide (Obs -Source 'Failed') -Cfg $cfg -Local ([datetime]'2026-10-29 03:00')).State.SourceFailures | Should Be 1
+        (QDecide (Obs -Source 'Failed') -Cfg $cfg -Local ([datetime]'2026-10-28 23:30')).State.SourceFailures | Should Be 1
+    }
+
+    It 'has no quiet hours when the key is missing or empty' {
+        $cfg = $config.Clone(); $cfg.SourceQuietHours = ''
+        (QDecide (Obs -Source 'Failed') -Cfg $cfg).State.SourceFailures | Should Be 1
+        (QDecide (Obs -Source 'Failed') -Cfg $config).State.SourceFailures | Should Be 1
+    }
+}
+
 Describe 'Read-WatchdogState / Save-WatchdogState' {
 
     It 'round-trips the state, including a single restart and alert time' {

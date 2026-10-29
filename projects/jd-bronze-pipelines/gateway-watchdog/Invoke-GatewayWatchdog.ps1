@@ -111,7 +111,7 @@ try {
     $statePath = Join-Path $root 'state.json'
     $state = Read-WatchdogState -Path $statePath
     $nowUtc = (Get-Date).ToUniversalTime()
-    $d = Get-WatchdogDecision -Observation $obs -State $state -Config $config -NowUtc $nowUtc
+    $d = Get-WatchdogDecision -Observation $obs -State $state -Config $config -NowUtc $nowUtc -NowLocal (Get-Date)
 
     if ($Mode -eq 'Test') {
         Write-WatchdogLog 'INFO' "Test: $obsText"

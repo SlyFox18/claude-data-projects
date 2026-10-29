@@ -25,6 +25,17 @@ function Get-RestartsInWindow {
     @($Restarts | Where-Object { $_ -and ([datetime]::Parse($_, $null, 'RoundtripKind') -gt $cutoff) })
 }
 
+function Test-InQuietHours {
+    <# Is $NowLocal inside a 'HH:mm-HH:mm' window (start inclusive, end exclusive; may cross midnight)? Empty = never. #>
+    param([string]$Window, [datetime]$NowLocal)
+    if (-not $Window) { return $false }
+    $parts = $Window.Split('-')
+    $start = [TimeSpan]::Parse($parts[0].Trim()); $end = [TimeSpan]::Parse($parts[1].Trim())
+    $t = $NowLocal.TimeOfDay
+    if ($start -le $end) { return ($t -ge $start -and $t -lt $end) }
+    ($t -ge $start -or $t -lt $end)
+}
+
 function Get-WatchdogDecision {
     <#
     .SYNOPSIS
@@ -43,14 +54,21 @@ function Get-WatchdogDecision {
         Source   'Ok' | 'Failed' | 'Unknown' | 'NotChecked'
         Network  $true / $false / $null (only probed when Gateway is 'Unknown')
         Installing  $true while the gateway installer (GatewayInstall.exe) runs: hands off, counters reset
+    .PARAMETER NowLocal
+        Local time for Config.SourceQuietHours; defaults to NowUtc in this machine's time zone.
     #>
     param(
         [Parameter(Mandatory)] [hashtable]$Observation,
         [Parameter(Mandatory)] [hashtable]$State,
         [Parameter(Mandatory)] [hashtable]$Config,
-        [Parameter(Mandatory)] [datetime]$NowUtc
+        [Parameter(Mandatory)] [datetime]$NowUtc,
+        [Nullable[datetime]]$NowLocal = $null
     )
     $o = $Observation
+    if ($null -eq $NowLocal) { $NowLocal = $NowUtc.ToLocalTime() }
+    $quietHours = ''
+    if ($Config.ContainsKey('SourceQuietHours') -and $Config.SourceQuietHours) { $quietHours = [string]$Config.SourceQuietHours }
+    $sourceQuiet = $false
     # Keys added after the first release may be missing from an old state.json or config.json; a missing hashtable
     # key throws under StrictMode 2, so ask first.
     $srcFailures = 0; $srcTimes = @()
@@ -105,7 +123,12 @@ function Get-WatchdogDecision {
     }
     elseif ($o.Gateway -eq 'Live') {
         $new.ConsecutiveFailures = 0
-        if ($o.Source -eq 'Failed') {
+        if ($o.Source -eq 'Failed' -and (Test-InQuietHours -Window $quietHours -NowLocal $NowLocal)) {
+            # IT blocks Equip ODBC from SPI00T4022W11 every night (about 23:00-04:00, by design): logged, not counted.
+            $sourceQuiet = $true
+            $summary = "Equip test through the gateway failed inside the quiet hours $quietHours (expected; not counted)"
+        }
+        elseif ($o.Source -eq 'Failed') {
             # One failed test is noise (Equip busy overnight, 2026-10-19 00:37); alert only when it repeats.
             # Also alert when it keeps failing every other check (fail, ok, fail, ok, fail).
             $new.SourceFailures++
@@ -176,6 +199,9 @@ function Get-WatchdogDecision {
             $new.LastAlertUtc = $NowUtc.ToString('o')
         }
         $new.OpenProblem = $problem
+    }
+    elseif ($sourceQuiet -and $new.OpenProblem -eq 'source-failed') {
+        # An Equip problem alerted before the quiet hours stays open through them, with no repeat and no Recovered.
     }
     elseif ($new.OpenProblem -eq 'source-failed' -and $o.Service -eq 'Running' -and $o.Gateway -eq 'Live' -and
             $new.SourceFailureTimes.Count -ge $srcInWindow) {
@@ -458,6 +484,6 @@ function Send-WatchdogMail {
     }
 }
 
-Export-ModuleMember -Function New-WatchdogState, Get-RestartsInWindow, Get-WatchdogDecision, ConvertTo-Hashtable,
+Export-ModuleMember -Function New-WatchdogState, Get-RestartsInWindow, Test-InQuietHours, Get-WatchdogDecision, ConvertTo-Hashtable,
     Read-WatchdogState, Save-WatchdogState, Protect-WatchdogSecret, Unprotect-WatchdogSecret, Get-GatewayObservation,
     Restart-GatewayService, Wait-GatewayLive, Send-WatchdogMail, Test-TcpPort, Get-CatchupTrigger, Start-CatchupRun

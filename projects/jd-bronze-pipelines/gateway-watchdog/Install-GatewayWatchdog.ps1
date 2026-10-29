@@ -75,11 +75,16 @@ $configPath = Join-Path $InstallDir 'config.json'
 # Catch-up trigger (Pipeline_DP_Refresh in DP - Presentation - Prod, mode=catchup). Backup times are JD only.
 $catchupTimes = @()
 if ($Gateway -eq 'JD') { $catchupTimes = @('08:30', '10:30') }
+# Equip quiet hours: IT blocks Equip ODBC from SPI00T4022W11 every night (about 23:00-04:00), so SPI ignores
+# failed Equip tests then. The JD gateway's Equip test isn't blocked.
+$quietHours = ''
+if ($Gateway -eq 'SPI') { $quietHours = '22:45-04:30' }
 $catchupDefaults = [ordered]@{
     CatchupEnabled     = $false
     CatchupWorkspaceId = '7836042d-adb1-4846-b70d-bd42980054c5'
     CatchupPipelineId  = '1fa19eb8-7d5f-465e-b7e7-b31e02e56a2c'
     CatchupTimes       = $catchupTimes
+    SourceQuietHours   = $quietHours
 }
 if ($ResetConfig -or -not (Test-Path $configPath)) {
     $config = [ordered]@{
@@ -106,7 +111,7 @@ if ($ResetConfig -or -not (Test-Path $configPath)) {
     Write-Host 'Wrote config.json (log-only)'
 }
 else {
-    # Existing config: add any catch-up keys it lacks, never overwrite a value that is there.
+    # Existing config: add any catch-up / quiet-hours keys it lacks, never overwrite a value that is there.
     $c = Get-Content $configPath -Raw | ConvertFrom-Json
     $added = @()
     foreach ($k in $catchupDefaults.Keys) {
@@ -117,7 +122,7 @@ else {
     }
     if ($added.Count -gt 0) {
         $c | ConvertTo-Json | Set-Content -Path $configPath -Encoding UTF8
-        Write-Host "config.json: added $($added -join ', ') (catch-up is log-only until CatchupEnabled is true)"
+        Write-Host "config.json: added $($added -join ', ') (catch-up is log-only until CatchupEnabled is true; SourceQuietHours = '$quietHours')"
     }
 }
 if ($Live) {
