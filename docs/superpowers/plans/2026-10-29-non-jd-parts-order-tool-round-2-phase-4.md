@@ -3,6 +3,7 @@
 > **For agentic workers:** REQUIRED SUB-SKILL: use superpowers:subagent-driven-development, one task at a time with a review after each (Brian's standing choice). Steps use checkbox (`- [ ]`) syntax.
 
 > **Progress:** plan written 2026-10-29 (Claude, for Brian). Waiting on Brian's read of the decisions below.
+> - **G1 done 2026-10-29** (app `7dde8e2`; engine 595 tests, lint and tsc clean; dist untouched). `src/engine/oneTimeTransfers.ts`: receivers with need > 0 summed per branch + part (branch trimmed and upper-cased, as committedKey); rows rebuilt with `allocationRow` from every source in a receiver's group; receivers `convNeed = need, freeExcess 0` (G3), senders keep FreeExcess; every row `redistEligible: false`; `allocateAll` sorts. A receiver without a source row is skipped (guard). Reviewed by Claude: no changes.
 > - **Starting point:** app 0.6.2 (`0bec57a`) live on Fedora on Prod data. Phase 3 (Plan F) is done: transfers are ticked and saved on Recommended Reorder step 1 and the Transfers page, transfer orders are exported / entered in Equip / cancelled, and Ben edits transfer rules. One-Time Order already subtracts saved transfers in (`AppInboundQty`, spec "One-Time Order with transfers", first bullet); what it lacks is suggesting them.
 > - **Asked by Ben (2026-10-29, through Brian):** "do the transfers apply to the One-Time Orders as well?"
 
@@ -38,7 +39,7 @@
 **nonjd-order-app**
 | File | Change |
 |---|---|
-| `src/engine/oneTimeTransfers.ts` (new) + `src/engine/index.ts` | `oneTimeTransferLines(receivers, run, sources)`: builds the allocation rows (G2, G3) and calls `allocateGroup` per group; conventional lines only |
+| `src/engine/oneTimeTransfers.ts` (new) + `src/engine/index.ts` | `oneTimeTransferLines(receivers, sources, run)`: builds the allocation rows (G2, G3) and calls `allocateGroup` per group; conventional lines only |
 | `src/pages/reorder/useReorderTransfers.ts` → keeps its name, gains a `lines` strategy option | Default strategy = today's (live run lines into the branches); One-Time passes its own. `saveSource` gains `'One-Time'`; Parameters gain `orderName` |
 | `src/transfers/draft.ts`, `src/data/types.ts` | `TransferParameters.source` adds `'One-Time'`; optional `orderName` |
 | `src/pages/OneTimeOrderPage.tsx`, `src/pages/oneTime/OneTimeTransfersStep.tsx` (new), `src/pages/oneTime/steps.ts` (new) | Three-step stepper, the Transfers step (TransferStep + the Save-first question), skip rule, settings-change question |
@@ -70,7 +71,7 @@
   - no redistribution lines, ever, even where the daily run would make some;
   - need 0, or no sender with free > 0: no lines;
   - the result doesn't depend on the order of receivers or sources (shuffle and compare);
-  - a part at a receiving branch that the live run has no row for (no source) still receives, with cover from oh + oo + AppInboundQty and rate 0.
+  - a receiver with no source row at its branch is skipped (a guard: One-Time lines always come from loaded branch parts, and the all-branch run has every part of every branch).
 - [ ] **Step 2:** implement: index `run.parts` / `sources` by `suggestedKey`; for each group with a receiver, build `AllocationRow`s with `allocationRow(...)` from the source and its `PartTransfer`, then override: receivers `{ convNeed: need, freeExcess: 0, redistEligible: false }`, others `{ convNeed: 0, redistEligible: false }` (FreeExcess kept); call `allocateGroup`. Return `SuggestionLine[]` sorted as `allocateAll` does.
 - [ ] **Step 3:** `npx vitest run src/engine`, `npm run lint`; commit.
 
