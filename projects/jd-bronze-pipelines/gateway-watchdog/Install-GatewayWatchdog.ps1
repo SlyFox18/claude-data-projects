@@ -122,7 +122,9 @@ else {
     }
     if ($added.Count -gt 0) {
         $c | ConvertTo-Json | Set-Content -Path $configPath -Encoding UTF8
-        Write-Host "config.json: added $($added -join ', ') (catch-up is log-only until CatchupEnabled is true; SourceQuietHours = '$quietHours')"
+        $note = "SourceQuietHours = '$($c.SourceQuietHours)'"
+        if (-not $c.CatchupEnabled) { $note = "catch-up is log-only until CatchupEnabled is true; $note" }
+        Write-Host "config.json: added $($added -join ', ') ($note)"
     }
 }
 if ($Live) {
