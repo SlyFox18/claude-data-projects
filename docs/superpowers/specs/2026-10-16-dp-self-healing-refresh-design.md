@@ -12,7 +12,8 @@
 >   - **Phase 2 LIVE 2026-10-19.** Claim task installed on Brian's PC. Prod deploy run 39257305075 (13:07Z)
 >     re-published both pipelines (`claimed:no`), and the task claimed both at 08:10 CT, about 3 min later. Nothing
 >     needed a re-run.
->     Still to prove: a deploy with no pipeline change reports "unchanged → still claimed".
+>     **Proven 2026-10-28:** Prod deploy run 40737121551 reported "Pipeline_DP_Refresh: unchanged → still
+>     claimed" (and the same for Pipeline_PartsAvailability).
 >   - **Phase 2 code done 2026-10-16:** fabric-workspace-docs PR #40 (331 tests, reviewed, Dev dry run OK).
 >     - The pending marker goes in the staged `.platform`: fabric-cicd 1.3.0 rewrites the description from it.
 >     - The claim task runs 05:10–20:55 every 15 min, with a pending.json rerun window (deploy..claim + 2 min).
@@ -33,6 +34,16 @@
 >     - `Pipeline_DP_Refresh` gets `concurrency: 1`.
 >     - Dev-tested: quiet, plus a dry run.
 >     - **Rollout:** deploy, then re-install both watchdogs (log-only), one week, then `CatchupEnabled`.
+>     - **Log-only review 2026-10-29** (watchdog logs 10-19..10-29):
+>       - JD: "would start" at 08:30 and 10:30 every weekday, as designed. No gateway recoveries.
+>       - SPI: one "recovered" start every morning (05:31/05:41), all from IT's nightly Equip ODBC block on
+>         SPI00T4022W11 (about 23:00–04:00), plus a DNS blip recovery at 04:11 on 10-26. A 04:11 catch-up does
+>         nothing: `decide_catchup` waits for the day's scheduled run.
+>       - Fixed the same day: watchdog `SourceQuietHours` (SPI `22:45-04:30`, data-projects `f0d18922`),
+>         installed on SPI00T4022W11. This also stops the three emails a night.
+>       - Still open before `CatchupEnabled`: open question 3. Does an SPN-started run's dataflow activity still
+>         run as the last modifier? Test: start Dev `Pipeline_DP_Refresh` as SPN-Fabric-Refresh-Automation with
+>         `mode=items`, `items=df_InSalPar_Audit_Raw`.
 >   - **Phase 3c:** maintenance helper. **Layer 3:** diagnosis agent.
 > - Later phases get their own plans once phase 1 ships and 0c is answered.
 
