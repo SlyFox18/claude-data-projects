@@ -1,5 +1,5 @@
 // Builds "Non-JD Order Tool - User Guide.docx" for Ben, Shannon, Barry and Curt.
-// Facts come from the app (nonjd-order-app 0.5.2: src/engine, src/pages, README) and ../REORDER-RULES.md.
+// Facts come from the app (nonjd-order-app 0.6.0: src/engine, src/pages, README) and ../REORDER-RULES.md.
 // Worked examples: Dev Gold Fact_NonJD_Reorder built 2026-10-26 (window Oct 2025 - Sep 2026); the transfer example
 // is the app's mock data (round numbers), as in REORDER-RULES.md.
 // Run: npm install, then node guide.js [output file]
@@ -9,11 +9,11 @@ const w = (...fr) => fr.map((f) => Math.round(CONTENT_W * f));
 
 build(process.argv[2] || 'Non-JD Order Tool - User Guide.docx', {
   title: 'Non-JD Parts Order Tool: user guide',
-  subtitle: 'For Ben, Shannon, Barry and Curt · Version 0.5.2 · October 28, 2026 (test version) · https://10.110.100.13:8443',
-  footer: 'Non-JD Parts Order Tool: user guide (version 0.5.2)',
+  subtitle: 'For Ben, Shannon, Barry and Curt · Version 0.6.0 · October 28, 2026 (test version) · https://10.110.100.13:8443',
+  footer: 'Non-JD Parts Order Tool: user guide (version 0.6.0)',
   blocks: [
     { p: '**In one sentence:** the tool shows each branch which non-John Deere parts to reorder and why, suggests stock other branches could send instead, lets you tune the rules behind those suggestions, and turns the parts you pick into an order file for each vendor.' },
-    { p: 'This guide covers getting in, what each page does, and exactly how every number is worked out. Version 0.5.2 includes Ben’s round 1 answers, several branches and dealer groups at once, **phase-in**, and **transfer suggestions** (round 2, from Ben’s answers of October 27). What changed in each version is in the **walkthrough**, Part 2.' },
+    { p: 'This guide covers getting in, what each page does, and exactly how every number is worked out. Version 0.6.0 includes Ben’s round 1 answers, several branches and dealer groups at once, **phase-in**, **transfer suggestions** and **saving transfers** in the app, with transfer orders and transfer rules (round 2, from Ben’s answers of October 27). What changed in each version is in the **walkthrough**, Part 2.' },
 
     { h1: '1. Getting started' },
     { steps: [
@@ -33,7 +33,7 @@ build(process.argv[2] || 'Non-JD Order Tool - User Guide.docx', {
     { h2: 'Home' },
     { p: 'Shows how many parts need ordering at your branch and what they would cost, with a **Review now** link straight to that list, plus a card for each page. Pick a different branch in the greeting line to look at another branch.' },
     { p: 'The count leaves out lines that are only there because of an Equip minimum on a part with no demand (see "Min, no demand" below). A small line says how many were left out, for example "(21 more with minimums but no demand)".' },
-    { p: 'Below it, a **purple transfers card** sums up this morning’s transfer suggestions, for example "Branch 1: 12 parts could come by transfer instead of being bought", with the totals for every branch underneath. **Review transfers** opens the Transfers page on the parts coming into your branch. The card is hidden on a morning with no suggestions.' },
+    { p: 'Below it, a **purple transfers card** sums up this morning’s transfer suggestions, for example "Branch 1: 12 parts could come by transfer instead of being bought", with the totals for every branch underneath. **Review transfers** opens Recommended Reorder on **step 1 (Transfers)** for your branch, where you tick and save them. The card is hidden on a morning with no suggestions.' },
 
     { h2: 'Recommended Reorder' },
     { p: 'The main page: every part at the branch with the suggested order quantity.' },
@@ -56,12 +56,23 @@ build(process.argv[2] || 'Non-JD Order Tool - User Guide.docx', {
     { h3: 'Transfers on Recommended Reorder' },
     { p: 'Parts another branch could send are marked in **purple**, so they stand out while you scan the list:' },
     { bullets: [
-      'A purple banner above the list: for example "3 parts here could come by transfer instead of being bought", with **See Transfers**, which opens the Transfers page on this branch.',
+      'A purple banner above the list: for example "3 parts here could come by transfer instead of being bought", with **See Transfers**.',
       'Each such row has a purple edge and a pill before the order: **Transfer 1 from 92**, or **Transfer 3 from 2 branches** when several branches could send. **Redistribution 9 from 92** means extra stock is on offer, not a replacement for buying (section 5).',
       'In the row detail, a purple **Suggested transfers** box comes first: for example "Branch 92 can send 1 instead of buying (Conventional), and 9 more (Redistribution)."',
     ] },
-    { note: 'In this version the suggested **order doesn’t drop** when a transfer is suggested. Key the transfer into Equip yourself and lower the order before you save it. Ticking and saving transfers in the app comes in the next version, and the order will then be recalculated.' },
-    { p: 'These marks are from **this morning’s** suggestions. The Transfers page works them out again live.' },
+    { p: 'A suggestion alone doesn’t lower the order: the order counts **saved** transfers only. Save them on step 1 (below).' },
+    { h3: 'Saving transfers: step 1 and step 2' },
+    { p: 'When any transfer is suggested into the branches you picked, Recommended Reorder opens on **step 1** of **1 Transfers → 2 Order**; otherwise it opens on step 2 and step 1 says “No transfers suggested”.' },
+    { bullets: [
+      '**Step 1** lists every suggestion into your branches, **Conventional** and **Redistribution**, all ticked to start with, with a franchise filter. Untick what you don’t want, or change a quantity (a whole number, never more than suggested: “At most 44”). The line under the table says what the ticked lines do, for example “2 transfers cover 2 order lines and $38.00 you won’t buy.”',
+      'Every branch loads in the background first. Until then the list is this morning’s, marked “as of this morning”, and can’t be saved (“Loading every branch… you can save once it finishes”), so a save is always checked against live stock.',
+      '**Save N transfers (N transfer orders)** saves the ticked lines as one **transfer order** per sending and receiving branch, all franchises together, and lists them under **Saved transfers** with a link to each.',
+      'Just before saving, the app checks each sending branch still has the stock. If someone else took it meanwhile, **nothing is saved**: a banner lists what changed (for example “… from 92 to 1: 9 → 4 (branch 92 now has only 4 to send)” or “no longer suggested”), the ticks are adjusted, and you click Save again.',
+      'If SharePoint is slow to show what you saved: “Saved. The list hasn’t caught up yet — Refresh in a moment.” The order already counts it. **Refresh** re-reads the saved transfers at any time.',
+      '**Continue to order ›** goes to step 2. With unsaved ticks it asks “Save the N ticked transfers first?”: **Save and continue** or **Continue without them**. The order only ever counts saved transfers.',
+      '**Step 2** is the order list. A line a saved transfer reduced shows **Transfer in: 44 from branch 6**; a line it covered fully has nothing left to order and leaves “Reorder needed only”.',
+      'Leaving the page with unsaved transfer changes or ticked parts asks first.',
+    ] },
     { h3: 'Several branches at once' },
     { p: 'Click **Several branches…** and tick the branches you want (or **Select all**). Each loads by itself, with a progress line. The list then has a **Branch** column, a **Totals by branch** table, and a **Show** picker to look at one branch at a time. Search, ticks and sorting work across every loaded branch. **Create orders** makes one order per **branch and franchise**. Unticking a branch unticks its parts, and says how many. **Clear** and tick one branch to go back to the single-branch view.' },
     { h3: 'Part actions: Mask, Manual order and Phase in' },
@@ -106,15 +117,27 @@ build(process.argv[2] || 'Non-JD Order Tool - User Guide.docx', {
     { p: 'One list of every part with a special setting: **Masked**, **Manual order**, a **Min override**, a **Phase-in**, or a **mask or phase-in that has ended** (so someone can tidy it). It shows the branch, part, description, on hand, status, who set it and when, the expiry or phase-in and the notes. Filter by status and branch, click a part to open it, and **Export CSV** for a spreadsheet.' },
 
     { h2: 'Transfers' },
-    { p: 'Every suggested transfer between branches, all branches and franchises together. Read only in this version: **key them into Equip by hand**. Saving transfers comes next.' },
+    { p: 'Every suggested transfer between branches, all branches and franchises together, in two tabs: **Suggestions** and **Transfer orders**.' },
     { bullets: [
       'It opens on this morning’s suggestions (**As of this morning**) and loads every branch in the background, with a progress line. Once all have loaded it switches to **Live**: worked out again with the current rules, part settings and saved transfers.',
       'A banner then says whether anything changed since this morning, for example "1 part has changed since this morning", and **Why** (a rule or a part setting changed). A red banner saying the app disagrees with this morning’s run is a bug: tell Brian.',
-      '**Filters** at the top: **Franchise**, **Kind** (Conventional or Redistribution), **From** and **To** branch.',
+      '**Filters** at the top: **Franchise**, **Kind** (Conventional or Redistribution), **From**, **To** and **Status**: **Suggested**, or **Saved today** (today’s saved transfer lines).',
+      '**Tick and save** as on Reorder step 1. Save takes only the ticked lines **you can see** with the current filters, so you can work one sending branch at a time. When ticked lines are further down: “N more ticked lines below — Show more to include them”.',
       'Each line has a **kind badge**: **Conventional** (another branch sends what this branch would otherwise buy) or **Redistribution** (extra stock to a branch that sells the part and has room).',
       'The columns show the receiving branch’s need, the quantity, and the sending branch’s on hand, months of supply and excess as "before → after" this transfer, plus the receiving branch’s months of supply before → after and the value.',
       'The line under the table totals each kind. **Export CSV** downloads the filtered list: `Kind, FromBranch, ToBranch, PartNumber, Franchise, Description, Qty, FromBin, ToBin, FromCost, Value`.',
-      '**Transfer rules in use** (at the bottom, closed to start with) lists the transfer rules, or the built-in default: excess above 12 months, receive up to 6 months, no minimum.',
+      '**Transfer rules in use** (at the bottom, closed to start with) lists the transfer rules, or the built-in default, with a link to the Transfer rules page.',
+    ] },
+    { h3: 'Transfer orders' },
+    { p: 'The **Transfer orders** tab lists every saved transfer, newest first: From, To, status, lines, value at the sending branch’s cost, export count and who saved it when. Filter by From, To and status. A Draft more than a week old shows **Draft for N days**, and the tab label counts them, so nothing is forgotten.' },
+    { p: 'Open one to see its lines. A transfer order goes **Draft → Exported → Entered in Equip**:' },
+    { bullets: [
+      '**Draft:** change a quantity (never above the suggested quantity; 0 means “Not sent”; lines are never deleted).',
+      '**Export CSV** downloads `PartNumber, Franchise, Description, Qty, FromBin, ToBin, Cost, LineValue` for keying into Equip, and marks it Exported. After that its quantities can’t change; start a new transfer instead.',
+      '**Mark entered in Equip** once it is keyed in. It needs an export first, because the CSV is the record of what was keyed.',
+      '**Cancel** (Draft or Exported only) releases the stock for other suggestions. Nothing is deleted.',
+      '**Archive** hides an entered or cancelled transfer from the list (**Show archived** brings it back). An archived transfer is read-only until unarchived.',
+      'If someone else exported, entered, cancelled or archived it while you had it open, your change is refused with a message saying so, and the page shows the current state.',
     ] },
 
     { h2: 'Orders' },
@@ -147,6 +170,14 @@ build(process.argv[2] || 'Non-JD Order Tool - User Guide.docx', {
     { p: 'The rules that drive every suggestion (how much history to look at, how much to stock). Anyone in the test group can change them, and the page shows who last changed each rule and when. Section 4 explains them.' },
     { p: '**Try it** lets you test a change before saving it: click **Edit** on a rule, change a number, and the panel shows a branch before and after: order lines, total value, status counts and the parts that change most. Nothing is saved until you click **Save rule**. If you leave with unsaved changes, it asks first.' },
     { p: '**Archive** hides a rule you no longer use, instead of deleting it. Archived rules are never used. They are hidden unless **Show archived** is on; then they show greyed out, and **Unarchive** brings one back.' },
+
+    { h2: 'Transfer rules' },
+    { p: 'The rules that decide how much a branch keeps before stock counts as excess, whether it may send or receive, and how much redistribution it takes (section 5). It works like Rules: a list with each rule’s state (**Active**, **Off**, **Out of season**, **Archived**, or **Invalid** with the reason, which means it is skipped), an editor, **Archive** instead of delete, and **Try it**.' },
+    { bullets: [
+      'The first row is the read-only **Built-in default**: excess above 12 months, receive up to 6 months, no minimum for redistribution. It applies wherever no rule matches.',
+      '**Try it** shows, while you edit, the effect on every branch before you save: conventional lines and **Order $ avoided**, redistribution lines and dollars, before → after, and the parts that change most. Nothing is saved until you click Save. A rule with a problem shows the problem instead.',
+      'Saving applies straight away in the app; the morning run uses it the next day. Switching on a rule that has problems asks first, because it would be skipped.',
+    ] },
 
     { h2: 'Cleanup' },
     { p: 'Equip minimums on parts with **no demand and no units sold** in the rule’s history months: the same lines that carry the Min, no demand tag. These minimums **do** apply to the order, so this is the list to fix. The list shows each one’s minimum, on hand, cost, the stock value the minimum commits (minimum × cost) and what it **would order** today. Export it to work through in Equip.' },
@@ -252,7 +283,9 @@ build(process.argv[2] || 'Non-JD Order Tool - User Guide.docx', {
     { p: '**Example** (round numbers). Branch 92 has 40 of a chain, sells 1 a month and its target is 2, so it keeps 12 (12 months of supply) and has 40 − 12 = **28** excess. Branch 1 sells 2 a month, has none on hand and a target of 3. Branch 1 has the lowest months of supply, so it receives first: **Transfer 3 from 92** (conventional), leaving 92 with 25 excess. Branch 1 can then take up to 6 months of supply = 12 in all, so 9 more come as **redistribution**. If 2 of the 40 were already on a saved transfer to branch 1, 92’s excess would be 26 and the conventional transfer 1.' },
     { h3: 'Transfer rules' },
     { p: 'Transfer rules use the same criteria, priority and seasons as order rules. **The sending branch’s rule** sets its excess supply (**ExcessSupply**, weeks or months), whether it may send (**AllowSend**), and a minimum line value for redistribution (**RedistMinValue**). **The receiving branch’s rule** sets whether it may receive (**AllowReceive**) and its redistribution maximum (**RedistMax**; 0 = no redistribution into that branch). With no rule, the built-in default applies: 12 months, both allowed, 6 months, no minimum.' },
-    { p: 'In this version transfer rules are edited by Brian or Ben in the SharePoint list **NonJD_TransferRules**; a page in the app comes with saving transfers. A rule with a missing or out-of-range setting is skipped: the Transfers page shows it as **Skipped** with the reason, and Brian’s morning email names it.' },
+    { p: 'Transfer rules are edited on the **Transfer rules** page (section 2). A rule with a missing or out-of-range setting is skipped: the page shows it as **Invalid** with the reason, and Brian’s morning email names it.' },
+    { h3: 'Saved transfers' },
+    { p: 'A saved transfer counts as stock on its way: it lowers the receiving branch’s order (transfers in) and the sending branch’s excess (transfers out), straight away in the app and in the next morning’s run. A **Draft** or **Exported** transfer counts until it is entered or cancelled. One **entered in Equip** counts until the next morning’s run, when Equip itself shows it. A **cancelled** transfer never counts. Archiving changes nothing.' },
 
     { h1: '6. One-Time Order: the calculation' },
     { steps: [

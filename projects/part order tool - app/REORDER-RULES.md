@@ -200,10 +200,29 @@ Each part (franchise + part number) is worked out on its own across all branches
 6. **The sending branch's own order never changes**: it always keeps at least its target.
 7. **No branch-pair rules.** All branches are treated alike; Ben prefers to handle special cases by hand.
 
-In 0.5.0 the suggestions are shown (Home, Recommended Reorder and the Transfers page), and are keyed into Equip by
-hand. **The suggested order doesn't drop yet when a transfer is suggested.** Ticking transfers, saving them and
-seeing the order recalculated come in the next version. Unticking a suggestion will put the order back to the
-full quantity.
+Since 0.6.0 the suggestions can be ticked and **saved** in the app (Recommended Reorder step 1, or the Transfers
+page). A suggestion alone never lowers an order; a **saved** transfer does (next section). Unticking a suggestion
+before saving leaves the order at the full quantity.
+
+## Saved transfers (0.6.0)
+
+Saving makes one **transfer order** per sending + receiving branch (lists `NonJD_Transfers` and
+`NonJD_TransferLines`). A saved transfer counts as stock on its way: it adds to the receiving branch's **transfers
+in** (so its order drops) and to the sending branch's **transfers out** (so its excess drops), straight away in
+the app and in the next morning's run.
+
+| Status | Counts as committed? |
+|---|---|
+| **Draft** | Yes, from the moment it is saved |
+| **Exported** (the CSV was downloaded for Equip) | Yes |
+| **Entered in Equip** (marked placed) | Yes on the day it is entered; from the next morning's run Equip itself shows the transfer, so it stops counting |
+| **Cancelled** | Never |
+| Archived | Archiving changes nothing: an archived entered transfer counts exactly as it would unarchived. Only entered or cancelled transfers can be archived |
+
+Each line counts its whole quantity (never below 0). A line's quantity can be changed only while the transfer is a
+**Draft**, and never above the **suggested quantity** it was saved with, so a transfer can't promise more of the
+sender's stock than the calculation offered; start a new transfer to send more. Before saving, the app re-checks
+each sender's live excess and refuses lines whose stock someone else has taken meanwhile.
 
 ## Transfer rules (list NonJD_TransferRules)
 
@@ -221,10 +240,14 @@ receiving allowed, receive up to **6 months**, no minimum.
 | **RedistMax** with **RedistUnit** | The receive maximum for redistribution: 0-104 weeks or 0-24 months of supply. 0 = this branch takes no redistribution | 6 months |
 | **RedistMinValue** ($) | Redistribution lines worth less than this aren't suggested | 0 (no minimum) |
 
-The list has no rows yet, so the built-in default applies everywhere. There is no page for transfer rules in the
-app yet (planned with saving transfers): Brian or Ben edit the SharePoint list directly. The Transfers page shows
-the rules in use under **Transfer rules in use**. A rule with a missing or out-of-range setting is **skipped**:
-it shows there as Skipped with the reason, it isn't used, and the morning refresh email names it.
+Edit them on the app's **Transfer rules** page (0.6.0), next to Rules; anyone in the test group can. It works
+like Rules: a list with each rule's state, an editor that validates as you type, **Archive** instead of delete,
+and **Try it**, which shows the effect of a draft on every branch's suggestions (conventional lines, **Order $
+avoided**, redistribution lines and dollars, the parts that change most) before you save. A save sends only the
+columns you changed, so two people editing different parts of a rule don't undo each other. The built-in
+default shows as a read-only first row. A rule with a missing or out-of-range setting is **skipped**: the page
+shows it as Invalid with the reason, it isn't used, and the morning refresh email names it. Switching such a rule
+on asks first.
 
 ## Things we already know to look at
 

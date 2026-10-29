@@ -5,6 +5,8 @@ Brian, on 2026-10-28. Each entry gives the idea as described, what already exist
 open questions to settle before it is designed. Nothing here is scheduled; pick from this list when planning the
 next round.
 
+Next on the round 2 plan: phase 4, One-Time Order transfers (conventional only, A21).
+
 | # | Idea | Rough size | Needs a design pass |
 |---|---|---|---|
 | F1 | More Cleanup checks | Small per check | No (list the checks) |
