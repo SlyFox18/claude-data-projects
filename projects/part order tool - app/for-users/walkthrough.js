@@ -5,7 +5,7 @@
 // Examples are from Prod data of 2026-10-27 (Fact_NonJD_Reorder built 11:40 UTC); the 0.5.0 section's transfer and
 // phase-in examples are from Dev data of 2026-10-28 (Gold built 14:12 UTC), because Prod has no round 2 data until the
 // release. Re-check them against Prod after the first 0.5.0 publish. Refresh examples when a section is added.
-// Labels follow nonjd-order-app 0.6.0 and the user guide (guide.js). The 0.6.0 section's examples are Prod data of
+// Labels follow nonjd-order-app 0.6.2 and the user guide (guide.js). The 0.6.0 section's examples are Prod data of
 // 2026-10-28 (Gold built 18:08 UTC): MULTISEAL at 1 "Transfer 44 from 6", R134A "Redistribution 52 from 13".
 // Run: npm install, then node walkthrough.js [output file]
 const { build, CONTENT_W } = require('./lib');
@@ -21,8 +21,8 @@ const notes = { answer: 'Notes (anything different, slow or confusing):' };
 
 build(process.argv[2] || 'Non-JD Order Tool - Walkthrough.docx', {
   title: 'Non-JD Parts Order Tool: walkthrough',
-  subtitle: 'Hands-on steps through every page · Version 0.6.0 · October 28, 2026 · App: https://10.110.100.13:8443',
-  footer: 'Non-JD Parts Order Tool: walkthrough (0.6.0)',
+  subtitle: 'Hands-on steps through every page · Version 0.6.2 · October 29, 2026 · App: https://10.110.100.13:8443',
+  footer: 'Non-JD Parts Order Tool: walkthrough (0.6.2)',
   blocks: [
     { p: 'This is a hands-on tour of the tool. Each step says what to do and what you should see. Tick **OK** when it matches. When it doesn’t, or something is slow or confusing, write it in the notes box under that section and send it to Brian.' },
     { bullets: [
@@ -118,19 +118,22 @@ build(process.argv[2] || 'Non-JD Order Tool - Walkthrough.docx', {
     { h2: '9. Cleanup and App Settings' },
     steps([
       ['Click **Cleanup**. Pick branch **6**.', 'The Equip minimums on parts with no demand and no sales; branch 6 has about 1,000. The largest is about $21,000 (part 145019, module rim, minimum 65).'],
-      ['Click **App Settings**.', 'Your default branch and franchise, and **About** with the version (**0.6.0**).'],
+      ['Click **App Settings**.', 'Your default branch and franchise, and **About** with the version (**0.6.2**).'],
       ['Set your default branch, then open Recommended Reorder.', 'It opens on your default branch.'],
     ]),
     notes,
 
     { h1: 'Part 2: what’s new' },
 
-    { h2: 'Version 0.6.0 (October 28, 2026): save transfers in the app' },
+    { h2: 'Versions 0.6.0 to 0.6.2 (October 28 and 29, 2026): save transfers in the app' },
     { p: 'New since 0.5.3:' },
     { bullets: [
       '**Save transfers.** Recommended Reorder now has two steps, **1 Transfers → 2 Order**. Step 1 lists the transfers suggested into your branch, all ticked to start with. Untick what you don’t want, change a quantity, and **Save**. Each sending and receiving pair becomes one **transfer order**.',
       '**The order counts saved transfers.** On step 2 a line a saved transfer reduced says **Includes 44 coming by transfer from branch 6** (part of Inbound, not on top of it), and a line it covered fully drops out of “Reorder needed only”. **Continue to order** with unsaved ticks asks whether to save them first.',
       '**The Transfers page saves too,** for example to work one sending branch at a time, and has a **Saved today** view and a new **Transfer orders** tab.',
+      '**Transfers opens on Transfer orders (0.6.2).** Clicking **Transfers** in the menu lands on **Transfer orders**, now the first tab. The suggestions are on the second tab, **Suggestions**. Home’s **Review transfers** and the links on Recommended Reorder still go to the suggestions.',
+      '**Status pills (0.6.1).** On Transfer orders each status is a coloured pill: **Draft** amber, **Exported** blue, **Entered in Equip** green, **Cancelled** grey.',
+      '**Step 1 is easier to work (0.6.1).** The part search box at the top of Recommended Reorder now filters step 1’s list too. It doesn’t change your ticks: the footer says “N of M ticked lines shown” when the search hides some. The footer (what the ticked lines cover) stays at the bottom of the window while you scroll, with its own **Save** button.',
       '**Transfer orders** have their own page: change quantities while it is a Draft (never above the suggested quantity), **Export CSV** for keying into Equip, then **Mark entered in Equip**. **Cancel** releases the stock. Entered or cancelled transfers can be archived.',
       '**Transfer rules page** next to Rules, with **Try it**: change the excess (12 months), the redistribution limit (6 months) or the minimum, for a franchise, branch or other criteria, and see the effect on every branch before saving.',
       '**Safety:** before saving, the app checks each sending branch still has the stock; if someone else took it, nothing is saved and it says what changed. If SharePoint is slow to show a saved transfer, the app still counts it and says so. If a different person signs in on the same browser, the app reloads so nobody sees the last person’s data.',
@@ -140,20 +143,21 @@ build(process.argv[2] || 'Non-JD Order Tool - Walkthrough.docx', {
     { h3: 'Recommended Reorder: step 1 and step 2' },
     steps([
       ['Go to **Home**, branch **1**. Click **Review transfers** on the purple card.', 'Recommended Reorder opens on **step 1** of **1 Transfers → 2 Order**: “Transfers into branch 1”, with “Tick the transfers to make instead of buying; the order on step 2 counts the saved ones.” While every branch loads, the table is marked “as of this morning” and can’t be ticked: “Loading every branch… you can save once it finishes”.'],
-      ['When loading finishes, find **MULTISEAL** (franchise M).', 'Ticked, with a **Conventional** badge, about **44 from 6**. The line under the table reads like “N transfers cover N order lines and $X you won’t buy.”'],
+      ['When loading finishes, type `MULTISEAL` in the search box at the top of the page.', 'Only the MULTISEAL lines (franchise M). Ticked, with a **Conventional** badge, about **44 from 6**. The footer reads like “N transfers cover N order lines and $X you won’t buy.” and “2 of N ticked lines shown”: the lines the search hides stay ticked.'],
       ['Type **60** in MULTISEAL’s quantity box.', 'It goes back to the suggested quantity with “At most 44”: a transfer is never more than suggested.'],
-      ['Untick every line except one cheap one and set its quantity to **1**. Note the part. Click **Save 1 transfer (1 transfer order)**.', '“Saved 1 transfer order.” and a **Saved transfers** list, for example “6 → 1 · 1 line · Draft · saved 3:10 PM by <your name>”, linking to the transfer order.'],
+      ['Clear the search. Scroll down the list.', 'Every line again. The footer, with its **Save** button, stays at the bottom of the window while you scroll.'],
+      ['Untick every line except one cheap one and set its quantity to **1**. Note the part. Click **Save 1 transfer (1 transfer order)** (at the top, or in the footer).', '“Saved 1 transfer order.” and a **Saved transfers** list, for example “6 → 1 · 1 line · Draft · saved 3:10 PM by <your name>”, linking to the transfer order.'],
       ['Tick another line, then click **Continue to order ›**.', 'A question: “Save the 1 ticked transfer first?” with **Continue without them** and **Save and continue**. Click **Continue without them**.'],
       ['On step 2, find the part you saved.', 'Its order cell says **Includes 1 coming by transfer from branch …** and the order is 1 lower than before. If SharePoint hasn’t caught up yet, a banner says “Your saved transfers may take a moment to show here — Refresh”; the order already counts it.'],
-      ['Open the transfer from the **Saved transfers** list (or Transfers → Transfer orders). Click **Cancel**, then **Cancel transfer**, then **Archive**.', '“Cancel this transfer? Its stock is released for other suggestions.” It shows **Cancelled**, then **Archived**. Back on Reorder step 2 (Refresh if needed) the order is back to what it was.'],
+      ['Open the transfer from the **Saved transfers** list (or click **Transfers**: it opens on Transfer orders). Click **Cancel**, then **Cancel transfer**, then **Archive**.', '“Cancel this transfer? Its stock is released for other suggestions.” It shows **Cancelled** (a grey pill), then **Archived**. Back on Reorder step 2 (Refresh if needed) the order is back to what it was.'],
     ]),
     notes,
     { h3: 'The Transfers page and transfer orders' },
     steps([
-      ['Open **Transfers**. Set **From** to **13** and **To** to **1**.', 'Only lines from 13 into 1, for example **R134A**, **Redistribution** about **52 from 13**. The Save button counts only the ticked lines you can see.'],
+      ['Click **Transfers** in the menu.', 'It opens on **Transfer orders**, the first tab: every transfer order, newest first: From, To, Status, Lines, Value at the sending branch’s cost, Exported, Saved. Each status is a coloured pill: **Draft** amber, **Exported** blue, **Entered in Equip** green, **Cancelled** grey. A Draft more than a week old shows **Draft for N days**, and the tab says how many old drafts there are.'],
+      ['Turn on **Show archived**.', 'Your cancelled practice transfer, greyed, with a grey **Cancelled** pill and an **Archived** tag. Only entered or cancelled transfers can be archived.'],
+      ['Click the **Suggestions** tab. Set **From** to **13** and **To** to **1**.', 'Only lines from 13 into 1, for example **R134A**, **Redistribution** about **52 from 13**. The Save button counts only the ticked lines you can see.'],
       ['Set **Status** to **Saved today**.', 'Today’s saved transfer lines. A note says “Cancelled transfers aren’t listed here; see Transfer orders (Status: Cancelled).”: your cancelled practice transfer is there, not here. Kind is greyed out: saved lines are listed by transfer, not by kind.'],
-      ['Click the **Transfer orders** tab.', 'Every transfer order, newest first: From, To, Status (**Entered in Equip** once keyed in), Lines, Value at the sending branch’s cost, Exported, Saved. A Draft more than a week old shows **Draft for N days**, and the tab says how many old drafts there are.'],
-      ['Turn on **Show archived**.', 'Your cancelled practice transfer, greyed, with an **Archived** tag. Only entered or cancelled transfers can be archived.'],
     ]),
     notes,
     { h3: 'Transfer rules and Try it' },
@@ -230,7 +234,7 @@ build(process.argv[2] || 'Non-JD Order Tool - Walkthrough.docx', {
 
     { h3: 'The Transfers page' },
     steps([
-      ['Click **Transfers** in the menu.', 'A grey **As of this morning** tag and a progress line while every branch loads (a few seconds), then a green **Live** tag: about **2,312 suggestions**, with the banner "Showing live suggestions. No part has changed since this morning."'],
+      ['Click **Transfers** in the menu, then the **Suggestions** tab (since 0.6.2 it opens on Transfer orders).', 'A grey **As of this morning** tag and a progress line while every branch loads (a few seconds), then a green **Live** tag: about **2,312 suggestions**, with the banner "Showing live suggestions. No part has changed since this morning."'],
       ['Set **Kind** to **Conventional**, then **Redistribution**, then **All**.', 'About 1,219, then about 1,093. Every line has a **Conventional** or **Redistribution** badge. The line under the table totals each kind.'],
       ['Set **Franchise** to **M** and **To** to **1**.', 'Branch 1’s franchise M suggestions, including MULTISEAL (44 and 61 from 6). The From columns show "before → after", for example on hand 730 → 686.'],
       ['Set **From** to **13**, then everything back to **All**.', 'Only lines sent by branch 13 (lots of R134A), then the full list.'],
@@ -250,7 +254,7 @@ build(process.argv[2] || 'Non-JD Order Tool - Walkthrough.docx', {
       ['Click the **Detail** tab.', 'Target **2**, order **2**. "Why this number" says the phase-in of 2 sets the target.'],
       ['Click **Special statuses**.', 'GG100 at branch 1 listed as **Phase-in**, "2 until" the date, with your name.'],
       ['**Recommended Reorder**, branch 1, search `GG100`.', 'Order 2, with a small green **Phase-in** tag by the part number.'],
-      ['Open **Transfers** and wait for **Live**.', 'The banner now says "1 part has changed since this morning". Click **Why**: a part setting (… phase-in) changed. With franchise **BS** and To **1** you may also see a new GG100 line from a branch with a spare one (on the test data: 2 from branch 94). Phase-in parts can be filled by transfer.'],
+      ['Open **Transfers**, click the **Suggestions** tab and wait for **Live**.', 'The banner now says "1 part has changed since this morning". Click **Why**: a part setting (… phase-in) changed. With franchise **BS** and To **1** you may also see a new GG100 line from a branch with a spare one (on the test data: 2 from branch 94). Phase-in parts can be filled by transfer.'],
       ['Back on GG100’s **Settings** tab, click **Clear phase-in**, then **Save settings**.', 'The badge is gone. The order is back to 0, and GG100 is off Special statuses.'],
     ]),
     notes,
@@ -301,6 +305,14 @@ build(process.argv[2] || 'Non-JD Order Tool - Walkthrough.docx', {
 
     { h1: 'Part 3: release checks (Brian)' },
     { p: 'Run these when a new version is deployed to the test server, after **Ctrl+F5** to load it.' },
+    { h3: '0.6.1 and 0.6.2' },
+    steps([
+      ['App Settings → **About**.', '**0.6.2** and the deployed commit.'],
+      ['Click **Transfers** in the menu.', 'It opens on **Transfer orders** (the first tab), with coloured status pills. **Suggestions** is the second tab.'],
+      ['Home → **Review transfers**; then on Recommended Reorder click **See Transfers**.', 'Reorder step 1, then the Transfers page on its **Suggestions** tab with To set to the branch.'],
+      ['On Reorder step 1, search a part, then clear the search. Scroll a long list.', '“N of M ticked lines shown” while searching; all ticks kept after. The footer and its Save stay at the bottom of the window.'],
+    ]),
+    notes,
     { h3: '0.6.0' },
     steps([
       ['App Settings → **About**.', '**0.6.0** and the deployed commit.'],
