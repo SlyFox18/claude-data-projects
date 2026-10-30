@@ -4,6 +4,12 @@
 > review after each (Brian's standing choice). Steps use checkbox (`- [ ]`) syntax.
 
 > **Progress:** plan written 2026-10-30 (Claude, for Brian).
+> - **I3 done 2026-10-30** (data-projects `a8b134d3`; publish tests 247 pass). Contract v4: `lastReceived` (`YYYY-MM-DD` /
+>   null) per part, `purchases.json.gz` `{dataAsOf, rows}`, in the hashes before `_meta.json`. Guard: a Gold without
+>   LastReceived or Fact_NonJD_Purchases fails before writing anything (exit 1, no v4 meta). **Do NOT `git pull` on the
+>   Gateway PC until I12 step 5** (Prod Gold on round 3 and app 0.9.0 on Fedora): before that, the scheduled publish
+>   would fail every morning and the app would stay on the previous day's files. The local `--out` check from Claude
+>   failed on az token exhaustion (dp_refresh_log scan); Brian's own `--out` run against Dev is still owed (Step 4).
 > - **I2 done 2026-10-30** (data-projects `405d5cb3`; tests 596 pass). Dev: **PASS**, 0 differences on Fact_NonJD_Reorder
 >   (incl. LastReceived on all 199,555 rows), Fact_NonJD_TransferSuggestion and Fact_NonJD_Purchases (354 rows, window
 >   2025-10-01 to before 2026-10-01). Memory: the InTrans read turns DuckDB's external file cache off and collapses
