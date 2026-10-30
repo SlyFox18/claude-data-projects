@@ -4,6 +4,15 @@
 > review after each (Brian's standing choice). Steps use checkbox (`- [ ]`) syntax.
 
 > **Progress:** plan written 2026-10-30 (Claude, for Brian).
+> - **I4 done 2026-10-30** (app `498af36`, `5110ad3` mock parts, review fixes `edf964f`; 1,945 tests in two halves, lint, tsc
+>   clean; pushed). Lists config + REQUIRED_LIST_KEYS; types; contract 3 and 4 (5 refused), `loadPurchases` null on v3;
+>   13 list methods; `loadOpenReturns` holds safely (an open document with an unreadable Kind still holds; held qty
+>   clamped ≥ 0 whole). Mock v4 (`createMockSource({ contractVersion: 3 })` for v3): rules "MM annual return" (10%
+>   Purchases12, no sales 24, not received 12, credit 85%, leaves out Manual order and minimums) and "Scrap default";
+>   purchases MM 1 $2,500 / 92 $1,830.40; MM parts at branch 1: -OLD, -NOW, -NEW, -MIN, -MAN, -DEM (demand at 92 and
+>   95; target 92), -HELD (2 of 5 held by open Draft return 1). No allowReceive=false mock (engine tests cover it). No
+>   If-Match: status actions re-read before patching (as transfers). Test expectations moved: MM in franchise lists,
+>   one more Manual order row on Special statuses.
 > - **I3 done 2026-10-30** (data-projects `a8b134d3`; publish tests 247 pass). Contract v4: `lastReceived` (`YYYY-MM-DD` /
 >   null) per part, `purchases.json.gz` `{dataAsOf, rows}`, in the hashes before `_meta.json`. Guard: a Gold without
 >   LastReceived or Fact_NonJD_Purchases fails before writing anything (exit 1, no v4 meta). **Do NOT `git pull` on the
