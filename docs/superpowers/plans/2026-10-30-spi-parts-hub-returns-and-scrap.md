@@ -4,6 +4,9 @@
 > review after each (Brian's standing choice). Steps use checkbox (`- [ ]`) syntax.
 
 > **Progress:** plan written 2026-10-30 (Claude, for Brian).
+> - **I7 done 2026-10-30** (app `5b05da9`, pushed; tests pass in two halves). Area `returns` after Cleanup (icons package /
+>   cleanup / rules), seven placeholder routes, launch card third (after Cleanup): "1 open return" on the mock, counted
+>   as distinct documents, loaded separately so it never blocks the other cards.
 > - **I4 done 2026-10-30** (app `498af36`, `5110ad3` mock parts, review fixes `edf964f`; 1,945 tests in two halves, lint, tsc
 >   clean; pushed). Lists config + REQUIRED_LIST_KEYS; types; contract 3 and 4 (5 refused), `loadPurchases` null on v3;
 >   13 list methods; `loadOpenReturns` holds safely (an open document with an unreadable Kind still holds; held qty
