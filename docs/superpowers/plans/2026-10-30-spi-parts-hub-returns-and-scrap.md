@@ -4,6 +4,11 @@
 > review after each (Brian's standing choice). Steps use checkbox (`- [ ]`) syntax.
 
 > **Progress:** plan written 2026-10-30 (Claude, for Brian).
+> - **I5 done 2026-10-30** (app `fd4f67c`, review fixes `9526a36`; 1,897 tests, lint, tsc clean; pushed). `src/engine/returns.ts`.
+>   Changes from the plan's code: `inSeason` → **`inReturnSeason`** (name clash with rules.inSeason); `receivedWithin`
+>   clamps month-end; `prePick` with allowance ≤ 0 ticks nothing, ordinal sort ending on franchise; `demandElsewhere`
+>   merges branch keys that normalise alike (trimmed, upper-case); non-finite stock / cost skipped. Review
+>   (typescript-reviewer): approved, no high findings. Later tasks: validate seasons as `^\d\d-\d\d$` on save (I6).
 > - **I0a–I0c done 2026-10-30** (Brian created, Claude verified through Graph; 0 items each). `NonJD_ReturnRules`
 >   **`4b8e36cc-4d85-4af2-b465-b9a64b45da6a`**, `NonJD_Returns` **`b3284d52-4ccf-43cf-81b8-2035cd08cd6e`** (Franchise and
 >   Status indexed; Parameters plain text), `NonJD_ReturnLines` **`1a210f70-7a1e-42f0-a758-c24c3dc0ccda`** (ReturnId
