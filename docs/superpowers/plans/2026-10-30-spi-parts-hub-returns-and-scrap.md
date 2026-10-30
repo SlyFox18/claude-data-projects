@@ -4,6 +4,11 @@
 > review after each (Brian's standing choice). Steps use checkbox (`- [ ]`) syntax.
 
 > **Progress:** plan written 2026-10-30 (Claude, for Brian).
+> - **I0a–I0c done 2026-10-30** (Brian created, Claude verified through Graph; 0 items each). `NonJD_ReturnRules`
+>   **`4b8e36cc-4d85-4af2-b465-b9a64b45da6a`**, `NonJD_Returns` **`b3284d52-4ccf-43cf-81b8-2035cd08cd6e`** (Franchise and
+>   Status indexed; Parameters plain text), `NonJD_ReturnLines` **`1a210f70-7a1e-42f0-a758-c24c3dc0ccda`** (ReturnId
+>   indexed). All columns as planned. Differences: Status has no default (the app always writes it); ReturnLines has an
+>   extra `Number` column (2 dp) the app ignores (Brian may delete it). Left: I0c step 3 (`.env.local`, Brian).
 > - **Starting point:** app 0.8.1 (`1b38c40`) live on Fedora on Prod data (contract v3). fabric-workspace-docs `dev`
 >   = `main`. Spec approved: `docs/superpowers/specs/2026-10-30-spi-parts-hub-round-3-design.md` (R1–R16, D1–D3).
 
