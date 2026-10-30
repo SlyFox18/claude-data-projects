@@ -4,6 +4,11 @@
 > review after each (Brian's standing choice). Steps use checkbox (`- [ ]`) syntax.
 
 > **Progress:** plan written 2026-10-30 (Claude, for Brian).
+> - **I2 done 2026-10-30** (data-projects `405d5cb3`; tests 596 pass). Dev: **PASS**, 0 differences on Fact_NonJD_Reorder
+>   (incl. LastReceived on all 199,555 rows), Fact_NonJD_TransferSuggestion and Fact_NonJD_Purchases (354 rows, window
+>   2025-10-01 to before 2026-10-01). Memory: the InTrans read turns DuckDB's external file cache off and collapses
+>   purchases_src to key + day (this PC is short on RAM). **Until round 3 reaches Prod, `--tier prod` FAILs on the
+>   missing Fact_NonJD_Purchases / LastReceived** (expected; morning checks read the reorder and suggestion lines).
 > - **I1 done 2026-10-30** (fabric-workspace-docs `2c9cc024`, pushed; dag_check OK, hygiene 0, pytest 359). Dev run
 >   Completed (19:18–19:34 UTC). Fact_NonJD_Purchases: 354 rows, 19 branches, 28 franchises, $12.35M (BW $2.85M, M
 >   $2.75M, BS $1.18M, MM $399K). Fact_NonJD_Reorder: LastReceived (DATE) on 165,406 of 199,555 rows. Decisions:
