@@ -4,6 +4,15 @@
 > review after each (Brian's standing choice). Steps use checkbox (`- [ ]`) syntax.
 
 > **Progress:** plan written 2026-10-30 (Claude, for Brian).
+> - **I9 done 2026-10-30** (app `cea9c06`, `786d466`, review fixes `5c33920`; 2,116 tests in two halves, lint, tsc clean;
+>   pushed). `/returns`, `/scrap` lists (Show archived remembered), `/returns/:id`, `/scrap/:id` pages: statuses per R14,
+>   every action re-reads first and refuses on a changed status / archived; line qty (lower only) and Remove while
+>   Draft, single-flight with the header actions (Export waits for a pending save; lines re-checked after export);
+>   ExpectedCredit recomputed on line changes and at export; CSV with totals in cents and the formula guard (Description,
+>   Bin, LastSold), Export by branch with distinct names; RA number; Credit received "(92%)"; transfer orders made with
+>   it. Pill tone `done` (Credited). **Follow-ups:** the made-with transfers match on `orderName` = title by reading
+>   every transfer order; the lists read each document's lines (N+1). `PlaceholderPage.tsx` is now unused (delete with
+>   Brian's OK).
 > - **I8 done 2026-10-30** except the transfers-only question (app `327c5d0`, `7d57de9`, `f896291`, review fixes `5f71864`;
 >   2,070 tests in two halves, lint, tsc clean; pushed). Wizard `/returns/new`, `/scrap/new` (SetupStep, PartsStep,
 >   ReviewStep; `src/returns/draft.ts`, `saveReturn.ts`; `useReturnSource` reads live open transfers so availability is
