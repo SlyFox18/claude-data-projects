@@ -15,7 +15,9 @@ pick and validation and the transfer inputs per part (ExcessKeep, FreeExcess, Co
 SQL, then the allocation as a separate plain Python loop (allocate_group, written from the spec's Part 3 only),
 compared with Fact_NonJD_TransferSuggestion row by row. Also prints a fingerprint of the Gold table (excluding
 BuiltAtUtc) for run-twice determinism checks, and lists the rules, transfer rules and part settings that are skipped
-as invalid.
+as invalid. Round 3 (Plan I, Task I2; plan docs/superpowers/plans/2026-10-30-spi-parts-hub-returns-and-scrap.md,
+decisions I1-I4) adds LastReceived on Fact_NonJD_Reorder and Fact_NonJD_Purchases, both from Silver_InTrans Type 'P'
+rows (purchases from suppliers).
 
 Choices the spec leaves open are marked "(choice)" in the comments; Gold and the app engine must make the same ones.
 
@@ -29,7 +31,8 @@ MaxLineValue, Archived, ManualOrder, MaskedOn; the five criteria; PhaseInQty, Ph
 the staging tables have them and are NULL otherwise; with no MinDemands every list rule is invalid and the built-in
 default applies. A missing NonJD_Transfers table reads as no committed transfers, and a missing NonJD_TransferRules
 table as no transfer rules (the built-in default everywhere). When Gold lacks some output columns, or
-Fact_NonJD_TransferSuggestion doesn't exist yet, the check still compares what it can, then FAILs.
+Fact_NonJD_TransferSuggestion or Fact_NonJD_Purchases doesn't exist yet, the check still compares what it can, then
+FAILs.
 
 Auth: Azure CLI (az login as Brian), read-only.
 """
@@ -70,7 +73,7 @@ COMPARE_COLS = ["RuleId", "RuleName", "DemandBasis", "HistoryMonths", "MinDemand
                 "PhaseInEndReason", "AppInboundQty", "AppOutboundQty",
                 "TransferRuleId", "TransferRuleName", "ExcessUnit", "AllowSend", "AllowReceive", "RedistUnit",
                 "ExcessKeep", "FreeExcess", "ConvNeed", "RedistCap", "RedistEligible", "SuggestedInQty",
-                "SuggestedConvInQty", "SuggestedOutQty"]
+                "SuggestedConvInQty", "SuggestedOutQty", "LastReceived"]
 TOLERANCE_COLS = ["Supply", "SupplyMonths", "MinLineValue", "MaxLineValue", "WindowDemand", "UnitsSoldWindow",
                   "MonthlyRate",
                   "EffectiveMin", "InboundTransferQty", "PendingQty", "ExcessSupply", "RedistMax", "RedistMinValue"]
@@ -86,8 +89,12 @@ OUTPUT_COLS = ["Branch", "Franchise", "PartNumber", "RuleId", "RuleName", "Deman
                # round 2 Part 2 (the part's transfer rule and transfer inputs) and Part 3 (its suggested quantities)
                "TransferRuleId", "TransferRuleName", "ExcessSupply", "ExcessUnit", "AllowSend", "AllowReceive",
                "RedistMax", "RedistUnit", "RedistMinValue", "ExcessKeep", "FreeExcess", "ConvNeed", "RedistCap",
-               "RedistEligible", "SuggestedInQty", "SuggestedConvInQty", "SuggestedOutQty"]
+               "RedistEligible", "SuggestedInQty", "SuggestedConvInQty", "SuggestedOutQty",
+               # round 3 (Plan I)
+               "LastReceived"]
 SUGGESTED_COLS = ["SuggestedInQty", "SuggestedConvInQty", "SuggestedOutQty"]
+# Added after the allocation (EXPECTED_FROM_PART2_SQL), so not in the part2 table
+LATE_COLS = SUGGESTED_COLS + ["LastReceived"]
 KEYS = "Branch, Franchise, PartNumber"
 # Fact_NonJD_TransferSuggestion as the reference builds it (spec "The data model"). FromBin, ToBin, Description and
 # BuiltAtUtc are display columns and not compared. The key is the first five. FromBranch / ToBranch are the Branch
@@ -431,7 +438,7 @@ def transfer_ctes(p1: str) -> str:
 
 
 # The part2 table: the reorder output without Part 3's suggested quantities, plus the columns allocate_group reads
-PART2_COLS = [c for c in OUTPUT_COLS if c not in SUGGESTED_COLS] + ["oh", "oo", "pend", "cost"]
+PART2_COLS = [c for c in OUTPUT_COLS if c not in LATE_COLS] + ["oh", "oo", "pend", "cost"]
 
 # Parameters: $cur = first day of the run's Central-time month, $today = the run's Central date.
 # Every value that is ceil'd or floor'd is first rounded to 9 decimals (round9), so double noise such as
@@ -798,8 +805,44 @@ def create_suggestion_table(con, name: str, lines: list) -> None:
                         [[line[c] for c, _ in SUGGESTION_COLS] for line in lines])
 
 
-# The reorder output: part2 plus each part's suggested quantities (0 where none). Lines join back on the Branch
-# values as stored (FromBranch / ToBranch are copied from the rows).
+# Round 3 (Plan I, decisions I1 and I3): table purchases_src = Silver_InTrans Type 'P' rows (purchases from
+# suppliers; gross, nothing netted), scoped as the parts are (the excluded franchises, the T / U prefixes and the
+# excluded branches, on the trimmed, upper-case values; a NULL franchise or branch drops out), with Branch and
+# Franchise trimmed and upper-case, PartNumberTrim = trim(PartNumber), TransDate = TransDatetime's date in the UTC
+# session (as stored) and CostValue as DECIMAL(14,2). {src} = a relation with the Silver columns.
+PURCHASES_SRC_SQL = f"""
+    SELECT upper(trim(Branch)) AS Branch, upper(trim(Franchise)) AS Franchise, trim(PartNumber) AS PartNumberTrim,
+           CAST(TransDatetime AS DATE) AS TransDate, CAST(CostValue AS DECIMAL(14,2)) AS CostValue
+    FROM {{src}}
+    WHERE Type = 'P'
+      AND upper(trim(Franchise)) NOT IN ('D', 'ZP', 'S', '95')
+      AND NOT starts_with(upper(trim(Franchise)), 'T')
+      AND NOT starts_with(upper(trim(Franchise)), 'U')
+      AND upper(trim(Branch)) NOT IN ({_EXCLUDED_SQL})
+"""
+# Decision I3: LastReceived = the newest TransDate per branch + franchise + trimmed part number (NULL when never).
+LAST_RECEIVED_SQL = """
+    CREATE OR REPLACE TABLE last_received AS
+    SELECT Branch, Franchise, PartNumberTrim, max(TransDate) AS LastReceived FROM purchases_src GROUP BY ALL
+"""
+# Decisions I2 and I4: purchases at cost per branch + franchise over the 12 full months before the build's Central
+# month ($p_from <= TransDate < $p_to), summed exactly as DECIMAL, rounded to cents. Only branch + franchise pairs
+# with purchases in the window get a row.
+EXPECTED_PURCHASES_SQL = """
+    CREATE OR REPLACE TABLE expected_purchases AS
+    SELECT Branch, Franchise, CAST(round(sum(CostValue), 2) AS DOUBLE) AS Purchases12
+    FROM purchases_src
+    WHERE TransDate >= $p_from AND TransDate < $p_to
+    GROUP BY ALL
+"""
+PURCHASES_SRC_COLS = [("Branch", "VARCHAR"), ("Franchise", "VARCHAR"), ("PartNumberTrim", "VARCHAR"),
+                      ("TransDate", "DATE"), ("CostValue", "DECIMAL(14,2)")]
+PURCHASES_KEYS = "Branch, Franchise"
+PURCHASES_TOLERANCE = 0.005
+
+# The reorder output: part2 plus each part's suggested quantities (0 where none) and LastReceived. Lines join back
+# on the Branch values as stored (FromBranch / ToBranch are copied from the rows). LastReceived joins on Branch and
+# Franchise trimmed and upper-case and the trimmed part number, so trailing-space twin parts get the same date.
 EXPECTED_FROM_PART2_SQL = f"""
     CREATE OR REPLACE TABLE expected AS
     WITH moves AS (
@@ -811,26 +854,35 @@ EXPECTED_FROM_PART2_SQL = f"""
     ),
     sums AS (SELECT Branch, Franchise, PartNumber, sum(q_in) AS q_in, sum(q_conv) AS q_conv, sum(q_out) AS q_out
              FROM moves GROUP BY ALL)
-    SELECT {", ".join("p." + c for c in OUTPUT_COLS if c not in SUGGESTED_COLS)},
+    SELECT {", ".join("p." + c for c in OUTPUT_COLS if c not in LATE_COLS)},
            CAST(coalesce(s.q_in, 0) AS INTEGER) AS SuggestedInQty,
            CAST(coalesce(s.q_conv, 0) AS INTEGER) AS SuggestedConvInQty,
-           CAST(coalesce(s.q_out, 0) AS INTEGER) AS SuggestedOutQty
+           CAST(coalesce(s.q_out, 0) AS INTEGER) AS SuggestedOutQty,
+           lr.LastReceived
     FROM part2 p LEFT JOIN sums s
       ON p.Branch IS NOT DISTINCT FROM s.Branch AND p.Franchise IS NOT DISTINCT FROM s.Franchise
      AND p.PartNumber IS NOT DISTINCT FROM s.PartNumber
+    LEFT JOIN last_received lr
+      ON lr.Branch = upper(trim(p.Branch)) AND lr.Franchise = upper(trim(p.Franchise))
+     AND lr.PartNumberTrim = trim(p.PartNumber)
 """
 
 
 def build_expected(con, current_month: date, today: date) -> dict:
     """Run the reference over tables parts, inmaster, rules, hist, order_rules, settings, transfers, app_transfers
-    and transfer_rules, creating tables part2 (Parts 1-2), expected_suggestion (Part 3) and expected (the reorder
-    output, OUTPUT_COLS). current_month = first day of the run's Central-time month; today = the run's Central date
-    (the build's, for the mask, phase-in and committed Placed transfers). Returns {"groups": candidate groups,
+    and transfer_rules (and purchases_src: an empty one is created when missing), creating tables part2 (Parts
+    1-2), expected_suggestion (Part 3), last_received, expected (the reorder output, OUTPUT_COLS) and
+    expected_purchases (Fact_NonJD_Purchases). current_month = first day of the run's Central-time month; today =
+    the run's Central date (the build's, for the mask, phase-in and committed Placed transfers). Returns {"groups": candidate groups,
     "lines": suggestion lines}."""
     con.execute("CREATE OR REPLACE TABLE part2 AS " + EXPECTED_SQL, _params(current_month, today))
     lines = expected_suggestions(con)
     create_suggestion_table(con, "expected_suggestion", lines)
+    con.execute("CREATE TABLE IF NOT EXISTS purchases_src ("
+                + ", ".join(f"{c} {t}" for c, t in PURCHASES_SRC_COLS) + ")")
+    con.execute(LAST_RECEIVED_SQL)
     con.execute(EXPECTED_FROM_PART2_SQL)
+    con.execute(EXPECTED_PURCHASES_SQL, {"p_from": add_months(current_month, -12), "p_to": current_month})
     groups = con.execute(f"SELECT count(*) FROM ({CANDIDATE_GROUPS_SQL})").fetchone()[0]
     return {"groups": groups, "lines": len(lines)}
 
@@ -892,6 +944,17 @@ def compare(con, gold: str, expected: str, cols: list = None) -> dict:
     return _compare(con, gold, expected, KEYS, _diff_where(cols))
 
 
+def compare_purchases(con, gold: str, expected: str) -> dict:
+    """Row-by-row compare of Fact_NonJD_Purchases on Branch + Franchise: Purchases12 within PURCHASES_TOLERANCE
+    (NULL against a value is a mismatch)."""
+    return _compare(con, gold, expected, PURCHASES_KEYS, _purchases_diff_where())
+
+
+def _purchases_diff_where() -> str:
+    return (f"(g.Purchases12 IS NULL) <> (e.Purchases12 IS NULL) "
+            f"OR abs(g.Purchases12 - e.Purchases12) > {PURCHASES_TOLERANCE}")
+
+
 def compare_suggestions(con, gold: str, expected: str, cols: list = None) -> dict:
     """Row-by-row compare of suggestion lines on Kind + Franchise + PartNumber + FromBranch + ToBranch: Qty, Seq and
     the integer columns exactly, costs, Value and ToRate within TOLERANCE; `cols` limits the compared columns."""
@@ -922,8 +985,8 @@ def _connect():
 
 
 def load_inputs(con, tier: str, current_month: date) -> list:
-    """Create the input tables EXPECTED_SQL reads (parts, inmaster, rules, hist, order_rules, settings, transfers,
-    app_transfers, transfer_rules) from the tier's lakehouses; returns the optional (round 1 and 2) columns and tables the staging
+    """Create the input tables build_expected reads (parts, inmaster, rules, hist, order_rules, settings, transfers,
+    app_transfers, transfer_rules, purchases_src) from the tier's lakehouses; returns the optional (round 1 and 2) columns and tables the staging
     lakehouse doesn't have yet, read as NULL / empty.
     The session is UTC, so DateLastRequested becomes the timestamp as stored (Equip's wall clock) and its date is
     the date Equip shows; PlacedAt is a UTC instant and EXPECTED_SQL converts it to the Central date."""
@@ -972,6 +1035,18 @@ def load_inputs(con, tier: str, current_month: date) -> list:
         absent += [f"NonJD_TransferRules.{c}" for c in TRANSFER_RULE_COLS if c not in have]
         con.execute(f"CREATE TABLE transfer_rules AS SELECT {select_list(con, src, [], TRANSFER_RULE_COLS, have)} "
                     f"FROM {src}")
+    # Round 3: InTrans purchases (Type 'P', in scope); only the needed columns are read.
+    src = (f"(SELECT Branch, Franchise, PartNumber, Type, TransDatetime, CostValue "
+           f"FROM delta_scan('{_path(tier, 'staging', 'Silver_InTrans')}') WHERE Type = 'P')")
+    # Collapsed to one row per key and day (CostValue summed exactly as DECIMAL) to keep the table small; the max
+    # date and the window sums come out the same. The external file cache is off for this one-pass read: otherwise
+    # it keeps ~300 MB of InTrans files, enough to run the later part2 build out of memory.
+    con.execute("SET enable_external_file_cache = false")
+    con.execute(f"""CREATE TABLE purchases_src AS
+                    SELECT Branch, Franchise, PartNumberTrim, TransDate,
+                           CAST(sum(CostValue) AS DECIMAL(18,2)) AS CostValue
+                    FROM ({PURCHASES_SRC_SQL.format(src=src)}) GROUP BY ALL""")
+    con.execute("SET enable_external_file_cache = true")
     return absent
 
 
@@ -998,6 +1073,11 @@ def main() -> int:
         print(f"Fact_NonJD_TransferSuggestion ({a.tier}): {rows:,} rows, fingerprint {fp}")
     except duckdb.Error as e:
         print(f"Fact_NonJD_TransferSuggestion ({a.tier}): no fingerprint ({str(e).splitlines()[0][:120]})")
+    try:
+        rows, fp = fingerprint(con, a.tier, "Fact_NonJD_Purchases")
+        print(f"Fact_NonJD_Purchases ({a.tier}): {rows:,} rows, fingerprint {fp}")
+    except duckdb.Error as e:
+        print(f"Fact_NonJD_Purchases ({a.tier}): no fingerprint ({str(e).splitlines()[0][:120]})")
     if a.fingerprint_only:
         return 0
 
@@ -1098,9 +1178,40 @@ def main() -> int:
                 _print_labeled(con, f"""SELECT {SUGGESTION_KEYS} FROM expected_suggestion
                                         EXCEPT SELECT {SUGGESTION_KEYS} FROM gold_s LIMIT 10""",
                                "suggestions only in expected")
+
+    # Fact_NonJD_Purchases (round 3)
+    pur_p = _path(a.tier, "presentation", "Fact_NonJD_Purchases")
+    p_from, p_to = add_months(current_month, -12), current_month
+    try:
+        pur_cols = columns(con, f"delta_scan('{pur_p}')")
+    except duckdb.Error as e:
+        failed = True
+        print(f"FAIL: Fact_NonJD_Purchases can't be read (absent: Gold not on round 3 yet?) "
+              f"({str(e).splitlines()[0][:120]})")
+    else:
+        p_missing = [c for c in ("Branch", "Franchise", "Purchases12") if c not in pur_cols]
+        if p_missing:
+            failed = True
+            print(f"FAIL: Fact_NonJD_Purchases has no {', '.join(p_missing)}; purchases not compared")
+        else:
+            con.execute(f"CREATE TABLE gold_pu AS SELECT Branch, Franchise, Purchases12 FROM delta_scan('{pur_p}')")
+            p_result = compare_purchases(con, "gold_pu", "expected_purchases")
+            print(f"Fact_NonJD_Purchases (window {p_from} to before {p_to}): {p_result}")
+            if any(p_result.values()):
+                failed = True
+                _print_labeled(con, f"""SELECT g.Branch, g.Franchise, g.Purchases12, e.Purchases12 AS e_Purchases12
+                                        FROM gold_pu g JOIN expected_purchases e USING ({PURCHASES_KEYS})
+                                        WHERE {_purchases_diff_where()} LIMIT 10""",
+                               "different purchases (e_ = expected)")
+                _print_labeled(con, f"""SELECT {PURCHASES_KEYS} FROM gold_pu
+                                        EXCEPT SELECT {PURCHASES_KEYS} FROM expected_purchases LIMIT 10""",
+                               "purchases only in gold")
+                _print_labeled(con, f"""SELECT {PURCHASES_KEYS} FROM expected_purchases
+                                        EXCEPT SELECT {PURCHASES_KEYS} FROM gold_pu LIMIT 10""",
+                               "purchases only in expected")
     if failed:
         return 1
-    print("PASS: Gold matches the reference rules (reorder and transfer suggestions)")
+    print("PASS: Gold matches the reference rules (reorder, transfer suggestions and purchases)")
     return 0
 
 

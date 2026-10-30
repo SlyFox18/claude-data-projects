@@ -148,7 +148,7 @@ def test_output_columns():
         "PhaseInEndReason", "AppInboundQty", "AppOutboundQty",
         "TransferRuleId", "TransferRuleName", "ExcessSupply", "ExcessUnit", "AllowSend", "AllowReceive",
         "RedistMax", "RedistUnit", "RedistMinValue", "ExcessKeep", "FreeExcess", "ConvNeed", "RedistCap",
-        "RedistEligible", "SuggestedInQty", "SuggestedConvInQty", "SuggestedOutQty"]
+        "RedistEligible", "SuggestedInQty", "SuggestedConvInQty", "SuggestedOutQty", "LastReceived"]
 
 
 def test_scope_excludes_jd_test_franchises_and_zero_cost():
@@ -2682,7 +2682,8 @@ CMP_COLS = [("Branch", "VARCHAR"), ("Franchise", "VARCHAR"), ("PartNumber", "VAR
             ("AllowReceive", "BOOLEAN"), ("RedistMax", "DOUBLE"), ("RedistUnit", "VARCHAR"),
             ("RedistMinValue", "DOUBLE"), ("ExcessKeep", "INTEGER"), ("FreeExcess", "INTEGER"),
             ("ConvNeed", "INTEGER"), ("RedistCap", "INTEGER"), ("RedistEligible", "BOOLEAN"),
-            ("SuggestedInQty", "INTEGER"), ("SuggestedConvInQty", "INTEGER"), ("SuggestedOutQty", "INTEGER")]
+            ("SuggestedInQty", "INTEGER"), ("SuggestedConvInQty", "INTEGER"), ("SuggestedOutQty", "INTEGER"),
+            ("LastReceived", "DATE")]
 BASE = dict(Branch="1", Franchise="MC", PartNumber="A", RuleId=1, RuleName="Default", DemandBasis="UnitsSold",
             HistoryMonths=12, MinDemands=3, SupplyUnit="Weeks", Supply=12.0, SupplyMonths=12 * 12 / 52,
             MinLineValue=10.0, MaxLineValue=500.0, WindowDemand=3.0, UnitsSoldWindow=3.0, DemandCount=4, ActiveMonths=2,
@@ -2694,7 +2695,8 @@ BASE = dict(Branch="1", Franchise="MC", PartNumber="A", RuleId=1, RuleName="Defa
             AppInboundQty=2, AppOutboundQty=0, TransferRuleId=None, TransferRuleName="Built-in default",
             ExcessSupply=12.0, ExcessUnit="Months", AllowSend=True, AllowReceive=True, RedistMax=6.0,
             RedistUnit="Months", RedistMinValue=0.0, ExcessKeep=2, FreeExcess=0, ConvNeed=1, RedistCap=1,
-            RedistEligible=True, SuggestedInQty=1, SuggestedConvInQty=1, SuggestedOutQty=0)
+            RedistEligible=True, SuggestedInQty=1, SuggestedConvInQty=1, SuggestedOutQty=0,
+            LastReceived=date(2026, 9, 14))
 
 
 def test_compare_covers_every_output_column():
@@ -2848,3 +2850,77 @@ def test_transfer_rule_columns():
         "StartMonth": "DOUBLE", "EndMonth": "DOUBLE", "ExcessSupply": "DOUBLE", "ExcessUnit": "VARCHAR",
         "AllowSend": "BOOLEAN", "AllowReceive": "BOOLEAN", "RedistMax": "DOUBLE", "RedistUnit": "VARCHAR",
         "RedistMinValue": "DOUBLE"}
+
+
+# ---------------------------------------------------------------------------------------------------------
+# round 3 (Plan I, Task I2): LastReceived and Fact_NonJD_Purchases from InTrans Type 'P'
+# ---------------------------------------------------------------------------------------------------------
+def _intrans(con, rows):
+    """Raw Silver_InTrans rows (Branch, Franchise, PartNumber, Type, TransDatetime, CostValue) loaded into
+    purchases_src through PURCHASES_SRC_SQL, as load_inputs does."""
+    con.execute("""CREATE OR REPLACE TABLE intrans_raw (Branch VARCHAR, Franchise VARCHAR, PartNumber VARCHAR,
+                   Type VARCHAR, TransDatetime TIMESTAMP, CostValue DECIMAL(14,2))""")
+    if rows:
+        con.executemany("INSERT INTO intrans_raw VALUES (?, ?, ?, ?, CAST(? AS TIMESTAMP), ?)", rows)
+    con.execute("CREATE OR REPLACE TABLE purchases_src AS " + chk.PURCHASES_SRC_SQL.format(src="intrans_raw"))
+
+
+def test_purchases_src_scope_and_normalisation():
+    con = duckdb.connect()
+    _intrans(con, [(" 1 ", " mc ", " A ", "P", "2026-09-14 23:30:00", 10.0),
+                   ("1", "MC", "A", "S", "2026-09-15 08:00:00", 99.0),       # not a purchase
+                   ("1", "D", "A", "P", "2026-09-15 08:00:00", 99.0),        # JD
+                   ("1", "TD", "A", "P", "2026-09-15 08:00:00", 99.0),       # T prefix
+                   ("1", "um", "A", "P", "2026-09-15 08:00:00", 99.0),       # U prefix (case)
+                   ("4b", "MC", "A", "P", "2026-09-15 08:00:00", 99.0),      # excluded branch (case)
+                   (None, "MC", "A", "P", "2026-09-15 08:00:00", 99.0),
+                   ("1", None, "A", "P", "2026-09-15 08:00:00", 99.0)])
+    assert con.execute("SELECT * FROM purchases_src").fetchall() == [("1", "MC", "A", date(2026, 9, 14), 10)]
+
+
+def test_last_received_joins_on_trimmed_keys():
+    con = _con()
+    _part(con, "A", branch="1 ", franchise="mc")
+    _part(con, "A ", branch="1", franchise="MC")     # trailing-space twin: same date
+    _part(con, "B")
+    _intrans(con, [("1", "MC", "A", "P", "2026-08-01 10:00:00", 5.0),
+                   ("1", "MC", "A  ", "P", "2026-09-30 23:59:00", 5.0),
+                   ("1", "MC", "A", "P", "2025-01-01 10:00:00", 5.0),
+                   ("2", "MC", "B", "P", "2026-09-01 10:00:00", 5.0)])   # another branch
+    out = _run(con)
+    assert out[K("A", branch="1 ", franchise="mc")]["LastReceived"] == date(2026, 9, 30)
+    assert out[K("A ")]["LastReceived"] == date(2026, 9, 30)
+    assert out[K("B")]["LastReceived"] is None
+
+
+def test_expected_purchases_window_and_rounding():
+    con = _con()
+    _intrans(con, [("1", "MC", "A", "P", "2025-09-30 23:59:59", 1000.0),   # before the window
+                   ("1", "MC", "A", "P", "2025-10-01 00:00:00", 10.25),
+                   ("1", "mc", "B", "P", "2026-09-30 23:59:59", 0.10),
+                   ("1", "MC", "A", "P", "2026-10-01 00:00:00", 1000.0),   # current month
+                   ("2", "MC", "A", "P", "2026-10-02 00:00:00", 1000.0)])  # only outside the window: no row
+    chk.build_expected(con, CUR, TODAY)
+    assert con.execute("SELECT * FROM expected_purchases").fetchall() == [("1", "MC", 10.35)]
+
+
+def _pcmp(gold_rows, exp_rows):
+    con = duckdb.connect()
+    for name, rows in (("gold", gold_rows), ("expected", exp_rows)):
+        con.execute(f"CREATE TABLE {name} (Branch VARCHAR, Franchise VARCHAR, Purchases12 DOUBLE)")
+        if rows:
+            con.executemany(f"INSERT INTO {name} VALUES (?, ?, ?)", rows)
+    return chk.compare_purchases(con, "gold", "expected")
+
+
+def test_compare_purchases():
+    assert not any(_pcmp([("1", "MC", 10.0)], [("1", "MC", 10.004)]).values())
+    assert _pcmp([("1", "MC", 10.0)], [("1", "MC", 10.01)])["different"] == 1
+    assert _pcmp([("1", "MC", None)], [("1", "MC", 0.0)])["different"] == 1
+    r = _pcmp([("1", "MC", 1.0), ("2", "MC", 1.0)], [("1", "MC", 1.0), ("3", "MC", 1.0)])
+    assert (r["only_gold"], r["only_expected"]) == (1, 1)
+
+
+def test_compare_flags_last_received():
+    assert _cmp([{}], [{"LastReceived": None}])["different"] == 1
+    assert _cmp([{"LastReceived": None}], [{"LastReceived": None}])["different"] == 0
