@@ -4,6 +4,13 @@
 > review after each (Brian's standing choice). Steps use checkbox (`- [ ]`) syntax.
 
 > **Progress:** plan written 2026-10-30 (Claude, for Brian).
+> - **I1 done 2026-10-30** (fabric-workspace-docs `2c9cc024`, pushed; dag_check OK, hygiene 0, pytest 359). Dev run
+>   Completed (19:18–19:34 UTC). Fact_NonJD_Purchases: 354 rows, 19 branches, 28 franchises, $12.35M (BW $2.85M, M
+>   $2.75M, BS $1.18M, MM $399K). Fact_NonJD_Reorder: LastReceived (DATE) on 165,406 of 199,555 rows. Decisions:
+>   Branch and **Franchise trimmed and upper-cased** in both keys (97 reorder rows store a lower-case franchise such as
+>   `m`; their LastReceived comes from the upper-case franchise's purchases, and purchases only has upper-case
+>   franchises); PartNumber trimmed only; the scope filter applies to the purchases themselves (parts with cost 0 or
+>   not in PartInformation still count). The push also carried Brian's unpushed docs commit `b2cb5681`.
 > - **I5 done 2026-10-30** (app `fd4f67c`, review fixes `9526a36`; 1,897 tests, lint, tsc clean; pushed). `src/engine/returns.ts`.
 >   Changes from the plan's code: `inSeason` → **`inReturnSeason`** (name clash with rules.inSeason); `receivedWithin`
 >   clamps month-end; `prePick` with allowance ≤ 0 ticks nothing, ordinal sort ending on franchise; `demandElsewhere`
