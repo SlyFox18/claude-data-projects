@@ -5,12 +5,12 @@ Brian, on 2026-10-28. Each entry gives the idea as described, what already exist
 open questions to settle before it is designed. Nothing here is scheduled; pick from this list when planning the
 next round.
 
-Next on the round 2 plan: phase 4, One-Time Order transfers (conventional only, A21).
+Round 2 is complete (0.7.0, phase 4 One-Time transfers). F2 is done in 0.8.0 (2026-10-30).
 
 | # | Idea | Rough size | Needs a design pass |
 |---|---|---|---|
 | F1 | More Cleanup checks | Small per check | No (list the checks) |
-| F2 | A landing page above the tools ("parts hub") | Medium, grows with each tool | **Yes** |
+| F2 | A landing page above the tools ("parts hub") | **Done in 0.8.0** | No |
 | F3 | Specials and promotions | Medium-large | **Yes** |
 | F4 | Inventory management (the Corp Parts Excel Reports) | Medium-large | **Yes** |
 | F5 | Scheduled reminders | Medium | Yes (with F3) |
@@ -40,7 +40,13 @@ and later others. Ben sees the tool becoming much more than non-JD ordering.
 **Builds on.** The app already has a nav rail and a Home page; today's Home would become the non-JD section's
 home. The sign-in, the SharePoint lists and the publish all carry over.
 
-**Open.** Needs proper design before building:
+**Done in 0.8.0 (2026-10-30)** as **SPI Parts Hub**: a launch page with a card per area (Non-JD ordering, Cleanup,
+Part Lookup; JD ordering and Inventory management as "Coming later"), counts of what is waiting on each card, and a
+left nav that shows one area at a time. The questions below are answered in the spec
+`docs/superpowers/specs/2026-10-29-spi-parts-hub-launch-page-design.md` (decisions H1–H7); the URL changes with the
+production move (1.0.0), and limiting areas by person waits until JD ordering exists.
+
+**Was open:**
 - which pieces, in what order (JD ordering is a large round of its own);
 - the app's name and URL (it is "Non-JD tool" today);
 - whether the attention items from each piece (transfers, cleanup counts, reminders) show on the landing page;

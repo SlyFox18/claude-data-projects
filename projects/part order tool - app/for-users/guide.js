@@ -1,5 +1,5 @@
 // Builds "Non-JD Order Tool - User Guide.docx" for Ben, Shannon, Barry and Curt.
-// Facts come from the app (nonjd-order-app 0.7.0: src/engine, src/pages, README) and ../REORDER-RULES.md.
+// Facts come from the app (nonjd-order-app 0.8.0: src/engine, src/pages, README) and ../REORDER-RULES.md.
 // Worked examples: Dev Gold Fact_NonJD_Reorder built 2026-10-26 (window Oct 2025 - Sep 2026); the transfer example
 // is the app's mock data (round numbers), as in REORDER-RULES.md.
 // Run: npm install, then node guide.js [output file]
@@ -8,12 +8,13 @@ const { build, CONTENT_W } = require('./lib');
 const w = (...fr) => fr.map((f) => Math.round(CONTENT_W * f));
 
 build(process.argv[2] || 'Non-JD Order Tool - User Guide.docx', {
-  title: 'Non-JD Parts Order Tool: user guide',
-  subtitle: 'For Ben, Shannon, Barry and Curt · Version 0.7.0 · October 29, 2026 (test version) · https://10.110.100.13:8443',
-  footer: 'Non-JD Parts Order Tool: user guide (version 0.7.0)',
+  title: 'SPI Parts Hub: user guide',
+  subtitle: 'Formerly the Non-JD Parts Order Tool · For Ben, Shannon, Barry and Curt · Version 0.8.0 · October 30, 2026 (test version) · https://10.110.100.13:8443',
+  footer: 'SPI Parts Hub: user guide (version 0.8.0)',
   blocks: [
-    { p: '**In one sentence:** the tool shows each branch which non-John Deere parts to reorder and why, suggests stock other branches could send instead, lets you tune the rules behind those suggestions, and turns the parts you pick into an order file for each vendor.' },
-    { p: 'This guide covers getting in, what each page does, and exactly how every number is worked out. Version 0.7.0 includes Ben’s round 1 answers, several branches and dealer groups at once, **phase-in**, **transfer suggestions** and **saving transfers** in the app, with transfer orders and transfer rules, and **transfers on One-Time Orders** (round 2, from Ben’s answers of October 27). What changed in each version is in the **walkthrough**, Part 2.' },
+    { p: '**SPI Parts Hub** (until 0.8.0 the Non-JD Parts Order Tool) opens on a launch page where you pick what to work on: **Non-JD ordering**, **Cleanup** or **Part Lookup** today, with **JD ordering** and **Inventory management** to come. Most of this guide is about Non-JD ordering.' },
+    { p: '**In one sentence:** Non-JD ordering shows each branch which non-John Deere parts to reorder and why, suggests stock other branches could send instead, lets you tune the rules behind those suggestions, and turns the parts you pick into an order file for each vendor.' },
+    { p: 'This guide covers getting in, what each page does, and exactly how every number is worked out. Version 0.8.0 includes Ben’s round 1 answers, several branches and dealer groups at once, **phase-in**, **transfer suggestions** and **saving transfers** in the app, with transfer orders and transfer rules, and **transfers on One-Time Orders** (round 2, from Ben’s answers of October 27), and the **launch page** in front of it all (0.8.0). What changed in each version is in the **walkthrough**, Part 2.' },
 
     { h1: '1. Getting started' },
     { steps: [
@@ -28,10 +29,20 @@ build(process.argv[2] || 'Non-JD Order Tool - User Guide.docx', {
     { p: 'Branches **12, 5, 97, 4B and 93C** are left out of the tool, as Ben asked.' },
 
     { h1: '2. The pages' },
-    { p: 'The menu on the left takes you to each page. The branch you’re looking at shows at the top right.' },
+    { h2: 'The launch page and areas (0.8.0)' },
+    { p: 'The app opens on the **launch page**: the SPI logo, a greeting, a **Branch** select (your App Settings default to start with) and the date of the morning data. Under it is a card for each area. The cards say what is waiting at the picked branch:' },
+    { bullets: [
+      '**Non-JD ordering:** reorder, One-Time Orders, transfers and rules. It shows the same figures as its Home page, for example “220 parts to order · $93,000” and, in purple, “67 could come by transfer”.',
+      '**Cleanup:** things to fix in Equip, for example “21 minimums with no demand at Branch 1” (the same count as Cleanup filtered to that branch).',
+      '**Part Lookup:** any part’s stock, prices, history and settings.',
+      '**JD ordering** and **Inventory management** are greyed out with **Coming later**: they show where the tool is heading and can’t be opened yet.',
+    ] },
+    { p: 'A count is left out when it is 0, while the data loads, or when the data can’t be read; the cards still work. Under the cards, **Other parts tools** links open **Parts Availability** and the **Parts reports** app in a new tab, next to **App Settings**.' },
+    { p: 'Inside an area, the **menu on the left** shows only that area’s pages. At the top are **‹ All areas** (back to the launch page) and the **Area** select, which opens another area. If leaving would lose ticked parts or unsaved transfers, the app asks first. The breadcrumb at the top starts with the area, for example “Non-JD ordering › Recommended Reorder”. App Settings stays at the bottom of the menu. The branch you’re looking at shows at the top right.' },
+    { p: 'Every address from before 0.8.0 still opens the same page, so bookmarks keep working. The only change: the bare address is now the launch page, and Non-JD ordering’s Home is at **/non-jd**.' },
 
-    { h2: 'Home' },
-    { p: 'Shows how many parts need ordering at your branch and what they would cost, with a **Review now** link straight to that list, plus a card for each page. Pick a different branch in the greeting line to look at another branch.' },
+    { h2: 'Home (Non-JD ordering)' },
+    { p: 'The first page of Non-JD ordering (/non-jd). Shows how many parts need ordering at your branch and what they would cost, with a **Review now** link straight to that list, plus a card for each page. Pick a different branch in the greeting line to look at another branch.' },
     { p: 'The count leaves out lines that are only there because of an Equip minimum on a part with no demand (see "Min, no demand" below). A small line says how many were left out, for example "(21 more with minimums but no demand)".' },
     { p: 'Below it, a **purple transfers card** sums up this morning’s transfer suggestions, for example "Branch 1: 12 parts could come by transfer instead of being bought", with the totals for every branch underneath. **Review transfers** opens Recommended Reorder on **step 1 (Transfers)** for your branch, where you tick and save them. The card is hidden on a morning with no suggestions.' },
 
@@ -195,10 +206,10 @@ build(process.argv[2] || 'Non-JD Order Tool - User Guide.docx', {
     ] },
 
     { h2: 'Cleanup' },
-    { p: 'Equip minimums on parts with **no demand and no units sold** in the rule’s history months: the same lines that carry the Min, no demand tag. These minimums **do** apply to the order, so this is the list to fix. The list shows each one’s minimum, on hand, cost, the stock value the minimum commits (minimum × cost) and what it **would order** today. Export it to work through in Equip.' },
+    { p: 'Its own area: open it from the launch page or the Area select. Equip minimums on parts with **no demand and no units sold** in the rule’s history months: the same lines that carry the Min, no demand tag. These minimums **do** apply to the order, so this is the list to fix. The list shows each one’s minimum, on hand, cost, the stock value the minimum commits (minimum × cost) and what it **would order** today. Export it to work through in Equip.' },
 
     { h2: 'App Settings' },
-    { p: 'Your own default branch and franchise (saved in your browser only). Reorder, One-Time Order and Part Lookup open on them. **About** shows the version.' },
+    { p: 'Your own default branch and franchise (saved in your browser only). The launch page, Reorder, One-Time Order and Part Lookup open on them. Open it from the bottom of the left menu or from the launch page. **About** shows the version.' },
 
     { h1: '3. How the suggested order is worked out' },
     { p: 'For each part at each branch, every morning and again in the tool whenever you change a rule or setting:' },

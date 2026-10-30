@@ -5,10 +5,12 @@
 // Examples are from Prod data of 2026-10-27 (Fact_NonJD_Reorder built 11:40 UTC); the 0.5.0 section's transfer and
 // phase-in examples are from Dev data of 2026-10-28 (Gold built 14:12 UTC), because Prod has no round 2 data until the
 // release. Re-check them against Prod after the first 0.5.0 publish. Refresh examples when a section is added.
-// Labels follow nonjd-order-app 0.7.0 and the user guide (guide.js). The 0.6.0 section's examples are Prod data of
+// Labels follow nonjd-order-app 0.8.0 and the user guide (guide.js). The 0.6.0 section's examples are Prod data of
 // 2026-10-28 (Gold built 18:08 UTC): MULTISEAL at 1 "Transfer 44 from 6", R134A "Redistribution 52 from 13".
 // The 0.7.0 section's example is Brian's Prod TEST of 2026-10-29 (Plan G task G7): One-Time Order "TEST 0.7.0",
 // branch 1, ET-3912-J (MM) 1 from branch 3, $32.00, saved then cancelled.
+// The 0.8.0 section's counts are Prod data of 2026-10-30 (Gold built 11:40 UTC): branch 1 has 21 minimums with no
+// demand; the order and transfer counts are rounded from the tour's.
 // Run: npm install, then node walkthrough.js [output file]
 const { build, CONTENT_W } = require('./lib');
 
@@ -22,9 +24,9 @@ const steps = (rows) => ({
 const notes = { answer: 'Notes (anything different, slow or confusing):' };
 
 build(process.argv[2] || 'Non-JD Order Tool - Walkthrough.docx', {
-  title: 'Non-JD Parts Order Tool: walkthrough',
-  subtitle: 'Hands-on steps through every page · Version 0.7.0 · October 29, 2026 · App: https://10.110.100.13:8443',
-  footer: 'Non-JD Parts Order Tool: walkthrough (0.7.0)',
+  title: 'SPI Parts Hub: walkthrough',
+  subtitle: 'Formerly the Non-JD Parts Order Tool · Hands-on steps through every page · Version 0.8.0 · October 30, 2026 · App: https://10.110.100.13:8443',
+  footer: 'SPI Parts Hub: walkthrough (0.8.0)',
   blocks: [
     { p: 'This is a hands-on tour of the tool. Each step says what to do and what you should see. Tick **OK** when it matches. When it doesn’t, or something is slow or confusing, write it in the notes box under that section and send it to Brian.' },
     { bullets: [
@@ -32,15 +34,16 @@ build(process.argv[2] || 'Non-JD Order Tool - Walkthrough.docx', {
       '**Part 2, what’s new,** has a short section for each version. When a new version comes out, only its section needs doing.',
       '**Part 3, release checks,** is for Brian when he puts a new version on the test server.',
     ] },
-    { note: 'The examples use the data of October 27 to 29, 2026. The data is refreshed every morning, so your quantities and dollars will be a little different. Close is fine; what matters is that the steps behave as described.' },
+    { note: 'The examples use the data of October 27 to 30, 2026. The data is refreshed every morning, so your quantities and dollars will be a little different. Close is fine; what matters is that the steps behave as described.' },
     { note: 'Practising is safe if you follow the steps: anything you change is undone in the next step. Practice orders stay as **drafts** named **TEST**. Don’t export or mark them placed. Orders are never deleted: archive the TEST ones when you are done (0.5.2). A practice **transfer** is different: while it is saved it holds the sending branch’s stock for everyone, so **cancel it** straight after the step that made it.' },
 
     { h1: 'Part 1: the tour' },
 
-    { h2: '1. Getting in and Home' },
+    { h2: '1. Getting in, the launch page and Home' },
     steps([
-      ['Open **https://10.110.100.13:8443** in Edge or Chrome. If the browser warns "Your connection isn’t private", click **Advanced**, then **Continue to 10.110.100.13**.', 'The sign-in page, or Home if you are already signed in.'],
-      ['Sign in with your work Microsoft account.', '**Home**, with a greeting, your branch, and how many parts need ordering there and their cost.'],
+      ['Open **https://10.110.100.13:8443** in Edge or Chrome. If the browser warns "Your connection isn’t private", click **Advanced**, then **Continue to 10.110.100.13**.', 'The sign-in page (the SPI logo, **SPI Parts Hub**, **Sign in with Microsoft**), or the launch page if you are already signed in.'],
+      ['Sign in with your work Microsoft account.', 'The **launch page**: a greeting, your branch, and five cards: **Non-JD ordering**, **Cleanup**, **Part Lookup**, and greyed-out **JD ordering** and **Inventory management** (**Coming later**).'],
+      ['Click the **Non-JD ordering** card.', '**Home**, with a greeting, your branch, and how many parts need ordering there and their cost. The left menu lists only Non-JD ordering’s pages, under **‹ All areas** and the **Area** select.'],
       ['Look at the top right.', 'The date and time of the morning data. It is **amber** if the data is more than one business day old.'],
       ['In the greeting line, change the branch to **1**.', 'Branch 1 needs about **220** parts ordered (about $93,000), with a small line like "(21 more with minimums but no demand)". Below it, a purple **transfers** card (Part 2, 0.5.0).'],
       ['Click **Review now**.', 'Recommended Reorder opens on branch 1.'],
@@ -121,13 +124,36 @@ build(process.argv[2] || 'Non-JD Order Tool - Walkthrough.docx', {
 
     { h2: '9. Cleanup and App Settings' },
     steps([
-      ['Click **Cleanup**. Pick branch **6**.', 'The Equip minimums on parts with no demand and no sales; branch 6 has about 1,000. The largest is about $21,000 (part 145019, module rim, minimum 65).'],
-      ['Click **App Settings**.', 'Your default branch and franchise, and **About** with the version (**0.7.0**).'],
+      ['In the left menu, change the **Area** select to **Cleanup**. Pick branch **6**.', 'The Equip minimums on parts with no demand and no sales; branch 6 has about 1,000. The largest is about $21,000 (part 145019, module rim, minimum 65).'],
+      ['Click **App Settings**.', 'Your default branch and franchise, and **About** with the version (**0.8.0**).'],
       ['Set your default branch, then open Recommended Reorder.', 'It opens on your default branch.'],
     ]),
     notes,
 
     { h1: 'Part 2: what’s new' },
+
+    { h2: 'Version 0.8.0 (October 30, 2026): SPI Parts Hub and the launch page' },
+    { p: 'New since 0.7.0, from Ben’s idea of a landing page above the tools:' },
+    { bullets: [
+      '**A new name and the SPI logo:** the tool is now **SPI Parts Hub**. The ordering itself works as before.',
+      '**A launch page in front.** The app opens on a page where you pick where to go: **Non-JD ordering**, **Cleanup** or **Part Lookup**. **JD ordering** and **Inventory management** show greyed out as **Coming later**, so you can see where the tool is heading.',
+      '**The cards say what is waiting** at the branch picked at the top: parts to order and their cost, how many could come by transfer, and how many Equip minimums have no demand.',
+      '**One area at a time in the menu.** Inside an area the left menu lists only its pages, under **‹ All areas** (back to the launch page) and an **Area** select to jump to another area. It no longer grows with every new tool.',
+      '**Links out:** **Parts Availability** and the **Parts reports** app, at the bottom of the launch page.',
+      '**Home moved:** Non-JD ordering’s Home is at **/non-jd**. Every other address and bookmark still works.',
+    ] },
+    { h3: 'The launch page and the menu' },
+    steps([
+      ['Open the app (Ctrl+F5 the first time after the update).', 'The browser tab reads **SPI Parts Hub**. The launch page: the colour SPI logo, a greeting, “Where do you want to go?”, a **Branch** select and the data date. Five cards; **JD ordering** and **Inventory management** are greyed with **Coming later**.'],
+      ['Set the branch to **1** and read the cards.', 'Non-JD ordering: about **220 parts to order** with their cost and, in purple, about **67 could come by transfer**. Cleanup: about **21 minimums with no demand at Branch 1**. Part Lookup has no count. The Coming later cards do nothing when clicked.'],
+      ['Click the **Non-JD ordering** card.', 'Home, with the same numbers as the card. The left menu has **‹ All areas**, the **Area** select on Non-JD ordering, and only its pages: Home, Recommended Reorder, One-Time Order, Transfers, Orders, Rules, Transfer rules, Special statuses.'],
+      ['Open **Recommended Reorder** (continue to step 2 if it opens on transfers) and tick one part. Change the **Area** select to **Cleanup**.', '“Leave this page? 1 ticked part will be lost.” Click **Stay**: the tick is kept. Change the area again and click **Leave**: Cleanup, with only Cleanup in the menu.'],
+      ['Click **‹ All areas**, then the **Part Lookup** card. Search a part and open it.', 'Part Lookup, with only Part Lookup in the menu; it stays there on the part page.'],
+      ['Click **‹ All areas**. At the bottom, click **Parts Availability ↗**, then **Parts reports ↗**.', 'Each opens in a new tab: Parts Availability, and the Parts Reports app in Power BI. The launch page stays open.'],
+      ['Open a bookmark or address you used before, for example **/reorder** or **/orders**.', 'It opens that page as before, with the menu on its area.'],
+    ]),
+    { p: '**Your opinion:** do the launch page cards read clearly at a glance, and should the Coming later cards stay visible?' },
+    notes,
 
     { h2: 'Version 0.7.0 (October 29, 2026): transfers on One-Time Orders' },
     { p: 'New since 0.6.2, from Ben’s question “do the transfers apply to the One-Time Orders as well?”:' },
@@ -338,6 +364,14 @@ build(process.argv[2] || 'Non-JD Order Tool - Walkthrough.docx', {
 
     { h1: 'Part 3: release checks (Brian)' },
     { p: 'Run these when a new version is deployed to the test server, after **Ctrl+F5** to load it.' },
+    { h3: '0.8.0' },
+    steps([
+      ['App Settings → **About**.', '**0.8.0** and the deployed commit (`ae6c1a6`).'],
+      ['The launch page on branch 1, then the Non-JD ordering card.', 'The card’s parts to order and cost match Home’s; the Cleanup card’s count matches Cleanup filtered to branch 1.'],
+      ['Ask Shannon or Barry to click **Parts reports ↗** on the launch page.', 'The Parts Reports app opens for them.'],
+      ['Old addresses: `/reorder`, `/orders`, `/cleanup`, a part page.', 'Each opens as before, with the menu on its area.'],
+    ]),
+    notes,
     { h3: '0.7.0' },
     steps([
       ['App Settings → **About**.', '**0.7.0** and the deployed commit (`ff52dc3`).'],

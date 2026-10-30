@@ -1,5 +1,7 @@
 # Non-JD Parts Order Tool: round 2 design (transfers, several branches, phase-in)
 
+> **Round 2 complete 2026-10-30:** phases 1–4 built and on Fedora (0.4.0 several branches; 0.5.0 phase-in and transfer suggestions; 0.6.x saving transfers, transfer orders, Transfer rules; 0.7.0 One-Time transfers). Plans D–G hold the details.
+>
 > **Progress:** design written 2026-10-27 (Claude, for Brian), without waiting for Ben. Every assumption is in the table below so Ben can correct it. Nothing is built yet. No code, Fabric or SharePoint changes were made; the numbers come from read-only DuckDB queries on Prod Gold built 2026-10-26 20:59 UTC.
 >
 > Builds on: spec `2026-10-20-non-jd-parts-order-tool-redesign-design.md`, Plan A (data feed), Plan B (app), Plan C (round 1, decisions D1–D14 and "The calculation"), contract v2 (`projects/part order tool - app/publish/README.md`). Ben's answers: `projects/part order tool - app/feedback/2026-10-23-ben-answers.md` (Q2, Q3, Q8).
