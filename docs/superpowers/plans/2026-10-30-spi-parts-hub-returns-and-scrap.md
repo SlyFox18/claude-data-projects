@@ -4,6 +4,10 @@
 > review after each (Brian's standing choice). Steps use checkbox (`- [ ]`) syntax.
 
 > **Progress:** plan written 2026-10-30 (Claude, for Brian).
+> - **I10 done 2026-10-30** (app `df57592`; 2,122 tests in two halves, lint, tsc clean; pushed). `useOpenReturns` (cached per
+>   source, 2-minute re-read, invalidated after a return / scrap save), grey `On return <title> (n)` tag linking to the
+>   document on Reorder lines (status cell), transfer suggestions (From branch, Transfers page and Reorder step 1) and the
+>   Part page's Other branches table. Not yet on One-Time's transfers step (one prop; add in I11).
 > - **I9 done 2026-10-30** (app `cea9c06`, `786d466`, review fixes `5c33920`; 2,116 tests in two halves, lint, tsc clean;
 >   pushed). `/returns`, `/scrap` lists (Show archived remembered), `/returns/:id`, `/scrap/:id` pages: statuses per R14,
 >   every action re-reads first and refuses on a changed status / archived; line qty (lower only) and Remove while
