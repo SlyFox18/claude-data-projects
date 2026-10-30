@@ -4,6 +4,14 @@
 > review after each (Brian's standing choice). Steps use checkbox (`- [ ]`) syntax.
 
 > **Progress:** plan written 2026-10-30 (Claude, for Brian).
+> - **I6 done 2026-10-30** (app `5bc8631`, `b11d009`, review fixes `77c7086`; 2,019 tests in two halves, lint, tsc clean;
+>   pushed). `/return-rules`: tabs (Links, `?tab=scrap`), table, editor, Try it (engine branches; purchases and open
+>   returns re-read per editor open). Reusable: `src/returns/ruleValidation.ts`, `ruleTerms.ts`, `sourceRows.ts`
+>   (`buildReturnSources`, `heldByLine`, `qualifyContextFor`, `DEMAND_WINDOW_MONTHS = 18`), `allowanceBase.ts`.
+>   **One franchise match everywhere: trimmed + upper-case** (`franchiseKey` in the engine; the 97 lower-case Equip rows
+>   now count under M / MM); saved franchises are normalised. Conflict flow writes this rule first, switches the other
+>   off last (never zero active), re-reads rules before asking; unarchive asks too; invalid rules can't be switched on.
+>   Mock Try it: MM annual return 3 parts $326.00, allowance $433.04, credit $277.10; Scrap default 14 parts $959.00.
 > - **I7 done 2026-10-30** (app `5b05da9`, pushed; tests pass in two halves). Area `returns` after Cleanup (icons package /
 >   cleanup / rules), seven placeholder routes, launch card third (after Cleanup): "1 open return" on the mock, counted
 >   as distinct documents, loaded separately so it never blocks the other cards.
