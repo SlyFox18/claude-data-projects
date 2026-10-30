@@ -8,7 +8,7 @@
 >   **`4b8e36cc-4d85-4af2-b465-b9a64b45da6a`**, `NonJD_Returns` **`b3284d52-4ccf-43cf-81b8-2035cd08cd6e`** (Franchise and
 >   Status indexed; Parameters plain text), `NonJD_ReturnLines` **`1a210f70-7a1e-42f0-a758-c24c3dc0ccda`** (ReturnId
 >   indexed). All columns as planned. Differences: Status has no default (the app always writes it); ReturnLines has an
->   extra `Number` column (2 dp) the app ignores (Brian may delete it). Left: I0c step 3 (`.env.local`, Brian).
+>   extra `Number` column (2 dp) the app ignores (Brian may delete it). Left: I0c step 3 (`.env.production`, Brian).
 > - **Starting point:** app 0.8.1 (`1b38c40`) live on Fedora on Prod data (contract v3). fabric-workspace-docs `dev`
 >   = `main`. Spec approved: `docs/superpowers/specs/2026-10-30-spi-parts-hub-round-3-design.md` (R1–R16, D1–D3).
 
@@ -125,7 +125,7 @@ Fabric PySpark notebook; Python + DuckDB for the reference check and the publish
   - Qty (Number, 0 dp);
   - Cost, LineValue, CreditPct, CreditValue (Number, 2 dp).
 - [ ] **Step 2 (Claude):** verify and record the ID.
-- [ ] **Step 3 (Brian):** add to the app's `.env.local` on his PC (Claude can't read `.env*` files):
+- [ ] **Step 3 (Brian):** add to the app's `.env.production` on his PC (the release build reads it; Brian runs `npm run dev` in mock mode, so there is no `.env.local`; Claude can't read `.env*` files), and optionally `.env.example`:
   `VITE_LIST_RETURN_RULES=<id>`, `VITE_LIST_RETURNS=<id>`, `VITE_LIST_RETURN_LINES=<id>`.
 
 ### Task I1: Gold: LastReceived and Fact_NonJD_Purchases (fabric-workspace-docs, Dev)
