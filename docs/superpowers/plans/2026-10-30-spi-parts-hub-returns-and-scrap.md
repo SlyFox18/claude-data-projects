@@ -4,6 +4,17 @@
 > review after each (Brian's standing choice). Steps use checkbox (`- [ ]`) syntax.
 
 > **Progress:** plan written 2026-10-30 (Claude, for Brian).
+> - **I8 done 2026-10-30** except the transfers-only question (app `327c5d0`, `7d57de9`, `f896291`, review fixes `5f71864`;
+>   2,070 tests in two halves, lint, tsc clean; pushed). Wizard `/returns/new`, `/scrap/new` (SetupStep, PartsStep,
+>   ReviewStep; `src/returns/draft.ts`, `saveReturn.ts`; `useReturnSource` reads live open transfers so availability is
+>   current; Create one → `/return-rules?tab=…&new=<F>` opens a prefilled editor). Save: re-check (fresh open returns
+>   and transfers; on a short the page rebuilds its rows and marks the lines) → transfer orders (source Return / Scrap,
+>   `orderName` = title; `rulesSource: 'snapshot'`, no rules list) → document → lines; Retry continues the same save
+>   (lookup by saveId, missing lines only, trailing-space twins matched). Edits are per line, so untouched lines keep
+>   following the pre-pick / Transfer instead defaults. Mock: MM return 3 lines $326.00 of $433.04, credit $277.10; AM
+>   scrap: AM-SURP-1 transferred 92 → 1, AM-BELT-2 on the list. **Open:** a list whose every line is Transfer instead
+>   can't be saved yet (Brian deciding whether to allow a transfers-only save). Document Parameters carry the full rule;
+>   the two older mock documents store only its name (I9 reads both).
 > - **I6 done 2026-10-30** (app `5bc8631`, `b11d009`, review fixes `77c7086`; 2,019 tests in two halves, lint, tsc clean;
 >   pushed). `/return-rules`: tabs (Links, `?tab=scrap`), table, editor, Try it (engine branches; purchases and open
 >   returns re-read per editor open). Reusable: `src/returns/ruleValidation.ts`, `ruleTerms.ts`, `sourceRows.ts`
