@@ -20,7 +20,9 @@ GOLD_REORDER = [
     "PhaseInEndReason", "AppInboundQty", "AppOutboundQty", "TransferRuleId", "TransferRuleName", "ExcessSupply",
     "ExcessUnit", "AllowSend", "AllowReceive", "RedistMax", "RedistUnit", "RedistMinValue", "ExcessKeep",
     "FreeExcess", "ConvNeed", "RedistCap", "RedistEligible", "SuggestedInQty", "SuggestedConvInQty",
-    "SuggestedOutQty", "BuiltAtUtc"]
+    "SuggestedOutQty",
+    # round 3 (Plan I1, Build_Gold_NonJD_Reorder on Dev)
+    "LastReceived", "BuiltAtUtc"]
 ROUND2_FIELDS = {"pendingQty", "slc", "source", "commodityCode", "phaseInQty", "phaseInEnds", "phaseInOn",
                  "phaseInActive", "phaseInEndReason", "appInboundQty", "appOutboundQty", "transferRuleId",
                  "transferRuleName", "excessSupply", "excessUnit", "allowSend", "allowReceive", "redistMax",
@@ -39,6 +41,7 @@ APP_TRANSFER_COLS = ["TransferId", "Status", "PlacedAt", "FromBranch", "ToBranch
 SUGGESTION_COLS = ["Kind", "Franchise", "PartNumber", "FromBranch", "ToBranch", "Seq", "Qty", "FromCost", "ToCost",
                    "Value", "FromOnHand", "FromExcessKeep", "FromFreeExcess", "ToOnHand", "ToOnOrder", "ToTarget",
                    "ToNeed", "ToRate", "FromBin", "ToBin", "Description", "BuiltAtUtc"]
+PURCHASES_COLS = ["Branch", "Franchise", "Purchases12", "BuiltAtUtc"]
 
 
 @pytest.fixture
@@ -55,12 +58,13 @@ def _table(con, name, cols, rows=()):
 
 
 def _gold_tables(con, reorder_cols=GOLD_REORDER, rule_cols=RULE_COLS, trule_cols=TRULE_COLS,
-                 app_cols=APP_TRANSFER_COLS, sugg_cols=SUGGESTION_COLS):
+                 app_cols=APP_TRANSFER_COLS, sugg_cols=SUGGESTION_COLS, purchases_cols=PURCHASES_COLS):
     _table(con, "Fact_NonJD_Reorder", reorder_cols)
     _table(con, "NonJD_OrderRules", rule_cols)
     _table(con, "NonJD_TransferRules", trule_cols)
     _table(con, "NonJD_Transfers", app_cols)
     _table(con, "Fact_NonJD_TransferSuggestion", sugg_cols)
+    _table(con, "Fact_NonJD_Purchases", purchases_cols)
     _table(con, "Fact_NonJD_SalesHistory", ["Branch", "Franchise", "PartNumber", "MonthOffset", "MonthStart",
                                             "SalesQty", "RequestCount"])
     _table(con, "Fact_OutstandingTransfers", ["RequestingBranch", "SupplyingBranch", "PartNumber", "PartTicket",
@@ -72,7 +76,7 @@ def test_reorder_columns_cover_gold_except_ruleid_and_builtat():
     gold = [g for g, _ in extract.REORDER_COLUMNS]
     assert sorted(gold) == sorted(c for c in GOLD_REORDER if c not in ("RuleId", "BuiltAtUtc"))
     fields = [f for _, f in extract.REORDER_COLUMNS]
-    assert len(fields) == len(set(fields)) == 82
+    assert len(fields) == len(set(fields)) == 83
     assert ROUND2_FIELDS <= set(fields)
 
 
@@ -96,7 +100,7 @@ def test_reorder_reads_and_renames(con):
                 "VALUES ('92', 'A', 'P2', '3', 'Weeks'), ('1', 'A', 'P1', '2', 'Months')")
     rows = extract.reorder(con)
     assert [r["partNumber"] for r in rows] == ["P1", "P2"]
-    assert len(rows[0]) == 82
+    assert len(rows[0]) == 83
     assert rows[0]["minDemands"] == "2" and rows[0]["supplyUnit"] == "Months"
 
 
@@ -257,3 +261,51 @@ def test_committed_reads_the_lines_gold_counts(con):
     assert set(rows[0]) == {"transferId", "lineId", "status", "placedAt", "fromBranch", "toBranch", "franchise",
                             "partNumber", "qty"}
     assert rows[1]["partNumber"] == "P1 " and rows[0]["qty"] == 1.5
+
+
+# ---- Round 3 (Plan I3): contract v4, lastReceived and Fact_NonJD_Purchases ----
+
+def test_reorder_columns_end_with_last_received():
+    assert extract.REORDER_COLUMNS[-1] == ("LastReceived", "lastReceived")
+
+
+def test_reorder_reads_last_received_as_a_date(con):
+    _gold_tables(con, reorder_cols=[c for c in GOLD_REORDER if c != "LastReceived"])
+    con.execute('ALTER TABLE "Fact_NonJD_Reorder" ADD COLUMN LastReceived DATE')
+    con.execute('INSERT INTO "Fact_NonJD_Reorder" (Branch, Franchise, PartNumber, LastReceived) '
+                "VALUES ('1', 'A', 'P1', DATE '2026-09-14'), ('1', 'A', 'P2', NULL)")
+    from datetime import date
+    rows = extract.reorder(con)
+    assert [r["lastReceived"] for r in rows] == [date(2026, 9, 14), None]
+
+
+def test_check_columns_names_missing_last_received(con):
+    _gold_tables(con, reorder_cols=[c for c in GOLD_REORDER if c != "LastReceived"])
+    with pytest.raises(pl.MissingColumnsError, match="Fact_NonJD_Reorder.*LastReceived"):
+        extract.check_columns(con)
+
+
+def test_check_columns_missing_purchases_table_is_clear_error(con):
+    _gold_tables(con)
+    con.execute('DROP TABLE "Fact_NonJD_Purchases"')
+    with pytest.raises(RuntimeError, match="Fact_NonJD_Purchases not found or unreadable.*round 3") as ei:
+        extract.check_columns(con)
+    assert not isinstance(ei.value, pl.MissingColumnsError)
+
+
+def test_check_columns_names_missing_purchases_column(con):
+    _gold_tables(con, purchases_cols=["Branch", "Franchise", "BuiltAtUtc"])
+    with pytest.raises(pl.MissingColumnsError, match="Fact_NonJD_Purchases.*Purchases12"):
+        extract.check_columns(con)
+
+
+def test_purchases_sorted_by_branch_then_franchise(con):
+    _gold_tables(con)
+    con.execute('DROP TABLE "Fact_NonJD_Purchases"')
+    con.execute('CREATE TABLE "Fact_NonJD_Purchases" (Branch VARCHAR, Franchise VARCHAR, Purchases12 DOUBLE, '
+                "BuiltAtUtc TIMESTAMP)")
+    con.execute("""INSERT INTO "Fact_NonJD_Purchases" VALUES ('92', 'MC', 10.5, NULL), ('1', 'MC', 2.25, NULL),
+                   ('1', 'AB', 1234.56, NULL)""")
+    assert extract.purchases(con) == [{"branch": "1", "franchise": "AB", "purchases12": 1234.56},
+                                      {"branch": "1", "franchise": "MC", "purchases12": 2.25},
+                                      {"branch": "92", "franchise": "MC", "purchases12": 10.5}]

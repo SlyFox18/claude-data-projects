@@ -202,8 +202,8 @@ def test_history_arrays_duplicate_slot_raises():
 
 # ---- Round 1 (Plan C4): contract version, required columns, excluded branches ----
 
-def test_contract_version_is_3():
-    assert pl.CONTRACT_VERSION == 3
+def test_contract_version_is_4():
+    assert pl.CONTRACT_VERSION == 4
 
 
 def test_require_columns_passes_when_all_present():

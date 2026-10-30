@@ -40,6 +40,8 @@ REORDER_COLUMNS = [
     ("ExcessKeep", "excessKeep"), ("FreeExcess", "freeExcess"), ("ConvNeed", "convNeed"), ("RedistCap", "redistCap"),
     ("RedistEligible", "redistEligible"), ("SuggestedInQty", "suggestedInQty"),
     ("SuggestedConvInQty", "suggestedConvInQty"), ("SuggestedOutQty", "suggestedOutQty"),
+    # round 3 (contract v4, Plan I): newest supplier receipt date (DATE; null = never received)
+    ("LastReceived", "lastReceived"),
 ]
 REORDER_SQL = ("SELECT " + ", ".join(f'{g} AS "{f}"' for g, f in REORDER_COLUMNS)
                + "\nFROM {src}\nORDER BY branch, franchise, partNumber")
@@ -78,6 +80,8 @@ COMMITTED_COLUMNS = [
     ("FromBranch", "fromBranch"), ("ToBranch", "toBranch"), ("Franchise", "franchise"), ("PartNumber", "partNumber"),
     ("Qty", "qty"),
 ]
+# Fact_NonJD_Purchases column -> purchases.json.gz "rows" field (round 3; BuiltAtUtc is not published).
+PURCHASES_COLUMNS = [("Branch", "branch"), ("Franchise", "franchise"), ("Purchases12", "purchases12")]
 HISTORY_COLUMNS = ["Branch", "Franchise", "PartNumber", "MonthOffset", "SalesQty", "RequestCount"]
 TRANSFER_COLUMNS = ["RequestingBranch", "SupplyingBranch", "PartNumber", "PartTicket", "LineNumber", "OrderQty",
                     "ShippedQty", "OpenQty", "FulfillmentStatus", "TransferSubType", "OrderAge", "Date"]
@@ -131,7 +135,8 @@ def check_columns(con) -> None:
             ("NonJD_OrderRules", RULE_COLUMNS, "the rules dataflow and shortcut"),
             ("NonJD_TransferRules", TRANSFER_RULE_COLUMNS, "df_NonJD_TransferRules_Raw and its shortcut"),
             ("NonJD_Transfers", COMMITTED_COLUMNS, "df_NonJD_Transfers_Raw and its shortcut"),
-            ("Fact_NonJD_TransferSuggestion", SUGGESTION_COLUMNS, "the round 2 Build_Gold_NonJD_Reorder")]:
+            ("Fact_NonJD_TransferSuggestion", SUGGESTION_COLUMNS, "the round 2 Build_Gold_NonJD_Reorder"),
+            ("Fact_NonJD_Purchases", PURCHASES_COLUMNS, "the round 3 Build_Gold_NonJD_Reorder")]:
         pl.require_columns(table, _readable_columns(con, table, deploy), [g for g, _ in cols])
 
 
@@ -177,6 +182,13 @@ def suggestions(con) -> list:
     """Gold's transfer suggestion lines, by group (Franchise, PartNumber; NULLs last) then emission order."""
     return _dicts(con.execute(f"SELECT {_select(SUGGESTION_COLUMNS)} FROM {_src('Fact_NonJD_TransferSuggestion')} "
                               "ORDER BY Franchise, PartNumber, Seq, Kind, FromBranch, ToBranch"))
+
+
+def purchases(con) -> list:
+    """Gold's 12-month purchases at cost, one row per branch + franchise (values as Gold stores them: trimmed,
+    upper-case), ordered by branch then franchise."""
+    return _dicts(con.execute(f"SELECT {_select(PURCHASES_COLUMNS)} FROM {_src('Fact_NonJD_Purchases')} "
+                              "ORDER BY Branch, Franchise"))
 
 
 def committed(con, build_date) -> list:

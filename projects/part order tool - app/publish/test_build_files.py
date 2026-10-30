@@ -28,7 +28,7 @@ NULLABLE = {"slc", "source", "commodityCode", "phaseInQty", "phaseInEnds", "phas
 
 def _row(branch, part, surplus, cost="12.50", **kw):
     r = {"branch": branch, "franchise": "A", "partNumber": part, "onHand": 5, "target": 3,
-         "surplusQty": surplus, "status": "OK", "cost": Decimal(cost), **ROUND2}
+         "surplusQty": surplus, "status": "OK", "cost": Decimal(cost), **ROUND2, "lastReceived": None}
     r.update(kw)
     return r
 
@@ -97,21 +97,25 @@ SUGGESTIONS = [
      "toBin": "B2"}]
 COMMITTED = [{"transferId": 3, "lineId": 9, "status": "Placed", "placedAt": datetime(2026, 10, 20, 15, 0),
               "fromBranch": "1", "toBranch": "92 ", "franchise": "A", "partNumber": "P3", "qty": 2.0}]
+PURCHASES = [{"branch": "92", "franchise": "A", "purchases12": 10.0},
+             {"branch": "1", "franchise": "MC", "purchases12": Decimal("2.25")},
+             {"branch": "1", "franchise": "A", "purchases12": 1234.5678}]
 
 
-def _build(reorder=None, rules=None, trules=None, suggestions=None, committed=None):
+def _build(reorder=None, rules=None, trules=None, suggestions=None, committed=None, purchases=None):
     return build_files.build(REORDER if reorder is None else reorder, _hist, TRANSFERS, NAMES, AS_OF, MONTH,
                              RULES if rules is None else rules,
                              transfer_rules=TRULES if trules is None else trules,
                              suggestions=SUGGESTIONS if suggestions is None else suggestions,
-                             committed=COMMITTED if committed is None else committed)
+                             committed=COMMITTED if committed is None else committed,
+                             purchases=PURCHASES if purchases is None else purchases)
 
 
 def test_files_and_branches(out):
     hashes, branches = _build()
     assert set(hashes) == {"reorder_1.json.gz", "history_1.json.gz", "reorder_92.json.gz",
                            "history_92.json.gz", "surplus.json.gz", "transfers.json.gz", "rules.json.gz",
-                           "transfer_rules.json.gz", "transfer_suggestions.json.gz"}
+                           "transfer_rules.json.gz", "transfer_suggestions.json.gz", "purchases.json.gz"}
     assert sorted(os.listdir(out)) == sorted(hashes)
     assert [b["branch"] for b in branches] == ["1", "92"]
     assert branches[0]["name"] == "Lubbock"
@@ -166,7 +170,7 @@ def test_write_meta_plain_json(out):
     assert raw[:2] != b"\x1f\x8b"
     meta = json.loads(raw)
     assert meta == {"dataAsOf": AS_OF, "publishedAt": "2026-10-20T12:00:00+00:00", "source": "dev",
-                    "branches": branches, "counts": counts, "schemaVersion": 1, "contractVersion": 3}
+                    "branches": branches, "counts": counts, "schemaVersion": 1, "contractVersion": 4}
 
 
 def test_nan_rejected():
@@ -249,7 +253,7 @@ def test_transfers_to_or_from_excluded_branches_are_dropped(out):
              for i, (to, fr) in enumerate([("1", "92"), ("12", "1"), ("1", "93C "), ("4b", "92"), ("92", "5"),
                                            (" 97", "1"), ("", "1"), ("1", None)])]
     build_files.build(REORDER, _hist, lines, NAMES, AS_OF, MONTH, RULES, transfer_rules=TRULES,
-                      suggestions=SUGGESTIONS, committed=COMMITTED)
+                      suggestions=SUGGESTIONS, committed=COMMITTED, purchases=PURCHASES)
     got = [t["ticket"] for t in _read(out, "transfers.json.gz")["lines"]]
     assert got == ["T0", "T6", "T7"]
 
@@ -264,7 +268,7 @@ def test_reorder_row_at_excluded_branch_raises(out, branch):
 def test_meta_has_contract_version(out):
     _, branches = _build()
     path = build_files.write_meta(AS_OF, AS_OF, "dev", branches, {})
-    assert json.loads(open(path, "rb").read())["contractVersion"] == 3
+    assert json.loads(open(path, "rb").read())["contractVersion"] == 4
 
 
 @pytest.mark.parametrize("bad", [float("nan"), float("inf"), float("-inf"), Decimal("NaN")])
@@ -392,8 +396,72 @@ def test_build_into_another_folder(out, tmp_path):
     other.mkdir()
     (other / "keep.txt").write_text("not ours")
     hashes, branches = build_files.build(REORDER, _hist, TRANSFERS, NAMES, AS_OF, MONTH, RULES, transfer_rules=TRULES,
-                                         suggestions=SUGGESTIONS, committed=COMMITTED, out_dir=str(other))
+                                         suggestions=SUGGESTIONS, committed=COMMITTED, purchases=PURCHASES,
+                                         out_dir=str(other))
     meta = build_files.write_meta(AS_OF, AS_OF, "dev", branches, {}, out_dir=str(other))
     assert sorted(os.listdir(other)) == sorted(list(hashes) + ["_meta.json", "keep.txt"])
     assert os.path.dirname(meta) == str(other)
     assert not out.exists()
+
+
+# ---- Round 3 (Plan I3): contract v4 ----
+
+def test_reorder_last_received_is_a_date_string_or_null(out):
+    _build([_row("1", "P1", 0, lastReceived=date(2026, 9, 14)), _row("1", "P2", 0),
+            _row("1", "P3", 0, lastReceived=datetime(2026, 8, 1, 0, 0))])
+    parts = _read(out, "reorder_1.json.gz")["parts"]
+    assert [p["lastReceived"] for p in parts] == ["2026-09-14", None, "2026-08-01"]
+
+
+def test_reorder_row_missing_last_received_fails(out):
+    row = _row("1", "P1", 0)
+    del row["lastReceived"]
+    with pytest.raises(ValueError, match="lastReceived"):
+        _build([row])
+
+
+def test_purchases_file(out):
+    hashes, _ = _build()
+    assert "purchases.json.gz" in hashes
+    d = _read(out, "purchases.json.gz")
+    assert d == {"dataAsOf": AS_OF, "rows": [{"branch": "1", "franchise": "A", "purchases12": 1234.57},
+                                             {"branch": "1", "franchise": "MC", "purchases12": 2.25},
+                                             {"branch": "92", "franchise": "A", "purchases12": 10}]}
+
+
+def test_purchases_numeric_branch_order_and_deterministic(out):
+    rows = [{"branch": "10", "franchise": "A", "purchases12": 1.0},
+            {"branch": "2", "franchise": "A", "purchases12": 1.0},
+            {"branch": "BX", "franchise": "A", "purchases12": 1.0}]
+    h1, _ = _build(purchases=rows)
+    assert [r["branch"] for r in _read(out, "purchases.json.gz")["rows"]] == ["2", "10", "BX"]
+    h2, _ = _build(purchases=list(reversed(rows)))
+    assert h1["purchases.json.gz"] == h2["purchases.json.gz"]
+
+
+def test_purchases_empty_still_written(out):
+    _build(purchases=[])
+    assert _read(out, "purchases.json.gz") == {"dataAsOf": AS_OF, "rows": []}
+
+
+def test_purchases_row_missing_key_fails(out):
+    with pytest.raises(ValueError, match="purchases12"):
+        _build(purchases=[{"branch": "1", "franchise": "A"}])
+
+
+@pytest.mark.parametrize("bad", [None, float("nan"), float("inf"), Decimal("NaN")])
+def test_purchases_null_or_non_finite_fails(out, bad):
+    with pytest.raises(ValueError, match="purchases12"):
+        _build(purchases=[{"branch": "1", "franchise": "A", "purchases12": bad}])
+    assert not (out / "purchases.json.gz").exists()
+
+
+def test_purchases_row_at_excluded_branch_fails(out):
+    with pytest.raises(ValueError, match="excluded"):
+        _build(purchases=[{"branch": "12", "franchise": "A", "purchases12": 1.0}])
+
+
+def test_purchases_duplicate_key_fails(out):
+    with pytest.raises(ValueError, match="duplicate"):
+        _build(purchases=[{"branch": "1", "franchise": "A", "purchases12": 1.0},
+                          {"branch": "1", "franchise": "A", "purchases12": 2.0}])

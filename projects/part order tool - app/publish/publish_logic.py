@@ -26,9 +26,9 @@ ITEM = "Build_Gold_NonJD_Reorder"
 META_FILE = "_meta.json"
 CENTRAL = ZoneInfo("America/Chicago")
 # The field contract of the files (README "File contract"). 1 = Plan A/B fields (no contractVersion in _meta.json);
-# 2 = round 1 (Plan C); 3 = round 2 (Plan E: phase-in, transfer rules and suggestions). The app refuses a version
-# it doesn't know.
-CONTRACT_VERSION = 3
+# 2 = round 1 (Plan C); 3 = round 2 (Plan E: phase-in, transfer rules and suggestions); 4 = round 3 (Plan I:
+# lastReceived, purchases.json.gz). The app refuses a version it doesn't know.
+CONTRACT_VERSION = 4
 # Uploaded every run, changed or not (round 2 spec "The publish": the suggestions file embeds dataAsOf).
 ALWAYS_UPLOAD = ("transfer_suggestions.json.gz",)
 # Committed transfer statuses (spec step 8b, exact spelling); Placed counts only while recent.

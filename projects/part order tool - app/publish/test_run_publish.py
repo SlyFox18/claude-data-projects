@@ -16,14 +16,14 @@ BUILT = datetime(2026, 10, 20, 10, 20, 0)
 
 DATA_FILES = {"reorder_01.json.gz", "history_01.json.gz", "reorder_02.json.gz", "history_02.json.gz",
               "surplus.json.gz", "transfers.json.gz", "rules.json.gz", "transfer_rules.json.gz",
-              "transfer_suggestions.json.gz"}
+              "transfer_suggestions.json.gz", "purchases.json.gz"}
 ROUND2 = {"pendingQty": 0.0, "slc": None, "source": None, "commodityCode": None, "phaseInQty": None,
           "phaseInEnds": None, "phaseInOn": None, "phaseInActive": False, "phaseInEndReason": None,
           "appInboundQty": 0, "appOutboundQty": 0, "transferRuleId": None, "transferRuleName": "Built-in default",
           "excessSupply": 12.0, "excessUnit": "Months", "allowSend": True, "allowReceive": True, "redistMax": 6.0,
           "redistUnit": "Months", "redistMinValue": 0.0, "excessKeep": 2, "freeExcess": 0, "convNeed": 0,
           "redistCap": 0, "redistEligible": False, "suggestedInQty": 0, "suggestedConvInQty": 0,
-          "suggestedOutQty": 0}
+          "suggestedOutQty": 0, "lastReceived": None}
 
 
 class Env:
@@ -79,6 +79,7 @@ def env(tmp_path, monkeypatch):
     monkeypatch.setattr(extract, "transfers", lambda con: [])
     monkeypatch.setattr(extract, "transfer_rules", lambda con: e.trules)
     monkeypatch.setattr(extract, "suggestions", lambda con: e.suggestions)
+    monkeypatch.setattr(extract, "purchases", lambda con: [{"branch": "01", "franchise": "A", "purchases12": 12.5}])
 
     def committed(con, build_date):
         e.committed_on.append(build_date)
@@ -144,7 +145,7 @@ def test_data_change_uploads_only_changed_files(env):
     # reorder/surplus/transfers embed dataAsOf so they change with every run; history files do not
     assert set(env.uploaded[:-1]) == {"reorder_01.json.gz", "reorder_02.json.gz", "surplus.json.gz",
                                       "transfers.json.gz", "rules.json.gz", "transfer_rules.json.gz",
-                                      "transfer_suggestions.json.gz"}
+                                      "transfer_suggestions.json.gz", "purchases.json.gz"}
     assert env.uploaded[-1] == "_meta.json"
 
 
@@ -252,7 +253,7 @@ def test_missing_rules_columns_fail_before_extracting(env, monkeypatch):
 def test_meta_carries_contract_version(env, tmp_path):
     run_publish.main([])
     meta = json.loads((tmp_path / "out" / "_meta.json").read_bytes())
-    assert meta["contractVersion"] == 3 and meta["schemaVersion"] == 1
+    assert meta["contractVersion"] == 4 and meta["schemaVersion"] == 1
 
 
 
@@ -287,7 +288,7 @@ def test_out_builds_locally_without_upload_state_or_lock(env, tmp_path, monkeypa
     assert not env.state_file.exists()
     assert set(os.listdir(dest)) == DATA_FILES | {"_meta.json"}
     assert not (tmp_path / "out").exists()      # the publish's own output folder is untouched
-    assert json.loads((dest / "_meta.json").read_bytes())["contractVersion"] == 3
+    assert json.loads((dest / "_meta.json").read_bytes())["contractVersion"] == 4
 
 
 def test_out_ignores_publish_state(env, tmp_path):
@@ -304,3 +305,20 @@ def test_out_still_refuses_a_failed_run(env, tmp_path):
     env.status = "Failed"
     assert run_publish.main(["--out", str(tmp_path / "v3")]) == 0
     assert not (tmp_path / "v3").exists()
+
+
+# ---- Round 3 (Plan I3): contract v4 ----
+
+def test_purchases_file_uploaded_before_meta(env):
+    run_publish.main([])
+    assert env.uploaded.index("purchases.json.gz") < env.uploaded.index("_meta.json")
+
+
+def test_gold_without_round3_fails_before_writing(env, tmp_path, monkeypatch):
+    def check(con):
+        raise publish_logic.MissingColumnsError("Fact_NonJD_Reorder is missing column(s) LastReceived")
+    monkeypatch.setattr(extract, "check_columns", check)
+    monkeypatch.setattr(extract, "purchases", lambda con: pytest.fail("extracted after a failed check"))
+    with pytest.raises(publish_logic.MissingColumnsError, match="LastReceived"):
+        run_publish.main(["--out", str(tmp_path / "v4")])
+    assert not (tmp_path / "v4").exists()

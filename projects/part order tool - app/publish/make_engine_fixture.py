@@ -2,7 +2,7 @@
 Build the app's engine parity fixture (Plan B Task B6) from a publish output folder.
 
 Reads reorder_<b>.json.gz, history_<b>.json.gz, rules.json.gz, transfer_rules.json.gz,
-transfer_suggestions.json.gz and _meta.json (contract v3), samples ~400 parts across every branch with
+transfer_suggestions.json.gz and _meta.json (contract v3 or v4), samples ~400 parts across every branch with
 stratification (every status, every rule, minimumNoDemand true/false, masked, min override, negative on hand,
 fractional values, with and without history; round 1: the demand-count boundary, units sold with no demands (D14),
 value capped, months of supply, manual order and a mask ended by a request; round 2: an active phase-in, Expired,

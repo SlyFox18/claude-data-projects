@@ -6,7 +6,7 @@ import math
 import os
 import re
 from collections import defaultdict
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal
 
 import publish_logic as pl
@@ -37,6 +37,8 @@ ROUND2_FIELDS = ("pendingQty", "slc", "source", "commodityCode", "phaseInQty", "
 ROUND2_NULLABLE = frozenset(("slc", "source", "commodityCode", "phaseInQty", "phaseInEnds", "phaseInOn",
                              "phaseInEndReason", "transferRuleId"))
 ROUND2_TEXT = frozenset(("transferRuleName", "excessUnit", "redistUnit"))
+# purchases.json.gz row fields (extract.PURCHASES_COLUMNS); purchases12 is never null and is rounded to cents.
+PURCHASES_KEYS = ("branch", "franchise", "purchases12")
 _SAFE = re.compile(r"^[A-Za-z0-9_-]+$")
 
 
@@ -80,6 +82,46 @@ def _round2(r: dict) -> dict:
     return out
 
 
+def _last_received(r: dict) -> dict:
+    """The row with contract v4's lastReceived as a 'YYYY-MM-DD' string or null (Gold stores a DATE)."""
+    if "lastReceived" not in r:
+        raise ValueError(f"reorder row {r.get('branch')!r} {r.get('franchise')!r} {r.get('partNumber')!r} is missing "
+                         f"field lastReceived")
+    v = r["lastReceived"]
+    if isinstance(v, datetime):
+        v = v.date()
+    return {**r, "lastReceived": v.isoformat() if isinstance(v, date) else v}
+
+
+def _purchases_rows(rows: list) -> list:
+    """purchases.json.gz rows: every key present, purchases12 a finite number (rounded to cents), no excluded
+    branch, one row per branch + franchise; sorted by branch (numeric codes first, as the branch list) then
+    franchise, so the bytes don't depend on the extract's order."""
+    out, seen = [], set()
+    for r in rows:
+        missing = [k for k in PURCHASES_KEYS if k not in r]
+        if missing:
+            raise ValueError(f"purchases row {r!r} is missing key(s) {', '.join(missing)}")
+        v = r["purchases12"]
+        if v is None or (isinstance(v, float) and not math.isfinite(v)) or \
+                (isinstance(v, Decimal) and not v.is_finite()):
+            raise ValueError(f"purchases row {r['branch']!r} {r['franchise']!r}: purchases12 is {v}, not a finite "
+                             f"number; Gold should always set it (Gold and the publish are out of step)")
+        if pl.is_excluded_branch(r["branch"]):
+            raise ValueError(f"purchases row at excluded branch {r['branch']!r}; Gold should have left it out")
+        key = (r["branch"], r["franchise"])
+        if key in seen:
+            raise ValueError(f"duplicate purchases row for branch {key[0]!r} franchise {key[1]!r}")
+        seen.add(key)
+        out.append(_clean({"branch": r["branch"], "franchise": r["franchise"],
+                           "purchases12": round(float(v), 2)}))
+
+    def order(row):
+        b = str(row["branch"])
+        return ((0, int(b), "") if b.isdigit() else (1, 0, b)), _none_last(row["franchise"])
+    return sorted(out, key=order)
+
+
 def _check_list_rows(rows: list, keys: tuple, list_name: str) -> None:
     """Every key present, and no NaN / infinite number: one would be written as null, which reads as "blank"
     (a different rule); fail instead."""
@@ -112,12 +154,13 @@ def _keyed(rows: list, keys: tuple, what: str) -> list:
 
 def build(reorder: list, history_for, transfers: list, names: dict, data_as_of: str,
           current_month: date, rules: list, *, transfer_rules: list, suggestions: list, committed: list,
-          out_dir: str = None) -> tuple:
+          purchases: list, out_dir: str = None) -> tuple:
     """Write all data files into out_dir (default OUT_DIR; not _meta.json, see write_meta).
     history_for(branch_key) -> that branch's history rows (called once per branch).
     rules: NonJD_OrderRules rows (camelCase keys), written as rules.json.gz for the app's engine check.
     transfer_rules: NonJD_TransferRules rows -> transfer_rules.json.gz. suggestions: Gold's suggestion lines and
     committed: the committed app transfer lines Gold used -> transfer_suggestions.json.gz.
+    purchases: Fact_NonJD_Purchases rows (branch, franchise, purchases12) -> purchases.json.gz (contract v4).
     Excluded branches (D6): a reorder row at one is an error (Gold leaves them out, so it means Gold and the publish
     are out of step); transfer lines to or from one are dropped (Fact_OutstandingTransfers still has them).
     Only the folder's previous output files (*.json.gz, _meta.json) are removed first.
@@ -147,7 +190,7 @@ def build(reorder: list, history_for, transfers: list, names: dict, data_as_of: 
             surplus.append(_clean({"branch": key, "franchise": r["franchise"], "partNumber": r["partNumber"],
                                    "onHand": r["onHand"], "target": r["target"], "surplusQty": r["surplusQty"],
                                    "status": r["status"]}))
-        by_branch[key].append(_clean({k: v for k, v in _round2(r).items() if k != "branch"}))
+        by_branch[key].append(_clean({k: v for k, v in _last_received(_round2(r)).items() if k != "branch"}))
 
     labels = pl.month_labels(current_month, 60)
     keys = sorted(by_branch, key=lambda b: (0, int(b), "") if b.isdigit() else (1, 0, b))
@@ -178,6 +221,8 @@ def build(reorder: list, history_for, transfers: list, names: dict, data_as_of: 
                   key=lambda l: (_none_last(l["transferId"]), _none_last(l["lineId"])))
     _write("transfer_suggestions.json.gz", _bytes({"dataAsOf": data_as_of, "lines": lines, "committed": done}),
            hashes)
+
+    _write("purchases.json.gz", _bytes({"dataAsOf": data_as_of, "rows": _purchases_rows(purchases)}), hashes)
 
     branches = [{"branch": b, "name": names.get(b, b), "parts": len(by_branch[b])} for b in keys]
     return hashes, branches

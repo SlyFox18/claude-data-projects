@@ -116,6 +116,7 @@ def _publish(args) -> int:
     history_rows = extract.stage_history(con)     # copied into a DuckDB temp table; built one branch at a time
     transfers, names = extract.transfers(con), extract.branch_names(con)
     transfer_rules, suggestions = extract.transfer_rules(con), extract.suggestions(con)
+    purchases = extract.purchases(con)
     committed = extract.committed(con, pl.central_date(built))
     try:
         rules = extract.rules(con)
@@ -130,7 +131,8 @@ def _publish(args) -> int:
         raise RuntimeError("Fact_NonJD_Reorder was rewritten while extracting; rerun the publish")
     hashes, branches = build_files.build(reorder, lambda b: extract.history_for(con, b), transfers, names,
                                          data_as_of, current_month, rules, transfer_rules=transfer_rules,
-                                         suggestions=suggestions, committed=committed, out_dir=out_dir)
+                                         suggestions=suggestions, committed=committed, purchases=purchases,
+                                         out_dir=out_dir)
     counts = {"parts": len(reorder), "historyRows": history_rows, "transferLines": len(transfers),
               "transferSuggestions": len(suggestions)}
     meta_path = build_files.write_meta(data_as_of, datetime.now(timezone.utc).isoformat(), config.SOURCE,
