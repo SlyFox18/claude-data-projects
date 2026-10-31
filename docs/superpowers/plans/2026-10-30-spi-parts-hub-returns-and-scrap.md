@@ -4,6 +4,16 @@
 > review after each (Brian's standing choice). Steps use checkbox (`- [ ]`) syntax.
 
 > **Progress:** plan written 2026-10-30 (Claude, for Brian).
+> - **I11 done 2026-10-31** (app `1864bae` transfers-only save, `3d21014` One-Time tags, `1addf0d` launch card separator
+>   was a Latin-1 byte (showed "�" with both kinds open; from I7), `e5d9dbf` clickThrough090, final-review fixes
+>   `be315d6` (tags invalidated after every document action and a partial save; no stale in-flight read) and `5707a83`
+>   (made-with transfers match on saveId, title fallback for old documents), `b81e253` 0.9.0; 2,134 tests in two halves,
+>   lint, tsc clean; built and pushed). dist checked: the three new list IDs, transfers lists and site present, no mock
+>   strings, "Version 0.9.0 · commit b81e253". Transfers-only (Brian: A): Review says "Nothing left to scrap: 1 part
+>   goes to other branches." (counts lines), **Save transfers**, stays on Review with the order links. Brian's list:
+>   `for-users/0.9.0-click-through.md`. **Follow-ups (low):** ReturnsPage reads every document's lines (store a count /
+>   total on the header); a Draft with no lines isn't counted on the launch card; package-lock.json version is stale
+>   (0.2.0, older drift).
 > - **I10 done 2026-10-30** (app `df57592`; 2,122 tests in two halves, lint, tsc clean; pushed). `useOpenReturns` (cached per
 >   source, 2-minute re-read, invalidated after a return / scrap save), grey `On return <title> (n)` tag linking to the
 >   document on Reorder lines (status cell), transfer suggestions (From branch, Transfers page and Reorder step 1) and the
@@ -25,8 +35,8 @@
 >   `orderName` = title; `rulesSource: 'snapshot'`, no rules list) → document → lines; Retry continues the same save
 >   (lookup by saveId, missing lines only, trailing-space twins matched). Edits are per line, so untouched lines keep
 >   following the pre-pick / Transfer instead defaults. Mock: MM return 3 lines $326.00 of $433.04, credit $277.10; AM
->   scrap: AM-SURP-1 transferred 92 → 1, AM-BELT-2 on the list. **Open:** a list whose every line is Transfer instead
->   can't be saved yet (Brian deciding whether to allow a transfers-only save). Document Parameters carry the full rule;
+>   scrap: AM-SURP-1 transferred 92 → 1, AM-BELT-2 on the list. **Decided 2026-10-31 (Brian: A):** a list whose every
+>   line is Transfer instead saves only the transfer orders (no document); built in I11. Document Parameters carry the full rule;
 >   the two older mock documents store only its name (I9 reads both).
 > - **I6 done 2026-10-30** (app `5bc8631`, `b11d009`, review fixes `77c7086`; 2,019 tests in two halves, lint, tsc clean;
 >   pushed). `/return-rules`: tabs (Links, `?tab=scrap`), table, editor, Try it (engine branches; purchases and open
