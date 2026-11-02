@@ -4,7 +4,15 @@
 > review after each (Brian's standing choice). Steps use checkbox (`- [ ]`) syntax.
 
 > **Progress:** plan written 2026-10-30 (Claude, for Brian).
-> - **I12 in progress 2026-11-02:** Type R confirmed = returns to the supplier (comments "Oct.2026 Surplus Return"), so
+> - **I12 done 2026-11-02 (same day, no wait):** Prod `items` run of Build_Gold_NonJD_Reorder (09:40–09:53 Central),
+>   `nonjd_reorder_check.py --tier prod` PASS (0 differences; Purchases 350 rows, window 2025-11 to 2026-10), Gateway
+>   PC (`C:\data-projects`) pulled and published v4 by hand (199,706 parts). Real TEST on Fedora: Brian's "Scrap default"
+>   rule (All franchises, no sales 36, unit cost ≥ $0.10; kept), AM scrap list AM-SCR-20261102-1026 (6397 × 2 at 11)
+>   with transfer 91-8-20261102-1026 (9447 × 1): all fields correct in SharePoint, then the 4 rows deleted. Found: the
+>   rule Franchise was free text ("ALL" matched nothing) and sticky footers left a gap under them → **0.9.1**
+>   (`a227638`, `c4a5975`, `001e2e8`: Franchise select with All franchises for scrap; one shared `stickyFooterClass`
+>   on six footers; 2,143 tests; built and pushed, "Version 0.9.1 · commit 001e2e8").
+> - **I12 (earlier):** Type R confirmed = returns to the supplier (comments "Oct.2026 Surplus Return"), so
 >   Purchases12 stays gross Type P. PR #46 merged (`559fa6da`), Deploy DP backend succeeded 15:27Z, both Prod pipelines
 >   claimed by Brian, dev fast-forwarded. App 0.9.0 (`b81e253`) on Fedora. **Next:** after the 2026-11-03 06:15 Prod
 >   run, `/check-refresh prod` + `nonjd_reorder_check.py --tier prod`; then Brian pulls the Gateway PC; then the TEST
