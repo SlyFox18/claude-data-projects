@@ -4,6 +4,15 @@
 > review after each (Brian's standing choice). Steps use checkbox (`- [ ]`) syntax.
 
 > **Progress:** plan written 2026-11-02 (Claude, for Brian). Decisions J-D1–J-D10 approved by Brian 2026-11-02.
+> - **J6 done 2026-11-02** (app `66d8a39` clickThrough0100, `c34a2ce` feedback fixes: Review shows "From template X",
+>   "Template updated.", "Not saved to the template yet: …", aligned archive prompts; final-review fixes `f9aa99d`:
+>   a Full-year template in January keeps its period (period hint in `setupToTemplate`), card Archive re-reads (already
+>   archived → no write; gone → "This template was removed."), Use re-reads (archived/gone → "That template isn't
+>   available."), Stop using keeps the dealer-group block; `9cc43f0` 0.10.0; 2,303 tests in two halves, lint, tsc
+>   clean; built and pushed). dist checked: both template list IDs and the existing lists/site present, no mock strings,
+>   "Version 0.10.0 · commit 9cc43f0". Brian's try-it (`for-users/0.10.0-try-it.md`) passed on mock. **Follow-ups (low):**
+>   archive/unarchive bump Modified so "Changed by" can show for a flag-only change; `?template=` handled once per
+>   mount; orders keep "From template X" even if the Set up was changed afterwards; "Create orders (N)" counts lines.
 > - **J4 done 2026-11-02** (app `bf452b4`, review fixes `ed6486a`; 2,293 tests in two halves, lint, tsc clean; pushed).
 >   `/templates` (top-level like `/one-time`; rail "Templates" after One-Time Order, new `copy` icon), H1 "One-Time
 >   templates": name + description, `setupText` line ("Branches 1, 92 · BS · Rolling 12 · total units sold × 1.5"),
