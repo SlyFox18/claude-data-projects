@@ -4,6 +4,13 @@
 > review after each (Brian's standing choice). Steps use checkbox (`- [ ]`) syntax.
 
 > **Progress:** plan written 2026-11-02 (Claude, for Brian). Decisions K-D1–K-D11 approved by Brian 2026-11-02.
+> - **K6 done 2026-11-02** (app `d38f66d`, review fixes `8884837`; plus `b90217d` the $1 built-in; 2,446 tests in two halves,
+>   lint, tsc clean; pushed). `loadCleanupChecks()` → `{ rows, unreadable }` (unreadable rows keep itemId, name, reason,
+>   active, archived, modified, editor, so the page can show "can't be read" and still archive them); writes refuse a
+>   blank or > 255-char name and invalid conditions before any request. Mock seeds "Old stock, no sales 2 years" (On
+>   hand > 0, Sales 24 months = 0, Last received before 24 months ago or never; Ben Hill) and archived "Zero-cost parts".
+>   New field `equipStockValueAbs` "Equip stock value (either way)"; `VALUE_NO_QTY` = that ≥ $1 and On hand ≤ 0;
+>   `VALUE_NO_QTY_COLUMNS` = On hand, Cost, Equip stock value (signed).
 > - **K3 done 2026-11-02** (data-projects `db8988cd`; publish tests 260 pass; pushed). Contract 5, `equipStockValue` required
 >   and rounded to cents; older Gold refused naming EquipStockValue. Local `--out` build on Dev: 199,555 parts all with
 >   the field, `_meta.json` contractVersion 5. Not published (K10). **Decided (Brian, 2026-11-02: A):** the built-in
