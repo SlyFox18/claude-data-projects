@@ -4,6 +4,11 @@
 > review after each (Brian's standing choice). Steps use checkbox (`- [ ]`) syntax.
 
 > **Progress:** plan written 2026-11-02 (Claude, for Brian). Decisions K-D1–K-D11 approved by Brian 2026-11-02.
+> - **K1 + K2 done 2026-11-02** (fabric-workspace-docs `863afe35`, data-projects `f59073c9`; review clean). Gold
+>   `EquipStockValue` = round(Silver_PartInformation.InventoryCost, 2), decimal(18,2), after LastReceived (Silver's
+>   InventoryCost is DECIMAL(12,2), coalesced to 0). Dev git-synced, Dev run `b8fce472` Completed (gold 254 s); reference
+>   check `--tier dev` PASS, 0 differences on all three tables (Reorder 199,555 rows). The Dev email's Parts
+>   Availability staleness warning is Dev-only (no Dev schedule); Prod reported no problems.
 > - **K4 done 2026-11-02** (app `dcdf737`; 2,310 tests in two halves, lint, tsc clean; review clean; pushed). Contract
 >   [3, 4, 5], `hasEquipStockValue`, `ReorderPart.equipStockValue?`, required `VITE_LIST_CLEANUP_CHECKS`; mock v5
 >   (default value = on-hand value; seeded BS-VAL-NOQTY 0 on hand / $120, BS-VAL-NEG −2 / −$45, BS-QTY-NOVAL 3 / $0 at
