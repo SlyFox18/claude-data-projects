@@ -4,6 +4,12 @@
 > review after each (Brian's standing choice). Steps use checkbox (`- [ ]`) syntax.
 
 > **Progress:** plan written 2026-11-02 (Claude, for Brian). Decisions K-D1–K-D11 approved by Brian 2026-11-02.
+> - **K5 done 2026-11-02** (app `865efba`, review fixes `4966e59`; 2,430 tests in two halves, lint, tsc clean; pushed).
+>   `src/cleanup/fields.ts` (21 fields, `comparisonsFor(id)`, `fieldInData`), `conditions.ts` (`parseConditions`,
+>   `conditionProblem`, `compileConditions` + `matches`, `conditionText`, `checkColumns`, `VALUE_NO_QTY`). **Decided:**
+>   number/money comparisons never match a blank (only "is blank"); text "is not" does; new `beforeOrNever` ("before
+>   …, or never") for Last requested / Last received; Vendor is text (digits, is / is not / one of). Shared `money`,
+>   `lastRequestedDate`, `STATUS_LABELS` now in `@/engine` (no engine → pages imports).
 > - **K1 + K2 done 2026-11-02** (fabric-workspace-docs `863afe35`, data-projects `f59073c9`; review clean). Gold
 >   `EquipStockValue` = round(Silver_PartInformation.InventoryCost, 2), decimal(18,2), after LastReceived (Silver's
 >   InventoryCost is DECIMAL(12,2), coalesced to 0). Dev git-synced, Dev run `b8fce472` Completed (gold 254 s); reference
