@@ -42,6 +42,8 @@ REORDER_COLUMNS = [
     ("SuggestedConvInQty", "suggestedConvInQty"), ("SuggestedOutQty", "suggestedOutQty"),
     # round 3 (contract v4, Plan I): newest supplier receipt date (DATE; null = never received)
     ("LastReceived", "lastReceived"),
+    # round 3 phase 3 (contract v5, Plan K): Equip's own stock value (ON_HAND_VAL), dollars, never null
+    ("EquipStockValue", "equipStockValue"),
 ]
 REORDER_SQL = ("SELECT " + ", ".join(f'{g} AS "{f}"' for g, f in REORDER_COLUMNS)
                + "\nFROM {src}\nORDER BY branch, franchise, partNumber")

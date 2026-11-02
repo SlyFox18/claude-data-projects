@@ -22,7 +22,9 @@ GOLD_REORDER = [
     "FreeExcess", "ConvNeed", "RedistCap", "RedistEligible", "SuggestedInQty", "SuggestedConvInQty",
     "SuggestedOutQty",
     # round 3 (Plan I1, Build_Gold_NonJD_Reorder on Dev)
-    "LastReceived", "BuiltAtUtc"]
+    "LastReceived",
+    # round 3 phase 3 (Plan K1, Build_Gold_NonJD_Reorder on Dev, fabric-workspace-docs 863afe35)
+    "EquipStockValue", "BuiltAtUtc"]
 ROUND2_FIELDS = {"pendingQty", "slc", "source", "commodityCode", "phaseInQty", "phaseInEnds", "phaseInOn",
                  "phaseInActive", "phaseInEndReason", "appInboundQty", "appOutboundQty", "transferRuleId",
                  "transferRuleName", "excessSupply", "excessUnit", "allowSend", "allowReceive", "redistMax",
@@ -76,7 +78,7 @@ def test_reorder_columns_cover_gold_except_ruleid_and_builtat():
     gold = [g for g, _ in extract.REORDER_COLUMNS]
     assert sorted(gold) == sorted(c for c in GOLD_REORDER if c not in ("RuleId", "BuiltAtUtc"))
     fields = [f for _, f in extract.REORDER_COLUMNS]
-    assert len(fields) == len(set(fields)) == 83
+    assert len(fields) == len(set(fields)) == 84
     assert ROUND2_FIELDS <= set(fields)
 
 
@@ -100,7 +102,7 @@ def test_reorder_reads_and_renames(con):
                 "VALUES ('92', 'A', 'P2', '3', 'Weeks'), ('1', 'A', 'P1', '2', 'Months')")
     rows = extract.reorder(con)
     assert [r["partNumber"] for r in rows] == ["P1", "P2"]
-    assert len(rows[0]) == 83
+    assert len(rows[0]) == 84
     assert rows[0]["minDemands"] == "2" and rows[0]["supplyUnit"] == "Months"
 
 
@@ -265,8 +267,8 @@ def test_committed_reads_the_lines_gold_counts(con):
 
 # ---- Round 3 (Plan I3): contract v4, lastReceived and Fact_NonJD_Purchases ----
 
-def test_reorder_columns_end_with_last_received():
-    assert extract.REORDER_COLUMNS[-1] == ("LastReceived", "lastReceived")
+def test_reorder_columns_include_last_received():
+    assert extract.REORDER_COLUMNS[-2] == ("LastReceived", "lastReceived")
 
 
 def test_reorder_reads_last_received_as_a_date(con):
@@ -309,3 +311,26 @@ def test_purchases_sorted_by_branch_then_franchise(con):
     assert extract.purchases(con) == [{"branch": "1", "franchise": "AB", "purchases12": 1234.56},
                                       {"branch": "1", "franchise": "MC", "purchases12": 2.25},
                                       {"branch": "92", "franchise": "MC", "purchases12": 10.5}]
+
+
+# ---- Round 3 phase 3 (Plan K3): contract v5, EquipStockValue ----
+
+def test_reorder_columns_end_with_equip_stock_value():
+    assert extract.REORDER_COLUMNS[-1] == ("EquipStockValue", "equipStockValue")
+
+
+def test_reorder_reads_equip_stock_value(con):
+    _gold_tables(con, reorder_cols=[c for c in GOLD_REORDER if c != "EquipStockValue"])
+    con.execute('ALTER TABLE "Fact_NonJD_Reorder" ADD COLUMN EquipStockValue DECIMAL(18,2)')
+    con.execute('INSERT INTO "Fact_NonJD_Reorder" (Branch, Franchise, PartNumber, EquipStockValue) '
+                "VALUES ('1', 'A', 'P1', 123.45), ('1', 'A', 'P2', -7.10)")
+    from decimal import Decimal
+    rows = extract.reorder(con)
+    assert [r["equipStockValue"] for r in rows] == [Decimal("123.45"), Decimal("-7.10")]
+
+
+def test_check_columns_names_missing_equip_stock_value(con):
+    # a round 3 phase 1 Gold (contract v4) has LastReceived but no EquipStockValue
+    _gold_tables(con, reorder_cols=[c for c in GOLD_REORDER if c != "EquipStockValue"])
+    with pytest.raises(pl.MissingColumnsError, match="Fact_NonJD_Reorder.*EquipStockValue"):
+        extract.check_columns(con)

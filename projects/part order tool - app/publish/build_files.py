@@ -93,6 +93,19 @@ def _last_received(r: dict) -> dict:
     return {**r, "lastReceived": v.isoformat() if isinstance(v, date) else v}
 
 
+def _equip_stock_value(r: dict) -> dict:
+    """The row with contract v5's equipStockValue as a finite number rounded to cents (negative allowed, -0 -> 0).
+    Gold always sets it (Silver coalesces to 0), so missing, null or non-finite fails the publish."""
+    where = f"reorder row {r.get('branch')!r} {r.get('franchise')!r} {r.get('partNumber')!r}"
+    if "equipStockValue" not in r:
+        raise ValueError(f"{where} is missing field equipStockValue")
+    v = r["equipStockValue"]
+    if isinstance(v, bool) or not isinstance(v, (int, float, Decimal)) or             (isinstance(v, float) and not math.isfinite(v)) or (isinstance(v, Decimal) and not v.is_finite()):
+        raise ValueError(f"{where}: equipStockValue is {v!r}, not a finite number; Gold should always set it "
+                         f"(Gold and the publish are out of step)")
+    return {**r, "equipStockValue": round(float(v), 2) + 0.0}
+
+
 def _purchases_rows(rows: list) -> list:
     """purchases.json.gz rows: every key present, purchases12 a finite number (rounded to cents), no excluded
     branch, one row per branch + franchise; sorted by branch (numeric codes first, as the branch list) then
@@ -190,7 +203,7 @@ def build(reorder: list, history_for, transfers: list, names: dict, data_as_of: 
             surplus.append(_clean({"branch": key, "franchise": r["franchise"], "partNumber": r["partNumber"],
                                    "onHand": r["onHand"], "target": r["target"], "surplusQty": r["surplusQty"],
                                    "status": r["status"]}))
-        by_branch[key].append(_clean({k: v for k, v in _last_received(_round2(r)).items() if k != "branch"}))
+        by_branch[key].append(_clean({k: v for k, v in _equip_stock_value(_last_received(_round2(r))).items() if k != "branch"}))
 
     labels = pl.month_labels(current_month, 60)
     keys = sorted(by_branch, key=lambda b: (0, int(b), "") if b.isdigit() else (1, 0, b))

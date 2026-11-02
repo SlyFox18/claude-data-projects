@@ -28,7 +28,8 @@ NULLABLE = {"slc", "source", "commodityCode", "phaseInQty", "phaseInEnds", "phas
 
 def _row(branch, part, surplus, cost="12.50", **kw):
     r = {"branch": branch, "franchise": "A", "partNumber": part, "onHand": 5, "target": 3,
-         "surplusQty": surplus, "status": "OK", "cost": Decimal(cost), **ROUND2, "lastReceived": None}
+         "surplusQty": surplus, "status": "OK", "cost": Decimal(cost), **ROUND2, "lastReceived": None,
+         "equipStockValue": Decimal("0.00")}
     r.update(kw)
     return r
 
@@ -170,7 +171,7 @@ def test_write_meta_plain_json(out):
     assert raw[:2] != b"\x1f\x8b"
     meta = json.loads(raw)
     assert meta == {"dataAsOf": AS_OF, "publishedAt": "2026-10-20T12:00:00+00:00", "source": "dev",
-                    "branches": branches, "counts": counts, "schemaVersion": 1, "contractVersion": 4}
+                    "branches": branches, "counts": counts, "schemaVersion": 1, "contractVersion": 5}
 
 
 def test_nan_rejected():
@@ -268,7 +269,7 @@ def test_reorder_row_at_excluded_branch_raises(out, branch):
 def test_meta_has_contract_version(out):
     _, branches = _build()
     path = build_files.write_meta(AS_OF, AS_OF, "dev", branches, {})
-    assert json.loads(open(path, "rb").read())["contractVersion"] == 4
+    assert json.loads(open(path, "rb").read())["contractVersion"] == 5
 
 
 @pytest.mark.parametrize("bad", [float("nan"), float("inf"), float("-inf"), Decimal("NaN")])
@@ -465,3 +466,34 @@ def test_purchases_duplicate_key_fails(out):
     with pytest.raises(ValueError, match="duplicate"):
         _build(purchases=[{"branch": "1", "franchise": "A", "purchases12": 1.0},
                           {"branch": "1", "franchise": "A", "purchases12": 2.0}])
+
+
+# ---- Round 3 phase 3 (Plan K3): contract v5, equipStockValue ----
+
+def test_reorder_equip_stock_value_is_a_number_rounded_to_cents(out):
+    _build([_row("1", "P1", 0, equipStockValue=Decimal("123.45")),
+            _row("1", "P2", 0, equipStockValue=Decimal("0.00")),
+            _row("1", "P3", 0, equipStockValue=Decimal("-7.10"), onHand=0),
+            _row("1", "P4", 0, equipStockValue=12.3456),
+            _row("1", "P5", 0, equipStockValue=-0.001),
+            _row("1", "P6", 0, equipStockValue=Decimal("40")),
+            _row("1", "P7", 0, equipStockValue=5)])
+    parts = _read(out, "reorder_1.json.gz")["parts"]
+    vals = [p["equipStockValue"] for p in parts]
+    assert vals == [123.45, 0, -7.1, 12.35, 0, 40, 5]
+    assert all(type(v) in (int, float) for v in vals)
+    assert str(vals[4]) == "0"          # -0 is written as 0
+
+
+@pytest.mark.parametrize("bad", [None, float("nan"), float("inf"), float("-inf"), Decimal("NaN"), Decimal("Infinity"),
+                                 "12.5", True])
+def test_reorder_equip_stock_value_not_a_finite_number_fails(out, bad):
+    with pytest.raises(ValueError, match="equipStockValue"):
+        _build([_row("1", "P1", 0, equipStockValue=bad)])
+
+
+def test_reorder_row_missing_equip_stock_value_fails(out):
+    row = _row("1", "P1", 0)
+    del row["equipStockValue"]
+    with pytest.raises(ValueError, match="equipStockValue"):
+        _build([row])

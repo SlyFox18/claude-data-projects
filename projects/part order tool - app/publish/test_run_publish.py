@@ -23,7 +23,8 @@ ROUND2 = {"pendingQty": 0.0, "slc": None, "source": None, "commodityCode": None,
           "excessSupply": 12.0, "excessUnit": "Months", "allowSend": True, "allowReceive": True, "redistMax": 6.0,
           "redistUnit": "Months", "redistMinValue": 0.0, "excessKeep": 2, "freeExcess": 0, "convNeed": 0,
           "redistCap": 0, "redistEligible": False, "suggestedInQty": 0, "suggestedConvInQty": 0,
-          "suggestedOutQty": 0, "lastReceived": None}
+          "suggestedOutQty": 0, "lastReceived": None,
+          "equipStockValue": 0}
 
 
 class Env:
@@ -253,7 +254,7 @@ def test_missing_rules_columns_fail_before_extracting(env, monkeypatch):
 def test_meta_carries_contract_version(env, tmp_path):
     run_publish.main([])
     meta = json.loads((tmp_path / "out" / "_meta.json").read_bytes())
-    assert meta["contractVersion"] == 4 and meta["schemaVersion"] == 1
+    assert meta["contractVersion"] == 5 and meta["schemaVersion"] == 1
 
 
 
@@ -288,7 +289,7 @@ def test_out_builds_locally_without_upload_state_or_lock(env, tmp_path, monkeypa
     assert not env.state_file.exists()
     assert set(os.listdir(dest)) == DATA_FILES | {"_meta.json"}
     assert not (tmp_path / "out").exists()      # the publish's own output folder is untouched
-    assert json.loads((dest / "_meta.json").read_bytes())["contractVersion"] == 4
+    assert json.loads((dest / "_meta.json").read_bytes())["contractVersion"] == 5
 
 
 def test_out_ignores_publish_state(env, tmp_path):

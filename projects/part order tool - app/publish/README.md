@@ -47,8 +47,9 @@ What decides whether to publish:
   `Fact_OutstandingTransfers`, `Fact_NonJD_TransferSuggestion`, `Fact_NonJD_Purchases`, `NonJD_OrderRules`,
   `NonJD_TransferRules` or `NonJD_Transfers`) lacks a column the contract needs, naming the missing columns
   (`extract.check_columns`); a missing list, suggestion or purchases table is named with what to deploy. Gold and the
-  publish code must be deployed together (round 3 Gold, with `LastReceived` and `Fact_NonJD_Purchases`, with
-  contractVersion 4 publish code; against a round 2 Gold the publish fails naming `LastReceived` and writes nothing).
+  publish code must be deployed together (round 3 phase 3 Gold, with `EquipStockValue`, with contractVersion 5
+  publish code; against a round 3 phase 1 Gold the publish fails naming `EquipStockValue`, and against a round 2
+  Gold naming `LastReceived` and `EquipStockValue`, and writes nothing).
 - It refuses (exit 1) if a rule in `NonJD_OrderRules` or `NonJD_TransferRules` has a NaN or infinite number, naming
   the rule and the field, if Gold left a never-null round 2 reorder field null (see "Nulls"), or if a
   `Fact_NonJD_Purchases` row has a null or non-finite `Purchases12`, an excluded branch or a duplicate branch +
@@ -85,7 +86,7 @@ Task Scheduler setup:
 - Check `_meta.json`'s `contractVersion` first (missing = 1) and load nothing unless it is the version the app knows
   (messages under "File contract").
 
-## File contract (schemaVersion 1, contractVersion 4)
+## File contract (schemaVersion 1, contractVersion 5)
 
 - `schemaVersion` 1 = the rules-list file layout (2026-10-20); the earlier matrix-era shape was never consumed. It
   is unchanged in round 1.
@@ -97,9 +98,12 @@ Task Scheduler setup:
   (`transfer_rules.json.gz`, `transfer_suggestions.json.gz`) and `counts.transferSuggestions`. Deploy the v3 app
   first, then publish v3 (a v2 app refuses v3 data). **4 = round 3** (Plan I, 2026-10-30, returns and scrap): the
   reorder field `lastReceived` and a new file, `purchases.json.gz`. Deploy the v4 app first, then publish v4 (a v3
-  app refuses v4 data).
+  app refuses v4 data). **5 = round 3 phase 3** (Plan K): `equipStockValue`, Equip's own stock value (ON_HAND_VAL).
+  Deploy app 0.11.0 first, then publish v5.
 - **Bump `contractVersion`** on any removed or renamed field, any change in a field's meaning, or any new `status`
-  value. Don't bump for a new optional field: the app ignores fields it doesn't know.
+  value. Don't bump for a new optional field: the app ignores fields it doesn't know. (v5 is bumped anyway for
+  `equipStockValue`: the field is never null and 0 is a real value, so the app must tell "not published yet" (a v4
+  file) from 0, and it can only do that from `contractVersion`.)
 - **The app must refuse a `contractVersion` it doesn't know** and load nothing, rather than reading fields that have
   changed meaning:
   - newer than the app knows: "The app needs updating: the data was published in a newer format."
@@ -122,7 +126,9 @@ unsorted for reading); `.json.gz` files are gzip-compressed, `_meta.json` is pla
   `transferRuleId` can be null (`transferRuleId` is null exactly when the built-in default transfer rule applied).
   The others are never null: blank `transferRuleName` / `excessUnit` / `redistUnit` would arrive as `""` (Gold
   always fills them), a null `pendingQty` arrives as 0 (Part 2 counts it as 0), and any other null fails the publish.
-  The round 3 field `lastReceived` (contractVersion 4) is null when the part was never received. In
+  The round 3 field `lastReceived` (contractVersion 4) is null when the part was never received. The round 3
+  phase 3 field `equipStockValue` (contractVersion 5) is never null (a missing, null or non-finite value fails the
+  publish). In
   `purchases.json.gz`, no field is null. In the other files, any field may be null.
 - Dates are ISO strings (`2026-10-20`). Datetimes are ISO UTC with `+00:00` and may include fractional seconds.
 - Branch codes are Equip's text codes (e.g. `"1"`, `"92"`), **trimmed**. The `branch` value inside every file is that
@@ -136,7 +142,7 @@ unsorted for reading); `.json.gz` files are gzip-compressed, `_meta.json` is pla
 
 ### `_meta.json` (uploaded last)
 ```json
-{"schemaVersion": 1, "contractVersion": 4, "dataAsOf": "2026-10-20T11:41:07+00:00",
+{"schemaVersion": 1, "contractVersion": 5, "dataAsOf": "2026-10-20T11:41:07+00:00",
  "publishedAt": "2026-10-20T12:20:03.482915+00:00", "source": "prod",
  "branches": [{"branch": "1", "name": "Lubbock", "parts": 18234}],
  "counts": {"parts": 412345, "historyRows": 3456789, "transferLines": 210, "transferSuggestions": 2312}}
@@ -148,11 +154,13 @@ table, `transferLines` the Equip outstanding transfer lines read, `transferSugge
 `transfer_suggestions.json.gz`. `contractVersion` is described above (missing = 1).
 
 ### `reorder_<branch>.json.gz`
-`{"branch", "dataAsOf", "parts": [ ... ]}`, one object per part in scope at that branch. Each part has the 82 fields
-below (53 + 28 round 2 fields + 1 round 3 field): `extract.REORDER_COLUMNS` selects 83 columns, and `branch` is the
+`{"branch", "dataAsOf", "parts": [ ... ]}`, one object per part in scope at that branch. Each part has the 83 fields
+below (53 + 28 round 2 fields + 2 round 3 fields): `extract.REORDER_COLUMNS` selects 84 columns, and `branch` is the
 file-level key rather than a per-part field. They are renamed as shown (the camelCase of the Gold column unless noted). Gold's
 `RuleId` and `BuiltAtUtc` are not published (users see the rule name, not its list id); `TransferRuleId` is (plan E
 decision X6), for showing which transfer rule applied and for the parity check.
+
+Changed in contractVersion 5: one new field, `equipStockValue` (third table below). No existing field changed meaning.
 
 Changed in contractVersion 4: one new field, `lastReceived` (third table below). No existing field changed meaning.
 
@@ -233,11 +241,13 @@ the whole part.
 | redistEligible | Boolean: may take redistribution (allowReceive, target > 0, rate > 0, not ManualOrder / masked, no free excess) |
 | suggestedInQty, suggestedConvInQty, suggestedOutQty | Units suggested into this part (all kinds / conventional only) and out of it, from Gold's allocation; 0 when none |
 
-Round 3 field (contractVersion 4, Plan I decision I3):
+Round 3 fields (`lastReceived`: contractVersion 4, Plan I decision I3; `equipStockValue`: contractVersion 5, Plan K
+decisions K-D1 and K-D2):
 
 | Field | Meaning |
 |---|---|
 | lastReceived | Date string `YYYY-MM-DD`: the date of the newest supplier receipt (`Silver_InTrans` Type `P`) for this branch + franchise + trimmed part number, so trailing-space twin parts share it. Null = never received (in the InTrans history Gold reads). Display it; the returns screens use it for "received in the last N months" |
+| equipStockValue | Number, dollars rounded to cents: Equip's own stock value for the part at this branch (`Silver_PartInformation.InventoryCost`, Equip ON_HAND_VAL), not on hand x cost. Never null (Silver coalesces a missing value to 0); can be negative, and can be non-zero when on hand is 0 or below. On a v4 file the field is absent: "not in today's data yet", not 0 |
 
 ### Settings the app reads live (`NonJD_PartSettings`)
 
