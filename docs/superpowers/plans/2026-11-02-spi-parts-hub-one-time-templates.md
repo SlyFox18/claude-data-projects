@@ -3,7 +3,12 @@
 > **For agentic workers:** REQUIRED SUB-SKILL: use superpowers:subagent-driven-development, one task at a time with a
 > review after each (Brian's standing choice). Steps use checkbox (`- [ ]`) syntax.
 
-> **Progress:** plan written 2026-11-02 (Claude, for Brian).
+> **Progress:** plan written 2026-11-02 (Claude, for Brian). Decisions J-D1–J-D10 approved by Brian 2026-11-02.
+> - **J0 done 2026-11-02:** lists created by Brian and checked through Graph: NonJD_OneTimeTemplates
+>   `d13a45c7-fac0-4f37-8fcb-6c85c0ab0fb1` (Title, Description, Setup plain multi-line, Archived default No),
+>   NonJD_TemplateChanges `2b4bbe11-99c7-46fa-a542-c89b14b849b2` (Title, TemplateId indexed, Summary plain
+>   multi-line). Brian added `VITE_LIST_ONETIME_TEMPLATES` / `VITE_LIST_TEMPLATE_CHANGES` to `.env.production` and
+>   `.env.example`.
 
 **Goal:** One-Time Order set-ups can be saved as shared, editable templates with a who-changed-what history, so a
 season's order (e.g. "Cotton pre-season, all branches, KU + AM, Rolling 12, factor 1.5") is one click to start.
