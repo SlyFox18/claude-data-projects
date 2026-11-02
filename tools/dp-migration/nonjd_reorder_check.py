@@ -17,7 +17,9 @@ compared with Fact_NonJD_TransferSuggestion row by row. Also prints a fingerprin
 BuiltAtUtc) for run-twice determinism checks, and lists the rules, transfer rules and part settings that are skipped
 as invalid. Round 3 (Plan I, Task I2; plan docs/superpowers/plans/2026-10-30-spi-parts-hub-returns-and-scrap.md,
 decisions I1-I4) adds LastReceived on Fact_NonJD_Reorder and Fact_NonJD_Purchases, both from Silver_InTrans Type 'P'
-rows (purchases from suppliers).
+rows (purchases from suppliers). Round 3 (Plan K, Task K2; plan docs/superpowers/plans/2026-11-02-spi-parts-hub-
+cleanup-checks.md, decision K-D1) adds EquipStockValue = round(Silver_PartInformation.InventoryCost, 2) (Equip's
+ON_HAND_VAL; Silver coalesces it to 0), compared within 0.005.
 
 Choices the spec leaves open are marked "(choice)" in the comments; Gold and the app engine must make the same ones.
 
@@ -76,8 +78,11 @@ COMPARE_COLS = ["RuleId", "RuleName", "DemandBasis", "HistoryMonths", "MinDemand
                 "SuggestedConvInQty", "SuggestedOutQty", "LastReceived"]
 TOLERANCE_COLS = ["Supply", "SupplyMonths", "MinLineValue", "MaxLineValue", "WindowDemand", "UnitsSoldWindow",
                   "MonthlyRate",
-                  "EffectiveMin", "InboundTransferQty", "PendingQty", "ExcessSupply", "RedistMax", "RedistMinValue"]
+                  "EffectiveMin", "InboundTransferQty", "PendingQty", "ExcessSupply", "RedistMax", "RedistMinValue",
+                  "EquipStockValue"]
 TOLERANCE = 1e-6
+# Tolerance columns compared with their own tolerance instead of TOLERANCE (dollars at 2 dp).
+COL_TOLERANCE = {"EquipStockValue": 0.005}
 OUTPUT_COLS = ["Branch", "Franchise", "PartNumber", "RuleId", "RuleName", "DemandBasis", "HistoryMonths",
                "MinDemands", "SupplyUnit", "Supply", "SupplyMonths", "MinLineValue", "MaxLineValue",
                "WindowDemand", "UnitsSoldWindow", "DemandCount", "ActiveMonths", "MonthlyRate", "CalcTarget", "EffectiveMin",
@@ -91,7 +96,9 @@ OUTPUT_COLS = ["Branch", "Franchise", "PartNumber", "RuleId", "RuleName", "Deman
                "RedistMax", "RedistUnit", "RedistMinValue", "ExcessKeep", "FreeExcess", "ConvNeed", "RedistCap",
                "RedistEligible", "SuggestedInQty", "SuggestedConvInQty", "SuggestedOutQty",
                # round 3 (Plan I)
-               "LastReceived"]
+               "LastReceived",
+               # round 3 (Plan K)
+               "EquipStockValue"]
 SUGGESTED_COLS = ["SuggestedInQty", "SuggestedConvInQty", "SuggestedOutQty"]
 # Added after the allocation (EXPECTED_FROM_PART2_SQL), so not in the part2 table
 LATE_COLS = SUGGESTED_COLS + ["LastReceived"]
@@ -526,6 +533,8 @@ EXPECTED_SQL = f"""
                CAST(sc.PendingQty AS DOUBLE) AS PendingQty, sc.SLC, sc.Source, sc.CommodityCode,
                -- step 7b inputs: PhaseInQty validated (invalid -> NULL), the dates as stored
                ps.phase_qty AS PhaseInQty, ps.PhaseInEnds, ps.PhaseInOn,
+               -- round 3 (Plan K, K-D1): Equip's ON_HAND_VAL, 2 dp
+               round(sc.InventoryCost, 2) AS EquipStockValue,
                CAST(coalesce(ai.q, 0) AS INTEGER) AS AppInboundQty,
                CAST(coalesce(ao.q, 0) AS INTEGER) AS AppOutboundQty
         FROM in_scope_parts sc
@@ -843,6 +852,12 @@ PURCHASES_TOLERANCE = 0.005
 # The reorder output: part2 plus each part's suggested quantities (0 where none) and LastReceived. Lines join back
 # on the Branch values as stored (FromBranch / ToBranch are copied from the rows). LastReceived joins on Branch and
 # Franchise trimmed and upper-case and the trimmed part number, so trailing-space twin parts get the same date.
+# Columns in OUTPUT_COLS order; the LATE_COLS come from the joins, every other column from part2.
+_LATE_EXPR = {"SuggestedInQty": "CAST(coalesce(s.q_in, 0) AS INTEGER)",
+              "SuggestedConvInQty": "CAST(coalesce(s.q_conv, 0) AS INTEGER)",
+              "SuggestedOutQty": "CAST(coalesce(s.q_out, 0) AS INTEGER)",
+              "LastReceived": "lr.LastReceived"}
+assert set(_LATE_EXPR) == set(LATE_COLS)
 EXPECTED_FROM_PART2_SQL = f"""
     CREATE OR REPLACE TABLE expected AS
     WITH moves AS (
@@ -854,11 +869,7 @@ EXPECTED_FROM_PART2_SQL = f"""
     ),
     sums AS (SELECT Branch, Franchise, PartNumber, sum(q_in) AS q_in, sum(q_conv) AS q_conv, sum(q_out) AS q_out
              FROM moves GROUP BY ALL)
-    SELECT {", ".join("p." + c for c in OUTPUT_COLS if c not in LATE_COLS)},
-           CAST(coalesce(s.q_in, 0) AS INTEGER) AS SuggestedInQty,
-           CAST(coalesce(s.q_conv, 0) AS INTEGER) AS SuggestedConvInQty,
-           CAST(coalesce(s.q_out, 0) AS INTEGER) AS SuggestedOutQty,
-           lr.LastReceived
+    SELECT {", ".join(f"{_LATE_EXPR[c]} AS {c}" if c in LATE_COLS else "p." + c for c in OUTPUT_COLS)}
     FROM part2 p LEFT JOIN sums s
       ON p.Branch IS NOT DISTINCT FROM s.Branch AND p.Franchise IS NOT DISTINCT FROM s.Franchise
      AND p.PartNumber IS NOT DISTINCT FROM s.PartNumber
@@ -911,7 +922,8 @@ def invalid_settings(con) -> list:
 
 def _diff_cond(exact: list, approx: list) -> str:
     e = [f"g.{c} IS DISTINCT FROM e.{c}" for c in exact]
-    a = [f"((g.{c} IS NULL) <> (e.{c} IS NULL) OR abs(g.{c} - e.{c}) > {TOLERANCE})" for c in approx]
+    a = [f"((g.{c} IS NULL) <> (e.{c} IS NULL) OR abs(g.{c} - e.{c}) > {COL_TOLERANCE.get(c, TOLERANCE)})"
+         for c in approx]
     return " OR ".join(e + a) or "false"
 
 
@@ -993,7 +1005,7 @@ def load_inputs(con, tier: str, current_month: date) -> list:
     absent = []
     con.execute(f"""CREATE TABLE parts AS SELECT Branch, Franchise, PartNumber, QuantityOnHand, OnOrder, Cost,
                     DealerGroupCode, CAST(DateLastRequested AS TIMESTAMP) AS DateLastRequested,
-                    PendingQty, SLC, Source, CommodityCode, VendorCode
+                    PendingQty, SLC, Source, CommodityCode, VendorCode, InventoryCost
                     FROM delta_scan('{_path(tier, 'staging', 'Silver_PartInformation')}')""")
     con.execute(f"""CREATE TABLE inmaster AS SELECT Branch, Franchise, PartNumber, ProductGroup
                     FROM delta_scan('{_path(tier, 'staging', 'Silver_InMaster')}')""")

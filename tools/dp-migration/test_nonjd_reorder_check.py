@@ -4,6 +4,7 @@ round-1.md, "The calculation", "Validation" and decisions D13/D14), round 2 Part
 order-tool-round-2-design.md) and the compares."""
 import random
 from datetime import date
+from decimal import Decimal
 
 import duckdb
 import pytest
@@ -22,7 +23,7 @@ def _con():
     con.execute("""CREATE TABLE parts (Branch VARCHAR, Franchise VARCHAR, PartNumber VARCHAR,
                    QuantityOnHand DECIMAL(12,2), OnOrder DECIMAL(12,2), Cost DECIMAL(12,2), DealerGroupCode VARCHAR,
                    DateLastRequested TIMESTAMP, PendingQty DECIMAL(12,2), SLC VARCHAR, Source VARCHAR,
-                   CommodityCode VARCHAR, VendorCode INTEGER)""")
+                   CommodityCode VARCHAR, VendorCode INTEGER, InventoryCost DECIMAL(18,4))""")
     con.execute("CREATE TABLE inmaster (Branch VARCHAR, Franchise VARCHAR, PartNumber VARCHAR, ProductGroup VARCHAR)")
     con.execute("CREATE TABLE rules (Branch VARCHAR, Franchise VARCHAR, PartNumber VARCHAR, MinimumQty DECIMAL(10,2))")
     con.execute("""CREATE TABLE hist (Branch VARCHAR, Franchise VARCHAR, PartNumber VARCHAR, MonthStart DATE,
@@ -50,11 +51,12 @@ def _con():
 
 
 def _part(con, pn, oh=0, oo=0, cost=10, branch="1", franchise="MC", dgc=None, last_req=None, pending=None,
-          slc=None, source=None, commodity=None, vendor=None, product_group=None):
+          slc=None, source=None, commodity=None, vendor=None, product_group=None, inv_cost=0):
     con.execute("""INSERT INTO parts (Branch, Franchise, PartNumber, QuantityOnHand, OnOrder, Cost, DealerGroupCode,
-                       DateLastRequested, PendingQty, SLC, Source, CommodityCode, VendorCode)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-                [branch, franchise, pn, oh, oo, cost, dgc, last_req, pending, slc, source, commodity, vendor])
+                       DateLastRequested, PendingQty, SLC, Source, CommodityCode, VendorCode, InventoryCost)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                [branch, franchise, pn, oh, oo, cost, dgc, last_req, pending, slc, source, commodity, vendor,
+                 inv_cost])
     if product_group is not None:
         con.execute("INSERT INTO inmaster VALUES (?, ?, ?, ?)", [branch, franchise, pn, product_group])
 
@@ -148,7 +150,8 @@ def test_output_columns():
         "PhaseInEndReason", "AppInboundQty", "AppOutboundQty",
         "TransferRuleId", "TransferRuleName", "ExcessSupply", "ExcessUnit", "AllowSend", "AllowReceive",
         "RedistMax", "RedistUnit", "RedistMinValue", "ExcessKeep", "FreeExcess", "ConvNeed", "RedistCap",
-        "RedistEligible", "SuggestedInQty", "SuggestedConvInQty", "SuggestedOutQty", "LastReceived"]
+        "RedistEligible", "SuggestedInQty", "SuggestedConvInQty", "SuggestedOutQty", "LastReceived",
+        "EquipStockValue"]
 
 
 def test_scope_excludes_jd_test_franchises_and_zero_cost():
@@ -2683,7 +2686,7 @@ CMP_COLS = [("Branch", "VARCHAR"), ("Franchise", "VARCHAR"), ("PartNumber", "VAR
             ("RedistMinValue", "DOUBLE"), ("ExcessKeep", "INTEGER"), ("FreeExcess", "INTEGER"),
             ("ConvNeed", "INTEGER"), ("RedistCap", "INTEGER"), ("RedistEligible", "BOOLEAN"),
             ("SuggestedInQty", "INTEGER"), ("SuggestedConvInQty", "INTEGER"), ("SuggestedOutQty", "INTEGER"),
-            ("LastReceived", "DATE")]
+            ("LastReceived", "DATE"), ("EquipStockValue", "DECIMAL(18,2)")]
 BASE = dict(Branch="1", Franchise="MC", PartNumber="A", RuleId=1, RuleName="Default", DemandBasis="UnitsSold",
             HistoryMonths=12, MinDemands=3, SupplyUnit="Weeks", Supply=12.0, SupplyMonths=12 * 12 / 52,
             MinLineValue=10.0, MaxLineValue=500.0, WindowDemand=3.0, UnitsSoldWindow=3.0, DemandCount=4, ActiveMonths=2,
@@ -2696,7 +2699,7 @@ BASE = dict(Branch="1", Franchise="MC", PartNumber="A", RuleId=1, RuleName="Defa
             ExcessSupply=12.0, ExcessUnit="Months", AllowSend=True, AllowReceive=True, RedistMax=6.0,
             RedistUnit="Months", RedistMinValue=0.0, ExcessKeep=2, FreeExcess=0, ConvNeed=1, RedistCap=1,
             RedistEligible=True, SuggestedInQty=1, SuggestedConvInQty=1, SuggestedOutQty=0,
-            LastReceived=date(2026, 9, 14))
+            LastReceived=date(2026, 9, 14), EquipStockValue=Decimal("12.34"))
 
 
 def test_compare_covers_every_output_column():
@@ -2924,3 +2927,30 @@ def test_compare_purchases():
 def test_compare_flags_last_received():
     assert _cmp([{}], [{"LastReceived": None}])["different"] == 1
     assert _cmp([{"LastReceived": None}], [{"LastReceived": None}])["different"] == 0
+
+
+# ---------------------------------------------------------------------------------------------------------
+# round 3 (Plan K, Task K2): EquipStockValue = round(InventoryCost, 2)
+# ---------------------------------------------------------------------------------------------------------
+def test_equip_stock_value_passes_through_with_no_quantity():
+    con = _con()
+    _part(con, "A", oh=0, inv_cost=Decimal("12.345"))           # a value with 0 on hand passes through
+    _part(con, "B", oh=-2, inv_cost=Decimal("-7.5"))
+    _part(con, "C", oh=3)                                        # Silver's coalesced 0
+    out = _run(con)
+    assert out[K("A")]["EquipStockValue"] == Decimal("12.35")
+    assert out[K("B")]["EquipStockValue"] == Decimal("-7.50")
+    assert out[K("C")]["EquipStockValue"] == 0
+
+
+def test_compare_equip_stock_value_within_half_a_cent():
+    assert _cmp([{}], [{"EquipStockValue": Decimal("12.34")}])["different"] == 0
+    assert _cmp([{}], [{"EquipStockValue": Decimal("12.35")}])["different"] == 1
+    assert _cmp([{}], [{"EquipStockValue": None}])["different"] == 1
+    assert chk.COL_TOLERANCE["EquipStockValue"] == 0.005
+    con = duckdb.connect()                                       # Gold decimal(18,2) against a double reference
+    con.execute("CREATE TABLE g AS SELECT 1 AS k, CAST(12.34 AS DECIMAL(18,2)) AS EquipStockValue")
+    for ref, diff in ((12.344, 0), (12.336, 0), (12.346, 1)):
+        con.execute(f"CREATE OR REPLACE TABLE e AS SELECT 1 AS k, CAST({ref} AS DOUBLE) AS EquipStockValue")
+        n = con.execute(f"SELECT count(*) FROM g JOIN e USING (k) WHERE {chk._diff_where(['EquipStockValue'])}")
+        assert n.fetchone()[0] == diff, ref
