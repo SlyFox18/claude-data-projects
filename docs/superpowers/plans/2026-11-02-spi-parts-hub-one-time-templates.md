@@ -4,6 +4,10 @@
 > review after each (Brian's standing choice). Steps use checkbox (`- [ ]`) syntax.
 
 > **Progress:** plan written 2026-11-02 (Claude, for Brian). Decisions J-D1–J-D10 approved by Brian 2026-11-02.
+> - **J7 done 2026-11-02:** 0.10.0 on Fedora (Brian). Real test: "Test Template" (branch 1, BS, Rolling 12, factor 1 → 2,
+>   min demands 10, description "This is a test") saved, updated, archived; SharePoint had the row (Archived, Setup JSON
+>   correct) and three change entries by Brian Fox (Created; loading factor 1 → 2; Archived). The 4 rows were deleted;
+>   both lists are empty.
 > - **J6 done 2026-11-02** (app `66d8a39` clickThrough0100, `c34a2ce` feedback fixes: Review shows "From template X",
 >   "Template updated.", "Not saved to the template yet: …", aligned archive prompts; final-review fixes `f9aa99d`:
 >   a Full-year template in January keeps its period (period hint in `setupToTemplate`), card Archive re-reads (already
