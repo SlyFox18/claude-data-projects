@@ -4,6 +4,12 @@
 > review after each (Brian's standing choice). Steps use checkbox (`- [ ]`) syntax.
 
 > **Progress:** plan written 2026-11-02 (Claude, for Brian). Decisions K-D1–K-D11 approved by Brian 2026-11-02.
+> - **K7b done 2026-11-02** (app `d9732fb`, review fixes `538f244`; 2,531 tests in two halves, lint, tsc clean; pushed).
+>   Editor at `/cleanup/new` and `/cleanup/check/:id/edit` (Edit on the list and the results page): name, description,
+>   condition rows (field / comparison / value fitted to the type; months-ago or date; chips for "one of", status tick
+>   list, franchise / dealer group suggestions), live Try it (first run at once, debounced after, deferred over branch
+>   arrival; count + first 20), Save check (re-read; clash with built-ins and active checks; changed-meanwhile Replace;
+>   navigates with replace), leave guard. Numbers accept only plain or correctly grouped input ("$" on money only).
 > - **K7a done 2026-11-02** (app `b870a9d`, review fixes `240c7d7`; 2,494 tests in two halves, lint, tsc clean; pushed).
 >   Old page moved (git mv) to `/cleanup/minimums` (H1 "Minimums with no demand", otherwise unchanged); `/cleanup` =
 >   "Cleanup checks" list (built-ins, saved, Off, unreadable, Show archived; counts cached per conditions + data;
