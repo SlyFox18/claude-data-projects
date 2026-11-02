@@ -100,7 +100,7 @@ async function build(file, { title, subtitle, blocks, footer }) {
     numbering: { config: [
       { reference: 'bullets', levels: [0, 1].map((level) => ({ level, format: LevelFormat.BULLET, text: level ? '–' : '•', alignment: AlignmentType.LEFT,
         style: { paragraph: { indent: { left: 360 + level * 360, hanging: 260 } } } })) },
-      ...['steps', 'steps2', 'steps3', 'steps4', 'steps5', 'steps6', 'steps7', 'steps8', 'steps9', 'steps10'].map((reference) => ({ reference, levels: [{ level: 0, format: LevelFormat.DECIMAL, text: '%1.', alignment: AlignmentType.LEFT,
+      ...['steps', 'steps2', 'steps3', 'steps4', 'steps5', 'steps6', 'steps7', 'steps8', 'steps9', 'steps10', 'steps11'].map((reference) => ({ reference, levels: [{ level: 0, format: LevelFormat.DECIMAL, text: '%1.', alignment: AlignmentType.LEFT,
         style: { paragraph: { indent: { left: 360, hanging: 300 } } } }] })),
     ] },
     sections: [{

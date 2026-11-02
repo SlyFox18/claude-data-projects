@@ -5,7 +5,7 @@
 // Examples are from Prod data of 2026-10-27 (Fact_NonJD_Reorder built 11:40 UTC); the 0.5.0 section's transfer and
 // phase-in examples are from Dev data of 2026-10-28 (Gold built 14:12 UTC), because Prod has no round 2 data until the
 // release. Re-check them against Prod after the first 0.5.0 publish. Refresh examples when a section is added.
-// Labels follow nonjd-order-app 0.10.0 and the user guide (guide.js). The 0.6.0 section's examples are Prod data of
+// Labels follow nonjd-order-app 0.11.0 and the user guide (guide.js). The 0.6.0 section's examples are Prod data of
 // 2026-10-28 (Gold built 18:08 UTC): MULTISEAL at 1 "Transfer 44 from 6", R134A "Redistribution 52 from 13".
 // The 0.7.0 section's example is Brian's Prod TEST of 2026-10-29 (Plan G task G7): One-Time Order "TEST 0.7.0",
 // branch 1, ET-3912-J (MM) 1 from branch 3, $32.00, saved then cancelled.
@@ -20,6 +20,11 @@
 // src/pages/TemplatesPage.tsx). Prod had no templates (Brian's real test of 2026-11-02, "Test Template", was deleted
 // with its history), so the steps have the reader make a TEST 0.10.0 template (branch 1, BS, Rolling 12, factor 1.5 → 2)
 // and archive it.
+// The 0.11.0 section follows nonjd-order-app 0.11.0 (commit e8c6a7e: src/pages/cleanup/*, src/cleanup/fields.ts and
+// conditions.ts). Counts are Prod of 2026-11-02 (v5 publish, 199,706 parts, data as of 22:04 UTC): Minimums with no
+// demand 3,592, Stock value with no quantity 415. RM-24V at 11 (on hand -126, cost $500, Equip value -$63,000) is from
+// the plan's Prod survey of that day. The new check (On hand > 0, Sales 24 months = 0, Cost > 100) is Brian's real
+// test "TEST Check", deleted afterwards; the steps have the reader make "TEST 0.11.0" and archive it.
 // Run: npm install, then node walkthrough.js [output file]
 const { build, CONTENT_W } = require('./lib');
 
@@ -34,8 +39,8 @@ const notes = { answer: 'Notes (anything different, slow or confusing):' };
 
 build(process.argv[2] || 'Non-JD Order Tool - Walkthrough.docx', {
   title: 'SPI Parts Hub: walkthrough',
-  subtitle: 'Formerly the Non-JD Parts Order Tool · Hands-on steps through every page · Version 0.10.0 · November 2, 2026 · App: https://10.110.100.13:8443',
-  footer: 'SPI Parts Hub: walkthrough (0.10.0)',
+  subtitle: 'Formerly the Non-JD Parts Order Tool · Hands-on steps through every page · Version 0.11.0 · November 2, 2026 · App: https://10.110.100.13:8443',
+  footer: 'SPI Parts Hub: walkthrough (0.11.0)',
   blocks: [
     { p: 'This is a hands-on tour of the tool. Each step says what to do and what you should see. Tick **OK** when it matches. When it doesn’t, or something is slow or confusing, write it in the notes box under that section and send it to Brian.' },
     { bullets: [
@@ -133,13 +138,39 @@ build(process.argv[2] || 'Non-JD Order Tool - Walkthrough.docx', {
 
     { h2: '9. Cleanup and App Settings' },
     steps([
-      ['In the left menu, change the **Area** select to **Cleanup**. Pick branch **6**.', 'The Equip minimums on parts with no demand and no sales; branch 6 has about 1,000. The largest is about $21,000 (part 145019, module rim, minimum 65).'],
-      ['Click **App Settings**.', 'Your default branch and franchise, and **About** with the version (**0.10.0**).'],
+      ['In the left menu, change the **Area** select to **Cleanup**.', '**Cleanup checks**, with **Checks** the only item in the menu: the built-in checks **Minimums with no demand** and **Stock value with no quantity**, and any saved ones, each with a count over every branch (Part 2, 0.11.0).'],
+      ['Click **Minimums with no demand**, then pick branch **6**.', 'The Equip minimums on parts with no demand and no sales, with **← Cleanup checks** at the top; branch 6 has about 1,000. The largest is about $21,000 (part 145019, module rim, minimum 65).'],
+      ['Click **App Settings**.', 'Your default branch and franchise, and **About** with the version (**0.11.0**).'],
       ['Set your default branch, then open Recommended Reorder.', 'It opens on your default branch.'],
     ]),
     notes,
 
     { h1: 'Part 2: what’s new' },
+
+    { h2: 'Version 0.11.0 (November 2, 2026): Cleanup checks' },
+    { p: 'New since 0.10.0, from Ben’s “value without quantity” idea and his wish for more things to fix in Equip: **Cleanup is now a list of checks**. The user guide, section 7, explains them in full; this section opens the built-in ones, builds a check of your own and tidies it away.' },
+    { bullets: [
+      '**Cleanup checks:** the Cleanup area (its menu item is **Checks**) lists checks, each a list of parts to fix in Equip, with how many parts it finds over every branch.',
+      '**Two built in:** **Minimums with no demand** (the old Cleanup page, unchanged) and the new **Stock value with no quantity**: Equip shows a stock value of $1 or more, either way, but nothing or less than nothing on hand.',
+      '**Open a check** to filter it by branch and franchise, sort it by any column and **Export CSV**.',
+      '**Build your own** from conditions such as “On hand > 0” and “Sales 24 months = 0”, with **Try it** showing what it finds as you type. Saved checks are shared: anyone can edit, switch off or archive one.',
+    ] },
+    { note: 'Saving a check is real: everyone sees it straight away. Name it **TEST 0.11.0**, and **archive it** at the end of these steps (archiving hides it; Brian tidies up afterwards). The counts are from November 2 and change every morning; close is fine.' },
+    { h3: 'The built-in checks, then a check of your own' },
+    steps([
+      ['On the launch page, click the **Cleanup** card. Wait for the progress bar to finish.', '**Cleanup checks**: “Lists of parts to fix in Equip, over every branch. Open one to filter it and export a CSV.”, a **New check** button, and **Checks** the only item in the menu. Two rows marked **Built in**: **Minimums with no demand**, about **3,592 parts**, and **Stock value with no quantity**, about **415 parts**, with its conditions under it: “Equip stock value (either way) ≥ $1.00 and On hand ≤ 0”. While branches load, each count says “in N of 19 branches”.'],
+      ['Click **Stock value with no quantity**.', '**← Cleanup checks** at the top, the name, “Equip shows a stock value of $1 or more (either way) but nothing, or less than nothing, on hand.”, **Branch** and **Franchise** on **All**, about “415 parts” and a dollar total marked **Equip stock value**. Columns: Branch, Franchise, Part, Description, Bin, **On hand**, **Cost**, **Equip stock value**. Every On hand is 0 or less; every Equip stock value is $1.00 or more, or -$1.00 or less.'],
+      ['Set **Branch** to **11**. Click the **Equip stock value** heading (and again to reverse). Click **Export CSV** and open the file in Excel.', 'Only branch 11’s parts. The first click sorts the largest value first; the second puts the most negative first. On November 2 one of them was **RM-24V**: -126 on hand at $500.00, **-$63,000.00**. The file is called like `Cleanup-Stock value with no quantity-20261102.csv`: Branch, Franchise, PartNumber, Description, Bin, OnHand, Cost, EquipStockValue, branch 11 only.'],
+      ['Click **← Cleanup checks**, then **Minimums with no demand**.', 'The same page as before 0.11.0 (Equip min, On hand, Min × cost, Would order $ …), now with **← Cleanup checks** at the top. Go back to the list.'],
+      ['Click **New check**. Name it **TEST 0.11.0**. Condition 1 says **On hand** **=** **0**: change the comparison to **>** (leave 0).', 'Three cards: **Check** (“Nothing is saved until Save check.”), **Conditions** (“All conditions must match.”) and **Try it**: “What this check finds today over every branch, from this morning’s data. Nothing is saved.”, with a count of parts and the first 20.'],
+      ['Click **Add condition** and change its field to **Sales 24 months** (it says = 0). **Add condition** again: field **Cost**, comparison **>**, value **100**.', 'The new row starts on a field not used yet (On order, then Pending). Under the rows: “On hand > 0 and Sales 24 months = 0 and Cost > $100.00”. Try it updates after a moment (“Recomputing…”): parts with stock, no sales in two years and a cost over $100, and “The first 20 of N parts. Save the check to see them all.”'],
+      ['Type `abc` in the Cost value, then put **100** back.', 'A red “Enter a number.” under the row, **Save check** greyed out and Try it saying “Fix the conditions’ problems to try it.”; with 100 back, the count returns.'],
+      ['Click **Save check**.', 'The check’s results open with “Check saved.”: **TEST 0.11.0** with an **Edit** button, its conditions, and columns **On hand**, **Cost** and **Sales 24 months** after Bin. The total is marked **On-hand value (on hand × cost)**.'],
+      ['Click **Edit**, change the Cost value to **200** and click **Save check**.', '“Check updated.” and fewer parts than before.'],
+      ['Click **← Cleanup checks**. On the TEST 0.11.0 row click **Switch off**, then **Switch off** again. Then **Archive**, then **Archive**. Turn on **Show archived (1)**.', 'The row says **By** <your name> and its count. “Switch off TEST 0.11.0? It stays in the list, marked Off; Switch on brings it back.”: the row greys, gets an **Off** tag and moves under the checks that are on. “Archive TEST 0.11.0? It leaves the list; Show archived and Unarchive bring it back.”: the row goes and “1 archived check is hidden.” shows. With Show archived on: the row greyed with **Off** and **Archived** tags, **Unarchive** and no Open or Edit.'],
+    ]),
+    { p: '**Your opinion:** are the fields and comparisons easy to read? Is there a field you expected that isn’t in the list? Which checks would you build first?' },
+    notes,
 
     { h2: 'Version 0.10.0 (November 2, 2026): One-Time templates' },
     { p: 'New since 0.9.1, from Ben’s idea of saving One-Time settings that get used all the time: **templates**. The user guide, section 9, explains them in full; this section makes one, uses it, changes it and archives it.' },
@@ -435,6 +466,13 @@ build(process.argv[2] || 'Non-JD Order Tool - Walkthrough.docx', {
 
     { h1: 'Part 3: release checks (Brian)' },
     { p: 'Run these when a new version is deployed to the test server, after **Ctrl+F5** to load it.' },
+    { h3: '0.11.0' },
+    steps([
+      ['App Settings → **About**.', '**Version 0.11.0 · commit e8c6a7e**.'],
+      ['The morning after the backend deploy: the data date at the top right, then **Cleanup**.', 'The Gateway PC published contract 5 (Equip stock value): **Stock value with no quantity** shows a count, not “Not in today’s data yet”. (Done November 2: v5 publish, 199,706 parts, data as of 22:04 UTC; Minimums with no demand 3,592, Stock value with no quantity 415; `nonjd_reorder_check.py --tier prod` PASS.)'],
+      ['With Claude: a real test check on Prod (save, edit, switch off, archive), then check SharePoint and delete the TEST row.', 'NonJD_CleanupChecks holds the row with the right Conditions, Active and Archived, by you. (Done November 2: “TEST Check”, On hand > 0, Sales 24 months = 0, Cost > 100; edited, switched off, archived; correct in SharePoint, then deleted, list empty.)'],
+    ]),
+    notes,
     { h3: '0.10.0' },
     steps([
       ['App Settings → **About**.', '**Version 0.10.0 · commit 9cc43f0**.'],

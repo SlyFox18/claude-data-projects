@@ -4,6 +4,10 @@
 > review after each (Brian's standing choice). Steps use checkbox (`- [ ]`) syntax.
 
 > **Progress:** plan written 2026-11-02 (Claude, for Brian). Decisions K-D1–K-D11 approved by Brian 2026-11-02.
+> - **K11 done 2026-11-02:** user docs for 0.11.0: user guide section 7 "Cleanup checks (0.11.0)" (replaces
+>   "Cleanup: the numbers"), walkthrough Part 2 "Version 0.11.0" (10 steps) and Part 3 0.11.0 release checks,
+>   `projects/part order tool - app/CLEANUP-CHECKS.md` for Ben, FUTURE-IDEAS F1 done with follow-ups. Round 3
+>   complete.
 > - **K10 done 2026-11-02:** PR #47 merged 21:54Z, Deploy DP backend 21:55Z, Brian claimed the pipelines; 0.11.0 on
 >   Fedora; Prod items run ea595d30 (gold OK; Aftermarket model collided with its own hourly refresh, harmless);
 >   `nonjd_reorder_check.py --tier prod` PASS, 0 differences; Gateway PC pulled and published v5 (199,706 parts, data

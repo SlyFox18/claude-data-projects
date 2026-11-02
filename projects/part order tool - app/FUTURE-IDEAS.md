@@ -5,11 +5,11 @@ Brian, on 2026-10-28. Each entry gives the idea as described, what already exist
 open questions to settle before it is designed. Nothing here is scheduled; pick from this list when planning the
 next round.
 
-Round 2 is complete (0.7.0, phase 4 One-Time transfers). F2 is done in 0.8.0 (2026-10-30), F6 in 0.9.0 and F8 in 0.10.0 (both 2026-11-02).
+Round 2 is complete (0.7.0, phase 4 One-Time transfers). F2 is done in 0.8.0 (2026-10-30), F6 in 0.9.0, F8 in 0.10.0 and F1 in 0.11.0 (all 2026-11-02).
 
 | # | Idea | Rough size | Needs a design pass |
 |---|---|---|---|
-| F1 | More Cleanup checks | Small per check | No (list the checks) |
+| F1 | More Cleanup checks | **Done in 0.11.0** | No |
 | F2 | A landing page above the tools ("parts hub") | **Done in 0.8.0** | No |
 | F3 | Specials and promotions | Medium-large | **Yes** |
 | F4 | Inventory management (the Corp Parts Excel Reports) | Medium-large | **Yes** |
@@ -28,8 +28,24 @@ with an **on hand value but no on hand quantity** (an Equip quirk). Ben will loo
 spreadsheet formulas in descriptions). Each new check is a filter over data the publish already carries, or one
 more column in the publish.
 
-**Open.** Ben's list of checks. For the value-without-quantity check: which Equip value field (InMaster stock
-value or the cost × on hand), and whether the publish carries it today.
+**Done in 0.11.0 (2026-11-02)** as **Cleanup checks**: Cleanup is a list of checks over every branch, each with a
+count, a results page (branch and franchise filters, sort, Export CSV) and an editor. Two are built in: **Minimums
+with no demand** (the old page) and **Stock value with no quantity** (Equip stock value of $1 or more either way, on
+hand 0 or less; Prod had 415 on 2026-11-02). Anyone can save a check from conditions (field · comparison · value, all
+must match) over 22 fields, with a live Try it; saved checks are shared and can be edited, switched off and archived.
+The value is Equip's own (ON_HAND_VAL, `Silver_PartInformation.InventoryCost`), added to Gold and the publish
+(contract 5). Spec `docs/superpowers/specs/2026-10-30-spi-parts-hub-round-3-design.md` (phase 3), plan
+`docs/superpowers/plans/2026-11-02-spi-parts-hub-cleanup-checks.md` (decisions K-D1–K-D11), user guide section 7,
+`CLEANUP-CHECKS.md`.
+
+**Follow-ups:**
+- **Or** between conditions (today every condition must match; "A or B" needs two checks).
+- **Last sold** as a field: needs every branch's monthly history, too heavy for a list over every branch today.
+- **Checks per person:** today every saved check is shared; a personal vs shared choice (and "my checks" first).
+- **The "value without quantity" threshold** is fixed at $1 in the built-in; make it a setting.
+
+**Was open:** Ben's list of checks (any check can now be built without a release); which Equip value field (Equip's
+own stock value, not cost × on hand) and whether the publish carried it (it does since contract 5).
 
 ## F2. A landing page above the tools
 

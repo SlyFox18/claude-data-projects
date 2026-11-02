@@ -7,8 +7,11 @@
 > list, and the user docs (guide section 8, walkthrough 0.9.0, `projects/part order tool - app/RETURNS-AND-SCRAP.md`).
 > See the plan's Progress. **Phase 2 (0.10.0, One-Time templates) shipped 2026-11-02:** app 0.10.0 (commit
 > `9cc43f0`) on Fedora, a real test template saved, updated, archived and deleted, and the user docs (guide section 9,
-> walkthrough 0.10.0); see `docs/superpowers/plans/2026-11-02-spi-parts-hub-one-time-templates.md`. Next: the plan
-> for phase 3 (Cleanup checks, 0.11.0).
+> walkthrough 0.10.0); see `docs/superpowers/plans/2026-11-02-spi-parts-hub-one-time-templates.md`. **Phase 3
+> (0.11.0, Cleanup checks) shipped 2026-11-02:** Prod Gold with `EquipStockValue`, the v5 publish, app 0.11.0 (commit
+> `e8c6a7e`) on Fedora, a real test check saved, edited, switched off, archived and deleted, and the user docs (guide
+> section 7, walkthrough 0.11.0, `projects/part order tool - app/CLEANUP-CHECKS.md`); see
+> `docs/superpowers/plans/2026-11-02-spi-parts-hub-cleanup-checks.md`. **Round 3 is complete.**
 > **Origin:** `projects/part order tool - app/FUTURE-IDEAS.md` F6 (returns and scrap), F8 (templates), F1 (Cleanup
 > checks); Brian's scrap work for Ben, `projects/corp parts excel reports/Scrap/` (demand at other branches).
 > **Context:** test phase. Saved documents are test data and may be deleted (Brian, 2026-10-30).

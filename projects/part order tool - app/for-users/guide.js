@@ -1,8 +1,12 @@
 // Builds "Non-JD Order Tool - User Guide.docx" for Ben, Shannon, Barry and Curt.
-// Facts come from the app (nonjd-order-app 0.10.0: src/engine, src/pages, src/returns, src/oneTime, README),
-// ../REORDER-RULES.md and ../RETURNS-AND-SCRAP.md. Section 9 (One-Time templates, 0.10.0) follows the app's Template card
-// (src/pages/oneTime), Templates page and src/oneTime/templates.ts; its example template (Cotton pre-season) is made up,
-// because Prod had no templates at release.
+// Facts come from the app (nonjd-order-app 0.11.0: src/engine, src/pages, src/returns, src/oneTime, src/cleanup,
+// README), ../REORDER-RULES.md, ../RETURNS-AND-SCRAP.md and ../CLEANUP-CHECKS.md. Section 9 (One-Time templates, 0.10.0)
+// follows the app's Template card (src/pages/oneTime), Templates page and src/oneTime/templates.ts; its example template
+// (Cotton pre-season) is made up, because Prod had no templates at release.
+// Section 7 (Cleanup checks, 0.11.0) follows src/pages/cleanup (CleanupChecksPage, CheckResultsPage, CheckEditorPage,
+// ConditionRowEditor, MinimumsPage, builtIns.ts, checkResults.ts) and src/cleanup (fields.ts, conditions.ts). Counts
+// are Prod of 2026-11-02 (v5 publish, data as of 22:04 UTC): Minimums with no demand 3,592, Stock value with no
+// quantity 415. The saved-check example (On hand > 0, Sales 24 months = 0, Cost > 100) is Brian's real test, deleted.
 // Worked examples: Dev Gold Fact_NonJD_Reorder built 2026-10-26 (window Oct 2025 - Sep 2026); the transfer example
 // is the app's mock data (round numbers), as in REORDER-RULES.md. The Returns & scrap example (section 8) is Brian's Prod
 // test of 2026-11-02: rule "Scrap default" (All franchises, no sales 36 months, unit cost at least $0.10), 49 AM parts.
@@ -13,12 +17,12 @@ const w = (...fr) => fr.map((f) => Math.round(CONTENT_W * f));
 
 build(process.argv[2] || 'Non-JD Order Tool - User Guide.docx', {
   title: 'SPI Parts Hub: user guide',
-  subtitle: 'Formerly the Non-JD Parts Order Tool · For Ben, Shannon, Barry and Curt · Version 0.10.0 · November 2, 2026 (test version) · https://10.110.100.13:8443',
-  footer: 'SPI Parts Hub: user guide (version 0.10.0)',
+  subtitle: 'Formerly the Non-JD Parts Order Tool · For Ben, Shannon, Barry and Curt · Version 0.11.0 · November 2, 2026 (test version) · https://10.110.100.13:8443',
+  footer: 'SPI Parts Hub: user guide (version 0.11.0)',
   blocks: [
     { p: '**SPI Parts Hub** (until 0.8.0 the Non-JD Parts Order Tool) opens on a launch page where you pick what to work on: **Non-JD ordering**, **Cleanup**, **Returns & scrap** or **Part Lookup** today, with **JD ordering** and **Inventory management** to come. Most of this guide is about Non-JD ordering.' },
     { p: '**In one sentence:** Non-JD ordering shows each branch which non-John Deere parts to reorder and why, suggests stock other branches could send instead, lets you tune the rules behind those suggestions, and turns the parts you pick into an order file for each vendor.' },
-    { p: 'This guide covers getting in, what each page does, and exactly how every number is worked out. Version 0.8.0 includes Ben’s round 1 answers, several branches and dealer groups at once, **phase-in**, **transfer suggestions** and **saving transfers** in the app, with transfer orders and transfer rules, and **transfers on One-Time Orders** (round 2, from Ben’s answers of October 27), the **launch page** in front of it all (0.8.0), **returns and scrap** (0.9.0, section 8), and **One-Time templates** (0.10.0, section 9). What changed in each version is in the **walkthrough**, Part 2.' },
+    { p: 'This guide covers getting in, what each page does, and exactly how every number is worked out. Version 0.8.0 includes Ben’s round 1 answers, several branches and dealer groups at once, **phase-in**, **transfer suggestions** and **saving transfers** in the app, with transfer orders and transfer rules, and **transfers on One-Time Orders** (round 2, from Ben’s answers of October 27), the **launch page** in front of it all (0.8.0), **returns and scrap** (0.9.0, section 8), **One-Time templates** (0.10.0, section 9), and **Cleanup checks** (0.11.0, section 7). What changed in each version is in the **walkthrough**, Part 2.' },
 
     { h1: '1. Getting started' },
     { steps: [
@@ -37,13 +41,13 @@ build(process.argv[2] || 'Non-JD Order Tool - User Guide.docx', {
     { p: 'The app opens on the **launch page**: the SPI logo, a greeting, a **Branch** select (your App Settings default to start with) and the date of the morning data. Under it is a card for each area. The cards say what is waiting at the picked branch:' },
     { bullets: [
       '**Non-JD ordering:** reorder, One-Time Orders and their templates, transfers and rules. It shows the same figures as its Home page, for example “220 parts to order · $93,000” and, in purple, “67 could come by transfer”.',
-      '**Cleanup:** things to fix in Equip, for example “21 minimums with no demand at Branch 1” (the same count as Cleanup filtered to that branch).',
+      '**Cleanup:** checks that list parts to fix in Equip (0.11.0, section 7). The card counts only the minimums with no demand at the picked branch, for example “21 minimums with no demand at Branch 1” (the same count as **Minimums with no demand** filtered to that branch).',
       '**Returns & scrap** (0.9.0): vendor returns and scrap lists, for example “1 open return · 2 open scrap lists” (section 8).',
       '**Part Lookup:** any part’s stock, prices, history and settings.',
       '**JD ordering** and **Inventory management** are greyed out with **Coming later**: they show where the tool is heading and can’t be opened yet.',
     ] },
     { p: 'A count is left out when it is 0, while the data loads, or when the data can’t be read; the cards still work. Under the cards, **Other parts tools** links open **Parts Availability** and the **Parts reports** app in a new tab, next to **App Settings**.' },
-    { p: 'Inside an area, the **menu on the left** shows only that area’s pages. At the top are **‹ All areas** (back to the launch page) and the **Area** select, which opens another area. If leaving would lose ticked parts or unsaved transfers, the app asks first. The breadcrumb at the top starts with the area, for example “Non-JD ordering › Recommended Reorder”. App Settings stays at the bottom of the menu. The branch you’re looking at shows at the top right.' },
+    { p: 'Inside an area, the **menu on the left** shows only that area’s pages. At the top are **‹ All areas** (back to the launch page) and the **Area** select, which opens another area. If leaving would lose ticked parts or unsaved transfers, the app asks first. The breadcrumb at the top starts with the area, for example “Non-JD ordering › Recommended Reorder”. App Settings stays at the bottom of the menu. The branch you’re looking at shows at the top right. Cleanup has one menu item, **Checks** (0.11.0).' },
     { p: 'Every address from before 0.8.0 still opens the same page, so bookmarks keep working. The only change: the bare address is now the launch page, and Non-JD ordering’s Home is at **/non-jd**.' },
 
     { h2: 'Home (Non-JD ordering)' },
@@ -215,7 +219,7 @@ build(process.argv[2] || 'Non-JD Order Tool - User Guide.docx', {
     ] },
 
     { h2: 'Cleanup' },
-    { p: 'Its own area: open it from the launch page or the Area select. Equip minimums on parts with **no demand and no units sold** in the rule’s history months: the same lines that carry the Min, no demand tag. These minimums **do** apply to the order, so this is the list to fix. The list shows each one’s minimum, on hand, cost, the stock value the minimum commits (minimum × cost) and what it **would order** today. Export it to work through in Equip.' },
+    { p: 'Its own area (0.11.0): open it from the launch page or the Area select; its menu item is **Checks**. **Cleanup checks** lists checks, each a list of parts to fix in Equip over every branch: two built in (**Minimums with no demand**, as before, and **Stock value with no quantity**) and any that people save. Open one to filter it by branch and franchise, sort it and export a CSV; **New check** builds your own. Section 7 explains it job by job.' },
 
     { h2: 'Returns & scrap' },
     { p: 'Its own area (0.9.0): **Returns**, **Scrap** and **Return & scrap rules**. Section 8 explains it job by job.' },
@@ -343,13 +347,134 @@ build(process.argv[2] || 'Non-JD Order Tool - User Guide.docx', {
       ['Total, factor 1.5, max line value $100, cost $8', 'The order of 20 is worth $160, over $100. $100 ÷ $8 = 12.5, rounded down', '**12** ($96)'],
     ], widths: w(0.28, 0.54, 0.18), keep: true },
 
-    { h1: '7. Cleanup: the numbers' },
+    { h1: '7. Cleanup checks (0.11.0)' },
+    { p: 'The **Cleanup** area lists things to fix in Equip. Since 0.11.0 it is a list of **checks**: each check is a list of parts, over every branch, that meet its conditions. Two are built in, and anyone can build more without waiting for a new version of the app.' },
+    { note: 'Nothing here changes Equip. A check is a list you filter, export and work through; the fixes are made in Equip as today. A fixed part leaves the list with the next morning’s data.' },
+
+    { h2: 'The list of checks' },
+    { p: 'Open **Cleanup** from the launch page (or the Area select); **Checks** in the menu. The page is **Cleanup checks**: “Lists of parts to fix in Equip, over every branch. Open one to filter it and export a CSV.” It loads every branch first, with a progress bar. Each row shows:' },
     { bullets: [
-      '**Listed:** parts with an Equip minimum above 0, no min override, and **no demands and no units sold** in the rule’s history months, as of this morning’s snapshot.',
-      '**Minimum value** = Equip minimum × cost: the stock value that minimum commits. Example: 408DU, minimum 2 × $245.02 = $490.04.',
-      '**Would order** = Equip minimum (rounded up) − on hand − on order, never below 0, × cost: what the minimum makes the tool suggest today.',
+      '**Check:** the name (click it to open the check), the description, and its conditions in one line, for example “On hand > 0 and Sales 24 months = 0 and Cost > $100.00”.',
+      '**By:** **Built in**, or who made the check and who changed it last, for example “Ben Hill · changed Nov 2, 3:40 PM by Shannon Cole”.',
+      '**Parts:** how many parts it finds over every branch. The counts fill in as the branches load (“in 12 of 19 branches” until they all have). The counts change every morning.',
+      'The buttons: **Open** for every check; **Edit**, **Switch off** / **Switch on** and **Archive** for saved checks.',
+    ] },
+    { p: 'The two built-in checks come first, then the saved checks that are on (A to Z), then any that are switched off. On November 2, 2026 (Prod): **Minimums with no demand** found **3,592** parts and **Stock value with no quantity** **415**.' },
+    { p: 'The launch page card still shows only the minimums with no demand at your branch, so it is a much smaller number than the list’s count over every branch.' },
+
+    { h2: 'Minimums with no demand' },
+    { p: 'The same list as before 0.11.0, now opened from the checks list. Its page has **← Cleanup checks** at the top to go back.' },
+    { bullets: [
+      '**Listed:** parts with an Equip minimum above 0, no min override, and **no demands and no units sold** in the rule’s history months, as of this morning’s snapshot: the lines that carry the **Min, no demand** tag on Recommended Reorder. These minimums **do** apply to the order, so this is the list to fix.',
+      '**Min × cost** = Equip minimum × cost: the stock value that minimum commits. Example: 408DU, minimum 2 × $245.02 = $490.04.',
+      '**Would order $** = Equip minimum (rounded up) − on hand − on order, never below 0, × cost: what the minimum makes the tool suggest today.',
+      '**Export CSV** downloads `Branch, Franchise, PartNumber, Description, EquipMinimum, OnHand, Cost, MinimumValue, WouldOrderValue, LastRequested`.',
     ] },
     { p: 'To take a listed part off the order, fix the minimum in Equip, or set a min override of 0 on its Part page. To keep it stocked, leave it, or set the min override you want.' },
+
+    { h2: 'Stock value with no quantity' },
+    { p: 'New in 0.11.0, from Ben’s “value without quantity”. It lists parts where **Equip shows a stock value of $1 or more, either way, but nothing or less than nothing on hand**. Its conditions read “Equip stock value (either way) ≥ $1.00 and On hand ≤ 0”.' },
+    { bullets: [
+      '**Equip stock value** is Equip’s own figure for what the part’s stock is worth, as it shows on the part. It is **not** worked out by the tool from on hand × cost, so it can disagree with them, and it can be negative.',
+      '**Either way** means a value of $1.00 or more, or −$1.00 or less. Example: a part with none on hand and $120.00 of value is listed; so is a part with −2 on hand and −$45.00.',
+      '**Why it matters:** the stock value adds up into what the inventory is worth on the books. A value with no parts behind it means the books carry stock that isn’t on the shelf (or, when negative, the other way round). It usually needs a correction in Equip.',
+      '**Values under $1 are left out**, either way: Equip has many penny leftovers on parts with no stock, and they would bury the ones worth fixing.',
+    ] },
+    { p: 'On November 2, 2026 Prod had **415** such parts. The results show **On hand**, **Cost** and **Equip stock value** (with its sign), and the total at the top is the Equip stock value of the parts listed, which can be a negative dollar figure when the negative values outweigh the positive ones.' },
+
+    { h2: 'Open a check: filters, sort and CSV' },
+    { p: 'Click a check’s name or **Open**. The page shows the check’s name (with an **Off** tag if it is switched off, and **Edit** for a saved check), its description and its conditions, and **← Cleanup checks** to go back. Every branch loads first.' },
+    { bullets: [
+      '**Branch** and **Franchise** at the top narrow the list (**All** = every one). Picking a branch resets the franchise.',
+      'Next to them: the number of parts listed and their total value, written like “415 parts · -$1,234.56”. The value is the **Equip stock value** for Stock value with no quantity and for any check that uses Equip stock value; otherwise it is the **On-hand value (on hand × cost)**.',
+      'The table: **Branch**, **Franchise**, **Part** (click it to open the Part page), **Description**, **Bin**, then a column for each field the check’s conditions use. A date that is blank shows **Never**; a part with no dealer group shows **(none)**.',
+      '**Sort** by clicking a column heading; click again to reverse. While branches are still loading the list stays in branch order (“Listed by branch while the rest load; sorted once every branch has loaded.”).',
+      'The first 200 parts show; **Show 200 more** at the bottom adds more.',
+      '**Export CSV** downloads what the filters show, with the same columns as the table: `Branch, Franchise, PartNumber, Description, Bin`, then each field (for example `OnHand, Cost, EquipStockValue`). The file is named after the check and the data date, for example `Cleanup-Stock value with no quantity-20261102.csv`. If not every branch has loaded, the button reads **Export loaded branches (12 of 19)** and the file name ends in **-partial**.',
+    ] },
+
+    { h2: 'Build your own check' },
+    { p: 'Click **New check** on the list. The editor has three cards: **Check** (name and description), **Conditions** and **Try it**. “Nothing is saved until Save check.”' },
+    { steps: [
+      'Type a **Name** (required) and, if you like, a **Description**: what the check is for and what to do with the parts it finds.',
+      'Set **Condition 1**: pick a **field**, a **comparison** and a **value**. The value box fits the field: a number, a date, some text, or ticks. A new check starts with “On hand = 0”.',
+      'Click **Add condition** for each further condition. It starts on the next field not used yet. **Remove** takes a condition out (a check always has at least one). **All conditions must match**: a part is listed only when it meets every one.',
+      'Watch **Try it** (below): it shows what the check finds today, as you type.',
+      'Click **Save check**. The check’s results open with “Check saved.”, and the check is on the list for everyone.',
+    ], ref: 'steps11' },
+    { p: '**Example** (Brian’s test of November 2): **On hand > 0** and **Sales 24 months = 0** and **Cost > 100**: parts with stock on the shelf, no sales in two years, costing over $100 each. Under the conditions the editor sums them up in one line: “On hand > 0 and Sales 24 months = 0 and Cost > $100.00”.' },
+    { h3: 'The fields' },
+    { table: [
+      ['Field', 'What it is'],
+      ['On hand', 'Equip’s quantity on hand. Can be negative.'],
+      ['On order', 'Equip’s quantity on order (purchase orders and transfers in Equip).'],
+      ['Pending', 'Stock committed to open tickets in Equip.'],
+      ['Back order', 'Equip’s back-order quantity.'],
+      ['Cost', 'The part’s cost, per unit.'],
+      ['On-hand value', 'On hand (whole units, never below 0) × cost, worked out by the tool.'],
+      ['Equip stock value', 'Equip’s own stock value for the part, with its sign (see Stock value with no quantity).'],
+      ['Equip stock value (either way)', 'The size of Equip’s stock value whichever way it goes: −$45 counts as $45.'],
+      ['Equip minimum', 'The minimum set in Equip; blank when none.'],
+      ['Equip maximum', 'The maximum set in Equip; blank when none.'],
+      ['Sales 12 months', 'Units sold in the last 12 months, as Equip counts them.'],
+      ['Sales 24 months', 'Units sold in the last 24 months (the last 12 plus the 12 before).'],
+      ['Last requested', 'The last day the part was asked for at that branch; blank = never.'],
+      ['Last received', 'The last day the branch received it from a supplier; blank = never.'],
+      ['Status', 'The tool’s status this morning: Out of stock, Reorder, Stocked, Not stocked, and so on (section 3).'],
+      ['Franchise', 'The part’s franchise, such as BS or MM.'],
+      ['Dealer group', 'The dealer group code at that branch; type **(none)** for parts with no dealer group.'],
+      ['Vendor', 'The Equip vendor number, such as 1058 (leading zeros don’t matter).'],
+      ['Product group', 'The product group at that branch.'],
+      ['SLC', 'The part’s SLC code.'],
+      ['Source', 'The part’s source code.'],
+      ['Manual order', 'Whether the part is set to Manual order in this tool.'],
+    ], widths: w(0.3, 0.7) },
+    { p: 'Each branch’s own part record decides, as for rules, so a part can be on a check at one branch and not another. Only parts in the tool are checked: the non-John Deere parts with a cost above $0, at the branches the tool covers.' },
+    { h3: 'The comparisons' },
+    { table: [
+      ['Field kind', 'Comparisons'],
+      ['Numbers and dollars', '**=  ≠  <  ≤  >  ≥** and a number. Dollars compare to the cent. Equip minimum and maximum also offer **is blank** and **is not blank**.'],
+      ['Dates (Last requested, Last received)', '**before**, **before, or never**, **after**, **is blank** (never), **is not blank**. The value is **months ago** (1 to 120) or **a date**.'],
+      ['Text (Franchise, Dealer group, Product group, SLC, Source, Vendor)', '**is**, **is not**, **one of** (type a value and press Enter for each), and, except Vendor, **is blank** and **is not blank**. Capitals and spaces at either end don’t matter. Franchise and Dealer group suggest the values in today’s data.'],
+      ['Status', '**one of**: tick the statuses.'],
+      ['Manual order', '**is yes** or **is no**.'],
+    ], widths: w(0.32, 0.68), keep: true },
+    { p: '**“N months ago” keeps a check current.** “Last received before 24 months ago” always means 24 months before **today**, so the check needs no editing next month. Pick **a date** instead for a fixed day.' },
+    { p: '**“before, or never”** counts parts that were never requested (or never received) as old. Plain **before** leaves them out. Example: “Last received before 24 months ago, or never” finds parts not received in two years, including those never received at all.' },
+    { h3: 'Blanks' },
+    { p: 'Some parts have a blank: no Equip minimum, never requested, no dealer group. The rules:', keepNext: true },
+    { bullets: [
+      '**Number comparisons skip blanks.** “Equip minimum < 5” doesn’t list parts with no minimum; use **is blank** for those.',
+      '**Dates:** before and after skip “never”; **before, or never** and **is blank** include it.',
+      '**“is not” on text includes blanks.** “Product group is not FILTERS” also lists parts with no product group, because a blank isn’t FILTERS. Add “Product group is not blank” to leave them out.',
+      '**is** and **one of** never match a blank (except the dealer group’s **(none)**).',
+    ] },
+    { h3: 'Try it' },
+    { p: 'While you edit, **Try it** shows “What this check finds today over every branch, from this morning’s data. Nothing is saved.”: the number of parts and the first 20, with the fields the conditions use. It updates a moment after you stop typing (“Recomputing…”). When more than 20 match: “The first 20 of 1,234 parts. Save the check to see them all.” While a condition has a problem, a red line under it says what (“Enter a number.”, “Pick at least one.”, “Enter whole months from 1 to 120.”), and Try it says “Fix the conditions’ problems to try it.”' },
+    { h3: 'Saving' },
+    { bullets: [
+      '**Save check** is greyed out until there is a name and every condition is right. The name can’t be the same as a built-in check or another saved check that is on; Save then refuses it under the name: “A check called Old stock already exists.”',
+      'Saving opens the check’s results with **Check saved.**',
+      '**Cancel** goes back without saving. Leaving with unsaved changes asks first: “Leave this page? Your changes to this check aren’t saved.”',
+    ] },
+
+    { h2: 'Edit, switch off and archive' },
+    { p: 'Saved checks are shared: everyone sees them and anyone can change them. Nothing is ever deleted.' },
+    { bullets: [
+      '**Edit** (on the list, or at the top of the check’s page) opens the editor with the check filled in. **Save check** says **Check updated.** If someone else saved the check after you opened it, it asks first: “Shannon Cole changed this check at Nov 2, 3:40 PM. Replace it with yours?” (**Replace** or **Cancel**). If it was archived meanwhile: “This check was removed or archived meanwhile, so it wasn’t saved.”',
+      '**Switch off** asks “Switch off Old stock? It stays in the list, marked Off; Switch on brings it back.” An **Off** check is greyed, listed after the ones that are on, and can still be opened. Its name is free for another check. **Switch on** brings it back (unless another check that is on now has its name).',
+      '**Archive** asks “Archive Old stock? It leaves the list; Show archived and Unarchive bring it back.” A line under the list says how many are hidden (“1 archived check is hidden.”). **Show archived (1)** shows them greyed with an **Archived** tag and **Unarchive**; an archived check can’t be opened or edited until it is unarchived.',
+      'The built-in checks can’t be edited, switched off or archived.',
+    ] },
+
+    { h2: '“Not in today’s data yet”' },
+    { p: 'Equip stock value arrived with 0.11.0’s new morning data. When the morning data doesn’t carry a field yet, a check that uses it can’t run, and the app says so rather than listing nothing:' },
+    { bullets: [
+      'The list shows **Not in today’s data yet** instead of a count.',
+      'The check’s page says “Equip stock value isn’t in today’s data yet. It arrives with the next publish.” and “No parts are listed until then.”',
+      'In the editor, the field is marked “(not in today’s data yet)” (it can still be picked and saved), and Try it says **Not in today’s data yet**.',
+    ] },
+    { p: 'From November 2, 2026 the morning data has Equip stock value, so this should only show if something goes wrong with a morning’s data: tell Brian.' },
 
     { h1: '8. Returns & scrap (0.9.0)' },
     { p: 'The **Returns & scrap** area helps with two jobs: sending slow parts **back to the vendor for credit**, and **scrapping** parts that will never sell. Both start from parts that haven’t sold in a long time, at every branch at once. Before a part goes back or into the scrap, the tool shows whether another branch has asked for it, so it can go there instead.' },
