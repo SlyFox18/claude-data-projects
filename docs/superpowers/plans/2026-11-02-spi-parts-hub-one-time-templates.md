@@ -4,6 +4,15 @@
 > review after each (Brian's standing choice). Steps use checkbox (`- [ ]`) syntax.
 
 > **Progress:** plan written 2026-11-02 (Claude, for Brian). Decisions J-D1–J-D10 approved by Brian 2026-11-02.
+> - **J3 + J5 done 2026-11-02** (app `4801ff0` J5, `9c34681` J3, review fixes `613f0ca`; 2,271 tests in two halves, lint,
+>   tsc clean; pushed). Orders carry `templateId` / `templateName` ("· From template X"). Template card on Set up
+>   (`TemplateCard.tsx`, `useOneTimeTemplate.ts`, `TemplateHistory.tsx`, `src/oneTime/lastUsed.ts`; helpers
+>   `applyTemplateToday`, `changedSinceUsed`): two-phase Use (tick branches → wait for those to load → the rest; Cancel
+>   while waiting), Save as / Save as new, Update (enabled by `templateDiff`; re-reads at Update AND at Replace: archived
+>   meanwhile refuses, renamed meanwhile keeps the new name, changed again asks again), History, Archive, Stop using,
+>   "Changed by X on …" (`useAuthUserName`), notes box, "Updating also removes what today's data left out", a
+>   successful write whose list refresh fails warns instead of reporting failure. Dealer groups dropped only when a
+>   template franchise was kept; the "Pick the dealer groups" problem applies only while there are groups to pick.
 > - **J2 done 2026-11-02** (app `8334c5b`, review fixes `2bca57e`; 2,227 tests in two halves, lint, tsc clean; pushed).
 >   `periodFromMonths` (→ null with no usable month), `monthsFromPeriod`, `periodText`, `templateDiff`, `nameProblem`,
 >   `applyTemplate` (notes for what's left out; rolling capped by short history; unfinished months named as such),
