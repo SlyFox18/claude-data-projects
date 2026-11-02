@@ -4,6 +4,13 @@
 > review after each (Brian's standing choice). Steps use checkbox (`- [ ]`) syntax.
 
 > **Progress:** plan written 2026-11-02 (Claude, for Brian). Decisions K-D1–K-D11 approved by Brian 2026-11-02.
+> - **K10 done 2026-11-02:** PR #47 merged 21:54Z, Deploy DP backend 21:55Z, Brian claimed the pipelines; 0.11.0 on
+>   Fedora; Prod items run ea595d30 (gold OK; Aftermarket model collided with its own hourly refresh, harmless);
+>   `nonjd_reorder_check.py --tier prod` PASS, 0 differences; Gateway PC pulled and published v5 (199,706 parts, data
+>   as of 22:04Z). Live: Minimums with no demand 3,592 parts, Stock value with no quantity 415 parts. Real test: Brian's
+>   "TEST Check" (On hand > 0, Sales 24 = 0, Cost > 100; edited, switched off, archived) correct in SharePoint, then
+>   deleted (list empty). fabric-workspace-docs dev not yet fast-forwarded: Brian's local unpushed "Fabric Data Brain"
+>   commit b20a7838 sits on dev.
 > - **K8 + K9 done 2026-11-02** (app `7829b1d` clickThrough0110, `fee01b1` "Check saved." / "Check updated.", "← Cleanup
 >   checks", Add condition picks the next unused field; final-review fixes `192bf4c`: "Not in today's data yet" shown
 >   before branches load, blank dealer group "(none)" in results, quantities compare at 2 dp; `e8c6a7e` 0.11.0; 2,543
