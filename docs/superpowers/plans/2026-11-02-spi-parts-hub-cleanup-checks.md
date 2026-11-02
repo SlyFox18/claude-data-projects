@@ -4,6 +4,14 @@
 > review after each (Brian's standing choice). Steps use checkbox (`- [ ]`) syntax.
 
 > **Progress:** plan written 2026-11-02 (Claude, for Brian). Decisions K-D1–K-D11 approved by Brian 2026-11-02.
+> - **K7a done 2026-11-02** (app `b870a9d`, review fixes `240c7d7`; 2,494 tests in two halves, lint, tsc clean; pushed).
+>   Old page moved (git mv) to `/cleanup/minimums` (H1 "Minimums with no demand", otherwise unchanged); `/cleanup` =
+>   "Cleanup checks" list (built-ins, saved, Off, unreadable, Show archived; counts cached per conditions + data;
+>   switch / archive with alertdialog, re-read, name clash refused on Switch on / Unarchive); results at
+>   `/cleanup/value-no-qty` and `/cleanup/check/:id` (filters, per-branch row cache, sort deferred until loading ends,
+>   unique columns, CSV via formatQty, `-partial` only when the filter's branches aren't all loaded); rail "Checks";
+>   breadcrumb shows the check's name. Measured ~20–30 ms per check over 201,600 parts. `/cleanup/new` placeholder
+>   until K7b.
 > - **K6 done 2026-11-02** (app `d38f66d`, review fixes `8884837`; plus `b90217d` the $1 built-in; 2,446 tests in two halves,
 >   lint, tsc clean; pushed). `loadCleanupChecks()` → `{ rows, unreadable }` (unreadable rows keep itemId, name, reason,
 >   active, archived, modified, editor, so the page can show "can't be read" and still archive them); writes refuse a
