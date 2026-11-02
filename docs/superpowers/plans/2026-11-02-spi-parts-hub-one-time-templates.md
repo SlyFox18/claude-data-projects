@@ -4,6 +4,14 @@
 > review after each (Brian's standing choice). Steps use checkbox (`- [ ]`) syntax.
 
 > **Progress:** plan written 2026-11-02 (Claude, for Brian). Decisions J-D1–J-D10 approved by Brian 2026-11-02.
+> - **J2 done 2026-11-02** (app `8334c5b`, review fixes `2bca57e`; 2,227 tests in two halves, lint, tsc clean; pushed).
+>   `periodFromMonths` (→ null with no usable month), `monthsFromPeriod`, `periodText`, `templateDiff`, `nameProblem`,
+>   `applyTemplate` (notes for what's left out; rolling capped by short history; unfinished months named as such),
+>   `setupToTemplate` (→ null without a period; canonical keys: ztrim branches / groups, franchiseKey franchises,
+>   sorted). **Decided (Claude + review, 2026-11-02):** when none of a template's dealer groups is in today's data the
+>   order does NOT widen to every group: `dealerGroupsDropped` blocks Set up ("Pick the dealer groups for this order.").
+>   **For J3:** decide unsaved changes / Update with `templateDiff(...) !== ''`, never a structural compare; apply only
+>   after branches, franchises and labels have loaded, with dealer groups from the template's kept franchises.
 > - **J1 done 2026-11-02** (app `60e5b3c`, review fixes `5110355`; 2,195 tests in two halves, lint, tsc clean; pushed).
 >   Types, config keys (both required), five DataSource methods, Graph mappers, mock seeds ("Cotton pre-season",
 >   archived "Old 2024 order", 3 change entries). Writes refuse an invalid set-up or blank name before any request
