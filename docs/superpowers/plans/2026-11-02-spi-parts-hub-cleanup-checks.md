@@ -4,6 +4,12 @@
 > review after each (Brian's standing choice). Steps use checkbox (`- [ ]`) syntax.
 
 > **Progress:** plan written 2026-11-02 (Claude, for Brian). Decisions K-D1–K-D11 approved by Brian 2026-11-02.
+> - **K8 + K9 done 2026-11-02** (app `7829b1d` clickThrough0110, `fee01b1` "Check saved." / "Check updated.", "← Cleanup
+>   checks", Add condition picks the next unused field; final-review fixes `192bf4c`: "Not in today's data yet" shown
+>   before branches load, blank dealer group "(none)" in results, quantities compare at 2 dp; `e8c6a7e` 0.11.0; 2,543
+>   tests in two halves, lint, tsc clean; built and pushed). dist checked: cleanup checks list ID + the existing
+>   lists and site, no mock strings, "Version 0.11.0 · commit e8c6a7e". Brian's try-it (`for-users/0.11.0-try-it.md`)
+>   passed on mock. Backend PR #47 opened (EquipStockValue).
 > - **K7b done 2026-11-02** (app `d9732fb`, review fixes `538f244`; 2,531 tests in two halves, lint, tsc clean; pushed).
 >   Editor at `/cleanup/new` and `/cleanup/check/:id/edit` (Edit on the list and the results page): name, description,
 >   condition rows (field / comparison / value fitted to the type; months-ago or date; chips for "one of", status tick
