@@ -99,7 +99,7 @@ Task Scheduler setup:
   first, then publish v3 (a v2 app refuses v3 data). **4 = round 3** (Plan I, 2026-10-30, returns and scrap): the
   reorder field `lastReceived` and a new file, `purchases.json.gz`. Deploy the v4 app first, then publish v4 (a v3
   app refuses v4 data). **5 = round 3 phase 3** (Plan K): `equipStockValue`, Equip's own stock value (ON_HAND_VAL).
-  Deploy app 0.11.0 first, then publish v5.
+  Deploy app 0.11.0 first, then publish v5 (an older app refuses v5 data; 0.11.0 accepts v3–v5).
 - **Bump `contractVersion`** on any removed or renamed field, any change in a field's meaning, or any new `status`
   value. Don't bump for a new optional field: the app ignores fields it doesn't know. (v5 is bumped anyway for
   `equipStockValue`: the field is never null and 0 is a real value, so the app must tell "not published yet" (a v4

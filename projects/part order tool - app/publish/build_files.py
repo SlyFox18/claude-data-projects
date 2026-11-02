@@ -100,7 +100,9 @@ def _equip_stock_value(r: dict) -> dict:
     if "equipStockValue" not in r:
         raise ValueError(f"{where} is missing field equipStockValue")
     v = r["equipStockValue"]
-    if isinstance(v, bool) or not isinstance(v, (int, float, Decimal)) or             (isinstance(v, float) and not math.isfinite(v)) or (isinstance(v, Decimal) and not v.is_finite()):
+    is_number = isinstance(v, (int, float, Decimal)) and not isinstance(v, bool)
+    finite = is_number and (v.is_finite() if isinstance(v, Decimal) else math.isfinite(v))
+    if not finite:
         raise ValueError(f"{where}: equipStockValue is {v!r}, not a finite number; Gold should always set it "
                          f"(Gold and the publish are out of step)")
     return {**r, "equipStockValue": round(float(v), 2) + 0.0}

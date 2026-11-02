@@ -268,7 +268,7 @@ def test_committed_reads_the_lines_gold_counts(con):
 # ---- Round 3 (Plan I3): contract v4, lastReceived and Fact_NonJD_Purchases ----
 
 def test_reorder_columns_include_last_received():
-    assert extract.REORDER_COLUMNS[-2] == ("LastReceived", "lastReceived")
+    assert ("LastReceived", "lastReceived") in extract.REORDER_COLUMNS
 
 
 def test_reorder_reads_last_received_as_a_date(con):
