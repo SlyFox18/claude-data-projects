@@ -4,6 +4,12 @@
 > review after each (Brian's standing choice). Steps use checkbox (`- [ ]`) syntax.
 
 > **Progress:** plan written 2026-11-02 (Claude, for Brian). Decisions J-D1–J-D10 approved by Brian 2026-11-02.
+> - **J1 done 2026-11-02** (app `60e5b3c`, review fixes `5110355`; 2,195 tests in two halves, lint, tsc clean; pushed).
+>   Types, config keys (both required), five DataSource methods, Graph mappers, mock seeds ("Cotton pre-season",
+>   archived "Old 2024 order", 3 change entries). Writes refuse an invalid set-up or blank name before any request
+>   (mock throws the same). `parseTemplateSetup` normalises: fixed months 01–12, newest first, de-duplicated; year
+>   2000–2099; dealer groups `[]` → null, trimmed, `''` kept (the One-Time picker offers "(none)" = ''); branches and
+>   franchises trimmed, de-duplicated, blanks rejected; numeric ranges left to the page's `oneTimeProblems`.
 > - **J0 done 2026-11-02:** lists created by Brian and checked through Graph: NonJD_OneTimeTemplates
 >   `d13a45c7-fac0-4f37-8fcb-6c85c0ab0fb1` (Title, Description, Setup plain multi-line, Archived default No),
 >   NonJD_TemplateChanges `2b4bbe11-99c7-46fa-a542-c89b14b849b2` (Title, TemplateId indexed, Summary plain
