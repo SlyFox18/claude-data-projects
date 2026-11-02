@@ -4,6 +4,10 @@
 > review after each (Brian's standing choice). Steps use checkbox (`- [ ]`) syntax.
 
 > **Progress:** plan written 2026-11-02 (Claude, for Brian). Decisions J-D1–J-D10 approved by Brian 2026-11-02.
+> - **J8 done 2026-11-02:** user docs for 0.10.0: user guide section 9 "One-Time templates (0.10.0)" (plus Templates
+>   in section 2), walkthrough Part 2 "Version 0.10.0 (November 2, 2026): One-Time templates" (10 steps: make TEST
+>   0.10.0, use it, update the factor, Templates page, archive) and Part 3 0.10.0 checks; FUTURE-IDEAS F8 marked done
+>   with the low follow-ups.
 > - **J7 done 2026-11-02:** 0.10.0 on Fedora (Brian). Real test: "Test Template" (branch 1, BS, Rolling 12, factor 1 → 2,
 >   min demands 10, description "This is a test") saved, updated, archived; SharePoint had the row (Archived, Setup JSON
 >   correct) and three change entries by Brian Fox (Created; loading factor 1 → 2; Archived). The 4 rows were deleted;

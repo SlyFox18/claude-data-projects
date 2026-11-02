@@ -5,7 +5,7 @@
 // Examples are from Prod data of 2026-10-27 (Fact_NonJD_Reorder built 11:40 UTC); the 0.5.0 section's transfer and
 // phase-in examples are from Dev data of 2026-10-28 (Gold built 14:12 UTC), because Prod has no round 2 data until the
 // release. Re-check them against Prod after the first 0.5.0 publish. Refresh examples when a section is added.
-// Labels follow nonjd-order-app 0.9.1 and the user guide (guide.js). The 0.6.0 section's examples are Prod data of
+// Labels follow nonjd-order-app 0.10.0 and the user guide (guide.js). The 0.6.0 section's examples are Prod data of
 // 2026-10-28 (Gold built 18:08 UTC): MULTISEAL at 1 "Transfer 44 from 6", R134A "Redistribution 52 from 13".
 // The 0.7.0 section's example is Brian's Prod TEST of 2026-10-29 (Plan G task G7): One-Time Order "TEST 0.7.0",
 // branch 1, ET-3912-J (MM) 1 from branch 3, $32.00, saved then cancelled.
@@ -16,6 +16,10 @@
 // 2 x $239.62 = $479.24, last sold 2023-03, no demand elsewhere; 9447 (98-3/8" GANG BOLT) at 91, $490.48, demand at
 // 8 (2), 13 (2), 96 (2), 94 (1), Transfer instead to 8. There were no return rules on Prod, so the return steps have the
 // reader create one with the vendor's terms.
+// The 0.10.0 section follows nonjd-order-app 0.10.0 (commit 9cc43f0: src/pages/oneTime/TemplateCard.tsx,
+// src/pages/TemplatesPage.tsx). Prod had no templates (Brian's real test of 2026-11-02, "Test Template", was deleted
+// with its history), so the steps have the reader make a TEST 0.10.0 template (branch 1, BS, Rolling 12, factor 1.5 → 2)
+// and archive it.
 // Run: npm install, then node walkthrough.js [output file]
 const { build, CONTENT_W } = require('./lib');
 
@@ -30,8 +34,8 @@ const notes = { answer: 'Notes (anything different, slow or confusing):' };
 
 build(process.argv[2] || 'Non-JD Order Tool - Walkthrough.docx', {
   title: 'SPI Parts Hub: walkthrough',
-  subtitle: 'Formerly the Non-JD Parts Order Tool · Hands-on steps through every page · Version 0.9.1 · November 2, 2026 · App: https://10.110.100.13:8443',
-  footer: 'SPI Parts Hub: walkthrough (0.9.1)',
+  subtitle: 'Formerly the Non-JD Parts Order Tool · Hands-on steps through every page · Version 0.10.0 · November 2, 2026 · App: https://10.110.100.13:8443',
+  footer: 'SPI Parts Hub: walkthrough (0.10.0)',
   blocks: [
     { p: 'This is a hands-on tour of the tool. Each step says what to do and what you should see. Tick **OK** when it matches. When it doesn’t, or something is slow or confusing, write it in the notes box under that section and send it to Brian.' },
     { bullets: [
@@ -130,12 +134,39 @@ build(process.argv[2] || 'Non-JD Order Tool - Walkthrough.docx', {
     { h2: '9. Cleanup and App Settings' },
     steps([
       ['In the left menu, change the **Area** select to **Cleanup**. Pick branch **6**.', 'The Equip minimums on parts with no demand and no sales; branch 6 has about 1,000. The largest is about $21,000 (part 145019, module rim, minimum 65).'],
-      ['Click **App Settings**.', 'Your default branch and franchise, and **About** with the version (**0.9.1**).'],
+      ['Click **App Settings**.', 'Your default branch and franchise, and **About** with the version (**0.10.0**).'],
       ['Set your default branch, then open Recommended Reorder.', 'It opens on your default branch.'],
     ]),
     notes,
 
     { h1: 'Part 2: what’s new' },
+
+    { h2: 'Version 0.10.0 (November 2, 2026): One-Time templates' },
+    { p: 'New since 0.9.1, from Ben’s idea of saving One-Time settings that get used all the time: **templates**. The user guide, section 9, explains them in full; this section makes one, uses it, changes it and archives it.' },
+    { bullets: [
+      '**A template** saves a One-Time Order’s Set up under a name: branches, franchises, dealer groups, the months, the Calculation and the line value limits. Not the order name, and not transfers.',
+      '**Shared:** everyone sees the same templates, anyone can save, change or archive one, and every change is recorded with who and when. Nothing is deleted.',
+      '**The Template card** at the top of One-Time Order’s Set up: **Use** one to fill in the Set up, **Save as template**, and once you’re using one, **Update template**, **Save as new template**, **History**, **Archive** and **Stop using**.',
+      '**Periods stay current:** a Rolling 12 template always means the latest 12 months; a full year stays that year; picked months stay those months.',
+      '**A Templates page** in the Non-JD ordering menu, right under One-Time Order: every template with **Start order**, **History** and **Archive** / **Unarchive**.',
+      '**Orders say where they came from:** an order made from a template ends its calculation line with “· From template <name>”.',
+    ] },
+    { note: 'Saving a template is real: everyone sees it straight away. Name it **TEST 0.10.0**, and **archive it** at the end of these steps (archiving hides it; Brian tidies up afterwards). Don’t create the One-Time order itself. There were no templates on the test server on November 2, so these steps start by making one.' },
+    { h3: 'Make a template, use it, change it, archive it' },
+    steps([
+      ['Click **One-Time Order**. Look at the **Template** card at the top of Set up.', '“Start from a saved set-up, or save this one for next time.”, an empty **Start from a template** list with “No templates yet. Set up an order and save it as a template.”, and **Save as template**, greyed out until a branch has loaded and a month is picked.'],
+      ['Name the order **TEST 0.10.0**, tick branch **1** and franchise **BS**, choose **Rolling 12**, and under **Calculation** leave **Total** with a **Loading factor** of **1.5**.', '**Save as template** lights up.'],
+      ['Click **Save as template**. The **Template name** already says TEST 0.10.0; type a **Description** such as “Walkthrough practice”. Click **Save**.', 'The card now says **From template TEST 0.10.0** with the description, and the buttons **Update template** (greyed: nothing to save), **Save as new template**, **History**, **Archive** and **Stop using**. **History** shows one line: the date and time · your name · **Created**.'],
+      ['Reload the page (F5) to start a fresh order. Pick **TEST 0.10.0** under **Start from a template** and click **Use**.', 'For a moment “Starting from TEST 0.10.0. Waiting for the branches to load.”, then branch 1, BS, the last 12 months, Total and 1.5 are filled in, and the blank **Order name** becomes **TEST 0.10.0**. The card says **From template TEST 0.10.0**.'],
+      ['Change the **Loading factor** to **2**. Then back to **1.5**, then to **2** again.', 'With 2: “Not saved to the template yet: loading factor 1.5 → 2” under the buttons, and **Update template** lights up. With 1.5 the line goes and the button greys out again.'],
+      ['Click **Update template**, then **History**.', '“Template updated.” The history now has two lines, newest first: “… · <your name> · loading factor 1.5 → 2”, then **Created**.'],
+      ['Click **Continue to transfers**, then **Continue to review ›** (answer **Continue without them** if it asks).', 'The line about the calculation at the top of Review ends with “· From template TEST 0.10.0”. Don’t create the order.'],
+      ['Click **Templates** in the menu, right under One-Time Order.', '**One-Time templates**: a row **TEST 0.10.0** with “Walkthrough practice” under it, Set up “Branch 1 · BS · Rolling 12 · total units sold × 2”, Changed “<your name> · <date and time>”, and **Start order**, **History** and **Archive**. Click **History**: the same two lines as on the card.'],
+      ['Click **Start order** on that row.', 'One-Time Order, with TEST 0.10.0 filled in as in step 4 (factor **2** now). Click **Templates** again to go back.'],
+      ['Click **Archive** on the row, then **Archive** again. Turn on **Show archived (1)** and open **History**.', '“Archive TEST 0.10.0? It leaves One-Time Order’s template list; Unarchive brings it back.” The row goes, “1 archived template is hidden.” shows, and **Show archived (1)** appears. With it on: the row greyed, an **Archived** tag, **Unarchive** and no **Start order**; History starts with **Archived**. On One-Time Order, TEST 0.10.0 is no longer in the list.'],
+    ]),
+    { p: '**Your opinion:** is “Update template” versus “Save as new template” clear? Which of your One-Time orders would you save as templates?' },
+    notes,
 
     { h2: 'Version 0.9.0 (November 2, 2026): Returns & scrap' },
     { p: 'New since 0.8.1: a **Returns & scrap** area, for sending slow parts back to the vendor for credit and scrapping parts that will never sell. The user guide, section 8, explains each job; this section tries them once.' },
@@ -186,7 +217,7 @@ build(process.argv[2] || 'Non-JD Order Tool - Walkthrough.docx', {
     steps([
       ['Open the app (Ctrl+F5 the first time after the update).', 'The browser tab reads **SPI Parts Hub**. The launch page: the colour SPI logo, a greeting, “Where do you want to go?”, a **Branch** select and the data date. Five cards; **JD ordering** and **Inventory management** are greyed with **Coming later**.'],
       ['Set the branch to **1** and read the cards.', 'Non-JD ordering: about **220 parts to order** with their cost and, in purple, about **67 could come by transfer**. Cleanup: about **21 minimums with no demand at Branch 1**. Part Lookup has no count. The Coming later cards do nothing when clicked.'],
-      ['Click the **Non-JD ordering** card.', 'Home, with the same numbers as the card. The left menu has **‹ All areas**, the **Area** select on Non-JD ordering, and only its pages: Home, Recommended Reorder, One-Time Order, Transfers, Orders, Rules, Transfer rules, Special statuses.'],
+      ['Click the **Non-JD ordering** card.', 'Home, with the same numbers as the card. The left menu has **‹ All areas**, the **Area** select on Non-JD ordering, and only its pages: Home, Recommended Reorder, One-Time Order, Transfers, Orders, Rules, Transfer rules, Special statuses (and, since 0.10.0, Templates under One-Time Order).'],
       ['Open **Recommended Reorder** (continue to step 2 if it opens on transfers) and tick one part. Change the **Area** select to **Cleanup**.', '“Leave this page? 1 ticked part will be lost.” Click **Stay**: the tick is kept. Change the area again and click **Leave**: Cleanup, with only Cleanup in the menu.'],
       ['Click **‹ All areas**, then the **Part Lookup** card. Search a part and open it.', 'Part Lookup, with only Part Lookup in the menu; it stays there on the part page.'],
       ['Click **‹ All areas**. At the bottom, click **Parts Availability ↗**, then **Parts reports ↗**.', 'Each opens in a new tab: Parts Availability, and the Parts Reports app in Power BI. The launch page stays open.'],
@@ -404,6 +435,13 @@ build(process.argv[2] || 'Non-JD Order Tool - Walkthrough.docx', {
 
     { h1: 'Part 3: release checks (Brian)' },
     { p: 'Run these when a new version is deployed to the test server, after **Ctrl+F5** to load it.' },
+    { h3: '0.10.0' },
+    steps([
+      ['App Settings → **About**.', '**Version 0.10.0 · commit 9cc43f0**.'],
+      ['With Claude: a real test template on Prod (save, update, archive), then check SharePoint and delete the TEST rows.', 'NonJD_OneTimeTemplates holds the row (Archived, Setup correct) and NonJD_TemplateChanges one entry per change, by you. (Done November 2: “Test Template”, branch 1, BS, Rolling 12, factor 1 → 2, min demands 10; entries Created, loading factor 1 → 2, Archived; the 4 rows deleted, both lists empty.)'],
+      ['Non-JD ordering menu.', '**Templates** right under One-Time Order; it opens **One-Time templates** with “No templates yet. Save one from One-Time Order’s Set up.” while the list is empty.'],
+    ]),
+    notes,
     { h3: '0.9.0 and 0.9.1' },
     steps([
       ['App Settings → **About**.', '**Version 0.9.1 · commit 001e2e8**.'],

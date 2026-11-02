@@ -5,7 +5,10 @@
 > **Progress:** **phase 1 (0.9.0) shipped 2026-11-02** (0.9.1 the same day: the rule Franchise is a list, sticky
 > footers flush): Prod Gold with purchases / last received, the v4 publish, app 0.9.1 on Fedora, a real TEST scrap
 > list, and the user docs (guide section 8, walkthrough 0.9.0, `projects/part order tool - app/RETURNS-AND-SCRAP.md`).
-> See the plan's Progress. Next: plans for phase 2 (templates, 0.10.0) and phase 3 (Cleanup checks, 0.11.0).
+> See the plan's Progress. **Phase 2 (0.10.0, One-Time templates) shipped 2026-11-02:** app 0.10.0 (commit
+> `9cc43f0`) on Fedora, a real test template saved, updated, archived and deleted, and the user docs (guide section 9,
+> walkthrough 0.10.0); see `docs/superpowers/plans/2026-11-02-spi-parts-hub-one-time-templates.md`. Next: the plan
+> for phase 3 (Cleanup checks, 0.11.0).
 > **Origin:** `projects/part order tool - app/FUTURE-IDEAS.md` F6 (returns and scrap), F8 (templates), F1 (Cleanup
 > checks); Brian's scrap work for Ben, `projects/corp parts excel reports/Scrap/` (demand at other branches).
 > **Context:** test phase. Saved documents are test data and may be deleted (Brian, 2026-10-30).

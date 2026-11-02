@@ -5,7 +5,7 @@ Brian, on 2026-10-28. Each entry gives the idea as described, what already exist
 open questions to settle before it is designed. Nothing here is scheduled; pick from this list when planning the
 next round.
 
-Round 2 is complete (0.7.0, phase 4 One-Time transfers). F2 is done in 0.8.0 (2026-10-30), F6 in 0.9.0 (2026-11-02).
+Round 2 is complete (0.7.0, phase 4 One-Time transfers). F2 is done in 0.8.0 (2026-10-30), F6 in 0.9.0 and F8 in 0.10.0 (both 2026-11-02).
 
 | # | Idea | Rough size | Needs a design pass |
 |---|---|---|---|
@@ -16,7 +16,7 @@ Round 2 is complete (0.7.0, phase 4 One-Time transfers). F2 is done in 0.8.0 (20
 | F5 | Scheduled reminders | Medium | Yes (with F3) |
 | F6 | One-Time returns and scrap | **Done in 0.9.0** | No |
 | F7 | Warn before losing ticked parts on Recommended Reorder | **Done in 0.5.0** | No |
-| F8 | One-Time order templates | Small-medium | Light |
+| F8 | One-Time order templates | **Done in 0.10.0** | No |
 | F9 | Price change history (was N5) | Medium | Yes, later |
 
 ## F1. More Cleanup checks
@@ -139,7 +139,23 @@ search settings; the user saves them as a template and recalls them with one cli
 **Builds on.** One-Time's settings are already written into each saved order's Parameters JSON, so a template is
 that same JSON with a name, in a new SharePoint list (or reused from a past order: "Start from this order").
 
-**Open.** Shared templates or per user; who can edit them.
+**Done in 0.10.0 (2026-11-02)** as **One-Time templates**: a Template card on One-Time Order's Set up (Use, Save as
+template, Update template / Save as new template, History, Archive, Stop using) and a Templates page under One-Time
+Order (Start order, History, Archive / Unarchive). Templates are shared and anyone can change them; every change is
+recorded with who and when; periods are kept relative (Rolling N, a full year, or fixed months); a template whose
+values aren't in today's data fills what exists and says what it left out; orders record "From template X". Spec
+`docs/superpowers/specs/2026-10-30-spi-parts-hub-round-3-design.md` (phase 2), plan
+`docs/superpowers/plans/2026-11-02-spi-parts-hub-one-time-templates.md` (decisions J-D1–J-D10), user guide section 9.
+
+**Follow-ups (low, found while building it):**
+- Archive / Unarchive count as a change for "Changed by": they move the template's last-changed time, so after someone
+  archives and unarchives a template, the next person starting from it sees "Changed by X on …" though the Set up is
+  the same.
+- Orders keep "From template X" even if the Set up was changed after starting from the template (the order's own
+  parameters say what was really used).
+- "Create orders (N)" on One-Time Review counts lines, not orders.
+
+**Was open:** shared templates or per user; who can edit them. (Shared; anyone can edit.)
 
 ## F9. Price change history (was question N5)
 

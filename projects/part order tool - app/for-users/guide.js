@@ -1,6 +1,8 @@
 // Builds "Non-JD Order Tool - User Guide.docx" for Ben, Shannon, Barry and Curt.
-// Facts come from the app (nonjd-order-app 0.9.1: src/engine, src/pages, src/returns, README), ../REORDER-RULES.md and
-// ../RETURNS-AND-SCRAP.md.
+// Facts come from the app (nonjd-order-app 0.10.0: src/engine, src/pages, src/returns, src/oneTime, README),
+// ../REORDER-RULES.md and ../RETURNS-AND-SCRAP.md. Section 9 (One-Time templates, 0.10.0) follows the app's Template card
+// (src/pages/oneTime), Templates page and src/oneTime/templates.ts; its example template (Cotton pre-season) is made up,
+// because Prod had no templates at release.
 // Worked examples: Dev Gold Fact_NonJD_Reorder built 2026-10-26 (window Oct 2025 - Sep 2026); the transfer example
 // is the app's mock data (round numbers), as in REORDER-RULES.md. The Returns & scrap example (section 8) is Brian's Prod
 // test of 2026-11-02: rule "Scrap default" (All franchises, no sales 36 months, unit cost at least $0.10), 49 AM parts.
@@ -11,12 +13,12 @@ const w = (...fr) => fr.map((f) => Math.round(CONTENT_W * f));
 
 build(process.argv[2] || 'Non-JD Order Tool - User Guide.docx', {
   title: 'SPI Parts Hub: user guide',
-  subtitle: 'Formerly the Non-JD Parts Order Tool · For Ben, Shannon, Barry and Curt · Version 0.9.1 · November 2, 2026 (test version) · https://10.110.100.13:8443',
-  footer: 'SPI Parts Hub: user guide (version 0.9.1)',
+  subtitle: 'Formerly the Non-JD Parts Order Tool · For Ben, Shannon, Barry and Curt · Version 0.10.0 · November 2, 2026 (test version) · https://10.110.100.13:8443',
+  footer: 'SPI Parts Hub: user guide (version 0.10.0)',
   blocks: [
     { p: '**SPI Parts Hub** (until 0.8.0 the Non-JD Parts Order Tool) opens on a launch page where you pick what to work on: **Non-JD ordering**, **Cleanup**, **Returns & scrap** or **Part Lookup** today, with **JD ordering** and **Inventory management** to come. Most of this guide is about Non-JD ordering.' },
     { p: '**In one sentence:** Non-JD ordering shows each branch which non-John Deere parts to reorder and why, suggests stock other branches could send instead, lets you tune the rules behind those suggestions, and turns the parts you pick into an order file for each vendor.' },
-    { p: 'This guide covers getting in, what each page does, and exactly how every number is worked out. Version 0.8.0 includes Ben’s round 1 answers, several branches and dealer groups at once, **phase-in**, **transfer suggestions** and **saving transfers** in the app, with transfer orders and transfer rules, and **transfers on One-Time Orders** (round 2, from Ben’s answers of October 27), the **launch page** in front of it all (0.8.0), and **returns and scrap** (0.9.0, section 8). What changed in each version is in the **walkthrough**, Part 2.' },
+    { p: 'This guide covers getting in, what each page does, and exactly how every number is worked out. Version 0.8.0 includes Ben’s round 1 answers, several branches and dealer groups at once, **phase-in**, **transfer suggestions** and **saving transfers** in the app, with transfer orders and transfer rules, and **transfers on One-Time Orders** (round 2, from Ben’s answers of October 27), the **launch page** in front of it all (0.8.0), **returns and scrap** (0.9.0, section 8), and **One-Time templates** (0.10.0, section 9). What changed in each version is in the **walkthrough**, Part 2.' },
 
     { h1: '1. Getting started' },
     { steps: [
@@ -34,7 +36,7 @@ build(process.argv[2] || 'Non-JD Order Tool - User Guide.docx', {
     { h2: 'The launch page and areas (0.8.0)' },
     { p: 'The app opens on the **launch page**: the SPI logo, a greeting, a **Branch** select (your App Settings default to start with) and the date of the morning data. Under it is a card for each area. The cards say what is waiting at the picked branch:' },
     { bullets: [
-      '**Non-JD ordering:** reorder, One-Time Orders, transfers and rules. It shows the same figures as its Home page, for example “220 parts to order · $93,000” and, in purple, “67 could come by transfer”.',
+      '**Non-JD ordering:** reorder, One-Time Orders and their templates, transfers and rules. It shows the same figures as its Home page, for example “220 parts to order · $93,000” and, in purple, “67 could come by transfer”.',
       '**Cleanup:** things to fix in Equip, for example “21 minimums with no demand at Branch 1” (the same count as Cleanup filtered to that branch).',
       '**Returns & scrap** (0.9.0): vendor returns and scrap lists, for example “1 open return · 2 open scrap lists” (section 8).',
       '**Part Lookup:** any part’s stock, prices, history and settings.',
@@ -183,6 +185,7 @@ build(process.argv[2] || 'Non-JD Order Tool - User Guide.docx', {
       '**Create order:** the same review and save as above; the order is marked One-Time.',
     ], ref: 'steps2' },
     { p: 'Masked and Manual order parts are left off One-Time Orders completely. The review says how many were left off. A phase-in doesn’t affect One-Time Orders.' },
+    { p: '**Templates** (0.10.0): the **Template** card at the top of Set up fills in a saved set-up with one click, or saves this one for next time. Section 9 explains it.' },
     { h3: 'The Transfers step' },
     { p: 'It works like Recommended Reorder step 1: “Transfers into branch 1”, every line ticked to start with, a quantity never above the suggestion, a **Search parts** box, and a footer with its own **Save**. The **Order** column shows the line’s one-time quantity before → after the ticked transfer, for example **22 → 0**. What it suggests:' },
     { bullets: [
@@ -194,6 +197,9 @@ build(process.argv[2] || 'Non-JD Order Tool - User Guide.docx', {
     ] },
     { p: '**Continue to review ›** with unsaved ticks asks “Save the N ticked transfers first?” (**Stay**, **Continue without them**, **Save and continue**). Review counts **saved** transfers only. They come off the quantity: a **Transfer in** column shows them, with “Includes 12 coming by transfer from branch 92” on the line. A line saved transfers cover fully stays on Review with **0** and **Covered by transfers**: it can’t be ticked, isn’t in the totals and is never ordered.' },
     { p: 'Changing the order’s settings after editing the ticks asks first (“Your transfer changes will be lost.”), because the transfers are worked out again. A transfer order saved here says **From One-Time Order "<name>"** on its page.' },
+
+    { h2: 'Templates' },
+    { p: 'In the menu right under One-Time Order (0.10.0): every saved One-Time template, with **Start order**, **History** and **Archive**. Section 9 explains it.' },
 
     { h2: 'Rules' },
     { p: 'The rules that drive every suggestion (how much history to look at, how much to stock). Anyone in the test group can change them, and the page shows who last changed each rule and when. Section 4 explains them.' },
@@ -468,7 +474,79 @@ build(process.argv[2] || 'Non-JD Order Tool - User Guide.docx', {
     ] },
     { p: 'The hold is in the app only. **Equip isn’t changed**, and orders and transfer suggestions are worked out as before, so a tagged part can still be suggested as a transfer: check the tag before saving one. The hold ends when the list is sent to the vendor, scrapped or cancelled. Key the return or scrap into Equip promptly: until the next morning’s data shows the stock gone, the tool still counts it.' },
 
-    { h1: '9. During the test' },
+    { h1: '9. One-Time templates (0.10.0)' },
+    { p: 'A **template** saves a One-Time Order’s Set up under a name, so an order you make every season starts with one click. It holds:' },
+    { bullets: [
+      'the **branches**, **franchises** and **dealer groups** (none ticked = every group);',
+      'the **months**, kept as a period (see “Periods stay current” below);',
+      'the **Calculation**: Total or Avg / mo, the loading factor (or months of supply), min demands and min sales;',
+      'the **Min line value** and **Max line value**;',
+      'a **name** and an optional **description**.',
+    ] },
+    { p: 'It doesn’t hold the order name (that belongs to each order) or any transfers: the Transfers step works those out fresh every time, from that day’s stock.' },
+    { p: 'Templates are **shared**: everyone sees the same ones, and anyone can save, change or archive one. Every change is recorded with who made it and when, and nothing is ever deleted. You work with them in two places: the **Template** card at the top of One-Time Order’s Set up (“Start from a saved set-up, or save this one for next time.”) and the **Templates** page in the menu, right under One-Time Order.' },
+
+    { h2: 'Save a Set up as a template' },
+    { steps: [
+      'Set up a One-Time Order as usual: branches, franchises, any dealer groups, the months, the Calculation and any line value limits.',
+      'On the **Template** card, click **Save as template**. (It stays greyed out until the branches have loaded, a month is picked and the Calculation has no problems.)',
+      'Type a **Template name** (it starts as the order name) and, if you like, a **Description**, such as who it is for or when it is used. Click **Save**.',
+    ], ref: 'steps9' },
+    { p: 'The name must be different from every other template that isn’t archived (capitals and spaces at either end don’t count), and at most 80 characters. The form says what’s wrong, for example “Give the template a name.” or “A template called "Cotton pre-season" already exists.” The template’s history starts with **Created**.' },
+
+    { h2: 'Start an order from a template' },
+    { steps: [
+      'Open **One-Time Order**. On the **Template** card, pick the template under **Start from a template** and click **Use**. (Or click **Start order** on the Templates page, which opens One-Time Order and does the same.)',
+      'The app ticks the template’s branches first and says “Starting from Cotton pre-season. Waiting for the branches to load.”, because franchises and dealer groups can only be ticked once their branches have loaded. **Cancel** stops it; so does changing the branch ticks yourself.',
+      'Then it fills in the rest: franchises, dealer groups, the months, the Calculation and the line value limits. If the **Order name** was blank, it gets the template’s name; a name you already typed is kept.',
+      'The card now says **From template Cotton pre-season**, with its description. Check the Set up and carry on as usual: **Continue to transfers**, then Review and **Create orders**.',
+    ], ref: 'steps10' },
+    { p: '**When something isn’t in today’s data.** The app never changes a template by itself, and never refuses to start from one. It fills in what today’s data has and lists what it left out in a blue box (**Dismiss** closes it), for example:', keepNext: true },
+    { bullets: [
+      '“Branch 97 isn’t in today’s data, so it was left out.” (the same for a franchise or a dealer group);',
+      '“Nov 2026 hasn’t finished yet, so it was left out.”, or a month older than the history (about 5 years) left out with a note saying so.',
+    ] },
+    { p: '**Dealer groups that are all gone.** If none of the template’s dealer groups is in today’s data, the order does **not** quietly widen to every group. The note says “Dealer group COTTON isn’t in today’s data. Pick the dealer groups for this order.”, and Set up waits until you tick the groups you want.' },
+
+    { h2: 'Change a template' },
+    { p: 'Templates are changed from One-Time Order’s Set up: start from the template, change the Set up, then save it back.' },
+    { bullets: [
+      'As soon as the Set up differs from the template, a line under the buttons says how, for example “Not saved to the template yet: loading factor 1.5 → 2”, and **Update template** lights up. Changing it back makes the line go away.',
+      '**Update template** saves your Set up into the same template, keeping its name and description. It says “Template updated.”, and the history gets a line such as “loading factor 1.5 → 2”.',
+      '**Save as new template** leaves the template as it was and saves your Set up as another one. The name starts as “Cotton pre-season (copy)”: change it.',
+      'If some of the template’s branches, franchises, dealer groups or months were left out today (above), **Update template** saves without them, and the card says so: “Updating also removes what today’s data left out (see the notes above).” Use **Save as new template** to keep the original as it was.',
+      '**Archive** (on the card) archives the template you are using, after asking. **Stop using** unhooks the Set up from the template without changing anything: the Set up stays as it is, and orders made from it no longer say which template they came from.',
+    ] },
+    { p: '**Someone else changed it meanwhile.** **Update template** reads the template again before saving. If someone saved it after you started from it, it asks first, for example “Shannon Cole changed this template on Nov 2, 10:14 AM (loading factor 1.5 → 2). Replace it with yours?”. **Replace** saves your Set up over theirs (their change stays in the history); **Cancel** saves nothing, so you can look first, or use Save as new template. If someone archived it meanwhile, it isn’t updated: “Someone archived this template, so it can’t be updated. Save it as a new template instead.”' },
+
+    { h2: 'History and “Changed by …”' },
+    { p: '**History** (on the card, and on each row of the Templates page) lists every change, newest first, one per line: when, who and what, for example “Nov 2, 10:14 AM · Shannon Cole · loading factor 1.5 → 2”. The first line is **Created**; **Archived** and **Unarchived** are recorded too. Several changes saved at once are joined with “;”, for example “added franchise KU; period Rolling 12 → Rolling 24”.' },
+    { p: 'When you start from a template that someone else has changed since you last started from it **on this computer**, the card says so: “Changed by Shannon Cole on Nov 2, 10:14 AM”, with a **History** link to see what changed. Your own changes don’t show it, and neither does the first time you use a template on a computer.' },
+
+    { h2: 'Periods stay current' },
+    { p: 'A template keeps the months as a **period**, not as fixed dates, so a template saved today still means the same thing next season. When you save, the app works out the period from the months ticked:', keepNext: true },
+    { table: [
+      ['You ticked', 'The template keeps', 'When you start from it later'],
+      ['The latest N complete months (Rolling 12, 24, 36 or any number)', '**Rolling N**', 'The N latest complete months on that day. Rolling 12 stays rolling: used in March 2027 it means March 2026 to February 2027.'],
+      ['Every month of one calendar year', '**Full year**, for example Full year 2025', 'Always January to December of that year.'],
+      ['Any other months', '**Those months**, for example May 2026, Mar 2026', 'Always those months. Once one is older than the history (about 5 years), it is left out with a note.'],
+    ], widths: w(0.3, 0.25, 0.45), keep: true },
+    { p: 'One catch: in January, the latest 12 months are exactly last year, so a **new** template saved then from last year’s months is kept as **Rolling 12**. A template that is already Full year 2025 stays Full year 2025 when you update it in January.' },
+
+    { h2: 'The Templates page' },
+    { p: '**Templates** in the Non-JD ordering menu (right under One-Time Order) lists every template: the **Name** with its description, the **Set up** in one line (for example “Branches 1, 92 · BS · Rolling 12 · total units sold × 1.5”), and **Changed** (who saved it last, and when). Each row has:', keepNext: true },
+    { bullets: [
+      '**Start order:** opens One-Time Order with the template filled in, as **Use** does.',
+      '**History:** opens the change list under the row; click it again to close it.',
+      '**Archive:** asks “Archive Cotton pre-season? It leaves One-Time Order’s template list; Unarchive brings it back.” An archived template isn’t offered on One-Time Order and has no Start order, but nothing is deleted and its history stays.',
+      '**Show archived (N)** at the top (only when some are archived) shows them greyed, with an **Archived** tag and an **Unarchive** button. While it is off, a line under the list says how many are hidden.',
+    ] },
+    { p: 'The page doesn’t edit templates: start from one, change the Set up and use **Update template**. An archived template keeps its name, so a new template can reuse it; unarchiving the old one then says “Rename the other Cotton pre-season first.” There is no rename button yet: archive the other one first if you want the old one back.' },
+
+    { h2: 'Orders say which template they came from' },
+    { p: 'An order made from a template records it. Review’s line about the calculation, and the same line on the saved order’s page (**Orders** → open it), end with “· From template Cotton pre-season”. Orders made after **Stop using** don’t.' },
+
+    { h1: '10. During the test' },
     { bullets: [
       'This is a test copy on a test server; the address and the certificate warning will change for the real version.',
       'Orders and settings you save are real (they go into the SharePoint lists), but nothing is sent to a vendor; you download the CSV and use it yourself.',
