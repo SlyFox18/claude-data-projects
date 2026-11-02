@@ -4,6 +4,11 @@
 > review after each (Brian's standing choice). Steps use checkbox (`- [ ]`) syntax.
 
 > **Progress:** plan written 2026-10-30 (Claude, for Brian).
+> - **I12 in progress 2026-11-02:** Type R confirmed = returns to the supplier (comments "Oct.2026 Surplus Return"), so
+>   Purchases12 stays gross Type P. PR #46 merged (`559fa6da`), Deploy DP backend succeeded 15:27Z, both Prod pipelines
+>   claimed by Brian, dev fast-forwarded. App 0.9.0 (`b81e253`) on Fedora. **Next:** after the 2026-11-03 06:15 Prod
+>   run, `/check-refresh prod` + `nonjd_reorder_check.py --tier prod`; then Brian pulls the Gateway PC; then the TEST
+>   scrap list on Fedora.
 > - **I11 done 2026-10-31** (app `1864bae` transfers-only save, `3d21014` One-Time tags, `1addf0d` launch card separator
 >   was a Latin-1 byte (showed "�" with both kinds open; from I7), `e5d9dbf` clickThrough090, final-review fixes
 >   `be315d6` (tags invalidated after every document action and a partial save; no stale in-flight read) and `5707a83`
