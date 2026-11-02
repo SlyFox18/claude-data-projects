@@ -4,6 +4,11 @@
 > review after each (Brian's standing choice). Steps use checkbox (`- [ ]`) syntax.
 
 > **Progress:** plan written 2026-11-02 (Claude, for Brian). Decisions J-D1–J-D10 approved by Brian 2026-11-02.
+> - **J4 done 2026-11-02** (app `bf452b4`, review fixes `ed6486a`; 2,293 tests in two halves, lint, tsc clean; pushed).
+>   `/templates` (top-level like `/one-time`; rail "Templates" after One-Time Order, new `copy` icon), H1 "One-Time
+>   templates": name + description, `setupText` line ("Branches 1, 92 · BS · Rolling 12 · total units sold × 1.5"),
+>   changed by / when, Start order (unarchived only) → `/one-time?template=<id>`, History, Archive / Unarchive
+>   (alertdialog, re-read first, clash → "Rename the other <name> first."), Show archived only when some are.
 > - **J3 + J5 done 2026-11-02** (app `4801ff0` J5, `9c34681` J3, review fixes `613f0ca`; 2,271 tests in two halves, lint,
 >   tsc clean; pushed). Orders carry `templateId` / `templateName` ("· From template X"). Template card on Set up
 >   (`TemplateCard.tsx`, `useOneTimeTemplate.ts`, `TemplateHistory.tsx`, `src/oneTime/lastUsed.ts`; helpers
