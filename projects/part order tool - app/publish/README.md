@@ -15,7 +15,8 @@ on https://spitractor.sharepoint.com/sites/SouthPlainsImplement-ReportSite.
   `workspaces/DP - Presentation - Dev/Fact Tables/Parts Order Tool/Build_Gold_NonJD_Reorder.Notebook`) and its
   independent check, `tools/dp-migration/nonjd_reorder_check.py`.
 - Runs on the Gateway PC (SPI00T4022W11), Task Scheduler `\SPI\Non-JD Order Tool Publish`, "run whether user is
-  logged on or not", as the Parts Availability task's account.
+  logged on or not", as the Parts Availability task's account. The repo there is `C:\data-projects` (pulled by hand,
+  on `dev`), so this folder is `C:\data-projects\projects\part order tool - app\publish`.
 - `NONJD_SOURCE` in `.env` picks the DP tier (`dev` or `prod`).
 
 ## Setup
