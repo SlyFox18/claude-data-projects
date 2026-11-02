@@ -5,7 +5,7 @@ Brian, on 2026-10-28. Each entry gives the idea as described, what already exist
 open questions to settle before it is designed. Nothing here is scheduled; pick from this list when planning the
 next round.
 
-Round 2 is complete (0.7.0, phase 4 One-Time transfers). F2 is done in 0.8.0 (2026-10-30).
+Round 2 is complete (0.7.0, phase 4 One-Time transfers). F2 is done in 0.8.0 (2026-10-30), F6 in 0.9.0 (2026-11-02).
 
 | # | Idea | Rough size | Needs a design pass |
 |---|---|---|---|
@@ -14,7 +14,7 @@ Round 2 is complete (0.7.0, phase 4 One-Time transfers). F2 is done in 0.8.0 (20
 | F3 | Specials and promotions | Medium-large | **Yes** |
 | F4 | Inventory management (the Corp Parts Excel Reports) | Medium-large | **Yes** |
 | F5 | Scheduled reminders | Medium | Yes (with F3) |
-| F6 | One-Time returns and scrap | Medium | Light |
+| F6 | One-Time returns and scrap | **Done in 0.9.0** | No |
 | F7 | Warn before losing ticked parts on Recommended Reorder | **Done in 0.5.0** | No |
 | F8 | One-Time order templates | Small-medium | Light |
 | F9 | Price change history (was N5) | Medium | Yes, later |
@@ -96,7 +96,23 @@ as Return or Scrap.
 **Builds on.** One-Time Order's search, ticking, multi-branch and export (0.3.0 / 0.4.0) and the Orders list with
 its Parameters JSON. Mostly a new mode of an existing page.
 
-**Open.**
+**Done in 0.9.0 (2026-11-02)** (0.9.1 the same day) as the **Returns & scrap** area: return and scrap rules per
+franchise (a scrap rule can cover all franchises), New return / New scrap list (company-wide, pre-picked up to the
+allowance for a return, **Transfer instead** to a branch with demand), saved documents with their own statuses and
+CSV, and holds shown as "On return / On scrap" tags. Spec `docs/superpowers/specs/2026-10-30-spi-parts-hub-round-3-design.md`
+(decisions R1–R16), plan `docs/superpowers/plans/2026-10-30-spi-parts-hub-returns-and-scrap.md`, reference for Ben
+`RETURNS-AND-SCRAP.md`. The answers: the criteria are rule fields (no sales, not received, min line value / unit
+cost, leave out Manual order / minimums, season); the allowance is a % of 12-month purchases, stock value or the
+qualifying value, chosen per rule, and the tool warns but doesn't stop at it; the CSV has cost, credit % and credit
+value; returns and scrap are saved documents with statuses.
+
+**Follow-ups (small, found while building it):**
+- The Returns and Scrap lists read every document's lines to show its lines, value and branches, so they get slower
+  as history builds up. Store a line count and total on the document instead.
+- A Draft whose lines were all removed isn't counted on the launch card ("N open returns"), though it is still open.
+- Transfer instead goes by requests only: it doesn't check whether the receiving branch already has plenty.
+
+**Was open:**
 - The criteria: months without sales, on hand > 0, franchise, dealer group, maybe age since last receipt.
 - The return allowance: is the 10% of value or of quantity, and of what (purchases in a period, stock)? Should
   the tool stop at the allowance?

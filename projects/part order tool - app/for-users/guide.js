@@ -1,7 +1,9 @@
 // Builds "Non-JD Order Tool - User Guide.docx" for Ben, Shannon, Barry and Curt.
-// Facts come from the app (nonjd-order-app 0.8.0: src/engine, src/pages, README) and ../REORDER-RULES.md.
+// Facts come from the app (nonjd-order-app 0.9.1: src/engine, src/pages, src/returns, README), ../REORDER-RULES.md and
+// ../RETURNS-AND-SCRAP.md.
 // Worked examples: Dev Gold Fact_NonJD_Reorder built 2026-10-26 (window Oct 2025 - Sep 2026); the transfer example
-// is the app's mock data (round numbers), as in REORDER-RULES.md.
+// is the app's mock data (round numbers), as in REORDER-RULES.md. The Returns & scrap example (section 8) is Brian's Prod
+// test of 2026-11-02: rule "Scrap default" (All franchises, no sales 36 months, unit cost at least $0.10), 49 AM parts.
 // Run: npm install, then node guide.js [output file]
 const { build, CONTENT_W } = require('./lib');
 
@@ -9,12 +11,12 @@ const w = (...fr) => fr.map((f) => Math.round(CONTENT_W * f));
 
 build(process.argv[2] || 'Non-JD Order Tool - User Guide.docx', {
   title: 'SPI Parts Hub: user guide',
-  subtitle: 'Formerly the Non-JD Parts Order Tool · For Ben, Shannon, Barry and Curt · Version 0.8.0 · October 30, 2026 (test version) · https://10.110.100.13:8443',
-  footer: 'SPI Parts Hub: user guide (version 0.8.0)',
+  subtitle: 'Formerly the Non-JD Parts Order Tool · For Ben, Shannon, Barry and Curt · Version 0.9.1 · November 2, 2026 (test version) · https://10.110.100.13:8443',
+  footer: 'SPI Parts Hub: user guide (version 0.9.1)',
   blocks: [
-    { p: '**SPI Parts Hub** (until 0.8.0 the Non-JD Parts Order Tool) opens on a launch page where you pick what to work on: **Non-JD ordering**, **Cleanup** or **Part Lookup** today, with **JD ordering** and **Inventory management** to come. Most of this guide is about Non-JD ordering.' },
+    { p: '**SPI Parts Hub** (until 0.8.0 the Non-JD Parts Order Tool) opens on a launch page where you pick what to work on: **Non-JD ordering**, **Cleanup**, **Returns & scrap** or **Part Lookup** today, with **JD ordering** and **Inventory management** to come. Most of this guide is about Non-JD ordering.' },
     { p: '**In one sentence:** Non-JD ordering shows each branch which non-John Deere parts to reorder and why, suggests stock other branches could send instead, lets you tune the rules behind those suggestions, and turns the parts you pick into an order file for each vendor.' },
-    { p: 'This guide covers getting in, what each page does, and exactly how every number is worked out. Version 0.8.0 includes Ben’s round 1 answers, several branches and dealer groups at once, **phase-in**, **transfer suggestions** and **saving transfers** in the app, with transfer orders and transfer rules, and **transfers on One-Time Orders** (round 2, from Ben’s answers of October 27), and the **launch page** in front of it all (0.8.0). What changed in each version is in the **walkthrough**, Part 2.' },
+    { p: 'This guide covers getting in, what each page does, and exactly how every number is worked out. Version 0.8.0 includes Ben’s round 1 answers, several branches and dealer groups at once, **phase-in**, **transfer suggestions** and **saving transfers** in the app, with transfer orders and transfer rules, and **transfers on One-Time Orders** (round 2, from Ben’s answers of October 27), the **launch page** in front of it all (0.8.0), and **returns and scrap** (0.9.0, section 8). What changed in each version is in the **walkthrough**, Part 2.' },
 
     { h1: '1. Getting started' },
     { steps: [
@@ -34,6 +36,7 @@ build(process.argv[2] || 'Non-JD Order Tool - User Guide.docx', {
     { bullets: [
       '**Non-JD ordering:** reorder, One-Time Orders, transfers and rules. It shows the same figures as its Home page, for example “220 parts to order · $93,000” and, in purple, “67 could come by transfer”.',
       '**Cleanup:** things to fix in Equip, for example “21 minimums with no demand at Branch 1” (the same count as Cleanup filtered to that branch).',
+      '**Returns & scrap** (0.9.0): vendor returns and scrap lists, for example “1 open return · 2 open scrap lists” (section 8).',
       '**Part Lookup:** any part’s stock, prices, history and settings.',
       '**JD ordering** and **Inventory management** are greyed out with **Coming later**: they show where the tool is heading and can’t be opened yet.',
     ] },
@@ -208,6 +211,9 @@ build(process.argv[2] || 'Non-JD Order Tool - User Guide.docx', {
     { h2: 'Cleanup' },
     { p: 'Its own area: open it from the launch page or the Area select. Equip minimums on parts with **no demand and no units sold** in the rule’s history months: the same lines that carry the Min, no demand tag. These minimums **do** apply to the order, so this is the list to fix. The list shows each one’s minimum, on hand, cost, the stock value the minimum commits (minimum × cost) and what it **would order** today. Export it to work through in Equip.' },
 
+    { h2: 'Returns & scrap' },
+    { p: 'Its own area (0.9.0): **Returns**, **Scrap** and **Return & scrap rules**. Section 8 explains it job by job.' },
+
     { h2: 'App Settings' },
     { p: 'Your own default branch and franchise (saved in your browser only). The launch page, Reorder, One-Time Order and Part Lookup open on them. Open it from the bottom of the left menu or from the launch page. **About** shows the version.' },
 
@@ -339,7 +345,130 @@ build(process.argv[2] || 'Non-JD Order Tool - User Guide.docx', {
     ] },
     { p: 'To take a listed part off the order, fix the minimum in Equip, or set a min override of 0 on its Part page. To keep it stocked, leave it, or set the min override you want.' },
 
-    { h1: '8. During the test' },
+    { h1: '8. Returns & scrap (0.9.0)' },
+    { p: 'The **Returns & scrap** area helps with two jobs: sending slow parts **back to the vendor for credit**, and **scrapping** parts that will never sell. Both start from parts that haven’t sold in a long time, at every branch at once. Before a part goes back or into the scrap, the tool shows whether another branch has asked for it, so it can go there instead.' },
+    { bullets: [
+      '**Returns:** your saved vendor returns, and **New return**.',
+      '**Scrap:** your saved scrap lists, and **New scrap list**.',
+      '**Return & scrap rules:** each franchise’s return terms, and which parts are old enough to scrap.',
+    ] },
+    { p: 'The launch card says what is still open, for example “1 open return · 2 open scrap lists” (Draft or Exported; nothing when there are none).' },
+    { note: 'Nothing here changes Equip. A return or scrap list is a list you export and work from: key the return or the scrap into Equip as you do today. The stock leaves the tool’s figures with the next morning’s data, once Equip shows it gone.' },
+
+    { h2: 'Set up a return rule for a franchise' },
+    { p: 'A return rule holds a franchise’s return terms, so nobody has to remember them each time. Set it up once, **with your vendor’s terms**; every new return for that franchise uses it. There is **one active return rule per franchise**.' },
+    { steps: [
+      'Open **Return & scrap rules**, tab **Return rules**, and click **New return rule**.',
+      'Fill in the fields below. The **Try it** card under the form shows straight away what the rule would pick today.',
+      'Click **Save rule**. If another rule is already active for that franchise, the app asks “Rule ‘MM annual return’ is active for MM. Make this one active instead?”: **Make this one active** switches the other one off; **Stay** keeps it.',
+    ], ref: 'steps7' },
+    { table: [
+      ['Field', 'What it does', 'Example'],
+      ['Name', 'Required. Shown in the list and on every return made with it.', 'MM annual return'],
+      ['Franchise', 'The franchise the rule is for, picked from the list.', 'MM'],
+      ['No sales for', 'Months, 1 to 59. A part qualifies only if it hasn’t sold at that branch in that many full months, **and** not this month either. New rules start at 24.', '24'],
+      ['Not received for', 'Months, 1 to 59, or blank. Leaves out parts the branch bought from a supplier in that time: a part just bought usually can’t go back yet. Blank = no check.', '12'],
+      ['Min line value', 'Dollars, or blank. A line worth less than this (qty × cost) is left out, so the return isn’t cluttered with small lines.', '$25'],
+      ['Leave out Manual order', 'On = parts set to Manual order are left out (someone orders those by hand on purpose).', 'On'],
+      ['Leave out minimums', 'On = parts with an Equip minimum above 0 are left out (someone wants them stocked).', 'On'],
+      ['Allowance %', 'How much you may return, as a percent (0 to 100). Use your vendor’s terms.', '10'],
+      ['Based on', 'What the percent is taken of: **12-month purchases**, **Stock value** or **Qualifying parts’ value** (below). Always the franchise’s, at the branches on the return.', '12-month purchases'],
+      ['Credit %', 'The share of the line value (at cost) you expect back, 0 to 100. Blank = not known. Use your vendor’s terms.', '85'],
+      ['Season starts, Season ends', 'MM-DD, or both blank for all year, for a vendor that takes returns only at certain times. 11-01 to 02-28 wraps the year end. Outside the season you can still make a return; the app just says so.', '03-01 and 05-31'],
+      ['Active', 'Off = not used.', 'On'],
+    ], widths: w(0.22, 0.58, 0.2) },
+    { p: 'What the allowance is based on:', keepNext: true },
+    { bullets: [
+      '**12-month purchases:** what the branches on the return bought from suppliers in that franchise over the last 12 complete months, at cost. Returns to the supplier aren’t taken off. On November 2, 2026 that is November 2025 to October 2026. Example: 10% of $40,000 of purchases is a $4,000 allowance.',
+      '**Stock value:** what the franchise’s stock on hand at those branches is worth at cost today.',
+      '**Qualifying parts’ value:** the value of the parts the rule picks.',
+    ] },
+    { p: 'The rules list shows each rule’s terms in one line, for example “10% of 12-mo purchases · no sales 24 mo · not received 12 mo · credit 85% · excl. Manual order / minimums”, with its season, **Active** or **Off**, and who changed it last.' },
+    { p: '**Try it.** While you edit, Try it loads every branch and shows what the draft would pick today: **Qualifying parts**, **Their value**, the **Allowance** in dollars and the **Expected credit**, then a line such as “Pre-pick ticks 12 parts, $3,950.00 of $4,000.00.”, and the 20 biggest parts with their branch, qty, value, last sold, demand elsewhere and whether the pre-pick ticks them. Nothing is saved until you click **Save rule**.' },
+    { p: 'A rule that can’t be saved says why (“No sales for must be 1 to 59 months.”). **Switch off** / **Switch on** and **Archive** are on each row; rules are never deleted. A saved change applies to new returns only: saved ones keep their lines.' },
+
+    { h2: 'Set up a scrap rule' },
+    { p: 'A scrap rule says which parts are old enough to scrap. It has no allowance and no credit. Its fields are the return rule’s **Which parts** and **When** fields, with **Min unit cost** instead of Min line value: parts costing less than that are left out. New scrap rules start at **no sales for 36 months**.' },
+    { bullets: [
+      '**All franchises** (the first choice under Franchise) is used for every franchise that has no scrap rule of its own. One exists already: **Scrap default**, no sales for 36 months, unit cost at least $0.10.',
+      '**A franchise’s own rule** replaces the All franchises rule for that franchise only. For example, a franchise whose parts go out of date faster could have its own rule with no sales for 24 months.',
+      'One active rule per franchise, plus one active All franchises rule.',
+    ] },
+
+    { h2: 'Build a vendor return' },
+    { steps: [
+      '**Returns → New return.** The steps across the top read **Set up · Parts · Review & save**.',
+      '**Set up:** pick the **Franchise** (those with a return rule come first). The rule and its terms show under it, with a link to the rules. With no rule yet it says “No return rule for MM yet · **Create one**”, which opens a new rule for that franchise. Every branch is ticked; untick any that shouldn’t be on the return. Every branch loads first; then click **Choose parts**.',
+      '**Parts:** one list across the ticked branches, biggest value first. Check the ticks (below), then click **Review**.',
+      '**Review & save:** the totals and any transfers, then **Save return**.',
+    ], ref: 'steps8' },
+    { h3: 'Which parts are listed' },
+    { p: 'A part at a branch is listed when all of these are true:', keepNext: true },
+    { bullets: [
+      'Some of it is **free to send back**: on hand, less stock committed to open tickets, less stock on transfers saved in this app, less stock already on another open return or scrap list.',
+      'It hasn’t sold at that branch for the rule’s **No sales for** months, this month included.',
+      'It wasn’t received there in the rule’s **Not received for** months, if the rule has one.',
+      'The line is worth at least the **Min line value**, if any, and it isn’t left out as Manual order or for a minimum, if the rule says so.',
+    ] },
+    { p: 'The columns are Branch, Part (with franchise and description), Bin, **Qty** (starts at all the free stock), Cost, Value, Credit, **Last sold** (the last month it sold at that branch, such as 2023-03, or “Over 5 years”), **Demand elsewhere** and **Transfer instead**.' },
+    { h3: 'The pre-pick and the allowance meter' },
+    { p: 'The tool ticks lines for you, up to the allowance, worst sellers first: the parts that haven’t sold for longest (never sold in 5 years first of all), and the more valuable line first among equals. A line that would go over what is left of the allowance is skipped, and a smaller one further down may still fit. So the ticks come as close to the allowance as they can without going over.' },
+    { p: 'The meter above the list reads like “$3,950.00 of $4,000.00 allowance”. It turns **red** with “(over)” when your ticks go over. You can still save: the meter is a warning, because the vendor has the last word.' },
+    { h3: 'Changing what goes back' },
+    { bullets: [
+      'Tick or untick any line. The box in the heading ticks or unticks every line shown.',
+      'Lower a **Qty** to send back only some of it (a whole number, never more than is free: “At most 4”).',
+      '**Search** by part or description, and pick a **Branch** to see one branch. Ticks stay when you search.',
+      'The footer stays at the bottom of the window with the totals, for example “12 lines · $3,950.00 · credit $3,357.50 · 1 to transfer”, and **Back to setup** and **Review**.',
+    ] },
+    { h3: 'Demand elsewhere and Transfer instead' },
+    { p: '**Demand elsewhere** lists the other branches that asked for the part (requests) in the last 18 complete months, busiest first: “8 (2), 13 (2), 96 (2), 94 (1)” means branch 8 asked twice, and so on. Every other branch counts, ticked or not. You can change the 18 months on Set up (**Demand window (months)**).' },
+    { p: 'Where another branch wants the part, **Transfer instead** sends the line there: tick it and pick the branch. The busiest branch is chosen to start with, and the list shows only branches that asked for it and can receive it. Why: stock another branch is selling is worth more there than as a credit or as scrap. A line sent by transfer leaves the return and its totals, and becomes a **transfer order** when you save.' },
+    { p: 'On a return, Transfer instead starts **off** (the demand still shows, for you to decide). “No branch can receive it” means the branches that asked for it don’t take transfers of it (their transfer rule, or they don’t carry the part).' },
+    { h3: 'Saving' },
+    { p: 'Review shows **Lines**, **Value at cost**, **Expected credit** and **Allowance**, and the lines to transfer instead, grouped From → To. **Save return** checks the stock again first. If someone used it meanwhile (a sale, a transfer, another list), **nothing is saved**: a banner names each part, for example “6397 at 11: 1 available now, 2 ticked”. Go back to the parts, where those lines are marked, and save again. The save makes the transfer orders first, then the return as a **Draft**, and opens it.' },
+
+    { h2: 'Make a scrap list' },
+    { p: 'The same three steps, from **Scrap → New scrap list**, using the franchise’s scrap rule (its own, or All franchises). The differences:', keepNext: true },
+    { bullets: [
+      'No allowance, meter or credit.',
+      'Every qualifying line starts ticked.',
+      '**Transfer instead starts on** for every line another branch has asked for, to the busiest branch that can receive it. Scrapping a part another branch is asking for throws away stock that could sell. Untick Transfer instead if you still want to scrap it.',
+      'If every ticked line goes by transfer, Review says “Nothing left to scrap: 3 parts go to other branches.” and the button reads **Save transfers**. Only the transfer orders are saved: “Saved 1 transfer order. No scrap list was made: nothing was left to scrap.”, with a link to each.',
+    ] },
+    { p: '**Example** (Prod data, November 2, 2026, rule Scrap default). Franchise AM had **49** qualifying parts. Branch 11’s **6397** (BRKT): 2 at $239.62 = $479.24, last sold 2023-03, no demand elsewhere, so it stays on the scrap list. Branch 91’s **9447** (98-3/8" GANG BOLT), $490.48, was asked for at 8 (2), 13 (2), 96 (2) and 94 (1), so it starts as **Transfer instead** to branch 8 (8, 13 and 96 tie; branch order picks 8). The counts change every day.' },
+
+    { h2: 'After saving: statuses, exports and the RA number' },
+    { p: '**Returns** and **Scrap** list the saved ones, newest first: the title (franchise, RET or SCR, the date and time, such as AM-SCR-20261102-1026), franchise, branches, lines, value at cost, a return’s credit (expected / received), the status and who saved it when. **Show archived** shows the archived ones too. Click a title to open it.' },
+    { table: [
+      ['Status', 'What it means', 'What you can do'],
+      ['Draft (amber)', 'Just saved. Its parts are held (below).', 'Lower a quantity or **Remove** a line. **Export CSV**. **Cancel**.'],
+      ['Exported (blue)', 'The CSV has been downloaded. Still held.', 'Export again. **Mark sent to vendor** (return) or **Mark scrapped** (scrap list). **Cancel**.'],
+      ['Sent to vendor (green)', 'Return only: the parts have gone back.', '**Credit received**: enter the amount (it starts at the expected credit) and **Save credit**.'],
+      ['Credit received (dark green)', 'Return only: done. The page shows, for example, “Expected $4,250.00 · Received $3,980.00 (94%)”.', 'Archive.'],
+      ['Scrapped (green)', 'Scrap list only: done.', 'Archive.'],
+      ['Cancelled (grey)', 'Not going ahead. Its parts are free for other lists.', 'Archive.'],
+    ], widths: w(0.22, 0.4, 0.38), keep: true },
+    { bullets: [
+      '**RA number** (returns): type the vendor’s return authorization number and press Enter: “RA number saved.” It can be changed at any time.',
+      '**Export CSV** downloads one file: `Branch, PartNumber, Description, Bin, Qty, Cost, LineValue, CreditPct, CreditValue, LastSold` and a Total row (a scrap list has no credit columns). **Export by branch** (when there is more than one branch) downloads one file per branch, to use as pick lists. Either marks it Exported.',
+      '**Mark sent to vendor** and **Mark scrapped** need an export first, because the CSV is the record of what went.',
+      '**Cancel** (Draft or Exported) asks first: “Cancel this return? Its parts are no longer held and can go on another return.”',
+      '**Archive** hides a finished one (sent, credited, scrapped or cancelled). Nothing is deleted; **Unarchive** brings it back.',
+      '**Transfer orders made with it** lists the transfer orders saved for its Transfer instead lines, with their status. They are ordinary transfer orders: export them and mark them entered in Equip on the **Transfers** page as usual. Cancelling the return or scrap list doesn’t cancel them.',
+      'If someone else changed it while you had it open, your change is refused: “This return was changed by someone else; reload it.”',
+    ] },
+
+    { h2: '“On return” and “On scrap” tags' },
+    { p: 'While a return or scrap list is **Draft** or **Exported**, its parts are **held in the app**: they aren’t offered on another return or scrap list, and a grey tag shows wherever the part appears, for example **On scrap AM-SCR-20261102-1026 (2)**: the list and the quantity it holds. Click the tag to open the list. The tags show on:', keepNext: true },
+    { bullets: [
+      'Recommended Reorder lines;',
+      'transfer suggestions, by the sending branch: Reorder step 1, the Transfers page and One-Time Order’s Transfers step;',
+      'the Part page’s **Other branches** table.',
+    ] },
+    { p: 'The hold is in the app only. **Equip isn’t changed**, and orders and transfer suggestions are worked out as before, so a tagged part can still be suggested as a transfer: check the tag before saving one. The hold ends when the list is sent to the vendor, scrapped or cancelled. Key the return or scrap into Equip promptly: until the next morning’s data shows the stock gone, the tool still counts it.' },
+
+    { h1: '9. During the test' },
     { bullets: [
       'This is a test copy on a test server; the address and the certificate warning will change for the real version.',
       'Orders and settings you save are real (they go into the SharePoint lists), but nothing is sent to a vendor; you download the CSV and use it yourself.',

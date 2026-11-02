@@ -5,12 +5,17 @@
 // Examples are from Prod data of 2026-10-27 (Fact_NonJD_Reorder built 11:40 UTC); the 0.5.0 section's transfer and
 // phase-in examples are from Dev data of 2026-10-28 (Gold built 14:12 UTC), because Prod has no round 2 data until the
 // release. Re-check them against Prod after the first 0.5.0 publish. Refresh examples when a section is added.
-// Labels follow nonjd-order-app 0.8.0 and the user guide (guide.js). The 0.6.0 section's examples are Prod data of
+// Labels follow nonjd-order-app 0.9.1 and the user guide (guide.js). The 0.6.0 section's examples are Prod data of
 // 2026-10-28 (Gold built 18:08 UTC): MULTISEAL at 1 "Transfer 44 from 6", R134A "Redistribution 52 from 13".
 // The 0.7.0 section's example is Brian's Prod TEST of 2026-10-29 (Plan G task G7): One-Time Order "TEST 0.7.0",
 // branch 1, ET-3912-J (MM) 1 from branch 3, $32.00, saved then cancelled.
 // The 0.8.0 section's counts are Prod data of 2026-10-30 (Gold built 11:40 UTC): branch 1 has 21 minimums with no
 // demand; the order and transfer counts are rounded from the tour's.
+// The 0.9.0 section's examples are Brian's Prod TEST of 2026-11-02 (Plan I task I12, v4 publish of that morning): rule
+// "Scrap default" (All franchises, no sales 36 months, unit cost at least $0.10) found 49 AM parts; 6397 (BRKT) at 11,
+// 2 x $239.62 = $479.24, last sold 2023-03, no demand elsewhere; 9447 (98-3/8" GANG BOLT) at 91, $490.48, demand at
+// 8 (2), 13 (2), 96 (2), 94 (1), Transfer instead to 8. There were no return rules on Prod, so the return steps have the
+// reader create one with the vendor's terms.
 // Run: npm install, then node walkthrough.js [output file]
 const { build, CONTENT_W } = require('./lib');
 
@@ -25,8 +30,8 @@ const notes = { answer: 'Notes (anything different, slow or confusing):' };
 
 build(process.argv[2] || 'Non-JD Order Tool - Walkthrough.docx', {
   title: 'SPI Parts Hub: walkthrough',
-  subtitle: 'Formerly the Non-JD Parts Order Tool · Hands-on steps through every page · Version 0.8.0 · October 30, 2026 · App: https://10.110.100.13:8443',
-  footer: 'SPI Parts Hub: walkthrough (0.8.0)',
+  subtitle: 'Formerly the Non-JD Parts Order Tool · Hands-on steps through every page · Version 0.9.1 · November 2, 2026 · App: https://10.110.100.13:8443',
+  footer: 'SPI Parts Hub: walkthrough (0.9.1)',
   blocks: [
     { p: 'This is a hands-on tour of the tool. Each step says what to do and what you should see. Tick **OK** when it matches. When it doesn’t, or something is slow or confusing, write it in the notes box under that section and send it to Brian.' },
     { bullets: [
@@ -34,7 +39,7 @@ build(process.argv[2] || 'Non-JD Order Tool - Walkthrough.docx', {
       '**Part 2, what’s new,** has a short section for each version. When a new version comes out, only its section needs doing.',
       '**Part 3, release checks,** is for Brian when he puts a new version on the test server.',
     ] },
-    { note: 'The examples use the data of October 27 to 30, 2026. The data is refreshed every morning, so your quantities and dollars will be a little different. Close is fine; what matters is that the steps behave as described.' },
+    { note: 'The examples use the data of October 27 to November 2, 2026. The data is refreshed every morning, so your quantities and dollars will be a little different. Close is fine; what matters is that the steps behave as described.' },
     { note: 'Practising is safe if you follow the steps: anything you change is undone in the next step. Practice orders stay as **drafts** named **TEST**. Don’t export or mark them placed. Orders are never deleted: archive the TEST ones when you are done (0.5.2). A practice **transfer** is different: while it is saved it holds the sending branch’s stock for everyone, so **cancel it** straight after the step that made it.' },
 
     { h1: 'Part 1: the tour' },
@@ -42,7 +47,7 @@ build(process.argv[2] || 'Non-JD Order Tool - Walkthrough.docx', {
     { h2: '1. Getting in, the launch page and Home' },
     steps([
       ['Open **https://10.110.100.13:8443** in Edge or Chrome. If the browser warns "Your connection isn’t private", click **Advanced**, then **Continue to 10.110.100.13**.', 'The sign-in page (the SPI logo, **SPI Parts Hub**, **Sign in with Microsoft**), or the launch page if you are already signed in.'],
-      ['Sign in with your work Microsoft account.', 'The **launch page**: a greeting, your branch, and five cards: **Non-JD ordering**, **Cleanup**, **Part Lookup**, and greyed-out **JD ordering** and **Inventory management** (**Coming later**).'],
+      ['Sign in with your work Microsoft account.', 'The **launch page**: a greeting, your branch, and six cards: **Non-JD ordering**, **Cleanup**, **Returns & scrap** (Part 2, 0.9.0), **Part Lookup**, and greyed-out **JD ordering** and **Inventory management** (**Coming later**).'],
       ['Click the **Non-JD ordering** card.', '**Home**, with a greeting, your branch, and how many parts need ordering there and their cost. The left menu lists only Non-JD ordering’s pages, under **‹ All areas** and the **Area** select.'],
       ['Look at the top right.', 'The date and time of the morning data. It is **amber** if the data is more than one business day old.'],
       ['In the greeting line, change the branch to **1**.', 'Branch 1 needs about **220** parts ordered (about $93,000), with a small line like "(21 more with minimums but no demand)". Below it, a purple **transfers** card (Part 2, 0.5.0).'],
@@ -125,12 +130,47 @@ build(process.argv[2] || 'Non-JD Order Tool - Walkthrough.docx', {
     { h2: '9. Cleanup and App Settings' },
     steps([
       ['In the left menu, change the **Area** select to **Cleanup**. Pick branch **6**.', 'The Equip minimums on parts with no demand and no sales; branch 6 has about 1,000. The largest is about $21,000 (part 145019, module rim, minimum 65).'],
-      ['Click **App Settings**.', 'Your default branch and franchise, and **About** with the version (**0.8.0**).'],
+      ['Click **App Settings**.', 'Your default branch and franchise, and **About** with the version (**0.9.1**).'],
       ['Set your default branch, then open Recommended Reorder.', 'It opens on your default branch.'],
     ]),
     notes,
 
     { h1: 'Part 2: what’s new' },
+
+    { h2: 'Version 0.9.0 (November 2, 2026): Returns & scrap' },
+    { p: 'New since 0.8.1: a **Returns & scrap** area, for sending slow parts back to the vendor for credit and scrapping parts that will never sell. The user guide, section 8, explains each job; this section tries them once.' },
+    { bullets: [
+      '**Return & scrap rules:** each franchise’s return terms (allowance, credit %, how long without sales) are kept as a rule, set up once with the vendor’s terms. Scrap rules say how old a part must be to scrap; one for **All franchises** covers every franchise without its own.',
+      '**New return / New scrap list:** three steps, **Set up · Parts · Review & save**. The tool lists the parts that qualify at every branch at once. A return is pre-ticked up to the allowance, worst sellers first, with a meter.',
+      '**Transfer instead:** a part another branch has asked for in the last 18 months can go there instead of back to the vendor or into the scrap. It starts on for scrap and off for returns.',
+      '**Saved returns and scrap lists** with their own statuses: Draft → Exported → Sent to vendor → Credit received (scrap: → Scrapped), an RA number, Export CSV and Export by branch.',
+      '**On return / On scrap tags** where a part on an open list shows (Recommended Reorder, transfer suggestions, the Part page). The stock is held in the app only; Equip isn’t changed.',
+      '**0.9.1 (the same day):** on Return & scrap rules, **Franchise is a list** (with **All franchises** for a scrap rule) instead of a box to type in; and the footers that stay at the bottom of the window (on Reorder step 1, the transfer and One-Time steps and the new return and scrap steps) now sit right at the bottom, with no gap under them.',
+    ] },
+    { note: 'Saving a scrap list is real: while it is a Draft it holds the parts for everyone. Save **one practice line**, then **cancel and archive it** in the same sitting, as below. The examples are from Brian’s test of November 2: “Scrap default” found **49** AM parts that day. The counts change every day; if a part isn’t there on your day, use any line.' },
+    { h3: 'A scrap list (practice, then cancel it)' },
+    steps([
+      ['On the launch page, click the **Returns & scrap** card (“Vendor returns and scrap, by franchise rule.”). Click **Return & scrap rules**, then the **Scrap rules** tab.', 'The left menu has **Returns**, **Scrap** and **Return & scrap rules**. The tab lists **Scrap default**: **All franchises**, “no sales 36 mo · unit cost ≥ $0.10”, **All year**, **Active**. (The **Return rules** tab said “No rules yet.” on November 2.)'],
+      ['Click **Scrap**, then **New scrap list**. Pick franchise **AM**.', 'Steps across the top: **Set up · Parts · Review & save**. Under the franchise: “**Scrap default** (All franchises) · no sales 36 mo · unit cost ≥ $0.10 · Rules”. Every branch ticked, **Demand window (months)** 18, and a progress bar while every branch loads.'],
+      ['When loading finishes, click **Choose parts**.', 'About **49 qualifying parts**, all ticked, no allowance meter (that is for returns). Lines another branch has asked for already have **Transfer instead** ticked. The footer at the bottom of the window gives the lines, value and how many go by transfer.'],
+      ['Search `6397`.', 'Branch **11**, AM · BRKT, qty **2**, cost $239.62, value **$479.24**, last sold **2023-03**, Demand elsewhere **—** and no Transfer instead: no other branch wants it, so it is one to scrap.'],
+      ['Search `9447`.', 'Branch **91**, 98-3/8" GANG BOLT, **$490.48**, Demand elsewhere “**8 (2), 13 (2), 96 (2), 94 (1)**”, Transfer instead ticked with **8 (2)** in the box (8, 13 and 96 tie; branch order picks 8). Open the box: only branches that asked for it and can receive it.'],
+      ['Clear the search. Untick the box in the heading (every line unticks), then tick **6397** only. Click **Review**.', 'The footer read “1 line · $479.24”. Review: **AM scrap list**, “Rule: Scrap default. Saved as a Draft.”, Lines **1**, Value at cost **$479.24**, and **No transfers**.'],
+      ['Click **Save scrap list**.', 'The scrap list opens: “Scrap list · AM”, **AM-SCR-** with today’s date and time, an amber **Draft** pill, Saved … by you, Rule Scrap default, Branches 11, and the one line. Buttons: **Export CSV**, **Cancel scrap list**, and **Archive** greyed out.'],
+      ['Change the **Area** to **Non-JD ordering**, open **Recommended Reorder**, branch **11**, franchise **AM**, turn **Reorder needed only** off and search `6397`.', 'A grey tag **On scrap AM-SCR-… (2)** on the line. Click it: back to the scrap list.'],
+      ['Click **Cancel scrap list**, then **Cancel scrap list** again. Then **Archive**, then **Archive**.', '“Cancel this scrap list? Its parts are no longer held and can go on another scrap list.” The pill turns grey **Cancelled**, then an **Archived** tag. On Scrap it is hidden unless **Show archived** is on.'],
+    ]),
+    notes,
+    { h3: 'A return rule and a return (don’t save the return)' },
+    { note: 'There are no return rules yet. Pick a franchise you return to its vendor, and use **that vendor’s terms**. Save the rule only if the terms are right; otherwise close it without saving.' },
+    steps([
+      ['**Return & scrap rules**, tab **Return rules**, **New return rule**. Name it (for example “MM annual return”), pick the **Franchise**, and fill in **No sales for**, **Allowance %**, **Based on** and **Credit %** from the vendor’s terms.', 'The **Try it** card loads every branch, then shows **Qualifying parts**, **Their value**, the **Allowance** and the **Expected credit**, a line “Pre-pick ticks N parts, $X of $Y.”, and the biggest parts. It changes as you type. **Save rule** if the terms are right; otherwise **Close**, then **Discard**.'],
+      ['If you saved the rule: **Returns → New return**, pick that franchise, **Choose parts**.', 'A meter “$X of $Y allowance” above the list, with the pre-picked lines ticked: the longest unsold first, up to the allowance. The Credit column fills in.'],
+      ['Tick a few more lines until the meter goes over. Then click **Returns** in the menu.', 'The meter turns red with “(over)”; Review is still allowed. Leaving asks “Leave this page? Your new return isn’t saved.”: click **Leave**. Nothing was saved.'],
+    ]),
+    { p: '**Your opinion:** do the rule fields match how your vendors word their terms? Should Transfer instead start on for returns too?' },
+    notes,
+
 
     { h2: 'Version 0.8.0 (October 30, 2026): SPI Parts Hub and the launch page' },
     { p: 'New since 0.7.0, from Ben’s idea of a landing page above the tools:' },
@@ -364,6 +404,15 @@ build(process.argv[2] || 'Non-JD Order Tool - Walkthrough.docx', {
 
     { h1: 'Part 3: release checks (Brian)' },
     { p: 'Run these when a new version is deployed to the test server, after **Ctrl+F5** to load it.' },
+    { h3: '0.9.0 and 0.9.1' },
+    steps([
+      ['App Settings → **About**.', '**Version 0.9.1 · commit 001e2e8**.'],
+      ['The morning after a publish: the data date at the top right, then **Return & scrap rules** → **New return rule** with any franchise and Allowance based on **12-month purchases** (don’t save).', 'Today’s date (the Gateway PC publish ran). Try it shows an **Allowance** in dollars, not “Purchases arrive with the next morning data”, and **Not received for** has no note saying last received isn’t in the data yet.'],
+      ['With Claude: a **TEST** scrap list on Prod (one line kept, one line Transfer instead), then check SharePoint and delete the TEST rows.', 'NonJD_Returns / NonJD_ReturnLines and the transfer order hold the right fields; the tags show and go when it is cancelled. (Done November 2: Scrap default, AM-SCR-20261102-1026 with 6397 × 2 at 11, transfer 91-8-20261102-1026 with 9447 × 1; the 4 rows deleted.)'],
+      ['Return & scrap rules: open **Scrap default** and a new return rule.', '0.9.1: **Franchise** is a list: **All franchises** on the scrap rule, **Choose a franchise** on the return rule.'],
+      ['Scroll a long list on Reorder step 1 and on New scrap list → Parts.', '0.9.1: the footer sits at the very bottom of the window, with no rows showing under it.'],
+    ]),
+    notes,
     { h3: '0.8.0' },
     steps([
       ['App Settings → **About**.', '**0.8.0** and the deployed commit (`ae6c1a6`).'],

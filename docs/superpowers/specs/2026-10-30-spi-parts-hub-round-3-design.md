@@ -2,6 +2,10 @@
 
 > **Status:** design approved section by section by Brian, 2026-10-30 (brainstorm). Next: the implementation plan for
 > phase 1 (Plan I, app 0.9.0). Phases 2 and 3 get their own plans when phase 1 has shipped.
+> **Progress:** **phase 1 (0.9.0) shipped 2026-11-02** (0.9.1 the same day: the rule Franchise is a list, sticky
+> footers flush): Prod Gold with purchases / last received, the v4 publish, app 0.9.1 on Fedora, a real TEST scrap
+> list, and the user docs (guide section 8, walkthrough 0.9.0, `projects/part order tool - app/RETURNS-AND-SCRAP.md`).
+> See the plan's Progress. Next: plans for phase 2 (templates, 0.10.0) and phase 3 (Cleanup checks, 0.11.0).
 > **Origin:** `projects/part order tool - app/FUTURE-IDEAS.md` F6 (returns and scrap), F8 (templates), F1 (Cleanup
 > checks); Brian's scrap work for Ben, `projects/corp parts excel reports/Scrap/` (demand at other branches).
 > **Context:** test phase. Saved documents are test data and may be deleted (Brian, 2026-10-30).

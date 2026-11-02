@@ -4,6 +4,12 @@
 > review after each (Brian's standing choice). Steps use checkbox (`- [ ]`) syntax.
 
 > **Progress:** plan written 2026-10-30 (Claude, for Brian).
+> - **I13 done 2026-11-02:** user guide section 8 "Returns & scrap" (by job: return rule, scrap rule, a vendor return,
+>   a scrap list, statuses / exports / RA number, the tags) and walkthrough Part 2 "Version 0.9.0" (12 steps on the
+>   2026-11-02 Prod examples, plus a 0.9.1 line) and Part 3 "0.9.0 and 0.9.1" checks; both .docx regenerated at 0.9.1.
+>   `projects/part order tool - app/RETURNS-AND-SCRAP.md` (reference for Ben). FUTURE-IDEAS F6 marked done in 0.9.0,
+>   with the follow-ups (list reads every document's lines; an empty Draft isn't counted on the launch card; Transfer
+>   instead doesn't check the receiver's stock). Phase 1 is shipped; phases 2 and 3 need their own plans.
 > - **I12 done 2026-11-02 (same day, no wait):** Prod `items` run of Build_Gold_NonJD_Reorder (09:40–09:53 Central),
 >   `nonjd_reorder_check.py --tier prod` PASS (0 differences; Purchases 350 rows, window 2025-11 to 2026-10), Gateway
 >   PC (`C:\data-projects`) pulled and published v4 by hand (199,706 parts). Real TEST on Fedora: Brian's "Scrap default"
