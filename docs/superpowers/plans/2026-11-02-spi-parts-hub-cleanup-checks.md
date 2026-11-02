@@ -3,7 +3,14 @@
 > **For agentic workers:** REQUIRED SUB-SKILL: use superpowers:subagent-driven-development, one task at a time with a
 > review after each (Brian's standing choice). Steps use checkbox (`- [ ]`) syntax.
 
-> **Progress:** plan written 2026-11-02 (Claude, for Brian).
+> **Progress:** plan written 2026-11-02 (Claude, for Brian). Decisions K-D1–K-D11 approved by Brian 2026-11-02.
+> - **K4 done 2026-11-02** (app `dcdf737`; 2,310 tests in two halves, lint, tsc clean; review clean; pushed). Contract
+>   [3, 4, 5], `hasEquipStockValue`, `ReorderPart.equipStockValue?`, required `VITE_LIST_CLEANUP_CHECKS`; mock v5
+>   (default value = on-hand value; seeded BS-VAL-NOQTY 0 on hand / $120, BS-VAL-NEG −2 / −$45, BS-QTY-NOVAL 3 / $0 at
+>   branch 1); `SlimPart` 29 fields (≈ +30–40 MB for ~200k parts; key always present, so test `=== undefined`).
+> - **K0 done 2026-11-02:** NonJD_CleanupChecks `a7a1a184-8421-440b-84e8-95ba37e3612b` created by Brian and checked
+>   (Description, Conditions plain multi-line; Active default Yes; Archived default No). `.env` line
+>   `VITE_LIST_CLEANUP_CHECKS` given to Brian.
 
 **Goal:** Cleanup becomes a list of checks: the built-in **Minimums with no demand**, a new built-in **Stock value
 with no quantity** (Ben's "value without quantity"), and checks anyone can save from conditions (field · comparison ·
