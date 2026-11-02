@@ -4,6 +4,12 @@
 > review after each (Brian's standing choice). Steps use checkbox (`- [ ]`) syntax.
 
 > **Progress:** plan written 2026-11-02 (Claude, for Brian). Decisions K-D1–K-D11 approved by Brian 2026-11-02.
+> - **K3 done 2026-11-02** (data-projects `db8988cd`; publish tests 260 pass; pushed). Contract 5, `equipStockValue` required
+>   and rounded to cents; older Gold refused naming EquipStockValue. Local `--out` build on Dev: 199,555 parts all with
+>   the field, `_meta.json` contractVersion 5. Not published (K10). **Decided (Brian, 2026-11-02: A):** the built-in
+>   "Stock value with no quantity" ignores values under $1 either way (Dev: 741 parts with a value and nothing on hand,
+>   292 of them under $1 totalling −$19.31; 449 of $1 or more, −$144,056). Implemented as a new field "Equip stock value
+>   (either way)" (absolute value): built-in = that ≥ $1 and On hand ≤ 0.
 > - **K5 done 2026-11-02** (app `865efba`, review fixes `4966e59`; 2,430 tests in two halves, lint, tsc clean; pushed).
 >   `src/cleanup/fields.ts` (21 fields, `comparisonsFor(id)`, `fieldInData`), `conditions.ts` (`parseConditions`,
 >   `conditionProblem`, `compileConditions` + `matches`, `conditionText`, `checkColumns`, `VALUE_NO_QTY`). **Decided:**
