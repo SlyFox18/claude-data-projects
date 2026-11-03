@@ -4,6 +4,12 @@
 > review after each (Brian's standing choice). Steps use checkbox (`- [ ]`) syntax.
 
 > **Progress:** plan written 2026-11-03 (Claude, for Brian). Spec approved 2026-11-03.
+> - **L5 done 2026-11-03** (app `c6b231e`, review fixes `b610e90`; 1,804 + 779 tests, lint, tsc clean; pushed).
+>   Contract [3–6], `hasJdParts`, `JdPart` / `JdFile`, `loadJd` (envelope checked), mock v6 with jdBranches 1, 2, 12
+>   and `JD_FIXTURES` (JD-MLPF-OK + one-fail-each, B12 at 12; `asV5`; `jdFailBranches`). Cache rules moved to
+>   `src/state/publishCache.ts` (useAllBranches unchanged; now shares in-flight downloads); `useJdBranches()` (6
+>   downloads at a time; `otherRun` for files from another publish; v6 without jdBranches = error). `JdRow` from
+>   `@/state/jdBranches`.
 > - **L4 done 2026-11-03** (data-projects `16e6ed85`; publish tests 338 pass): contract 6, `build_jd` (all JD
 >   branches, no D6; twins kept; 4 MB check), `_meta.jdBranches`, `counts.jdParts`; publish refuses an older Gold
 >   without Fact_CorpParts_JD and checks its BuiltAtUtc like Fact_NonJD_Reorder's. Local `--out` build on Dev: 72
