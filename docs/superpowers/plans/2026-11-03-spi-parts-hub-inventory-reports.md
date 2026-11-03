@@ -4,6 +4,9 @@
 > review after each (Brian's standing choice). Steps use checkbox (`- [ ]`) syntax.
 
 > **Progress:** plan written 2026-11-03 (Claude, for Brian). Spec approved 2026-11-03.
+> - **L0 done 2026-11-03:** NonJD_InventoryReports `bc73e59b-29c5-43d9-93ed-92849e0986bc` created by Brian and checked
+>   (Description, Conditions plain multi-line; Active default Yes; Archived default No). `.env` line
+>   `VITE_LIST_INVENTORY_REPORTS` given to Brian.
 
 **Goal:** a live **Inventory** area: the Corp Parts reports over the active JD (franchise D) parts, starting with a
 built-in **MLPF Gaps** that matches the workbook row for row, plus **Copy as my own** (editable saved copies).
