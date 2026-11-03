@@ -4,6 +4,24 @@
 > review after each (Brian's standing choice). Steps use checkbox (`- [ ]`) syntax.
 
 > **Progress:** plan written 2026-11-03 (Claude, for Brian). Spec approved 2026-11-03.
+> - **M5 done 2026-11-03** (app `189b3fe`; 1,877 + 831 tests, lint, tsc clean; no existing test changed). Naming:
+>   `Condition<F>` stays plain; `GroupCondition<F> = { anyOf }`, `ConditionItem<F>` for lists; `ConditionListEditor`,
+>   `GroupRowEditor` ("Any of these", Add line, Remove group). Review: no Critical / Important; minor fixes queued
+>   (results-page tests with a group-only field, leave guard / focus inside a group, a lone group can't be removed,
+>   a one-line group can't be made plain; skip tests once a row has failed; header comment wrapping).
+> - **M2 + M2b done 2026-11-03** (data-projects `fc145a46`; 675 tests in tools/dp-migration). `corp_parts_check.py`:
+>   idle table compare, `--report mlpf|border|cotton`, `--report-out`, `--compare-xlsx` with the other-branch
+>   columns. `--tier dev` PASS (active 250,740; idle 643,107; active + idle = 893,847 Silver D, disjoint).
+>   **Correction:** idle is ~643k, not 663,333 (the probe's active filter left Corp demands out).
+>   **Excel comparison vs Prod Silver:** Border Stores 1,562 of 1,571 matched (88 differences), 2 & 4 Cotton 248 of
+>   248 rows present (20 figure differences, 1 extra). **No rule difference:** every difference is Equip changing
+>   after **Prod Silver's snapshot, which is Equip as of 2026-11-02 18:42** (JD Bronze's evening copy; DP loads it the
+>   next morning), mostly pool rows whose on order changed. The workbook's quirks (franchise-less join, trailing
+>   spaces, model codes on other franchises) change nothing today. Classified per part in the scratchpad
+>   `border/m2/classify_*.csv`. **Fix taken into M1/M3/M4:** idle records can have **negative on order** (2 today),
+>   so the idle table and files carry `OnOrder` and idle rows use it (not 0). **For M11:** Brian refreshes the
+>   workbooks in the evening close to JD's copy (~18:45) for a cleaner comparison. Latent, not fixed: Corp demands
+>   match part numbers trimmed but case-sensitive (30 D records have lower-case part numbers; none in today's lists).
 
 **Goal:** built-in **Border Stores** and **2 & 4 Cotton** Inventory reports that match the workbooks row for row, with
 copies that can change which branches are compared, left out or counted.
@@ -49,9 +67,9 @@ before the Gateway publishes v7; Prod Gold with the idle table before the Gatewa
 | M-D7 | **Pool fields** `otherDemands` ("Other-branch demands", number) and `otherBranches` ("Other branches with demand", number) exist only when the report has a pool; a condition on them in a report with no pool is a validation error ("Add 'Count other branches where' to use this field."). Not allowed inside the pool list itself. | Avoids circular definitions. |
 | M-D8 | **Pool matching key:** trimmed, upper-cased part number; "other" = trimmed branch ≠ the row's trimmed branch. Twins at one branch both count. | Matches the workbook's GROUP BY over stored values (RTRIM-insensitive in SQL Anywhere). Verified in M2b. |
 | M-D9 | **`dealerGroupAnyBranch`** ("Dealer group at any branch"; comparisons one of / not one of): over every JD record of the part (active and idle, any branch), trimmed, upper-cased. A report that uses it loads the idle files even with the switch off. | The cotton rule is part-level. |
-| M-D10 | **Idle rows in the app:** `JdRow` with onHand 0, onOrder 0, sales12 0, salesPrev12 0, corpDemands 0, plus `idle: true`. Only reports with `includeIdle` see them as candidates or pool rows. | One row type for the engine. |
+| M-D10 | **Idle rows in the app:** `JdRow` with onHand 0, onOrder **as published** (0 or negative; M2b), sales12 0, salesPrev12 0, corpDemands 0, plus `idle: true`. Only reports with `includeIdle` see them as candidates or pool rows. | One row type for the engine. |
 | M-D11 | **Built-in ids/routes:** `/inventory/border-stores`, `/inventory/cotton-2-4`; list order MLPF Gaps, Border Stores, 2 & 4 Cotton. CSV headers: the 12 MLPF names + `OtherBranchDemands`, `OtherLocationCount`. File names `Inventory-Border Stores-<date>.csv`, `Inventory-2 & 4 Cotton-<date>.csv`. | As MLPF Gaps. |
-| M-D12 | **Contract v7:** `jd_idle_<branch>.json.gz` `{branch, dataAsOf, parts:[{partNumber, description, cost, packageQty, returnIndicator, source, slc, superTo, commodityCode, commodityGroup, dealerGroupCode, minimumQty, maximumQty}]}`; `_meta.jdIdleBranches`, `counts.jdIdleParts`. App accepts 3–7. | Spec section 2. |
+| M-D12 | **Contract v7:** `jd_idle_<branch>.json.gz` `{branch, dataAsOf, parts:[{partNumber, description, cost, onOrder, packageQty, returnIndicator, source, slc, superTo, commodityCode, commodityGroup, dealerGroupCode, minimumQty, maximumQty}]}`; `_meta.jdIdleBranches`, `counts.jdIdleParts`. App accepts 3–7. | Spec section 2. |
 
 ## File map
 

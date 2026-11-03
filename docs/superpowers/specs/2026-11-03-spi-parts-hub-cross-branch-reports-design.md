@@ -86,10 +86,11 @@ Reports saved by 0.12.0 parse and behave exactly as before.
 
 **Gold `Fact_CorpParts_JD_Idle`** (Part 5 of `Build_Gold_NonJD_Reorder`): every franchise D record of
 Silver_PartInformation that `Fact_CorpParts_JD` leaves out (on hand 0, on order ≤ 0, 24-month sales 0, no Corp
-demands). Columns: Branch, Franchise, PartNumber, Description, Cost, PackageQty, ReturnIndicator, Source, SLC, SuperTo,
+demands). Columns: Branch, Franchise, PartNumber, Description, Cost, OnOrder (0 or negative: the workbooks require
+exactly 0, found in the Excel comparison), PackageQty, ReturnIndicator, Source, SLC, SuperTo,
 CommodityCode, CommodityGroup, DealerGroupCode, MinimumQty, MaximumQty, BuiltAtUtc. Same grain, guards and rules as
 the active table; the two tables never share a key and together hold every franchise D record (asserted in the
-notebook). Prod 2026-11-03: 663,333 records at 40 branches.
+notebook). Prod 2026-11-03: about 643,000 records at 40 branches.
 
 **Publish contract v7:** `jd_idle_<branch>.json.gz` per branch (fields as above, camelCase; numbers that are 0 by
 definition left out), `_meta.json` `jdIdleBranches` and `counts.jdIdleParts`. Additive. Measured: 11 MB compressed in
