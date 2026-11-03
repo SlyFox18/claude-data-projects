@@ -15,7 +15,16 @@
 >   without Fact_CorpParts_JD and checks its BuiltAtUtc like Fact_NonJD_Reorder's. Local `--out` build on Dev: 72
 >   files, 27 `jd_` files, largest `jd_2` 482 KB, jdParts 254,213. JD branches include tiny ones (5: 2 rows, 97: 1,
 >   15I, 4B, 4I, 4S, 8I). **Don't publish v6 until L12.**
-> - **L2b (Silver franchise-case fix) approved by Brian 2026-11-03:** in progress.
+> - **L2b done 2026-11-03** (Silver franchise-case fix, approved by Brian; fabric-workspace-docs `9c86d6ab`, data-projects
+>   `1614c221` dp-notebook-rules rule 6; dag_check OK, hygiene 0, 368 tests). Build_Silver_PartInformation compares
+>   franchise / branch with upper(trim()) on both sides in the InManuf, INHIST_MONTH_4_PI, InHistMQT (dollars) and
+>   Branch_Name joins; stored values and grain unchanged. Bronze: 431 InMaster rows with a lower-case franchise (d 321,
+>   m 86, …); InManuf all upper case and unique after upper(); no join can match twice. Dev runs back to back: baseline
+>   `c1daacc2`, fixed `80654215`, Gold `a46fc35f`, all Completed. Silver diff: same 1,118,983 keys; 448 rows changed,
+>   all explained (InManuf fields only on lower-case rows; ~140 rows gain sales / dollars whose history was stored
+>   under the other case). The 6 Excel parts now have package 1 / R / commodity code and are in Dev MLPF (10,040).
+>   `corp_parts_check --tier dev` PASS (250,740 rows), `nonjd_reorder_check --tier dev` PASS. **Follow-up (not in this
+>   plan):** other notebooks that join Equip sources on franchise as stored may have the same issue.
 > - **L3 + L3b analysis done 2026-11-03** (data-projects `f2a809a9`; 31 new tests, nonjd tests still pass):
 >   `corp_parts_check.py --tier dev` **PASS**, 0 differences (254,213 rows, 752,100 demands; MLPF 10,048 at run 2's
 >   as-of). **Excel comparison** (Brian's 09:41 refresh, 10,065 rows) against Prod Silver (`--tier prod --groups-tier
