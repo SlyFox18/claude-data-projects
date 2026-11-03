@@ -4,6 +4,11 @@
 > review after each (Brian's standing choice). Steps use checkbox (`- [ ]`) syntax.
 
 > **Progress:** plan written 2026-11-03 (Claude, for Brian). Spec approved 2026-11-03.
+> - **L8 done 2026-11-03** (app `74caea9`; 1,843 + 780 tests, lint, tsc clean; pushed; reviewed with L9). The
+>   cleanup checks' Graph mapper is shared through `SavedConditionsList<F>` (`CLEANUP_CHECKS_LIST`,
+>   `INVENTORY_REPORTS_LIST`); `CleanupCheckRow<F>` etc. are generic (default FieldId), `InventoryReport*` aliases over
+>   JdFieldId; `VITE_LIST_INVENTORY_REPORTS` required. Mock: "MLPF Gaps – 2 or 3 demands" (Ben Hill) and archived
+>   "Old SLC test".
 > - **L6 + L7 done 2026-11-03** (app `09a2665` L6, `05de58b` L7, review fixes `94606ec`; 1,830 + 780 tests, lint,
 >   tsc clean; pushed). `src/cleanup/catalogue.ts` (`Catalogue`, `makeCatalogue`; field props `blankText`, `choices`,
 >   `digits`, `hint`; hooks `storedText`, `textProblem`, `shownText`); the engine names no fields; existing Cleanup
