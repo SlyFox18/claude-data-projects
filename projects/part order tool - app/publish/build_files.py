@@ -39,6 +39,16 @@ ROUND2_NULLABLE = frozenset(("slc", "source", "commodityCode", "phaseInQty", "ph
 ROUND2_TEXT = frozenset(("transferRuleName", "excessUnit", "redistUnit"))
 # purchases.json.gz row fields (extract.PURCHASES_COLUMNS); purchases12 is never null and is rounded to cents.
 PURCHASES_KEYS = ("branch", "franchise", "purchases12")
+# jd_<branch>.json.gz part fields (contract v6, extract.JD_COLUMNS without branch), by how they are written:
+# text trimmed (null -> "", except description, which stays null); money rounded to cents; quantities and sales
+# to 2 decimals (the JD_NULLABLE ones may be null); corpDemands a whole number.
+JD_TEXT = ("partNumber", "description", "returnIndicator", "source", "slc", "superTo", "commodityCode",
+           "commodityGroup", "dealerGroupCode")
+JD_NUMBERS = ("cost", "onHand", "onOrder", "packageQty", "minimumQty", "maximumQty", "sales12", "salesPrev12")
+JD_NULLABLE = frozenset(("description", "packageQty", "minimumQty", "maximumQty"))
+JD_KEYS = JD_TEXT + JD_NUMBERS + ("corpDemands",)
+# A jd file must fit the simple upload (upload.SIMPLE_LIMIT, compressed bytes); the largest branch is ~0.5 MB.
+JD_FILE_LIMIT = 4 * 1024 * 1024
 _SAFE = re.compile(r"^[A-Za-z0-9_-]+$")
 
 
@@ -243,11 +253,86 @@ def build(reorder: list, history_for, transfers: list, names: dict, data_as_of: 
     return hashes, branches
 
 
+def _branch_order(b: str):
+    return (0, int(b), "") if b.isdigit() else (1, 0, b)
+
+
+def _is_finite_number(v) -> bool:
+    if isinstance(v, bool) or not isinstance(v, (int, float, Decimal)):
+        return False
+    return v.is_finite() if isinstance(v, Decimal) else math.isfinite(v)
+
+
+def _jd_part(r: dict) -> dict:
+    """One jd file part (contract v6): every JD_KEYS field present; text trimmed; numbers finite, rounded to 2
+    decimals (whole values as integers, -0 as 0); only JD_NULLABLE fields may be null. Gold coalesces the others,
+    so a null there means Gold and the publish are out of step."""
+    where = f"JD row {r.get('branch')!r} {r.get('partNumber')!r}"
+    missing = [k for k in JD_KEYS if k not in r]
+    if missing:
+        raise ValueError(f"{where} is missing field(s) {', '.join(missing)}")
+    out = {}
+    for k in JD_TEXT:
+        v = r[k]
+        out[k] = (None if k in JD_NULLABLE else "") if v is None else str(v).strip()
+    for k in JD_NUMBERS:
+        v = r[k]
+        if v is None and k in JD_NULLABLE:
+            out[k] = None
+        elif not _is_finite_number(v):
+            raise ValueError(f"{where}: {k} is {v!r}, not a finite number; Gold should always set it "
+                             f"(Gold and the publish are out of step)")
+        else:
+            out[k] = pl.clean_value(round(float(v), 2) + 0.0)
+    v = r["corpDemands"]
+    if not _is_finite_number(v) or v != int(v):
+        raise ValueError(f"{where}: corpDemands is {v!r}, not a whole number (Gold and the publish are out of step)")
+    out["corpDemands"] = int(v)
+    return out
+
+
+def build_jd(rows: list, names: dict, data_as_of: str, out_dir: str = None) -> tuple:
+    """Write one jd_<branch>.json.gz per branch with Fact_CorpParts_JD rows (contract v6) into out_dir (default
+    OUT_DIR), after build() (which clears the folder's old outputs, jd files included; this adds to them).
+    Branch keys follow branch_key (trimmed, file-name safe, two raw codes that trim to one key = error), but with
+    no excluded-branch check: the Corp Parts reports cover every JD branch, 12 included (Plan L decision L-D5).
+    Part numbers are trimmed and need not be unique (trailing-space twins stay two rows, L-D12); parts are
+    sorted by trimmed partNumber, then the raw value, so the bytes don't depend on the extract's order. A file
+    over JD_FILE_LIMIT compressed bytes fails the build, naming the branch.
+    Returns ({file name: sha256}, [{"branch", "name", "parts"}] for _meta.json jdBranches, sorted like branches)."""
+    out_dir = out_dir or OUT_DIR
+    os.makedirs(out_dir, exist_ok=True)
+    by_branch, raw_of = defaultdict(list), {}
+    for r in rows:
+        raw = r.get("branch")
+        if raw is None:
+            raise ValueError(f"JD row {r.get('partNumber')!r} has no branch")
+        key = branch_key(raw)
+        if raw_of.setdefault(key, raw) != raw:
+            raise ValueError(f"branch codes {raw_of[key]!r} and {raw!r} both map to file key {key!r}")
+        raw_pn = r.get("partNumber")
+        by_branch[key].append((_jd_part(r), "" if raw_pn is None else str(raw_pn)))
+
+    hashes, keys = {}, sorted(by_branch, key=_branch_order)
+    for key in keys:
+        parts = [p for p, _ in sorted(by_branch[key], key=lambda t: (t[0]["partNumber"], t[1]))]
+        name = f"jd_{key}.json.gz"
+        data = _bytes({"branch": key, "dataAsOf": data_as_of, "parts": parts})
+        if len(data) > JD_FILE_LIMIT:
+            raise ValueError(f"{name} would be {len(data):,} bytes, over the {JD_FILE_LIMIT:,}-byte upload limit "
+                             f"(branch {key}, {len(parts):,} parts); add a chunked upload or split the file")
+        with open(os.path.join(out_dir, name), "wb") as f:
+            f.write(data)
+        hashes[name] = hashlib.sha256(data).hexdigest()
+    return hashes, [{"branch": b, "name": names.get(b, b), "parts": len(by_branch[b])} for b in keys]
+
+
 def write_meta(data_as_of: str, published_at: str, source: str, branches: list, counts: dict,
-               out_dir: str = None) -> str:
+               out_dir: str = None, *, jd_branches: list) -> str:
+    """_meta.json (plain JSON). jd_branches = build_jd's list (contract v6 jdBranches; counts carries jdParts)."""
     path = os.path.join(out_dir or OUT_DIR, pl.META_FILE)
     with open(path, "wb") as f:
         f.write(_bytes({"dataAsOf": data_as_of, "publishedAt": published_at, "source": source,
                         "branches": branches, "counts": counts, "schemaVersion": 1,
-                        "contractVersion": pl.CONTRACT_VERSION}, compress=False))
+                        "contractVersion": pl.CONTRACT_VERSION, "jdBranches": jd_branches}, compress=False))
     return path

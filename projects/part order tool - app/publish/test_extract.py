@@ -60,8 +60,11 @@ def _table(con, name, cols, rows=()):
 
 
 def _gold_tables(con, reorder_cols=GOLD_REORDER, rule_cols=RULE_COLS, trule_cols=TRULE_COLS,
-                 app_cols=APP_TRANSFER_COLS, sugg_cols=SUGGESTION_COLS, purchases_cols=PURCHASES_COLS):
+                 app_cols=APP_TRANSFER_COLS, sugg_cols=SUGGESTION_COLS, purchases_cols=PURCHASES_COLS,
+                 jd_cols="all"):
     _table(con, "Fact_NonJD_Reorder", reorder_cols)
+    if jd_cols is not None:        # None = an older Gold without Fact_CorpParts_JD (Plan L)
+        _table(con, "Fact_CorpParts_JD", GOLD_JD if jd_cols == "all" else jd_cols)
     _table(con, "NonJD_OrderRules", rule_cols)
     _table(con, "NonJD_TransferRules", trule_cols)
     _table(con, "NonJD_Transfers", app_cols)
@@ -334,3 +337,61 @@ def test_check_columns_names_missing_equip_stock_value(con):
     _gold_tables(con, reorder_cols=[c for c in GOLD_REORDER if c != "EquipStockValue"])
     with pytest.raises(pl.MissingColumnsError, match="Fact_NonJD_Reorder.*EquipStockValue"):
         extract.check_columns(con)
+
+
+# ---- Plan L (L4): contract v6, Fact_CorpParts_JD ----
+
+# Gold's Fact_CorpParts_JD columns (Build_Gold_NonJD_Reorder Part 5, fabric-workspace-docs 6e7e7dc4).
+GOLD_JD = ["Branch", "Franchise", "PartNumber", "Description", "Cost", "OnHand", "OnOrder", "PackageQty",
+           "ReturnIndicator", "Source", "SLC", "SuperTo", "CommodityCode", "CommodityGroup", "DealerGroupCode",
+           "MinimumQty", "MaximumQty", "Sales12", "SalesPrev12", "CorpDemands", "DemandAsOf", "BuiltAtUtc"]
+JD_FIELDS = ["partNumber", "description", "cost", "onHand", "onOrder", "packageQty", "returnIndicator", "source",
+             "slc", "superTo", "commodityCode", "commodityGroup", "dealerGroupCode", "minimumQty", "maximumQty",
+             "sales12", "salesPrev12", "corpDemands"]
+
+
+def test_jd_columns_are_the_l_d18_fields_plus_branch():
+    assert extract.JD_COLUMNS[0] == ("Branch", "branch")
+    assert [f for _, f in extract.JD_COLUMNS[1:]] == JD_FIELDS
+    m = dict(extract.JD_COLUMNS)
+    assert (m["Sales12"], m["SalesPrev12"], m["CorpDemands"]) == ("sales12", "salesPrev12", "corpDemands")
+    assert {g for g, _ in extract.JD_COLUMNS} <= set(GOLD_JD)
+    assert not {"Franchise", "DemandAsOf", "BuiltAtUtc"} & {g for g, _ in extract.JD_COLUMNS}
+
+
+def test_jd_parts_reads_and_renames(con):
+    _gold_tables(con)
+    con.execute('INSERT INTO "Fact_CorpParts_JD" (Branch, Franchise, PartNumber, Description, CorpDemands, '
+                "PackageQty) VALUES ('2', 'D', 'B1', 'Bolt', '2', NULL), ('1', 'D', 'A2 ', NULL, '0', '1.00'), "
+                "('1', 'D', 'A1', 'Nut', '3', '2.00')")
+    rows = extract.jd_parts(con)
+    assert [(r["branch"], r["partNumber"]) for r in rows] == [("1", "A1"), ("1", "A2 "), ("2", "B1")]
+    assert set(rows[0]) == {"branch"} | set(JD_FIELDS)
+    assert rows[1]["description"] is None and rows[2]["packageQty"] is None and rows[0]["corpDemands"] == "3"
+
+
+def test_check_columns_passes_with_the_jd_table(con):
+    _gold_tables(con)
+    extract.check_columns(con)
+
+
+@pytest.mark.parametrize("missing", ["CorpDemands", "PackageQty", "CommodityGroup", "BuiltAtUtc"])
+def test_check_columns_names_missing_jd_column(con, missing):
+    _gold_tables(con, jd_cols=[c for c in GOLD_JD if c != missing])
+    with pytest.raises(pl.MissingColumnsError, match=f"Fact_CorpParts_JD.*{missing}"):
+        extract.check_columns(con)
+
+
+def test_check_columns_missing_jd_table_is_clear_error(con):
+    # an older Gold (before Plan L) has every other table but not Fact_CorpParts_JD
+    _gold_tables(con, jd_cols=None)
+    with pytest.raises(RuntimeError, match="Fact_CorpParts_JD not found or unreadable.*Plan L") as ei:
+        extract.check_columns(con)
+    assert not isinstance(ei.value, pl.MissingColumnsError)
+
+
+def test_jd_built_at(con):
+    _gold_tables(con)
+    con.execute('INSERT INTO "Fact_CorpParts_JD" (Branch, PartNumber, BuiltAtUtc) VALUES '
+                "('1', 'A', '2026-11-03 15:26:59'), ('2', 'B', '2026-11-03 15:26:59')")
+    assert str(extract.jd_built_at(con)) == "2026-11-03 15:26:59"

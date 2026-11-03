@@ -166,12 +166,15 @@ def test_deterministic(out):
 def test_write_meta_plain_json(out):
     _, branches = _build()
     counts = {"parts": 4}
-    path = build_files.write_meta(AS_OF, "2026-10-20T12:00:00+00:00", "dev", branches, counts)
+    jd_branches = [{"branch": "12", "name": "12", "parts": 3}]
+    path = build_files.write_meta(AS_OF, "2026-10-20T12:00:00+00:00", "dev", branches, counts,
+                                  jd_branches=jd_branches)
     raw = open(path, "rb").read()
     assert raw[:2] != b"\x1f\x8b"
     meta = json.loads(raw)
     assert meta == {"dataAsOf": AS_OF, "publishedAt": "2026-10-20T12:00:00+00:00", "source": "dev",
-                    "branches": branches, "counts": counts, "schemaVersion": 1, "contractVersion": 5}
+                    "branches": branches, "counts": counts, "schemaVersion": 1, "contractVersion": 6,
+                    "jdBranches": jd_branches}
 
 
 def test_nan_rejected():
@@ -268,8 +271,8 @@ def test_reorder_row_at_excluded_branch_raises(out, branch):
 
 def test_meta_has_contract_version(out):
     _, branches = _build()
-    path = build_files.write_meta(AS_OF, AS_OF, "dev", branches, {})
-    assert json.loads(open(path, "rb").read())["contractVersion"] == 5
+    path = build_files.write_meta(AS_OF, AS_OF, "dev", branches, {}, jd_branches=[])
+    assert json.loads(open(path, "rb").read())["contractVersion"] == 6
 
 
 @pytest.mark.parametrize("bad", [float("nan"), float("inf"), float("-inf"), Decimal("NaN")])
@@ -399,7 +402,7 @@ def test_build_into_another_folder(out, tmp_path):
     hashes, branches = build_files.build(REORDER, _hist, TRANSFERS, NAMES, AS_OF, MONTH, RULES, transfer_rules=TRULES,
                                          suggestions=SUGGESTIONS, committed=COMMITTED, purchases=PURCHASES,
                                          out_dir=str(other))
-    meta = build_files.write_meta(AS_OF, AS_OF, "dev", branches, {}, out_dir=str(other))
+    meta = build_files.write_meta(AS_OF, AS_OF, "dev", branches, {}, out_dir=str(other), jd_branches=[])
     assert sorted(os.listdir(other)) == sorted(list(hashes) + ["_meta.json", "keep.txt"])
     assert os.path.dirname(meta) == str(other)
     assert not out.exists()
@@ -497,3 +500,199 @@ def test_reorder_row_missing_equip_stock_value_fails(out):
     del row["equipStockValue"]
     with pytest.raises(ValueError, match="equipStockValue"):
         _build([row])
+
+
+# ---- Plan L (L4): contract v6, jd_<branch>.json.gz ----
+
+JD_FIELDS = {"partNumber", "description", "cost", "onHand", "onOrder", "packageQty", "returnIndicator", "source",
+             "slc", "superTo", "commodityCode", "commodityGroup", "dealerGroupCode", "minimumQty", "maximumQty",
+             "sales12", "salesPrev12", "corpDemands"}
+
+
+def _jd(branch, part, **kw):
+    """A Fact_CorpParts_JD row as extract.jd_parts returns it (Gold's types: DECIMAL numbers, INTEGER demands)."""
+    r = {"branch": branch, "partNumber": part, "description": "Pin", "cost": Decimal("459.01"),
+         "onHand": Decimal("0.00"), "onOrder": Decimal("0.00"), "packageQty": Decimal("1.00"),
+         "returnIndicator": "R", "source": "FF", "slc": "15C", "superTo": "", "commodityCode": "07A",
+         "commodityGroup": "Tillage", "dealerGroupCode": "", "minimumQty": None, "maximumQty": None,
+         "sales12": Decimal("2.00"), "salesPrev12": Decimal("0.00"), "corpDemands": 2}
+    r.update(kw)
+    return r
+
+
+JD = [_jd("2", "B1"), _jd("1", "A2"), _jd("12", "C1"), _jd("1", "A1")]
+JD_NAMES = {"1": "Lubbock", "12": "Corporate"}
+
+
+def _build_jd(rows=None, names=None):
+    return build_files.build_jd(JD if rows is None else rows, JD_NAMES if names is None else names, AS_OF)
+
+
+def test_jd_files_and_branches(out):
+    hashes, jd_branches = _build_jd()
+    assert set(hashes) == {"jd_1.json.gz", "jd_2.json.gz", "jd_12.json.gz"}
+    assert sorted(os.listdir(out)) == sorted(hashes)
+    assert jd_branches == [{"branch": "1", "name": "Lubbock", "parts": 2},
+                           {"branch": "2", "name": "2", "parts": 1},
+                           {"branch": "12", "name": "Corporate", "parts": 1}]
+
+
+@pytest.mark.parametrize("branch", ["12", "5", "97", "4B", "93C"])
+def test_jd_excluded_branches_are_written(out, branch):
+    # L-D5: the Corp Parts reports cover every JD branch, so there is no D6 check on JD rows
+    hashes, jd_branches = _build_jd([_jd(branch, "P1")])
+    assert f"jd_{branch}.json.gz" in hashes
+    assert [b["branch"] for b in jd_branches] == [branch]
+
+
+def test_jd_file_layout(out):
+    _build_jd()
+    data = _read(out, "jd_1.json.gz")
+    assert set(data) == {"branch", "dataAsOf", "parts"}
+    assert data["branch"] == "1" and data["dataAsOf"] == AS_OF
+    assert all(set(p) == JD_FIELDS for p in data["parts"])
+    raw = gzip.decompress((out / "jd_1.json.gz").read_bytes())
+    assert raw == json.dumps(json.loads(raw), sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
+
+
+def test_jd_values(out):
+    _build_jd([_jd("1", "A1")])
+    p = _read(out, "jd_1.json.gz")["parts"][0]
+    assert p == {"partNumber": "A1", "description": "Pin", "cost": 459.01, "onHand": 0, "onOrder": 0,
+                 "packageQty": 1, "returnIndicator": "R", "source": "FF", "slc": "15C", "superTo": "",
+                 "commodityCode": "07A", "commodityGroup": "Tillage", "dealerGroupCode": "", "minimumQty": None,
+                 "maximumQty": None, "sales12": 2, "salesPrev12": 0, "corpDemands": 2}
+    assert type(p["onHand"]) is int and type(p["corpDemands"]) is int
+
+
+def test_jd_text_trimmed_and_null_text_is_empty(out):
+    _build_jd([_jd(" 1 ", " A1  ", description="  Pin  ", returnIndicator=" R ", source=None, slc="  ",
+                   superTo=None, commodityCode=" 07A", commodityGroup="Other ", dealerGroupCode=None)])
+    data = _read(out, "jd_1.json.gz")
+    p = data["parts"][0]
+    assert data["branch"] == "1"
+    assert (p["partNumber"], p["description"], p["returnIndicator"]) == ("A1", "Pin", "R")
+    assert (p["source"], p["slc"], p["superTo"], p["dealerGroupCode"]) == ("", "", "", "")
+    assert (p["commodityCode"], p["commodityGroup"]) == ("07A", "Other")
+
+
+def test_jd_nullable_fields_stay_null(out):
+    _build_jd([_jd("1", "A1", description=None, packageQty=None, minimumQty=None, maximumQty=None)])
+    p = _read(out, "jd_1.json.gz")["parts"][0]
+    assert (p["description"], p["packageQty"], p["minimumQty"], p["maximumQty"]) == (None, None, None, None)
+
+
+def test_jd_rounding(out):
+    _build_jd([_jd("1", "A1", cost=12.3456, onHand=Decimal("1.004"), onOrder=2.499, packageQty=Decimal("2.50"),
+                   minimumQty=Decimal("3.00"), maximumQty=7.777, sales12=Decimal("-0.001"), salesPrev12=15664,
+                   corpDemands=Decimal("3"))])
+    p = _read(out, "jd_1.json.gz")["parts"][0]
+    assert (p["cost"], p["onHand"], p["onOrder"], p["packageQty"]) == (12.35, 1.0, 2.5, 2.5)
+    assert (p["minimumQty"], p["maximumQty"], p["sales12"], p["salesPrev12"]) == (3, 7.78, 0, 15664)
+    assert p["corpDemands"] == 3 and type(p["corpDemands"]) is int
+    assert type(p["minimumQty"]) is int and str(p["sales12"]) == "0"     # whole values as integers, -0 -> 0
+
+
+@pytest.mark.parametrize("key", ["cost", "onHand", "onOrder", "sales12", "salesPrev12", "corpDemands"])
+def test_jd_null_never_null_number_fails(out, key):
+    with pytest.raises(ValueError, match=key):
+        _build_jd([_jd("1", "A1", **{key: None})])
+
+
+@pytest.mark.parametrize("key", ["cost", "onHand", "packageQty", "maximumQty"])
+@pytest.mark.parametrize("bad", [float("nan"), float("inf"), Decimal("NaN"), Decimal("-Infinity"), "1", True])
+def test_jd_non_finite_or_non_number_fails(out, key, bad):
+    with pytest.raises(ValueError, match=key):
+        _build_jd([_jd("1", "A1", **{key: bad})])
+
+
+@pytest.mark.parametrize("bad", [2.5, Decimal("2.5"), "2", True, float("nan")])
+def test_jd_corp_demands_must_be_whole(out, bad):
+    with pytest.raises(ValueError, match="corpDemands"):
+        _build_jd([_jd("1", "A1", corpDemands=bad)])
+
+
+def test_jd_row_missing_field_fails(out):
+    row = _jd("1", "A1")
+    del row["commodityGroup"]
+    with pytest.raises(ValueError, match="commodityGroup"):
+        _build_jd([row])
+
+
+def test_jd_twins_allowed_and_sorted_by_trimmed_part_then_raw(out):
+    # L-D12: the trailing-space twins stay two rows; sorted by trimmed partNumber, then the raw value
+    _build_jd([_jd("8", "E63245 ", onHand=1), _jd("8", "B2"), _jd("8", "E63245", onHand=2), _jd("8", " A9"),
+               _jd("8", "E6324")])
+    parts = _read(out, "jd_8.json.gz")["parts"]
+    assert [p["partNumber"] for p in parts] == ["A9", "B2", "E6324", "E63245", "E63245"]
+    assert [p["onHand"] for p in parts[3:]] == [2, 1]
+
+
+def test_jd_deterministic_whatever_the_input_order(out):
+    h1, b1 = _build_jd()
+    h2, b2 = _build_jd(list(reversed(JD)))
+    assert h1 == h2 and b1 == b2
+
+
+def test_jd_branch_order_numeric_then_alpha(out):
+    _, jd_branches = _build_jd([_jd(b, "P") for b in ["4B", "93C", "10", "2", "15I", "97"]])
+    assert [b["branch"] for b in jd_branches] == ["2", "10", "97", "15I", "4B", "93C"]
+
+
+def test_jd_branch_key_collision_raises(out):
+    with pytest.raises(ValueError, match="both map to file key"):
+        _build_jd([_jd("1", "A"), _jd("1 ", "B")])
+
+
+@pytest.mark.parametrize("branch", ["../x", "", None, "1 2"])
+def test_jd_unsafe_branch_raises(out, branch):
+    with pytest.raises(ValueError):
+        _build_jd([_jd(branch, "A")])
+
+
+def test_jd_file_over_the_upload_limit_fails_naming_the_branch(out, monkeypatch):
+    monkeypatch.setattr(build_files, "JD_FILE_LIMIT", 1000)
+    rows = [_jd("1", "A1")] + [_jd("92", f"P{i:05d}", description=f"part {i * 7919 % 10007}") for i in range(200)]
+    with pytest.raises(ValueError, match=r"jd_92\.json\.gz .*bytes.*branch 92"):
+        _build_jd(rows)
+    assert not (out / "jd_92.json.gz").exists()
+
+
+def test_jd_file_limit_is_the_upload_limit():
+    import upload
+    assert build_files.JD_FILE_LIMIT == upload.SIMPLE_LIMIT == 4 * 1024 * 1024
+
+
+def test_jd_build_keeps_the_other_files(out):
+    # build() clears the folder's old outputs; build_jd runs after it and adds to them
+    hashes, _ = _build()
+    jd_hashes, _ = _build_jd()
+    assert sorted(os.listdir(out)) == sorted(set(hashes) | set(jd_hashes))
+
+
+def test_stale_jd_files_cleared_by_build(out):
+    _build_jd()
+    _build()
+    assert not [f for f in os.listdir(out) if f.startswith("jd_")]
+
+
+def test_jd_build_into_another_folder(out, tmp_path):
+    dest = tmp_path / "local"
+    hashes, _ = build_files.build_jd(JD, JD_NAMES, AS_OF, out_dir=str(dest))
+    assert sorted(os.listdir(dest)) == sorted(hashes)
+    assert not out.exists()
+
+
+def test_jd_empty_gives_no_files(out):
+    assert _build_jd([]) == ({}, [])
+
+
+def test_write_meta_has_jd_branches(out):
+    _, branches = _build()
+    _, jd_branches = _build_jd()
+    path = build_files.write_meta(AS_OF, AS_OF, "dev", branches, {"parts": 4, "jdParts": 4},
+                                  jd_branches=jd_branches)
+    meta = json.loads(open(path, "rb").read())
+    assert meta["jdBranches"] == jd_branches and meta["counts"]["jdParts"] == 4
+    assert meta["contractVersion"] == 6
+    assert [b["branch"] for b in meta["branches"]] == ["1", "92"]

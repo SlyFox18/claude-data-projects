@@ -1,14 +1,16 @@
 # Non-JD Parts Order Tool - data publish
 
 Reads DP Gold (`Fact_NonJD_Reorder`, `Fact_NonJD_SalesHistory`, `Fact_NonJD_TransferSuggestion`,
-`Fact_NonJD_Purchases`, `Fact_OutstandingTransfers`, `dim_BranchLocation`) and the list tables Gold read (`NonJD_OrderRules`,
+`Fact_NonJD_Purchases`, `Fact_CorpParts_JD`, `Fact_OutstandingTransfers`, `dim_BranchLocation`) and the list tables Gold read (`NonJD_OrderRules`,
 `NonJD_TransferRules`, `NonJD_Transfers`) after the morning DP run and uploads the web app's data files to the SharePoint library **NonJD Order Data**
 on https://spitractor.sharepoint.com/sites/SouthPlainsImplement-ReportSite.
 
 - Plan: `docs/superpowers/plans/2026-10-20-non-jd-parts-order-tool-data-feed.md`; round 1 (contractVersion 2):
   `docs/superpowers/plans/2026-10-26-non-jd-parts-order-tool-round-1.md`; round 2 (contractVersion 3):
   `docs/superpowers/plans/2026-10-27-non-jd-parts-order-tool-round-2-phase-2.md` (task E6); round 3 (contractVersion
-  4, returns and scrap): `docs/superpowers/plans/2026-10-30-spi-parts-hub-returns-and-scrap.md` (task I3)
+  4, returns and scrap): `docs/superpowers/plans/2026-10-30-spi-parts-hub-returns-and-scrap.md` (task I3); Plan L
+  (contractVersion 6, the Inventory reports' JD parts):
+  `docs/superpowers/plans/2026-11-03-spi-parts-hub-inventory-reports.md` (task L4)
 - Spec: `docs/superpowers/specs/2026-10-20-non-jd-parts-order-tool-redesign-design.md`; round 2 (transfers,
   phase-in): `docs/superpowers/specs/2026-10-27-non-jd-parts-order-tool-round-2-design.md` ("The contract (v3)")
 - Where the business rules live: the Gold notebook (fabric-workspace-docs
@@ -42,26 +44,30 @@ are replaced. The app's parity checks and `make_engine_fixture.py --output <dir>
 What decides whether to publish:
 - It looks back 14 days in `dp_refresh_log` for the latest `Build_Gold_NonJD_Reorder` item row. Skipped rows are
   ignored. It publishes only if that latest run succeeded and hasn't been published yet.
-- It refuses (exit 1) if `Fact_NonJD_Reorder.BuiltAtUtc` is outside that run, or if the table changes during extraction.
+- It refuses (exit 1) if `Fact_NonJD_Reorder.BuiltAtUtc` or `Fact_CorpParts_JD.BuiltAtUtc` is outside that run
+  (the same Gold item writes both), or if either table changes during extraction (rerun the publish).
 - It refuses (exit 1) before extracting anything if a table (`Fact_NonJD_Reorder`, `Fact_NonJD_SalesHistory`,
-  `Fact_OutstandingTransfers`, `Fact_NonJD_TransferSuggestion`, `Fact_NonJD_Purchases`, `NonJD_OrderRules`,
-  `NonJD_TransferRules` or `NonJD_Transfers`) lacks a column the contract needs, naming the missing columns
-  (`extract.check_columns`); a missing list, suggestion or purchases table is named with what to deploy. Gold and the
-  publish code must be deployed together (round 3 phase 3 Gold, with `EquipStockValue`, with contractVersion 5
-  publish code; against a round 3 phase 1 Gold the publish fails naming `EquipStockValue`, and against a round 2
-  Gold naming `LastReceived` and `EquipStockValue`, and writes nothing).
+  `Fact_OutstandingTransfers`, `Fact_NonJD_TransferSuggestion`, `Fact_NonJD_Purchases`, `Fact_CorpParts_JD`,
+  `NonJD_OrderRules`, `NonJD_TransferRules` or `NonJD_Transfers`) lacks a column the contract needs, naming the
+  missing columns (`extract.check_columns`); a missing list, suggestion, purchases or JD table is named with what to
+  deploy. Gold and the publish code must be deployed together: contractVersion 6 publish code needs the Plan L Gold
+  (with `Fact_CorpParts_JD`). Against an older Gold the publish fails with "Fact_CorpParts_JD not found or unreadable
+  ... deploy the Plan L Build_Gold_NonJD_Reorder" and writes nothing (likewise a round 3 phase 1 Gold fails naming
+  `EquipStockValue`, and a round 2 Gold naming `LastReceived` and `EquipStockValue`). So pull the v6 publish code on
+  the Gateway PC only after Prod Gold has `Fact_CorpParts_JD`.
 - It refuses (exit 1) if a rule in `NonJD_OrderRules` or `NonJD_TransferRules` has a NaN or infinite number, naming
   the rule and the field, if Gold left a never-null round 2 reorder field null (see "Nulls"), or if a
   `Fact_NonJD_Purchases` row has a null or non-finite `Purchases12`, an excluded branch or a duplicate branch +
   franchise.
 
 What gets uploaded:
-- The reorder, surplus, transfers, rules, transfer rules, transfer suggestions and purchases files are re-uploaded on
-  every new DP run (they embed `dataAsOf`, so their content always changes); `transfer_suggestions.json.gz` is sent on every
+- The reorder, surplus, transfers, rules, transfer rules, transfer suggestions, purchases and JD (`jd_<branch>`)
+  files are re-uploaded on every new DP run (they embed `dataAsOf`, so their content always changes); `transfer_suggestions.json.gz` is sent on every
   upload even if its hash is unchanged (`publish_logic.ALWAYS_UPLOAD`). History files are uploaded only when their
   content changed. `_meta.json` goes last.
 - If `NONJD_SOURCE` changes, every file is re-sent.
-- Files over 4 MB fail the upload (there is no chunked upload yet).
+- Files over 4 MB fail the upload (there is no chunked upload yet). A `jd_<branch>.json.gz` over 4 MB (compressed)
+  already fails the build, naming the branch; the largest is about 0.5 MB.
 
 Other behavior:
 - `--force` re-publishes the latest run, if it succeeded, and re-sends every file (use it to repair a file damaged
@@ -77,7 +83,8 @@ Task Scheduler setup:
 
 ## For the app (Plan B)
 
-- Fetch only the branches listed in `_meta.json`. Files of branches that dropped out stay in the library.
+- Fetch only the branches listed in `_meta.json` (`branches` for reorder / history, `jdBranches` for `jd_`). Files
+  of branches that dropped out stay in the library.
 - A crash mid-upload can briefly leave some branch files newer than `_meta.json` until the next run heals it. If
   `reorder_<b>.dataAsOf` differs from `_meta.dataAsOf`, show the file's own date.
 - History files have no `dataAsOf`, so a stale history file after a mid-upload crash can't be detected from the file
@@ -86,7 +93,7 @@ Task Scheduler setup:
 - Check `_meta.json`'s `contractVersion` first (missing = 1) and load nothing unless it is the version the app knows
   (messages under "File contract").
 
-## File contract (schemaVersion 1, contractVersion 5)
+## File contract (schemaVersion 1, contractVersion 6)
 
 - `schemaVersion` 1 = the rules-list file layout (2026-10-20); the earlier matrix-era shape was never consumed. It
   is unchanged in round 1.
@@ -99,7 +106,9 @@ Task Scheduler setup:
   first, then publish v3 (a v2 app refuses v3 data). **4 = round 3** (Plan I, 2026-10-30, returns and scrap): the
   reorder field `lastReceived` and a new file, `purchases.json.gz`. Deploy the v4 app first, then publish v4 (a v3
   app refuses v4 data). **5 = round 3 phase 3** (Plan K): `equipStockValue`, Equip's own stock value (ON_HAND_VAL).
-  Deploy app 0.11.0 first, then publish v5 (an older app refuses v5 data; 0.11.0 accepts v3–v5).
+  Deploy app 0.11.0 first, then publish v5 (an older app refuses v5 data; 0.11.0 accepts v3–v5). **6 = Plan L**
+  (2026-11-03, Inventory reports): `jd_<branch>.json.gz`, `_meta.jdBranches`, `counts.jdParts`; deploy app 0.12.0
+  first, then publish v6 (an older app refuses v6 data; 0.12.0 accepts v3–v6). No existing file or field changed.
 - **Bump `contractVersion`** on any removed or renamed field, any change in a field's meaning, or any new `status`
   value. Don't bump for a new optional field: the app ignores fields it doesn't know. (v5 is bumped anyway for
   `equipStockValue`: the field is never null and 0 is a real value, so the app must tell "not published yet" (a v4
@@ -116,7 +125,8 @@ unsorted for reading); `.json.gz` files are gzip-compressed, `_meta.json` is pla
 
 - Numbers are plain JSON numbers (whole values are integers). `NaN` / `Infinity` never appear (they become `null`;
   the writer refuses to emit them).
-- Nulls: the `sales` / `requests` arrays never contain null (they use 0). In a reorder part, only these fields can be
+- Nulls: in a `jd_<branch>` part only `description`, `packageQty`, `minimumQty` and `maximumQty` can be null (see
+  that file). The `sales` / `requests` arrays never contain null (they use 0). In a reorder part, only these fields can be
   null: `description`, `productGroup`, `minimumQty`, `maximumQty`, `reorderCode`, `activityCode`, `minOverride`,
   `maskExpires`, `maskedOn`, `minLineValue` and `maxLineValue`. Every other reorder field is never null: blank text
   arrives as `""` (`bin`, `superTo`, `superFrom`, `dealerGroupCode`), quantities and prices are 0 when missing, and
@@ -138,20 +148,28 @@ unsorted for reading); `.json.gz` files are gzip-compressed, `_meta.json` is pla
   reorder, history or surplus rows, no `_meta.json` entry, and no transfer line to or from them. Gold leaves them out
   of the reorder and history tables; a reorder row at one fails the publish (Gold and the publish are out of step).
   Transfer lines are filtered in the publish, because `Fact_OutstandingTransfers` still holds them.
+- **The JD files (contractVersion 6) have no excluded branches:** every branch with a `Fact_CorpParts_JD` row gets a
+  `jd_<branch>.json.gz` and a `jdBranches` entry, 12, 5, 97, 4B and 93C included (Plan L decision L-D5: the Corp Parts
+  reports cover every JD branch). The other branch-key rules (trimmed, safe characters, no trim clash) apply.
 - Part numbers are raw as stored in Gold (a trailing space is significant). Match on `franchise` + `partNumber`.
 
 ### `_meta.json` (uploaded last)
 ```json
-{"schemaVersion": 1, "contractVersion": 5, "dataAsOf": "2026-10-20T11:41:07+00:00",
+{"schemaVersion": 1, "contractVersion": 6, "dataAsOf": "2026-10-20T11:41:07+00:00",
  "publishedAt": "2026-10-20T12:20:03.482915+00:00", "source": "prod",
  "branches": [{"branch": "1", "name": "Lubbock", "parts": 18234}],
- "counts": {"parts": 412345, "historyRows": 3456789, "transferLines": 210, "transferSuggestions": 2312}}
+ "jdBranches": [{"branch": "1", "name": "Lubbock", "parts": 19858}, {"branch": "12", "name": "O'Donnell", "parts": 909}],
+ "counts": {"parts": 412345, "historyRows": 3456789, "transferLines": 210, "transferSuggestions": 2312,
+            "jdParts": 230464}}
 ```
 `dataAsOf` is when `Build_Gold_NonJD_Reorder` finished in the DP run (its `end_utc` in `dp_refresh_log`), not the
 publish time. `branches` is sorted numerically, then alphabetically; `name` falls back to the code if the branch is
 not in `dim_BranchLocation`. `counts.parts` is the total reorder rows, `historyRows` the rows read from the history
 table, `transferLines` the Equip outstanding transfer lines read, `transferSuggestions` the lines in
 `transfer_suggestions.json.gz`. `contractVersion` is described above (missing = 1).
+`jdBranches` (new in contractVersion 6) lists every branch with a `jd_<branch>.json.gz` (no excluded branches), sorted
+and named like `branches`; `parts` is the rows in that file. `counts.jdParts` is the total JD rows (the sum of
+`jdBranches[].parts`). Both are absent before v6.
 
 ### `reorder_<branch>.json.gz`
 `{"branch", "dataAsOf", "parts": [ ... ]}`, one object per part in scope at that branch. Each part has the 83 fields
@@ -248,6 +266,39 @@ decisions K-D1 and K-D2):
 |---|---|
 | lastReceived | Date string `YYYY-MM-DD`: the date of the newest supplier receipt (`Silver_InTrans` Type `P`) for this branch + franchise + trimmed part number, so trailing-space twin parts share it. Null = never received (in the InTrans history Gold reads). Display it; the returns screens use it for "received in the last N months" |
 | equipStockValue | Number, dollars rounded to cents: Equip's own stock value for the part at this branch (`Silver_PartInformation.InventoryCost`, Equip ON_HAND_VAL), not on hand x cost. Never null (Silver coalesces a missing value to 0); can be negative, and can be non-zero when on hand is 0 or below. On a v4 file the field is absent: "not in today's data yet", not 0 |
+
+### `jd_<branch>.json.gz` (new in contractVersion 6)
+`{"branch", "dataAsOf", "parts": [ ... ]}`: `Fact_CorpParts_JD` (Plan L), one object per row at that branch: every
+active JD (franchise D) part, for the Inventory area's Corp Parts reports (MLPF Gaps first). The fields are below
+(`extract.JD_COLUMNS`; `branch` is the file-level key). Franchise (always D), `DemandAsOf` and `BuiltAtUtc` are not
+published. One file per branch with rows, every branch (no excluded branches, see "Branch codes"), uploaded on every
+new DP run (it embeds `dataAsOf`), before `_meta.json`.
+
+- Grain: Branch + Franchise + PartNumber as stored in Silver (Plan L decision L-D12). `partNumber` is **trimmed**
+  and is **not unique**: trailing-space twins stay two rows (2 in Prod), each with the demand of the trimmed part
+  number. Key rows by position, not by part number.
+- Parts are sorted by trimmed `partNumber`, then the stored (untrimmed) value.
+- Text is trimmed; blank or null text arrives as `""`, except `description`, which may be null.
+- Numbers: `cost` rounded to cents; quantities and sales to 2 decimals; `corpDemands` a whole number. Whole values
+  are integers. Only `description`, `packageQty`, `minimumQty` and `maximumQty` can be null; a null, NaN, infinite or
+  non-number value in any other number field fails the publish (Gold always sets them).
+- The largest branch is about 0.5 MB compressed; a file over the 4 MB upload limit fails the build, naming the branch.
+
+| Field | Label in the app | Meaning |
+|---|---|---|
+| partNumber | Part number | Text, trimmed (see grain) |
+| description | (detail panel) | Text; may be null |
+| cost | Cost | Money (Silver_PartInformation cost), to the cent |
+| onHand, onOrder | On hand, On order | Equip quantities (on hand can be negative) |
+| packageQty | Package qty | Equip's package quantity as a number; null when Equip's text isn't a number |
+| returnIndicator | Return indicator | Equip `Returnable` (`R`, `N`, `D` or `""`) |
+| source, slc, superTo | Source, SLC, Super To | Text; `superTo` is `""` when the part isn't superseded |
+| commodityCode | Commodity code | Text; `""` when blank |
+| commodityGroup | Commodity group | The group of the code in Ben's CommodityCodeGroups.csv; `Other` when the code isn't in it (blank codes too) |
+| dealerGroupCode | Dealer group | Text; `""` when blank |
+| minimumQty, maximumQty | Equip minimum, Equip maximum | Silver_PartStockingRules; null = no stocking rule row |
+| sales12, salesPrev12 | Sales 12 months, Sales 24 months (L-D18; how the app derives the 24-month figure is its call) | Units sold in the current and previous 12 months (`Current12MoSales`, `Previous12MoSales`) |
+| corpDemands | Corp demands | The Corp demand count: invoices for the branch + trimmed part dated 18 months to 7 days before the build, net of their credits (credits up to the build time); an invoice counts once when its net qty > 0 (Plan L decisions L-D10, L-D11). 0 when none |
 
 ### Settings the app reads live (`NonJD_PartSettings`)
 

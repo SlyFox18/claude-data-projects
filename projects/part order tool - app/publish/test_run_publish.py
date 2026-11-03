@@ -16,7 +16,7 @@ BUILT = datetime(2026, 10, 20, 10, 20, 0)
 
 DATA_FILES = {"reorder_01.json.gz", "history_01.json.gz", "reorder_02.json.gz", "history_02.json.gz",
               "surplus.json.gz", "transfers.json.gz", "rules.json.gz", "transfer_rules.json.gz",
-              "transfer_suggestions.json.gz", "purchases.json.gz"}
+              "transfer_suggestions.json.gz", "purchases.json.gz", "jd_01.json.gz", "jd_12.json.gz"}
 ROUND2 = {"pendingQty": 0.0, "slc": None, "source": None, "commodityCode": None, "phaseInQty": None,
           "phaseInEnds": None, "phaseInOn": None, "phaseInActive": False, "phaseInEndReason": None,
           "appInboundQty": 0, "appOutboundQty": 0, "transferRuleId": None, "transferRuleName": "Built-in default",
@@ -25,6 +25,10 @@ ROUND2 = {"pendingQty": 0.0, "slc": None, "source": None, "commodityCode": None,
           "redistCap": 0, "redistEligible": False, "suggestedInQty": 0, "suggestedConvInQty": 0,
           "suggestedOutQty": 0, "lastReceived": None,
           "equipStockValue": 0}
+JD_ROW = {"partNumber": "J1", "description": "Pin", "cost": 1.5, "onHand": 0, "onOrder": 0, "packageQty": 1,
+          "returnIndicator": "R", "source": "FF", "slc": "15C", "superTo": "", "commodityCode": "", "commodityGroup":
+          "Other", "dealerGroupCode": "", "minimumQty": None, "maximumQty": None, "sales12": 2, "salesPrev12": 0,
+          "corpDemands": 2}
 
 
 class Env:
@@ -32,6 +36,7 @@ class Env:
         self.uploaded = []
         self.status = "Succeeded"
         self.built = [BUILT]  # successive built_at results; the last one repeats
+        self.jd_built = [BUILT]  # the same for Fact_CorpParts_JD
         self.end = END
         self.on_hand_02 = 0
         self.rules = [{"id": 1, "ruleName": "Default", "priority": 99.0, "active": True, "archived": None,
@@ -64,6 +69,13 @@ def env(tmp_path, monkeypatch):
     def built_at(con):
         return e.built.pop(0) if len(e.built) > 1 else e.built[0]
     monkeypatch.setattr(extract, "built_at", built_at)
+
+    def jd_built_at(con):
+        return e.jd_built.pop(0) if len(e.jd_built) > 1 else e.jd_built[0]
+    monkeypatch.setattr(extract, "jd_built_at", jd_built_at)
+    # branch 12 is excluded from the reorder files (D6) but written for JD (L-D5)
+    monkeypatch.setattr(extract, "jd_parts", lambda con: [
+        {"branch": "12", **JD_ROW}, {"branch": "01", **JD_ROW}, {"branch": "01", **JD_ROW, "partNumber": "J2"}])
 
     def check_columns(con):
         e.checked += 1
@@ -146,7 +158,8 @@ def test_data_change_uploads_only_changed_files(env):
     # reorder/surplus/transfers embed dataAsOf so they change with every run; history files do not
     assert set(env.uploaded[:-1]) == {"reorder_01.json.gz", "reorder_02.json.gz", "surplus.json.gz",
                                       "transfers.json.gz", "rules.json.gz", "transfer_rules.json.gz",
-                                      "transfer_suggestions.json.gz", "purchases.json.gz"}
+                                      "transfer_suggestions.json.gz", "purchases.json.gz", "jd_01.json.gz",
+                                      "jd_12.json.gz"}
     assert env.uploaded[-1] == "_meta.json"
 
 
@@ -254,7 +267,7 @@ def test_missing_rules_columns_fail_before_extracting(env, monkeypatch):
 def test_meta_carries_contract_version(env, tmp_path):
     run_publish.main([])
     meta = json.loads((tmp_path / "out" / "_meta.json").read_bytes())
-    assert meta["contractVersion"] == 5 and meta["schemaVersion"] == 1
+    assert meta["contractVersion"] == 6 and meta["schemaVersion"] == 1
 
 
 
@@ -289,7 +302,7 @@ def test_out_builds_locally_without_upload_state_or_lock(env, tmp_path, monkeypa
     assert not env.state_file.exists()
     assert set(os.listdir(dest)) == DATA_FILES | {"_meta.json"}
     assert not (tmp_path / "out").exists()      # the publish's own output folder is untouched
-    assert json.loads((dest / "_meta.json").read_bytes())["contractVersion"] == 5
+    assert json.loads((dest / "_meta.json").read_bytes())["contractVersion"] == 6
 
 
 def test_out_ignores_publish_state(env, tmp_path):
@@ -323,3 +336,49 @@ def test_gold_without_round3_fails_before_writing(env, tmp_path, monkeypatch):
     with pytest.raises(publish_logic.MissingColumnsError, match="LastReceived"):
         run_publish.main(["--out", str(tmp_path / "v4")])
     assert not (tmp_path / "v4").exists()
+
+
+# ---- Plan L (L4): contract v6, jd_<branch>.json.gz ----
+
+def test_meta_has_jd_branches_and_count(env, tmp_path):
+    run_publish.main([])
+    meta = json.loads((tmp_path / "out" / "_meta.json").read_bytes())
+    assert meta["jdBranches"] == [{"branch": "01", "name": "One", "parts": 2},
+                                  {"branch": "12", "name": "12", "parts": 1}]
+    assert meta["counts"]["jdParts"] == 3
+    assert [b["branch"] for b in meta["branches"]] == ["01", "02"]       # branch 12 stays out of the reorder list
+
+
+def test_jd_files_uploaded_before_meta(env, tmp_path):
+    run_publish.main([])
+    assert {"jd_01.json.gz", "jd_12.json.gz"} <= set(env.uploaded[:-1]) and env.uploaded[-1] == "_meta.json"
+    import gzip
+    d = json.loads(gzip.decompress((tmp_path / "out" / "jd_01.json.gz").read_bytes()))
+    assert d["dataAsOf"] == "2026-10-20T10:30:00+00:00" and [p["partNumber"] for p in d["parts"]] == ["J1", "J2"]
+
+
+def test_gold_without_jd_table_fails_before_writing(env, tmp_path, monkeypatch):
+    def check(con):
+        raise RuntimeError("Fact_CorpParts_JD not found or unreadable in the dev DP_Presentation lakehouse")
+    monkeypatch.setattr(extract, "check_columns", check)
+    monkeypatch.setattr(extract, "jd_parts", lambda con: pytest.fail("extracted after a failed check"))
+    with pytest.raises(RuntimeError, match="Fact_CorpParts_JD"):
+        run_publish.main(["--out", str(tmp_path / "v6")])
+    assert not (tmp_path / "v6").exists()
+    with pytest.raises(RuntimeError, match="Fact_CorpParts_JD"):
+        run_publish.main([])
+    assert env.uploaded == [] and not env.state_file.exists()
+
+
+def test_jd_built_outside_run_raises(env):
+    env.jd_built = [datetime(2026, 10, 19, 10, 20, 0)]
+    with pytest.raises(RuntimeError, match="Fact_CorpParts_JD BuiltAtUtc.*outside run"):
+        run_publish.main([])
+    assert env.uploaded == [] and not env.state_file.exists()
+
+
+def test_jd_table_rewritten_mid_extract_raises(env):
+    env.jd_built = [BUILT, datetime(2026, 10, 20, 10, 25, 0)]
+    with pytest.raises(RuntimeError, match="Fact_CorpParts_JD was rewritten"):
+        run_publish.main([])
+    assert env.uploaded == [] and not env.state_file.exists()

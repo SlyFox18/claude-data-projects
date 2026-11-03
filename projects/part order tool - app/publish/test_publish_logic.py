@@ -202,8 +202,8 @@ def test_history_arrays_duplicate_slot_raises():
 
 # ---- Round 1 (Plan C4): contract version, required columns, excluded branches ----
 
-def test_contract_version_is_5():
-    assert pl.CONTRACT_VERSION == 5
+def test_contract_version_is_6():
+    assert pl.CONTRACT_VERSION == 6
 
 
 def test_require_columns_passes_when_all_present():
@@ -304,3 +304,18 @@ def test_committed_lines_filters_and_orders():
 def test_central_date():
     assert pl.central_date(datetime(2026, 10, 27, 4, 0)) == date(2026, 10, 26)
     assert pl.central_date(datetime(2026, 10, 27, 4, 0, tzinfo=CHI)) == date(2026, 10, 27)
+
+
+# ---- Plan L (L4): contract v6, jd_<branch>.json.gz ----
+
+def test_upload_order_jd_files_before_meta():
+    order = pl.upload_order(["out/_meta.json", "out/jd_12.json.gz", "out/reorder_1.json.gz", "out/jd_1.json.gz"])
+    assert order[-1] == "out/_meta.json"
+    assert {"out/jd_1.json.gz", "out/jd_12.json.gz"} <= set(order[:-1])
+
+
+def test_changed_files_sends_jd_files_whose_content_changed():
+    # jd files embed dataAsOf, so every new DP run changes them and they are sent (as the reorder files)
+    assert pl.changed_files({"jd_1.json.gz": "new", "jd_2.json.gz": "b"},
+                            {"jd_1.json.gz": "old", "jd_2.json.gz": "b"}) == ["jd_1.json.gz"]
+    assert pl.changed_files({"jd_12.json.gz": "x"}, {}) == ["jd_12.json.gz"]

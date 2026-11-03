@@ -2,8 +2,9 @@
 Non-JD Parts Order Tool - daily publish.
 
 1. Read dp_refresh_log; publish only if Build_Gold_NonJD_Reorder's latest run succeeded and wasn't published yet.
-2. Check the Gold table was written by that run (BuiltAtUtc within the run).
-3. Build files, upload the changed ones (and transfer_suggestions.json.gz every run), then _meta.json last.
+2. Check the Gold tables (Fact_NonJD_Reorder, Fact_CorpParts_JD) were written by that run (BuiltAtUtc within it).
+3. Build files (contract v6's jd_<branch>.json.gz last), upload the changed ones (and
+   transfer_suggestions.json.gz every run), then _meta.json last.
    Save publish_state.json.
 
 --out DIR builds the same files plus _meta.json into DIR and stops there: no upload, no publish_state.json, no
@@ -108,6 +109,10 @@ def _publish(args) -> int:
     if not pl.built_in_run(built, start, latest["end_utc"]):
         raise RuntimeError(f"Fact_NonJD_Reorder BuiltAtUtc {built} is outside run {latest['run_id']} "
                            f"({start} .. {latest['end_utc']}); refusing to publish mismatched data")
+    jd_built = extract.jd_built_at(con)        # the same Gold item writes Fact_CorpParts_JD (Plan L, Part 5)
+    if not pl.built_in_run(jd_built, start, latest["end_utc"]):
+        raise RuntimeError(f"Fact_CorpParts_JD BuiltAtUtc {jd_built} is outside run {latest['run_id']} "
+                           f"({start} .. {latest['end_utc']}); refusing to publish mismatched data")
 
     data_as_of = pl.iso_utc(latest["end_utc"])
     current_month = pl.central_month_start(built)
@@ -118,6 +123,7 @@ def _publish(args) -> int:
     transfer_rules, suggestions = extract.transfer_rules(con), extract.suggestions(con)
     purchases = extract.purchases(con)
     committed = extract.committed(con, pl.central_date(built))
+    jd_rows = extract.jd_parts(con)
     try:
         rules = extract.rules(con)
     except pl.MissingColumnsError:
@@ -129,14 +135,18 @@ def _publish(args) -> int:
                            f"before publishing") from ex
     if extract.built_at(con) != built:
         raise RuntimeError("Fact_NonJD_Reorder was rewritten while extracting; rerun the publish")
+    if extract.jd_built_at(con) != jd_built:
+        raise RuntimeError("Fact_CorpParts_JD was rewritten while extracting; rerun the publish")
     hashes, branches = build_files.build(reorder, lambda b: extract.history_for(con, b), transfers, names,
                                          data_as_of, current_month, rules, transfer_rules=transfer_rules,
                                          suggestions=suggestions, committed=committed, purchases=purchases,
                                          out_dir=out_dir)
+    jd_hashes, jd_branches = build_files.build_jd(jd_rows, names, data_as_of, out_dir=out_dir)   # contract v6
+    hashes.update(jd_hashes)
     counts = {"parts": len(reorder), "historyRows": history_rows, "transferLines": len(transfers),
-              "transferSuggestions": len(suggestions)}
+              "transferSuggestions": len(suggestions), "jdParts": len(jd_rows)}
     meta_path = build_files.write_meta(data_as_of, datetime.now(timezone.utc).isoformat(), config.SOURCE,
-                                       branches, counts, out_dir=out_dir)
+                                       branches, counts, out_dir=out_dir, jd_branches=jd_branches)
     if args.out:
         print(f"[{_ts()}] done: built {len(hashes)} file(s) + _meta.json into {out_dir} (nothing uploaded); "
               f"data as of {data_as_of}; {counts}", flush=True)

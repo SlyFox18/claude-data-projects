@@ -84,6 +84,17 @@ COMMITTED_COLUMNS = [
 ]
 # Fact_NonJD_Purchases column -> purchases.json.gz "rows" field (round 3; BuiltAtUtc is not published).
 PURCHASES_COLUMNS = [("Branch", "branch"), ("Franchise", "franchise"), ("Purchases12", "purchases12")]
+# Fact_CorpParts_JD column -> jd_<branch>.json.gz part field (contract v6, Plan L decision L-D18). Branch is the
+# file-level key (build_files.build_jd groups on it); Franchise (always D), DemandAsOf and BuiltAtUtc are not
+# published.
+JD_COLUMNS = [
+    ("Branch", "branch"), ("PartNumber", "partNumber"), ("Description", "description"), ("Cost", "cost"),
+    ("OnHand", "onHand"), ("OnOrder", "onOrder"), ("PackageQty", "packageQty"),
+    ("ReturnIndicator", "returnIndicator"), ("Source", "source"), ("SLC", "slc"), ("SuperTo", "superTo"),
+    ("CommodityCode", "commodityCode"), ("CommodityGroup", "commodityGroup"), ("DealerGroupCode", "dealerGroupCode"),
+    ("MinimumQty", "minimumQty"), ("MaximumQty", "maximumQty"), ("Sales12", "sales12"),
+    ("SalesPrev12", "salesPrev12"), ("CorpDemands", "corpDemands"),
+]
 HISTORY_COLUMNS = ["Branch", "Franchise", "PartNumber", "MonthOffset", "SalesQty", "RequestCount"]
 TRANSFER_COLUMNS = ["RequestingBranch", "SupplyingBranch", "PartNumber", "PartTicket", "LineNumber", "OrderQty",
                     "ShippedQty", "OpenQty", "FulfillmentStatus", "TransferSubType", "OrderAge", "Date"]
@@ -140,6 +151,10 @@ def check_columns(con) -> None:
             ("Fact_NonJD_TransferSuggestion", SUGGESTION_COLUMNS, "the round 2 Build_Gold_NonJD_Reorder"),
             ("Fact_NonJD_Purchases", PURCHASES_COLUMNS, "the round 3 Build_Gold_NonJD_Reorder")]:
         pl.require_columns(table, _readable_columns(con, table, deploy), [g for g, _ in cols])
+    pl.require_columns("Fact_CorpParts_JD",
+                       _readable_columns(con, "Fact_CorpParts_JD",
+                                         "the Plan L Build_Gold_NonJD_Reorder (Part 5, Fact_CorpParts_JD)"),
+                       [g for g, _ in JD_COLUMNS] + ["BuiltAtUtc"])
 
 
 def _dicts(cur) -> list:
@@ -159,6 +174,17 @@ def log_rows(con, days: int = 14) -> list:
 
 def built_at(con) -> datetime:
     return con.execute(f"SELECT max(BuiltAtUtc) FROM {_src('Fact_NonJD_Reorder')}").fetchone()[0]
+
+
+def jd_built_at(con) -> datetime:
+    return con.execute(f"SELECT max(BuiltAtUtc) FROM {_src('Fact_CorpParts_JD')}").fetchone()[0]
+
+
+def jd_parts(con) -> list:
+    """Gold's JD (franchise D) parts for the Corp Parts reports, every branch (no D6 exclusion, L-D5), raw as
+    stored; build_files.build_jd trims, rounds and sorts them."""
+    return _dicts(con.execute(f"SELECT {_select(JD_COLUMNS)} FROM {_src('Fact_CorpParts_JD')} "
+                              "ORDER BY Branch, PartNumber"))
 
 
 def reorder(con) -> list:

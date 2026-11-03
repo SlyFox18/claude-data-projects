@@ -13,7 +13,8 @@ NON-JD ORDER TOOL PUBLISH - PURE HELPERS (no network, no config; tested in test_
   published in transfer_suggestions.json.gz for the app's per-group parity check.
 - CONTRACT_VERSION / require_columns: the field contract the files follow, and a clear failure when Gold and the
   publish code are out of step (a Gold column the publish needs is missing).
-- EXCLUDED_BRANCHES / is_excluded_branch: branches left out of every output (Plan C D6; same list as Gold).
+- EXCLUDED_BRANCHES / is_excluded_branch: branches left out of every Non-JD output (Plan C D6; same list as Gold).
+  The JD files (contract v6) cover every branch (Plan L decision L-D5).
 """
 import math
 import os
@@ -27,9 +28,9 @@ META_FILE = "_meta.json"
 CENTRAL = ZoneInfo("America/Chicago")
 # The field contract of the files (README "File contract"). 1 = Plan A/B fields (no contractVersion in _meta.json);
 # 2 = round 1 (Plan C); 3 = round 2 (Plan E: phase-in, transfer rules and suggestions); 4 = round 3 (Plan I:
-# lastReceived, purchases.json.gz); 5 = round 3 phase 3 (Plan K: equipStockValue). The app refuses a version it
-# doesn't know.
-CONTRACT_VERSION = 5
+# lastReceived, purchases.json.gz); 5 = round 3 phase 3 (Plan K: equipStockValue); 6 = Plan L (jd_<branch>.json.gz,
+# _meta.jdBranches, counts.jdParts). The app refuses a version it doesn't know.
+CONTRACT_VERSION = 6
 # Uploaded every run, changed or not (round 2 spec "The publish": the suggestions file embeds dataAsOf).
 ALWAYS_UPLOAD = ("transfer_suggestions.json.gz",)
 # Committed transfer statuses (spec step 8b, exact spelling); Placed counts only while recent.
