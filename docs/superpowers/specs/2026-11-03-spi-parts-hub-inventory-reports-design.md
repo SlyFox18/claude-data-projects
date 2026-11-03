@@ -2,6 +2,10 @@
 
 > **Status:** design approved section by section by Brian, 2026-11-03 (brainstorm). Next: the implementation plan
 > (Plan L, app 0.12.0).
+> **Progress:** **shipped 2026-11-03:** app 0.12.0 (commit `46812b4`) on Fedora, Prod Gold `Fact_CorpParts_JD`, the
+> v6 publish, the Excel comparison (10,046 of 10,065 rows matched, every difference explained), a real test copy saved,
+> switched off, archived and deleted, and the user docs (guide section 10, walkthrough 0.12.0,
+> `projects/part order tool - app/INVENTORY-REPORTS.md`); see `docs/superpowers/plans/2026-11-03-spi-parts-hub-inventory-reports.md`.
 > **Origin:** `projects/part order tool - app/FUTURE-IDEAS.md` F4 (inventory management); the Corp Parts Excel
 > workbooks in `projects/corp parts excel reports/` (Ben, Barry, Curt), starting with `MLPF Gaps/MLPF Gaps.pq`.
 > **Context:** the parts team is testing the app (round 3 live). Saved documents are test data and may be deleted.

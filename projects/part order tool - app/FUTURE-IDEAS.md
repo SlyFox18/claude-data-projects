@@ -5,14 +5,14 @@ Brian, on 2026-10-28. Each entry gives the idea as described, what already exist
 open questions to settle before it is designed. Nothing here is scheduled; pick from this list when planning the
 next round.
 
-Round 2 is complete (0.7.0, phase 4 One-Time transfers). F2 is done in 0.8.0 (2026-10-30), F6 in 0.9.0, F8 in 0.10.0 and F1 in 0.11.0 (all 2026-11-02).
+Round 2 is complete (0.7.0, phase 4 One-Time transfers). F2 is done in 0.8.0 (2026-10-30), F6 in 0.9.0, F8 in 0.10.0 and F1 in 0.11.0 (all 2026-11-02), and F4's first report in 0.12.0 (2026-11-03).
 
 | # | Idea | Rough size | Needs a design pass |
 |---|---|---|---|
 | F1 | More Cleanup checks | **Done in 0.11.0** | No |
 | F2 | A landing page above the tools ("parts hub") | **Done in 0.8.0** | No |
 | F3 | Specials and promotions | Medium-large | **Yes** |
-| F4 | Inventory management (the Corp Parts Excel Reports) | Medium-large | **Yes** |
+| F4 | Inventory management (the Corp Parts Excel Reports) | **MLPF Gaps done in 0.12.0**; the other workbooks next | No (one release per workbook) |
 | F5 | Scheduled reminders | Medium | Yes (with F3) |
 | F6 | One-Time returns and scrap | **Done in 0.9.0** | No |
 | F7 | Warn before losing ticked parts on Recommended Reorder | **Done in 0.5.0** | No |
@@ -87,8 +87,31 @@ earlier, order more, a different price); whether it ties to F5's reminders.
 `project_franchise_d_low_demand_parts`). The publish already ships every branch's non-JD parts with sales
 history, so non-JD pieces could reuse it.
 
-**Open.** Needs a design pass: which workbooks, which users, whether they cover JD parts too (then F2 and JD
-ordering come first), and whether they replace the workbooks or sit beside them.
+**MLPF Gaps done in 0.12.0 (2026-11-03)** as the **Inventory management** area: reports over every active JD part
+at every branch (a new Gold table `Fact_CorpParts_JD` with the Corp demand count, shipped in the publish as contract
+6). The built-in **MLPF Gaps** uses the workbook's rules and columns; **Copy as my own** saves an editable copy
+(SharePoint list NonJD_InventoryReports) on the Cleanup checks engine, with new **starts with / doesn't start with**
+comparisons. Results have a branch filter, search, sort, Total cost (1 each), a part details panel and a CSV with the
+workbook's headings. The Excel comparison of 2026-11-03 matched 10,046 of 10,065 rows on every column, every
+difference explained. Spec `docs/superpowers/specs/2026-11-03-spi-parts-hub-inventory-reports-design.md`, plan
+`docs/superpowers/plans/2026-11-03-spi-parts-hub-inventory-reports.md` (decisions L-D9–L-D22), user guide section 10,
+`INVENTORY-REPORTS.md`.
+
+**Next reports**, each a small release with its own Excel comparison: **Border Stores** and **2 & 4 Cotton**, then
+**Corporate Stocking**, then **Pieces In Set**. Scrap and COTTON Trouble Parts are placed later.
+
+**Follow-ups:**
+- **A JD Part page:** today a report row opens a details panel (the Part page is non-JD only).
+- **Actions from a row:** order, transfer or set a minimum straight from a report.
+- **Intraday data:** reports use the morning data; the workbooks read Equip live. DP's `intraday` mode could refresh
+  the JD parts during the day.
+- **The franchise-case issue elsewhere:** `Build_Silver_PartInformation` lost InManuf fields on parts stored with a
+  lower-case franchise (fixed in Plan L, L2b). Other notebooks that join Equip sources on franchise as stored may
+  have the same issue.
+
+**Was open:** which workbooks (all of them, MLPF Gaps first), which users (everyone), whether they cover JD parts (yes,
+the JD parts only, without waiting for JD ordering), and whether they replace the workbooks (they sit beside them
+until Ben is happy to retire them).
 
 ## F5. Scheduled reminders
 

@@ -5,7 +5,7 @@
 // Examples are from Prod data of 2026-10-27 (Fact_NonJD_Reorder built 11:40 UTC); the 0.5.0 section's transfer and
 // phase-in examples are from Dev data of 2026-10-28 (Gold built 14:12 UTC), because Prod has no round 2 data until the
 // release. Re-check them against Prod after the first 0.5.0 publish. Refresh examples when a section is added.
-// Labels follow nonjd-order-app 0.11.0 and the user guide (guide.js). The 0.6.0 section's examples are Prod data of
+// Labels follow nonjd-order-app 0.12.0 and the user guide (guide.js). The 0.6.0 section's examples are Prod data of
 // 2026-10-28 (Gold built 18:08 UTC): MULTISEAL at 1 "Transfer 44 from 6", R134A "Redistribution 52 from 13".
 // The 0.7.0 section's example is Brian's Prod TEST of 2026-10-29 (Plan G task G7): One-Time Order "TEST 0.7.0",
 // branch 1, ET-3912-J (MM) 1 from branch 3, $32.00, saved then cancelled.
@@ -25,6 +25,10 @@
 // demand 3,592, Stock value with no quantity 415. RM-24V at 11 (on hand -126, cost $500, Equip value -$63,000) is from
 // the plan's Prod survey of that day. The new check (On hand > 0, Sales 24 months = 0, Cost > 100) is Brian's real
 // test "TEST Check", deleted afterwards; the steps have the reader make "TEST 0.11.0" and archive it.
+// The 0.12.0 section follows nonjd-order-app 0.12.0 (commit 46812b4: src/pages/inventory/*, src/inventory/builtIns.ts,
+// fields.ts and reportResults.ts). Counts are Prod of 2026-11-03 (v6 publish at 20:08 UTC, 250,867 JD parts at 27
+// branches, data as of 19:42 UTC): MLPF Gaps 10,090. Brian's real test copy "Test of MLPF Gaps" (Corp demands >= 4)
+// was switched off, archived and deleted; the steps have the reader make "TEST 0.12.0" and archive it.
 // Run: npm install, then node walkthrough.js [output file]
 const { build, CONTENT_W } = require('./lib');
 
@@ -39,8 +43,8 @@ const notes = { answer: 'Notes (anything different, slow or confusing):' };
 
 build(process.argv[2] || 'Non-JD Order Tool - Walkthrough.docx', {
   title: 'SPI Parts Hub: walkthrough',
-  subtitle: 'Formerly the Non-JD Parts Order Tool · Hands-on steps through every page · Version 0.11.0 · November 2, 2026 · App: https://10.110.100.13:8443',
-  footer: 'SPI Parts Hub: walkthrough (0.11.0)',
+  subtitle: 'Formerly the Non-JD Parts Order Tool · Hands-on steps through every page · Version 0.12.0 · November 3, 2026 · App: https://10.110.100.13:8443',
+  footer: 'SPI Parts Hub: walkthrough (0.12.0)',
   blocks: [
     { p: 'This is a hands-on tour of the tool. Each step says what to do and what you should see. Tick **OK** when it matches. When it doesn’t, or something is slow or confusing, write it in the notes box under that section and send it to Brian.' },
     { bullets: [
@@ -48,7 +52,7 @@ build(process.argv[2] || 'Non-JD Order Tool - Walkthrough.docx', {
       '**Part 2, what’s new,** has a short section for each version. When a new version comes out, only its section needs doing.',
       '**Part 3, release checks,** is for Brian when he puts a new version on the test server.',
     ] },
-    { note: 'The examples use the data of October 27 to November 2, 2026. The data is refreshed every morning, so your quantities and dollars will be a little different. Close is fine; what matters is that the steps behave as described.' },
+    { note: 'The examples use the data of October 27 to November 3, 2026. The data is refreshed every morning, so your quantities and dollars will be a little different. Close is fine; what matters is that the steps behave as described.' },
     { note: 'Practising is safe if you follow the steps: anything you change is undone in the next step. Practice orders stay as **drafts** named **TEST**. Don’t export or mark them placed. Orders are never deleted: archive the TEST ones when you are done (0.5.2). A practice **transfer** is different: while it is saved it holds the sending branch’s stock for everyone, so **cancel it** straight after the step that made it.' },
 
     { h1: 'Part 1: the tour' },
@@ -56,7 +60,7 @@ build(process.argv[2] || 'Non-JD Order Tool - Walkthrough.docx', {
     { h2: '1. Getting in, the launch page and Home' },
     steps([
       ['Open **https://10.110.100.13:8443** in Edge or Chrome. If the browser warns "Your connection isn’t private", click **Advanced**, then **Continue to 10.110.100.13**.', 'The sign-in page (the SPI logo, **SPI Parts Hub**, **Sign in with Microsoft**), or the launch page if you are already signed in.'],
-      ['Sign in with your work Microsoft account.', 'The **launch page**: a greeting, your branch, and six cards: **Non-JD ordering**, **Cleanup**, **Returns & scrap** (Part 2, 0.9.0), **Part Lookup**, and greyed-out **JD ordering** and **Inventory management** (**Coming later**).'],
+      ['Sign in with your work Microsoft account.', 'The **launch page**: a greeting, your branch, and six cards: **Non-JD ordering**, **Cleanup**, **Returns & scrap** (Part 2, 0.9.0), **Part Lookup**, **Inventory management** (Part 2, 0.12.0), and greyed-out **JD ordering** (**Coming later**).'],
       ['Click the **Non-JD ordering** card.', '**Home**, with a greeting, your branch, and how many parts need ordering there and their cost. The left menu lists only Non-JD ordering’s pages, under **‹ All areas** and the **Area** select.'],
       ['Look at the top right.', 'The date and time of the morning data. It is **amber** if the data is more than one business day old.'],
       ['In the greeting line, change the branch to **1**.', 'Branch 1 needs about **220** parts ordered (about $93,000), with a small line like "(21 more with minimums but no demand)". Below it, a purple **transfers** card (Part 2, 0.5.0).'],
@@ -136,16 +140,42 @@ build(process.argv[2] || 'Non-JD Order Tool - Walkthrough.docx', {
     ]),
     notes,
 
-    { h2: '9. Cleanup and App Settings' },
+    { h2: '9. Cleanup, Inventory and App Settings' },
     steps([
       ['In the left menu, change the **Area** select to **Cleanup**.', '**Cleanup checks**, with **Checks** the only item in the menu: the built-in checks **Minimums with no demand** and **Stock value with no quantity**, and any saved ones, each with a count over every branch (Part 2, 0.11.0).'],
       ['Click **Minimums with no demand**, then pick branch **6**.', 'The Equip minimums on parts with no demand and no sales, with **← Cleanup checks** at the top; branch 6 has about 1,000. The largest is about $21,000 (part 145019, module rim, minimum 65).'],
-      ['Click **App Settings**.', 'Your default branch and franchise, and **About** with the version (**0.11.0**).'],
+      ['Change the **Area** select to **Inventory management**.', '**Inventory reports**, with **Reports** the only item in the menu: the built-in **MLPF Gaps** and any saved copies, each with a count over every JD branch (Part 2, 0.12.0).'],
+      ['Click **App Settings**.', 'Your default branch and franchise, and **About** with the version (**0.12.0**).'],
       ['Set your default branch, then open Recommended Reorder.', 'It opens on your default branch.'],
     ]),
     notes,
 
     { h1: 'Part 2: what’s new' },
+
+    { h2: 'Version 0.12.0 (November 3, 2026): Inventory reports' },
+    { p: 'New since 0.11.0, from Ben’s wish to bring the Corp Parts workbooks into the tool: the **Inventory management** area, starting with **MLPF Gaps**. The user guide, section 10, explains it in full; this section opens MLPF Gaps, makes a copy of your own and tidies it away.' },
+    { bullets: [
+      '**Inventory reports:** the Inventory management area (its menu item is **Reports**) lists reports over every active JD part at every branch, each with how many parts it finds.',
+      '**MLPF Gaps, built in:** the workbook’s rules and columns, so it lists the same parts as MLPF Gaps.xlsx on the same morning.',
+      '**Open a report** to filter it by branch, search it, sort it, see a part’s details and **Export CSV** with the workbook’s headings.',
+      '**Copy as my own** makes a version you can change, such as 2 or more demands. The built-in never changes. Copies are shared: anyone can edit, switch off or archive one.',
+    ] },
+    { note: 'Saving a copy is real: everyone sees it straight away. Name it **TEST 0.12.0**, and **archive it** at the end of these steps (Brian tidies up afterwards). The counts are from November 3 and change every morning; close is fine.' },
+    { h3: 'MLPF Gaps, then a copy of your own' },
+    steps([
+      ['On the launch page, click the **Inventory management** card. Wait for the loading line to finish.', '**Inventory reports**: “The Corp Parts reports over the JD parts, every branch. Open one to filter it and export a CSV.”, “Loading JD parts: N of 27 branches…” for a few seconds, then **Data as of …**. **Reports** is the only item in the menu. The first row is **MLPF Gaps** marked **🔒 Built in**, about **10,090 parts**, with its conditions under it: “Branch is not 12 and Corp demands = 2 and On hand < 1 … and Super To is blank”.'],
+      ['Click **MLPF Gaps**.', '**← Inventory reports** at the top, the name, the description, the conditions and **Data as of …**. **Branch** on **All branches**, a **Search** box, and about “10,090 parts · Total cost (1 each) $…”. Columns: Branch, Part number, Description, Cost, Source, SLC, Commodity code, Commodity group, Dealer group, On order, On hand, Corp demands. Every row has Corp demands **2**, On hand below 1 and On order **0**; no row is at branch 12.'],
+      ['Set **Branch** to **1**. Type part of a part number in **Search**. Click the **Cost** heading, and again.', 'Only branch 1’s parts, then only those matching the search. The first click puts the dearest first; the second reverses it. The count and Total cost follow the filters.'],
+      ['Click a part number.', 'A panel on the right with the part and its branch, and every field: Corp demands, On hand, On order, Cost, Package qty (1), Return indicator (R), Source, SLC, Super To (—), Commodity code and group, Dealer group, Equip minimum and maximum, Sales 12 and 24 months. **Close** (or Escape) closes it.'],
+      ['Clear the search, set Branch back to **All branches**, then **Export CSV** and open the file in Excel.', 'A file named like `Inventory-MLPF Gaps-20261103.csv`, with the workbook’s headings: Branch, PartNumber, Description, Cost, Source, SLC, CommodityCode, CommodityGroup, DealerGroupCode, OnOrder, OnHandQty, Demands. It lines up beside MLPF Gaps.xlsx.'],
+      ['Click **Copy as my own**.', '**Copy report**, with three cards: **Report** (“Nothing is saved until Save report.”, name “Copy of MLPF Gaps”, description “Based on MLPF Gaps.”), **Conditions** (“All conditions must match.”, the nine MLPF conditions) and **Try it**, with a count close to MLPF Gaps’.'],
+      ['Name it **TEST 0.12.0**. On the **Corp demands** row, change **=** to **≥** (leave 2).', 'Under the rows: “… and Corp demands ≥ 2 and …”. Try it updates after a moment (“Recomputing…”) with more parts than MLPF Gaps and “The first 20 of N parts. Save the report to see them all.”'],
+      ['Click **Save report**.', 'The copy’s page opens with “Report saved.”: **TEST 0.12.0** with **Copy as my own** and **Edit**. After the workbook’s columns it adds **Package qty**, **Return indicator** and **Super To**, the other fields its conditions use.'],
+      ['Click **Edit**, change the value to **3** and click **Save report**.', '“Report updated.” and fewer parts than before.'],
+      ['Click **← Inventory reports**. On the TEST 0.12.0 row click **Switch off**, then **Switch off** again. Then **Archive**, then **Archive**. Turn on **Show archived (1)**.', 'The row says **By** <your name> and its count. “Switch off TEST 0.12.0? It stays in the list, marked Off; Switch on brings it back.”: the row greys and gets an **Off** tag. “Archive TEST 0.12.0? It leaves the list; Show archived and Unarchive bring it back.”: the row goes and “1 archived report is hidden.” shows. With Show archived on: the row greyed with **Off** and **Archived** tags and **Unarchive**.'],
+    ]),
+    { p: '**Your opinion:** does MLPF Gaps read like the workbook? Is **Total cost (1 each)** a useful total? Is a JD field you’d expect missing from the field list?' },
+    notes,
 
     { h2: 'Version 0.11.0 (November 2, 2026): Cleanup checks' },
     { p: 'New since 0.10.0, from Ben’s “value without quantity” idea and his wish for more things to fix in Equip: **Cleanup is now a list of checks**. The user guide, section 7, explains them in full; this section opens the built-in ones, builds a check of your own and tidies it away.' },
@@ -466,6 +496,14 @@ build(process.argv[2] || 'Non-JD Order Tool - Walkthrough.docx', {
 
     { h1: 'Part 3: release checks (Brian)' },
     { p: 'Run these when a new version is deployed to the test server, after **Ctrl+F5** to load it.' },
+    { h3: '0.12.0' },
+    steps([
+      ['App Settings → **About**.', '**Version 0.12.0 · commit 46812b4**.'],
+      ['After the backend deploy and the Gateway publish: the data date at the top right, then **Inventory management**.', 'The Gateway PC published contract 6 (the JD parts): Inventory shows the reports, not “JD parts aren’t in today’s data yet”. (Done November 3: v6 publish at 20:08 UTC, 250,867 JD parts, data as of 19:42 UTC; `corp_parts_check.py --tier prod` PASS, MLPF Gaps 10,090; `nonjd_reorder_check.py --tier prod` PASS.)'],
+      ['Refresh MLPF Gaps.xlsx and compare it with the app’s list.', 'Every difference is explained by today’s sales, receipts or orders. (Done November 3: Brian’s 9:41 AM refresh against the Prod data, 10,046 of 10,065 rows matched on every column, every difference explained; see INVENTORY-REPORTS.md.)'],
+      ['With Claude: a real test copy on Prod (save, switch off, archive), then check SharePoint and delete the TEST row.', 'NonJD_InventoryReports holds the row with the right Conditions, Active and Archived, by you. (Done November 3: “Test of MLPF Gaps”, Corp demands ≥ 4; switched off, archived; correct in SharePoint, then deleted, list empty.)'],
+    ]),
+    notes,
     { h3: '0.11.0' },
     steps([
       ['App Settings → **About**.', '**Version 0.11.0 · commit e8c6a7e**.'],

@@ -7,6 +7,10 @@
 // ConditionRowEditor, MinimumsPage, builtIns.ts, checkResults.ts) and src/cleanup (fields.ts, conditions.ts). Counts
 // are Prod of 2026-11-02 (v5 publish, data as of 22:04 UTC): Minimums with no demand 3,592, Stock value with no
 // quantity 415. The saved-check example (On hand > 0, Sales 24 months = 0, Cost > 100) is Brian's real test, deleted.
+// Section 10 (Inventory reports, 0.12.0) follows nonjd-order-app 0.12.0 (commit 46812b4: src/pages/inventory/*,
+// src/inventory/builtIns.ts, fields.ts, reportResults.ts) and ../INVENTORY-REPORTS.md. Counts are Prod of 2026-11-03
+// (v6 publish, 250,867 JD parts at 27 branches, data as of 19:42 UTC): MLPF Gaps 10,090. The copy example (Corp
+// demands ≥ 4) is Brian's real test "Test of MLPF Gaps", deleted.
 // Worked examples: Dev Gold Fact_NonJD_Reorder built 2026-10-26 (window Oct 2025 - Sep 2026); the transfer example
 // is the app's mock data (round numbers), as in REORDER-RULES.md. The Returns & scrap example (section 8) is Brian's Prod
 // test of 2026-11-02: rule "Scrap default" (All franchises, no sales 36 months, unit cost at least $0.10), 49 AM parts.
@@ -17,12 +21,12 @@ const w = (...fr) => fr.map((f) => Math.round(CONTENT_W * f));
 
 build(process.argv[2] || 'Non-JD Order Tool - User Guide.docx', {
   title: 'SPI Parts Hub: user guide',
-  subtitle: 'Formerly the Non-JD Parts Order Tool · For Ben, Shannon, Barry and Curt · Version 0.11.0 · November 2, 2026 (test version) · https://10.110.100.13:8443',
-  footer: 'SPI Parts Hub: user guide (version 0.11.0)',
+  subtitle: 'Formerly the Non-JD Parts Order Tool · For Ben, Shannon, Barry and Curt · Version 0.12.0 · November 3, 2026 (test version) · https://10.110.100.13:8443',
+  footer: 'SPI Parts Hub: user guide (version 0.12.0)',
   blocks: [
-    { p: '**SPI Parts Hub** (until 0.8.0 the Non-JD Parts Order Tool) opens on a launch page where you pick what to work on: **Non-JD ordering**, **Cleanup**, **Returns & scrap** or **Part Lookup** today, with **JD ordering** and **Inventory management** to come. Most of this guide is about Non-JD ordering.' },
+    { p: '**SPI Parts Hub** (until 0.8.0 the Non-JD Parts Order Tool) opens on a launch page where you pick what to work on: **Non-JD ordering**, **Cleanup**, **Returns & scrap**, **Part Lookup** or **Inventory management** today, with **JD ordering** to come. Most of this guide is about Non-JD ordering.' },
     { p: '**In one sentence:** Non-JD ordering shows each branch which non-John Deere parts to reorder and why, suggests stock other branches could send instead, lets you tune the rules behind those suggestions, and turns the parts you pick into an order file for each vendor.' },
-    { p: 'This guide covers getting in, what each page does, and exactly how every number is worked out. Version 0.8.0 includes Ben’s round 1 answers, several branches and dealer groups at once, **phase-in**, **transfer suggestions** and **saving transfers** in the app, with transfer orders and transfer rules, and **transfers on One-Time Orders** (round 2, from Ben’s answers of October 27), the **launch page** in front of it all (0.8.0), **returns and scrap** (0.9.0, section 8), **One-Time templates** (0.10.0, section 9), and **Cleanup checks** (0.11.0, section 7). What changed in each version is in the **walkthrough**, Part 2.' },
+    { p: 'This guide covers getting in, what each page does, and exactly how every number is worked out. Version 0.8.0 includes Ben’s round 1 answers, several branches and dealer groups at once, **phase-in**, **transfer suggestions** and **saving transfers** in the app, with transfer orders and transfer rules, and **transfers on One-Time Orders** (round 2, from Ben’s answers of October 27), the **launch page** in front of it all (0.8.0), **returns and scrap** (0.9.0, section 8), **One-Time templates** (0.10.0, section 9), **Cleanup checks** (0.11.0, section 7), and **Inventory reports** (0.12.0, section 10). What changed in each version is in the **walkthrough**, Part 2.' },
 
     { h1: '1. Getting started' },
     { steps: [
@@ -44,10 +48,11 @@ build(process.argv[2] || 'Non-JD Order Tool - User Guide.docx', {
       '**Cleanup:** checks that list parts to fix in Equip (0.11.0, section 7). The card counts only the minimums with no demand at the picked branch, for example “21 minimums with no demand at Branch 1” (the same count as **Minimums with no demand** filtered to that branch).',
       '**Returns & scrap** (0.9.0): vendor returns and scrap lists, for example “1 open return · 2 open scrap lists” (section 8).',
       '**Part Lookup:** any part’s stock, prices, history and settings.',
-      '**JD ordering** and **Inventory management** are greyed out with **Coming later**: they show where the tool is heading and can’t be opened yet.',
+      '**Inventory management** (0.12.0): the Corp Parts reports over the JD parts, starting with **MLPF Gaps** (section 10). Its card shows no count.',
+      '**JD ordering** is greyed out with **Coming later**: it shows where the tool is heading and can’t be opened yet.',
     ] },
     { p: 'A count is left out when it is 0, while the data loads, or when the data can’t be read; the cards still work. Under the cards, **Other parts tools** links open **Parts Availability** and the **Parts reports** app in a new tab, next to **App Settings**.' },
-    { p: 'Inside an area, the **menu on the left** shows only that area’s pages. At the top are **‹ All areas** (back to the launch page) and the **Area** select, which opens another area. If leaving would lose ticked parts or unsaved transfers, the app asks first. The breadcrumb at the top starts with the area, for example “Non-JD ordering › Recommended Reorder”. App Settings stays at the bottom of the menu. The branch you’re looking at shows at the top right. Cleanup has one menu item, **Checks** (0.11.0).' },
+    { p: 'Inside an area, the **menu on the left** shows only that area’s pages. At the top are **‹ All areas** (back to the launch page) and the **Area** select, which opens another area. If leaving would lose ticked parts or unsaved transfers, the app asks first. The breadcrumb at the top starts with the area, for example “Non-JD ordering › Recommended Reorder”. App Settings stays at the bottom of the menu. The branch you’re looking at shows at the top right. Cleanup has one menu item, **Checks** (0.11.0); Inventory management has one, **Reports** (0.12.0).' },
     { p: 'Every address from before 0.8.0 still opens the same page, so bookmarks keep working. The only change: the bare address is now the launch page, and Non-JD ordering’s Home is at **/non-jd**.' },
 
     { h2: 'Home (Non-JD ordering)' },
@@ -223,6 +228,9 @@ build(process.argv[2] || 'Non-JD Order Tool - User Guide.docx', {
 
     { h2: 'Returns & scrap' },
     { p: 'Its own area (0.9.0): **Returns**, **Scrap** and **Return & scrap rules**. Section 8 explains it job by job.' },
+
+    { h2: 'Inventory management' },
+    { p: 'Its own area (0.12.0): open it from the launch page or the Area select; its menu item is **Reports**. **Inventory reports** lists the Corp Parts reports over the JD parts at every branch: the built-in **MLPF Gaps** and any copies people save. Open one to filter it, search it, sort it and export a CSV; **Copy as my own** makes a version you can change. Section 10 explains it job by job.' },
 
     { h2: 'App Settings' },
     { p: 'Your own default branch and franchise (saved in your browser only). The launch page, Reorder, One-Time Order and Part Lookup open on them. Open it from the bottom of the left menu or from the launch page. **About** shows the version.' },
@@ -671,7 +679,79 @@ build(process.argv[2] || 'Non-JD Order Tool - User Guide.docx', {
     { h2: 'Orders say which template they came from' },
     { p: 'An order made from a template records it. Review’s line about the calculation, and the same line on the saved order’s page (**Orders** → open it), end with “· From template Cotton pre-season”. Orders made after **Stop using** don’t.' },
 
-    { h1: '10. During the test' },
+    { h1: '10. Inventory reports (0.12.0)' },
+    { p: 'The **Inventory management** area brings the **Corp Parts** Excel workbooks into the app as **reports**. A report lists the JD parts, at every branch at once, that meet its conditions. The first one is **MLPF Gaps**. It uses the same rules and columns as MLPF Gaps.xlsx, so it lists the same parts.' },
+    { bullets: [
+      '**Which parts:** every **active** JD (franchise D) part at every branch: something on hand, something on order, a sale in the last 24 months, or a Corp demand. On November 3, 2026 that was **250,867** part records at **27** branches. Unlike the rest of the tool, this includes the branches it leaves out (such as 12); each report leaves out what its workbook leaves out.',
+      '**Which day:** the morning data, as the rest of the tool. Each report says **Data as of …**. The workbook reads Equip live, so a sale or receipt made today shows in the workbook but not in the app until tomorrow.',
+    ] },
+    { note: 'Nothing here changes Equip, and the workbooks keep working. A report is a list you filter, export and work through.' },
+
+    { h2: 'The list of reports' },
+    { p: 'Open **Inventory management** from the launch page (or the Area select); **Reports** in the menu. The page is **Inventory reports**: “The Corp Parts reports over the JD parts, every branch. Open one to filter it and export a CSV.” The first visit loads every JD branch (“Loading JD parts: 12 of 27 branches…”); this takes a few seconds. Each row shows:' },
+    { bullets: [
+      '**Report:** the name (click it to open the report), the description, and its conditions in one line.',
+      '**By:** **—** for the built-in; for a copy, who made it and who changed it last.',
+      '**Parts:** how many parts it finds over every branch. The counts change every morning.',
+      'The buttons: **Open** and **Copy as my own** on every report; **Edit**, **Switch off** / **Switch on** and **Archive** on copies.',
+    ] },
+    { p: '**MLPF Gaps** comes first, marked **🔒 Built in**, then the copies that are on (A to Z), then any that are switched off.' },
+
+    { h2: 'MLPF Gaps' },
+    { p: 'The built-in report, from the MLPF Gaps workbook: “JD parts with exactly 2 Corp demands and nothing on hand or on order, returnable, package qty 1, not superseded (the MLPF Gaps workbook).” A part at a branch is listed when **all** of these are true:' },
+    { bullets: [
+      'It has **exactly 2 Corp demands** at that branch (see below).',
+      '**Nothing on hand** (less than 1) and **nothing on order**.',
+      'It is **returnable** (return indicator R).',
+      'Its **package qty is 1** (sold one at a time, not in a pack).',
+      'It is **not superseded** (Super To is blank).',
+      'The branch is **not 12** (the Combine Vault).',
+      'Its source is **not AN**.',
+      'Its SLC **doesn’t start with 21, 90, 91 or 99**.',
+    ] },
+    { p: 'The page shows them in one line: “Branch is not 12 and Corp demands = 2 and On hand < 1 and On order = 0 and Package qty = 1 and Return indicator is R and Source is not AN and SLC doesn’t start with 21, 90, 91, 99 and Super To is blank”. On November 3, 2026 (Prod) it found about **10,090** parts.' },
+    { p: 'The built-in never changes. It can’t be edited, switched off or archived, only copied.' },
+
+    { h3: 'The Corp demand rule' },
+    { p: 'All the Corp Parts workbooks count demand the same way, and so does the app:', keepNext: true },
+    { bullets: [
+      'One demand = **one customer invoice** for the part at that branch. An invoice with several lines for the part, or a quantity of 5, is still one demand.',
+      'The invoice is dated between **7 days and 18 months** ago. The last week is left out.',
+      '**Credits are netted** against the invoice they return. An invoice that is **fully credited** back doesn’t count; a partial return still counts.',
+      '**Transfers never count**, nor purchases, receipts or adjustments.',
+    ] },
+    { p: 'Example: a part sold on two invoices in the last year, one of them later credited in full, has 1 Corp demand, so it is not on MLPF Gaps.' },
+
+    { h2: 'Use the table' },
+    { p: 'Click a report’s name or **Open**. The page shows its name, description, conditions and **Data as of …**, with **← Inventory reports** at the top to go back.' },
+    { bullets: [
+      '**Branch** at the top narrows the list to one branch (**All branches** to start with).',
+      '**Search** finds a part number or description containing what you type (capitals don’t matter).',
+      'The **columns** are the workbook’s: Branch, Part number, Description, Cost, Source, SLC, Commodity code, Commodity group, Dealer group, On order, On hand, Corp demands. A blank shows **—**; a part with no dealer group shows **(none)**.',
+      '**Sort** by clicking a column heading: the first click puts the largest (or Z) first, the second reverses it. To start with, the list is sorted by part number, then branch, as the workbook is.',
+      'Next to the filters: the number of parts shown and **Total cost (1 each)**: the cost of one of each part listed. MLPF parts have nothing on hand, so this is what stocking one of each would cost.',
+      'The first 200 parts show; **Show 200 more** at the bottom adds more.',
+      '**Click a part** (or anywhere on its row) to open its details on the right: every field the app has for it, such as Package qty, Return indicator, Equip minimum and maximum, and sales. **Close** or Escape closes it.',
+      '**Export CSV** downloads what the filters show, in the table’s order. The headings are the workbook’s (Branch, PartNumber, Description, Cost, Source, SLC, CommodityCode, CommodityGroup, DealerGroupCode, OnOrder, OnHandQty, Demands), so the file lines up beside MLPF Gaps.xlsx. The file is named like `Inventory-MLPF Gaps-20261103.csv`.',
+    ] },
+
+    { h2: 'Copy as my own' },
+    { p: 'To change a report, make your own copy. The built-in stays as it is.' },
+    { bullets: [
+      'Click **Copy as my own** on the list or on the report’s page. The editor (**Copy report**) opens with the report’s conditions, the name “Copy of MLPF Gaps” and the description “Based on MLPF Gaps.”. Change the name to say what your version is for.',
+      'Change the conditions as in a Cleanup check (section 7): pick a field, a comparison and a value; **Add condition** or **Remove**. All conditions must match. For example, change **Corp demands = 2** to **Corp demands ≥ 2** to see parts with 2 or more demands.',
+      '**Try it** shows what your version finds as you type: the number of parts and the first 20.',
+      'Click **Save report**. Your copy opens with “Report saved.” and is on the list for everyone. Its table and CSV have the workbook’s columns, then any other field your conditions use (for example Package qty, Return indicator, Super To).',
+      '**Edit** changes a copy later (“Report updated.”). A name can’t repeat MLPF Gaps or another copy that is on: “A report called … already exists.”',
+      '**Switch off** keeps a copy on the list, greyed and marked **Off**. **Archive** takes it off the list; **Show archived** and **Unarchive** bring it back. Nothing is deleted.',
+    ] },
+    { p: 'The fields a copy can use: Branch, Part number, Description, Corp demands, On hand, On order, Cost, Package qty, Return indicator, Source, SLC, Super To, Commodity code, Commodity group, Dealer group, Equip minimum, Equip maximum, Sales 12 months and Sales 24 months. Text fields also offer **starts with** and **doesn’t start with**, with a list of starts: “SLC doesn’t start with 21, 90, 91, 99”. A blank never starts with anything, so “doesn’t start with” keeps blanks.' },
+
+    { h2: '“JD parts aren’t in today’s data yet”' },
+    { p: 'The JD parts came with the morning data of November 3, 2026. If a morning’s data doesn’t carry them, the Inventory pages say “JD parts aren’t in today’s data yet. They arrive with the next publish.” and show nothing else. The rest of the app works as normal. If you see it after November 3, tell Brian.' },
+    { p: 'If one branch’s parts don’t load, the page names it, for example “Branch 4 didn’t load; the count covers the rest.” (with the branch’s name), with **Try again**. The CSV is then named **-partial**.' },
+
+    { h1: '11. During the test' },
     { bullets: [
       'This is a test copy on a test server; the address and the certificate warning will change for the real version.',
       'Orders and settings you save are real (they go into the SharePoint lists), but nothing is sent to a vendor; you download the CSV and use it yourself.',

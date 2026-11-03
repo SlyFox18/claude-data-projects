@@ -4,6 +4,11 @@
 > review after each (Brian's standing choice). Steps use checkbox (`- [ ]`) syntax.
 
 > **Progress:** plan written 2026-11-03 (Claude, for Brian). Spec approved 2026-11-03.
+> - **L13 done 2026-11-03:** user docs for 0.12.0: user guide section 10 "Inventory reports (0.12.0)" ("During the
+>   test" is now 11), walkthrough Part 2 "Version 0.12.0" (10 steps) and Part 3 0.12.0 release checks, both .docx
+>   regenerated; `projects/part order tool - app/INVENTORY-REPORTS.md` for Ben; FUTURE-IDEAS F4 → MLPF Gaps done with
+>   the next reports and follow-ups; spec Progress. The note in `projects/corp parts excel reports/CLAUDE.md` (MLPF
+>   Gaps also in the app; change rules in both places) is left for Brian to commit with his edits. Plan L complete.
 > - **L12 done 2026-11-03:** Brian's try-it on mock passed. Backend rode in Brian's PR #50 (with his other work):
 >   Deploy DP backend, claim, Prod `df_CommodityCodeGroups_Raw` (run `ddfc0f5f`), `sync_shortcuts.py --apply`
 >   (CommodityCodeGroups shortcut), Prod items `Build_Silver_PartInformation` + Gold (run `a41d77b2`), all OK.
