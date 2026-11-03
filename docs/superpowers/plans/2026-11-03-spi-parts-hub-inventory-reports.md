@@ -4,6 +4,17 @@
 > review after each (Brian's standing choice). Steps use checkbox (`- [ ]`) syntax.
 
 > **Progress:** plan written 2026-11-03 (Claude, for Brian). Spec approved 2026-11-03.
+> - **L3 + L3b analysis done 2026-11-03** (data-projects `f2a809a9`; 31 new tests, nonjd tests still pass):
+>   `corp_parts_check.py --tier dev` **PASS**, 0 differences (254,213 rows, 752,100 demands; MLPF 10,048 at run 2's
+>   as-of). **Excel comparison** (Brian's 09:41 refresh, 10,065 rows) against Prod Silver (`--tier prod --groups-tier
+>   dev --as-of '2026-11-03 09:40:30'`; Prod InTrans ends 11-02 18:42): 10,046 match on every column; 19 only in
+>   Excel, 13 only in ours, 1 value difference. **Every row is explained, and none points to the Gold rule:** 6 = a
+>   **Silver bug** (below); 11 at branch 4 = stock received against back orders and invoiced this morning; 7 = sold or
+>   transferred 11-02, then reordered before 09:41; 9 = live Equip on hand / on order moved today with no InTrans
+>   yet (unverified); 0 twins; 0 from the workbook's franchise-less join. The workbook's GETDATE() was 09:40:00–09:40:50
+>   (two invoices on the 10-27 edge). **Silver bug:** `Build_Silver_PartInformation` joins InManuf / InManuf_Locale on
+>   `FRANCHISE == FR` (case-sensitive in Spark; Equip isn't), so InMaster rows stored with franchise `'d'` (321 in
+>   Prod) get the defaults: PackageQty '0', Returnable '', CommodityCode '', weight 0. Files in the scratchpad `mlpf/`.
 > - **L2 done 2026-11-03** (fabric-workspace-docs `6e7e7dc4`; dag_check OK, hygiene 0, 364 tests): Part 5 of
 >   Build_Gold_NonJD_Reorder writes `Fact_CorpParts_JD` (guards: unique key, unique commodity codes, no stocking-rule
 >   fan-out). Bounds passed as text cast in the UTC session (Silver keeps Equip's Central wall clock); DemandAsOf =
