@@ -41,7 +41,7 @@ data-projects; nonjd-order-app (React 19, TypeScript, Vite, Tailwind 4, react-ro
 
 ## What we know (2026-11-03)
 
-- Prod Silver franchise D: 893,847 records; `Fact_CorpParts_JD` (active) 250,867; **idle 663,333 at 40 branches**,
+- Prod Silver franchise D: 893,847 records; `Fact_CorpParts_JD` (active) 250,867; **idle about 643,000 at 40 branches** (corrected in M2),
   11 MB gzipped as per-branch JSON (largest branch 4: 978 KB, under the 4 MB upload limit).
 - Probe (Prod Gold active rows vs Brian's refreshes, scratchpad `border/probe.py`): Border Stores 1,562 / 1,571
   matched (9 only in Excel, 17 only in ours, 80 with different other-branch figures); 2 & 4 Cotton 14 / 248, the other
