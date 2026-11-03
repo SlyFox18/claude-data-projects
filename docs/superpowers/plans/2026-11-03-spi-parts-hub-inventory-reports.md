@@ -4,6 +4,15 @@
 > review after each (Brian's standing choice). Steps use checkbox (`- [ ]`) syntax.
 
 > **Progress:** plan written 2026-11-03 (Claude, for Brian). Spec approved 2026-11-03.
+> - **L12 done 2026-11-03:** Brian's try-it on mock passed. Backend rode in Brian's PR #50 (with his other work):
+>   Deploy DP backend, claim, Prod `df_CommodityCodeGroups_Raw` (run `ddfc0f5f`), `sync_shortcuts.py --apply`
+>   (CommodityCodeGroups shortcut), Prod items `Build_Silver_PartInformation` + Gold (run `a41d77b2`), all OK.
+>   Prod: CommodityCodeGroups 244 codes / 17 groups (table and shortcut); 321 'd' rows fixed except the 3 with no
+>   InManuf row; **`corp_parts_check --tier prod` PASS** (250,867 rows, 754,558 demands, 0 differences; MLPF 10,090);
+>   **`nonjd_reorder_check --tier prod` PASS**. App 0.12.0 on Fedora; Gateway publish v6 at 20:08Z (52 files sent,
+>   jdParts 250,867, data as of 19:42Z). Real test: Brian's "Test of MLPF Gaps" (Corp demands ≥ 4, switched off,
+>   archived) correct in SharePoint, then deleted (list empty). (Claude's `_meta.json` download through a raw Graph
+>   token was refused by the permission check; the publish log and the working app show v6.)
 > - **L10 + L11 done 2026-11-03** (app `632a85c` clickThrough0120, `a1f9303` wording: a copy's description starts
 >   "Based on <name>.", H1 "Copy report" / "New report" / "Edit report", the built-in's By column "—", Try it says
 >   "from the data as of …"; `46812b4` 0.12.0; 1,859 + 820 tests (one known returnDocumentReview timeout, passes
