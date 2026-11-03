@@ -4,6 +4,17 @@
 > review after each (Brian's standing choice). Steps use checkbox (`- [ ]`) syntax.
 
 > **Progress:** plan written 2026-11-03 (Claude, for Brian). Spec approved 2026-11-03.
+> - **M1 done 2026-11-03** (fabric-workspace-docs `17dc13b2`, `c5262e7f` OnOrder; dag_check OK, hygiene 0, 368
+>   tests). Part 5 builds one frame with an `_active` flag and splits it into `Fact_CorpParts_JD` (unchanged) and
+>   `Fact_CorpParts_JD_Idle` (+ `OnOrder` DECIMAL(12,2) after Cost); guards before either write (keys unique,
+>   disjoint, active + idle = Silver D). Dev runs `f5a4398d`, `d3d0c2f8`, `e0c114d1` Completed; idle 643,107 with the
+>   same fingerprint each time; active 250,740; 2 negative on order (AT323728 @1 −1, SU70183 @2 −3).
+>   `nonjd_reorder_check` and `corp_parts_check --tier dev` PASS (idle 0 differences; MLPF 10,039).
+> - **M3 done 2026-11-03** (data-projects `b75dc3d5`; 428 publish tests). Contract 7, `build_jd_idle` (onOrder ≤ 0
+>   enforced; zero-by-definition fields omitted), `_meta.jdIdleBranches`, `counts.jdIdleParts`; the idle table's
+>   BuiltAtUtc must equal the active table's (same Gold run). Local Dev build: 40 `jd_idle_` files, 643,107 parts,
+>   11.4 MB, largest `jd_idle_4` 975 KB. **Don't publish v7 until M11.**
+> - **M4 review fixes done** (app `515b113`): no 'off' flash on enable / disable, non-finite on order → 0, mid-load tests.
 > - **M4 done 2026-11-03** (app `7072324`, `ac8f218` idle on order; 1,913 + 831 tests, lint, tsc clean). Contract
 >   [3–7], `hasJdIdle`, `JdIdlePart` (with `onOrder`), `loadJdIdle`, mock v7 (`JD_IDLE_FIXTURES`, `idlePart()`,
 >   `asV6`, `jdIdleFailBranches`), `idleRow()`, `useJdIdleBranches(enabled)` ('off' requests nothing); the loader is
