@@ -4,9 +4,9 @@ On-demand Excel workbooks built from **John Deere's dealer data share** (`JD_Dea
 
 - **What the share is**, its tables, keys and quirks: `fabric-workspace-docs/docs/JD-DATA-SHARE.md`.
 - **Who gets what:**
-  - Casey (Aftermarket Sales & Service: training, inspections, warranty, PIPs) gets these three workbooks;
-  - Ben (Corporate Parts) gets anything from `parts_order`;
-  - Kurt (Corporate Sales) gets market share, UCC and leads.
+  - Casey (Aftermarket Sales & Service: training, inspections, warranty, PIPs) gets PIPs, JD University Training and Service Opportunities;
+  - Ben (Corporate Parts) gets JD Parts Orders;
+  - Kurt (Corporate Sales) gets Sales & Market.
 
 ## Run it
 
@@ -16,6 +16,8 @@ az login                        # if not already signed in; DuckDB reads OneLake
 python build_pips.py            # output/JD_PIPs_<load date>.xlsx
 python build_training.py        # output/JD_University_Training_<load date>.xlsx
 python build_service_opps.py    # output/JD_Service_Opportunities_<load date>.xlsx  (--days 180 = warranty window)
+python build_parts_orders.py    # output/JD_Parts_Orders_<load date>.xlsx  (--since 2026-06-01 = summary period)
+python build_sales.py           # output/JD_Sales_Market_<load date>.xlsx  (--ucc-years 3)
 ```
 
 - **Options and timing:** `--tier dev` reads DP - Presentation - Dev for our side of the matching; `--out <file.xlsx>` picks the output path. Each script takes 2–3 minutes.
@@ -29,6 +31,8 @@ python build_service_opps.py    # output/JD_Service_Opportunities_<load date>.xl
 | **PIPs** | By Store, By PIP, Machines (one row per machine × PIP), Notes | `customer_pips` |
 | **JD University Training** | By Store, Employees, Learning Paths (employee × path), Training History (every enrollment / completion), Notes | `dealer_employee`, `dealer_john_deere_university_*` |
 | **Service Opportunities** | By Store, By Program, Recommendations (open, machine × recommendation), Warranty Ending (coverage ending in `--days`), Notes | `warranty_recommendations`, `customer_warranty` |
+| **JD Parts Orders** | By Store, Back Orders & Open, Emergency Parts (most-ordered on emergency orders), By Month, Substitutions, Order Lines, Notes | `parts_order`, `part_information`, `dealer_employee`; our `dim_Parts`, `CommodityCodeGroups` |
+| **Sales & Market** | Share by Machine, Share by County, Share Detail, Competition by County, Competition by Type, Competitive Equipment (non-Deere UCC filings), Lead Summary, Scored Leads, Web Requests, Retail by County, Notes | `dealer_market_share_*`, `dealer_ucc`, `leads_*` |
 
 ## How the matching works (`jdshare.py`)
 
@@ -42,6 +46,15 @@ python build_service_opps.py    # output/JD_Service_Opportunities_<load date>.xl
 - **In Our Stock:** the serial is an unsold unit in `Silver_VhStock` (no `SaleDate`).
 - **JD Registered Owner:** JD's own name for the owner (`customer_profile` on `entity_id` + `contact_id`). It's shown next to ours because about 17% of machines have no match on our side.
 - **Model:** `product_information.decal_mdl_id` → `eph.decal_model_nm`.
+- **Parts orders:**
+  - Store comes from the order's ship-to account (`dealer_profile.kunnr`).
+  - "Ordered By" maps `submitted_by` to `dealer_employee`; JDPoint, JDPrism and SYSTEM are JD's automated ordering.
+  - Commodity group follows the same rule as `Fact_CorpParts_JD`: trimmed upper-case code, and anything unmapped or blank is "Other".
+  - `dealer_reference` is **not** our invoice or sales-order number. It overlaps with 2023 invoice numbers by coincidence (checked 2026-11-03), so it isn't linked to a customer.
+- **Sales:**
+  - Scored leads are matched to our customer through the serial of the lead's last machine.
+  - UCC filings are matched through the filing's serial.
+  - Web requests include email and phone, because the customer asked to be contacted.
 
 ## First run (2026-11-03 load)
 
@@ -50,3 +63,10 @@ python build_service_opps.py    # output/JD_Service_Opportunities_<load date>.xl
   - 4,835 matched to our customer; 89 on unsold stock units (17 not complete).
 - **Training:** 1,049 JD users (372 active, all mapped to a store), 37,230 history rows, 1,062 employee × path rows.
 - **Service opportunities:** 91,687 open recommendations (69,200 matched to our customer), 103 programs, 2,031 warranty coverages ending within 180 days.
+- **Parts orders:** 69,729 lines (58,650 since June 2026, all mapped to a store).
+  - 1,258 back-ordered and 2,230 open.
+  - 6,261 parts on emergency orders since June; 512 substitutions.
+- **Sales:** 132 county × segment rows of market share.
+  - 10,316 non-Deere UCC filings in 3 years.
+  - 56,562 scored leads (3,426 high or very high; 24,631 matched to our customer).
+  - 91 web requests.
