@@ -4,6 +4,16 @@
 > review after each (Brian's standing choice). Steps use checkbox (`- [ ]`) syntax.
 
 > **Progress:** plan written 2026-11-03 (Claude, for Brian). Spec approved 2026-11-03.
+> - **L9 done 2026-11-03** (app `aab88df` shared helpers from the Cleanup pages, `3bb5b7a` area + list, `47a0ed3`
+>   results + JD part panel, `bc23017` editor, `82464b8` CSV headers, `f59c151` review fixes; 1,858 + 820 tests, lint,
+>   tsc clean; pushed). Review of L8 + L9: no Critical, no Cleanup regression. Fixed: CSV part number / branch exactly
+>   as stored (quoteField); matches hold only the row (values, search text lazy); deferred sort / filter with a
+>   "Sorting…" note; a real details button per row; panel Escape ignores text boxes, focus falls back to search;
+>   built-in names clash on Switch on / Unarchive (both areas). **CSV headers:** the 12 MLPF columns use the
+>   workbook's names (`MLPF_CSV_HEADERS`: Branch … DealerGroupCode, OnOrder, OnHandQty, Demands); a copy's extra
+>   columns use PascalCase labels. JD results appear once every branch has loaded ("Loading JD parts: n of N
+>   branches…"). jsdom, a copy matching all 251,100 rows: ~1 s to first render and per Description sort (pure
+>   matching 48 ms). 0.12.0 needs `VITE_LIST_INVENTORY_REPORTS` in `.env.production` (required list key).
 > - **L8 done 2026-11-03** (app `74caea9`; 1,843 + 780 tests, lint, tsc clean; pushed; reviewed with L9). The
 >   cleanup checks' Graph mapper is shared through `SavedConditionsList<F>` (`CLEANUP_CHECKS_LIST`,
 >   `INVENTORY_REPORTS_LIST`); `CleanupCheckRow<F>` etc. are generic (default FieldId), `InventoryReport*` aliases over
