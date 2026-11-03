@@ -1,6 +1,7 @@
 # tools/dp-migration/corp_parts_check.py
 """
-SPI Parts Hub Inventory reports: independent check of Fact_CorpParts_JD, the MLPF Gaps list and the workbook compare.
+SPI Parts Hub Inventory reports: independent check of Fact_CorpParts_JD and Fact_CorpParts_JD_Idle, the MLPF Gaps,
+Border Stores and 2 & 4 Cotton lists and the workbook compare.
 
 Re-implements Fact_CorpParts_JD in DuckDB SQL over the same inputs (Silver_PartInformation, Silver_InTrans,
 Silver_PartStockingRules, CommodityCodeGroups) and compares row by row with the Gold table Build_Gold_NonJD_Reorder
@@ -25,11 +26,32 @@ decisions L-D10..L-D14), taken from the workbook query projects/corp parts excel
   21/90/91/99 (a blank SLC passes), SuperTo blank. Text trimmed, case-insensitive. Workbook columns, sorted by
   PartNumber then Branch.
 
+Plan M (docs/superpowers/plans/2026-11-03-spi-parts-hub-cross-branch-reports.md, M-D8 / M-D9):
+- Idle rows (Fact_CorpParts_JD_Idle) = every Silver franchise D record the active filter leaves out, IDLE_COLS.
+  Active and idle must be disjoint and together cover Silver franchise D (checked on the reference); Gold idle is
+  compared with the reference when the table exists.
+- Border Stores and 2 & 4 Cotton, from the workbook code (projects/corp parts excel reports/Border Stores/ and
+  2 & 4 Cotton & Stripper Parts/), over the reference's active + idle rows (jd_all). The six part filters =
+  COALESCE(OnOrder, 0) = 0, PackageQty = 1, ReturnIndicator R, Source not AN, SLC not 21/90/91/99..., SuperTo
+  blank. Pool = rows at branches other than 2 and 4 passing the six filters (2 & 4 Cotton: and the cotton rule).
+  A candidate's OtherBranchDemands = the sum of CorpDemands over pool rows with the same upper(trim(PartNumber)) at
+  a branch other than its own (trimmed, upper); OtherLocationCount = how many of those rows have CorpDemands >= 1
+  (trailing-space twins at one branch both count). Border Stores candidates: branch 95, 91 or 96, CorpDemands >= 1,
+  OnHand < 1, the six filters. 2 & 4 Cotton: branch 2 or 4, CorpDemands = 0, OnHand < 1, the six filters, the
+  cotton rule. Both: OtherBranchDemands >= 10 and OtherLocationCount >= 5. Cotton rule = own DealerGroupCode
+  (trimmed, upper) COTTON / STRIPPER / PICKER, or any franchise D record of the part (active or idle, any branch)
+  coded 690 / 770 / CS690 / JDCS690.
+  Workbook behaviour not reproduced (the app can't either): its jdis join has no franchise (a non-D record at the
+  branch can add or change a row), its model-code list reads every franchise, and its part numbers match exactly
+  where the reference trims.
+
 Usage:
     python corp_parts_check.py --tier dev                      # compare with Gold, exit 1 on any mismatch
     python corp_parts_check.py --tier dev --mlpf-out mlpf.csv
     python corp_parts_check.py --tier prod --groups-tier dev --as-of "2026-11-03 09:41:00" \\
         --compare-xlsx "MLPF Gaps.xlsx" [--sheet "MLPF Gaps"] --diff-out diff.csv --mlpf-out mlpf.csv
+    python corp_parts_check.py --tier prod --report border --as-of "2026-11-03 14:34:00" \\
+        --compare-xlsx "Border Stores.xlsx" --diff-out diff.csv --report-out border.csv
 
 --groups-tier reads CommodityCodeGroups from another tier (Prod doesn't have it until L1 is released). Without
 Gold (a tier the Part 5 build hasn't run on) give --as-of: the Gold compare is skipped and the MLPF list comes
@@ -66,6 +88,25 @@ TOLERANCE = 0.005
 MLPF_COLUMNS = ["Branch", "PartNumber", "Description", "Cost", "Source", "SLC", "CommodityCode", "CommodityGroup",
                 "DealerGroupCode", "OnOrder", "OnHandQty", "Demands"]
 MLPF_NUM = ["Cost", "OnOrder", "OnHandQty", "Demands"]
+IDLE_TABLE = "Fact_CorpParts_JD_Idle"
+IDLE_COLS = ["Branch", "Franchise", "PartNumber", "Description", "Cost", "PackageQty", "ReturnIndicator", "Source",
+             "SLC", "SuperTo", "CommodityCode", "CommodityGroup", "DealerGroupCode", "MinimumQty", "MaximumQty"]
+IDLE_TEXT = [c for c in TEXT_COLS if c in IDLE_COLS]
+IDLE_NUM = [c for c in NUM_COLS if c in IDLE_COLS]
+REPORT_COLUMNS = MLPF_COLUMNS + ["OtherBranchDemands", "OtherLocationCount"]
+REPORT_NUM = MLPF_NUM + ["OtherBranchDemands", "OtherLocationCount"]
+POOL_EXCLUDED_BRANCHES = ("2", "4")
+OTHER_DEMANDS_MIN = 10
+OTHER_BRANCHES_MIN = 5
+COTTON_GROUPS = ("COTTON", "STRIPPER", "PICKER")
+COTTON_MODEL_CODES = ("690", "770", "CS690", "JDCS690")
+REPORTS = {
+    "mlpf": {"sheet": "MLPF Gaps", "columns": MLPF_COLUMNS, "num": MLPF_NUM},
+    "border": {"sheet": "Border Stores", "columns": REPORT_COLUMNS, "num": REPORT_NUM,
+               "branches": ("95", "91", "96"), "demand": "CorpDemands >= 1", "cotton": False},
+    "cotton": {"sheet": "2 & 4 Cotton & Stripper Parts", "columns": REPORT_COLUMNS, "num": REPORT_NUM,
+               "branches": ("2", "4"), "demand": "CorpDemands = 0", "cotton": True},
+}
 DEMAND_MONTHS = 18
 INVOICE_LAG_DAYS = 7
 
@@ -94,7 +135,8 @@ ACTIVE_SQL = """(coalesce(p.QuantityOnHand, 0) <> 0 OR coalesce(p.OnOrder, 0) > 
 
 
 def build_expected(con, now: datetime) -> None:
-    """Create corp_demands (b, p, CorpDemands) and expected (OUTPUT_COLS) from the tables parts, intrans, rules and
+    """Create corp_demands (b, p, CorpDemands), jd_all (every franchise D record: OUTPUT_COLS + Active), expected
+    (the active rows, OUTPUT_COLS) and expected_idle (the rest, IDLE_COLS) from the tables parts, intrans, rules and
     groups. intrans.TransDatetime is a naive TIMESTAMP holding Equip's Central wall clock."""
     ws, ie, ce = window(now)
     dup = con.execute("""SELECT upper(trim(CommodityCode)) AS cc, count(*) AS n FROM groups
@@ -129,7 +171,7 @@ def build_expected(con, now: datetime) -> None:
         SELECT b, p, CAST(count(*) AS INTEGER) AS CorpDemands FROM invoices GROUP BY b, p
     """)
     con.execute(f"""
-        CREATE OR REPLACE TABLE expected AS
+        CREATE OR REPLACE TABLE jd_all AS
         WITH g AS (
             SELECT upper(trim(CommodityCode)) AS cc, CommodityGroup AS cg FROM groups
             WHERE coalesce(upper(trim(CommodityCode)), '') <> ''
@@ -140,13 +182,41 @@ def build_expected(con, now: datetime) -> None:
                trim(p.Returnable) AS ReturnIndicator, p.Source, p.SLC, p.SuperTo, p.CommodityCode,
                coalesce(g.cg, 'Other') AS CommodityGroup, p.DealerGroupCode, r.MinimumQty, r.MaximumQty,
                p.Current12MoSales AS Sales12, p.Previous12MoSales AS SalesPrev12,
-               CAST(coalesce(cd.CorpDemands, 0) AS INTEGER) AS CorpDemands
+               CAST(coalesce(cd.CorpDemands, 0) AS INTEGER) AS CorpDemands, {ACTIVE_SQL} AS Active
         FROM parts p
         LEFT JOIN rules r ON r.Branch = p.Branch AND r.Franchise = p.Franchise AND r.PartNumber = p.PartNumber
         LEFT JOIN corp_demands cd ON cd.b = upper(trim(p.Branch)) AND cd.p = trim(p.PartNumber)
         LEFT JOIN g ON g.cc = upper(trim(p.CommodityCode))
-        WHERE upper(trim(p.Franchise)) = 'D' AND {ACTIVE_SQL}
+        WHERE upper(trim(p.Franchise)) = 'D'
     """)
+    con.execute(f"CREATE OR REPLACE TABLE expected AS SELECT {', '.join(OUTPUT_COLS)} FROM jd_all WHERE Active")
+    con.execute(f"CREATE OR REPLACE TABLE expected_idle AS SELECT {', '.join(IDLE_COLS)} FROM jd_all WHERE NOT Active")
+
+
+def idle_checks(con, active: str = "expected", idle: str = "expected_idle") -> dict:
+    """Counts for the active / idle split: Silver franchise D records, active rows, idle rows, keys in both, and
+    duplicate idle keys."""
+    keys = ", ".join(KEYS)
+    q = lambda sql: con.execute(sql).fetchone()[0]
+    return {
+        "silver_d": q("SELECT count(*) FROM parts WHERE upper(trim(Franchise)) = 'D'"),
+        "active": q(f"SELECT count(*) FROM {active}"),
+        "idle": q(f"SELECT count(*) FROM {idle}"),
+        "overlap": q(f"SELECT count(*) FROM (SELECT {keys} FROM {active} INTERSECT SELECT {keys} FROM {idle})"),
+        "dup_idle": q(f"SELECT count(*) - count(DISTINCT ({keys})) FROM {idle}"),
+    }
+
+
+def idle_problems(res: dict) -> list:
+    out = []
+    if res["overlap"]:
+        out.append(f"{res['overlap']:,} keys are in both the active and the idle table")
+    if res["dup_idle"]:
+        out.append(f"the idle table has {res['dup_idle']:,} duplicate keys")
+    if res["active"] + res["idle"] != res["silver_d"]:
+        out.append(f"active {res['active']:,} + idle {res['idle']:,} = {res['active'] + res['idle']:,} rows don't "
+                   f"cover Silver's {res['silver_d']:,} franchise D records exactly")
+    return out
 
 
 MLPF_WHERE = """upper(trim(Branch)) <> '12' AND CorpDemands = 2 AND OnHand < 1 AND OnOrder = 0 AND PackageQty = 1
@@ -154,6 +224,60 @@ MLPF_WHERE = """upper(trim(Branch)) <> '12' AND CorpDemands = 2 AND OnHand < 1 A
     AND NOT (coalesce(trim(SLC), '') LIKE '21%' OR coalesce(trim(SLC), '') LIKE '90%'
              OR coalesce(trim(SLC), '') LIKE '91%' OR coalesce(trim(SLC), '') LIKE '99%')
     AND coalesce(trim(SuperTo), '') = ''"""
+
+
+PART_FILTERS = """coalesce(OnOrder, 0) = 0 AND PackageQty = 1 AND upper(trim(ReturnIndicator)) = 'R'
+    AND coalesce(upper(trim(Source)), '') <> 'AN'
+    AND NOT (coalesce(trim(SLC), '') LIKE '21%' OR coalesce(trim(SLC), '') LIKE '90%'
+             OR coalesce(trim(SLC), '') LIKE '91%' OR coalesce(trim(SLC), '') LIKE '99%')
+    AND coalesce(trim(SuperTo), '') = ''"""
+
+
+def _in_list(vals) -> str:
+    return ", ".join("'" + v.replace("'", "''") + "'" for v in vals)
+
+
+def report_rows(con, name: str, source: str = "jd_all") -> list:
+    """The named report's rows (REPORTS[name]["columns"], text trimmed, sorted by PartNumber then Branch). 'mlpf' is
+    mlpf_rows over `expected`; Border Stores and 2 & 4 Cotton are computed over `source` (active + idle rows with
+    OUTPUT_COLS) per the workbook code (module docstring)."""
+    if name == "mlpf":
+        return mlpf_rows(con, "expected" if source == "jd_all" else source)
+    rep = REPORTS[name]
+    cotton = " AND cotton" if rep["cotton"] else ""
+    cur = con.execute(f"""
+        WITH r AS (
+            SELECT *, upper(trim(Branch)) AS b, upper(trim(PartNumber)) AS k,
+                   coalesce(upper(trim(DealerGroupCode)), '') AS dg, row_number() OVER () AS rid
+            FROM {source}
+        ), model AS (
+            SELECT DISTINCT k FROM r WHERE dg IN ({_in_list(COTTON_MODEL_CODES)})
+        ), f AS (
+            SELECT r.*, coalesce({PART_FILTERS}, false) AS ok,
+                   (dg IN ({_in_list(COTTON_GROUPS)}) OR k IN (SELECT k FROM model)) AS cotton
+            FROM r
+        ), pool AS (
+            SELECT b, k, CorpDemands FROM f WHERE ok AND b NOT IN ({_in_list(POOL_EXCLUDED_BRANCHES)}){cotton}
+        ), cand AS (
+            SELECT * FROM f
+            WHERE ok AND b IN ({_in_list(rep['branches'])}) AND {rep['demand']} AND OnHand < 1{cotton}
+        ), fig AS (
+            SELECT c.rid, CAST(coalesce(sum(p.CorpDemands), 0) AS INTEGER) AS od,
+                   CAST(count(p.k) FILTER (WHERE p.CorpDemands >= 1) AS INTEGER) AS ol
+            FROM cand c LEFT JOIN pool p ON p.k = c.k AND p.b <> c.b
+            GROUP BY c.rid
+        )
+        SELECT trim(c.Branch) AS Branch, trim(c.PartNumber) AS PartNumber, trim(c.Description) AS Description,
+               c.Cost, trim(c.Source) AS Source, trim(c.SLC) AS SLC, trim(c.CommodityCode) AS CommodityCode,
+               trim(c.CommodityGroup) AS CommodityGroup, trim(c.DealerGroupCode) AS DealerGroupCode, c.OnOrder,
+               c.OnHand AS OnHandQty, c.CorpDemands AS Demands, fig.od AS OtherBranchDemands,
+               fig.ol AS OtherLocationCount
+        FROM cand c JOIN fig USING (rid)
+        WHERE fig.od >= {OTHER_DEMANDS_MIN} AND fig.ol >= {OTHER_BRANCHES_MIN}""")
+    cols = [d[0] for d in cur.description]
+    rows = [dict(zip(cols, r)) for r in cur.fetchall()]
+    rows.sort(key=lambda r: (r["PartNumber"] or "", r["Branch"] or ""))
+    return rows
 
 
 def mlpf_rows(con, source: str) -> list:
@@ -178,15 +302,15 @@ def _key_join() -> str:
     return " AND ".join(f"g.{k} IS NOT DISTINCT FROM e.{k}" for k in KEYS)
 
 
-def _col_diff(col: str) -> str:
-    if col in NUM_COLS:
+def _col_diff(col: str, num_cols=NUM_COLS) -> str:
+    if col in num_cols:
         return f"((g.{col} IS NULL) <> (e.{col} IS NULL) OR abs(g.{col} - e.{col}) > {TOLERANCE})"
     return f"g.{col} IS DISTINCT FROM e.{col}"
 
 
-def compare(con, gold: str, expected: str) -> dict:
+def compare(con, gold: str, expected: str, text_cols=TEXT_COLS, num_cols=NUM_COLS) -> dict:
     keys = ", ".join(KEYS)
-    where = " OR ".join(_col_diff(c) for c in TEXT_COLS + NUM_COLS)
+    where = " OR ".join(_col_diff(c, num_cols) for c in text_cols + num_cols)
     q = lambda sql: con.execute(sql).fetchone()[0]
     return {
         "only_gold": q(f"SELECT count(*) FROM (SELECT {keys} FROM {gold} EXCEPT SELECT {keys} FROM {expected})"),
@@ -197,7 +321,8 @@ def compare(con, gold: str, expected: str) -> dict:
     }
 
 
-def differences(con, gold: str, expected: str, limit: int = None) -> list:
+def differences(con, gold: str, expected: str, limit: int = None, text_cols=TEXT_COLS,
+                num_cols=NUM_COLS) -> list:
     """Every difference as a dict (Kind, Branch, Franchise, PartNumber, Column, Gold, Expected); Kind is
     only_gold, only_expected or different (one entry per differing column)."""
     keys = ", ".join(KEYS)
@@ -205,10 +330,10 @@ def differences(con, gold: str, expected: str, limit: int = None) -> list:
                  FROM (SELECT {keys} FROM {gold} EXCEPT SELECT {keys} FROM {expected})""",
              f"""SELECT 'only_expected', {keys}, '', NULL, NULL
                  FROM (SELECT {keys} FROM {expected} EXCEPT SELECT {keys} FROM {gold})"""]
-    for c in TEXT_COLS + NUM_COLS:
+    for c in text_cols + num_cols:
         parts.append(f"""SELECT 'different', g.Branch, g.Franchise, g.PartNumber, '{c}',
                                 CAST(g.{c} AS VARCHAR), CAST(e.{c} AS VARCHAR)
-                         FROM {gold} g JOIN {expected} e ON {_key_join()} WHERE {_col_diff(c)}""")
+                         FROM {gold} g JOIN {expected} e ON {_key_join()} WHERE {_col_diff(c, num_cols)}""")
     sql = " UNION ALL ".join(f"({p})" for p in parts) + ' ORDER BY Kind, Branch, PartNumber, "Column"'
     if limit:
         sql += f" LIMIT {limit}"
@@ -228,8 +353,9 @@ def _cell_text(v):
     return str(v)
 
 
-def read_xlsx(path: str, sheet: str) -> list:
-    """The workbook's MLPF table as dicts with MLPF_COLUMNS: header = the first row holding all 12 column names."""
+def read_xlsx(path: str, sheet: str, columns=MLPF_COLUMNS) -> list:
+    """The workbook's table as dicts with `columns` (default the 12 MLPF ones): header = the first row holding all of
+    them. Columns in REPORT_NUM stay numbers, the rest become text."""
     import openpyxl
     wb = openpyxl.load_workbook(path, read_only=True, data_only=True)
     try:
@@ -238,11 +364,11 @@ def read_xlsx(path: str, sheet: str) -> list:
         idx = None
         for row in rows:
             names = [(_cell_text(v) or "").strip() for v in row]
-            if all(c in names for c in MLPF_COLUMNS):
-                idx = {c: names.index(c) for c in MLPF_COLUMNS}
+            if all(c in names for c in columns):
+                idx = {c: names.index(c) for c in columns}
                 break
         if idx is None:
-            raise ValueError(f"no header row with {', '.join(MLPF_COLUMNS)} in sheet {sheet!r}")
+            raise ValueError(f"no header row with {', '.join(columns)} in sheet {sheet!r}")
         out = []
         for row in rows:
             if row is None or all(v is None for v in row):
@@ -250,7 +376,7 @@ def read_xlsx(path: str, sheet: str) -> list:
             rec = {}
             for c, i in idx.items():
                 v = row[i] if i < len(row) else None
-                rec[c] = v if c in MLPF_NUM else _cell_text(v)
+                rec[c] = v if c in REPORT_NUM else _cell_text(v)
             out.append(rec)
         return out
     finally:
@@ -271,9 +397,10 @@ def _text_differs(a, b) -> bool:
     return ((a or "").strip()) != ((b or "").strip())
 
 
-def compare_xlsx(con, xl_rows: list, ours: list) -> dict:
-    """Match the workbook rows to our MLPF rows on trimmed Branch + trimmed PartNumber. A key with several rows on a
-    side (the trailing-space twins) compares each pair."""
+def compare_xlsx(con, xl_rows: list, ours: list, columns=MLPF_COLUMNS, num=MLPF_NUM) -> dict:
+    """Match the workbook rows to our rows on trimmed Branch + trimmed PartNumber and compare `columns` after the
+    first two (`num` numerically). A key with several rows on a side (the trailing-space twins) compares each
+    pair."""
     xl_by, our_by = {}, {}
     for r in xl_rows:
         xl_by.setdefault(_xkey(r), []).append(r)
@@ -285,8 +412,8 @@ def compare_xlsx(con, xl_rows: list, ours: list) -> dict:
     for k in sorted(set(xl_by) & set(our_by)):
         for x in xl_by[k]:
             for o in our_by[k]:
-                for c in MLPF_COLUMNS[2:]:
-                    differs = _num_differs(x[c], o[c]) if c in MLPF_NUM else _text_differs(x[c], o[c])
+                for c in columns[2:]:
+                    differs = _num_differs(x[c], o[c]) if c in num else _text_differs(x[c], o[c])
                     if differs:
                         values.append({"Branch": k[0], "PartNumber": k[1], "Column": c, "Excel": x[c],
                                        "Ours": o[c]})
@@ -408,8 +535,9 @@ def _print_rows(title: str, rows: list, limit: int = 20) -> None:
 
 
 def run_xlsx_compare(con, args, ours: list, now: datetime) -> None:
-    xl = read_xlsx(args.compare_xlsx, args.sheet)
-    res = compare_xlsx(con, xl, ours)
+    rep = REPORTS[args.report]
+    xl = read_xlsx(args.compare_xlsx, args.sheet, rep["columns"])
+    res = compare_xlsx(con, xl, ours, rep["columns"], rep["num"])
     print(f"\nWorkbook compare ({args.compare_xlsx}, sheet {args.sheet!r}): Excel {res['excel_rows']:,} rows, "
           f"ours {res['our_rows']:,} rows, {res['matched_keys']:,} keys on both sides; duplicate keys: Excel "
           f"{res['dup_excel_keys']}, ours {res['dup_our_keys']}")
@@ -452,10 +580,16 @@ def main() -> int:
     ap.add_argument("--groups-tier", choices=sorted(TIERS), help="tier to read CommodityCodeGroups from")
     ap.add_argument("--as-of", help="Central wall clock 'YYYY-MM-DD HH:MM:SS' (default: Gold's DemandAsOf)")
     ap.add_argument("--mlpf-out", help="write the MLPF Gaps list (Gold if present, else the reference) to CSV")
-    ap.add_argument("--compare-xlsx", help="MLPF Gaps workbook to compare with the MLPF list")
-    ap.add_argument("--sheet", default="MLPF Gaps")
+    ap.add_argument("--report", choices=sorted(REPORTS), default="mlpf",
+                    help="the list for --report-out / --compare-xlsx (default mlpf); border and cotton come from "
+                         "the reference's active + idle rows")
+    ap.add_argument("--report-out", help="write the --report list to CSV")
+    ap.add_argument("--compare-xlsx", help="workbook to compare with the --report list")
+    ap.add_argument("--sheet", help="workbook sheet (default: the report's: MLPF Gaps, Border Stores, "
+                                    "2 & 4 Cotton & Stripper Parts)")
     ap.add_argument("--diff-out", help="write every workbook difference to CSV (with --compare-xlsx)")
     a = ap.parse_args()
+    a.sheet = a.sheet or REPORTS[a.report]["sheet"]
     con = _connect()
 
     has_gold, gold_now = gold_as_of(con, a.tier)
@@ -480,6 +614,11 @@ def main() -> int:
     print(f"Reference: {n:,} rows, {nd:,} with Corp demands ({dem:,} demands)")
 
     failed = False
+    split = idle_checks(con)
+    print(f"Reference idle: {split['idle']:,} rows; active + idle vs Silver franchise D: {split}")
+    for prob in idle_problems(split):
+        failed = True
+        print(f"FAIL: reference {prob}")
     if has_gold:
         cols = ", ".join(OUTPUT_COLS)
         con.execute(f"CREATE TABLE gold AS SELECT {cols} FROM delta_scan('{_path(a.tier, 'presentation', GOLD_TABLE)}')")
@@ -494,16 +633,55 @@ def main() -> int:
             print(f"PASS: {GOLD_TABLE} matches the reference ({gn[0]:,} rows, {gn[1]:,} demands, 0 differences)")
     else:
         print(f"Gold compare skipped: {GOLD_TABLE} isn't on {a.tier}")
+    if not check_gold_idle(con, a.tier, has_gold):
+        failed = True
 
     src = "gold" if has_gold else "expected"
-    ours = mlpf_rows(con, src)
-    print(f"MLPF Gaps from {'Gold' if has_gold else 'the reference'}: {len(ours):,} rows")
+    mlpf = mlpf_rows(con, src)
+    print(f"MLPF Gaps from {'Gold' if has_gold else 'the reference'}: {len(mlpf):,} rows")
     if a.mlpf_out:
-        _write_csv(a.mlpf_out, ours, MLPF_COLUMNS)
+        _write_csv(a.mlpf_out, mlpf, MLPF_COLUMNS)
         print(f"wrote {a.mlpf_out}")
+    if a.report == "mlpf":
+        ours = mlpf
+    else:
+        ours = report_rows(con, a.report)
+        print(f"{REPORTS[a.report]['sheet']} from the reference (active + idle): {len(ours):,} rows")
+    if a.report_out:
+        _write_csv(a.report_out, ours, REPORTS[a.report]["columns"])
+        print(f"wrote {a.report_out}")
     if a.compare_xlsx:
         run_xlsx_compare(con, a, ours, now)
     return 1 if failed else 0
+
+
+def check_gold_idle(con, tier: str, has_gold: bool) -> bool:
+    """Compare Gold Fact_CorpParts_JD_Idle with the reference idle rows when the table exists (and, with Gold active,
+    check the two Gold tables are disjoint and cover Silver franchise D). False on any difference."""
+    try:
+        con.execute(f"CREATE TABLE gold_idle AS SELECT {', '.join(IDLE_COLS)} "
+                    f"FROM delta_scan('{_path(tier, 'presentation', IDLE_TABLE)}')")
+    except duckdb.Error as e:
+        print(f"Idle compare skipped: {IDLE_TABLE} isn't on {tier} ({str(e).splitlines()[0][:120]})")
+        return True
+    ok = True
+    res = compare(con, "gold_idle", "expected_idle", IDLE_TEXT, IDLE_NUM)
+    print(f"{IDLE_TABLE} ({tier}): {res}")
+    if any(res.values()):
+        ok = False
+        _print_rows("differences", differences(con, "gold_idle", "expected_idle", limit=20, text_cols=IDLE_TEXT,
+                                               num_cols=IDLE_NUM))
+        print(f"FAIL: {IDLE_TABLE} doesn't match the reference")
+    if has_gold:
+        split = idle_checks(con, "gold", "gold_idle")
+        print(f"Gold active + idle vs Silver franchise D: {split}")
+        for prob in idle_problems(split):
+            ok = False
+            print(f"FAIL: Gold {prob}")
+    if ok:
+        n = con.execute("SELECT count(*) FROM gold_idle").fetchone()[0]
+        print(f"PASS: {IDLE_TABLE} matches the reference ({n:,} rows, 0 differences)")
+    return ok
 
 
 if __name__ == "__main__":

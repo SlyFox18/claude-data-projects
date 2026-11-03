@@ -441,3 +441,243 @@ def test_read_xlsx_missing_header_fails(tmp_path):
     wb.save(p)
     with pytest.raises(ValueError, match="header"):
         chk.read_xlsx(str(p), "MLPF Gaps")
+
+
+# ---------------------------------------------------------------------------------------------------------
+# idle table (Plan M, M1 / M2): franchise D records the active table leaves out
+# ---------------------------------------------------------------------------------------------------------
+def _idle(con):
+    cur = con.execute("SELECT * FROM expected_idle")
+    cols = [d[0] for d in cur.description]
+    return {(r[0], r[1], r[2]): dict(zip(cols, r)) for r in cur.fetchall()}
+
+
+def test_idle_is_silver_d_minus_active_with_its_columns():
+    con = _con()
+    con.execute("INSERT INTO groups VALUES ('AB', 'Filters')")
+    con.execute("INSERT INTO rules VALUES ('1', 'D', 'DEAD', 1, 4)")
+    _part(con, "DEAD", ri=" R ", pkg=" 1 ")
+    _part(con, "NEGOO", oo=-1)                  # on order <= 0: idle
+    _part(con, "ACT", oh=1)
+    _part(con, "DEM")
+    _sale(con, "DEM", "A1")
+    _part(con, "OTHER", franchise="MC")          # not franchise D: in neither table
+    chk.build_expected(con, NOW)
+    idle = _idle(con)
+    assert set(idle) == {("1", "D", "DEAD"), ("1", "D", "NEGOO")}
+    r = idle[("1", "D", "DEAD")]
+    assert list(r) == chk.IDLE_COLS
+    assert r["ReturnIndicator"] == "R" and r["PackageQty"] == 1 and r["CommodityGroup"] == "Filters"
+    assert (r["MinimumQty"], r["MaximumQty"]) == (1, 4)
+    assert set(_run(con)) == {("1", "D", "ACT"), ("1", "D", "DEM")}
+    res = chk.idle_checks(con)
+    assert res == {"silver_d": 4, "active": 2, "idle": 2, "overlap": 0, "dup_idle": 0}
+    assert chk.idle_problems(res) == []
+
+
+def test_idle_checks_report_overlap_duplicates_and_gaps():
+    con = _con()
+    _part(con, "DEAD")
+    _part(con, "ACT", oh=1)
+    chk.build_expected(con, NOW)
+    con.execute("INSERT INTO expected_idle SELECT * FROM expected_idle")          # a duplicate idle key
+    con.execute("INSERT INTO expected_idle (Branch, Franchise, PartNumber) VALUES ('1', 'D', 'ACT')")
+    res = chk.idle_checks(con)
+    assert res["overlap"] == 1 and res["dup_idle"] == 1
+    probs = chk.idle_problems(res)
+    assert any("both" in p for p in probs)
+    assert any("duplicate" in p for p in probs)
+    assert any("cover" in p for p in probs)
+
+
+def test_idle_gold_compare():
+    con = _con()
+    _part(con, "DEAD")
+    _part(con, "DEAD2", desc="Other thing")
+    chk.build_expected(con, NOW)
+    con.execute("CREATE TABLE gold_idle AS SELECT *, TIMESTAMP '2026-11-03 15:00:00' AS BuiltAtUtc FROM expected_idle")
+    res = chk.compare(con, "gold_idle", "expected_idle", chk.IDLE_TEXT, chk.IDLE_NUM)
+    assert not any(res.values()), res
+    con.execute("UPDATE gold_idle SET Description = 'X' WHERE PartNumber = 'DEAD2'")
+    res = chk.compare(con, "gold_idle", "expected_idle", chk.IDLE_TEXT, chk.IDLE_NUM)
+    assert res["different"] == 1
+    diffs = chk.differences(con, "gold_idle", "expected_idle", text_cols=chk.IDLE_TEXT, num_cols=chk.IDLE_NUM)
+    assert [(d["PartNumber"], d["Column"]) for d in diffs] == [("DEAD2", "Description")]
+
+
+# ---------------------------------------------------------------------------------------------------------
+# Border Stores and 2 & 4 Cotton (Plan M, the workbook code; M-D8, M-D9)
+# ---------------------------------------------------------------------------------------------------------
+GOOD = dict(oh=0, oo=0, pkg="1.00", ri="R", source="JD", slc="10", super_to="")
+
+
+def _jd(con, pn, branch, demands=0, **kw):
+    """A franchise D record with `demands` invoices in the window."""
+    _part(con, pn, branch=branch, **{**GOOD, **kw})
+    for i in range(demands):
+        _sale(con, pn, f"{branch}-{pn}-{i}", branch=branch)
+
+
+def _pool(con, pn, demands, **kw):
+    """Other-branch records for `pn`: one per entry of `demands`, at branches 10, 11, 12..."""
+    for i, d in enumerate(demands):
+        _jd(con, pn, str(10 + i), d, **kw)
+
+
+def _report(con, name, now=NOW):
+    chk.build_expected(con, now)
+    rows = chk.report_rows(con, name)
+    return {(r["Branch"], r["PartNumber"]): r for r in rows}, rows
+
+
+def test_border_counts_only_other_passing_rows_outside_2_and_4():
+    con = _con()
+    _jd(con, "P", "95", demands=1)                  # the candidate
+    _pool(con, "P", [2, 2, 2, 2, 2])                # 10 demands at 5 branches
+    _jd(con, "P", "2", demands=50)                  # branch 2 is not in the pool
+    _jd(con, "P", "4", demands=50)                  # nor 4
+    _jd(con, "P", "30", demands=50, pkg="2")        # fails a part filter
+    _jd(con, "P", "31", demands=50, super_to="Q")   # superseded
+    _jd(con, "P", "32", demands=50, oo=1)           # on order
+    _jd(con, "P", "33", demands=50, ri="N")         # not returnable
+    _jd(con, "P", "34", demands=0)                  # passes, no demand: adds nothing
+    by, rows = _report(con, "border")
+    r = by[("95", "P")]
+    assert (r["Demands"], r["OtherBranchDemands"], r["OtherLocationCount"]) == (1, 10, 5)
+    assert list(r) == chk.REPORT_COLUMNS
+    assert len(rows) == 1
+
+
+def test_border_own_branch_not_counted_and_twins_both_count():
+    con = _con()
+    _jd(con, "P", "95", demands=1)
+    _jd(con, "P ", "95")                            # own branch's twin (shares the trimmed part's 1 demand)
+    _pool(con, "P", [2, 2, 2, 2])                   # 8 at 4 branches (10..13)
+    _jd(con, "P ", "14")                            # twin at branch 14 ...
+    _jd(con, "P", "14", demands=1)                  # ... both rows carry branch 14's 1 demand
+    _, rows = _report(con, "border")
+    # both 95 rows are candidates; neither counts the other (same branch); branch 14 adds 1 + 1 at 2 rows
+    assert [(r["Branch"], r["PartNumber"], r["OtherBranchDemands"], r["OtherLocationCount"]) for r in rows] == \
+        [("95", "P", 10, 6), ("95", "P", 10, 6)]
+
+
+def test_border_thresholds_at_their_edges():
+    con = _con()
+    _jd(con, "D9", "91", demands=1)
+    _pool(con, "D9", [2, 2, 2, 2, 1])               # 9 demands: out
+    _jd(con, "D10", "91", demands=1)
+    _pool(con, "D10", [2, 2, 2, 2, 2])              # 10: in
+    _jd(con, "L4", "96", demands=1)
+    _pool(con, "L4", [4, 3, 2, 1])                  # 10 at 4 branches: out
+    _jd(con, "L5", "96", demands=1)
+    _pool(con, "L5", [3, 3, 2, 1, 1])               # 10 at 5: in
+    by, _ = _report(con, "border")
+    assert set(by) == {("91", "D10"), ("96", "L5")}
+
+
+def test_border_candidate_conditions():
+    con = _con()
+    cases = {"OK": ("95", 1, {}), "B7": ("7", 1, {}), "D0": ("95", 0, {}), "OH1": ("95", 1, {"oh": 1}),
+             "OO1": ("95", 1, {"oo": 1}), "PKG": ("95", 1, {"pkg": "2"}), "RIN": ("95", 1, {"ri": "N"}),
+             "SAN": ("95", 1, {"source": "AN"}), "SLC": ("95", 1, {"slc": "91B"}),
+             "SUP": ("95", 1, {"super_to": "Z"}), "D5": ("95", 5, {})}
+    for pn, (b, d, kw) in cases.items():
+        _jd(con, pn, b, d, **kw)
+        _pool(con, pn, [2, 2, 2, 2, 2])
+    _, rows = _report(con, "border")
+    assert [(r["Branch"], r["PartNumber"]) for r in rows] == [("95", "D5"), ("95", "OK")]
+
+
+def test_border_sorted_part_then_branch_and_candidates_count_each_other():
+    con = _con()
+    for pn in ("B", "A"):
+        for b in ("96", "91"):
+            _jd(con, pn, b, demands=1)
+        _pool(con, pn, [2, 2, 2, 2, 2])
+    _, rows = _report(con, "border")
+    assert [(r["Branch"], r["PartNumber"]) for r in rows] == [("91", "A"), ("96", "A"), ("91", "B"), ("96", "B")]
+    assert rows[0]["OtherBranchDemands"] == 11 and rows[0]["OtherLocationCount"] == 6
+
+
+def test_cotton_idle_candidate_via_own_dealer_group():
+    con = _con()
+    _jd(con, "C1", "4", dgc="cotton ")              # idle: nothing on hand, on order, sold or demanded
+    _pool(con, "C1", [2, 2, 2, 2, 2], dgc="STRIPPER")
+    _jd(con, "C1", "20", demands=9, dgc="COMBINE")  # fails the cotton rule: not in the pool
+    by, _ = _report(con, "cotton")
+    r = by[("4", "C1")]
+    assert (r["Demands"], r["OtherBranchDemands"], r["OtherLocationCount"]) == (0, 10, 5)
+    assert con.execute("SELECT count(*) FROM expected_idle WHERE Branch = '4' AND PartNumber = 'C1'").fetchone()[0]
+
+
+def test_cotton_via_model_code_at_another_branch_and_combine_without_model_code_out():
+    con = _con()
+    _jd(con, "M1", "2", dgc="")                      # blank here; coded 770 at branch 30 (an idle record)
+    _jd(con, "M1 ", "30", dgc="770 ")
+    _pool(con, "M1", [2, 2, 2, 2, 2], dgc="COMBINE")  # pool rows pass through the part's model code
+    _jd(con, "X1", "2", dgc="COMBINE")               # no model code anywhere: out
+    _pool(con, "X1", [2, 2, 2, 2, 2], dgc="COMBINE")
+    _jd(con, "N1", "2", dgc="")                      # model code only on a non-D record: out (D records only)
+    _part(con, "N1", branch="30", franchise="M", dgc="770")
+    _pool(con, "N1", [2, 2, 2, 2, 2], dgc="COTTON")
+    by, _ = _report(con, "cotton")
+    assert set(by) == {("2", "M1")}
+    assert by[("2", "M1")]["DealerGroupCode"] == ""
+
+
+def test_cotton_candidate_conditions():
+    con = _con()
+    cases = {"OK": ("2", 0, {}), "B95": ("95", 0, {}), "D1": ("4", 1, {}), "OH1": ("4", 0, {"oh": 1}),
+             "SAN": ("2", 0, {"source": "AN"}), "SUP": ("2", 0, {"super_to": "Z"}), "OON": ("2", 0, {"oo": -1})}
+    for pn, (b, d, kw) in cases.items():
+        _jd(con, pn, b, d, dgc="PICKER", **kw)
+        _pool(con, pn, [2, 2, 2, 2, 2], dgc="PICKER")
+    _, rows = _report(con, "cotton")
+    assert [(r["Branch"], r["PartNumber"]) for r in rows] == [("2", "OK")]
+
+
+def test_cotton_other_candidate_branch_is_not_in_the_pool():
+    con = _con()
+    _jd(con, "P", "2", dgc="COTTON")
+    _jd(con, "P", "4", dgc="COTTON")
+    _pool(con, "P", [2, 2, 2, 2, 2], dgc="COTTON")
+    by, _ = _report(con, "cotton")
+    assert set(by) == {("2", "P"), ("4", "P")}
+    assert (by[("2", "P")]["OtherBranchDemands"], by[("2", "P")]["OtherLocationCount"]) == (10, 5)
+
+
+def test_report_rows_mlpf_is_the_mlpf_list():
+    con = _con()
+    _mlpf_fixture(con)
+    chk.build_expected(con, NOW)
+    assert chk.report_rows(con, "mlpf") == chk.mlpf_rows(con, "expected")
+
+
+def test_compare_xlsx_with_the_other_branch_columns(tmp_path):
+    con = _con()
+    _jd(con, "P", "95", demands=1)
+    _pool(con, "P", [2, 2, 2, 2, 2])
+    _, ours = _report(con, "border")
+    base = [ours[0][c] for c in chk.MLPF_COLUMNS]
+    base[3] = float(base[3])
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Border Stores"
+    ws.append(chk.REPORT_COLUMNS)
+    ws.append(base + [11, 5])                        # OtherBranchDemands differs
+    p = tmp_path / "border.xlsx"
+    wb.save(p)
+    xl = chk.read_xlsx(str(p), "Border Stores", chk.REPORT_COLUMNS)
+    assert xl[0]["OtherBranchDemands"] == 11
+    res = chk.compare_xlsx(con, xl, ours, chk.REPORT_COLUMNS, chk.REPORT_NUM)
+    assert [(d["Column"], d["Excel"], d["Ours"]) for d in res["values"]] == [("OtherBranchDemands", 11, 10)]
+
+
+def test_read_xlsx_report_columns_required(tmp_path):
+    wb = openpyxl.Workbook()
+    wb.active.title = "Border Stores"
+    wb.active.append(chk.MLPF_COLUMNS)
+    p = tmp_path / "mlpf_only.xlsx"
+    wb.save(p)
+    with pytest.raises(ValueError, match="OtherLocationCount"):
+        chk.read_xlsx(str(p), "Border Stores", chk.REPORT_COLUMNS)
