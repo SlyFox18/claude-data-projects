@@ -4,6 +4,18 @@
 > review after each (Brian's standing choice). Steps use checkbox (`- [ ]`) syntax.
 
 > **Progress:** plan written 2026-11-03 (Claude, for Brian). Spec approved 2026-11-03.
+> - **M6 done 2026-11-03** (app `09222ef`, `f9a4d08` each other branch counts once; 1,967 + 838 tests, lint, tsc
+>   clean; reference check matched in data-projects `9d36d18a`, Dev Border 1,562 / Cotton 250 unchanged).
+>   `src/inventory/report.ts`: `InventoryReportDef` (conditions, pool, includeIdle), `parseReportDef` /
+>   `reportDefValue` (array when no pool / idle, else `{v:2,…}`), `compileReport` → ready / needsIdle / invalid,
+>   `withReportFields` per-compile catalogue; new engine options `comparisons`, `readMany`; **new comparison
+>   `notOneOf` ("is not one of") for every text field, Cleanup too** (needed for "Branch not one of 2, 4"); inventory
+>   patches carry conditions + pool + includeIdle together. Review: no Critical / Important; fixes in progress (docs
+>   on 0.12.0 readability, a robust perf test, hot-path savings). **For M8** (from the review): every Inventory page
+>   must switch to `compileReport` (list counts, results `savedKey` incl. pool / includeIdle, `copyColumns(def)`,
+>   sort / CSV / cells via the compiled `value`, Try it, the panel), wire `needsIdle`; a hint on "Dealer group at any
+>   branch is not one of (none)". **For the release notes:** a check or report saved with groups, "is not one of"
+>   or the new fields can't be read by 0.12.0, so deploy 0.13.0 before anyone uses them (Fedora serves one version).
 > - **M1 done 2026-11-03** (fabric-workspace-docs `17dc13b2`, `c5262e7f` OnOrder; dag_check OK, hygiene 0, 368
 >   tests). Part 5 builds one frame with an `_active` flag and splits it into `Fact_CorpParts_JD` (unchanged) and
 >   `Fact_CorpParts_JD_Idle` (+ `OnOrder` DECIMAL(12,2) after Cost); guards before either write (keys unique,
