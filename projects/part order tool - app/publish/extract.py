@@ -95,6 +95,16 @@ JD_COLUMNS = [
     ("MinimumQty", "minimumQty"), ("MaximumQty", "maximumQty"), ("Sales12", "sales12"),
     ("SalesPrev12", "salesPrev12"), ("CorpDemands", "corpDemands"),
 ]
+# Fact_CorpParts_JD_Idle column -> jd_idle_<branch>.json.gz part field (contract v7, Plan M decision M-D12): the
+# JD_COLUMNS fields without the ones that are 0 by definition for an idle record (OnHand, Sales12, SalesPrev12,
+# CorpDemands; Gold leaves them out). OnOrder stays: it is 0 or negative. Franchise and BuiltAtUtc are not published.
+JD_IDLE_COLUMNS = [
+    ("Branch", "branch"), ("PartNumber", "partNumber"), ("Description", "description"), ("Cost", "cost"),
+    ("OnOrder", "onOrder"), ("PackageQty", "packageQty"), ("ReturnIndicator", "returnIndicator"),
+    ("Source", "source"), ("SLC", "slc"), ("SuperTo", "superTo"), ("CommodityCode", "commodityCode"),
+    ("CommodityGroup", "commodityGroup"), ("DealerGroupCode", "dealerGroupCode"), ("MinimumQty", "minimumQty"),
+    ("MaximumQty", "maximumQty"),
+]
 HISTORY_COLUMNS = ["Branch", "Franchise", "PartNumber", "MonthOffset", "SalesQty", "RequestCount"]
 TRANSFER_COLUMNS = ["RequestingBranch", "SupplyingBranch", "PartNumber", "PartTicket", "LineNumber", "OrderQty",
                     "ShippedQty", "OpenQty", "FulfillmentStatus", "TransferSubType", "OrderAge", "Date"]
@@ -127,14 +137,14 @@ def columns(con, table: str) -> list:
     return [r[0] for r in con.execute(f"DESCRIBE SELECT * FROM {_src(table)}").fetchall()]
 
 
-def _readable_columns(con, table: str, deploy: str) -> list:
+def _readable_columns(con, table: str, deploy: str, before: str = "publishing") -> list:
     """columns(), with a clear error naming what to deploy when the table is missing or unreadable."""
     try:
         return columns(con, table)
     except Exception as ex:
         first = (str(ex).splitlines() or [""])[0]
         raise RuntimeError(f"{table} not found or unreadable in the {config.SOURCE} DP_Presentation "
-                           f"lakehouse ({type(ex).__name__}: {first}); deploy {deploy} before publishing") from ex
+                           f"lakehouse ({type(ex).__name__}: {first}); deploy {deploy} before {before}") from ex
 
 
 def check_columns(con) -> None:
@@ -155,6 +165,11 @@ def check_columns(con) -> None:
                        _readable_columns(con, "Fact_CorpParts_JD",
                                          "the Plan L Build_Gold_NonJD_Reorder (Part 5, Fact_CorpParts_JD)"),
                        [g for g, _ in JD_COLUMNS] + ["BuiltAtUtc"])
+    pl.require_columns("Fact_CorpParts_JD_Idle",
+                       _readable_columns(con, "Fact_CorpParts_JD_Idle",
+                                         "Plan M (Build_Gold_NonJD_Reorder Part 5, Fact_CorpParts_JD_Idle)",
+                                         before="publishing v7"),
+                       [g for g, _ in JD_IDLE_COLUMNS] + ["BuiltAtUtc"])
 
 
 def _dicts(cur) -> list:
@@ -184,6 +199,17 @@ def jd_parts(con) -> list:
     """Gold's JD (franchise D) parts for the Corp Parts reports, every branch (no D6 exclusion, L-D5), raw as
     stored; build_files.build_jd trims, rounds and sorts them."""
     return _dicts(con.execute(f"SELECT {_select(JD_COLUMNS)} FROM {_src('Fact_CorpParts_JD')} "
+                              "ORDER BY Branch, PartNumber"))
+
+
+def jd_idle_built_at(con) -> datetime:
+    return con.execute(f"SELECT max(BuiltAtUtc) FROM {_src('Fact_CorpParts_JD_Idle')}").fetchone()[0]
+
+
+def jd_idle_parts(con) -> list:
+    """Gold's idle JD (franchise D) records, the ones Fact_CorpParts_JD leaves out (contract v7, Plan M), every
+    branch, raw as stored; build_files.build_jd_idle trims, rounds, checks and sorts them."""
+    return _dicts(con.execute(f"SELECT {_select(JD_IDLE_COLUMNS)} FROM {_src('Fact_CorpParts_JD_Idle')} "
                               "ORDER BY Branch, PartNumber"))
 
 

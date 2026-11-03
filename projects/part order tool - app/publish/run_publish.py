@@ -2,8 +2,9 @@
 Non-JD Parts Order Tool - daily publish.
 
 1. Read dp_refresh_log; publish only if Build_Gold_NonJD_Reorder's latest run succeeded and wasn't published yet.
-2. Check the Gold tables (Fact_NonJD_Reorder, Fact_CorpParts_JD) were written by that run (BuiltAtUtc within it).
-3. Build files (contract v6's jd_<branch>.json.gz last), upload the changed ones (and
+2. Check the Gold tables (Fact_NonJD_Reorder, Fact_CorpParts_JD, Fact_CorpParts_JD_Idle) were written by that run
+   (BuiltAtUtc within it; the two JD tables share one BuiltAtUtc).
+3. Build files (contract v6's jd_<branch>.json.gz and v7's jd_idle_<branch>.json.gz last), upload the changed ones (and
    transfer_suggestions.json.gz every run), then _meta.json last.
    Save publish_state.json.
 
@@ -113,6 +114,13 @@ def _publish(args) -> int:
     if not pl.built_in_run(jd_built, start, latest["end_utc"]):
         raise RuntimeError(f"Fact_CorpParts_JD BuiltAtUtc {jd_built} is outside run {latest['run_id']} "
                            f"({start} .. {latest['end_utc']}); refusing to publish mismatched data")
+    idle_built = extract.jd_idle_built_at(con)  # Plan M: written with Fact_CorpParts_JD, with the same BuiltAtUtc
+    if not pl.built_in_run(idle_built, start, latest["end_utc"]):
+        raise RuntimeError(f"Fact_CorpParts_JD_Idle BuiltAtUtc {idle_built} is outside run {latest['run_id']} "
+                           f"({start} .. {latest['end_utc']}); refusing to publish mismatched data")
+    if idle_built != jd_built:
+        raise RuntimeError(f"Fact_CorpParts_JD_Idle BuiltAtUtc {idle_built} differs from Fact_CorpParts_JD's "
+                           f"{jd_built} (one Gold build writes both); refusing to publish mismatched data")
 
     data_as_of = pl.iso_utc(latest["end_utc"])
     current_month = pl.central_month_start(built)
@@ -124,6 +132,7 @@ def _publish(args) -> int:
     purchases = extract.purchases(con)
     committed = extract.committed(con, pl.central_date(built))
     jd_rows = extract.jd_parts(con)
+    jd_idle_rows = extract.jd_idle_parts(con)
     try:
         rules = extract.rules(con)
     except pl.MissingColumnsError:
@@ -137,16 +146,22 @@ def _publish(args) -> int:
         raise RuntimeError("Fact_NonJD_Reorder was rewritten while extracting; rerun the publish")
     if extract.jd_built_at(con) != jd_built:
         raise RuntimeError("Fact_CorpParts_JD was rewritten while extracting; rerun the publish")
+    if extract.jd_idle_built_at(con) != idle_built:
+        raise RuntimeError("Fact_CorpParts_JD_Idle was rewritten while extracting; rerun the publish")
     hashes, branches = build_files.build(reorder, lambda b: extract.history_for(con, b), transfers, names,
                                          data_as_of, current_month, rules, transfer_rules=transfer_rules,
                                          suggestions=suggestions, committed=committed, purchases=purchases,
                                          out_dir=out_dir)
     jd_hashes, jd_branches = build_files.build_jd(jd_rows, names, data_as_of, out_dir=out_dir)   # contract v6
     hashes.update(jd_hashes)
+    idle_hashes, jd_idle_branches = build_files.build_jd_idle(jd_idle_rows, names, data_as_of,
+                                                              out_dir=out_dir)   # contract v7
+    hashes.update(idle_hashes)
     counts = {"parts": len(reorder), "historyRows": history_rows, "transferLines": len(transfers),
-              "transferSuggestions": len(suggestions), "jdParts": len(jd_rows)}
+              "transferSuggestions": len(suggestions), "jdParts": len(jd_rows), "jdIdleParts": len(jd_idle_rows)}
     meta_path = build_files.write_meta(data_as_of, datetime.now(timezone.utc).isoformat(), config.SOURCE,
-                                       branches, counts, out_dir=out_dir, jd_branches=jd_branches)
+                                       branches, counts, out_dir=out_dir, jd_branches=jd_branches,
+                                       jd_idle_branches=jd_idle_branches)
     if args.out:
         print(f"[{_ts()}] done: built {len(hashes)} file(s) + _meta.json into {out_dir} (nothing uploaded); "
               f"data as of {data_as_of}; {counts}", flush=True)

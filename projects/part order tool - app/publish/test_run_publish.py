@@ -16,7 +16,8 @@ BUILT = datetime(2026, 10, 20, 10, 20, 0)
 
 DATA_FILES = {"reorder_01.json.gz", "history_01.json.gz", "reorder_02.json.gz", "history_02.json.gz",
               "surplus.json.gz", "transfers.json.gz", "rules.json.gz", "transfer_rules.json.gz",
-              "transfer_suggestions.json.gz", "purchases.json.gz", "jd_01.json.gz", "jd_12.json.gz"}
+              "transfer_suggestions.json.gz", "purchases.json.gz", "jd_01.json.gz", "jd_12.json.gz",
+              "jd_idle_01.json.gz", "jd_idle_4.json.gz"}
 ROUND2 = {"pendingQty": 0.0, "slc": None, "source": None, "commodityCode": None, "phaseInQty": None,
           "phaseInEnds": None, "phaseInOn": None, "phaseInActive": False, "phaseInEndReason": None,
           "appInboundQty": 0, "appOutboundQty": 0, "transferRuleId": None, "transferRuleName": "Built-in default",
@@ -29,6 +30,9 @@ JD_ROW = {"partNumber": "J1", "description": "Pin", "cost": 1.5, "onHand": 0, "o
           "returnIndicator": "R", "source": "FF", "slc": "15C", "superTo": "", "commodityCode": "", "commodityGroup":
           "Other", "dealerGroupCode": "", "minimumQty": None, "maximumQty": None, "sales12": 2, "salesPrev12": 0,
           "corpDemands": 2}
+JD_IDLE_ROW = {"partNumber": "I1", "description": "Bolt", "cost": 2.25, "onOrder": 0, "packageQty": 1,
+               "returnIndicator": "R", "source": "FF", "slc": "15C", "superTo": "", "commodityCode": "",
+               "commodityGroup": "Other", "dealerGroupCode": "770", "minimumQty": None, "maximumQty": None}
 
 
 class Env:
@@ -37,6 +41,7 @@ class Env:
         self.status = "Succeeded"
         self.built = [BUILT]  # successive built_at results; the last one repeats
         self.jd_built = [BUILT]  # the same for Fact_CorpParts_JD
+        self.idle_built = [BUILT]  # and for Fact_CorpParts_JD_Idle
         self.end = END
         self.on_hand_02 = 0
         self.rules = [{"id": 1, "ruleName": "Default", "priority": 99.0, "active": True, "archived": None,
@@ -76,6 +81,14 @@ def env(tmp_path, monkeypatch):
     # branch 12 is excluded from the reorder files (D6) but written for JD (L-D5)
     monkeypatch.setattr(extract, "jd_parts", lambda con: [
         {"branch": "12", **JD_ROW}, {"branch": "01", **JD_ROW}, {"branch": "01", **JD_ROW, "partNumber": "J2"}])
+
+    def jd_idle_built_at(con):
+        return e.idle_built.pop(0) if len(e.idle_built) > 1 else e.idle_built[0]
+    monkeypatch.setattr(extract, "jd_idle_built_at", jd_idle_built_at)
+    monkeypatch.setattr(extract, "jd_idle_parts", lambda con: [
+        {"branch": "4", **JD_IDLE_ROW}, {"branch": "01", **JD_IDLE_ROW},
+        {"branch": "01", **JD_IDLE_ROW, "partNumber": "I2", "onOrder": -1}, {"branch": "4", **JD_IDLE_ROW,
+                                                                             "partNumber": "I0"}])
 
     def check_columns(con):
         e.checked += 1
@@ -159,7 +172,7 @@ def test_data_change_uploads_only_changed_files(env):
     assert set(env.uploaded[:-1]) == {"reorder_01.json.gz", "reorder_02.json.gz", "surplus.json.gz",
                                       "transfers.json.gz", "rules.json.gz", "transfer_rules.json.gz",
                                       "transfer_suggestions.json.gz", "purchases.json.gz", "jd_01.json.gz",
-                                      "jd_12.json.gz"}
+                                      "jd_12.json.gz", "jd_idle_01.json.gz", "jd_idle_4.json.gz"}
     assert env.uploaded[-1] == "_meta.json"
 
 
@@ -267,7 +280,7 @@ def test_missing_rules_columns_fail_before_extracting(env, monkeypatch):
 def test_meta_carries_contract_version(env, tmp_path):
     run_publish.main([])
     meta = json.loads((tmp_path / "out" / "_meta.json").read_bytes())
-    assert meta["contractVersion"] == 6 and meta["schemaVersion"] == 1
+    assert meta["contractVersion"] == 7 and meta["schemaVersion"] == 1
 
 
 
@@ -302,7 +315,7 @@ def test_out_builds_locally_without_upload_state_or_lock(env, tmp_path, monkeypa
     assert not env.state_file.exists()
     assert set(os.listdir(dest)) == DATA_FILES | {"_meta.json"}
     assert not (tmp_path / "out").exists()      # the publish's own output folder is untouched
-    assert json.loads((dest / "_meta.json").read_bytes())["contractVersion"] == 6
+    assert json.loads((dest / "_meta.json").read_bytes())["contractVersion"] == 7
 
 
 def test_out_ignores_publish_state(env, tmp_path):
@@ -382,3 +395,67 @@ def test_jd_table_rewritten_mid_extract_raises(env):
     with pytest.raises(RuntimeError, match="Fact_CorpParts_JD was rewritten"):
         run_publish.main([])
     assert env.uploaded == [] and not env.state_file.exists()
+
+
+# ---- Plan M (M3): contract v7, jd_idle_<branch>.json.gz ----
+
+def test_meta_has_jd_idle_branches_and_count(env, tmp_path):
+    run_publish.main([])
+    meta = json.loads((tmp_path / "out" / "_meta.json").read_bytes())
+    assert meta["jdIdleBranches"] == [{"branch": "01", "name": "One", "parts": 2},
+                                      {"branch": "4", "name": "4", "parts": 2}]
+    assert meta["counts"]["jdIdleParts"] == 4 and meta["counts"]["jdParts"] == 3
+    assert [b["branch"] for b in meta["jdBranches"]] == ["01", "12"]
+
+
+def test_idle_files_uploaded_before_meta(env, tmp_path):
+    run_publish.main([])
+    assert {"jd_idle_01.json.gz", "jd_idle_4.json.gz"} <= set(env.uploaded[:-1]) and env.uploaded[-1] == "_meta.json"
+    import gzip
+    d = json.loads(gzip.decompress((tmp_path / "out" / "jd_idle_4.json.gz").read_bytes()))
+    assert d["dataAsOf"] == "2026-10-20T10:30:00+00:00" and [p["partNumber"] for p in d["parts"]] == ["I0", "I1"]
+    d = json.loads(gzip.decompress((tmp_path / "out" / "jd_idle_01.json.gz").read_bytes()))
+    assert [p["onOrder"] for p in d["parts"]] == [0, -1]
+
+
+def test_gold_without_idle_table_fails_before_writing(env, tmp_path, monkeypatch):
+    def check(con):
+        raise RuntimeError("Fact_CorpParts_JD_Idle not found or unreadable in the dev DP_Presentation lakehouse")
+    monkeypatch.setattr(extract, "check_columns", check)
+    monkeypatch.setattr(extract, "jd_idle_parts", lambda con: pytest.fail("extracted after a failed check"))
+    with pytest.raises(RuntimeError, match="Fact_CorpParts_JD_Idle"):
+        run_publish.main(["--out", str(tmp_path / "v7")])
+    assert not (tmp_path / "v7").exists()
+    with pytest.raises(RuntimeError, match="Fact_CorpParts_JD_Idle"):
+        run_publish.main([])
+    assert env.uploaded == [] and not env.state_file.exists()
+
+
+def test_idle_built_outside_run_raises(env):
+    env.idle_built = [datetime(2026, 10, 19, 10, 20, 0)]
+    with pytest.raises(RuntimeError, match="Fact_CorpParts_JD_Idle BuiltAtUtc.*outside run"):
+        run_publish.main([])
+    assert env.uploaded == [] and not env.state_file.exists()
+
+
+def test_idle_built_by_another_build_than_the_active_table_raises(env):
+    # both tables come from one Gold run with one BuiltAtUtc (Part 5); a different value inside the run means
+    # they were written by two builds
+    env.idle_built = [datetime(2026, 10, 20, 10, 21, 0)]
+    with pytest.raises(RuntimeError, match="Fact_CorpParts_JD_Idle BuiltAtUtc.*Fact_CorpParts_JD"):
+        run_publish.main([])
+    assert env.uploaded == [] and not env.state_file.exists()
+
+
+def test_idle_table_rewritten_mid_extract_raises(env):
+    env.idle_built = [BUILT, datetime(2026, 10, 20, 10, 25, 0)]
+    with pytest.raises(RuntimeError, match="Fact_CorpParts_JD_Idle was rewritten"):
+        run_publish.main([])
+    assert env.uploaded == [] and not env.state_file.exists()
+
+
+def test_positive_idle_on_order_fails_before_meta(env, tmp_path, monkeypatch):
+    monkeypatch.setattr(extract, "jd_idle_parts", lambda con: [{"branch": "4", **JD_IDLE_ROW, "onOrder": 2}])
+    with pytest.raises(ValueError, match="onOrder"):
+        run_publish.main([])
+    assert env.uploaded == [] and not (tmp_path / "out" / "_meta.json").exists()

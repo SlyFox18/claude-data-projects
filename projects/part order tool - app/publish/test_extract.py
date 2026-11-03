@@ -61,10 +61,12 @@ def _table(con, name, cols, rows=()):
 
 def _gold_tables(con, reorder_cols=GOLD_REORDER, rule_cols=RULE_COLS, trule_cols=TRULE_COLS,
                  app_cols=APP_TRANSFER_COLS, sugg_cols=SUGGESTION_COLS, purchases_cols=PURCHASES_COLS,
-                 jd_cols="all"):
+                 jd_cols="all", idle_cols="all"):
     _table(con, "Fact_NonJD_Reorder", reorder_cols)
     if jd_cols is not None:        # None = an older Gold without Fact_CorpParts_JD (Plan L)
         _table(con, "Fact_CorpParts_JD", GOLD_JD if jd_cols == "all" else jd_cols)
+    if idle_cols is not None:      # None = an older Gold without Fact_CorpParts_JD_Idle (Plan M)
+        _table(con, "Fact_CorpParts_JD_Idle", GOLD_JD_IDLE if idle_cols == "all" else idle_cols)
     _table(con, "NonJD_OrderRules", rule_cols)
     _table(con, "NonJD_TransferRules", trule_cols)
     _table(con, "NonJD_Transfers", app_cols)
@@ -395,3 +397,68 @@ def test_jd_built_at(con):
     con.execute('INSERT INTO "Fact_CorpParts_JD" (Branch, PartNumber, BuiltAtUtc) VALUES '
                 "('1', 'A', '2026-11-03 15:26:59'), ('2', 'B', '2026-11-03 15:26:59')")
     assert str(extract.jd_built_at(con)) == "2026-11-03 15:26:59"
+
+
+# ---- Plan M (M3): contract v7, Fact_CorpParts_JD_Idle ----
+
+# Gold's Fact_CorpParts_JD_Idle columns (Build_Gold_NonJD_Reorder Part 5, fabric-workspace-docs c5262e7f).
+GOLD_JD_IDLE = ["Branch", "Franchise", "PartNumber", "Description", "Cost", "OnOrder", "PackageQty",
+                "ReturnIndicator", "Source", "SLC", "SuperTo", "CommodityCode", "CommodityGroup", "DealerGroupCode",
+                "MinimumQty", "MaximumQty", "BuiltAtUtc"]
+JD_IDLE_FIELDS = ["partNumber", "description", "cost", "onOrder", "packageQty", "returnIndicator", "source", "slc",
+                  "superTo", "commodityCode", "commodityGroup", "dealerGroupCode", "minimumQty", "maximumQty"]
+
+
+def test_jd_idle_columns_are_the_m_d12_fields_plus_branch():
+    assert extract.JD_IDLE_COLUMNS[0] == ("Branch", "branch")
+    assert [f for _, f in extract.JD_IDLE_COLUMNS[1:]] == JD_IDLE_FIELDS
+    assert {g for g, _ in extract.JD_IDLE_COLUMNS} <= set(GOLD_JD_IDLE)
+    assert not {"Franchise", "BuiltAtUtc"} & {g for g, _ in extract.JD_IDLE_COLUMNS}
+    # the same Gold column -> field names as the active table
+    jd = dict(extract.JD_COLUMNS)
+    assert all(jd[g] == f for g, f in extract.JD_IDLE_COLUMNS)
+
+
+def test_jd_idle_parts_reads_and_renames(con):
+    _gold_tables(con)
+    con.execute('INSERT INTO "Fact_CorpParts_JD_Idle" (Branch, Franchise, PartNumber, Description, OnOrder, '
+                "PackageQty) VALUES ('4', 'D', 'B1', 'Bolt', '-1.00', NULL), ('1', 'D', 'A2 ', NULL, '0.00', "
+                "'1.00'), ('1', 'D', 'A1', 'Nut', '0.00', '2.00')")
+    rows = extract.jd_idle_parts(con)
+    assert [(r["branch"], r["partNumber"]) for r in rows] == [("1", "A1"), ("1", "A2 "), ("4", "B1")]
+    assert set(rows[0]) == {"branch"} | set(JD_IDLE_FIELDS)
+    assert rows[1]["description"] is None and rows[2]["packageQty"] is None and rows[2]["onOrder"] == "-1.00"
+
+
+def test_check_columns_passes_with_the_idle_table(con):
+    _gold_tables(con)
+    extract.check_columns(con)
+
+
+@pytest.mark.parametrize("missing", ["OnOrder", "PackageQty", "DealerGroupCode", "BuiltAtUtc"])
+def test_check_columns_names_missing_idle_column(con, missing):
+    _gold_tables(con, idle_cols=[c for c in GOLD_JD_IDLE if c != missing])
+    with pytest.raises(pl.MissingColumnsError, match=f"Fact_CorpParts_JD_Idle.*{missing}"):
+        extract.check_columns(con)
+
+
+def test_check_columns_missing_idle_table_is_clear_error(con):
+    # a Plan L Gold has every other table, Fact_CorpParts_JD included, but not Fact_CorpParts_JD_Idle
+    _gold_tables(con, idle_cols=None)
+    with pytest.raises(RuntimeError, match="Fact_CorpParts_JD_Idle not found or unreadable.*"
+                                           "deploy Plan M.*before publishing v7") as ei:
+        extract.check_columns(con)
+    assert not isinstance(ei.value, pl.MissingColumnsError)
+
+
+def test_check_columns_missing_jd_table_still_names_plan_l(con):
+    _gold_tables(con, jd_cols=None, idle_cols=None)
+    with pytest.raises(RuntimeError, match="Fact_CorpParts_JD not found or unreadable.*Plan L"):
+        extract.check_columns(con)
+
+
+def test_jd_idle_built_at(con):
+    _gold_tables(con)
+    con.execute('INSERT INTO "Fact_CorpParts_JD_Idle" (Branch, PartNumber, BuiltAtUtc) VALUES '
+                "('1', 'A', '2026-11-03 15:26:59'), ('2', 'B', '2026-11-03 15:26:59')")
+    assert str(extract.jd_idle_built_at(con)) == "2026-11-03 15:26:59"

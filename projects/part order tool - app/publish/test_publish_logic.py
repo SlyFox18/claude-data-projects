@@ -202,8 +202,8 @@ def test_history_arrays_duplicate_slot_raises():
 
 # ---- Round 1 (Plan C4): contract version, required columns, excluded branches ----
 
-def test_contract_version_is_6():
-    assert pl.CONTRACT_VERSION == 6
+def test_contract_version_is_7():
+    assert pl.CONTRACT_VERSION == 7
 
 
 def test_require_columns_passes_when_all_present():
@@ -319,3 +319,11 @@ def test_changed_files_sends_jd_files_whose_content_changed():
     assert pl.changed_files({"jd_1.json.gz": "new", "jd_2.json.gz": "b"},
                             {"jd_1.json.gz": "old", "jd_2.json.gz": "b"}) == ["jd_1.json.gz"]
     assert pl.changed_files({"jd_12.json.gz": "x"}, {}) == ["jd_12.json.gz"]
+
+
+# ---- Plan M (M3): contract v7, jd_idle_<branch>.json.gz ----
+
+def test_upload_order_idle_files_before_meta():
+    order = pl.upload_order(["out/_meta.json", "out/jd_idle_4.json.gz", "out/jd_1.json.gz", "out/jd_idle_1.json.gz"])
+    assert order[-1] == "out/_meta.json"
+    assert {"out/jd_idle_1.json.gz", "out/jd_idle_4.json.gz", "out/jd_1.json.gz"} == set(order[:-1])

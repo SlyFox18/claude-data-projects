@@ -167,14 +167,15 @@ def test_write_meta_plain_json(out):
     _, branches = _build()
     counts = {"parts": 4}
     jd_branches = [{"branch": "12", "name": "12", "parts": 3}]
+    jd_idle_branches = [{"branch": "4", "name": "4", "parts": 5}]
     path = build_files.write_meta(AS_OF, "2026-10-20T12:00:00+00:00", "dev", branches, counts,
-                                  jd_branches=jd_branches)
+                                  jd_branches=jd_branches, jd_idle_branches=jd_idle_branches)
     raw = open(path, "rb").read()
     assert raw[:2] != b"\x1f\x8b"
     meta = json.loads(raw)
     assert meta == {"dataAsOf": AS_OF, "publishedAt": "2026-10-20T12:00:00+00:00", "source": "dev",
-                    "branches": branches, "counts": counts, "schemaVersion": 1, "contractVersion": 6,
-                    "jdBranches": jd_branches}
+                    "branches": branches, "counts": counts, "schemaVersion": 1, "contractVersion": 7,
+                    "jdBranches": jd_branches, "jdIdleBranches": jd_idle_branches}
 
 
 def test_nan_rejected():
@@ -271,8 +272,8 @@ def test_reorder_row_at_excluded_branch_raises(out, branch):
 
 def test_meta_has_contract_version(out):
     _, branches = _build()
-    path = build_files.write_meta(AS_OF, AS_OF, "dev", branches, {}, jd_branches=[])
-    assert json.loads(open(path, "rb").read())["contractVersion"] == 6
+    path = build_files.write_meta(AS_OF, AS_OF, "dev", branches, {}, jd_branches=[], jd_idle_branches=[])
+    assert json.loads(open(path, "rb").read())["contractVersion"] == 7
 
 
 @pytest.mark.parametrize("bad", [float("nan"), float("inf"), float("-inf"), Decimal("NaN")])
@@ -402,7 +403,8 @@ def test_build_into_another_folder(out, tmp_path):
     hashes, branches = build_files.build(REORDER, _hist, TRANSFERS, NAMES, AS_OF, MONTH, RULES, transfer_rules=TRULES,
                                          suggestions=SUGGESTIONS, committed=COMMITTED, purchases=PURCHASES,
                                          out_dir=str(other))
-    meta = build_files.write_meta(AS_OF, AS_OF, "dev", branches, {}, out_dir=str(other), jd_branches=[])
+    meta = build_files.write_meta(AS_OF, AS_OF, "dev", branches, {}, out_dir=str(other), jd_branches=[],
+                                  jd_idle_branches=[])
     assert sorted(os.listdir(other)) == sorted(list(hashes) + ["_meta.json", "keep.txt"])
     assert os.path.dirname(meta) == str(other)
     assert not out.exists()
@@ -691,8 +693,213 @@ def test_write_meta_has_jd_branches(out):
     _, branches = _build()
     _, jd_branches = _build_jd()
     path = build_files.write_meta(AS_OF, AS_OF, "dev", branches, {"parts": 4, "jdParts": 4},
-                                  jd_branches=jd_branches)
+                                  jd_branches=jd_branches, jd_idle_branches=[])
     meta = json.loads(open(path, "rb").read())
     assert meta["jdBranches"] == jd_branches and meta["counts"]["jdParts"] == 4
-    assert meta["contractVersion"] == 6
+    assert meta["contractVersion"] == 7
     assert [b["branch"] for b in meta["branches"]] == ["1", "92"]
+
+
+# ---- Plan M (M3): contract v7, jd_idle_<branch>.json.gz ----
+
+JD_IDLE_FIELDS = {"partNumber", "description", "cost", "onOrder", "packageQty", "returnIndicator", "source", "slc",
+                  "superTo", "commodityCode", "commodityGroup", "dealerGroupCode", "minimumQty", "maximumQty"}
+
+
+def _idle(branch, part, **kw):
+    """A Fact_CorpParts_JD_Idle row as extract.jd_idle_parts returns it (Gold's types: DECIMAL numbers)."""
+    r = {"branch": branch, "partNumber": part, "description": "Pin", "cost": Decimal("459.01"),
+         "onOrder": Decimal("0.00"), "packageQty": Decimal("1.00"), "returnIndicator": "R", "source": "FF",
+         "slc": "15C", "superTo": "", "commodityCode": "07A", "commodityGroup": "Tillage", "dealerGroupCode": "",
+         "minimumQty": None, "maximumQty": None}
+    r.update(kw)
+    return r
+
+
+IDLE = [_idle("4", "B1"), _idle("1", "A2"), _idle("12", "C1"), _idle("1", "A1")]
+
+
+def _build_idle(rows=None, names=None):
+    return build_files.build_jd_idle(IDLE if rows is None else rows, JD_NAMES if names is None else names, AS_OF)
+
+
+def test_idle_files_and_branches(out):
+    hashes, idle_branches = _build_idle()
+    assert set(hashes) == {"jd_idle_1.json.gz", "jd_idle_4.json.gz", "jd_idle_12.json.gz"}
+    assert sorted(os.listdir(out)) == sorted(hashes)
+    assert idle_branches == [{"branch": "1", "name": "Lubbock", "parts": 2},
+                             {"branch": "4", "name": "4", "parts": 1},
+                             {"branch": "12", "name": "Corporate", "parts": 1}]
+
+
+@pytest.mark.parametrize("branch", ["12", "5", "97", "4B", "93C"])
+def test_idle_excluded_branches_are_written(out, branch):
+    # as the active JD files (L-D5): every JD branch, no D6 check
+    hashes, idle_branches = _build_idle([_idle(branch, "P1")])
+    assert f"jd_idle_{branch}.json.gz" in hashes
+    assert [b["branch"] for b in idle_branches] == [branch]
+
+
+def test_idle_file_layout(out):
+    _build_idle()
+    data = _read(out, "jd_idle_1.json.gz")
+    assert set(data) == {"branch", "dataAsOf", "parts"}
+    assert data["branch"] == "1" and data["dataAsOf"] == AS_OF
+    assert all(set(p) == JD_IDLE_FIELDS for p in data["parts"])
+    raw = gzip.decompress((out / "jd_idle_1.json.gz").read_bytes())
+    assert raw == json.dumps(json.loads(raw), sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
+
+
+def test_idle_values(out):
+    _build_idle([_idle("1", "A1", onOrder=Decimal("-2.00"))])
+    p = _read(out, "jd_idle_1.json.gz")["parts"][0]
+    assert p == {"partNumber": "A1", "description": "Pin", "cost": 459.01, "onOrder": -2, "packageQty": 1,
+                 "returnIndicator": "R", "source": "FF", "slc": "15C", "superTo": "", "commodityCode": "07A",
+                 "commodityGroup": "Tillage", "dealerGroupCode": "", "minimumQty": None, "maximumQty": None}
+    assert type(p["onOrder"]) is int
+
+
+def test_idle_zero_by_definition_fields_left_out(out):
+    # on hand, sales and Corp demands are 0 for every idle row (M-D12); extra keys in a row are not published
+    _build_idle([_idle("1", "A1", onHand=0, sales12=0, salesPrev12=0, corpDemands=0)])
+    p = _read(out, "jd_idle_1.json.gz")["parts"][0]
+    assert not {"onHand", "sales12", "salesPrev12", "corpDemands"} & set(p)
+
+
+def test_idle_text_trimmed_and_null_text_is_empty(out):
+    _build_idle([_idle(" 1 ", " A1  ", description="  Pin  ", returnIndicator=" R ", source=None, slc="  ",
+                       superTo=None, commodityCode=" 07A", commodityGroup="Other ", dealerGroupCode=" 770 ")])
+    data = _read(out, "jd_idle_1.json.gz")
+    p = data["parts"][0]
+    assert data["branch"] == "1"
+    assert (p["partNumber"], p["description"], p["returnIndicator"]) == ("A1", "Pin", "R")
+    assert (p["source"], p["slc"], p["superTo"]) == ("", "", "")
+    assert (p["commodityCode"], p["commodityGroup"], p["dealerGroupCode"]) == ("07A", "Other", "770")
+
+
+def test_idle_nullable_fields_stay_null(out):
+    _build_idle([_idle("1", "A1", description=None, packageQty=None, minimumQty=None, maximumQty=None)])
+    p = _read(out, "jd_idle_1.json.gz")["parts"][0]
+    assert (p["description"], p["packageQty"], p["minimumQty"], p["maximumQty"]) == (None, None, None, None)
+
+
+def test_idle_rounding(out):
+    _build_idle([_idle("1", "A1", cost=12.3456, onOrder=Decimal("-1.004"), packageQty=Decimal("2.50"),
+                       minimumQty=Decimal("3.00"), maximumQty=7.777)])
+    p = _read(out, "jd_idle_1.json.gz")["parts"][0]
+    assert (p["cost"], p["onOrder"], p["packageQty"], p["minimumQty"], p["maximumQty"]) == (12.35, -1, 2.5, 3, 7.78)
+    assert type(p["minimumQty"]) is int and type(p["onOrder"]) is int
+
+
+def test_idle_negative_zero_on_order_is_zero(out):
+    _build_idle([_idle("1", "A1", onOrder=Decimal("-0.001"))])
+    p = _read(out, "jd_idle_1.json.gz")["parts"][0]
+    assert str(p["onOrder"]) == "0"
+
+
+@pytest.mark.parametrize("pos", [Decimal("1.00"), Decimal("0.001"), 3, 0.5])
+def test_idle_positive_on_order_fails_naming_the_part(out, pos):
+    # a positive on order makes the record active (L-D14), so Gold's active / idle split is wrong
+    with pytest.raises(ValueError, match=r"'7'.*'E63245 '.*onOrder.*active"):
+        _build_idle([_idle("1", "A1"), _idle("7", "E63245 ", onOrder=pos)])
+    assert not out.exists() or not os.listdir(out)
+
+
+@pytest.mark.parametrize("key", ["cost", "onOrder"])
+def test_idle_null_never_null_number_fails(out, key):
+    with pytest.raises(ValueError, match=key):
+        _build_idle([_idle("1", "A1", **{key: None})])
+
+
+@pytest.mark.parametrize("key", ["cost", "onOrder", "packageQty", "maximumQty"])
+@pytest.mark.parametrize("bad", [float("nan"), float("-inf"), Decimal("NaN"), Decimal("-Infinity"), "-1", True])
+def test_idle_non_finite_or_non_number_fails(out, key, bad):
+    with pytest.raises(ValueError, match=key):
+        _build_idle([_idle("1", "A1", **{key: bad})])
+
+
+@pytest.mark.parametrize("key", sorted(JD_IDLE_FIELDS))
+def test_idle_row_missing_field_fails(out, key):
+    row = _idle("1", "A1")
+    del row[key]
+    with pytest.raises(ValueError, match=key):
+        _build_idle([row])
+
+
+def test_idle_twins_allowed_and_sorted_by_trimmed_part_then_raw(out):
+    _build_idle([_idle("8", "E63245 ", cost=1), _idle("8", "B2"), _idle("8", "E63245", cost=2), _idle("8", " A9"),
+                 _idle("8", "E6324")])
+    parts = _read(out, "jd_idle_8.json.gz")["parts"]
+    assert [p["partNumber"] for p in parts] == ["A9", "B2", "E6324", "E63245", "E63245"]
+    assert [p["cost"] for p in parts[3:]] == [2, 1]
+
+
+def test_idle_deterministic_whatever_the_input_order(out):
+    h1, b1 = _build_idle()
+    h2, b2 = _build_idle(list(reversed(IDLE)))
+    assert h1 == h2 and b1 == b2
+
+
+def test_idle_branch_order_numeric_then_alpha(out):
+    _, idle_branches = _build_idle([_idle(b, "P") for b in ["4B", "93C", "10", "2", "15I", "97"]])
+    assert [b["branch"] for b in idle_branches] == ["2", "10", "97", "15I", "4B", "93C"]
+
+
+def test_idle_branch_key_collision_raises(out):
+    with pytest.raises(ValueError, match="both map to file key"):
+        _build_idle([_idle("1", "A"), _idle("1 ", "B")])
+
+
+@pytest.mark.parametrize("branch", ["../x", "", None, "1 2"])
+def test_idle_unsafe_branch_raises(out, branch):
+    with pytest.raises(ValueError):
+        _build_idle([_idle(branch, "A")])
+
+
+def test_idle_file_over_the_upload_limit_fails_naming_the_branch(out, monkeypatch):
+    monkeypatch.setattr(build_files, "JD_FILE_LIMIT", 1000)
+    rows = [_idle("1", "A1")] + [_idle("92", f"P{i:05d}", description=f"part {i * 7919 % 10007}") for i in range(200)]
+    with pytest.raises(ValueError, match=r"jd_idle_92\.json\.gz .*bytes.*branch 92"):
+        _build_idle(rows)
+    assert not (out / "jd_idle_92.json.gz").exists()
+
+
+def test_idle_and_active_files_live_side_by_side(out):
+    # build() clears the folder's old outputs; build_jd and build_jd_idle run after it and add to them
+    hashes, _ = _build()
+    jd_hashes, _ = _build_jd()
+    idle_hashes, _ = _build_idle()
+    assert not set(jd_hashes) & set(idle_hashes)
+    assert sorted(os.listdir(out)) == sorted(set(hashes) | set(jd_hashes) | set(idle_hashes))
+
+
+def test_is_output_covers_idle_files():
+    assert build_files._is_output("jd_idle_4.json.gz") and build_files._is_output("jd_idle_93C.json.gz")
+
+
+def test_stale_idle_files_cleared_by_build(out):
+    _build_idle()
+    _build()
+    assert not [f for f in os.listdir(out) if f.startswith("jd_idle_")]
+
+
+def test_idle_build_into_another_folder(out, tmp_path):
+    dest = tmp_path / "local"
+    hashes, _ = build_files.build_jd_idle(IDLE, JD_NAMES, AS_OF, out_dir=str(dest))
+    assert sorted(os.listdir(dest)) == sorted(hashes)
+    assert not out.exists()
+
+
+def test_idle_empty_gives_no_files(out):
+    assert _build_idle([]) == ({}, [])
+
+
+def test_write_meta_has_jd_idle_branches(out):
+    _, branches = _build()
+    _, jd_branches = _build_jd()
+    _, idle_branches = _build_idle()
+    path = build_files.write_meta(AS_OF, AS_OF, "dev", branches, {"parts": 4, "jdParts": 4, "jdIdleParts": 4},
+                                  jd_branches=jd_branches, jd_idle_branches=idle_branches)
+    meta = json.loads(open(path, "rb").read())
+    assert meta["jdIdleBranches"] == idle_branches and meta["counts"]["jdIdleParts"] == 4
+    assert meta["jdBranches"] == jd_branches and meta["contractVersion"] == 7

@@ -47,7 +47,13 @@ JD_TEXT = ("partNumber", "description", "returnIndicator", "source", "slc", "sup
 JD_NUMBERS = ("cost", "onHand", "onOrder", "packageQty", "minimumQty", "maximumQty", "sales12", "salesPrev12")
 JD_NULLABLE = frozenset(("description", "packageQty", "minimumQty", "maximumQty"))
 JD_KEYS = JD_TEXT + JD_NUMBERS + ("corpDemands",)
-# A jd file must fit the simple upload (upload.SIMPLE_LIMIT, compressed bytes); the largest branch is ~0.5 MB.
+# jd_idle_<branch>.json.gz part fields (contract v7, extract.JD_IDLE_COLUMNS without branch): the jd fields without
+# the ones that are 0 by definition for an idle record (onHand, sales12, salesPrev12, corpDemands), written by the
+# same rules. onOrder is never null and never positive (a positive on order makes a record active, L-D14).
+JD_IDLE_NUMBERS = ("cost", "onOrder", "packageQty", "minimumQty", "maximumQty")
+JD_IDLE_KEYS = JD_TEXT + JD_IDLE_NUMBERS
+# A jd or jd_idle file must fit the simple upload (upload.SIMPLE_LIMIT, compressed bytes); the largest active
+# branch is ~0.5 MB, the largest idle branch ~1 MB.
 JD_FILE_LIMIT = 4 * 1024 * 1024
 _SAFE = re.compile(r"^[A-Za-z0-9_-]+$")
 
@@ -263,19 +269,18 @@ def _is_finite_number(v) -> bool:
     return v.is_finite() if isinstance(v, Decimal) else math.isfinite(v)
 
 
-def _jd_part(r: dict) -> dict:
-    """One jd file part (contract v6): every JD_KEYS field present; text trimmed; numbers finite, rounded to 2
-    decimals (whole values as integers, -0 as 0); only JD_NULLABLE fields may be null. Gold coalesces the others,
-    so a null there means Gold and the publish are out of step."""
-    where = f"JD row {r.get('branch')!r} {r.get('partNumber')!r}"
-    missing = [k for k in JD_KEYS if k not in r]
+def _jd_fields(r: dict, where: str, keys: tuple, numbers: tuple) -> dict:
+    """The text and number fields of a jd / jd_idle part: every key present; text trimmed; numbers finite, rounded
+    to 2 decimals (whole values as integers, -0 as 0); only JD_NULLABLE fields may be null. Gold coalesces the
+    others, so a null there means Gold and the publish are out of step."""
+    missing = [k for k in keys if k not in r]
     if missing:
         raise ValueError(f"{where} is missing field(s) {', '.join(missing)}")
     out = {}
     for k in JD_TEXT:
         v = r[k]
         out[k] = (None if k in JD_NULLABLE else "") if v is None else str(v).strip()
-    for k in JD_NUMBERS:
+    for k in numbers:
         v = r[k]
         if v is None and k in JD_NULLABLE:
             out[k] = None
@@ -284,11 +289,60 @@ def _jd_part(r: dict) -> dict:
                              f"(Gold and the publish are out of step)")
         else:
             out[k] = pl.clean_value(round(float(v), 2) + 0.0)
+    return out
+
+
+def _jd_part(r: dict) -> dict:
+    """One jd file part (contract v6): _jd_fields over JD_KEYS, plus corpDemands, a whole number."""
+    where = f"JD row {r.get('branch')!r} {r.get('partNumber')!r}"
+    out = _jd_fields(r, where, JD_KEYS, JD_NUMBERS)
     v = r["corpDemands"]
     if not _is_finite_number(v) or v != int(v):
         raise ValueError(f"{where}: corpDemands is {v!r}, not a whole number (Gold and the publish are out of step)")
     out["corpDemands"] = int(v)
     return out
+
+
+def _jd_idle_part(r: dict) -> dict:
+    """One jd_idle file part (contract v7): _jd_fields over JD_IDLE_KEYS (fields outside them, e.g. an onHand,
+    are not published). onOrder must be <= 0 as read (before rounding): a positive on order makes the record active
+    (L-D14), so Gold's active / idle split is wrong."""
+    where = f"JD idle row {r.get('branch')!r} {r.get('partNumber')!r}"
+    out = _jd_fields(r, where, JD_IDLE_KEYS, JD_IDLE_NUMBERS)
+    if r["onOrder"] > 0:
+        raise ValueError(f"{where}: onOrder is {r['onOrder']!r}; an idle record's on order is 0 or negative (a "
+                         f"positive one makes it active), so Gold's active / idle split is wrong")
+    return out
+
+
+def _branch_files(rows: list, names: dict, data_as_of: str, out_dir: str, prefix: str, part, what: str) -> tuple:
+    """build_jd / build_jd_idle: one <prefix><branch>.json.gz per branch, part(row) per row."""
+    out_dir = out_dir or OUT_DIR
+    by_branch, raw_of = defaultdict(list), {}
+    for r in rows:
+        raw = r.get("branch")
+        if raw is None:
+            raise ValueError(f"{what} row {r.get('partNumber')!r} has no branch")
+        key = branch_key(raw)
+        if raw_of.setdefault(key, raw) != raw:
+            raise ValueError(f"branch codes {raw_of[key]!r} and {raw!r} both map to file key {key!r}")
+        raw_pn = r.get("partNumber")
+        by_branch[key].append((part(r), "" if raw_pn is None else str(raw_pn)))
+
+    # Every row is checked before any file is written.
+    os.makedirs(out_dir, exist_ok=True)
+    hashes, keys = {}, sorted(by_branch, key=_branch_order)
+    for key in keys:
+        parts = [p for p, _ in sorted(by_branch[key], key=lambda t: (t[0]["partNumber"], t[1]))]
+        name = f"{prefix}{key}.json.gz"
+        data = _bytes({"branch": key, "dataAsOf": data_as_of, "parts": parts})
+        if len(data) > JD_FILE_LIMIT:
+            raise ValueError(f"{name} would be {len(data):,} bytes, over the {JD_FILE_LIMIT:,}-byte upload limit "
+                             f"(branch {key}, {len(parts):,} parts); add a chunked upload or split the file")
+        with open(os.path.join(out_dir, name), "wb") as f:
+            f.write(data)
+        hashes[name] = hashlib.sha256(data).hexdigest()
+    return hashes, [{"branch": b, "name": names.get(b, b), "parts": len(by_branch[b])} for b in keys]
 
 
 def build_jd(rows: list, names: dict, data_as_of: str, out_dir: str = None) -> tuple:
@@ -300,39 +354,25 @@ def build_jd(rows: list, names: dict, data_as_of: str, out_dir: str = None) -> t
     sorted by trimmed partNumber, then the raw value, so the bytes don't depend on the extract's order. A file
     over JD_FILE_LIMIT compressed bytes fails the build, naming the branch.
     Returns ({file name: sha256}, [{"branch", "name", "parts"}] for _meta.json jdBranches, sorted like branches)."""
-    out_dir = out_dir or OUT_DIR
-    os.makedirs(out_dir, exist_ok=True)
-    by_branch, raw_of = defaultdict(list), {}
-    for r in rows:
-        raw = r.get("branch")
-        if raw is None:
-            raise ValueError(f"JD row {r.get('partNumber')!r} has no branch")
-        key = branch_key(raw)
-        if raw_of.setdefault(key, raw) != raw:
-            raise ValueError(f"branch codes {raw_of[key]!r} and {raw!r} both map to file key {key!r}")
-        raw_pn = r.get("partNumber")
-        by_branch[key].append((_jd_part(r), "" if raw_pn is None else str(raw_pn)))
+    return _branch_files(rows, names, data_as_of, out_dir, "jd_", _jd_part, "JD")
 
-    hashes, keys = {}, sorted(by_branch, key=_branch_order)
-    for key in keys:
-        parts = [p for p, _ in sorted(by_branch[key], key=lambda t: (t[0]["partNumber"], t[1]))]
-        name = f"jd_{key}.json.gz"
-        data = _bytes({"branch": key, "dataAsOf": data_as_of, "parts": parts})
-        if len(data) > JD_FILE_LIMIT:
-            raise ValueError(f"{name} would be {len(data):,} bytes, over the {JD_FILE_LIMIT:,}-byte upload limit "
-                             f"(branch {key}, {len(parts):,} parts); add a chunked upload or split the file")
-        with open(os.path.join(out_dir, name), "wb") as f:
-            f.write(data)
-        hashes[name] = hashlib.sha256(data).hexdigest()
-    return hashes, [{"branch": b, "name": names.get(b, b), "parts": len(by_branch[b])} for b in keys]
+
+def build_jd_idle(rows: list, names: dict, data_as_of: str, out_dir: str = None) -> tuple:
+    """Write one jd_idle_<branch>.json.gz per branch with Fact_CorpParts_JD_Idle rows (contract v7, Plan M) into
+    out_dir, after build(), by build_jd's rules (every branch, no D6 check; twins kept; sorted; the same limit).
+    A positive onOrder fails the build, naming the part (Gold's active / idle split is wrong).
+    Returns ({file name: sha256}, [{"branch", "name", "parts"}] for _meta.json jdIdleBranches)."""
+    return _branch_files(rows, names, data_as_of, out_dir, "jd_idle_", _jd_idle_part, "JD idle")
 
 
 def write_meta(data_as_of: str, published_at: str, source: str, branches: list, counts: dict,
-               out_dir: str = None, *, jd_branches: list) -> str:
-    """_meta.json (plain JSON). jd_branches = build_jd's list (contract v6 jdBranches; counts carries jdParts)."""
+               out_dir: str = None, *, jd_branches: list, jd_idle_branches: list) -> str:
+    """_meta.json (plain JSON). jd_branches = build_jd's list (contract v6 jdBranches; counts carries jdParts);
+    jd_idle_branches = build_jd_idle's list (contract v7 jdIdleBranches; counts carries jdIdleParts)."""
     path = os.path.join(out_dir or OUT_DIR, pl.META_FILE)
     with open(path, "wb") as f:
         f.write(_bytes({"dataAsOf": data_as_of, "publishedAt": published_at, "source": source,
                         "branches": branches, "counts": counts, "schemaVersion": 1,
-                        "contractVersion": pl.CONTRACT_VERSION, "jdBranches": jd_branches}, compress=False))
+                        "contractVersion": pl.CONTRACT_VERSION, "jdBranches": jd_branches,
+                        "jdIdleBranches": jd_idle_branches}, compress=False))
     return path
