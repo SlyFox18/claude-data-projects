@@ -4,6 +4,12 @@
 > review after each (Brian's standing choice). Steps use checkbox (`- [ ]`) syntax.
 
 > **Progress:** plan written 2026-11-03 (Claude, for Brian). Spec approved 2026-11-03.
+> - **L1 done 2026-11-03** (fabric-workspace-docs `278c4fbe`; dag_check OK, 364 tests): `df_CommodityCodeGroups_Raw`
+>   (DP - Staging - Dev, item `4497e578…`) → DP_Staging `CommodityCodeGroups`, daily, no de-dup (Gold checks codes are
+>   unique); DP_Presentation shortcut via Git sync (the usual DP_Presentation "changed on both sides" conflict, resolved
+>   by Accept incoming; workspace-only changes untouched). Direct refresh and Dev pipeline `b81647f7` (items mode)
+>   Completed. DuckDB: 244 codes, 17 groups, unique, trimmed, identical to the reference CSV (staging and shortcut).
+>   Prod: run the dataflow, then `sync_shortcuts.py --apply` (dry run: would create CommodityCodeGroups).
 > - **L0 done 2026-11-03:** NonJD_InventoryReports `bc73e59b-29c5-43d9-93ed-92849e0986bc` created by Brian and checked
 >   (Description, Conditions plain multi-line; Active default Yes; Archived default No). `.env` line
 >   `VITE_LIST_INVENTORY_REPORTS` given to Brian.
