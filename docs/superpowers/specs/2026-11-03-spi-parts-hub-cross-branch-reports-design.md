@@ -51,9 +51,10 @@ no demand), hence M-D3.
   at a branch other than the row's own.
 - **Other branches with demand:** how many of those rows have Corp demands ≥ 1.
 
-A report without list 2 can't use the pool fields (the editor shows the card once one is used). Trailing-space twin
-rows at one branch both count (as the workbook's GROUP BY on the stored part number does): checked in the Excel
-comparison.
+A report without list 2 can't use the pool fields (the editor shows the card once one is used). Each other branch
+counts once: trailing-space twin rows at one branch carry the same Corp demands (counted on the trimmed part number)
+and SQL Anywhere groups them as one row, so a branch adds its demands once and counts as one branch (corrected
+2026-11-03; no twins in today's lists).
 
 **Any-of groups:** a condition can be a group whose lines need only one to match (one level; no groups in groups),
 in either list.
