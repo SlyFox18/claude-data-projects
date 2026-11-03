@@ -548,17 +548,28 @@ def test_border_counts_only_other_passing_rows_outside_2_and_4():
     assert len(rows) == 1
 
 
-def test_border_own_branch_not_counted_and_twins_both_count():
+def test_border_own_branch_not_counted_and_twins_count_once():
     con = _con()
     _jd(con, "P", "95", demands=1)
     _jd(con, "P ", "95")                            # own branch's twin (shares the trimmed part's 1 demand)
     _pool(con, "P", [2, 2, 2, 2])                   # 8 at 4 branches (10..13)
     _jd(con, "P ", "14")                            # twin at branch 14 ...
-    _jd(con, "P", "14", demands=1)                  # ... both rows carry branch 14's 1 demand
+    _jd(con, "P", "14", demands=4)                  # ... both rows carry branch 14's 4 demands (trimmed part)
     _, rows = _report(con, "border")
-    # both 95 rows are candidates; neither counts the other (same branch); branch 14 adds 1 + 1 at 2 rows
+    # both 95 rows are candidates; neither counts the other (same branch); branch 14 counts once: +4 and +1
     assert [(r["Branch"], r["PartNumber"], r["OtherBranchDemands"], r["OtherLocationCount"]) for r in rows] == \
-        [("95", "P", 10, 6), ("95", "P", 10, 6)]
+        [("95", "P", 12, 5), ("95", "P", 12, 5)]
+
+
+def test_border_twin_branch_counts_once_when_only_one_twin_passes():
+    con = _con()
+    _jd(con, "P", "95", demands=1)
+    _pool(con, "P", [2, 2, 2, 2])                   # 8 at 4 branches (10..13)
+    _jd(con, "P", "14", demands=4)                  # passes
+    _jd(con, "P ", "14", pkg="2")                   # its twin fails a part filter: the branch still counts once
+    by, _ = _report(con, "border")
+    r = by[("95", "P")]
+    assert (r["OtherBranchDemands"], r["OtherLocationCount"]) == (12, 5)
 
 
 def test_border_thresholds_at_their_edges():

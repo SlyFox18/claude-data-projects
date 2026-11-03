@@ -33,10 +33,12 @@ Plan M (docs/superpowers/plans/2026-11-03-spi-parts-hub-cross-branch-reports.md,
 - Border Stores and 2 & 4 Cotton, from the workbook code (projects/corp parts excel reports/Border Stores/ and
   2 & 4 Cotton & Stripper Parts/), over the reference's active + idle rows (jd_all). The six part filters =
   COALESCE(OnOrder, 0) = 0, PackageQty = 1, ReturnIndicator R, Source not AN, SLC not 21/90/91/99..., SuperTo
-  blank. Pool = rows at branches other than 2 and 4 passing the six filters (2 & 4 Cotton: and the cotton rule).
-  A candidate's OtherBranchDemands = the sum of CorpDemands over pool rows with the same upper(trim(PartNumber)) at
-  a branch other than its own (trimmed, upper); OtherLocationCount = how many of those rows have CorpDemands >= 1
-  (trailing-space twins at one branch both count). Border Stores candidates: branch 95, 91 or 96, CorpDemands >= 1,
+  blank. Pool = one entry per (upper(trim(PartNumber)), upper(trim(Branch))) at branches other than 2 and 4 where
+  any of its rows passes the six filters (2 & 4 Cotton: and the cotton rule), demand = MAX(CorpDemands) over the
+  passing rows, so trailing-space twins at one branch count once (M-D8; Gold gives twins the trimmed part's demand,
+  and the workbook's SQL Anywhere GROUP BY sees one row per branch). A candidate's OtherBranchDemands = the sum of
+  those demands over the part's other branches; OtherLocationCount = how many of those branches have demand >= 1.
+  Border Stores candidates: branch 95, 91 or 96, CorpDemands >= 1,
   OnHand < 1, the six filters. 2 & 4 Cotton: branch 2 or 4, CorpDemands = 0, OnHand < 1, the six filters, the
   cotton rule. Both: OtherBranchDemands >= 10 and OtherLocationCount >= 5. Cotton rule = own DealerGroupCode
   (trimmed, upper) COTTON / STRIPPER / PICKER, or any franchise D record of the part (active or idle, any branch)
@@ -257,7 +259,9 @@ def report_rows(con, name: str, source: str = "jd_all") -> list:
                    (dg IN ({_in_list(COTTON_GROUPS)}) OR k IN (SELECT k FROM model)) AS cotton
             FROM r
         ), pool AS (
-            SELECT b, k, CorpDemands FROM f WHERE ok AND b NOT IN ({_in_list(POOL_EXCLUDED_BRANCHES)}){cotton}
+            SELECT b, k, max(CorpDemands) AS CorpDemands FROM f
+            WHERE ok AND b NOT IN ({_in_list(POOL_EXCLUDED_BRANCHES)}){cotton}
+            GROUP BY b, k
         ), cand AS (
             SELECT * FROM f
             WHERE ok AND b IN ({_in_list(rep['branches'])}) AND {rep['demand']} AND OnHand < 1{cotton}
