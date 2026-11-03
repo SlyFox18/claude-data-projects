@@ -4,6 +4,16 @@
 > review after each (Brian's standing choice). Steps use checkbox (`- [ ]`) syntax.
 
 > **Progress:** plan written 2026-11-03 (Claude, for Brian). Spec approved 2026-11-03.
+> - **L2 done 2026-11-03** (fabric-workspace-docs `6e7e7dc4`; dag_check OK, hygiene 0, 364 tests): Part 5 of
+>   Build_Gold_NonJD_Reorder writes `Fact_CorpParts_JD` (guards: unique key, unique commodity codes, no stocking-rule
+>   fan-out). Bounds passed as text cast in the UTC session (Silver keeps Equip's Central wall clock); DemandAsOf =
+>   BuiltAtUtc as Central. Dev runs `23af3a3b` and `c69314c3` Completed: 254,213 rows at 27 branches both times;
+>   CorpDemands 752,132 → 752,100 = exactly the 32 invoices in the 17-minute slice the 18-month start moved over.
+>   MLPF Gaps (L-D19) **10,049** on Dev (Dev InTrans ends 2026-10-26). Fact_NonJD_* fingerprints unchanged.
+>   CommodityGroup "Other" on 67% of rows (19k blank codes; the rest codes not in Ben's 244-code CSV: same as the
+>   workbook; raise with Ben). Source never NULL among MLPF candidates. **Don't start Pipeline_DP_Refresh with
+>   `run_item.py`** (typed params → "Unable to convert mode to string", Dev run `51cb9afb`); send plain strings.
+>   Brian refreshed MLPF Gaps.xlsx at 09:41 (10,065 rows) for the Excel comparison.
 > - **L1 done 2026-11-03** (fabric-workspace-docs `278c4fbe`; dag_check OK, 364 tests): `df_CommodityCodeGroups_Raw`
 >   (DP - Staging - Dev, item `4497e578…`) → DP_Staging `CommodityCodeGroups`, daily, no de-dup (Gold checks codes are
 >   unique); DP_Presentation shortcut via Git sync (the usual DP_Presentation "changed on both sides" conflict, resolved
