@@ -53,6 +53,11 @@ Spark adds DOUBLE values in whatever order the data arrives, so 6817.63 can come
 An append-only snapshot must cast new rows to the existing table's column types before writing. Otherwise a type change in the source fails the append with `DELTA_FAILED_TO_MERGE_FIELDS`.
 > **Example:** Fact_Parts_Open_Orders_Snapshot: its source `Order_No` became BIGINT, but the history column is INT.
 
+## 6. Compare Equip codes case- and space-insensitively
+
+Spark text comparison is case- and trailing-space-sensitive; Equip/SQL isn't. Compare codes from Equip (franchise, branch, type) with `upper(trim())` on both sides. Keep the stored value in the output.
+> **Example:** Build_Silver_PartInformation joined InMaster to InManuf on Franchise as stored. 321 InMaster rows have franchise `'d'`, InManuf has `'D'`, so those parts lost their CommodityCode, PackageQty, Returnable and Weight (Plan L L2b, 2026-11-03).
+
 ## How to check
 
 After changing a notebook, run it twice on the same input, or run Prod and Dev back to back. Then run:
