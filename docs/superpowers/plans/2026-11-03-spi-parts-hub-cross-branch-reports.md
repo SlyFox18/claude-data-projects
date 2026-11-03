@@ -4,6 +4,17 @@
 > review after each (Brian's standing choice). Steps use checkbox (`- [ ]`) syntax.
 
 > **Progress:** plan written 2026-11-03 (Claude, for Brian). Spec approved 2026-11-03.
+> - **M4 done 2026-11-03** (app `7072324`, `ac8f218` idle on order; 1,913 + 831 tests, lint, tsc clean). Contract
+>   [3–7], `hasJdIdle`, `JdIdlePart` (with `onOrder`), `loadJdIdle`, mock v7 (`JD_IDLE_FIXTURES`, `idlePart()`,
+>   `asV6`, `jdIdleFailBranches`), `idleRow()`, `useJdIdleBranches(enabled)` ('off' requests nothing); the loader is
+>   shared in `src/state/branchFiles.ts` (`useJdBranches` unchanged, its tests untouched). Review: no Critical /
+>   Important; fixes in progress (no 'off' flash on enable, non-finite on order → 0, more tests).
+> - **M5 review fixes done** (app `c60221e`; 1,914 + 838 tests): a lone group's Remove leaves one condition; a
+>   one-line group offers "Make it a plain condition"; results-page and editor tests for groups. Evaluation keeps
+>   the existing semantics exactly (a missing field makes the row 'unknown' even after a failed condition); only
+>   comparisons that can't change the answer are skipped.
+> - **Decided (Brian, 2026-11-03):** keep "Data as of …" (the Gold build time) on the Inventory pages, although the
+>   Equip snapshot is JD's copy from the evening before; Brian explains if asked.
 > - **M5 done 2026-11-03** (app `189b3fe`; 1,877 + 831 tests, lint, tsc clean; no existing test changed). Naming:
 >   `Condition<F>` stays plain; `GroupCondition<F> = { anyOf }`, `ConditionItem<F>` for lists; `ConditionListEditor`,
 >   `GroupRowEditor` ("Any of these", Add line, Remove group). Review: no Critical / Important; minor fixes queued
