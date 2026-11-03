@@ -4,6 +4,12 @@
 > review after each (Brian's standing choice). Steps use checkbox (`- [ ]`) syntax.
 
 > **Progress:** plan written 2026-11-03 (Claude, for Brian). Spec approved 2026-11-03.
+> - **L10 + L11 done 2026-11-03** (app `632a85c` clickThrough0120, `a1f9303` wording: a copy's description starts
+>   "Based on <name>.", H1 "Copy report" / "New report" / "Edit report", the built-in's By column "—", Try it says
+>   "from the data as of …"; `46812b4` 0.12.0; 1,859 + 820 tests (one known returnDocumentReview timeout, passes
+>   alone), lint, tsc clean; built and pushed). dist: inventory reports list `bc73e59b…`, cleanup checks list and the
+>   site present; no mock strings; "Version 0.12.0 · commit 46812b4". Try-it notes `for-users/0.12.0-try-it.md`.
+>   Next: Brian's try-it on mock, then L12.
 > - **L9 done 2026-11-03** (app `aab88df` shared helpers from the Cleanup pages, `3bb5b7a` area + list, `47a0ed3`
 >   results + JD part panel, `bc23017` editor, `82464b8` CSV headers, `f59c151` review fixes; 1,858 + 820 tests, lint,
 >   tsc clean; pushed). Review of L8 + L9: no Critical, no Cleanup regression. Fixed: CSV part number / branch exactly
