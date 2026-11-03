@@ -4,6 +4,15 @@
 > review after each (Brian's standing choice). Steps use checkbox (`- [ ]`) syntax.
 
 > **Progress:** plan written 2026-11-03 (Claude, for Brian). Spec approved 2026-11-03.
+> - **L6 + L7 done 2026-11-03** (app `09a2665` L6, `05de58b` L7, review fixes `94606ec`; 1,830 + 780 tests, lint,
+>   tsc clean; pushed). `src/cleanup/catalogue.ts` (`Catalogue`, `makeCatalogue`; field props `blankText`, `choices`,
+>   `digits`, `hint`; hooks `storedText`, `textProblem`, `shownText`); the engine names no fields; existing Cleanup
+>   assertions untouched. Overloads: the catalogue may be omitted only for Cleanup (`@ts-expect-error` tests enforce
+>   it); ConditionRowEditor props are a union. `startsWith` / `notStartsWith` on every text field **except Vendor**
+>   (no leading zeros in the data); a "(none)" prefix says "A prefix can't be (none)."; lists read comma-joined
+>   ("SLC doesn't start with 21, 90, 91, 99"). `src/inventory/fields.ts` (`JD_CATALOGUE`, 19 fields),
+>   `src/inventory/builtIns.ts` (`MLPF_GAPS`, `MLPF_COLUMNS` for the built-in; `copyColumns()` for copies). Two
+>   unrelated page tests (returnDocumentReview, wording) timed out once under load.
 > - **L5 done 2026-11-03** (app `c6b231e`, review fixes `b610e90`; 1,804 + 779 tests, lint, tsc clean; pushed).
 >   Contract [3–6], `hasJdParts`, `JdPart` / `JdFile`, `loadJd` (envelope checked), mock v6 with jdBranches 1, 2, 12
 >   and `JD_FIXTURES` (JD-MLPF-OK + one-fail-each, B12 at 12; `asV5`; `jdFailBranches`). Cache rules moved to
