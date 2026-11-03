@@ -4,6 +4,14 @@
 > review after each (Brian's standing choice). Steps use checkbox (`- [ ]`) syntax.
 
 > **Progress:** plan written 2026-11-03 (Claude, for Brian). Spec approved 2026-11-03.
+> - **M8 done 2026-11-03** (app `176e16c` list + results through `compileReport`, `45dd385` editor; 1,990 + 860
+>   tests, lint, tsc clean). Three built-ins listed and routed (`/inventory/<id>`), CSV headers / file stems from the
+>   built-in, idle files only when `needsIdle`, v6 message "Parts with no activity aren't in today's data yet.";
+>   editor cards "Rows to show", "Count other branches where" (Add / Remove; a new pool starts with "Corp demands ≥ 1"),
+>   "Parts with no activity" switch, pool fields only with a pool. Review of M7 + M8: no Critical; built-ins match the
+>   workbook code. Fixes in progress: the list page no longer loads idle files by itself (a **Count** button); `-partial`
+>   for cross-branch reports whenever any branch is missing; indexes cached across mounts per publish; focus and
+>   accessibility in the pool card; more Cotton tests.
 > - **M7 done 2026-11-03** (app `1f5f01a`; 1,990 + 838 tests): `PART_FILTERS` shared by all three built-ins (MLPF
 >   Gaps unchanged), `BORDER_STORES`, `COTTON_2_4` (`COTTON_GROUP`), `BUILT_INS` / `builtInById` with columns, CSV
 >   headers, file stem. Mock: 7 new active branches (7, 14, 91, 93, 94, 95, 96); Border passes `95/JD-BS-OK` (10 / 5),
