@@ -4,6 +4,13 @@
 > review after each (Brian's standing choice). Steps use checkbox (`- [ ]`) syntax.
 
 > **Progress:** plan written 2026-11-03 (Claude, for Brian). Spec approved 2026-11-03.
+> - **M7 done 2026-11-03** (app `1f5f01a`; 1,990 + 838 tests): `PART_FILTERS` shared by all three built-ins (MLPF
+>   Gaps unchanged), `BORDER_STORES`, `COTTON_2_4` (`COTTON_GROUP`), `BUILT_INS` / `builtInById` with columns, CSV
+>   headers, file stem. Mock: 7 new active branches (7, 14, 91, 93, 94, 95, 96); Border passes `95/JD-BS-OK` (10 / 5),
+>   Cotton `2/JD-CT-770` and `4/JD-CT-OK`; each fail case fails only its own condition. M8 (pages) in progress.
+> - **Evening workbook refreshes for the Excel gate (Brian, 2026-11-03 ~17:00):** Border Stores 17:01 (1,575 rows),
+>   2 & 4 Cotton 16:59 (248 rows), copied to the scratchpad `border/evening/`. Compare them with **Prod Silver of
+>   2026-11-04** (= Equip as of ~18:42 on 11-03, after the stores closed) using `--as-of '2026-11-03 17:00:00'`.
 > - **M6 done 2026-11-03** (app `09222ef`, `f9a4d08` each other branch counts once; 1,967 + 838 tests, lint, tsc
 >   clean; reference check matched in data-projects `9d36d18a`, Dev Border 1,562 / Cotton 250 unchanged).
 >   `src/inventory/report.ts`: `InventoryReportDef` (conditions, pool, includeIdle), `parseReportDef` /
