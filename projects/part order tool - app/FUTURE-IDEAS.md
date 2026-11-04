@@ -5,14 +5,14 @@ Brian, on 2026-10-28. Each entry gives the idea as described, what already exist
 open questions to settle before it is designed. Nothing here is scheduled; pick from this list when planning the
 next round.
 
-Round 2 is complete (0.7.0, phase 4 One-Time transfers). F2 is done in 0.8.0 (2026-10-30), F6 in 0.9.0, F8 in 0.10.0 and F1 in 0.11.0 (all 2026-11-02), and F4's first report in 0.12.0 (2026-11-03).
+Round 2 is complete (0.7.0, phase 4 One-Time transfers). F2 is done in 0.8.0 (2026-10-30), F6 in 0.9.0, F8 in 0.10.0 and F1 in 0.11.0 (all 2026-11-02), F4's first report in 0.12.0 (2026-11-03), and Border Stores and 2 & 4 Cotton in 0.13.0 (2026-11-04).
 
 | # | Idea | Rough size | Needs a design pass |
 |---|---|---|---|
 | F1 | More Cleanup checks | **Done in 0.11.0** | No |
 | F2 | A landing page above the tools ("parts hub") | **Done in 0.8.0** | No |
 | F3 | Specials and promotions | Medium-large | **Yes** |
-| F4 | Inventory management (the Corp Parts Excel Reports) | **MLPF Gaps done in 0.12.0**; the other workbooks next | No (one release per workbook) |
+| F4 | Inventory management (the Corp Parts Excel Reports) | **MLPF Gaps (0.12.0), Border Stores and 2 & 4 Cotton (0.13.0) done**; Corporate Stocking next | No (one release per workbook) |
 | F5 | Scheduled reminders | Medium | Yes (with F3) |
 | F6 | One-Time returns and scrap | **Done in 0.9.0** | No |
 | F7 | Warn before losing ticked parts on Recommended Reorder | **Done in 0.5.0** | No |
@@ -97,8 +97,16 @@ difference explained. Spec `docs/superpowers/specs/2026-11-03-spi-parts-hub-inve
 `docs/superpowers/plans/2026-11-03-spi-parts-hub-inventory-reports.md` (decisions L-D9–L-D22), user guide section 10,
 `INVENTORY-REPORTS.md`.
 
-**Next reports**, each a small release with its own Excel comparison: **Border Stores** and **2 & 4 Cotton**, then
-**Corporate Stocking**, then **Pieces In Set**. Scrap and COTTON Trouble Parts are placed later.
+**Border Stores and 2 & 4 Cotton done in 0.13.0 (2026-11-04).** The engine learnt "other branches": a report's second
+list **Count other branches where** feeds two fields, Other-branch demands and Other branches with demand, so copies
+can change the branches compared and counted. Also "any of" groups (Cleanup too), "not one of", **Dealer group at any
+branch**, and **parts with no activity** (Gold `Fact_CorpParts_JD_Idle`, about 643,000 records, publish contract 7,
+loaded only by reports that need them). The Excel comparison matched Border Stores 1,573 of 1,575 and 2 & 4 Cotton
+248 of 248 (plus 1), every difference evening Equip activity except a lower-case part record, fixed. Spec
+`docs/superpowers/specs/2026-11-03-spi-parts-hub-cross-branch-reports-design.md`, plan
+`docs/superpowers/plans/2026-11-03-spi-parts-hub-cross-branch-reports.md`, user guide section 11.
+
+**Next reports**, each a small release with its own Excel comparison: **Corporate Stocking**, then **Pieces In Set**. Scrap and COTTON Trouble Parts are placed later.
 
 **Follow-ups:**
 - **A JD Part page:** today a report row opens a details panel (the Part page is non-JD only).

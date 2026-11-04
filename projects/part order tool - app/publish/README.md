@@ -62,6 +62,11 @@ What decides whether to publish:
   or unreadable ... deploy Plan M (Build_Gold_NonJD_Reorder Part 5, Fact_CorpParts_JD_Idle) before publishing v7"
   and writes nothing. Deploy app 0.13.0 first, and pull the v7 publish code on the Gateway PC only after Prod Gold
   has `Fact_CorpParts_JD_Idle`.
+- **Release timing (0.13.0, 2026-11-04):** a Prod `mode=items` run's Gold item finishes before the run's model
+  refreshes, and the scheduled publish (every 30 minutes until 10:15) can publish it with the **old** code before
+  anyone pulls. So pull the new publish code just before starting the items run (a scheduled run meanwhile still
+  sees the morning's run as already published, or fails safely against the old Gold), or pull afterwards and run
+  `run_publish.py --force`. Check the output's counts for the new files (e.g. `jdIdleParts`).
 - It refuses (exit 1) if a rule in `NonJD_OrderRules` or `NonJD_TransferRules` has a NaN or infinite number, naming
   the rule and the field, if Gold left a never-null round 2 reorder field null (see "Nulls"), or if a
   `Fact_NonJD_Purchases` row has a null or non-finite `Purchases12`, an excluded branch or a duplicate branch +

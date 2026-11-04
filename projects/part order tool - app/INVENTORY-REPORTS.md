@@ -1,9 +1,10 @@
 # Inventory reports: a guide for Ben
 
-This page explains the **Inventory management** area of SPI Parts Hub (app version 0.12.0, 2026-11-03): what the
-built-in **MLPF Gaps** checks and how each condition maps to the workbook, the Corp demand rule, the JD fields a copy
-can use, how fresh the data is, and how the app's list compared with MLPF Gaps.xlsx. Section 10 of the user guide
-covers the same ground job by job, with fewer details.
+This page explains the **Inventory management** area of SPI Parts Hub (app version 0.13.0, 2026-11-04): what the
+built-ins **MLPF Gaps**, **Border Stores** and **2 & 4 Cotton** check and how each condition maps to the workbook,
+the Corp demand rule, the JD fields a copy can use, how fresh the data is, and how the app's lists compared with the
+workbooks. Section 10 of the user guide
+covers the same ground job by job, with fewer details; section 11 covers Border Stores and 2 & 4 Cotton.
 
 Saved copies are kept in the SharePoint list **NonJD_InventoryReports** (one row per copy: name, description,
 conditions, Active, Archived; the author is SharePoint's Created By, "changed by" its Modified By). You work with them
@@ -72,7 +73,8 @@ at every branch (the **Corp demands** field):
   whenever it was made, even in the last week. An invoice **fully credited** back doesn't count; a partial return
   still counts as 1. A credit whose invoice is outside the window counts for nothing.
 - **Transfers never count**, nor purchases, receipts or adjustments.
-- Part numbers and invoice numbers are compared without trailing spaces.
+- Part numbers and invoice numbers are compared without trailing spaces, and part numbers with capitals ignored
+  (since 2026-11-04: a few part records are stored lower-case in Equip; see the 0.13.0 comparison).
 
 Example: a part sold on two invoices in the last year, one of them later credited in full, has 1 Corp demand.
 
@@ -159,11 +161,91 @@ from the same file, **CommodityCodeGroups.csv** on the Report Site (244 codes in
 To give more parts a group, add their codes to CommodityCodeGroups.csv. The app picks it up the next morning, and the
 workbook on its next refresh.
 
+## Border Stores and 2 & 4 Cotton (0.13.0, 2026-11-04)
+
+Both workbooks compare a part at one branch with **the same part at the other branches**. The app does it with two
+new fields, worked out per row from the report's second list of conditions, **Count other branches where**:
+
+- **Other-branch demands:** the sum of Corp demands over the part's rows (same part number, trimmed, capitals
+  ignored) that pass the list, at branches other than the row's own. The workbooks' `OtherBranchDemands`.
+- **Other branches with demand:** how many of those branches have Corp demands ≥ 1. The workbooks' `OtherLocationCount`.
+- **Each other branch counts once:** a part stored twice at one branch (a trailing-space twin) adds its demands once,
+  as SQL Anywhere groups them.
+
+A report without the second list can't use the two fields. Both are columns after Corp demands, in the details panel,
+and in the CSV as `OtherBranchDemands`, `OtherLocationCount`.
+
+**The queries' code is the rule, not their header notes**, which are stale after several revisions (the notes say
+Border Stores candidates are 7, 14, 95, 91, 96 with fewer than 3 demands; the code says 95, 91, 96 with at least 1).
+
+| | Border Stores | 2 & 4 Cotton |
+|---|---|---|
+| **Rows to show** | Branch one of 95, 91, 96 · Corp demands ≥ 1 · Other-branch demands ≥ 10 · Other branches with demand ≥ 5 · On hand < 1 · the six part rules¹ | Branch one of 2, 4 · Corp demands = 0 · the same two thresholds · On hand < 1 · the six part rules¹ · the cotton group² |
+| **Count other branches where** | Branch not one of 2, 4 · the six part rules¹ | Branch not one of 2, 4 · the six part rules¹ · the cotton group² |
+| **Include parts with no activity** | off | on |
+| **Prod, 2026-11-04** | 1,576 parts | 251 parts |
+
+¹ On order = 0, Package qty = 1, Return indicator is R, Source is not AN, SLC doesn't start with 21, 90, 91, 99,
+Super To is blank (as MLPF Gaps).
+² **Any of** (Dealer group one of COTTON, STRIPPER, PICKER; Dealer group at any branch one of 690, 770, CS690,
+JDCS690): the row's own dealer group is a cotton one, or the part number is coded as a cotton model at any branch.
+
+**Columns:** the 12 MLPF columns, then Other-branch demands and Other branches with demand. Sorted by part number,
+then branch.
+
+### Parts with no activity
+
+2 & 4 Cotton needs parts **2 and 4 carry but have never stocked or sold**: on 2026-11-03, 234 of the workbook's 248
+rows. Those records are not in the active parts, so the morning data now also carries every other franchise D record
+(Gold `Fact_CorpParts_JD_Idle`: nothing on hand, on order 0 or less, no sales in 24 months, no Corp demand; about
+643,000 records at 40 branches, 11 MB compressed). The app loads them only for a report that needs them:
+
+- **Include parts with no activity** (a report switch, on in 2 & 4 Cotton): the report runs over the active and
+  the idle records. On the list such a report shows **Count (loads more data)** instead of a count.
+- **Dealer group at any branch** (a field) always reads both, so a report using it loads them too.
+- MLPF Gaps, Border Stores and 0.12.0 copies never load them.
+
+### Copies: other branches, "any of" groups, new fields
+
+- **Copy as my own** on either report gives the editor two lists: **Rows to show** (which branch rows are listed) and
+  **Count other branches where** (which rows at other branches count). To compare different branches, change the
+  Branch condition in Rows to show; to change which branches are counted, change the second list.
+- **"Any of" groups:** a box **Any of these** in either list, 2 to 10 lines, passing when at least one line does (one
+  level; no groups in groups). **Make it a plain condition** turns a one-line group back. Cleanup checks have them too.
+- **New fields:** Other-branch demands, Other branches with demand (numbers), Dealer group at any branch (text: one
+  of, not one of; trimmed, capitals ignored).
+- **New comparison:** **not one of**, on every text field except Vendor (Cleanup).
+- Stored as `{"v":2,"conditions":[…],"pool":[…],"includeIdle":true}` in the Conditions column; a report with no
+  second list and no switch is still stored as a plain list, so 0.12.0 copies are unchanged. **0.12.0 can't read a
+  report or check saved with groups, "not one of" or the new fields**, so 0.13.0 was deployed before anyone saved one.
+
+### Compared with the workbooks (2026-11-03 evening, 2026-11-04)
+
+Brian refreshed Border Stores.xlsx (17:01, 1,575 rows) and 2 & 4 Cotton & Stripper Parts.xlsx (16:59, 248 rows) on
+2026-11-03, after the stores closed. They were compared with the reference rules as of 17:00 over Prod data of
+2026-11-04, which is Equip as of about 19:00 on 11-03 (JD's evening copy):
+
+- **Border Stores:** 1,573 of 1,575 rows matched on every column; 2 only in the workbook, 0 only in the app, 8 rows
+  with different other-branch figures.
+- **2 & 4 Cotton:** all 248 rows matched; 1 only in the app, 6 rows with different other-branch figures.
+
+| Parts | Why |
+|---|---|
+| AM135526, AUC20589, AUC20590, R54027 (at 95 or 91), R55202 (96, so it drops below 10) | An order placed at another branch (1 or 17) after 5 pm, so that branch's row fails On order = 0 and stops counting |
+| H161529, N374068 (2 & 4 Cotton) | The same, at branch 3 or 93 |
+| JD9313, R236582, R297109, RE558115, AN122420, AN123600 | A transfer received at another branch after 5 pm (17:08 to 17:58): its on order cleared, so that branch now counts |
+| AN277321 at 4 (only in the app) | Transferred from 4 to 2 at 16:48, while the workbook was refreshing |
+| **TCA24616 at 95 (only in the workbook)** | **A bug the comparison found:** branch 8's record is stored lower-case (`tca24616`) while its invoices aren't, and Corp demands matched part numbers case-sensitively, so branch 8 had 0 demands instead of 3. **Fixed** before release: part numbers are now compared with capitals ignored, as in Equip |
+
+After the release, on 2026-11-04: the reference check on Prod found 0 differences (250,911 active and 643,034 idle
+records), and the app's CSVs matched the reference exactly (Border Stores 1,576, 2 & 4 Cotton 251). A test copy of
+Border Stores for branches 7 and 14, with parts with no activity, found the same 1,027 parts as the reference.
+
 ## Coming next
 
-The other Corp Parts workbooks, each as its own small release with its own Excel comparison: **Border Stores** and
-**2 & 4 Cotton** first, then **Corporate Stocking**, then **Pieces In Set**. Each checks first whether it needs new
-fields.
+The other Corp Parts workbooks, each as its own small release with its own Excel comparison: **Corporate Stocking**
+(one row per part, "zero at every branch"; it builds on the other-branch fields and the parts with no activity),
+then **Pieces In Set**. Each checks first whether it needs new fields.
 
 Ideas for later (FUTURE-IDEAS F4): a JD Part page; actions from a report row (order, transfer, set a minimum); data
 during the day instead of once a morning.

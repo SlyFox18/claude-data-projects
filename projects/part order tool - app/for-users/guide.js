@@ -11,6 +11,11 @@
 // src/inventory/builtIns.ts, fields.ts, reportResults.ts) and ../INVENTORY-REPORTS.md. Counts are Prod of 2026-11-03
 // (v6 publish, 250,867 JD parts at 27 branches, data as of 19:42 UTC): MLPF Gaps 10,090. The copy example (Corp
 // demands ≥ 4) is Brian's real test "Test of MLPF Gaps", deleted.
+// Section 11 (Border Stores and 2 & 4 Cotton, 0.13.0) follows nonjd-order-app 0.13.0 (commit 1319ca9:
+// src/inventory/builtIns.ts, report.ts, fields.ts, src/pages/inventory/ReportEditorPage.tsx, src/pages/cleanup/
+// GroupRowEditor.tsx). Counts are Prod of 2026-11-04 (v7 publish, 250,911 active and 643,034 idle JD part records,
+// data as of 15:43 UTC): Border Stores 1,576, 2 & 4 Cotton 251, MLPF Gaps 10,135. The copy example (branch one of 7,
+// 14, parts with no activity on, 1,027 parts) is Brian's real test "Test 0.13.0", deleted.
 // Worked examples: Dev Gold Fact_NonJD_Reorder built 2026-10-26 (window Oct 2025 - Sep 2026); the transfer example
 // is the app's mock data (round numbers), as in REORDER-RULES.md. The Returns & scrap example (section 8) is Brian's Prod
 // test of 2026-11-02: rule "Scrap default" (All franchises, no sales 36 months, unit cost at least $0.10), 49 AM parts.
@@ -21,12 +26,12 @@ const w = (...fr) => fr.map((f) => Math.round(CONTENT_W * f));
 
 build(process.argv[2] || 'Non-JD Order Tool - User Guide.docx', {
   title: 'SPI Parts Hub: user guide',
-  subtitle: 'Formerly the Non-JD Parts Order Tool · For Ben, Shannon, Barry and Curt · Version 0.12.0 · November 3, 2026 (test version) · https://10.110.100.13:8443',
-  footer: 'SPI Parts Hub: user guide (version 0.12.0)',
+  subtitle: 'Formerly the Non-JD Parts Order Tool · For Ben, Shannon, Barry and Curt · Version 0.13.0 · November 4, 2026 (test version) · https://10.110.100.13:8443',
+  footer: 'SPI Parts Hub: user guide (version 0.13.0)',
   blocks: [
     { p: '**SPI Parts Hub** (until 0.8.0 the Non-JD Parts Order Tool) opens on a launch page where you pick what to work on: **Non-JD ordering**, **Cleanup**, **Returns & scrap**, **Part Lookup** or **Inventory management** today, with **JD ordering** to come. Most of this guide is about Non-JD ordering.' },
     { p: '**In one sentence:** Non-JD ordering shows each branch which non-John Deere parts to reorder and why, suggests stock other branches could send instead, lets you tune the rules behind those suggestions, and turns the parts you pick into an order file for each vendor.' },
-    { p: 'This guide covers getting in, what each page does, and exactly how every number is worked out. Version 0.8.0 includes Ben’s round 1 answers, several branches and dealer groups at once, **phase-in**, **transfer suggestions** and **saving transfers** in the app, with transfer orders and transfer rules, and **transfers on One-Time Orders** (round 2, from Ben’s answers of October 27), the **launch page** in front of it all (0.8.0), **returns and scrap** (0.9.0, section 8), **One-Time templates** (0.10.0, section 9), **Cleanup checks** (0.11.0, section 7), and **Inventory reports** (0.12.0, section 10). What changed in each version is in the **walkthrough**, Part 2.' },
+    { p: 'This guide covers getting in, what each page does, and exactly how every number is worked out. Version 0.8.0 includes Ben’s round 1 answers, several branches and dealer groups at once, **phase-in**, **transfer suggestions** and **saving transfers** in the app, with transfer orders and transfer rules, and **transfers on One-Time Orders** (round 2, from Ben’s answers of October 27), the **launch page** in front of it all (0.8.0), **returns and scrap** (0.9.0, section 8), **One-Time templates** (0.10.0, section 9), **Cleanup checks** (0.11.0, section 7), **Inventory reports** (0.12.0, section 10), and **Border Stores** and **2 & 4 Cotton** (0.13.0, section 11). What changed in each version is in the **walkthrough**, Part 2.' },
 
     { h1: '1. Getting started' },
     { steps: [
@@ -48,7 +53,7 @@ build(process.argv[2] || 'Non-JD Order Tool - User Guide.docx', {
       '**Cleanup:** checks that list parts to fix in Equip (0.11.0, section 7). The card counts only the minimums with no demand at the picked branch, for example “21 minimums with no demand at Branch 1” (the same count as **Minimums with no demand** filtered to that branch).',
       '**Returns & scrap** (0.9.0): vendor returns and scrap lists, for example “1 open return · 2 open scrap lists” (section 8).',
       '**Part Lookup:** any part’s stock, prices, history and settings.',
-      '**Inventory management** (0.12.0): the Corp Parts reports over the JD parts, starting with **MLPF Gaps** (section 10). Its card shows no count.',
+      '**Inventory management** (0.12.0): the Corp Parts reports over the JD parts, with **MLPF Gaps**, **Border Stores** and **2 & 4 Cotton** (sections 10 and 11). Its card shows no count.',
       '**JD ordering** is greyed out with **Coming later**: it shows where the tool is heading and can’t be opened yet.',
     ] },
     { p: 'A count is left out when it is 0, while the data loads, or when the data can’t be read; the cards still work. Under the cards, **Other parts tools** links open **Parts Availability** and the **Parts reports** app in a new tab, next to **App Settings**.' },
@@ -230,7 +235,7 @@ build(process.argv[2] || 'Non-JD Order Tool - User Guide.docx', {
     { p: 'Its own area (0.9.0): **Returns**, **Scrap** and **Return & scrap rules**. Section 8 explains it job by job.' },
 
     { h2: 'Inventory management' },
-    { p: 'Its own area (0.12.0): open it from the launch page or the Area select; its menu item is **Reports**. **Inventory reports** lists the Corp Parts reports over the JD parts at every branch: the built-in **MLPF Gaps** and any copies people save. Open one to filter it, search it, sort it and export a CSV; **Copy as my own** makes a version you can change. Section 10 explains it job by job.' },
+    { p: 'Its own area (0.12.0): open it from the launch page or the Area select; its menu item is **Reports**. **Inventory reports** lists the Corp Parts reports over the JD parts at every branch: the built-ins **MLPF Gaps**, **Border Stores** and **2 & 4 Cotton**, and any copies people save. Open one to filter it, search it, sort it and export a CSV; **Copy as my own** makes a version you can change. Sections 10 and 11 explain it job by job.' },
 
     { h2: 'App Settings' },
     { p: 'Your own default branch and franchise (saved in your browser only). The launch page, Reorder, One-Time Order and Part Lookup open on them. Open it from the bottom of the left menu or from the launch page. **About** shows the version.' },
@@ -751,7 +756,53 @@ build(process.argv[2] || 'Non-JD Order Tool - User Guide.docx', {
     { p: 'The JD parts came with the morning data of November 3, 2026. If a morning’s data doesn’t carry them, the Inventory pages say “JD parts aren’t in today’s data yet. They arrive with the next publish.” and show nothing else. The rest of the app works as normal. If you see it after November 3, tell Brian.' },
     { p: 'If one branch’s parts don’t load, the page names it, for example “Branch 4 didn’t load; the count covers the rest.” (with the branch’s name), with **Try again**. The CSV is then named **-partial**.' },
 
-    { h1: '11. During the test' },
+    { h1: '11. Border Stores and 2 & 4 Cotton (0.13.0)' },
+    { p: 'Two more Corp Parts workbooks are now built-in reports: **Border Stores** and **2 & 4 Cotton** (the 2 & 4 Cotton & Stripper Parts workbook). Both compare a part at one branch with the **same part at the other branches**: a part is listed when other branches are selling it and this branch has none. Like MLPF Gaps, each uses its workbook’s rules and columns, so it lists the same parts on the same morning.' },
+    { bullets: [
+      '**Other-branch demands:** the Corp demands of the same part at the other branches that count, added up. The row’s own branch is never one of them.',
+      '**Other branches with demand:** how many of those branches have at least 1 Corp demand for it.',
+      'Each branch counts once. Which branches count is the report’s **Count other branches where** list (below).',
+      'Both are columns after Corp demands, and in the part’s details panel. The CSV headings are the workbooks’: … Demands, **OtherBranchDemands**, **OtherLocationCount**.',
+    ] },
+
+    { h2: 'Border Stores' },
+    { p: 'The built-in: “Parts with at least 1 Corp demand at 95, 91 or 96 but nothing on hand there, that 5 or more other branches (not 2 or 4) are selling, 10 or more Corp demands between them; returnable, package qty 1, nothing on order, not superseded (the Border Stores workbook).” A part at a branch is listed when **all** of these are true:' },
+    { bullets: [
+      'The branch is **95, 91 or 96**, the part has **at least 1 Corp demand** there and **nothing on hand** (less than 1).',
+      '**Other-branch demands is 10 or more** and **Other branches with demand is 5 or more**.',
+      'The six part rules of MLPF Gaps: nothing on order, package qty 1, returnable (R), source not AN, SLC doesn’t start with 21, 90, 91 or 99, not superseded.',
+    ] },
+    { p: 'The other branches that count are every branch **except 2 and 4** (and the row’s own) where the part passes the same six part rules. On November 4, 2026 (Prod) it found **1,576** parts.' },
+
+    { h2: '2 & 4 Cotton' },
+    { p: 'The built-in: “Cotton, stripper and picker parts with no Corp demands and nothing on hand at 2 or 4 (parts with no activity too), that 5 or more other branches (not 2 or 4) are selling, 10 or more Corp demands between them; …”. It is Border Stores with three changes:' },
+    { bullets: [
+      'The branch is **2 or 4** and the part has **no Corp demands** there.',
+      'It must be a **cotton part**, both at the row’s branch and at the other branches that count: its dealer group is **COTTON**, **STRIPPER** or **PICKER**, **or** the part is coded **690**, **770**, **CS690** or **JDCS690** at any branch. So a part coded COMBINE at 2 but 770 at another branch counts.',
+      'It includes **parts with no activity** (below): most of its parts have never been stocked or sold at 2 or 4.',
+    ] },
+    { p: 'On November 4, 2026 (Prod) it found **251** parts. On the list it shows **Count (loads more data)** instead of a number; press it for the count. It loads the parts with no activity, about 11 MB the first time in a session.' },
+
+    { h2: 'Parts with no activity' },
+    { p: 'The reports normally run over the **active** JD parts (section 10). A JD part record with nothing on hand, nothing on order, no sales in 24 months and no Corp demand is a part **with no activity**: on November 4 there were about **643,000** of them. A report that needs them (2 & 4 Cotton, or a copy with **Include parts with no activity** on) loads them when you open it: “Loading the parts with no activity this report needs…”. MLPF Gaps and Border Stores never load them.' },
+
+    { h2: 'Changing the other branches in a copy' },
+    { p: '**Copy as my own** on Border Stores or 2 & 4 Cotton opens the editor with **two** lists of conditions:' },
+    { bullets: [
+      '**Rows to show** (“All conditions must match.”): which branch rows the report lists, as in section 10. To look at different branches, change the **Branch** condition here, for example to **one of 7, 14**. The two thresholds, **Other-branch demands ≥ 10** and **Other branches with demand ≥ 5**, are here too, right after Corp demands.',
+      '**Count other branches where:** “Optional. Which of the part’s rows at other branches count towards Other-branch demands and Other branches with demand. All conditions must match.” In the built-ins it starts **Branch not one of 2, 4**. Change it to leave more branches out, or to count only some.',
+      '**Include parts with no activity:** “Adds JD parts with no stock, orders, sales or demand (loads more data).” On in 2 & 4 Cotton.',
+    ] },
+    { p: 'Example: Brian’s test copy of Border Stores with **Branch one of 7, 14** and parts with no activity on found **1,027** parts on November 4.' },
+    { p: 'A report without **Count other branches where** can’t use the two other-branch fields; **Add ‘Count other branches where’** adds the list. Copies have three more fields: **Other-branch demands**, **Other branches with demand** and **Dealer group at any branch** (true when the part has one of the codes at any branch, active or not). Text fields also offer **not one of**: “Branch not one of 2, 4”.' },
+
+    { h3: '“Any of” groups' },
+    { p: '**Add ‘any of’ group** puts a box **Any of these** (“At least one line must match.”) in either list: the group passes when **one** of its lines does, where the rest of the list needs **all**. The cotton rule is one: any of (Dealer group one of COTTON, STRIPPER, PICKER; Dealer group at any branch one of 690, 770, CS690, JDCS690). A group has 2 to 10 lines; with one line left, **Make it a plain condition** turns it back into an ordinary condition. Cleanup checks (section 7) have the same button.' },
+
+    { h2: 'Compared with the workbooks (November 3 and 4, 2026)' },
+    { p: 'Brian refreshed both workbooks at about 5 pm on November 3, and they were compared with the app’s rules over the next morning’s data. **Border Stores:** 1,573 of 1,575 rows matched. **2 & 4 Cotton:** all 248 rows matched, plus 1 extra in the app. Every difference was an order placed or a transfer received at another branch after 5 pm, except one: a few part records are stored in Equip in lower case (for example tca24616 at branch 8), and the app missed their Corp demands. That was **fixed** before release.' },
+
+    { h1: '12. During the test' },
     { bullets: [
       'This is a test copy on a test server; the address and the certificate warning will change for the real version.',
       'Orders and settings you save are real (they go into the SharePoint lists), but nothing is sent to a vendor; you download the CSV and use it yourself.',

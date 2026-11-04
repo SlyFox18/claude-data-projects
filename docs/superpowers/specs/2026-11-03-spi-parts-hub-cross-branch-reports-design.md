@@ -1,7 +1,11 @@
 # SPI Parts Hub: cross-branch Inventory reports, Border Stores and 2 & 4 Cotton (design)
 
-> **Status:** design approved section by section by Brian, 2026-11-03 (brainstorm). Next: the implementation plan
-> (Plan M, app 0.13.0).
+> **Status:** design approved section by section by Brian, 2026-11-03 (brainstorm). Plan M, app 0.13.0.
+> **Progress:** **shipped 2026-11-04:** app 0.13.0 (commit `1319ca9`) on Fedora, Prod Gold `Fact_CorpParts_JD_Idle`,
+> the v7 publish (jdIdleParts 643,034), the Excel comparison (Border Stores 1,573 of 1,575, 2 & 4 Cotton 248 of 248
+> plus 1, every difference explained; it found case-sensitive part matching in Corp demands, fixed), the app's CSVs
+> equal to the reference (1,576 / 251), a real test copy checked and deleted, and the user docs (guide section 11,
+> walkthrough 0.13.0, `INVENTORY-REPORTS.md`); see `docs/superpowers/plans/2026-11-03-spi-parts-hub-cross-branch-reports.md`.
 > **Origin:** the Inventory reports spec `2026-11-03-spi-parts-hub-inventory-reports-design.md` ("Later"); the
 > workbooks `projects/corp parts excel reports/Border Stores/Border Stores.pq` and
 > `2 & 4 Cotton & Stripper Parts/2 & 4 Cotton & Stripper Parts.pq`.

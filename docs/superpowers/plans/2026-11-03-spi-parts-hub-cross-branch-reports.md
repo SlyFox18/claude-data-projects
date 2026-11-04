@@ -4,6 +4,25 @@
 > review after each (Brian's standing choice). Steps use checkbox (`- [ ]`) syntax.
 
 > **Progress:** plan written 2026-11-03 (Claude, for Brian). Spec approved 2026-11-03.
+> - **Shipped 2026-11-04: M11 and M12 done.**
+>   - **Excel gate** (Brian's 2026-11-03 refreshes at 16:59 / 17:01 against Prod Silver of 2026-11-04, `--as-of
+>     '2026-11-03 17:00:00'`): Border Stores 1,573 of 1,575 matched, 2 & 4 Cotton 248 of 248 plus 1 only in ours.
+>     Every difference was evening Equip activity at another branch (orders placed, transfers received after 17:00),
+>     except **95/TCA24616**: branch 8's record is lower-case `tca24616`. **Fixed:** Corp demands match part numbers
+>     trimmed and upper-case (fabric-workspace-docs `568a9f8b`; reference check `67480aa1`, new test). Dev run
+>     2026-11-04 08:29–08:47 Central, `corp_parts_check --tier dev` PASS (active 250,740, idle 643,107).
+>   - **Release:** PR #51 merged, Deploy DP backend, claim (Brian); dev fast-forwarded to `a2d3da1a`. App 0.13.0
+>     (`1319ca9`) on Fedora. Prod items run 09:37–09:49 Central; `corp_parts_check --tier prod` PASS (active
+>     250,911, idle 643,034, 0 differences; active + idle = all 893,945 franchise D records, disjoint).
+>     `nonjd_reorder_check --tier prod` was not run (repeated `az` token failures that day).
+>   - **Publish:** the Gold item finished before the 09:45 scheduled Gateway publish, which published it, so Brian
+>     re-ran `run_publish.py --force` after the pull: 111 files, jdParts 250,911, jdIdleParts 643,034 (v7).
+>   - **Real test:** the app's CSVs matched the reference exactly (Border Stores 1,576, 2 & 4 Cotton 251; MLPF Gaps
+>     count 10,135). TEST copy "Test 0.13.0" (Branch one of 7, 14, includeIdle on) stored in `{v:2,…}` form with the
+>     pool; its 1,027 rows matched the reference; deleted (InventoryReports list empty).
+>   - **Docs (M12):** user guide section 11, walkthrough 0.13.0 (Part 2 and Part 3), both .docx regenerated,
+>     `INVENTORY-REPORTS.md`, FUTURE-IDEAS F4, publish README, a 0.13.0 note in the Corp Parts CLAUDE.md (Brian
+>     commits it), memory. **Next for F4: Corporate Stocking.**
 > - **M8 review fixes done** (app `0153405`, `3c068d5`, `8140aa5`; 2,011 + 868 tests): the list makes no idle
 >   requests until **Count** (or the idle files are already cached for this publish); cross-branch reports are
 >   `-partial` when any branch is missing ("Some branches didn't load, so the other-branch figures may be short.");
@@ -80,8 +99,9 @@
 >   spaces, model codes on other franchises) change nothing today. Classified per part in the scratchpad
 >   `border/m2/classify_*.csv`. **Fix taken into M1/M3/M4:** idle records can have **negative on order** (2 today),
 >   so the idle table and files carry `OnOrder` and idle rows use it (not 0). **For M11:** Brian refreshes the
->   workbooks in the evening close to JD's copy (~18:45) for a cleaner comparison. Latent, not fixed: Corp demands
->   match part numbers trimmed but case-sensitive (30 D records have lower-case part numbers; none in today's lists).
+>   workbooks in the evening close to JD's copy (~18:45) for a cleaner comparison. Corp demands matched part numbers
+>   trimmed but case-sensitive (30 D records have lower-case part numbers): it mattered after all (95/TCA24616 in
+>   the M11 Excel gate) and was **fixed 2026-11-04** (upper-case match; see Shipped above).
 
 **Goal:** built-in **Border Stores** and **2 & 4 Cotton** Inventory reports that match the workbooks row for row, with
 copies that can change which branches are compared, left out or counted.
@@ -251,7 +271,7 @@ before the Gateway publishes v7; Prod Gold with the idle table before the Gatewa
 - [ ] typescript-reviewer over M4–M9; fixes; suites, lint, tsc; 0.13.0 in package.json / lock / README; `npm run
   build`; dist checks (list IDs, site, no mock strings, version + commit).
 
-### Task M11: Release (Brian's steps, one at a time)
+### Task M11: Release (Brian's steps, one at a time) (done 2026-11-04)
 
 1. fabric-workspace-docs PR dev → main; Brian merges, runs Deploy DP backend, then the claim (no new shortcuts).
 2. Brian deploys app 0.13.0 to Fedora (reads v6 and v7).
@@ -264,7 +284,7 @@ before the Gateway publishes v7; Prod Gold with the idle table before the Gatewa
 
 ### Task M12: Documents and progress
 
-- [ ] Guide section "Border Stores and 2 & 4 Cotton (0.13.0)", walkthrough 0.13.0, regenerate both .docx,
+- [x] Guide section "Border Stores and 2 & 4 Cotton (0.13.0)", walkthrough 0.13.0, regenerate both .docx,
   `INVENTORY-REPORTS.md` (the two reports, other branches, any-of groups, the no-activity switch, the Excel
   comparison), FUTURE-IDEAS, a note for the Corp Parts CLAUDE.md (Brian commits it), plan and spec Progress, memory.
 

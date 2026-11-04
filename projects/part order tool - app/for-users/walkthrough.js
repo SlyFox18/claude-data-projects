@@ -5,7 +5,7 @@
 // Examples are from Prod data of 2026-10-27 (Fact_NonJD_Reorder built 11:40 UTC); the 0.5.0 section's transfer and
 // phase-in examples are from Dev data of 2026-10-28 (Gold built 14:12 UTC), because Prod has no round 2 data until the
 // release. Re-check them against Prod after the first 0.5.0 publish. Refresh examples when a section is added.
-// Labels follow nonjd-order-app 0.12.0 and the user guide (guide.js). The 0.6.0 section's examples are Prod data of
+// Labels follow nonjd-order-app 0.13.0 and the user guide (guide.js). The 0.6.0 section's examples are Prod data of
 // 2026-10-28 (Gold built 18:08 UTC): MULTISEAL at 1 "Transfer 44 from 6", R134A "Redistribution 52 from 13".
 // The 0.7.0 section's example is Brian's Prod TEST of 2026-10-29 (Plan G task G7): One-Time Order "TEST 0.7.0",
 // branch 1, ET-3912-J (MM) 1 from branch 3, $32.00, saved then cancelled.
@@ -29,6 +29,11 @@
 // fields.ts and reportResults.ts). Counts are Prod of 2026-11-03 (v6 publish at 20:08 UTC, 250,867 JD parts at 27
 // branches, data as of 19:42 UTC): MLPF Gaps 10,090. Brian's real test copy "Test of MLPF Gaps" (Corp demands >= 4)
 // was switched off, archived and deleted; the steps have the reader make "TEST 0.12.0" and archive it.
+// The 0.13.0 section follows nonjd-order-app 0.13.0 (commit 1319ca9: src/inventory/builtIns.ts, report.ts,
+// src/pages/inventory/ReportEditorPage.tsx, src/pages/cleanup/GroupRowEditor.tsx). Counts are Prod of 2026-11-04
+// (v7 publish at 16:11 UTC, 250,911 active and 643,034 idle JD part records, data as of 15:43 UTC): Border Stores
+// 1,576, 2 & 4 Cotton 251, MLPF Gaps 10,135. Brian's real test copy "Test 0.13.0" (branch one of 7, 14, parts with
+// no activity on, 1,027 parts) was deleted; the steps have the reader make "TEST 0.13.0" and archive it.
 // Run: npm install, then node walkthrough.js [output file]
 const { build, CONTENT_W } = require('./lib');
 
@@ -43,8 +48,8 @@ const notes = { answer: 'Notes (anything different, slow or confusing):' };
 
 build(process.argv[2] || 'Non-JD Order Tool - Walkthrough.docx', {
   title: 'SPI Parts Hub: walkthrough',
-  subtitle: 'Formerly the Non-JD Parts Order Tool · Hands-on steps through every page · Version 0.12.0 · November 3, 2026 · App: https://10.110.100.13:8443',
-  footer: 'SPI Parts Hub: walkthrough (0.12.0)',
+  subtitle: 'Formerly the Non-JD Parts Order Tool · Hands-on steps through every page · Version 0.13.0 · November 4, 2026 · App: https://10.110.100.13:8443',
+  footer: 'SPI Parts Hub: walkthrough (0.13.0)',
   blocks: [
     { p: 'This is a hands-on tour of the tool. Each step says what to do and what you should see. Tick **OK** when it matches. When it doesn’t, or something is slow or confusing, write it in the notes box under that section and send it to Brian.' },
     { bullets: [
@@ -52,7 +57,7 @@ build(process.argv[2] || 'Non-JD Order Tool - Walkthrough.docx', {
       '**Part 2, what’s new,** has a short section for each version. When a new version comes out, only its section needs doing.',
       '**Part 3, release checks,** is for Brian when he puts a new version on the test server.',
     ] },
-    { note: 'The examples use the data of October 27 to November 3, 2026. The data is refreshed every morning, so your quantities and dollars will be a little different. Close is fine; what matters is that the steps behave as described.' },
+    { note: 'The examples use the data of October 27 to November 4, 2026. The data is refreshed every morning, so your quantities and dollars will be a little different. Close is fine; what matters is that the steps behave as described.' },
     { note: 'Practising is safe if you follow the steps: anything you change is undone in the next step. Practice orders stay as **drafts** named **TEST**. Don’t export or mark them placed. Orders are never deleted: archive the TEST ones when you are done (0.5.2). A practice **transfer** is different: while it is saved it holds the sending branch’s stock for everyone, so **cancel it** straight after the step that made it.' },
 
     { h1: 'Part 1: the tour' },
@@ -144,13 +149,39 @@ build(process.argv[2] || 'Non-JD Order Tool - Walkthrough.docx', {
     steps([
       ['In the left menu, change the **Area** select to **Cleanup**.', '**Cleanup checks**, with **Checks** the only item in the menu: the built-in checks **Minimums with no demand** and **Stock value with no quantity**, and any saved ones, each with a count over every branch (Part 2, 0.11.0).'],
       ['Click **Minimums with no demand**, then pick branch **6**.', 'The Equip minimums on parts with no demand and no sales, with **← Cleanup checks** at the top; branch 6 has about 1,000. The largest is about $21,000 (part 145019, module rim, minimum 65).'],
-      ['Change the **Area** select to **Inventory management**.', '**Inventory reports**, with **Reports** the only item in the menu: the built-in **MLPF Gaps** and any saved copies, each with a count over every JD branch (Part 2, 0.12.0).'],
-      ['Click **App Settings**.', 'Your default branch and franchise, and **About** with the version (**0.12.0**).'],
+      ['Change the **Area** select to **Inventory management**.', '**Inventory reports**, with **Reports** the only item in the menu: the built-ins **MLPF Gaps**, **Border Stores** and **2 & 4 Cotton** and any saved copies, each with a count over every JD branch (Part 2, 0.12.0 and 0.13.0).'],
+      ['Click **App Settings**.', 'Your default branch and franchise, and **About** with the version (**0.13.0**).'],
       ['Set your default branch, then open Recommended Reorder.', 'It opens on your default branch.'],
     ]),
     notes,
 
     { h1: 'Part 2: what’s new' },
+
+    { h2: 'Version 0.13.0 (November 4, 2026): Border Stores and 2 & 4 Cotton' },
+    { p: 'New since 0.12.0: two more Corp Parts workbooks as built-in reports, both comparing a part at one branch with the same part at the other branches. The user guide, section 11, explains them in full; this section opens both, makes a copy of Border Stores for other branches and tidies it away.' },
+    { bullets: [
+      '**Border Stores:** parts with a Corp demand at 95, 91 or 96 and nothing on hand there that 5 or more other branches (not 2 or 4) are selling, 10 or more Corp demands between them.',
+      '**2 & 4 Cotton:** cotton, stripper and picker parts at 2 and 4 with no Corp demands there, by the same test, including parts 2 and 4 carry but have never stocked or sold (**parts with no activity**).',
+      '**Two new columns**, **Other-branch demands** and **Other branches with demand**, the workbooks’ OtherBranchDemands and OtherLocationCount.',
+      '**Copies** can say which other branches count (**Count other branches where**), use **‘any of’ groups**, and include parts with no activity. Cleanup checks get ‘any of’ groups too.',
+    ] },
+    { note: 'Saving a copy is real: everyone sees it straight away. Name it **TEST 0.13.0**, and **archive it** at the end of these steps (Brian tidies up afterwards). The counts are from November 4 and change every morning; close is fine.' },
+    { h3: 'The two reports, then a copy for other branches' },
+    steps([
+      ['Open **Inventory management**. Wait for the loading line to finish.', 'Three built-ins marked **🔒 Built in**: **MLPF Gaps** (about **10,135** parts), **Border Stores** (about **1,576**) and **2 & 4 Cotton**, which shows a **Count (loads more data)** button instead of a number.'],
+      ['Click **Count** on 2 & 4 Cotton.', 'After a few seconds (it loads the parts with no activity, about 11 MB the first time), about **251** parts.'],
+      ['Open **Border Stores**.', 'Its conditions start “Branch is one of 95, 91, 96 and Corp demands ≥ 1 and Other-branch demands ≥ 10 and Other branches with demand ≥ 5 and On hand < 1 …”. The columns end **Corp demands**, **Other-branch demands**, **Other branches with demand**; every row is at 95, 91 or 96, with Other-branch demands 10 or more and Other branches with demand 5 or more.'],
+      ['Click a part number.', 'The details panel shows **Other-branch demands** and **Other branches with demand** with the other fields.'],
+      ['**Export CSV** and open it in Excel.', 'A file named like `Inventory-Border Stores-20261104.csv`; the last three headings are **Demands**, **OtherBranchDemands**, **OtherLocationCount**, as in Border Stores.xlsx.'],
+      ['Go back and open **2 & 4 Cotton**.', '“Loading the parts with no activity this report needs…” if they aren’t loaded yet, then its parts: every row at 2 or 4, with Corp demands **0**. Many have nothing at all on hand, on order or sold there.'],
+      ['Open **Border Stores** again and click **Copy as my own**. Name it **TEST 0.13.0**.', '**Copy report** with two condition cards: **Rows to show** (“All conditions must match.”) and **Count other branches where** (“Optional. Which of the part’s rows at other branches count …”), which starts “Branch not one of 2, 4” and the six part rules. Under them **Include parts with no activity**, off.'],
+      ['In **Rows to show**, change the Branch condition to **one of 7, 14**. Turn on **Include parts with no activity**.', '**Try it** updates after a moment with parts at 7 and 14 (about 1,000 on November 4).'],
+      ['Click **Add ‘any of’ group** in Rows to show.', 'A box **Any of these** (“At least one line must match.”) with two lines. Click **Remove** on one line: the box offers **Make it a plain condition**. Click **Remove group** to put the report back.'],
+      ['Click **Save report**.', '“Report saved.”: **TEST 0.13.0**, its rows only at 7 and 14, with the two other-branch columns.'],
+      ['Click **← Inventory reports**. On the TEST 0.13.0 row click **Switch off**, then **Switch off** again. Then **Archive**, then **Archive**.', 'The row greys with an **Off** tag, then leaves the list: “1 archived report is hidden.”'],
+    ]),
+    { p: '**Your opinion:** are **Rows to show** and **Count other branches where** easy to tell apart? Would you know which one to change to compare different branches? Does the Count button make sense?' },
+    notes,
 
     { h2: 'Version 0.12.0 (November 3, 2026): Inventory reports' },
     { p: 'New since 0.11.0, from Ben’s wish to bring the Corp Parts workbooks into the tool: the **Inventory management** area, starting with **MLPF Gaps**. The user guide, section 10, explains it in full; this section opens MLPF Gaps, makes a copy of your own and tidies it away.' },
@@ -496,6 +527,13 @@ build(process.argv[2] || 'Non-JD Order Tool - Walkthrough.docx', {
 
     { h1: 'Part 3: release checks (Brian)' },
     { p: 'Run these when a new version is deployed to the test server, after **Ctrl+F5** to load it.' },
+    { h3: '0.13.0' },
+    steps([
+      ['App Settings → **About**.', '**Version 0.13.0 · commit 1319ca9**.'],
+      ['After the backend deploy, the Prod items run and the Gateway publish: Inventory management, **Count** on 2 & 4 Cotton.', 'The Gateway PC published contract 7 (the parts with no activity): a count, not “Parts with no activity aren’t in today’s data yet”. (Done November 4: v7 publish with --force at 16:11 UTC, jdParts 250,911, jdIdleParts 643,034; `corp_parts_check.py --tier prod` PASS, 0 differences on both tables.)'],
+      ['Refresh Border Stores.xlsx and 2 & 4 Cotton & Stripper Parts.xlsx and compare them with the app’s lists.', 'Every difference is explained. (Done November 4 against Brian’s 5 pm refreshes of November 3: Border Stores 1,573 of 1,575 matched, 2 & 4 Cotton 248 of 248 plus 1; all evening orders or transfer receipts except 95/TCA24616, a lower-case part record, fixed. The app’s CSVs then matched the reference exactly: Border Stores 1,576, 2 & 4 Cotton 251.)'],
+      ['With Claude: a real test copy of Border Stores with other branches, then check SharePoint and delete the TEST row.', 'NonJD_InventoryReports holds the row with its two lists and the no-activity switch. (Done November 4: “Test 0.13.0”, branch one of 7, 14, parts with no activity on; stored correctly, its 1,027 parts matched the reference; deleted, list empty.)'],
+    ]),
     { h3: '0.12.0' },
     steps([
       ['App Settings → **About**.', '**Version 0.12.0 · commit 46812b4**.'],
