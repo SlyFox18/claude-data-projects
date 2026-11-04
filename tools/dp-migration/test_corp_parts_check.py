@@ -189,6 +189,15 @@ def test_lower_case_and_padded_franchise_type_branch_count():
     assert _demands(con, branch="4b") == 1
 
 
+def test_lower_case_part_record_gets_its_invoices_demands():
+    # SQL Anywhere compares case-insensitively: 'tca24616' at branch 8 has its invoices as 'TCA24616' (Prod 2026-11-04)
+    con = _con()
+    _part(con, "tca24616", branch="8")
+    _sale(con, "TCA24616", "A1", branch="8")
+    _sale(con, "TcA24616", "A2", branch="8")
+    assert _demands(con, pn="tca24616", branch="8") == 2
+
+
 def test_trailing_space_part_and_invoice_numbers_group_together():
     con = _con()
     _part(con, "P1")

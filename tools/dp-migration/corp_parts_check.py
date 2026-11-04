@@ -10,7 +10,8 @@ decisions L-D10..L-D14), taken from the workbook query projects/corp parts excel
 
 - Corp demand = one invoice for the Branch + part, net of its credits. Franchise D InTrans only (trimmed, upper).
   Invoices (Type 'I', Qty > 0) dated [now - 18 months, now - 7 days]; credits (Type 'C', Qty < 0) dated
-  [now - 18 months, now]. Grouped by upper(trim(Branch)), trim(PartNumber) and the invoice key (trim(RONumber) for
+  [now - 18 months, now]. Grouped by upper(trim(Branch)), upper(trim(PartNumber)) (SQL Anywhere compares
+  case-insensitively; a few part records are stored lower-case) and the invoice key (trim(RONumber) for
   'I', trim(OriginalInvoiceNo) for 'C'); an invoice counts when its net qty > 0 and it has an 'I' line.
   "now - 18 months" keeps the time of day; a day past the month's end becomes its last day (SQL Anywhere DATEADD).
 - "now" is Central wall clock, the way Equip stores TransDatetime: Silver holds that wall clock in a TIMESTAMPTZ
@@ -159,7 +160,7 @@ def build_expected(con, now: datetime) -> None:
     con.execute(f"""
         CREATE OR REPLACE TABLE corp_demands AS
         WITH tx AS (
-            SELECT upper(trim(Branch)) AS b, trim(PartNumber) AS p,
+            SELECT upper(trim(Branch)) AS b, upper(trim(PartNumber)) AS p,
                    CASE WHEN upper(trim(Type)) = 'I' THEN trim(RONumber) ELSE trim(OriginalInvoiceNo) END AS inv,
                    Qty, upper(trim(Type)) = 'I' AS is_inv
             FROM intrans
@@ -187,7 +188,7 @@ def build_expected(con, now: datetime) -> None:
                CAST(coalesce(cd.CorpDemands, 0) AS INTEGER) AS CorpDemands, {ACTIVE_SQL} AS Active
         FROM parts p
         LEFT JOIN rules r ON r.Branch = p.Branch AND r.Franchise = p.Franchise AND r.PartNumber = p.PartNumber
-        LEFT JOIN corp_demands cd ON cd.b = upper(trim(p.Branch)) AND cd.p = trim(p.PartNumber)
+        LEFT JOIN corp_demands cd ON cd.b = upper(trim(p.Branch)) AND cd.p = upper(trim(p.PartNumber))
         LEFT JOIN g ON g.cc = upper(trim(p.CommodityCode))
         WHERE upper(trim(p.Franchise)) = 'D'
     """)
@@ -434,14 +435,14 @@ def part_context(con, keys: list, now: datetime, tier: str = None) -> dict:
         return {}
     ws, ie, _ = window(now)
     con.execute("CREATE OR REPLACE TEMP TABLE ctx_keys (b VARCHAR, p VARCHAR)")
-    con.executemany("INSERT INTO ctx_keys VALUES (?, ?)", [[b.upper(), p] for b, p in keys])
-    out = {(b.upper(), p): {"CorpDemands": 0, "Rows": [], "Lines": [], "LastDTrans": None} for b, p in keys}
+    con.executemany("INSERT INTO ctx_keys VALUES (?, ?)", [[b.upper(), p.upper()] for b, p in keys])
+    out = {(b.upper(), p.upper()): {"CorpDemands": 0, "Rows": [], "Lines": [], "LastDTrans": None} for b, p in keys}
     for b, p, cd in con.execute("SELECT b, p, CorpDemands FROM corp_demands JOIN ctx_keys USING (b, p)").fetchall():
         out[(b, p)]["CorpDemands"] = cd
     for row in con.execute("""
             SELECT k.b, k.p, x.Franchise, x.PartNumber, x.QuantityOnHand, x.OnOrder, x.PackageQty, x.Returnable,
                    x.Source, x.SLC, x.SuperTo, x.Cost
-            FROM parts x JOIN ctx_keys k ON upper(trim(x.Branch)) = k.b AND trim(x.PartNumber) = k.p
+            FROM parts x JOIN ctx_keys k ON upper(trim(x.Branch)) = k.b AND upper(trim(x.PartNumber)) = k.p
             ORDER BY k.b, k.p, x.Franchise, x.PartNumber""").fetchall():
         b, p, fr, pn, oh, oo, pkg, ri, src, slc, sup, cost = row
         out[(b, p)]["Rows"].append(f"{fr!s}|{pn!r}|oh={oh}|oo={oo}|pkg={pkg!r}|ri={ri!r}|src={src!r}|slc={slc!r}"
@@ -449,7 +450,7 @@ def part_context(con, keys: list, now: datetime, tier: str = None) -> dict:
     for b, p, typ, qty, ts, inv in con.execute("""
             SELECT k.b, k.p, upper(trim(t.Type)), t.Qty, t.TransDatetime,
                    CASE WHEN upper(trim(t.Type)) = 'I' THEN trim(t.RONumber) ELSE trim(t.OriginalInvoiceNo) END
-            FROM intrans t JOIN ctx_keys k ON upper(trim(t.Branch)) = k.b AND trim(t.PartNumber) = k.p
+            FROM intrans t JOIN ctx_keys k ON upper(trim(t.Branch)) = k.b AND upper(trim(t.PartNumber)) = k.p
             WHERE upper(trim(t.Franchise)) = 'D' ORDER BY k.b, k.p, t.TransDatetime""").fetchall():
         edge = ""
         if ts < ws:
@@ -465,7 +466,7 @@ def part_context(con, keys: list, now: datetime, tier: str = None) -> dict:
         src = f"delta_scan('{_path(tier, 'staging', 'Silver_InTrans')}')"
         for b, p, last in con.execute(f"""
                 SELECT k.b, k.p, max(CAST(t.TransDatetime AS TIMESTAMP))
-                FROM {src} t JOIN ctx_keys k ON upper(trim(t.Branch)) = k.b AND trim(t.PartNumber) = k.p
+                FROM {src} t JOIN ctx_keys k ON upper(trim(t.Branch)) = k.b AND upper(trim(t.PartNumber)) = k.p
                 WHERE upper(trim(t.Franchise)) = 'D' GROUP BY ALL""").fetchall():
             out[(b, p)]["LastDTrans"] = last
     return out
@@ -560,7 +561,7 @@ def run_xlsx_compare(con, args, ours: list, now: datetime) -> None:
     keys = sorted({(d["Branch"], d["PartNumber"]) for d in diffs})
     ctx = part_context(con, keys, now, args.tier)
     for d in diffs:
-        c = ctx[(d["Branch"].upper(), d["PartNumber"])]
+        c = ctx[(d["Branch"].upper(), d["PartNumber"].upper())]
         d["CorpDemands"] = c["CorpDemands"]
         d["LastDTrans"] = c["LastDTrans"]
         d["PartRows"] = " ; ".join(c["Rows"])
