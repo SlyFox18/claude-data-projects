@@ -4,6 +4,13 @@
 > review after each (Brian's standing choice). Steps use checkbox (`- [ ]`) syntax.
 
 > **Progress:** plan written 2026-11-03 (Claude, for Brian). Spec approved 2026-11-03.
+> - **M8 review fixes done** (app `0153405`, `3c068d5`, `8140aa5`; 2,011 + 868 tests): the list makes no idle
+>   requests until **Count** (or the idle files are already cached for this publish); cross-branch reports are
+>   `-partial` when any branch is missing ("Some branches didn't load, so the other-branch figures may be short.");
+>   branch Maps and pool / dealer indexes kept across mounts per publish; editor focus, switch description, idle
+>   suggestions; dead exports removed; Cotton fail / pass cases for every condition and code.
+> - **M9 done** (app `4bdbca4` clickThrough0130; try-it notes `for-users/0.13.0-try-it.md`). M10 (wording: "not one
+>   of", "Count (loads more data)" with focus, thresholds after Corp demands; 0.13.0; build) in progress.
 > - **M8 done 2026-11-03** (app `176e16c` list + results through `compileReport`, `45dd385` editor; 1,990 + 860
 >   tests, lint, tsc clean). Three built-ins listed and routed (`/inventory/<id>`), CSV headers / file stems from the
 >   built-in, idle files only when `needsIdle`, v6 message "Parts with no activity aren't in today's data yet.";
