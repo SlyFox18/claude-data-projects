@@ -16,6 +16,8 @@
 // GroupRowEditor.tsx). Counts are Prod of 2026-11-04 (v7 publish, 250,911 active and 643,034 idle JD part records,
 // data as of 15:43 UTC): Border Stores 1,576, 2 & 4 Cotton 251, MLPF Gaps 10,135. The copy example (branch one of 7,
 // 14, parts with no activity on, 1,027 parts) is Brian's real test "Test 0.13.0", deleted.
+// Export (N) on Transfer orders (0.13.1) follows nonjd-order-app 0.13.1 (commit 0a0d6e6: src/transfers/bulkExport.ts,
+// src/export/csv.ts transferOrdersCsv, src/pages/transfers/TransferOrdersList.tsx).
 // Worked examples: Dev Gold Fact_NonJD_Reorder built 2026-10-26 (window Oct 2025 - Sep 2026); the transfer example
 // is the app's mock data (round numbers), as in REORDER-RULES.md. The Returns & scrap example (section 8) is Brian's Prod
 // test of 2026-11-02: rule "Scrap default" (All franchises, no sales 36 months, unit cost at least $0.10), 49 AM parts.
@@ -26,12 +28,12 @@ const w = (...fr) => fr.map((f) => Math.round(CONTENT_W * f));
 
 build(process.argv[2] || 'Non-JD Order Tool - User Guide.docx', {
   title: 'SPI Parts Hub: user guide',
-  subtitle: 'Formerly the Non-JD Parts Order Tool · For Ben, Shannon, Barry and Curt · Version 0.13.0 · November 4, 2026 (test version) · https://10.110.100.13:8443',
-  footer: 'SPI Parts Hub: user guide (version 0.13.0)',
+  subtitle: 'Formerly the Non-JD Parts Order Tool · For Ben, Shannon, Barry and Curt · Version 0.13.1 · November 4, 2026 (test version) · https://10.110.100.13:8443',
+  footer: 'SPI Parts Hub: user guide (version 0.13.1)',
   blocks: [
     { p: '**SPI Parts Hub** (until 0.8.0 the Non-JD Parts Order Tool) opens on a launch page where you pick what to work on: **Non-JD ordering**, **Cleanup**, **Returns & scrap**, **Part Lookup** or **Inventory management** today, with **JD ordering** to come. Most of this guide is about Non-JD ordering.' },
     { p: '**In one sentence:** Non-JD ordering shows each branch which non-John Deere parts to reorder and why, suggests stock other branches could send instead, lets you tune the rules behind those suggestions, and turns the parts you pick into an order file for each vendor.' },
-    { p: 'This guide covers getting in, what each page does, and exactly how every number is worked out. Version 0.8.0 includes Ben’s round 1 answers, several branches and dealer groups at once, **phase-in**, **transfer suggestions** and **saving transfers** in the app, with transfer orders and transfer rules, and **transfers on One-Time Orders** (round 2, from Ben’s answers of October 27), the **launch page** in front of it all (0.8.0), **returns and scrap** (0.9.0, section 8), **One-Time templates** (0.10.0, section 9), **Cleanup checks** (0.11.0, section 7), **Inventory reports** (0.12.0, section 10), and **Border Stores** and **2 & 4 Cotton** (0.13.0, section 11). What changed in each version is in the **walkthrough**, Part 2.' },
+    { p: 'This guide covers getting in, what each page does, and exactly how every number is worked out. Version 0.8.0 includes Ben’s round 1 answers, several branches and dealer groups at once, **phase-in**, **transfer suggestions** and **saving transfers** in the app, with transfer orders and transfer rules, and **transfers on One-Time Orders** (round 2, from Ben’s answers of October 27), the **launch page** in front of it all (0.8.0), **returns and scrap** (0.9.0, section 8), **One-Time templates** (0.10.0, section 9), **Cleanup checks** (0.11.0, section 7), **Inventory reports** (0.12.0, section 10), **Border Stores** and **2 & 4 Cotton** (0.13.0, section 11), and exporting **several transfer orders at once** (0.13.1, under Transfers). What changed in each version is in the **walkthrough**, Part 2.' },
 
     { h1: '1. Getting started' },
     { steps: [
@@ -171,6 +173,12 @@ build(process.argv[2] || 'Non-JD Order Tool - User Guide.docx', {
       '**Cancel** (Draft or Exported only) releases the stock for other suggestions. Nothing is deleted.',
       '**Archive** hides an entered or cancelled transfer from the list (**Show archived** brings it back). An archived transfer is read-only until unarchived.',
       'If someone else exported, entered, cancelled or archived it while you had it open, your change is refused with a message saying so, and the page shows the current state.',
+    ] },
+    { p: '**Export several at once (0.13.1).** Tick transfer orders on the list (the box in the heading ticks every one the filters show), then click **Export (N)**. One file downloads, `Transfer-orders-<date>.csv`: `Transfer, From, To, PartNumber, Franchise, Description, Qty, FromBin, ToBin, Cost, LineValue`, newest transfer first, each with its lines. Every transfer in the file counts as exported, exactly as if you had exported it on its own (Exported, export count + 1).' },
+    { bullets: [
+      'Only **Draft** or **Exported** transfers that aren’t archived can be exported; with any other ticked, the button is greyed out and says so.',
+      'Each transfer is read again first. One that someone entered, cancelled or archived meanwhile, or that has no line with a quantity, is left out, and the message names it, for example “Exported 5 transfer orders (42 lines). Left out: 6-2-… (no line with a quantity).”',
+      'If some couldn’t be recorded as exported (for example the sign-in expired), a box lists them: **Try again** records them without downloading again, **Dismiss** closes it. **Export** waits until the box is cleared, so none is forgotten.',
     ] },
 
     { h2: 'Orders' },

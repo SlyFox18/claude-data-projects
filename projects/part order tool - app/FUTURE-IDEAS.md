@@ -5,7 +5,7 @@ Brian, on 2026-10-28. Each entry gives the idea as described, what already exist
 open questions to settle before it is designed. Nothing here is scheduled; pick from this list when planning the
 next round.
 
-Round 2 is complete (0.7.0, phase 4 One-Time transfers). F2 is done in 0.8.0 (2026-10-30), F6 in 0.9.0, F8 in 0.10.0 and F1 in 0.11.0 (all 2026-11-02), F4's first report in 0.12.0 (2026-11-03), and Border Stores and 2 & 4 Cotton in 0.13.0 (2026-11-04).
+Round 2 is complete (0.7.0, phase 4 One-Time transfers). F2 is done in 0.8.0 (2026-10-30), F6 in 0.9.0, F8 in 0.10.0 and F1 in 0.11.0 (all 2026-11-02), F4's first report in 0.12.0 (2026-11-03), Border Stores and 2 & 4 Cotton in 0.13.0 (2026-11-04), and a bulk transfer export (Brian's request, 2026-11-04: Export (N) on Transfer orders, one combined CSV) in 0.13.1.
 
 | # | Idea | Rough size | Needs a design pass |
 |---|---|---|---|

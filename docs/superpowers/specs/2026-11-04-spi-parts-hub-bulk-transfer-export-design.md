@@ -2,6 +2,9 @@
 
 > **Status:** design approved by Brian, 2026-11-04. Plan: `docs/superpowers/plans/2026-11-04-spi-parts-hub-bulk-transfer-export.md`
 > (Plan N, app 0.13.1).
+> **Shipped 2026-11-04:** app 0.13.1 (commit `0a0d6e6`) on Fedora; Brian's try-it on mock had no issues;
+> N1 review approved, N2 review's one Important fixed (Export waits while unrecorded exports are listed);
+> 2,904 tests, lint and tsc clean. See the plan.
 > **Origin:** Brian, 2026-11-04: "When you select all transfers, can the user have the ability to export all of that
 > at one time instead of individually?"
 

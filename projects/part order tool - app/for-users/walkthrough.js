@@ -34,6 +34,8 @@
 // (v7 publish at 16:11 UTC, 250,911 active and 643,034 idle JD part records, data as of 15:43 UTC): Border Stores
 // 1,576, 2 & 4 Cotton 251, MLPF Gaps 10,135. Brian's real test copy "Test 0.13.0" (branch one of 7, 14, parts with
 // no activity on, 1,027 parts) was deleted; the steps have the reader make "TEST 0.13.0" and archive it.
+// The 0.13.1 section follows nonjd-order-app 0.13.1 (commit 0a0d6e6: Export (N) on the Transfer orders tab,
+// src/transfers/bulkExport.ts, src/pages/transfers/TransferOrdersList.tsx); the steps use practice transfers.
 // Run: npm install, then node walkthrough.js [output file]
 const { build, CONTENT_W } = require('./lib');
 
@@ -48,8 +50,8 @@ const notes = { answer: 'Notes (anything different, slow or confusing):' };
 
 build(process.argv[2] || 'Non-JD Order Tool - Walkthrough.docx', {
   title: 'SPI Parts Hub: walkthrough',
-  subtitle: 'Formerly the Non-JD Parts Order Tool · Hands-on steps through every page · Version 0.13.0 · November 4, 2026 · App: https://10.110.100.13:8443',
-  footer: 'SPI Parts Hub: walkthrough (0.13.0)',
+  subtitle: 'Formerly the Non-JD Parts Order Tool · Hands-on steps through every page · Version 0.13.1 · November 4, 2026 · App: https://10.110.100.13:8443',
+  footer: 'SPI Parts Hub: walkthrough (0.13.1)',
   blocks: [
     { p: 'This is a hands-on tour of the tool. Each step says what to do and what you should see. Tick **OK** when it matches. When it doesn’t, or something is slow or confusing, write it in the notes box under that section and send it to Brian.' },
     { bullets: [
@@ -150,12 +152,26 @@ build(process.argv[2] || 'Non-JD Order Tool - Walkthrough.docx', {
       ['In the left menu, change the **Area** select to **Cleanup**.', '**Cleanup checks**, with **Checks** the only item in the menu: the built-in checks **Minimums with no demand** and **Stock value with no quantity**, and any saved ones, each with a count over every branch (Part 2, 0.11.0).'],
       ['Click **Minimums with no demand**, then pick branch **6**.', 'The Equip minimums on parts with no demand and no sales, with **← Cleanup checks** at the top; branch 6 has about 1,000. The largest is about $21,000 (part 145019, module rim, minimum 65).'],
       ['Change the **Area** select to **Inventory management**.', '**Inventory reports**, with **Reports** the only item in the menu: the built-ins **MLPF Gaps**, **Border Stores** and **2 & 4 Cotton** and any saved copies, each with a count over every JD branch (Part 2, 0.12.0 and 0.13.0).'],
-      ['Click **App Settings**.', 'Your default branch and franchise, and **About** with the version (**0.13.0**).'],
+      ['Click **App Settings**.', 'Your default branch and franchise, and **About** with the version (**0.13.1**).'],
       ['Set your default branch, then open Recommended Reorder.', 'It opens on your default branch.'],
     ]),
     notes,
 
     { h1: 'Part 2: what’s new' },
+
+    { h2: 'Version 0.13.1 (November 4, 2026): export several transfer orders at once' },
+    { p: 'New since 0.13.0: on the **Transfer orders** tab, tick several transfer orders and click **Export (N)** for one file with all their lines, instead of opening and exporting each one. Every transfer in the file is marked Exported, as if exported on its own. The user guide (Transfers, Transfer orders) explains it.' },
+    { note: 'Exporting is real: practise on two transfers you make for the purpose, then cancel and archive them at the end of these steps. Don’t tick real transfers unless you mean to send them.' },
+    { h3: 'Two practice transfers, one file' },
+    steps([
+      ['Click **Transfers**, then the **Suggestions** tab. Set **From** to a branch with a few suggestions and click **Save**. Do the same for a second **From** branch.', '“Saved 1 transfer order.” each time.'],
+      ['Click the **Transfer orders** tab. Tick your two new transfers (the newest two, saved by you).', '**Export (2)** appears above the list.'],
+      ['Tick an **Entered in Equip** or **Cancelled** transfer as well.', '**Export (3)** is greyed out: “Only Draft or Exported transfer orders that aren’t archived can be exported.” Untick it again.'],
+      ['Click **Export (2)** and open the file in Notepad.', 'One file, `Transfer-orders-<today>.csv`, starting **Transfer, From, To**, then the usual line columns; your newer transfer’s lines first. The message reads “Exported 2 transfer orders (N lines).” and both rows show **Exported** with an export count of 1.'],
+      ['Open each practice transfer, click **Cancel**, then **Cancel transfer**, then **Archive**.', 'Both show **Cancelled**, then leave the list (their stock is released for other suggestions).'],
+    ]),
+    { p: '**Your opinion:** is the combined file what you’d work from? Would a filter by **To** branch plus the heading tick box cover how you send transfers?' },
+    notes,
 
     { h2: 'Version 0.13.0 (November 4, 2026): Border Stores and 2 & 4 Cotton' },
     { p: 'New since 0.12.0: two more Corp Parts workbooks as built-in reports, both comparing a part at one branch with the same part at the other branches. The user guide, section 11, explains them in full; this section opens both, makes a copy of Border Stores for other branches and tidies it away.' },
@@ -527,6 +543,11 @@ build(process.argv[2] || 'Non-JD Order Tool - Walkthrough.docx', {
 
     { h1: 'Part 3: release checks (Brian)' },
     { p: 'Run these when a new version is deployed to the test server, after **Ctrl+F5** to load it.' },
+    { h3: '0.13.1' },
+    steps([
+      ['App Settings → **About**.', '**Version 0.13.1 · commit 0a0d6e6**. (Done November 4.)'],
+      ['Transfer orders: tick two or more, **Export (N)**.', 'One combined CSV; each transfer shows Exported with its export count up by 1. (Done November 4 on mock, no issues; app only, no data or publish changes.)'],
+    ]),
     { h3: '0.13.0' },
     steps([
       ['App Settings → **About**.', '**Version 0.13.0 · commit 1319ca9**.'],
