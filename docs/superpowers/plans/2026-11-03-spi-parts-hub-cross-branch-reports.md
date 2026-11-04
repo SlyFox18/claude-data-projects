@@ -9,8 +9,12 @@
 >   `-partial` when any branch is missing ("Some branches didn't load, so the other-branch figures may be short.");
 >   branch Maps and pool / dealer indexes kept across mounts per publish; editor focus, switch description, idle
 >   suggestions; dead exports removed; Cotton fail / pass cases for every condition and code.
-> - **M9 done** (app `4bdbca4` clickThrough0130; try-it notes `for-users/0.13.0-try-it.md`). M10 (wording: "not one
->   of", "Count (loads more data)" with focus, thresholds after Corp demands; 0.13.0; build) in progress.
+> - **M9 done** (app `4bdbca4` clickThrough0130; try-it notes `for-users/0.13.0-try-it.md`).
+> - **M10 done** (app `d606c7e` wording: "not one of", "Count (loads more data)" with focus on the count cell,
+>   thresholds right after Corp demands; `1319ca9` 0.13.0; 2,012 + 868 tests, lint, tsc clean; built and pushed).
+>   dist: inventory reports and cleanup checks lists, site present; no mock strings; "Version 0.13.0 · commit
+>   1319ca9". Next: Brian's try-it on mock; the Excel gate against Prod Silver of 2026-11-04 (evening refreshes);
+>   then M11.
 > - **M8 done 2026-11-03** (app `176e16c` list + results through `compileReport`, `45dd385` editor; 1,990 + 860
 >   tests, lint, tsc clean). Three built-ins listed and routed (`/inventory/<id>`), CSV headers / file stems from the
 >   built-in, idle files only when `needsIdle`, v6 message "Parts with no activity aren't in today's data yet.";
