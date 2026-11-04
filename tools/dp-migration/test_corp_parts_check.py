@@ -1,7 +1,8 @@
 # tools/dp-migration/test_corp_parts_check.py
 """Tests for the reference Corp demand rule and Fact_CorpParts_JD rows (Plan L: docs/superpowers/plans/2026-11-03-
 spi-parts-hub-inventory-reports.md, decisions L-D10..L-D14 and L-D19), the MLPF Gaps filter, the Gold compare and
-the workbook comparison. In-memory DuckDB tables only."""
+the workbook comparison; Border Stores and 2 & 4 Cotton (Plan M); Corporate Stocking (Plan O, O-D4 / O-D8 / O-D9).
+In-memory DuckDB tables only."""
 from datetime import datetime, timedelta
 
 import duckdb
@@ -701,3 +702,245 @@ def test_read_xlsx_report_columns_required(tmp_path):
     wb.save(p)
     with pytest.raises(ValueError, match="OtherLocationCount"):
         chk.read_xlsx(str(p), "Border Stores", chk.REPORT_COLUMNS)
+
+
+# ---------------------------------------------------------------------------------------------------------
+# Corporate Stocking (Plan O, O1; O-D4, O-D8, O-D9): one row per part, the workbook code
+# ---------------------------------------------------------------------------------------------------------
+def _stocking(con, now=NOW):
+    chk.build_expected(con, now)
+    rows = chk.stocking_rows(con)
+    return {r["PartNumber"]: r for r in rows}, rows
+
+
+def test_stocking_three_demand_branches_zero_stock_listed():
+    con = _con()
+    _jd(con, "P", "3", 1, cost=10, desc="Valve", source="JD", slc="10", commodity="AB", dgc="X")
+    _jd(con, "P", "11", 2, cost=12.5, source="JE", slc="12", commodity="AC", dgc="Y")
+    _jd(con, "P", "93", 3, cost=11)
+    by, rows = _stocking(con)
+    assert list(by) == ["P"]
+    r = by["P"]
+    assert list(r) == chk.STOCKING_COLUMNS
+    assert r["Description"] == "Valve"              # "VALVE" > "THING" ignoring case
+    assert (float(r["Cost"]), r["Source"], r["SLC"], r["CommodityCode"], r["DealerGroupCode"]) == \
+        (12.5, "JE", "12", "AC", "Y")
+    assert (r["OnOrder"], r["OnHandQty"]) == (0, 0)
+    assert (r["R18 Demands"], r["Count of Locations with Demands"], r["Locations with Demands"]) == (6, 3, "3, 11, 93")
+
+
+def test_stocking_one_counted_record_on_hand_blocks():
+    con = _con()
+    _pool(con, "P", [1, 1, 1])
+    _jd(con, "P", "20", oh=1)
+    assert _stocking(con)[1] == []
+
+
+def test_stocking_on_hand_at_branch_2_does_not_block():
+    con = _con()
+    _pool(con, "P", [1, 1, 1])
+    _jd(con, "P", "2", oh=1)
+    _jd(con, "P", "4", oo=3, super_to="Z")
+    assert list(_stocking(con)[0]) == ["P"]
+
+
+def test_stocking_record_failing_the_filters_does_not_block():
+    con = _con()
+    _pool(con, "P", [1, 1, 1])
+    _jd(con, "P", "20", oh=5, slc="21A")
+    _jd(con, "P", "21", oh=5, pkg="2")
+    _jd(con, "P", "22", oh=5, ri="N")
+    _jd(con, "P", "23", oh=5, source=" an")
+    assert list(_stocking(con)[0]) == ["P"]
+
+
+def test_stocking_super_to_on_a_counted_idle_record_blocks():
+    con = _con()
+    _pool(con, "P", [1, 1, 1])
+    _jd(con, "P", "20", super_to="Q1 ")             # nothing on hand / on order / sold / demanded: idle
+    chk.build_expected(con, NOW)
+    assert con.execute("SELECT count(*) FROM expected_idle WHERE Branch = '20'").fetchone()[0] == 1
+    assert chk.stocking_rows(con) == []
+
+
+def test_stocking_negative_on_order_blocks():
+    con = _con()
+    _pool(con, "P", [1, 1, 1])
+    _jd(con, "P", "20", oo=-1)
+    assert _stocking(con)[1] == []
+
+
+def test_stocking_two_demand_branches_not_listed():
+    con = _con()
+    _pool(con, "P", [5, 5])
+    _jd(con, "P", "2", 5)                           # 2 and 4 don't count as demand branches
+    _jd(con, "P", "4", 5)
+    assert _stocking(con)[1] == []
+
+
+def test_stocking_part_needs_a_counted_record():
+    con = _con()
+    _pool(con, "P", [1, 1, 1], pkg="2")             # demand at three branches, no record passes the filters
+    assert _stocking(con)[1] == []
+
+
+def test_stocking_demand_at_a_branch_whose_record_fails_still_counts():
+    con = _con()
+    _pool(con, "P", [1, 1])                         # 10, 11
+    _jd(con, "P", "20", 2, oh=4, slc="90")          # fails the filters (doesn't block) but its demand counts
+    _sale(con, "P", "N1", branch="30")              # a demand at a branch with no record at all
+    by, _ = _stocking(con)
+    r = by["P"]
+    assert (r["R18 Demands"], r["Count of Locations with Demands"], r["Locations with Demands"]) == \
+        (5, 4, "10, 11, 20, 30")
+
+
+def test_stocking_locations_in_branch_order_non_numeric_last():
+    con = _con()
+    for b in ("93", "4B", "11", "3"):
+        _jd(con, "P", b, 1)
+    by, _ = _stocking(con)
+    assert by["P"]["Locations with Demands"] == "3, 11, 93, 4B"
+    assert by["P"]["Count of Locations with Demands"] == 4
+
+
+def test_stocking_description_largest_ignoring_case_lowest_branch_wins():
+    con = _con()
+    _pool(con, "V", [1, 1, 1])                      # "Thing" at 10..12: less than "VALVE"
+    _jd(con, "V", "11", desc="Valve ")
+    _jd(con, "V", "3", desc="VALVE")
+    _jd(con, "V", "4B", desc="valve")
+    _pool(con, "W", [1, 1, 1], desc="Arm")
+    _jd(con, "W", "3", desc="VALVE")
+    _jd(con, "W", "40", desc="washer")              # largest ignoring case beats the lower branch
+    _pool(con, "N", [1, 1, 1], desc="Valve")
+    _jd(con, "N", "9", desc=None)                   # NULL loses
+    by, _ = _stocking(con)
+    assert by["V"]["Description"] == "VALVE"
+    assert by["W"]["Description"] == "washer"
+    assert by["N"]["Description"] == "Valve"
+
+
+def test_stocking_description_branch_numeric_order_not_text():
+    con = _con()
+    _jd(con, "P", "10", 1, desc="valve")            # "10" < "9" as text, but 9 is the lower branch
+    _jd(con, "P", "9", 1, desc="Valve")
+    _jd(con, "P", "12", 1, desc="VALVE")
+    by, _ = _stocking(con)
+    assert by["P"]["Description"] == "Valve"
+
+
+def test_stocking_twins_and_case_variants_are_one_part():
+    con = _con()
+    _jd(con, "P", "10", 1)
+    _jd(con, "P ", "10")                            # the twin shares branch 10's demand: one location
+    _jd(con, "p", "11", 1)                          # lower case record: the same part
+    _jd(con, "P", "12", 1)
+    _, rows = _stocking(con)
+    assert len(rows) == 1
+    r = rows[0]
+    assert r["PartNumber"] == "P"                   # from the first counted record in branch order
+    assert (r["R18 Demands"], r["Count of Locations with Demands"]) == (3, 3)
+
+
+def test_stocking_twin_with_stock_blocks():
+    con = _con()
+    _pool(con, "P", [1, 1, 1])
+    _jd(con, "P ", "10", oh=1)
+    assert _stocking(con)[1] == []
+
+
+def test_stocking_sorted_count_desc_demands_desc_part():
+    con = _con()
+    _pool(con, "C", [1, 1, 1])
+    _pool(con, "B", [1, 1, 1])
+    _pool(con, "A", [1, 1, 1, 1])
+    _pool(con, "D", [2, 2, 2])
+    _, rows = _stocking(con)
+    assert [r["PartNumber"] for r in rows] == ["A", "D", "B", "C"]
+
+
+def test_report_rows_stocking_is_the_stocking_list():
+    con = _con()
+    _pool(con, "P", [1, 1, 1])
+    chk.build_expected(con, NOW)
+    assert chk.report_rows(con, "stocking") == chk.stocking_rows(con)
+    rep = chk.REPORTS["stocking"]
+    assert rep["key"] == ("PartNumber",) and rep["columns"] == chk.STOCKING_COLUMNS
+    assert rep["sheet"] == "SPI Corparate Stocking"
+
+
+def _stocking_xlsx(tmp_path, rows):
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "SPI Corparate Stocking"
+    ws.append(chk.STOCKING_COLUMNS)
+    for r in rows:
+        ws.append(r)
+    p = tmp_path / "stocking.xlsx"
+    wb.save(p)
+    return str(p)
+
+
+def test_compare_xlsx_stocking_keys_on_part_and_ignores_description_case(tmp_path):
+    con = _con()
+    _pool(con, "P1", [1, 1, 1], desc="Valve")
+    _pool(con, "P2", [1, 1, 1])
+    _pool(con, "P3", [1, 1, 1])
+    chk.build_expected(con, NOW)
+    ours = chk.stocking_rows(con)
+    rep = chk.REPORTS["stocking"]
+    xl = [
+        # P1: lower case and padded part number, description in another case: a match with no differences
+        ["p1 ", "VALVE", 12.5, "JD", "10", "AB", "X", 0, 0, 3, 3, "10, 11, 12"],
+        # P2: demands and locations differ, description differs by more than case
+        ["P2", "Thing2", 12.5, "JD", "10", "AB", "X", 0, 0, 4, 3, "10, 11, 13"],
+        ["ONLYXL", "Thing", 1.0, "JD", "10", "AB", "X", 0, 0, 3, 3, "1, 2, 3"],
+    ]
+    xl_rows = chk.read_xlsx(_stocking_xlsx(tmp_path, xl), rep["sheet"], rep["columns"], rep["num"])
+    assert xl_rows[0]["R18 Demands"] == 3
+    res = chk.compare_xlsx(con, xl_rows, ours, rep["columns"], rep["num"], key=rep["key"],
+                           upper_key=rep["upper_key"], nocase=rep["nocase"])
+    assert res["matched_keys"] == 2
+    assert [chk._xkey(r, rep["key"], True) for r in res["only_excel"]] == [("ONLYXL",)]
+    assert [chk._xkey(r, rep["key"], True) for r in res["only_ours"]] == [("P3",)]
+    assert sorted((d["PartNumber"], d["Column"]) for d in res["values"]) == \
+        [("P2", "Description"), ("P2", "Locations with Demands"), ("P2", "R18 Demands")]
+    assert all("Branch" not in d for d in res["values"])
+
+
+def test_part_context_whole_part_lists_every_branch():
+    con = _con()
+    _jd(con, "P", "11", 2)
+    _jd(con, "P ", "3", 1, oh=4)
+    _part(con, "P", branch="5", franchise="MC")
+    chk.build_expected(con, NOW)
+    ctx = chk.part_context(con, [("p",)], NOW)
+    c = ctx[("P",)]
+    assert c["CorpDemands"] == "3=1, 11=2"
+    assert len(c["Rows"]) == 3 and c["Rows"][0].startswith("3|D|")
+    assert len(c["Lines"]) == 3 and c["Lines"][0].startswith("3 I ")
+    two = chk.part_context(con, [("11", "P")], NOW)
+    assert two[("11", "P")]["CorpDemands"] == 2 and two[("11", "P")]["Rows"][0].startswith("D|")
+
+
+def test_run_xlsx_compare_stocking_writes_the_part_keyed_diff_csv(tmp_path):
+    import argparse
+    import csv
+    con = _con()
+    _pool(con, "P1", [1, 1, 1])
+    _pool(con, "P2", [1, 1, 1])
+    chk.build_expected(con, NOW)
+    ours = chk.stocking_rows(con)
+    xl = [["p1", "THING", 12.5, "JD", "10", "AB", "X", 0, 0, 4, 3, "10, 11, 12"]]
+    out = tmp_path / "diff.csv"
+    args = argparse.Namespace(report="stocking", compare_xlsx=_stocking_xlsx(tmp_path, xl),
+                              sheet="SPI Corparate Stocking", tier=None, diff_out=str(out))
+    chk.run_xlsx_compare(con, args, ours, NOW)
+    with open(out, newline="", encoding="utf-8") as f:
+        rows = list(csv.DictReader(f))
+    assert list(rows[0]) == ["Kind", "PartNumber", "Column", "Excel", "Ours", "CorpDemands", "LastDTrans",
+                             "PartRows", "Lines"]
+    assert [(r["Kind"], r["PartNumber"], r["Column"]) for r in rows] == \
+        [("only_ours", "P2", ""), ("value", "P1", "R18 Demands")]
+    assert rows[1]["CorpDemands"] == "10=1, 11=1, 12=1"

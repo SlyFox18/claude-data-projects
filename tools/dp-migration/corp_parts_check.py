@@ -48,6 +48,11 @@ Plan M (docs/superpowers/plans/2026-11-03-spi-parts-hub-cross-branch-reports.md,
   branch can add or change a row), its model-code list reads every franchise, and its part numbers match exactly
   where the reference trims.
 
+Plan O (docs/superpowers/plans/2026-11-04-spi-parts-hub-corporate-stocking.md, O-D4 / O-D8 / O-D9):
+- Corporate Stocking (--report stocking, projects/corp parts excel reports/SPI Corparate Stocking/), one row per part
+  (upper(trim(PartNumber))) over jd_all: see stocking_rows. --compare-xlsx keys it on the trimmed, upper-case
+  PartNumber and compares Description ignoring case (SQL Anywhere's MAX picks any case variant).
+
 Usage:
     python corp_parts_check.py --tier dev                      # compare with Gold, exit 1 on any mismatch
     python corp_parts_check.py --tier dev --mlpf-out mlpf.csv
@@ -55,6 +60,8 @@ Usage:
         --compare-xlsx "MLPF Gaps.xlsx" [--sheet "MLPF Gaps"] --diff-out diff.csv --mlpf-out mlpf.csv
     python corp_parts_check.py --tier prod --report border --as-of "2026-11-03 14:34:00" \\
         --compare-xlsx "Border Stores.xlsx" --diff-out diff.csv --report-out border.csv
+    python corp_parts_check.py --tier prod --report stocking --as-of "2026-11-04 15:03:00" \\
+        --compare-xlsx "SPI Corparate Stocking.xlsx" --diff-out diff.csv --report-out stocking.csv
 
 --groups-tier reads CommodityCodeGroups from another tier (Prod doesn't have it until L1 is released). Without
 Gold (a tier the Part 5 build hasn't run on) give --as-of: the Gold compare is skipped and the MLPF list comes
@@ -103,12 +110,21 @@ OTHER_DEMANDS_MIN = 10
 OTHER_BRANCHES_MIN = 5
 COTTON_GROUPS = ("COTTON", "STRIPPER", "PICKER")
 COTTON_MODEL_CODES = ("690", "770", "CS690", "JDCS690")
+STOCKING_COLUMNS = ["PartNumber", "Description", "Cost", "Source", "SLC", "CommodityCode", "DealerGroupCode",
+                    "OnOrder", "OnHandQty", "R18 Demands", "Count of Locations with Demands",
+                    "Locations with Demands"]
+STOCKING_NUM = ["Cost", "OnOrder", "OnHandQty", "R18 Demands", "Count of Locations with Demands"]
+STOCKING_BRANCHES_MIN = 3
+BRANCH_KEY = ("Branch", "PartNumber")
 REPORTS = {
     "mlpf": {"sheet": "MLPF Gaps", "columns": MLPF_COLUMNS, "num": MLPF_NUM},
     "border": {"sheet": "Border Stores", "columns": REPORT_COLUMNS, "num": REPORT_NUM,
                "branches": ("95", "91", "96"), "demand": "CorpDemands >= 1", "cotton": False},
     "cotton": {"sheet": "2 & 4 Cotton & Stripper Parts", "columns": REPORT_COLUMNS, "num": REPORT_NUM,
                "branches": ("2", "4"), "demand": "CorpDemands = 0", "cotton": True},
+    # one row per part (Plan O): keyed on the part alone, upper case for matching; case-blind description (O-D4)
+    "stocking": {"sheet": "SPI Corparate Stocking", "columns": STOCKING_COLUMNS, "num": STOCKING_NUM,
+                 "key": ("PartNumber",), "upper_key": True, "nocase": ("Description",)},
 }
 DEMAND_MONTHS = 18
 INVOICE_LAG_DAYS = 7
@@ -246,6 +262,8 @@ def report_rows(con, name: str, source: str = "jd_all") -> list:
     OUTPUT_COLS) per the workbook code (module docstring)."""
     if name == "mlpf":
         return mlpf_rows(con, "expected" if source == "jd_all" else source)
+    if name == "stocking":
+        return stocking_rows(con, source)
     rep = REPORTS[name]
     cotton = " AND cotton" if rep["cotton"] else ""
     cur = con.execute(f"""
@@ -283,6 +301,69 @@ def report_rows(con, name: str, source: str = "jd_all") -> list:
     rows = [dict(zip(cols, r)) for r in cur.fetchall()]
     rows.sort(key=lambda r: (r["PartNumber"] or "", r["Branch"] or ""))
     return rows
+
+
+STOCKING_FILTERS = """PackageQty = 1 AND upper(trim(ReturnIndicator)) = 'R'
+    AND coalesce(upper(trim(Source)), '') <> 'AN'
+    AND NOT (coalesce(trim(SLC), '') LIKE '21%' OR coalesce(trim(SLC), '') LIKE '90%'
+             OR coalesce(trim(SLC), '') LIKE '91%' OR coalesce(trim(SLC), '') LIKE '99%')"""
+
+
+def _branch_order(col: str) -> str:
+    """ORDER BY terms for O-D9 branch order: numeric codes by number, then the others by code (ordinal)."""
+    return f"TRY_CAST({col} AS BIGINT) IS NULL, TRY_CAST({col} AS BIGINT), {col}"
+
+
+def stocking_rows(con, source: str = "jd_all") -> list:
+    """Corporate Stocking (Plan O, the workbook SPI Corparate Stocking.pq): one row per part (upper(trim(PartNumber)))
+    with STOCKING_COLUMNS, sorted by location count desc, R18 Demands desc, PartNumber.
+
+    Counted records = `source` records at branches other than 2 and 4 that pass STOCKING_FILTERS; the part needs at
+    least one, and every one must have on hand = 0, on order = 0 and a blank Super To. Text columns = the largest
+    trimmed value over the counted records, Cost = the largest (O-D8); Description = the largest ignoring case, among
+    case variants the one at the lowest branch (O-D4, O-D9); PartNumber = trimmed, from the first counted record in
+    branch order. Demand comes from corp_demands at any branch other than 2 and 4, whatever its record looks like:
+    R18 Demands = the sum, at least STOCKING_BRANCHES_MIN branches, listed in branch order."""
+    excluded = _in_list(POOL_EXCLUDED_BRANCHES)
+    cur = con.execute(f"""
+        WITH c AS (
+            SELECT *, upper(trim(Branch)) AS b, upper(trim(PartNumber)) AS k, trim(Description) AS d,
+                   trim(PartNumber) AS pn
+            FROM {source}
+            WHERE upper(trim(Branch)) NOT IN ({excluded}) AND coalesce({STOCKING_FILTERS}, false)
+        ), eligible AS (
+            SELECT k, max(Cost) AS "Cost", max(trim(Source)) AS "Source", max(trim(SLC)) AS "SLC",
+                   max(trim(CommodityCode)) AS "CommodityCode", max(trim(DealerGroupCode)) AS "DealerGroupCode"
+            FROM c
+            GROUP BY k
+            HAVING count(*) FILTER (WHERE coalesce(OnHand, 0) <> 0) = 0
+               AND count(*) FILTER (WHERE coalesce(OnOrder, 0) <> 0) = 0
+               AND count(*) FILTER (WHERE coalesce(trim(SuperTo), '') <> '') = 0
+        ), ranked AS (
+            SELECT k, d, pn,
+                   row_number() OVER (PARTITION BY k ORDER BY upper(d) DESC NULLS LAST, {_branch_order('b')}, d)
+                       AS desc_rank,
+                   row_number() OVER (PARTITION BY k ORDER BY {_branch_order('b')}, pn) AS part_rank
+            FROM c
+        ), names AS (
+            SELECT k, max(d) FILTER (WHERE desc_rank = 1) AS "Description",
+                   max(pn) FILTER (WHERE part_rank = 1) AS "PartNumber"
+            FROM ranked GROUP BY k
+        ), demand AS (
+            SELECT p AS k, CAST(sum(CorpDemands) AS INTEGER) AS dm, CAST(count(*) AS INTEGER) AS n,
+                   string_agg(b, ', ' ORDER BY {_branch_order('b')}) AS locs
+            FROM corp_demands
+            WHERE b NOT IN ({excluded}) AND CorpDemands >= 1
+            GROUP BY p
+            HAVING count(*) >= {STOCKING_BRANCHES_MIN}
+        )
+        SELECT n."PartNumber", n."Description", e."Cost", e."Source", e."SLC", e."CommodityCode",
+               e."DealerGroupCode", 0 AS "OnOrder", 0 AS "OnHandQty", dm.dm AS "R18 Demands",
+               dm.n AS "Count of Locations with Demands", dm.locs AS "Locations with Demands"
+        FROM eligible e JOIN names n USING (k) JOIN demand dm USING (k)
+        ORDER BY dm.n DESC, dm.dm DESC, n."PartNumber", k""")
+    cols = [d[0] for d in cur.description]
+    return [dict(zip(cols, r)) for r in cur.fetchall()]
 
 
 def mlpf_rows(con, source: str) -> list:
@@ -358,9 +439,9 @@ def _cell_text(v):
     return str(v)
 
 
-def read_xlsx(path: str, sheet: str, columns=MLPF_COLUMNS) -> list:
+def read_xlsx(path: str, sheet: str, columns=MLPF_COLUMNS, num=REPORT_NUM) -> list:
     """The workbook's table as dicts with `columns` (default the 12 MLPF ones): header = the first row holding all of
-    them. Columns in REPORT_NUM stay numbers, the rest become text."""
+    them. Columns in `num` (default REPORT_NUM) stay numbers, the rest become text."""
     import openpyxl
     wb = openpyxl.load_workbook(path, read_only=True, data_only=True)
     try:
@@ -381,15 +462,17 @@ def read_xlsx(path: str, sheet: str, columns=MLPF_COLUMNS) -> list:
             rec = {}
             for c, i in idx.items():
                 v = row[i] if i < len(row) else None
-                rec[c] = v if c in REPORT_NUM else _cell_text(v)
+                rec[c] = v if c in num else _cell_text(v)
             out.append(rec)
         return out
     finally:
         wb.close()
 
 
-def _xkey(r: dict) -> tuple:
-    return ((r["Branch"] or "").strip(), (r["PartNumber"] or "").strip())
+def _xkey(r: dict, key=BRANCH_KEY, upper: bool = False) -> tuple:
+    """The row's trimmed `key` values (upper case with `upper`)."""
+    vals = tuple((r[k] or "").strip() for k in key)
+    return tuple(v.upper() for v in vals) if upper else vals
 
 
 def _num_differs(a, b) -> bool:
@@ -398,30 +481,32 @@ def _num_differs(a, b) -> bool:
     return abs(float(a) - float(b)) > TOLERANCE
 
 
-def _text_differs(a, b) -> bool:
-    return ((a or "").strip()) != ((b or "").strip())
+def _text_differs(a, b, nocase: bool = False) -> bool:
+    a, b = (a or "").strip(), (b or "").strip()
+    return a.upper() != b.upper() if nocase else a != b
 
 
-def compare_xlsx(con, xl_rows: list, ours: list, columns=MLPF_COLUMNS, num=MLPF_NUM) -> dict:
-    """Match the workbook rows to our rows on trimmed Branch + trimmed PartNumber and compare `columns` after the
-    first two (`num` numerically). A key with several rows on a side (the trailing-space twins) compares each
-    pair."""
+def compare_xlsx(con, xl_rows: list, ours: list, columns=MLPF_COLUMNS, num=MLPF_NUM, key=BRANCH_KEY,
+                 upper_key: bool = False, nocase=()) -> dict:
+    """Match the workbook rows to our rows on the trimmed `key` columns (default Branch + PartNumber; upper case
+    with `upper_key`) and compare the other `columns` (`num` numerically, `nocase` ignoring case). A key with
+    several rows on a side (the trailing-space twins) compares each pair."""
     xl_by, our_by = {}, {}
     for r in xl_rows:
-        xl_by.setdefault(_xkey(r), []).append(r)
+        xl_by.setdefault(_xkey(r, key, upper_key), []).append(r)
     for r in ours:
-        our_by.setdefault(_xkey(r), []).append(r)
+        our_by.setdefault(_xkey(r, key, upper_key), []).append(r)
     only_excel = [r for k in sorted(set(xl_by) - set(our_by)) for r in xl_by[k]]
     only_ours = [r for k in sorted(set(our_by) - set(xl_by)) for r in our_by[k]]
     values = []
     for k in sorted(set(xl_by) & set(our_by)):
         for x in xl_by[k]:
             for o in our_by[k]:
-                for c in columns[2:]:
-                    differs = _num_differs(x[c], o[c]) if c in num else _text_differs(x[c], o[c])
+                for c in (c for c in columns if c not in key):
+                    differs = (_num_differs(x[c], o[c]) if c in num
+                               else _text_differs(x[c], o[c], c in nocase))
                     if differs:
-                        values.append({"Branch": k[0], "PartNumber": k[1], "Column": c, "Excel": x[c],
-                                       "Ours": o[c]})
+                        values.append({**dict(zip(key, k)), "Column": c, "Excel": x[c], "Ours": o[c]})
     return {"excel_rows": len(xl_rows), "our_rows": len(ours), "matched_keys": len(set(xl_by) & set(our_by)),
             "dup_excel_keys": sum(1 for v in xl_by.values() if len(v) > 1),
             "dup_our_keys": sum(1 for v in our_by.values() if len(v) > 1),
@@ -429,29 +514,45 @@ def compare_xlsx(con, xl_rows: list, ours: list, columns=MLPF_COLUMNS, num=MLPF_
 
 
 def part_context(con, keys: list, now: datetime, tier: str = None) -> dict:
-    """For (Branch, PartNumber) trimmed keys: our part rows (every franchise), CorpDemands, the franchise D I/C lines
-    from 10 days before the window start, and (with a tier) the last franchise D InTrans line of any type."""
+    """For trimmed (Branch, PartNumber) keys: our part rows (every franchise), CorpDemands, the franchise D I/C lines
+    from 10 days before the window start, and (with a tier) the last franchise D InTrans line of any type. A
+    (PartNumber,) key covers every branch of the part: rows and lines start with the branch, CorpDemands is
+    "branch=n, ..." in branch order (O-D9). Results are keyed by the upper-case key."""
     if not keys:
         return {}
     ws, ie, _ = window(now)
+    norm = [(None, k[0].upper()) if len(k) == 1 else (k[0].upper(), k[1].upper()) for k in keys]
     con.execute("CREATE OR REPLACE TEMP TABLE ctx_keys (b VARCHAR, p VARCHAR)")
-    con.executemany("INSERT INTO ctx_keys VALUES (?, ?)", [[b.upper(), p.upper()] for b, p in keys])
-    out = {(b.upper(), p.upper()): {"CorpDemands": 0, "Rows": [], "Lines": [], "LastDTrans": None} for b, p in keys}
-    for b, p, cd in con.execute("SELECT b, p, CorpDemands FROM corp_demands JOIN ctx_keys USING (b, p)").fetchall():
-        out[(b, p)]["CorpDemands"] = cd
-    for row in con.execute("""
-            SELECT k.b, k.p, x.Franchise, x.PartNumber, x.QuantityOnHand, x.OnOrder, x.PackageQty, x.Returnable,
-                   x.Source, x.SLC, x.SuperTo, x.Cost
-            FROM parts x JOIN ctx_keys k ON upper(trim(x.Branch)) = k.b AND upper(trim(x.PartNumber)) = k.p
-            ORDER BY k.b, k.p, x.Franchise, x.PartNumber""").fetchall():
-        b, p, fr, pn, oh, oo, pkg, ri, src, slc, sup, cost = row
-        out[(b, p)]["Rows"].append(f"{fr!s}|{pn!r}|oh={oh}|oo={oo}|pkg={pkg!r}|ri={ri!r}|src={src!r}|slc={slc!r}"
-                                   f"|super={sup!r}|cost={cost}")
-    for b, p, typ, qty, ts, inv in con.execute("""
-            SELECT k.b, k.p, upper(trim(t.Type)), t.Qty, t.TransDatetime,
+    con.executemany("INSERT INTO ctx_keys VALUES (?, ?)", [list(k) for k in norm])
+    out_key = lambda b, p: (p,) if b is None else (b, p)
+    out = {out_key(b, p): {"CorpDemands": 0, "Rows": [], "Lines": [], "LastDTrans": None} for b, p in norm}
+    match = lambda t: f"(k.b IS NULL OR upper(trim({t}.Branch)) = k.b) AND upper(trim({t}.PartNumber)) = k.p"
+    whole = {}
+    for kb, p, b, cd in con.execute(f"""
+            SELECT k.b, k.p, c.b, c.CorpDemands FROM corp_demands c JOIN ctx_keys k
+            ON (k.b IS NULL OR c.b = k.b) AND c.p = k.p
+            ORDER BY {_branch_order('c.b')}""").fetchall():
+        if kb is None:
+            whole.setdefault(p, []).append(f"{b}={cd}")
+        else:
+            out[(kb, p)]["CorpDemands"] = cd
+    for p, items in whole.items():
+        out[(p,)]["CorpDemands"] = ", ".join(items)
+    for row in con.execute(f"""
+            SELECT k.b, k.p, trim(x.Branch), x.Franchise, x.PartNumber, x.QuantityOnHand, x.OnOrder, x.PackageQty,
+                   x.Returnable, x.Source, x.SLC, x.SuperTo, x.Cost
+            FROM parts x JOIN ctx_keys k ON {match('x')}
+            ORDER BY k.b, k.p, {_branch_order('upper(trim(x.Branch))')}, x.Franchise, x.PartNumber""").fetchall():
+        kb, p, br, fr, pn, oh, oo, pkg, ri, src, slc, sup, cost = row
+        out[out_key(kb, p)]["Rows"].append(
+            ("" if kb else f"{br}|") + f"{fr!s}|{pn!r}|oh={oh}|oo={oo}|pkg={pkg!r}|ri={ri!r}|src={src!r}"
+            f"|slc={slc!r}|super={sup!r}|cost={cost}")
+    for kb, p, br, typ, qty, ts, inv in con.execute(f"""
+            SELECT k.b, k.p, trim(t.Branch), upper(trim(t.Type)), t.Qty, t.TransDatetime,
                    CASE WHEN upper(trim(t.Type)) = 'I' THEN trim(t.RONumber) ELSE trim(t.OriginalInvoiceNo) END
-            FROM intrans t JOIN ctx_keys k ON upper(trim(t.Branch)) = k.b AND upper(trim(t.PartNumber)) = k.p
-            WHERE upper(trim(t.Franchise)) = 'D' ORDER BY k.b, k.p, t.TransDatetime""").fetchall():
+            FROM intrans t JOIN ctx_keys k ON {match('t')}
+            WHERE upper(trim(t.Franchise)) = 'D'
+            ORDER BY k.b, k.p, {_branch_order('upper(trim(t.Branch))')}, t.TransDatetime""").fetchall():
         edge = ""
         if ts < ws:
             edge = "<start"
@@ -461,14 +562,15 @@ def part_context(con, keys: list, now: datetime, tier: str = None) -> dict:
             edge = ">invEnd"
         elif ts > now:
             edge = ">now"
-        out[(b, p)]["Lines"].append(f"{typ} {ts:%Y-%m-%d %H:%M} {inv} q={qty}{(' ' + edge) if edge else ''}")
+        out[out_key(kb, p)]["Lines"].append(("" if kb else f"{br} ") + f"{typ} {ts:%Y-%m-%d %H:%M} {inv} q={qty}"
+                                            f"{(' ' + edge) if edge else ''}")
     if tier:
         src = f"delta_scan('{_path(tier, 'staging', 'Silver_InTrans')}')"
-        for b, p, last in con.execute(f"""
+        for kb, p, last in con.execute(f"""
                 SELECT k.b, k.p, max(CAST(t.TransDatetime AS TIMESTAMP))
-                FROM {src} t JOIN ctx_keys k ON upper(trim(t.Branch)) = k.b AND upper(trim(t.PartNumber)) = k.p
+                FROM {src} t JOIN ctx_keys k ON {match('t')}
                 WHERE upper(trim(t.Franchise)) = 'D' GROUP BY ALL""").fetchall():
-            out[(b, p)]["LastDTrans"] = last
+            out[out_key(kb, p)]["LastDTrans"] = last
     return out
 
 
@@ -541,8 +643,9 @@ def _print_rows(title: str, rows: list, limit: int = 20) -> None:
 
 def run_xlsx_compare(con, args, ours: list, now: datetime) -> None:
     rep = REPORTS[args.report]
-    xl = read_xlsx(args.compare_xlsx, args.sheet, rep["columns"])
-    res = compare_xlsx(con, xl, ours, rep["columns"], rep["num"])
+    key, upper = rep.get("key", BRANCH_KEY), rep.get("upper_key", False)
+    xl = read_xlsx(args.compare_xlsx, args.sheet, rep["columns"], rep["num"])
+    res = compare_xlsx(con, xl, ours, rep["columns"], rep["num"], key, upper, rep.get("nocase", ()))
     print(f"\nWorkbook compare ({args.compare_xlsx}, sheet {args.sheet!r}): Excel {res['excel_rows']:,} rows, "
           f"ours {res['our_rows']:,} rows, {res['matched_keys']:,} keys on both sides; duplicate keys: Excel "
           f"{res['dup_excel_keys']}, ours {res['dup_our_keys']}")
@@ -553,15 +656,15 @@ def run_xlsx_compare(con, args, ours: list, now: datetime) -> None:
         by_col[d["Column"]] = by_col.get(d["Column"], 0) + 1
     if by_col:
         print("value differences by column: " + ", ".join(f"{c} {n}" for c, n in sorted(by_col.items())))
-    diffs = ([{"Kind": "only_excel", "Column": "", "Excel": "", "Ours": "", **_xkey_dict(r)}
+    diffs = ([{"Kind": "only_excel", "Column": "", "Excel": "", "Ours": "", **_xkey_dict(r, key, upper)}
               for r in res["only_excel"]]
-             + [{"Kind": "only_ours", "Column": "", "Excel": "", "Ours": "", **_xkey_dict(r)}
+             + [{"Kind": "only_ours", "Column": "", "Excel": "", "Ours": "", **_xkey_dict(r, key, upper)}
                 for r in res["only_ours"]]
              + [{"Kind": "value", **d} for d in res["values"]])
-    keys = sorted({(d["Branch"], d["PartNumber"]) for d in diffs})
+    keys = sorted({tuple(d[k] for k in key) for d in diffs})
     ctx = part_context(con, keys, now, args.tier)
     for d in diffs:
-        c = ctx[(d["Branch"].upper(), d["PartNumber"].upper())]
+        c = ctx[tuple(d[k].upper() for k in key)]
         d["CorpDemands"] = c["CorpDemands"]
         d["LastDTrans"] = c["LastDTrans"]
         d["PartRows"] = " ; ".join(c["Rows"])
@@ -569,14 +672,13 @@ def run_xlsx_compare(con, args, ours: list, now: datetime) -> None:
     for kind in ("only_excel", "only_ours", "value"):
         _print_rows(f"\n{kind}", [d for d in diffs if d["Kind"] == kind])
     if args.diff_out:
-        _write_csv(args.diff_out, diffs, ["Kind", "Branch", "PartNumber", "Column", "Excel", "Ours", "CorpDemands",
-                                          "LastDTrans", "PartRows", "Lines"])
+        _write_csv(args.diff_out, diffs, ["Kind", *key, "Column", "Excel", "Ours", "CorpDemands", "LastDTrans",
+                                          "PartRows", "Lines"])
         print(f"wrote {len(diffs):,} differences to {args.diff_out}")
 
 
-def _xkey_dict(r: dict) -> dict:
-    b, p = _xkey(r)
-    return {"Branch": b, "PartNumber": p}
+def _xkey_dict(r: dict, key=BRANCH_KEY, upper: bool = False) -> dict:
+    return dict(zip(key, _xkey(r, key, upper)))
 
 
 def main() -> int:
@@ -586,12 +688,12 @@ def main() -> int:
     ap.add_argument("--as-of", help="Central wall clock 'YYYY-MM-DD HH:MM:SS' (default: Gold's DemandAsOf)")
     ap.add_argument("--mlpf-out", help="write the MLPF Gaps list (Gold if present, else the reference) to CSV")
     ap.add_argument("--report", choices=sorted(REPORTS), default="mlpf",
-                    help="the list for --report-out / --compare-xlsx (default mlpf); border and cotton come from "
-                         "the reference's active + idle rows")
+                    help="the list for --report-out / --compare-xlsx (default mlpf); border, cotton and stocking "
+                         "come from the reference's active + idle rows")
     ap.add_argument("--report-out", help="write the --report list to CSV")
     ap.add_argument("--compare-xlsx", help="workbook to compare with the --report list")
     ap.add_argument("--sheet", help="workbook sheet (default: the report's: MLPF Gaps, Border Stores, "
-                                    "2 & 4 Cotton & Stripper Parts)")
+                                    "2 & 4 Cotton & Stripper Parts, SPI Corparate Stocking)")
     ap.add_argument("--diff-out", help="write every workbook difference to CSV (with --compare-xlsx)")
     a = ap.parse_args()
     a.sheet = a.sheet or REPORTS[a.report]["sheet"]
