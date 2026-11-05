@@ -1,6 +1,26 @@
 # Part details panel (Plan Q, app 0.15.1) Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
+
+> **Shipped 2026-11-05:** app 0.15.1 (commit `ca5f16e`) on Fedora, installed by Brian; his try-it on mock and his real test
+> (Ben's example on Seminole, not saved) passed. Commits: app 20c508a (Q1), 8d33289 (Q2), 03a2c17 (Q3), b674b61 (review
+> fixes and Return wizard links), ca5f16e (Q4); data-projects 12c621f4 (try-it notes). Q1 + Q2 reviewed: approved on three
+> fixes, all made in b674b61 (not re-reviewed; each has its own test). 3,081 tests, lint and tsc clean. App only.
+>
+> **Departures from the plan:**
+> - **Open full page closes the panel first** on a plain click, so "Leave this page?" (in the page beneath) isn't hidden
+>   behind the modal. If the user chooses Stay, the panel stays closed.
+> - **Crash isolation:** the dialog shell and Close sit outside a keyed `ErrorBoundary` around `PartPanelBody` (which calls
+>   `usePartRow`), so a crash in the panel shows its own message and the page keeps its work. Switching part reloads.
+> - **`PartLink` and `useOpenPart` are in their own file**, `src/pages/part/PartLink.tsx`, which breaks an import cycle
+>   through `OtherBranches`; `PartPanelContext.tsx` keeps only the provider.
+> - **Return wizard links added** (`returns/PartsStep`, `ReviewStep`), since a return in progress has the same problem.
+> - **Inventory excluded:** JD parts have no part page; its reports keep their own panels. Rule and check previews
+>   (`returnRules/TryIt`, `transferRules/TransferTryItPanel`, `cleanup/CheckEditorPage`) stay plain text.
+> - Closing focuses the opener, or `<main>` if the opener has gone. The backdrop closes on click, not mouse down. The
+>   provider's pathname effect stays (it does nothing inside AppShell's keyed boundary; a test without that boundary needs it).
+> - Known behaviour: the panel reads live settings, so it can show a newer number than the page beneath ("Changed"); the
+>   browser's Back button leaves the page rather than closing the panel.
 
 **Goal:** Clicking a part number anywhere opens a look-only side panel over the page, so an order in progress keeps its
 ticks and quantities and never asks "Leave this page?".
@@ -36,7 +56,7 @@ so existing tests keep working. The panel reuses the part page's pieces, extract
 - Modify: `src/pages/PartPage.tsx`
 - Test: `src/pages/part/__tests__/PartDetailsPanel.test.tsx`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```tsx
 function renderPanel(partKey = { branch: '1', franchise: 'MC', partNumber: 'MC-OOS-1' }) {
@@ -89,9 +109,9 @@ describe('PartDetailsPanel', () => {
 (Replace the last test's comment with the assertion, using the helper `src/pages/__tests__/PartPage.test.tsx` uses for
 `useTopBarChips`.)
 
-- [ ] **Step 2: Run them to see them fail** (`npx vitest run src/pages/part/__tests__/PartDetailsPanel.test.tsx`).
+- [x] **Step 2: Run them to see them fail** (`npx vitest run src/pages/part/__tests__/PartDetailsPanel.test.tsx`).
 
-- [ ] **Step 3: Extract `PartContent`**
+- [x] **Step 3: Extract `PartContent`**
 
 Move `PartView` from `PartPage.tsx` to `src/pages/part/PartContent.tsx` as `PartContent`, adding `readOnly?: boolean`:
 - `const tabs = readOnly ? TABS.filter(([k]) => k !== 'settings') : TABS;` used for the tablist and `onTabKey`.
@@ -119,7 +139,7 @@ export function usePartRow(partKey: PartKey, options: BranchDataOptions) {
 
 All `PartPage` tests must pass unchanged at this point.
 
-- [ ] **Step 4: Write `PartDetailsPanel`**
+- [x] **Step 4: Write `PartDetailsPanel`**
 
 ```tsx
 // A part's details over any page (Plan Q): the part page's content, look only, in a dialog. The page beneath stays
@@ -178,9 +198,9 @@ the panel; Shift+Tab on the first moves to the last and Tab on the last to the f
 whether `Button` forwards `ref`; if it doesn't, add `forwardRef` or render a ref-holding wrapper as `JdPartPanel` does
 (read how it focuses its Close button and follow that).
 
-- [ ] **Step 5: Run** the new tests and `npx vitest run src/pages/__tests__/PartPage.test.tsx` → PASS.
+- [x] **Step 5: Run** the new tests and `npx vitest run src/pages/__tests__/PartPage.test.tsx` → PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/pages/part/PartContent.tsx src/pages/part/PartDetailsPanel.tsx src/pages/PartPage.tsx src/pages/part/__tests__/PartDetailsPanel.test.tsx
@@ -196,7 +216,7 @@ git commit -m "Plan Q task Q1: PartContent shared with the part page; PartDetail
 - Modify: `src/ui/AppShell.tsx` (wrap `<Outlet />` in `<PartPanelProvider>`)
 - Test: `src/pages/part/__tests__/PartLink.test.tsx`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```tsx
 const KEY = { branch: '1', franchise: 'MC', partNumber: 'MC-OOS-1' };
@@ -268,9 +288,9 @@ describe('PartLink', () => {
 
 (Fill the last test: click "Open full page", expect `where` to show the part path and no dialog.)
 
-- [ ] **Step 2: Run them to see them fail.**
+- [x] **Step 2: Run them to see them fail.**
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 ```tsx
 // Part links open the part in a panel over the page (Plan Q): PartPanelProvider, in the app shell, holds which part is
@@ -340,9 +360,9 @@ Note: `setPartKey` updater with a side effect runs twice under StrictMode harmle
 outside the updater if a reviewer prefers: keep a `partKeyRef`. In `AppShell.tsx`, wrap the `<Outlet />`:
 `<PartPanelProvider><Outlet /></PartPanelProvider>`.
 
-- [ ] **Step 4: Run** the new tests and `npx vitest run src/__tests__/shell.test.tsx src/ui` → PASS.
+- [x] **Step 4: Run** the new tests and `npx vitest run src/__tests__/shell.test.tsx src/ui` → PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/pages/part/PartPanelContext.tsx src/ui/AppShell.tsx src/pages/part/__tests__/PartLink.test.tsx
@@ -368,7 +388,7 @@ className and title):**
 - Change the Reorder link's title "Open the part page" to "Part details".
 - Test: the pages' test files, and `src/pages/__tests__/partPanelPages.test.tsx` (new)
 
-- [ ] **Step 1: Write the failing test**, one case per screen, each rendering the page inside
+- [x] **Step 1: Write the failing test**, one case per screen, each rendering the page inside
 `PartPanelProvider` with the mock source:
 
 ```tsx
@@ -387,12 +407,12 @@ it.each([
 Fill in the real parts from each page's own test file, and add One-Time, Order page, Returns and transfer order lines
 the same way (they need a draft or a saved row: reuse those test files' setups, or put those cases in those files).
 
-- [ ] **Step 2: Run to see them fail** (the links navigate, no dialog).
+- [x] **Step 2: Run to see them fail** (the links navigate, no dialog).
 
-- [ ] **Step 3: Replace the links**, screen by screen. Tests that expect a link's `href` keep passing (PartLink keeps
+- [x] **Step 3: Replace the links**, screen by screen. Tests that expect a link's `href` keep passing (PartLink keeps
 it). Tests that render a page alone keep navigating (no provider).
 
-- [ ] **Step 4: The order-in-progress test** in `partPanelPages.test.tsx`:
+- [x] **Step 4: The order-in-progress test** in `partPanelPages.test.tsx`:
 
 ```tsx
 it('Reorder, Transfers step: tick 3, open a part, close: still 3 ticked, no leave question', async () => {
@@ -403,11 +423,11 @@ it('Reorder, Transfers step: tick 3, open a part, close: still 3 ticked, no leav
 });
 ```
 
-- [ ] **Step 5: Run** `npx vitest run src/pages src/__tests__`, tsc, lint. Fix tests that clicked a part link and
+- [x] **Step 5: Run** `npx vitest run src/pages src/__tests__`, tsc, lint. Fix tests that clicked a part link and
 expected to land on the part page *inside the shell* (with the provider now in `AppShell`): make them use the link's
 href, or Open full page. Name each changed test in the commit body.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add <the pages and tests changed, by name>
@@ -421,28 +441,28 @@ git commit -m "Plan Q task Q3: every part number opens the panel (One-Time and O
 **Files:** `package.json`, `package-lock.json`; create `src/__tests__/clickThrough0151.test.tsx`; create (data-projects)
 `projects/part order tool - app/for-users/0.15.1-try-it.md`.
 
-- [ ] **Step 1: Click-through** (setup as `clickThrough0150.test.tsx`), through the real shell and routes: Recommended
+- [x] **Step 1: Click-through** (setup as `clickThrough0150.test.tsx`), through the real shell and routes: Recommended
 Reorder → Transfers, tick 3, click a part number: panel with Detail and History, no Settings; History tab; Other
 branches: click another branch, the panel switches to it (no navigation); Escape: back on Transfers, 3 still ticked, no
 leave question; click a part, Open full page: "Leave this page?" appears (the guard still guards), Stay; the panel is
 gone or still open as the provider decides, and the ticks remain. Then `package.json` version `0.15.1` as 0150 checks.
 
-- [ ] **Step 2: Run the full suite** in two halves (`npx vitest run src/pages`; the rest), tsc, lint.
+- [x] **Step 2: Run the full suite** in two halves (`npx vitest run src/pages`; the rest), tsc, lint.
 
-- [ ] **Step 3: Try-it notes** for Brian and Ben (the 0.15.0 note's style, saying exactly where to click): Ben's own
+- [x] **Step 3: Try-it notes** for Brian and Ben (the 0.15.0 note's style, saying exactly where to click): Ben's own
 example, Seminole → Recommended Reorder → Transfers → tick 3 → click a part number → look at History → Close → still 3
 ticked. Then Other branches inside the panel; Open full page and its question; right-click → open in new tab; a part
 on a One-Time line; a part in Cleanup. Look for: is the panel wide enough; is Settings missing from it a problem.
 
-- [ ] **Step 4: Commit both repos.**
+- [x] **Step 4: Commit both repos.**
 
 ---
 
 ### Task Q5: Release (with Brian)
 
-- [ ] Brian's try-it on mock.
-- [ ] `npm run build`; dist checks (version 0.15.1, the commit, the SharePoint site id, no mock data); upload to
+- [x] Brian's try-it on mock.
+- [x] `npm run build`; dist checks (version 0.15.1, the commit, the SharePoint site id, no mock data); upload to
   `~/nonjd-order-deploy/dist` on 10.110.100.13; Brian installs (the six sudo steps).
-- [ ] Real test: Brian follows Ben's example on Seminole in the real app, on an order he doesn't save.
-- [ ] Docs: guide + walkthrough (regenerate both .docx: `node guide.js`, `node walkthrough.js`), FUTURE-IDEAS (F11 done),
+- [x] Real test: Brian follows Ben's example on Seminole in the real app, on an order he doesn't save.
+- [x] Docs: guide + walkthrough (regenerate both .docx: `node guide.js`, `node walkthrough.js`), FUTURE-IDEAS (F11 done),
   this plan's and the spec's status, memory. Then the F12 reason-code design for Brian and Ben.

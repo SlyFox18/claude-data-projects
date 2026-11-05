@@ -1,6 +1,8 @@
 # SPI Parts Hub: part details in a side panel, without leaving the page (design)
 
-> **Status:** design approved by Brian, 2026-11-05. Next: the implementation plan (Plan Q, app 0.15.1), after Plan P.
+> **Status:** design approved by Brian, 2026-11-05. Plan: `docs/superpowers/plans/2026-11-05-spi-parts-hub-part-details-panel.md` (Plan Q).
+> **Shipped 2026-11-05:** app 0.15.1 (commit `ca5f16e`) on Fedora; Brian's real test on Seminole passed. Departures from
+> this design are in the plan's Shipped block (Open full page closes the panel first; Return wizard links added).
 > **Origin:** Ben, 2026-11-05 (via Brian): on an order in progress (e.g. Recommended Reorder → Transfers, 3 of 156
 > ticked), clicking a part number to check it asks "Leave this page?"; he wants to see the part and come back without
 > losing his work.

@@ -26,6 +26,8 @@
 // Section 13 (Stock on superseded parts, 0.15.0) follows nonjd-order-app 0.15.0 (commit 130b68e: src/inventory/builtIns.ts,
 // fields.ts, src/cleanup/conditions.ts, fields.ts, src/pages/cleanup/builtIns.ts). Counts are Prod of 2026-11-05: JD 2,477
 // records at 20 branches ($571,028.49), non-JD 698 at 19 branches ($497,322.78; 22 with a word Super To).
+// Section 14 (part details panel, 0.15.1) follows nonjd-order-app 0.15.1 (commit ca5f16e: src/pages/part/PartDetailsPanel.tsx,
+// PartLink.tsx, PartPanelContext.tsx).
 // Worked examples: Dev Gold Fact_NonJD_Reorder built 2026-10-26 (window Oct 2025 - Sep 2026); the transfer example
 // is the app's mock data (round numbers), as in REORDER-RULES.md. The Returns & scrap example (section 8) is Brian's Prod
 // test of 2026-11-02: rule "Scrap default" (All franchises, no sales 36 months, unit cost at least $0.10), 49 AM parts.
@@ -36,8 +38,8 @@ const w = (...fr) => fr.map((f) => Math.round(CONTENT_W * f));
 
 build(process.argv[2] || 'Non-JD Order Tool - User Guide.docx', {
   title: 'SPI Parts Hub: user guide',
-  subtitle: 'Formerly the Non-JD Parts Order Tool · For Ben, Shannon, Barry and Curt · Version 0.15.0 · November 5, 2026 (test version) · https://10.110.100.13:8443',
-  footer: 'SPI Parts Hub: user guide (version 0.15.0)',
+  subtitle: 'Formerly the Non-JD Parts Order Tool · For Ben, Shannon, Barry and Curt · Version 0.15.1 · November 5, 2026 (test version) · https://10.110.100.13:8443',
+  footer: 'SPI Parts Hub: user guide (version 0.15.1)',
   blocks: [
     { p: '**SPI Parts Hub** (until 0.8.0 the Non-JD Parts Order Tool) opens on a launch page where you pick what to work on: **Non-JD ordering**, **Cleanup**, **Returns & scrap**, **Part Lookup** or **Inventory management** today, with **JD ordering** to come. Most of this guide is about Non-JD ordering.' },
     { p: '**In one sentence:** Non-JD ordering shows each branch which non-John Deere parts to reorder and why, suggests stock other branches could send instead, lets you tune the rules behind those suggestions, and turns the parts you pick into an order file for each vendor.' },
@@ -88,7 +90,7 @@ build(process.argv[2] || 'Non-JD Order Tool - User Guide.docx', {
       '**Sort** by clicking a column heading; click again to reverse.',
       'Click the **arrow** at the left of a row to see **why** that quantity was suggested, in plain English. It also shows any suggested transfers, the rule used, inbound transfers, other branches with stock above their target, and the **Part actions** (below).',
       '**Inbound** counts transfers on their way: the ones open in Equip plus the ones saved in this app (a small **app** tag; hover over the number: “Equip transfers + transfers saved in this app”, with the split).',
-      'Click a **part number** to open its Part page.',
+      'Click a **part number** to see the part in a panel, without leaving this page (section 14).',
     ] },
     { h3: 'Min, no demand' },
     { p: 'An Equip minimum always applies, even on a part nobody has asked for in the rule’s history months. Those lines carry a **Min, no demand** tag. They are hidden until you turn on **Show minimums with no demand**, and even then they are only ordered if you tick them. Many of these minimums are old or mistyped in Equip, so check them before ordering.' },
@@ -128,7 +130,7 @@ build(process.argv[2] || 'Non-JD Order Tool - User Guide.docx', {
     ], ref: 'steps' },
 
     { h2: 'Part Lookup and the Part page' },
-    { p: 'Search one branch, or **All branches** to find a part anywhere. The Part page has three tabs:' },
+    { p: 'Search one branch, or **All branches** to find a part anywhere. Clicking a part number opens a **panel** with Detail, History and Other branches (section 14); **Open full page** in it goes to the Part page, which has three tabs:' },
     { bullets: [
       '**Detail:** stock, prices, the suggested order and "Why this number", plus **Other branches** (below).',
       '**History:** a chart of the last 12 full months (switch between units sold and requests), a 60-month table and totals.',
@@ -416,7 +418,7 @@ build(process.argv[2] || 'Non-JD Order Tool - User Guide.docx', {
     { bullets: [
       '**Branch** and **Franchise** at the top narrow the list (**All** = every one). Picking a branch resets the franchise.',
       'Next to them: the number of parts listed and their total value, written like “415 parts · -$1,234.56”. The value is the **Equip stock value** for Stock value with no quantity and for any check that uses Equip stock value; otherwise it is the **On-hand value (on hand × cost)**.',
-      'The table: **Branch**, **Franchise**, **Part** (click it to open the Part page), **Description**, **Bin**, then a column for each field the check’s conditions use. A date that is blank shows **Never**; a part with no dealer group shows **(none)**.',
+      'The table: **Branch**, **Franchise**, **Part** (click it to see the part, section 14), **Description**, **Bin**, then a column for each field the check’s conditions use. A date that is blank shows **Never**; a part with no dealer group shows **(none)**.',
       '**Sort** by clicking a column heading; click again to reverse. While branches are still loading the list stays in branch order (“Listed by branch while the rest load; sorted once every branch has loaded.”).',
       'The first 200 parts show; **Show 200 more** at the bottom adds more.',
       '**Export CSV** downloads what the filters show, with the same columns as the table: `Branch, Franchise, PartNumber, Description, Bin`, then each field (for example `OnHand, Cost, EquipStockValue`). The file is named after the check and the data date, for example `Cleanup-Stock value with no quantity-20261102.csv`. If not every branch has loaded, the button reads **Export loaded branches (12 of 19)** and the file name ends in **-partial**.',
@@ -864,7 +866,20 @@ build(process.argv[2] || 'Non-JD Order Tool - User Guide.docx', {
     ] },
     { p: 'On November 5, 2026 (Prod): JD **2,477** records at 20 branches, **$571,028.49** on hand; non-JD **698** records at 19 branches, **$497,322.78**, 22 of them with a word Super To. Both CSVs matched an independent list from the same data record for record.' },
 
-    { h1: '14. During the test' },
+    { h1: '14. Seeing a part without leaving your work (0.15.1)' },
+    { p: 'Ben’s request of November 5: on an order in progress, check a part and come back with nothing lost. Clicking a **part number** now opens a **panel** over the right of the screen. The page stays exactly as it was underneath: ticks, quantities and the step you are on.' },
+    { bullets: [
+      '**Look only:** the panel shows the part’s **Detail** and **History** tabs and **Other branches**. There is no **Settings** tab: a change halfway through an order could move the order’s own numbers.',
+      '**Close it** with **Close**, **Esc** or a click on the dimmed page. Nothing is lost, and “Leave this page?” does not appear, because you never left.',
+      '**Other branches:** click another branch’s name and the panel switches to that branch.',
+      '**Open full page** (top of the panel) goes to the Part page, for Settings. The panel closes first, and if you have unsaved work **“Leave this page?”** asks, as it always has.',
+      '**A new tab:** Ctrl-click a part number, or right-click and open it in a new tab: the full Part page opens there and your page stays put.',
+      '**Where:** Recommended Reorder (both steps), the One-Time Order review, Create order, Transfers and transfer orders, order lines, return and scrap documents and the New return and New scrap wizards, Cleanup results, Part Lookup (anywhere on the row), Special statuses, the Rules page’s Try it, and Other branches. **Not Inventory reports:** JD parts have no Part page, so those reports keep their own record panels.',
+      '**A newer number:** the panel reads the live settings when it opens, so if someone changed a setting since your page loaded it can show a newer number than the page beneath. A **Changed** tag shows when a part differs from this morning’s run.',
+      '**The browser’s Back button** leaves the page; it does not close the panel. Use Close.',
+    ] },
+
+    { h1: '15. During the test' },
     { bullets: [
       'This is a test copy on a test server; the address and the certificate warning will change for the real version.',
       'Orders and settings you save are real (they go into the SharePoint lists), but nothing is sent to a vendor; you download the CSV and use it yourself.',

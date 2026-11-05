@@ -5,7 +5,7 @@ Brian, on 2026-10-28. Each entry gives the idea as described, what already exist
 open questions to settle before it is designed. Nothing here is scheduled; pick from this list when planning the
 next round.
 
-Round 2 is complete (0.7.0, phase 4 One-Time transfers). F2 is done in 0.8.0 (2026-10-30), F6 in 0.9.0, F8 in 0.10.0 and F1 in 0.11.0 (all 2026-11-02), F4's first report in 0.12.0 (2026-11-03), Border Stores and 2 & 4 Cotton in 0.13.0 (2026-11-04), a bulk transfer export (Brian's request, 2026-11-04: Export (N) on Transfer orders, one combined CSV) in 0.13.1, Corporate Stocking (the first one-row-per-part report) in 0.14.0 and F10 Stock on superseded parts in 0.15.0 (both 2026-11-05). Next: F11 (part details panel, 0.15.1), then the F12 reason-code design.
+Round 2 is complete (0.7.0, phase 4 One-Time transfers). F2 is done in 0.8.0 (2026-10-30), F6 in 0.9.0, F8 in 0.10.0 and F1 in 0.11.0 (all 2026-11-02), F4's first report in 0.12.0 (2026-11-03), Border Stores and 2 & 4 Cotton in 0.13.0 (2026-11-04), a bulk transfer export (Brian's request, 2026-11-04: Export (N) on Transfer orders, one combined CSV) in 0.13.1, Corporate Stocking (the first one-row-per-part report) in 0.14.0, F10 Stock on superseded parts in 0.15.0 and F11 the part details panel in 0.15.1 (all 2026-11-05). Next: Pieces In Set (F4), then the F12 reason-code design (Brian is asking Ben the open questions meanwhile).
 
 | # | Idea | Rough size | Needs a design pass |
 |---|---|---|---|
@@ -19,8 +19,8 @@ Round 2 is complete (0.7.0, phase 4 One-Time transfers). F2 is done in 0.8.0 (20
 | F8 | One-Time order templates | **Done in 0.10.0** | No |
 | F9 | Price change history (was N5) | Medium | Yes, later |
 | F10 | Stock on superseded parts (JD + non-JD built-ins) | **Done in 0.15.0** | No |
-| F11 | Part details panel (see a part without leaving an order) | Medium; **next** | **Designed** (spec Q, 0.15.1) |
-| F12 | Reason codes: report and check rules suggest parts on orders | Large | **Yes** (after P and Q) |
+| F11 | Part details panel (see a part without leaving an order) | **Done in 0.15.1** | No |
+| F12 | Reason codes: report and check rules suggest parts on orders | Large | **Yes** (after Pieces In Set) |
 
 ## F1. More Cleanup checks
 
@@ -235,7 +235,8 @@ Inventory report and a built-in Cleanup check; Super To is a new Cleanup field. 
 
 **Idea (Ben, 2026-11-05).** On an order in progress, check a part's details and come back without losing the work
 (today the part link asks "Leave this page?"). Designed: `docs/superpowers/specs/2026-11-05-spi-parts-hub-part-details-panel-design.md`
-(Plan Q, app 0.15.1).
+(Plan Q). **Done in 0.15.1 (2026-11-05):** a part number opens a look-only panel over the page. When JD ordering is
+built it will need a JD version: JD parts have no part page.
 
 ## F12. Reason codes: rules that suggest parts on orders
 

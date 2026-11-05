@@ -42,6 +42,8 @@
 // (Branches with demand >= 4, 618 parts) was deleted; the steps have the reader make "TEST 0.14.0" and archive it.
 // The 0.15.0 section follows nonjd-order-app 0.15.0 (commit 130b68e: Stock on superseded parts, src/inventory/builtIns.ts,
 // src/pages/cleanup/builtIns.ts). Counts are Prod of 2026-11-05: JD 2,477 records, non-JD 698.
+// The 0.15.1 section follows nonjd-order-app 0.15.1 (commit ca5f16e: the part details panel, src/pages/part/PartDetailsPanel.tsx,
+// PartLink.tsx, PartPanelContext.tsx).
 // Run: npm install, then node walkthrough.js [output file]
 const { build, CONTENT_W } = require('./lib');
 
@@ -56,8 +58,8 @@ const notes = { answer: 'Notes (anything different, slow or confusing):' };
 
 build(process.argv[2] || 'Non-JD Order Tool - Walkthrough.docx', {
   title: 'SPI Parts Hub: walkthrough',
-  subtitle: 'Formerly the Non-JD Parts Order Tool · Hands-on steps through every page · Version 0.15.0 · November 5, 2026 · App: https://10.110.100.13:8443',
-  footer: 'SPI Parts Hub: walkthrough (0.15.0)',
+  subtitle: 'Formerly the Non-JD Parts Order Tool · Hands-on steps through every page · Version 0.15.1 · November 5, 2026 · App: https://10.110.100.13:8443',
+  footer: 'SPI Parts Hub: walkthrough (0.15.1)',
   blocks: [
     { p: 'This is a hands-on tour of the tool. Each step says what to do and what you should see. Tick **OK** when it matches. When it doesn’t, or something is slow or confusing, write it in the notes box under that section and send it to Brian.' },
     { bullets: [
@@ -98,17 +100,17 @@ build(process.argv[2] || 'Non-JD Order Tool - Walkthrough.docx', {
     steps([
       ['Search `124184`. Click the **arrow** at the left of its line.', 'The details open: "why" in plain English, the rule used (**Default**), 22 demands, 170 sold in 12 months, a target of 40, and an order of **39** (40 − 1 on hand − 0 on order).'],
       ['In the same details, look for **Above target at other branches** and **Inbound transfers in Equip**.', 'Other branches with stock above their own target, if any, and any Equip transfers on their way (they don’t reduce the order: Equip already counts them in on order). A part another branch could send shows a purple **Suggested transfers** box instead (Part 2, 0.5.0).'],
-      ['Click the **part number** 124184.', 'The Part page opens on its **Detail** tab (next section).'],
+      ['Click the **part number** 124184.', 'A panel opens over the page on its **Detail** tab (next section). Click **Close**: the page is as you left it.'],
     ]),
     notes,
 
     { h2: '4. Part Lookup and the Part page' },
     steps([
       ['Click **Part Lookup** in the menu. Choose **All branches** and search `PW-193NT`.', 'The Posi-Close Schlagel wheel at every branch that has it (about 12 of them need ordering today).'],
-      ['Click the branch 1 result.', 'The Part page, **Detail** tab: stock, prices, the suggested order (about 14) and "Why this number".'],
+      ['Click the branch 1 result.', 'The part’s panel, **Detail** tab: stock, prices, the suggested order (about 14) and "Why this number".'],
       ['Scroll to **Other branches**.', 'Every branch with this part, this branch first and marked "(this branch)": On hand, Target, Above target, Excess, Months of supply and Sold 12 mo, with a **Total** row.'],
       ['Click the **History** tab. Switch between units sold and requests.', 'A chart of the last 12 full months, a 60-month table and totals.'],
-      ['Click the **Settings** tab. Don’t change anything yet.', 'Min override, Manual order, Masked (with an expiry date), Phase in (quantity and end date), Notes, and the not-yet-used EOQ / pre-approved fields.'],
+      ['Click **Open full page** at the top of the panel, then the **Settings** tab. Don’t change anything yet.', 'Min override, Manual order, Masked (with an expiry date), Phase in (quantity and end date), Notes, and the not-yet-used EOQ / pre-approved fields.'],
     ]),
     notes,
 
@@ -158,12 +160,28 @@ build(process.argv[2] || 'Non-JD Order Tool - Walkthrough.docx', {
       ['In the left menu, change the **Area** select to **Cleanup**.', '**Cleanup checks**, with **Checks** the only item in the menu: the built-in checks **Minimums with no demand**, **Stock value with no quantity** and **Stock on superseded parts**, and any saved ones, each with a count over every branch (Part 2, 0.11.0).'],
       ['Click **Minimums with no demand**, then pick branch **6**.', 'The Equip minimums on parts with no demand and no sales, with **← Cleanup checks** at the top; branch 6 has about 1,000. The largest is about $21,000 (part 145019, module rim, minimum 65).'],
       ['Change the **Area** select to **Inventory management**.', '**Inventory reports**, with **Reports** the only item in the menu: the built-ins **MLPF Gaps**, **Border Stores**, **2 & 4 Cotton**, **Corporate Stocking** and **Stock on superseded parts** and any saved copies, each with a count over every JD branch (Part 2, 0.12.0 to 0.15.0).'],
-      ['Click **App Settings**.', 'Your default branch and franchise, and **About** with the version (**0.15.0**).'],
+      ['Click **App Settings**.', 'Your default branch and franchise, and **About** with the version (**0.15.1**).'],
       ['Set your default branch, then open Recommended Reorder.', 'It opens on your default branch.'],
     ]),
     notes,
 
     { h1: 'Part 2: what’s new' },
+
+    { h2: 'Version 0.15.1 (November 5, 2026): see a part without leaving your work' },
+    { p: 'New since 0.15.0, Ben’s request: clicking a part number opens a **panel** over the right of the screen, look only, and the page stays exactly as it was underneath. Nothing here saves anything.' },
+    { h3: 'Ben’s example' },
+    steps([
+      ['**Recommended Reorder**, branch **1**, step **1, Transfers**. Tick **3** transfers.', 'The Save button says “Save 3 transfers”.'],
+      ['Click a **part number**.', 'A panel with the part’s status, **Detail** and **History** tabs and **Other branches**; no Settings tab. No “Leave this page?”.'],
+      ['Click **History**.', 'The sales chart and the 60-month table.'],
+      ['Under **Other branches**, click another branch’s name.', 'The panel switches to that branch; you are still on Recommended Reorder.'],
+      ['Press **Esc** (or **Close**, or click the dimmed page).', 'Back on Transfers, **3 still ticked**.'],
+      ['Click a part number, then **Open full page** at the top of the panel.', 'The panel closes and **“Leave this page?”** asks, as it always has. Click **Stay**: the ticks are kept.'],
+      ['Ctrl-click a part number.', 'The full Part page opens in a new tab; this page stays put. Close that tab.'],
+      ['Leave Recommended Reorder and click **Leave**. Open a part number in **Cleanup**, **Part Lookup** (anywhere on the row) and on an order’s lines on **Orders**.', 'The same panel each time. Inventory reports keep their own record panels: JD parts have no Part page.'],
+    ]),
+    { p: '**Your opinion:** is the panel wide enough for the chart and Other branches? Do you miss Settings in it?' },
+    notes,
 
     { h2: 'Version 0.15.0 (November 5, 2026): Stock on superseded parts' },
     { p: 'New since 0.14.0, Ben’s request: parts with stock on hand but a **Super To**, so stock still under an old part number can be moved or relabelled. Same rule in two places: an **Inventory** report for JD parts and a **Cleanup** check for non-JD parts. Nothing is saved in these steps. The counts are from November 5 and will have moved a little.' },
@@ -370,7 +388,7 @@ build(process.argv[2] || 'Non-JD Order Tool - Walkthrough.docx', {
       ['Set the branch to **1** and read the cards.', 'Non-JD ordering: about **220 parts to order** with their cost and, in purple, about **67 could come by transfer**. Cleanup: about **21 minimums with no demand at Branch 1**. Part Lookup has no count. The Coming later cards do nothing when clicked.'],
       ['Click the **Non-JD ordering** card.', 'Home, with the same numbers as the card. The left menu has **‹ All areas**, the **Area** select on Non-JD ordering, and only its pages: Home, Recommended Reorder, One-Time Order, Transfers, Orders, Rules, Transfer rules, Special statuses (and, since 0.10.0, Templates under One-Time Order).'],
       ['Open **Recommended Reorder** (continue to step 2 if it opens on transfers) and tick one part. Change the **Area** select to **Cleanup**.', '“Leave this page? 1 ticked part will be lost.” Click **Stay**: the tick is kept. Change the area again and click **Leave**: Cleanup, with only Cleanup in the menu.'],
-      ['Click **‹ All areas**, then the **Part Lookup** card. Search a part and open it.', 'Part Lookup, with only Part Lookup in the menu; it stays there on the part page.'],
+      ['Click **‹ All areas**, then the **Part Lookup** card. Search a part, open it, then click **Open full page**.', 'Part Lookup, with only Part Lookup in the menu; it stays there on the part page.'],
       ['Click **‹ All areas**. At the bottom, click **Parts Availability ↗**, then **Parts reports ↗**.', 'Each opens in a new tab: Parts Availability, and the Parts Reports app in Power BI. The launch page stays open.'],
       ['Open a bookmark or address you used before, for example **/reorder** or **/orders**.', 'It opens that page as before, with the menu on its area.'],
     ]),
@@ -506,7 +524,7 @@ build(process.argv[2] || 'Non-JD Order Tool - Walkthrough.docx', {
 
     { h3: 'Above target, Excess and Months of supply' },
     steps([
-      ['On Recommended Reorder, branch 1, search `MULTISEAL` and click the **part number**.', 'The Part page. Under **Other branches**, a **Suggested transfers** line once every branch has loaded: "Suggested: 44 from branch 6 (conventional); 61 from branch 6 (redistribution)".'],
+      ['On Recommended Reorder, branch 1, search `MULTISEAL` and click the **part number**.', 'The part’s panel. Under **Other branches**, a **Suggested transfers** line once every branch has loaded: "Suggested: 44 from branch 6 (conventional); 61 from branch 6 (redistribution)".'],
       ['Find **branch 6** in the Other branches table.', 'On hand about 730, Above target about 659, **Excess about 426**, Months of supply about 28.8. Branch 6 keeps 12 months of supply (about 304), so only the rest is excess.'],
       ['Find **branch 93**.', 'About 1,150 **Above target**, but **Excess 0**: it has about 11 months of supply, less than the 12 it keeps.'],
       ['Hover over the **Above target**, **Excess** and **Months of supply** headings.', 'A short definition of each.'],
@@ -528,7 +546,7 @@ build(process.argv[2] || 'Non-JD Order Tool - Walkthrough.docx', {
     { h3: 'Phase-in (practice, then clear it)' },
     { note: 'A phase-in is saved for everyone straight away. Clear it again at the end of these steps.' },
     steps([
-      ['**Part Lookup**, branch **1**, search `GG100`, and open it.', 'BS **GG100**, 100PSI liquid fill gauge: none on hand, no sales, so no order (**No recent activity**).'],
+      ['**Part Lookup**, branch **1**, search `GG100`, open it, and click **Open full page**.', 'BS **GG100**, 100PSI liquid fill gauge: none on hand, no sales, so no order (**No recent activity**).'],
       ['Click the **Settings** tab. Under **Phase in**, type a quantity of **2**.', 'The end date fills in 12 months from today.'],
       ['Change the end date to **yesterday**.', 'The message "That date has passed, so the phase-in would not apply. Pick today or later." Put the 12-months-from-today date back.'],
       ['Click **Save settings**.', '"Saved." A green badge next to **Phase in**: **Active until** that date, and a line saying it ends early once the part has 3 demands.'],
@@ -543,7 +561,7 @@ build(process.argv[2] || 'Non-JD Order Tool - Walkthrough.docx', {
     { h3: 'A phase-in that has ended (practice, then clear it)' },
     { p: 'A phase-in ends at its end date, or as soon as the part has the demands its rule needs. This shows the second case on a part that already sells well.' },
     steps([
-      ['Open part **124184** (Mobil 1 oil) at branch 1, **Settings** tab. Set a phase-in quantity of **1** and **Save settings**.', 'An amber badge **Ended: reached 3 demands**: the part already has about 22 demands, so its rule stocks it and the phase-in has nothing to do.'],
+      ['**Part Lookup**: open part **124184** (Mobil 1 oil) at branch 1, **Open full page**, **Settings** tab. Set a phase-in quantity of **1** and **Save settings**.', 'An amber badge **Ended: reached 3 demands**: the part already has about 22 demands, so its rule stocks it and the phase-in has nothing to do.'],
       ['Click the **Detail** tab.', 'Target and order are unchanged (about 40 and 39). "Why this number" starts with "The phase-in ended because the part reached 3 demands."'],
       ['Open **Special statuses**.', '124184 listed as **Phase-in ended**, so someone can tidy it.'],
       ['Back on **Settings**, click **Clear phase-in** and **Save settings**.', 'The badge and the Special statuses entry are gone.'],
@@ -586,6 +604,11 @@ build(process.argv[2] || 'Non-JD Order Tool - Walkthrough.docx', {
 
     { h1: 'Part 3: release checks (Brian)' },
     { p: 'Run these when a new version is deployed to the test server, after **Ctrl+F5** to load it.' },
+    { h3: '0.15.1' },
+    steps([
+      ['App Settings → **About**.', '**Version 0.15.1 · commit ca5f16e**. (Done November 5.)'],
+      ['Ben’s example on Seminole, on an order you don’t save: tick 3 transfers, open a part, check its real numbers, close it, then leave the page.', 'Still 3 ticked after closing, and “Leave this page?” still asks on leaving. (Done November 5 by Brian; app only, no data or publish change.)'],
+    ]),
     { h3: '0.15.0' },
     steps([
       ['App Settings → **About**.', '**Version 0.15.0 · commit 130b68e**. (Done November 5.)'],
