@@ -22,8 +22,9 @@ On hand > 0 and Super To (trimmed) is not blank. One row per branch record.
 - **Active records only** (`includeIdle` off): idle records are those with no stock, orders, sales or demand, so none
   can have on hand > 0. It counts at once, with no Count button and no idle download. (The plan's reference check
   confirms 0 idle records with on hand > 0 in Prod.)
-- Columns: Branch, PartNumber, Description, OnHand, Cost, OnHandValue, SuperTo, Source, SLC. Default sort: on-hand
-  value desc, then part number, then branch. CSV headings = these names.
+- Columns: Branch, PartNumber, Description, OnHand, Cost, OnHandValue (a new JD field: whole units on hand at cost,
+  as Cleanup's), SuperTo, Source, SLC. Sort: the reports' usual default (part number); any column sorts by a click.
+  CSV headings = these names.
 - Copy as my own works as for the other built-ins.
 
 ## 2. Non-JD: built-in Cleanup check "Stock on superseded parts"
