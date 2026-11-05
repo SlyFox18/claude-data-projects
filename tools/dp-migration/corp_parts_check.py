@@ -53,6 +53,20 @@ Plan O (docs/superpowers/plans/2026-11-04-spi-parts-hub-corporate-stocking.md, O
   (upper(trim(PartNumber))) over jd_all: see stocking_rows. --compare-xlsx keys it on the trimmed, upper-case
   PartNumber and compares Description ignoring case (SQL Anywhere's MAX picks any case variant).
 
+Plan R (docs/superpowers/plans/2026-11-05-spi-parts-hub-pieces-in-set.md, R-D2 / R-D3 / R-D6 / R-D7):
+- Pieces In Set (--report pis, pis3, pisreview; projects/corp parts excel reports/SPI-Pieces In Set/): the queries'
+  InvoiceQty .. Ranked over the same 18 months through "now" (no 7-day lag), computed at every branch, the reports
+  leaving out 2 and 4: see build_pis_stats. The record per Branch + upper(trim(part)) is franchise D's (R-D6), longest
+  description, then the smallest, then the smallest part number as stored (R-D7), and Super To is that record's: the
+  app's semantics. The workbook's joins read any franchise; pis_franchise_rows lists the rows that changes (R-D6).
+- Gold's seven columns are compared with the reference over every active record when Gold has them (--check-pis-gold
+  makes their absence a failure), and no idle record may qualify for a list, i.e. hold 3+ invoices. An idle record CAN
+  hold fewer (about 500 at any time, Prod 2026-11-05): a first sale inside Corp demands' 7-day lag, on a part with no
+  stock and sales counters at 0. They carry no stats and no report needs them, so they're only counted.
+- Sheets: pis = Data, pis3 = 'SPI - Pieces In Set ' (trailing space; the first tab only catches up with Data on the
+  second Refresh All), pisreview = 'SPI -Pieces In Set Review'. Numbers tolerate 0.05 (Match % is rounded to 1 dp,
+  Excel's Months of Supply isn't).
+
 Usage:
     python corp_parts_check.py --tier dev                      # compare with Gold, exit 1 on any mismatch
     python corp_parts_check.py --tier dev --mlpf-out mlpf.csv
@@ -62,6 +76,8 @@ Usage:
         --compare-xlsx "Border Stores.xlsx" --diff-out diff.csv --report-out border.csv
     python corp_parts_check.py --tier prod --report stocking --as-of "2026-11-04 15:03:00" \\
         --compare-xlsx "SPI Corparate Stocking.xlsx" --diff-out diff.csv --report-out stocking.csv
+    python corp_parts_check.py --tier prod --groups-tier prod --report pis --as-of "2026-11-05 15:15:00" \\
+        --compare-xlsx "SPI - Pieces In Set.xlsx" --diff-out diff.csv --report-out pis.csv
 
 --groups-tier reads CommodityCodeGroups from another tier (Prod doesn't have it until L1 is released). Without
 Gold (a tier the Part 5 build hasn't run on) give --as-of: the Gold compare is skipped and the MLPF list comes
@@ -116,6 +132,23 @@ STOCKING_COLUMNS = ["PartNumber", "Description", "Cost", "Source", "SLC", "Commo
 STOCKING_NUM = ["Cost", "OnOrder", "OnHandQty", "R18 Demands", "Count of Locations with Demands"]
 STOCKING_BRANCHES_MIN = 3
 BRANCH_KEY = ("Branch", "PartNumber")
+PIS_COLUMNS = ["Branch", "Part #", "Description", "Source", "SLC", "Commodity Code", "Dealer Group Code", "SPI PIS",
+               "Match %", "Invoices", "Demands", "Sales Qty", "Bin Qty", "On Order Qty", "Cost", "Round Up",
+               "Recommended Qty", "Recommended Cost", "Tier", "PIS Class", "Stock Position", "Months of Supply",
+               "Coverage Flag"]
+PIS_NUM = ["SPI PIS", "Match %", "Invoices", "Demands", "Sales Qty", "Bin Qty", "On Order Qty", "Cost", "Round Up",
+           "Recommended Qty", "Recommended Cost", "Stock Position", "Months of Supply"]
+PIS_REVIEW_COLUMNS = ["Branch", "Part #", "Description", "Source", "SLC", "Commodity Code", "Dealer Group Code",
+                      "InMaster PIS", "Most Common Qty", "Match %", "PIS Multiple %", "Invoices", "Demands",
+                      "Sales Qty"]
+PIS_REVIEW_NUM = ["InMaster PIS", "Most Common Qty", "Match %", "PIS Multiple %", "Invoices", "Demands", "Sales Qty"]
+PIS_GOLD_COLS = ["BinQty", "PiecesInSet", "PisInvoices", "PisSalesQty", "PisQty", "PisQtyInvoices",
+                 "PisMultipleInvoices"]
+PIS_MONTHS = 18
+PIS_MIN_INVOICES = 3
+PIS_MATCH_MIN = 75
+PIS_TOLERANCE = 0.05
+_PIS_REPORT = {"key": ("Branch", "Part #"), "upper_key": True, "nocase": ("Description",), "tolerance": PIS_TOLERANCE}
 REPORTS = {
     "mlpf": {"sheet": "MLPF Gaps", "columns": MLPF_COLUMNS, "num": MLPF_NUM},
     "border": {"sheet": "Border Stores", "columns": REPORT_COLUMNS, "num": REPORT_NUM,
@@ -125,6 +158,11 @@ REPORTS = {
     # one row per part (Plan O): keyed on the part alone, upper case for matching; case-blind description (O-D4)
     "stocking": {"sheet": "SPI Corparate Stocking", "columns": STOCKING_COLUMNS, "num": STOCKING_NUM,
                  "key": ("PartNumber",), "upper_key": True, "nocase": ("Description",)},
+    # Plan R: the workbook's three lists
+    "pis": {"sheet": "Data", "columns": PIS_COLUMNS, "num": PIS_NUM, **_PIS_REPORT},
+    "pis3": {"sheet": "SPI - Pieces In Set ", "columns": PIS_COLUMNS, "num": PIS_NUM, **_PIS_REPORT},
+    "pisreview": {"sheet": "SPI -Pieces In Set Review", "columns": PIS_REVIEW_COLUMNS, "num": PIS_REVIEW_NUM,
+                  **_PIS_REPORT},
 }
 DEMAND_MONTHS = 18
 INVOICE_LAG_DAYS = 7
@@ -264,6 +302,12 @@ def report_rows(con, name: str, source: str = "jd_all") -> list:
         return mlpf_rows(con, "expected" if source == "jd_all" else source)
     if name == "stocking":
         return stocking_rows(con, source)
+    if name == "pis":
+        return pis_rows(con)
+    if name == "pis3":
+        return pis3_rows(con)
+    if name == "pisreview":
+        return pis_review_rows(con)
     rep = REPORTS[name]
     cotton = " AND cotton" if rep["cotton"] else ""
     cur = con.execute(f"""
@@ -362,6 +406,200 @@ def stocking_rows(con, source: str = "jd_all") -> list:
                dm.n AS "Count of Locations with Demands", dm.locs AS "Locations with Demands"
         FROM eligible e JOIN names n USING (k) JOIN demand dm USING (k)
         ORDER BY dm.n DESC, dm.dm DESC, n."PartNumber", k""")
+    cols = [d[0] for d in cur.description]
+    return [dict(zip(cols, r)) for r in cur.fetchall()]
+
+
+def build_pis_stats(con, now: datetime) -> None:
+    """Pieces In Set (Plan R), from parts, intrans and inmaster. Creates:
+    pis_invoices (b, p, inv, q): one row per invoice net of its credits, 18 months through now, every branch;
+    inmaster_pis (b, p, pieces): MAX(PiecesInSet) over franchise D's rows of the Branch + part;
+    pis_stats (b, p, PisQty, PisQtyInvoices, PisInvoices, PisSalesQty, PisMultipleInvoices): the queries' QtyCounts,
+      PartTotals and Ranked: the most common net quantity, ties to the smaller;
+    pis_records: every franchise D part record with b, k and pick (1 = the record that carries the stats, R-D7)."""
+    ws = add_months_dt(now, -PIS_MONTHS)
+    con.execute(f"""
+        CREATE OR REPLACE TABLE pis_invoices AS
+        WITH tx AS (
+            SELECT upper(trim(Branch)) AS b, upper(trim(PartNumber)) AS p,
+                   CASE WHEN upper(trim(Type)) = 'I' THEN trim(RONumber) ELSE trim(OriginalInvoiceNo) END AS inv,
+                   Qty, upper(trim(Type)) = 'I' AS is_inv
+            FROM intrans
+            WHERE upper(trim(Franchise)) = 'D' AND TransDatetime >= {_ts(ws)} AND TransDatetime <= {_ts(now)}
+              AND ((upper(trim(Type)) = 'I' AND Qty > 0) OR (upper(trim(Type)) = 'C' AND Qty < 0))
+        )
+        SELECT b, p, inv, sum(Qty) AS q FROM tx GROUP BY b, p, inv HAVING sum(Qty) > 0 AND bool_or(is_inv)
+    """)
+    con.execute("""
+        CREATE OR REPLACE TABLE inmaster_pis AS
+        SELECT upper(trim(Branch)) AS b, upper(trim(PartNumber)) AS p, max(PiecesInSet) AS pieces
+        FROM inmaster WHERE upper(trim(Franchise)) = 'D' GROUP BY 1, 2
+    """)
+    # The modulo in whole hundredths: DuckDB's % on decimals goes through DOUBLE.
+    con.execute("""
+        CREATE OR REPLACE TABLE pis_stats AS
+        WITH qc AS (
+            SELECT b, p, q, count(*) AS n FROM pis_invoices GROUP BY b, p, q
+        ), totals AS (
+            SELECT i.b, i.p, count(*) AS tot, sum(i.q) AS sales,
+                   count(*) FILTER (WHERE m.pieces > 1 AND CAST(round(i.q * 100) AS BIGINT)
+                                          % CAST(round(m.pieces * 100) AS BIGINT) = 0) AS mult
+            FROM pis_invoices i LEFT JOIN inmaster_pis m ON m.b = i.b AND m.p = i.p
+            GROUP BY i.b, i.p
+        ), ranked AS (
+            SELECT *, row_number() OVER (PARTITION BY b, p ORDER BY n DESC, q ASC) AS rn FROM qc
+        )
+        SELECT r.b, r.p, r.q AS PisQty, CAST(r.n AS INTEGER) AS PisQtyInvoices, CAST(t.tot AS INTEGER) AS PisInvoices,
+               t.sales AS PisSalesQty, CAST(t.mult AS INTEGER) AS PisMultipleInvoices
+        FROM ranked r JOIN totals t ON t.b = r.b AND t.p = r.p
+        WHERE r.rn = 1
+    """)
+    con.execute("""
+        CREATE OR REPLACE TABLE pis_records AS
+        SELECT x.*, upper(trim(Branch)) AS b, upper(trim(PartNumber)) AS k,
+               row_number() OVER (PARTITION BY upper(trim(Branch)), upper(trim(PartNumber))
+                                  ORDER BY length(Description) DESC NULLS LAST, Description ASC, PartNumber ASC,
+                                           Branch ASC, Franchise ASC) AS pick
+        FROM parts x WHERE upper(trim(Franchise)) = 'D'
+    """)
+
+
+def _pis_fetch(con, sql: str) -> list:
+    """Rows as dicts, sorted by Branch then Part # (the workbook's Table.Sort)."""
+    cur = con.execute(sql)
+    cols = [d[0] for d in cur.description]
+    rows = [dict(zip(cols, r)) for r in cur.fetchall()]
+    rows.sort(key=lambda r: (r["Branch"] or "", r["Part #"] or ""))
+    return rows
+
+
+_PIS_TEXT = """trim(x.Branch) AS "Branch", trim(x.PartNumber) AS "Part #", trim(x.Description) AS "Description",
+               trim(x.Source) AS "Source", trim(x.SLC) AS "SLC", trim(x.CommodityCode) AS "Commodity Code",
+               trim(x.DealerGroupCode) AS "Dealer Group Code\""""
+_PIS_MATCH = "round(CAST(s.PisQtyInvoices AS DOUBLE) / s.PisInvoices * 100, 1)"
+_PIS_RECORD = f"""x.pick = 1 AND x.b NOT IN ({_in_list(POOL_EXCLUDED_BRANCHES)})
+              AND s.PisInvoices >= {PIS_MIN_INVOICES}"""
+
+
+def pis_rows(con) -> list:
+    """The main list (PIS_COLUMNS): SPI PIS > 1, Match % >= 75, 3+ invoices, Super To blank, not branch 2 or 4. The
+    calculated columns are the workbook's: Bin Qty, not on hand, is the stock (R-D3); zero stock orders one full set."""
+    return _pis_fetch(con, f"""
+        WITH a AS (
+            SELECT {_PIS_TEXT}, s.PisQty AS "SPI PIS", {_PIS_MATCH} AS "Match %", s.PisInvoices AS "Invoices",
+                   s.PisInvoices AS "Demands", s.PisSalesQty AS "Sales Qty", coalesce(x.BinQty, 0) AS "Bin Qty",
+                   coalesce(x.OnOrder, 0) AS "On Order Qty", x.Cost AS "Cost",
+                   CAST(coalesce(x.BinQty, 0) + coalesce(x.OnOrder, 0) AS DOUBLE) AS sp
+            FROM pis_records x JOIN pis_stats s ON s.b = x.b AND s.p = x.k
+            WHERE {_PIS_RECORD}
+              AND s.PisQty > 1 AND {_PIS_MATCH} >= {PIS_MATCH_MIN} AND coalesce(trim(x.SuperTo), '') = ''
+        ), b AS (
+            SELECT *, CASE WHEN sp = 0 THEN CAST("SPI PIS" AS DOUBLE)
+                           ELSE ceil(sp / CAST("SPI PIS" AS DOUBLE)) * CAST("SPI PIS" AS DOUBLE) END AS ru,
+                   CASE WHEN "Sales Qty" <> 0 THEN sp / (CAST("Sales Qty" AS DOUBLE) / {PIS_MONTHS}) END AS mos
+            FROM a
+        )
+        SELECT "Branch", "Part #", "Description", "Source", "SLC", "Commodity Code", "Dealer Group Code", "SPI PIS",
+               "Match %", "Invoices", "Demands", "Sales Qty", "Bin Qty", "On Order Qty", "Cost", ru AS "Round Up",
+               ru - sp AS "Recommended Qty", CAST("Cost" AS DOUBLE) * (ru - sp) AS "Recommended Cost",
+               CASE WHEN "Invoices" <= 3 THEN '4 - Thin'
+                    WHEN "Match %" >= 90 AND "Invoices" >= 10 THEN '1 - Act Now'
+                    WHEN "Match %" >= 80 AND "Invoices" >= 5 THEN '2 - Likely'
+                    ELSE '3 - Review' END AS "Tier",
+               CASE WHEN "SPI PIS" >= 50 THEN 'Box / Bulk Qty' WHEN "SPI PIS" <= 12 THEN 'Set'
+                    ELSE 'Large Multiple' END AS "PIS Class",
+               sp AS "Stock Position", mos AS "Months of Supply",
+               CASE WHEN sp = 0 THEN 'Out of Stock' WHEN "Sales Qty" = 0 THEN 'No Sales' WHEN mos < 1 THEN 'Thin'
+                    WHEN mos <= 6 THEN 'Healthy' ELSE 'Overstocked' END AS "Coverage Flag"
+        FROM b""")
+
+
+def pis3_rows(con) -> list:
+    """3 Months or Less: the main list with Months of Supply <= 3; a blank fails, as the workbook's number test does."""
+    return [r for r in pis_rows(con) if r["Months of Supply"] is not None and r["Months of Supply"] <= 3]
+
+
+def pis_review_rows(con) -> list:
+    """Review (PIS_REVIEW_COLUMNS): InMaster PIS > 1, Match % < 75, 3+ invoices, not branch 2 or 4. Super To doesn't
+    matter here, as in the query."""
+    return _pis_fetch(con, f"""
+        SELECT {_PIS_TEXT}, m.pieces AS "InMaster PIS", s.PisQty AS "Most Common Qty", {_PIS_MATCH} AS "Match %",
+               round(CAST(s.PisMultipleInvoices AS DOUBLE) / s.PisInvoices * 100, 1) AS "PIS Multiple %",
+               s.PisInvoices AS "Invoices", s.PisInvoices AS "Demands", s.PisSalesQty AS "Sales Qty"
+        FROM pis_records x JOIN pis_stats s ON s.b = x.b AND s.p = x.k
+        JOIN inmaster_pis m ON m.b = x.b AND m.p = x.k
+        WHERE {_PIS_RECORD} AND m.pieces > 1 AND {_PIS_MATCH} < {PIS_MATCH_MIN}""")
+
+
+def pis_franchise_rows(con) -> list:
+    """R-D6: the rows that pass the main list's statistics tests where the query's jdis join (any franchise) can read
+    a different record from the app (franchise D's): a non-D record ranks first on the query's ORDER BY (LEN then
+    description, ignoring case, as SQL Anywhere compares; on an exact tie the query's pick is arbitrary) and differs
+    from D's in Bin, On Order or Cost, or has no D record to compare, or a non-D record's Super To drops the row from
+    the workbook. "Query" columns are the non-D record, "D" what the app reads."""
+    return _pis_fetch(con, f"""
+        WITH anyf AS (
+            SELECT *, upper(trim(Branch)) AS b, upper(trim(PartNumber)) AS k,
+                   max(CASE WHEN coalesce(trim(SuperTo), '') <> '' THEN 1 ELSE 0 END)
+                       OVER (PARTITION BY upper(trim(Branch)), upper(trim(PartNumber))) AS sup,
+                   rank() OVER (PARTITION BY upper(trim(Branch)), upper(trim(PartNumber))
+                                ORDER BY length(Description) DESC NULLS LAST, upper(Description) ASC) AS jrank
+            FROM parts
+        ), other AS (
+            SELECT * FROM anyf WHERE upper(trim(Franchise)) <> 'D' OR sup = 1
+            QUALIFY row_number() OVER (PARTITION BY b, k
+                                       ORDER BY upper(trim(Franchise)) = 'D', jrank, Franchise, PartNumber) = 1
+        )
+        SELECT trim(q.Branch) AS "Branch", trim(q.PartNumber) AS "Part #", trim(q.Franchise) AS "Query Franchise",
+               q.BinQty AS "Query Bin", q.OnOrder AS "Query OnOrder", q.Cost AS "Query Cost",
+               q.sup AS "Query Superseded", d.BinQty AS "D Bin", d.OnOrder AS "D OnOrder", d.Cost AS "D Cost",
+               trim(d.SuperTo) AS "D SuperTo"
+        FROM pis_stats s
+        JOIN other q ON q.b = s.b AND q.k = s.p
+        LEFT JOIN pis_records d ON d.b = s.b AND d.k = s.p AND d.pick = 1
+        WHERE s.b NOT IN ({_in_list(POOL_EXCLUDED_BRANCHES)}) AND s.PisInvoices >= {PIS_MIN_INVOICES} AND s.PisQty > 1
+          AND {_PIS_MATCH} >= {PIS_MATCH_MIN}
+          AND ((q.sup = 1 AND coalesce(trim(d.SuperTo), '') = '')
+               OR (q.jrank = 1 AND upper(trim(q.Franchise)) <> 'D'
+                   AND (d.Branch IS NULL OR q.BinQty IS DISTINCT FROM d.BinQty OR q.OnOrder IS DISTINCT FROM d.OnOrder
+                        OR q.Cost IS DISTINCT FROM d.Cost)))""")
+
+
+def build_pis_expected(con) -> None:
+    """pis_all: every franchise D record with KEYS + PIS_GOLD_COLS, the stats on the picked record only (R-D7), 0 on
+    the others; expected_pis: its active records (needs build_expected and build_pis_stats)."""
+    con.execute("""
+        CREATE OR REPLACE TABLE pis_all AS
+        SELECT x.Branch, x.Franchise, x.PartNumber, x.BinQty, m.pieces AS PiecesInSet,
+               CASE WHEN x.pick = 1 THEN coalesce(s.PisInvoices, 0) ELSE 0 END AS PisInvoices,
+               CASE WHEN x.pick = 1 THEN coalesce(s.PisSalesQty, 0) ELSE 0 END AS PisSalesQty,
+               CASE WHEN x.pick = 1 THEN coalesce(s.PisQty, 0) ELSE 0 END AS PisQty,
+               CASE WHEN x.pick = 1 THEN coalesce(s.PisQtyInvoices, 0) ELSE 0 END AS PisQtyInvoices,
+               CASE WHEN x.pick = 1 THEN coalesce(s.PisMultipleInvoices, 0) ELSE 0 END AS PisMultipleInvoices
+        FROM pis_records x
+        LEFT JOIN pis_stats s ON s.b = x.b AND s.p = x.k
+        LEFT JOIN inmaster_pis m ON m.b = x.b AND m.p = x.k
+    """)
+    con.execute("""
+        CREATE OR REPLACE TABLE expected_pis AS
+        SELECT a.* FROM pis_all a JOIN jd_all j
+          ON a.Branch IS NOT DISTINCT FROM j.Branch AND a.Franchise IS NOT DISTINCT FROM j.Franchise
+         AND a.PartNumber IS NOT DISTINCT FROM j.PartNumber
+        WHERE j.Active
+    """)
+
+
+def pis_idle_rows(con, min_invoices: int = PIS_MIN_INVOICES) -> list:
+    """Idle records holding at least `min_invoices` 18-month invoices. At the default, the 3 every list needs, these
+    are R-D7's check: Gold refuses to write them, because the idle table doesn't carry the stats and the row would
+    leave a report. Should be none."""
+    cur = con.execute(f"""
+        SELECT a.Branch, a.Franchise, a.PartNumber, a.PisInvoices, a.PisSalesQty, a.PisQty
+        FROM pis_all a JOIN jd_all j
+          ON a.Branch IS NOT DISTINCT FROM j.Branch AND a.Franchise IS NOT DISTINCT FROM j.Franchise
+         AND a.PartNumber IS NOT DISTINCT FROM j.PartNumber
+        WHERE NOT j.Active AND a.PisInvoices >= {min_invoices}
+        ORDER BY a.Branch, a.PartNumber""")
     cols = [d[0] for d in cur.description]
     return [dict(zip(cols, r)) for r in cur.fetchall()]
 
@@ -475,10 +713,10 @@ def _xkey(r: dict, key=BRANCH_KEY, upper: bool = False) -> tuple:
     return tuple(v.upper() for v in vals) if upper else vals
 
 
-def _num_differs(a, b) -> bool:
+def _num_differs(a, b, tolerance: float = TOLERANCE) -> bool:
     if a is None or b is None:
         return (a is None) != (b is None)
-    return abs(float(a) - float(b)) > TOLERANCE
+    return abs(float(a) - float(b)) > tolerance
 
 
 def _text_differs(a, b, nocase: bool = False) -> bool:
@@ -487,10 +725,10 @@ def _text_differs(a, b, nocase: bool = False) -> bool:
 
 
 def compare_xlsx(con, xl_rows: list, ours: list, columns=MLPF_COLUMNS, num=MLPF_NUM, key=BRANCH_KEY,
-                 upper_key: bool = False, nocase=()) -> dict:
+                 upper_key: bool = False, nocase=(), tolerance: float = TOLERANCE) -> dict:
     """Match the workbook rows to our rows on the trimmed `key` columns (default Branch + PartNumber; upper case
-    with `upper_key`) and compare the other `columns` (`num` numerically, `nocase` ignoring case). A key with
-    several rows on a side (the trailing-space twins) compares each pair."""
+    with `upper_key`) and compare the other `columns` (`num` numerically within `tolerance`, `nocase` ignoring case).
+    A key with several rows on a side (the trailing-space twins) compares each pair."""
     xl_by, our_by = {}, {}
     for r in xl_rows:
         xl_by.setdefault(_xkey(r, key, upper_key), []).append(r)
@@ -503,7 +741,7 @@ def compare_xlsx(con, xl_rows: list, ours: list, columns=MLPF_COLUMNS, num=MLPF_
         for x in xl_by[k]:
             for o in our_by[k]:
                 for c in (c for c in columns if c not in key):
-                    differs = (_num_differs(x[c], o[c]) if c in num
+                    differs = (_num_differs(x[c], o[c], tolerance) if c in num
                                else _text_differs(x[c], o[c], c in nocase))
                     if differs:
                         values.append({**dict(zip(key, k)), "Column": c, "Excel": x[c], "Ours": o[c]})
@@ -539,13 +777,13 @@ def part_context(con, keys: list, now: datetime, tier: str = None) -> dict:
     for p, items in whole.items():
         out[(p,)]["CorpDemands"] = ", ".join(items)
     for row in con.execute(f"""
-            SELECT k.b, k.p, trim(x.Branch), x.Franchise, x.PartNumber, x.QuantityOnHand, x.OnOrder, x.PackageQty,
-                   x.Returnable, x.Source, x.SLC, x.SuperTo, x.Cost
+            SELECT k.b, k.p, trim(x.Branch), x.Franchise, x.PartNumber, x.QuantityOnHand, x.BinQty, x.OnOrder,
+                   x.PackageQty, x.Returnable, x.Source, x.SLC, x.SuperTo, x.Cost
             FROM parts x JOIN ctx_keys k ON {match('x')}
             ORDER BY k.b, k.p, {_branch_order('upper(trim(x.Branch))')}, x.Franchise, x.PartNumber""").fetchall():
-        kb, p, br, fr, pn, oh, oo, pkg, ri, src, slc, sup, cost = row
+        kb, p, br, fr, pn, oh, bin_qty, oo, pkg, ri, src, slc, sup, cost = row
         out[out_key(kb, p)]["Rows"].append(
-            ("" if kb else f"{br}|") + f"{fr!s}|{pn!r}|oh={oh}|oo={oo}|pkg={pkg!r}|ri={ri!r}|src={src!r}"
+            ("" if kb else f"{br}|") + f"{fr!s}|{pn!r}|oh={oh}|bin={bin_qty}|oo={oo}|pkg={pkg!r}|ri={ri!r}|src={src!r}"
             f"|slc={slc!r}|super={sup!r}|cost={cost}")
     for kb, p, br, typ, qty, ts, inv in con.execute(f"""
             SELECT k.b, k.p, trim(t.Branch), upper(trim(t.Type)), t.Qty, t.TransDatetime,
@@ -591,13 +829,25 @@ def _connect():
     return con
 
 
+def inmaster_select(silver_columns, silver_path: str, bronze_path: str) -> tuple:
+    """(SQL, description) for the inmaster table: Silver_InMaster when it has PiecesInSet, else the staging lakehouse's
+    Bronze InMaster shortcut (a tier Plan R's Build_Silver_InMaster hasn't reached yet)."""
+    if "PiecesInSet" in silver_columns:
+        return (f"SELECT Branch, Franchise, PartNumber, PiecesInSet FROM delta_scan('{silver_path}')",
+                "Silver_InMaster.PiecesInSet")
+    return (f"""SELECT BRANCH AS Branch, FRANCHISE AS Franchise, PART_NO AS PartNumber, Pieces_In_Set AS PiecesInSet
+                FROM delta_scan('{bronze_path}')""",
+            "the Bronze InMaster shortcut's Pieces_In_Set (Silver_InMaster has no PiecesInSet yet)")
+
+
 def load_inputs(con, tier: str, groups_tier: str, now: datetime) -> None:
     """parts (every franchise; build_expected keeps D), intrans (franchise D, I and C lines from 10 days before the
-    window start; TransDatetime cast to the naive wall clock in the UTC session), rules and groups."""
+    window start; TransDatetime cast to the naive wall clock in the UTC session), rules, groups and inmaster."""
     con.execute(f"""CREATE TABLE parts AS SELECT Branch, Franchise, PartNumber, Description, Cost, QuantityOnHand,
                     OnOrder, PackageQty, Returnable, Source, SLC, SuperTo, CommodityCode, DealerGroupCode,
-                    Current12MoSales, Previous12MoSales
+                    Current12MoSales, Previous12MoSales, BinQty
                     FROM delta_scan('{_path(tier, 'staging', 'Silver_PartInformation')}')""")
+    # The Corp demand and Pieces In Set windows start on the same day; both are covered from 10 days before it.
     ws, _, _ = window(now)
     con.execute(f"""CREATE TABLE intrans AS SELECT Branch, Franchise, PartNumber, Type, Qty,
                     CAST(TransDatetime AS TIMESTAMP) AS TransDatetime, RONumber, OriginalInvoiceNo
@@ -612,6 +862,11 @@ def load_inputs(con, tier: str, groups_tier: str, now: datetime) -> None:
     except duckdb.Error as e:
         sys.exit(f"CommodityCodeGroups can't be read on {groups_tier} ({str(e).splitlines()[0][:150]}); "
                  f"run df_CommodityCodeGroups_Raw there or pass --groups-tier dev")
+    silver_path = _path(tier, "staging", "Silver_InMaster")
+    columns = [r[0] for r in con.execute(f"DESCRIBE SELECT * FROM delta_scan('{silver_path}')").fetchall()]
+    sql, source = inmaster_select(columns, silver_path, _path(tier, "staging", "InMaster"))
+    con.execute(f"CREATE TABLE inmaster AS {sql}")
+    print(f"InMaster Pieces In Set ({tier}) read from {source}")
 
 
 def gold_as_of(con, tier: str):
@@ -645,7 +900,8 @@ def run_xlsx_compare(con, args, ours: list, now: datetime) -> None:
     rep = REPORTS[args.report]
     key, upper = rep.get("key", BRANCH_KEY), rep.get("upper_key", False)
     xl = read_xlsx(args.compare_xlsx, args.sheet, rep["columns"], rep["num"])
-    res = compare_xlsx(con, xl, ours, rep["columns"], rep["num"], key, upper, rep.get("nocase", ()))
+    res = compare_xlsx(con, xl, ours, rep["columns"], rep["num"], key, upper, rep.get("nocase", ()),
+                       rep.get("tolerance", TOLERANCE))
     print(f"\nWorkbook compare ({args.compare_xlsx}, sheet {args.sheet!r}): Excel {res['excel_rows']:,} rows, "
           f"ours {res['our_rows']:,} rows, {res['matched_keys']:,} keys on both sides; duplicate keys: Excel "
           f"{res['dup_excel_keys']}, ours {res['dup_our_keys']}")
@@ -688,12 +944,15 @@ def main() -> int:
     ap.add_argument("--as-of", help="Central wall clock 'YYYY-MM-DD HH:MM:SS' (default: Gold's DemandAsOf)")
     ap.add_argument("--mlpf-out", help="write the MLPF Gaps list (Gold if present, else the reference) to CSV")
     ap.add_argument("--report", choices=sorted(REPORTS), default="mlpf",
-                    help="the list for --report-out / --compare-xlsx (default mlpf); border, cotton and stocking "
-                         "come from the reference's active + idle rows")
+                    help="the list for --report-out / --compare-xlsx (default mlpf); border, cotton, stocking and the "
+                         "Pieces In Set lists (pis, pis3, pisreview) come from the reference")
     ap.add_argument("--report-out", help="write the --report list to CSV")
     ap.add_argument("--compare-xlsx", help="workbook to compare with the --report list")
     ap.add_argument("--sheet", help="workbook sheet (default: the report's: MLPF Gaps, Border Stores, "
-                                    "2 & 4 Cotton & Stripper Parts, SPI Corparate Stocking)")
+                                    "2 & 4 Cotton & Stripper Parts, SPI Corparate Stocking, Data, "
+                                    "'SPI - Pieces In Set ', SPI -Pieces In Set Review)")
+    ap.add_argument("--check-pis-gold", action="store_true",
+                    help="fail when Gold lacks the Pieces In Set columns (compared by default when it has them)")
     ap.add_argument("--diff-out", help="write every workbook difference to CSV (with --compare-xlsx)")
     a = ap.parse_args()
     a.sheet = a.sheet or REPORTS[a.report]["sheet"]
@@ -742,6 +1001,10 @@ def main() -> int:
         print(f"Gold compare skipped: {GOLD_TABLE} isn't on {a.tier}")
     if not check_gold_idle(con, a.tier, has_gold):
         failed = True
+    build_pis_stats(con, now)
+    build_pis_expected(con)
+    if not check_pis(con, a.tier, has_gold, a.check_pis_gold):
+        failed = True
 
     src = "gold" if has_gold else "expected"
     mlpf = mlpf_rows(con, src)
@@ -753,13 +1016,51 @@ def main() -> int:
         ours = mlpf
     else:
         ours = report_rows(con, a.report)
-        print(f"{REPORTS[a.report]['sheet']} from the reference (active + idle): {len(ours):,} rows")
+        print(f"{REPORTS[a.report]['sheet']} from the reference: {len(ours):,} rows")
+    if a.report in ("pis", "pis3"):
+        _print_rows("\nR-D6: rows where the workbook's join reads another franchise's record", pis_franchise_rows(con),
+                    limit=50)
     if a.report_out:
         _write_csv(a.report_out, ours, REPORTS[a.report]["columns"])
         print(f"wrote {a.report_out}")
     if a.compare_xlsx:
         run_xlsx_compare(con, a, ours, now)
     return 1 if failed else 0
+
+
+def check_pis(con, tier: str, has_gold: bool, required: bool = False) -> bool:
+    """R-D7's idle check (no idle record qualifies for a list), then Gold's seven Pieces In Set columns against the reference over every active record, when
+    Gold has them (`required`: their absence fails). False on any problem."""
+    ok = True
+    idle = pis_idle_rows(con)
+    if idle:
+        ok = False
+        _print_rows(f"FAIL: idle records with {PIS_MIN_INVOICES}+ 18-month invoices", idle)
+    else:
+        below = len(pis_idle_rows(con, 1))
+        print(f"PASS: no idle record has {PIS_MIN_INVOICES}+ 18-month invoices ({below:,} have fewer: no list needs them)")
+    missing = PIS_GOLD_COLS
+    if has_gold:
+        path = _path(tier, "presentation", GOLD_TABLE)
+        have = {r[0] for r in con.execute(f"DESCRIBE SELECT * FROM delta_scan('{path}')").fetchall()}
+        missing = [c for c in PIS_GOLD_COLS if c not in have]
+    if missing:
+        print(f"Pieces In Set compare skipped: {GOLD_TABLE} ({tier}) has no {', '.join(missing)}")
+        return ok and not required
+    cols = ", ".join(KEYS + PIS_GOLD_COLS)
+    con.execute(f"CREATE TABLE gold_pis AS SELECT {cols} FROM delta_scan('{path}')")
+    res = compare(con, "gold_pis", "expected_pis", [], PIS_GOLD_COLS)
+    print(f"{GOLD_TABLE} Pieces In Set ({tier}): {res}")
+    if any(res.values()):
+        ok = False
+        _print_rows("differences", differences(con, "gold_pis", "expected_pis", limit=20, text_cols=[],
+                                               num_cols=PIS_GOLD_COLS))
+        print("FAIL: Gold's Pieces In Set columns don't match the reference")
+    else:
+        n = con.execute("SELECT count(*) FILTER (PisInvoices > 0), sum(PisInvoices) FROM gold_pis").fetchone()
+        print(f"PASS: Gold's Pieces In Set columns match the reference ({n[0]:,} records with invoices, {n[1]:,} "
+              f"invoices, 0 differences)")
+    return ok
 
 
 def check_gold_idle(con, tier: str, has_gold: bool) -> bool:

@@ -1,7 +1,8 @@
 # tools/dp-migration/test_corp_parts_check.py
 """Tests for the reference Corp demand rule and Fact_CorpParts_JD rows (Plan L: docs/superpowers/plans/2026-11-03-
 spi-parts-hub-inventory-reports.md, decisions L-D10..L-D14 and L-D19), the MLPF Gaps filter, the Gold compare and
-the workbook comparison; Border Stores and 2 & 4 Cotton (Plan M); Corporate Stocking (Plan O, O-D4 / O-D8 / O-D9).
+the workbook comparison; Border Stores and 2 & 4 Cotton (Plan M); Corporate Stocking (Plan O, O-D4 / O-D8 / O-D9);
+Pieces In Set (Plan R, R-D6 / R-D7).
 In-memory DuckDB tables only."""
 from datetime import datetime, timedelta
 
@@ -24,20 +25,22 @@ def _con():
     con.execute("""CREATE TABLE parts (Branch VARCHAR, Franchise VARCHAR, PartNumber VARCHAR, Description VARCHAR,
                    Cost DECIMAL(12,2), QuantityOnHand DECIMAL(12,2), OnOrder DECIMAL(12,2), PackageQty VARCHAR,
                    Returnable VARCHAR, Source VARCHAR, SLC VARCHAR, SuperTo VARCHAR, CommodityCode VARCHAR,
-                   DealerGroupCode VARCHAR, Current12MoSales DECIMAL(27,2), Previous12MoSales DECIMAL(27,2))""")
+                   DealerGroupCode VARCHAR, Current12MoSales DECIMAL(27,2), Previous12MoSales DECIMAL(27,2),
+                   BinQty DECIMAL(12,2))""")
     con.execute("""CREATE TABLE intrans (Branch VARCHAR, Franchise VARCHAR, PartNumber VARCHAR, Type VARCHAR,
                    Qty DECIMAL(8,2), TransDatetime TIMESTAMP, RONumber VARCHAR, OriginalInvoiceNo VARCHAR)""")
     con.execute("""CREATE TABLE rules (Branch VARCHAR, Franchise VARCHAR, PartNumber VARCHAR, MinimumQty DECIMAL(10,2),
                    MaximumQty DECIMAL(10,2))""")
     con.execute("CREATE TABLE groups (CommodityCode VARCHAR, CommodityGroup VARCHAR)")
+    con.execute("CREATE TABLE inmaster (Branch VARCHAR, Franchise VARCHAR, PartNumber VARCHAR, PiecesInSet DECIMAL(9,2))")
     return con
 
 
 def _part(con, pn, branch="1", franchise="D", oh=0, oo=0, sales12=0, prev12=0, pkg="1.00", ri="R", source="JD",
-          slc="10", super_to="", commodity="AB", dgc="X", cost=12.5, desc="Thing"):
-    con.execute("INSERT INTO parts VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+          slc="10", super_to="", commodity="AB", dgc="X", cost=12.5, desc="Thing", bin_qty=0):
+    con.execute("INSERT INTO parts VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 [branch, franchise, pn, desc, cost, oh, oo, pkg, ri, source, slc, super_to, commodity, dgc,
-                 sales12, prev12])
+                 sales12, prev12, bin_qty])
 
 
 def _tx(con, pn, typ, qty, when, inv=None, orig=None, branch="1", franchise="D"):
@@ -944,3 +947,296 @@ def test_run_xlsx_compare_stocking_writes_the_part_keyed_diff_csv(tmp_path):
     assert [(r["Kind"], r["PartNumber"], r["Column"]) for r in rows] == \
         [("only_ours", "P2", ""), ("value", "P1", "R18 Demands")]
     assert rows[1]["CorpDemands"] == "10=1, 11=1, 12=1"
+
+
+# ---------------------------------------------------------------------------------------------------------
+# Pieces In Set (Plan R, R1; R-D6, R-D7): the workbook's two queries and its formula columns
+# ---------------------------------------------------------------------------------------------------------
+def _pis_part(con, pn, qtys, branch="1", **kw):
+    """A franchise D record, active through sales, with one invoice per entry of `qtys`."""
+    _part(con, pn, branch=branch, **{"sales12": 1, **kw})
+    for i, q in enumerate(qtys):
+        _sale(con, pn, f"{branch}-{pn}-{i}", qty=q, branch=branch)
+
+
+def _pis_build(con, now=NOW):
+    chk.build_expected(con, now)
+    chk.build_pis_stats(con, now)
+    chk.build_pis_expected(con)
+
+
+def _by_key(rows):
+    out = {(r["Branch"], r["Part #"]): r for r in rows}
+    assert len(out) == len(rows), "duplicate Branch + Part # rows"
+    return out
+
+
+def _pis(con, now=NOW):
+    _pis_build(con, now)
+    return _by_key(chk.pis_rows(con))
+
+
+def _review(con, now=NOW):
+    _pis_build(con, now)
+    return _by_key(chk.pis_review_rows(con))
+
+
+def test_pis_worked_example():
+    # The query's own example: invoices of 2, 2, 2, 1 => SPI PIS 2, Match 75.0, Invoices 4, Sales 7.
+    con = _con()
+    _pis_part(con, "P", [2, 2, 2, 1], source="JD", slc="10", commodity="AB", dgc="X", desc="Bolt")
+    r = _pis(con)[("1", "P")]
+    assert list(r) == chk.PIS_COLUMNS
+    assert (r["SPI PIS"], r["Match %"], r["Invoices"], r["Sales Qty"]) == (2, 75.0, 4, 7)
+    assert r["Demands"] == 4
+    assert r["Description"] == "Bolt" and r["Tier"] == "3 - Review" and r["PIS Class"] == "Set"
+
+
+def test_pis_split_lines_and_credits():
+    con = _con()
+    _part(con, "P", sales12=1)
+    _sale(con, "P", "A", qty=1)                 # two lines of one invoice sum: 2
+    _sale(con, "P", "A", qty=1)
+    _sale(con, "P", "B", qty=3)                 # a credit nets into its OriginalInvoiceNo: 2
+    _credit(con, "P", "B", qty=-1)
+    _sale(con, "P", "C", qty=2)
+    _sale(con, "P", "D", qty=2)                 # a fully returned invoice drops out
+    _credit(con, "P", "D", qty=-2)
+    _credit(con, "P", "OUTSIDE", qty=-2)        # a credit whose invoice is outside the window drops out
+    _sale(con, "P", "OUTSIDE", qty=2, when=NOW - timedelta(days=800))
+    _tx(con, "P", "T", 2, RECENT, inv="T1")     # transfers never count
+    _sale(con, "P", "NEW", qty=2, when=NOW - timedelta(days=1))  # no 7-day lag, unlike Corp demands
+    _sale(con, "P", "LATE", qty=2, when=NOW + timedelta(minutes=5))  # after now
+    r = _pis(con)[("1", "P")]
+    assert (r["Invoices"], r["Sales Qty"], r["SPI PIS"], r["Match %"]) == (4, 8, 2, 100.0)
+
+
+def test_pis_most_common_qty_tie_goes_to_the_smaller():
+    con = _con()
+    _pis_part(con, "P", [3, 3, 2, 2, 1])
+    _pis_build(con)
+    s = con.execute("SELECT PisQty, PisQtyInvoices, PisInvoices FROM pis_stats").fetchall()
+    assert s == [(2, 2, 5)]
+
+
+def test_pis_round_up():
+    con = _con()
+    _pis_part(con, "ZERO", [2, 2, 2, 2])                    # stock 0 => one full set
+    _pis_part(con, "THREE", [2, 2, 2, 2], bin_qty=3, cost=1.97)  # up to 4, Recommended 1
+    _pis_part(con, "FOUR", [2, 2, 2, 2], bin_qty=4)         # already on a multiple: 0
+    _pis_part(con, "ONORD", [2, 2, 2, 2], bin_qty=1, oo=2)  # on order counts
+    _pis_part(con, "ONHAND", [2, 2, 2, 2], oh=7)            # Bin Qty is the stock, not on hand (R-D3)
+    _pis_part(con, "NEG", [2, 2, 2, 2], bin_qty=-2)         # negative stock: the query's CEILING, never negative
+    by = _pis(con)
+    got = {k[1]: (r["Round Up"], r["Recommended Qty"]) for k, r in by.items()}
+    assert got == {"ZERO": (2, 2), "THREE": (4, 1), "FOUR": (4, 0), "ONORD": (4, 1), "ONHAND": (2, 2), "NEG": (-2, 0)}
+    assert by[("1", "THREE")]["Recommended Cost"] == pytest.approx(1.97)
+    assert by[("1", "ZERO")]["Coverage Flag"] == "Out of Stock"
+
+
+def test_pis_formula_columns():
+    con = _con()
+    _pis_part(con, "ACT", [2] * 10, bin_qty=1)              # 20 sold: 0.9 months
+    _pis_part(con, "LIKELY", [2] * 4 + [1], bin_qty=4)      # 80.0 at 5
+    _pis_part(con, "THIN", [12, 12, 12], bin_qty=24)        # 3 invoices, a 12 is a Set; 12 months: Overstocked
+    _pis_part(con, "MULT", [13, 13, 13])
+    _pis_part(con, "BOX", [50, 50, 50, 50], bin_qty=100)    # labelled, not removed; 9 months
+    _pis_part(con, "SIX", [6, 6, 6], bin_qty=6)             # 18 sold, stock 6: exactly 6 months: Healthy
+    by = _pis(con)
+    assert (by[("1", "ACT")]["Tier"], by[("1", "ACT")]["Coverage Flag"]) == ("1 - Act Now", "Thin")
+    assert by[("1", "LIKELY")]["Tier"] == "2 - Likely"
+    assert (by[("1", "THIN")]["Tier"], by[("1", "THIN")]["PIS Class"]) == ("4 - Thin", "Set")
+    assert by[("1", "THIN")]["Coverage Flag"] == "Overstocked"
+    assert by[("1", "MULT")]["PIS Class"] == "Large Multiple"
+    assert by[("1", "BOX")]["PIS Class"] == "Box / Bulk Qty"
+    assert by[("1", "SIX")]["Months of Supply"] == pytest.approx(6)
+    assert by[("1", "SIX")]["Coverage Flag"] == "Healthy"
+
+
+def test_pis_filters():
+    con = _con()
+    _pis_part(con, "OK", [2, 2, 2])
+    _pis_part(con, "B2", [2, 2, 2], branch="2")             # branches 2 and 4 out
+    _pis_part(con, "B4", [2, 2, 2], branch="4")
+    _pis_part(con, "SUP", [2, 2, 2], super_to="R1 ")        # Super To set out
+    _pis_part(con, "INV2", [2, 2])                          # 2 invoices out
+    _pis_part(con, "ONE", [1, 1, 1])                        # SPI PIS 1 out
+    _pis_part(con, "LOW", [2, 2, 1, 1, 3])                  # Match below 75 out
+    _part(con, "MC", franchise="MC", sales12=1)             # a non-D record and its lines aren't read
+    for i in range(3):
+        _sale(con, "MC", f"M{i}", qty=2, franchise="MC")
+    by = _pis(con)
+    assert set(by) == {("1", "OK")}
+    # Stats are computed at every branch: the reports leave 2 and 4 out, a copy can include them.
+    assert con.execute("SELECT PisInvoices FROM expected_pis WHERE Branch = '2'").fetchone()[0] == 3
+
+
+def test_pis_three_months():
+    con = _con()
+    _pis_part(con, "EXACT", [2] * 18, bin_qty=6)            # 36 sold: 6 / (36 / 18) = exactly 3
+    _pis_part(con, "ABOVE", [2] * 18, bin_qty=7)            # 3.5
+    _pis_part(con, "NOSALES", [2] * 3, bin_qty=1)
+    _pis_build(con)
+    con.execute("UPDATE pis_stats SET PisSalesQty = 0 WHERE p = 'NOSALES'")     # blank Months of Supply fails "<= 3"
+    assert [r["Part #"] for r in chk.pis3_rows(con)] == ["EXACT"]
+    assert chk.report_rows(con, "pis3") == chk.pis3_rows(con)
+    nosales = _by_key(chk.pis_rows(con))[("1", "NOSALES")]
+    assert nosales["Months of Supply"] is None and nosales["Coverage Flag"] == "No Sales"
+
+
+def test_pis_review():
+    con = _con()
+    # InMaster PIS 4 is MAX over franchise D rows only (the MC row's 9 isn't read); invoices of 4 and 8 count as
+    # multiples, 3 doesn't; Super To set is still listed.
+    _pis_part(con, "REV", [1, 1, 4, 8, 3], super_to="R1")
+    con.execute("""INSERT INTO inmaster VALUES ('1', 'D', 'REV', 2), ('1', ' d', 'REV ', 4), ('1', 'MC', 'REV', 9),
+                   ('1', 'D', 'AT75', 4), ('1', 'D', 'INV2', 4), ('1', 'D', 'PIS1', 1), ('2', 'D', 'B2', 4)""")
+    _pis_part(con, "AT75", [4, 4, 4, 1])                    # Match at 75: not listed
+    _pis_part(con, "INV2", [1, 2])                          # 2 invoices: not listed
+    _pis_part(con, "PIS1", [1, 2, 3])                       # InMaster PIS 1: not listed
+    _pis_part(con, "NONE", [1, 2, 3])                       # no InMaster row: not listed
+    _pis_part(con, "B2", [1, 2, 3], branch="2")             # branch 2: not listed
+    by = _review(con)
+    assert set(by) == {("1", "REV")}
+    r = by[("1", "REV")]
+    assert list(r) == chk.PIS_REVIEW_COLUMNS
+    assert (r["InMaster PIS"], r["Most Common Qty"], r["Match %"], r["PIS Multiple %"]) == (4, 1, 40.0, 40.0)
+    assert (r["Invoices"], r["Demands"], r["Sales Qty"]) == (5, 5, 17)
+
+
+def test_pis_multiple_is_zero_when_pieces_not_above_one():
+    con = _con()
+    con.execute("INSERT INTO inmaster VALUES ('1', 'D', 'P', 1), ('1', 'D', 'Q', 0)")
+    _pis_part(con, "P", [2, 2, 2])
+    _pis_part(con, "Q", [2, 2, 2])
+    _pis_build(con)
+    assert con.execute("SELECT sum(PisMultipleInvoices) FROM pis_stats").fetchone()[0] == 0
+
+
+def test_pis_twins_once():
+    # 'X' and 'X ' at a branch: one row, the longer description's; invoices under either spelling count together.
+    con = _con()
+    _part(con, "X", desc="Bolt", sales12=1, bin_qty=1)
+    _part(con, "X ", desc="Bolt long", sales12=1, bin_qty=3)
+    _sale(con, "X", "A", qty=2)
+    _sale(con, "X ", "B", qty=2)
+    _sale(con, "X", "C", qty=2)
+    by = _pis(con)
+    assert list(by) == [("1", "X")]
+    r = by[("1", "X")]
+    assert (r["Description"], r["Bin Qty"], r["Invoices"]) == ("Bolt long", 3, 3)
+    stats = dict(con.execute("SELECT PartNumber, PisInvoices FROM expected_pis").fetchall())
+    assert stats == {"X": 0, "X ": 3}
+
+
+def test_pis_twins_tie_goes_to_the_smallest_part_number():
+    con = _con()
+    _part(con, "X ", desc="Same", sales12=1)
+    _part(con, "X", desc="Same", sales12=1)
+    _part(con, "Y", desc=None, sales12=1)
+    _part(con, "y", desc="Z", sales12=1)                    # a NULL description loses, whatever the part number
+    for pn in ("X", "Y"):
+        for inv in ("A", "B", "C"):
+            _sale(con, pn, inv, qty=2)
+    _pis_build(con)
+    stats = dict(con.execute("SELECT PartNumber, PisInvoices FROM expected_pis").fetchall())
+    assert stats == {"X": 3, "X ": 0, "Y": 0, "y": 3}
+
+
+def test_pis_reads_franchise_d_record_and_lists_it():
+    # R-D6: the query's join reads the other franchise's longer record; the app reads D's.
+    con = _con()
+    _pis_part(con, "P", [2, 2, 2], bin_qty=4, cost=1, desc="Bolt")
+    _part(con, "P", franchise="MC", desc="Longer bolt", bin_qty=9, cost=5)
+    # The non-D record's Super To drops it from the workbook, not from ours.
+    _pis_part(con, "S", [2, 2, 2], bin_qty=2, desc="Long enough")
+    _part(con, "S", franchise="MC", desc="x", super_to="R9")
+    _pis_part(con, "PLAIN", [2, 2, 2], desc="Same as ever")
+    by = _pis(con)
+    assert by[("1", "P")]["Bin Qty"] == 4 and by[("1", "P")]["Description"] == "Bolt"
+    assert ("1", "S") in by
+    # A tie on the description: the query's pick is arbitrary, and it can read the other record's numbers.
+    _pis_part(con, "TIE", [2, 2, 2], bin_qty=4, desc="Same")
+    _part(con, "TIE", franchise="TD", desc="SAME", bin_qty=9)
+    # A tie with the same numbers makes no difference, and a shorter non-D record is never read.
+    _pis_part(con, "EQUAL", [2, 2, 2], bin_qty=4, desc="Same")
+    _part(con, "EQUAL", franchise="TD", desc="Same", bin_qty=4)
+    _pis_part(con, "SHORT", [2, 2, 2], bin_qty=4, desc="Same long")
+    _part(con, "SHORT", franchise="TD", desc="Same", bin_qty=9)
+    _pis_build(con)
+    rows = chk.pis_franchise_rows(con)
+    assert [r["Part #"] for r in rows] == ["P", "S", "TIE"]
+    assert (rows[0]["Query Franchise"], rows[0]["Query Bin"], rows[0]["D Bin"]) == ("MC", 9, 4)
+    assert rows[1]["Query Superseded"] == 1
+    assert (rows[2]["Query Franchise"], rows[2]["Query Bin"], rows[2]["D Bin"]) == ("TD", 9, 4)
+
+
+def _pis_gold(con):
+    con.execute("CREATE OR REPLACE TABLE gold_pis AS SELECT * FROM expected_pis")
+
+
+def test_pis_gold_compare_finds_a_changed_stat():
+    con = _con()
+    _pis_part(con, "P", [2, 2, 2])
+    _pis_part(con, "Q", [2, 2, 2])
+    con.execute("INSERT INTO inmaster VALUES ('1', 'D', 'P', 2)")
+    _pis_build(con)
+    _pis_gold(con)
+    assert not any(chk.compare(con, "gold_pis", "expected_pis", [], chk.PIS_GOLD_COLS).values())
+    r = con.execute("SELECT BinQty, PiecesInSet, PisInvoices, PisSalesQty, PisQty, PisQtyInvoices, PisMultipleInvoices"
+                    " FROM expected_pis WHERE PartNumber = 'P'").fetchone()
+    assert tuple(float(v) for v in r) == (0, 2, 3, 6, 2, 3, 3)
+    con.execute("UPDATE gold_pis SET PisInvoices = 2 WHERE PartNumber = 'Q'")
+    con.execute("UPDATE gold_pis SET PiecesInSet = 3 WHERE PartNumber = 'Q'")     # NULL in the reference
+    res = chk.compare(con, "gold_pis", "expected_pis", [], chk.PIS_GOLD_COLS)
+    assert res["different"] == 1
+    diffs = chk.differences(con, "gold_pis", "expected_pis", text_cols=[], num_cols=chk.PIS_GOLD_COLS)
+    assert sorted((d["PartNumber"], d["Column"]) for d in diffs) == [("Q", "PiecesInSet"), ("Q", "PisInvoices")]
+
+
+def test_pis_idle_record_that_qualifies_is_reported():
+    # Invoices in the last 7 days aren't Corp demands: with no stock or sales counters, the record is idle.
+    con = _con()
+    _pis_part(con, "ACT", [2, 2, 2])
+    _part(con, "IDLE1", sales12=0)
+    _sale(con, "IDLE1", "A", when=NOW - timedelta(days=1))
+    _part(con, "IDLE3", sales12=0)
+    for inv in ("A", "B", "C"):
+        _sale(con, "IDLE3", inv, qty=2, when=NOW - timedelta(days=1))
+    _pis_build(con)
+    assert [(r["PartNumber"], r["PisInvoices"]) for r in chk.pis_idle_rows(con)] == [("IDLE3", 3)]
+    assert [r["PartNumber"] for r in chk.pis_idle_rows(con, 1)] == ["IDLE1", "IDLE3"]
+    assert con.execute("SELECT count(*) FROM expected_pis WHERE PartNumber LIKE 'IDLE%'").fetchone()[0] == 0
+
+
+def test_pis_reports_are_keyed_on_upper_part_and_case_blind_description(tmp_path):
+    con = _con()
+    _pis_part(con, "ab1", [2, 2, 2], desc="Valve", bin_qty=2, source="JD", slc="10", commodity="AB", dgc="X")
+    _pis_part(con, "ab2", [2, 2, 2], desc="Valve", bin_qty=2, source="JD", slc="10", commodity="AB", dgc="X")
+    _pis_build(con)
+    ours = chk.report_rows(con, "pis")
+    rep = chk.REPORTS["pis"]
+    assert rep["sheet"] == "Data" and chk.REPORTS["pis3"]["sheet"] == "SPI - Pieces In Set "
+    assert chk.REPORTS["pisreview"]["sheet"] == "SPI -Pieces In Set Review"
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Data"
+    ws.append(chk.PIS_COLUMNS + ["Category"])               # a column we leave out (R-D8)
+    row = lambda part, desc, match: [1, part, desc, "JD", "10", "AB", "X", 2, match, 3, 3, 6, 2, 0, 12.5, 2, 0, 0,
+                                     "4 - Thin", "Set", 2, 6.0, "Healthy", "Other"]
+    ws.append(row("AB1", "VALVE", 100.04))                  # upper case, within 0.05: no difference
+    ws.append(row("AB2", "Valve", 99.9))                    # outside the tolerance
+    p = tmp_path / "pis.xlsx"
+    wb.save(p)
+    xl = chk.read_xlsx(str(p), "Data", rep["columns"], rep["num"])
+    res = chk.compare_xlsx(con, xl, ours, rep["columns"], rep["num"], key=rep["key"], upper_key=True,
+                           nocase=rep["nocase"], tolerance=rep["tolerance"])
+    assert res["matched_keys"] == 2 and not res["only_excel"] and not res["only_ours"]
+    assert [(d["Part #"], d["Column"]) for d in res["values"]] == [("AB2", "Match %")]
+
+
+def test_inmaster_select_prefers_silver():
+    sql, source = chk.inmaster_select(["Branch", "PiecesInSet"], "SILVER", "BRONZE")
+    assert "SILVER" in sql and "BRONZE" not in sql and "Silver" in source
+    sql, source = chk.inmaster_select(["Branch"], "SILVER", "BRONZE")
+    assert "BRONZE" in sql and "Pieces_In_Set AS PiecesInSet" in sql and "Bronze" in source
