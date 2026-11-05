@@ -23,6 +23,9 @@
 // ReportEditorPage.tsx, InventoryReportsPage.tsx). Counts are Prod of 2026-11-05 (251,019 active and 643,030 idle JD
 // part records, demand window to 06:42 Central): Corporate Stocking 1,815. The copy example (Branches with demand
 // >= 4, 618 parts) is Brian's real test "TEST Corporate Stocking 4+", deleted.
+// Section 13 (Stock on superseded parts, 0.15.0) follows nonjd-order-app 0.15.0 (commit 130b68e: src/inventory/builtIns.ts,
+// fields.ts, src/cleanup/conditions.ts, fields.ts, src/pages/cleanup/builtIns.ts). Counts are Prod of 2026-11-05: JD 2,477
+// records at 20 branches ($571,028.49), non-JD 698 at 19 branches ($497,322.78; 22 with a word Super To).
 // Worked examples: Dev Gold Fact_NonJD_Reorder built 2026-10-26 (window Oct 2025 - Sep 2026); the transfer example
 // is the app's mock data (round numbers), as in REORDER-RULES.md. The Returns & scrap example (section 8) is Brian's Prod
 // test of 2026-11-02: rule "Scrap default" (All franchises, no sales 36 months, unit cost at least $0.10), 49 AM parts.
@@ -33,8 +36,8 @@ const w = (...fr) => fr.map((f) => Math.round(CONTENT_W * f));
 
 build(process.argv[2] || 'Non-JD Order Tool - User Guide.docx', {
   title: 'SPI Parts Hub: user guide',
-  subtitle: 'Formerly the Non-JD Parts Order Tool · For Ben, Shannon, Barry and Curt · Version 0.14.0 · November 5, 2026 (test version) · https://10.110.100.13:8443',
-  footer: 'SPI Parts Hub: user guide (version 0.14.0)',
+  subtitle: 'Formerly the Non-JD Parts Order Tool · For Ben, Shannon, Barry and Curt · Version 0.15.0 · November 5, 2026 (test version) · https://10.110.100.13:8443',
+  footer: 'SPI Parts Hub: user guide (version 0.15.0)',
   blocks: [
     { p: '**SPI Parts Hub** (until 0.8.0 the Non-JD Parts Order Tool) opens on a launch page where you pick what to work on: **Non-JD ordering**, **Cleanup**, **Returns & scrap**, **Part Lookup** or **Inventory management** today, with **JD ordering** to come. Most of this guide is about Non-JD ordering.' },
     { p: '**In one sentence:** Non-JD ordering shows each branch which non-John Deere parts to reorder and why, suggests stock other branches could send instead, lets you tune the rules behind those suggestions, and turns the parts you pick into an order file for each vendor.' },
@@ -242,13 +245,13 @@ build(process.argv[2] || 'Non-JD Order Tool - User Guide.docx', {
     ] },
 
     { h2: 'Cleanup' },
-    { p: 'Its own area (0.11.0): open it from the launch page or the Area select; its menu item is **Checks**. **Cleanup checks** lists checks, each a list of parts to fix in Equip over every branch: two built in (**Minimums with no demand**, as before, and **Stock value with no quantity**) and any that people save. Open one to filter it by branch and franchise, sort it and export a CSV; **New check** builds your own. Section 7 explains it job by job.' },
+    { p: 'Its own area (0.11.0): open it from the launch page or the Area select; its menu item is **Checks**. **Cleanup checks** lists checks, each a list of parts to fix in Equip over every branch: three built in (**Minimums with no demand**, as before, **Stock value with no quantity** and **Stock on superseded parts**) and any that people save. Open one to filter it by branch and franchise, sort it and export a CSV; **New check** builds your own. Section 7 explains it job by job.' },
 
     { h2: 'Returns & scrap' },
     { p: 'Its own area (0.9.0): **Returns**, **Scrap** and **Return & scrap rules**. Section 8 explains it job by job.' },
 
     { h2: 'Inventory management' },
-    { p: 'Its own area (0.12.0): open it from the launch page or the Area select; its menu item is **Reports**. **Inventory reports** lists the Corp Parts reports over the JD parts at every branch: the built-ins **MLPF Gaps**, **Border Stores** and **2 & 4 Cotton**, and any copies people save. Open one to filter it, search it, sort it and export a CSV; **Copy as my own** makes a version you can change. Sections 10 and 11 explain it job by job.' },
+    { p: 'Its own area (0.12.0): open it from the launch page or the Area select; its menu item is **Reports**. **Inventory reports** lists the Corp Parts reports over the JD parts at every branch: the built-ins **MLPF Gaps**, **Border Stores**, **2 & 4 Cotton**, **Corporate Stocking** and **Stock on superseded parts**, and any copies people save. Open one to filter it, search it, sort it and export a CSV; **Copy as my own** makes a version you can change. Sections 10 to 13 explain it job by job.' },
 
     { h2: 'App Settings' },
     { p: 'Your own default branch and franchise (saved in your browser only). The launch page, Reorder, One-Time Order and Part Lookup open on them. Open it from the bottom of the left menu or from the launch page. **About** shows the version.' },
@@ -385,7 +388,7 @@ build(process.argv[2] || 'Non-JD Order Tool - User Guide.docx', {
       '**Parts:** how many parts it finds over every branch. The counts fill in as the branches load (“in 12 of 19 branches” until they all have). The counts change every morning.',
       'The buttons: **Open** for every check; **Edit**, **Switch off** / **Switch on** and **Archive** for saved checks.',
     ] },
-    { p: 'The two built-in checks come first, then the saved checks that are on (A to Z), then any that are switched off. On November 2, 2026 (Prod): **Minimums with no demand** found **3,592** parts and **Stock value with no quantity** **415**.' },
+    { p: 'The three built-in checks come first, then the saved checks that are on (A to Z), then any that are switched off. On November 2, 2026 (Prod): **Minimums with no demand** found **3,592** parts and **Stock value with no quantity** **415**. **Stock on superseded parts** (0.15.0, section 13) found **698** on November 5.' },
     { p: 'The launch page card still shows only the minimums with no demand at your branch, so it is a much smaller number than the list’s count over every branch.' },
 
     { h2: 'Minimums with no demand' },
@@ -453,6 +456,7 @@ build(process.argv[2] || 'Non-JD Order Tool - User Guide.docx', {
       ['Product group', 'The product group at that branch.'],
       ['SLC', 'The part’s SLC code.'],
       ['Source', 'The part’s source code.'],
+      ['Super To', 'Equip’s Super To for the part, as typed: a part number, or sometimes a note such as BOLTS. Blank when none (new in 0.15.0).'],
       ['Manual order', 'Whether the part is set to Manual order in this tool.'],
     ], widths: w(0.3, 0.7) },
     { p: 'Each branch’s own part record decides, as for rules, so a part can be on a check at one branch and not another. Only parts in the tool are checked: the non-John Deere parts with a cost above $0, at the branches the tool covers.' },
@@ -763,7 +767,7 @@ build(process.argv[2] || 'Non-JD Order Tool - User Guide.docx', {
       '**Edit** changes a copy later (“Report updated.”). A name can’t repeat MLPF Gaps or another copy that is on: “A report called … already exists.”',
       '**Switch off** keeps a copy on the list, greyed and marked **Off**. **Archive** takes it off the list; **Show archived** and **Unarchive** bring it back. Nothing is deleted.',
     ] },
-    { p: 'The fields a copy can use: Branch, Part number, Description, Corp demands, On hand, On order, Cost, Package qty, Return indicator, Source, SLC, Super To, Commodity code, Commodity group, Dealer group, Equip minimum, Equip maximum, Sales 12 months and Sales 24 months. Text fields also offer **starts with** and **doesn’t start with**, with a list of starts: “SLC doesn’t start with 21, 90, 91, 99”. A blank never starts with anything, so “doesn’t start with” keeps blanks.' },
+    { p: 'The fields a copy can use: Branch, Part number, Description, Corp demands, On hand, On order, Cost, On-hand value (0.15.0), Package qty, Return indicator, Source, SLC, Super To, Commodity code, Commodity group, Dealer group, Equip minimum, Equip maximum, Sales 12 months and Sales 24 months. Text fields also offer **starts with** and **doesn’t start with**, with a list of starts: “SLC doesn’t start with 21, 90, 91, 99”. A blank never starts with anything, so “doesn’t start with” keeps blanks.' },
 
     { h2: '“JD parts aren’t in today’s data yet”' },
     { p: 'The JD parts came with the morning data of November 3, 2026. If a morning’s data doesn’t carry them, the Inventory pages say “JD parts aren’t in today’s data yet. They arrive with the next publish.” and show nothing else. The rest of the app works as normal. If you see it after November 3, tell Brian.' },
@@ -850,7 +854,17 @@ build(process.argv[2] || 'Non-JD Order Tool - User Guide.docx', {
     { h2: 'Compared with the workbook (November 5, 2026)' },
     { p: 'Brian refreshed the workbook at 8:01 am on November 5, and it was compared with the app’s rules over that morning’s data. **1,817** parts matched on every column. Five more parts in Excel had one more demand at branch 94, from an invoice posted between the app’s data time (6:42 am) and the refresh; one part had just left Excel’s 18-month window; two had changed at branch 11 in Equip after JD’s overnight copy (checked by Brian). For 4 parts the description differs: where branches spell a description differently, Equip’s SQL picks one of them in a way the app can’t copy exactly. Brian accepted that. The app’s CSV then matched the reference exactly: **1,815** parts.' },
 
-    { h1: '13. During the test' },
+    { h1: '13. Stock on superseded parts (0.15.0)' },
+    { p: 'Ben’s request of November 5: stock still sitting under an old part number. It is a built-in in **two places**, with the same rule: **on hand more than 0 and Super To not blank**, one row per branch record. JD parts are an Inventory report; non-JD parts are a Cleanup check. “On hand” is Equip’s quantity on hand, so stock anywhere at the branch counts, not only the main bin.' },
+    { bullets: [
+      '**Any Super To counts**, notes such as **BOLTS** too, so you can see them and decide. A Super To of only spaces counts as blank.',
+      '**Inventory:** the fifth built-in, under Corporate Stocking, a separate report (Corporate Stocking’s rules are unchanged). It counts at once, with **no Count button**: parts with no activity have no stock, so it never needs them. Columns: Branch, Part number, Description, On hand, Cost, **On-hand value**, Super To, Source, SLC. It starts in part number order; click **On-hand value** to sort by it. **Copy as my own** works as on the other reports.',
+      '**On-hand value** is new for Inventory reports: on hand (whole units, never below 0) × cost, the same as Cleanup’s. Copies can use it, and the panel you get by clicking a part now shows it too.',
+      '**Cleanup:** the third built-in check. Columns after the part: On hand, Cost, On-hand value, Super To; the total is the on-hand value. **Super To** is also a new field for your own checks (section 7).',
+    ] },
+    { p: 'On November 5, 2026 (Prod): JD **2,477** records at 20 branches, **$571,028.49** on hand; non-JD **698** records at 19 branches, **$497,322.78**, 22 of them with a word Super To. Both CSVs matched an independent list from the same data record for record.' },
+
+    { h1: '14. During the test' },
     { bullets: [
       'This is a test copy on a test server; the address and the certificate warning will change for the real version.',
       'Orders and settings you save are real (they go into the SharePoint lists), but nothing is sent to a vendor; you download the CSV and use it yourself.',

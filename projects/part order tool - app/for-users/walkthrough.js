@@ -40,6 +40,8 @@
 // src/pages/inventory/PartReportResultsPage.tsx, PartRecordsPanel.tsx, ReportEditorPage.tsx, InventoryReportsPage.tsx).
 // Counts are Prod of 2026-11-05: Corporate Stocking 1,815; Brian's real test copy "TEST Corporate Stocking 4+"
 // (Branches with demand >= 4, 618 parts) was deleted; the steps have the reader make "TEST 0.14.0" and archive it.
+// The 0.15.0 section follows nonjd-order-app 0.15.0 (commit 130b68e: Stock on superseded parts, src/inventory/builtIns.ts,
+// src/pages/cleanup/builtIns.ts). Counts are Prod of 2026-11-05: JD 2,477 records, non-JD 698.
 // Run: npm install, then node walkthrough.js [output file]
 const { build, CONTENT_W } = require('./lib');
 
@@ -54,8 +56,8 @@ const notes = { answer: 'Notes (anything different, slow or confusing):' };
 
 build(process.argv[2] || 'Non-JD Order Tool - Walkthrough.docx', {
   title: 'SPI Parts Hub: walkthrough',
-  subtitle: 'Formerly the Non-JD Parts Order Tool · Hands-on steps through every page · Version 0.14.0 · November 5, 2026 · App: https://10.110.100.13:8443',
-  footer: 'SPI Parts Hub: walkthrough (0.14.0)',
+  subtitle: 'Formerly the Non-JD Parts Order Tool · Hands-on steps through every page · Version 0.15.0 · November 5, 2026 · App: https://10.110.100.13:8443',
+  footer: 'SPI Parts Hub: walkthrough (0.15.0)',
   blocks: [
     { p: 'This is a hands-on tour of the tool. Each step says what to do and what you should see. Tick **OK** when it matches. When it doesn’t, or something is slow or confusing, write it in the notes box under that section and send it to Brian.' },
     { bullets: [
@@ -153,15 +155,31 @@ build(process.argv[2] || 'Non-JD Order Tool - Walkthrough.docx', {
 
     { h2: '9. Cleanup, Inventory and App Settings' },
     steps([
-      ['In the left menu, change the **Area** select to **Cleanup**.', '**Cleanup checks**, with **Checks** the only item in the menu: the built-in checks **Minimums with no demand** and **Stock value with no quantity**, and any saved ones, each with a count over every branch (Part 2, 0.11.0).'],
+      ['In the left menu, change the **Area** select to **Cleanup**.', '**Cleanup checks**, with **Checks** the only item in the menu: the built-in checks **Minimums with no demand**, **Stock value with no quantity** and **Stock on superseded parts**, and any saved ones, each with a count over every branch (Part 2, 0.11.0).'],
       ['Click **Minimums with no demand**, then pick branch **6**.', 'The Equip minimums on parts with no demand and no sales, with **← Cleanup checks** at the top; branch 6 has about 1,000. The largest is about $21,000 (part 145019, module rim, minimum 65).'],
-      ['Change the **Area** select to **Inventory management**.', '**Inventory reports**, with **Reports** the only item in the menu: the built-ins **MLPF Gaps**, **Border Stores**, **2 & 4 Cotton** and **Corporate Stocking** and any saved copies, each with a count over every JD branch (Part 2, 0.12.0 to 0.14.0).'],
-      ['Click **App Settings**.', 'Your default branch and franchise, and **About** with the version (**0.14.0**).'],
+      ['Change the **Area** select to **Inventory management**.', '**Inventory reports**, with **Reports** the only item in the menu: the built-ins **MLPF Gaps**, **Border Stores**, **2 & 4 Cotton**, **Corporate Stocking** and **Stock on superseded parts** and any saved copies, each with a count over every JD branch (Part 2, 0.12.0 to 0.15.0).'],
+      ['Click **App Settings**.', 'Your default branch and franchise, and **About** with the version (**0.15.0**).'],
       ['Set your default branch, then open Recommended Reorder.', 'It opens on your default branch.'],
     ]),
     notes,
 
     { h1: 'Part 2: what’s new' },
+
+    { h2: 'Version 0.15.0 (November 5, 2026): Stock on superseded parts' },
+    { p: 'New since 0.14.0, Ben’s request: parts with stock on hand but a **Super To**, so stock still under an old part number can be moved or relabelled. Same rule in two places: an **Inventory** report for JD parts and a **Cleanup** check for non-JD parts. Nothing is saved in these steps. The counts are from November 5 and will have moved a little.' },
+    { h3: 'JD parts and non-JD parts' },
+    steps([
+      ['Open **Inventory management → Reports** (the list of reports). Wait for the loading line to finish.', 'A new, separate row under Corporate Stocking: **Stock on superseded parts** (🔒 Built in), with about **2,477** parts straight away and no Count button.'],
+      ['Open it.', 'Under the description: “On hand > 0 and Super To is not blank”. Columns: Branch, Part number, Description, On hand, Cost, **On-hand value**, Super To, Source, SLC.'],
+      ['Click the **On-hand value** heading twice, then look down the Super To column.', 'The most valuable stock first. Most Super Tos are part numbers; a note such as **BOLTS** is listed on purpose.'],
+      ['Click a part number.', 'The part’s panel, which now shows **On-hand value** after Cost. Close it.'],
+      ['**Export CSV** and open it in Excel.', 'Headings: Branch, PartNumber, Description, OnHand, Cost, OnHandValue, SuperTo, Source, SLC.'],
+      ['Change the **Area** select to **Cleanup**.', 'Three built-ins; the last is **Stock on superseded parts**, with about **698** parts.'],
+      ['Open it.', 'After the part columns: On hand, Cost, On-hand value, Super To. The total above the table is the on-hand value (about **$497,323**).'],
+      ['Click **← Cleanup checks**, then **New check**. Open the **Condition 1** field list.', '**Super To** is a new field (“is not blank” and so on). Leave without saving.'],
+    ]),
+    { p: '**Your opinion:** are notes such as BOLTS useful here or just noise? Are these the columns you need to act on the list?' },
+    notes,
 
     { h2: 'Version 0.14.0 (November 5, 2026): Corporate Stocking, one row per part' },
     { p: 'New since 0.13.1: the SPI Corparate Stocking workbook as a built-in report, **Corporate Stocking**. It is the first report with **one row per part** instead of one per branch. Copies can change which records count, what they must be, where demand counts and the thresholds, and **New report** starts a report from scratch. The user guide, section 12, explains it in full.' },
@@ -568,6 +586,11 @@ build(process.argv[2] || 'Non-JD Order Tool - Walkthrough.docx', {
 
     { h1: 'Part 3: release checks (Brian)' },
     { p: 'Run these when a new version is deployed to the test server, after **Ctrl+F5** to load it.' },
+    { h3: '0.15.0' },
+    steps([
+      ['App Settings → **About**.', '**Version 0.15.0 · commit 130b68e**. (Done November 5.)'],
+      ['Export both Stock on superseded parts CSVs and compare them with `superseded_stock_check.py --tier prod`.', 'Every record, on hand and Super To the same. (Done November 5: JD 2,477 = 2,477, non-JD 698 = 698, 0 differences; app only, no data or publish changes.)'],
+    ]),
     { h3: '0.14.0' },
     steps([
       ['App Settings → **About**.', '**Version 0.14.0 · commit 15ca00a**. (Done November 5.)'],

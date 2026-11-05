@@ -1,6 +1,8 @@
 # SPI Parts Hub: Stock on superseded parts, JD and non-JD built-ins (design)
 
-> **Status:** design approved by Brian, 2026-11-05. Next: the implementation plan (Plan P, app 0.15.0).
+> **Status:** design approved by Brian, 2026-11-05. Plan: `docs/superpowers/plans/2026-11-05-spi-parts-hub-superseded-stock.md` (Plan P).
+> **Shipped 2026-11-05:** app 0.15.0 (commit `130b68e`) on Fedora. The app's CSVs matched the Prod reference record for
+> record: JD 2,477 at 20 branches, non-JD 698 at 19 branches, 0 differences. See the plan.
 > **Origin:** Ben, 2026-11-05 (via Brian): "Parts with a Bin Qty greater than 0 with a Super To", for JD and non-JD.
 
 ## Decisions (Brian, 2026-11-05)

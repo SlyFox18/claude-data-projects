@@ -5,7 +5,7 @@ Brian, on 2026-10-28. Each entry gives the idea as described, what already exist
 open questions to settle before it is designed. Nothing here is scheduled; pick from this list when planning the
 next round.
 
-Round 2 is complete (0.7.0, phase 4 One-Time transfers). F2 is done in 0.8.0 (2026-10-30), F6 in 0.9.0, F8 in 0.10.0 and F1 in 0.11.0 (all 2026-11-02), F4's first report in 0.12.0 (2026-11-03), Border Stores and 2 & 4 Cotton in 0.13.0 (2026-11-04), a bulk transfer export (Brian's request, 2026-11-04: Export (N) on Transfer orders, one combined CSV) in 0.13.1, and Corporate Stocking (the first one-row-per-part report) in 0.14.0 (2026-11-05).
+Round 2 is complete (0.7.0, phase 4 One-Time transfers). F2 is done in 0.8.0 (2026-10-30), F6 in 0.9.0, F8 in 0.10.0 and F1 in 0.11.0 (all 2026-11-02), F4's first report in 0.12.0 (2026-11-03), Border Stores and 2 & 4 Cotton in 0.13.0 (2026-11-04), a bulk transfer export (Brian's request, 2026-11-04: Export (N) on Transfer orders, one combined CSV) in 0.13.1, Corporate Stocking (the first one-row-per-part report) in 0.14.0 and F10 Stock on superseded parts in 0.15.0 (both 2026-11-05). Next: F11 (part details panel, 0.15.1), then the F12 reason-code design.
 
 | # | Idea | Rough size | Needs a design pass |
 |---|---|---|---|
@@ -18,8 +18,8 @@ Round 2 is complete (0.7.0, phase 4 One-Time transfers). F2 is done in 0.8.0 (20
 | F7 | Warn before losing ticked parts on Recommended Reorder | **Done in 0.5.0** | No |
 | F8 | One-Time order templates | **Done in 0.10.0** | No |
 | F9 | Price change history (was N5) | Medium | Yes, later |
-| F10 | Stock on superseded parts (JD + non-JD built-ins) | Small | **Designed** (spec P, 0.15.0) |
-| F11 | Part details panel (see a part without leaving an order) | Medium | **Designed** (spec Q, 0.15.1) |
+| F10 | Stock on superseded parts (JD + non-JD built-ins) | **Done in 0.15.0** | No |
+| F11 | Part details panel (see a part without leaving an order) | Medium; **next** | **Designed** (spec Q, 0.15.1) |
 | F12 | Reason codes: report and check rules suggest parts on orders | Large | **Yes** (after P and Q) |
 
 ## F1. More Cleanup checks
@@ -227,8 +227,9 @@ changes (Part Master history, `Fact_PartMaster_History`) can give a non-JD histo
 
 ## F10. Stock on superseded parts
 
-**Idea (Ben, 2026-11-05).** Parts with on hand > 0 and a Super To, for JD and non-JD. Designed:
-`docs/superpowers/specs/2026-11-05-spi-parts-hub-superseded-stock-design.md` (Plan P, app 0.15.0).
+**Done in 0.15.0 (2026-11-05).** Ben's idea: parts with on hand > 0 and a Super To, for JD and non-JD. A built-in
+Inventory report and a built-in Cleanup check; Super To is a new Cleanup field. Spec:
+`docs/superpowers/specs/2026-11-05-spi-parts-hub-superseded-stock-design.md` (Plan P).
 
 ## F11. Part details panel
 

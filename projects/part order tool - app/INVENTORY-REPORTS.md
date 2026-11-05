@@ -1,10 +1,10 @@
 # Inventory reports: a guide for Ben
 
-This page explains the **Inventory management** area of SPI Parts Hub (app version 0.14.0, 2026-11-05): what the
-built-ins **MLPF Gaps**, **Border Stores**, **2 & 4 Cotton** and **Corporate Stocking** check and how each condition maps to the workbook,
+This page explains the **Inventory management** area of SPI Parts Hub (app version 0.15.0, 2026-11-05): what the
+built-ins **MLPF Gaps**, **Border Stores**, **2 & 4 Cotton** and **Corporate Stocking** check and how each condition maps to the workbook, what **Stock on superseded parts** finds,
 the Corp demand rule, the JD fields a copy can use, how fresh the data is, and how the app's lists compared with the
 workbooks. Section 10 of the user guide
-covers the same ground job by job, with fewer details; section 11 covers Border Stores and 2 & 4 Cotton, section 12 Corporate Stocking.
+covers the same ground job by job, with fewer details; section 11 covers Border Stores and 2 & 4 Cotton, section 12 Corporate Stocking, section 13 Stock on superseded parts.
 
 Saved copies are kept in the SharePoint list **NonJD_InventoryReports** (one row per copy: name, description,
 conditions, Active, Archived; the author is SharePoint's Created By, "changed by" its Modified By). You work with them
@@ -289,6 +289,32 @@ list differs from the workbook by these parts:
 
 After the release: the app's CSV matched the reference exactly (1,815 parts), and a test copy with Branches with
 demand ≥ 4 found the same 618 parts, in the same order. The copy was stored as v3 and deleted.
+
+## Stock on superseded parts (0.15.0, 2026-11-05)
+
+Ben's request, not a workbook: stock still under an old part number. A fifth built-in, a separate report (Corporate
+Stocking's rules are unchanged). One row per branch record:
+
+| Condition | Why |
+|---|---|
+| On hand > 0 | Equip's quantity on hand, not BinQty: stock anywhere at the branch. Fractions count |
+| Super To is not blank | Any Super To, notes such as `BOLTS` too, so they can be seen and judged. Spaces only = blank |
+
+Active records only: parts with no activity carry no on hand, so none could pass. So there is **no Count button** and
+no extra download. Columns: Branch, Part number, Description, On hand, Cost, **On-hand value**, Super To, Source, SLC
+(CSV `Branch,PartNumber,Description,OnHand,Cost,OnHandValue,SuperTo,Source,SLC`). It keeps the reports' usual part
+number order; any column sorts by a click. **On-hand value** is a new field for every report: whole units on hand
+(never below 0) × cost, as Cleanup's. Copies can use it, and the part panel shows it.
+
+Non-JD parts have the same rule as a built-in **Cleanup** check of the same name (user guide, section 13).
+
+**Compared with the data (2026-11-05):** the app's two CSVs against `tools/dp-migration/superseded_stock_check.py` on
+Prod matched record for record, with 0 differences in on hand or Super To:
+
+| | Records | Branches | On-hand value |
+|---|---|---|---|
+| JD (Inventory) | 2,477 | 20 | $571,028.49 |
+| Non-JD (Cleanup; 22 with a word Super To) | 698 | 19 | $497,322.78 |
 
 ## Coming next
 

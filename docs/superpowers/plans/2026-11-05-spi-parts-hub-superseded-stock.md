@@ -1,6 +1,19 @@
 # Stock on superseded parts (Plan P, app 0.15.0) Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
+
+> **Shipped 2026-11-05:** app 0.15.0 (commit `130b68e`) on Fedora, installed by Brian. Commits: P1 e9076500
+> (data-projects, `superseded_stock_check.py`); app d60870d (P2), 4d83afa (P3), b7a1c3c (P4), d0d424e (P5), 130b68e
+> (review tidy-ups: `isConditionBuiltInId` in place of casts). P3 + P4 reviewed and approved; 3,022 tests, lint and tsc
+> clean. App only: no Fabric, publish or contract change.
+> **Real test (2026-11-05):** the app's CSVs against `superseded_stock_check.py --tier prod`: JD 2,477 = 2,477 records at
+> 20 branches, non-JD 698 = 698 at 19 branches, 0 differences in on hand or Super To. On-hand value: JD $571,028.49,
+> non-JD $497,322.78. 22 non-JD records have a word Super To.
+> **Differences from the plan below:** `cents()` returns dollars rounded to 2 places, so P2's test expects 6.75, not 675;
+> the JD part panel lists every JD field, so it shows On-hand value too; the JD report keeps the default part-number
+> sort; MC-SS-1 has no sales, so on mock it also joins the Scrap default (14 → 15 lines, $959 → $1,013; no doc quotes
+> these); About can't show the version in tests (`__APP_VERSION__` is a test value), so the click-through checks
+> `package.json`.
 
 **Goal:** Two built-ins, "Stock on superseded parts" (on hand > 0 and a Super To): a fifth Inventory report over JD
 records and a third Cleanup check over non-JD parts.
@@ -31,7 +44,7 @@ non-JD `Fact_NonJD_Reorder` 698 records at 19 branches (22 with a word Super To 
 - Create: `tools/dp-migration/superseded_stock_check.py`
 - Test: `tools/dp-migration/test_superseded_stock_check.py`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```python
 import duckdb
@@ -52,12 +65,12 @@ def test_rows_on_hand_and_super_to():
     assert [(r["Branch"], r["PartNumber"]) for r in rows] == [("1", "A"), ("11", "G")]
 ```
 
-- [ ] **Step 2: Run it to see it fail**
+- [x] **Step 2: Run it to see it fail**
 
 Run: `cd tools/dp-migration && python -m pytest test_superseded_stock_check.py -q`
 Expected: FAIL, `ModuleNotFoundError: superseded_stock_check`.
 
-- [ ] **Step 3: Write the script**
+- [x] **Step 3: Write the script**
 
 ```python
 """Stock on superseded parts (Plan P): the reference for the app's two built-ins, from Prod or Dev Gold.
@@ -109,12 +122,12 @@ if __name__ == "__main__":
     main()
 ```
 
-- [ ] **Step 4: Run the test, then the script against Prod**
+- [x] **Step 4: Run the test, then the script against Prod**
 
 Run: `python -m pytest test_superseded_stock_check.py -q` → PASS.
 Run: `python superseded_stock_check.py --tier prod` → `JD: 2,477 records; non-JD: 698 records` (or today's numbers).
 
-- [ ] **Step 5: Commit** (data-projects)
+- [x] **Step 5: Commit** (data-projects)
 
 ```bash
 git add tools/dp-migration/superseded_stock_check.py tools/dp-migration/test_superseded_stock_check.py
@@ -131,7 +144,7 @@ git commit -m "Plan P task P1: superseded_stock_check.py (reference for Stock on
 - Modify: `src/data/mock/jdFixtures.ts` (mock rows)
 - Test: `src/inventory/__tests__/builtIns.test.ts` (or the file that tests the other built-ins; `grep -l BORDER_STORES src/inventory/__tests__`)
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```ts
 describe('Stock on superseded parts (Plan P)', () => {
@@ -166,11 +179,11 @@ describe('Stock on superseded parts (Plan P)', () => {
 "greater than" is not `'gt'`, check `src/cleanup/conditions.ts` op names and use the one the editor offers for
 "is more than"; with `'ge'` use value 1 only if quantities are whole. Prefer `'gt'` 0 so 0.5 counts.)
 
-- [ ] **Step 2: Run them to see them fail**
+- [x] **Step 2: Run them to see them fail**
 
 Run: `npx vitest run src/inventory/__tests__/builtIns.test.ts -t "superseded"` → FAIL (no export).
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 In `src/inventory/fields.ts`, add `'onHandValue'` to `JdFieldId` after `'cost'`, and after the `cost` row field:
 
@@ -220,13 +233,13 @@ existing row helper:
 Make sure none of them passes MLPF Gaps / Border Stores / Cotton / Corporate Stocking (on hand > 0 or Super To set
 already fails their filters), so the existing counts don't move.
 
-- [ ] **Step 4: Run the inventory tests**
+- [x] **Step 4: Run the inventory tests**
 
 Run: `npx vitest run src/inventory src/pages/__tests__/inventoryReportsPage.test.tsx src/pages/__tests__/inventoryResultsPage.test.tsx src/__tests__`
 Expected: PASS. Tests that list the built-ins (names, counts, BUILT_IN_NAMES in `inventoryReportsPage.test.tsx`)
 gain the fifth; update them to include `'Stock on superseded parts'` and its count (2 on mock).
 
-- [ ] **Step 5: Commit** (nonjd-order-app)
+- [x] **Step 5: Commit** (nonjd-order-app)
 
 ```bash
 git add src/inventory/fields.ts src/inventory/builtIns.ts src/data/mock/jdFixtures.ts <the test files changed>
@@ -243,7 +256,7 @@ git commit -m "Plan P task P2: Stock on superseded parts, JD built-in Inventory 
 - Modify: `src/data/mock/fixtures.ts` (`PartSpec.superTo`, used in the `ReorderPart`)
 - Test: `src/cleanup/__tests__/fields.test.ts` (or the catalogue's test file), `src/state/__tests__/allBranches.test.ts`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```ts
 it('slimReorder keeps Super To', () => {
@@ -261,9 +274,9 @@ it('Super To: a blankable text field; spaces-only is blank', () => {
 
 (`FILE`, `PART`, `SLIM`: the sample objects the existing tests in those files build; reuse them.)
 
-- [ ] **Step 2: Run them to see them fail** → FAIL (no `superTo`).
+- [x] **Step 2: Run them to see them fail** → FAIL (no `superTo`).
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `SlimPart`, after `source`:
 
@@ -288,9 +301,9 @@ results (check the Reorder page tests' counts still pass; if one counts every br
 Any other code that builds a `SlimPart` literal (tests, `grep -rn "minimumNoDemand:" src --include=*.ts*`) gains
 `superTo: ''`.
 
-- [ ] **Step 4: Run** `npx vitest run src/cleanup src/state src/pages/__tests__` and tsc → PASS.
+- [x] **Step 4: Run** `npx vitest run src/cleanup src/state src/pages/__tests__` and tsc → PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/state/allBranches.ts src/cleanup/fields.ts src/data/mock/fixtures.ts <tests changed>
@@ -312,7 +325,7 @@ regex). Replace that with one table of condition built-ins.
 - Modify: `src/pages/cleanup/checkResults.ts`, `CheckResultsPage.tsx`, `CleanupChecksPage.tsx`, `src/App.tsx`, `src/ui/nav.ts`
 - Test: `src/pages/__tests__/cleanupChecksPage.test.tsx`, `checkResultsPage.test.tsx` (find with `grep -l value-no-qty src/pages/__tests__`), `src/ui/__tests__/nav.test.ts`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```ts
 // cleanup checks list
@@ -339,9 +352,9 @@ it('titles /cleanup/superseded-stock', () => {
 (Use each file's existing helpers; the names above are placeholders for them: read the file's value-no-qty tests
 and mirror them.)
 
-- [ ] **Step 2: Run them to see them fail.**
+- [x] **Step 2: Run them to see them fail.**
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `src/cleanup/conditions.ts`, after `VALUE_NO_QTY_COLUMNS`:
 
@@ -402,10 +415,10 @@ active: true, fields: resultFields(builtIn), total: totalField(builtIn) };`. Upd
 `ui/nav.ts`: the title lookup uses `CONDITION_BUILT_INS[sub]?.name`; the regex
 `(minimums|value-no-qty|superseded-stock|new|check\/...)`.
 
-- [ ] **Step 4: Run** `npx vitest run src/pages src/ui src/cleanup src/__tests__`, tsc, lint → PASS. The value-no-qty
+- [x] **Step 4: Run** `npx vitest run src/pages src/ui src/cleanup src/__tests__`, tsc, lint → PASS. The value-no-qty
 tests must pass unchanged (same page, same columns, same total).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/cleanup/conditions.ts src/pages/cleanup/builtIns.ts src/pages/cleanup/checkResults.ts \
@@ -422,20 +435,20 @@ git commit -m "Plan P task P4: Cleanup built-in Stock on superseded parts (condi
 - Create: `src/__tests__/clickThrough0150.test.tsx`
 - Create (data-projects): `projects/part order tool - app/for-users/0.15.0-try-it.md`
 
-- [ ] **Step 1: Click-through test** (mirror `src/__tests__/clickThrough0140.test.tsx`'s setup): Inventory lists
+- [x] **Step 1: Click-through test** (mirror `src/__tests__/clickThrough0140.test.tsx`'s setup): Inventory lists
 five built-ins and Stock on superseded parts counts 2; opening it lists JD-SS-BOLTS and JD-SS-OK with their Super To;
 Export CSV's first line is `Branch,PartNumber,Description,OnHand,Cost,OnHandValue,SuperTo,Source,SLC`. Cleanup lists
 three built-ins; Stock on superseded parts counts 1 and shows MC-SS-1 with Super To MC-SS-2; About says 0.15.0.
 
-- [ ] **Step 2: Run it** and the full suite in two halves as before (`npx vitest run src/pages` and the rest); tsc;
+- [x] **Step 2: Run it** and the full suite in two halves as before (`npx vitest run src/pages` and the rest); tsc;
 lint → PASS.
 
-- [ ] **Step 3: Try-it notes** (`0.15.0-try-it.md`, the 0.14.0 note's style): 1. Inventory → Stock on superseded
+- [x] **Step 3: Try-it notes** (`0.15.0-try-it.md`, the 0.14.0 note's style): 1. Inventory → Stock on superseded
 parts (2 parts, Super To column, BOLTS shown on purpose, CSV headings); 2. Cleanup → Stock on superseded parts
 (MC-SS-1; MC-SS-NO isn't listed because it has no stock); 3. a saved Cleanup check can now use Super To (New check →
 Super To is not blank); then About 0.15.0. Real-app numbers to expect: JD about 2,477, non-JD about 698.
 
-- [ ] **Step 4: Commit both repos**
+- [x] **Step 4: Commit both repos**
 
 ```bash
 git add package.json src/__tests__/clickThrough0150.test.tsx
@@ -449,11 +462,11 @@ git commit -m "0.15.0 try-it notes (Stock on superseded parts)"
 
 ### Task P6: Release (with Brian)
 
-- [ ] Brian's try-it on mock.
-- [ ] `npm run build`; dist checks (version 0.15.0, the commit, SharePoint site id, no `JD-SS-OK`/`MC-SS-1` mock data);
+- [x] Brian's try-it on mock.
+- [x] `npm run build`; dist checks (version 0.15.0, the commit, SharePoint site id, no `JD-SS-OK`/`MC-SS-1` mock data);
   upload to `~/nonjd-order-deploy/dist` on 10.110.100.13; Brian installs (the six sudo steps).
-- [ ] Real test: run `python tools/dp-migration/superseded_stock_check.py --tier prod --jd-out jd.csv --nonjd-out
+- [x] Real test: run `python tools/dp-migration/superseded_stock_check.py --tier prod --jd-out jd.csv --nonjd-out
   nonjd.csv`; Brian exports both built-ins' CSVs; compare by Branch + PartNumber (every record, on hand, Super To);
   explain any difference (a publish older than Gold's build, trailing-space part numbers).
-- [ ] Docs: guide + walkthrough (regenerate both .docx: `node guide.js`, `node walkthrough.js`), INVENTORY-REPORTS,
+- [x] Docs: guide + walkthrough (regenerate both .docx: `node guide.js`, `node walkthrough.js`), INVENTORY-REPORTS,
   FUTURE-IDEAS (F10 done), this plan's and the spec's status, memory.
