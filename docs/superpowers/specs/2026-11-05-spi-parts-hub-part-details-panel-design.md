@@ -23,8 +23,10 @@
 - Other branches inside the panel switch the panel to that branch (no navigation).
 - Ctrl/Cmd-click, middle-click and "open in new tab" still open the full part page in a new tab (the link keeps its
   `href`).
-- Screens: Reorder (both steps), One-Time, Transfers and transfer orders, Returns/Scrap lines, Cleanup results and
-  Minimums, Inventory record panels (part links), Part Lookup, Special statuses, rules Try it.
+- Screens: Reorder (both steps), Transfers and transfer orders, Returns/Scrap lines, Cleanup results and Minimums,
+  Part Lookup, Special statuses, rules Try it, Other branches on the part page. One-Time lines and the Order page show
+  part numbers as plain text today; they gain the link. **Not Inventory:** JD parts have no part page, and its reports
+  already open their own record panels without leaving the page.
 - Accessibility: a dialog with a label, focus moved in and trapped, Esc closes, focus restored.
 
 ## Build
