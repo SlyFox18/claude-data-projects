@@ -18,6 +18,11 @@
 // 14, parts with no activity on, 1,027 parts) is Brian's real test "Test 0.13.0", deleted.
 // Export (N) on Transfer orders (0.13.1) follows nonjd-order-app 0.13.1 (commit 0a0d6e6: src/transfers/bulkExport.ts,
 // src/export/csv.ts transferOrdersCsv, src/pages/transfers/TransferOrdersList.tsx).
+// Section 12 (Corporate Stocking, 0.14.0) follows nonjd-order-app 0.14.0 (commit 15ca00a: src/inventory/builtIns.ts,
+// partReport.ts, partFields.ts, partResults.ts, src/pages/inventory/PartReportResultsPage.tsx, PartRecordsPanel.tsx,
+// ReportEditorPage.tsx, InventoryReportsPage.tsx). Counts are Prod of 2026-11-05 (251,019 active and 643,030 idle JD
+// part records, demand window to 06:42 Central): Corporate Stocking 1,815. The copy example (Branches with demand
+// >= 4, 618 parts) is Brian's real test "TEST Corporate Stocking 4+", deleted.
 // Worked examples: Dev Gold Fact_NonJD_Reorder built 2026-10-26 (window Oct 2025 - Sep 2026); the transfer example
 // is the app's mock data (round numbers), as in REORDER-RULES.md. The Returns & scrap example (section 8) is Brian's Prod
 // test of 2026-11-02: rule "Scrap default" (All franchises, no sales 36 months, unit cost at least $0.10), 49 AM parts.
@@ -28,12 +33,12 @@ const w = (...fr) => fr.map((f) => Math.round(CONTENT_W * f));
 
 build(process.argv[2] || 'Non-JD Order Tool - User Guide.docx', {
   title: 'SPI Parts Hub: user guide',
-  subtitle: 'Formerly the Non-JD Parts Order Tool · For Ben, Shannon, Barry and Curt · Version 0.13.1 · November 4, 2026 (test version) · https://10.110.100.13:8443',
-  footer: 'SPI Parts Hub: user guide (version 0.13.1)',
+  subtitle: 'Formerly the Non-JD Parts Order Tool · For Ben, Shannon, Barry and Curt · Version 0.14.0 · November 5, 2026 (test version) · https://10.110.100.13:8443',
+  footer: 'SPI Parts Hub: user guide (version 0.14.0)',
   blocks: [
     { p: '**SPI Parts Hub** (until 0.8.0 the Non-JD Parts Order Tool) opens on a launch page where you pick what to work on: **Non-JD ordering**, **Cleanup**, **Returns & scrap**, **Part Lookup** or **Inventory management** today, with **JD ordering** to come. Most of this guide is about Non-JD ordering.' },
     { p: '**In one sentence:** Non-JD ordering shows each branch which non-John Deere parts to reorder and why, suggests stock other branches could send instead, lets you tune the rules behind those suggestions, and turns the parts you pick into an order file for each vendor.' },
-    { p: 'This guide covers getting in, what each page does, and exactly how every number is worked out. Version 0.8.0 includes Ben’s round 1 answers, several branches and dealer groups at once, **phase-in**, **transfer suggestions** and **saving transfers** in the app, with transfer orders and transfer rules, and **transfers on One-Time Orders** (round 2, from Ben’s answers of October 27), the **launch page** in front of it all (0.8.0), **returns and scrap** (0.9.0, section 8), **One-Time templates** (0.10.0, section 9), **Cleanup checks** (0.11.0, section 7), **Inventory reports** (0.12.0, section 10), **Border Stores** and **2 & 4 Cotton** (0.13.0, section 11), and exporting **several transfer orders at once** (0.13.1, under Transfers). What changed in each version is in the **walkthrough**, Part 2.' },
+    { p: 'This guide covers getting in, what each page does, and exactly how every number is worked out. Version 0.8.0 includes Ben’s round 1 answers, several branches and dealer groups at once, **phase-in**, **transfer suggestions** and **saving transfers** in the app, with transfer orders and transfer rules, and **transfers on One-Time Orders** (round 2, from Ben’s answers of October 27), the **launch page** in front of it all (0.8.0), **returns and scrap** (0.9.0, section 8), **One-Time templates** (0.10.0, section 9), **Cleanup checks** (0.11.0, section 7), **Inventory reports** (0.12.0, section 10), **Border Stores** and **2 & 4 Cotton** (0.13.0, section 11), exporting **several transfer orders at once** (0.13.1, under Transfers), and **Corporate Stocking**, the first report with one row per part (0.14.0, section 12). What changed in each version is in the **walkthrough**, Part 2.' },
 
     { h1: '1. Getting started' },
     { steps: [
@@ -810,7 +815,42 @@ build(process.argv[2] || 'Non-JD Order Tool - User Guide.docx', {
     { h2: 'Compared with the workbooks (November 3 and 4, 2026)' },
     { p: 'Brian refreshed both workbooks at about 5 pm on November 3, and they were compared with the app’s rules over the next morning’s data. **Border Stores:** 1,573 of 1,575 rows matched. **2 & 4 Cotton:** all 248 rows matched, plus 1 extra in the app. Every difference was an order placed or a transfer received at another branch after 5 pm, except one: a few part records are stored in Equip in lower case (for example tca24616 at branch 8), and the app missed their Corp demands. That was **fixed** before release.' },
 
-    { h1: '12. During the test' },
+    { h1: '12. Corporate Stocking: one row per part (0.14.0)' },
+    { p: 'The SPI Corparate Stocking workbook is now a built-in report, **Corporate Stocking**: “Parts with nothing on hand or on order at any branch (except 2 and 4) that had a Corp demand at 3 or more branches.” Unlike the other reports it lists **one row per part**, not one per branch: a part is looked at over every branch at once. It uses the workbook’s rules and columns, so it lists the same parts on the same morning.' },
+    { p: 'A part is listed when **all** of these are true:' },
+    { bullets: [
+      '**Records that count:** its JD records at branches other than 2 and 4 with package qty 1, return indicator R, source not AN and an SLC that doesn’t start with 21, 90, 91 or 99. A record that fails these doesn’t count either way. The part needs at least one counted record.',
+      '**Every counted record** has **0 on hand**, **0 on order** (a negative fails too) and **no Super To**. Parts with no activity (section 11) count here: a Super To at a branch that has never stocked the part still keeps it off the list.',
+      '**Demand:** it had a Corp demand at **3 or more branches** other than 2 and 4, whatever those branches’ records look like. Each branch counts once.',
+    ] },
+    { p: 'Columns, as in the workbook: Part number, Description, Cost, Source, SLC, Commodity code, Dealer group, On order, On hand, **R18 demands** (the Corp demands added up), **Branches with demand** and **Locations with demand** (the branch codes, for example “1, 7, 14, 93”). The text columns take the largest value over the counted records. The list is sorted by Branches with demand (most first), then R18 demands, then part number. On November 5, 2026 (Prod) it found **1,815** parts.' },
+    { p: 'On the list it shows a **Count (loads more data)** button, as 2 & 4 Cotton does, because it always loads the parts with no activity.' },
+
+    { h2: 'Using the report' },
+    { bullets: [
+      'There is no Branch column, so the branch filter is **Demand at branch** instead: pick a branch to see only the parts with a demand there.',
+      '**Search** (part number or description), sorting, the count and **Total cost (1 each)** work as in the other reports.',
+      '**Click a part number:** a panel lists **every branch’s record** of the part: On hand, On order, Super To, Corp demands, **Counted** and **Demand counted**. Counted says **Yes**, or why not: “No: not in Records that count” or “No: fails Every counted record must”. A ✓ under Demand counted means that branch’s demands are in R18 demands, even when its record didn’t count. For example, a source AN record at 93 doesn’t count, but its demands do.',
+      '**Export CSV** uses the workbook’s headings: PartNumber, Description, Cost, Source, SLC, CommodityCode, DealerGroupCode, OnOrder, OnHandQty, R18 Demands, Count of Locations with Demands, Locations with Demands. Copies keep these headings.',
+    ] },
+
+    { h2: 'Changing it in a copy' },
+    { p: '**Copy as my own** on Corporate Stocking opens the editor with **four** cards, in this order:' },
+    { bullets: [
+      '**Records that count:** “Which of the part’s records, at any branch, make up the part.” Built in: Branch not one of 2, 4 and the four part rules. To stop counting branch 12, add it to the Branch condition here.',
+      '**Every counted record must:** “The part is shown only when each counted record matches.” Built in: On hand = 0, On order = 0, Super To is blank.',
+      '**Demand counts where:** “Which records’ Corp demands count; each branch counts once.” Built in: Branch not one of 2, 4.',
+      '**Parts to show:** “Conditions on the part as a whole.” Built in: Branches with demand ≥ 3. Its fields are the part’s: R18 demands, Branches with demand, Locations with demand (for example contains 93), and the part’s Description, Cost, Source, SLC, Commodity code and group, and Dealer group.',
+    ] },
+    { p: 'The first three may be empty (“Every record counts.” and so on); Parts to show needs at least one condition. ‘Any of’ groups work in every card. Example: Brian’s test copy with **Branches with demand ≥ 4** found **618** parts on November 5.' },
+
+    { h2: 'A new report' },
+    { p: '**New report** (top right of Inventory reports, above “Data as of”) opens a blank editor. It starts with **Report type**: **One row per branch** (“A part at a branch: each branch’s record is a row.”, like MLPF Gaps) or **One row per part** (“A part over every branch, parts with no activity too: each part is a row.”, like Corporate Stocking). A copy keeps its report’s type.' },
+
+    { h2: 'Compared with the workbook (November 5, 2026)' },
+    { p: 'Brian refreshed the workbook at 8:01 am on November 5, and it was compared with the app’s rules over that morning’s data. **1,817** parts matched on every column. Five more parts in Excel had one more demand at branch 94, from an invoice posted between the app’s data time (6:42 am) and the refresh; one part had just left Excel’s 18-month window; two had changed at branch 11 in Equip after JD’s overnight copy (checked by Brian). For 4 parts the description differs: where branches spell a description differently, Equip’s SQL picks one of them in a way the app can’t copy exactly. Brian accepted that. The app’s CSV then matched the reference exactly: **1,815** parts.' },
+
+    { h1: '13. During the test' },
     { bullets: [
       'This is a test copy on a test server; the address and the certificate warning will change for the real version.',
       'Orders and settings you save are real (they go into the SharePoint lists), but nothing is sent to a vendor; you download the CSV and use it yourself.',

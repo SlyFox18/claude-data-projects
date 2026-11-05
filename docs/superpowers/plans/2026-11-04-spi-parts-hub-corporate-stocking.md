@@ -3,6 +3,22 @@
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or
 > superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+> **Shipped 2026-11-05:** app 0.14.0 (commit `15ca00a`) on Fedora, installed by Brian (About shows it). Commits: O1
+> 43e315bc (data-projects, `corp_parts_check.py --report stocking`); app c025266 + 5a3d3f9 (O2), 13b7284 + 68f88d4
+> (O3), 66b933e + d111366 (O4), 91d34df + 69f41a4 (O5), ce546f3 + dcb9570 (O6), 4e6546d + a005c4e (O7), 702d807 (O8),
+> then 2a01838 (**New report** button on the list, added after Brian's try-it: a blank editor was only reachable by
+> address) and 15ca00a (a part copy's CSV headings use the workbook's names, as branch copies use MLPF's; found in
+> the real test). Every task reviewed, findings fixed; about 3,000 tests, lint and tsc clean.
+> **Excel gate (2026-11-05):** the reference check on Prod found 0 differences in Gold (251,019 active, 643,030 idle).
+> Brian's 08:01 refresh (1,819 parts) against the reference as of 08:01: 1,817 matched on every column; 2 only in
+> Excel (H140180, RE506624: branch 11 changed in Equip after JD's overnight copy, checked by Brian), 4 descriptions
+> (JD8914, R86105, RE155713, RE29408: SQL Anywhere's MAX pick among branch spellings; accepted by Brian). At Gold's
+> own data time (06:42) also: invoice 2015916 at 94 posted 06:42–08:01 on 10-29 (H103344, H96423, HXE81341 only in
+> Excel; AH96333, HXE37540 one demand fewer) and AFH210470 only in the app (window start).
+> **Real test:** the app's CSV matched the reference exactly (1,815 parts, every column); a TEST copy with Branches
+> with demand ≥ 4 found the same 618 parts in the same order, stored as v3 in NonJD_InventoryReports (item 3), then
+> deleted (list empty). App only, no data or publish changes.
+
 **Goal:** A one-row-per-part Inventory report type and the built-in Corporate Stocking, matching the workbook, with
 editable copies.
 
@@ -45,7 +61,7 @@ stage named files only (never `git add -A`; `.env.example` has an unrelated user
 
 **Files:** Modify `tools/dp-migration/corp_parts_check.py`, `tools/dp-migration/test_corp_parts_check.py`.
 
-- [ ] Add `STOCKING_FILTERS` (the four filters, no on order / Super To):
+- [x] Add `STOCKING_FILTERS` (the four filters, no on order / Super To):
   ```python
   STOCKING_FILTERS = """PackageQty = 1 AND upper(trim(ReturnIndicator)) = 'R'
       AND coalesce(upper(trim(Source)), '') <> 'AN'
@@ -55,7 +71,7 @@ stage named files only (never `git add -A`; `.env.example` has an unrelated user
                       "OnOrder", "OnHandQty", "R18 Demands", "Count of Locations with Demands",
                       "Locations with Demands"]
   ```
-- [ ] `stocking_rows(con, source="jd_all") -> list[dict]` implementing the spec: eligibility over records with
+- [x] `stocking_rows(con, source="jd_all") -> list[dict]` implementing the spec: eligibility over records with
   `upper(trim(Branch)) NOT IN ('2','4') AND coalesce(STOCKING_FILTERS, false)` grouped by `upper(trim(PartNumber))`
   with the three HAVING sums (on hand ≠ 0, on order ≠ 0, Super To not blank, each = 0); text fields `max(trim(x))`,
   cost `max(Cost)`, description per O-D4 (`arg_max(trim(Description), [upper(trim(Description)), branch-order key])`
@@ -63,22 +79,22 @@ stage named files only (never `git add -A`; `.env.example` has an unrelated user
   trick, and test it); demand from `corp_demands` (b not in 2, 4), `count(*) >= 3`; locations
   `string_agg(b, ', ' ORDER BY <O-D9 key>)`; OnOrder and OnHandQty 0; sorted count desc, demands desc, part number.
   Twins: `corp_demands` is already per (b, upper(trim(part))) since 67480aa1.
-- [ ] `REPORTS["stocking"]` with `key=("PartNumber",)`, `columns=STOCKING_COLUMNS`, the numeric columns, sheet
+- [x] `REPORTS["stocking"]` with `key=("PartNumber",)`, `columns=STOCKING_COLUMNS`, the numeric columns, sheet
   `SPI Corparate Stocking`; generalise `compare_xlsx` / `_xkey` / `part_context` / the diff CSV to the report's key
   (Branch + PartNumber for the others, PartNumber alone here; for stocking, part_context lists every branch's record
   of the part). Description compares ignoring case for stocking only.
-- [ ] Tests (DuckDB in memory, the file's helpers `_part`, `_sale`, `_credit`, `_con`): a part with three demand
+- [x] Tests (DuckDB in memory, the file's helpers `_part`, `_sale`, `_credit`, `_con`): a part with three demand
   branches and zero stock listed; one counted record with on hand 1 → not listed; the same record at branch 2 → listed;
   a record with SLC 21A and on hand 5 → listed; Super To on a counted idle record → not listed; on order −1 → not
   listed; two demand branches → not listed; a demand at a branch whose record fails the filters still counts;
   locations "3, 11, 93" order with a non-numeric branch last; description "Valve" at 11 and "VALVE" at 3 → "VALVE".
-- [ ] `python -m pytest tools/dp-migration/test_corp_parts_check.py -q`; commit; push.
+- [x] `python -m pytest tools/dp-migration/test_corp_parts_check.py -q`; commit; push.
 
 ### Task O2: Part fields and `PartRow` (app)
 
 **Files:** Create `src/inventory/partFields.ts`, `src/inventory/__tests__/partFields.test.ts`.
 
-- [ ] Types:
+- [x] Types:
   ```ts
   export type PartFieldId =
     | 'partNumber' | 'description' | 'cost' | 'source' | 'slc' | 'commodityCode' | 'commodityGroup' | 'dealerGroup'
@@ -110,16 +126,16 @@ stage named files only (never `git add -A`; `.env.example` has an unrelated user
     records: readonly PartRecord[];      // every record of the part, O-D9 branch order
   }
   ```
-- [ ] `PART_FIELDS` (labels: Part number, Description, Cost, Source, SLC, Commodity code, Commodity group, Dealer
+- [x] `PART_FIELDS` (labels: Part number, Description, Cost, Source, SLC, Commodity code, Commodity group, Dealer
   group, R18 demands, Branches with demand, Locations with demand, On hand, On order) as `FieldDefOf<PartRow,
   PartFieldId>` with the same text rules as `JD_FIELDS` (`textValue`, `cents`, `DEALER_GROUP_OPTIONS`), all
   `alwaysKnown`; `demandBranches` reads `demandLocations.length`; `demandLocations` is text with `readMany: (p) =>
   p.demandLocations`, `comparisons: ['oneOf', 'notOneOf']`, `blankable: false` (O-D7), shown as the ", " text.
   `PART_CATALOGUE = makeCatalogue(PART_FIELDS, OPTIONS)` (export `OPTIONS` from `./fields` rather than copy it).
-- [ ] `branchOrder(a, b)` (O-D9) exported from here for O3 and the pages.
-- [ ] Tests: each field's read on a hand-made PartRow; `branchOrder` sorts `['93','3','11','4B']` → `3, 11, 93, 4B`;
+- [x] `branchOrder(a, b)` (O-D9) exported from here for O3 and the pages.
+- [x] Tests: each field's read on a hand-made PartRow; `branchOrder` sorts `['93','3','11','4B']` → `3, 11, 93, 4B`;
   `conditionProblem` accepts `demandBranches ge 3` and `demandLocations oneOf ['93']`, rejects `demandLocations ge`.
-- [ ] Lint, tsc, tests; commit.
+- [x] Lint, tsc, tests; commit.
 
 ### Task O3: `PartReportDef`, parsing, v3 storage, compiling (app)
 
@@ -127,7 +143,7 @@ stage named files only (never `git add -A`; `.env.example` has an unrelated user
 `src/inventory/report.ts` (only to export `branchKey` / `partKey` if not already, and `AnyReportDef`,
 `parseAnyReportDef`, `anyReportDefToJson`, `isPartReport`).
 
-- [ ] Types and storage:
+- [x] Types and storage:
   ```ts
   export interface PartReportDef {
     grain: 'part';
@@ -144,7 +160,7 @@ stage named files only (never `git add -A`; `.env.example` has an unrelated user
   `parsePartReportDef(raw)`: v3 object with the four arrays (`parseConditions` with the right catalogue) and no
   problem, else null. In report.ts: `parseAnyReportDef(raw) = raw?.v === 3 ? parsePartReportDef(raw) :
   parseReportDef(raw)`; `anyReportDefToJson`.
-- [ ] `compilePartReport(def, active, idle, today)` → `{ status: 'needsIdle' } | { status: 'invalid', problem } |
+- [x] `compilePartReport(def, active, idle, today)` → `{ status: 'needsIdle' } | { status: 'invalid', problem } |
   ReadyPartReport` where
   ```ts
   export interface ReadyPartReport {
@@ -163,44 +179,44 @@ stage named files only (never `git add -A`; `.env.example` has an unrelated user
   `true`; shown when `compileConditions(def.conditions, today, PART_CATALOGUE)` is `true`. Keep the built part map per
   (active, idle, today, JSON of lists 1–3) in a small keep-last-N cache like `keptPoolIndex` (lists 1–3 decide the
   PartRows; list 4 only filters), so editing a threshold doesn't regroup ~890k rows.
-- [ ] Tests (hand-made JdRows; reuse the helpers in `src/inventory/__tests__/report.test.ts` if they exist): the O1 cases
+- [x] Tests (hand-made JdRows; reuse the helpers in `src/inventory/__tests__/report.test.ts` if they exist): the O1 cases
   one by one through `compilePartReport` with the built-in's lists; twins at one branch count once (largest);
   `every` 'unknown' hides the part; list 4 `demandLocations oneOf 93`; v3 round trip; a v2 and an array still parse
   via `parseAnyReportDef` to the same `InventoryReportDef` as `parseReportDef`; a v3 with a problem → null; needsIdle;
   the cache isn't rebuilt when only list 4 changes (a build counter like `poolIndexBuilds`).
-- [ ] Lint, tsc, tests; commit.
+- [x] Lint, tsc, tests; commit.
 
 ### Task O4: The built-in and the mock data (app)
 
 **Files:** Modify `src/inventory/builtIns.ts`, the mock fixtures (`src/data/mock/jdFixtures.ts`,
 `jdIdleFixtures.ts` or wherever they live), `src/inventory/__tests__/builtIns.test.ts`.
 
-- [ ] `CORPORATE_STOCKING: PartReportDef` per the spec (counted: branch notOneOf 2, 4 + package qty eq 1, return
+- [x] `CORPORATE_STOCKING: PartReportDef` per the spec (counted: branch notOneOf 2, 4 + package qty eq 1, return
   indicator is R, source isNot AN, slc notStartsWith 21, 90, 91, 99, reusing the matching items of `PART_FILTERS`;
   every: onHand eq 0, onOrder eq 0, superTo blank; demandAt: branch notOneOf 2, 4; conditions: demandBranches ge 3).
   `BuiltInReport` gains an optional grain: make `def: AnyReportDef`; `CORPORATE_STOCKING_BUILT_IN` (id
   `corporate-stocking`, name "Corporate Stocking", description from the workbook's purpose in one sentence, columns =
   the workbook's 12, CSV headers = the workbook's), appended to `BUILT_INS`. Update `copyColumns` and any `BuiltInReport`
   consumer that assumed `InventoryReportDef` (tsc will list them; for a part report they take the part columns).
-- [ ] Mock: JD-CS-* parts at branches 1, 3, 6, 11 that no other built-in finds (Corp demands 1 or 3, never 2; no
+- [x] Mock: JD-CS-* parts at branches 1, 3, 6, 11 that no other built-in finds (Corp demands 1 or 3, never 2; no
   candidates at 95/91/96 or 2/4; no cotton dealer groups): JD-CS-OK (demand at 1, 3, 6; zero stock) listed;
   JD-CS-OH (one counted record on hand 1) not; JD-CS-B2 (on hand 5 only at branch 2) listed; JD-CS-SLC (SLC 21A on hand
   5 at 11) listed; JD-CS-SUP (an idle record at 11 with Super To) not; JD-CS-2B (demand at two branches) not;
   JD-CS-AN (a demand at 11 whose record is source AN) listed with 3 locations.
-- [ ] Tests: the built-in against the mock finds exactly OK, B2, SLC, AN, in the default order; MLPF Gaps, Border
+- [x] Tests: the built-in against the mock finds exactly OK, B2, SLC, AN, in the default order; MLPF Gaps, Border
   Stores and 2 & 4 Cotton find the same rows as before (their existing tests unchanged and passing).
-- [ ] Lint, tsc, tests (`src/inventory`, `src/pages/inventory`, the click-throughs); commit.
+- [x] Lint, tsc, tests (`src/inventory`, `src/pages/inventory`, the click-throughs); commit.
 
 ### Task O5: List page and loading (app)
 
 **Files:** Modify `src/pages/inventory/reportLoad.ts`, `useReportsList.ts`, `InventoryReportsPage.tsx` and their tests.
 
-- [ ] Saved reports parse with `parseAnyReportDef`; the list shows Corporate Stocking among the built-ins with the
+- [x] Saved reports parse with `parseAnyReportDef`; the list shows Corporate Stocking among the built-ins with the
   Count button (it always needs the idle files); a part report's count = `rows.length`. Copy as my own of a part
   report opens the editor with the four lists (O7). Saving writes `anyReportDefToJson`.
-- [ ] Tests: the built-in's Count on mock = 4; a stored v3 copy lists and counts; an unreadable v3 says so as a bad
+- [x] Tests: the built-in's Count on mock = 4; a stored v3 copy lists and counts; an unreadable v3 says so as a bad
   stored report does today.
-- [ ] Lint, tsc, tests; commit.
+- [x] Lint, tsc, tests; commit.
 
 ### Task O6: Results page and details panel for part reports (app)
 
@@ -208,40 +224,40 @@ stage named files only (never `git add -A`; `.env.example` has an unrelated user
 `src/inventory/partResults.ts` (+ tests); modify the route / `ReportResultsPage.tsx` to hand a part report to the new
 page.
 
-- [ ] `partResults.ts`: `filterPartRows(rows, { search, demandAt })` (search = part number or description,
+- [x] `partResults.ts`: `filterPartRows(rows, { search, demandAt })` (search = part number or description,
   case-insensitive, as `filterReportRows`; `demandAt` = a branch code → parts whose `demandLocations` include it),
   `sortPartRows(rows, sort)` (any column; default = O3's order), `partReportCsv(rows, columns, headers)` (the
   workbook's headings; Locations as the ", " text), `totalCost`.
-- [ ] The page mirrors `ReportResultsPage` (Data as of, search, a **Demand at branch** select listing branches with a
+- [x] The page mirrors `ReportResultsPage` (Data as of, search, a **Demand at branch** select listing branches with a
   label, sortable columns, row count and total cost, Export CSV, the missing-branches / needsIdle messages); a row
   opens `PartRecordsPanel`: a table of every record (branch, on hand, on order, Super To, Corp demands, Counted:
   "Yes" / "No: not in Records that count" / "No: fails Every counted record must"; demand counted ✓).
-- [ ] Tests: columns and default order; Demand at branch filter; search; CSV headers and the Locations cell; the panel's
+- [x] Tests: columns and default order; Demand at branch filter; search; CSV headers and the Locations cell; the panel's
   rows and reasons for JD-CS-AN.
-- [ ] Lint, tsc, tests; commit.
+- [x] Lint, tsc, tests; commit.
 
 ### Task O7: Editor for part reports (app)
 
 **Files:** Modify `src/pages/inventory/ReportEditorPage.tsx` (+ tests); reuse `ConditionListEditor` / `GroupRowEditor`.
 
-- [ ] New report: a choice at the top, **One row per branch** (today) / **One row per part**, only when creating;
+- [x] New report: a choice at the top, **One row per branch** (today) / **One row per part**, only when creating;
   a copy or an edit keeps its grain. A part report shows four cards in order (titles from the spec, a one-line hint
   each), lists 1–3 with `JD_ROW_CATALOGUE`'s fields, list 4 with `PART_CATALOGUE`'s; Try it runs
   `compilePartReport`; saving validates with `partReportDefProblem`.
-- [ ] Tests: create a part report from scratch (choose the grain, a list-4 condition, save → v3 JSON); copy Corporate
+- [x] Tests: create a part report from scratch (choose the grain, a list-4 condition, save → v3 JSON); copy Corporate
   Stocking, change list 4 to `≥ 4` and list 1's branch to `not one of 2, 4, 12`, Try it, save; edit keeps the grain;
   a branch report's editor is unchanged (existing tests pass).
-- [ ] Lint, tsc, tests; commit.
+- [x] Lint, tsc, tests; commit.
 
 ### Task O8: Version, click-through, try-it notes (app + data-projects)
 
-- [ ] `package.json` / `package-lock.json` / README version table 0.14.0 (as commit 1319ca9 did).
-- [ ] `src/__tests__/clickThrough0140.test.tsx` (model: `clickThrough0130.test.tsx`): Inventory → Count Corporate
+- [x] `package.json` / `package-lock.json` / README version table 0.14.0 (as commit 1319ca9 did).
+- [x] `src/__tests__/clickThrough0140.test.tsx` (model: `clickThrough0130.test.tsx`): Inventory → Count Corporate
   Stocking (4) → open it → the four parts in order → click JD-CS-AN, panel → Export CSV headers → Copy as my own →
-  list 4 ≥ 4 → Try it (0) → save.
-- [ ] Full suite in two halves (`npx vitest run src/pages` and `npx vitest run --exclude 'src/pages/**'`), lint, tsc;
+  list 4 ≥ 4 → Try it (1) → save.
+- [x] Full suite in two halves (`npx vitest run src/pages` and `npx vitest run --exclude 'src/pages/**'`), lint, tsc;
   commit; push dev.
-- [ ] `projects/part order tool - app/for-users/0.14.0-try-it.md` (data-projects): three short jobs on mock.
+- [x] `projects/part order tool - app/for-users/0.14.0-try-it.md` (data-projects): three short jobs on mock.
 
 ### Task O9: Excel gate and release (Claude + Brian)
 

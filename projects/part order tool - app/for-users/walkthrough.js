@@ -36,6 +36,10 @@
 // no activity on, 1,027 parts) was deleted; the steps have the reader make "TEST 0.13.0" and archive it.
 // The 0.13.1 section follows nonjd-order-app 0.13.1 (commit 0a0d6e6: Export (N) on the Transfer orders tab,
 // src/transfers/bulkExport.ts, src/pages/transfers/TransferOrdersList.tsx); the steps use practice transfers.
+// The 0.14.0 section follows nonjd-order-app 0.14.0 (commit 15ca00a: Corporate Stocking, src/inventory/partReport.ts,
+// src/pages/inventory/PartReportResultsPage.tsx, PartRecordsPanel.tsx, ReportEditorPage.tsx, InventoryReportsPage.tsx).
+// Counts are Prod of 2026-11-05: Corporate Stocking 1,815; Brian's real test copy "TEST Corporate Stocking 4+"
+// (Branches with demand >= 4, 618 parts) was deleted; the steps have the reader make "TEST 0.14.0" and archive it.
 // Run: npm install, then node walkthrough.js [output file]
 const { build, CONTENT_W } = require('./lib');
 
@@ -50,8 +54,8 @@ const notes = { answer: 'Notes (anything different, slow or confusing):' };
 
 build(process.argv[2] || 'Non-JD Order Tool - Walkthrough.docx', {
   title: 'SPI Parts Hub: walkthrough',
-  subtitle: 'Formerly the Non-JD Parts Order Tool · Hands-on steps through every page · Version 0.13.1 · November 4, 2026 · App: https://10.110.100.13:8443',
-  footer: 'SPI Parts Hub: walkthrough (0.13.1)',
+  subtitle: 'Formerly the Non-JD Parts Order Tool · Hands-on steps through every page · Version 0.14.0 · November 5, 2026 · App: https://10.110.100.13:8443',
+  footer: 'SPI Parts Hub: walkthrough (0.14.0)',
   blocks: [
     { p: 'This is a hands-on tour of the tool. Each step says what to do and what you should see. Tick **OK** when it matches. When it doesn’t, or something is slow or confusing, write it in the notes box under that section and send it to Brian.' },
     { bullets: [
@@ -59,7 +63,7 @@ build(process.argv[2] || 'Non-JD Order Tool - Walkthrough.docx', {
       '**Part 2, what’s new,** has a short section for each version. When a new version comes out, only its section needs doing.',
       '**Part 3, release checks,** is for Brian when he puts a new version on the test server.',
     ] },
-    { note: 'The examples use the data of October 27 to November 4, 2026. The data is refreshed every morning, so your quantities and dollars will be a little different. Close is fine; what matters is that the steps behave as described.' },
+    { note: 'The examples use the data of October 27 to November 5, 2026. The data is refreshed every morning, so your quantities and dollars will be a little different. Close is fine; what matters is that the steps behave as described.' },
     { note: 'Practising is safe if you follow the steps: anything you change is undone in the next step. Practice orders stay as **drafts** named **TEST**. Don’t export or mark them placed. Orders are never deleted: archive the TEST ones when you are done (0.5.2). A practice **transfer** is different: while it is saved it holds the sending branch’s stock for everyone, so **cancel it** straight after the step that made it.' },
 
     { h1: 'Part 1: the tour' },
@@ -151,13 +155,34 @@ build(process.argv[2] || 'Non-JD Order Tool - Walkthrough.docx', {
     steps([
       ['In the left menu, change the **Area** select to **Cleanup**.', '**Cleanup checks**, with **Checks** the only item in the menu: the built-in checks **Minimums with no demand** and **Stock value with no quantity**, and any saved ones, each with a count over every branch (Part 2, 0.11.0).'],
       ['Click **Minimums with no demand**, then pick branch **6**.', 'The Equip minimums on parts with no demand and no sales, with **← Cleanup checks** at the top; branch 6 has about 1,000. The largest is about $21,000 (part 145019, module rim, minimum 65).'],
-      ['Change the **Area** select to **Inventory management**.', '**Inventory reports**, with **Reports** the only item in the menu: the built-ins **MLPF Gaps**, **Border Stores** and **2 & 4 Cotton** and any saved copies, each with a count over every JD branch (Part 2, 0.12.0 and 0.13.0).'],
-      ['Click **App Settings**.', 'Your default branch and franchise, and **About** with the version (**0.13.1**).'],
+      ['Change the **Area** select to **Inventory management**.', '**Inventory reports**, with **Reports** the only item in the menu: the built-ins **MLPF Gaps**, **Border Stores**, **2 & 4 Cotton** and **Corporate Stocking** and any saved copies, each with a count over every JD branch (Part 2, 0.12.0 to 0.14.0).'],
+      ['Click **App Settings**.', 'Your default branch and franchise, and **About** with the version (**0.14.0**).'],
       ['Set your default branch, then open Recommended Reorder.', 'It opens on your default branch.'],
     ]),
     notes,
 
     { h1: 'Part 2: what’s new' },
+
+    { h2: 'Version 0.14.0 (November 5, 2026): Corporate Stocking, one row per part' },
+    { p: 'New since 0.13.1: the SPI Corparate Stocking workbook as a built-in report, **Corporate Stocking**. It is the first report with **one row per part** instead of one per branch. Copies can change which records count, what they must be, where demand counts and the thresholds, and **New report** starts a report from scratch. The user guide, section 12, explains it in full.' },
+    { note: 'Saving a copy is real: everyone sees it straight away. Name it **TEST 0.14.0**, and **archive it** at the end of these steps (Brian tidies up afterwards). The counts are from November 5 and change every morning; close is fine.' },
+    { h3: 'Corporate Stocking, a copy, and a new report' },
+    steps([
+      ['Open **Inventory management**. Wait for the loading line to finish.', 'The built-ins end with **Corporate Stocking** (🔒 Built in), showing a **Count (loads more data)** button.'],
+      ['Click **Count** on Corporate Stocking.', 'After a few seconds (it loads the parts with no activity, about 11 MB the first time), about **1,815** parts.'],
+      ['Open **Corporate Stocking**.', 'No Branch column: Part number, Description, Cost, Source, SLC, Commodity code, Dealer group, On order, On hand, **R18 demands**, **Branches with demand**, **Locations with demand** (for example “1, 6, 7, 8, 11 …”). Every row has On order and On hand **0** and Branches with demand **3** or more, most first. Instead of Branch there is **Demand at branch**.'],
+      ['Set **Demand at branch** to **93**, then back to **All branches**.', 'Only the parts with a demand at 93 (93 is in their Locations with demand), then all of them again.'],
+      ['Click a part number.', 'A panel listing every branch’s record: On hand, On order, Super To, Corp demands, **Counted** (Yes, or “No: not in Records that count” for branches 2 and 4 and records failing the part rules) and a ✓ under **Demand counted** for each branch in Locations with demand. **Close** closes it.'],
+      ['**Export CSV** and open it in Excel.', 'A file named like `Inventory-Corporate Stocking-20261105.csv` with the workbook’s headings, ending **R18 Demands**, **Count of Locations with Demands**, **Locations with Demands**. It lines up beside SPI Corparate Stocking.xlsx.'],
+      ['Click **Copy as my own**. Name it **TEST 0.14.0**.', '**Copy report** with four cards: **Records that count** (Branch not one of 2, 4 and the four part rules), **Every counted record must** (On hand = 0, On order = 0, Super To is blank), **Demand counts where** (Branch not one of 2, 4) and **Parts to show** (Branches with demand ≥ 3).'],
+      ['In **Parts to show**, change **3** to **4**.', '**Try it** updates after a moment with fewer parts (about 618 on November 5).'],
+      ['Click **Save report**.', '“Report saved.”: **TEST 0.14.0**. Its **Export CSV** has the same workbook headings.'],
+      ['Click **← Inventory reports**. On the TEST 0.14.0 row click **Switch off**, then **Switch off** again. Then **Archive**, then **Archive**.', 'The row greys with an **Off** tag, then leaves the list: “1 archived report is hidden.”'],
+      ['Click **New report** (top right).', '**New report** with a **Report type** choice: **One row per branch** or **One row per part**. Choose **One row per part**: the first three cards are empty (“Every record counts.” and so on) and Parts to show starts with Branches with demand ≥ 1.'],
+      ['Click **← Inventory reports** without saving.', 'It asks first; leave without saving.'],
+    ]),
+    { p: '**Your opinion:** does the panel explain a part clearly? Is **Demand at branch** what you’d want instead of a branch filter? Are the four cards easy to tell apart, and would you know which one to change to stop counting a branch?' },
+    notes,
 
     { h2: 'Version 0.13.1 (November 4, 2026): export several transfer orders at once' },
     { p: 'New since 0.13.0: on the **Transfer orders** tab, tick several transfer orders and click **Export (N)** for one file with all their lines, instead of opening and exporting each one. Every transfer in the file is marked Exported, as if exported on its own. The user guide (Transfers, Transfer orders) explains it.' },
@@ -543,6 +568,12 @@ build(process.argv[2] || 'Non-JD Order Tool - Walkthrough.docx', {
 
     { h1: 'Part 3: release checks (Brian)' },
     { p: 'Run these when a new version is deployed to the test server, after **Ctrl+F5** to load it.' },
+    { h3: '0.14.0' },
+    steps([
+      ['App Settings → **About**.', '**Version 0.14.0 · commit 15ca00a**. (Done November 5.)'],
+      ['Refresh SPI Corparate Stocking.xlsx and compare it with the app’s list.', 'Every difference is explained. (Done November 5 against Brian’s 8:01 am refresh: Gold matched the reference with 0 differences; 1,817 parts matched; 5 parts with an invoice at 94 after the 6:42 data time, 1 at the window start, 2 changed at branch 11 in Equip, 4 description spellings accepted by Brian. The app’s CSV then matched the reference exactly: 1,815.)'],
+      ['With Claude: a real test copy of Corporate Stocking, then check SharePoint and delete the TEST row.', 'NonJD_InventoryReports holds the row as a one-row-per-part report with its four lists. (Done November 5: “TEST Corporate Stocking 4+”, Branches with demand ≥ 4; its 618 parts matched the reference in the same order; deleted, list empty. App only: no data or publish changes.)'],
+    ]),
     { h3: '0.13.1' },
     steps([
       ['App Settings → **About**.', '**Version 0.13.1 · commit 0a0d6e6**. (Done November 4.)'],

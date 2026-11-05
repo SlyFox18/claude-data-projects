@@ -5,14 +5,14 @@ Brian, on 2026-10-28. Each entry gives the idea as described, what already exist
 open questions to settle before it is designed. Nothing here is scheduled; pick from this list when planning the
 next round.
 
-Round 2 is complete (0.7.0, phase 4 One-Time transfers). F2 is done in 0.8.0 (2026-10-30), F6 in 0.9.0, F8 in 0.10.0 and F1 in 0.11.0 (all 2026-11-02), F4's first report in 0.12.0 (2026-11-03), Border Stores and 2 & 4 Cotton in 0.13.0 (2026-11-04), and a bulk transfer export (Brian's request, 2026-11-04: Export (N) on Transfer orders, one combined CSV) in 0.13.1.
+Round 2 is complete (0.7.0, phase 4 One-Time transfers). F2 is done in 0.8.0 (2026-10-30), F6 in 0.9.0, F8 in 0.10.0 and F1 in 0.11.0 (all 2026-11-02), F4's first report in 0.12.0 (2026-11-03), Border Stores and 2 & 4 Cotton in 0.13.0 (2026-11-04), a bulk transfer export (Brian's request, 2026-11-04: Export (N) on Transfer orders, one combined CSV) in 0.13.1, and Corporate Stocking (the first one-row-per-part report) in 0.14.0 (2026-11-05).
 
 | # | Idea | Rough size | Needs a design pass |
 |---|---|---|---|
 | F1 | More Cleanup checks | **Done in 0.11.0** | No |
 | F2 | A landing page above the tools ("parts hub") | **Done in 0.8.0** | No |
 | F3 | Specials and promotions | Medium-large | **Yes** |
-| F4 | Inventory management (the Corp Parts Excel Reports) | **MLPF Gaps (0.12.0), Border Stores and 2 & 4 Cotton (0.13.0) done**; Corporate Stocking next | No (one release per workbook) |
+| F4 | Inventory management (the Corp Parts Excel Reports) | **MLPF Gaps (0.12.0), Border Stores and 2 & 4 Cotton (0.13.0), Corporate Stocking (0.14.0) done**; Pieces In Set next | No (one release per workbook) |
 | F5 | Scheduled reminders | Medium | Yes (with F3) |
 | F6 | One-Time returns and scrap | **Done in 0.9.0** | No |
 | F7 | Warn before losing ticked parts on Recommended Reorder | **Done in 0.5.0** | No |
@@ -106,7 +106,15 @@ loaded only by reports that need them). The Excel comparison matched Border Stor
 `docs/superpowers/specs/2026-11-03-spi-parts-hub-cross-branch-reports-design.md`, plan
 `docs/superpowers/plans/2026-11-03-spi-parts-hub-cross-branch-reports.md`, user guide section 11.
 
-**Next reports**, each a small release with its own Excel comparison: **Corporate Stocking**, then **Pieces In Set**. Scrap and COTTON Trouble Parts are placed later.
+**Corporate Stocking done in 0.14.0 (2026-11-05).** The engine learnt **one row per part**: four lists (Records that
+count, Every counted record must, Demand counts where, Parts to show) over a part's active and idle records at every
+branch, with part fields R18 demands, Branches with demand and Locations with demand. Results filter by **Demand at
+branch**; a part's panel shows how each branch's record was treated. **New report** starts from scratch with a Report
+type choice. The Excel comparison matched 1,817 parts, every difference explained (window edges, two Equip changes,
+four description spellings accepted). Spec `docs/superpowers/specs/2026-11-04-spi-parts-hub-corporate-stocking-design.md`,
+plan `docs/superpowers/plans/2026-11-04-spi-parts-hub-corporate-stocking.md`, user guide section 12.
+
+**Next report:** **Pieces In Set**, a small release with its own Excel comparison. Scrap and COTTON Trouble Parts are placed later.
 
 **Follow-ups:**
 - **A JD Part page:** today a report row opens a details panel (the Part page is non-JD only).

@@ -1,6 +1,10 @@
 # SPI Parts Hub: Corporate Stocking, one-row-per-part Inventory reports (design)
 
-> **Status:** design approved by Brian, 2026-11-04 (brainstorm). Next: the implementation plan (Plan O, app 0.14.0).
+> **Status:** design approved by Brian, 2026-11-04 (brainstorm). Plan: `docs/superpowers/plans/2026-11-04-spi-parts-hub-corporate-stocking.md` (Plan O).
+> **Shipped 2026-11-05:** app 0.14.0 (commit `15ca00a`) on Fedora. Excel gate passed (Gold 0 differences; 1,817 parts
+> matched Brian's 08:01 refresh, every difference explained by part; 4 description spellings accepted by Brian); the
+> app's CSV matched the reference exactly (1,815). Added during testing: a **New report** button and workbook CSV
+> headings on part copies. See the plan.
 > **Origin:** the Inventory reports spec `2026-11-03-spi-parts-hub-inventory-reports-design.md` (L-D8 order) and the
 > cross-branch spec `2026-11-03-spi-parts-hub-cross-branch-reports-design.md` (M-D4); the workbook
 > `projects/corp parts excel reports/SPI Corparate Stocking/SPI Corparate Stocking.pq`.

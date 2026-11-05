@@ -1,10 +1,10 @@
 # Inventory reports: a guide for Ben
 
-This page explains the **Inventory management** area of SPI Parts Hub (app version 0.13.0, 2026-11-04): what the
-built-ins **MLPF Gaps**, **Border Stores** and **2 & 4 Cotton** check and how each condition maps to the workbook,
+This page explains the **Inventory management** area of SPI Parts Hub (app version 0.14.0, 2026-11-05): what the
+built-ins **MLPF Gaps**, **Border Stores**, **2 & 4 Cotton** and **Corporate Stocking** check and how each condition maps to the workbook,
 the Corp demand rule, the JD fields a copy can use, how fresh the data is, and how the app's lists compared with the
 workbooks. Section 10 of the user guide
-covers the same ground job by job, with fewer details; section 11 covers Border Stores and 2 & 4 Cotton.
+covers the same ground job by job, with fewer details; section 11 covers Border Stores and 2 & 4 Cotton, section 12 Corporate Stocking.
 
 Saved copies are kept in the SharePoint list **NonJD_InventoryReports** (one row per copy: name, description,
 conditions, Active, Archived; the author is SharePoint's Created By, "changed by" its Modified By). You work with them
@@ -241,11 +241,59 @@ After the release, on 2026-11-04: the reference check on Prod found 0 difference
 records), and the app's CSVs matched the reference exactly (Border Stores 1,576, 2 & 4 Cotton 251). A test copy of
 Border Stores for branches 7 and 14, with parts with no activity, found the same 1,027 parts as the reference.
 
+## Corporate Stocking: one row per part (0.14.0, 2026-11-05)
+
+The SPI Corparate Stocking workbook lists **parts, not branch rows**: a part with nothing on hand or on order at any
+branch (except 2 and 4) that had a Corp demand at 3 or more branches. The app learnt a second kind of report,
+**one row per part**, with four lists of conditions instead of one:
+
+| List | What it decides | Corporate Stocking |
+|---|---|---|
+| **Records that count** | Which of the part's records (active and idle, every branch) make up the part. A record outside it doesn't count either way | Branch not one of 2, 4 · Package qty = 1 · Return indicator is R · Source is not AN · SLC doesn't start with 21, 90, 91, 99 |
+| **Every counted record must** | The part is shown only when each counted record passes (and it has at least one) | On hand = 0 · On order = 0 · Super To is blank |
+| **Demand counts where** | Which records' Corp demands count, whatever the first two lists say; each branch once (twins: the larger) | Branch not one of 2, 4 |
+| **Parts to show** | Conditions on the part: R18 demands, Branches with demand, Locations with demand, and the part's text fields | Branches with demand ≥ 3 |
+
+- **The query's code is the rule.** On order must be exactly 0 (a negative fails), and a branch's demand counts even
+  when its record fails the part filters (a source AN record at 93 still adds its demands).
+- **The part's fields:** R18 demands (the counted branches' Corp demands added up), Branches with demand, Locations
+  with demand (codes in number order, others last, ", "-separated). Description, Source, SLC, Commodity code and
+  Dealer group are the largest value over the counted records (SQL `MAX`); Cost the largest. Branches spell some
+  descriptions differently by case; SQL Anywhere's pick isn't predictable, so the app takes the largest ignoring case,
+  at the lowest branch among case variants.
+- **Results:** the workbook's 12 columns and sort (Branches with demand desc, R18 demands desc, part number);
+  **Demand at branch** instead of a branch filter; a part's panel lists every branch's record and whether it counted
+  ("Yes", "No: not in Records that count", "No: fails Every counted record must") and whether its demand counted.
+- **CSV:** the workbook's headings (… OnHandQty, R18 Demands, Count of Locations with Demands, Locations with Demands);
+  copies keep them for these columns.
+- **Always loads the parts with no activity:** 17 of the workbook's parts are kept off only by a Super To at a branch
+  that has never stocked them. On the list it shows **Count (loads more data)**.
+- **New report** (button on the list) starts from scratch with a **Report type** choice: one row per branch or one
+  row per part. Copies keep their report's type.
+- Stored as `{"v":3,"grain":"part","counted":[…],"every":[…],"demandAt":[…],"conditions":[…]}`. **0.13.x can't read
+  it**, so 0.14.0 was deployed before anyone saved one. Branch reports are stored as before.
+
+### Compared with the workbook (2026-11-05)
+
+Brian refreshed SPI Corparate Stocking.xlsx at 08:01 on 2026-11-05 (1,819 parts). The reference check on that
+morning's Prod data found 0 differences in Gold (251,019 active and 643,030 idle records). Against the workbook,
+with the reference as of 08:01, **1,817 parts matched on every column**; at Gold's own data time (06:42) the app's
+list differs from the workbook by these parts:
+
+| Parts | Why |
+|---|---|
+| H103344, H96423, HXE81341 (only in Excel); AH96333, HXE37540 (one more demand in Excel) | Invoice 2015916 at branch 94 posted on 10-29 between 06:42 and 08:01: inside Excel's 18-month window, not yet inside the app's. It reaches the app the next morning |
+| AFH210470 (only in the app) | Its 2025-05-05 07:20 invoice is still inside the app's window and had just left Excel's |
+| H140180, RE506624 (only in Excel) | Branch 11's on hand or on order changed in Equip after JD's overnight copy (checked by Brian) |
+| JD8914, R86105, RE155713, RE29408 (description) | Branches spell the description differently (leading spaces, punctuation); SQL Anywhere's `MAX` picks one the app can't copy exactly. Accepted by Brian |
+
+After the release: the app's CSV matched the reference exactly (1,815 parts), and a test copy with Branches with
+demand ≥ 4 found the same 618 parts, in the same order. The copy was stored as v3 and deleted.
+
 ## Coming next
 
-The other Corp Parts workbooks, each as its own small release with its own Excel comparison: **Corporate Stocking**
-(one row per part, "zero at every branch"; it builds on the other-branch fields and the parts with no activity),
-then **Pieces In Set**. Each checks first whether it needs new fields.
+The other Corp Parts workbooks, each as its own small release with its own Excel comparison: **Pieces In Set** next.
+It checks first whether it needs new fields.
 
 Ideas for later (FUTURE-IDEAS F4): a JD Part page; actions from a report row (order, transfer, set a minimum); data
 during the day instead of once a morning.
