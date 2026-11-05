@@ -18,6 +18,9 @@ Round 2 is complete (0.7.0, phase 4 One-Time transfers). F2 is done in 0.8.0 (20
 | F7 | Warn before losing ticked parts on Recommended Reorder | **Done in 0.5.0** | No |
 | F8 | One-Time order templates | **Done in 0.10.0** | No |
 | F9 | Price change history (was N5) | Medium | Yes, later |
+| F10 | Stock on superseded parts (JD + non-JD built-ins) | Small | **Designed** (spec P, 0.15.0) |
+| F11 | Part details panel (see a part without leaving an order) | Medium | **Designed** (spec Q, 0.15.1) |
+| F12 | Reason codes: report and check rules suggest parts on orders | Large | **Yes** (after P and Q) |
 
 ## F1. More Cleanup checks
 
@@ -221,3 +224,38 @@ values aren't in today's data fills what exists and says what it left out; order
 entered; it differs by vendor. Brian wants to explore it later without taking focus from other features. Revisit
 when JD parts join the tool (then the JD history is ready to show), and look then at whether Equip's own cost
 changes (Part Master history, `Fact_PartMaster_History`) can give a non-JD history without vendor files.
+
+## F10. Stock on superseded parts
+
+**Idea (Ben, 2026-11-05).** Parts with on hand > 0 and a Super To, for JD and non-JD. Designed:
+`docs/superpowers/specs/2026-11-05-spi-parts-hub-superseded-stock-design.md` (Plan P, app 0.15.0).
+
+## F11. Part details panel
+
+**Idea (Ben, 2026-11-05).** On an order in progress, check a part's details and come back without losing the work
+(today the part link asks "Leave this page?"). Designed: `docs/superpowers/specs/2026-11-05-spi-parts-hub-part-details-panel-design.md`
+(Plan Q, app 0.15.1).
+
+## F12. Reason codes: rules that suggest parts on orders
+
+**Idea (Ben, 2026-11-05).** On an order (e.g. Seminole's Recommended Reorder, Order step), parts that meet the
+Corporate Stocking rules are suggested too, each labelled with why, as JD Prism's "Reason Codes" do. Must work for
+non-JD ordering now and JD ordering once that is built (planned).
+
+**Direction (Brian, 2026-11-05: approach A).** Not a separate rules area: any Inventory report (JD) or Cleanup check
+(non-JD), built-in or saved, gets a **Suggest on orders** setting:
+- a **reason code** (e.g. `CORP-STOCK`), shown on the order line as a label beside Reorder / Out of stock;
+- for one-row-per-part reports, **which branch gets the suggestion** (each branch with demand, or a set stocking
+  branch);
+- a **quantity** (e.g. 1, the package quantity, up to a minimum).
+
+The order screen runs the branch's suggesting rules: a part it already suggests gains the label; a part it wouldn't
+order is added with the rule's quantity, marked as suggested by that reason, unticked.
+
+**Likely order.** (1) Reason codes on Cleanup checks shown on the non-JD order screen; (2) the one-row-per-part engine
+over non-JD parts, for a non-JD Corporate-Stocking-style rule; (3) Inventory reports (Corporate Stocking) plug in
+when JD ordering exists.
+
+**Open questions (for Brian and Ben).** Which branch orders a part-grain suggestion; the quantity rule; whether a
+reason-code part counts in the order total before it is ticked; several reasons on one part (show all?); whether
+reason codes appear on the export / in Equip; who may switch a rule's suggesting on.
