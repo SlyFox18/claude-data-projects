@@ -13,7 +13,7 @@
 > invoices, 0 differences; no idle record with 3+ invoices (572 with fewer).
 > **Real test (2026-11-06):** the app's three CSVs = reference on every part and column: 3,316, 680, 121, 0 differences.
 > Recommended cost: main $51,671.63, 3 Months or Less $27,065.03. Brian's copy "Test of Pieces In Set" (Sales qty >= 20) read
-> back correctly from SharePoint.
+> back correctly from SharePoint, then Claude deleted it.
 > **Excel (Brian's 07:57 refresh; the plan's evening + next-morning check replaced at his call):** with the reference clocked
 > to 07:57 (`--as-of`), the Data tab has 3,318 rows on both sides, Invoices and Sales identical. What's left: 18 R-D6 rows;
 > 8 rows where Bin + On Order agree but stock moved from on order to bin (16/RE577612, 6/R123145, 8/AR103729, 8/M164016,
