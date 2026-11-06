@@ -174,7 +174,7 @@ def test_write_meta_plain_json(out):
     assert raw[:2] != b"\x1f\x8b"
     meta = json.loads(raw)
     assert meta == {"dataAsOf": AS_OF, "publishedAt": "2026-10-20T12:00:00+00:00", "source": "dev",
-                    "branches": branches, "counts": counts, "schemaVersion": 1, "contractVersion": 7,
+                    "branches": branches, "counts": counts, "schemaVersion": 1, "contractVersion": 8,
                     "jdBranches": jd_branches, "jdIdleBranches": jd_idle_branches}
 
 
@@ -273,7 +273,7 @@ def test_reorder_row_at_excluded_branch_raises(out, branch):
 def test_meta_has_contract_version(out):
     _, branches = _build()
     path = build_files.write_meta(AS_OF, AS_OF, "dev", branches, {}, jd_branches=[], jd_idle_branches=[])
-    assert json.loads(open(path, "rb").read())["contractVersion"] == 7
+    assert json.loads(open(path, "rb").read())["contractVersion"] == 8
 
 
 @pytest.mark.parametrize("bad", [float("nan"), float("inf"), float("-inf"), Decimal("NaN")])
@@ -508,7 +508,8 @@ def test_reorder_row_missing_equip_stock_value_fails(out):
 
 JD_FIELDS = {"partNumber", "description", "cost", "onHand", "onOrder", "packageQty", "returnIndicator", "source",
              "slc", "superTo", "commodityCode", "commodityGroup", "dealerGroupCode", "minimumQty", "maximumQty",
-             "sales12", "salesPrev12", "corpDemands"}
+             "sales12", "salesPrev12", "corpDemands", "binQty", "piecesInSet", "pisInvoices", "pisSalesQty", "pisQty",
+             "pisQtyInvoices", "pisMultipleInvoices"}
 
 
 def _jd(branch, part, **kw):
@@ -517,7 +518,9 @@ def _jd(branch, part, **kw):
          "onHand": Decimal("0.00"), "onOrder": Decimal("0.00"), "packageQty": Decimal("1.00"),
          "returnIndicator": "R", "source": "FF", "slc": "15C", "superTo": "", "commodityCode": "07A",
          "commodityGroup": "Tillage", "dealerGroupCode": "", "minimumQty": None, "maximumQty": None,
-         "sales12": Decimal("2.00"), "salesPrev12": Decimal("0.00"), "corpDemands": 2}
+         "sales12": Decimal("2.00"), "salesPrev12": Decimal("0.00"), "corpDemands": 2,
+         "binQty": Decimal("3.00"), "piecesInSet": None, "pisInvoices": 4, "pisSalesQty": Decimal("7.00"),
+         "pisQty": Decimal("2.00"), "pisQtyInvoices": 3, "pisMultipleInvoices": 0}
     r.update(kw)
     return r
 
@@ -563,8 +566,28 @@ def test_jd_values(out):
     assert p == {"partNumber": "A1", "description": "Pin", "cost": 459.01, "onHand": 0, "onOrder": 0,
                  "packageQty": 1, "returnIndicator": "R", "source": "FF", "slc": "15C", "superTo": "",
                  "commodityCode": "07A", "commodityGroup": "Tillage", "dealerGroupCode": "", "minimumQty": None,
-                 "maximumQty": None, "sales12": 2, "salesPrev12": 0, "corpDemands": 2}
+                 "maximumQty": None, "sales12": 2, "salesPrev12": 0, "corpDemands": 2, "binQty": 3, "piecesInSet": None,
+                 "pisInvoices": 4, "pisSalesQty": 7, "pisQty": 2, "pisQtyInvoices": 3, "pisMultipleInvoices": 0}
     assert type(p["onHand"]) is int and type(p["corpDemands"]) is int
+
+
+def test_jd_pieces_in_set_fields_v8(out):
+    # Plan R: quantities to 2 decimals, the invoice counts whole, piecesInSet numeric or null
+    _build_jd([_jd("1", "A1", binQty=Decimal("-1.504"), piecesInSet=Decimal("4.00"), pisInvoices=Decimal("9"),
+                   pisSalesQty=Decimal("18.255"), pisQty=Decimal("2.50"), pisQtyInvoices=7, pisMultipleInvoices=6),
+               _jd("1", "A2", piecesInSet=None)])
+    a1, a2 = _read(out, "jd_1.json.gz")["parts"]
+    assert (a1["binQty"], a1["piecesInSet"], a1["pisSalesQty"], a1["pisQty"]) == (-1.5, 4, 18.25, 2.5)
+    assert (a1["pisInvoices"], a1["pisQtyInvoices"], a1["pisMultipleInvoices"]) == (9, 7, 6)
+    assert type(a1["piecesInSet"]) is int and type(a1["pisInvoices"]) is int
+    assert a2["piecesInSet"] is None
+
+
+def test_jd_idle_files_have_no_pieces_in_set_fields(out):
+    # Plan R: an idle record has no 18-month invoices by definition, so its file doesn't change
+    _build_idle([_idle("1", "A1")])
+    assert not {"binQty", "piecesInSet", "pisInvoices", "pisSalesQty", "pisQty", "pisQtyInvoices",
+                "pisMultipleInvoices"} & set(_read(out, "jd_idle_1.json.gz")["parts"][0])
 
 
 def test_jd_text_trimmed_and_null_text_is_empty(out):
@@ -595,23 +618,26 @@ def test_jd_rounding(out):
     assert type(p["minimumQty"]) is int and str(p["sales12"]) == "0"     # whole values as integers, -0 -> 0
 
 
-@pytest.mark.parametrize("key", ["cost", "onHand", "onOrder", "sales12", "salesPrev12", "corpDemands"])
+@pytest.mark.parametrize("key", ["cost", "onHand", "onOrder", "sales12", "salesPrev12", "corpDemands", "binQty",
+                                 "pisInvoices", "pisSalesQty", "pisQty", "pisQtyInvoices", "pisMultipleInvoices"])
 def test_jd_null_never_null_number_fails(out, key):
     with pytest.raises(ValueError, match=key):
         _build_jd([_jd("1", "A1", **{key: None})])
 
 
-@pytest.mark.parametrize("key", ["cost", "onHand", "packageQty", "maximumQty"])
+@pytest.mark.parametrize("key", ["cost", "onHand", "packageQty", "maximumQty", "binQty", "piecesInSet", "pisQty",
+                                 "pisSalesQty"])
 @pytest.mark.parametrize("bad", [float("nan"), float("inf"), Decimal("NaN"), Decimal("-Infinity"), "1", True])
 def test_jd_non_finite_or_non_number_fails(out, key, bad):
     with pytest.raises(ValueError, match=key):
         _build_jd([_jd("1", "A1", **{key: bad})])
 
 
+@pytest.mark.parametrize("key", ["corpDemands", "pisInvoices", "pisQtyInvoices", "pisMultipleInvoices"])
 @pytest.mark.parametrize("bad", [2.5, Decimal("2.5"), "2", True, float("nan")])
-def test_jd_corp_demands_must_be_whole(out, bad):
-    with pytest.raises(ValueError, match="corpDemands"):
-        _build_jd([_jd("1", "A1", corpDemands=bad)])
+def test_jd_counts_must_be_whole(out, key, bad):
+    with pytest.raises(ValueError, match=key):
+        _build_jd([_jd("1", "A1", **{key: bad})])
 
 
 def test_jd_row_missing_field_fails(out):
@@ -696,7 +722,7 @@ def test_write_meta_has_jd_branches(out):
                                   jd_branches=jd_branches, jd_idle_branches=[])
     meta = json.loads(open(path, "rb").read())
     assert meta["jdBranches"] == jd_branches and meta["counts"]["jdParts"] == 4
-    assert meta["contractVersion"] == 7
+    assert meta["contractVersion"] == 8
     assert [b["branch"] for b in meta["branches"]] == ["1", "92"]
 
 
@@ -902,4 +928,4 @@ def test_write_meta_has_jd_idle_branches(out):
                                   jd_branches=jd_branches, jd_idle_branches=idle_branches)
     meta = json.loads(open(path, "rb").read())
     assert meta["jdIdleBranches"] == idle_branches and meta["counts"]["jdIdleParts"] == 4
-    assert meta["jdBranches"] == jd_branches and meta["contractVersion"] == 7
+    assert meta["jdBranches"] == jd_branches and meta["contractVersion"] == 8

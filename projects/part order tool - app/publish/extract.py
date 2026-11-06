@@ -94,6 +94,10 @@ JD_COLUMNS = [
     ("CommodityCode", "commodityCode"), ("CommodityGroup", "commodityGroup"), ("DealerGroupCode", "dealerGroupCode"),
     ("MinimumQty", "minimumQty"), ("MaximumQty", "maximumQty"), ("Sales12", "sales12"),
     ("SalesPrev12", "salesPrev12"), ("CorpDemands", "corpDemands"),
+    # contract v8, Plan R: the Pieces In Set stats (PiecesInSet is null when InMaster has none)
+    ("BinQty", "binQty"), ("PiecesInSet", "piecesInSet"), ("PisInvoices", "pisInvoices"),
+    ("PisSalesQty", "pisSalesQty"), ("PisQty", "pisQty"), ("PisQtyInvoices", "pisQtyInvoices"),
+    ("PisMultipleInvoices", "pisMultipleInvoices"),
 ]
 # Fact_CorpParts_JD_Idle column -> jd_idle_<branch>.json.gz part field (contract v7, Plan M decision M-D12): the
 # JD_COLUMNS fields without the ones that are 0 by definition for an idle record (OnHand, Sales12, SalesPrev12,
@@ -164,7 +168,8 @@ def check_columns(con) -> None:
     pl.require_columns("Fact_CorpParts_JD",
                        _readable_columns(con, "Fact_CorpParts_JD",
                                          "the Plan L Build_Gold_NonJD_Reorder (Part 5, Fact_CorpParts_JD)"),
-                       [g for g, _ in JD_COLUMNS] + ["BuiltAtUtc"])
+                       [g for g, _ in JD_COLUMNS] + ["BuiltAtUtc"],
+                       deploy="Plan R (Build_Gold_NonJD_Reorder Part 5, the Pieces In Set columns)")
     pl.require_columns("Fact_CorpParts_JD_Idle",
                        _readable_columns(con, "Fact_CorpParts_JD_Idle",
                                          "Plan M (Build_Gold_NonJD_Reorder Part 5, Fact_CorpParts_JD_Idle)",

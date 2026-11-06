@@ -346,13 +346,15 @@ def test_check_columns_names_missing_equip_stock_value(con):
 # Gold's Fact_CorpParts_JD columns (Build_Gold_NonJD_Reorder Part 5, fabric-workspace-docs 6e7e7dc4).
 GOLD_JD = ["Branch", "Franchise", "PartNumber", "Description", "Cost", "OnHand", "OnOrder", "PackageQty",
            "ReturnIndicator", "Source", "SLC", "SuperTo", "CommodityCode", "CommodityGroup", "DealerGroupCode",
-           "MinimumQty", "MaximumQty", "Sales12", "SalesPrev12", "CorpDemands", "DemandAsOf", "BuiltAtUtc"]
+           "MinimumQty", "MaximumQty", "Sales12", "SalesPrev12", "CorpDemands", "BinQty", "PiecesInSet", "PisInvoices",
+           "PisSalesQty", "PisQty", "PisQtyInvoices", "PisMultipleInvoices", "DemandAsOf", "BuiltAtUtc"]
 JD_FIELDS = ["partNumber", "description", "cost", "onHand", "onOrder", "packageQty", "returnIndicator", "source",
              "slc", "superTo", "commodityCode", "commodityGroup", "dealerGroupCode", "minimumQty", "maximumQty",
-             "sales12", "salesPrev12", "corpDemands"]
+             "sales12", "salesPrev12", "corpDemands", "binQty", "piecesInSet", "pisInvoices", "pisSalesQty", "pisQty",
+             "pisQtyInvoices", "pisMultipleInvoices"]
 
 
-def test_jd_columns_are_the_l_d18_fields_plus_branch():
+def test_jd_columns_are_the_l_d18_and_plan_r_fields_plus_branch():
     assert extract.JD_COLUMNS[0] == ("Branch", "branch")
     assert [f for _, f in extract.JD_COLUMNS[1:]] == JD_FIELDS
     m = dict(extract.JD_COLUMNS)
@@ -381,6 +383,14 @@ def test_check_columns_passes_with_the_jd_table(con):
 def test_check_columns_names_missing_jd_column(con, missing):
     _gold_tables(con, jd_cols=[c for c in GOLD_JD if c != missing])
     with pytest.raises(pl.MissingColumnsError, match=f"Fact_CorpParts_JD.*{missing}"):
+        extract.check_columns(con)
+
+
+@pytest.mark.parametrize("missing", ["BinQty", "PiecesInSet", "PisInvoices", "PisSalesQty", "PisQty", "PisQtyInvoices",
+                                     "PisMultipleInvoices"])
+def test_check_columns_v8_gold_without_plan_r_says_what_to_deploy(con, missing):
+    _gold_tables(con, jd_cols=[c for c in GOLD_JD if c != missing])
+    with pytest.raises(pl.MissingColumnsError, match=f"Fact_CorpParts_JD.*{missing}.*[Dd]eploy Plan R.*before publishing v8"):
         extract.check_columns(con)
 
 

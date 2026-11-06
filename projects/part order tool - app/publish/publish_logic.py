@@ -29,9 +29,10 @@ CENTRAL = ZoneInfo("America/Chicago")
 # The field contract of the files (README "File contract"). 1 = Plan A/B fields (no contractVersion in _meta.json);
 # 2 = round 1 (Plan C); 3 = round 2 (Plan E: phase-in, transfer rules and suggestions); 4 = round 3 (Plan I:
 # lastReceived, purchases.json.gz); 5 = round 3 phase 3 (Plan K: equipStockValue); 6 = Plan L (jd_<branch>.json.gz,
-# _meta.jdBranches, counts.jdParts); 7 = Plan M (jd_idle_<branch>.json.gz, _meta.jdIdleBranches, counts.jdIdleParts).
+# _meta.jdBranches, counts.jdParts); 7 = Plan M (jd_idle_<branch>.json.gz, _meta.jdIdleBranches, counts.jdIdleParts);
+# 8 = Plan R (the Pieces In Set fields on jd_<branch>.json.gz).
 # The app refuses a version it doesn't know.
-CONTRACT_VERSION = 7
+CONTRACT_VERSION = 8
 # Uploaded every run, changed or not (round 2 spec "The publish": the suggestions file embeds dataAsOf).
 ALWAYS_UPLOAD = ("transfer_suggestions.json.gz",)
 # Committed transfer statuses (spec step 8b, exact spelling); Placed counts only while recent.
@@ -44,14 +45,16 @@ class MissingColumnsError(RuntimeError):
     """A table lacks columns the publish needs: Gold and the publish code are out of step."""
 
 
-def require_columns(table: str, available, required) -> None:
+def require_columns(table: str, available, required, deploy: str = None) -> None:
+    """Fail naming every missing column; deploy = what supplies them, when that's known."""
     have = set(available)
     missing = [c for c in required if c not in have]
     if missing:
+        advice = (f"Deploy {deploy} before publishing v{CONTRACT_VERSION}" if deploy else
+                  "Deploy the matching Build_Gold_NonJD_Reorder / dataflow, or update the publish, before publishing")
         raise MissingColumnsError(
             f"{table} is missing column(s) {', '.join(missing)} that the publish (contract version "
-            f"{CONTRACT_VERSION}) needs; Gold and the publish code are out of step. Deploy the matching "
-            f"Build_Gold_NonJD_Reorder / dataflow, or update the publish, before publishing")
+            f"{CONTRACT_VERSION}) needs; Gold and the publish code are out of step. {advice}")
 
 
 def is_excluded_branch(raw) -> bool:

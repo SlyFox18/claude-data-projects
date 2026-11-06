@@ -61,7 +61,10 @@ What decides whether to publish:
   Plan M Gold (with `Fact_CorpParts_JD_Idle`): against a Plan L Gold it fails with "Fact_CorpParts_JD_Idle not found
   or unreadable ... deploy Plan M (Build_Gold_NonJD_Reorder Part 5, Fact_CorpParts_JD_Idle) before publishing v7"
   and writes nothing. Deploy app 0.13.0 first, and pull the v7 publish code on the Gateway PC only after Prod Gold
-  has `Fact_CorpParts_JD_Idle`.
+  has `Fact_CorpParts_JD_Idle`. Likewise contractVersion 8 publish code needs the Plan R Gold: against an older Gold
+  it fails naming the missing columns ("... Deploy Plan R (Build_Gold_NonJD_Reorder Part 5, the Pieces In Set columns)
+  before publishing v8") and writes nothing. **Deploy Plan R Gold to Prod first, then app 0.16.0, then pull the v8
+  publish code on the Gateway PC.**
 - **Release timing (0.13.0, 2026-11-04):** a Prod `mode=items` run's Gold item finishes before the run's model
   refreshes, and the scheduled publish (every 30 minutes until 10:15) can publish it with the **old** code before
   anyone pulls. So pull the new publish code just before starting the items run (a scheduled run meanwhile still
@@ -108,7 +111,7 @@ Task Scheduler setup:
 - Check `_meta.json`'s `contractVersion` first (missing = 1) and load nothing unless it is the version the app knows
   (messages under "File contract").
 
-## File contract (schemaVersion 1, contractVersion 7)
+## File contract (schemaVersion 1, contractVersion 8)
 
 - `schemaVersion` 1 = the rules-list file layout (2026-10-20); the earlier matrix-era shape was never consumed. It
   is unchanged in round 1.
@@ -128,6 +131,10 @@ Task Scheduler setup:
   `counts.jdIdleParts`; deploy app 0.13.0 first, then publish v7 (an older app refuses v7 data; 0.13.0 accepts
   v3–v7); pull the v7 publish code on the Gateway only after Prod Gold has `Fact_CorpParts_JD_Idle`. No existing file
   or field changed.
+  **8 = Plan R** (2026-11-05, Pieces In Set): seven new fields on `jd_<branch>.json.gz` (`binQty`, `piecesInSet`,
+  `pisInvoices`, `pisSalesQty`, `pisQty`, `pisQtyInvoices`, `pisMultipleInvoices`). The idle files don't change. Bumped
+  so the app can tell "not published yet" from a real 0. **Order: Gold first, then app 0.16.0 (accepts v3–v8; an older
+  app refuses v8 data), then this code on the Gateway PC.** No existing file or field changed.
 - **Bump `contractVersion`** on any removed or renamed field, any change in a field's meaning, or any new `status`
   value. Don't bump for a new optional field: the app ignores fields it doesn't know. (v5 is bumped anyway for
   `equipStockValue`: the field is never null and 0 is a real value, so the app must tell "not published yet" (a v4
@@ -145,7 +152,7 @@ unsorted for reading); `.json.gz` files are gzip-compressed, `_meta.json` is pla
 - Numbers are plain JSON numbers (whole values are integers). `NaN` / `Infinity` never appear (they become `null`;
   the writer refuses to emit them).
 - Nulls: in a `jd_<branch>` or `jd_idle_<branch>` part only `description`, `packageQty`, `minimumQty` and
-  `maximumQty` can be null (see those files). The `sales` / `requests` arrays never contain null (they use 0). In a reorder part, only these fields can be
+  `maximumQty` can be null, plus `piecesInSet` in a `jd_<branch>` part (see those files). The `sales` / `requests` arrays never contain null (they use 0). In a reorder part, only these fields can be
   null: `description`, `productGroup`, `minimumQty`, `maximumQty`, `reorderCode`, `activityCode`, `minOverride`,
   `maskExpires`, `maskedOn`, `minLineValue` and `maxLineValue`. Every other reorder field is never null: blank text
   arrives as `""` (`bin`, `superTo`, `superFrom`, `dealerGroupCode`), quantities and prices are 0 when missing, and
@@ -176,7 +183,7 @@ unsorted for reading); `.json.gz` files are gzip-compressed, `_meta.json` is pla
 
 ### `_meta.json` (uploaded last)
 ```json
-{"schemaVersion": 1, "contractVersion": 7, "dataAsOf": "2026-10-20T11:41:07+00:00",
+{"schemaVersion": 1, "contractVersion": 8, "dataAsOf": "2026-10-20T11:41:07+00:00",
  "publishedAt": "2026-10-20T12:20:03.482915+00:00", "source": "prod",
  "branches": [{"branch": "1", "name": "Lubbock", "parts": 18234}],
  "jdBranches": [{"branch": "1", "name": "Lubbock", "parts": 19858}, {"branch": "12", "name": "O'Donnell", "parts": 909}],
@@ -294,7 +301,7 @@ decisions K-D1 and K-D2):
 ### `jd_<branch>.json.gz` (new in contractVersion 6)
 `{"branch", "dataAsOf", "parts": [ ... ]}`: `Fact_CorpParts_JD` (Plan L), one object per row at that branch: every
 active JD (franchise D) part, for the Inventory area's Corp Parts reports (MLPF Gaps first). The fields are below
-(`extract.JD_COLUMNS`; `branch` is the file-level key). Franchise (always D), `DemandAsOf` and `BuiltAtUtc` are not
+(`extract.JD_COLUMNS`; `branch` is the file-level key; the Pieces In Set fields are new in contractVersion 8). Franchise (always D), `DemandAsOf` and `BuiltAtUtc` are not
 published. One file per branch with rows, every branch (no excluded branches, see "Branch codes"), uploaded on every
 new DP run (it embeds `dataAsOf`), before `_meta.json`.
 
@@ -303,9 +310,10 @@ new DP run (it embeds `dataAsOf`), before `_meta.json`.
   number. Key rows by position, not by part number.
 - Parts are sorted by trimmed `partNumber`, then the stored (untrimmed) value.
 - Text is trimmed; blank or null text arrives as `""`, except `description`, which may be null.
-- Numbers: `cost` rounded to cents; quantities and sales to 2 decimals; `corpDemands` a whole number. Whole values
-  are integers. Only `description`, `packageQty`, `minimumQty` and `maximumQty` can be null; a null, NaN, infinite or
-  non-number value in any other number field fails the publish (Gold always sets them).
+- Numbers: `cost` rounded to cents; quantities and sales to 2 decimals; `corpDemands`, `pisInvoices`, `pisQtyInvoices`
+  and `pisMultipleInvoices` whole numbers. Whole values are integers. Only `description`, `packageQty`, `minimumQty`,
+  `maximumQty` and `piecesInSet` can be null; a null, NaN, infinite or non-number value in any other number field fails
+  the publish (Gold always sets them).
 - The largest branch is about 0.5 MB compressed; a file over the 4 MB upload limit fails the build, naming the branch.
 
 | Field | Label in the app | Meaning |
@@ -323,6 +331,13 @@ new DP run (it embeds `dataAsOf`), before `_meta.json`.
 | minimumQty, maximumQty | Equip minimum, Equip maximum | Silver_PartStockingRules; null = no stocking rule row |
 | sales12, salesPrev12 | Sales 12 months, Sales 24 months (L-D18; how the app derives the 24-month figure is its call) | Units sold in the current and previous 12 months (`Current12MoSales`, `Previous12MoSales`) |
 | corpDemands | Corp demands | The Corp demand count: invoices for the branch + trimmed part dated 18 months to 7 days before the build, net of their credits (credits up to the build time); an invoice counts once when its net qty > 0 (Plan L decisions L-D10, L-D11). 0 when none |
+| binQty | Bin qty | v8. Silver_PartInformation `BinQty`, the stock in the Pieces In Set reports (R-D3) |
+| piecesInSet | InMaster PIS | v8. InMaster's Pieces In Set, the largest over the franchise D records of the Branch + part; null = none |
+| pisInvoices | Invoices (and Demands) | v8. Franchise D invoices (type I, net of their credits, net qty > 0) of the Branch + part, 18 months through the build (not held back 7 days as `corpDemands` is). 0 when none; one record of a trailing-space twin pair carries the stats (R-D7) |
+| pisSalesQty | Sales qty | v8. The sum of those invoices' net quantities; 0 when none |
+| pisQty | SPI PIS | v8. The most common net quantity (ties: the smaller); 0 when none |
+| pisQtyInvoices | (Match %) | v8. The invoices at `pisQty`; 0 when none |
+| pisMultipleInvoices | (PIS multiple %) | v8. The invoices whose net quantity is a whole multiple of `piecesInSet`; 0 when `piecesInSet` isn't above 1 |
 
 ### `jd_idle_<branch>.json.gz` (new in contractVersion 7)
 `{"branch", "dataAsOf", "parts": [ ... ]}`: `Fact_CorpParts_JD_Idle` (Plan M), one object per row at that branch:

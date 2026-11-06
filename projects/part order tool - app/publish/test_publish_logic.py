@@ -202,8 +202,13 @@ def test_history_arrays_duplicate_slot_raises():
 
 # ---- Round 1 (Plan C4): contract version, required columns, excluded branches ----
 
-def test_contract_version_is_7():
-    assert pl.CONTRACT_VERSION == 7
+def test_require_columns_names_what_to_deploy():
+    with pytest.raises(pl.MissingColumnsError, match=r"T is missing column\(s\) B.*[Dd]eploy Plan R before publishing v8"):
+        pl.require_columns("T", ["A"], ["A", "B"], deploy="Plan R")
+
+
+def test_contract_version_is_8():
+    assert pl.CONTRACT_VERSION == 8
 
 
 def test_require_columns_passes_when_all_present():

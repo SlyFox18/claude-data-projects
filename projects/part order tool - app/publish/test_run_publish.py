@@ -29,7 +29,8 @@ ROUND2 = {"pendingQty": 0.0, "slc": None, "source": None, "commodityCode": None,
 JD_ROW = {"partNumber": "J1", "description": "Pin", "cost": 1.5, "onHand": 0, "onOrder": 0, "packageQty": 1,
           "returnIndicator": "R", "source": "FF", "slc": "15C", "superTo": "", "commodityCode": "", "commodityGroup":
           "Other", "dealerGroupCode": "", "minimumQty": None, "maximumQty": None, "sales12": 2, "salesPrev12": 0,
-          "corpDemands": 2}
+          "corpDemands": 2, "binQty": 0, "piecesInSet": None, "pisInvoices": 0, "pisSalesQty": 0, "pisQty": 0,
+          "pisQtyInvoices": 0, "pisMultipleInvoices": 0}
 JD_IDLE_ROW = {"partNumber": "I1", "description": "Bolt", "cost": 2.25, "onOrder": 0, "packageQty": 1,
                "returnIndicator": "R", "source": "FF", "slc": "15C", "superTo": "", "commodityCode": "",
                "commodityGroup": "Other", "dealerGroupCode": "770", "minimumQty": None, "maximumQty": None}
@@ -280,7 +281,7 @@ def test_missing_rules_columns_fail_before_extracting(env, monkeypatch):
 def test_meta_carries_contract_version(env, tmp_path):
     run_publish.main([])
     meta = json.loads((tmp_path / "out" / "_meta.json").read_bytes())
-    assert meta["contractVersion"] == 7 and meta["schemaVersion"] == 1
+    assert meta["contractVersion"] == 8 and meta["schemaVersion"] == 1
 
 
 
@@ -315,7 +316,7 @@ def test_out_builds_locally_without_upload_state_or_lock(env, tmp_path, monkeypa
     assert not env.state_file.exists()
     assert set(os.listdir(dest)) == DATA_FILES | {"_meta.json"}
     assert not (tmp_path / "out").exists()      # the publish's own output folder is untouched
-    assert json.loads((dest / "_meta.json").read_bytes())["contractVersion"] == 7
+    assert json.loads((dest / "_meta.json").read_bytes())["contractVersion"] == 8
 
 
 def test_out_ignores_publish_state(env, tmp_path):

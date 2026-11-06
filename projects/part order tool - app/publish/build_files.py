@@ -39,14 +39,16 @@ ROUND2_NULLABLE = frozenset(("slc", "source", "commodityCode", "phaseInQty", "ph
 ROUND2_TEXT = frozenset(("transferRuleName", "excessUnit", "redistUnit"))
 # purchases.json.gz row fields (extract.PURCHASES_COLUMNS); purchases12 is never null and is rounded to cents.
 PURCHASES_KEYS = ("branch", "franchise", "purchases12")
-# jd_<branch>.json.gz part fields (contract v6, extract.JD_COLUMNS without branch), by how they are written:
-# text trimmed (null -> "", except description, which stays null); money rounded to cents; quantities and sales
-# to 2 decimals (the JD_NULLABLE ones may be null); corpDemands a whole number.
+# jd_<branch>.json.gz part fields (contract v6, v8's Pieces In Set fields; extract.JD_COLUMNS without branch), by how
+# they are written: text trimmed (null -> "", except description, which stays null); money rounded to cents; quantities
+# and sales to 2 decimals (the JD_NULLABLE ones may be null); the JD_COUNTS whole numbers.
 JD_TEXT = ("partNumber", "description", "returnIndicator", "source", "slc", "superTo", "commodityCode",
            "commodityGroup", "dealerGroupCode")
-JD_NUMBERS = ("cost", "onHand", "onOrder", "packageQty", "minimumQty", "maximumQty", "sales12", "salesPrev12")
-JD_NULLABLE = frozenset(("description", "packageQty", "minimumQty", "maximumQty"))
-JD_KEYS = JD_TEXT + JD_NUMBERS + ("corpDemands",)
+JD_NUMBERS = ("cost", "onHand", "onOrder", "packageQty", "minimumQty", "maximumQty", "sales12", "salesPrev12",
+              "binQty", "piecesInSet", "pisSalesQty", "pisQty")
+JD_NULLABLE = frozenset(("description", "packageQty", "minimumQty", "maximumQty", "piecesInSet"))
+JD_COUNTS = ("corpDemands", "pisInvoices", "pisQtyInvoices", "pisMultipleInvoices")
+JD_KEYS = JD_TEXT + JD_NUMBERS + JD_COUNTS
 # jd_idle_<branch>.json.gz part fields (contract v7, extract.JD_IDLE_COLUMNS without branch): the jd fields without
 # the ones that are 0 by definition for an idle record (onHand, sales12, salesPrev12, corpDemands), written by the
 # same rules. onOrder is never null and never positive (a positive on order makes a record active, L-D14).
@@ -293,13 +295,14 @@ def _jd_fields(r: dict, where: str, keys: tuple, numbers: tuple) -> dict:
 
 
 def _jd_part(r: dict) -> dict:
-    """One jd file part (contract v6): _jd_fields over JD_KEYS, plus corpDemands, a whole number."""
+    """One jd file part (contract v6, v8): _jd_fields over JD_KEYS, plus the JD_COUNTS, whole numbers."""
     where = f"JD row {r.get('branch')!r} {r.get('partNumber')!r}"
     out = _jd_fields(r, where, JD_KEYS, JD_NUMBERS)
-    v = r["corpDemands"]
-    if not _is_finite_number(v) or v != int(v):
-        raise ValueError(f"{where}: corpDemands is {v!r}, not a whole number (Gold and the publish are out of step)")
-    out["corpDemands"] = int(v)
+    for k in JD_COUNTS:
+        v = r[k]
+        if not _is_finite_number(v) or v != int(v):
+            raise ValueError(f"{where}: {k} is {v!r}, not a whole number (Gold and the publish are out of step)")
+        out[k] = int(v)
     return out
 
 
