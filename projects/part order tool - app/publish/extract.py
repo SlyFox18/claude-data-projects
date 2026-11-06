@@ -109,6 +109,16 @@ JD_IDLE_COLUMNS = [
     ("CommodityGroup", "commodityGroup"), ("DealerGroupCode", "dealerGroupCode"), ("MinimumQty", "minimumQty"),
     ("MaximumQty", "maximumQty"),
 ]
+# Fact_JD_Reorder column -> jdorder_<branch>.json.gz part field (contract v9, Plan S): the reorder columns without the
+# transfer ones (S-P3; the app fills those with neutral values on read). Gold's AppInboundQty is always 0 and isn't
+# published either. check_columns() doesn't read the JD tables: a missing one isn't an error (S-P4).
+_JD_ORDER_LEFT_OUT = frozenset((
+    "AppInboundQty", "AppOutboundQty", "TransferRuleId", "TransferRuleName", "ExcessSupply", "ExcessUnit", "AllowSend",
+    "AllowReceive", "RedistMax", "RedistUnit", "RedistMinValue", "ExcessKeep", "FreeExcess", "ConvNeed", "RedistCap",
+    "RedistEligible", "SuggestedInQty", "SuggestedConvInQty", "SuggestedOutQty"))
+JD_ORDER_COLUMNS = [(g, f) for g, f in REORDER_COLUMNS if g not in _JD_ORDER_LEFT_OUT]
+JD_ORDER_SQL = ("SELECT " + ", ".join(f'{g} AS "{f}"' for g, f in JD_ORDER_COLUMNS)
+                + "\nFROM {src}\nORDER BY branch, franchise, partNumber")
 HISTORY_COLUMNS = ["Branch", "Franchise", "PartNumber", "MonthOffset", "SalesQty", "RequestCount"]
 TRANSFER_COLUMNS = ["RequestingBranch", "SupplyingBranch", "PartNumber", "PartTicket", "LineNumber", "OrderQty",
                     "ShippedQty", "OpenQty", "FulfillmentStatus", "TransferSubType", "OrderAge", "Date"]
@@ -177,6 +187,18 @@ def check_columns(con) -> None:
                        [g for g, _ in JD_IDLE_COLUMNS] + ["BuiltAtUtc"])
 
 
+def jd_order_available(con) -> bool:
+    """Plan S, S-P4: every JD order table exists, is readable and has the columns the publish reads. False (not an
+    error) otherwise, so the publish goes ahead and the JD files stay as they were."""
+    try:
+        have = {t: set(columns(con, t)) for t in ("Fact_JD_Reorder", "Fact_JD_SalesHistory", "JD_OrderRules")}
+    except Exception:
+        return False
+    return ({g for g, _ in JD_ORDER_COLUMNS} | {"BuiltAtUtc"} <= have["Fact_JD_Reorder"]
+            and set(HISTORY_COLUMNS) <= have["Fact_JD_SalesHistory"]
+            and {g for g, _ in RULE_COLUMNS} <= have["JD_OrderRules"])
+
+
 def _dicts(cur) -> list:
     cols = [d[0] for d in cur.description]
     return [dict(zip(cols, r)) for r in cur.fetchall()]
@@ -188,7 +210,7 @@ def log_rows(con, days: int = 14) -> list:
     since = datetime.now(timezone.utc) - timedelta(days=days)
     return _dicts(con.execute(f"""
         SELECT run_id, name, row_type, status, start_utc, end_utc FROM {_src("dp_refresh_log")}
-        WHERE ((name = 'Build_Gold_NonJD_Reorder' AND row_type = 'item') OR row_type = 'run')
+        WHERE ((name IN ('Build_Gold_NonJD_Reorder', 'Build_Gold_JD_Reorder') AND row_type = 'item') OR row_type = 'run')
           AND coalesce(end_utc, start_utc) >= ?""", [since]))
 
 
@@ -216,6 +238,33 @@ def jd_idle_parts(con) -> list:
     branch, raw as stored; build_files.build_jd_idle trims, rounds, checks and sorts them."""
     return _dicts(con.execute(f"SELECT {_select(JD_IDLE_COLUMNS)} FROM {_src('Fact_CorpParts_JD_Idle')} "
                               "ORDER BY Branch, PartNumber"))
+
+
+def jd_order_built_at(con) -> datetime:
+    return con.execute(f"SELECT max(BuiltAtUtc) FROM {_src('Fact_JD_Reorder')}").fetchone()[0]
+
+
+def jd_order(con) -> list:
+    """Gold's JD order rows (contract v9), every branch (no D6 exclusion, S-D5)."""
+    return _dicts(con.execute(JD_ORDER_SQL.format(src=_src("Fact_JD_Reorder"))))
+
+
+def jd_rules(con) -> list:
+    """JD_OrderRules raw, as Gold reads it, ordered by Id."""
+    return _dicts(con.execute(f"SELECT {_select(RULE_COLUMNS)} FROM {_src('JD_OrderRules')} ORDER BY Id"))
+
+
+def stage_jd_history(con) -> int:
+    """Copy Fact_JD_SalesHistory into a DuckDB temp table once, as stage_history does; returns its row count."""
+    con.execute(f"""CREATE OR REPLACE TEMP TABLE jd_hist AS
+        SELECT trim(Branch) AS branch, Franchise AS franchise, PartNumber AS partNumber, MonthOffset AS monthOffset,
+               SalesQty AS salesQty, RequestCount AS requestCount
+        FROM {_src('Fact_JD_SalesHistory')}""")
+    return con.execute("SELECT count(*) FROM jd_hist").fetchone()[0]
+
+
+def jd_history_for(con, branch: str) -> list:
+    return _dicts(con.execute("SELECT * FROM jd_hist WHERE branch = ?", [branch]))
 
 
 def reorder(con) -> list:

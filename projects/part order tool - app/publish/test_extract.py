@@ -390,7 +390,7 @@ def test_check_columns_names_missing_jd_column(con, missing):
                                      "PisMultipleInvoices"])
 def test_check_columns_v8_gold_without_plan_r_says_what_to_deploy(con, missing):
     _gold_tables(con, jd_cols=[c for c in GOLD_JD if c != missing])
-    with pytest.raises(pl.MissingColumnsError, match=f"Fact_CorpParts_JD.*{missing}.*[Dd]eploy Plan R.*before publishing v8"):
+    with pytest.raises(pl.MissingColumnsError, match=f"Fact_CorpParts_JD.*{missing}.*[Dd]eploy Plan R.*before publishing v9"):
         extract.check_columns(con)
 
 
@@ -472,3 +472,91 @@ def test_jd_idle_built_at(con):
     con.execute('INSERT INTO "Fact_CorpParts_JD_Idle" (Branch, PartNumber, BuiltAtUtc) VALUES '
                 "('1', 'A', '2026-11-03 15:26:59'), ('2', 'B', '2026-11-03 15:26:59')")
     assert str(extract.jd_idle_built_at(con)) == "2026-11-03 15:26:59"
+
+
+
+# ---- Plan S (contract 9): the JD order files ----
+JD_ORDER_GOLD = [c for c in GOLD_REORDER if c not in (
+    "AppOutboundQty", "TransferRuleId", "TransferRuleName", "ExcessSupply", "ExcessUnit", "AllowSend",
+    "AllowReceive", "RedistMax", "RedistUnit", "RedistMinValue", "ExcessKeep", "FreeExcess", "ConvNeed", "RedistCap",
+    "RedistEligible", "SuggestedInQty", "SuggestedConvInQty", "SuggestedOutQty")]
+
+
+def _jd_tables(con, reorder=JD_ORDER_GOLD, hist=True, rules=True):
+    _table(con, "Fact_JD_Reorder", reorder)
+    if hist:
+        _table(con, "Fact_JD_SalesHistory", ["Branch", "Franchise", "PartNumber", "MonthStart", "MonthOffset", "SalesQty",
+                                             "RequestCount"])
+    if rules:
+        _table(con, "JD_OrderRules", RULE_COLS)
+
+
+def test_jd_order_columns_are_the_reorder_columns_without_the_transfer_ones():
+    gold = [g for g, _ in extract.JD_ORDER_COLUMNS]
+    assert sorted(gold) == sorted(c for c in JD_ORDER_GOLD if c not in ("RuleId", "BuiltAtUtc", "AppInboundQty"))
+    fields = {f for _, f in extract.JD_ORDER_COLUMNS}
+    assert not {"appInboundQty", "appOutboundQty", "transferRuleId", "suggestedOutQty"} & fields
+    assert {"phaseInEndReason", "lastReceived", "equipStockValue", "status"} <= fields
+
+
+def test_jd_order_available(con):
+    assert extract.jd_order_available(con) is False                # nothing there yet
+    _jd_tables(con, hist=False)
+    assert extract.jd_order_available(con) is False                # no history table
+    con.execute('DROP TABLE "Fact_JD_Reorder"')
+    con.execute('DROP TABLE "JD_OrderRules"')
+    _jd_tables(con, reorder=[c for c in JD_ORDER_GOLD if c != "EquipStockValue"])
+    assert extract.jd_order_available(con) is False                # a column is missing
+    con.execute('DROP TABLE "Fact_JD_Reorder"')
+    con.execute('DROP TABLE "Fact_JD_SalesHistory"')
+    con.execute('DROP TABLE "JD_OrderRules"')
+    _jd_tables(con)
+    assert extract.jd_order_available(con) is True
+
+
+def test_jd_order_reads_jd_tables_and_ignores_non_jd(con):
+    _gold_tables(con)
+    _jd_tables(con)
+    con.execute('INSERT INTO "Fact_NonJD_Reorder" (Branch, Franchise, PartNumber) VALUES (\'1\', \'A\', \'NOPE\')')
+    con.execute('INSERT INTO "Fact_JD_Reorder" (Branch, Franchise, PartNumber, BuiltAtUtc) VALUES '
+                "('12', 'D', 'B', '2026-11-06 12:00:00'), ('12', 'D', 'A', '2026-11-06 12:00:00')")
+    rows = extract.jd_order(con)
+    assert [r["partNumber"] for r in rows] == ["A", "B"]
+    assert len(rows[0]) == len(extract.JD_ORDER_COLUMNS)
+    assert str(extract.jd_order_built_at(con)) == "2026-11-06 12:00:00"
+
+
+def test_jd_history_is_staged_apart_from_non_jd(con):
+    _gold_tables(con)
+    _jd_tables(con)
+    con.execute('INSERT INTO "Fact_NonJD_SalesHistory" (Branch, Franchise, PartNumber, MonthOffset, SalesQty, RequestCount)'
+                " VALUES ('1', 'A', 'N', '1', '9', '9')")
+    con.execute('INSERT INTO "Fact_JD_SalesHistory" (Branch, Franchise, PartNumber, MonthOffset, SalesQty, RequestCount)'
+                " VALUES ('12 ', 'D', 'J', '2', '3', '1')")
+    assert extract.stage_history(con) == 1
+    assert extract.stage_jd_history(con) == 1
+    assert [r["partNumber"] for r in extract.history_for(con, "1")] == ["N"]
+    assert extract.jd_history_for(con, "12") == [{"branch": "12", "franchise": "D", "partNumber": "J", "monthOffset": "2",
+                                                  "salesQty": "3", "requestCount": "1"}]
+
+
+def test_jd_rules_reads_its_own_list(con):
+    _jd_tables(con)
+    con.execute('INSERT INTO "JD_OrderRules" (Id, RuleName) VALUES (\'1\', \'Default\')')
+    rows = extract.jd_rules(con)
+    assert rows[0]["ruleName"] == "Default" and set(rows[0]) == {f for _, f in extract.RULE_COLUMNS}
+
+
+def test_log_rows_includes_the_jd_item(con):
+    con.execute("""CREATE TABLE dp_refresh_log (run_id VARCHAR, name VARCHAR, row_type VARCHAR, status VARCHAR,
+                   start_utc TIMESTAMPTZ, end_utc TIMESTAMPTZ)""")
+    con.execute("""INSERT INTO dp_refresh_log VALUES
+        ('r', 'Build_Gold_JD_Reorder', 'item', 'Succeeded', NULL, now()),
+        ('r', 'Build_Gold_NonJD_Reorder', 'item', 'Succeeded', NULL, now()),
+        ('r', 'Build_Gold_Other', 'item', 'Succeeded', NULL, now())""")
+    assert {r["name"] for r in extract.log_rows(con)} == {"Build_Gold_JD_Reorder", "Build_Gold_NonJD_Reorder"}
+
+
+def test_check_columns_does_not_need_the_jd_tables(con):
+    _gold_tables(con)                                               # S-P4: no Fact_JD_Reorder at all
+    extract.check_columns(con)

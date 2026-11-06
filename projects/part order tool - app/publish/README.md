@@ -11,7 +11,8 @@ on https://spitractor.sharepoint.com/sites/SouthPlainsImplement-ReportSite.
   4, returns and scrap): `docs/superpowers/plans/2026-10-30-spi-parts-hub-returns-and-scrap.md` (task I3); Plan L
   (contractVersion 6, the Inventory reports' JD parts):
   `docs/superpowers/plans/2026-11-03-spi-parts-hub-inventory-reports.md` (task L4); Plan M (contractVersion 7, the
-  idle JD parts): `docs/superpowers/plans/2026-11-03-spi-parts-hub-cross-branch-reports.md` (task M3)
+  idle JD parts): `docs/superpowers/plans/2026-11-03-spi-parts-hub-cross-branch-reports.md` (task M3); Plan S
+  (contractVersion 9, JD ordering): `docs/superpowers/plans/2026-11-06-spi-parts-hub-jd-ordering.md` (task S4)
 - Spec: `docs/superpowers/specs/2026-10-20-non-jd-parts-order-tool-redesign-design.md`; round 2 (transfers,
   phase-in): `docs/superpowers/specs/2026-10-27-non-jd-parts-order-tool-round-2-design.md` ("The contract (v3)")
 - Where the business rules live: the Gold notebook (fabric-workspace-docs
@@ -64,7 +65,9 @@ What decides whether to publish:
   has `Fact_CorpParts_JD_Idle`. Likewise contractVersion 8 publish code needs the Plan R Gold: against an older Gold
   it fails naming the missing columns ("... Deploy Plan R (Build_Gold_NonJD_Reorder Part 5, the Pieces In Set columns)
   before publishing v8") and writes nothing. **Deploy Plan R Gold to Prod first, then app 0.16.0, then pull the v8
-  publish code on the Gateway PC.**
+  publish code on the Gateway PC.** contractVersion 9 needs no Gold to run (a missing JD table isn't an error, S-P4),
+  but an older app refuses v9 data. **Deploy Gold (`Build_Gold_JD_Reorder`, `JD_OrderRules`) to Prod first, then app
+  0.17.0, then pull this code on the Gateway PC.**
 - **Release timing (0.13.0, 2026-11-04):** a Prod `mode=items` run's Gold item finishes before the run's model
   refreshes, and the scheduled publish (every 30 minutes until 10:15) can publish it with the **old** code before
   anyone pulls. So pull the new publish code just before starting the items run (a scheduled run meanwhile still
@@ -111,7 +114,7 @@ Task Scheduler setup:
 - Check `_meta.json`'s `contractVersion` first (missing = 1) and load nothing unless it is the version the app knows
   (messages under "File contract").
 
-## File contract (schemaVersion 1, contractVersion 8)
+## File contract (schemaVersion 1, contractVersion 9)
 
 - `schemaVersion` 1 = the rules-list file layout (2026-10-20); the earlier matrix-era shape was never consumed. It
   is unchanged in round 1.
@@ -135,6 +138,9 @@ Task Scheduler setup:
   `pisInvoices`, `pisSalesQty`, `pisQty`, `pisQtyInvoices`, `pisMultipleInvoices`). The idle files don't change. Bumped
   so the app can tell "not published yet" from a real 0. **Order: Gold first, then app 0.16.0 (accepts v3–v8; an older
   app refuses v8 data), then this code on the Gateway PC.** No existing file or field changed.
+  **9 = Plan S** (2026-11-06, JD ordering): `jdorder_<branch>.json.gz`, `jdhistory_<branch>.json.gz`, `jd_rules.json.gz`,
+  `_meta.jdOrderBranches`, `_meta.jdOrderAsOf`, `counts.jdOrderParts`, `counts.jdHistoryRows`. **Order: Gold first, then
+  app 0.17.0, then this code on the Gateway PC.** No existing file or field changed.
 - **Bump `contractVersion`** on any removed or renamed field, any change in a field's meaning, or any new `status`
   value. Don't bump for a new optional field: the app ignores fields it doesn't know. (v5 is bumped anyway for
   `equipStockValue`: the field is never null and 0 is a real value, so the app must tell "not published yet" (a v4
@@ -183,7 +189,7 @@ unsorted for reading); `.json.gz` files are gzip-compressed, `_meta.json` is pla
 
 ### `_meta.json` (uploaded last)
 ```json
-{"schemaVersion": 1, "contractVersion": 8, "dataAsOf": "2026-10-20T11:41:07+00:00",
+{"schemaVersion": 1, "contractVersion": 9, "dataAsOf": "2026-10-20T11:41:07+00:00",
  "publishedAt": "2026-10-20T12:20:03.482915+00:00", "source": "prod",
  "branches": [{"branch": "1", "name": "Lubbock", "parts": 18234}],
  "jdBranches": [{"branch": "1", "name": "Lubbock", "parts": 19858}, {"branch": "12", "name": "O'Donnell", "parts": 909}],
@@ -201,6 +207,10 @@ and named like `branches`; `parts` is the rows in that file. `counts.jdParts` is
 `jdBranches[].parts`). Both are absent before v6.
 `jdIdleBranches` (new in contractVersion 7) lists every branch with a `jd_idle_<branch>.json.gz` the same way;
 `counts.jdIdleParts` is the total idle JD rows (the sum of `jdIdleBranches[].parts`). Both are absent before v7.
+`jdOrderBranches` (new in contractVersion 9) lists every branch with a `jdorder_<branch>.json.gz` the same way, and
+`jdOrderAsOf` is when `Build_Gold_JD_Reorder` finished. `counts.jdOrderParts` is the sum of `jdOrderBranches[].parts`,
+`counts.jdHistoryRows` the rows read from `Fact_JD_SalesHistory`. Until a JD build has published, `jdOrderBranches` is
+`[]`, `jdOrderAsOf` is null and both counts are 0. All four are absent before v9.
 
 ### `reorder_<branch>.json.gz`
 `{"branch", "dataAsOf", "parts": [ ... ]}`, one object per part in scope at that branch. Each part has the 83 fields
@@ -363,6 +373,27 @@ report needs them.
 |---|---|
 | partNumber, description, cost, packageQty, returnIndicator, source, slc, superTo, commodityCode, commodityGroup, dealerGroupCode, minimumQty, maximumQty | As in `jd_<branch>.json.gz` |
 | onOrder | Equip on order: 0 or negative (never null) |
+
+### `jdorder_<branch>.json.gz` (new in contractVersion 9)
+`{"branch", "dataAsOf", "parts": [ ... ]}`: `Fact_JD_Reorder` (Plan S), one object per row at that branch. `dataAsOf` is
+`jdOrderAsOf`, not the non-JD `dataAsOf`. The fields mean what they mean in `reorder_<branch>.json.gz`, without the
+transfer fields: `appInboundQty`, `appOutboundQty` and `transferRuleId` through `suggestedOutQty` (S-P3; the app fills
+those with neutral values on read). The records are S-D7's: franchise D, cost > 0, and a sale in the 60 months of
+history, stock on hand or on order, or a part setting. Every branch, 12 included (S-D5). Parts are sorted by part
+number.
+- 521,780 rows at 33 branches on Dev, 2026-11-06: 30.2 MB compressed in all, the largest branch (4, 39,995 parts) 2.27 MB. A file over the 4 MB upload limit fails the JD build, naming the branch, and the JD files stay as published. They embed `dataAsOf`, so a new JD run re-uploads all of them.
+- **It can't block non-JD (S-P4).** If `Build_Gold_JD_Reorder`'s latest run failed or there is none, or its table isn't
+  readable, isn't from that run or is rewritten during the extract, or a JD file fails to build (one over the limit,
+  say), the publish goes ahead and the JD files stay as published. The log says `JD order files kept as published (...)`
+  and `_meta.json` keeps the earlier `jdOrderBranches` and `jdOrderAsOf`. A JD build that finishes later triggers its
+  own publish ("new JD order data"), which sends the JD files, `transfer_suggestions.json.gz` and `_meta.json`. A JD
+  build that keeps failing to build its files publishes again each scheduled run until it stops, without sending them.
+
+### `jdhistory_<branch>.json.gz` (new in contractVersion 9)
+Written as `history_<branch>.json.gz`, from `Fact_JD_SalesHistory`, for the branches in `jdOrderBranches`. 3,040,324 rows on Dev, 2026-11-06: 6.4 MB compressed in all, the largest branch 0.55 MB; the same 4 MB limit.
+
+### `jd_rules.json.gz` (new in contractVersion 9)
+Written as `rules.json.gz`, from `JD_OrderRules`.
 
 ### Settings the app reads live (`NonJD_PartSettings`)
 

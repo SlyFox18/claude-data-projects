@@ -203,12 +203,12 @@ def test_history_arrays_duplicate_slot_raises():
 # ---- Round 1 (Plan C4): contract version, required columns, excluded branches ----
 
 def test_require_columns_names_what_to_deploy():
-    with pytest.raises(pl.MissingColumnsError, match=r"T is missing column\(s\) B.*[Dd]eploy Plan R before publishing v8"):
+    with pytest.raises(pl.MissingColumnsError, match=r"T is missing column\(s\) B.*[Dd]eploy Plan R before publishing v9"):
         pl.require_columns("T", ["A"], ["A", "B"], deploy="Plan R")
 
 
-def test_contract_version_is_8():
-    assert pl.CONTRACT_VERSION == 8
+def test_contract_is_9():
+    assert pl.CONTRACT_VERSION == 9
 
 
 def test_require_columns_passes_when_all_present():
@@ -332,3 +332,27 @@ def test_upload_order_idle_files_before_meta():
     order = pl.upload_order(["out/_meta.json", "out/jd_idle_4.json.gz", "out/jd_1.json.gz", "out/jd_idle_1.json.gz"])
     assert order[-1] == "out/_meta.json"
     assert {"out/jd_idle_1.json.gz", "out/jd_idle_4.json.gz", "out/jd_1.json.gz"} == set(order[:-1])
+
+
+# ---- Plan S (contract 9): the JD order files ----
+
+def test_decide_publish_new_jd_order_data():
+    end = datetime(2026, 11, 9, 12, 0)
+    state = {"source": "prod", "dataAsOf": pl.iso_utc(end), "jdOrderAsOf": "old"}
+    latest = {"status": "Succeeded", "end_utc": end, "run_id": "r"}
+    assert pl.decide_publish(latest, state, "prod", jd_end=datetime(2026, 11, 9, 12, 5))[0] is True
+    state["jdOrderAsOf"] = pl.iso_utc(datetime(2026, 11, 9, 12, 5))
+    assert pl.decide_publish(latest, state, "prod", jd_end=datetime(2026, 11, 9, 12, 5))[0] is False
+    assert pl.decide_publish(latest, state, "prod")[0] is False            # no JD build: as before
+
+
+def test_decide_publish_a_failed_non_jd_run_still_keeps_the_old_files_with_new_jd_data():
+    latest = {"status": "Failed", "end_utc": datetime(2026, 11, 9, 12, 0), "run_id": "r"}
+    assert pl.decide_publish(latest, {}, "prod", jd_end=datetime(2026, 11, 9, 12, 5))[0] is False
+
+
+def test_latest_item_run_finds_the_jd_item():
+    jd = {**_row("Succeeded", datetime(2026, 11, 9, 12, 5), run="j"), "name": pl.JD_ITEM}
+    assert pl.JD_ITEM == "Build_Gold_JD_Reorder"
+    assert pl.latest_item_run([_row("Succeeded", datetime(2026, 11, 9, 13, 0)), jd], pl.JD_ITEM)["run_id"] == "j"
+    assert pl.latest_item_run([_row("Succeeded", datetime(2026, 11, 9, 13, 0))], pl.JD_ITEM) is None

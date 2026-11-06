@@ -37,6 +37,9 @@ ROUND2_FIELDS = ("pendingQty", "slc", "source", "commodityCode", "phaseInQty", "
 ROUND2_NULLABLE = frozenset(("slc", "source", "commodityCode", "phaseInQty", "phaseInEnds", "phaseInOn",
                              "phaseInEndReason", "transferRuleId"))
 ROUND2_TEXT = frozenset(("transferRuleName", "excessUnit", "redistUnit"))
+# The round 2 fields a jdorder part has (contract v9, Plan S): the reorder file's without the transfer ones (S-P3).
+JD_ORDER_ROUND2_FIELDS = ("pendingQty", "slc", "source", "commodityCode", "phaseInQty", "phaseInEnds", "phaseInOn",
+                          "phaseInActive", "phaseInEndReason")
 # purchases.json.gz row fields (extract.PURCHASES_COLUMNS); purchases12 is never null and is rounded to cents.
 PURCHASES_KEYS = ("branch", "franchise", "purchases12")
 # jd_<branch>.json.gz part fields (contract v6, v8's Pieces In Set fields; extract.JD_COLUMNS without branch), by how
@@ -81,14 +84,14 @@ def _clean(row: dict) -> dict:
     return {k: pl.clean_value(v) for k, v in row.items()}
 
 
-def _round2(r: dict) -> dict:
-    """The row with contract v3's never-null rules applied to the round 2 fields."""
-    missing = [k for k in ROUND2_FIELDS if k not in r]
+def _round2(r: dict, fields: tuple = ROUND2_FIELDS) -> dict:
+    """The row with contract v3's never-null rules applied to the round 2 fields (`fields` of them)."""
+    missing = [k for k in fields if k not in r]
     if missing:
         raise ValueError(f"reorder row {r.get('branch')!r} {r.get('franchise')!r} {r.get('partNumber')!r} is missing "
                          f"field(s) {', '.join(missing)}")
     out = dict(r)
-    for k in ROUND2_FIELDS:
+    for k in fields:
         if out[k] is None and k not in ROUND2_NULLABLE:
             if k in ROUND2_TEXT:
                 out[k] = ""
@@ -368,14 +371,65 @@ def build_jd_idle(rows: list, names: dict, data_as_of: str, out_dir: str = None)
     return _branch_files(rows, names, data_as_of, out_dir, "jd_idle_", _jd_idle_part, "JD idle")
 
 
+def _jd_order_part(r: dict) -> dict:
+    """One jdorder file part (contract v9): written as a reorder file part, without the transfer fields (S-P3)."""
+    out = _clean(_equip_stock_value(_last_received(_round2(r, JD_ORDER_ROUND2_FIELDS))))
+    del out["branch"]
+    return out
+
+
+def build_jd_order(rows: list, names: dict, data_as_of: str, out_dir: str = None) -> tuple:
+    """jdorder_<branch>.json.gz (contract v9, Plan S): every branch, no D6 check (S-D5). Same limit as the JD files.
+    Into out_dir, after build(). Returns ({file name: sha256}, [{"branch", "name", "parts"}] for _meta.json
+    jdOrderBranches)."""
+    return _branch_files(rows, names, data_as_of, out_dir, "jdorder_", _jd_order_part, "JD order")
+
+
+def _write_jd_file(name: str, obj: dict, out_dir: str) -> str:
+    """Write one JD file, refusing one over JD_FILE_LIMIT; returns its sha256."""
+    data = _bytes(obj)
+    if len(data) > JD_FILE_LIMIT:
+        raise ValueError(f"{name} would be {len(data):,} bytes, over the {JD_FILE_LIMIT:,}-byte upload limit; add a "
+                         f"chunked upload or split the file")
+    os.makedirs(out_dir, exist_ok=True)
+    with open(os.path.join(out_dir, name), "wb") as f:
+        f.write(data)
+    return hashlib.sha256(data).hexdigest()
+
+
+def build_jd_history(history_for, branches: list, current_month: date, out_dir: str = None) -> dict:
+    """jdhistory_<branch>.json.gz (contract v9, Plan S), written as build() writes history_<branch>.json.gz, for the
+    branch keys given; history_for(branch_key) is called once per branch. Returns {file name: sha256}."""
+    out_dir = out_dir or OUT_DIR
+    labels = pl.month_labels(current_month, 60)
+    hashes = {}
+    for key in branches:
+        name = f"jdhistory_{key}.json.gz"
+        hist = history_for(key)
+        hashes[name] = _write_jd_file(name, {"branch": key, "months": labels, "parts": pl.history_arrays(hist, 60)}, out_dir)
+        del hist
+    return hashes
+
+
+def build_jd_rules(rules: list, data_as_of: str, out_dir: str = None) -> dict:
+    """jd_rules.json.gz (contract v9, Plan S), JD_OrderRules rows written as rules.json.gz. Returns {file name: sha256}."""
+    _check_list_rows(rules, RULE_KEYS, "JD_OrderRules")
+    name = "jd_rules.json.gz"
+    return {name: _write_jd_file(name, {"dataAsOf": data_as_of, "rules": _list_file(rules, RULE_KEYS)}, out_dir or OUT_DIR)}
+
+
 def write_meta(data_as_of: str, published_at: str, source: str, branches: list, counts: dict,
-               out_dir: str = None, *, jd_branches: list, jd_idle_branches: list) -> str:
+               out_dir: str = None, *, jd_branches: list, jd_idle_branches: list, jd_order_branches: list = None,
+               jd_order_as_of: str = None) -> str:
     """_meta.json (plain JSON). jd_branches = build_jd's list (contract v6 jdBranches; counts carries jdParts);
-    jd_idle_branches = build_jd_idle's list (contract v7 jdIdleBranches; counts carries jdIdleParts)."""
+    jd_idle_branches = build_jd_idle's list (contract v7 jdIdleBranches; counts carries jdIdleParts);
+    jd_order_branches, jd_order_as_of = the JD order files' branches and data date (contract v9; [] and None until the
+    JD build has published; counts carries jdOrderParts and jdHistoryRows)."""
     path = os.path.join(out_dir or OUT_DIR, pl.META_FILE)
     with open(path, "wb") as f:
         f.write(_bytes({"dataAsOf": data_as_of, "publishedAt": published_at, "source": source,
                         "branches": branches, "counts": counts, "schemaVersion": 1,
                         "contractVersion": pl.CONTRACT_VERSION, "jdBranches": jd_branches,
-                        "jdIdleBranches": jd_idle_branches}, compress=False))
+                        "jdIdleBranches": jd_idle_branches, "jdOrderBranches": jd_order_branches or [],
+                        "jdOrderAsOf": jd_order_as_of}, compress=False))
     return path

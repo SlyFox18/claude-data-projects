@@ -58,6 +58,10 @@ class Env:
         self.committed_on = []   # build dates extract.committed was called with
         self.checked = 0
         self.fail_on = None   # upload call number (1-based) that raises
+        self.jd_status = None   # Plan S: Build_Gold_JD_Reorder's log row status; None = it has no run
+        self.jd_end = END
+        self.jd_order_built = [BUILT]
+        self.jd_cost = 1.5
 
 
 @pytest.fixture
@@ -70,7 +74,26 @@ def env(tmp_path, monkeypatch):
     monkeypatch.setattr(extract, "log_rows", lambda con: [
         {"run_id": "r1", "name": "run", "row_type": "run", "status": "Succeeded", "start_utc": START, "end_utc": e.end},
         {"run_id": "r1", "name": "Build_Gold_NonJD_Reorder", "row_type": "item", "status": e.status,
-         "start_utc": None, "end_utc": e.end}])
+         "start_utc": None, "end_utc": e.end}] + ([] if e.jd_status is None else [
+             {"run_id": "r2", "name": "run", "row_type": "run", "status": "Succeeded", "start_utc": START,
+              "end_utc": e.jd_end},
+             {"run_id": "r2", "name": "Build_Gold_JD_Reorder", "row_type": "item", "status": e.jd_status,
+              "start_utc": None, "end_utc": e.jd_end}]))
+    # Plan S: the JD order extracts (only called when Build_Gold_JD_Reorder has a successful run)
+    monkeypatch.setattr(extract, "jd_order_available", lambda con: True)
+
+    def jd_order_built_at(con):
+        return e.jd_order_built.pop(0) if len(e.jd_order_built) > 1 else e.jd_order_built[0]
+    monkeypatch.setattr(extract, "jd_order_built_at", jd_order_built_at)
+    monkeypatch.setattr(extract, "jd_order", lambda con: [
+        {"branch": "12", "franchise": "D", "partNumber": "J1", "onHand": 1, "target": 2, "surplusQty": 0, "status": "OK",
+         "cost": e.jd_cost, "pendingQty": 0.0, "slc": None, "source": None, "commodityCode": None, "phaseInQty": None,
+         "phaseInEnds": None, "phaseInOn": None, "phaseInActive": False, "phaseInEndReason": None,
+         "lastReceived": None, "equipStockValue": 0}])
+    monkeypatch.setattr(extract, "stage_jd_history", lambda con: 1)
+    monkeypatch.setattr(extract, "jd_history_for", lambda con, b: [
+        {"franchise": "D", "partNumber": "J1", "monthOffset": 1, "salesQty": 1, "requestCount": 1}])
+    monkeypatch.setattr(extract, "jd_rules", lambda con: e.rules)
 
     def built_at(con):
         return e.built.pop(0) if len(e.built) > 1 else e.built[0]
@@ -281,7 +304,7 @@ def test_missing_rules_columns_fail_before_extracting(env, monkeypatch):
 def test_meta_carries_contract_version(env, tmp_path):
     run_publish.main([])
     meta = json.loads((tmp_path / "out" / "_meta.json").read_bytes())
-    assert meta["contractVersion"] == 8 and meta["schemaVersion"] == 1
+    assert meta["contractVersion"] == 9 and meta["schemaVersion"] == 1
 
 
 
@@ -316,7 +339,7 @@ def test_out_builds_locally_without_upload_state_or_lock(env, tmp_path, monkeypa
     assert not env.state_file.exists()
     assert set(os.listdir(dest)) == DATA_FILES | {"_meta.json"}
     assert not (tmp_path / "out").exists()      # the publish's own output folder is untouched
-    assert json.loads((dest / "_meta.json").read_bytes())["contractVersion"] == 8
+    assert json.loads((dest / "_meta.json").read_bytes())["contractVersion"] == 9
 
 
 def test_out_ignores_publish_state(env, tmp_path):
@@ -460,3 +483,116 @@ def test_positive_idle_on_order_fails_before_meta(env, tmp_path, monkeypatch):
     with pytest.raises(ValueError, match="onOrder"):
         run_publish.main([])
     assert env.uploaded == [] and not (tmp_path / "out" / "_meta.json").exists()
+
+
+# ---- Plan S (contract 9): the JD order files; S-P4, the JD publish can't block non-JD ----
+JD_FILES = {"jdorder_12.json.gz", "jdhistory_12.json.gz", "jd_rules.json.gz"}
+JD_END = datetime(2026, 10, 20, 10, 45, 0)
+JD_BUILT = datetime(2026, 10, 20, 10, 40, 0)
+
+
+def _jd_ok(env, end=JD_END, built=JD_BUILT):
+    env.jd_status, env.jd_end, env.jd_order_built = "Succeeded", end, [built]
+
+
+def test_jd_files_are_published_with_their_own_as_of(env, tmp_path):
+    _jd_ok(env)
+    assert run_publish.main([]) == 0
+    assert set(env.uploaded[:-1]) == DATA_FILES | JD_FILES and env.uploaded[-1] == "_meta.json"
+    meta = json.loads((tmp_path / "out" / "_meta.json").read_bytes())
+    assert meta["jdOrderBranches"] == [{"branch": "12", "name": "12", "parts": 1}]
+    assert meta["jdOrderAsOf"] == "2026-10-20T10:45:00+00:00"
+    assert meta["counts"]["jdOrderParts"] == 1 and meta["counts"]["jdHistoryRows"] == 1
+    state = json.loads(env.state_file.read_text())
+    assert state["jdOrderAsOf"] == meta["jdOrderAsOf"] and state["jdOrderBranches"] == meta["jdOrderBranches"]
+    assert set(state["jdOrderHashes"]) == JD_FILES
+
+
+def test_no_jd_run_publishes_non_jd_with_empty_jd_fields(env, tmp_path):
+    assert run_publish.main([]) == 0
+    assert set(env.uploaded[:-1]) == DATA_FILES
+    meta = json.loads((tmp_path / "out" / "_meta.json").read_bytes())
+    assert meta["contractVersion"] == 9 and meta["jdOrderBranches"] == [] and meta["jdOrderAsOf"] is None
+    assert meta["counts"]["jdOrderParts"] == 0 and meta["counts"]["jdHistoryRows"] == 0
+
+
+def test_a_jd_build_that_finishes_later_triggers_its_own_publish_of_only_the_jd_files(env):
+    assert run_publish.main([]) == 0
+    env.uploaded.clear()
+    _jd_ok(env)
+    assert run_publish.main([]) == 0
+    assert set(env.uploaded[:-1]) == JD_FILES | set(publish_logic.ALWAYS_UPLOAD)
+    assert env.uploaded[-1] == "_meta.json"
+    env.uploaded.clear()
+    assert run_publish.main([]) == 0                  # already published
+    assert env.uploaded == []
+
+
+def test_failed_jd_build_keeps_what_is_published_and_non_jd_goes_ahead(env, tmp_path):
+    _jd_ok(env)
+    assert run_publish.main([]) == 0
+    first = json.loads(env.state_file.read_text())
+    env.uploaded.clear()
+    env.status, env.jd_status = "Succeeded", "Failed"
+    env.end = datetime(2026, 10, 21, 10, 30, 0)
+    env.built = [datetime(2026, 10, 21, 10, 20, 0)]
+    env.on_hand_02 = 7
+    assert run_publish.main([]) == 0
+    assert "reorder_02.json.gz" in env.uploaded and not JD_FILES & set(env.uploaded)
+    state = json.loads(env.state_file.read_text())
+    assert state["dataAsOf"] == "2026-10-21T10:30:00+00:00"
+    for k in ("jdOrderAsOf", "jdOrderBranches", "jdOrderHashes"):
+        assert state[k] == first[k]
+    meta = json.loads((tmp_path / "out" / "_meta.json").read_bytes())
+    assert meta["jdOrderAsOf"] == first["jdOrderAsOf"] and meta["jdOrderBranches"] == first["jdOrderBranches"]
+    assert meta["counts"]["jdOrderParts"] == 1 and meta["counts"]["jdHistoryRows"] == 1
+
+
+def test_force_with_carried_jd_files_does_not_look_for_them(env):
+    _jd_ok(env)
+    assert run_publish.main([]) == 0
+    env.uploaded.clear()
+    env.jd_status = "Failed"
+    assert run_publish.main(["--force"]) == 0
+    assert set(env.uploaded[:-1]) == DATA_FILES
+
+
+def test_jd_table_not_from_that_run_is_kept_as_published(env):
+    _jd_ok(env, built=datetime(2026, 10, 19, 1, 0, 0))
+    assert run_publish.main([]) == 0
+    assert set(env.uploaded[:-1]) == DATA_FILES
+    assert json.loads(env.state_file.read_text())["jdOrderHashes"] == {}
+
+
+def test_jd_table_rewritten_while_extracting_is_kept_as_published(env):
+    env.jd_status, env.jd_end = "Succeeded", JD_END
+    env.jd_order_built = [JD_BUILT, datetime(2026, 10, 20, 10, 44, 0)]
+    assert run_publish.main([]) == 0
+    assert set(env.uploaded[:-1]) == DATA_FILES
+
+
+def test_jd_table_missing_is_kept_as_published(env, monkeypatch):
+    _jd_ok(env)
+    monkeypatch.setattr(extract, "jd_order_available", lambda con: False)
+    assert run_publish.main([]) == 0
+    assert set(env.uploaded[:-1]) == DATA_FILES
+
+
+def test_a_jd_file_over_the_limit_does_not_block_non_jd(env, monkeypatch):
+    _jd_ok(env)
+
+    def too_big(*a, **kw):
+        raise ValueError("jdorder_12.json.gz would be 5,000,000 bytes, over the upload limit")
+    monkeypatch.setattr(build_files, "build_jd_order", too_big)
+    assert run_publish.main([]) == 0
+    assert set(env.uploaded[:-1]) == DATA_FILES
+
+
+def test_non_jd_hashes_are_the_same_with_and_without_the_jd_build(env, tmp_path):
+    run_publish.main([])
+    without = json.loads(env.state_file.read_text())["hashes"]
+    env.state_file.unlink()
+    _jd_ok(env)
+    run_publish.main([])
+    with_jd = json.loads(env.state_file.read_text())["hashes"]
+    assert {k: v for k, v in with_jd.items() if k not in JD_FILES} == without

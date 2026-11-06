@@ -1,5 +1,6 @@
 """Tests for build_files (no config, no network)."""
 import gzip
+import hashlib
 import json
 import os
 from datetime import date, datetime
@@ -174,8 +175,9 @@ def test_write_meta_plain_json(out):
     assert raw[:2] != b"\x1f\x8b"
     meta = json.loads(raw)
     assert meta == {"dataAsOf": AS_OF, "publishedAt": "2026-10-20T12:00:00+00:00", "source": "dev",
-                    "branches": branches, "counts": counts, "schemaVersion": 1, "contractVersion": 8,
-                    "jdBranches": jd_branches, "jdIdleBranches": jd_idle_branches}
+                    "branches": branches, "counts": counts, "schemaVersion": 1, "contractVersion": 9,
+                    "jdBranches": jd_branches, "jdIdleBranches": jd_idle_branches,
+                    "jdOrderBranches": [], "jdOrderAsOf": None}
 
 
 def test_nan_rejected():
@@ -273,7 +275,7 @@ def test_reorder_row_at_excluded_branch_raises(out, branch):
 def test_meta_has_contract_version(out):
     _, branches = _build()
     path = build_files.write_meta(AS_OF, AS_OF, "dev", branches, {}, jd_branches=[], jd_idle_branches=[])
-    assert json.loads(open(path, "rb").read())["contractVersion"] == 8
+    assert json.loads(open(path, "rb").read())["contractVersion"] == 9
 
 
 @pytest.mark.parametrize("bad", [float("nan"), float("inf"), float("-inf"), Decimal("NaN")])
@@ -722,7 +724,7 @@ def test_write_meta_has_jd_branches(out):
                                   jd_branches=jd_branches, jd_idle_branches=[])
     meta = json.loads(open(path, "rb").read())
     assert meta["jdBranches"] == jd_branches and meta["counts"]["jdParts"] == 4
-    assert meta["contractVersion"] == 8
+    assert meta["contractVersion"] == 9
     assert [b["branch"] for b in meta["branches"]] == ["1", "92"]
 
 
@@ -928,4 +930,99 @@ def test_write_meta_has_jd_idle_branches(out):
                                   jd_branches=jd_branches, jd_idle_branches=idle_branches)
     meta = json.loads(open(path, "rb").read())
     assert meta["jdIdleBranches"] == idle_branches and meta["counts"]["jdIdleParts"] == 4
-    assert meta["jdBranches"] == jd_branches and meta["contractVersion"] == 8
+    assert meta["jdBranches"] == jd_branches and meta["contractVersion"] == 9
+
+
+# ---- Plan S (contract 9): the JD order files ----
+JD_ROUND2 = {k: v for k, v in ROUND2.items()
+             if k in ("pendingQty", "slc", "source", "commodityCode", "phaseInQty", "phaseInEnds", "phaseInOn",
+                      "phaseInActive", "phaseInEndReason")}
+
+
+def jd_order_row(branch="1", partNumber="P", **kw):
+    r = {"branch": branch, "franchise": "D", "partNumber": partNumber, "onHand": 5, "target": 3, "surplusQty": 2,
+         "status": "OK", "cost": Decimal("12.50"), **JD_ROUND2, "lastReceived": date(2026, 10, 2),
+         "equipStockValue": Decimal("62.50")}
+    r.update(kw)
+    return r
+
+
+def hist_row(branch, partNumber="P", monthOffset=1):
+    return {"branch": branch, "franchise": "D", "partNumber": partNumber, "monthOffset": monthOffset, "salesQty": 2,
+            "requestCount": 1}
+
+
+def read_gz(path):
+    return json.loads(gzip.decompress(path.read_bytes()))
+
+
+def test_build_jd_order_files(tmp_path):
+    rows = [jd_order_row(branch="12", partNumber="B"), jd_order_row(branch="12", partNumber="A")]
+    hashes, branches = build_files.build_jd_order(rows, {"12": "Vault"}, AS_OF, out_dir=str(tmp_path))
+    assert set(hashes) == {"jdorder_12.json.gz"}                           # branch 12 allowed (S-D5)
+    assert branches == [{"branch": "12", "name": "Vault", "parts": 2}]
+    doc = read_gz(tmp_path / "jdorder_12.json.gz")
+    assert doc["branch"] == "12" and doc["dataAsOf"] == AS_OF
+    assert [p["partNumber"] for p in doc["parts"]] == ["A", "B"]
+    assert "transferRuleId" not in doc["parts"][0] and "branch" not in doc["parts"][0]   # S-P3
+    assert doc["parts"][0]["lastReceived"] == "2026-10-02" and doc["parts"][0]["equipStockValue"] == 62.5
+
+
+def test_build_jd_order_applies_the_never_null_rules_it_has_fields_for(tmp_path):
+    doc_rows = [jd_order_row(pendingQty=None)]
+    build_files.build_jd_order(doc_rows, {}, AS_OF, out_dir=str(tmp_path))
+    assert read_gz(tmp_path / "jdorder_1.json.gz")["parts"][0]["pendingQty"] == 0
+    with pytest.raises(ValueError, match="phaseInActive"):
+        build_files.build_jd_order([jd_order_row(phaseInActive=None)], {}, AS_OF, out_dir=str(tmp_path))
+    bad = jd_order_row()
+    del bad["lastReceived"]
+    with pytest.raises(ValueError, match="lastReceived"):
+        build_files.build_jd_order([bad], {}, AS_OF, out_dir=str(tmp_path))
+
+
+def test_build_jd_order_refuses_a_file_over_the_limit(tmp_path, monkeypatch):
+    monkeypatch.setattr(build_files, "JD_FILE_LIMIT", 10)
+    with pytest.raises(ValueError, match="upload limit"):
+        build_files.build_jd_order([jd_order_row()], {}, AS_OF, out_dir=str(tmp_path))
+
+
+def test_build_jd_history_files(tmp_path):
+    hashes = build_files.build_jd_history(lambda b: [hist_row(b)], ["12"], date(2026, 11, 1), out_dir=str(tmp_path))
+    assert set(hashes) == {"jdhistory_12.json.gz"}
+    doc = read_gz(tmp_path / "jdhistory_12.json.gz")
+    assert len(doc["months"]) == 60 and doc["months"][0] == "2026-11" and doc["branch"] == "12"
+    assert doc["parts"][0]["franchise"] == "D" and doc["parts"][0]["sales"][0] == 2
+
+
+def test_build_jd_history_refuses_a_file_over_the_limit(tmp_path, monkeypatch):
+    monkeypatch.setattr(build_files, "JD_FILE_LIMIT", 10)
+    with pytest.raises(ValueError, match="upload limit"):
+        build_files.build_jd_history(lambda b: [hist_row(b)], ["12"], date(2026, 11, 1), out_dir=str(tmp_path))
+
+
+def test_build_jd_rules_file(tmp_path):
+    hashes = build_files.build_jd_rules(list(reversed(RULES)), AS_OF, out_dir=str(tmp_path))
+    assert set(hashes) == {"jd_rules.json.gz"}
+    doc = read_gz(tmp_path / "jd_rules.json.gz")
+    assert doc["dataAsOf"] == AS_OF and [r["id"] for r in doc["rules"]] == sorted(r["id"] for r in RULES)
+    with pytest.raises(ValueError, match="JD_OrderRules"):
+        build_files.build_jd_rules([{"id": 1}], AS_OF, out_dir=str(tmp_path))
+
+
+def test_meta_has_the_jd_order_fields(tmp_path):
+    path = build_files.write_meta(AS_OF, AS_OF, "dev", [], {}, out_dir=str(tmp_path), jd_branches=[], jd_idle_branches=[],
+                                  jd_order_branches=[{"branch": "12", "name": "Vault", "parts": 2}], jd_order_as_of="x")
+    meta = json.load(open(path))
+    assert meta["contractVersion"] == 9 and meta["jdOrderAsOf"] == "x" and meta["jdOrderBranches"][0]["branch"] == "12"
+
+
+def test_non_jd_files_unchanged_by_the_jd_build(out):
+    hashes, _ = _build()
+    before = {n: (out / n).read_bytes() for n in hashes}
+    jd_hashes, jd_branches = build_files.build_jd_order([jd_order_row(), jd_order_row(branch="12")], {}, AS_OF)
+    jd_hashes.update(build_files.build_jd_history(lambda b: [hist_row(b)], [b["branch"] for b in jd_branches], MONTH))
+    jd_hashes.update(build_files.build_jd_rules(RULES, AS_OF))
+    assert not set(jd_hashes) & set(hashes)
+    assert {n: (out / n).read_bytes() for n in hashes} == before
+    for n, digest in hashes.items():
+        assert hashlib.sha256((out / n).read_bytes()).hexdigest() == digest

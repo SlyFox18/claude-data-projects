@@ -14,7 +14,8 @@ NON-JD ORDER TOOL PUBLISH - PURE HELPERS (no network, no config; tested in test_
 - CONTRACT_VERSION / require_columns: the field contract the files follow, and a clear failure when Gold and the
   publish code are out of step (a Gold column the publish needs is missing).
 - EXCLUDED_BRANCHES / is_excluded_branch: branches left out of every Non-JD output (Plan C D6; same list as Gold).
-  The JD files (contract v6) and the idle JD files (v7) cover every branch (Plan L decision L-D5).
+  The JD files (contract v6) and the idle JD files (v7) cover every branch (Plan L decision L-D5). So do the JD order
+  files (v9; Plan S decision S-D5).
 """
 import math
 import os
@@ -24,15 +25,18 @@ from decimal import Decimal
 from zoneinfo import ZoneInfo
 
 ITEM = "Build_Gold_NonJD_Reorder"
+JD_ITEM = "Build_Gold_JD_Reorder"     # Plan S: writes Fact_JD_Reorder and Fact_JD_SalesHistory; can't block ITEM (S-P4)
 META_FILE = "_meta.json"
 CENTRAL = ZoneInfo("America/Chicago")
 # The field contract of the files (README "File contract"). 1 = Plan A/B fields (no contractVersion in _meta.json);
 # 2 = round 1 (Plan C); 3 = round 2 (Plan E: phase-in, transfer rules and suggestions); 4 = round 3 (Plan I:
 # lastReceived, purchases.json.gz); 5 = round 3 phase 3 (Plan K: equipStockValue); 6 = Plan L (jd_<branch>.json.gz,
 # _meta.jdBranches, counts.jdParts); 7 = Plan M (jd_idle_<branch>.json.gz, _meta.jdIdleBranches, counts.jdIdleParts);
-# 8 = Plan R (the Pieces In Set fields on jd_<branch>.json.gz).
+# 8 = Plan R (the Pieces In Set fields on jd_<branch>.json.gz); 9 = Plan S (jdorder_<branch>.json.gz,
+# jdhistory_<branch>.json.gz, jd_rules.json.gz, _meta.jdOrderBranches, _meta.jdOrderAsOf, counts.jdOrderParts,
+# counts.jdHistoryRows).
 # The app refuses a version it doesn't know.
-CONTRACT_VERSION = 8
+CONTRACT_VERSION = 9
 # Uploaded every run, changed or not (round 2 spec "The publish": the suggestions file embeds dataAsOf).
 ALWAYS_UPLOAD = ("transfer_suggestions.json.gz",)
 # Committed transfer statuses (spec step 8b, exact spelling); Placed counts only while recent.
@@ -85,7 +89,9 @@ def run_start(rows: list, run_id: str):
     return min(starts, key=naive_utc, default=None)
 
 
-def decide_publish(latest, state: dict, source: str, force: bool = False):
+def decide_publish(latest, state: dict, source: str, force: bool = False, jd_end=None):
+    """Whether to publish, and why. jd_end = when the latest successful JD order build ended, None without one; a new
+    one publishes on its own (Plan S, S-P4), but only ever alongside a successful non-JD run."""
     if latest is None:
         return False, f"no run of {ITEM} in the log"
     if latest.get("status") != "Succeeded":
@@ -93,6 +99,8 @@ def decide_publish(latest, state: dict, source: str, force: bool = False):
     if force:
         return True, "forced"
     if state.get("source") == source and state.get("dataAsOf") == iso_utc(latest["end_utc"]):
+        if jd_end is not None and state.get("jdOrderAsOf") != iso_utc(jd_end):
+            return True, "new JD order data"
         return False, "already published"
     return True, "new data"
 

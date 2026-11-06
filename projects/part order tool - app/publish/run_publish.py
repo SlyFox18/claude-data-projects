@@ -7,6 +7,9 @@ Non-JD Parts Order Tool - daily publish.
 3. Build files (contract v6's jd_<branch>.json.gz and v7's jd_idle_<branch>.json.gz last), upload the changed ones (and
    transfer_suggestions.json.gz every run), then _meta.json last.
    Save publish_state.json.
+4. Contract v9 (Plan S): the JD order files come from Build_Gold_JD_Reorder, a separate item. S-P4: they can't block the
+   rest. Without a successful run whose table is readable and from that run, the publish goes ahead and the JD files
+   stay as they were; a JD build that finishes later triggers its own publish.
 
 --out DIR builds the same files plus _meta.json into DIR and stops there: no upload, no publish_state.json, no
 lock (a local build for the app's parity checks; the checks of steps 1-2 still apply, publish_state is ignored).
@@ -69,6 +72,49 @@ def save_state(state: dict) -> None:
     os.replace(tmp, STATE_FILE)
 
 
+def _jd_order_files(con, rows: list, names: dict, out_dir: str, state: dict) -> dict:
+    """Plan S: build the JD order files, or carry what's published (S-P4: nothing here can stop the non-JD publish).
+    Returns {"built": this run's {file name: sha256}, "hashes", "branches", "asOf", "historyRows"}: what's published
+    once this run is done. Carried hashes go into the saved state, not into the files to send, so --force never looks
+    for a file this run didn't write."""
+    carried = {"built": {}, "hashes": {}, "branches": [], "asOf": None, "historyRows": 0}
+    if state.get("source") == config.SOURCE:
+        carried.update(hashes=state.get("jdOrderHashes", {}), branches=state.get("jdOrderBranches", []),
+                       asOf=state.get("jdOrderAsOf"), historyRows=state.get("jdHistoryRows", 0))
+
+    def keep(why: str) -> dict:
+        print(f"JD order files kept as published ({why})")
+        return carried
+
+    run = pl.latest_item_run(rows, pl.JD_ITEM)
+    if run is None:
+        return keep("no run")
+    if run.get("status") != "Succeeded":
+        return keep(run.get("status"))
+    try:
+        if not extract.jd_order_available(con):
+            return keep("the JD tables aren't readable yet, or lack a column")
+        built = extract.jd_order_built_at(con)
+        start = pl.run_start(rows, run["run_id"])
+        if not pl.built_in_run(built, start, run["end_utc"]):
+            return keep(f"Fact_JD_Reorder BuiltAtUtc {built} is outside run {run['run_id']} ({start} .. {run['end_utc']})")
+        as_of = pl.iso_utc(run["end_utc"])
+        order_rows = extract.jd_order(con)
+        history_rows = extract.stage_jd_history(con)
+        rules = extract.jd_rules(con)
+        if extract.jd_order_built_at(con) != built:
+            return keep("Fact_JD_Reorder was rewritten while extracting")
+        hashes, branches = build_files.build_jd_order(order_rows, names, as_of, out_dir=out_dir)
+        hashes.update(build_files.build_jd_history(lambda b: extract.jd_history_for(con, b),
+                                                   [b["branch"] for b in branches], pl.central_month_start(built),
+                                                   out_dir=out_dir))
+        hashes.update(build_files.build_jd_rules(rules, as_of, out_dir=out_dir))
+    except Exception as ex:
+        traceback.print_exc()
+        return keep(f"{type(ex).__name__}: {ex}")
+    return {"built": hashes, "hashes": hashes, "branches": branches, "asOf": as_of, "historyRows": history_rows}
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--force", action="store_true",
@@ -97,7 +143,9 @@ def _publish(args) -> int:
     rows = extract.log_rows(con)
     latest = pl.latest_item_run(rows)
     state = {} if args.out else load_state()
-    go, why = pl.decide_publish(latest, state, config.SOURCE, args.force)
+    jd_run = pl.latest_item_run(rows, pl.JD_ITEM)
+    jd_end = jd_run["end_utc"] if jd_run is not None and jd_run.get("status") == "Succeeded" else None
+    go, why = pl.decide_publish(latest, state, config.SOURCE, args.force, jd_end=jd_end)
     print(f"decision: {go} ({why})")
     if not go:
         return 0
@@ -157,17 +205,22 @@ def _publish(args) -> int:
     idle_hashes, jd_idle_branches = build_files.build_jd_idle(jd_idle_rows, names, data_as_of,
                                                               out_dir=out_dir)   # contract v7
     hashes.update(idle_hashes)
+    jd_order = _jd_order_files(con, rows, names, out_dir, state)     # contract v9; never raises (S-P4)
+    hashes.update(jd_order["built"])
     counts = {"parts": len(reorder), "historyRows": history_rows, "transferLines": len(transfers),
-              "transferSuggestions": len(suggestions), "jdParts": len(jd_rows), "jdIdleParts": len(jd_idle_rows)}
+              "transferSuggestions": len(suggestions), "jdParts": len(jd_rows), "jdIdleParts": len(jd_idle_rows),
+              "jdOrderParts": sum(b["parts"] for b in jd_order["branches"]), "jdHistoryRows": jd_order["historyRows"]}
     meta_path = build_files.write_meta(data_as_of, datetime.now(timezone.utc).isoformat(), config.SOURCE,
                                        branches, counts, out_dir=out_dir, jd_branches=jd_branches,
-                                       jd_idle_branches=jd_idle_branches)
+                                       jd_idle_branches=jd_idle_branches, jd_order_branches=jd_order["branches"],
+                                       jd_order_as_of=jd_order["asOf"])
     if args.out:
         print(f"[{_ts()}] done: built {len(hashes)} file(s) + _meta.json into {out_dir} (nothing uploaded); "
               f"data as of {data_as_of}; {counts}", flush=True)
         return 0
 
-    previous = {} if args.force else (state.get("hashes", {}) if state.get("source") == config.SOURCE else {})
+    previous = ({} if args.force or state.get("source") != config.SOURCE
+                else {**state.get("hashes", {}), **state.get("jdOrderHashes", {})})
     to_send = [os.path.join(out_dir, n) for n in pl.changed_files(hashes, previous)]
     access = upload.token()
     print(f"[{_ts()}] uploading {len(to_send) + 1} file(s)", flush=True)
@@ -175,7 +228,9 @@ def _publish(args) -> int:
         upload.put_file(path, access)
         print(f"  uploaded {os.path.basename(path)}")
 
-    save_state({"source": config.SOURCE, "dataAsOf": data_as_of, "hashes": hashes})
+    save_state({"source": config.SOURCE, "dataAsOf": data_as_of, "hashes": hashes, "jdOrderAsOf": jd_order["asOf"],
+                "jdOrderBranches": jd_order["branches"], "jdOrderHashes": jd_order["hashes"],
+                "jdHistoryRows": jd_order["historyRows"]})
     print(f"[{_ts()}] done: published {len(to_send)} file(s) + _meta.json; data as of {data_as_of}; {counts}",
           flush=True)
     return 0
