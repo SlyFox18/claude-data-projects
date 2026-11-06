@@ -19,13 +19,17 @@ as invalid. Round 3 (Plan I, Task I2; plan docs/superpowers/plans/2026-10-30-spi
 decisions I1-I4) adds LastReceived on Fact_NonJD_Reorder and Fact_NonJD_Purchases, both from Silver_InTrans Type 'P'
 rows (purchases from suppliers). Round 3 (Plan K, Task K2; plan docs/superpowers/plans/2026-11-02-spi-parts-hub-
 cleanup-checks.md, decision K-D1) adds EquipStockValue = round(Silver_PartInformation.InventoryCost, 2) (Equip's
-ON_HAND_VAL; Silver coalesces it to 0), compared within 0.005.
+ON_HAND_VAL; Silver coalesces it to 0), compared within 0.005. Plan S (Task S1; plan docs/superpowers/plans/2026-11-06-
+spi-parts-hub-jd-ordering.md, spec 2026-11-06-spi-parts-hub-jd-ordering-design.md): --scope jd checks Build_Gold_JD_Reorder's
+Fact_JD_Reorder and Fact_JD_SalesHistory: franchise D at every branch, the S-D7 records, JD_OrderRules, a built-in default of 4
+weeks (S-D3), and no transfers (AppInboundQty is 0; the transfer steps and compares are skipped).
 
 Choices the spec leaves open are marked "(choice)" in the comments; Gold and the app engine must make the same ones.
 
 Usage:
     python nonjd_reorder_check.py --tier dev            # compare, exit 1 on any mismatch
     python nonjd_reorder_check.py --tier dev --fingerprint-only
+    python nonjd_reorder_check.py --tier dev --scope jd  # Fact_JD_Reorder and Fact_JD_SalesHistory
 
 Run straight after the DP refresh: Silver inputs are read live, so an intraday refresh between the Gold build
 and this check causes false mismatches. The round 1 and round 2 list columns (MinDemands, SupplyUnit, MinLineValue,
@@ -43,6 +47,7 @@ import math
 import os
 import sys
 import tempfile
+from dataclasses import dataclass
 from datetime import date, timezone
 from zoneinfo import ZoneInfo
 
@@ -144,6 +149,46 @@ TRANSFER_RULE_COLS = {"Id": "BIGINT", "RuleName": "VARCHAR", "Priority": "DOUBLE
                       "RedistMinValue": "DOUBLE"}
 CENTRAL = "America/Chicago"
 PHASE_IN_MAX = 99999
+# Reorder output columns that only exist with transfers: --scope jd has none of them (Plan S). AppInboundQty stays, as 0,
+# because the calculation subtracts it.
+TRANSFER_OUTPUT_COLS = ["AppOutboundQty", "TransferRuleId", "TransferRuleName", "ExcessSupply", "ExcessUnit", "AllowSend",
+                        "AllowReceive", "RedistMax", "RedistUnit", "RedistMinValue", "ExcessKeep", "FreeExcess",
+                        "ConvNeed", "RedistCap", "RedistEligible", "SuggestedInQty", "SuggestedConvInQty",
+                        "SuggestedOutQty"]
+
+
+@dataclass(frozen=True)
+class Scope:
+    """What the reference checks. has_transfers also picks the part filter: the non-JD filter, or S-D7's (jd_scope_sql)."""
+    reorder_table: str
+    history_table: str
+    rules_table: str
+    builtin_supply: float
+    excluded_branches: list
+    has_transfers: bool
+
+
+SCOPES = {
+    "nonjd": Scope("Fact_NonJD_Reorder", "Fact_NonJD_SalesHistory", "NonJD_OrderRules", 12.0, EXCLUDED_BRANCHES, True),
+    "jd": Scope("Fact_JD_Reorder", "Fact_JD_SalesHistory", "JD_OrderRules", 4.0, [], False),   # S-D3, S-D5, S-D6
+}
+
+
+def output_cols(scope: Scope) -> list:
+    """The scope's reorder output columns, in OUTPUT_COLS order."""
+    return [c for c in OUTPUT_COLS if scope.has_transfers or c not in TRANSFER_OUTPUT_COLS]
+
+
+def jd_scope_sql(parts: str, hist: str, settings: str, select: str = "p.PartNumber") -> str:
+    """S-D7: franchise D, cost > 0, and a sale in the history, stock on hand or on order, or a part setting.
+    `hist` is an already-windowed relation (the 60 months of history, as Gold's)."""
+    return f"""SELECT {select} FROM {parts} p
+      WHERE upper(trim(p.Franchise)) = 'D' AND p.Cost > 0
+        AND (coalesce(p.QuantityOnHand, 0) <> 0 OR coalesce(p.OnOrder, 0) <> 0
+             OR EXISTS (SELECT 1 FROM {hist} h WHERE h.Branch = p.Branch AND h.Franchise = p.Franchise
+                                                 AND h.PartNumber = p.PartNumber)
+             OR EXISTS (SELECT 1 FROM {settings} s WHERE s.Branch = p.Branch AND s.Franchise = p.Franchise
+                                                     AND s.PartNumber = p.PartNumber))"""
 
 
 def add_months(d: date, n: int) -> date:
@@ -444,25 +489,61 @@ def transfer_ctes(p1: str) -> str:
     )"""
 
 
-# The part2 table: the reorder output without Part 3's suggested quantities, plus the columns allocate_group reads
-PART2_COLS = [c for c in OUTPUT_COLS if c not in LATE_COLS] + ["oh", "oo", "pend", "cost"]
+def part2_cols(scope: Scope) -> list:
+    """The part2 table: the reorder output without the columns added after it (LATE_COLS). With transfers, also the
+    columns allocate_group reads."""
+    cols = [c for c in output_cols(scope) if c not in LATE_COLS]
+    return cols + ["oh", "oo", "pend", "cost"] if scope.has_transfers else cols
 
-# Parameters: $cur = first day of the run's Central-time month, $today = the run's Central date.
-# Every value that is ceil'd or floor'd is first rounded to 9 decimals (round9), so double noise such as
-# (5 / 3) * 5.2 * 12 / 52 = 2.0000000000000004 gives 2, not 3. Line values (qty x cost) are compared rounded to
-# 9 decimals too, so 3 x 0.1 is not "more than 0.3". Build_Gold_NonJD_Reorder and the app engine do the same.
-EXPECTED_SQL = f"""
-    WITH {RULE_CHECK_CTE},
-    {SETTINGS_CHECK_CTE},
-    -- scope: non-JD parts with a cost, at the included branches (D6). NULL franchise or branch drops out.
+
+PART2_COLS = part2_cols(SCOPES["nonjd"])
+
+
+def _in_scope_parts_sql(scope: Scope) -> str:
+    if not scope.has_transfers:
+        windowed = f"(SELECT * FROM hist WHERE MonthStart >= CAST($cur - to_months({HIST_MONTHS - 1}) AS DATE))"
+        return f"""-- scope: S-D7's franchise D records, at every branch (S-D5)
+    in_scope_parts AS (
+        {jd_scope_sql("parts", windowed, "settings", "p.*")}
+    ),"""
+    excluded = ", ".join(f"'{b}'" for b in scope.excluded_branches)
+    return f"""-- scope: non-JD parts with a cost, at the included branches (D6). NULL franchise or branch drops out.
     in_scope_parts AS (
         SELECT * FROM parts
         WHERE Cost > 0
           AND upper(trim(Franchise)) NOT IN ('D', 'ZP', 'S', '95')
           AND NOT starts_with(upper(trim(Franchise)), 'T')
           AND NOT starts_with(upper(trim(Franchise)), 'U')
-          AND upper(trim(Branch)) NOT IN ({_EXCLUDED_SQL})
-    ),
+          AND upper(trim(Branch)) NOT IN ({excluded})
+    ),"""
+
+
+
+# Parameters: $cur = first day of the run's Central-time month, $today = the run's Central date.
+# Every value that is ceil'd or floor'd is first rounded to 9 decimals (round9), so double noise such as
+# (5 / 3) * 5.2 * 12 / 52 = 2.0000000000000004 gives 2, not 3. Line values (qty x cost) are compared rounded to
+# 9 decimals too, so 3 x 0.1 is not "more than 0.3". Build_Gold_NonJD_Reorder and the app engine do the same.
+def expected_sql(scope: Scope) -> str:
+    """The reference's Parts 1-2 for a scope. Without transfers it stops after step 14, with AppInboundQty 0."""
+    t = scope.has_transfers
+    committed = COMMITTED_CTES + ",\n    " if t else ""
+    app_cols = ("""CAST(coalesce(ai.q, 0) AS INTEGER) AS AppInboundQty,
+               CAST(coalesce(ao.q, 0) AS INTEGER) AS AppOutboundQty""" if t else "CAST(0 AS INTEGER) AS AppInboundQty")
+    app_joins = ("""
+        LEFT JOIN app_inbound ai
+          ON ai.tb = upper(trim(sc.Branch)) AND ai.Franchise = sc.Franchise AND ai.PartNumber = sc.PartNumber
+        LEFT JOIN app_outbound ao
+          ON ao.fb = upper(trim(sc.Branch)) AND ao.Franchise = sc.Franchise AND ao.PartNumber = sc.PartNumber""" if t else "")
+    tail = (f"""),
+    {transfer_ctes("final")}
+    SELECT {", ".join(part2_cols(scope))} FROM part2
+""" if t else f""")
+    SELECT {", ".join(part2_cols(scope))} FROM final
+""")
+    return f"""
+    WITH {RULE_CHECK_CTE},
+    {SETTINGS_CHECK_CTE},
+    {_in_scope_parts_sql(scope)}
     -- step 1: valid active rules in season this month (wrapping ranges such as 11-2 included)
     usable_rules AS (
         SELECT Id, RuleLabel, Priority,
@@ -501,8 +582,7 @@ EXPECTED_SQL = f"""
               ON {_CRITERIA_MATCH})
         WHERE rn = 1
     ),
-    {COMMITTED_CTES},
-    -- display only: open transfers into the branch, by trimmed upper-case part number
+    {committed}-- display only: open transfers into the branch, by trimmed upper-case part number
     inbound_transfers AS (
         SELECT trim(RequestingBranch) AS b, upper(trim(PartNumber)) AS pn, sum(coalesce(OpenQty, 0)) AS q
         FROM transfers GROUP BY ALL
@@ -520,7 +600,7 @@ EXPECTED_SQL = f"""
                coalesce(p.hm, {BUILTIN_DEFAULT["HistoryMonths"]}) AS HistoryMonths,
                coalesce(p.md, {BUILTIN_DEFAULT["MinDemands"]}) AS MinDemands,
                coalesce(p.unit, '{BUILTIN_DEFAULT["SupplyUnit"]}') AS SupplyUnit,
-               coalesce(p.supply, CAST({BUILTIN_DEFAULT["Supply"]} AS DOUBLE)) AS Supply,
+               coalesce(p.supply, CAST({scope.builtin_supply} AS DOUBLE)) AS Supply,
                CAST(p.minlv AS DOUBLE) AS MinLineValue, CAST(p.maxlv AS DOUBLE) AS MaxLineValue,
                CAST(ps.MinOverride AS DOUBLE) AS min_override, CAST(r.MinimumQty AS DOUBLE) AS equip_min,
                coalesce(ps.ManualOrder, false) AS ManualOrder, ps.MaskedOn,
@@ -535,17 +615,12 @@ EXPECTED_SQL = f"""
                ps.phase_qty AS PhaseInQty, ps.PhaseInEnds, ps.PhaseInOn,
                -- round 3 (Plan K, K-D1): Equip's ON_HAND_VAL, 2 dp
                round(sc.InventoryCost, 2) AS EquipStockValue,
-               CAST(coalesce(ai.q, 0) AS INTEGER) AS AppInboundQty,
-               CAST(coalesce(ao.q, 0) AS INTEGER) AS AppOutboundQty
+               {app_cols}
         FROM in_scope_parts sc
         LEFT JOIN part_rule p USING (Branch, Franchise, PartNumber)
         LEFT JOIN rules r USING (Branch, Franchise, PartNumber)
         LEFT JOIN part_settings ps USING (Branch, Franchise, PartNumber)
-        LEFT JOIN inbound_transfers t ON t.b = trim(sc.Branch) AND t.pn = upper(trim(sc.PartNumber))
-        LEFT JOIN app_inbound ai
-          ON ai.tb = upper(trim(sc.Branch)) AND ai.Franchise = sc.Franchise AND ai.PartNumber = sc.PartNumber
-        LEFT JOIN app_outbound ao
-          ON ao.fb = upper(trim(sc.Branch)) AND ao.Franchise = sc.Franchise AND ao.PartNumber = sc.PartNumber
+        LEFT JOIN inbound_transfers t ON t.b = trim(sc.Branch) AND t.pn = upper(trim(sc.PartNumber)){app_joins}
     ),
     -- step 2: full months only (the current partial month is left out); NULL counts as 0
     monthly_demand AS (
@@ -646,10 +721,10 @@ EXPECTED_SQL = f"""
                     WHEN RecommendedOrderQty > 0 AND coalesce(QuantityOnHand, 0) <= 0 THEN 'OutOfStock'
                     WHEN RecommendedOrderQty > 0 THEN 'Reorder' ELSE 'OK' END AS Status
         FROM order_qty
-    ),
-    {transfer_ctes("final")}
-    SELECT {", ".join(PART2_COLS)} FROM part2
-"""
+    {tail}"""
+
+
+EXPECTED_SQL = expected_sql(SCOPES["nonjd"])
 
 
 def _params(current_month: date, today: date) -> dict:
@@ -844,6 +919,13 @@ EXPECTED_PURCHASES_SQL = """
     WHERE TransDate >= $p_from AND TransDate < $p_to
     GROUP BY ALL
 """
+# Plan S: the JD build's LastReceived rows: Type 'P', franchise D, no branch filter (S-D5).
+JD_PURCHASES_SRC_SQL = """
+    SELECT upper(trim(Branch)) AS Branch, upper(trim(Franchise)) AS Franchise, trim(PartNumber) AS PartNumberTrim,
+           CAST(TransDatetime AS DATE) AS TransDate, CAST(CostValue AS DECIMAL(14,2)) AS CostValue
+    FROM {src}
+    WHERE Type = 'P' AND upper(trim(Franchise)) = 'D'
+"""
 PURCHASES_SRC_COLS = [("Branch", "VARCHAR"), ("Franchise", "VARCHAR"), ("PartNumberTrim", "VARCHAR"),
                       ("TransDate", "DATE"), ("CostValue", "DECIMAL(14,2)")]
 PURCHASES_KEYS = "Branch, Franchise"
@@ -879,14 +961,53 @@ EXPECTED_FROM_PART2_SQL = f"""
 """
 
 
-def build_expected(con, current_month: date, today: date) -> dict:
+def _jd_expected_from_part2_sql() -> str:
+    """The JD reorder output: part2 plus LastReceived, joined as EXPECTED_FROM_PART2_SQL does (no suggested quantities)."""
+    cols = output_cols(SCOPES["jd"])
+    return f"""
+    CREATE OR REPLACE TABLE expected AS
+    SELECT {", ".join("lr.LastReceived" if c == "LastReceived" else "p." + c for c in cols)}
+    FROM part2 p LEFT JOIN last_received lr
+      ON lr.Branch = upper(trim(p.Branch)) AND lr.Franchise = upper(trim(p.Franchise))
+     AND lr.PartNumberTrim = trim(p.PartNumber)
+"""
+
+
+# Fact_JD_SalesHistory as the reference builds it: the 60 months of history of the reorder keys. Same shape as
+# Fact_NonJD_SalesHistory. MonthOffset 1 = the current month.
+EXPECTED_JD_HISTORY_SQL = f"""
+    CREATE OR REPLACE TABLE expected_history AS
+    SELECT h.Branch, h.Franchise, h.PartNumber, h.MonthStart,
+           CAST(date_diff('month', h.MonthStart, $cur) + 1 AS INTEGER) AS MonthOffset, h.SalesQty, h.RequestCount
+    FROM hist h SEMI JOIN expected e USING (Branch, Franchise, PartNumber)
+    WHERE h.MonthStart >= CAST($cur - to_months({HIST_MONTHS - 1}) AS DATE)
+"""
+HISTORY_KEYS = KEYS + ", MonthStart"
+HISTORY_COLS = ["Branch", "Franchise", "PartNumber", "MonthStart", "MonthOffset", "SalesQty", "RequestCount"]
+_HISTORY_DIFF = ("g.MonthOffset IS DISTINCT FROM e.MonthOffset OR g.RequestCount IS DISTINCT FROM e.RequestCount "
+                 f"OR (g.SalesQty IS NULL) <> (e.SalesQty IS NULL) OR abs(g.SalesQty - e.SalesQty) > {TOLERANCE}")
+
+
+def compare_history(con, gold: str, expected: str) -> dict:
+    """Row-by-row compare of Fact_JD_SalesHistory on Branch + Franchise + PartNumber + MonthStart."""
+    return _compare(con, gold, expected, HISTORY_KEYS, _HISTORY_DIFF)
+
+
+def build_expected(con, current_month: date, today: date, scope: Scope = SCOPES["nonjd"]) -> dict:
     """Run the reference over tables parts, inmaster, rules, hist, order_rules, settings, transfers, app_transfers
     and transfer_rules (and purchases_src: an empty one is created when missing), creating tables part2 (Parts
     1-2), expected_suggestion (Part 3), last_received, expected (the reorder output, OUTPUT_COLS) and
     expected_purchases (Fact_NonJD_Purchases). current_month = first day of the run's Central-time month; today =
     the run's Central date (the build's, for the mask, phase-in and committed Placed transfers). Returns {"groups": candidate groups,
-    "lines": suggestion lines}."""
-    con.execute("CREATE OR REPLACE TABLE part2 AS " + EXPECTED_SQL, _params(current_month, today))
+    "lines": suggestion lines}. A scope without transfers (Plan S) needs no transfer tables and builds only part2,
+    last_received and expected (output_cols(scope)), with no suggestion lines."""
+    con.execute("CREATE OR REPLACE TABLE part2 AS " + expected_sql(scope), _params(current_month, today))
+    if not scope.has_transfers:
+        con.execute("CREATE TABLE IF NOT EXISTS purchases_src ("
+                    + ", ".join(f"{c} {t}" for c, t in PURCHASES_SRC_COLS) + ")")
+        con.execute(LAST_RECEIVED_SQL)
+        con.execute(_jd_expected_from_part2_sql())
+        return {"groups": 0, "lines": 0}
     lines = expected_suggestions(con)
     create_suggestion_table(con, "expected_suggestion", lines)
     con.execute("CREATE TABLE IF NOT EXISTS purchases_src ("
@@ -898,9 +1019,9 @@ def build_expected(con, current_month: date, today: date) -> dict:
     return {"groups": groups, "lines": len(lines)}
 
 
-def expected_reorder(con, current_month: date, today: date):
-    """build_expected, then a cursor over the expected reorder rows (OUTPUT_COLS)."""
-    build_expected(con, current_month, today)
+def expected_reorder(con, current_month: date, today: date, scope: Scope = SCOPES["nonjd"]):
+    """build_expected, then a cursor over the expected reorder rows (output_cols(scope))."""
+    build_expected(con, current_month, today, scope)
     return con.execute("SELECT * FROM expected")
 
 
@@ -996,9 +1117,10 @@ def _connect():
     return con
 
 
-def load_inputs(con, tier: str, current_month: date) -> list:
+def load_inputs(con, tier: str, current_month: date, scope: Scope = SCOPES["nonjd"]) -> list:
     """Create the input tables build_expected reads (parts, inmaster, rules, hist, order_rules, settings, transfers,
-    app_transfers, transfer_rules, purchases_src) from the tier's lakehouses; returns the optional (round 1 and 2) columns and tables the staging
+    app_transfers, transfer_rules, purchases_src; a scope without transfers skips app_transfers and transfer_rules)
+    from the tier's lakehouses; returns the optional (round 1 and 2) columns and tables the staging
     lakehouse doesn't have yet, read as NULL / empty.
     The session is UTC, so DateLastRequested becomes the timestamp as stored (Equip's wall clock) and its date is
     the date Equip shows; PlacedAt is a UTC instant and EXPECTED_SQL converts it to the Central date."""
@@ -1016,7 +1138,7 @@ def load_inputs(con, tier: str, current_month: date) -> list:
                     FROM delta_scan('{_path(tier, 'staging', 'Silver_PartSalesHistory')}')
                     -- only speeds the read; each rule's window is applied in EXPECTED_SQL
                     WHERE MonthStart >= DATE '{hist_start}'""")
-    for name, table, cols in (("order_rules", "NonJD_OrderRules", RULE_COLS),
+    for name, table, cols in (("order_rules", scope.rules_table, RULE_COLS),
                               ("settings", "NonJD_PartSettings", SETTINGS_COLS)):
         src = f"delta_scan('{_path(tier, 'staging', table)}')"
         have = columns(con, src)
@@ -1024,29 +1146,30 @@ def load_inputs(con, tier: str, current_month: date) -> list:
         con.execute(f"CREATE TABLE {name} AS SELECT {select_list(con, src, *cols, have=have)} FROM {src}")
     con.execute(f"""CREATE TABLE transfers AS SELECT RequestingBranch, PartNumber, OpenQty
                     FROM delta_scan('{_path(tier, 'presentation', 'Fact_OutstandingTransfers')}')""")
-    # Committed app transfers (step 8b); the table only exists once df_NonJD_Transfers_Raw has run on the tier.
-    src = f"delta_scan('{_path(tier, 'staging', 'NonJD_Transfers')}')"
-    typed = ", ".join(f"CAST({c} AS {t}) AS {c}" for c, t in APP_TRANSFER_COLS.items())
-    try:
-        columns(con, src)
-    except duckdb.Error as e:
-        absent.append(f"NonJD_Transfers (table: {str(e).splitlines()[0][:120]})")
-        con.execute("CREATE TABLE app_transfers ("
-                    + ", ".join(f"{c} {t}" for c, t in APP_TRANSFER_COLS.items()) + ")")
-    else:
-        con.execute(f"CREATE TABLE app_transfers AS SELECT {typed} FROM {src}")
-    # Transfer rules (Part 2); the table only exists once df_NonJD_TransferRules_Raw has run on the tier.
-    src = f"delta_scan('{_path(tier, 'staging', 'NonJD_TransferRules')}')"
-    try:
-        have = columns(con, src)
-    except duckdb.Error as e:
-        absent.append(f"NonJD_TransferRules (table: {str(e).splitlines()[0][:120]})")
-        con.execute("CREATE TABLE transfer_rules ("
-                    + ", ".join(f"{c} {t}" for c, t in TRANSFER_RULE_COLS.items()) + ")")
-    else:
-        absent += [f"NonJD_TransferRules.{c}" for c in TRANSFER_RULE_COLS if c not in have]
-        con.execute(f"CREATE TABLE transfer_rules AS SELECT {select_list(con, src, [], TRANSFER_RULE_COLS, have)} "
-                    f"FROM {src}")
+    if scope.has_transfers:
+        # Committed app transfers (step 8b); the table only exists once df_NonJD_Transfers_Raw has run on the tier.
+        src = f"delta_scan('{_path(tier, 'staging', 'NonJD_Transfers')}')"
+        typed = ", ".join(f"CAST({c} AS {t}) AS {c}" for c, t in APP_TRANSFER_COLS.items())
+        try:
+            columns(con, src)
+        except duckdb.Error as e:
+            absent.append(f"NonJD_Transfers (table: {str(e).splitlines()[0][:120]})")
+            con.execute("CREATE TABLE app_transfers ("
+                        + ", ".join(f"{c} {t}" for c, t in APP_TRANSFER_COLS.items()) + ")")
+        else:
+            con.execute(f"CREATE TABLE app_transfers AS SELECT {typed} FROM {src}")
+        # Transfer rules (Part 2); the table only exists once df_NonJD_TransferRules_Raw has run on the tier.
+        src = f"delta_scan('{_path(tier, 'staging', 'NonJD_TransferRules')}')"
+        try:
+            have = columns(con, src)
+        except duckdb.Error as e:
+            absent.append(f"NonJD_TransferRules (table: {str(e).splitlines()[0][:120]})")
+            con.execute("CREATE TABLE transfer_rules ("
+                        + ", ".join(f"{c} {t}" for c, t in TRANSFER_RULE_COLS.items()) + ")")
+        else:
+            absent += [f"NonJD_TransferRules.{c}" for c in TRANSFER_RULE_COLS if c not in have]
+            con.execute(f"CREATE TABLE transfer_rules AS SELECT {select_list(con, src, [], TRANSFER_RULE_COLS, have)} "
+                        f"FROM {src}")
     # Round 3: InTrans purchases (Type 'P', in scope); only the needed columns are read.
     src = (f"(SELECT Branch, Franchise, PartNumber, Type, TransDatetime, CostValue "
            f"FROM delta_scan('{_path(tier, 'staging', 'Silver_InTrans')}') WHERE Type = 'P')")
@@ -1057,7 +1180,8 @@ def load_inputs(con, tier: str, current_month: date) -> list:
     con.execute(f"""CREATE TABLE purchases_src AS
                     SELECT Branch, Franchise, PartNumberTrim, TransDate,
                            CAST(sum(CostValue) AS DECIMAL(18,2)) AS CostValue
-                    FROM ({PURCHASES_SRC_SQL.format(src=src)}) GROUP BY ALL""")
+                    FROM ({(PURCHASES_SRC_SQL if scope.has_transfers else JD_PURCHASES_SRC_SQL).format(src=src)})
+                    GROUP BY ALL""")
     con.execute("SET enable_external_file_cache = true")
     return absent
 
@@ -1076,34 +1200,43 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--tier", choices=sorted(TIERS), required=True)
     ap.add_argument("--fingerprint-only", action="store_true")
+    ap.add_argument("--scope", choices=sorted(SCOPES), default="nonjd",
+                    help="nonjd: Fact_NonJD_* (default); jd: Fact_JD_Reorder and Fact_JD_SalesHistory (Plan S)")
     a = ap.parse_args()
+    sc = SCOPES[a.scope]
+    table = sc.reorder_table
     con = _connect()
-    rows, fp = fingerprint(con, a.tier)
-    print(f"Fact_NonJD_Reorder ({a.tier}): {rows:,} rows, fingerprint {fp}")
-    try:
-        rows, fp = fingerprint(con, a.tier, "Fact_NonJD_TransferSuggestion")
-        print(f"Fact_NonJD_TransferSuggestion ({a.tier}): {rows:,} rows, fingerprint {fp}")
-    except duckdb.Error as e:
-        print(f"Fact_NonJD_TransferSuggestion ({a.tier}): no fingerprint ({str(e).splitlines()[0][:120]})")
-    try:
-        rows, fp = fingerprint(con, a.tier, "Fact_NonJD_Purchases")
-        print(f"Fact_NonJD_Purchases ({a.tier}): {rows:,} rows, fingerprint {fp}")
-    except duckdb.Error as e:
-        print(f"Fact_NonJD_Purchases ({a.tier}): no fingerprint ({str(e).splitlines()[0][:120]})")
+    rows, fp = fingerprint(con, a.tier, table)
+    print(f"{table} ({a.tier}): {rows:,} rows, fingerprint {fp}")
+    if sc.has_transfers:
+        try:
+            rows, fp = fingerprint(con, a.tier, "Fact_NonJD_TransferSuggestion")
+            print(f"Fact_NonJD_TransferSuggestion ({a.tier}): {rows:,} rows, fingerprint {fp}")
+        except duckdb.Error as e:
+            print(f"Fact_NonJD_TransferSuggestion ({a.tier}): no fingerprint ({str(e).splitlines()[0][:120]})")
+        try:
+            rows, fp = fingerprint(con, a.tier, "Fact_NonJD_Purchases")
+            print(f"Fact_NonJD_Purchases ({a.tier}): {rows:,} rows, fingerprint {fp}")
+        except duckdb.Error as e:
+            print(f"Fact_NonJD_Purchases ({a.tier}): no fingerprint ({str(e).splitlines()[0][:120]})")
+    else:
+        hist_src = f"delta_scan('{_path(a.tier, 'presentation', sc.history_table)}')"
+        rows, fp = con.execute(f"SELECT count(*), sum(hash(t)::HUGEINT) FROM (SELECT * FROM {hist_src}) t").fetchone()
+        print(f"{sc.history_table} ({a.tier}): {rows:,} rows, fingerprint {fp}")
     if a.fingerprint_only:
         return 0
 
-    gold_p = _path(a.tier, "presentation", "Fact_NonJD_Reorder")
+    gold_p = _path(a.tier, "presentation", table)
     built = con.execute(f"SELECT max(BuiltAtUtc) FROM delta_scan('{gold_p}')").fetchone()[0]
     if built is None:
-        sys.exit("Fact_NonJD_Reorder is empty; nothing to check")
+        sys.exit(f"{table} is empty; nothing to check")
     if built.tzinfo is None:
         built = built.replace(tzinfo=timezone.utc)
     today = built.astimezone(ZoneInfo("America/Chicago")).date()
     current_month = date(today.year, today.month, 1)
     print(f"Gold built {built}; checking as of {today} (month {current_month})")
 
-    absent = load_inputs(con, a.tier, current_month)
+    absent = load_inputs(con, a.tier, current_month, sc)
     if absent:
         print(f"NOTE: read as NULL (not in staging yet): {', '.join(absent)}")
     bad = invalid_rules(con)
@@ -1118,32 +1251,35 @@ def main() -> int:
         print(f"WARN: {len(bad)} part setting(s) with an invalid value (ignored):")
         for sid, branch, franchise, pn, reason in bad:
             print(f"  {sid} {branch}|{franchise}|{pn}: {reason}")
-    bad = invalid_transfer_rules(con)
-    if bad:
-        print(f"WARN: {len(bad)} transfer rule(s) skipped as invalid:")
-        for rid, name, reason in bad:
-            print(f"  {rid} {name!r}: {reason}")
-    else:
-        print("All active transfer rules are valid")
+    if sc.has_transfers:
+        bad = invalid_transfer_rules(con)
+        if bad:
+            print(f"WARN: {len(bad)} transfer rule(s) skipped as invalid:")
+            for rid, name, reason in bad:
+                print(f"  {rid} {name!r}: {reason}")
+        else:
+            print("All active transfer rules are valid")
 
-    built_counts = build_expected(con, current_month, today)
-    print(f"Reference suggestions: {built_counts['groups']:,} candidate groups, {built_counts['lines']:,} lines")
-    _print_labeled(con, """SELECT Kind, count(*) AS lines, sum(Qty) AS units, round(sum(Value), 2) AS value,
-                                  count(DISTINCT (ToBranch, Franchise, PartNumber)) AS receiving_parts,
-                                  count(DISTINCT FromBranch) AS senders, count(DISTINCT ToBranch) AS receivers
-                           FROM expected_suggestion GROUP BY Kind ORDER BY Kind""", "by kind")
+    built_counts = build_expected(con, current_month, today, sc)
+    if sc.has_transfers:
+        print(f"Reference suggestions: {built_counts['groups']:,} candidate groups, {built_counts['lines']:,} lines")
+        _print_labeled(con, """SELECT Kind, count(*) AS lines, sum(Qty) AS units, round(sum(Value), 2) AS value,
+                                      count(DISTINCT (ToBranch, Franchise, PartNumber)) AS receiving_parts,
+                                      count(DISTINCT FromBranch) AS senders, count(DISTINCT ToBranch) AS receivers
+                               FROM expected_suggestion GROUP BY Kind ORDER BY Kind""", "by kind")
 
-    # Fact_NonJD_Reorder
+    # The reorder table
     failed = False
+    wanted = output_cols(sc)
     gold_cols = {r[0] for r in con.execute(f"DESCRIBE SELECT * FROM delta_scan('{gold_p}')").fetchall()}
-    missing = [c for c in OUTPUT_COLS if c not in gold_cols]
-    present = [c for c in OUTPUT_COLS if c in gold_cols]
+    missing = [c for c in wanted if c not in gold_cols]
+    present = [c for c in wanted if c in gold_cols]
     if missing:
-        print(f"FAIL: Fact_NonJD_Reorder has no {', '.join(missing)} (Gold not on the latest rules yet?); "
+        print(f"FAIL: {table} has no {', '.join(missing)} (Gold not on the latest rules yet?); "
               f"comparing the other {len(present) - 3} columns")
     con.execute(f"CREATE TABLE gold AS SELECT {', '.join(present)} FROM delta_scan('{gold_p}')")
     result = compare(con, "gold", "expected", present)
-    print(f"Fact_NonJD_Reorder: {result}")
+    print(f"{table}: {result}")
     if any(result.values()):
         failed = True
         e_cols = ", ".join(f"e.{c} AS e_{c}" for c in present[3:])
@@ -1156,6 +1292,24 @@ def main() -> int:
     elif missing:
         failed = True
         print("The columns Gold has match the reference; FAIL because of the missing columns")
+
+    if not sc.has_transfers:
+        # Fact_JD_SalesHistory
+        hist_p = _path(a.tier, "presentation", sc.history_table)
+        con.execute(EXPECTED_JD_HISTORY_SQL, {"cur": current_month})
+        con.execute(f"CREATE TABLE gold_h AS SELECT {', '.join(HISTORY_COLS)} FROM delta_scan('{hist_p}')")
+        h_result = compare_history(con, "gold_h", "expected_history")
+        print(f"{sc.history_table}: {h_result}")
+        if any(h_result.values()):
+            failed = True
+            _print_labeled(con, f"SELECT {HISTORY_KEYS} FROM gold_h EXCEPT SELECT {HISTORY_KEYS} FROM expected_history "
+                                "LIMIT 10", "history only in gold")
+            _print_labeled(con, f"SELECT {HISTORY_KEYS} FROM expected_history EXCEPT SELECT {HISTORY_KEYS} FROM gold_h "
+                                "LIMIT 10", "history only in expected")
+        if failed:
+            return 1
+        print(f"PASS: Gold matches the reference rules ({table} and {sc.history_table})")
+        return 0
 
     # Fact_NonJD_TransferSuggestion
     sugg_p = _path(a.tier, "presentation", "Fact_NonJD_TransferSuggestion")

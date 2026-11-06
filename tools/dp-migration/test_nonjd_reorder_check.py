@@ -2954,3 +2954,108 @@ def test_compare_equip_stock_value_within_half_a_cent():
         con.execute(f"CREATE OR REPLACE TABLE e AS SELECT 1 AS k, CAST({ref} AS DOUBLE) AS EquipStockValue")
         n = con.execute(f"SELECT count(*) FROM g JOIN e USING (k) WHERE {chk._diff_where(['EquipStockValue'])}")
         assert n.fetchone()[0] == diff, ref
+
+
+# ---------------------------------------------------------------------------------------------------------
+# Plan S: --scope jd (Fact_JD_Reorder, Fact_JD_SalesHistory)
+# ---------------------------------------------------------------------------------------------------------
+JD = chk.SCOPES["jd"]
+
+
+@pytest.fixture
+def duck():
+    return duckdb.connect()
+
+
+def _jd_run(con, cur=CUR, today=TODAY):
+    cur_ = chk.expected_reorder(con, cur, today, JD)
+    cols = [d[0] for d in cur_.description]
+    return {(r[0], r[1], r[2]): dict(zip(cols, r)) for r in cur_.fetchall()}
+
+
+def test_scopes_name_their_tables_and_defaults():
+    nj, jd = chk.SCOPES["nonjd"], chk.SCOPES["jd"]
+    assert nj.reorder_table == "Fact_NonJD_Reorder" and nj.rules_table == "NonJD_OrderRules"
+    assert nj.builtin_supply == 12.0 and nj.excluded_branches == ["12", "5", "97", "4B", "93C"]
+    assert jd.reorder_table == "Fact_JD_Reorder" and jd.history_table == "Fact_JD_SalesHistory"
+    assert jd.rules_table == "JD_OrderRules"
+    assert jd.builtin_supply == 4.0 and jd.excluded_branches == []   # S-D3, S-D5
+
+
+def test_jd_scope_sql_is_franchise_d_with_s_d7(duck):
+    duck.execute("""CREATE TABLE parts AS SELECT * FROM (VALUES
+        ('1','D','HIST',5.0,0,0), ('1','D','STOCK',5.0,2,0), ('1','D','ORD',5.0,0,3), ('1','D','SET',5.0,0,0),
+        ('1','D','DEAD',5.0,0,0), ('1','D','FREE',0.0,9,0), ('1','MC','OTHER',5.0,9,0), ('12','D','VAULT',5.0,1,0)
+      ) t(Branch,Franchise,PartNumber,Cost,QuantityOnHand,OnOrder)""")
+    duck.execute("CREATE TABLE hist AS SELECT '1' Branch,'D' Franchise,'HIST' PartNumber")
+    duck.execute("CREATE TABLE settings AS SELECT '1' Branch,'D' Franchise,'SET' PartNumber")
+    got = {r[0] for r in duck.execute(chk.jd_scope_sql("parts", "hist", "settings")).fetchall()}
+    assert got == {"HIST", "STOCK", "ORD", "SET", "VAULT"}   # not DEAD, FREE (cost 0) or OTHER
+
+
+def test_nonjd_scope_is_the_default_and_jd_scope_output_has_no_transfer_columns():
+    assert chk.expected_sql(chk.SCOPES["nonjd"]) == chk.EXPECTED_SQL
+    con = _con()
+    cur_ = chk.expected_reorder(con, CUR, TODAY, JD)
+    cols = [d[0] for d in cur_.description]
+    assert cols == chk.output_cols(JD)
+    assert "AppInboundQty" in cols and "LastReceived" in cols and "EquipStockValue" in cols
+    assert not set(cols) & set(chk.TRANSFER_OUTPUT_COLS)
+    assert chk.output_cols(chk.SCOPES["nonjd"]) == chk.OUTPUT_COLS
+
+
+def test_jd_scope_uses_the_60_month_window_every_branch_and_trimmed_franchise():
+    con = _con()
+    _part(con, "RECENT", branch="12", franchise="D")
+    _hist(con, "RECENT", {"2021-11-01": (1, 1)}, branch="12", franchise="D")   # 59 months back from 2026-10: in
+    _part(con, "OLD", franchise="D")
+    _hist(con, "OLD", {"2021-09-01": (1, 1)}, franchise="D")                   # 61 months back: out
+    _part(con, "LOWER", oh=1, franchise="d ")
+    _part(con, "NEG", oh=-1, franchise="D")                                    # negative stock counts as stock
+    _part(con, "PHASE", franchise="D")
+    _setting(con, "PHASE", franchise="D", phase_qty=2)
+    _part(con, "MC", oh=4)
+    assert set(_jd_run(con)) == {("12", "D", "RECENT"), ("1", "d ", "LOWER"), ("1", "D", "NEG"), ("1", "D", "PHASE")}
+
+
+def test_jd_scope_builtin_default_is_4_weeks_and_rules_list_applies():
+    con = _con()
+    _part(con, "A", franchise="D")
+    _hist(con, "A", {"2026-09-01": (120, 3)}, franchise="D")     # 10 a month
+    r = _jd_run(con)[K("A", franchise="D")]
+    assert (r["RuleName"], r["Supply"], r["SupplyUnit"], r["MinDemands"]) == ("Built-in default", 4.0, "Weeks", 3)
+    assert r["AppInboundQty"] == 0
+    assert r["CalcTarget"] == 10                                 # 10 x (4 x 12 / 52) = 9.23, rounded up
+    assert r["RecommendedOrderQty"] == 10
+    con = _con()
+    _part(con, "A", franchise="D")
+    _hist(con, "A", {"2026-09-01": (120, 3)}, franchise="D")
+    _rule(con, 1, "Default", woc=8)
+    r = _jd_run(con)[K("A", franchise="D")]
+    assert (r["RuleName"], r["Supply"], r["CalcTarget"]) == ("Default", 8.0, 19)
+
+
+def test_jd_scope_last_received_and_history():
+    con = _con()
+    _part(con, "A ", oh=1, franchise="D")
+    _hist(con, "A ", {"2026-10-01": (1, 1), "2021-11-01": (2, 1), "2021-09-01": (3, 1)}, franchise="D")
+    con.execute("CREATE TABLE purchases_src (Branch VARCHAR, Franchise VARCHAR, PartNumberTrim VARCHAR, TransDate DATE, "
+                "CostValue DECIMAL(14,2))")
+    con.execute("INSERT INTO purchases_src VALUES ('1', 'D', 'A', DATE '2026-01-02', 1), ('1', 'D', 'A', DATE '2026-02-03', 1)")
+    assert _jd_run(con)[K("A ", franchise="D")]["LastReceived"] == date(2026, 2, 3)
+    con.execute(chk.EXPECTED_JD_HISTORY_SQL, {"cur": CUR})
+    got = con.execute("SELECT MonthStart, MonthOffset FROM expected_history ORDER BY MonthStart").fetchall()
+    assert got == [(date(2021, 11, 1), 60), (date(2026, 10, 1), 1)]
+    con.execute("CREATE TABLE gold_h AS SELECT * FROM expected_history")
+    assert not any(chk.compare_history(con, "gold_h", "expected_history").values())
+    con.execute("UPDATE gold_h SET SalesQty = SalesQty + 1 WHERE MonthOffset = 1")
+    assert chk.compare_history(con, "gold_h", "expected_history")["different"] == 1
+
+
+def test_jd_purchases_src_is_franchise_d_at_every_branch():
+    con = duckdb.connect()
+    con.execute("""CREATE TABLE t AS SELECT * FROM (VALUES
+        ('12', 'D ', 'X ', 'P', TIMESTAMP '2026-01-02 10:00', 5.0), ('1', 'MC', 'X', 'P', TIMESTAMP '2026-01-02', 5.0),
+        ('1', 'D', 'Y', 'I', TIMESTAMP '2026-01-02', 5.0)) v(Branch, Franchise, PartNumber, Type, TransDatetime, CostValue)""")
+    got = con.execute(chk.JD_PURCHASES_SRC_SQL.format(src="t")).fetchall()
+    assert [r[:4] for r in got] == [("12", "D", "X", date(2026, 1, 2))]
