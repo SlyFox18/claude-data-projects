@@ -1,6 +1,8 @@
 # SPI Parts Hub: Pieces In Set, three Inventory reports (design)
 
-> **Status:** design approved by Brian, 2026-11-05. Next: the implementation plan (Plan R, app 0.16.0).
+> **Status:** design approved by Brian, 2026-11-05. Plan: `docs/superpowers/plans/2026-11-05-spi-parts-hub-pieces-in-set.md` (Plan R).
+> **Shipped 2026-11-06:** app 0.16.0 (commit `b7018cc`) on Fedora, publish contract 8, PR #53. Corrected below after the
+> build: R-D6's row count and the idle statement. Results are in the plan's Shipped block.
 > **Origin:** the Inventory reports spec `2026-11-03-spi-parts-hub-inventory-reports-design.md` (L-D8 order); the workbook
 > `projects/corp parts excel reports/SPI-Pieces In Set/` (three queries, plus formula columns in the workbook).
 > **Builds on:** 0.15.1. Reports only: nothing appears on the order screens (that is F12, Reason Codes, afterwards).
@@ -18,7 +20,7 @@ The workbook's three lists as built-in Inventory reports that match Excel, with 
 | R-D3 | **Bin Qty, not On hand**, is the stock in Stock Position and Round Up (Ben's request; Brian, 2026-11-05: keep it). |
 | R-D4 | **Box and bulk quantities are labelled only** (PIS Class), not removed (Ben). |
 | R-D5 | **Overstocked parts keep their recommendation**, with the Coverage Flag beside it: the report matches Excel and the dollars stay visible. A copy can leave them out; the 3 Months or Less list has none by definition. |
-| R-D6 | **Franchise D's own record only.** The query's join ignores franchise, so 9 rows take Bin, On Order or Cost from another franchise's record of the part. The app reads the D record. Listed at the Excel check. |
+| R-D6 | **Franchise D's own record only.** The query's join ignores franchise, so rows take Bin, On Order or Commodity Code from another franchise's record of the part: **18 rows on 2026-11-06, 19 on 2026-11-05** (the 9 first written here undercounted, because exact ties are arbitrary in the query). The app reads the D record. Listed in `INVENTORY-REPORTS.md`. |
 | R-D7 | **Trailing-space twins show once:** the stats go on the record the query's JdisDedup would pick (longest description, then smallest; then smallest part number as stored), so the other twin never qualifies. |
 | R-D8 | **Category and Dup Branch+Part? are left out** (a keyword map; a check the dedup made pointless). |
 
@@ -51,8 +53,10 @@ above 0 and there is an I line. Unlike Corp demands, invoices run through "now",
 every branch (2 and 4 too); the reports' conditions leave those out, so a copy can include them. One record of a twin
 pair gets them (R-D7).
 
-Idle records have no 18-month invoices by definition (no sales in 24 months and no Corp demand), so the idle table and
-files don't change. **Check in the plan:** no qualifying row is idle.
+The idle table and files don't change. **Corrected in the build:** idle records can have 18-month invoices (about 500 to 572
+have 1 or 2 in Prod, mostly recent sales inside Corp demands' 7-day lag), so the first statement here, none by definition,
+was wrong. None has 3 or more, the least any report needs. Gold warns in the refresh summary if one does and still writes the
+tables (commit `39e0afcf`), because stopping the build would hold up everything over one row that returns within the week.
 
 **Publish:** contract **v8**: the seven fields on `jd_<branch>.json.gz`. Measure the size change.
 

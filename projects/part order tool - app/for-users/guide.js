@@ -28,6 +28,9 @@
 // records at 20 branches ($571,028.49), non-JD 698 at 19 branches ($497,322.78; 22 with a word Super To).
 // Section 14 (part details panel, 0.15.1) follows nonjd-order-app 0.15.1 (commit ca5f16e: src/pages/part/PartDetailsPanel.tsx,
 // PartLink.tsx, PartPanelContext.tsx).
+// Section 15 (Pieces In Set, 0.16.0) follows nonjd-order-app 0.16.0 (commit b7018cc: src/inventory/pisFields.ts, fields.ts,
+// builtIns.ts). Counts are Prod of 2026-11-06: Pieces In Set 3,316, 3 Months or Less 680, Review 121; the Buy List figures
+// are worked from the app's CSV of that morning (420 parts, $14,997.87).
 // Worked examples: Dev Gold Fact_NonJD_Reorder built 2026-10-26 (window Oct 2025 - Sep 2026); the transfer example
 // is the app's mock data (round numbers), as in REORDER-RULES.md. The Returns & scrap example (section 8) is Brian's Prod
 // test of 2026-11-02: rule "Scrap default" (All franchises, no sales 36 months, unit cost at least $0.10), 49 AM parts.
@@ -38,8 +41,8 @@ const w = (...fr) => fr.map((f) => Math.round(CONTENT_W * f));
 
 build(process.argv[2] || 'Non-JD Order Tool - User Guide.docx', {
   title: 'SPI Parts Hub: user guide',
-  subtitle: 'Formerly the Non-JD Parts Order Tool · For Ben, Shannon, Barry and Curt · Version 0.15.1 · November 5, 2026 (test version) · https://10.110.100.13:8443',
-  footer: 'SPI Parts Hub: user guide (version 0.15.1)',
+  subtitle: 'Formerly the Non-JD Parts Order Tool · For Ben, Shannon, Barry and Curt · Version 0.16.0 · November 6, 2026 (test version) · https://10.110.100.13:8443',
+  footer: 'SPI Parts Hub: user guide (version 0.16.0)',
   blocks: [
     { p: '**SPI Parts Hub** (until 0.8.0 the Non-JD Parts Order Tool) opens on a launch page where you pick what to work on: **Non-JD ordering**, **Cleanup**, **Returns & scrap**, **Part Lookup** or **Inventory management** today, with **JD ordering** to come. Most of this guide is about Non-JD ordering.' },
     { p: '**In one sentence:** Non-JD ordering shows each branch which non-John Deere parts to reorder and why, suggests stock other branches could send instead, lets you tune the rules behind those suggestions, and turns the parts you pick into an order file for each vendor.' },
@@ -253,7 +256,7 @@ build(process.argv[2] || 'Non-JD Order Tool - User Guide.docx', {
     { p: 'Its own area (0.9.0): **Returns**, **Scrap** and **Return & scrap rules**. Section 8 explains it job by job.' },
 
     { h2: 'Inventory management' },
-    { p: 'Its own area (0.12.0): open it from the launch page or the Area select; its menu item is **Reports**. **Inventory reports** lists the Corp Parts reports over the JD parts at every branch: the built-ins **MLPF Gaps**, **Border Stores**, **2 & 4 Cotton**, **Corporate Stocking** and **Stock on superseded parts**, and any copies people save. Open one to filter it, search it, sort it and export a CSV; **Copy as my own** makes a version you can change. Sections 10 to 13 explain it job by job.' },
+    { p: 'Its own area (0.12.0): open it from the launch page or the Area select; its menu item is **Reports**. **Inventory reports** lists the Corp Parts reports over the JD parts at every branch: the built-ins **MLPF Gaps**, **Border Stores**, **2 & 4 Cotton**, **Corporate Stocking**, **Stock on superseded parts** and the three **Pieces In Set** reports, and any copies people save. Open one to filter it, search it, sort it and export a CSV; **Copy as my own** makes a version you can change. Sections 10 to 13 and 15 explain it job by job.' },
 
     { h2: 'App Settings' },
     { p: 'Your own default branch and franchise (saved in your browser only). The launch page, Reorder, One-Time Order and Part Lookup open on them. Open it from the bottom of the left menu or from the launch page. **About** shows the version.' },
@@ -879,7 +882,31 @@ build(process.argv[2] || 'Non-JD Order Tool - User Guide.docx', {
       '**The browser’s Back button** leaves the page; it does not close the panel. Use Close.',
     ] },
 
-    { h1: '15. During the test' },
+    { h1: '15. Pieces In Set: three reports (0.16.0)' },
+    { p: 'The SPI Pieces In Set workbook is now **three new built-in reports**, the last three rows of **Inventory reports**. They find parts customers mostly buy in the same quantity above 1, so stock can be ordered in full sets. They are reports only: **nothing appears on the order screens**, and the other reports find the same parts as before.' },
+    { table: [
+      ['Report', 'A part at a branch is listed when', 'November 6'],
+      ['**Pieces In Set**', 'Not branch 2 or 4 · **Invoices** 3 or more · **SPI PIS** above 1 · **Match %** 75 or more · **Super To** blank', '**3,316**'],
+      ['**Pieces In Set: 3 Months or Less**', 'The same, and **Months of supply** 3 or less', '**680**'],
+      ['**Pieces In Set Review**', 'Not branch 2 or 4 · **Invoices** 3 or more · **InMaster PIS** above 1 · **Match %** under 75: Equip’s set size doesn’t match how the part sells', '**121**'],
+    ], widths: w(0.26, 0.6, 0.14) },
+    { p: 'All three count at once, with no Count button. **Invoices** are franchise D invoices in the last 18 months, net of their credits, up to the morning’s data. How each column is worked out:' },
+    { bullets: [
+      '**SPI PIS** (“Most Common Qty” on Review): the quantity most invoices were for; a tie takes the smaller. **Match %**: the share of invoices at that quantity. **InMaster PIS**: Pieces In Set in Equip. **PIS multiple %**: the share of invoices at a whole multiple of it.',
+      '**Stock position:** **Bin qty** + On order. The report uses Bin qty, not On hand, at Ben’s request.',
+      '**Round up:** the next full set at or above the stock position; with nothing in stock, one full set. **Recommended qty:** Round up − Stock position. **Recommended cost:** Cost × Recommended qty.',
+      '**Months of supply:** Stock position ÷ (Sales qty ÷ 18); blank with no sales.',
+      '**Tier:** 3 invoices or fewer **4 - Thin**; Match 90+ and 10+ invoices **1 - Act Now**; Match 80+ and 5+ invoices **2 - Likely**; otherwise **3 - Review**.',
+      '**PIS class:** set of 12 or less **Set**; 50 or more **Box / Bulk Qty**; between them **Large Multiple**. Box and bulk quantities are labelled, not removed.',
+      '**Coverage flag:** no stock **Out of Stock**; no sales **No Sales**; under 1 month **Thin**; up to 6 months **Healthy**; more **Overstocked**. Overstocked parts keep their recommendation, as in Excel: it only tops them up to a full set.',
+    ] },
+    { p: 'The table is wide, so scroll it sideways. The total above it, **Total cost (1 each)**, is one of each part, not the amount to spend: that is the sum of **Recommended cost** ($51,671.63 on the main list on November 6, $27,065.03 on 3 Months or Less). Clicking a part number opens its panel, which now shows these fields on every JD part. **Export CSV** uses the workbook’s headings.' },
+    { h2: 'The Buy List, as your own copy' },
+    { p: 'The workbook’s Buy List tab isn’t a built-in. In the **Pieces In Set** row click **Copy as my own**, then add three conditions: **Tier** one of `1 - Act Now`, `2 - Likely`; **PIS class** is not `Box / Bulk Qty`; **Recommended qty** > 0. On November 6 those conditions give **420** parts, **$14,997.87**. Add **Coverage flag** is not `Overstocked` if you’d rather leave those out. Give it a name and **Save report**. The workbook’s other analysis tabs stay in Excel.' },
+    { h2: 'Compared with the workbook (November 6, 2026)' },
+    { p: 'The app’s three CSVs matched an independent list from the same data on every part and column (3,316, 680 and 121). Brian refreshed the workbook at 7:57 am on November 6, and every part in its Data tab is on the independent list, with the same invoices and sales, once both use that time. The differences left are stock and labels: **18 rows** where Excel reads another franchise’s record of the part (the app reads franchise D’s own, so Bin qty or On order differ, and with them the recommendation); **8 rows** with the same stock position but stock moved from on order to the bin, which look like receipts that morning; 16 blank commodity codes on Review, from the same other-franchise records; and one sales quantity Excel rounds (398 for 397.5, 7/TY22563).' },
+
+    { h1: '16. During the test' },
     { bullets: [
       'This is a test copy on a test server; the address and the certificate warning will change for the real version.',
       'Orders and settings you save are real (they go into the SharePoint lists), but nothing is sent to a vendor; you download the CSV and use it yourself.',

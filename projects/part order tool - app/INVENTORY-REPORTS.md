@@ -1,10 +1,10 @@
 # Inventory reports: a guide for Ben
 
-This page explains the **Inventory management** area of SPI Parts Hub (app version 0.15.0, 2026-11-05): what the
-built-ins **MLPF Gaps**, **Border Stores**, **2 & 4 Cotton** and **Corporate Stocking** check and how each condition maps to the workbook, what **Stock on superseded parts** finds,
+This page explains the **Inventory management** area of SPI Parts Hub (app version 0.16.0, 2026-11-06): what the
+built-ins **MLPF Gaps**, **Border Stores**, **2 & 4 Cotton** and **Corporate Stocking** check and how each condition maps to the workbook, what **Stock on superseded parts** finds, what the three **Pieces In Set** reports check,
 the Corp demand rule, the JD fields a copy can use, how fresh the data is, and how the app's lists compared with the
 workbooks. Section 10 of the user guide
-covers the same ground job by job, with fewer details; section 11 covers Border Stores and 2 & 4 Cotton, section 12 Corporate Stocking, section 13 Stock on superseded parts.
+covers the same ground job by job, with fewer details; section 11 covers Border Stores and 2 & 4 Cotton, section 12 Corporate Stocking, section 13 Stock on superseded parts, section 15 Pieces In Set.
 
 Saved copies are kept in the SharePoint list **NonJD_InventoryReports** (one row per copy: name, description,
 conditions, Active, Archived; the author is SharePoint's Created By, "changed by" its Modified By). You work with them
@@ -316,10 +316,81 @@ Prod matched record for record, with 0 differences in on hand or Super To:
 | JD (Inventory) | 2,477 | 20 | $571,028.49 |
 | Non-JD (Cleanup; 22 with a word Super To) | 698 | 19 | $497,322.78 |
 
+## Pieces In Set: three reports (0.16.0, 2026-11-06)
+
+The SPI Pieces In Set workbook as three new built-ins, separate rows at the end of the list. Reports only: nothing
+appears on the order screens (that's F12, Reason Codes). All are one row per branch record, active records only, so they
+count at once with **no Count button**. The queries' code and the workbook's formulas are the truth.
+
+| Report | Conditions | Prod 2026-11-06 |
+|---|---|---|
+| **Pieces In Set** | Branch not one of 2, 4 · Invoices ≥ 3 · SPI PIS > 1 · Match % ≥ 75 · Super To blank | 3,316 |
+| **Pieces In Set: 3 Months or Less** | The same, and Months of supply ≤ 3 (a blank fails, as the workbook's "is number" test does) | 680 |
+| **Pieces In Set Review** | Branch not one of 2, 4 · Invoices ≥ 3 · InMaster PIS > 1 · Match % < 75 | 121 |
+
+**Invoices:** franchise D, type I with Qty > 0 or type C with Qty < 0, over the 18 months up to the Gold run's as-of time;
+grouped by Branch + part + (RONumber for I, OriginalInvoiceNo for C), kept when the net quantity is above 0 and there is an
+I line. Unlike Corp demands, they run through the as-of time, not 7 days before it. **Demands** is the same number (the
+workbook shows it twice).
+
+**The stock is Bin Qty, not On hand** (Ben's request; Brian kept it, 2026-11-05). Bin Qty is the record's main bin, so
+stock elsewhere at the branch isn't counted.
+
+| Field | Formula |
+|---|---|
+| SPI PIS | The most common net quantity; ties take the smaller (CSV "Most Common Qty" on Review) |
+| InMaster PIS | Equip's `Pieces_In_Set` on the franchise D record |
+| Match % | Invoices at SPI PIS ÷ Invoices, to 1 decimal |
+| PIS multiple % | Invoices at a whole multiple of InMaster PIS ÷ Invoices, to 1 decimal |
+| Stock position | Bin Qty + On order |
+| Round up | SPI PIS when Stock position is 0; else the next multiple of SPI PIS at or above it |
+| Recommended qty | Round up − Stock position |
+| Recommended cost | Cost × Recommended qty |
+| Months of supply | Stock position ÷ (Sales qty ÷ 18); blank with no sales |
+| Tier | Invoices ≤ 3 "4 - Thin"; Match ≥ 90 and Invoices ≥ 10 "1 - Act Now"; Match ≥ 80 and Invoices ≥ 5 "2 - Likely"; else "3 - Review" |
+| PIS class | SPI PIS ≥ 50 "Box / Bulk Qty"; ≤ 12 "Set"; else "Large Multiple" |
+| Coverage flag | Stock 0 "Out of Stock"; Sales 0 "No Sales"; Months < 1 "Thin"; ≤ 6 "Healthy"; else "Overstocked" |
+
+The calculated fields are blank on a record with no invoices. The workbook's thresholds are fixed in the app (its settings
+sheets have no equivalent); a copy filters on the fields.
+
+Decisions: **box and bulk quantities are labelled, not removed** (Ben). **Overstocked parts keep their recommendation**, so
+the report matches Excel and the dollars stay visible; a copy can leave them out. **Franchise D's own record only:** the
+query's join ignores franchise, so a few rows read another franchise's record; the app doesn't. **Trailing-space twins
+show once**, on the record the query's dedup would pick. **Category** and **Dup Branch+Part?** are left out.
+
+**The Buy List is a copy, not a built-in:** on Pieces In Set, **Copy as my own**, add Tier one of `1 - Act Now`, `2 - Likely`;
+PIS class is not `Box / Bulk Qty`; Recommended qty > 0 (420 parts, $14,997.87 on 2026-11-06, worked from the CSV). Keep Tier in
+it: a blank text field passes "is not", and Tier is what drops records with no invoices. The analysis tabs stay in Excel.
+
+Copies including parts with no activity: idle files carry no Pieces In Set figures, so those records read as having no
+invoices, and Bin qty and InMaster PIS aren't known on them. About 500 to 572 idle records have 1 or 2 invoices. None has 3
+or more, so the three reports aren't affected, and Gold warns in the refresh summary if one ever does.
+
+**Compared with the data and workbook (2026-11-06):** the app's three CSVs against `tools/dp-migration/corp_parts_check.py`
+on Prod: 3,316, 680 and 121 rows, 0 differences. Gold against the reference: 201,656 records, 767,403 invoices, 0 differences.
+Brian's workbook was refreshed at 07:57, so the reference was run with `--as-of "2026-11-06 07:57:00"`. Without that, the
+later items run moved the 18-month window start and made 91/57M8404, 91/57M8405 and 91/R85168 look missing. On that
+clock the Data tab has 3,318 rows on both sides, with Invoices and Sales identical. (`--as-of` compares the workbook with
+the reference; the app itself lists 3,316, from Gold's own later as-of time.) What's left:
+
+| Rows | Why |
+|---|---|
+| 18 | The query read another franchise's record (TD/UD), below: Bin, On order or Commodity Code differ, and what follows from them. Accepted: the app reads franchise D's own |
+| 8 | Bin + On order agree but stock moved from on order to bin: 16/RE577612, 6/R123145, 8/AR103729, 8/M164016, 93/AT397345, 93/FH329911, 93/N373020, 93/N374068. Believed to be receipts between Prod's morning copy and 07:57, not proven |
+| 16 (Review) | Blank Commodity Code in Excel, from the same TD/UD records |
+| 1 (Review) | 7/TY22563 Sales Qty 398 against 397.5: the query rounds |
+
+The 18 rows (Excel's franchise, Bin → franchise D's Bin): branch 1: 51M7070 TD 6→10, 57M9831 TD 13→6, 58M5575 TD 0→1,
+AT301456 UD 0→3, F3450R TD 2→4 (on order 0→20), JD7760 TD 10→5, R26919 UD 0→2, R29936 TD 11→2, R326674 TD 3→6, R77401 TD 3→2,
+RE210857 TD 2→33, RE48882 TD 0→4, T122075 TD 4→2; branch 8: R112954 TD 0→9, R56101 TD 0→3, R73599 TD 0→3, R81111 TD 0→2,
+T122075 TD 0→13. They also explain most of the 3 Months or Less differences (12 rows only in Excel, 1 only in the app), since
+a different stock moves Months of supply across 3.
+
 ## Coming next
 
-The other Corp Parts workbooks, each as its own small release with its own Excel comparison: **Pieces In Set** next.
-It checks first whether it needs new fields.
+**F12, Reason Codes** (FUTURE-IDEAS): a report or check can suggest parts on orders. Scrap and COTTON Trouble Parts are
+placed later.
 
 Ideas for later (FUTURE-IDEAS F4): a JD Part page; actions from a report row (order, transfer, set a minimum); data
 during the day instead of once a morning.

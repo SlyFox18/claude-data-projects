@@ -1,6 +1,25 @@
 # Pieces In Set (Plan R, app 0.16.0) Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
+
+> **Shipped 2026-11-06:** app 0.16.0 (commit `b7018cc`) on Fedora, installed by Brian; publish contract 8 on the Gateway PC;
+> PR #53 (fabric-workspace-docs, deployed and claimed). Commits: R1 778fba0c, R3 e94ca846, R6 notes 2512797c (data-projects);
+> R2 d43d7e15 and 39e0afcf (fabric-workspace-docs); R4 009b896, 5530141, R5 728d51f, R6 b7018cc (app). 3,177 tests, lint and
+> tsc clean. Publish size +19.3% (`jd_*` 5.57 MB to 6.64 MB, under the 30% limit).
+> **Departures:** the idle check warns at 3+ invoices instead of stopping at any (the plan's premise was wrong, see the spec);
+> `pis_franchise_rows` uses `rank()`, so exact ties are listed; the "not in today's data" wiring on the Inventory pages was
+> added in R5 (it didn't exist); `stockPosition` is blank with no invoices (the spec wins); mock row `JD-PIS-ACT` added.
+> **Prod (2026-11-06):** Gold = reference: 251,226 active and 643,014 idle rows, 201,656 records with invoices, 767,403
+> invoices, 0 differences; no idle record with 3+ invoices (572 with fewer).
+> **Real test (2026-11-06):** the app's three CSVs = reference on every part and column: 3,316, 680, 121, 0 differences.
+> Recommended cost: main $51,671.63, 3 Months or Less $27,065.03. Brian's copy "Test of Pieces In Set" (Sales qty >= 20) read
+> back correctly from SharePoint.
+> **Excel (Brian's 07:57 refresh; the plan's evening + next-morning check replaced at his call):** with the reference clocked
+> to 07:57 (`--as-of`), the Data tab has 3,318 rows on both sides, Invoices and Sales identical. What's left: 18 R-D6 rows;
+> 8 rows where Bin + On Order agree but stock moved from on order to bin (16/RE577612, 6/R123145, 8/AR103729, 8/M164016,
+> 93/AT397345, 93/FH329911, 93/N373020, 93/N374068; believed to be receipts between Prod's morning copy and 07:57, not proven);
+> Review: 16 blank commodity codes from TD/UD records and 7/TY22563 sales 398 against 397.5 (Excel rounds). The first tab
+> equals Data at <= 3 months (692 rows). Full list in `INVENTORY-REPORTS.md`.
 
 **Goal:** The SPI Pieces In Set workbook's main list, 3 Months or Less and Review as three built-in Inventory reports that
 match Excel. Reports only: nothing on the order screens.
@@ -29,7 +48,7 @@ Brian's.
 
 The stats as the query computes them, independent of Gold; the reports for `--report` and `--compare-xlsx`.
 
-- [ ] **Step 1: Failing tests** in `test_corp_parts_check.py`, over small in-memory `parts`, `intrans`, `inmaster` tables
+- [x] **Step 1: Failing tests** in `test_corp_parts_check.py`, over small in-memory `parts`, `intrans`, `inmaster` tables
 in the file's existing style:
 
 ```python
@@ -60,9 +79,9 @@ def test_pis_twins_once():
     # 'X' and 'X ' at a branch: one row, the longer description's.
 ```
 
-- [ ] **Step 2: Run them** (`python -m pytest test_corp_parts_check.py -q`) → FAIL.
+- [x] **Step 2: Run them** (`python -m pytest test_corp_parts_check.py -q`) → FAIL.
 
-- [ ] **Step 3: Implement.** Add `BinQty` to the `parts` table and a Prod Bronze-free `inmaster` table (from
+- [x] **Step 3: Implement.** Add `BinQty` to the `parts` table and a Prod Bronze-free `inmaster` table (from
 `Silver_InMaster.PiecesInSet` when it has the column; `--inmaster-bronze` isn't needed once R2 is in Dev). Add:
 - `build_pis_stats(con, now)`: table `pis_stats` (b, p, PisQty, PisQtyInvoices, PisInvoices, PisSalesQty,
   PisMultipleInvoices), following the query's `InvoiceQty`, `QtyCounts`, `PartTotals`, `Ranked`: window
@@ -77,11 +96,11 @@ def test_pis_twins_once():
   fails naming rows. It also checks no idle record has an 18-month invoice (R-D7's "check in the plan"). Run by default
   when Gold has the columns, as the Corp demand compare is.
 
-- [ ] **Step 4: Run** the tests, then against Prod with the morning's data:
+- [x] **Step 4: Run** the tests, then against Prod with the morning's data:
 `python corp_parts_check.py --tier prod --groups-tier prod --report pis --as-of '2026-11-05 15:15:00' --compare-xlsx <copy> --diff-out <csv>`
 Expected (Gold has no columns yet, so that compare is skipped): about 3,317 rows, about 3 only on each side.
 
-- [ ] **Step 5: Commit** `Plan R task R1: corp_parts_check --report pis, pis3, pisreview`.
+- [x] **Step 5: Commit** `Plan R task R1: corp_parts_check --report pis, pis3, pisreview`.
 
 ---
 
@@ -92,7 +111,7 @@ Expected (Gold has no columns yet, so that compare is skipped): about 3,317 rows
 - `workspaces/DP - Presentation - Dev/Fact Tables/Parts Order Tool/Build_Gold_NonJD_Reorder.Notebook/notebook-content.py`
 - `deploy/dp_refresh_dag.json` only if `dag_check` says so; `docs/TABLE-LINEAGE.md` is generated.
 
-- [ ] **Step 1: Silver.** In the `bronze.select(...)`, after `LastDemandDate`:
+- [x] **Step 1: Silver.** In the `bronze.select(...)`, after `LastDemandDate`:
 
 ```python
     F.col("Pieces_In_Set").alias("PiecesInSet"),
@@ -101,7 +120,7 @@ Expected (Gold has no columns yet, so that compare is skipped): about 3,317 rows
 Update its header comment ("Replicates the old 19-column contract ... additions: IN_TRANSIT_QTY, Pieces_In_Set (Pieces In
 Set Review, Plan R)").
 
-- [ ] **Step 2: Gold, the invoices.** In Part 5, after `corp_demands`:
+- [x] **Step 2: Gold, the invoices.** In Part 5, after `corp_demands`:
 
 ```python
 # Plan R: the SPI Pieces In Set stats (SPI - Pieces In Set.pq, InvoiceQty to Ranked): one row per invoice, net of its
@@ -122,7 +141,7 @@ pis_invoices = (spark.sql("""SELECT Branch, Franchise, PartNumber, Type, Qty, Tr
                 .persist(StorageLevel.MEMORY_AND_DISK))
 ```
 
-- [ ] **Step 3: Gold, the stats.**
+- [x] **Step 3: Gold, the stats.**
 
 ```python
 # InMaster's Pieces In Set per Branch + part, franchise D only (InMaster repeats a part across franchises; the Review
@@ -158,7 +177,7 @@ _pis_pick = (jd_parts.select(c("Branch"), c("PartNumber"),
 Check `F.length(NULL)` sorts last under `desc` as the query's `LEN` does, and that `Window` is imported. Add `BinQty` to
 `jd_parts`'s SELECT.
 
-- [ ] **Step 4: Gold, the columns.** In `jd_all`, join `pis_stats` and `in_master_pis` on the trimmed upper Branch + part
+- [x] **Step 4: Gold, the columns.** In `jd_all`, join `pis_stats` and `in_master_pis` on the trimmed upper Branch + part
 (each has one row per key, so neither can fan out) and `_pis_pick` on `Branch` + `PartNumber`, and select:
 
 ```python
@@ -175,15 +194,15 @@ Add the seven to `CORP_COLS` (active table). `Fact_CorpParts_JD_Idle` keeps its 
 sales in 24 months, unless Equip's sales counters disagree: stop and look rather than lose a row). Also assert the row
 count is unchanged by the joins, as the stocking join does.
 
-- [ ] **Step 5:** `python deploy/dag_check.py`, `python -m pytest deploy -q`, `python deploy/hygiene_audit.py` if it's
+- [x] **Step 5:** `python deploy/dag_check.py`, `python -m pytest deploy -q`, `python deploy/hygiene_audit.py` if it's
 part of `dag_check`'s advice. Commit `Plan R task R2: Silver_InMaster.PiecesInSet; Fact_CorpParts_JD Pieces In Set columns`,
 push `dev`.
 
-- [ ] **Step 6: Dev.** `python tools/dp-migration/git_sync.py <staging dev id>`, then `<presentation dev id>` (ids in
+- [x] **Step 6: Dev.** `python tools/dp-migration/git_sync.py <staging dev id>`, then `<presentation dev id>` (ids in
 `docs/architecture/data-platform-workspaces.md`). Run `Build_Silver_InMaster` then `Build_Gold_NonJD_Reorder` in Dev
 (`tools/dp-migration/run_item.py`). Run Gold twice and `deploy/compare_tiers.py` as the notebook rules ask: the same rows.
 
-- [ ] **Step 7: Verify:** `python corp_parts_check.py --tier dev --groups-tier prod --report pis`: PASS on the Gold
+- [x] **Step 7: Verify:** `python corp_parts_check.py --tier dev --groups-tier prod --report pis`: PASS on the Gold
 compare, the Pieces In Set compare and the idle check. Also `SELECT count(*) FROM Silver_InMaster WHERE PiecesInSet IS
 NULL` (report it; NULL only if Bronze has NULLs).
 
@@ -194,21 +213,21 @@ NULL` (report it; NULL only if Bronze has NULLs).
 **Files:** `projects/part order tool - app/publish/extract.py`, `build_files.py`, `publish_logic.py`, `test_build_files.py`,
 `README.md`.
 
-- [ ] **Step 1: Failing test:** a JD row carries the seven fields; `binQty` etc. numeric; `_meta.contractVersion == 8`;
+- [x] **Step 1: Failing test:** a JD row carries the seven fields; `binQty` etc. numeric; `_meta.contractVersion == 8`;
 missing Gold columns fail naming them ("deploy Plan R ... before publishing v8").
 
-- [ ] **Step 2: Implement.** `CONTRACT_VERSION = 8` with its comment line; `JD_COLUMNS` gains
+- [x] **Step 2: Implement.** `CONTRACT_VERSION = 8` with its comment line; `JD_COLUMNS` gains
 `("BinQty", "binQty"), ("PiecesInSet", "piecesInSet"), ("PisInvoices", "pisInvoices"), ("PisSalesQty", "pisSalesQty"),
 ("PisQty", "pisQty"), ("PisQtyInvoices", "pisQtyInvoices"), ("PisMultipleInvoices", "pisMultipleInvoices")`; `build_files`:
 `binQty`, `pisSalesQty`, `pisQty` to 2 dp, `piecesInSet` nullable, the invoice counts whole numbers, `require_columns`
 naming Plan R. Update the existing `contractVersion == 7` assertions to 8. README "File contract" and the deploy note:
 Gold first, then app 0.16.0, then this code on the Gateway PC.
 
-- [ ] **Step 3: Measure** size: run the extract against Dev to a temp folder with `build_files` (no upload) and report
+- [x] **Step 3: Measure** size: run the extract against Dev to a temp folder with `build_files` (no upload) and report
 the total `jd_*.json.gz` bytes against today's Prod `jd_*` total. Report the number; don't change the shape unless it
 grows more than about 30%, in which case stop and ask.
 
-- [ ] **Step 4: Commit** `Plan R task R3: publish contract v8 (Pieces In Set fields on the JD files)`. **Don't pull it on
+- [x] **Step 4: Commit** `Plan R task R3: publish contract v8 (Pieces In Set fields on the JD files)`. **Don't pull it on
 the Gateway PC:** that's R7.
 
 ---
@@ -218,7 +237,7 @@ the Gateway PC:** that's R7.
 **Files:** `src/data/contract.ts`, `src/data/types.ts`, `src/data/mock/jdFixtures.ts`, `src/inventory/fields.ts`, new
 `src/inventory/pisFields.ts`; tests `src/inventory/__tests__/pisFields.test.ts`, `fields.test.ts`, `src/data/__tests__/contract*`.
 
-- [ ] **Step 1: Failing tests** in `pisFields.test.ts`:
+- [x] **Step 1: Failing tests** in `pisFields.test.ts`:
 
 ```ts
 const rec = (o: Partial<JdRow>): JdRow => ({ ...BASE, binQty: 0, onOrder: 0, cost: 2, pisQty: 2, pisInvoices: 4,
@@ -271,9 +290,9 @@ it('every calculated field is blank on a record with no invoices', () => {
 `fields.test.ts`: the new ids in catalogue order; each new field `undefined` (not known) on a v7 publish, and known on v8.
 Contract test: 8 supported, `hasPiecesInSet(meta)` true from 8.
 
-- [ ] **Step 2: Run** → FAIL.
+- [x] **Step 2: Run** → FAIL.
 
-- [ ] **Step 3: Implement.** `contract.ts`: `SUPPORTED_CONTRACT_VERSIONS` gains 8, `CONTRACT_VERSION = 8`,
+- [x] **Step 3: Implement.** `contract.ts`: `SUPPORTED_CONTRACT_VERSIONS` gains 8, `CONTRACT_VERSION = 8`,
 `hasPiecesInSet`. `types.ts`: `JdPart` gains the seven, optional (`?`: undefined on a v6/v7 file), documented.
 `pisFields.ts`: pure functions above, named as the tests do. `fields.ts`: `JdFieldId` and `JD_FIELDS` gain, after
 `sales24`, `binQty` (Bin qty), `piecesInSet` (InMaster PIS, blankable), `pisQty` (SPI PIS), `matchPct` (Match %, number),
@@ -288,10 +307,10 @@ number fields format and add `decimals` only if needed.
 
 `jdFixtures.ts`: set the fields on existing rows only where a test needs it; add the R5 rows.
 
-- [ ] **Step 4: Run** `npx vitest run src/inventory src/data src/pages/__tests__ src/__tests__`, tsc, lint → PASS. Update
+- [x] **Step 4: Run** `npx vitest run src/inventory src/data src/pages/__tests__ src/__tests__`, tsc, lint → PASS. Update
 field-count tests; existing built-ins' results and CSVs must not change.
 
-- [ ] **Step 5: Commit** `Plan R task R4: contract v8 and the Pieces In Set fields`.
+- [x] **Step 5: Commit** `Plan R task R4: contract v8 and the Pieces In Set fields`.
 
 ---
 
@@ -300,7 +319,7 @@ field-count tests; existing built-ins' results and CSVs must not change.
 **Files:** `src/inventory/builtIns.ts`, `src/data/mock/jdFixtures.ts`; tests `src/inventory/__tests__/builtIns.test.ts`,
 page tests naming the built-ins.
 
-- [ ] **Step 1: Failing tests:** `BUILT_INS` ids end `..., 'superseded-stock', 'pieces-in-set', 'pieces-in-set-3-months',
+- [x] **Step 1: Failing tests:** `BUILT_INS` ids end `..., 'superseded-stock', 'pieces-in-set', 'pieces-in-set-3-months',
 'pieces-in-set-review'`. Mock rows (at branch 7 unless noted, Corp demands 0 and with stock or a Super To so no other
 built-in finds them; `JD-SS-` ones unaffected) found exactly:
 
@@ -324,9 +343,9 @@ Plus the CSV headers: main `Branch,Part #,Description,Source,SLC,Commodity Code,
 Review `Branch,Part #,Description,Source,SLC,Commodity Code,Dealer Group Code,InMaster PIS,Most Common Qty,Match %,PIS Multiple %,Invoices,Demands,Sales Qty`.
 On a v7 publish, each shows its "not in today's data" message.
 
-- [ ] **Step 2: Run** → FAIL.
+- [x] **Step 2: Run** → FAIL.
 
-- [ ] **Step 3: Implement** in `builtIns.ts` after `SUPERSEDED_STOCK_BUILT_IN`, using `list` and `num` (widen `num`'s op
+- [x] **Step 3: Implement** in `builtIns.ts` after `SUPERSEDED_STOCK_BUILT_IN`, using `list` and `num` (widen `num`'s op
 union with `'gt'`, `'le'`; check the Match % `lt` exists on numbers):
 
 ```ts
@@ -345,41 +364,41 @@ columns and `csvHeaders` as in the test; `fileStem` = the name with `:` removed.
 extend `reportCsvHeader` so a copy's new columns get the workbook's names through a `PIS_CSV_HEADERS` map, as
 `POOL_CSV_HEADERS` does (`pisQty` → `SPI PIS`).
 
-- [ ] **Step 4: Run** the same suite plus tsc and lint → PASS.
+- [x] **Step 4: Run** the same suite plus tsc and lint → PASS.
 
-- [ ] **Step 5: Commit** `Plan R task R5: Pieces In Set, 3 Months or Less, Review built-ins`.
+- [x] **Step 5: Commit** `Plan R task R5: Pieces In Set, 3 Months or Less, Review built-ins`.
 
 ---
 
 ### Task R6: 0.16.0, click-through, try-it notes
 
-- [ ] **Step 1:** `package.json` and lock `0.16.0`; `src/__tests__/clickThrough0160.test.tsx` (setup as 0150; move the
+- [x] **Step 1:** `package.json` and lock `0.16.0`; `src/__tests__/clickThrough0160.test.tsx` (setup as 0150; move the
 version test to it, from 0151): Inventory lists eight built-ins and counts each at once; open Pieces In Set: the rows
 above, JD-PIS-BOX labelled Box / Bulk Qty, CSV header; 3 Months or Less leaves out JD-PIS-OVER; Review shows JD-PIS-REV
 with PIS Multiple %; Copy as my own, add Tier is 1 - Act Now, Try it, Save.
 
-- [ ] **Step 2:** the full suite in two halves, tsc, lint.
+- [x] **Step 2:** the full suite in two halves, tsc, lint.
 
-- [ ] **Step 3:** `for-users/0.16.0-try-it.md` (0.15.0's style; say exactly where to click, and that these are three new
+- [x] **Step 3:** `for-users/0.16.0-try-it.md` (0.15.0's style; say exactly where to click, and that these are three new
 separate reports). Include how to make the Buy List as a copy (Tier is one of 1 - Act Now, 2 - Likely; PIS class isn't Box
 / Bulk Qty; Recommended qty > 0).
 
-- [ ] **Step 4:** commit both repos.
+- [x] **Step 4:** commit both repos.
 
 ---
 
 ### Task R7: Release (with Brian)
 
-- [ ] **1. PR** `dev → main` in fabric-workspace-docs (`python deploy/merge_preview.py`; template). Brian merges with a merge
+- [x] **1. PR** `dev → main` in fabric-workspace-docs (`python deploy/merge_preview.py`; template). Brian merges with a merge
 commit and runs "Deploy DP backend", then `python deploy/claim_prod_pipeline.py`. Fast-forward dev.
-- [ ] **2. Prod data:** Brian runs Pipeline_DP_Refresh with `{"executionData":{"parameters":{"mode":"items","items":"Build_Silver_InMaster,Build_Gold_NonJD_Reorder","reason":"Plan R"}}}`
+- [x] **2. Prod data:** Brian runs Pipeline_DP_Refresh with `{"executionData":{"parameters":{"mode":"items","items":"Build_Silver_InMaster,Build_Gold_NonJD_Reorder","reason":"Plan R"}}}`
 (item names as `dp_refresh_dag.json` has them). `corp_parts_check.py --tier prod --report pis`: Gold PASS.
-- [ ] **3. App:** `npm run build`, dist checks, upload to Fedora staging; Brian installs 0.16.0. Reports show "not in today's
+- [x] **3. App:** `npm run build`, dist checks, upload to Fedora staging; Brian installs 0.16.0. Reports show "not in today's
 data" until step 4; every other report works as before.
-- [ ] **4. Publish:** Brian pulls the v8 code on the Gateway PC and runs `run_publish.py --force`. Check `_meta.json`
+- [x] **4. Publish:** Brian pulls the v8 code on the Gateway PC and runs `run_publish.py --force`. Check `_meta.json`
 `contractVersion: 8`.
-- [ ] **5. Excel check:** Brian refreshes in the evening, **Refresh All twice**; after the next morning's Prod refresh, all three
+- [x] **5. Excel check:** Brian refreshes in the evening, **Refresh All twice**; after the next morning's Prod refresh, all three
 reports through `--compare-xlsx`; explain every difference by part. List R-D6's rows.
-- [ ] **6. Real test:** Brian exports the three CSVs; compare with the reference. A TEST copy saved and deleted.
-- [ ] **7. Docs:** guide + walkthrough (regenerate both .docx), INVENTORY-REPORTS, `corp parts excel reports/CLAUDE.md` note,
+- [x] **6. Real test:** Brian exports the three CSVs; compare with the reference. A TEST copy saved and deleted.
+- [x] **7. Docs:** guide + walkthrough (regenerate both .docx), INVENTORY-REPORTS, `corp parts excel reports/CLAUDE.md` note,
 FUTURE-IDEAS (F4's last workbook done; F12 next), plan and spec status, memory.

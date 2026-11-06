@@ -44,6 +44,9 @@
 // src/pages/cleanup/builtIns.ts). Counts are Prod of 2026-11-05: JD 2,477 records, non-JD 698.
 // The 0.15.1 section follows nonjd-order-app 0.15.1 (commit ca5f16e: the part details panel, src/pages/part/PartDetailsPanel.tsx,
 // PartLink.tsx, PartPanelContext.tsx).
+// The 0.16.0 section follows nonjd-order-app 0.16.0 (commit b7018cc: Pieces In Set, src/inventory/pisFields.ts, fields.ts,
+// builtIns.ts). Counts are Prod of 2026-11-06: 3,316, 680 and 121; the Buy List's 420 parts are worked from that CSV.
+// Brian's real test copy was "Test of Pieces In Set" (Sales qty >= 20).
 // Run: npm install, then node walkthrough.js [output file]
 const { build, CONTENT_W } = require('./lib');
 
@@ -58,8 +61,8 @@ const notes = { answer: 'Notes (anything different, slow or confusing):' };
 
 build(process.argv[2] || 'Non-JD Order Tool - Walkthrough.docx', {
   title: 'SPI Parts Hub: walkthrough',
-  subtitle: 'Formerly the Non-JD Parts Order Tool · Hands-on steps through every page · Version 0.15.1 · November 5, 2026 · App: https://10.110.100.13:8443',
-  footer: 'SPI Parts Hub: walkthrough (0.15.1)',
+  subtitle: 'Formerly the Non-JD Parts Order Tool · Hands-on steps through every page · Version 0.16.0 · November 6, 2026 · App: https://10.110.100.13:8443',
+  footer: 'SPI Parts Hub: walkthrough (0.16.0)',
   blocks: [
     { p: 'This is a hands-on tour of the tool. Each step says what to do and what you should see. Tick **OK** when it matches. When it doesn’t, or something is slow or confusing, write it in the notes box under that section and send it to Brian.' },
     { bullets: [
@@ -159,13 +162,28 @@ build(process.argv[2] || 'Non-JD Order Tool - Walkthrough.docx', {
     steps([
       ['In the left menu, change the **Area** select to **Cleanup**.', '**Cleanup checks**, with **Checks** the only item in the menu: the built-in checks **Minimums with no demand**, **Stock value with no quantity** and **Stock on superseded parts**, and any saved ones, each with a count over every branch (Part 2, 0.11.0).'],
       ['Click **Minimums with no demand**, then pick branch **6**.', 'The Equip minimums on parts with no demand and no sales, with **← Cleanup checks** at the top; branch 6 has about 1,000. The largest is about $21,000 (part 145019, module rim, minimum 65).'],
-      ['Change the **Area** select to **Inventory management**.', '**Inventory reports**, with **Reports** the only item in the menu: the built-ins **MLPF Gaps**, **Border Stores**, **2 & 4 Cotton**, **Corporate Stocking** and **Stock on superseded parts** and any saved copies, each with a count over every JD branch (Part 2, 0.12.0 to 0.15.0).'],
-      ['Click **App Settings**.', 'Your default branch and franchise, and **About** with the version (**0.15.1**).'],
+      ['Change the **Area** select to **Inventory management**.', '**Inventory reports**, with **Reports** the only item in the menu: the built-ins **MLPF Gaps**, **Border Stores**, **2 & 4 Cotton**, **Corporate Stocking**, **Stock on superseded parts** and the three **Pieces In Set** reports and any saved copies, each with a count over every JD branch (Part 2, 0.12.0 to 0.16.0).'],
+      ['Click **App Settings**.', 'Your default branch and franchise, and **About** with the version (**0.16.0**).'],
       ['Set your default branch, then open Recommended Reorder.', 'It opens on your default branch.'],
     ]),
     notes,
 
     { h1: 'Part 2: what’s new' },
+
+    { h2: 'Version 0.16.0 (November 6, 2026): Pieces In Set, three new reports' },
+    { p: 'New since 0.15.1: the SPI Pieces In Set workbook as **three new, separate rows** at the end of the Inventory reports list. Nothing else changed, and **nothing appears on the order screens**. The steps don’t save anything. The counts are from November 6 and will have moved a little. The user guide, section 15, explains every column.' },
+    { h3: 'The three reports and a Buy List' },
+    steps([
+      ['Open **Inventory management → Reports**. Wait for the loading line to finish, and look at the last three rows.', '**Pieces In Set** about **3,316** parts, **Pieces In Set: 3 Months or Less** about **680**, **Pieces In Set Review** about **121**, each 🔒 Built in, with no Count button.'],
+      ['In the **Pieces In Set** row click **Open**, and scroll the table sideways.', 'From SPI PIS, Match %, Invoices and Demands across to Recommended Cost, Tier, PIS Class, Stock Position, Months of Supply and Coverage Flag.'],
+      ['Click a part number.', 'The part’s panel, with the new lines below Sales 24 months: Bin qty, InMaster PIS, SPI PIS and so on. Close it.'],
+      ['**Export CSV** and open it in Excel.', 'The workbook’s headings, starting Branch, Part #, Description, Source, SLC.'],
+      ['Click **← Inventory reports**, and in the **3 Months or Less** row click **Open**.', 'The same columns, with Months of supply 3 or less on every row.'],
+      ['Click **← Inventory reports**, and in the **Pieces In Set Review** row click **Open**.', 'InMaster PIS beside SPI PIS, Match % under 75 on every row, and PIS Multiple %. In its CSV, SPI PIS is headed Most Common Qty.'],
+      ['Click **← Inventory reports**, and in the **Pieces In Set** row click **Copy as my own**. Add three conditions: **Tier** one of `1 - Act Now`, `2 - Likely`; **PIS class** is not `Box / Bulk Qty`; **Recommended qty** > 0. Click **Try it**.', 'About **420** parts: the workbook’s Buy List. Leave without saving, or name it and **Save report** to keep your own.'],
+    ]),
+    { p: '**Your opinion:** should overstocked parts stay on your Buy List when they only need topping up to a full set? Are any box or bulk quantities worth ordering this way?' },
+    notes,
 
     { h2: 'Version 0.15.1 (November 5, 2026): see a part without leaving your work' },
     { p: 'New since 0.15.0, Ben’s request: clicking a part number opens a **panel** over the right of the screen, look only, and the page stays exactly as it was underneath. Nothing here saves anything.' },
@@ -604,6 +622,11 @@ build(process.argv[2] || 'Non-JD Order Tool - Walkthrough.docx', {
 
     { h1: 'Part 3: release checks (Brian)' },
     { p: 'Run these when a new version is deployed to the test server, after **Ctrl+F5** to load it.' },
+    { h3: '0.16.0' },
+    steps([
+      ['App Settings → **About**.', '**Version 0.16.0 · commit b7018cc**. (Done November 6.)'],
+      ['After the v8 publish: export the three new reports’ CSVs, compare them with `corp_parts_check.py --tier prod --report pis / pis3 / pisreview --report-out`, and save a copy with one more condition.', '3,316, 680 and 121 parts, 0 differences, and the copy is saved. (Done November 6 by Brian.)'],
+    ]),
     { h3: '0.15.1' },
     steps([
       ['App Settings → **About**.', '**Version 0.15.1 · commit ca5f16e**. (Done November 5.)'],

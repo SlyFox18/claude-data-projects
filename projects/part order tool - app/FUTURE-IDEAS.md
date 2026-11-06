@@ -5,14 +5,14 @@ Brian, on 2026-10-28. Each entry gives the idea as described, what already exist
 open questions to settle before it is designed. Nothing here is scheduled; pick from this list when planning the
 next round.
 
-Round 2 is complete (0.7.0, phase 4 One-Time transfers). F2 is done in 0.8.0 (2026-10-30), F6 in 0.9.0, F8 in 0.10.0 and F1 in 0.11.0 (all 2026-11-02), F4's first report in 0.12.0 (2026-11-03), Border Stores and 2 & 4 Cotton in 0.13.0 (2026-11-04), a bulk transfer export (Brian's request, 2026-11-04: Export (N) on Transfer orders, one combined CSV) in 0.13.1, Corporate Stocking (the first one-row-per-part report) in 0.14.0, F10 Stock on superseded parts in 0.15.0 and F11 the part details panel in 0.15.1 (all 2026-11-05). Next: Pieces In Set (F4), then the F12 reason-code design (Brian is asking Ben the open questions meanwhile).
+Round 2 is complete (0.7.0, phase 4 One-Time transfers). F2 is done in 0.8.0 (2026-10-30), F6 in 0.9.0, F8 in 0.10.0 and F1 in 0.11.0 (all 2026-11-02), F4's first report in 0.12.0 (2026-11-03), Border Stores and 2 & 4 Cotton in 0.13.0 (2026-11-04), a bulk transfer export (Brian's request, 2026-11-04: Export (N) on Transfer orders, one combined CSV) in 0.13.1, Corporate Stocking (the first one-row-per-part report) in 0.14.0, F10 Stock on superseded parts in 0.15.0 and F11 the part details panel in 0.15.1 (all 2026-11-05), and Pieces In Set in 0.16.0 (2026-11-06). Next: the F12 reason-code design (Brian is asking Ben the open questions meanwhile).
 
 | # | Idea | Rough size | Needs a design pass |
 |---|---|---|---|
 | F1 | More Cleanup checks | **Done in 0.11.0** | No |
 | F2 | A landing page above the tools ("parts hub") | **Done in 0.8.0** | No |
 | F3 | Specials and promotions | Medium-large | **Yes** |
-| F4 | Inventory management (the Corp Parts Excel Reports) | **MLPF Gaps (0.12.0), Border Stores and 2 & 4 Cotton (0.13.0), Corporate Stocking (0.14.0) done**; Pieces In Set next | No (one release per workbook) |
+| F4 | Inventory management (the Corp Parts Excel Reports) | **MLPF Gaps (0.12.0), Border Stores and 2 & 4 Cotton (0.13.0), Corporate Stocking (0.14.0), Pieces In Set (0.16.0) done**; Scrap and COTTON Trouble Parts placed later | No (one release per workbook) |
 | F5 | Scheduled reminders | Medium | Yes (with F3) |
 | F6 | One-Time returns and scrap | **Done in 0.9.0** | No |
 | F7 | Warn before losing ticked parts on Recommended Reorder | **Done in 0.5.0** | No |
@@ -20,7 +20,7 @@ Round 2 is complete (0.7.0, phase 4 One-Time transfers). F2 is done in 0.8.0 (20
 | F9 | Price change history (was N5) | Medium | Yes, later |
 | F10 | Stock on superseded parts (JD + non-JD built-ins) | **Done in 0.15.0** | No |
 | F11 | Part details panel (see a part without leaving an order) | **Done in 0.15.1** | No |
-| F12 | Reason codes: report and check rules suggest parts on orders | Large | **Yes** (after Pieces In Set) |
+| F12 | Reason codes: report and check rules suggest parts on orders | Large | **Yes**; **next** |
 
 ## F1. More Cleanup checks
 
@@ -117,7 +117,14 @@ type choice. The Excel comparison matched 1,817 parts, every difference explaine
 four description spellings accepted). Spec `docs/superpowers/specs/2026-11-04-spi-parts-hub-corporate-stocking-design.md`,
 plan `docs/superpowers/plans/2026-11-04-spi-parts-hub-corporate-stocking.md`, user guide section 12.
 
-**Next report:** **Pieces In Set**, a small release with its own Excel comparison. Scrap and COTTON Trouble Parts are placed later.
+**Pieces In Set done in 0.16.0 (2026-11-06).** Three built-ins (the main list, 3 Months or Less, Review) with new fields
+from seven Gold columns on `Fact_CorpParts_JD` and `Silver_InMaster.PiecesInSet`, publish contract 8. The stock is Bin Qty,
+not On hand (Ben). Reports only; nothing on the order screens. The Buy List is a copy. The app's CSVs matched the reference
+with 0 differences (3,316, 680, 121), and every workbook difference is listed (18 other-franchise rows, 8 stock moves not
+proven). Spec `docs/superpowers/specs/2026-11-05-spi-parts-hub-pieces-in-set-design.md`, plan
+`docs/superpowers/plans/2026-11-05-spi-parts-hub-pieces-in-set.md`, user guide section 15.
+
+**Later:** Scrap and COTTON Trouble Parts are placed later. **F12, Reason Codes,** is next.
 
 **Follow-ups:**
 - **A JD Part page:** today a report row opens a details panel (the Part page is non-JD only).
