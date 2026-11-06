@@ -25,6 +25,7 @@ releases are fine and a missing screen is acceptable.
 | S-D4 | **Separate JD build and data.** Same logic as non-JD, its own Gold tables, files and rules list, so non-JD's numbers can't move. |
 | S-D5 | **Every branch is included, with no exclusions.** Non-JD's exclusions don't apply here. Branch 12 is the combine vault (F13). |
 | S-D6 | **JD has its own rules list.** Today's Default rule says "All parts", and a shared list would let a non-JD change move JD numbers. |
+| S-D7 | **Records that could be ordered** (Claude, for Brian's review): see "Which records" below. |
 
 **Left out of phase 1:** Transfers; spiking, EOQ and the check on Prism's Pre-Approved orders (Ben, 2026-10-23: JD-specific,
 and the spiking criteria are still to come); rules with tags (F12, next); limiting areas by person; the combine vault (F13).
@@ -41,9 +42,10 @@ and the spiking criteria are still to come); rules with tags (F12, next); limiti
 A rough Default-rule estimate over all branches, on today's on hand and on order: 4 weeks gives about 3,622 lines and
 $864,000; 12 weeks about 9,785 lines and $2.08 million. Only the scale matters here: it leaves out settings and value limits.
 
-**Which records:** the non-JD rule is cost > 0 and "some activity"; JD follows the same scope rule with franchise D only. The
-plan measures the published size for the real scope and reports it before the publish is finalized. Files load one branch
-at a time.
+**Which records (S-D7):** franchise D, cost > 0, and any of: a sale in the 60 months of history, stock on hand or on order, or a
+part setting (so a Phase-in on a part with no history still works). That is at most about 530,000 records. Non-JD keeps every
+record with cost > 0, but for JD that would be 884,432, most of which can never be recommended. The plan measures the published
+size for this scope and reports it before the publish is finalized. Files load one branch at a time.
 
 ## 1. Data (Fabric and publish)
 
