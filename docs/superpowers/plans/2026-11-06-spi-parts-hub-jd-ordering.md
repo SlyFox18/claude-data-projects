@@ -36,15 +36,15 @@ and committed, and its Dev run waits. S4's tests don't need Dev; its measurement
 print or stage `.env*` files, `.env.example` included. Never `fab import` into Dev. No deletes of Fabric items. Commit
 messages end with `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`. Push after each commit.
 
-## SharePoint (Brian creates these, 2026-11-06)
+## SharePoint (done and verified, 2026-11-06)
 
 There is one set of lists, shared by Dev and Prod.
 
-- **`JD_OrderRules`:** created in SharePoint from existing list `NonJD_OrderRules`, so the columns match, with no rows.
+- **`JD_OrderRules`:** list GUID `22e28c35-2a57-4c71-a807-abd9f22d1409`, same columns as `NonJD_OrderRules`, with the Default
+  row (item 1: 12 months, MinDemands 3, 4 weeks).
 - **`Area`** (single line of text) on `NonJD_Orders` and `NonJD_OneTimeTemplates`. Blank = non-JD.
 
-Claude's `az` Graph sign-in can write list **items** but can't create lists or columns (accessDenied, 2026-11-06). Look up
-the list and add its Default row in S2.
+Claude's `az` Graph sign-in can write list **items** but can't create lists or columns (accessDenied, 2026-11-06).
 
 ## Decisions made in this plan
 
@@ -156,41 +156,21 @@ before the change (read-only).
 
 ### Task S2: The rules dataflow and shortcut (fabric-workspace-docs, Dev)
 
-- [ ] **Step 1: Find the list.** `az rest` GET on `sites/<site>/lists?$filter=displayName eq 'JD_OrderRules'&$select=id`.
-**If it isn't there, stop this task and report: Brian creates it.** Don't try to create it.
+**The SharePoint list and Default row are done** (above). **The coordinator is creating `df_JD_OrderRules_Raw` and its
+`dp_refresh_dag.json` entry directly (2026-11-06): don't redo them.** What's left, once that dataflow is committed:
 
-- [ ] **Step 2: Add the Default row** if the list is empty (Graph `POST .../items`; this is allowed):
+- [ ] **Step 1: Confirm** `df_JD_OrderRules_Raw.Dataflow` and its DAG entry are on `dev` (`produces: ["JD_OrderRules"]`) and its `mashup.pq` reads list `22e28c35-2a57-4c71-a807-abd9f22d1409`. If not there yet, report and go on with the other tasks.
 
-```json
-{"fields": {"Title": "Default", "Priority": 0, "Active": true, "Archived": false, "HistoryMonths": 12,
-  "MinActiveMonths": 3, "MinDemands": 3, "WeeksOfCover": 4, "SupplyUnit": "Weeks", "DemandBasis": "UnitsSold",
-  "Notes": "Catch-all rule. Applies to any JD part no other active rule matches. 4 weeks is Prism's default (Ben)."}}
-```
-
-Read it back and confirm those values.
-
-- [ ] **Step 3: The dataflow.** Copy `df_NonJD_OrderRules_Raw.Dataflow` as `df_JD_OrderRules_Raw.Dataflow`:
-  - `.platform`: new `displayName`, a fresh `logicalId` (no trailing newline).
-  - `queryMetadata.json`: `name`, new `queryId`s, query names `JD_OrderRules` and `JD_OrderRules_DataDestination`. The two `connections` stay as they are.
-  - `mashup.pq`: the header comment names this table, dataflow, list GUID and `Build_Gold_JD_Reorder`; `Items = Source{[Id = "<the GUID from Step 1>"]}[Items]`; every `NonJD_OrderRules` becomes `JD_OrderRules`, including `TableNavigation`'s `Id`.
-
-- [ ] **Step 4: Config.** `deploy/dp_refresh_dag.json`, beside the NonJD dataflow:
-
-```json
-{"name": "df_JD_OrderRules_Raw", "type": "dataflow", "workspace": "staging", "tier": "staging", "cadence": "daily",
- "dependsOn": [], "produces": ["JD_OrderRules"]}
-```
-
-`DP_Presentation.Lakehouse/shortcuts.metadata.json`: an entry as `NonJD_OrderRules`'s:
+- [ ] **Step 2: The shortcut, if that work didn't add it.** `DP_Presentation.Lakehouse/shortcuts.metadata.json`, as `NonJD_OrderRules`'s:
 
 ```json
 {"name": "JD_OrderRules", "path": "/Tables", "target": {"type": "OneLake", "oneLake": {"path": "Tables/JD_OrderRules",
  "itemId": "876255e0-d462-4697-adc1-4a655f5bb101", "workspaceId": "ab15d64d-c7ba-415d-9bcf-7feb1ef9b201"}}}
 ```
 
-- [ ] **Step 5:** `python deploy/dag_check.py`, `python -m pytest deploy -q`. Commit `Plan S task S2: df_JD_OrderRules_Raw`, push. Git sync `DP - Staging - Dev` and `DP - Presentation - Dev` with `tools/dp-migration/git_sync.py`.
+`python deploy/dag_check.py`, `python -m pytest deploy -q`. Commit `Plan S task S2: JD_OrderRules shortcut`, push. Git sync `DP - Presentation - Dev` with `tools/dp-migration/git_sync.py`.
 
-- [ ] **Step 6: Run it in Dev:** `run_item.py <staging workspace> <item> Refresh`. **If it fails on credentials, that piece waits for Brian** (he opens it once in the Dev UI and picks the existing SharePoint connection, as L1). Report and go on. On success, confirm with DuckDB that `JD_OrderRules` has the Default row, then `python deploy/sync_shortcuts.py` (dry run) and `--apply` **for Dev only**.
+- [ ] **Step 3: Run it in Dev if it hasn't run:** `run_item.py <staging workspace> <item> Refresh`. **If it fails on credentials, that piece waits for Brian** (he opens it once in the Dev UI and picks the existing SharePoint connection, as L1). Report and go on. On success, confirm with DuckDB that `JD_OrderRules` has the Default row, then `python deploy/sync_shortcuts.py` (dry run) and `--apply` **for Dev only**.
 
 ### Task S3: `Build_Gold_JD_Reorder` (fabric-workspace-docs, Dev)
 
@@ -780,7 +760,7 @@ Claude gives exact commands and checks each step. Nothing here runs unattended.
 
 - [ ] **1. Fabric PR** `dev → main` (`python deploy/merge_preview.py`, the template). Brian merges with a merge commit, runs **Deploy DP backend**, then `python deploy/claim_prod_pipeline.py`. Claude fast-forwards dev.
 - [ ] **2. Prod data.** Brian runs Pipeline_DP_Refresh with `mode=items`, `items=df_JD_OrderRules_Raw`; then `sync_shortcuts.py --apply`; then `mode=items`, `items=Build_Gold_JD_Reorder`. `nonjd_reorder_check.py --tier prod --scope jd` → PASS, and `--tier prod` (non-JD) → PASS and unchanged.
-- [ ] **3. App.** Brian adds `VITE_LIST_JD_RULES=<JD_OrderRules GUID>` to the build's env file (Claude gives the GUID and doesn't open the file). `npm run build`, dist checks, upload to Fedora staging; Brian installs 0.17.0. The JD card says "Coming later" until step 4, and every other area works as before.
+- [ ] **3. App.** Brian adds `VITE_LIST_JD_RULES=22e28c35-2a57-4c71-a807-abd9f22d1409` to the build's env file (`22e28c35-2a57-4c71-a807-abd9f22d1409`; Claude doesn't open the file). `npm run build`, dist checks, upload to Fedora staging; Brian installs 0.17.0. The JD card says "Coming later" until step 4, and every other area works as before.
 - [ ] **4. Publish.** Brian pulls the contract 9 code on the Gateway PC and runs `run_publish.py --force`. Claude checks `contractVersion: 9`, `jdOrderBranches` (branch 12 included) and the file sizes.
 - [ ] **5. Real test.** One branch: Recommended Reorder and One-Time lists, a saved order and its CSV compared with the reference, a TEST rule on `JD_OrderRules`, a TEST template and a JD setting. Claude removes the TEST rows afterwards and says what was removed.
 - [ ] **6. Non-JD check.** Brian's normal branch: the Non-JD card, Orders and Special statuses are as they were.
@@ -798,10 +778,10 @@ Claude gives exact commands and checks each step. Nothing here runs unattended.
 |---|---|
 | S-D1 no Prism connection; ends as an export | S8, S9 (the same export) |
 | S-D2 screens | S7 to S9 |
-| S-D3 Default rule, fallback | S2 (row), S3 (Gold), S5 (app) |
+| S-D3 Default rule, fallback | Done (row), S3 (Gold), S5 (app) |
 | S-D4 separate build; non-JD can't move | S3 (Step 8, guard), S4 (byte test, S-P4) |
 | S-D5 every branch | S1, S3, S4, tests naming branch 12 |
-| S-D6 own rules list | S2, S5, S9 |
+| S-D6 own rules list | Done (list), S2 (shortcut), S5, S9 |
 | S-D7 records | S1, S3 |
 | Contract 9 files, 4 MB | S4 |
 | Area column | S5, S7, S9 |
