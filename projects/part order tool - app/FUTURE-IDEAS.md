@@ -282,3 +282,10 @@ when JD ordering exists.
 **Open questions (for Brian and Ben).** Which branch orders a part-grain suggestion; the quantity rule; whether a
 reason-code part counts in the order total before it is ticked; several reasons on one part (show all?); whether
 reason codes appear on the export / in Equip; who may switch a rule's suggesting on.
+
+## F13. The combine vault (branch 12)
+
+**Idea (Brian, 2026-11-06).** Branch 12 isn't a physical location: it's the combine vault, holding combine and stripper parts,
+like a trailer that can be moved closer to the stores that may need those parts but don't normally stock them. The Hub could
+help manage that inventory: what to load, where to move it, what the nearby stores need. Non-JD parts aren't in the vault,
+which is why non-JD ordering excludes branch 12. Later, after JD ordering. JD ordering includes every branch, 12 too.
