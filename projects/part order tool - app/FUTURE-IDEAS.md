@@ -251,7 +251,21 @@ built it will need a JD version: JD parts have no part page.
 Corporate Stocking rules are suggested too, each labelled with why, as JD Prism's "Reason Codes" do. Must work for
 non-JD ordering now and JD ordering once that is built (planned).
 
-**Direction (Brian, 2026-11-05: approach A).** Not a separate rules area: any Inventory report (JD) or Cleanup check
+**Direction (Brian, 2026-11-06): tags on the reorder rules. This replaces approach A below.** Add to the existing Rules
+screen instead of a Suggest on orders setting on reports. Build after JD ordering.
+- A rule gets a **tag**: pick one already in use or type a new one (no SharePoint list change to add a tag). The tag
+  shows on the Recommended Reorder and One-Time Order screens.
+- A rule either **replaces** (as today, one rule per part; Cotton stays this way) or **adds parts**: the normal rule
+  runs first, then the add-on rule also checks the part, and a part it recommends appears with the tag.
+- A part both rules order takes the **larger** quantity; the user can change it on the order.
+- Tagged parts **start ticked**, like other lines: the user checks every line of an order and unticks what they don't
+  want.
+- Rules can't express Corporate Stocking today: they look at one branch and it looks across all branches (nothing on
+  hand or on order anywhere, demand at 3+ branches), and it is JD only. It becomes a real rule with JD ordering, with
+  those conditions added. Package qty, Super To and the like are added as people ask.
+- Both the morning run and the app calculate rules, so both change and must still agree.
+
+**Earlier direction, superseded (Brian, 2026-11-05: approach A).** Not a separate rules area: any Inventory report (JD) or Cleanup check
 (non-JD), built-in or saved, gets a **Suggest on orders** setting:
 - a **reason code** (e.g. `CORP-STOCK`), shown on the order line as a label beside Reorder / Out of stock;
 - for one-row-per-part reports, **which branch gets the suggestion** (each branch with demand, or a set stocking
