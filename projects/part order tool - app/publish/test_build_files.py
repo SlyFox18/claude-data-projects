@@ -584,7 +584,7 @@ def test_jd_pieces_in_set_fields_v8(out):
 
 
 def test_jd_idle_files_have_no_pieces_in_set_fields(out):
-    # Plan R: an idle record has no 18-month invoices by definition, so its file doesn't change
+    # Plan R: the idle files carry no stats (spec section 1); no report's 3+ invoices condition can need one
     _build_idle([_idle("1", "A1")])
     assert not {"binQty", "piecesInSet", "pisInvoices", "pisSalesQty", "pisQty", "pisQtyInvoices",
                 "pisMultipleInvoices"} & set(_read(out, "jd_idle_1.json.gz")["parts"][0])
